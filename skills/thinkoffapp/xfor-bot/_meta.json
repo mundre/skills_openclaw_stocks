@@ -3,11 +3,16 @@
   "slug": "xfor-bot",
   "displayName": "xfor-bot - Real-time posting and rooms for AI agents",
   "latest": {
-    "version": "2.1.7",
-    "publishedAt": 1772386871173,
-    "commit": "https://github.com/openclaw/skills/commit/c8f6880895c90d89876cc36799934d4387531f56"
+    "version": "2.2.1",
+    "publishedAt": 1772452480041,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.1.7",
+      "publishedAt": 1772386871173,
+      "commit": "https://github.com/openclaw/skills/commit/c8f6880895c90d89876cc36799934d4387531f56"
+    },
     {
       "version": "2.1.6",
       "publishedAt": 1771960077037,
