@@ -1,3 +1,8 @@
+---
+name: agentic-loop-upgrade
+description: "Enhanced agentic loop with planning, parallel execution, confidence gates, semantic error recovery, and observable state machine. Includes Mode dashboard UI for easy configuration."
+---
+
 # Enhanced Agentic Loop Skill
 
 A comprehensive upgrade to OpenClaw's agentic capabilities with persistent state, automatic planning, approval gates, retry logic, context management, checkpointing, knowledge graph auto-injection, and channel-aware plan rendering.
@@ -17,7 +22,7 @@ A comprehensive upgrade to OpenClaw's agentic capabilities with persistent state
 | Enabled by default | ❌ No — explicit opt-in required |
 | Approval gates default | ✅ On for high/critical risk operations |
 
-## Status: ✅ Active (v2.1.0)
+## Status: ✅ Active (v2.3.0)
 
 All components are integrated and working.
 
@@ -256,11 +261,14 @@ The skill integrates via the enhanced-loop-hook in OpenClaw:
 1. **Config file:** `~/.openclaw/agents/main/agent/enhanced-loop-config.json`
 
 2. **Automatic activation:** When enabled, the hook:
-   - Detects planning intent in user messages
+   - Loads `tryLoadEnhancedLoop()` once per agent run, creating the orchestrator
+   - `wrapRun()` is called before each attempt, injecting plan context + memory + tool tracking
+   - Detects planning intent in user messages via `processGoal()`
    - Injects plan context into system prompt (additive; does not replace or override existing system prompt policies)
-   - Tracks tool executions and step progress
+   - Tracks tool executions and step progress via `onToolResult` / `onAgentEvent` wrappers
    - Creates checkpoints automatically
    - Offers to resume incomplete tasks
+   - Falls back to memory-only injection if the orchestrator module is unavailable
 
 ### Host Build Requirement — Real-Time Plan Card Updates
 
@@ -280,7 +288,10 @@ openclaw gateway update
 
 ## Credentials and Security
 
-- **No additional API keys required.** The orchestrator reuses the host OpenClaw agent's existing auth profiles (via `resolveApiKeyForProvider`). It prefers `api_key` type profiles over OAuth tokens for compatibility with direct API calls.
+- **No additional API keys required.** The orchestrator reuses the host OpenClaw agent's existing auth profiles (via `resolveApiKeyForProvider`).
+- **OAuth/token priority enforced.** Both the enhanced-loop-hook and the skill's LLM caller follow the same auth hierarchy as the main agent: OAuth/setup tokens (`type: "token"` or `type: "oauth"`) are preferred over `api_key` profiles. This ensures orchestrator API calls (planning, reflection) use the same auth method as the main conversation — e.g., Claude Max OAuth instead of burning API credits.
+- **OAuth setup tokens supported natively.** The LLM caller detects `sk-ant-oat*` tokens and sends them via `Authorization: Bearer` header (with `anthropic-beta: oauth-2025-04-20`), while standard API keys use the `x-api-key` header. No manual configuration needed.
+- **Auth profile order respected.** When the caller reads from `auth-profiles.json` directly (fallback path), it follows the configured `order.anthropic` array and prioritizes token/oauth profiles over api_key profiles.
 - **Orchestrator model is dynamically selectable** via the Mode dashboard. The dropdown is populated from the OpenClaw model catalog (`models.list`), so any model the agent can use is available. Pick a smaller model for planning/reflection calls to minimize costs.
 - **No external network calls** beyond the configured LLM provider API (e.g. `api.anthropic.com`). The skill does not phone home or send telemetry. Run `scripts/verify.sh --network-audit` to confirm.
 - **Persistence is local only.** Plan state, checkpoints, and configuration are written to `~/.openclaw/` under the agent directory. No cloud storage.
@@ -360,6 +371,13 @@ ui/
 ```
 
 ## Changelog
+
+### v2.3.0
+- **Re-wired orchestrator into agent runner**: The `tryLoadEnhancedLoop()` / `wrapRun()` integration with `run.ts` was lost during a prior upstream merge. Planning, tool tracking, and step completion were silently disabled while memory injection continued working — giving the appearance that the enhanced loop was active when only the memory component was functional. The full orchestrator pipeline is now restored.
+- **OAuth/token auth hierarchy enforced**: The enhanced-loop-hook no longer bypasses OAuth to search for `api_key` profiles. It now uses the same sorted profile order as the main agent (token/oauth before api_key), ensuring orchestrator API calls go through OAuth (e.g., Claude Max) when available.
+- **LLM caller supports OAuth setup tokens**: The skill's `caller.ts` / `caller.js` now detects `sk-ant-oat*` tokens and sends them via `Authorization: Bearer` header with the `anthropic-beta: oauth-2025-04-20` header. Standard API keys continue to use `x-api-key`.
+- **Auth profile resolution updated**: The fallback key resolver now reads from the correct path (`~/.openclaw/agents/main/agent/auth-profiles.json`), follows the configured `order.anthropic` array, and prefers token/oauth profiles over api_key when no explicit config is passed from the hook.
+- **Files changed**: `src/llm/caller.ts`, `src/dist/llm/caller.js`, `SKILL.md`, `SECURITY.md` (credentials section)
 
 ### v2.2.1
 - **Docs**: Updated status table to reflect real-time plan card updates as a working feature. Added note that UI rebuild is required to activate the `app-tool-stream.ts` fix.

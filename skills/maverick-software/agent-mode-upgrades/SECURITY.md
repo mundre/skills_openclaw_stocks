@@ -81,8 +81,9 @@ No files are written outside `~/.openclaw/`. No registry edits, no global config
 
 ## Credential Handling
 
-- **No new credentials required.** The skill reuses the host agent's existing provider auth profiles via `resolveApiKeyForProvider`.
+- **No new credentials required.** The skill reuses the host agent's existing provider auth profiles via `resolveApiKeyForProvider`. The enhanced-loop-hook resolves credentials using the same sorted profile order as the main agent, with OAuth/setup tokens preferred over API keys.
 - **No credentials stored.** The skill reads credentials from the host agent's config at runtime; it does not cache, log, or transmit them.
+- **OAuth tokens sent correctly.** When an OAuth setup token (`sk-ant-oat*`) is resolved, the LLM caller sends it via `Authorization: Bearer` header (not `x-api-key`), with the `anthropic-beta: oauth-2025-04-20` header. Standard API keys continue to use `x-api-key`.
 - **Effective privilege = host agent privilege.** The skill can use any model or provider the host agent already has access to. Users should be aware of this before enabling.
 
 ### SurrealDB (Optional)

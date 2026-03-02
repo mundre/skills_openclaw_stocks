@@ -44,15 +44,16 @@ export interface LLMCallerConfig {
 // ============================================================================
 
 function resolveApiKey(config?: LLMCallerConfig): string | null {
-  // 1. Explicit config
+  // 1. Explicit config (from enhanced-loop-hook, which resolves via auth profile chain)
   if (config?.apiKey) return config.apiKey;
   
   // 2. Environment variable
   if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
   
-  // 3. Try to read from OpenClaw auth storage
+  // 3. Try to read from OpenClaw auth storage (with OAuth/token priority)
   const home = process.env.HOME || process.env.USERPROFILE || "";
   const authPaths = [
+    path.join(home, ".openclaw", "agents", "main", "agent", "auth-profiles.json"),
     path.join(home, ".openclaw", "auth-profiles.json"),
     path.join(home, ".config", "openclaw", "auth-profiles.json"),
   ];
@@ -62,13 +63,30 @@ function resolveApiKey(config?: LLMCallerConfig): string | null {
       if (fs.existsSync(authPath)) {
         const content = fs.readFileSync(authPath, "utf-8");
         const auth = JSON.parse(content);
+        const profiles = auth.profiles || {};
+        const order = auth.order?.anthropic as string[] | undefined;
         
-        // Look for Anthropic profile
-        for (const profile of Object.values(auth.profiles || {})) {
-          const p = profile as { provider?: string; apiKey?: string };
-          if (p.provider === "anthropic" && p.apiKey) {
-            return p.apiKey;
+        // Follow configured order if available
+        if (order?.length) {
+          for (const profileId of order) {
+            const p = profiles[profileId] as { provider?: string; type?: string; key?: string; token?: string; apiKey?: string } | undefined;
+            if (!p || p.provider !== "anthropic") continue;
+            const key = p.token || p.key || p.apiKey;
+            if (key) return key;
           }
+        }
+        
+        // Fallback: prefer token/oauth profiles over api_key
+        const sorted = Object.entries(profiles)
+          .filter(([, p]) => (p as { provider?: string }).provider === "anthropic")
+          .sort(([, a], [, b]) => {
+            const rank = (t: string) => (t === "token" || t === "oauth" ? 0 : 1);
+            return rank((a as { type?: string }).type ?? "api_key") - rank((b as { type?: string }).type ?? "api_key");
+          });
+        for (const [, profile] of sorted) {
+          const p = profile as { token?: string; key?: string; apiKey?: string };
+          const key = p.token || p.key || p.apiKey;
+          if (key) return key;
         }
       }
     } catch {
@@ -77,6 +95,14 @@ function resolveApiKey(config?: LLMCallerConfig): string | null {
   }
   
   return null;
+}
+
+/**
+ * Determine if the key is an OAuth/setup token (needs Authorization header)
+ * vs a standard API key (needs x-api-key header).
+ */
+function isOAuthToken(key: string): boolean {
+  return key.startsWith("sk-ant-oat") || key.startsWith("Bearer ");
 }
 
 // ============================================================================
@@ -130,11 +156,19 @@ export class LLMCaller {
       })),
     };
 
+    // Use Authorization header for OAuth/setup tokens, x-api-key for standard API keys
+    const authHeaders: Record<string, string> = isOAuthToken(this.apiKey)
+      ? {
+          "Authorization": `Bearer ${this.apiKey.replace(/^Bearer\s*/i, "")}`,
+          "anthropic-beta": "oauth-2025-04-20",
+        }
+      : { "x-api-key": this.apiKey };
+
     const response = await fetch(this.baseUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": this.apiKey,
+        ...authHeaders,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(body),
