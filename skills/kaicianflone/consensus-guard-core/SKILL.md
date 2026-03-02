@@ -3,38 +3,8 @@ name: consensus-guard-core
 description: Shared deterministic guard primitives for the Consensus.Tools skill family: hard-block taxonomy, weighted vote aggregation, reputation updates, idempotency keys, strict schema enforcement, and indexed board artifact access.
 homepage: https://github.com/kaicianflone/consensus-guard-core
 source: https://github.com/kaicianflone/consensus-guard-core
-requires:
-  bins:
-    - node
-    - tsx
-  env:
-    - CONSENSUS_STATE_FILE
-    - CONSENSUS_STATE_ROOT
-install:
-  - id: npm
-    kind: node
-    package: consensus-guard-core
-    bins:
-      - node
-      - tsx
-    label: Install consensus-guard-core from npm
-metadata:
-  openclaw:
-    requires:
-      bins:
-        - node
-        - tsx
-      env:
-        - CONSENSUS_STATE_FILE
-        - CONSENSUS_STATE_ROOT
-    install:
-      - id: npm
-        kind: node
-        package: consensus-guard-core
-        bins:
-          - node
-          - tsx
-        label: Install consensus-guard-core from npm
+upstream:
+  consensus-tools: https://github.com/kaicianflone/consensus-tools
 ---
 
 # consensus-guard-core
@@ -80,11 +50,27 @@ Without a shared core, every guard drifts into incompatible policy logic. This p
 - this skill does not request host-wide privileges and does not mutate other skills
 - note: dependency trees should be audited separately by consumers for transitive packages
 
+## Install
+
+```bash
+npm i consensus-guard-core
+```
+
 ## Quick start
 
 ```bash
 npm test
 ```
+
+## Import contract
+
+Use the package root import (stable public API):
+
+```js
+import { aggregateVotes, writeArtifact, resolveStatePath } from 'consensus-guard-core';
+```
+
+Do not import internal paths like `consensus-guard-core/src/index.mjs` in dependent skills.
 
 ## Tool-call integration
 
