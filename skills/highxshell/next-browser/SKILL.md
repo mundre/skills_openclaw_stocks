@@ -143,6 +143,15 @@ viewed, 8 upvotes, and 3 comments."\
   }'
 ```
 
+### Endpoint: Stop chat session and task
+
+The chat-session-id is returned in the response of - POST /api/v1/chat/tasks
+
+```bash
+curl -X PUT "https://app.nextbrowser.com/api/v1/chat/sessions/<chat-session-id>/stop" \
+  -H "Authorization: x-api-key $API_KEY"
+```
+
 ### Endpoint: Poll for completion
 
 ```bash
