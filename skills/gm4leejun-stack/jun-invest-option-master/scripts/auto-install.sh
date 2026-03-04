@@ -2,28 +2,28 @@
 set -euo pipefail
 
 # One-shot installer for jun-invest-option-master
-# - Ensures the skill is up to date
-# - Syncs assets into the isolated agent workspace
+# - Ensures THIS skill is up to date (latest)
+# - Creates runtime workspace (first install)
+# - Sets up runtime git + commit-triggered sync to artifact
 # - Registers the isolated agent (id: jun-invest-option-master)
-# - Optionally restarts the gateway
 
 WORKSPACE_DIR="/Users/lijunsheng/.openclaw/workspace-jun-invest-option-master"
 RESTART_GATEWAY="false"
-SKILL_VERSION=""
 
 usage() {
   cat <<'EOF'
 Usage:
-  bash scripts/auto-install.sh [--workspace <dir>] [--restart-gateway] [--skill-version <ver>]
+  bash scripts/auto-install.sh [--workspace <dir>] [--restart-gateway]
 
 Defaults:
   --workspace /Users/lijunsheng/.openclaw/workspace-jun-invest-option-master
 
 What it does:
-  1) clawhub update jun-invest-option-master (optional --skill-version)
+  1) clawhub update jun-invest-option-master --force   (always latest)
   2) bash scripts/install.sh --workspace <workspace>
-  3) openclaw agents add jun-invest-option-master --non-interactive --workspace <workspace>
-  4) optionally: openclaw gateway restart
+  3) bash scripts/setup-runtime-git.sh  (commit-triggered sync)
+  4) openclaw agents add jun-invest-option-master --non-interactive --workspace <workspace>
+  5) optionally: openclaw gateway restart
 EOF
 }
 
@@ -33,8 +33,6 @@ while [[ $# -gt 0 ]]; do
       WORKSPACE_DIR="$2"; shift 2;;
     --restart-gateway)
       RESTART_GATEWAY="true"; shift 1;;
-    --skill-version)
-      SKILL_VERSION="$2"; shift 2;;
     -h|--help)
       usage; exit 0;;
     *)
@@ -44,16 +42,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 if command -v clawhub >/dev/null 2>&1; then
-  if [[ -n "${SKILL_VERSION}" ]]; then
-    clawhub update jun-invest-option-master --version "${SKILL_VERSION}" --force || true
-  else
-    clawhub update jun-invest-option-master --force || true
-  fi
+  clawhub update jun-invest-option-master --force || true
 fi
 
-bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/install.sh" --workspace "${WORKSPACE_DIR}"
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)/install.sh" --workspace "${WORKSPACE_DIR}"
 
-# Register agent (idempotent: if it already exists, this may error; treat as OK)
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)/setup-runtime-git.sh" || true
+
+# Setup unattended daily publish (macOS launchd; best-effort)
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  bash "$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)/setup-launchd.sh" || true
+fi
+
 openclaw agents add jun-invest-option-master --non-interactive --workspace "${WORKSPACE_DIR}" --json >/dev/null 2>&1 || true
 
 if [[ "${RESTART_GATEWAY}" == "true" ]]; then

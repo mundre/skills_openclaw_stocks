@@ -4,23 +4,23 @@ set -euo pipefail
 # Install target: an isolated OpenClaw agent workspace directory
 # Recommended: /Users/lijunsheng/.openclaw/workspace-jun-invest-option-master
 WORKSPACE=""
-
-# Back-compat: if you prefer installing under a parent workspace folder, you can
-# pass --target-name. If omitted, we install directly into --workspace.
 TARGET_DIR_NAME=""
+FORCE_RESET="false"
 
 usage() {
   cat <<'EOF'
 Usage:
-  bash scripts/install.sh --workspace <AGENT_WORKSPACE_DIR> [--target-name <subdir>]
+  bash scripts/install.sh --workspace <AGENT_WORKSPACE_DIR> [--target-name <subdir>] [--force-reset]
 
 What it does:
-  - If --target-name is omitted: copies ./agent/* directly into <workspace>/
-  - If --target-name is set: copies ./agent/* into <workspace>/<target-name>/
+  - First install: copies ./agent/* into <workspace>/ (or <workspace>/<target-name>/)
+  - Subsequent runs: non-destructive by default (does NOT overwrite runtime source-of-truth)
+  - Use --force-reset to backup+replace the runtime workspace from this package
   - Best-effort installs external skills listed in skills.lock.json (latest)
 
 Safety:
-  - If target exists, it will be backed up with a timestamp.
+  - Default is safe/non-destructive.
+  - --force-reset will backup existing target with a timestamp, then replace it.
 EOF
 }
 
@@ -30,6 +30,8 @@ while [[ $# -gt 0 ]]; do
       WORKSPACE="$2"; shift 2;;
     --target-name)
       TARGET_DIR_NAME="$2"; shift 2;;
+    --force-reset)
+      FORCE_RESET="true"; shift 1;;
     -h|--help)
       usage; exit 0;;
     *)
@@ -46,27 +48,31 @@ fi
 
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/agent"
 
-# If target-name is empty, install directly into WORKSPACE.
 if [[ -z "${TARGET_DIR_NAME}" ]]; then
   DST_DIR="${WORKSPACE}"
 else
   DST_DIR="${WORKSPACE}/${TARGET_DIR_NAME}"
 fi
 
-# Create workspace dir if needed (agent workspaces are standalone directories).
 mkdir -p "${WORKSPACE}"
 
 if [[ -e "${DST_DIR}" ]]; then
-  TS=$(date +"%Y%m%d-%H%M%S")
-  BACKUP="${DST_DIR}.bak.${TS}"
-  echo "Target exists; backing up to: ${BACKUP}"
-  mv "${DST_DIR}" "${BACKUP}"
+  if [[ "${FORCE_RESET}" == "true" ]]; then
+    TS=$(date +"%Y%m%d-%H%M%S")
+    BACKUP="${DST_DIR}.bak.${TS}"
+    echo "--force-reset: backing up existing runtime to: ${BACKUP}"
+    mv "${DST_DIR}" "${BACKUP}"
+    mkdir -p "${DST_DIR}"
+    echo "Installing (reset) jun-invest-option-master into: ${DST_DIR}"
+    rsync -a "${SRC_DIR}/" "${DST_DIR}/"
+  else
+    echo "Runtime workspace already exists at ${DST_DIR}; leaving it untouched (source-of-truth)."
+  fi
+else
+  mkdir -p "${DST_DIR}"
+  echo "First install: creating runtime workspace at ${DST_DIR}"
+  rsync -a "${SRC_DIR}/" "${DST_DIR}/"
 fi
-
-mkdir -p "${DST_DIR}"
-
-echo "Installing jun-invest-option-master into: ${DST_DIR}"
-rsync -a "${SRC_DIR}/" "${DST_DIR}/"
 
 # Best-effort: install skills (latest)
 if command -v clawhub >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
@@ -76,8 +82,8 @@ if command -v clawhub >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
     echo "Installing external skills (latest):"
     echo "${SKILLS}" | while IFS= read -r slug; do
       [[ -z "${slug}" ]] && continue
-      echo "- clawhub install ${slug} (best-effort)"
-      clawhub install "${slug}" || true
+      echo "- clawhub update ${slug} --force (latest, best-effort)"
+      clawhub update "${slug}" --force >/dev/null 2>&1 || clawhub install "${slug}" || true
     done
   fi
 else
