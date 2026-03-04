@@ -1,0 +1,11 @@
+{
+  "owner": "broedkrummen",
+  "slug": "danish-news-aggregator",
+  "displayName": "Danish News Aggregator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772631746610,
+    "commit": null
+  },
+  "history": []
+}
