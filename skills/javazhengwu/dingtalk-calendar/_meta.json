@@ -1,11 +1,17 @@
 {
   "owner": "javazhengwu",
   "slug": "dingtalk-calendar",
-  "displayName": "钉钉日程管理",
+  "displayName": "Dingtalk Calendar",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772195678882,
-    "commit": "https://github.com/openclaw/skills/commit/56bd61189546e513c33608f2f41256b83e950ff7"
+    "version": "1.0.2",
+    "publishedAt": 1772525656908,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772195678882,
+      "commit": "https://github.com/openclaw/skills/commit/56bd61189546e513c33608f2f41256b83e950ff7"
+    }
+  ]
 }
