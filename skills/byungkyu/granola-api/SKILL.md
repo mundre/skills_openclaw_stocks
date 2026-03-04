@@ -1,10 +1,8 @@
 ---
-name: granola
+name: granola-mcp
 description: |
-  Granola MCP server integration with managed OAuth. Query meeting notes, list meetings, and access transcripts.
-  Use this skill when users want to search meeting content, get meeting summaries, find action items, or retrieve transcripts from Granola.
-  For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
-  Requires network access and valid Maton API key.
+  Granola MCP integration with managed authentication. Use this skill when users want to search meeting content, get meeting summaries, find action items, or retrieve transcripts from Granola via MCP. For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
+compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
   version: "1.0"
@@ -16,14 +14,13 @@ metadata:
         - MATON_API_KEY
 ---
 
-# Granola
+# Granola MCP
 
-Access Granola's MCP server with managed OAuth authentication. Query meeting notes, list meetings, search meeting content, and retrieve transcripts.
+Access Granola via MCP (Model Context Protocol) with managed authentication.
 
 ## Quick Start
 
 ```bash
-# Query your meeting notes
 python <<'EOF'
 import urllib.request, os, json
 data = json.dumps({'query': 'What action items came from my last meeting?'}).encode()
@@ -37,14 +34,14 @@ EOF
 ## Base URL
 
 ```
-https://gateway.maton.ai/granola/{tool_name}
+https://gateway.maton.ai/granola/{tool-name}
 ```
 
-Replace `{tool_name}` with the MCP tool name. The gateway proxies requests to Granola's MCP server at `mcp.granola.ai` and automatically handles OAuth authentication.
+Replace `{tool-name}` with the MCP tool name (e.g., `query_granola_meetings`). The gateway proxies requests to `mcp.granola.ai` and automatically injects your credentials.
 
 ## Authentication
 
-All requests require the Maton API key in the Authorization header:
+All requests require the Maton API key:
 
 ```
 Authorization: Bearer $MATON_API_KEY
@@ -64,14 +61,14 @@ export MATON_API_KEY="YOUR_API_KEY"
 
 ## Connection Management
 
-Manage your Granola OAuth connections at `https://ctrl.maton.ai`.
+Manage your Granola MCP connections at `https://ctrl.maton.ai`.
 
 ### List Connections
 
 ```bash
 python <<'EOF'
 import urllib.request, os, json
-req = urllib.request.Request('https://ctrl.maton.ai/connections?app=granola&status=ACTIVE')
+req = urllib.request.Request('https://ctrl.maton.ai/connections?app=granola&method=MCP&status=ACTIVE')
 req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
 print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
 EOF
@@ -82,7 +79,7 @@ EOF
 ```bash
 python <<'EOF'
 import urllib.request, os, json
-data = json.dumps({'app': 'granola'}).encode()
+data = json.dumps({'app': 'granola', 'method': 'MCP'}).encode()
 req = urllib.request.Request('https://ctrl.maton.ai/connections', data=data, method='POST')
 req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
 req.add_header('Content-Type', 'application/json')
@@ -106,11 +103,11 @@ EOF
 {
   "connection": {
     "connection_id": "8a413c45-6427-45d9-b69d-8118ce62ffce",
-    "status": "ACTIVE",
+    "status": "PENDING",
     "creation_time": "2026-02-24T11:34:46.204677Z",
-    "last_updated_time": "2026-02-24T11:37:01.221812Z",
     "url": "https://connect.maton.ai/?session_token=...",
     "app": "granola",
+    "method": "MCP",
     "metadata": {}
   }
 }
@@ -131,7 +128,7 @@ EOF
 
 ### Specifying Connection
 
-If you have multiple Granola connections, specify which one to use with the `Maton-Connection` header:
+If you have multiple Granola connections, you must specify which MCP connection to use with the `Maton-Connection` header:
 
 ```bash
 python <<'EOF'
@@ -145,37 +142,29 @@ print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
 EOF
 ```
 
-If omitted, the gateway uses the default (oldest) active connection.
+IMPORTANT: If omitted, the gateway uses the default (oldest) active connection, which may fail if it's not an MCP connection.
 
-## MCP Tools Reference
+## MCP Reference
 
-Granola exposes four MCP tools. All tools are called via POST requests with JSON body parameters.
+All MCP tools use `POST` method:
 
-### query_granola_meetings
+| Tool | Description | Schema |
+|------|-------------|--------|
+| `query_granola_meetings` | Chat with meeting notes using natural language | [schema](schemas/query_granola_meetings.json) |
+| `list_meetings` | List meetings with metadata and attendees | [schema](schemas/list_meetings.json) |
+| `get_meetings` | Retrieve detailed content for specific meetings | [schema](schemas/get_meetings.json) |
+| `get_meeting_transcript` | Get raw transcript (paid tiers only) | [schema](schemas/get_meeting_transcript.json) |
 
-Chat with your meeting notes using natural language queries. This is the primary tool for conversational interaction with your meeting data.
+### Query Meetings
 
-**Endpoint:**
-```
-POST /granola/query_granola_meetings
-```
-
-**Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `query` | string | Yes | Natural language query about your meetings |
-
-**Example:**
+Chat with your meeting notes using natural language queries:
 ```bash
-python <<'EOF'
-import urllib.request, os, json
-data = json.dumps({'query': 'What action items came from my meetings this week?'}).encode()
-req = urllib.request.Request('https://gateway.maton.ai/granola/query_granola_meetings', data=data, method='POST')
-req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
-req.add_header('Content-Type', 'application/json')
-print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
-EOF
+POST /granola/query_granola_meetings
+Content-Type: application/json
+
+{
+  "query": "What action items came from my meetings this week?"
+}
 ```
 
 **Response:**
@@ -197,33 +186,14 @@ EOF
 - "What did we discuss about the product launch?"
 - "Find all mentions of budget in my meetings"
 
----
+### List Meetings
 
-### list_meetings
-
-List your meetings with metadata including IDs, titles, dates, and attendees. Use this to discover meeting IDs for use with other tools.
-
-**Endpoint:**
-```
-POST /granola/list_meetings
-```
-
-**Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| (none) | - | - | Returns recent meetings by default |
-
-**Example:**
+List your meetings with metadata including IDs, titles, dates, and attendees:
 ```bash
-python <<'EOF'
-import urllib.request, os, json
-data = json.dumps({}).encode()
-req = urllib.request.Request('https://gateway.maton.ai/granola/list_meetings', data=data, method='POST')
-req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
-req.add_header('Content-Type', 'application/json')
-print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
-EOF
+POST /granola/list_meetings
+Content-Type: application/json
+
+{}
 ```
 
 **Response:**
@@ -244,33 +214,16 @@ EOF
 - `meeting`: Individual meeting with `id`, `title`, and `date` attributes
 - `known_participants`: List of attendees with name, role, company, and email
 
----
+### Get Meetings
 
-### get_meetings
-
-Retrieve detailed content for specific meetings by ID, including summaries, enhanced notes, and private notes.
-
-**Endpoint:**
-```
-POST /granola/get_meetings
-```
-
-**Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `meeting_ids` | array of strings | Yes | List of meeting IDs to retrieve |
-
-**Example:**
+Retrieve detailed content for specific meetings by ID:
 ```bash
-python <<'EOF'
-import urllib.request, os, json
-data = json.dumps({'meeting_ids': ['0dba4400-50f1-4262-9ac7-89cd27b79371']}).encode()
-req = urllib.request.Request('https://gateway.maton.ai/granola/get_meetings', data=data, method='POST')
-req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
-req.add_header('Content-Type', 'application/json')
-print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
-EOF
+POST /granola/get_meetings
+Content-Type: application/json
+
+{
+  "meeting_ids": ["0dba4400-50f1-4262-9ac7-89cd27b79371"]
+}
 ```
 
 **Response:**
@@ -291,33 +244,16 @@ EOF
 - `summary`: AI-generated meeting summary with key decisions and action items
 - Enhanced notes and private notes (when available)
 
----
+### Get Meeting Transcript
 
-### get_meeting_transcript
-
-Retrieve the raw transcript for a specific meeting. **Only available on paid Granola tiers.**
-
-**Endpoint:**
-```
-POST /granola/get_meeting_transcript
-```
-
-**Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `meeting_id` | string | Yes | The meeting ID to get transcript for |
-
-**Example:**
+Retrieve the raw transcript for a specific meeting (paid tiers only):
 ```bash
-python <<'EOF'
-import urllib.request, os, json
-data = json.dumps({'meeting_id': '0dba4400-50f1-4262-9ac7-89cd27b79371'}).encode()
-req = urllib.request.Request('https://gateway.maton.ai/granola/get_meeting_transcript', data=data, method='POST')
-req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
-req.add_header('Content-Type', 'application/json')
-print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
-EOF
+POST /granola/get_meeting_transcript
+Content-Type: application/json
+
+{
+  "meeting_id": "0dba4400-50f1-4262-9ac7-89cd27b79371"
+}
 ```
 
 **Response (paid tier):**
@@ -351,12 +287,11 @@ EOF
 ### JavaScript
 
 ```javascript
-// Query meeting notes
 const response = await fetch('https://gateway.maton.ai/granola/query_granola_meetings', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${process.env.MATON_API_KEY}`,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${process.env.MATON_API_KEY}`
   },
   body: JSON.stringify({
     query: 'What were the action items from my last meeting?'
@@ -372,37 +307,19 @@ console.log(data.content[0].text);
 import os
 import requests
 
-# List all meetings
+# Query meeting notes
 response = requests.post(
-    'https://gateway.maton.ai/granola/list_meetings',
+    'https://gateway.maton.ai/granola/query_granola_meetings',
     headers={
         'Authorization': f'Bearer {os.environ["MATON_API_KEY"]}',
         'Content-Type': 'application/json'
     },
-    json={}
+    json={
+        'query': 'What were the action items from my last meeting?'
+    }
 )
-data = response.json()
-
-# Get specific meeting content
-meeting_ids = ['0dba4400-50f1-4262-9ac7-89cd27b79371']
-response = requests.post(
-    'https://gateway.maton.ai/granola/get_meetings',
-    headers={
-        'Authorization': f'Bearer {os.environ["MATON_API_KEY"]}',
-        'Content-Type': 'application/json'
-    },
-    json={'meeting_ids': meeting_ids}
-)
+print(response.json())
 ```
-
-## Notes
-
-- **MCP Protocol**: Granola uses the Model Context Protocol (MCP). All tool calls are POST requests with JSON body parameters.
-- **Response Format**: All responses follow MCP format with `content` array containing `type: "text"` objects and an `isError` boolean.
-- **Access Control**: Users can only query their own meeting notes. Shared notes from others are not accessible.
-- **Free Tier Limits**: Basic (free) plan users are limited to notes from the last 30 days.
-- **Transcript Access**: The `get_meeting_transcript` tool is only available on paid Granola tiers.
-- **Rate Limits**: Approximately 100 requests per minute (varies by plan tier).
 
 ## Error Handling
 
@@ -410,10 +327,38 @@ response = requests.post(
 |--------|---------|
 | 400 | Missing Granola connection |
 | 401 | Invalid or missing Maton API key |
-| 429 | Rate limited |
-| MCP -32602 | Invalid tool parameters (check required fields) |
+| 429 | Rate limited (approx 100 req/min) |
 
-**MCP Error Response:**
+### Troubleshooting: API Key Issues
+
+1. Check that the `MATON_API_KEY` environment variable is set:
+
+```bash
+echo $MATON_API_KEY
+```
+
+2. Verify the API key is valid by listing connections:
+
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
+```
+
+### Troubleshooting: Invalid App Name
+
+1. Ensure your URL path starts with `granola`. For example:
+
+- Correct: `https://gateway.maton.ai/granola/query_granola_meetings`
+- Incorrect: `https://gateway.maton.ai/query_granola_meetings`
+
+### Troubleshooting: MCP Parameter Errors
+
+MCP tools return validation errors when required parameters are missing:
+
 ```json
 {
   "content": [
@@ -425,6 +370,14 @@ response = requests.post(
   "isError": true
 }
 ```
+
+## Notes
+
+- All IDs are UUIDs (with or without hyphens)
+- MCP tool responses wrap content in `{"content": [{"type": "text", "text": "..."}], "isError": false}` format
+- Users can only query their own meeting notes; shared notes from others are not accessible
+- Basic (free) plan users are limited to notes from the last 30 days
+- The `get_meeting_transcript` tool is only available on paid Granola tiers
 
 ## Resources
 
