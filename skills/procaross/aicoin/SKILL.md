@@ -6,7 +6,7 @@ description: >
   place orders, check balance, set leverage, view positions, or cancel orders.
   Also use when the user asks for crypto market data: real-time prices, K-lines, funding
   rates, open interest, liquidation data, whale tracking, AI analysis, order flow, news,
-  Hyperliquid on-chain data, or Freqtrade bot control.
+  Twitter/X crypto tweets, Hyperliquid on-chain data, or Freqtrade bot control.
   Also use when the user asks to set up automated trading, deploy Freqtrade, backtest
   strategies, or control a trading bot.
   Scripts auto-load .env — just run them directly. If a script fails due to missing
@@ -97,8 +97,10 @@ Create a `.env` file in the OpenClaw workspace directory (recommended):
 
 ```bash
 # AiCoin API (optional — built-in free key works with IP rate limits)
-AICOIN_ACCESS_KEY_ID=your-key
-AICOIN_ACCESS_SECRET=your-secret
+# Mapping: AiCoin website "API Key" → AICOIN_ACCESS_KEY_ID
+#          AiCoin website "API Secret" → AICOIN_ACCESS_SECRET
+AICOIN_ACCESS_KEY_ID=your-api-key
+AICOIN_ACCESS_SECRET=your-api-secret
 
 # Exchange trading — only if needed (requires: npm install -g ccxt)
 BINANCE_API_KEY=xxx
@@ -116,6 +118,25 @@ PROXY_URL=socks5://127.0.0.1:7890
 # FREQTRADE_USERNAME=freqtrader
 # FREQTRADE_PASSWORD=auto-generated
 ```
+
+**IMPORTANT — AiCoin API Key Configuration:**
+
+1. The user may provide two values without labels (just two strings copied from the AiCoin website). **Do NOT guess which is which.** Ask the user to confirm: "哪个是 API Key，哪个是 API Secret？" Or look for the labels in the user's message.
+
+2. **After writing keys to `.env`, ALWAYS verify by running a test call:**
+   ```bash
+   node scripts/coin.mjs coin_ticker '{"coin_list":"bitcoin"}'
+   ```
+
+3. **If the test returns error code `1001` (signature verification failed), the keys are swapped.** Fix by swapping them:
+   ```bash
+   # Read current values, swap them
+   OLD_KEY=$(grep '^AICOIN_ACCESS_KEY_ID=' ~/.openclaw/workspace/.env | cut -d= -f2)
+   OLD_SECRET=$(grep '^AICOIN_ACCESS_SECRET=' ~/.openclaw/workspace/.env | cut -d= -f2)
+   sed -i '' "s|^AICOIN_ACCESS_KEY_ID=.*|AICOIN_ACCESS_KEY_ID=${OLD_SECRET}|" ~/.openclaw/workspace/.env
+   sed -i '' "s|^AICOIN_ACCESS_SECRET=.*|AICOIN_ACCESS_SECRET=${OLD_KEY}|" ~/.openclaw/workspace/.env
+   ```
+   Then re-run the test to confirm it works.
 
 Or configure in `~/.openclaw/openclaw.json`:
 
@@ -225,6 +246,27 @@ All scripts follow: `node scripts/<name>.mjs <action> [json-params]`
 | `newsflash` | AiCoin flash news | `{"language":"cn"}` |
 | `flash_list` | Industry flash news | `{"language":"cn"}` |
 | `exchange_listing` | Exchange listing announcements | `{"memberIds":"477,1509"}` (477=Binance, 1509=Bitget) |
+
+---
+
+### scripts/twitter.mjs — Twitter/X Crypto Tweets
+
+| Action | Description | Params |
+|--------|-------------|--------|
+| `latest` | Latest crypto tweets (cursor-paginated) | `{"language":"cn","page_size":"20","last_time":"1234567890"}` |
+| `search` | Search tweets by keyword | `{"keyword":"bitcoin","language":"cn","page_size":"20"}` |
+| `members` | Search Twitter KOL/users | `{"word":"elon","page":"1","size":"20"}` |
+| `interaction_stats` | Tweet engagement stats | `{"flash_ids":"123,456,789"}` (max 50 IDs) |
+
+---
+
+### scripts/newsflash.mjs — Newsflash (OpenData)
+
+| Action | Description | Params |
+|--------|-------------|--------|
+| `search` | Search newsflash by keyword | `{"word":"bitcoin","page":"1","size":"20"}` |
+| `list` | Newsflash list with filters | `{"pagesize":"20","lan":"cn","date_mode":"range","start_date":"2025-03-01","end_date":"2025-03-04"}` |
+| `detail` | Newsflash full content | `{"flash_id":"123456"}` |
 
 ---
 
@@ -364,6 +406,12 @@ All scripts follow: `node scripts/<name>.mjs <action> [json-params]`
 
 ### scripts/exchange.mjs — Exchange Trading (CCXT)
 
+**⚠️ MANDATORY: All exchange operations MUST go through `exchange.mjs`.**
+- **NEVER** write custom CCXT/Python code to interact with exchanges. Always use `node scripts/exchange.mjs <action> '<params>'`.
+- **NEVER** import ccxt directly in custom scripts. The exchange.mjs wrapper handles broker attribution, proxy config, and API key management.
+- `exchange.mjs` automatically sets AiCoin broker tags for order attribution. Custom CCXT code will NOT have these tags, causing orders to be mis-attributed.
+- For automated trading workflows, use `auto-trade.mjs` which wraps `exchange.mjs` with risk management.
+
 Requires `npm install ccxt` and exchange API keys.
 
 #### Public (no API key required)
@@ -385,32 +433,59 @@ Requires `npm install ccxt` and exchange API keys.
 
 #### Trading (API key required)
 
+**🚨 SAFETY RULES — MANDATORY for ALL trading operations:**
+1. **NEVER execute a buy/sell/trade without explicit user confirmation.** Always show the order details and ask "确认下单？" BEFORE calling `create_order`.
+2. **NEVER sell or close the user's existing positions** unless the user specifically asks to sell/close.
+3. **NEVER write custom CCXT, Python, or curl code** to interact with exchanges. ALL exchange operations MUST go through `exchange.mjs`.
+
+**⚠️ CRITICAL — `amount` units differ between spot and futures:**
+- **Spot**: `amount` is in **base currency** (e.g., `amount: 0.01` = 0.01 BTC)
+- **Futures/Swap**: `amount` is in **contracts** (e.g., `amount: 1` = 1 contract). Get `contractSize` from `markets` to convert.
+
+**User intent → `amount` conversion (you MUST get this right):**
+| User says | Spot `amount` | Swap `amount` (OKX BTC, contractSize=0.01) |
+|-----------|--------------|---------------------------------------------|
+| "0.01 BTC" / "0.01个BTC" | `0.01` | `0.01 / 0.01 = 1` (1 contract) |
+| "1张合约" / "1 contract" | N/A | `1` (直接用) |
+| "0.01张" | N/A | `0.01` (0.01 contract = 0.0001 BTC) |
+| "100U" / "100 USDT" | `100 / price` | `(100 / price) / contractSize` |
+
+**NEVER pass the user's number directly as `amount` without checking the unit context!**
+
 **Before placing any order, you MUST:**
-1. Run `markets` to get the trading pair's `limits.amount.min` (minimum order size) — do NOT guess or assume minimums
+1. Run `markets` to get the trading pair's `limits.amount.min` (minimum order size) and `contractSize` — do NOT guess or assume minimums
 2. Run `balance` to check available funds
-3. For futures/swap: calculate actual buying power = balance × leverage
-4. Verify: buying power ≥ min order size × current price
+3. Convert user's quantity to the correct unit using the table above
+4. For futures/swap: calculate actual buying power = balance × leverage
+5. Verify: buying power ≥ order value
+6. **Confirm with user**: "You want to buy X contracts (= Y BTC ≈ Z USDT), correct?" before placing the order
 
 Example pre-trade check for BTC/USDT perpetual on OKX:
 ```bash
-# Step 1: Check minimum order size
+# Step 1: Check minimum order size AND contract size
 node scripts/exchange.mjs markets '{"exchange":"okx","market_type":"swap","base":"BTC"}'
-# → look for limits.amount.min (e.g. 0.001 BTC)
+# → look for limits.amount.min (e.g. 1 contract) and contractSize (e.g. 0.01 BTC)
+# → This means: 1 contract = 0.01 BTC, min order = 1 contract = 0.01 BTC
 
 # Step 2: Check balance
 node scripts/exchange.mjs balance '{"exchange":"okx"}'
 # → e.g. 7 USDT free
 
-# Step 3: Calculate — 7 USDT × 10x = 70 USDT ÷ $68000 ≈ 0.001 BTC ≥ min → OK to trade
+# Step 3: Calculate — 7 USDT × 10x = 70 USDT ÷ $68000 ≈ 0.001 BTC ÷ 0.01 = 0.1 contracts → below min 1 contract → cannot trade
+# With more capital: 100 USDT × 10x = 1000 ÷ $68000 ≈ 0.0147 BTC ÷ 0.01 = 1.47 → round to 1 contract → OK
 ```
 
 | Action | Description | Params |
 |--------|-------------|--------|
-| `create_order` | Place order | `{"exchange":"binance","symbol":"BTC/USDT","type":"limit","side":"buy","amount":0.01,"price":60000}` |
-| `cancel_order` | Cancel order | `{"exchange":"binance","symbol":"BTC/USDT","order_id":"xxx"}` |
-| `set_leverage` | Set leverage | `{"exchange":"binance","symbol":"BTC/USDT","leverage":10}` |
-| `set_margin_mode` | Margin mode | `{"exchange":"binance","symbol":"BTC/USDT","margin_mode":"cross"}` |
+| `create_order` | Place order | Spot: `{"exchange":"okx","symbol":"BTC/USDT","type":"market","side":"buy","amount":0.001}` (amount in BTC). Swap: `{"exchange":"okx","symbol":"BTC/USDT:USDT","type":"market","side":"buy","amount":1,"market_type":"swap"}` (amount in contracts) |
+| `cancel_order` | Cancel order | `{"exchange":"okx","symbol":"BTC/USDT","order_id":"xxx"}` |
+| `set_leverage` | Set leverage | `{"exchange":"okx","symbol":"BTC/USDT:USDT","leverage":10,"market_type":"swap"}` |
+| `set_margin_mode` | Margin mode | `{"exchange":"okx","symbol":"BTC/USDT:USDT","margin_mode":"cross","market_type":"swap"}` |
 | `transfer` | Transfer funds | `{"exchange":"binance","code":"USDT","amount":100,"from_account":"spot","to_account":"future"}` |
+
+**Notes on `transfer`:**
+- **OKX unified account (重要)**: OKX uses a **unified trading account** — spot and derivatives share the SAME balance. **Do NOT ask the user to transfer funds between accounts.** If transfer returns error 58123, tell the user: "你的 OKX 是统一账户，现货和合约共用同一个余额，不需要划转。" Do NOT suggest manual transfer in the app.
+- **Binance**: Requires explicit transfer between spot/futures accounts.
 
 ---
 
@@ -507,6 +582,8 @@ The `open` action automatically:
 **Deploy defaults to dry-run mode** (simulated trading, no real money). Pass `{"dry_run":false}` for live trading.
 
 **IMPORTANT: NEVER use Docker for Freqtrade.** The deploy script uses `git clone` + `setup.sh -i` (official Freqtrade installation method). Do NOT fall back to Docker, do NOT write custom install scripts, do NOT try `pip install freqtrade` directly. Just run `node scripts/ft-deploy.mjs deploy` — it handles everything.
+
+**IMPORTANT: Do NOT manually edit Freqtrade config files, do NOT manually run `freqtrade trade` commands, do NOT manually `source .venv/bin/activate`.** Always use `ft-deploy.mjs` actions. If deploy fails, check logs with `ft-deploy.mjs logs` and report the error — do NOT attempt manual workarounds.
 
 ---
 
