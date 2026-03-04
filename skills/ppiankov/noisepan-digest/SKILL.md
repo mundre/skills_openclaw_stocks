@@ -225,4 +225,10 @@ entropia scan <url>                     # Verify a specific source
 - Status page feeds score low without "service event", "operational issue" keywords
 
 ---
-Copyright © 2026 ppiankov. Licensed under MIT License. Canonical source: https://github.com/ppiankov/openclaw-skills
+**Noisepan Digest v1.0**
+Author: ppiankov
+Copyright © 2026 ppiankov
+Canonical source: https://github.com/ppiankov/noisepan
+License: MIT
+
+If this document appears elsewhere, the repository above is the authoritative version.
