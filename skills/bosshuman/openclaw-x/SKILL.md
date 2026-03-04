@@ -1,100 +1,101 @@
 ---
 name: openclaw-x
-description: 操控你的 X/Twitter 账号——查看时间线、搜索推文、发推、点赞、转推、收藏。
+version: 0.1.0
+description: Control your X/Twitter account — view timeline, search tweets, post, like, retweet, bookmark.
 ---
 
 # OpenClaw X
 
-通过本地 API 操控你的 X/Twitter 账号。
+Control your X/Twitter account via a local API.
 
-## 前置要求
+## Prerequisites
 
-1. 从 [GitHub Release](https://github.com/bosshuman/openclaw-x/releases) 下载对应平台的可执行文件
-2. 从 Chrome 导出 X 的 cookies（使用 Cookie-Editor 扩展），保存为 `cookies.json` 放在可执行文件同目录
-3. 运行可执行文件，确保服务已启动：`http://localhost:19816`
+1. Download the executable from [GitHub Release](https://github.com/bosshuman/openclaw-x/releases)
+2. Export your X cookies from Chrome (using Cookie-Editor extension), save as `cookies.json` in the same directory
+3. Run the executable, ensure the service is running at `http://localhost:19816`
 
-## 可用操作
+## Available Actions
 
-### 1. 获取首页时间线
+### 1. Get Home Timeline
 
 ```bash
 curl http://localhost:19816/timeline?count=20
 ```
 
-返回最新的推文列表，包含内容、作者、媒体 URL 等。
+Returns the latest tweets including content, author, media URLs, etc.
 
-### 2. 获取推文详情
+### 2. Get Tweet Details
 
 ```bash
 curl http://localhost:19816/tweet/{tweet_id}
 ```
 
-支持传入推文 ID 或完整 URL（如 `https://x.com/user/status/123456`）。
+Supports both tweet ID and full URL (e.g. `https://x.com/user/status/123456`).
 
-### 3. 搜索推文
-
-```bash
-curl "http://localhost:19816/search?q=关键词&sort=Latest&count=20"
-```
-
-参数：
-- `q`：搜索关键词（必填）
-- `sort`：`Latest`（最新）或 `Top`（热门），默认 Latest
-- `count`：结果数量，默认 20
-
-### 4. 发推文
+### 3. Search Tweets
 
 ```bash
-curl -X POST http://localhost:19816/tweet \
-  -H "Content-Type: application/json" \
-  -d '{"text": "你好世界"}'
+curl "http://localhost:19816/search?q=keyword&sort=Latest&count=20"
 ```
 
-回复推文：
+Parameters:
+- `q`: Search keyword (required)
+- `sort`: `Latest` or `Top`, default Latest
+- `count`: Number of results, default 20
+
+### 4. Post a Tweet
 
 ```bash
 curl -X POST http://localhost:19816/tweet \
   -H "Content-Type: application/json" \
-  -d '{"text": "回复内容", "reply_to": "原推文ID"}'
+  -d '{"text": "Hello world"}'
 ```
 
-### 5. 点赞推文
+Reply to a tweet:
+
+```bash
+curl -X POST http://localhost:19816/tweet \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Reply content", "reply_to": "original_tweet_id"}'
+```
+
+### 5. Like a Tweet
 
 ```bash
 curl -X POST http://localhost:19816/tweet/{tweet_id}/like
 ```
 
-### 6. 转推
+### 6. Retweet
 
 ```bash
 curl -X POST http://localhost:19816/tweet/{tweet_id}/retweet
 ```
 
-### 7. 收藏推文
+### 7. Bookmark a Tweet
 
 ```bash
 curl -X POST http://localhost:19816/tweet/{tweet_id}/bookmark
 ```
 
-### 8. 获取用户信息
+### 8. Get User Info
 
 ```bash
 curl http://localhost:19816/user/{username}
 ```
 
-返回用户名、头像、简介、粉丝数等。
+Returns username, avatar, bio, follower count, etc.
 
-### 9. 获取用户推文
+### 9. Get User Tweets
 
 ```bash
 curl http://localhost:19816/user/{username}/tweets?count=20
 ```
 
-## 常见使用场景
+## Common Use Cases
 
-1. "帮我看看我的时间线有什么新推"
-2. "搜索关于 AI Agent 的最新推文"
-3. "发一条推文说：今天天气真好"
-4. "帮我点赞这条推文 https://x.com/xxx/status/123"
-5. "看看 @elonmusk 最近发了什么"
-6. "帮我收藏这条推文"
+1. "Show me what's new on my timeline"
+2. "Search for the latest tweets about AI Agents"
+3. "Post a tweet saying: What a beautiful day!"
+4. "Like this tweet https://x.com/xxx/status/123"
+5. "Check what @elonmusk has been posting"
+6. "Bookmark this tweet"
