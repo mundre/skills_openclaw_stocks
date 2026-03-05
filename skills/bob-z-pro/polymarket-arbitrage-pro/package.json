@@ -1,0 +1,14 @@
+{
+  "name": "polymarket-arbitrage-pro",
+  "version": "6.0.0",
+  "description": "Polymarket套利机器人 - 真实交易版",
+  "main": "polymarket-trade.js",
+  "bin": {
+    "arbitrage": "./polymarket-trade.js"
+  },
+  "author": "BOB-Z-PRO",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
