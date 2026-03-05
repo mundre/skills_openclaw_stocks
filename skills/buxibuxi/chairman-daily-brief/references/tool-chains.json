@@ -1,0 +1,58 @@
+{
+  "_comment": "董事长早晚报 - 工具链路由配置",
+  "version": "1.0.0",
+  "morning_brief": {
+    "market_overview": {
+      "description": "全球市场概览",
+      "priority": ["ths_ifind.global_market", "alpha_vantage.market_status", "yahoo_finance.market_summary"],
+      "fallback": ["qveris_search"]
+    },
+    "policy_news": {
+      "description": "宏观政策与行业新闻",
+      "priority": ["caidazi.news.query", "caidazi.report.query", "caidazi.search.hybrid.list"],
+      "fallback": ["alpha_news_sentiment", "finnhub.news"]
+    },
+    "company_quote": {
+      "description": "公司实时行情",
+      "priority": ["ths_ifind.real_time_quotation", "alpha_vantage.quote"],
+      "fallback": ["yahoo_finance.quote"]
+    },
+    "industry_data": {
+      "description": "行业数据与指数",
+      "priority": ["ths_ifind.industry_index", "caidazi.sector_analysis"],
+      "fallback": ["qveris_search"]
+    },
+    "sentiment": {
+      "description": "市场情绪与热点",
+      "priority": ["qveris_social.x_domain_hot_topics", "qveris_social.x_domain_hot_events"],
+      "fallback": ["x_developer.tweets.search.recent"]
+    }
+  },
+  "evening_brief": {
+    "company_quote": {
+      "description": "公司收盘数据",
+      "priority": ["ths_ifind.real_time_quotation", "ths_ifind.history_quotation"],
+      "fallback": ["alpha_vantage.quote"]
+    },
+    "announcements": {
+      "description": "公司公告与新闻",
+      "priority": ["caidazi.news.query", "exchange_announcements"],
+      "fallback": ["finnhub.news"]
+    },
+    "research": {
+      "description": "研报与分析师观点",
+      "priority": ["caidazi.report.query", "alpha_news_sentiment"],
+      "fallback": ["qveris_search"]
+    },
+    "fund_flow": {
+      "description": "资金流向与龙虎榜",
+      "priority": ["ths_ifind.capital_flow", "ths_ifind.dragon_tiger"],
+      "fallback": ["qveris_search"]
+    },
+    "sentiment_analysis": {
+      "description": "舆情监控",
+      "priority": ["qveris_social.x_domain_new_posts", "caidazi.search.hybrid_v2.query"],
+      "fallback": ["x_developer.tweets.search.recent"]
+    }
+  }
+}
