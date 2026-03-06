@@ -1,7 +1,7 @@
----
+﻿---
 name: quantum-messenger-im
 description: 帮助中国电信同人及客户实现通过量子密信调用 OpenClaw 机器人。支持文本、图片、附件及状态栏反馈。
-version: 1.0.1
+version: 1.0.2
 author: 上海电信政支中心/量子能力中心 技术经理 程沛及他的openclaw机器人助手：1号机（Gemini) (18918115454，chenpei.sh@chinatelecom.cn)
 tags: [quantum, im, chinatelecom, messaging]
 metadata: {"openclaw":{"requires":{"bins":["node"],"env":["QUANTUM_KEY"]},"primaryEnv":"QUANTUM_KEY"}}
