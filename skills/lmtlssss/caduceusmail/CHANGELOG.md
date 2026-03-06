@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.3.3
+
+Fresh-onboarding and VPS handoff release.
+
+### Added
+
+* gateway-assisted Microsoft device-login handoff in `scripts/caduceusmail.sh`
+* fallback dashboard URL emission when browser handoff is unavailable
+* handoff artifact output at `INTEL_DIR/caduceusmail-login-handoff.json`
+
+### Changed
+
+* bootstrap output parsing now extracts the JSON summary robustly even when PowerShell emits preamble text
+* validated a true fresh OpenClaw pull path (`clawhub install` -> strict credentials -> live provision/verify/retire probes)
+
 ## 5.1.1
 
 Wording/design restoration release that brings back the high-impact 4.2.0 product voice while keeping the scan-hardening changes.

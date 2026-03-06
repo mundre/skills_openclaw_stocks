@@ -25,6 +25,11 @@ The recommended path is split in two:
 2. Daily headless operations with `--skip-m365-bootstrap` once `ENTRA_CLIENT_SECRET` is present.
 3. Keep persistence opt-in: use `--persist-env` and `--persist-secrets` only when you intentionally want disk writes.
 
+### VPS/SSH login handoff
+
+Use `--gateway-login-handoff` during first bootstrap to attempt automatic handoff of `https://microsoft.com/devicelogin` through OpenClaw browser control.
+If browser automation is unavailable on the host, the script emits a dashboard URL fallback and writes a machine-readable handoff artifact in the intel directory.
+
 ## Security posture
 
 The first bootstrap can install Microsoft modules from PSGallery using `Install-Module` if they are missing.

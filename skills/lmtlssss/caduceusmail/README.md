@@ -1,9 +1,9 @@
-# ☤CaduceusMail 5.1.1
+# ☤CaduceusMail 5.3.3
 
 ☤CaduceusMail lets your OpenClaw automate an enterprise-level communications stack with one domain/mailbox combo.
 Inbox-reliability optimization engine: automates sender trust hardening, identity rotation, and scale-ready outreach/support flows designed to keep your mail out of junk.
 
-Version 5.1.1 keeps that shipping surface and restores the high-impact 4.2.0 product voice while preserving scanner-facing coherence: full env/bin declarations in skill metadata, explicit privilege/persistence disclosure, and regression coverage to prevent metadata drift.
+Version 5.3.3 keeps that shipping surface and restores the high-impact 4.2.0 product voice while preserving scanner-facing coherence: full env/bin declarations in skill metadata, explicit privilege/persistence disclosure, and regression coverage to prevent metadata drift.
 
 ## What the stack controls
 
@@ -15,7 +15,7 @@ Version 5.1.1 keeps that shipping surface and restores the high-impact 4.2.0 pro
 
 That means alias lane creation, retirement, and verification happen as one operational flow instead of being scattered across separate admin panels.
 
-## What is in 5.1.1
+## What is in 5.3.3
 
 The repo now includes:
 
@@ -25,6 +25,7 @@ The repo now includes:
 * a PowerShell bootstrap with `auto`, `browser`, and `device` auth modes
 * a doctor that reports readiness for OpenClaw sandboxes and VPS runs
 * a Graph backed `entra-exchange.sh` bridge for probe sends
+* gateway-assisted Microsoft device-login handoff for VPS/SSH bootstrap runs
 * smoke tests and pytest coverage for the shipping surface
 * OpenClaw config examples and node bootstrap docs
 
@@ -70,6 +71,8 @@ bash ./scripts/caduceusmail.sh \
 
 Persistence is opt-in. By default the wrapper does not write runtime keys or secrets to disk.
 If you explicitly want persistence, use `--persist-env` and optionally `--persist-secrets`.
+
+For VPS-first onboarding, `--gateway-login-handoff` attempts to open Microsoft device login through OpenClaw browser controls and falls back to a dashboard URL when no local browser is available on host.
 
 ## Doctor
 

@@ -5,7 +5,7 @@ homepage: https://github.com/lmtlssss/caduceusmail
 metadata: {"openclaw":{"emoji":"☤","skillKey":"caduceusmail","requires":{"bins":["bash","pwsh","python3","jq","rg"],"env":["ENTRA_TENANT_ID","ENTRA_CLIENT_ID","ENTRA_CLIENT_SECRET","EXCHANGE_DEFAULT_MAILBOX","EXCHANGE_ORGANIZATION","ORGANIZATION_DOMAIN","CLOUDFLARE_API_TOKEN","CLOUDFLARE_ZONE_ID"]}}}
 ---
 
-# ☤CaduceusMail 5.1.1
+# ☤CaduceusMail 5.3.3
 
 Inbox-reliability optimization engine: automates sender trust hardening, identity rotation, and scale-ready outreach/support flows designed to keep your mail out of junk.
 
@@ -24,6 +24,7 @@ That means plug-and-play lane creation, verification, and optimization without m
 ## What this skill can do
 
 * bootstrap Graph and Exchange auth posture
+* hand off Microsoft device-login flows for VPS/SSH setups through OpenClaw gateway/browser hooks
 * audit credential and DNS posture
 * optimize root mail records
 * provision reply and no reply lanes under subdomains
@@ -101,6 +102,9 @@ That smoke flow uses `--simulate-bootstrap`, so it does not require PowerShell o
 
 Prefer secret injection through `skills.entries.caduceusmail.env` over editing files in a sandbox. See `examples/openclaw.config.json5` and `docs/openclaw.md`.
 Persistence is opt-in through `--persist-env` and `--persist-secrets`.
+
+For SSH/VPS bootstrap runs, `--gateway-login-handoff` attempts to open `https://microsoft.com/devicelogin` through OpenClaw browser controls.
+If browser handoff is unavailable on the host, the script emits a dashboard URL fallback and writes `caduceusmail-login-handoff.json` under the intel directory.
 
 ## Security and Privilege Disclosure
 
