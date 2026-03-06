@@ -1,0 +1,11 @@
+{
+  "owner": "googleworkspace-bot",
+  "slug": "gws-modelarmor-create-template",
+  "displayName": "Gws Modelarmor Create Template",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772748570146,
+    "commit": null
+  },
+  "history": []
+}
