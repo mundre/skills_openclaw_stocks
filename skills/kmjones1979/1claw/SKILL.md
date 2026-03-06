@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.0.8
+version: 1.0.9
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -24,7 +24,8 @@ metadata:
                             "label": "1Claw MCP Server",
                         },
                     ],
-                "credentials": ["ONECLAW_AGENT_ID", "ONECLAW_AGENT_API_KEY", "ONECLAW_VAULT_ID"],
+                "credentials": ["ONECLAW_AGENT_API_KEY"],
+                "optional_credentials": ["ONECLAW_AGENT_ID", "ONECLAW_VAULT_ID"],
                 "permissions":
                     [
                         "vault:read",
@@ -47,6 +48,7 @@ metadata:
 1Claw is a cloud HSM-backed secrets manager. Agents access API keys, passwords, and credentials at runtime without them ever entering the conversation context. Secrets are encrypted with keys that never leave the HSM.
 
 **API base URL:** `https://api.1claw.xyz`
+**Shroud (TEE proxy):** `https://shroud.1claw.xyz`
 **MCP endpoint:** `https://mcp.1claw.xyz/mcp`
 **Dashboard:** `https://1claw.xyz`
 **Docs:** `https://docs.1claw.xyz`
@@ -59,14 +61,38 @@ metadata:
 - You need to rotate a credential after regenerating it
 - You want to check what secrets are available before using one
 - You need to sign or simulate an EVM transaction without exposing private keys
+- You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
 
 ---
 
 ## Setup
 
+### Option 0: Self-enrollment (new agents)
+
+If you don't have credentials yet, self-enroll — this sends them to your human:
+
+```bash
+# curl
+curl -s -X POST https://api.1claw.xyz/v1/agents/enroll \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-agent","human_email":"human@example.com"}'
+
+# TypeScript SDK (static method, no auth needed)
+import { AgentsResource } from "@1claw/sdk";
+await AgentsResource.enroll("https://api.1claw.xyz", {
+  name: "my-agent",
+  human_email: "human@example.com",
+});
+
+# CLI (no auth needed)
+npx @1claw/cli agent enroll my-agent --email human@example.com
+```
+
+The human receives the Agent ID + API key by email. They then configure policies for your access.
+
 ### Option 1: MCP server (recommended for AI agents)
 
-Add to your MCP client configuration. The server auto-refreshes JWT tokens.
+Add to your MCP client configuration. Only the API key is required — agent ID and vault are auto-discovered.
 
 ```json
 {
@@ -75,14 +101,14 @@ Add to your MCP client configuration. The server auto-refreshes JWT tokens.
             "command": "npx",
             "args": ["-y", "@1claw/mcp"],
             "env": {
-                "ONECLAW_AGENT_ID": "<agent-uuid>",
-                "ONECLAW_AGENT_API_KEY": "<agent-api-key>",
-                "ONECLAW_VAULT_ID": "<vault-uuid>"
+                "ONECLAW_AGENT_API_KEY": "<agent-api-key>"
             }
         }
     }
 }
 ```
+
+Optional overrides: `ONECLAW_AGENT_ID` (explicit agent), `ONECLAW_VAULT_ID` (explicit vault).
 
 Hosted HTTP streaming mode:
 
@@ -104,7 +130,6 @@ import { createClient } from "@1claw/sdk";
 
 const client = createClient({
     baseUrl: "https://api.1claw.xyz",
-    agentId: process.env.ONECLAW_AGENT_ID,
     apiKey: process.env.ONECLAW_AGENT_API_KEY,
 });
 ```
@@ -114,10 +139,12 @@ const client = createClient({
 Authenticate, then pass the Bearer token on every request.
 
 ```bash
-# Exchange agent credentials for a JWT
-TOKEN=$(curl -s -X POST https://api.1claw.xyz/v1/auth/agent-token \
+# Exchange agent API key for a JWT (key-only — agent_id is auto-resolved)
+RESP=$(curl -s -X POST https://api.1claw.xyz/v1/auth/agent-token \
   -H "Content-Type: application/json" \
-  -d '{"agent_id":"<uuid>","api_key":"<key>"}' | jq -r .access_token)
+  -d '{"api_key":"<key>"}')
+TOKEN=$(echo "$RESP" | jq -r .access_token)
+AGENT_ID=$(echo "$RESP" | jq -r .agent_id)
 
 # Use the JWT
 curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
@@ -133,7 +160,7 @@ curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
 
 1. Human registers an agent in the dashboard or via `POST /v1/agents` with an `auth_method` (`api_key` default, `mtls`, or `oidc_client_credentials`). For `api_key` agents → receives `agent_id` + `api_key` (prefix `ocv_`). For mTLS/OIDC agents → receives `agent_id` only (no API key).
 2. All agents auto-receive an Ed25519 SSH keypair (public key on agent record, private key in `__agent-keys` vault).
-3. API key agents exchange credentials: `POST /v1/auth/agent-token` with `{ "agent_id": "<uuid>", "api_key": "<key>" }` → returns `{ "access_token": "<jwt>", "token_type": "bearer", "expires_in": 3600 }`.
+3. API key agents exchange credentials: `POST /v1/auth/agent-token` with `{ "api_key": "<key>" }` (or `{ "agent_id": "<uuid>", "api_key": "<key>" }`) → returns `{ "access_token": "<jwt>", "expires_in": 3600, "agent_id": "<uuid>", "vault_ids": ["..."] }`. Agent ID is optional — the server resolves it from the key prefix.
 4. Agent uses `Authorization: Bearer <jwt>` on all subsequent requests.
 5. JWT scopes derive from the agent's access policies (path patterns). If no policies exist, scopes are empty (zero access). The agent's `vault_ids` are also included in the JWT — requests to unlisted vaults are rejected.
 6. Token TTL defaults to ~1 hour but can be set per-agent via `token_ttl_seconds`. The MCP server auto-refreshes 60s before expiry.
@@ -262,7 +289,7 @@ Simulate an EVM transaction via Tenderly without signing. Returns balance change
 
 ### submit_transaction
 
-Submit an EVM transaction for signing and optional broadcast. Requires `crypto_proxy_enabled`.
+Submit an EVM transaction for signing and optional broadcast. Requires `intents_api_enabled`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -335,9 +362,10 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET` | `/v1/agents` | List agents → `{ agents: [...] }` |
 | `GET` | `/v1/agents/{id}` | Get agent |
 | `GET` | `/v1/agents/me` | Get current agent (self) |
-| `PATCH` | `/v1/agents/{id}` | Update agent (is_active, scopes, crypto_proxy_enabled, guardrails) |
+| `PATCH` | `/v1/agents/{id}` | Update agent (is_active, scopes, intents_api_enabled, guardrails) |
 | `DELETE` | `/v1/agents/{id}` | Delete agent → `204` |
 | `POST` | `/v1/agents/{id}/rotate-key` | Rotate agent API key → `{ api_key: "ocv_..." }` |
+| `POST` | `/v1/agents/{id}/rotate-identity-keys` | Rotate agent SSH + ECDH keypairs (user-only; keys in `__agent-keys` vault) |
 
 ### Policies (Access Control)
 
@@ -360,13 +388,13 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/share/{id}` | Revoke a share |
 | `GET` | `/v1/share/{id}` | Access a share (public, may require passphrase) |
 
-### Crypto Proxy (requires `crypto_proxy_enabled`)
+### Intents API (requires `intents_api_enabled`)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/v1/agents/{id}/transactions` | Submit transaction for signing |
-| `GET` | `/v1/agents/{id}/transactions` | List agent's transactions |
-| `GET` | `/v1/agents/{id}/transactions/{txid}` | Get transaction details |
+| `POST` | `/v1/agents/{id}/transactions` | Submit transaction for signing. Optional `Idempotency-Key` header for replay protection (24h TTL) |
+| `GET` | `/v1/agents/{id}/transactions` | List agent's transactions. `signed_tx` redacted unless `?include_signed_tx=true` |
+| `GET` | `/v1/agents/{id}/transactions/{txid}` | Get transaction details. `signed_tx` redacted unless `?include_signed_tx=true` |
 | `POST` | `/v1/agents/{id}/transactions/simulate` | Simulate single transaction |
 | `POST` | `/v1/agents/{id}/transactions/simulate-bundle` | Simulate transaction bundle |
 
@@ -421,10 +449,10 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `secrets` | `list(vaultId, prefix?)` | List secret metadata |
 | `secrets` | `delete(vaultId, key)` | Delete secret |
 | `secrets` | `rotate(vaultId, key, newValue)` | Rotate secret to new version |
-| `agents` | `create({ name, description?, scopes?, expires_at?, crypto_proxy_enabled?, token_ttl_seconds?, vault_ids? })` | Create agent → returns agent + api_key |
+| `agents` | `create({ name, description?, scopes?, expires_at?, intents_api_enabled?, token_ttl_seconds?, vault_ids? })` | Create agent → returns agent + api_key |
 | `agents` | `get(agentId)` | Get agent |
 | `agents` | `list()` | List agents |
-| `agents` | `update(agentId, { is_active?, scopes?, crypto_proxy_enabled?, tx_*? })` | Update agent |
+| `agents` | `update(agentId, { is_active?, scopes?, intents_api_enabled?, tx_*? })` | Update agent |
 | `agents` | `delete(agentId)` | Delete agent |
 | `agents` | `rotateKey(agentId)` | Rotate agent API key |
 | `agents` | `submitTransaction(agentId, { to, value, chain, ... })` | Submit EVM transaction |
@@ -534,18 +562,30 @@ Enterprise opt-in feature (Business tier and above). A human generates a 256-bit
 
 Agents reading from a CMEK vault receive the encrypted blob. The CMEK key is required to decrypt client-side. This is designed for organizations with compliance requirements — the default HSM encryption is already strong.
 
-### Crypto transaction proxy
+### Intents API
 
-When `crypto_proxy_enabled = true` (set by a human):
+When `intents_api_enabled = true` (set by a human):
 
-1. Agent **gains** transaction signing via the crypto proxy (keys stay in HSM)
+1. Agent **gains** transaction signing via the Intents API (keys stay in HSM)
 2. Agent is **blocked** from reading `private_key` and `ssh_key` secrets directly (403)
 
 Default signing key path: `keys/{chain}-signer`. Override with `signing_key_path`.
 
+#### Replay protection (Idempotency-Key)
+
+Include an `Idempotency-Key: <unique-string>` header on `POST /v1/agents/{id}/transactions`. The server SHA-256 hashes the key and caches the result for 24 hours. Duplicate submissions with the same key return the cached response instead of re-signing and re-broadcasting. If two concurrent requests share a key, one returns 409 (retry after a moment).
+
+#### Server-side nonce serialization
+
+When `nonce` is omitted from a transaction request, the server resolves it automatically via `eth_getTransactionCount` (pending) and serializes concurrent callers with `SELECT FOR UPDATE`. This prevents two in-flight submissions from the same agent+chain+address from receiving the same nonce. You can still pass an explicit `nonce` to override.
+
+#### signed_tx field gating
+
+GET endpoints (`/v1/agents/{id}/transactions` and `/v1/agents/{id}/transactions/{txid}`) **redact** the `signed_tx` field by default to reduce exfiltration risk. To include it, pass `?include_signed_tx=true`. The initial POST response always includes `signed_tx` for the originating caller.
+
 ### Transaction guardrails
 
-Human-configured, server-enforced limits on what the crypto proxy allows:
+Human-configured, server-enforced limits on what the Intents API allows:
 
 | Guardrail | Field | Effect |
 |-----------|-------|--------|
@@ -556,6 +596,96 @@ Human-configured, server-enforced limits on what the crypto proxy allows:
 
 Agents **cannot** modify their own guardrails. Violations return 403 with a descriptive error.
 
+### Shroud per-agent LLM proxy
+
+When `shroud_enabled = true` (set by a human), the agent's LLM traffic is routed through Shroud (`shroud.1claw.xyz`) for secret redaction, PII scrubbing, prompt injection defense, and policy enforcement inside a TEE.
+
+`shroud_config` is an optional JSON object that lets humans fine-tune the proxy behavior per agent:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pii_policy` | `"block"` \| `"redact"` \| `"warn"` \| `"allow"` | How PII in LLM traffic is handled |
+| `injection_threshold` | number (0.0–1.0) | Prompt injection detection sensitivity |
+| `context_injection_threshold` | number (0.0–1.0) | Context injection detection sensitivity |
+| `allowed_providers` | string[] | LLM providers the agent may use (empty = all) |
+| `allowed_models` | string[] | Models the agent may use (empty = all) |
+| `denied_models` | string[] | Models explicitly blocked |
+| `max_tokens_per_request` | number | Token cap per LLM request |
+| `max_requests_per_minute` | number | Per-minute rate limit |
+| `max_requests_per_day` | number | Per-day rate limit |
+| `daily_budget_usd` | number | Daily LLM spend cap in USD |
+| `enable_secret_redaction` | boolean | Redact vault secrets from LLM context |
+| `enable_response_filtering` | boolean | Filter sensitive data from LLM responses |
+
+**SDK:**
+
+```typescript
+await client.agents.create({
+  name: "my-agent",
+  shroud_enabled: true,
+  shroud_config: {
+    pii_policy: "redact",
+    injection_threshold: 0.8,
+    allowed_providers: ["openai", "anthropic"],
+    max_requests_per_day: 1000,
+    daily_budget_usd: 10.0,
+    enable_secret_redaction: true,
+  },
+});
+
+await client.agents.update(agentId, {
+  shroud_enabled: true,
+  shroud_config: { pii_policy: "block", injection_threshold: 0.9 },
+});
+```
+
+**CLI:**
+
+```bash
+1claw agent create my-agent --shroud
+1claw agent update <agent-id> --shroud true
+1claw agent update <agent-id> --shroud false
+```
+
+**MCP:** When `shroud_enabled` is true, the agent can send LLM requests through `shroud.1claw.xyz`. The Shroud proxy enforces the agent's `shroud_config` policy automatically — no client-side changes needed.
+
+---
+
+## Share with Your Human
+
+Agents can share secrets back with the human who created or enrolled them. Use `recipient_type: "creator"` — no email or user ID needed.
+
+**Via MCP:**
+
+```
+share_secret(secret_id: "...", recipient_type: "creator", expires_at: "2026-12-31T00:00:00Z")
+```
+
+**Via SDK:**
+
+```typescript
+await client.sharing.create(secretId, {
+  recipient_type: "creator",
+  expires_at: "2026-12-31T00:00:00Z",
+  max_access_count: 5,
+});
+```
+
+The human sees the share in their Inbound shares and accepts it. This is the primary pattern for agents that discover or generate credentials and need to report them to their human.
+
+---
+
+## Fleet Patterns
+
+When many agents operate in the same organization:
+
+- **Vault organization:** Use a shared vault with path-scoped policies (e.g. `agents/{name}/**`) or per-agent vaults for strict isolation.
+- **Bulk provisioning:** Use the authenticated `POST /v1/agents` endpoint with a human API key to create many agents, or stagger self-enrollment calls to respect the 10-min per-email cooldown.
+- **Vault binding:** Set `vault_ids` on each agent to restrict JWT scope beyond what policies allow.
+- **Token TTL:** Shorten to 5 min for ephemeral tasks (`token_ttl_seconds: 300`), keep default 1h for long-running agents.
+- **Transaction guardrails:** Apply `tx_max_value_eth`, `tx_daily_limit_eth`, and `tx_allowed_chains` to all Intents API agents.
+- **Monitoring:** Filter the audit log by agent ID to track per-agent activity. Use `billing usage` to monitor org-wide consumption.
+
 ---
 
 ## Security Model
@@ -565,8 +695,10 @@ Agents **cannot** modify their own guardrails. Violations return 403 with a desc
 - **Access is deny-by-default.** Even with valid credentials, only policy-allowed secrets are accessible.
 - **Secret values are fetched just-in-time** and must never be stored, echoed, or included in summaries.
 - **Agents cannot create email-based shares** (prevents phishing).
-- **Crypto proxy is opt-in.** When enabled, raw key reads are blocked.
+- **Intents API is opt-in.** When enabled, raw key reads are blocked.
 - **Transaction guardrails are human-controlled and server-enforced.**
+- **Token revocation:** `DELETE /v1/auth/token` (or SDK `auth.logout()`) revokes the current Bearer token; revoked tokens return 401.
+- **Request body limit:** 5MB max; larger requests return 413.
 
 ---
 
@@ -576,7 +708,7 @@ Agents **cannot** modify their own guardrails. Violations return 403 with a desc
 |------|---------|--------|
 | 400 | Bad request | Check request body format |
 | 401 | Not authenticated | Token expired — re-authenticate |
-| 402 | Quota exhausted / payment required | Inform user to top up credits or upgrade at `1claw.xyz/settings/billing` |
+| 402 | Quota exhausted / payment required | Body may include `required_usd`, `message`. Intents submit over quota: 0.25% of tx value; top up credits or send X-PAYMENT for required amount. Otherwise upgrade at `1claw.xyz/settings/billing` |
 | 403 | No permission | Ask user to grant access via a policy. Or: guardrail violation (check error detail) |
 | 403 | Resource limit reached (`type: "resource_limit_exceeded"`) | Tier limit on vaults/secrets/agents hit — ask user to upgrade at `1claw.xyz/settings/billing` |
 | 404 | Not found | Check path with `list_secrets` |
@@ -584,7 +716,8 @@ Agents **cannot** modify their own guardrails. Violations return 403 with a desc
 | 409 | Conflict | Resource already exists (e.g. duplicate vault name) |
 | 410 | Gone | Secret expired or max access count reached — ask user to store a new version |
 | 422 | Validation error or simulation reverted | Check input. For `simulate_first`: transaction would revert |
-| 429 | Rate limited | Wait and retry. Share creation: 10/min/org |
+| 413 | Payload too large | Request body over 5MB — reduce payload size |
+| 429 | Rate limited | Wait and retry. Auth routes: 5 req burst, 1/sec. Share creation: 10/min/org |
 
 All error responses include a `detail` field with a human-readable message.
 
