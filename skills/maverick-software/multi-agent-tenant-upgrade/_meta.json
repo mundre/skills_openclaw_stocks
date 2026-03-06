@@ -1,13 +1,18 @@
 {
   "owner": "maverick-software",
   "slug": "multi-agent-tenant-upgrade",
-  "displayName": "AI Creation Wizard  + Agent Management Upgrade",
+  "displayName": "Multi Agent Tenant Upgrade",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1772268552719,
-    "commit": "https://github.com/openclaw/skills/commit/4eb67787f5847f1f5cca6371ea0087f38c461278"
+    "version": "1.5.1",
+    "publishedAt": 1772765656036,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1772268552719,
+      "commit": "https://github.com/openclaw/skills/commit/4eb67787f5847f1f5cca6371ea0087f38c461278"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1771563176464,

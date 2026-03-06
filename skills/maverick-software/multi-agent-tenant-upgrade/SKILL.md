@@ -1,6 +1,6 @@
 ---
 name: agent-chat-ux
-version: 1.5.0
+version: 1.5.1
 author: Charles Sears
 description: "Multi-agent UX for OpenClaw Control UI — agent selector, per-agent sessions, session history viewer with search, agent-filtered Sessions tab with friendly names, Create Agent wizard, emoji picker, backend agent CRUD, and auth mode badge."
 ---
@@ -8,7 +8,7 @@ description: "Multi-agent UX for OpenClaw Control UI — agent selector, per-age
 # agent-chat-ux
 
 **name:** agent-chat-ux  
-**version:** 1.5.0  
+**version:** 1.5.1  
 **author:** Charles Sears  
 **description:** Multi-agent UX for OpenClaw Control UI — agent selector, per-agent sessions, session history viewer with search, agent-filtered Sessions tab with friendly names, Create Agent wizard, emoji picker, and backend agent CRUD.
 
@@ -469,6 +469,14 @@ Stored as `model.fallbacks[]` in the agent config. The runtime tries them via `r
 ---
 
 ## Changelog
+
+### 1.5.1 (2026-03-05)
+- **Fix:** Main/default agent model selection now honors Agents tab changes for model + fallbacks.
+- **Fix:** `ui/src/ui/app-render.ts` now mirrors `agentId === "main"` model edits to both config paths:
+  - `agents.list[main].model`
+  - `agents.defaults.model`
+- **Why:** Runtime/default resolution reads `agents.defaults.model`, while the Agents tab previously only updated `agents.list[].model`.
+- **Reference patch:** `references/main-agent-model-sync.patch`
 
 ### 1.5.0 (2026-02-28)
 - **New:** Auth mode badge in chat controls bar — shows OAuth / API / Fallback pill after each response via `auth.status` RPC reading `lastGood` from auth-profiles store
