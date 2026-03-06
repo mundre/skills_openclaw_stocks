@@ -1,0 +1,11 @@
+{
+  "owner": "dokobot",
+  "slug": "doko",
+  "displayName": "Doko",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1772683433066,
+    "commit": null
+  },
+  "history": []
+}
