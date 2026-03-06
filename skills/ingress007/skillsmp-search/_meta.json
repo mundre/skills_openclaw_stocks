@@ -1,0 +1,11 @@
+{
+  "owner": "ingress007",
+  "slug": "skillsmp-search",
+  "displayName": "Skillsmp Search",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772718068131,
+    "commit": null
+  },
+  "history": []
+}
