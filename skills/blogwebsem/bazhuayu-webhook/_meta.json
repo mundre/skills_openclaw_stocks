@@ -1,0 +1,11 @@
+{
+  "owner": "blogwebsem",
+  "slug": "bazhuayu-webhook",
+  "displayName": "八爪鱼 RPA Webhook 调用",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772714924894,
+    "commit": null
+  },
+  "history": []
+}

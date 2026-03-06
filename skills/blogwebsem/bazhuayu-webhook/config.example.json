@@ -1,0 +1,9 @@
+{
+  "url": "https://api-rpa.bazhuayu.com/api/v1/bots/webhooks/YOUR_WEBHOOK_ID/invoke",
+  "key": "YOUR_SECRET_KEY",
+  "paramNames": ["A", "B"],
+  "defaultParams": {
+    "A": "默认值 A",
+    "B": "默认值 B"
+  }
+}
