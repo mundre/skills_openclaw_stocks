@@ -1,85 +1,116 @@
-# clawvet
+# ClawVet
 
-**Skill vetting & supply chain security for OpenClaw.**
+[![CI](https://github.com/MohibShaikh/clawvet/actions/workflows/ci.yml/badge.svg)](https://github.com/MohibShaikh/clawvet/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/clawvet)](https://www.npmjs.com/package/clawvet)
+[![npm downloads](https://img.shields.io/npm/dw/clawvet)](https://www.npmjs.com/package/clawvet)
 
-ClawVet scans OpenClaw `SKILL.md` files for prompt injection, credential theft, remote code execution, typosquatting, and social engineering — before they reach your agent.
+Skill vetting & supply chain security for the OpenClaw ecosystem. Scans SKILL.md files for prompt injection, credential theft, remote code execution, typosquatting, and social engineering — catching threats that VirusTotal misses.
 
-## Install
+## Why
 
-```bash
-npm install -g clawvet
-```
+In Feb 2026 researchers found 824+ malicious skills (~20% of ClawHub). The "ClawHavoc" campaign distributed infostealers via fake skills. ClawVet runs 6 independent analysis passes on every skill to catch what single-pass scanners miss.
 
-## Usage
-
-### Scan a local skill
+## Quick Start
 
 ```bash
-clawvet scan ./my-skill/
-clawvet scan ./my-skill/SKILL.md
+# Scan a local skill
+npx clawvet scan ./my-skill/
+
+# JSON output for CI/CD
+npx clawvet scan ./my-skill/ --format json --fail-on high
+
+# Audit all installed skills
+npx clawvet audit
 ```
 
-### JSON output (for CI/CD)
+## Architecture
 
-```bash
-clawvet scan ./my-skill/ --format json
+```
+clawvet/
+├── apps/
+│   ├── api/          # Fastify backend (scanner engine, REST API, BullMQ worker)
+│   └── web/          # Next.js 14 dashboard
+├── packages/
+│   ├── cli/          # `clawvet` CLI tool
+│   └── shared/       # Types + scanner engine + 54 threat detection patterns
+├── docker-compose.yml
+└── turbo.json
 ```
 
-### Fail on severity threshold
+## 6-Pass Scanner Engine
 
-```bash
-clawvet scan ./my-skill/ --fail-on high
-# exits 1 if any high or critical findings
-```
-
-### Fetch and scan from ClawHub
-
-```bash
-clawvet scan weather-forecast --remote
-```
-
-### Audit all installed skills
-
-```bash
-clawvet audit
-```
-
-### Watch for new skill installs
-
-```bash
-clawvet watch --threshold 50
-```
-
-## What it detects
-
-ClawVet runs a 6-pass analysis on every skill:
-
-| Pass | What it checks |
-|------|---------------|
-| **Skill Parser** | Extracts YAML frontmatter, code blocks, URLs, IPs, domains |
-| **Static Analysis** | 54 regex patterns: RCE, reverse shells, credential theft, obfuscation, DNS exfil, privilege escalation |
-| **Metadata Validator** | Undeclared binaries, env vars, missing descriptions, invalid semver |
-| **Dependency Checker** | `npx -y` auto-install, global `npm install`, risky packages |
-| **Typosquat Detector** | Levenshtein distance against popular skills, suspicious naming patterns |
-| **Semantic Analysis** | AI-powered detection of social engineering & prompt injection (optional) |
+| Pass | Module | What it catches |
+|------|--------|-----------------|
+| 1 | `skill-parser` | Parses YAML frontmatter, extracts code blocks, URLs, IPs, domains |
+| 2 | `static-analysis` | 54 regex patterns: RCE, reverse shells, credential theft, obfuscation, exfiltration |
+| 3 | `metadata-validator` | Undeclared binaries/env vars, missing/vague descriptions, bad semver |
+| 4 | `semantic-analysis` | Claude AI analyzes instructions for social engineering & prompt injection |
+| 5 | `dependency-checker` | npx -y auto-install, global npm installs, risky packages |
+| 6 | `typosquat-detector` | Levenshtein distance against top ClawHub skills |
 
 ## Risk Scoring
 
-| Score | Grade | Action |
-|-------|-------|--------|
-| 0-10 | A | Approve |
-| 11-25 | B | Approve |
-| 26-50 | C | Warn |
-| 51-75 | D | Warn |
-| 76-100 | F | Block |
+- Each **critical** finding: +30 points
+- Each **high** finding: +15 points
+- Each **medium** finding: +7 points
+- Each **low** finding: +3 points
+- Score capped at 100. Grades: A (0-10), B (11-25), C (26-50), D (51-75), F (76-100)
 
-## CI/CD Integration
+## API
 
-```yaml
-# GitHub Actions example
-- name: Vet skill
-  run: npx clawvet scan ./my-skill --format json --fail-on high
 ```
+POST   /api/v1/scans          # Submit skill content for scanning
+GET    /api/v1/scans/:id      # Get scan result
+GET    /api/v1/scans           # List scans (paginated)
+GET    /api/v1/stats           # Public stats
+POST   /api/v1/webhooks        # Register webhook
+DELETE /api/v1/webhooks/:id    # Remove webhook
+GET    /api/v1/auth/github     # GitHub OAuth flow
+```
+
+## Development
+
+```bash
+# Install deps
+npm install
+
+# Run tests (61 tests across 6 suites)
+cd apps/api && npx vitest run
+
+# Start API server
+cd apps/api && npm run dev
+
+# Start web dashboard
+cd apps/web && npm run dev
+
+# Start Postgres + Redis
+docker-compose up -d
+
+# Push DB schema
+cd apps/api && npm run db:push
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env`:
+
+```
+DATABASE_URL=postgres://clawvet:clawvet@localhost:5432/clawvet
+REDIS_URL=redis://localhost:6379
+ANTHROPIC_API_KEY=sk-ant-...    # For AI semantic analysis
+GITHUB_CLIENT_ID=               # For OAuth
+GITHUB_CLIENT_SECRET=
+```
+
+## Tests
+
+61 tests covering:
+- All 6 fixture skills (benign → malicious)
+- Edge cases (empty files, malformed YAML, unicode, 100KB adversarial input)
+- Regex catastrophic backtracking safety
+- 54 threat patterns across 12 categories
+- API route validation (auth, webhooks, scans)
+- CLI end-to-end integration (--format json, --fail-on, exit codes)
 
 ## License
 
