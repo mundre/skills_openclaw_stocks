@@ -1,0 +1,11 @@
+{
+  "owner": "daniellummis",
+  "slug": "github-actions-failure-matrix",
+  "displayName": "GitHub Actions Failure Matrix",
+  "latest": {
+    "version": "1.7.0",
+    "publishedAt": 1772777212217,
+    "commit": null
+  },
+  "history": []
+}
