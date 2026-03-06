@@ -121,7 +121,7 @@ def step1_scan_models():
 def step2_suggest_pools(task_types, available_models):
     print_section("步骤 2: 智能建议模型池配置")
     
-    # 默认池配置模板
+    # 默认池配置模板（四池架构 v7.9.2）
     default_pools = {
         "Intelligence": {
             "name": "智能池",
@@ -132,9 +132,9 @@ def step2_suggest_pools(task_types, available_models):
             "fallback_2": None
         },
         "Highspeed": {
-            "name": "高速池", 
+            "name": "高速池",
             "description": "信息检索、快速查询、协调沟通",
-            "suitable_for": ["info_retrieval", "coordination", "search"],
+            "suitable_for": ["info_retrieval", "coordination", "web_search"],
             "primary": None,
             "fallback_1": None,
             "fallback_2": None
@@ -146,14 +146,23 @@ def step2_suggest_pools(task_types, available_models):
             "primary": None,
             "fallback_1": None,
             "fallback_2": None
+        },
+        "Agentic": {
+            "name": "代理池",
+            "description": "长上下文代理任务、Computer Use、复杂多工具调用、专业知识工作（文档/表格）",
+            "suitable_for": ["agentic_tasks"],
+            "primary": None,
+            "fallback_1": None,
+            "fallback_2": None
         }
     }
-    
-    # 模型推荐映射
+
+    # 模型推荐映射（lovbrowser 格式）
     model_recommendations = {
-        "Intelligence": ["openai-codex/gpt-5.3-codex", "lovbrowser/claude-opus-4.6", "kimi-coding/k2p5"],
-        "Highspeed": ["openai/gpt-4o-mini", "lovbrowser/claude-haiku-4.5", "google/gemini-2.5-flash"],
-        "Humanities": ["openai/gpt-4o", "lovbrowser/claude-sonnet-4.6", "google/gemini-2.5-pro"]
+        "Intelligence": ["custom-llmapi-lovbrowser-com/anthropic/claude-sonnet-4.6", "custom-llmapi-lovbrowser-com/anthropic/claude-opus-4.6", "custom-llmapi-lovbrowser-com/openai/gpt-5.3-codex"],
+        "Highspeed": ["custom-llmapi-lovbrowser-com/google/gemini-2.5-flash", "custom-llmapi-lovbrowser-com/openai/gpt-4o-mini", "zai/glm-4.7"],
+        "Humanities": ["custom-llmapi-lovbrowser-com/google/gemini-2.5-pro", "custom-llmapi-lovbrowser-com/openai/gpt-4o", "custom-llmapi-lovbrowser-com/anthropic/claude-sonnet-4.6"],
+        "Agentic": ["custom-llmapi-lovbrowser-com/openai/gpt-5.4", "custom-llmapi-lovbrowser-com/openai/gpt-5.3-codex", "custom-llmapi-lovbrowser-com/anthropic/claude-opus-4.6"]
     }
     
     suggested_pools = {}
@@ -243,12 +252,14 @@ def save_config(pools, task_types):
     # 生成 tasks.json
     tasks_config = {}
     for task in task_types:
-        # 智能匹配到合适的池
-        if any(kw in task.lower() for kw in ['开发', '代码', '编程', 'debug']):
+        # 智能匹配到合适的池（四池架构 v7.9.2）
+        if any(kw in task.lower() for kw in ['代理', 'agent', 'computer use', '操作电脑', '长上下文', '多工具', 'ppt', '报告', '表格']):
+            pool = "Agentic"
+        elif any(kw in task.lower() for kw in ['开发', '代码', '编程', 'debug', 'bug', '运维', '部署']):
             pool = "Intelligence"
         elif any(kw in task.lower() for kw in ['搜索', '查询', '检索', '找']):
             pool = "Highspeed"
-        elif any(kw in task.lower() for kw in ['写作', '创作', '内容', '文章']):
+        elif any(kw in task.lower() for kw in ['写作', '创作', '内容', '文章', '翻译']):
             pool = "Humanities"
         else:
             pool = "Highspeed"  # 默认

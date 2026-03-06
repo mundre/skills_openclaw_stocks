@@ -2,7 +2,7 @@
 # Semantic Router v7.7 - Phase 3 Stability Enhancement
 
 name: semantic-router
-version: 7.9.0
+version: 7.9.3
 
 metadata:
   title: "Semantic Router — 让你的 AI 代理学会自己选模型"
@@ -112,6 +112,15 @@ files:
     type: configuration
     description: 任务类型与关键词定义
   
+
+  - path: README_v7.9.2_设计哲学与演进史.md
+    type: documentation
+    description: 设计哲学与演进史（中文 Markdown）——完整踩坑历程与架构决策
+
+  - path: README_v7.9.2_设计哲学与演进史.docx
+    type: documentation
+    description: 设计哲学与演进史（中文 Word 格式）
+
   - path: references/
     type: documentation
     description: 参考文档与架构说明
@@ -220,6 +229,55 @@ testing:
     - Verify configuration merging
 
 changelog:
+  "7.9.3":
+    date: 2026-03-06
+    breaking_changes: []
+    new_features:
+      - "新增《设计哲学与演进史》README（中文 Markdown + Word 双格式）：完整记录五大踩坑历程、架构决策与设计哲学"
+    improvements:
+      - "clawhub.yaml files 列表补全所有文档条目"
+      - "package.json description 更新为四池架构描述"
+    bug_fixes: []
+
+  "7.9.2":
+    date: 2026-03-06
+    breaking_changes: []
+    new_features:
+      - "四池架构：新增 Agentic 池（primary: gpt-5.4），专为长上下文代理、Computer Use、专业知识工作设计"
+      - "trigger_groups_all 非连续词组命中接入 keyword_match()：支持口语化分组规则，分组内 OR、规则内 AND、多规则 OR"
+      - "agentic_tasks 任务类型：20+ 关键词 + 2条非连续规则，覆盖操作电脑/处理报告/制作PPT等场景"
+      - "development 任务类型新增非连续规则：(帮我|写|实现|建) AND (功能|模块|工具|程序|系统) 提升口语命中率"
+    improvements:
+      - "automation 任务关键词清理：移除与 agentic_tasks 重叠的'自动化'词，职责分明"
+      - "config/tasks.json 和 config/pools.json 同步至生产最新版本"
+      - "声明剥离机制（_sanitize_context_text）已确认覆盖路由标签、Skill Trigger 声明、系统注入提示，防止声明词污染关键词匹配"
+    bug_fixes: []
+
+  "7.9.1":
+    date: 2026-03-06
+    breaking_changes: []
+    new_features:
+      - "Option C routing tag: extractStableRoutingParts() extracts pool/model/sessionType from
+        declarationText and injects routingInstruction into prependContext for channel sessions.
+        LLM outputs 【语义检查·路由】{pool}｜{model}｜{sessionType} as first line of reply."
+      - "sessionType field: '延续' vs '新对话' derived from P\\d+-XXX branch label in
+        declarationText. Stable within same pool/model segment → M1 prefix cache preserved."
+    improvements:
+      - "isChannelSession now excludes :subagent: sessions in addition to :cron:. Prevents
+        subagent sessions (agent:main:subagent:xxx) from receiving routingInstruction and
+        outputting the routing tag twice in Discord/Telegram replies."
+      - "M1 combinedKey updated to include routingTagKey (rt:{pool}:{model}:{sessionType}).
+        Same pool+model+sessionType across turns → identical prependContext → LLM prefix cache hit."
+      - "pickReplyTextField supports messages array traversal (__messages__ virtual key) for
+        agent_end events that carry reply content in messages[last].content instead of top-level fields."
+    bug_fixes:
+      - "Fixed senderRole empty-string causing applyOutboundDeclarationGuard to exit early:
+        changed 'senderRole !== user' to 'senderRole && senderRole !== user' so agent_end
+        events with no sender_role field (empty string) are allowed through."
+      - "Fixed routing tag appearing twice in Discord replies: subagent sessions matching
+        startsWith('agent:main:') were incorrectly injected with routingInstruction.
+        Added :subagent: exclusion to isChannelSession check."
+
   "7.9.0":
     date: 2026-03-05
     breaking_changes: []
