@@ -1,88 +1,73 @@
-#!/bin/bash
-set -e
-
-# Auto-pet fallback - triggered 1 hour after reminder if user didn't respond
-# This only runs if the user didn't manually pet after the reminder
+#!/usr/bin/env bash
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="$HOME/.openclaw/workspace/skills/pet-me-master/config.json"
-STATE_FILE="$HOME/.openclaw/workspace/skills/pet-me-master/reminder-state.json"
-PET_SCRIPT="$SCRIPT_DIR/pet-via-bankr.sh"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
 
-echo "🤖 Auto-pet fallback triggered at $(date)"
+STATE_FILE="${PET_ME_REMINDER_STATE_FILE:-$SKILL_DIR/reminder-state.json}"
 
-# Load config
-GOTCHI_IDS=($(jq -r '.gotchiIds[]' "$CONFIG_FILE"))
-CONTRACT=$(jq -r '.contractAddress' "$CONFIG_FILE")
-RPC_URL=$(jq -r '.rpcUrl' "$CONFIG_FILE")
+echo "[$(date)] auto-pet fallback triggered"
 
-# Cooldown requirement
-REQUIRED_WAIT=43260
-NOW=$(date +%s)
+require_tx_tools
+load_config
 
-# Check if gotchis still need petting
-NEED_PETTING=()
+WALLET="$(resolve_agent_wallet_address || true)"
+[ -n "$WALLET" ] || err "Could not resolve agent wallet address"
 
-for GOTCHI_ID in "${GOTCHI_IDS[@]}"; do
-  DATA=$(cast call "$CONTRACT" "getAavegotchi(uint256)" "$GOTCHI_ID" --rpc-url "$RPC_URL" 2>/dev/null)
-  
-  if [ -z "$DATA" ]; then
-    echo "⚠️  Failed to query gotchi #$GOTCHI_ID"
-    continue
-  fi
-  
-  LAST_PET_HEX=${DATA:2498:64}
-  LAST_PET_DEC=$((16#$LAST_PET_HEX))
-  TIME_SINCE=$((NOW - LAST_PET_DEC))
-  
-  if [ $TIME_SINCE -ge $REQUIRED_WAIT ]; then
-    NEED_PETTING+=("$GOTCHI_ID")
+mapfile -t TARGET_IDS < <(discover_pettable_gotchi_ids "$WALLET")
+if [ "${#TARGET_IDS[@]}" -eq 0 ]; then
+  echo "[$(date)] no owned/delegated gotchis discovered for wallet $WALLET"
+  printf '{"lastReminder":0,"fallbackScheduled":false}\n' > "$STATE_FILE"
+  exit 0
+fi
+
+READY_IDS=()
+for GOTCHI_ID in "${TARGET_IDS[@]}"; do
+  STATUS="$("$SCRIPT_DIR/check-cooldown.sh" "$GOTCHI_ID" 2>/dev/null || true)"
+  [ -n "$STATUS" ] || STATUS="error:0:0"
+  STATE="${STATUS%%:*}"
+  if [ "$STATE" = "ready" ]; then
+    READY_IDS+=("$GOTCHI_ID")
   fi
 done
 
-# If any gotchis still need petting, pet them
-if [ ${#NEED_PETTING[@]} -gt 0 ]; then
-  echo "🦞 User didn't respond - auto-petting ${#NEED_PETTING[@]} gotchi(s)..."
-  
-  PETTED=()
-  FAILED=()
-  
-  for GOTCHI_ID in "${NEED_PETTING[@]}"; do
-    echo "Petting gotchi #$GOTCHI_ID..."
-    if bash "$PET_SCRIPT" "$GOTCHI_ID" >> /tmp/auto-pet.log 2>&1; then
-      PETTED+=("$GOTCHI_ID")
-      echo "✅ Gotchi #$GOTCHI_ID petted"
-      sleep 2
-    else
-      FAILED+=("$GOTCHI_ID")
-      echo "❌ Failed to pet gotchi #$GOTCHI_ID"
+if [ "${#READY_IDS[@]}" -gt 0 ]; then
+  READY_LIST="$(join_gotchi_ids "${READY_IDS[@]}")"
+  echo "[$(date)] auto fallback: batch petting ready gotchis $READY_LIST"
+
+  if PET_OUTPUT="$("$SCRIPT_DIR/pet-all.sh" 2>&1)"; then
+    echo "$PET_OUTPUT"
+    TX_HASH="$(printf '%s\n' "$PET_OUTPUT" | sed -n 's/^tx=//p' | head -n1)"
+
+    MSG="🤖 Auto-pet fallback executed.
+Wallet: ${WALLET}
+Petted: ${READY_LIST}
+Kinship +${#READY_IDS[@]}"
+    if [ -n "$TX_HASH" ]; then
+      MSG+="
+Tx: https://basescan.org/tx/${TX_HASH}"
     fi
-  done
-  
-  # Send notification about auto-petting
-  if [ ${#PETTED[@]} -gt 0 ]; then
-    PETTED_LIST=$(IFS=, ; echo "${PETTED[*]}")
-    NOTIFY_MSG="🤖 Auto-pet fallback executed! Petted gotchi(s): #$PETTED_LIST since you were busy. Kinship +${#PETTED[@]}! 👻💜"
-    echo "$NOTIFY_MSG"
-    
-    # Try to send notification (best effort)
-    echo "$NOTIFY_MSG" > /tmp/autopet-notification.txt
-  fi
-  
-  if [ ${#FAILED[@]} -gt 0 ]; then
-    FAILED_LIST=$(IFS=, ; echo "${FAILED[*]}")
-    echo "⚠️  Failed to pet: #$FAILED_LIST"
+
+    CHAT_ID="$(resolve_reminder_chat_id || true)"
+    if [ -n "$CHAT_ID" ] && send_telegram_message "$CHAT_ID" "$MSG"; then
+      echo "[$(date)] fallback notification sent to Telegram"
+    else
+      echo "$MSG"
+    fi
+  else
+    echo "[$(date)] ❌ auto batch pet failed"
+    echo "$PET_OUTPUT" >&2
   fi
 else
-  echo "✅ All gotchis already petted! User must have done it manually. Great job fren! 👻"
+  echo "[$(date)] all discovered gotchis already petted; nothing to do"
 fi
 
-# Reset state
-echo '{"lastReminder": 0, "fallbackScheduled": false}' > "$STATE_FILE"
-echo "🔄 State reset, ready for next cycle"
+printf '{"lastReminder":0,"fallbackScheduled":false}\n' > "$STATE_FILE"
+echo "[$(date)] reminder state reset"
 
-# Schedule next check dynamically based on actual pet time
+# Schedule next check at cooldown boundary.
 bash "$SCRIPT_DIR/schedule-dynamic-check.sh" &
-echo "📅 Scheduling next check based on pet time..."
+echo "[$(date)] scheduling next check based on latest pet timestamp"
 
 exit 0

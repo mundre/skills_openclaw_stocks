@@ -1,77 +1,67 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
 
-CONFIG_FILE="$HOME/.openclaw/workspace/skills/pet-me-master/config.json"
-CHECK_SCRIPT="$HOME/.openclaw/workspace/skills/pet-me-master/scripts/check-cooldown.sh"
+set -euo pipefail
 
-# Load gotchi IDs
-GOTCHI_IDS=$(jq -r ".gotchiIds[]" "$CONFIG_FILE")
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
 
-echo "👻 Your Gotchis:"
-echo ""
+require_read_tools
+load_config
+
+WALLET="$(resolve_agent_wallet_address || true)"
+[ -n "$WALLET" ] || err "Could not resolve agent wallet address"
+
+mapfile -t TARGET_IDS < <(discover_pettable_gotchi_ids "$WALLET")
+if [ "${#TARGET_IDS[@]}" -eq 0 ]; then
+  echo "No gotchis discovered for wallet $WALLET"
+  exit 0
+fi
+
+echo "Aavegotchi pet status"
+echo "wallet: $WALLET"
+echo "targets: $(join_gotchi_ids "${TARGET_IDS[@]}")"
+echo
 
 READY_COUNT=0
 WAITING_COUNT=0
 ERROR_COUNT=0
+NOW="$(date +%s)"
 
-for GOTCHI_ID in $GOTCHI_IDS; do
-  # Check cooldown status (check-cooldown.sh already outputs error:0:0 on failure)
-  STATUS=$("$CHECK_SCRIPT" "$GOTCHI_ID" 2>/dev/null || true)
-  
-  # Handle silent failures (empty STATUS)
-  if [ -z "$STATUS" ]; then
-    STATUS="error:0:0"
-  fi
-  
-  STATE=$(echo "$STATUS" | cut -d: -f1)
-  TIME_LEFT=$(echo "$STATUS" | cut -d: -f2)
-  LAST_PET=$(echo "$STATUS" | cut -d: -f3)
-  
-  if [ "$STATE" = "error" ]; then
-    echo "  #${GOTCHI_ID}"
-    echo "  ❌ Error checking status"
-    echo ""
-    ERROR_COUNT=$((ERROR_COUNT + 1))
-    continue
-  fi
-  
-  # Calculate time since last pet
-  NOW=$(date +%s)
-  TIME_AGO=$((NOW - LAST_PET))
-  
-  # Format time ago
-  HOURS_AGO=$((TIME_AGO / 3600))
-  MINS_AGO=$(((TIME_AGO % 3600) / 60))
-  
-  # Format last pet timestamp
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    LAST_PET_STR=$(date -r "$LAST_PET" "+%Y-%m-%d %H:%M UTC" 2>/dev/null || echo "Unknown")
-  else
-    LAST_PET_STR=$(date -d "@$LAST_PET" "+%Y-%m-%d %H:%M UTC" 2>/dev/null || echo "Unknown")
-  fi
-  
-  echo "  #${GOTCHI_ID}"
-  
-  if [ "$STATE" = "ready" ]; then
-    echo "  ✅ Ready to pet!"
-    echo "  Last: ${HOURS_AGO}h ${MINS_AGO}m ago ($LAST_PET_STR)"
-    READY_COUNT=$((READY_COUNT + 1))
-  else
-    # Format time left
-    HOURS_LEFT=$((TIME_LEFT / 3600))
-    MINS_LEFT=$(((TIME_LEFT % 3600) / 60))
-    SECS_LEFT=$((TIME_LEFT % 60))
-    
-    echo "  ⏰ Wait ${HOURS_LEFT}h ${MINS_LEFT}m ${SECS_LEFT}s"
-    echo "  Last: ${HOURS_AGO}h ${MINS_AGO}m ago ($LAST_PET_STR)"
-    WAITING_COUNT=$((WAITING_COUNT + 1))
-  fi
-  
-  echo ""
+for GOTCHI_ID in "${TARGET_IDS[@]}"; do
+  STATUS="$($SCRIPT_DIR/check-cooldown.sh "$GOTCHI_ID" 2>/dev/null || true)"
+  [ -n "$STATUS" ] || STATUS="error:0:0"
+
+  STATE="${STATUS%%:*}"
+  REST="${STATUS#*:}"
+  TIME_LEFT="${REST%%:*}"
+  LAST_PET="${REST##*:}"
+
+  echo "#$GOTCHI_ID"
+
+  case "$STATE" in
+    ready)
+      READY_COUNT=$((READY_COUNT + 1))
+      TIME_AGO=$((NOW - LAST_PET))
+      echo "  status: ready"
+      echo "  last_pet: $(format_utc "$LAST_PET") ($(format_duration "$TIME_AGO") ago)"
+      ;;
+    waiting)
+      WAITING_COUNT=$((WAITING_COUNT + 1))
+      NEXT_PET=$((LAST_PET + COOLDOWN_SECONDS))
+      TIME_AGO=$((NOW - LAST_PET))
+      echo "  status: waiting"
+      echo "  time_left: $(format_duration "$TIME_LEFT")"
+      echo "  last_pet: $(format_utc "$LAST_PET") ($(format_duration "$TIME_AGO") ago)"
+      echo "  next_pet: $(format_utc "$NEXT_PET")"
+      ;;
+    *)
+      ERROR_COUNT=$((ERROR_COUNT + 1))
+      echo "  status: error"
+      ;;
+  esac
+
+  echo
 done
 
-if [ "$ERROR_COUNT" -gt 0 ]; then
-  echo "Summary: ${READY_COUNT} ready, ${WAITING_COUNT} waiting, ${ERROR_COUNT} error"
-else
-  echo "Summary: ${READY_COUNT} ready, ${WAITING_COUNT} waiting"
-fi
+echo "Summary: total=${#TARGET_IDS[@]} ready=$READY_COUNT waiting=$WAITING_COUNT error=$ERROR_COUNT"

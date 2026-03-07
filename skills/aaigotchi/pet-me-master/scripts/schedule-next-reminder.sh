@@ -33,7 +33,7 @@ cat > /tmp/reminder-job.json << EOF
   "schedule": {"kind": "at", "at": "$NEXT_REMINDER_ISO"},
   "payload": {
     "kind": "systemEvent",
-    "text": "🦞👻 GOTCHI PETTING REMINDER!\n\nAll 53 gotchis are ready to be petted!\n\nLast pet: $(date -d "@$LAST_PET" '+%b %d, %Y %H:%M UTC')\nCooldown complete!\n\nReply 'pet gotchis' to pet them now!\n\nIf you don't respond within 1 hour, I'll auto-pet them as backup.\n\nLFGOTCHi! 💜"
+    "text": "fren pet your gotchi(s)!"
   },
   "sessionTarget": "main",
   "enabled": true

@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$(dirname "$SCRIPT_DIR")/config.json"
-CONTRACT=$(jq -r '.contract' "$CONFIG_FILE")
+CONTRACT=$(jq -r '.contractAddress' "$CONFIG_FILE")
 BANKR_CONFIG="$HOME/.openclaw/skills/bankr/config.json"
 
 # Get all gotchi IDs from config

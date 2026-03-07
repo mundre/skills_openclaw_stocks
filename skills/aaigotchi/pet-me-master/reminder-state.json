@@ -1,1 +1,4 @@
-{"lastReminder": 0, "fallbackScheduled": false}
+{
+  "reminderSent": true,
+  "fallbackScheduled": true
+}

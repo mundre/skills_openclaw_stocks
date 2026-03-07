@@ -1,106 +1,91 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 set -euo pipefail
 
-# Pet Aavegotchi via Bankr API (SECURE - NO PRIVATE KEYS!)
-# Usage: pet-via-bankr-SECURE.sh <gotchi-id>
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
 
-if [ $# -lt 1 ]; then
-  echo "❌ Usage: pet-via-bankr-SECURE.sh <gotchi-id>"
-  exit 1
-fi
+usage() {
+  cat <<USAGE
+Usage: $(basename "$0") [--dry-run] [gotchi-id]
 
-GOTCHI_ID="$1"
-CONTRACT="0xA99c4B08201F2913Db8D28e71d020c4298F29dBF"
-BANKR_CONFIG="$HOME/.openclaw/skills/bankr/config.json"
-
-echo "👻 Petting Aavegotchi #$GOTCHI_ID via Bankr"
-echo "============================================"
-echo ""
-
-# Build calldata for interact(uint256[])
-# Function selector: 0x22c67519
-# ABI encoding: interact(uint256[] memory _tokenIds)
-
-# Convert gotchi ID to hex (64 chars, padded)
-GOTCHI_HEX=$(printf '%064x' "$GOTCHI_ID")
-
-# Build calldata
-CALLDATA="0x22c67519"  # interact(uint256[])
-CALLDATA+="0000000000000000000000000000000000000000000000000000000000000020"  # offset to array
-CALLDATA+="0000000000000000000000000000000000000000000000000000000000000001"  # array length = 1
-CALLDATA+="$GOTCHI_HEX"  # gotchi ID
-
-echo "📝 Building transaction:"
-echo "   Contract: $CONTRACT"
-echo "   Function: interact(uint256[])"
-echo "   Gotchi ID: $GOTCHI_ID"
-echo "   Calldata: ${CALLDATA:0:66}..."
-echo ""
-
-# Create transaction JSON
-TX_FILE=$(mktemp)
-trap "rm -f $TX_FILE" EXIT
-
-cat > "$TX_FILE" << EOF
-{
-  "transaction": {
-    "to": "$CONTRACT",
-    "chainId": 8453,
-    "value": "0",
-    "data": "$CALLDATA"
-  },
-  "description": "Pet Aavegotchi #$GOTCHI_ID",
-  "waitForConfirmation": true
+Send interact([gotchi-id]) through Bankr on Base.
+If gotchi-id is omitted, uses the first configured gotchi ID.
+USAGE
 }
-EOF
 
-# Get Bankr API key
-if [ ! -f "$BANKR_CONFIG" ]; then
-  echo "❌ Bankr config not found: $BANKR_CONFIG"
+DRY_RUN=0
+POSITIONAL=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      while [ "$#" -gt 0 ]; do
+        POSITIONAL+=("$1")
+        shift
+      done
+      break
+      ;;
+    -*)
+      echo "ERROR: Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      POSITIONAL+=("$1")
+      ;;
+  esac
+  shift
+done
+
+if [ "${#POSITIONAL[@]}" -gt 1 ]; then
+  echo "ERROR: Too many arguments" >&2
+  usage >&2
   exit 1
 fi
 
-API_KEY=$(jq -r '.apiKey' "$BANKR_CONFIG")
+require_tx_tools
+load_config
 
-if [ -z "$API_KEY" ] || [ "$API_KEY" = "null" ]; then
-  echo "❌ Bankr API key not found in config"
-  exit 1
+GOTCHI_ID="${POSITIONAL[0]:-$(default_gotchi_id)}"
+if ! is_uint "$GOTCHI_ID"; then
+  err "Invalid gotchi ID: $GOTCHI_ID"
 fi
 
-echo "🚀 Submitting transaction via Bankr..."
-echo ""
+CALLDATA="$(encode_interact_calldata "$GOTCHI_ID")"
+DESCRIPTION="Pet Aavegotchi #$GOTCHI_ID"
 
-# Submit via Bankr API
-RESPONSE=$(curl -s -X POST "https://api.bankr.bot/agent/submit" \
-  -H "X-API-Key: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d @"$TX_FILE")
-
-# Parse response
-SUCCESS=$(echo "$RESPONSE" | jq -r '.success // false')
-
-if [ "$SUCCESS" = "true" ]; then
-  TX_HASH=$(echo "$RESPONSE" | jq -r '.transactionHash')
-  
-  echo "============================================"
-  echo "✅ Aavegotchi #$GOTCHI_ID petted successfully!"
-  echo "============================================"
-  echo "Transaction: $TX_HASH"
-  echo "View: https://basescan.org/tx/$TX_HASH"
-  echo ""
-  
+if [ "$DRY_RUN" -eq 1 ]; then
+  jq -n \
+    --arg to "$CONTRACT_ADDRESS" \
+    --arg chainId "$CHAIN_ID" \
+    --arg data "$CALLDATA" \
+    --arg gotchi "$GOTCHI_ID" \
+    '{mode:"dry-run",action:"pet-single",gotchiId:$gotchi,transaction:{to:$to,chainId:($chainId|tonumber),value:"0",data:$data}}'
   exit 0
-else
-  ERROR=$(echo "$RESPONSE" | jq -r '.error // "Unknown error"')
-  
-  echo "============================================"
-  echo "❌ Failed to pet Aavegotchi #$GOTCHI_ID"
-  echo "============================================"
-  echo "Error: $ERROR"
-  echo ""
-  echo "Response:"
-  echo "$RESPONSE" | jq '.'
-  echo ""
-  
-  exit 1
 fi
+
+echo "Petting gotchi #$GOTCHI_ID via Bankr..."
+RESPONSE="$(submit_bankr_tx "$CONTRACT_ADDRESS" "$CALLDATA" "$DESCRIPTION")"
+
+if bankr_is_success "$RESPONSE"; then
+  TX_HASH="$(bankr_tx_hash "$RESPONSE")"
+  echo "OK: gotchi #$GOTCHI_ID petted"
+  if [ -n "$TX_HASH" ]; then
+    echo "tx=$TX_HASH"
+    echo "url=https://basescan.org/tx/$TX_HASH"
+  fi
+  exit 0
+fi
+
+echo "ERROR: $(bankr_error "$RESPONSE")" >&2
+printf '%s\n' "$RESPONSE" | jq '.' >&2 || true
+exit 1

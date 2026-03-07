@@ -1,121 +1,102 @@
-#!/bin/bash
-set -e
-
-# Check if all gotchis are ready and send reminder if needed
-# This script runs every 30 minutes via cron
+#!/usr/bin/env bash
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="$HOME/.openclaw/workspace/skills/pet-me-master/config.json"
-STATE_FILE="$HOME/.openclaw/workspace/skills/pet-me-master/reminder-state.json"
-REMINDER_FILE="$HOME/.openclaw/workspace/.gotchi-reminder.txt"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
 
-# Load config
-GOTCHI_IDS=($(jq -r '.gotchiIds[]' "$CONFIG_FILE"))
-CONTRACT=$(jq -r '.contractAddress' "$CONFIG_FILE")
-RPC_URL=$(jq -r '.rpcUrl' "$CONFIG_FILE")
+STATE_FILE="${PET_ME_REMINDER_STATE_FILE:-$SKILL_DIR/reminder-state.json}"
+REMINDER_FILE="${PET_ME_REMINDER_QUEUE_FILE:-$HOME/.openclaw/workspace/.gotchi-reminder.txt}"
+IMMEDIATE_FILE="${PET_ME_IMMEDIATE_REMINDER_FILE:-$HOME/.openclaw/workspace/.pet-reminder-immediate.txt}"
 
-# Cooldown requirement (12h 1min)
-REQUIRED_WAIT=43260
+require_tx_tools
+load_config
 
-# Check if all gotchis are ready
+if ! is_daily_reminder_enabled; then
+  echo "[$(date)] dailyReminder disabled; skipping reminder check"
+  exit 0
+fi
+
+WALLET="$(resolve_agent_wallet_address || true)"
+[ -n "$WALLET" ] || err "Could not resolve agent wallet address"
+
+mapfile -t GOTCHI_IDS < <(discover_pettable_gotchi_ids "$WALLET")
+if [ "${#GOTCHI_IDS[@]}" -eq 0 ]; then
+  echo "[$(date)] no owned/delegated gotchis discovered for wallet $WALLET"
+  exit 0
+fi
+
 ALL_READY=true
-NOW=$(date +%s)
+READY_COUNT=0
+NOW="$(date +%s)"
 
 for GOTCHI_ID in "${GOTCHI_IDS[@]}"; do
-  # Get last pet time from blockchain
-  DATA=$(cast call "$CONTRACT" "getAavegotchi(uint256)" "$GOTCHI_ID" --rpc-url "$RPC_URL" 2>/dev/null)
-  
-  if [ -z "$DATA" ]; then
-    echo "[$(date)] Failed to query gotchi #$GOTCHI_ID"
+  STATUS="$("$SCRIPT_DIR/check-cooldown.sh" "$GOTCHI_ID" 2>/dev/null || true)"
+  [ -n "$STATUS" ] || STATUS="error:0:0"
+
+  STATE="${STATUS%%:*}"
+  if [ "$STATE" = "ready" ]; then
+    READY_COUNT=$((READY_COUNT + 1))
+  else
     ALL_READY=false
-    continue
-  fi
-  
-  # Extract last pet timestamp
-  LAST_PET_HEX=${DATA:2498:64}
-  LAST_PET_DEC=$((16#$LAST_PET_HEX))
-  TIME_SINCE=$((NOW - LAST_PET_DEC))
-  
-  if [ $TIME_SINCE -lt $REQUIRED_WAIT ]; then
-    ALL_READY=false
-    break
   fi
 done
 
-# Check state file
+mkdir -p "$(dirname "$STATE_FILE")" "$(dirname "$REMINDER_FILE")" "$(dirname "$IMMEDIATE_FILE")"
+
 if [ -f "$STATE_FILE" ]; then
-  LAST_REMINDER=$(jq -r '.lastReminder // 0' "$STATE_FILE" 2>/dev/null || echo "0")
-  FALLBACK_SCHEDULED=$(jq -r '.fallbackScheduled // false' "$STATE_FILE" 2>/dev/null || echo "false")
+  LAST_REMINDER="$(jq -r '.lastReminder // 0' "$STATE_FILE" 2>/dev/null || echo 0)"
+  FALLBACK_SCHEDULED="$(jq -r '.fallbackScheduled // false' "$STATE_FILE" 2>/dev/null || echo false)"
 else
   LAST_REMINDER=0
   FALLBACK_SCHEDULED=false
-  echo '{"lastReminder": 0, "fallbackScheduled": false}' > "$STATE_FILE"
+  printf '{"lastReminder":0,"fallbackScheduled":false}\n' > "$STATE_FILE"
 fi
 
-# If all ready and we haven't sent reminder in last 12h
 TIME_SINCE_REMINDER=$((NOW - LAST_REMINDER))
+FALLBACK_HOURS="$(resolve_fallback_delay_hours)"
+FALLBACK_SECONDS=$((FALLBACK_HOURS * 3600))
 
-if [ "$ALL_READY" = true ] && [ $TIME_SINCE_REMINDER -gt 43200 ] && [ "$FALLBACK_SCHEDULED" = false ]; then
-  echo "[$(date)] All gotchis ready! Sending immediate notification..."
-  
-  # Send IMMEDIATE notification via message tool (bypasses heartbeat delay)
-  # This triggers a direct Telegram message
-  export PATH="$HOME/.foundry/bin:/usr/local/bin:$PATH"
-  
-  # Create notification message
+if [ "$ALL_READY" = true ] && [ "$READY_COUNT" -gt 0 ] && [ "$TIME_SINCE_REMINDER" -gt 43200 ] && [ "$FALLBACK_SCHEDULED" = false ]; then
+  GOTCHI_LIST="$(join_gotchi_ids "${GOTCHI_IDS[@]}")"
+  NEXT_AUTO_PET="$(date -u -d "+${FALLBACK_HOURS} hour" '+%H:%M UTC' 2>/dev/null || date -u '+%H:%M UTC')"
   NOTIFY_MSG="fren, pet your gotchi(s)! 👻
 
 All ${#GOTCHI_IDS[@]} gotchis are ready for petting.
+Wallet: ${WALLET}
+Gotchis: ${GOTCHI_LIST}
 
-Reply with 'pet all my gotchis' or I'll auto-pet them in 1 hour if you're busy! 🦞"
+Reply with 'pet my gotchis' and I'll batch-pet all. If you don't reply, I'll auto-pet in ${FALLBACK_HOURS} hour(s). 🦞
+⏰ Next auto-pet: ${NEXT_AUTO_PET}"
 
-  # Send INSTANT Telegram notification (no delay!)
-  TELEGRAM_BOT_TOKEN=$(grep -A5 'telegram' ~/.openclaw/openclaw.json | grep 'botToken' | cut -d'"' -f4)
-  TELEGRAM_CHAT_ID="322059822"
-  
-  if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
-    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-      -d "chat_id=${TELEGRAM_CHAT_ID}" \
-      -d "text=${NOTIFY_MSG}" \
-      -d "parse_mode=HTML" > /dev/null 2>&1
-    
-    if [ $? -eq 0 ]; then
-      echo "[$(date)] ✅ Sent INSTANT Telegram notification"
-    else
-      # Fallback to file-based method
-      echo "$NOTIFY_MSG" > "$HOME/.openclaw/workspace/.pet-reminder-immediate.txt"
-      cat > "$REMINDER_FILE" << EOF
-$NOTIFY_MSG
-EOF
-      echo "[$(date)] ⚠️ Fallback: notification queued for heartbeat"
-    fi
+  CHAT_ID="$(resolve_reminder_chat_id || true)"
+  if [ -n "$CHAT_ID" ] && send_telegram_message "$CHAT_ID" "$NOTIFY_MSG"; then
+    echo "[$(date)] ✅ sent Telegram reminder to chat ${CHAT_ID}"
   else
-    # No bot token, use file-based method
-    echo "$NOTIFY_MSG" > "$HOME/.openclaw/workspace/.pet-reminder-immediate.txt"
-    cat > "$REMINDER_FILE" << EOF
-$NOTIFY_MSG
-EOF
-    echo "[$(date)] ⚠️ Using file-based notification (no bot token)"
+    printf '%s\n' "$NOTIFY_MSG" > "$IMMEDIATE_FILE"
+    printf '%s\n' "$NOTIFY_MSG" > "$REMINDER_FILE"
+    if [ -z "$CHAT_ID" ]; then
+      echo "[$(date)] ⚠️ no reminder chat ID configured; queued reminder file fallback"
+    else
+      echo "[$(date)] ⚠️ Telegram send failed; queued reminder file fallback"
+    fi
   fi
-  
-  # Update state: mark reminder sent and schedule fallback
-  jq '.lastReminder = '$(date +%s)' | .fallbackScheduled = true' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-  
-  # Schedule auto-pet fallback in 1 hour
-  echo "bash $SCRIPT_DIR/auto-pet-fallback.sh" | at now + 1 hour 2>/dev/null || {
-    # If 'at' not available, use background sleep
-    (sleep 3600 && bash "$SCRIPT_DIR/auto-pet-fallback.sh" >> /tmp/auto-pet-fallback.log 2>&1) &
-    FALLBACK_PID=$!
-    echo "[$(date)] Fallback scheduled via background process (PID $FALLBACK_PID)"
-  }
-  
-  echo "[$(date)] ✅ Fallback scheduled for 1 hour from now"
-  
+
+  jq --argjson now "$NOW" '.lastReminder = $now | .fallbackScheduled = true' "$STATE_FILE" > "${STATE_FILE}.tmp"
+  mv "${STATE_FILE}.tmp" "$STATE_FILE"
+
+  if command -v at >/dev/null 2>&1; then
+    echo "bash $SCRIPT_DIR/auto-pet-fallback.sh" | at now + "$FALLBACK_HOURS hour" >/dev/null 2>&1 || true
+  else
+    (sleep "$FALLBACK_SECONDS" && bash "$SCRIPT_DIR/auto-pet-fallback.sh" >> /tmp/auto-pet-fallback.log 2>&1) &
+    echo "[$(date)] fallback scheduled via background process (pid $!)"
+  fi
+
+  echo "[$(date)] ✅ fallback scheduled for ${FALLBACK_HOURS} hour(s)"
 elif [ "$ALL_READY" = false ] && [ "$FALLBACK_SCHEDULED" = true ]; then
-  # Reset state if gotchis were already petted
-  echo "[$(date)] Gotchis already petted, resetting state"
-  echo '{"lastReminder": 0, "fallbackScheduled": false}' > "$STATE_FILE"
-  rm -f "$REMINDER_FILE"
+  printf '{"lastReminder":0,"fallbackScheduled":false}\n' > "$STATE_FILE"
+  rm -f "$REMINDER_FILE" "$IMMEDIATE_FILE"
+  echo "[$(date)] gotchis already petted; reminder state reset"
 fi
 
 exit 0

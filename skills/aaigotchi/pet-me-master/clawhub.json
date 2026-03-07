@@ -1,10 +1,19 @@
 {
   "name": "pet-me-master",
-  "version": "2.1.0",
+  "version": "2.4.0",
   "title": "Pet Me Master - Autonomous Aavegotchi Petting",
   "description": "Fully autonomous gotchi petting system with instant notifications and auto-fallback. Checks blockchain for ready gotchis, sends Telegram alerts, and auto-pets after 1 hour if you're busy. Perfect for maximizing kinship while staying frenly! 👻💜",
   "author": "aaigotchi",
-  "tags": ["aavegotchi", "automation", "blockchain", "gaming", "nft", "base", "bankr", "kinship"],
+  "tags": [
+    "aavegotchi",
+    "automation",
+    "blockchain",
+    "gaming",
+    "nft",
+    "base",
+    "bankr",
+    "kinship"
+  ],
   "repository": "https://github.com/aaigotchi/pet-me-master",
   "license": "MIT",
   "dependencies": {
@@ -37,6 +46,8 @@
   "testDate": "2026-02-28",
   "compatibility": {
     "openclaw": ">=0.1.0",
-    "chains": ["base"]
+    "chains": [
+      "base"
+    ]
   }
 }

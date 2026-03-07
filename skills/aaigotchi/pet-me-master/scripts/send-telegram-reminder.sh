@@ -1,35 +1,44 @@
-#!/bin/bash
-# Simple script to send Telegram reminder directly
-# Called by check-and-remind.sh when gotchis are ready
+#!/usr/bin/env bash
+set -euo pipefail
 
-GOTCHI_COUNT="${1:-3}"
-GOTCHI_LIST="${2:-#9638, #10052, #21785}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
 
-# Create the message
-MESSAGE="🐾 **PET TIME!** 👻
+require_tx_tools
+load_config
 
-All $GOTCHI_COUNT gotchis are ready for petting!
+WALLET="$(resolve_agent_wallet_address || true)"
+[ -n "$WALLET" ] || err "Could not resolve agent wallet address"
 
-Gotchis: $GOTCHI_LIST
-
-Reply with 'pet all my gotchis' or I'll auto-pet them in 1 hour if you're busy! 🦞
-
-⏰ Next auto-pet: $(date -u -d "+1 hour" '+%H:%M UTC')"
-
-# Send via simple curl to local OpenClaw instance
-# This uses the internal message API
-curl -s -X POST "http://localhost:3000/v1/message/send" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"channel\": \"telegram\",
-    \"chatId\": \"322059822\",
-    \"message\": $(echo "$MESSAGE" | jq -Rs .)
-  }" > /tmp/telegram-reminder-response.txt 2>&1
-
-if [ $? -eq 0 ]; then
-  echo "[$(date)] ✅ Telegram reminder sent successfully"
-  cat /tmp/telegram-reminder-response.txt
-else
-  echo "[$(date)] ❌ Failed to send Telegram reminder"
-  cat /tmp/telegram-reminder-response.txt
+mapfile -t DISCOVERED_IDS < <(discover_pettable_gotchi_ids "$WALLET")
+if [ "${#DISCOVERED_IDS[@]}" -eq 0 ]; then
+  err "No gotchis discovered for wallet $WALLET"
 fi
+
+GOTCHI_COUNT="${1:-${#DISCOVERED_IDS[@]}}"
+GOTCHI_LIST="${2:-$(join_gotchi_ids "${DISCOVERED_IDS[@]}")}"
+FALLBACK_HOURS="$(resolve_fallback_delay_hours)"
+NEXT_AUTO_PET="$(date -u -d "+${FALLBACK_HOURS} hour" '+%H:%M UTC' 2>/dev/null || date -u '+%H:%M UTC')"
+
+CHAT_ID="$(resolve_reminder_chat_id || true)"
+[ -n "$CHAT_ID" ] || err "Reminder chat ID missing (set PET_ME_TELEGRAM_CHAT_ID/TELEGRAM_CHAT_ID or config reminder.telegramChatId)"
+
+MESSAGE="🐾 PET TIME! 👻
+
+All ${GOTCHI_COUNT} discovered gotchis are ready for petting.
+
+Wallet: ${WALLET}
+Gotchis: ${GOTCHI_LIST}
+
+Reply with 'pet my gotchis' and I'll batch-pet all. If no reply, auto-pet runs in ${FALLBACK_HOURS} hour(s). 🦞
+
+⏰ Next auto-pet: ${NEXT_AUTO_PET}"
+
+if send_telegram_message "$CHAT_ID" "$MESSAGE"; then
+  echo "[$(date)] ✅ Telegram reminder sent to chat ${CHAT_ID}"
+  exit 0
+fi
+
+echo "[$(date)] ❌ Failed to send Telegram reminder" >&2
+exit 1
