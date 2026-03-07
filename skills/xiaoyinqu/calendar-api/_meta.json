@@ -3,11 +3,16 @@
   "slug": "calendar-api",
   "displayName": "Calendar Api",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772781915325,
-    "commit": "https://github.com/openclaw/skills/commit/52afeb1cdcc61ad7074ec43a7c117ee9d92520b5"
+    "version": "1.0.2",
+    "publishedAt": 1772916640165,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772781915325,
+      "commit": "https://github.com/openclaw/skills/commit/52afeb1cdcc61ad7074ec43a7c117ee9d92520b5"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772781565810,
