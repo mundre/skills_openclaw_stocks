@@ -1,11 +1,17 @@
 {
   "owner": "githubxiaohei",
   "slug": "memory-system-optimizer",
-  "displayName": "memory-system-optimizer",
+  "displayName": "Memory System Optimizer",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1772817191285,
-    "commit": "https://github.com/openclaw/skills/commit/c324bcfc50308d47f61f3bb1072a7d987114f8fc"
+    "version": "1.5.0",
+    "publishedAt": 1772850822097,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1772817191285,
+      "commit": "https://github.com/openclaw/skills/commit/c324bcfc50308d47f61f3bb1072a7d987114f8fc"
+    }
+  ]
 }

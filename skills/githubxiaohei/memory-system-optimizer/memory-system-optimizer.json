@@ -1,40 +1,37 @@
 {
   "slug": "memory-system-optimizer",
   "name": "Memory System Optimizer",
-  "description": "OpenCLAW 记忆系统优化 - 三层架构 + 自动衰减 + CRUD验证 + SkillPay收费",
+  "description": "OpenCLAW 记忆系统优化 - 三层架构 + 自动衰减 + CRUD验证",
   "version": "1.2.0",
   "author": {
     "name": "Odin",
     "contact": "wanglinhong"
   },
-  "tags": ["memory", "openclaw", "optimization", "ai", "skillpay"],
-  "pricing": {
-    "type": "usage",
-    "price": 0.01,
-    "currency": "USDT",
-    "payment": "skillpay"
-  },
+  "tags": ["memory", "openclaw", "optimization", "ai"],
   "files": [
     "SKILL.md",
+    "scripts/auto-memlog.sh",
     "scripts/memlog.sh",
     "scripts/memory-gc.sh",
     "scripts/memory-decay.js",
     "scripts/memory-extract.js",
-    "scripts/billing.js",
     "config/NOW.md",
-    "config/INDEX.md"
+    "config/INDEX.md",
+    "config-files/SOUL.md",
+    "config-files/IDENTITY.md",
+    "config-files/USER.md",
+    "config-files/AGENTS.md",
+    "config-files/TOOLS.md",
+    "config-files/MEMORY.md",
+    "config-files/FEEDBACK-LOG.md",
+    "config-files/AUTONOMY.md",
+    "config-files/SKILLS.md",
+    "config-files/MULTI-INSTANCE.md",
+    "config-files/SECURITY.md",
+    "config-files/TRAINING.md",
+    "config-files/tacit_knowledge.md"
   ],
   "dependencies": {
     "openclaw": ">=3.0.0"
-  },
-  "config": {
-    "required": [
-      "SKILLPAY_API_KEY",
-      "SKILLPAY_SKILL_ID"
-    ],
-    "env": {
-      "SKILLPAY_API_KEY": "SkillPay API Key",
-      "SKILLPAY_SKILL_ID": "SkillPay Skill ID"
-    }
   }
 }

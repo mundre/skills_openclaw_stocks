@@ -4,9 +4,6 @@ description: OpenCLAW 记忆系统优化 - 三层架构 + 自动衰减 + CRUD验
 version: 1.2.0
 author: Odin
 tags: [memory, openclaw, optimization, ai]
-price: 0.01
-currency: USDT
-payment: skillpay
 ---
 
 # Memory System Optimizer
@@ -31,73 +28,30 @@ payment: skillpay
 - 过时标记
 
 ### 4. 写入工具
-- memlog.sh - 自动时间戳日志
+- auto-memlog.sh - 自动时间戳日志（推荐）
+- memlog.sh - 手动日志
 - memory-gc.sh - 冷数据归档
 - memory-decay.js - 温度分档
 
-## 收费
-
-- **每次调用**: 0.01 USDT
-- **支付方式**: SkillPay（BNB Chain）
+### 5. 12个核心配置文件
+| # | 文件 | 用途 |
+|---|------|------|
+| 1 | SOUL.md | 告诉AI它是谁 |
+| 2 | IDENTITY.md | 明确身份角色 |
+| 3 | USER.md | 了解服务对象 |
+| 4 | AGENTS.md | 多代理分工 |
+| 5 | TOOLS.md | 配置可用工具 |
+| 6 | MEMORY.md | 长期记忆，防止失忆 |
+| 7 | FEEDBACK-LOG.md | 错误不再犯 |
+| 8 | AUTONOMY.md | 自主权限，减少确认 |
+| 9 | SKILLS.md | 技能加载，持续升级 |
+| 10 | MULTI-INSTANCE.md | 并行工作 |
+| 11 | SECURITY.md | 安全设置，有限授权 |
+| 12 | TRAINING.md | 边做边教，每日培训 |
 
 ## 安装配置
 
-**获取凭证：**
-1. 去 [skillpay.me](https://skillpay.me) 注册账号
-2. 创建 Skill，获取 **API Key** 和 **Skill ID**
-3. 设定价格：0.01 USDT/次
-
-**配置环境变量：**
-```bash
-export SKILLPAY_API_KEY="你的APIKey"
-export SKILLPAY_SKILL_ID="你的SkillID"
-```
-
-## 收费接入（必须）
-
-**在执行 Skill 逻辑前，必须调用收费 API：**
-
-```javascript
-const SKILLPAY_API = "https://skillpay.me/api/v1/billing";
-const API_KEY = process.env.SKILLPAY_API_KEY;
-const SKILL_ID = process.env.SKILLPAY_SKILL_ID;
-
-// 自动生成 user_id（用飞书/Telegram ID 或随机标识）
-const userId = context.user_id || `user_${Date.now()}`;
-
-// 扣费调用
-const response = await fetch(`${SKILLPAY_API}/charge`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "X-API-Key": API_KEY
-  },
-  body: JSON.stringify({
-    user_id: userId,
-    skill_id: SKILL_ID
-  })
-});
-
-const result = await response.json();
-
-if (result.success) {
-  // ✅ 扣费成功，执行 Skill 逻辑
-  return await runSkill(input);
-} else {
-  // 💳 余额不足，返回支付链接
-  return {
-    error: "insufficient_balance",
-    message: "余额不足，请充值后继续使用",
-    payment_url: result.payment_url
-  };
-}
-```
-
-**重要规则：**
-- ❌ 不要让用户去 skillpay.me 注册
-- ❌ 不要暴露 API Key
-- ✅ user_id 自动生成，不要问用户要
-- ✅ 余额不足时，直接发支付链接给用户
+无收费，纯免费使用。
 
 ## 使用方法
 
@@ -118,7 +72,6 @@ node memory-decay.js
 - Markdown 文件
 - Shell 脚本
 - Node.js
-- SkillPay 计费
 
 ## 作者
 
