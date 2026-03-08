@@ -122,73 +122,23 @@
           "source_url": "https://www.bankhapoalim.co.il/he/Poalim-Wonder",
           "deals": [
             {
-              "store": "שוק העיר",
-              "store_en": "Shuk HaIr",
-              "face_value": 300,
-              "price": 255,
+              "store": "קרפור: שובר בשווי 300 ₪",
+              "description": null,
+              "face_value": null,
+              "price": 300,
               "extra_points": 50,
-              "effective_pct": 15.0
+              "effective_pct": null
             },
             {
-              "store": "ויקטורי",
-              "store_en": "Victory",
-              "face_value": 300,
-              "price": 259,
+              "store": "התו המלא מבית רמי לוי",
+              "description": null,
+              "face_value": null,
+              "price": 700,
               "extra_points": 50,
-              "effective_pct": 13.7
-            },
-            {
-              "store": "קרפור",
-              "store_en": "Carrefour",
-              "face_value": 300,
-              "price": 259,
-              "extra_points": 50,
-              "effective_pct": 13.7
-            },
-            {
-              "store": "קרפור",
-              "store_en": "Carrefour",
-              "face_value": 500,
-              "price": 465,
-              "extra_points": 0,
-              "effective_pct": 7.0,
-              "notes": "חבילה גדולה"
-            },
-            {
-              "store": "רמי לוי",
-              "store_en": "Rami Levy",
-              "face_value": 600,
-              "price": 575,
-              "extra_points": 0,
-              "effective_pct": 4.2
-            },
-            {
-              "store": "רמי לוי",
-              "store_en": "Rami Levy",
-              "face_value": 700,
-              "price": 620,
-              "extra_points": 50,
-              "effective_pct": 11.4,
-              "notes": "חבילה גדולה — עדיפה!"
-            },
-            {
-              "store": "נוי השדה",
-              "store_en": "Noi HaSadeh",
-              "face_value": 100,
-              "price": 79,
-              "extra_points": 50,
-              "effective_pct": 21.0,
-              "notes": "מוצרי חקלאות ישראלית"
-            },
-            {
-              "store": "קשת טעמים",
-              "store_en": "Keshet Taamim",
-              "face_value": 200,
-              "price": 175,
-              "extra_points": 50,
-              "effective_pct": 12.5
+              "effective_pct": null
             }
-          ]
+          ],
+          "cached_at": "2026-03-07"
         },
         "gov_xml": {
           "type": "price_comparison",
@@ -474,6 +424,10 @@
           "name": "Naale Nimrod",
           "he": "נעלי נמרוד",
           "note": "shoe chain"
+        },
+        {
+          "he": "שילב",
+          "en": "Shilav"
         }
       ],
       "sources": {
@@ -516,53 +470,76 @@
           "deals": [
             {
               "store": "קסטרו",
-              "store_en": "Castro",
-              "face_value": 150,
-              "price": 109,
+              "description": null,
+              "face_value": null,
+              "price": 150,
               "extra_points": 25,
-              "effective_pct": 27.3
+              "effective_pct": null
             },
             {
               "store": "SOHO",
-              "face_value": 200,
-              "price": 149,
+              "description": null,
+              "face_value": null,
+              "price": 200,
               "extra_points": 50,
-              "effective_pct": 25.5
+              "effective_pct": null
             },
             {
-              "store": "כיתן",
-              "store_en": "Kitan",
+              "store": "רשת ורדינון",
+              "description": null,
+              "face_value": null,
+              "price": 100,
+              "extra_points": 25,
+              "effective_pct": null
+            },
+            {
+              "store": "רשת KITAN",
+              "description": null,
+              "face_value": null,
+              "price": 150,
+              "extra_points": 25,
+              "effective_pct": null
+            },
+            {
+              "store": "GOLF KIDS",
+              "description": null,
+              "face_value": null,
+              "price": 150,
+              "extra_points": 25,
+              "effective_pct": null
+            },
+            {
+              "store": "רשת INTIMA",
+              "description": null,
+              "face_value": null,
+              "price": 150,
+              "extra_points": 25,
+              "effective_pct": null
+            },
+            {
+              "store": "שילב",
+              "store_en": "Shilav",
               "face_value": 150,
-              "price": 109,
-              "extra_points": 25,
-              "effective_pct": 27.3
+              "price": 100,
+              "effective_pct": 33.3,
+              "benefit_id": 441,
+              "benefit_url": "https://links.bankhapoalim.co.il/wonder/benefit/441",
+              "cached_at": "2026-03-07",
+              "notes": ""
             },
             {
-              "store": "גולף קידס",
-              "store_en": "Golf Kids",
-              "face_value": 150,
-              "price": 109,
-              "extra_points": 25,
-              "effective_pct": 27.3
-            },
-            {
-              "store": "אינטימה",
-              "store_en": "Intima",
-              "face_value": 150,
-              "price": 109,
-              "extra_points": 25,
-              "effective_pct": 27.3
-            },
-            {
-              "store": "ורדינון",
-              "store_en": "Vardinon",
-              "face_value": 100,
-              "price": 65,
-              "extra_points": 25,
-              "effective_pct": 35.0,
-              "notes": "מצעים וטקסטיל"
+              "store": "טרמינל X",
+              "store_en": "Terminal X",
+              "face_value": 300,
+              "price": 260,
+              "effective_pct": 13.3,
+              "benefit_id": 5867,
+              "benefit_url": "https://links.bankhapoalim.co.il/wonder/benefit/5867",
+              "cached_at": "2026-03-07",
+              "notes": ""
             }
-          ]
+          ],
+          "cached_at": "2026-03-07"
         },
         "htzone_pro2": {
           "type": "voucher",
@@ -676,6 +653,14 @@
         {
           "name": "Cinematheque TLV",
           "he": "סינמטק תל אביב"
+        },
+        {
+          "he": "סקיי ג'אמפ",
+          "en": "Sky Jump"
+        },
+        {
+          "he": "ספארי",
+          "en": "Safari"
         }
       ],
       "sources": {
@@ -690,6 +675,39 @@
               "description": "זוג כרטיסים לסרט — כל ימות השבוע",
               "price": 45,
               "extra_points": 25
+            },
+            {
+              "store": "לב סינמה",
+              "store_en": "Lev Cinema",
+              "face_value": null,
+              "price": 45,
+              "effective_pct": null,
+              "benefit_id": 4426,
+              "benefit_url": "https://links.bankhapoalim.co.il/wonder/benefit/4426",
+              "cached_at": "2026-03-07",
+              "notes": "2 tickets for ₪45"
+            },
+            {
+              "store": "סקיי ג'אמפ",
+              "store_en": "Sky Jump",
+              "face_value": null,
+              "price": 45,
+              "effective_pct": null,
+              "benefit_id": 4685,
+              "benefit_url": "https://links.bankhapoalim.co.il/wonder/benefit/4685",
+              "cached_at": "2026-03-07",
+              "notes": "single ticket"
+            },
+            {
+              "store": "ספארי",
+              "store_en": "Safari",
+              "face_value": null,
+              "price": 75,
+              "effective_pct": null,
+              "benefit_id": 5979,
+              "benefit_url": "https://links.bankhapoalim.co.il/wonder/benefit/5979",
+              "cached_at": "2026-03-07",
+              "notes": "single ticket"
             }
           ]
         },
@@ -739,33 +757,38 @@
           "deals": [
             {
               "store": "GiftZone",
-              "face_value": 100,
-              "price": 75,
+              "description": null,
+              "face_value": null,
+              "price": 100,
               "extra_points": 50,
-              "effective_pct": 25.0
+              "effective_pct": null
             },
             {
-              "store": "Love Gift Card",
-              "face_value": 150,
-              "price": 109,
+              "store": "LOVE GIFT CARD",
+              "description": null,
+              "face_value": null,
+              "price": 150,
               "extra_points": 25,
-              "effective_pct": 27.3
+              "effective_pct": null
             },
             {
-              "store": "Dream Card",
-              "face_value": 150,
-              "price": 109,
+              "store": "DREAM CARD",
+              "description": null,
+              "face_value": null,
+              "price": 150,
               "extra_points": 25,
-              "effective_pct": 27.3
+              "effective_pct": null
             },
             {
-              "store": "Gifta",
-              "face_value": 200,
-              "price": 180,
+              "store": "Gifta- כל מה שצריך במתנה",
+              "description": null,
+              "face_value": null,
+              "price": 200,
               "extra_points": 25,
-              "effective_pct": 10.0
+              "effective_pct": null
             }
-          ]
+          ],
+          "cached_at": "2026-03-07"
         }
       }
     },
@@ -817,15 +840,15 @@
           "source_url": "https://www.bankhapoalim.co.il/he/Poalim-Wonder/Shopping",
           "deals": [
             {
-              "store": "סלטם",
-              "store_en": "Soltam",
-              "face_value": 100,
-              "price": 60,
+              "store": "רשת SOLTAM",
+              "description": null,
+              "face_value": null,
+              "price": 100,
               "extra_points": 25,
-              "effective_pct": 40.0,
-              "notes": "כלי בישול"
+              "effective_pct": null
             }
-          ]
+          ],
+          "cached_at": "2026-03-07"
         },
         "htzone_pro2": {
           "type": "voucher",
@@ -867,13 +890,14 @@
           "deals": [
             {
               "store": "סנו עד הבית",
-              "store_en": "Sano",
-              "face_value": 150,
-              "price": 120,
+              "description": null,
+              "face_value": null,
+              "price": 150,
               "extra_points": 50,
-              "effective_pct": 20.0
+              "effective_pct": null
             }
-          ]
+          ],
+          "cached_at": "2026-03-07"
         }
       }
     },
@@ -964,14 +988,25 @@
           "source_url": "https://www.bankhapoalim.co.il/he/Poalim-Wonder/Shopping",
           "deals": [
             {
-              "store": "מגה ספורט",
-              "store_en": "Mega Sport",
-              "face_value": 250,
-              "price": 199,
+              "store": "רשת מגה ספורט",
+              "description": null,
+              "face_value": null,
+              "price": 250,
               "extra_points": 25,
-              "effective_pct": 20.4
+              "effective_pct": null
+            },
+            {
+              "store": "פעלטון",
+              "store_en": "Pealton",
+              "face_value": null,
+              "price": 44,
+              "effective_pct": null,
+              "cached_at": "2026-03-07",
+              "notes": "single ticket",
+              "benefit_id": 5986
             }
-          ]
+          ],
+          "cached_at": "2026-03-07"
         }
       }
     },
@@ -1027,6 +1062,24 @@
           "verified_url": true,
           "deals": [],
           "cached_at": null
+        },
+        "poalim_wonder": {
+          "type": "voucher",
+          "verified": true,
+          "verified_at": "2026-03-07",
+          "deals": [
+            {
+              "store": "טויס אר אס",
+              "store_en": "Toys R Us",
+              "face_value": 150,
+              "price": 115,
+              "effective_pct": 23.3,
+              "benefit_id": 5734,
+              "benefit_url": "https://links.bankhapoalim.co.il/wonder/benefit/5734",
+              "cached_at": "2026-03-07",
+              "notes": ""
+            }
+          ]
         }
       }
     },
@@ -1054,6 +1107,56 @@
               "cached_at": "2026-03-07",
               "notes": "price needs browser fetch (PRO² only)",
               "effective_pct": 20.4
+            }
+          ]
+        },
+        "poalim_wonder": {
+          "type": "voucher",
+          "verified": true,
+          "verified_at": "2026-03-07",
+          "deals": [
+            {
+              "store": "קרביץ",
+              "store_en": "Kravitz",
+              "face_value": 200,
+              "price": 175,
+              "effective_pct": 12.5,
+              "benefit_id": 5933,
+              "benefit_url": "https://links.bankhapoalim.co.il/wonder/benefit/5933",
+              "cached_at": "2026-03-07",
+              "notes": ""
+            }
+          ]
+        }
+      }
+    },
+    "books_culture": {
+      "name": {
+        "he": "ספרים ותרבות",
+        "en": "Books & Culture"
+      },
+      "stores": [
+        {
+          "he": "סטימצקי",
+          "en": "Steimatzky"
+        }
+      ],
+      "sources": {
+        "poalim_wonder": {
+          "type": "voucher",
+          "verified": true,
+          "verified_at": "2026-03-07",
+          "deals": [
+            {
+              "store": "סטימצקי",
+              "store_en": "Steimatzky",
+              "face_value": 50,
+              "price": 29,
+              "effective_pct": 42.0,
+              "benefit_id": 6346,
+              "benefit_url": "https://links.bankhapoalim.co.il/wonder/benefit/6346",
+              "cached_at": "2026-03-07",
+              "notes": ""
             }
           ]
         }
