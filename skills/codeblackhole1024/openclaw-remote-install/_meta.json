@@ -3,9 +3,15 @@
   "slug": "openclaw-remote-install",
   "displayName": "Openclaw Remote Install",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1772764158437,
-    "commit": "https://github.com/openclaw/skills/commit/ff2a74695a12ad7d4733dbd2c61561cd7b31dde8"
+    "version": "1.0.1",
+    "publishedAt": 1772870054924,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1772764158437,
+      "commit": "https://github.com/openclaw/skills/commit/ff2a74695a12ad7d4733dbd2c61561cd7b31dde8"
+    }
+  ]
 }

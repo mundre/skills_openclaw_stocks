@@ -2,13 +2,7 @@
 name: openclaw-remote-install
 version: "1.0.0"
 description: |
-  Remotely install and configure OpenClaw on remote servers via SSH with automatic OS detection and optimal method selection. Use when:
-  (1) User wants to install OpenClaw on a remote VPS/cloud server
-  (2) User needs to automate OpenClaw deployment across multiple machines
-  (3) User provides server credentials (SSH key or password) for remote installation
-  (4) User wants to use specific installation methods (Docker, Podman, npm, etc.)
-  (5) User wants to configure OpenClaw (models, channels, gateway) after installation
-  (6) Building a complete installation-to-running workflow for OpenClaw
+  One-click remote OpenClaw deployment via SSH. Auto-detects OS and selects best method (Docker/Podman/npm). Use when: (1) Installing on VPS/cloud servers, (2) Automating multi-machine deployment, (3) Configuring models/channels/gateway post-install.
 ---
 
 # OpenClaw Remote Install Skill
