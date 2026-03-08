@@ -1,26 +1,28 @@
 {
     "name": "wodeapp-ai",
-    "version": "1.0.0",
+    "version": "2.2.0",
     "displayName": "WodeApp AI 全能引擎",
-    "description": "AI 文本生成、图片生成、JSON 结构化输出、语音合成、视频生成、页面构建、无头工作流执行 — 一个 skill 包搞定所有 AI 能力",
+    "description": "AI 文本生成、图片生成、JSON 结构化输出、语音合成、视频生成、页面构建、无头工作流执行 — 一个 skill 包搞定所有 AI 能力。只需 WODEAPP_API_KEY 一个凭证，无需其他第三方 API Key。",
     "author": "WodeApp Team",
-    "license": "MIT",
+    "license": "Commercial",
     "homepage": "https://wodeapp.ai",
     "source": "https://wodeapp.ai/api-skills",
     "always": false,
     "requiredEnvVars": [
         {
             "name": "WODEAPP_API_KEY",
-            "description": "API Key from wodeapp.ai — required for all API and MCP requests",
+            "description": "API Key from wodeapp.ai — the only credential required for all API and MCP requests. No additional third-party keys needed.",
             "required": true
         }
     ],
     "security": {
         "authMethod": "API Key (header: X-API-Key)",
         "keyStorage": "Environment variable WODEAPP_API_KEY. Do NOT hardcode in source files.",
+        "credentialScope": "Only WODEAPP_API_KEY is required. No additional platform credentials, OAuth tokens, or third-party API keys are accessed by this skill.",
         "scoping": "Keys can be scoped with billing limits per project",
-        "revocation": "Keys can be revoked instantly at wodeapp.ai/api-skills",
-        "dataPolicy": "User prompts are sent to upstream AI providers for processing only. No data is stored for model training."
+        "revocation": "Keys can be revoked instantly at wodeapp.ai/api-skills — takes effect within 60 seconds",
+        "dataPolicy": "User prompts are forwarded to upstream AI providers for processing only. Raw prompts and responses are NOT stored after processing. No data is used for model training by WodeApp. Upstream provider training policies apply per their respective terms of service.",
+        "dataTransmission": "Text prompts, image/audio/video base64 data or URLs, and workflow parameters are transmitted to wodeapp.ai and then routed to the selected upstream AI provider."
     },
     "connection": {
         "mcp": {
@@ -50,7 +52,7 @@
     "tools": [
         {
             "name": "ai_generate_text",
-            "description": "AI 文本生成 — 支持 GPT-4o/Claude/Gemini/DeepSeek 等 343+ 模型",
+            "description": "AI 文本生成 — 支持 GPT-4o/Claude/Gemini/DeepSeek 等 343+ 模型，省略 model 则自动选择最优性价比",
             "endpoint": "POST /ai/chat",
             "server": "runtime",
             "inputSchema": {
@@ -65,7 +67,7 @@
                 },
                 "model": {
                     "type": "string",
-                    "description": "模型 ID (默认 gemini-2.0-flash)"
+                    "description": "模型 ID (省略则自动选择最优性价比模型)"
                 },
                 "temperature": {
                     "type": "number",
@@ -126,11 +128,11 @@
                         "9:16",
                         "16:9"
                     ],
-                    "description": "画幅比例"
+                    "description": "画幅比例 (默认 1:1)"
                 },
                 "model": {
                     "type": "string",
-                    "description": "图片模型 ID"
+                    "description": "图片模型 ID (省略则自动选择)"
                 }
             },
             "outputSchema": {
@@ -140,7 +142,7 @@
         },
         {
             "name": "ai_text_to_speech",
-            "description": "AI 语音合成 (TTS) — 文字转语音",
+            "description": "AI 语音合成 (TTS) — 文字转语音，自动检测语言",
             "endpoint": "POST /ai/tts",
             "server": "runtime",
             "inputSchema": {
@@ -151,11 +153,11 @@
                 },
                 "voice": {
                     "type": "string",
-                    "description": "语音角色"
+                    "description": "语音角色 (省略则自动选择)"
                 },
                 "language": {
                     "type": "string",
-                    "description": "语言代码 (zh-CN/en-US)"
+                    "description": "语言代码 (省略则从文本自动检测)"
                 }
             },
             "outputSchema": {
@@ -179,14 +181,13 @@
         },
         {
             "name": "upload_file",
-            "description": "通用文件上传（图片/音频/视频/文档） — 支持 base64 或 URL 方式",
+            "description": "通用文件上传（图片/音频/视频/文档）— 支持 base64 或 URL。上传后文件存储在 WodeApp CDN，生成的 URL 为半公开可访问链接。",
             "endpoint": "POST /upload/file",
             "server": "runtime",
-            "note": "旧路径 POST /upload/image 仍可用（兼容）",
             "inputSchema": {
                 "data": {
                     "type": "string",
-                    "description": "base64 文件 (data:image/...;base64,... 或 data:audio/...;base64,...)"
+                    "description": "base64 文件 (data:image/...;base64,...)"
                 },
                 "url": {
                     "type": "string",
@@ -219,7 +220,7 @@
                 },
                 "templateId": {
                     "type": "string",
-                    "description": "模板 ID (如 digital-human-generator)"
+                    "description": "模板 ID"
                 },
                 "language": {
                     "type": "string",
@@ -279,7 +280,7 @@
         },
         {
             "name": "publish_project",
-            "description": "发布项目上线 — 生成可访问的域名链接",
+            "description": "发布项目上线 — 自动分配域名 (*.wodeapp.ai) + SSL 证书",
             "endpoint": "POST /json-schema/publish/{projectId}",
             "server": "main",
             "inputSchema": {
@@ -363,13 +364,19 @@
         "publish_project"
     ],
     "templates": [
-        "digital-human-generator",
-        "ai-customer-service",
-        "marketing-landing",
-        "data-dashboard",
-        "blog-writer",
-        "survey-form",
-        "workflow-automation"
+        "digital-avatar-marketing",
+        "redbook-viral-copy",
+        "deepseek-gateway",
+        "weekly-report",
+        "resume-screener",
+        "product-copy",
+        "moments-copy",
+        "interview-coach",
+        "daily-pocket-chef",
+        "year-end-review",
+        "article-generator",
+        "landing-page",
+        "ppt-generator"
     ],
     "rateLimits": {
         "perUser": 5,
