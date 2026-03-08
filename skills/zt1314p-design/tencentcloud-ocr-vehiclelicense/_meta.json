@@ -1,11 +1,17 @@
 {
   "owner": "zt1314p-design",
   "slug": "tencentcloud-ocr-vehiclelicense",
-  "displayName": "tencentcloud-ocr-vehiclelicense",
+  "displayName": "TencentCloud VehicleLicense OCR",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772809435706,
-    "commit": "https://github.com/openclaw/skills/commit/67dd872f8283dfbd2745114c9b98eba1ce30b99c"
+    "version": "1.0.2",
+    "publishedAt": 1772962382455,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772809435706,
+      "commit": "https://github.com/openclaw/skills/commit/67dd872f8283dfbd2745114c9b98eba1ce30b99c"
+    }
+  ]
 }
