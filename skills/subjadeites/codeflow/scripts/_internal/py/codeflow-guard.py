@@ -274,31 +274,6 @@ def cmd_deactivate(args: argparse.Namespace) -> int:
     return 0
 
 
-def _check_binding(guard: Dict[str, Any], ctx: Dict[str, str]) -> str:
-    expected_session = norm(guard.get("sessionKey"))
-    expected_chat = norm(guard.get("chatId"))
-    expected_thread = norm(guard.get("threadId"))
-
-    # Strict session binding when both are present.
-    if expected_session and ctx["sessionKey"] and expected_session != ctx["sessionKey"]:
-        return f"session_mismatch expected={expected_session} got={ctx['sessionKey']}"
-
-    # Chat/thread binding for Telegram/forum contexts.
-    if expected_chat:
-        if not ctx["chatId"]:
-            return "missing_chat_context"
-        if expected_chat != ctx["chatId"]:
-            return f"chat_mismatch expected={expected_chat} got={ctx['chatId']}"
-
-    if expected_thread:
-        if not ctx["threadId"]:
-            return "missing_thread_context"
-        if expected_thread != ctx["threadId"]:
-            return f"thread_mismatch expected={expected_thread} got={ctx['threadId']}"
-
-    return ""
-
-
 def cmd_check(args: argparse.Namespace) -> int:
     state_path = Path(args.state).expanduser()
     audit_path = Path(args.audit).expanduser()
@@ -350,30 +325,6 @@ def cmd_check(args: argparse.Namespace) -> int:
             },
         )
         print("GUARD_BLOCKED: binding inactive. Re-run /codeflow in this chat/topic to activate.", file=sys.stderr)
-        return 2
-
-    binding_err = _check_binding(guard, ctx)
-    if binding_err:
-        append_audit(
-            audit_path,
-            "check",
-            "deny",
-            {
-                "reason": binding_err,
-                "bindingKey": key,
-                "sessionKey": ctx["sessionKey"],
-                "platform": ctx["platform"],
-                "chatId": ctx["chatId"],
-                "threadId": ctx["threadId"],
-                "workdir": ctx["workdir"],
-                "agent": ctx["agent"],
-                "commandHint": ctx["commandHint"],
-                "guardSessionKey": norm(guard.get("sessionKey")),
-                "guardChatId": norm(guard.get("chatId")),
-                "guardThreadId": norm(guard.get("threadId")),
-            },
-        )
-        print(f"GUARD_BLOCKED: {binding_err}. Re-run /codeflow in this chat/topic.", file=sys.stderr)
         return 2
 
     warnings = []
@@ -438,6 +389,31 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_current(args: argparse.Namespace) -> int:
+    state_path = Path(args.state).expanduser()
+    state = load_json(state_path)
+    ctx = current_context(args)
+    key = binding_key(ctx["platform"], ctx["chatId"], ctx["threadId"], ctx["sessionKey"])
+    bindings = _load_bindings(state)
+    guard = bindings.get(key) if isinstance(bindings.get(key), dict) else {}
+    out = {
+        "stateFile": str(state_path),
+        "context": {
+            "platform": ctx["platform"],
+            "chatId": ctx["chatId"],
+            "threadId": ctx["threadId"],
+            "sessionKey": ctx["sessionKey"],
+            "workdir": ctx["workdir"],
+        },
+        "bindingKey": key,
+        "matched": bool(guard),
+        "active": bool(guard.get("active")) if isinstance(guard, dict) else False,
+        "guard": guard if isinstance(guard, dict) else {},
+    }
+    print(json.dumps(out, ensure_ascii=False, indent=2))
+    return 0
+
+
 def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--state", required=True, help="Guard state JSON file")
     parser.add_argument("--audit", required=True, help="Audit log JSONL file")
@@ -466,6 +442,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_status = sub.add_parser("status", help="Show guard status")
     add_common_args(p_status)
 
+    p_current = sub.add_parser("current", help="Show guard binding for current context")
+    add_common_args(p_current)
+
     return parser
 
 
@@ -481,6 +460,8 @@ def main() -> int:
         return cmd_check(args)
     if args.action == "status":
         return cmd_status(args)
+    if args.action == "current":
+        return cmd_current(args)
 
     parser.error(f"unknown action: {args.action}")
     return 2

@@ -20,9 +20,9 @@
 #   --skip-reads   Hide Read events
 #   --worktree     Use git worktrees instead of separate repos
 #
-# Each task runs in its own relay session. All post to the same Discord channel
-# but in separate threads (when --thread is used). A summary message is posted
-# when all tasks complete.
+# Each task runs in its own relay session. When --thread is used on Discord,
+# each task gets its own thread; otherwise tasks share the target channel.
+# A summary message is posted when all tasks complete.
 
 set -euo pipefail
 
@@ -47,16 +47,42 @@ codeflow_require_python310
 
 STATE_FILE="${CODEFLOW_STATE_FILE:-$CODEFLOW_STATE_FILE_DEFAULT}"
 STATE_FILE_READ="$STATE_FILE"
+GUARD_FILE="${CODEFLOW_GUARD_FILE:-$CODEFLOW_GUARD_FILE_DEFAULT}"
+AUDIT_FILE="${CODEFLOW_AUDIT_FILE:-$CODEFLOW_AUDIT_FILE_DEFAULT}"
+ENFORCE_GUARD="${CODEFLOW_ENFORCE_GUARD:-true}"
 
 state_get() {
   local key="$1"
   codeflow_state_get "$STATE_FILE_READ" "$key"
 }
 
+usage() {
+  cat <<'EOF'
+Usage:
+  parallel-tasks.sh [options] <tasks-file>
+
+Options:
+  -t <seconds>   Timeout per task (default: 1800)
+  -a <agent>     Agent command: claude (default), codex
+  -P <platform>  discord, telegram, or auto
+  --thread       Each task gets its own Discord thread
+  --tg-chat <id> Telegram chat id
+  --tg-thread <id>
+                 Telegram thread/topic id
+  --skip-reads   Hide Read tool events
+  --worktree     Use git worktrees instead of source dirs
+  --help         Show this help
+EOF
+}
+
 # Parse options
 ARGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --help|help)
+      usage
+      exit 0
+      ;;
     --thread)      THREAD_MODE=true; shift ;;
     --skip-reads)  SKIP_READS=true; shift ;;
     --worktree)    USE_WORKTREE=true; shift ;;
@@ -71,7 +97,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 TASKS_FILE="${ARGS[0]:-}"
-[ -z "$TASKS_FILE" ] && { echo "Usage: parallel-tasks.sh [options] <tasks-file>" >&2; exit 1; }
+[ -z "$TASKS_FILE" ] && { usage >&2; exit 1; }
 [ ! -f "$TASKS_FILE" ] && { echo "❌ Error: Tasks file not found: $TASKS_FILE" >&2; exit 1; }
 
 # Read tasks
@@ -109,6 +135,23 @@ echo ""
 
 # Platform target for summary message
 PLATFORM="$(codeflow_infer_platform "$ROOT_DIR" "$PLATFORM" "$STATE_FILE_READ" "$TG_CHAT_ID" "$TG_THREAD_ID")"
+if codeflow_guard_enabled "$ENFORCE_GUARD"; then
+  if ! codeflow_guard_check \
+    "$PY_DIR" \
+    "$GUARD_FILE" \
+    "$AUDIT_FILE" \
+    "$PLATFORM" \
+    "$TG_CHAT_ID" \
+    "$TG_THREAD_ID" \
+    "" \
+    "${AGENT} Parallel" \
+    "codeflow parallel $TASKS_FILE"
+  then
+    echo "❌ Error: Codeflow guard blocked this run. Send /codeflow in this chat/topic, then retry." >&2
+    exit 42
+  fi
+fi
+
 if [ "$PLATFORM" = "telegram" ]; then
   codeflow_resolve_openclaw_session_context
   [ -z "$TG_CHAT_ID" ] && TG_CHAT_ID="$(state_get telegram_chat_id)"
@@ -209,7 +252,6 @@ post_summary "🔀 **Parallel Session Started** — $TASK_COUNT tasks$(echo -e "
 
 # Launch all tasks
 declare -a PIDS
-declare -a RELAY_DIRS
 
 for i in $(seq 0 $((TASK_COUNT - 1))); do
   TASK_DIR="${TASK_DIRS[$i]}"
@@ -251,8 +293,7 @@ for i in $(seq 0 $((TASK_COUNT - 1))); do
 
   # Build relay flags
   RELAY_ARGS=(-w "$WORK_DIR" -t "$TIMEOUT" -P "$PLATFORM" -n "${AGENT} [$TASK_NAME]")
-  # Always use threads for parallel on Discord so tasks don't interleave
-  if [ "$PLATFORM" = "discord" ]; then
+  if [ "$PLATFORM" = "discord" ] && [ "$THREAD_MODE" = true ]; then
     RELAY_ARGS+=(--thread)
   fi
   [ "$SKIP_READS" = true ] && RELAY_ARGS+=(--skip-reads)

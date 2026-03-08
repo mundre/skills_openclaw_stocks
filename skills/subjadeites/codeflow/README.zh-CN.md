@@ -26,6 +26,7 @@ Codeflow 用来运行你的 coding-agent CLI，并把会话过程结构化转发
 按 `references/setup.md` 完成一次性配置：
 - 给 `scripts/codeflow` 加执行权限
 - 配 Discord（Webhook；`--thread` 可选 bot token）或 Telegram 凭据
+- 如需硬工具拦截，可额外安装随 skill 打包的 `codeflow-enforcer` plugin，同时保留 skill 模式的 `/codeflow`
 - 跑一遍 smoke test
 
 ## 快速开始
@@ -62,10 +63,11 @@ bash scripts/codeflow <command> [...]
 核心命令：
 - `run`：启动一次 relay 会话
 - `resume`：从 relay 目录回放（读取 `stream.jsonl`）
-- `guard`：`activate|deactivate|status`（没有显式激活时阻止启动会话）
+- `guard`：`activate|deactivate|status|current`（没有显式激活时阻止启动会话）
 - `review`：PR review 模式
 - `parallel`：按任务文件并发跑多会话
 - `bridge`：可选 Discord gateway bridge（只读）
+- `enforcer`：安装/更新/卸载/查询随包提供的 OpenClaw plugin
 - `smoke`：前置依赖/配置校验
 - `check`：本地自检（语法 + 单元测试）
 

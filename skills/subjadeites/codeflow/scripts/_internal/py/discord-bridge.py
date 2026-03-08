@@ -16,7 +16,7 @@ Environment:
 
 Commands (from Discord):
     !status   Show active Codeflow sessions
-    !log      Show recent output:  !log [PID]
+    !log      Show recent stream event types:  !log [PID]
 
 Session data read from: /tmp/dev-relay-sessions/<PID>.json
 """
@@ -162,7 +162,7 @@ def get_active_sessions():
     return sessions
 
 def get_recent_log(pid):
-    """Get recent output from a session's relay dir."""
+    """Get recent stream event types from a session's relay dir."""
     sessions = get_active_sessions()
     session = sessions.get(str(pid))
     if not session:
@@ -304,7 +304,7 @@ def handle_message(data):
             if SAFE_MODE:
                 # Keep it tight in safe mode: avoid large bodies.
                 log_content = (log_content[:300] + "…") if len(log_content) > 300 else log_content
-            reply(channel_id, f"📜 Recent log for `{pid}`:\n```\n{log_content}\n```")
+            reply(channel_id, f"📜 Recent event types for `{pid}`:\n```\n{log_content}\n```")
         return
 
 

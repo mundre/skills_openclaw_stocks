@@ -4,6 +4,16 @@ Run these steps once after installing the skill.
 
 Requires: **Python >= 3.10** (`python3`).
 
+If you want `/codeflow` to keep working in skill mode while also gaining hard thread-scoped tool blocking, install the bundled OpenClaw plugin after the skill is present:
+
+```bash
+bash {baseDir}/scripts/codeflow enforcer install --restart
+```
+
+Use `bash {baseDir}/scripts/codeflow enforcer status` to inspect plugin install readiness and, when `OPENCLAW_SESSION_KEY` is set, the current thread binding.
+
+If the plugin is not installed yet, `/codeflow` still works in soft mode because the skill owns the command. In that case the skill should warn that hard enforcement is unavailable and, when the channel supports buttons, offer an inline install button that triggers the bundled installer from the local skill directory.
+
 ## 1. Make scripts executable
 
 ```bash
@@ -101,7 +111,7 @@ bash {baseDir}/scripts/codeflow smoke -P discord
 bash {baseDir}/scripts/codeflow smoke -P telegram --tg-chat <chat_id>
 ```
 
-Checks platform credentials/reachability (no message posting), required binaries, script permissions, and adapter loading.
+Checks platform credentials/reachability (no message posting), required binaries, public entrypoint permissions, and adapter loading.
 
 ## 7. Optional: Safe mode (recommended for shared channels)
 

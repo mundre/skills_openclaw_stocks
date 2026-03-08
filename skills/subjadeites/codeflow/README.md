@@ -26,6 +26,7 @@ It parses structured outputs locally (Claude Code `stream-json`, Codex CLI `--js
 Follow `references/setup.md` to:
 - make `scripts/codeflow` executable
 - configure Discord (webhook, optional bot token for `--thread`) or Telegram credentials
+- optionally install the bundled `codeflow-enforcer` plugin for hard tool blocking while keeping `/codeflow` in skill mode
 - run the smoke test
 
 ## Quick start
@@ -62,10 +63,11 @@ bash scripts/codeflow <command> [...]
 Core commands:
 - `run` — start a relay session
 - `resume` — replay from a relay directory (`stream.jsonl`)
-- `guard` — `activate|deactivate|status` (prevents running sessions without explicit activation)
+- `guard` — `activate|deactivate|status|current` (prevents running sessions without explicit activation)
 - `review` — PR review mode
 - `parallel` — run multiple sessions from a tasks file
 - `bridge` — optional Discord gateway bridge (read-only)
+- `enforcer` — install/update/uninstall/status for the bundled OpenClaw plugin
 - `smoke` — prereq/config validation
 - `check` — local sanity checks (syntax + unit tests)
 

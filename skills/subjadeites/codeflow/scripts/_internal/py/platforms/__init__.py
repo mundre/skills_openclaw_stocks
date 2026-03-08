@@ -19,5 +19,4 @@ def get_platform(name=None):
     if name == "test":
         from . import test
         return test
-    # Add slack.py, teams.py etc here
     raise RuntimeError(f"Platform '{name}' not yet supported")

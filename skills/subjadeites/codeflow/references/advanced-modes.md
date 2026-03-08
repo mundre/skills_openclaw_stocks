@@ -15,6 +15,8 @@ This will:
 4. Stream the review to Discord as usual
 5. Optionally post the review as a `gh pr comment`
 
+Guard note: `codeflow review` now checks the active `/codeflow` binding before it touches `gh`, clones a repo, or checks out a branch.
+
 **Options:**
 
 | Flag | Description | Default |
@@ -54,13 +56,17 @@ Notes:
 - Empty lines are ignored.
 - Fields support surrounding single/double quotes to preserve spaces (quotes are stripped).
 
-Each task gets its own Discord thread, relay directory, and session.
+Each task gets its own relay directory and session.
+With `--thread` on Discord, each task also gets its own thread; otherwise tasks share the target channel.
+
+Guard note: `codeflow parallel` now checks the active `/codeflow` binding before it posts the start summary or creates worktrees.
 
 **Options:**
 
 | Flag | Description | Default |
 |------|------------|---------|
 | `-a <agent>` | Agent (claude, codex) | claude |
+| `--thread` | Post each Discord task into its own thread | Off |
 | `--worktree` | Use git worktrees | Off |
 | `-t <sec>` | Timeout per task | 1800 |
 

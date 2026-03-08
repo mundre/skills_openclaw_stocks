@@ -41,16 +41,44 @@ codeflow_require_python310
 
 STATE_FILE="${CODEFLOW_STATE_FILE:-$CODEFLOW_STATE_FILE_DEFAULT}"
 STATE_FILE_READ="$STATE_FILE"
+GUARD_FILE="${CODEFLOW_GUARD_FILE:-$CODEFLOW_GUARD_FILE_DEFAULT}"
+AUDIT_FILE="${CODEFLOW_AUDIT_FILE:-$CODEFLOW_AUDIT_FILE_DEFAULT}"
+ENFORCE_GUARD="${CODEFLOW_ENFORCE_GUARD:-true}"
 
 state_get() {
   local key="$1"
   codeflow_state_get "$STATE_FILE_READ" "$key"
 }
 
+usage() {
+  cat <<'EOF'
+Usage:
+  review-pr.sh [options] <pr_url>
+
+Options:
+  -a <agent>     Agent command: claude (default), codex
+  -p <prompt>    Custom review prompt
+  -c             Post the review back to GitHub as a PR comment
+  -w <dir>       Working directory (default: temp clone)
+  -t <seconds>   Timeout for the agent (default: 1800)
+  -P <platform>  discord, telegram, or auto
+  --thread       Post into a Discord thread
+  --tg-chat <id> Telegram chat id
+  --tg-thread <id>
+                 Telegram thread/topic id
+  --skip-reads   Hide Read tool events
+  --help         Show this help
+EOF
+}
+
 # Parse options
 ARGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --help|help)
+      usage
+      exit 0
+      ;;
     --thread)      THREAD_MODE=true; shift ;;
     --skip-reads)  SKIP_READS=true; shift ;;
     --tg-chat)     TG_CHAT_ID="$2"; shift 2 ;;
@@ -67,7 +95,25 @@ while [[ $# -gt 0 ]]; do
 done
 
 PR_URL="${ARGS[0]:-}"
-[ -z "$PR_URL" ] && { echo "Usage: review-pr.sh [options] <PR_URL>" >&2; exit 1; }
+[ -z "$PR_URL" ] && { usage >&2; exit 1; }
+
+PLATFORM="$(codeflow_infer_platform "$ROOT_DIR" "$PLATFORM" "$STATE_FILE_READ" "$TG_CHAT_ID" "$TG_THREAD_ID")"
+if codeflow_guard_enabled "$ENFORCE_GUARD"; then
+  if ! codeflow_guard_check \
+    "$PY_DIR" \
+    "$GUARD_FILE" \
+    "$AUDIT_FILE" \
+    "$PLATFORM" \
+    "$TG_CHAT_ID" \
+    "$TG_THREAD_ID" \
+    "$WORKDIR" \
+    "${AGENT} Review" \
+    "codeflow review $PR_URL"
+  then
+    echo "❌ Error: Codeflow guard blocked this run. Send /codeflow in this chat/topic, then retry." >&2
+    exit 42
+  fi
+fi
 
 # Validate gh CLI
 command -v gh &>/dev/null || { echo "❌ Error: 'gh' CLI not found" >&2; exit 1; }
@@ -110,6 +156,11 @@ echo "  Title: $PR_TITLE"
 echo "  Branch: $PR_BRANCH → $PR_BASE"
 echo "  Changes: +${PR_ADDITIONS} -${PR_DELETIONS}"
 
+REVIEW_OUTPUT="/tmp/pr-review-${PR_NUM}.md"
+REVIEW_REQUIREMENTS="Write your final review to ${REVIEW_OUTPUT}
+
+When completely finished, run: openclaw system event --text 'Done: PR #${PR_NUM} review complete' --mode now"
+
 # Clone or use worktree
 CLEANUP_CLONE=false
 if [ -z "$WORKDIR" ]; then
@@ -130,7 +181,10 @@ fi
 
 # Build review prompt
 if [ -n "$CUSTOM_PROMPT" ]; then
-  REVIEW_PROMPT="$CUSTOM_PROMPT"
+  REVIEW_PROMPT="${CUSTOM_PROMPT}
+
+Additional requirements:
+${REVIEW_REQUIREMENTS}"
 else
   REVIEW_PROMPT="Review this pull request thoroughly.
 
@@ -154,13 +208,10 @@ Read the changed files, understand the context, and provide a structured review 
 - Suggestions for improvement
 - Overall assessment (approve, request changes, or comment)
 
-Write your final review to /tmp/pr-review-${PR_NUM}.md
-
-When completely finished, run: openclaw system event --text 'Done: PR #${PR_NUM} review complete' --mode now"
+${REVIEW_REQUIREMENTS}"
 fi
 
 # Build agent command
-REVIEW_OUTPUT="/tmp/pr-review-${PR_NUM}.md"
 AGENT_ARGS=()
 NEED_PROMPT_STDIN=false
 case "$AGENT" in
@@ -179,8 +230,6 @@ case "$AGENT" in
 esac
 
 echo "🚀 Starting review with ${AGENT}..."
-
-PLATFORM="$(codeflow_infer_platform "$ROOT_DIR" "$PLATFORM" "$STATE_FILE_READ" "$TG_CHAT_ID" "$TG_THREAD_ID")"
 
 # Build relay flags
 RELAY_ARGS=(-w "$WORKDIR" -t "$TIMEOUT" -P "$PLATFORM" -n "${AGENT} Review")

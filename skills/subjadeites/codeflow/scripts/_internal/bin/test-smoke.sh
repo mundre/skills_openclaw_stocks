@@ -54,10 +54,10 @@ else
   echo "  ⚠️  unbuffer not found (required for Claude stream-json sessions)"
 fi
 
-# --- Script permissions ---
+# --- Public entrypoint permissions ---
 echo ""
 echo "Permissions:"
-for script in "$SCRIPT_DIR/dev-relay.sh" "$PY_DIR/parse-stream.py"; do
+for script in "$ROOT_DIR/codeflow"; do
   if [ -x "$script" ]; then
     pass "$(basename "$script") is executable"
   else

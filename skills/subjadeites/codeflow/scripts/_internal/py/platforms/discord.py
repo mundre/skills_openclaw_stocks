@@ -17,6 +17,7 @@ from typing import Any, Dict, Optional
 webhook_url = os.environ.get("WEBHOOK_URL", "").strip()
 agent_name = os.environ.get("AGENT_NAME", "Claude Code").strip() or "Claude Code"
 thread_mode = os.environ.get("THREAD_MODE", "false").lower() == "true"
+thread_id_file = os.environ.get("CODEFLOW_DISCORD_THREAD_ID_FILE", "").strip()
 allow_mentions = (os.environ.get("CODEFLOW_DISCORD_ALLOW_MENTIONS") or "").strip().lower() in {
     "1",
     "true",
@@ -40,6 +41,39 @@ DELIVERY_STATS = {
     "http_retries": 0,
     "last_error": "",
 }
+
+
+def _load_thread_id() -> Optional[str]:
+    if not thread_id_file:
+        return None
+    try:
+        with open(thread_id_file, "r", encoding="utf-8") as f:
+            tid = f.read().strip()
+        return tid or None
+    except OSError:
+        return None
+
+
+def _store_thread_id(thread_id: str) -> None:
+    if not thread_id_file or not thread_id:
+        return
+    dir_path = os.path.dirname(thread_id_file) or "."
+    os.makedirs(dir_path, exist_ok=True)
+    tmp_path = thread_id_file + ".tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write(thread_id)
+            f.write("\n")
+        os.replace(tmp_path, thread_id_file)
+    finally:
+        try:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+        except OSError:
+            pass
+
+
+_thread_id = _load_thread_id()
 
 
 def _with_query(url: str, **params: str) -> str:
@@ -200,6 +234,7 @@ def _create_thread_via_webhook(first_msg: str, name: Optional[str]) -> bool:
     tid = thread_resp.get("id")
     if isinstance(tid, str) and tid:
         _thread_id = tid
+        _store_thread_id(tid)
     return True
 
 
@@ -217,6 +252,8 @@ def post(msg: str, name: Optional[str] = None) -> None:
     msg = msg or ""
     if not msg:
         return
+    if _thread_id is None:
+        _thread_id = _load_thread_id()
     chunks = _split_text(msg, MAX_TEXT)
 
     start = 0

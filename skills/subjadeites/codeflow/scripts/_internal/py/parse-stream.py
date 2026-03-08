@@ -694,8 +694,9 @@ def detect_format(evt):
 # ---------------------------------------------------------------------------
 # Main event loop
 # ---------------------------------------------------------------------------
-# Track the last tool_use name so we can correlate tool_results with their tool
+# Track Claude tool_use ids so tool_results attach to the correct tool.
 _last_tool_name = None
+_tool_names_by_use_id = {}
 # Track Codex session start for final summary
 _codex_start_time = None
 
@@ -781,10 +782,13 @@ for line in sys.stdin:
             elif block.get("type") == "tool_use":
                 tool = block.get("name", "?")
                 inp = block.get("input", {})
+                tool_use_id = str(block.get("id") or block.get("tool_use_id") or "").strip()
 
                 # Track tool usage counts
                 tools_used[tool] = tools_used.get(tool, 0) + 1
                 _last_tool_name = tool
+                if tool_use_id:
+                    _tool_names_by_use_id[tool_use_id] = tool
 
                 if tool == "Write":
                     fp = inp.get("file_path", "?")
@@ -841,6 +845,7 @@ for line in sys.stdin:
             if not isinstance(block, dict):
                 continue
             if block.get("type") == "tool_result":
+                tool_use_id = str(block.get("tool_use_id") or block.get("toolUseId") or "").strip()
                 tool_failed = False
                 try:
                     tool_failed = bool(block.get("is_error") is True or block.get("isError") is True)
@@ -858,7 +863,7 @@ for line in sys.stdin:
                     if err_obj:
                         tool_failed = True
 
-                tool_name = _last_tool_name or "Tool"
+                tool_name = _tool_names_by_use_id.get(tool_use_id) or _last_tool_name or "Tool"
 
                 if tool_failed:
                     if safe_mode:
@@ -900,7 +905,7 @@ for line in sys.stdin:
                 for sub in block.get("content", []):
                     if not isinstance(sub, dict):
                         continue
-                    if sub.get("type") == "text" and _last_tool_name == "Bash":
+                    if sub.get("type") == "text" and tool_name == "Bash":
                         stdout = sub.get("text", "").strip()
                         if stdout:
                             if safe_mode:
@@ -908,6 +913,9 @@ for line in sys.stdin:
                             else:
                                 stdout = redact_text(stdout, strict=False)
                                 post(f"📤 **Output** ```\n{stdout}\n```")
+
+                if tool_use_id:
+                    _tool_names_by_use_id.pop(tool_use_id, None)
 
     # --- Result (session complete) ---
     elif etype == "result":

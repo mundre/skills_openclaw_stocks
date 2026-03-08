@@ -1,5 +1,5 @@
 ---
-version: 1.1.0
+version: 2.0.1
 name: codeflow
 description: Codeflow streams coding agent sessions (Claude Code, Codex, Gemini CLI, etc.) to Discord or Telegram in real-time. Use when invoking coding agents and wanting transparent, observable dev sessions — no black box. Parses Claude Code's stream-json output into clean formatted messages showing tool calls, file writes, bash commands, and results with zero AI token burn. Use when asked to "stream to Discord", "stream to Telegram", "relay agent output", or "make dev sessions visible".
 user-invocable: true
@@ -18,6 +18,14 @@ Breaking note:
 
 First-time setup: see [references/setup.md](references/setup.md) for webhook creation, unbuffer install, bot token, and smoke test.
 
+For hard thread-scoped enforcement (skill-owned `/codeflow` + plugin tool blocking), install the bundled enforcer plugin once on the host:
+
+```bash
+bash {baseDir}/scripts/codeflow enforcer install --restart
+```
+
+If the plugin is missing, `/codeflow` still works in soft mode. The button/no-button behavior must be owned by the deterministic router script, not by free-form assistant prose.
+
 ## Developer Checks (optional)
 
 Run a local sanity check bundle (Python syntax compile + unit tests + `bash -n`):
@@ -28,28 +36,53 @@ bash {baseDir}/scripts/codeflow check
 
 ## `/codeflow` command contract (session-scoped)
 
-When user invokes `/codeflow`, treat it as a **session-scoped declaration**:
+When user invokes `/codeflow`, treat it as a **control command first**, then as a session-scoped declaration:
 
 1. For the **current OpenClaw session**, all coding, development, or review tasks (code/architecture/security/product review) — including any direct Codex or Claude Code invocations — must be executed via **Codeflow relay + local Codex/Claude Code** (not direct edits unless explicitly requested).
 2. Follow Codeflow output conventions (including compact Telegram behavior when applicable).
 3. If user asks for direct non-code tasks, handle normally; this contract applies to coding, development, and review tasks.
 4. The contract lasts for the current session context. If user resets/new session, require re-invocation.
 
-Acknowledge activation in one short sentence, then execute coding tasks under this contract.
+Important command-order rule:
+- A bare control message such as `/codeflow`, `/codeflow on`, `/codeflow status`, `/codeflow off`, or `callback_data: cfe:install` is **not** a request for a coding task.
+- For these control messages, do **not** send a generic acknowledgement like “ready, what should I do next?”.
+- First execute the deterministic control router below.
+- If the router succeeds, end with `NO_REPLY` because the router already sent the user-facing control reply.
+- Only after that should later coding tasks in the same session be executed under the Codeflow contract.
+- If the same inbound message includes both the `/codeflow` command and an actual coding task, run the control router first, then continue with the remaining task text.
 
-After `/codeflow` activation, immediately run a guard activation command (same chat/topic context):
+Soft fallback contract:
+
+- `/codeflow` is always owned by the skill. That is the public entrypoint and the soft fallback path.
+- The bundled enforcer plugin is optional. When installed, it adds hard `before_prompt_build` / `before_tool_call` blocking on top of the skill flow; it does **not** own `/codeflow`.
+- Step 0) Call `session_status` and read the current `sessionKey` for the active OpenClaw conversation.
+- Step 1) Always run the deterministic control script:
 
 ```bash
-# Telegram example (preferred in Telegram topics):
-exec command:"{baseDir}/scripts/codeflow guard activate -P telegram --tg-chat <chat_id> --tg-thread <thread_id_optional>"
-
-# Generic auto mode:
-exec command:"{baseDir}/scripts/codeflow guard activate -P auto"
+bash {baseDir}/scripts/codeflow control \
+  --session-key "<sessionKey>" \
+  --text "<raw user message text>"
 ```
 
+- The script owns these cases:
+  - `/codeflow` or `/codeflow on|enable|activate`
+  - `/codeflow status`
+  - `/codeflow off|disable|deactivate`
+  - `callback_data: cfe:install` (or raw `cfe:install`)
+- For a bare `/codeflow` message, always route it here first. Do not improvise a textual reply.
+- The script performs the real work itself:
+  - runs `codeflow guard activate|deactivate` when needed
+  - runs `codeflow enforcer status --json --session-key <sessionKey>`
+  - sends the final message itself via Gateway `message.send`
+  - includes `recommendation.buttons` when Telegram routing is available
+  - falls back to plain `Install:` / `Restart:` command text when buttons cannot be sent
+- Normal path: the script already sent the user-facing reply, so end the turn with `NO_REPLY`.
+- Fallback path: if the script exits with code `3` and stdout starts with `NEED_LLM_ROUTE`, parse the JSON payload on the next line (`{message, buttons}`) and send that yourself. If your current channel/tooling cannot attach buttons, keep the plain text exactly as provided.
+- Installer note: when handling `cfe:install`, be explicit that gateway restart may interrupt or reset the current conversation/thread.
+
 Guard enforcement (hard constraint in script):
-- All execution modes that can post/run work (`run`, `resume`, `review`, `parallel`) are guard-protected by default because they route through `dev-relay.sh`.
-- Guard management commands (`codeflow guard activate|deactivate|status`) bypass the precheck.
+- All execution modes that can post/run work (`run`, `resume`, `review`, `parallel`) are guard-protected by default. `review` and `parallel` must precheck the guard before they clone repos, create worktrees, or post start summaries.
+- Guard management commands (`codeflow guard activate|deactivate|status|current`) bypass the precheck.
 - Guard is bound to chat/topic context (and session key when available).
 - Every allow/deny decision is appended to `${XDG_STATE_HOME:-$HOME/.local/state}/codeflow/guard-audit.jsonl` (stores `commandHint` only — redacted + truncated; never the full command).
 - If blocked, instruct user to re-run `/codeflow` in the same chat/topic.
@@ -94,11 +127,13 @@ bash {baseDir}/scripts/codeflow <command> [...]
 Commands:
 
 - `codeflow run [run-flags] -- <agent command>` — start a relay session
-- `codeflow guard activate|deactivate|status [run-flags]` — manage the session-scoped guard
+- `codeflow guard activate|deactivate|status|current [run-flags]` — manage/query the session-scoped guard
+- `codeflow control --session-key <key> --text <raw_text>` — deterministic `/codeflow` soft-mode control router
 - `codeflow resume [run-flags] <relay_dir>` — replay a previous session from `stream.jsonl`
 - `codeflow review [...] <pr_url>` — PR review mode
 - `codeflow parallel [...] <tasks_file>` — parallel tasks mode
 - `codeflow bridge [...]` — Discord gateway bridge
+- `codeflow enforcer install|update|uninstall|status [--json]` — manage/query the bundled OpenClaw enforcer plugin
 - `codeflow check` — local checks (syntax + unit tests)
 - `codeflow smoke` — config/prereq smoke test
 
@@ -111,7 +146,6 @@ See `bash {baseDir}/scripts/codeflow --help` for the canonical CLI.
 | `-w <dir>` | Working directory | Current dir |
 | `-t <sec>` | Timeout | 1800 |
 | `-h <sec>` | Hang threshold | 120 |
-| `-i <sec>` | Post interval (raw mode only) | 10 |
 | `-n <name>` | Agent display name | Auto-detected |
 | `-P <platform>` | `discord`, `telegram`, `auto` (inferred) | discord |
 | `--thread` | Post into a Discord thread | Off |

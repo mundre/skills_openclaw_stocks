@@ -9,7 +9,6 @@
 #   -w <dir>        Working directory (default: current dir)
 #   -t <seconds>    Timeout (default: 1800 = 30min)
 #   -h <seconds>    Hang threshold (default: 120)
-#   -i <seconds>    Post interval (default: 10)
 #   -n <name>       Agent display name (auto-detected from command)
 #   -P <platform>   Chat platform: discord, telegram, or auto (defaults from CODEFLOW_PLATFORM/CODEFLOW_DEFAULT_PLATFORM)
 #   --thread        Post into a Discord thread (first message creates the thread)
@@ -17,8 +16,6 @@
 #   --tg-thread <id> Telegram message_thread_id (optional, forum topics)
 #   --skip-reads    Hide Read tool events from relay output
 #   --resume <dir>  Replay a previous session from its stream.jsonl
-#   --review <url>  PR review mode: clone, review, stream (see review-pr.sh)
-#   --parallel <f>  Parallel tasks mode: run tasks from file across worktrees
 #   --new-session   For Codex exec: force a new Codex session (ignore cached one)
 #   --reuse-session For Codex exec: require and reuse previous session for this workdir
 #   --activate      Activate Codeflow guard for current chat/session context
@@ -34,16 +31,14 @@ umask 077
 WORKDIR="$(pwd)"
 TIMEOUT=1800
 HANG_THRESHOLD=120
-INTERVAL=10
 AGENT_NAME=""
 PLATFORM="${CODEFLOW_DEFAULT_PLATFORM:-${CODEFLOW_PLATFORM:-discord}}"
 THREAD_MODE=false
 SKIP_READS=false
 RESUME_DIR=""
-REVIEW_PR=""
-PARALLEL_FILE=""
 TG_CHAT_ID=""
 TG_THREAD_ID=""
+SHOW_HELP=false
 CODEX_SESSION_POLICY="${CODEFLOW_CODEX_SESSION_MODE:-auto}"   # auto|new|reuse
 CODEX_SESSION_MAP="${CODEFLOW_CODEX_SESSION_MAP:-/tmp/dev-relay-codex-sessions.json}"
 PROMPT_MODE="${CODEFLOW_PROMPT_MODE:-auto}"                  # auto|argv|stdin (stdin = prompt via stdin; reject argv prompt for supported agents)
@@ -65,6 +60,14 @@ GUARD_ACTIVATE=false
 GUARD_DEACTIVATE=false
 GUARD_STATUS=false
 
+# Single-flight controls (codex/claude)
+# - CODEFLOW_SINGLE_FLIGHT: enable at most one active Codeflow run per context (default true)
+# - CODEFLOW_SINGLE_FLIGHT_QUEUE: when true, wait for slot (default true)
+CODEFLOW_SINGLE_FLIGHT="${CODEFLOW_SINGLE_FLIGHT:-true}"
+CODEFLOW_SINGLE_FLIGHT_QUEUE="${CODEFLOW_SINGLE_FLIGHT_QUEUE:-true}"
+CODEFLOW_SINGLE_FLIGHT_RETRY_INTERVAL="${CODEFLOW_SINGLE_FLIGHT_RETRY_INTERVAL:-3}"
+CODEFLOW_SINGLE_FLIGHT_LOCK_DIR="${CODEFLOW_STATE_DIR}/single-flight-locks"
+
 # Telegram UI feedback (set CODEFLOW_TG_TYPING_ENABLED=false to disable)
 CODEFLOW_TG_TYPING_ENABLED="${CODEFLOW_TG_TYPING_ENABLED:-true}"
 CODEFLOW_TG_TYPING_INTERVAL="${CODEFLOW_TG_TYPING_INTERVAL:-4}"
@@ -72,6 +75,35 @@ CODEFLOW_TG_TYPING_INTERVAL="${CODEFLOW_TG_TYPING_INTERVAL:-4}"
 # Safety mode: suppress high-risk content in relay output (default OFF).
 # Enabled when CODEFLOW_SAFE_MODE=true.
 CODEFLOW_SAFE_MODE="$(printf '%s' "${CODEFLOW_SAFE_MODE:-false}" | tr '[:upper:]' '[:lower:]')"
+DISCORD_THREAD_STATE_FILE=""
+
+usage() {
+  cat <<'EOF'
+Usage:
+  dev-relay.sh [options] -- <command>
+
+Options:
+  -w <dir>        Working directory (default: current dir)
+  -t <seconds>    Timeout (default: 1800)
+  -h <seconds>    Hang threshold (default: 120)
+  -n <name>       Agent display name override
+  -P <platform>   discord, telegram, or auto
+  --thread        Post into a Discord thread
+  --tg-chat <id>  Telegram chat id
+  --tg-thread <id>
+                  Telegram thread/topic id
+  --skip-reads    Hide Read tool events
+  --resume <dir>  Replay a previous session from stream.jsonl
+  --new-session   Force a new Codex session
+  --reuse-session Reuse the previous Codex session for this workdir
+  --prompt-stdin  Require prompt via stdin for supported agents
+  --prompt-argv   Allow argv prompt for supported agents
+  --activate      Activate Codeflow guard for the current context
+  --deactivate    Deactivate Codeflow guard
+  --guard-status  Print current Codeflow guard state
+  --help          Show this help
+EOF
+}
 
 # Parse long options first, converting them to positional args for getopts
 ARGS=()
@@ -80,8 +112,6 @@ while [[ $# -gt 0 ]]; do
     --thread)     THREAD_MODE=true; shift ;;
     --skip-reads) SKIP_READS=true; shift ;;
     --resume)     RESUME_DIR="$2"; shift 2 ;;
-    --review)     REVIEW_PR="$2"; shift 2 ;;
-    --parallel)   PARALLEL_FILE="$2"; shift 2 ;;
     --tg-chat)    TG_CHAT_ID="$2"; shift 2 ;;
     --tg-thread)  TG_THREAD_ID="$2"; shift 2 ;;
     --new-session)   CODEX_SESSION_POLICY="new"; shift ;;
@@ -91,18 +121,22 @@ while [[ $# -gt 0 ]]; do
     --activate)   GUARD_ACTIVATE=true; shift ;;
     --deactivate) GUARD_DEACTIVATE=true; shift ;;
     --guard-status) GUARD_STATUS=true; shift ;;
+    --help|help)  SHOW_HELP=true; shift ;;
+    --review|--parallel)
+      echo "❌ Error: legacy $1 mode was removed from dev-relay.sh. Use 'codeflow review' or 'codeflow parallel'." >&2
+      exit 2
+      ;;
     --)           ARGS+=("--"); shift; ARGS+=("$@"); break ;;
     *)            ARGS+=("$1"); shift ;;
   esac
 done
 if [ ${#ARGS[@]} -gt 0 ]; then set -- "${ARGS[@]}"; else set --; fi
 
-while getopts "w:t:h:i:n:P:" opt; do
+while getopts "w:t:h:n:P:" opt; do
   case $opt in
     w) WORKDIR="$OPTARG" ;;
     t) TIMEOUT="$OPTARG" ;;
     h) HANG_THRESHOLD="$OPTARG" ;;
-    i) INTERVAL="$OPTARG" ;;
     n) AGENT_NAME="$OPTARG" ;;
     P) PLATFORM="$OPTARG" ;;
     *) exit 1 ;;
@@ -110,6 +144,11 @@ while getopts "w:t:h:i:n:P:" opt; do
 done
 shift $((OPTIND - 1))
 [ "${1:-}" = "--" ] && shift
+
+if [ "$SHOW_HELP" = true ]; then
+  usage
+  exit 0
+fi
 
 COMMAND_ARGS=("$@")
 COMMAND="$*"
@@ -311,12 +350,7 @@ state_set() {
 }
 
 guard_enabled() {
-  local v
-  v="$(printf '%s' "$ENFORCE_GUARD" | tr '[:upper:]' '[:lower:]')"
-  case "$v" in
-    false|0|no|off) return 1 ;;
-    *) return 0 ;;
-  esac
+  codeflow_guard_enabled "$ENFORCE_GUARD"
 }
 
 run_guard() {
@@ -335,6 +369,92 @@ run_guard() {
     --agent "${AGENT_NAME:-}" \
     --command "$COMMAND" \
     "$@"
+}
+
+single_flight_enabled() {
+  local v
+  v="$(printf '%s' "${CODEFLOW_SINGLE_FLIGHT:-$CODEFLOW_SINGLE_FLIGHT}" | tr '[:upper:]' '[:lower:]')"
+  case "$v" in
+    true|1|yes|on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+single_flight_queue_enabled() {
+  local v
+  v="$(printf '%s' "${CODEFLOW_SINGLE_FLIGHT_QUEUE}" | tr '[:upper:]' '[:lower:]')"
+  case "$v" in
+    true|1|yes|on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+single_flight_scope() {
+  local session_key="${OPENCLAW_SESSION_KEY:-${OPENCLAW_SESSION:-}}"
+
+  if [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+    local thread_key="${TELEGRAM_THREAD_ID:-none}"
+    printf '%s' "platform=${PLATFORM}|chat=${TELEGRAM_CHAT_ID}|thread=${thread_key}"
+    return
+  fi
+
+  if [ -n "$session_key" ]; then
+    printf '%s' "platform=${PLATFORM}|session=${session_key}"
+    return
+  fi
+
+  printf '%s' "platform=${PLATFORM}|scope=global"
+}
+
+single_flight_lock_path() {
+  local scope
+  scope="$(single_flight_scope)"
+  local hash
+  hash="$(printf '%s' "$scope" | python3 -c 'import hashlib,sys;print(hashlib.sha1(sys.stdin.buffer.read()).hexdigest())')"
+  echo "$CODEFLOW_SINGLE_FLIGHT_LOCK_DIR/$hash"
+}
+
+acquire_single_flight_lock() {
+  single_flight_enabled || return 0
+  if [ "${IS_CLAUDE:-false}" != true ] && [ "${IS_CODEX:-false}" != true ]; then
+    return 0
+  fi
+
+  CODEFLOW_SINGLE_FLIGHT_LOCK_PATH="$(single_flight_lock_path)"
+  mkdir -p "$CODEFLOW_SINGLE_FLIGHT_LOCK_DIR"
+
+  local waiting_shown=false
+  local interval
+  interval="${CODEFLOW_SINGLE_FLIGHT_RETRY_INTERVAL:-3}"
+  [ -z "$interval" ] && interval=3
+
+  while true; do
+    if mkdir "$CODEFLOW_SINGLE_FLIGHT_LOCK_PATH" 2>/dev/null; then
+      echo "$$" > "$CODEFLOW_SINGLE_FLIGHT_LOCK_PATH/pid"
+      echo "$PLATFORM" > "$CODEFLOW_SINGLE_FLIGHT_LOCK_PATH/platform"
+      echo "$WORKDIR_ABS" > "$CODEFLOW_SINGLE_FLIGHT_LOCK_PATH/workdir"
+      [ -n "${OPENCLAW_SESSION_KEY:-${OPENCLAW_SESSION:-}}" ] && echo "${OPENCLAW_SESSION_KEY:-${OPENCLAW_SESSION:-}}" > "$CODEFLOW_SINGLE_FLIGHT_LOCK_PATH/session_key"
+      return 0
+    fi
+
+    if ! single_flight_queue_enabled; then
+      echo "❌ Error: another Codeflow run is active for this context and CODEFLOW_SINGLE_FLIGHT_QUEUE=false." >&2
+      return 4
+    fi
+
+    if [ "$waiting_shown" = false ]; then
+      post "⏳ Codeflow single-flight enabled: waiting for existing run to finish in this context."
+      waiting_shown=true
+    fi
+    sleep "$interval"
+  done
+}
+
+release_single_flight_lock() {
+  local p
+  p="${CODEFLOW_SINGLE_FLIGHT_LOCK_PATH:-}"
+  [ -z "$p" ] && return 0
+  rm -rf "$p" 2>/dev/null || true
 }
 
 resolve_openclaw_session_context() {
@@ -462,25 +582,28 @@ PY
   esac
 }
 
-setup_platform_env
-
 # Guard management actions
-if [ "$GUARD_ACTIVATE" = true ]; then
-  run_guard activate
-  echo "Codeflow guard activated."
-  exit 0
-fi
+if [ "$GUARD_ACTIVATE" = true ] || [ "$GUARD_DEACTIVATE" = true ] || [ "$GUARD_STATUS" = true ]; then
+  resolve_openclaw_session_context
+  PLATFORM="$(codeflow_infer_platform "$ROOT_DIR" "$PLATFORM" "$STATE_FILE_READ" "$TG_CHAT_ID" "$TG_THREAD_ID")"
 
-if [ "$GUARD_DEACTIVATE" = true ]; then
-  run_guard deactivate
-  echo "Codeflow guard deactivated."
-  exit 0
-fi
+  if [ "$GUARD_ACTIVATE" = true ]; then
+    run_guard activate
+    echo "Codeflow guard activated."
+    exit 0
+  fi
 
-if [ "$GUARD_STATUS" = true ]; then
+  if [ "$GUARD_DEACTIVATE" = true ]; then
+    run_guard deactivate
+    echo "Codeflow guard deactivated."
+    exit 0
+  fi
+
   run_guard status
   exit 0
 fi
+
+setup_platform_env
 
 # Guard precheck: block runs unless Codeflow guard is active for this context
 if guard_enabled; then
@@ -507,42 +630,20 @@ if [ -n "$RESUME_DIR" ]; then
   exit 0
 fi
 
-# Review mode: delegate to review-pr.sh
-if [ -n "$REVIEW_PR" ]; then
-  REVIEW_FLAGS=(-P "$PLATFORM" -t "$TIMEOUT")
-  [ "$THREAD_MODE" = true ] && REVIEW_FLAGS+=(--thread)
-  [ "$SKIP_READS" = true ] && REVIEW_FLAGS+=(--skip-reads)
-  [ -n "$WORKDIR" ] && [ "$WORKDIR" != "$(pwd)" ] && REVIEW_FLAGS+=(-w "$WORKDIR")
-  [ -n "$TG_CHAT_ID" ] && REVIEW_FLAGS+=(--tg-chat "$TG_CHAT_ID")
-  [ -n "$TG_THREAD_ID" ] && REVIEW_FLAGS+=(--tg-thread "$TG_THREAD_ID")
-  # Pass remaining args as review options (e.g., -a codex, -p "custom prompt", -c)
-  exec bash "$SCRIPT_DIR/review-pr.sh" "${REVIEW_FLAGS[@]}" "${COMMAND_ARGS[@]}" "$REVIEW_PR"
-fi
-
-# Parallel mode: delegate to parallel-tasks.sh
-if [ -n "$PARALLEL_FILE" ]; then
-  PARA_FLAGS=(-P "$PLATFORM" -t "$TIMEOUT")
-  [ "$THREAD_MODE" = true ] && PARA_FLAGS+=(--thread)
-  [ "$SKIP_READS" = true ] && PARA_FLAGS+=(--skip-reads)
-  [ -n "$TG_CHAT_ID" ] && PARA_FLAGS+=(--tg-chat "$TG_CHAT_ID")
-  [ -n "$TG_THREAD_ID" ] && PARA_FLAGS+=(--tg-thread "$TG_THREAD_ID")
-  exec bash "$SCRIPT_DIR/parallel-tasks.sh" "${PARA_FLAGS[@]}" "$PARALLEL_FILE"
-fi
-
 [ -z "$COMMAND" ] && { echo "Usage: dev-relay.sh [options] -- <command>" >&2; exit 1; }
 
 # Auto-detect agent name and mode
 IS_CLAUDE=false
 IS_CODEX=false
-if [ -z "$AGENT_NAME" ]; then
-  case "$COMMAND" in
-    claude*) AGENT_NAME="Claude Code"; IS_CLAUDE=true ;;
-    codex*)  AGENT_NAME="Codex"; IS_CODEX=true ;;
-    gemini*) AGENT_NAME="Gemini CLI" ;;
-    pi*)     AGENT_NAME="Pi Agent" ;;
-    *)       AGENT_NAME="Agent" ;;
-  esac
-fi
+DETECTED_AGENT="$(codeflow_detect_agent_command "${COMMAND_ARGS[0]:-}")"
+DEFAULT_AGENT_NAME="${DETECTED_AGENT%%$'\t'*}"
+DETECTED_AGENT="${DETECTED_AGENT#*$'\t'}"
+DETECTED_IS_CLAUDE="${DETECTED_AGENT%%$'\t'*}"
+DETECTED_IS_CODEX="${DETECTED_AGENT#*$'\t'}"
+
+[ "$DETECTED_IS_CLAUDE" = "true" ] && IS_CLAUDE=true
+[ "$DETECTED_IS_CODEX" = "true" ] && IS_CODEX=true
+[ -z "$AGENT_NAME" ] && AGENT_NAME="$DEFAULT_AGENT_NAME"
 # Codex session reuse policy (forced by code path for codex exec)
 if [ "$IS_CODEX" = true ] && [ "${COMMAND_ARGS[0]:-}" = "codex" ] && [ "${COMMAND_ARGS[1]:-}" = "exec" ]; then
   IS_CODEX_EXEC=true
@@ -586,6 +687,12 @@ if [ "$IS_CODEX" = true ] && [ "${COMMAND_ARGS[0]:-}" = "codex" ] && [ "${COMMAN
     COMMAND="${COMMAND% }"
   fi
 fi
+
+# Single-flight guard: only allow one active Codex/Claude run per session context at a time.
+if ! acquire_single_flight_lock; then
+  exit 2
+fi
+trap 'release_single_flight_lock' EXIT
 
 # Detect if Codex command includes --json for structured parsing
 if [ "$IS_CODEX" = true ]; then
@@ -646,6 +753,7 @@ PY
 
 # Temp workspace
 RELAY_DIR=$(mktemp -d /tmp/dev-relay.XXXXXX)
+DISCORD_THREAD_STATE_FILE="$RELAY_DIR/discord-thread-id"
 STRUCTURED_RELAY=false
 EXIT_CODE=0
 TIMED_OUT=false
@@ -724,8 +832,9 @@ telegram.post(sys.stdin.read(), name)
 	  printf %s "$msg" | CODEFLOW_POST_NAME="$name" \
 	    PYTHONPATH="$PY_DIR" \
 	    PLATFORM="discord" \
-	    THREAD_MODE="false" \
+	    THREAD_MODE="$THREAD_MODE" \
 	    WEBHOOK_URL="$WEBHOOK_URL" \
+    CODEFLOW_DISCORD_THREAD_ID_FILE="${DISCORD_THREAD_STATE_FILE:-}" \
     AGENT_NAME="$AGENT_NAME" \
     BOT_TOKEN="$BOT_TOKEN" \
     python3 -c '
@@ -834,7 +943,7 @@ if [ "$IS_CLAUDE" = true ] || [ "$IS_CODEX_JSON" = true ]; then
   STRUCTURED_RELAY=true
   export WEBHOOK_URL AGENT_NAME PLATFORM THREAD_MODE SKIP_READS BOT_TOKEN
   export TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TELEGRAM_THREAD_ID
-  export RELAY_DIR
+  export RELAY_DIR CODEFLOW_DISCORD_THREAD_ID_FILE="$DISCORD_THREAD_STATE_FILE"
   cd "$WORKDIR"
   set -m
   if [ "$IS_CLAUDE" = true ]; then
@@ -848,6 +957,7 @@ if [ "$IS_CLAUDE" = true ] || [ "$IS_CODEX_JSON" = true ]; then
   [ -z "$RELAY_PGID" ] && RELAY_PGID=$RELAY_PID
 
   cleanup_relay() {
+    release_single_flight_lock
     if [ -n "${RELAY_PID:-}" ] && kill -0 "$RELAY_PID" 2>/dev/null; then
       kill -TERM -"$RELAY_PGID" 2>/dev/null
       sleep 1
@@ -887,6 +997,7 @@ if [ "$IS_CLAUDE" = true ] || [ "$IS_CODEX_JSON" = true ]; then
   SCRIPT_PID=$RAWPROC_PID
 
   cleanup() {
+    release_single_flight_lock
     if [ -n "${AGENT_PID:-}" ] && kill -0 "$AGENT_PID" 2>/dev/null; then
       kill -TERM "$AGENT_PID" 2>/dev/null
       sleep 1
@@ -1033,5 +1144,6 @@ elif [ "$EXIT_CODE" -eq 0 ]; then
 else
   openclaw system event --text "Codeflow ended (exit: ${EXIT_CODE}): ${AGENT_NAME} in ${WORKDIR}" 2>/dev/null || true
 fi
+release_single_flight_lock
 rm -f "$SESSION_FILE" 2>/dev/null
 echo "Done."

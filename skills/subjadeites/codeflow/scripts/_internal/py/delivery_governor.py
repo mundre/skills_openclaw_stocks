@@ -191,10 +191,6 @@ class DeliveryGovernor:
         # Latest-wins merge: attempt counter is tied to the pending payload.
         slot.pending_attempt = 0
 
-    def submit_state_delta(self, key: str, text: str) -> None:
-        """Deprecated: state deltas removed; treat as snapshot overwrite (latest-wins)."""
-        self.submit_state(key, text)
-
     def submit_event(self, text: str, *, name: Optional[str] = None) -> None:
         self._event_q.append(_QueuedMsg(op="post", text=text or "", name=name))
 

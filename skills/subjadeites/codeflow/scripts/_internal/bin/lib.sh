@@ -79,13 +79,22 @@ codeflow_parse_task_line() {
   return 0
 }
 
+codeflow_platform_from_session_key() {
+  local session_key="${1:-${OPENCLAW_SESSION_KEY:-${OPENCLAW_SESSION:-}}}"
+  case "$session_key" in
+    *":telegram:"*) printf '%s' "telegram" ;;
+    *":discord:"*) printf '%s' "discord" ;;
+    *) printf '%s' "" ;;
+  esac
+}
+
 codeflow_infer_platform() {
   local script_dir="${1:?script_dir required}"
   local requested="${2:-auto}"
   local state_file_read="${3:-}"
   local tg_chat_id="${4:-}"
   local tg_thread_id="${5:-}"
-  local platform state_chat state_thread
+  local platform state_chat state_thread session_platform
 
   platform="$(printf '%s' "$requested" | tr '[:upper:]' '[:lower:]')"
   [ -z "$platform" ] && platform="auto"
@@ -96,6 +105,12 @@ codeflow_infer_platform() {
   fi
 
   codeflow_resolve_openclaw_session_context
+
+  session_platform="$(codeflow_platform_from_session_key)"
+  if [ -n "$session_platform" ]; then
+    printf '%s' "$session_platform"
+    return 0
+  fi
 
   state_chat=""
   state_thread=""
@@ -250,4 +265,70 @@ codeflow_resolve_openclaw_session_context() {
     TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-$direct}"
     TELEGRAM_THREAD_ID=""
   fi
+}
+
+codeflow_guard_enabled() {
+  local value="${1:-true}"
+  value="$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')"
+  case "$value" in
+    false|0|no|off) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+codeflow_guard_check() {
+  local py_dir="${1:?py_dir required}"
+  local state_file="${2:?state_file required}"
+  local audit_file="${3:?audit_file required}"
+  local platform="${4:-}"
+  local chat_id="${5:-}"
+  local thread_id="${6:-}"
+  local workdir="${7:-}"
+  local agent_name="${8:-}"
+  local command_hint="${9:-}"
+  local session_key="${OPENCLAW_SESSION_KEY:-${OPENCLAW_SESSION:-}}"
+
+  codeflow_resolve_openclaw_session_context
+  [ -z "$chat_id" ] && chat_id="${TELEGRAM_CHAT_ID:-}"
+  [ -z "$thread_id" ] && thread_id="${TELEGRAM_THREAD_ID:-}"
+
+  python3 "$py_dir/codeflow-guard.py" check \
+    --state "$state_file" \
+    --audit "$audit_file" \
+    --session-key "$session_key" \
+    --platform "$platform" \
+    --chat-id "$chat_id" \
+    --thread-id "$thread_id" \
+    --workdir "$workdir" \
+    --agent "$agent_name" \
+    --command "$command_hint"
+}
+
+codeflow_detect_agent_command() {
+  local command_path="${1:-}"
+  local command_name default_name is_claude is_codex
+
+  command_name="$(basename -- "$command_path" 2>/dev/null || printf '%s' "$command_path")"
+  default_name="Agent"
+  is_claude="false"
+  is_codex="false"
+
+  case "$command_name" in
+    claude)
+      default_name="Claude Code"
+      is_claude="true"
+      ;;
+    codex)
+      default_name="Codex"
+      is_codex="true"
+      ;;
+    gemini)
+      default_name="Gemini CLI"
+      ;;
+    pi)
+      default_name="Pi Agent"
+      ;;
+  esac
+
+  printf '%s\t%s\t%s\n' "$default_name" "$is_claude" "$is_codex"
 }
