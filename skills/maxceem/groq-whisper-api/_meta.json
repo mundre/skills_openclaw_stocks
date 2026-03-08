@@ -1,0 +1,11 @@
+{
+  "owner": "maxceem",
+  "slug": "groq-whisper-api",
+  "displayName": "Transcribe audio via Groq API (~10x cheaper than OpenAI API)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772880108737,
+    "commit": null
+  },
+  "history": []
+}
