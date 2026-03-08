@@ -3,11 +3,16 @@
   "slug": "travel-lobster",
   "displayName": "Travel Lobster",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1772806367431,
-    "commit": "https://github.com/openclaw/skills/commit/e52d7a1ef5cfa97f6c2732c726743da2009dff80"
+    "version": "1.5.0",
+    "publishedAt": 1772853720125,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1772806367431,
+      "commit": "https://github.com/openclaw/skills/commit/e52d7a1ef5cfa97f6c2732c726743da2009dff80"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1772806020000,

@@ -3,6 +3,11 @@
 # Usage: bash travel.sh <chat_id> [channel] [min_interval] [max_interval]
 # Example: bash travel.sh chat:oc_abc123 feishu 10 30
 
+# Ensure openclaw is in PATH (crontab/watchdog has minimal PATH)
+# Add pnpm, nvm node, and standard paths for crontab compatibility
+NVM_NODE=$(ls -d "$HOME/.nvm/versions/node"/*/bin 2>/dev/null | sort -V | tail -1)
+export PATH="${NVM_NODE:+$NVM_NODE:}$HOME/.local/share/pnpm:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+
 set -e
 
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -67,8 +72,17 @@ fi
 PROMPT_TMP=$(mktemp)
 trap "rm -f $PROMPT_TMP" EXIT
 
-export AGENT_NAME USER_NAME USER_TZ USER_LANG CHAT_ID CHANNEL WORKSPACE JOURNAL SKILL_DIR
-envsubst '${AGENT_NAME} ${USER_NAME} ${USER_TZ} ${USER_LANG} ${CHAT_ID} ${CHANNEL} ${WORKSPACE} ${JOURNAL} ${SKILL_DIR}' < "$PROMPT_FILE" > "$PROMPT_TMP"
+# Calculate next postcard number from journal
+if [ -f "$JOURNAL" ]; then
+    LAST_NUM=$(grep -oP '### #(\d+)' "$JOURNAL" | grep -oP '\d+' | sort -n | tail -1)
+    NEXT_POSTCARD_NUM=$((${LAST_NUM:-0} + 1))
+else
+    NEXT_POSTCARD_NUM=1
+fi
+export NEXT_POSTCARD_NUM
+
+export AGENT_NAME USER_NAME USER_TZ USER_LANG CHAT_ID CHANNEL WORKSPACE JOURNAL SKILL_DIR NEXT_POSTCARD_NUM
+envsubst '${AGENT_NAME} ${USER_NAME} ${USER_TZ} ${USER_LANG} ${CHAT_ID} ${CHANNEL} ${WORKSPACE} ${JOURNAL} ${SKILL_DIR} ${NEXT_POSTCARD_NUM}' < "$PROMPT_FILE" > "$PROMPT_TMP"
 
 # Use process substitution to safely pass multi-line, quote-containing prompts
 PROMPT=$(cat "$PROMPT_TMP")
@@ -79,7 +93,7 @@ openclaw cron add \
     --delete-after-run \
     --session isolated \
     --model "openrouter/google/gemini-3.1-pro-preview" \
-    --timeout-seconds 180 \
+    --timeout-seconds 300 \
     --no-deliver \
     --message "$PROMPT" \
     2>> "$LOGFILE"
