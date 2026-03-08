@@ -1,13 +1,18 @@
 {
   "owner": "oztenbot",
   "slug": "agent-meter",
-  "displayName": "Meter",
+  "displayName": "AgentMeter",
   "latest": {
-    "version": "0.6.3",
-    "publishedAt": 1772802860795,
-    "commit": "https://github.com/openclaw/skills/commit/4f6a339b450056686a855675b5b7541493084d7c"
+    "version": "0.6.4",
+    "publishedAt": 1772822509559,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.6.3",
+      "publishedAt": 1772802860795,
+      "commit": "https://github.com/openclaw/skills/commit/4f6a339b450056686a855675b5b7541493084d7c"
+    },
     {
       "version": "0.4.0",
       "publishedAt": 1772674697090,
