@@ -1,0 +1,11 @@
+{
+  "owner": "daniellummis",
+  "slug": "dockerfile-hardening-audit",
+  "displayName": "Dockerfile Hardening Audit",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772939351826,
+    "commit": null
+  },
+  "history": []
+}
