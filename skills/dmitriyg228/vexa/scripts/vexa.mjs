@@ -20,6 +20,7 @@ const SKILL_ROOT = path.join(__dirname, "..");
 const SKILL_SECRETS_DIR = path.join(SKILL_ROOT, "secrets");
 const SECRETS_FILE_SKILL = path.join(SKILL_SECRETS_DIR, "vexa.env");
 const STATE_FILE_SKILL = path.join(SKILL_SECRETS_DIR, "vexa-state.json");
+const ENDPOINTS_FILE = path.join(SKILL_SECRETS_DIR, "vexa-endpoints.json");
 const SECRETS_FILE_HOME = path.join(os.homedir(), ".openclaw", "secrets", "vexa.env");
 const STATE_FILE_HOME = path.join(os.homedir(), ".openclaw", "secrets", "vexa-state.json");
 
@@ -33,7 +34,13 @@ function getStateWriteFile() {
 
 function loadVexaEnv() {
   if (process.env.VEXA_API_KEY?.trim()) return;
-  for (const file of [SECRETS_FILE_SKILL, SECRETS_FILE_HOME]) {
+  // Try endpoint-specific env file first (e.g. vexa-prod.env, vexa-local.env)
+  const endpointFiles = [];
+  const epConfig = loadEndpointsConfig();
+  if (epConfig?.active) {
+    endpointFiles.push(path.join(SKILL_SECRETS_DIR, `vexa-${epConfig.active}.env`));
+  }
+  for (const file of [...endpointFiles, SECRETS_FILE_SKILL, SECRETS_FILE_HOME]) {
     try {
       const raw = fs.readFileSync(file, "utf8");
       for (const line of raw.split("\n")) {
@@ -50,8 +57,74 @@ function loadVexaEnv() {
 
 loadVexaEnv();
 
-const BASE_URL = (process.env.VEXA_BASE_URL || "https://api.cloud.vexa.ai").replace(/\/$/, "");
-const API_KEY = process.env.VEXA_API_KEY;
+/**
+ * Endpoint environment switching.
+ * File: secrets/vexa-endpoints.json
+ * Format: { "active": "prod", "endpoints": { "prod": "https://api.cloud.vexa.ai", "local": "http://localhost:8000" } }
+ * Priority: VEXA_BASE_URL env > endpoints config > default prod URL.
+ */
+function loadEndpointsConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(ENDPOINTS_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function saveEndpointsConfig(config) {
+  fs.mkdirSync(path.dirname(ENDPOINTS_FILE), { recursive: true });
+  fs.writeFileSync(ENDPOINTS_FILE, JSON.stringify(config, null, 2) + "\n", { mode: 0o600 });
+}
+
+function getDefaultEndpointsConfig() {
+  return {
+    active: "prod",
+    endpoints: {
+      prod: "https://api.cloud.vexa.ai",
+      local: "http://localhost:8000"
+    }
+  };
+}
+
+/**
+ * Normalize endpoint config: supports both legacy string format and new object format.
+ * Legacy: { "endpoints": { "prod": "https://..." } }
+ * New:    { "endpoints": { "prod": { "url": "https://...", "apiKey": "..." } } }
+ */
+function getEndpointEntry(config, name) {
+  if (!config?.endpoints?.[name]) return null;
+  const entry = config.endpoints[name];
+  if (typeof entry === "string") return { url: entry, apiKey: null };
+  return { url: entry.url || null, apiKey: entry.apiKey || null };
+}
+
+function resolveBaseUrl() {
+  // Explicit env var always wins
+  if (process.env.VEXA_BASE_URL?.trim()) return process.env.VEXA_BASE_URL.trim().replace(/\/$/, "");
+  const config = loadEndpointsConfig();
+  const entry = getEndpointEntry(config, config?.active);
+  if (entry?.url) return entry.url.replace(/\/$/, "");
+  return "https://api.cloud.vexa.ai";
+}
+
+function resolveApiKey() {
+  // Explicit env var always wins
+  if (process.env.VEXA_API_KEY?.trim()) {
+    // But check if active endpoint has its own key — prefer that
+    const config = loadEndpointsConfig();
+    const entry = getEndpointEntry(config, config?.active);
+    if (entry?.apiKey) return entry.apiKey;
+    return process.env.VEXA_API_KEY.trim();
+  }
+  // Try endpoint-specific key
+  const config = loadEndpointsConfig();
+  const entry = getEndpointEntry(config, config?.active);
+  if (entry?.apiKey) return entry.apiKey;
+  return process.env.VEXA_API_KEY || null;
+}
+
+const BASE_URL = resolveBaseUrl();
+const API_KEY = resolveApiKey();
 
 function die(msg, code = 1) {
   console.error(msg);
@@ -155,6 +228,26 @@ function normalizeGoogleMeetId(raw) {
   }
 }
 
+function normalizeZoomInfo(raw) {
+  if (!raw) return null;
+  const v = String(raw).trim();
+  // Bare numeric ID (10-11 digits)
+  if (/^\d{10,11}$/.test(v)) return { native_meeting_id: v, passcode: null };
+  try {
+    const u = new URL(v);
+    if (!/zoom\.us$/i.test(u.hostname)) return null;
+    // Typical paths: /j/<id> or /w/<id>
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length < 2 || !["j", "w"].includes(parts[0])) return null;
+    const nativeId = parts[1];
+    if (!/^\d{10,11}$/.test(nativeId)) return null;
+    const passcode = u.searchParams.get("pwd") || null;
+    return { native_meeting_id: nativeId, passcode };
+  } catch {
+    return null;
+  }
+}
+
 function normalizeTeamsInfo(raw) {
   if (!raw) return null;
   const v = String(raw).trim();
@@ -192,6 +285,13 @@ function parseMeetingInput({ meeting_url, platform, native_meeting_id, passcode 
     platform: "teams",
     native_meeting_id: t.native_meeting_id,
     passcode: t.passcode || (passcode ? String(passcode) : undefined)
+  };
+
+  const z = normalizeZoomInfo(meeting_url);
+  if (z) return {
+    platform: "zoom",
+    native_meeting_id: z.native_meeting_id,
+    passcode: z.passcode || (passcode ? String(passcode) : undefined)
   };
 
   return null;
@@ -248,7 +348,7 @@ async function main() {
         passcode: args.passcode
       });
       if (!parsed) {
-        die("Unable to parse meeting input. Pass --meeting_url (Google Meet/Teams) or --platform + --native_meeting_id.");
+        die("Unable to parse meeting input. Pass --meeting_url (Google Meet/Teams/Zoom) or --platform + --native_meeting_id.");
       }
       return print({ ok: true, ...parsed });
     }
@@ -270,7 +370,7 @@ async function main() {
       });
 
       if (!parsed) {
-        die("Usage: bots:start (--meeting_url <url> | --platform <google_meet|teams> --native_meeting_id <id>) [--passcode ...] [--bot_name ...] [--language ...]");
+        die("Usage: bots:start (--meeting_url <url> | --platform <google_meet|teams|zoom> --native_meeting_id <id>) [--passcode ...] [--bot_name ...] [--language ...]");
       }
 
       if (parsed.platform === "teams" && !parsed.passcode) {
@@ -296,7 +396,7 @@ async function main() {
         passcode: args.passcode
       });
       if (!parsed) {
-        die("Usage: bots:stop (--meeting_url <url> | --platform <google_meet|teams> --native_meeting_id <id>)");
+        die("Usage: bots:stop (--meeting_url <url> | --platform <google_meet|teams|zoom> --native_meeting_id <id>)");
       }
       return print(await vexaFetch(`/bots/${encodeURIComponent(parsed.platform)}/${encodeURIComponent(parsed.native_meeting_id)}`, { method: "DELETE" }));
     }
@@ -392,6 +492,174 @@ async function main() {
       return print(await vexaFetch("/user/webhook", { method: "PUT", body: { webhook_url: String(webhook_url) } }));
     }
 
+    case "voice-agent:config:get": {
+      return print(await vexaFetch("/voice-agent-config"));
+    }
+
+    case "voice-agent:config:set": {
+      const { prompt } = args;
+      if (!prompt) die("Usage: voice-agent:config:set --prompt \"Your system prompt here\"");
+      return print(await vexaFetch("/voice-agent-config", { method: "PUT", body: { ultravox_system_prompt: String(prompt) } }));
+    }
+
+    case "voice-agent:config:reset": {
+      return print(await vexaFetch("/voice-agent-config", { method: "PUT", body: { ultravox_system_prompt: null } }));
+    }
+
+    case "env:list": {
+      const config = loadEndpointsConfig() || getDefaultEndpointsConfig();
+      // Show endpoints with key status (masked)
+      const display = {};
+      for (const [name, val] of Object.entries(config.endpoints || {})) {
+        const entry = getEndpointEntry(config, name);
+        const epEnvFile = path.join(SKILL_SECRETS_DIR, `vexa-${name}.env`);
+        const hasEpEnv = fs.existsSync(epEnvFile);
+        display[name] = {
+          url: entry?.url || val,
+          apiKey: entry?.apiKey ? entry.apiKey.slice(0, 6) + "..." : hasEpEnv ? `(from vexa-${name}.env)` : "(from vexa.env)",
+          envFile: hasEpEnv ? `vexa-${name}.env` : "vexa.env (fallback)"
+        };
+      }
+      const result = { active: config.active, activeUrl: BASE_URL, activeApiKey: API_KEY ? API_KEY.slice(0, 6) + "..." : null, endpoints: display };
+      return print(result);
+    }
+
+    case "env:use": {
+      const envName = args._[1] || args.name;
+      if (!envName) die("Usage: env:use <name>  (e.g. prod, local)");
+      const config = loadEndpointsConfig() || getDefaultEndpointsConfig();
+      if (!config.endpoints[envName]) die(`Unknown environment "${envName}". Available: ${Object.keys(config.endpoints).join(", ")}`);
+      config.active = envName;
+      saveEndpointsConfig(config);
+      const entry = getEndpointEntry(config, envName);
+      return print({ ok: true, active: envName, url: entry?.url, apiKey: entry?.apiKey ? entry.apiKey.slice(0, 6) + "..." : "(from vexa.env)" });
+    }
+
+    case "env:set": {
+      const envName = args._[1] || args.name;
+      const url = args.url;
+      const apiKey = args.api_key || args.apiKey;
+      if (!envName || !url) die("Usage: env:set <name> --url <base_url> [--api_key <key>]  (e.g. env:set staging --url https://staging.vexa.ai --api_key sk-...)");
+      const config = loadEndpointsConfig() || getDefaultEndpointsConfig();
+      // Store as object if apiKey provided, otherwise keep string for backward compat
+      if (apiKey) {
+        const existing = getEndpointEntry(config, envName);
+        config.endpoints[envName] = { url, apiKey };
+      } else {
+        // Preserve existing apiKey if just updating URL
+        const existing = getEndpointEntry(config, envName);
+        if (existing?.apiKey) {
+          config.endpoints[envName] = { url, apiKey: existing.apiKey };
+        } else {
+          config.endpoints[envName] = url;
+        }
+      }
+      saveEndpointsConfig(config);
+      return print({ ok: true, endpoints: Object.keys(config.endpoints) });
+    }
+
+    case "recordings:list": {
+      const qs = new URLSearchParams();
+      if (args.limit !== undefined) qs.set("limit", String(args.limit));
+      if (args.offset !== undefined) qs.set("offset", String(args.offset));
+      if (args.meeting_id !== undefined) qs.set("meeting_id", String(args.meeting_id));
+      const suffix = qs.toString() ? `?${qs.toString()}` : "";
+      return print(await vexaFetch(`/recordings${suffix}`));
+    }
+
+    case "recordings:get": {
+      const id = args._[1] || args.id;
+      if (!id) die("Usage: recordings:get <recording_id>");
+      return print(await vexaFetch(`/recordings/${encodeURIComponent(id)}`));
+    }
+
+    case "recordings:delete": {
+      const id = args._[1] || args.id;
+      if (!id) die("Usage: recordings:delete <recording_id> --confirm DELETE");
+      assertDeleteGuard(args, `recording ${id}`);
+      return print(await vexaFetch(`/recordings/${encodeURIComponent(id)}`, { method: "DELETE" }));
+    }
+
+    case "recordings:download": {
+      const recordingId = args._[1] || args.recording_id;
+      const mediaFileId = args._[2] || args.media_file_id;
+      if (!recordingId || !mediaFileId) die("Usage: recordings:download <recording_id> <media_file_id>");
+      return print(await vexaFetch(`/recordings/${encodeURIComponent(recordingId)}/media/${encodeURIComponent(mediaFileId)}/download`));
+    }
+
+    case "recordings:config:get": {
+      return print(await vexaFetch("/recording-config"));
+    }
+
+    case "recordings:config:update": {
+      const body = {};
+      if (args.enabled !== undefined) body.enabled = String(args.enabled) === "true";
+      if (args.capture_modes !== undefined) body.capture_modes = csv(args.capture_modes);
+      if (Object.keys(body).length === 0) die("Usage: recordings:config:update [--enabled true|false] [--capture_modes audio,video]");
+      return print(await vexaFetch("/recording-config", { method: "PUT", body }));
+    }
+
+    case "meetings:bundle": {
+      const parsed = parseMeetingInput({
+        meeting_url: args.meeting_url,
+        platform: args.platform,
+        native_meeting_id: args.native_meeting_id,
+        passcode: args.passcode
+      });
+      if (!parsed) {
+        die("Usage: meetings:bundle (--meeting_url <url> | --platform <google_meet|teams|zoom> --native_meeting_id <id>) [--segments] [--no-share] [--no-recordings] [--download-urls]");
+      }
+      // Fetch transcript
+      const transcript = await vexaFetch(`/transcripts/${encodeURIComponent(parsed.platform)}/${encodeURIComponent(parsed.native_meeting_id)}`);
+      const result = { ...transcript };
+
+      // Optionally strip segments (default: strip them to keep output small)
+      if (!args.segments) delete result.segments;
+
+      // Optionally strip recordings
+      if (args["no-recordings"]) delete result.recordings;
+
+      // Optionally resolve download URLs for recordings
+      if (args["download-urls"] && Array.isArray(result.recordings)) {
+        for (const rec of result.recordings) {
+          if (!rec?.id || !Array.isArray(rec.media_files)) continue;
+          for (const mf of rec.media_files) {
+            if (!mf?.id) continue;
+            try {
+              mf.download = await vexaFetch(`/recordings/${encodeURIComponent(rec.id)}/media/${encodeURIComponent(mf.id)}/download`);
+            } catch {}
+          }
+        }
+      }
+
+      // Optionally create share link (default: yes)
+      if (!args["no-share"]) {
+        const shareQs = new URLSearchParams();
+        if (args.ttl_seconds !== undefined) shareQs.set("ttl_seconds", String(args.ttl_seconds));
+        const shareSuffix = shareQs.toString() ? `?${shareQs.toString()}` : "";
+        try {
+          result.share_link = await vexaFetch(
+            `/transcripts/${encodeURIComponent(parsed.platform)}/${encodeURIComponent(parsed.native_meeting_id)}/share${shareSuffix}`,
+            { method: "POST" }
+          );
+        } catch (e) {
+          result.share_link_error = String(e);
+        }
+      }
+
+      return print(result);
+    }
+
+    case "env:remove": {
+      const envName = args._[1] || args.name;
+      if (!envName) die("Usage: env:remove <name>");
+      const config = loadEndpointsConfig() || getDefaultEndpointsConfig();
+      if (config.active === envName) die(`Cannot remove active environment "${envName}". Switch to another first with env:use.`);
+      delete config.endpoints[envName];
+      saveEndpointsConfig(config);
+      return print({ ok: true, endpoints: config.endpoints });
+    }
+
     default: {
       die([
         "Unknown or missing command.",
@@ -404,10 +672,24 @@ async function main() {
         "  meetings:list",
         "  meetings:update --platform ... --native_meeting_id ... [--name ...] [--participants a,b] [--languages en,es] [--notes ...]",
         "  meetings:delete --platform ... --native_meeting_id ... --confirm DELETE",
+        "  meetings:bundle (--meeting_url <url> | --platform ... --native_meeting_id ...) [--segments] [--no-share] [--no-recordings] [--download-urls]",
         "  report (--meeting_url <url> | --platform ... --native_meeting_id ...)",
         "  transcripts:get --platform ... --native_meeting_id ...",
         "  transcripts:share --platform ... --native_meeting_id ... [--meeting_id ...] [--ttl_seconds ...]",
+        "  recordings:list [--limit ...] [--offset ...] [--meeting_id ...]",
+        "  recordings:get <recording_id>",
+        "  recordings:delete <recording_id> --confirm DELETE",
+        "  recordings:download <recording_id> <media_file_id>",
+        "  recordings:config:get",
+        "  recordings:config:update [--enabled true|false] [--capture_modes audio,video]",
         "  user:webhook:set --webhook_url https://...",
+        "  voice-agent:config:get",
+        "  voice-agent:config:set --prompt \"Your system prompt\"",
+        "  voice-agent:config:reset",
+        "  env:list",
+        "  env:use <name>                  (switch active endpoint: prod, local, etc.)",
+        "  env:set <name> --url <base_url> (add/update a named endpoint)",
+        "  env:remove <name>               (remove a named endpoint)",
       ].join("\n"));
     }
   }

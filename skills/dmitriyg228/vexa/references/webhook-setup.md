@@ -1,14 +1,16 @@
-# Vexa webhook setup (meeting finished → report)
+# Vexa webhook setup (meeting finished → report) — optional, user-initiated
 
-When a meeting finishes, Vexa can POST to your OpenClaw hooks endpoint. The bundled transform processes the webhook and triggers creation of a basic meeting report.
+Optionally, when a meeting finishes, Vexa can POST to your OpenClaw hooks endpoint. The bundled transform processes the webhook and triggers creation of a basic meeting report.
 
-## Setup
+**This setup is entirely optional.** Without it, you can create reports manually with `vexa.mjs report`. The skill never modifies `openclaw.json` automatically — all changes below are done by you.
+
+## Setup (manual)
 
 1. **Set Vexa webhook URL** (points to your public OpenClaw hooks endpoint):
 
    `node skills/vexa/scripts/vexa.mjs user:webhook:set --webhook_url https://your-domain/hooks/vexa`
 
-2. **Add hooks mapping** in `openclaw.json` (under `hooks.mappings`):
+2. **Add hooks mapping** in your `openclaw.json` (under `hooks.mappings`) — you edit this file yourself:
 
    ```json
    {

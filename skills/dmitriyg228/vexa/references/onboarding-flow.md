@@ -2,11 +2,11 @@
 
 Load this file **only when** `node skills/vexa/scripts/onboard.mjs --check-secrets` returns `{"secrets_ok": false}`. If secrets exist, skip onboarding entirely.
 
-## Important: you do the setup, not the user
+## Important: secure key setup
 
-- **Never** ask the user to run scripts or edit files. You (the assistant) handle file creation.
-- **Primary flow:** Ask the user to paste the API key in chat → you write it to `skills/vexa/secrets/vexa.env` (mode 600).
-- **Alternative (security):** If the user prefers not to paste the key in chat, share the path and format: `skills/vexa/secrets/vexa.env` with content `export VEXA_API_KEY='<their_key>'` — they add it manually.
+- **Never** ask the user to paste API keys in chat — this is a security risk.
+- **Recommended flow:** Direct the user to set `VEXA_API_KEY` in their environment, or create `skills/vexa/secrets/vexa.env` manually with content `VEXA_API_KEY=their_key_here`.
+- The assistant should NOT handle raw API keys. The user sets up their own credentials.
 
 **Chat tone:** Reply as in a natural conversation. Do not output internal reasoning or meta-commentary ("I need to ask...", "According to..."). Speak directly to the user.
 
@@ -14,17 +14,19 @@ Load this file **only when** `node skills/vexa/scripts/onboard.mjs --check-secre
 
 ### 1. Get API key
 
-Ask the user to get their API key from **https://vexa.ai/dashboard/api-keys** (include this link when asking). Then they paste it in chat and you save it.
+Direct the user to get their API key from **https://vexa.ai/dashboard/api-keys**.
 
-### 2. Set it up immediately (you do it)
+### 2. Set up credentials (user does it)
 
-When the user provides the key in chat, **you** write it to `skills/vexa/secrets/vexa.env` (mode 600). No confirmation — do it right away. Do not ask the user to run `onboard.mjs` or edit files.
+Tell the user to set up their API key using one of these methods:
+- Set `VEXA_API_KEY` as an environment variable in their shell
+- Create `skills/vexa/secrets/vexa.env` with content `VEXA_API_KEY=their_key_here`
 
 Then ask: **"Do you want to test it right now with a meeting? If yes, paste a Google Meet or Teams link. Quick option: create one instantly at https://meet.new"**
 
 Use the full URL **https://meet.new** (not plain "meet.new") so it renders as a clickable link in chat.
 
-If **no** → do step 8 (webhook), then explain they can run `source skills/vexa/secrets/vexa.env` before vexa commands, and stop.
+If **no** → do step 8 (webhook), then stop.
 
 If **yes** → ensure the shell has the key (e.g. `source skills/vexa/secrets/vexa.env`) and continue.
 
@@ -81,11 +83,7 @@ node skills/vexa/scripts/onboard.mjs --check-webhook
 ```
 
 - If output is `{"webhook_configured": true}` → hooks mapping exists. Still run step 9 (validate pipeline).
-- If `{"webhook_configured": false}` → advise: *"I can set up the webhook so finished meetings auto-trigger reports. Want me to add it?"* Then **you** try to add the vexa webhook config to `openclaw.json`:
-  - Set `hooks.transformsDir` to the workspace root (path to the workspace directory).
-  - Add the vexa mapping under `hooks.mappings` — see `references/webhook-setup.md` for the exact JSON.
-
-**If you cannot write to openclaw.json** (e.g. file not exposed, no write access): Tell the user that the webhook is **not** set up and that they need to add it manually — share `references/webhook-setup.md` and the exact JSON to add.
+- If `{"webhook_configured": false}` → advise: *"You can set up the webhook so finished meetings auto-trigger reports."* Share `references/webhook-setup.md` and the exact JSON to add. The user adds it to their `openclaw.json` themselves — the skill does NOT modify this file automatically.
 
 **If webhook config is added successfully:** Tell the user the hooks mapping is ready. **Webhook can only be set when the user has a public URL** — Vexa rejects internal URLs (localhost). Run `user:webhook:set` only if the user has a reachable public domain (e.g. cloudflared tunnel):
 

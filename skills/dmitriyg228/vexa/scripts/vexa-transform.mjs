@@ -60,18 +60,17 @@ export default async function transform(ctx) {
 
   const message = `Vexa meeting finished webhook received.
 
-**Extracted:** platform=${platform}, native_meeting_id=${nativeMeetingId}
+Extracted: platform=${platform}, native_meeting_id=${nativeMeetingId}
 
-**Task:**
-1. Run: \`${reportCmd}\` (creates basic meeting report in memory/meetings/)
-2. Open the generated report and add a \`## Summary\` section with 5–10 bullets
+Task:
+1. Run: ${reportCmd} (creates basic meeting report in memory/meetings/)
+2. Open the generated report and add a Summary section with 5-10 bullets
 3. Update/create entity files under memory/entities/ (products, companies, people) referenced in the report
 4. Reply with: report path + entities updated + any issues
+5. When sending anything to meeting chat, use PLAIN TEXT only (no markdown) -- Google Meet chat does not render markdown.
 
 Raw payload (for reference):
-\`\`\`json
-${JSON.stringify(p, null, 2)}
-\`\`\``;
+${JSON.stringify(p, null, 2)}`;
 
   return { message };
 }

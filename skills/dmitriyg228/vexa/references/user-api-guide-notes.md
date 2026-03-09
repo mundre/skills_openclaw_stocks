@@ -23,6 +23,8 @@ Primary docs reviewed:
 - `PATCH /meetings/{platform}/{native_meeting_id}` — update metadata (`data.name`, `data.participants`, `data.languages`, `data.notes`)
 - `DELETE /meetings/{platform}/{native_meeting_id}` — purge transcript + anonymize finalized meeting only
 - `PUT /user/webhook` — set user webhook URL
+- `GET /voice-agent-config` — get user's voice agent config (incl. custom `ultravox_system_prompt`)
+- `PUT /voice-agent-config` — update voice agent config; set `ultravox_system_prompt` to a string to override, or `null` to reset to service default
 
 ## Meeting ID normalization
 
