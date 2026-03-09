@@ -1,0 +1,11 @@
+{
+  "owner": "jiangagentlabs",
+  "slug": "openclaw-tailscale-remote-access",
+  "displayName": "OpenClaw Tailscale Remote Access",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1772945765139,
+    "commit": null
+  },
+  "history": []
+}
