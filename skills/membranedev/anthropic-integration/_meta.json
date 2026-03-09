@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "anthropic-integration",
+  "displayName": "Anthropic",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772935344424,
+    "commit": null
+  },
+  "history": []
+}
