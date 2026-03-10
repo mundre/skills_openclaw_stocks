@@ -3,9 +3,15 @@
   "slug": "glm-v-model",
   "displayName": "glm-v-model",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772704635748,
-    "commit": "https://github.com/openclaw/skills/commit/1469510c4fbfddd5bf201e41c707ad1cc9d721da"
+    "version": "1.0.1",
+    "publishedAt": 1773122055207,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772704635748,
+      "commit": "https://github.com/openclaw/skills/commit/1469510c4fbfddd5bf201e41c707ad1cc9d721da"
+    }
+  ]
 }

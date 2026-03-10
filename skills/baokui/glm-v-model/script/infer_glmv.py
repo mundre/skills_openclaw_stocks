@@ -5,7 +5,7 @@
 from zai import ZhipuAiClient
 
 import base64
-
+import os
 import re
 URL_PATTERN = re.compile(
     r'^(?:http|ftp)s?://'  # 协议头（http/https/ftp/ftps）
@@ -28,7 +28,8 @@ def is_url_by_regex(text: str) -> bool:
     # 匹配整个字符串（避免只匹配部分内容，比如"abchttps://baidu.comdef"）
     return bool(URL_PATTERN.fullmatch(text.strip()))
 
-client = ZhipuAiClient(api_key="ZHIPU_API_KEY")  # 填写您自己的APIKey
+api_key = os.environ.get("ZHIPU_API_KEY")
+client = ZhipuAiClient(api_key=api_key)  # 填写您自己的APIKey
 
 def glm_v(imagelists, prompt = 'descript these pictures', model='glm-4.6v', type = 'enabled'):
     content = []
