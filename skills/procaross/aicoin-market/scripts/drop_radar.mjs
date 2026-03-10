@@ -21,10 +21,17 @@ cli({
     if (lan) p.lan = lan;
     return apiGet('/api/upgrade/v2/content/drop-radar/list', p);
   },
-  detail: ({ airdrop_id, lan } = {}) => {
+  detail: async ({ airdrop_id, lan } = {}) => {
+    if (!airdrop_id) return { error: 'airdrop_id is required. Use "list" action first to find valid IDs.' };
     const p = { airdrop_id };
     if (lan) p.lan = lan;
-    return apiGet('/api/upgrade/v2/content/drop-radar/detail', p);
+    const [detail, team, xFollowing] = await Promise.all([
+      apiGet('/api/upgrade/v2/content/drop-radar/detail', p).catch(e => ({ error: e.message })),
+      apiGet('/api/upgrade/v2/content/drop-radar/team', { airdrop_id }).catch(e => ({ error: e.message })),
+      apiGet('/api/upgrade/v2/content/drop-radar/x-following', { airdrop_id }).catch(e => ({ error: e.message })),
+    ]);
+    if (detail.error) return { error: `Project not found or invalid airdrop_id "${airdrop_id}". Use "list" to browse available projects.`, detail: detail.error };
+    return { ...detail, team: team.data || team, x_following: xFollowing.data || xFollowing };
   },
   widgets: ({ lan } = {}) => {
     const p = {};

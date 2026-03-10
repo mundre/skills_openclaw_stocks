@@ -3,11 +3,16 @@
   "slug": "aicoin-market",
   "displayName": "Aicoin Market",
   "latest": {
-    "version": "3.1.0",
-    "publishedAt": 1772796041603,
-    "commit": "https://github.com/openclaw/skills/commit/50fdf000660b356b3b2719636c3af1c6f335e4b5"
+    "version": "3.4.5",
+    "publishedAt": 1773167291403,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.1.0",
+      "publishedAt": 1772796041603,
+      "commit": "https://github.com/openclaw/skills/commit/50fdf000660b356b3b2719636c3af1c6f335e4b5"
+    },
     {
       "version": "2.3.1",
       "publishedAt": 1772764420863,
