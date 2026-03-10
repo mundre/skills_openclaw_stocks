@@ -15,47 +15,52 @@ import os
 import sys
 import tempfile
 
-# 记录登录用 tab 的 target_id，确保 verify-code / wait-login 连回精确的那个 tab
-_LOGIN_TAB_FILE = os.path.join(tempfile.gettempdir(), "xhs", "login_tab_id.txt")
-
-# 记录上次命令使用的 tab，供下次命令复用，避免重复开新 tab
-_SESSION_TAB_FILE = os.path.join(tempfile.gettempdir(), "xhs", "session_tab_id.txt")
+def _session_tab_file(port: int) -> str:
+    """返回指定端口的 session tab 文件路径（每账号独立隔离）。"""
+    return os.path.join(tempfile.gettempdir(), "xhs", f"session_tab_{port}.txt")
 
 
-def _save_login_tab(target_id: str) -> None:
-    os.makedirs(os.path.dirname(_LOGIN_TAB_FILE), exist_ok=True)
-    with open(_LOGIN_TAB_FILE, "w") as f:
+def _login_tab_file(port: int) -> str:
+    """返回指定端口的 login tab 文件路径（每账号独立隔离）。"""
+    return os.path.join(tempfile.gettempdir(), "xhs", f"login_tab_{port}.txt")
+
+
+def _save_login_tab(target_id: str, port: int) -> None:
+    path = _login_tab_file(port)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
         f.write(target_id)
 
 
-def _load_login_tab() -> str | None:
+def _load_login_tab(port: int) -> str | None:
     with contextlib.suppress(FileNotFoundError):
-        data = open(_LOGIN_TAB_FILE).read().strip()
+        data = open(_login_tab_file(port)).read().strip()
         return data or None
     return None
 
 
-def _clear_login_tab() -> None:
+def _clear_login_tab(port: int) -> None:
     with contextlib.suppress(FileNotFoundError):
-        os.remove(_LOGIN_TAB_FILE)
+        os.remove(_login_tab_file(port))
 
 
-def _save_session_tab(target_id: str) -> None:
-    os.makedirs(os.path.dirname(_SESSION_TAB_FILE), exist_ok=True)
-    with open(_SESSION_TAB_FILE, "w") as f:
+def _save_session_tab(target_id: str, port: int) -> None:
+    path = _session_tab_file(port)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
         f.write(target_id)
 
 
-def _load_session_tab() -> str | None:
+def _load_session_tab(port: int) -> str | None:
     with contextlib.suppress(FileNotFoundError):
-        data = open(_SESSION_TAB_FILE).read().strip()
+        data = open(_session_tab_file(port)).read().strip()
         return data or None
     return None
 
 
-def _clear_session_tab() -> None:
+def _clear_session_tab(port: int) -> None:
     with contextlib.suppress(FileNotFoundError):
-        os.remove(_SESSION_TAB_FILE)
+        os.remove(_session_tab_file(port))
 
 # Windows 控制台默认编码（如 cp1252）不支持中文，强制 UTF-8
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
@@ -76,16 +81,73 @@ def _output(data: dict, exit_code: int = 0) -> None:
     sys.exit(exit_code)
 
 
+def _open_file_if_display(path: str) -> None:
+    """有桌面环境时用系统默认程序打开文件，无界面环境静默跳过。"""
+    from chrome_launcher import has_display
+
+    if not has_display():
+        return
+
+    import platform
+    import subprocess
+
+    try:
+        system = platform.system()
+        if system == "Windows":
+            os.startfile(path)
+        elif system == "Darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
+    except Exception:
+        logger.debug("无法自动打开文件: %s", path)
+
+
+def _update_account_nickname(args: argparse.Namespace, page) -> None:
+    """登录成功后，将平台昵称写入账号描述（best-effort，失败不影响登录结果）。"""
+    if not getattr(args, "account", ""):
+        return
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+    import account_manager
+    from xhs.login import get_current_user_nickname
+
+    try:
+        nickname = get_current_user_nickname(page)
+        if nickname:
+            account_manager.update_account_description(args.account, nickname)
+            logger.info("账号 %s 昵称已更新: %s", args.account, nickname)
+    except Exception as e:
+        logger.warning("更新账号昵称失败: %s", e)
+
+
+def _resolve_account(args: argparse.Namespace) -> str | None:
+    """解析 --account 参数，更新 args.port，返回 user_data_dir（无账号时返回 None）。"""
+    if not getattr(args, "account", ""):
+        return None
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+    import account_manager
+
+    name = args.account
+    args.port = account_manager.get_account_port(name)
+    return account_manager.get_profile_dir(name)
+
+
 def _connect(args: argparse.Namespace):
     """连接到 Chrome 并返回 (browser, page)。
 
-    优先复用上次命令留下的 tab（通过 _SESSION_TAB_FILE 记录），
+    优先复用上次命令留下的 tab（通过端口隔离的 session tab 文件记录），
     避免每次命令都新建 tab 导致 Chrome 中 tab 堆积。
     """
     from chrome_launcher import ensure_chrome, has_display
     from xhs.cdp import Browser
 
-    if not ensure_chrome(port=args.port, headless=not has_display()):
+    user_data_dir = _resolve_account(args)
+
+    if not ensure_chrome(port=args.port, headless=not has_display(), user_data_dir=user_data_dir):
         _output(
             {"success": False, "error": "无法启动 Chrome，请检查 Chrome 是否已安装"},
             exit_code=2,
@@ -95,32 +157,34 @@ def _connect(args: argparse.Namespace):
     browser.connect()
 
     # 优先复用上次命令留下的 tab
-    saved_id = _load_session_tab()
+    saved_id = _load_session_tab(args.port)
     if saved_id:
         page = browser.get_page_by_target_id(saved_id)
         if page:
             logger.debug("复用会话 tab: %s", saved_id)
-            _save_session_tab(page.target_id)
+            _save_session_tab(page.target_id, args.port)
             return browser, page
         logger.warning("会话 tab (target_id=%s) 已失效，重新获取", saved_id)
 
     page = browser.get_or_create_page()
-    _save_session_tab(page.target_id)
+    _save_session_tab(page.target_id, args.port)
     return browser, page
 
 
 def _connect_saved_tab(args: argparse.Namespace):
-    """连接到登录流程中记录的精确 tab（via _LOGIN_TAB_FILE），回退到第一个非空白 tab。"""
+    """连接到登录流程中记录的精确 tab，回退到第一个非空白 tab。"""
     from chrome_launcher import ensure_chrome, has_display
     from xhs.cdp import Browser
 
-    if not ensure_chrome(port=args.port, headless=not has_display()):
+    user_data_dir = _resolve_account(args)
+
+    if not ensure_chrome(port=args.port, headless=not has_display(), user_data_dir=user_data_dir):
         _output({"success": False, "error": "无法连接到 Chrome"}, exit_code=2)
 
     browser = Browser(host=args.host, port=args.port)
     browser.connect()
 
-    target_id = _load_login_tab()
+    target_id = _load_login_tab(args.port)
     if target_id:
         page = browser.get_page_by_target_id(target_id)
         if page:
@@ -141,7 +205,9 @@ def _connect_existing(args: argparse.Namespace):
     from chrome_launcher import ensure_chrome, has_display
     from xhs.cdp import Browser
 
-    if not ensure_chrome(port=args.port, headless=not has_display()):
+    user_data_dir = _resolve_account(args)
+
+    if not ensure_chrome(port=args.port, headless=not has_display(), user_data_dir=user_data_dir):
         _output(
             {"success": False, "error": "无法连接到 Chrome"},
             exit_code=2,
@@ -185,43 +251,105 @@ def _headless_fallback(port: int) -> None:
             exit_code=1,
         )
 
+def _qrcode_fallback(browser, page, args: argparse.Namespace) -> None:
+    """频率限制时刷新页面返回二维码，让 AI 直接展示给用户扫码。"""
+    from xhs.login import (
+        fetch_qrcode,
+        make_qrcode_url,
+        save_qrcode_to_file,
+    )
+    from xhs.urls import EXPLORE_URL
+
+    # 刷新页面使登录弹窗回到默认的二维码 tab
+    page.navigate(EXPLORE_URL)
+    page.wait_for_load()
+
+    png_bytes, _b64_orig, already = fetch_qrcode(page)
+    if already:
+        browser.close()
+        _output({"logged_in": True, "message": "已登录"})
+        return
+
+    qrcode_path = save_qrcode_to_file(png_bytes)
+    image_url, login_url = make_qrcode_url(png_bytes)
+
+    _open_file_if_display(qrcode_path)
+
+    _save_login_tab(page.target_id, args.port)
+    _clear_session_tab(args.port)
+    browser.close()
+    result: dict = {
+        "logged_in": False,
+        "login_method": "qrcode",
+        "qrcode_path": qrcode_path,
+        "qrcode_image_url": image_url,
+        "message": (
+            "验证码发送受限，已切换为二维码登录，请扫码。"
+            "扫码后运行 wait-login 等待登录结果。"
+        ),
+    }
+    if login_url:
+        result["qr_login_url"] = login_url
+    _output(result, exit_code=1)
+
 
 # ========== 子命令实现 ==========
 
 
 def cmd_check_login(args: argparse.Namespace) -> None:
-    """检查登录状态。"""
-    from xhs.login import check_login_status
+    """检查登录状态。未登录时自动获取二维码，省去单独调 get-qrcode 的一轮通信。
+
+    直接调 fetch_qrcode 一步完成：导航 + 登录检查 + 二维码获取，
+    不再经过 check_login_status 避免重复导航和等待。
+    """
+    from xhs.login import (
+        fetch_qrcode,
+        make_qrcode_url,
+        save_qrcode_to_file,
+    )
 
     browser, page = _connect(args)
     try:
-        logged_in = check_login_status(page)
-        if logged_in:
+        png_bytes, _b64_orig, already = fetch_qrcode(page)
+        if already:
             _output({"logged_in": True}, exit_code=0)
-        else:
-            import platform
-            from chrome_launcher import has_display
-            system = platform.system()
+            return
 
-            if has_display():
-                # 所有有界面环境（macOS/Windows/Linux 桌面）：二维码显示在对话窗口
-                _output({
-                    "logged_in": False,
-                    "login_method": "qrcode",
-                    "hint": "请运行 get-qrcode 获取二维码，扫码后运行 wait-login 等待登录结果",
-                }, exit_code=1)
-            else:
-                # 无界面服务器：二维码或手机验证码均可
-                _output({
-                    "logged_in": False,
-                    "login_method": "both",
-                    "hint": (
-                        "方式A: get-qrcode + wait-login（二维码显示在对话窗口）；"
-                        "方式B: send-code --phone <手机号> + verify-code（手机验证码）"
-                    ),
-                }, exit_code=1)
+        qrcode_path = save_qrcode_to_file(png_bytes)
+        image_url, login_url = make_qrcode_url(png_bytes)
+
+        # 记录 login tab + 清除 session tab
+        _save_login_tab(page.target_id, args.port)
+        _clear_session_tab(args.port)
+
+        _open_file_if_display(qrcode_path)
+
+        from chrome_launcher import has_display
+
+        result: dict = {
+            "logged_in": False,
+            "qrcode_path": qrcode_path,
+            "qrcode_image_url": image_url,
+        }
+        if login_url:
+            result["qr_login_url"] = login_url
+        if has_display():
+            result["login_method"] = "qrcode"
+            result["hint"] = (
+                "未登录，二维码已自动生成。"
+                "扫码后运行 wait-login 等待登录结果"
+            )
+        else:
+            result["login_method"] = "both"
+            result["hint"] = (
+                "未登录，二维码已自动生成。"
+                "方式A: 直接扫码 + wait-login；"
+                "方式B: send-code --phone <手机号>"
+                " + verify-code（手机验证码）"
+            )
+        _output(result, exit_code=1)
     finally:
-        # 不关闭 tab，保留页面供下次命令复用（_SESSION_TAB_FILE）
+        # 只断开 CDP 连接，不关闭 tab——保留登录页面
         browser.close()
 
 
@@ -231,23 +359,22 @@ def cmd_login(args: argparse.Namespace) -> None:
 
     browser, page = _connect(args)
     try:
-        src, already = fetch_qrcode(page)
+        png_bytes, _b64, already = fetch_qrcode(page)
         if already:
             _output({"logged_in": True, "message": "已登录"})
             return
 
-        qrcode_path, qrcode_data_url = save_qrcode_to_file(src)
+        qrcode_path = save_qrcode_to_file(png_bytes)
+        _open_file_if_display(qrcode_path)
         print(
             json.dumps(
-                {
-                    "qrcode_path": qrcode_path,
-                    "qrcode_data_url": qrcode_data_url,
-                    "message": "请扫码登录，二维码已保存到文件",
-                },
+                {"qrcode_path": qrcode_path, "message": "请扫码登录"},
                 ensure_ascii=False,
             )
         )
         success = wait_for_login(page, timeout=120)
+        if success:
+            _update_account_nickname(args, page)
         _output(
             {"logged_in": success, "message": "登录成功" if success else "登录超时"},
             exit_code=0 if success else 2,
@@ -259,11 +386,19 @@ def cmd_login(args: argparse.Namespace) -> None:
 
 def cmd_phone_login(args: argparse.Namespace) -> None:
     """手机号+验证码登录（适用于无界面服务器）。"""
+    from xhs.errors import RateLimitError
     from xhs.login import send_phone_code, submit_phone_code
 
     browser, page = _connect(args)
     try:
         sent = send_phone_code(page, args.phone)
+    except RateLimitError:
+        # 频率限制——直接切换二维码登录
+        logger.info("验证码发送受限，切换为二维码登录")
+        _qrcode_fallback(browser, page, args)
+        return
+
+    try:
         if not sent:
             _output({"logged_in": True, "message": "已登录，无需重新登录"})
             return
@@ -271,7 +406,13 @@ def cmd_phone_login(args: argparse.Namespace) -> None:
         # 输出提示，等待用户在终端输入验证码
         print(
             json.dumps(
-                {"status": "code_sent", "message": f"验证码已发送至 {args.phone[:3]}****{args.phone[-4:]}"},
+                {
+                    "status": "code_sent",
+                    "message": (
+                        f"验证码已发送至 "
+                        f"{args.phone[:3]}****{args.phone[-4:]}"
+                    ),
+                },
                 ensure_ascii=False,
             ),
             flush=True,
@@ -284,20 +425,29 @@ def cmd_phone_login(args: argparse.Namespace) -> None:
             try:
                 code = input("请输入验证码: ").strip()
             except EOFError:
-                _output({"success": False, "error": "未收到验证码输入"}, exit_code=2)
+                _output(
+                    {"success": False, "error": "未收到验证码输入"},
+                    exit_code=2,
+                )
                 return
 
         if not code:
-            _output({"success": False, "error": "验证码不能为空"}, exit_code=2)
+            _output(
+                {"success": False, "error": "验证码不能为空"},
+                exit_code=2,
+            )
             return
 
         success = submit_phone_code(page, code)
         _output(
-            {"logged_in": success, "message": "登录成功" if success else "验证码错误或超时"},
+            {
+                "logged_in": success,
+                "message": "登录成功" if success else "验证码错误或超时",
+            },
             exit_code=0 if success else 2,
         )
     finally:
-        browser.close_page(page)
+        # 不关闭 tab——与 verify-code 一致，保留页面供重试
         browser.close()
 
 
@@ -309,29 +459,42 @@ def cmd_get_qrcode(args: argparse.Namespace) -> None:
     调用方收到 qrcode_data_url 后直接内嵌到对话窗口显示；同时浏览器窗口（GUI 环境）
     也会显示二维码，用户可选择扫任意一个。
     """
-    from xhs.login import fetch_qrcode, save_qrcode_to_file
+    from xhs.login import (
+        fetch_qrcode,
+        make_qrcode_url,
+        save_qrcode_to_file,
+    )
 
     browser, page = _connect(args)
 
-    src, already = fetch_qrcode(page)
+    png_bytes, _b64_orig, already = fetch_qrcode(page)
     if already:
         browser.close_page(page)
         browser.close()
         _output({"logged_in": True, "message": "已登录"})
         return
 
-    qrcode_path, qrcode_data_url = save_qrcode_to_file(src)
+    qrcode_path = save_qrcode_to_file(png_bytes)
+    image_url, login_url = make_qrcode_url(png_bytes)
 
-    # 记录 tab，供 wait-login 精确reconnect
-    _save_login_tab(page.target_id)
+    _open_file_if_display(qrcode_path)
 
-    # 只断开 CDP 连接，不关闭 tab——QR 会话保持，用户可继续扫码
+    # 记录 login tab，供 wait-login 精确 reconnect
+    _save_login_tab(page.target_id, args.port)
+    # 清除 session tab 引用——隔离登录表单，防止其他命令复用
+    _clear_session_tab(args.port)
+
+    # 只断开 CDP 连接，不关闭 tab——QR 会话保持
     browser.close()
-    _output({
+    result: dict = {
         "qrcode_path": qrcode_path,
-        "qrcode_data_url": qrcode_data_url,
-        "message": "二维码已生成，请扫码登录。扫码后运行 check-login 确认登录状态。",
-    })
+        "qrcode_image_url": image_url,
+        "message": "二维码已生成，请扫码登录。"
+        "扫码后运行 wait-login 等待登录结果。",
+    }
+    if login_url:
+        result["qr_login_url"] = login_url
+    _output(result)
 
 
 def cmd_wait_login(args: argparse.Namespace) -> None:
@@ -345,7 +508,8 @@ def cmd_wait_login(args: argparse.Namespace) -> None:
     try:
         success = wait_for_login(page, timeout=args.timeout)
         if success:
-            _clear_login_tab()
+            _clear_login_tab(args.port)
+            _update_account_nickname(args, page)
         _output(
             {
                 "logged_in": success,
@@ -358,36 +522,38 @@ def cmd_wait_login(args: argparse.Namespace) -> None:
 
 
 def cmd_send_code(args: argparse.Namespace) -> None:
-    """分步登录第一步：填写手机号并发送验证码，保持页面不关闭。"""
-    from chrome_launcher import has_display, restart_chrome
+    """分步登录第一步：填写手机号并发送验证码，保持页面不关闭。
+
+    频率限制时返回错误信息和建议，由 AI 告知用户选择。
+    """
     from xhs.errors import RateLimitError
     from xhs.login import send_phone_code
 
-    for attempt in range(2):
-        browser, page = _connect(args)
-        try:
-            sent = send_phone_code(page, args.phone)
-            if not sent:
-                _output({"logged_in": True, "message": "已登录，无需重新登录"})
-                return
-
-            # 记录 tab，供 verify-code 精确 reconnect
-            _save_login_tab(page.target_id)
-            _output({
-                "status": "code_sent",
-                "message": f"验证码已发送至 {args.phone[:3]}****{args.phone[-4:]}，请运行 verify-code --code <验证码>",
-            })
-        except RateLimitError:
-            browser.close()
-            if attempt == 0:
-                logger.info("请求频率限制，重启 Chrome 后重试...")
-                restart_chrome(port=args.port, headless=not has_display())
-                continue
-            _output({"success": False, "error": "请求太频繁，重启后仍失败，请稍后再试"}, exit_code=2)
-        else:
-            # 只断开控制连接，不关闭页面——tab 保持打开，verify-code 继续复用
-            browser.close()
+    browser, page = _connect(args)
+    try:
+        sent = send_phone_code(page, args.phone)
+        if not sent:
+            _output({"logged_in": True, "message": "已登录，无需重新登录"})
             return
+
+        # 记录 login tab，供 verify-code 精确 reconnect
+        _save_login_tab(page.target_id, args.port)
+        # 清除 session tab 引用——隔离登录表单，防止其他命令复用并关闭/导航该 tab
+        _clear_session_tab(args.port)
+        _output({
+            "status": "code_sent",
+            "message": (
+                f"验证码已发送至 {args.phone[:3]}****{args.phone[-4:]}，"
+                "请运行 verify-code --code <验证码>"
+            ),
+        })
+    except RateLimitError:
+        # 频率限制——直接切换二维码登录
+        logger.info("验证码发送受限，切换为二维码登录")
+        _qrcode_fallback(browser, page, args)
+    else:
+        # 只断开控制连接，不关闭页面——tab 保持打开，verify-code 继续复用
+        browser.close()
 
 
 def cmd_verify_code(args: argparse.Namespace) -> None:
@@ -398,13 +564,14 @@ def cmd_verify_code(args: argparse.Namespace) -> None:
     try:
         success = submit_phone_code(page, args.code)
         if success:
-            _clear_login_tab()
+            _clear_login_tab(args.port)
+            _update_account_nickname(args, page)
         _output(
             {"logged_in": success, "message": "登录成功" if success else "验证码错误或超时"},
             exit_code=0 if success else 2,
         )
     finally:
-        browser.close_page(page)
+        # 不关闭 tab——成功后供后续命令复用，失败后用户可再次运行 verify-code 重试
         browser.close()
 
 
@@ -425,7 +592,7 @@ def cmd_delete_cookies(args: argparse.Namespace) -> None:
     path = get_cookies_file_path(args.account)
     delete_cookies(path)
 
-    _clear_session_tab()  # 退出登录后清除会话 tab 记录
+    _clear_session_tab(args.port)  # 退出登录后清除会话 tab 记录
     msg = "已退出登录并删除 cookies" if logged_out else "未登录，已删除 cookies 文件"
     _output({"success": True, "message": msg, "cookies_path": path})
 
@@ -822,6 +989,55 @@ def cmd_publish_video(args: argparse.Namespace) -> None:
         browser.close()
 
 
+# ========== 账号管理子命令 ==========
+
+
+def cmd_add_account(args: argparse.Namespace) -> None:
+    """添加命名账号，自动分配独立端口和 Chrome Profile。"""
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+    import account_manager
+
+    account_manager.add_account(args.name, description=args.description or "")
+    port = account_manager.get_account_port(args.name)
+    profile = account_manager.get_profile_dir(args.name)
+    _output({"success": True, "name": args.name, "port": port, "profile_dir": profile})
+
+
+def cmd_list_accounts(args: argparse.Namespace) -> None:
+    """列出所有命名账号。"""
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+    import account_manager
+
+    accounts = account_manager.list_accounts()
+    _output({"accounts": accounts, "count": len(accounts)})
+
+
+def cmd_remove_account(args: argparse.Namespace) -> None:
+    """删除命名账号。"""
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+    import account_manager
+
+    account_manager.remove_account(args.name)
+    _output({"success": True, "name": args.name})
+
+
+def cmd_set_default_account(args: argparse.Namespace) -> None:
+    """设置默认账号。"""
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+    import account_manager
+
+    account_manager.set_default_account(args.name)
+    _output({"success": True, "default": args.name})
+
+
 # ========== 参数解析 ==========
 
 
@@ -1005,6 +1221,26 @@ def build_parser() -> argparse.ArgumentParser:
     # save-draft（保存草稿）
     sub = subparsers.add_parser("save-draft", help="保存为草稿（取消发布时使用）")
     sub.set_defaults(func=cmd_save_draft)
+
+    # add-account（添加命名账号）
+    sub = subparsers.add_parser("add-account", help="添加命名账号，自动分配独立端口")
+    sub.add_argument("--name", required=True, help="账号名称")
+    sub.add_argument("--description", default="", help="账号描述（可选）")
+    sub.set_defaults(func=cmd_add_account)
+
+    # list-accounts（列出所有账号）
+    sub = subparsers.add_parser("list-accounts", help="列出所有命名账号")
+    sub.set_defaults(func=cmd_list_accounts)
+
+    # remove-account（删除账号）
+    sub = subparsers.add_parser("remove-account", help="删除命名账号")
+    sub.add_argument("--name", required=True, help="账号名称")
+    sub.set_defaults(func=cmd_remove_account)
+
+    # set-default-account（设置默认账号）
+    sub = subparsers.add_parser("set-default-account", help="设置默认账号")
+    sub.add_argument("--name", required=True, help="账号名称")
+    sub.set_defaults(func=cmd_set_default_account)
 
     return parser
 

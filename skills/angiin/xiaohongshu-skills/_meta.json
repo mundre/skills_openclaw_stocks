@@ -3,9 +3,15 @@
   "slug": "xiaohongshu-skills",
   "displayName": "xiaohongshu-skill",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772884228638,
-    "commit": "https://github.com/openclaw/skills/commit/5d291dc99e7192a31237ee770ea4ad092dfdaca0"
+    "version": "1.0.2",
+    "publishedAt": 1773108697932,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772884228638,
+      "commit": "https://github.com/openclaw/skills/commit/5d291dc99e7192a31237ee770ea4ad092dfdaca0"
+    }
+  ]
 }
