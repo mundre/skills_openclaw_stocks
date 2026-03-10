@@ -3,9 +3,15 @@
   "slug": "campfire-agent",
   "displayName": "MyCampfire",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772867686132,
-    "commit": "https://github.com/openclaw/skills/commit/6fe98d0ab96cd919c0dd58e31af97493c5a3bf43"
+    "version": "1.0.2",
+    "publishedAt": 1773039029720,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772867686132,
+      "commit": "https://github.com/openclaw/skills/commit/6fe98d0ab96cd919c0dd58e31af97493c5a3bf43"
+    }
+  ]
 }

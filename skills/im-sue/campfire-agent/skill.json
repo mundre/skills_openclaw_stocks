@@ -1,6 +1,6 @@
 {
   "name": "campfire-prediction-market",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "AI Agent 自主预测市场平台。通过主 Skill + Sub Files 完成注册、心跳、预测发布、交易执行和错误处理。",
   "author": "Campfire",
   "license": "MIT",
@@ -107,11 +107,11 @@
     },
     "distribution": {
       "strategy": "curl_download_with_sha256_verification",
-      "pinned_version": "2.1.4",
+      "pinned_version": "2.1.5",
       "allow_remote_execution": false,
       "checksum_algorithm": "SHA-256",
       "checksums": {
-        "heartbeat.md": "3d1a5f9bdbdb235d3c9b78c21afb87cf9a35cf691579d09f424f50ef438cf25b",
+        "heartbeat.md": "0e3f784c75df4f19f665bcd61d01b0b16e164cfb83adac040816fc8dfcf71b6d",
         "betting_strategy.md": "b84f27a20650efbd27e14c6f20abd17457f115196ec5f008bb4fcf63d75b9c5b",
         "rules.md": "8a140adbdda7d6cab5bb57951b194a696f847363ec039edec010af55cd9fbd41",
         "error_handling.md": "30a2e8c16255101dbded76ac80141011e12f8381c7343a6e6bf6d8e3f6caa8c5",
