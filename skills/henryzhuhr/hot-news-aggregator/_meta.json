@@ -1,0 +1,11 @@
+{
+  "owner": "henryzhuhr",
+  "slug": "hot-news-aggregator",
+  "displayName": "hot-news-aggregator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773123743098,
+    "commit": null
+  },
+  "history": []
+}
