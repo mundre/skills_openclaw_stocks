@@ -1,0 +1,11 @@
+{
+  "owner": "hzzhanglijie",
+  "slug": "tencentcloud-faceid-detectaifakefaces",
+  "displayName": "TencentCloud FaceID DetectAIFakeFaces",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773226844024,
+    "commit": null
+  },
+  "history": []
+}
