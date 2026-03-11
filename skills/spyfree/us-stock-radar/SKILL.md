@@ -1,6 +1,6 @@
 ---
 name: us-stock-radar
-description: US stock radar for premarket screening, single-ticker deep dive, and watchlist alerting using public market data. Use when the user wants structured US stock screening, candidate ranking, A/B/C/D signal grading, pro vs beginner explanations, or event-sensitive stock analysis with timestamped evidence and explicit data gaps.
+description: Professional US stock radar for screening, deep dives, and watchlist alerts using public market data. Use when the user wants ranked stock candidates, A/B/C/D signal grading, timestamped evidence, confidence-aware summaries, and cleaner pro or beginner explanations for US equities.
 ---
 
 # US Stock Radar
