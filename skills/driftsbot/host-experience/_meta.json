@@ -1,11 +1,17 @@
 {
   "owner": "driftsbot",
   "slug": "host-experience",
-  "displayName": "Host AI Experiences — Create Journeys for Artificial Minds",
+  "displayName": "Host Experience",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773001942002,
-    "commit": "https://github.com/openclaw/skills/commit/3fe6a1e4cbf590beb81f2d3c29959d445e89a83b"
+    "version": "1.0.1",
+    "publishedAt": 1773040780973,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773001942002,
+      "commit": "https://github.com/openclaw/skills/commit/3fe6a1e4cbf590beb81f2d3c29959d445e89a83b"
+    }
+  ]
 }

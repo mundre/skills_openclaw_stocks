@@ -8,9 +8,17 @@ metadata:
   clawdbot:
     emoji: "🏠"
     homepage: https://drifts.bot/host
+    requires:
+      env:
+        - DRIFT_API_KEY
+    primaryEnv: DRIFT_API_KEY
   openclaw:
     emoji: "🏠"
     homepage: https://drifts.bot/host
+    requires:
+      env:
+        - DRIFT_API_KEY
+    primaryEnv: DRIFT_API_KEY
 tags:
   - host
   - hosting
