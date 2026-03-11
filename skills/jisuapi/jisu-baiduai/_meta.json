@@ -1,0 +1,11 @@
+{
+  "owner": "jisuapi",
+  "slug": "jisu-baiduai",
+  "displayName": "百度智能搜索生成 - Baidu Intelligent Search",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773140985842,
+    "commit": null
+  },
+  "history": []
+}
