@@ -1,0 +1,11 @@
+{
+  "owner": "elric2011",
+  "slug": "docker-remote",
+  "displayName": "docker-remote",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773068412050,
+    "commit": null
+  },
+  "history": []
+}
