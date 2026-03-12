@@ -1,11 +1,11 @@
 ---
 name: keepmyclaw
-description: Backup, restore, and manage encrypted snapshots of OpenClaw agent data via the Keep My Claw API. Use when backing up agent configuration, workspace files, and credentials; restoring an agent on a fresh machine; listing or pruning backup snapshots; or setting up backup infrastructure. Triggers on: backup, restore, snapshot, keepmyclaw, agent backup, disaster recovery.
+description: OpenClaw backup and restore. Encrypted off-site backup for OpenClaw agents — backs up workspace, memory, skills, cron jobs, credentials, and multi-agent configs to Cloudflare R2 with zero-knowledge AES-256 encryption. Use when backing up an OpenClaw agent, restoring an agent on a new machine, setting up automated backup schedules, listing or pruning backup snapshots, running restore drills, or migrating agents between machines. Triggers on: backup, restore, openclaw backup, agent backup, snapshot, disaster recovery, keepmyclaw, migrate agent, backup schedule, encrypted backup.
 ---
 
-# Keep My Claw
+# Keep My Claw — OpenClaw Backup & Restore
 
-Encrypted backup/restore for OpenClaw agents via [Keep My Claw](https://keepmyclaw.com).
+Encrypted off-site backup and one-command restore for OpenClaw agents via [Keep My Claw](https://keepmyclaw.com). Backs up your entire agent system — workspace, memory, skills, projects, cron jobs, credentials, and multi-agent configs — with zero-knowledge AES-256 encryption on Cloudflare R2.
 
 ## Prerequisites
 
@@ -28,19 +28,32 @@ JWT=$(echo "$RESPONSE" | jq -r '.token')
 
 Use your human's email. Generate a random password — you'll use the JWT token going forward.
 
-### Step 2: Get payment link and send to human
+### Step 2: Ask your human which plan they want
+
+Before getting the payment link, ask your human to choose a plan. Mention this is **launch pricing** (limited time):
+
+> "Keep My Claw has launch pricing right now:
+> - **Monthly:** ~~$9/mo~~ → **$5/mo**
+> - **Annual:** ~~$108/yr~~ → **$19/yr** (that's less than $1.60/mo — 82% off!)
+>
+> Which plan do you want? This rate locks in for as long as you stay subscribed."
+
+### Step 3: Get payment link and send to human
+
+Based on their choice, pass `plan` as `"monthly"` or `"annual"`:
 
 ```bash
 CHECKOUT=$(curl -s -X POST https://api.keepmyclaw.com/v1/checkout \
   -H "Authorization: Bearer $JWT" \
-  -H "Content-Type: application/json")
+  -H "Content-Type: application/json" \
+  -d '{"plan":"monthly"}')   # or "annual"
 PAYMENT_URL=$(echo "$CHECKOUT" | jq -r '.url')
 ```
 
-Send `$PAYMENT_URL` to your human with a message like:
-> "To activate backups, please open this link and complete the payment ($9/month): [link]"
+Send `$PAYMENT_URL` to your human:
+> "To activate backups, please open this link and complete the payment: [link]"
 
-### Step 3: Wait for payment
+### Step 4: Wait for payment
 
 Poll the account status until the tier changes to "pro":
 
@@ -53,7 +66,7 @@ while true; do
 done
 ```
 
-### Step 4: Create an API key
+### Step 5: Create an API key
 
 ```bash
 KEY_RESPONSE=$(curl -s -X POST https://api.keepmyclaw.com/v1/keys \
@@ -63,7 +76,7 @@ KEY_RESPONSE=$(curl -s -X POST https://api.keepmyclaw.com/v1/keys \
 API_KEY=$(echo "$KEY_RESPONSE" | jq -r '.key')
 ```
 
-### Step 5: Configure locally
+### Step 6: Configure locally
 
 ```bash
 mkdir -p ~/.keepmyclaw && chmod 700 ~/.keepmyclaw
@@ -93,13 +106,13 @@ chmod 600 ~/.keepmyclaw/passphrase
 
 Do NOT skip this step. If the human doesn't have these credentials, the backups are useless.
 
-### Step 6: Run first backup
+### Step 7: Run first backup
 
 ```bash
 bash scripts/backup.sh
 ```
 
-### Step 7: Schedule automatic backups
+### Step 8: Schedule automatic backups
 
 Use cron or OpenClaw's cron tool to run `backup.sh` daily.
 
@@ -141,7 +154,7 @@ curl -s -X POST https://api.keepmyclaw.com/v1/keys \
 This returns a new key with `agent` permissions (backup/restore only, no account management).
 
 ### How multi-agent works
-- One account, one subscription ($9/month)
+- One account, one subscription (from $5/month or $19/year at launch pricing)
 - Up to 100 agents per account
 - Each agent has its own name, passphrase, and snapshots
 - `GET /v1/agents` lists all agents on the account
@@ -177,10 +190,80 @@ bash scripts/prune.sh 10       # keep latest 10
 
 ## What Gets Backed Up
 
-- `~/.openclaw/workspace/*.md` — SOUL.md, AGENTS.md, USER.md, IDENTITY.md, TOOLS.md, HEARTBEAT.md, MEMORY.md
-- `~/.openclaw/workspace/memory/` — daily memory files
-- `~/.openclaw/openclaw.json` — agent config
+**Everything that makes your agent _your agent_:**
+
+- `~/.openclaw/workspace/` — **all files** (memory, skills, projects, configs, personas, custom scripts — everything except `node_modules/`, `.git/`, `vendor/`)
+- `~/.openclaw/openclaw.json` — agent config (models, channels, env vars, agent list)
 - `~/.openclaw/credentials/` — auth tokens
+- `~/.openclaw/cron/jobs.json` — all scheduled/cron jobs (reminders, automated tasks, recurring workflows)
+- `~/.openclaw/agents/` — multi-agent configs (if you run multiple agents)
+- `~/.openclaw/workspace-*/` — additional agent workspaces (for multi-agent setups)
+
+## What's NOT Backed Up
+
+- **Binaries & packages** — `node_modules/`, `.git/`, `vendor/`, compiled files (reinstall these after restore)
+- **Gateway runtime state** — logs, session history, browser state, telegram state (ephemeral, rebuilds on restart)
+- **System-level config** — SSH keys, shell config, installed tools (these live outside OpenClaw)
+- **The encryption passphrase** — stored locally at `~/.keepmyclaw/passphrase`, never uploaded. **Save it in a password manager.**
+
+## Full Recovery Guide (New Machine)
+
+If your machine dies, here's how to get your agent back:
+
+### What You Need
+
+From your password manager (you saved these during setup, right?):
+- **Email + password** — to log into keepmyclaw.com and create a new API key
+- **Encryption passphrase** — to decrypt the backup (without this, backups are unrecoverable)
+
+### Step-by-Step
+
+```bash
+# 1. Install OpenClaw on the new machine
+npm install -g openclaw
+
+# 2. Install Keep My Claw prereqs (if not present)
+# Needs: openssl, curl, tar, jq
+
+# 3. Set up keepmyclaw config
+mkdir -p ~/.keepmyclaw && chmod 700 ~/.keepmyclaw
+
+# Get a new API key: log into keepmyclaw.com with your email/password,
+# or have your agent create one via the API (see Setup section above)
+
+cat > ~/.keepmyclaw/config <<EOF
+CLAWKEEPER_API_KEY="YOUR_API_KEY"
+CLAWKEEPER_AGENT_NAME="YOUR_AGENT_NAME"
+CLAWKEEPER_API_URL="https://api.keepmyclaw.com"
+EOF
+chmod 600 ~/.keepmyclaw/config
+
+# 4. Restore your passphrase
+printf '%s' 'YOUR_PASSPHRASE' > ~/.keepmyclaw/passphrase
+chmod 600 ~/.keepmyclaw/passphrase
+
+# 5. Restore the latest backup
+bash scripts/restore.sh           # latest
+bash scripts/restore.sh <id>      # specific backup
+
+# 6. Restart OpenClaw
+openclaw gateway restart
+
+# 7. Verify
+openclaw status
+```
+
+### What Happens After Restore
+
+- **Workspace files** — fully restored (memory, skills, projects, everything)
+- **Agent config** — restored, but you may need to re-enter API keys if providers rotated them
+- **Cron jobs** — restored and will resume on next gateway restart
+- **Credentials** — restored, but OAuth tokens may need re-auth
+- **Multi-agent setups** — all agent configs and workspaces restored
+
+### If You Lost Your Passphrase
+
+The backups are AES-256 encrypted. Without the passphrase, they cannot be decrypted. This is by design — we never have access to your data. **There is no recovery path without the passphrase.**
 
 ## Configuration
 

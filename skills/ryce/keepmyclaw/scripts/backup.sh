@@ -28,26 +28,70 @@ echo
 FILE_LIST="$TMPDIR/files.txt"
 : > "$FILE_LIST"
 
-for f in SOUL.md AGENTS.md USER.md IDENTITY.md TOOLS.md HEARTBEAT.md MEMORY.md; do
-    [[ -f "$OPENCLAW_DIR/workspace/$f" ]] && echo "workspace/$f" >> "$FILE_LIST"
-done
-[[ -d "$OPENCLAW_DIR/workspace/memory" ]] && echo "workspace/memory" >> "$FILE_LIST"
+# --- Entire workspace (all files, not just hardcoded names) ---
+if [[ -d "$OPENCLAW_DIR/workspace" ]]; then
+    # Add all files in workspace, excluding node_modules and .git
+    (cd "$OPENCLAW_DIR" && find workspace -type f \
+        -not -path '*/node_modules/*' \
+        -not -path '*/.git/*' \
+        -not -path '*/vendor/*' \
+        -not -name '*.pyc' \
+        -not -name '.DS_Store' \
+    ) >> "$FILE_LIST"
+fi
+
+# --- OpenClaw config ---
 [[ -f "$OPENCLAW_DIR/openclaw.json" ]] && echo "openclaw.json" >> "$FILE_LIST"
-[[ -d "$OPENCLAW_DIR/credentials" ]] && echo "credentials" >> "$FILE_LIST"
+
+# --- Credentials ---
+if [[ -d "$OPENCLAW_DIR/credentials" ]]; then
+    (cd "$OPENCLAW_DIR" && find credentials -type f) >> "$FILE_LIST"
+fi
+
+# --- Cron jobs ---
+[[ -f "$OPENCLAW_DIR/cron/jobs.json" ]] && echo "cron/jobs.json" >> "$FILE_LIST"
+
+# --- Multi-agent configs (agent dirs) ---
+if [[ -d "$OPENCLAW_DIR/agents" ]]; then
+    (cd "$OPENCLAW_DIR" && find agents -type f \
+        -not -path '*/node_modules/*' \
+        -not -path '*/.git/*' \
+        -not -name '.DS_Store' \
+    ) >> "$FILE_LIST"
+fi
+
+# --- Additional agent workspaces (workspace-*) ---
+for ws in "$OPENCLAW_DIR"/workspace-*; do
+    [[ -d "$ws" ]] || continue
+    ws_name="$(basename "$ws")"
+    (cd "$OPENCLAW_DIR" && find "$ws_name" -type f \
+        -not -path '*/node_modules/*' \
+        -not -path '*/.git/*' \
+        -not -path '*/vendor/*' \
+        -not -name '*.pyc' \
+        -not -name '.DS_Store' \
+    ) >> "$FILE_LIST"
+done
+
+# Deduplicate
+sort -u "$FILE_LIST" -o "$FILE_LIST"
 
 if [[ ! -s "$FILE_LIST" ]]; then
     echo "Error: No files found to back up." >&2; exit 1
 fi
 
-echo "Files to back up:"
-sed 's/^/  /' "$FILE_LIST"
+FILE_COUNT="$(wc -l < "$FILE_LIST" | tr -d ' ')"
+echo "Files to back up: ${FILE_COUNT}"
+echo "(top 20 shown)"
+head -20 "$FILE_LIST" | sed 's/^/  /'
+[[ "$FILE_COUNT" -gt 20 ]] && echo "  ... and $((FILE_COUNT - 20)) more"
 echo
 
 # Create tarball
 TAR_FILE="$TMPDIR/backup.tar.gz"
 tar -czf "$TAR_FILE" -C "$OPENCLAW_DIR" -T "$FILE_LIST" 2>/dev/null
 TAR_SIZE="$(wc -c < "$TAR_FILE" | tr -d ' ')"
-echo "✓ Archive created (${TAR_SIZE} bytes)"
+echo "✓ Archive created (${TAR_SIZE} bytes, ${FILE_COUNT} files)"
 
 # Encrypt
 ENC_FILE="$TMPDIR/backup.tar.gz.enc"
@@ -76,3 +120,4 @@ fi
 
 echo
 echo "=== Backup complete ==="
+echo "Includes: workspace (all files), config, credentials, cron jobs, agent dirs"
