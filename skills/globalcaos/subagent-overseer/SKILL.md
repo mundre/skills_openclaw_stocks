@@ -1,6 +1,12 @@
 ---
 name: subagent-overseer
-description: Monitor sub-agent health and progress via a pull-based bash daemon. Use when spawning sub-agents that need progress tracking, staleness detection, and automatic status reporting. Replaces manual heartbeat polling with a deterministic status file the agent reads every 3 minutes. Zero AI tokens for monitoring — pure OS-level process checks and filesystem diffs.
+version: 1.1.0
+description: "You spawned 4 sub-agents. One died 20 minutes ago. You're still waiting. Overseer watches them so you don't have to — zero tokens, pure OS-level process checks. No polling loops, no wasted heartbeats."
+metadata:
+  openclaw:
+    emoji: "👁️"
+    notes:
+      security: "No network calls. Reads process status and filesystem diffs only. Pure bash daemon."
 ---
 
 # Sub-Agent Overseer
@@ -94,3 +100,12 @@ When HEARTBEAT.md fires:
 - Voice alerts: **$0.00** (local sherpa-onnx via `jarvis`)
 - Heartbeat reads status file: **$0.00** (one `cat` command)
 - Only cost is the heartbeat model itself (qwen3 local = free)
+
+## Pairs Well With
+
+- [agent-superpowers](https://clawhub.com/globalcaos/agent-superpowers) — the three-agent review pipeline that Overseer was built to monitor
+- [smart-model-router](https://clawhub.com/globalcaos/smart-model-router) — auto-select models for each sub-agent role
+
+👉 **https://github.com/globalcaos/tinkerclaw**
+
+_Clone it. Fork it. Break it. Make it yours._
