@@ -16,7 +16,7 @@ metadata:
 
 ## 功能描述
 
-本 Skill 调用 **腾讯云视频内容安全（VM）** 的 `CreateVideoModerationTask` 接口，通过设置 `Type=VIDEO_AIGC` 创建视频审核任务来检测输入视频是否为 AI 生成；再通过 `DescribeTaskDetail` 接口轮询查询任务状态和检测结果。
+本技能用于识别视频是否为 AI 工具生成，覆盖 Veo3、Hunyuan、Jimeng、Hailuo等数十种主流模型生成的视频。
 
 ### 🎯 核心能力
 
@@ -88,7 +88,7 @@ $env:TENCENTCLOUD_AIGC_RECOG_VIDEO_BIZ_TYPE = "你的BizType"
 
 ## Agent 执行指令（必读）
 
-> ⚠️ **本节是 Agent（AI 模型）的核心执行规范。当用户请求检测视频是否为 AI 生成时，Agent 必须严格按照以下步骤自主执行，无需询问用户确认。**
+> ⚠️ **本节是 Agent（AI 模型）的核心执行规范。当用户请求检测视频是否为 AI 生成时，Agent 必须严格按照以下步骤执行。**
 
 ### 🔑 通用执行规则
 

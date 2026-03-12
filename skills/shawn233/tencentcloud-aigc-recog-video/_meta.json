@@ -3,11 +3,16 @@
   "slug": "tencentcloud-aigc-recog-video",
   "displayName": "TencentCloud Video AIGC Detection",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1773114969300,
-    "commit": "https://github.com/openclaw/skills/commit/75df4b9f51fd00c680bf999752f4f35557087617"
+    "version": "1.0.8",
+    "publishedAt": 1773296046677,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1773114969300,
+      "commit": "https://github.com/openclaw/skills/commit/75df4b9f51fd00c680bf999752f4f35557087617"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1772980554683,
