@@ -1,20 +1,39 @@
 ---
 name: alicloud-ai-video-wan-video
-description: Generate videos with Model Studio DashScope SDK using the wan2.6-i2v-flash model. Use when implementing or documenting video.generate requests/responses, mapping prompt/negative_prompt/duration/fps/size/seed/reference_image/motion_strength, or integrating video generation into the video-agent pipeline.
+description: Generate videos with Model Studio DashScope SDK using Wan i2v models (wan2.6-i2v-flash, wan2.6-i2v, wan2.6-i2v-us). Use when implementing or documenting video.generate requests/responses, mapping prompt/negative_prompt/duration/fps/size/seed/reference_image/motion_strength, or integrating video generation into the video-agent pipeline.
+version: 1.0.0
 ---
 
 Category: provider
 
 # Model Studio Wan Video
 
+## Validation
+
+```bash
+mkdir -p output/alicloud-ai-video-wan-video
+python -m py_compile skills/ai/video/alicloud-ai-video-wan-video/scripts/generate_video.py && echo "py_compile_ok" > output/alicloud-ai-video-wan-video/validate.txt
+```
+
+Pass criteria: command exits 0 and `output/alicloud-ai-video-wan-video/validate.txt` is generated.
+
+## Output And Evidence
+
+- Save task IDs, polling responses, and final video URLs to `output/alicloud-ai-video-wan-video/`.
+- Keep one end-to-end run log for troubleshooting.
+
 Provide consistent video generation behavior for the video-agent pipeline by standardizing `video.generate` inputs/outputs and using DashScope SDK (Python) with the exact model name.
 
-## Critical model name
+## Critical model names
 
-Use ONLY this exact model string:
+Use one of these exact model strings:
+- `wan2.2-t2v-plus`
+- `wan2.2-t2v-flash`
 - `wan2.6-i2v-flash`
-
-Do not add date suffixes or aliases.
+- `wan2.6-i2v`
+- `wan2.6-i2v-us`
+- `wan2.6-t2v-us`
+- `wanx2.1-t2v-turbo`
 
 ## Prerequisites
 
@@ -36,7 +55,7 @@ python -m pip install dashscope
 - `fps` (number, required)
 - `size` (string, required) e.g. `1280*720`
 - `seed` (int, optional)
-- `reference_image` (string | bytes, required for `wan2.6-i2v-flash`)
+- `reference_image` (string | bytes, optional for t2v, required for i2v family models)
 - `motion_strength` (number, optional)
 
 ### Response
@@ -48,7 +67,7 @@ python -m pip install dashscope
 ## Quick start (Python + DashScope SDK)
 
 Video generation is usually asynchronous. Expect a task ID and poll until completion.
-Note: `wan2.6-i2v-flash` requires an input image; map `reference_image` to `img_url`.
+Note: Wan i2v models require an input image; pure t2v models can omit `reference_image`.
 
 ```python
 import os
@@ -59,7 +78,7 @@ from dashscope import VideoSynthesis
 
 def generate_video(req: dict) -> dict:
     payload = {
-        "model": "wan2.6-i2v-flash",
+        "model": req.get("model", "wan2.6-i2v-flash"),
         "prompt": req["prompt"],
         "negative_prompt": req.get("negative_prompt"),
         "duration": req.get("duration", 4),
@@ -95,7 +114,7 @@ import os
 from dashscope import VideoSynthesis
 
 task = VideoSynthesis.async_call(
-    model="wan2.6-i2v-flash",
+    model=req.get("model", "wan2.6-i2v-flash"),
     prompt=req["prompt"],
     img_url=req["reference_image"],
     duration=req.get("duration", 4),
@@ -123,14 +142,21 @@ video_url = final.output.get("video_url")
 
 ## Output location
 
-- Default output: `output/ai-video-wan-video/videos/`
+- Default output: `output/alicloud-ai-video-wan-video/videos/`
 - Override base dir with `OUTPUT_DIR`.
 
 ## Anti-patterns
 
-- Do not invent model names or aliases; use `wan2.6-i2v-flash` only.
+- Do not invent model names or aliases; use official Wan i2v model IDs only.
 - Do not block the UI without progress updates.
 - Do not retry blindly on 4xx; handle validation failures explicitly.
+
+## Workflow
+
+1) Confirm user intent, region, identifiers, and whether the operation is read-only or mutating.
+2) Run one minimal read-only query first to verify connectivity and permissions.
+3) Execute the target operation with explicit parameters and bounded scope.
+4) Verify results and save output/evidence files.
 
 ## References
 
