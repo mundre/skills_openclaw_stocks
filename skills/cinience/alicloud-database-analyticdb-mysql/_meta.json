@@ -3,11 +3,16 @@
   "slug": "alicloud-database-analyticdb-mysql",
   "displayName": "Alicloud Database Analyticdb Mysql",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770973220572,
-    "commit": "https://github.com/openclaw/skills/commit/ee310c6c59b69a5dfeedec3f28608da8148a4dc9"
+    "version": "1.0.2",
+    "publishedAt": 1773221953754,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770973220572,
+      "commit": "https://github.com/openclaw/skills/commit/ee310c6c59b69a5dfeedec3f28608da8148a4dc9"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770768629610,
