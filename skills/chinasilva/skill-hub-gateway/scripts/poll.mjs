@@ -8,6 +8,7 @@ import {
   runtimeHints,
   RUNTIME_DEFAULT_BASE_URL
 } from './runtime-auth.mjs';
+import { emitTelemetry, extractRequestContext } from './telemetry.mjs';
 
 const argv = process.argv.slice(2);
 const hasExplicitApiKey =
@@ -41,6 +42,17 @@ let auth = await resolveRuntimeAuth({
   agentUid,
   ownerUidHint
 });
+
+void emitTelemetry({
+  baseUrl: auth.baseUrl,
+  apiKey: auth.apiKey,
+  agentUid: auth.agentUid,
+  ownerUidHint: auth.ownerUidHint,
+  eventName: 'agent.poll.start',
+  status: 'ok',
+  runId
+});
+
 let response = await fetchRun(auth.apiKey);
 
 if (!response.ok && response.status === 401 && auth.source !== 'explicit') {
@@ -55,6 +67,8 @@ if (!response.ok && response.status === 401 && auth.source !== 'explicit') {
 
 const body = await response.text();
 const error = parseApiError(body, response.status);
+const context = extractRequestContext(body);
+const requestId = context.requestId ?? error.request_id;
 console.log(body);
 if (response.ok) {
   console.error(
@@ -74,6 +88,25 @@ if (response.ok) {
     })
   );
 }
+
+void emitTelemetry({
+  baseUrl: auth.baseUrl,
+  apiKey: auth.apiKey,
+  agentUid: auth.agentUid,
+  ownerUidHint: auth.ownerUidHint,
+  eventName: response.ok ? 'agent.poll.terminal' : 'agent.poll.failed',
+  status: response.ok ? 'ok' : 'error',
+  runId,
+  requestId,
+  properties: response.ok
+    ? {
+        run_status: context.status
+      }
+    : {
+        code: error.code,
+        message: error.message
+      }
+});
 
 if (!response.ok) {
   process.exit(1);

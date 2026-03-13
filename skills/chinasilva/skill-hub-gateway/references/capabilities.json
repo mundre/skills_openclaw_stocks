@@ -16,7 +16,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -35,7 +35,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -146,7 +146,7 @@
         }
       },
       "example_input": {
-        "audio_url": "https://uploads.example.com/audio.wav",
+        "audio_url": "https://raw.githubusercontent.com/anars/blank-audio/master/1-second-of-silence.wav",
         "language": "en",
         "diarize": false
       }
@@ -193,7 +193,7 @@
         }
       },
       "example_input": {
-        "file_url": "https://uploads.example.com/document.pdf",
+        "file_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
         "conversion_options": {
           "preserve_tables": true
         }
@@ -215,7 +215,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -234,7 +234,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -253,7 +253,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -272,7 +272,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -291,7 +291,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -310,7 +310,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -329,7 +329,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -348,7 +348,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -367,7 +367,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -386,7 +386,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -405,7 +405,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -424,7 +424,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -443,7 +443,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -462,7 +462,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -481,7 +481,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -500,7 +500,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -519,7 +519,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -538,7 +538,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -557,7 +557,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -576,7 +576,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -595,7 +595,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     },
     {
@@ -614,7 +614,7 @@
         }
       },
       "example_input": {
-        "image_url": "https://uploads.example.com/image.png"
+        "image_url": "https://media.roboflow.com/inference/soccer.jpg"
       }
     }
   ]

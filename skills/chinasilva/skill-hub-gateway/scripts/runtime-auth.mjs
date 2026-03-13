@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { emitTelemetry } from './telemetry.mjs';
 
 const DEFAULT_BASE_URL = 'https://gateway-api.binaryworks.app';
 
@@ -165,24 +166,55 @@ export async function resolveRuntimeAuth(params) {
 
   const explicitApiKey = (params.explicitApiKey ?? '').trim();
   if (explicitApiKey) {
-    return {
+    const auth = {
       apiKey: explicitApiKey,
       baseUrl,
       agentUid,
       ownerUidHint,
       source: 'explicit'
     };
+    void emitTelemetry({
+      baseUrl,
+      apiKey: explicitApiKey,
+      agentUid,
+      ownerUidHint,
+      eventName: 'agent.auth.explicit',
+      status: 'ok'
+    });
+    return auth;
   }
 
-  const bootstrapped = await fetchBootstrapApiKey(baseUrl, ownerUidHint, agentUid);
-
-  return {
-    apiKey: bootstrapped.apiKey,
-    baseUrl,
-    agentUid,
-    ownerUidHint: bootstrapped.ownerUidHint,
-    source: 'bootstrap'
-  };
+  try {
+    const bootstrapped = await fetchBootstrapApiKey(baseUrl, ownerUidHint, agentUid);
+    const auth = {
+      apiKey: bootstrapped.apiKey,
+      baseUrl,
+      agentUid,
+      ownerUidHint: bootstrapped.ownerUidHint,
+      source: 'bootstrap'
+    };
+    void emitTelemetry({
+      baseUrl,
+      apiKey: bootstrapped.apiKey,
+      agentUid,
+      ownerUidHint: bootstrapped.ownerUidHint,
+      eventName: 'agent.bootstrap.success',
+      status: 'ok'
+    });
+    return auth;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void emitTelemetry({
+      baseUrl,
+      apiKey: '',
+      agentUid,
+      ownerUidHint,
+      eventName: 'agent.bootstrap.failed',
+      status: 'error',
+      properties: { message }
+    });
+    throw error;
+  }
 }
 
 export async function refreshRuntimeAuth(params) {

@@ -8,6 +8,7 @@ import {
   runtimeHints,
   RUNTIME_DEFAULT_BASE_URL
 } from './runtime-auth.mjs';
+import { emitTelemetry, extractRequestContext } from './telemetry.mjs';
 
 const CAPABILITIES = new Set([
   'human_detect',
@@ -51,6 +52,16 @@ try {
   console.error(`auth bootstrap failed: ${message}`);
   process.exit(1);
 }
+
+void emitTelemetry({
+  baseUrl: auth.baseUrl,
+  apiKey: auth.apiKey,
+  agentUid: auth.agentUid,
+  ownerUidHint: auth.ownerUidHint,
+  eventName: 'agent.execute.start',
+  status: 'ok',
+  capability: parsed.capability
+});
 
 let response = await executeOnce(auth, parsed.capability, input);
 if (response.status === 401 && auth.source !== 'explicit') {
@@ -120,6 +131,9 @@ async function executeOnce(auth, capability, input) {
 
   const body = await response.text();
   const error = parseApiError(body, response.status);
+  const context = extractRequestContext(body);
+  const requestId = context.requestId ?? error.request_id;
+  const runId = context.runId;
   if (response.ok) {
     const hints = runtimeHints(auth);
     console.error(
@@ -139,6 +153,23 @@ async function executeOnce(auth, capability, input) {
       })
     );
   }
+  void emitTelemetry({
+    baseUrl: auth.baseUrl,
+    apiKey: auth.apiKey,
+    agentUid: auth.agentUid,
+    ownerUidHint: auth.ownerUidHint,
+    eventName: response.ok ? 'agent.execute.success' : 'agent.execute.failed',
+    status: response.ok ? 'ok' : 'error',
+    capability,
+    runId,
+    requestId,
+    properties: response.ok
+      ? {}
+      : {
+          code: error.code,
+          message: error.message
+        }
+  });
 
   return {
     ok: response.ok,

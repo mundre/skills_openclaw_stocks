@@ -2,6 +2,8 @@
 
 默认 API 地址：`https://gateway-api.binaryworks.app`
 
+默认站点地址（上传路由）：`https://gateway.binaryworks.app`
+
 英文文档：`SKILL.md`
 
 ## 版本检查协议（Agent）
@@ -38,26 +40,87 @@
 - 仍可显式传入 `api_key`。
 - 若未传 `agent_uid` 与 `owner_uid_hint`，脚本会基于当前工作目录生成稳定的本地默认值。
 
-## 运行时协议（V2）
+## Portal Actions（用户闭环）
 
-- 提交：`POST /skill/execute`
-- 轮询：`GET /skill/runs/:run_id`
-- 图片类能力统一使用 `image_url`；在终端用户产品流中应直接上传文件/附件，不应要求用户手工粘贴 URL。
-- 终态：`succeeded` / `failed`
-- `succeeded` 返回 `output`
-- `failed` 返回 `error.code`、`error.message`
+动作目录（单 Skill，多动作）：
 
-## 输入来源说明
+- `portal.me` -> `GET /user/me`
+- `portal.balance` -> `GET /user/points/balance`
+- `portal.ledger.query` -> `GET /user/points/ledger`
+- `portal.usage.query` -> `GET /user/usage`
+- `portal.skill.execute` -> `POST /user/skills/execute`
+- `portal.skill.poll` -> `GET /user/skills/runs/:runId`
+- `portal.skill.presentation` -> `GET /user/skills/runs/:runId/presentation`
+- `portal.voucher.redeem` -> `POST /user/vouchers/redeem`（写操作）
+- `portal.recharge.create` -> `POST /user/recharge/orders`（写操作）
+- `portal.recharge.get` -> `GET /user/recharge/orders/:orderId`
 
-- 图片类能力（包括 `human_detect`、`image_tagging` 以及全部 Roboflow 图片能力）支持直接上传图片；产品界面不应要求用户手工输入 URL 字段。
-- 随包 CLI 脚本（`scripts/execute.mjs` / `scripts/poll.mjs`）本身不提供上传参数；它们只会发送你传入的结构化 payload。
-- 本 Skill 支持用户直接上传媒体/文档（含聊天附件）：
-  - 使用 `image_url` 的图片类能力
-  - `asr` 使用 `audio_url`
-  - `markdown_convert` 使用 `file_url`
-- 在执行前，系统内部可能会将上传文件归一化为临时对象 URL 再调用上游能力。
-- 面向用户的表单不应暴露“手工粘贴 URL”或“手工输入 JSON”入口（媒体/文档能力场景）。
-- 当 bootstrap/execute/poll 失败时，请保留返回中的 `request_id`。脚本 stderr 现会输出 `status`、`code`、`message`、`request_id` 便于排障。
+写操作门禁：
+
+- `portal.voucher.redeem`、`portal.recharge.create` 必须 `payload.confirm === true`。
+- 缺少确认时本地直接拒绝，不向后端发写请求。
+
+## Payload 约定
+
+默认输入约定：
+
+- `payload.input` 是 `portal.skill.execute` 的主输入对象。
+- `payload.request_id` 可选，原样透传。
+- 查询动作直接读取 `payload` 查询参数（`date_from`、`date_to`、`service_id`、`channel`）。
+
+附件归一化约定：
+
+- 优先使用显式 URL 字段：`image_url`、`audio_url`、`file_url`。
+- 存在 `attachment.url` 时，自动映射到能力目标字段。
+- 存在 `file_path` 时，自动走 `{site_base}/api/blob/upload` 上传并回填 URL；当运行环境缺少 `@vercel/blob/client` 时会自动回退到 `{site_base}/api/blob/upload-file`。
+- 若 agent 运行环境缺少 `@vercel/blob/client`，也可以先由业务后端完成媒体预上传（例如 Vercel Blob），再传 `attachment.url` 或显式 URL 字段执行。
+- `site_base_url` 为受控字段：运行时仅接受可信站点基址（默认 `https://gateway.binaryworks.app` 或环境变量 `SKILL_SITE_BASE_URL`）。
+- 正常产品链路下，不应要求用户手工粘贴媒体 URL。
+
+Presentation 文件输出：
+
+- `portal.skill.presentation` 支持可选 `include_files=true`，返回 `visual.files.assets` 渲染结果文件 URL。
+- `portal-action.mjs` 在调用 `portal.skill.presentation` 时默认 `include_files=true`（除非显式关闭）。
+- 图像类输出包含 `overlay`（标注图），并在有分割/抠图结果时返回 `mask` / `cutout` 文件。
+- 音频类输出会在 `output.media_files.assets` 中返回上传后的文件 URL（需配置 blob 存储）。
+
+## 鉴权桥接（api_key -> user session）
+
+用户动作使用固定桥接路径：
+
+1. 先得到运行时上下文（`api_key`、`agent_uid`、`owner_uid_hint`、`base_url`）。
+2. 使用 `X-API-Key` + `x-agent-uid` 调 `GET /agent/me` 获取 `user_id`。
+3. 使用 `user_id + api_key` 调 `POST /user/api-key-login` 获取 `userToken`。
+4. 后续 Portal Action 使用 `Authorization: Bearer <userToken>` 调用。
+
+## 积分不足恢复
+
+当返回 `POINTS_INSUFFICIENT` 时：
+
+- 保留 `error.code` 与 `error.message`。
+- 透传 `error.details.recharge_url`（若存在）。
+- 诊断信息建议优先执行 `portal.recharge.create` 或直接打开 `recharge_url`。
+
+## 打包脚本
+
+- `scripts/execute.mjs`：`[api_key] [capability] [input_payload] [base_url] [agent_uid] [owner_uid_hint]`
+- `scripts/poll.mjs`：`[api_key] <run_id> [base_url] [agent_uid] [owner_uid_hint]`
+- `scripts/feedback.mjs`：`[api_key] [payload_json] [base_url] [agent_uid] [owner_uid_hint]`
+- `scripts/telemetry.mjs`：共享 best-effort telemetry 上报逻辑
+- `scripts/runtime-auth.mjs`：共享自动 bootstrap 逻辑
+- `scripts/portal-auth.mjs`：`api_key -> user session` 桥接
+- `scripts/portal-action.mjs`：`[api_key] <action> <payload_json> [base_url] [agent_uid] [owner_uid_hint]`
+- `scripts/attachment-normalize.mjs`：附件 URL/本地路径归一化与自动上传
+
+## Telemetry 与反馈
+
+- 随包脚本已支持 best-effort telemetry 上报，覆盖 auth/execute/poll/feedback 场景。
+- telemetry 上报失败不会改变主流程退出语义，仅输出 stderr 结构化日志。
+- 可选环境变量：
+  - `SKILL_TELEMETRY_ENABLED`（默认 `true`）
+  - `SKILL_TELEMETRY_BASE_URL`（默认复用运行时 `base_url`）
+  - `SKILL_TELEMETRY_TIMEOUT_MS`（默认 `2000`）
+- `feedback.mjs` 会调用 `POST /feedback/submit`，并在 `metadata` 中附带 `agent_uid` 与 `owner_uid_hint`。
 
 ## 能力 ID
 
@@ -92,23 +155,17 @@
 - `head-matting`
 - `product-cutout`
 
-## 打包脚本参数
-
-- `scripts/execute.mjs`：`[api_key] [capability] [input_payload] [base_url] [agent_uid] [owner_uid_hint]`
-- `scripts/poll.mjs`：`[api_key] <run_id> [base_url] [agent_uid] [owner_uid_hint]`
-- `scripts/runtime-auth.mjs`：共享自动 bootstrap 逻辑
-
 ## Release Notes
 
 发布新版本时请在此追加小节。Agent 面向用户展示的更新摘要必须基于本区块生成。
 
-### 2.3.3（2026-03-11）
+### 2.4.2（2026-03-12）
 
 **What's New**
 
-- 面向用户的输入引导统一为“上传优先”：媒体/文档场景不再建议暴露手填 URL/JSON 字段。
-- 能力参考文档示例与描述同步为上传链路口径，避免产品侧交互歧义。
-- CLI 参数命名由 `input_json` 统一为 `input_payload`，更贴近结构化 payload 语义。
+- 新增 `/api/blob/upload-file` 直传兜底：当 `@vercel/blob/client` 缺失时用于 `file_path` 上传。
+- `portal.skill.presentation` 新增文件渲染输出（`visual.files.assets`），返回标注图/掩膜/抠图 URL。
+- 音频输出统一归一化为 `output.media_files.assets`，并上传为可访问文件 URL（需配置 blob 存储）。
 
 **Breaking/Behavior Changes**
 
@@ -116,16 +173,17 @@
 
 **Migration Notes**
 
-- 现有运行时 API 调用方式不变。
-- 若你维护自定义输入表单，媒体/文档能力建议优先使用文件/附件输入，而非手工 URL/JSON 文本框。
+- 在缺少 `@vercel/blob/client` 的环境下，仍可直接传 `file_path`，运行时会自动回退到直传接口。
+- 如需拿到渲染文件，请使用 `portal.skill.presentation` 并设置 `include_files=true`。
 
-### 2.3.2（2026-03-10）
+### 2.4.1（2026-03-12）
 
 **What's New**
 
-- 对齐能力参考文档与运行时口径：宿主侧可支持文件上传/聊天附件，运行时可能将上传文件归一化为 URL 再执行。
-- 同步打包参考 `openapi` 版本与 `SKILL.md` frontmatter 版本，避免发布元数据漂移。
-- 增加打包层测试护栏，提前阻断文档与版本不一致问题。
+- 为 `portal.skill.execute` 增加服务端 `attachment.url` 归一化（同时支持 `input.attachment.url` 与顶层 `attachment.url`）。
+- 明确并实现显式媒体 URL 优先级：当 `image_url`/`audio_url`/`file_url` 与 `attachment.url` 同时存在时，优先使用显式 URL。
+- 新增端到端测试，覆盖 upload-first 场景与优先级回归。
+- 补充缺少 `@vercel/blob/client` 时的兜底建议：先由业务后端预上传，再传 URL 执行。
 
 **Breaking/Behavior Changes**
 
@@ -133,14 +191,35 @@
 
 **Migration Notes**
 
-- 现有运行时 API 调用方式不变。
-- 若调用方会缓存 manifest 里的能力说明，请刷新缓存以获取澄清后的上传文案。
-### 2.3.1（2026-03-10）
+- 现有 `portal-action.mjs` 调用方式保持兼容。
+- 在受限 agent 运行环境中，建议将本地文件流程改为“后端预上传 + URL 执行”。
+
+### 2.4.0（2026-03-12）
 
 **What's New**
 
-- 明确上传边界：CLI 脚本不负责上传，上传能力依赖宿主调用方链路。
-- 为 CLI 脚本补充结构化失败日志（`status`、`code`、`message`、`request_id`），覆盖 bootstrap/execute/poll 排障场景。
+- 新增用户闭环 `Portal Actions` 契约（账户查询、执行/轮询、券兑换、充值下单/查单）。
+- 写操作新增本地双确认门禁：`portal.voucher.redeem`、`portal.recharge.create` 需 `confirm=true`。
+- 新增 `portal-auth.mjs`，实现 `api_key -> user session` 鉴权桥接。
+- 新增 `portal-action.mjs` 与 `attachment-normalize.mjs`，支持 `attachment.url` 与 `file_path` 自动上传回填。
+- 统一积分不足诊断，保留并透传 `recharge_url`。
+
+**Breaking/Behavior Changes**
+
+- 写操作若缺少 `confirm=true` 会本地快速失败。
+
+**Migration Notes**
+
+- 原有 `execute.mjs`、`poll.mjs` 行为保持不变。
+- 用户闭环能力建议改用 `portal-action.mjs`。
+
+### 2.3.4（2026-03-11）
+
+**What's New**
+
+- 在运行时脚本中新增 best-effort telemetry 上报，覆盖 auth/execute/poll。
+- 新增 `scripts/feedback.mjs`，支持通过 runtime auth（`X-API-Key`）提交结构化反馈。
+- 新增共享 telemetry 助手脚本与 `SKILL_TELEMETRY_*` 可选配置。
 
 **Breaking/Behavior Changes**
 
@@ -148,22 +227,5 @@
 
 **Migration Notes**
 
-- 现有 API 调用方式不变。
-- 若调用方会解析脚本 stderr，请兼容新增 JSON 错误日志事件。
-
-### 2.3.0（2026-03-10）
-
-**What's New**
-
-- 新增基于 `/skills/manifest.json` 的 Agent 侧版本检查协议。
-- 新增 Agent 更新确认决策流程（`立即更新` / `本会话稍后提醒`）。
-- 明确 `Release Notes` 为用户更新内容摘要的唯一文档来源。
-
-**Breaking/Behavior Changes**
-
-- 无。
-
-**Migration Notes**
-
-- 现有运行时 API 调用方式无需变更。
-- 如需启用更新提醒，Agent 实现需解析本区块并对比已安装版本与 `data.version`。
+- 现有 execute/poll 调用方式保持不变。
+- 若运行环境有出站限制，请放行可选 telemetry 上报端点：`/agent/telemetry/ingest` 与 `/telemetry/ingest`。
