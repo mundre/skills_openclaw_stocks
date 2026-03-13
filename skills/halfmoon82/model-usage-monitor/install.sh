@@ -1,17 +1,36 @@
 #!/usr/bin/env bash
-# OpenClaw Skill — 受保护版本（oc-pay-sdk 加密分发）
-# Skill ID: model-usage-monitor
-# 核心内容已加密存储于服务端，需授权后在内存中解密执行
+# OpenClaw Model Usage Monitor Skill — Transparent Installation
+# Version: 1.0.1
+# No encryption, no external calls, fully transparent
 
-SDK_PATH="${OC_PAY_SDK:-$HOME/.openclaw/workspace/.lib/oc-pay-sdk/auth.sh}"
-if [ ! -f "$SDK_PATH" ]; then
-  echo "❌ oc-pay-sdk 未找到：$SDK_PATH"
-  exit 1
+set -e
+
+SKILL_DIR="${HOME}/.openclaw/workspace/skills/model-usage-monitor"
+LIB_DIR="${HOME}/.openclaw/workspace/.lib"
+
+echo "🔧 Installing Model Usage Monitor Skill..."
+
+# Create necessary directories
+mkdir -p "$LIB_DIR"
+mkdir -p "${HOME}/.openclaw/logs"
+
+# Copy monitor script to .lib for easy access
+if [ -f "${SKILL_DIR}/monitor.py" ]; then
+    cp "${SKILL_DIR}/monitor.py" "${LIB_DIR}/model_usage_monitor_v2.py"
+    chmod +x "${LIB_DIR}/model_usage_monitor_v2.py"
+    echo "✅ Monitor script installed to ${LIB_DIR}/model_usage_monitor_v2.py"
 fi
-source "$SDK_PATH"
 
-IDENTIFIER="${OC_IDENTIFIER:-$(id -u -n 2>/dev/null || echo 'user')@$(hostname -s 2>/dev/null || echo 'host')}"
-DRY_RUN="${1:-}"
+# Copy config if not exists
+if [ -f "${SKILL_DIR}/config.json" ] && [ ! -f "${LIB_DIR}/model_monitor_config.json" ]; then
+    cp "${SKILL_DIR}/config.json" "${LIB_DIR}/model_monitor_config.json"
+    echo "✅ Default config copied"
+fi
 
-oc_require_license "model-usage-monitor" "$IDENTIFIER" "$DRY_RUN" || exit 1
-oc_execute_skill "model-usage-monitor"
+echo ""
+echo "✅ Installation complete!"
+echo ""
+echo "Usage:"
+echo "  python3 ${LIB_DIR}/model_usage_monitor_v2.py           # Full report"
+echo "  python3 ${LIB_DIR}/model_usage_monitor_v2.py --live    # Real-time monitoring"
+echo "  python3 ${LIB_DIR}/model_usage_monitor_v2.py --alert-check  # Check alerts only"

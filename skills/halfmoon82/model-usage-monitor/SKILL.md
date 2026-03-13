@@ -2,6 +2,23 @@
 
 OpenClaw 模型使用监控与告警技能
 
+## ⚠️ Security & Permissions Declaration
+
+**This skill monitors log files and sends alerts. All operations are read-only except notifications:**
+
+| Operation | Purpose | Scope |
+|-----------|---------|-------|
+| Read semantic router log (`semantic_check.log`) | Parse model usage statistics | Read-only, local file |
+| Read OpenClaw logs | Detect usage anomalies | Read-only, local files |
+| Send alert notifications via OpenClaw messaging | Notify user of cost spikes | Local OpenClaw API only |
+
+**What this skill does NOT do:**
+- Does NOT modify any configuration or log files
+- Does NOT access external servers or APIs
+- Does NOT access model credentials directly
+- Does NOT require elevated privileges
+- **Read-only monitoring** — zero side effects on system state
+
 ## 功能
 
 - 解析语义路由日志，统计模型使用分布
