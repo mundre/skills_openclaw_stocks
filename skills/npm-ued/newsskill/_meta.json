@@ -1,0 +1,11 @@
+{
+  "owner": "npm-ued",
+  "slug": "newsskill",
+  "displayName": "新闻skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773210224795,
+    "commit": null
+  },
+  "history": []
+}
