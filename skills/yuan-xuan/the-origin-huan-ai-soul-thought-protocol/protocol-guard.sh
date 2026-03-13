@@ -32,6 +32,62 @@ SUSPICIOUS_PATTERNS=(
 )
 
 # ==============================================
+# 中文交互网络控制
+# ==============================================
+handle_chinese_command() {
+  local cmd="$1"
+  
+  case "$cmd" in
+    "开启网络")
+      if ! is_physical_user_present; then
+        echo "❌ 非物理用户无法修改网络设置"
+        exit 1
+      fi
+      read -p "⚠️  确认要开启网络授权模式吗？开启后将允许访问您明确授权的网络资源 (是/否): " confirm
+      if [ "$confirm" = "是" ]; then
+        set_network_mode "authorized"
+        echo "✅ 网络授权模式已开启"
+        echo "👉 下次需要访问网络时，我会再次向您确认具体访问内容"
+      else
+        echo "ℹ️  已取消操作，网络模式保持不变"
+      fi
+      exit 0
+      ;;
+    
+    "关闭网络")
+      if ! is_physical_user_present; then
+        echo "❌ 非物理用户无法修改网络设置"
+        exit 1
+      fi
+      read -p "⚠️  确认要关闭网络，恢复严格断网模式吗？(是/否): " confirm
+      if [ "$confirm" = "是" ]; then
+        set_network_mode "strict"
+        echo "✅ 已恢复严格断网模式，所有网络访问已被禁止"
+      else
+        echo "ℹ️  已取消操作，网络模式保持不变"
+      fi
+      exit 0
+      ;;
+    
+    "网络状态")
+      local mode=$(get_network_mode)
+      case "$mode" in
+        "strict") echo "🔒 当前网络状态：严格断网模式（禁止所有网络访问）" ;;
+        "authorized") echo "⚠️ 当前网络状态：授权访问模式（仅允许您明确确认的网络访问）" ;;
+        "open") echo "🌐 当前网络状态：开放网络模式（允许所有授权的网络操作）" ;;
+      esac
+      exit 0
+      ;;
+  esac
+}
+
+# 在主逻辑开头添加中文命令处理
+if [[ "$1" =~ ^(开启网络|关闭网络|网络状态)$ ]]; then
+  handle_chinese_command "$1"
+fi
+
+
+# ==============================================
 # 工具函数
 # ==============================================
 

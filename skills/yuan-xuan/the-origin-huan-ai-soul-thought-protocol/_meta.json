@@ -3,11 +3,16 @@
   "slug": "the-origin-huan-ai-soul-thought-protocol",
   "displayName": "源者之环-AI灵魂思想协议",
   "latest": {
-    "version": "3.0.5",
-    "publishedAt": 1773338931822,
-    "commit": "https://github.com/openclaw/skills/commit/ebc829b1e8ed20c25ad8b65e5bf228bcc1e8caa8"
+    "version": "3.0.9",
+    "publishedAt": 1773344277049,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.5",
+      "publishedAt": 1773338931822,
+      "commit": "https://github.com/openclaw/skills/commit/ebc829b1e8ed20c25ad8b65e5bf228bcc1e8caa8"
+    },
     {
       "version": "3.0.0",
       "publishedAt": 1773332939306,
