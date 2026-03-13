@@ -3,11 +3,16 @@
   "slug": "trent-openclaw-security",
   "displayName": "Trent OpenClaw Security",
   "latest": {
-    "version": "2.1.0",
-    "publishedAt": 1773144640250,
-    "commit": "https://github.com/openclaw/skills/commit/767bdc61744f43f0de63e17204ab551873e1480a"
+    "version": "3.0.0",
+    "publishedAt": 1773253100380,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.1.0",
+      "publishedAt": 1773144640250,
+      "commit": "https://github.com/openclaw/skills/commit/767bdc61744f43f0de63e17204ab551873e1480a"
+    },
     {
       "version": "2.0.1",
       "publishedAt": 1772628491079,
