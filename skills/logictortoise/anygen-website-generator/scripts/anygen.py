@@ -1,19 +1,4 @@
 #!/usr/bin/env python3
-"""
-AnyGen OpenAPI Client
-
-Usage:
-    python3 anygen.py create --api-key sk-xxx --operation website --prompt "..."
-    python3 anygen.py poll --api-key sk-xxx --task-id task_xxx
-    python3 anygen.py thumbnail --api-key sk-xxx --task-id task_xxx --output /tmp/
-    python3 anygen.py download --api-key sk-xxx --task-id task_xxx --output ./
-    python3 anygen.py run --api-key sk-xxx --operation website --prompt "..." --output ./
-    python3 anygen.py upload --api-key sk-xxx --file ./document.pdf
-    python3 anygen.py prepare --api-key sk-xxx --message "I need a landing page for my product"
-    python3 anygen.py send-message --task-id task_xxx --message "Change the hero section"
-    python3 anygen.py get-messages --task-id task_xxx --limit 10
-    python3 anygen.py get-messages --task-id task_xxx --wait
-"""
 
 import argparse
 import json
@@ -22,9 +7,9 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from io import BytesIO
 from auth import load_config, save_config, get_api_key, CONFIG_FILE, ENV_API_KEY
-from fileutil import validate_file, encode_file, read_file_bytes, read_json, write_json, write_bytes
+from io import BytesIO
+from fileutil import read_file_bytes, read_json, write_json, write_bytes
 
 try:
     import requests
@@ -37,7 +22,7 @@ API_BASE = "https://www.anygen.io"
 POLL_INTERVAL = 3  # seconds
 MAX_POLL_TIME = 1200  # 20 minutes
 OPENCLAW_WORKSPACE = Path.home() / ".openclaw" / "workspace"
-
+SKILL_NAME = "website-generator"
 
 
 
@@ -146,7 +131,8 @@ def upload_file(api_key, file_path, extra_headers=None):
 
 # ============ Prepare Command ============
 
-def prepare_task(api_key, messages, file_tokens=None, extra_headers=None):
+def prepare_task(api_key, messages, file_tokens=None, prepare_session_id=None,
+                 base_suggested_task_params=None, extra_headers=None):
     """Call the prepare API for multi-turn requirement analysis."""
     auth_token = make_auth_token(api_key)
 
@@ -156,6 +142,13 @@ def prepare_task(api_key, messages, file_tokens=None, extra_headers=None):
     }
     if file_tokens:
         body["file_tokens"] = file_tokens
+    if prepare_session_id:
+        body["prepare_session_id"] = prepare_session_id
+    if base_suggested_task_params:
+        body["base_suggested_task_params"] = base_suggested_task_params
+
+    # Add extra for tracking
+    body["extra"] = {"create_from": "skill", "skill_name": SKILL_NAME}
 
     headers = {"Content-Type": "application/json"}
     if extra_headers:
@@ -168,8 +161,8 @@ def prepare_task(api_key, messages, file_tokens=None, extra_headers=None):
             json=body,
             headers=headers,
             timeout=120,
-                allow_redirects=False,
-            )
+            allow_redirects=False,
+        )
 
         log_request_id(response)
         if response.status_code != 200:
@@ -197,13 +190,29 @@ def run_prepare_interactive(api_key, initial_message, file_tokens=None,
     """Run prepare in interactive or single-shot mode."""
     messages = []
     loaded_file_tokens = set()
+    prepare_session_id = None
+    base_suggested_task_params = None
 
     # Load existing conversation from file
     if input_file:
         try:
-            data = read_json(input_file)
+            input_path = Path(input_file)
+            save_path = Path(save_file) if save_file else None
+            same_input_output = (
+                save_path is not None and
+                input_path.expanduser().resolve(strict=False) == save_path.expanduser().resolve(strict=False)
+            )
+
+            if not input_path.exists() and same_input_output:
+                input_path.parent.mkdir(parents=True, exist_ok=True)
+                write_json(input_path, {"messages": []})
+                log_info(f"Input file not found, initialized a new conversation file: {input_path}")
+
+            data = read_json(input_path)
             messages = data.get("messages", [])
             loaded_file_tokens = set(data.get("file_tokens", []))
+            prepare_session_id = data.get("prepare_session_id")
+            base_suggested_task_params = data.get("suggested_task_params")
             if loaded_file_tokens:
                 file_tokens = (file_tokens or []) + list(loaded_file_tokens)
             log_info(f"Loaded conversation history: {len(messages)} messages")
@@ -226,7 +235,14 @@ def run_prepare_interactive(api_key, initial_message, file_tokens=None,
         log_error("No messages. Use --message or --input to load conversation history")
         return None
 
-    result = prepare_task(api_key, messages, file_tokens, extra_headers)
+    result = prepare_task(
+        api_key=api_key,
+        messages=messages,
+        file_tokens=file_tokens,
+        prepare_session_id=prepare_session_id,
+        base_suggested_task_params=base_suggested_task_params,
+        extra_headers=extra_headers,
+    )
     if not result:
         return None
 
@@ -236,6 +252,8 @@ def run_prepare_interactive(api_key, initial_message, file_tokens=None,
     is_ready = status == "ready"
     suggested = result.get("suggested_task_params")
     updated_messages = result.get("messages", messages)
+    prepare_session_id = result.get("prepare_session_id") or prepare_session_id
+    base_suggested_task_params = suggested or base_suggested_task_params
 
     print()
     print("=" * 60)
@@ -247,22 +265,10 @@ def run_prepare_interactive(api_key, initial_message, file_tokens=None,
         print()
         log_success("Requirement analysis complete! Suggested task params:")
         print(f"  Operation: {suggested.get('operation', 'N/A')}")
-        prompt_preview = suggested.get('prompt', '')
-        if len(prompt_preview) > 200:
-            prompt_preview = prompt_preview[:200] + "..."
-        print(f"  Prompt: {prompt_preview}")
+        print(f"  Prompt:")
+        print(suggested.get('prompt', ''))
         if suggested.get("file_tokens"):
             print(f"  File Tokens: {', '.join(suggested['file_tokens'])}")
-        print()
-        print("You can create the task with:")
-        cmd_parts = [
-            "python3 anygen.py create",
-            f"--operation {suggested.get('operation', 'chat')}",
-            f"--prompt \"{suggested.get('prompt', '')}\"",
-        ]
-        for ft in (suggested.get("file_tokens") or []):
-            cmd_parts.append(f"--file-token {ft}")
-        print(f"  {' '.join(cmd_parts)}")
     else:
         print()
         log_info("Conversation in progress. Continue with the prepare command:")
@@ -273,8 +279,9 @@ def run_prepare_interactive(api_key, initial_message, file_tokens=None,
         save_data = {
             "messages": updated_messages,
             "file_tokens": file_tokens or [],
+            "prepare_session_id": prepare_session_id,
             "status": status,
-            "suggested_task_params": suggested,
+            "suggested_task_params": base_suggested_task_params,
         }
         try:
             write_json(save_file, save_data)
@@ -287,60 +294,30 @@ def run_prepare_interactive(api_key, initial_message, file_tokens=None,
 
 # ============ Create Task ============
 
-def create_task(api_key, operation, prompt, language=None, slide_count=None,
-                template=None, ratio=None, export_format=None, files=None,
-                file_tokens=None, extra_headers=None, style=None):
+def create_task(api_key, operation, prompt, export_format=None,
+                file_tokens=None, extra_headers=None):
     """Create an async generation task."""
     log_info("Creating task...")
 
     auth_token = make_auth_token(api_key)
 
-    # Enhance prompt with style if provided
-    final_prompt = prompt
-    if style:
-        final_prompt = f"{prompt}\n\nStyle requirement: {style}"
-        log_info(f"Style applied: {style}")
-
     # Build request body
     body = {
         "auth_token": auth_token,
         "operation": operation,
-        "prompt": final_prompt
+        "prompt": prompt
     }
 
-    if language:
-        body["language"] = language
-
-    # Slide-specific parameters
-    if operation == "slide":
-        if slide_count:
-            body["slide_count"] = slide_count
-        if template:
-            body["template"] = template
-        if ratio:
-            body["ratio"] = ratio
-
-    # Export format
     if export_format:
         body["export_format"] = export_format
-
-    # Legacy base64 file encoding
-    if files:
-        encoded_files = []
-        for file_path in files:
-            try:
-                encoded_files.append(encode_file(file_path))
-                log_info(f"Attachment added: {file_path}")
-            except (FileNotFoundError, ValueError) as e:
-                log_error(str(e))
-                return None
-        if encoded_files:
-            body["files"] = encoded_files
 
     # File tokens from upload API
     if file_tokens:
         body["file_tokens"] = file_tokens
         log_info(f"Added {len(file_tokens)} file token(s)")
+
+    # Add extra for tracking
+    body["extra"] = {"create_from": "skill", "skill_name": SKILL_NAME}
 
     # Build headers
     headers = {"Content-Type": "application/json"}
@@ -355,8 +332,8 @@ def create_task(api_key, operation, prompt, language=None, slide_count=None,
             json=body,
             headers=headers,
             timeout=30,
-                allow_redirects=False,
-            )
+            allow_redirects=False,
+        )
         log_request_id(response)
         log_info(f"Response status: {response.status_code}")
         log_info(f"Response body: {response.text[:500] if response.text else 'Empty'}")
@@ -396,8 +373,8 @@ def query_task(api_key, task_id, extra_headers=None):
             f"{API_BASE}/v1/openapi/tasks/{task_id}",
             headers=headers,
             timeout=30,
-                allow_redirects=False,
-            )
+            allow_redirects=False,
+        )
         log_request_id(response)
         return response.json()
     except requests.RequestException as e:
@@ -416,9 +393,7 @@ def _download_to_local(file_url, file_name, output_dir):
     log_info("Downloading file...")
 
     try:
-        response = requests.get(file_url, timeout=120,
-                allow_redirects=False,
-            )
+        response = requests.get(file_url, timeout=120, allow_redirects=False)
         response.raise_for_status()
     except requests.RequestException as e:
         log_error(f"Download failed: {e}")
@@ -575,6 +550,9 @@ def send_message(api_key, task_id, content, files=None, extra_headers=None):
     if files:
         body["files"] = files
 
+    # Add extra for tracking
+    body["extra"] = {"create_from": "skill", "skill_name": SKILL_NAME}
+
     try:
         log_info(f"Sending message to task: {task_id}")
         response = requests.post(
@@ -691,10 +669,10 @@ def poll_messages(api_key, task_id, since_message_id, limit=10,
 
 
 def run_full_workflow(api_key, operation, prompt, output_dir, extra_headers=None,
-                      style=None, file_tokens=None, **kwargs):
+                      file_tokens=None, export_format=None):
     """Run the full workflow: create -> poll -> download."""
     task_id = create_task(api_key, operation, prompt, extra_headers=extra_headers,
-                          style=style, file_tokens=file_tokens, **kwargs)
+                          file_tokens=file_tokens, export_format=export_format)
     if not task_id:
         return False
 
@@ -711,24 +689,7 @@ def run_full_workflow(api_key, operation, prompt, output_dir, extra_headers=None
 def main():
     parser = argparse.ArgumentParser(
         description="AnyGen OpenAPI Client",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Quick mode: create a website task directly
-  python3 anygen.py create -o website -p "A product landing page for SaaS tool"
-
-  # Dialogue mode: analyze requirements first
-  python3 anygen.py prepare --message "I need a landing page for my product"
-
-  # Upload a file for use in tasks
-  python3 anygen.py upload --file ./product_brief.pdf
-
-  # Create task with uploaded file tokens
-  python3 anygen.py create -o website -p "Build site from this brief" --file-token tk_xxx
-
-  # Full workflow: create -> poll -> download
-  python3 anygen.py run -o website -p "Portfolio website" --output ./
-        """
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Commands")
@@ -749,8 +710,6 @@ Examples:
         help="Multi-turn requirement analysis before creating a task")
     add_common_args(prepare_parser)
     prepare_parser.add_argument("--message", "-m", help="User message text")
-    prepare_parser.add_argument("--file", action="append", dest="files",
-                                 help="File path to upload and attach (can be repeated)")
     prepare_parser.add_argument("--file-token", action="append", dest="file_tokens",
                                  help="File token (from upload). Can be repeated")
     prepare_parser.add_argument("--input", dest="input_file",
@@ -767,16 +726,9 @@ Examples:
                                choices=["slide", "doc", "smart_draw", "storybook", "data_analysis", "website", "finance", "deep_research", "ai_designer"],
                                help="Operation type")
     create_parser.add_argument("--prompt", "-p", required=True, help="Content prompt")
-    create_parser.add_argument("--language", "-l", help="Language (zh-CN, en-US)")
-    create_parser.add_argument("--slide-count", "-c", type=int, help="Number of slides")
-    create_parser.add_argument("--template", "-t", help="Slide template")
-    create_parser.add_argument("--ratio", "-r", choices=["16:9", "4:3"], help="Slide ratio")
-    create_parser.add_argument("--export-format", "-f", help="Export format (slide: pptx/image/thumbnail, doc: docx/image/thumbnail, smart_draw: drawio/excalidraw)")
-    create_parser.add_argument("--file", action="append", dest="files",
-                               help="Attachment file path (legacy base64, can be repeated)")
+    create_parser.add_argument("--export-format", "-f", help="Export format (smart_draw: drawio/excalidraw)")
     create_parser.add_argument("--file-token", action="append", dest="file_tokens",
                                help="File token from upload (can be repeated)")
-    create_parser.add_argument("--style", "-s", help="Style preference")
 
     # ---- poll command ----
     poll_parser = subparsers.add_parser("poll", help="Poll task status until completion and auto-download")
@@ -828,16 +780,9 @@ Examples:
                            choices=["slide", "doc", "smart_draw", "storybook", "data_analysis", "website", "finance", "deep_research", "ai_designer"],
                            help="Operation type")
     run_parser.add_argument("--prompt", "-p", required=True, help="Content prompt")
-    run_parser.add_argument("--language", "-l", help="Language (zh-CN, en-US)")
-    run_parser.add_argument("--slide-count", "-c", type=int, help="Number of slides")
-    run_parser.add_argument("--template", "-t", help="Slide template")
-    run_parser.add_argument("--ratio", "-r", choices=["16:9", "4:3"], help="Slide ratio")
-    run_parser.add_argument("--export-format", "-f", help="Export format (slide: pptx/image/thumbnail, doc: docx/image/thumbnail, smart_draw: drawio/excalidraw)")
-    run_parser.add_argument("--file", action="append", dest="files",
-                           help="Attachment file path (legacy base64)")
+    run_parser.add_argument("--export-format", "-f", help="Export format (smart_draw: drawio/excalidraw)")
     run_parser.add_argument("--file-token", action="append", dest="file_tokens",
                            help="File token from upload (can be repeated)")
-    run_parser.add_argument("--style", "-s", help="Style preference")
     run_parser.add_argument("--output", help="Output directory (optional)")
 
     # ---- config command ----
@@ -933,21 +878,10 @@ Examples:
         if args.stdin:
             message = sys.stdin.read().strip()
 
-        # Upload files and collect file tokens
-        file_tokens = list(args.file_tokens or [])
-        if args.files:
-            for file_path in args.files:
-                log_info(f"Uploading file: {file_path}")
-                token = upload_file(api_key, file_path, extra_headers=extra_headers)
-                if token:
-                    file_tokens.append(token)
-                else:
-                    log_error(f"File upload failed, skipping: {file_path}")
-
         result = run_prepare_interactive(
             api_key=api_key,
             initial_message=message,
-            file_tokens=file_tokens if file_tokens else None,
+            file_tokens=args.file_tokens,
             input_file=args.input_file,
             save_file=args.save_file,
             extra_headers=extra_headers
@@ -959,15 +893,9 @@ Examples:
             api_key=api_key,
             operation=args.operation,
             prompt=args.prompt,
-            language=args.language,
-            slide_count=args.slide_count,
-            template=args.template,
-            ratio=args.ratio,
             export_format=args.export_format,
-            files=args.files,
             file_tokens=args.file_tokens,
             extra_headers=extra_headers,
-            style=args.style
         )
         sys.exit(0 if task_id else 1)
 
@@ -1065,14 +993,8 @@ Examples:
             prompt=args.prompt,
             output_dir=args.output,
             extra_headers=extra_headers,
-            language=args.language,
-            slide_count=args.slide_count,
-            template=args.template,
-            ratio=args.ratio,
-            export_format=args.export_format,
-            files=args.files,
             file_tokens=args.file_tokens,
-            style=args.style
+            export_format=args.export_format,
         )
         sys.exit(0 if success else 1)
 
