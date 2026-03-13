@@ -1,11 +1,17 @@
 {
   "owner": "darinrowe",
   "slug": "openclaw-backup-restore",
-  "displayName": "openclaw-backup-restore",
+  "displayName": "OpenClaw Backup & Restore",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772696981216,
-    "commit": "https://github.com/openclaw/skills/commit/9bec765c90ef35da0f839f03fc315442a8664333"
+    "version": "1.0.2",
+    "publishedAt": 1773369985150,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772696981216,
+      "commit": "https://github.com/openclaw/skills/commit/9bec765c90ef35da0f839f03fc315442a8664333"
+    }
+  ]
 }

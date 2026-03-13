@@ -30,7 +30,8 @@ To trigger a manual backup and sync to your remote repository:
 2. The script will:
    - Read the repo URL from the OpenClaw config.
    - Sync `${HOME}/.openclaw/` to `${HOME}/openclaw-backup/` using `rsync` (respecting `.gitignore`).
-   - Commit changes with a timestamp and push to the remote `main` branch.
+   - Generate a readable commit summary from changed paths (for example workspace/config/runtime/memory).
+   - Commit and push to the remote `main` branch.
 
 **Trigger Phrases**: "Backup OpenClaw now", "Sync my data to GitHub".
 
@@ -57,6 +58,7 @@ To restore your environment on a new or existing machine:
 - **Backup Directory**: `${HOME}/openclaw-backup`
 - **Source Directory**: `${HOME}/.openclaw`
 - **Exclusions**: Defined in the skill's `.gitignore` (includes `node_modules/`, `logs/`, `completions/`, `tmp/`, `dist/`).
+- **Automatic Setup**: The `.gitignore` file is included in this skill and will be copied to `${HOME}/openclaw-backup/` during the first backup run.
 
 ---
 
@@ -68,3 +70,5 @@ If restoring to a **completely new machine**:
 3. Configure SSH access for your Git provider.
 4. Run the restore script provided by this skill.
 5. Run `openclaw onboard` if you need to re-install the daemon service.
+
+ 
