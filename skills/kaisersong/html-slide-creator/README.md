@@ -2,6 +2,10 @@
 
 A skill for [Claude Code](https://claude.ai/claude-code) and [OpenClaw](https://openclaw.ai) that generates stunning, zero-dependency HTML presentations.
 
+**v1.3.0** — PPTX export uses Playwright with your existing system Chrome. Pixel-perfect screenshots, no 300MB Chromium download, no Node.js. Just `pip install playwright python-pptx`.
+
+English | [简体中文](README.zh-CN.md)
+
 ## Features
 
 - **Two-stage workflow** — `--plan` to outline, `--generate` to produce
@@ -29,12 +33,14 @@ Restart Claude Code. Use as `/slide-creator`.
 ### OpenClaw
 
 ```bash
-# Via ClawHub CLI
-clawhub install kaisersong/slide-creator
+# Via ClawHub (recommended)
+clawhub install html-slide-creator
 
 # Or manually
 git clone https://github.com/kaisersong/slide-creator ~/.openclaw/skills/slide-creator
 ```
+
+> ClawHub page: https://clawhub.ai/skills/html-slide-creator
 
 OpenClaw will automatically detect and install dependencies (Pillow, python-pptx, puppeteer, pptxgenjs) on first use.
 
@@ -54,14 +60,14 @@ OpenClaw will automatically detect and install dependencies (Pillow, python-pptx
 | Dependency | Purpose | Auto-installed (OpenClaw) |
 |-----------|---------|--------------------------|
 | Python 3 + `Pillow` | Image processing | ✅ via uv |
-| Python 3 + `python-pptx` | PPT import | ✅ via uv |
-| Node.js + `puppeteer` | PPTX export | ✅ via npm |
-| Node.js + `pptxgenjs` | PPTX export | ✅ via npm |
+| Python 3 + `python-pptx` | PPT import/export | ✅ via uv |
+| Python 3 + `playwright` | PPTX export (uses system Chrome) | ✅ via uv |
+
+Node.js is not required. PPTX export uses your existing Chrome/Edge/Brave — no 300MB Chromium download.
 
 **Claude Code users** — install manually:
 ```bash
-pip install Pillow python-pptx
-# PPTX export: auto-installed in scripts/ on first --export pptx run
+pip install Pillow python-pptx playwright
 ```
 
 ## Output

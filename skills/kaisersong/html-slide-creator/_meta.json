@@ -1,11 +1,17 @@
 {
   "owner": "kaisersong",
   "slug": "html-slide-creator",
-  "displayName": "HTML Slide Creator",
+  "displayName": "Slide Creator",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772882185556,
-    "commit": "https://github.com/openclaw/skills/commit/d7ce512b2baf46c39795115bd2aa0e0dcac24803"
+    "version": "1.4.0",
+    "publishedAt": 1773396908062,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772882185556,
+      "commit": "https://github.com/openclaw/skills/commit/d7ce512b2baf46c39795115bd2aa0e0dcac24803"
+    }
+  ]
 }
