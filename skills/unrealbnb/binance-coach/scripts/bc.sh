@@ -64,10 +64,26 @@ if [[ -z "$PYTHON" ]]; then
 fi
 
 # ── Run via --command flag (clean non-interactive output) ────────────────────
+# Args are joined into a single quoted string passed to --command.
+# Each arg is shell-quoted to prevent injection.
 run_cmd() {
+    local cmd="$1"
     cd "$PROJECT"
     # shellcheck disable=SC2086
-    $PYTHON main.py $LANG_ARGS --command "$1"
+    $PYTHON main.py $LANG_ARGS --command "$cmd"
+}
+
+# Build a safe command string from a base command + args array
+safe_cmd() {
+    local base="$1"; shift
+    local result="$base"
+    for arg in "$@"; do
+        # Strip shell metacharacters — use tr to avoid bash parsing issues with backtick in pattern
+        local clean
+        clean=$(printf '%s' "$arg" | tr -d ';&|$()`{}\\<>')
+        result="$result $clean"
+    done
+    printf '%s' "$result"
 }
 
 # ── Dispatch ─────────────────────────────────────────────────────────────────
@@ -75,20 +91,20 @@ cd "$PROJECT"
 
 case "$COMMAND" in
     portfolio)    run_cmd "portfolio" ;;
-    dca)          run_cmd "dca ${ARGS[*]:-}" ;;
-    market)       run_cmd "market ${ARGS[0]:-BTCUSDT}" ;;
+    dca)          run_cmd "$(safe_cmd dca "${ARGS[@]:-}")" ;;
+    market)       run_cmd "$(safe_cmd market "${ARGS[0]:-BTCUSDT}")" ;;
     fg)           run_cmd "fg" ;;
     behavior)     run_cmd "behavior" ;;
-    alert)        run_cmd "alert ${ARGS[*]}" ;;
+    alert)        run_cmd "$(safe_cmd alert "${ARGS[@]}")" ;;
     alerts)       run_cmd "alerts" ;;
     check-alerts) run_cmd "check-alerts" ;;
-    learn)        run_cmd "learn ${ARGS[0]:-}" ;;
-    project)      run_cmd "project ${ARGS[0]:-BTCUSDT}" ;;
+    learn)        run_cmd "$(safe_cmd learn "${ARGS[0]:-}")" ;;
+    project)      run_cmd "$(safe_cmd project "${ARGS[0]:-BTCUSDT}")" ;;
     coach)        run_cmd "coach" ;;
     weekly)       run_cmd "weekly" ;;
-    ask)          run_cmd "ask ${ARGS[*]}" ;;
+    ask)          run_cmd "$(safe_cmd ask "${ARGS[@]}")" ;;
     models)       run_cmd "models" ;;
-    model)        run_cmd "model ${ARGS[0]:-}" ;;
+    model)        run_cmd "$(safe_cmd model "${ARGS[0]:-}")" ;;
     telegram)
         echo "🤖 Starting BinanceCoach Telegram bot..."
         exec $PYTHON main.py --telegram
@@ -102,6 +118,11 @@ case "$COMMAND" in
         echo "🔄 BinanceCoach update — review before applying"
         echo "   Changelog: https://clawhub.ai/skills/binance-coach"
         echo "   Source:    https://github.com/UnrealBNB/BinanceCoachAI"
+        echo ""
+        echo "   This will:"
+        echo "   • Fetch updated skill files from ClaWHub/GitHub (network access)"
+        echo "   • Run pip install to update Python dependencies from PyPI"
+        echo "   • Your .env and alert data are preserved"
         echo ""
         printf "   Proceed with update? [y/N] "
         read -r confirm
@@ -136,6 +157,42 @@ case "$COMMAND" in
         echo "✅ BinanceCoach updated successfully"
         echo "   Your .env and alert data are preserved."
         ;;
+    snapshot)       run_cmd "snapshot" ;;
+    history)        run_cmd "$(safe_cmd history "${ARGS[0]:-7}")" ;;
+    dca-history)    run_cmd "$(safe_cmd dca-history "${ARGS[0]:-}")" ;;
+    confirm)        run_cmd "$(safe_cmd confirm "${ARGS[@]}")" ;;
+    import-orders)  run_cmd "import-orders" ;;
+    journal)        run_cmd "$(safe_cmd journal "${ARGS[0]:-}")" ;;
+    journal-add)    run_cmd "$(safe_cmd journal-add "${ARGS[@]}")" ;;
+    journal-delete) run_cmd "$(safe_cmd journal-delete "${ARGS[0]:-}")" ;;
+    journal-perf)   run_cmd "journal-perf" ;;
+    pnl)            run_cmd "$(safe_cmd pnl "${ARGS[0]:-}")" ;;
+    pnl-export)     run_cmd "pnl-export" ;;
+    rebalance)      run_cmd "rebalance" ;;
+    targets)        run_cmd "targets" ;;
+    targets-set)    run_cmd "$(safe_cmd targets-set "${ARGS[@]}")" ;;
+    yield)          run_cmd "yield" ;;
+    news)         run_cmd "news ${ARGS[0]:-}" ;;
+    listings)     run_cmd "listings ${ARGS[0]:-}" ;;
+    launchpool)   run_cmd "launchpool" ;;
+    news-check)   run_cmd "news-check" ;;
+    watch)
+        INTERVAL="${ARGS[0]:-60}"
+        echo "👁  Starting BinanceCoach watcher (interval: ${INTERVAL}s)..."
+        echo "    Ctrl+C to stop, or run: bc.sh watch-stop"
+        run_cmd "watch ${INTERVAL}"
+        ;;
+    watch-bg)
+        INTERVAL="${ARGS[0]:-60}"
+        LOG_FILE="$PROJECT/data/watcher.log"
+        nohup bash "${BASH_SOURCE[0]}" watch "$INTERVAL" >> "$LOG_FILE" 2>&1 &
+        BG_PID=$!
+        echo "👁  Watcher started in background (PID: $BG_PID)"
+        echo "    Logs: $LOG_FILE"
+        echo "    Stop: bc.sh watch-stop"
+        ;;
+    watch-stop)   run_cmd "watch-stop" ;;
+    watch-status) run_cmd "watch-status" ;;
     help|--help|-h)
         echo "BinanceCoach — commands:"
         echo "  portfolio            Portfolio health score & analysis"
@@ -148,6 +205,26 @@ case "$COMMAND" in
         echo "  check-alerts         Check if any alert triggered"
         echo "  learn [TOPIC]        Educational lessons"
         echo "  project [SYMBOL]     12-month DCA projection"
+        echo "  journal [COIN]         Show decision journal (filter by COIN optional)"
+        echo "  journal-add COIN BUY/SELL PRICE [AMOUNT] [notes]"
+        echo "                         Log a buy or sell decision"
+        echo "                         e.g.: journal-add ADA buy 0.262 100 \"oversold -49% SMA200\""
+        echo "  journal-delete ID      Delete a journal entry by its id"
+        echo "  journal-perf           Journal performance vs current prices (unrealised P&L)"
+        echo "  pnl [SYMBOL]           P&L from Binance trade history (FIFO, 365 days)"
+        echo "  pnl-export             Export P&L to timestamped CSV for Koinly / CoinTracking"
+        echo "  rebalance            Portfolio rebalancing suggestions"
+        echo "  targets              Show target allocation"
+        echo "  targets-set C% ...   Set targets: targets-set BTC 40 ETH 30 BNB 20 ADA 10"
+        echo "  yield                Stablecoin yield optimizer"
+        echo "  news [N]             Latest Binance news & announcements (default: 5)"
+        echo "  listings [N]         New coin listings (default: 5)"
+        echo "  launchpool           Active launchpools & HODLer airdrops"
+        echo "  news-check           Check for new unseen announcements (heartbeat use)"
+        echo "  watch [SECS]         Watch for new announcements, notify Telegram (default: 60s)"
+        echo "  watch-bg [SECS]      Same but runs in background (nohup)"
+        echo "  watch-stop           Stop the running watcher"
+        echo "  watch-status         Check if watcher is running"
         echo "  coach                AI coaching summary (needs Anthropic key)"
         echo "  weekly               AI weekly brief (needs Anthropic key)"
         echo "  ask <question>       Ask Claude (needs Anthropic key)"

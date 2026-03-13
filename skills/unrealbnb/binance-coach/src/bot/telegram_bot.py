@@ -59,6 +59,20 @@ BOT_COMMANDS = [
     BotCommand("models",      "List Claude models"),
     BotCommand("model",       "Switch Claude model"),
     BotCommand("lang",        "Switch language (en/nl)"),
+    BotCommand("news",        "Latest Binance news & announcements"),
+    BotCommand("listings",    "New coin listings on Binance"),
+    BotCommand("launchpool",  "Active launchpools & HODLer airdrops"),
+    BotCommand("watchstatus", "Check if news watcher is active"),
+    BotCommand("journal",       "Show your decision journal"),
+    BotCommand("journaladd",    "Log a decision (e.g. ADA buy 0.262 100 reason)"),
+    BotCommand("journaldelete", "Delete a journal entry by id"),
+    BotCommand("journalperf",   "Journal P&L vs current prices"),
+    BotCommand("pnl",           "P&L summary (FIFO, 365 days)"),
+    BotCommand("pnlexport",     "Export P&L to CSV and send as file"),
+    BotCommand("rebalance",     "Portfolio rebalancing suggestions"),
+    BotCommand("targets",       "Show target allocation"),
+    BotCommand("targetsset",    "Set target allocation (e.g. BTC 40 ETH 30)"),
+    BotCommand("yield",         "Stablecoin yield optimizer"),
 ]
 
 
@@ -652,6 +666,221 @@ def build_app(client: Spot, market: MarketData):
 
     app.add_handler(CallbackQueryHandler(lang_callback, pattern=r"^setlang:"))
 
+    # ── News / Listings / Launchpool commands ─────────────────────────────
+
+    async def news_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        await _send(update, "<i>Fetching latest Binance news...</i>")
+        from modules.news import BinanceNews
+        news_mod = BinanceNews()
+        articles = news_mod.get_latest_news(limit=5)
+        await _send(update, news_mod.format_news_html(articles))
+
+    async def listings_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        await _send(update, "<i>Fetching new listings...</i>")
+        from modules.news import BinanceNews
+        news_mod = BinanceNews()
+        articles = news_mod.get_new_listings(limit=5)
+        await _send(update, news_mod.format_listings_html(articles))
+
+    async def launchpool_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        await _send(update, "<i>Checking launchpools &amp; airdrops...</i>")
+        from modules.news import BinanceNews
+        news_mod = BinanceNews()
+        articles = news_mod.get_launchpool(limit=5)
+        await _send(update, news_mod.format_launchpool_html(articles))
+
+    app.add_handler(CommandHandler("news",        news_cmd))
+    app.add_handler(CommandHandler("listings",    listings_cmd))
+    app.add_handler(CommandHandler("launchpool",  launchpool_cmd))
+
+    # ── Decision Journal ─────────────────────────────────────────────────────
+
+    async def journal_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        from modules.journal import DecisionJournal
+        j = DecisionJournal(market=market)
+        coin_arg = context.args[0].upper() if context.args else None
+        await _send(update, j.format_journal_html(coin=coin_arg))
+
+    async def journaladd_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Usage: /journaladd COIN BUY/SELL PRICE [AMOUNT] [notes...]"""
+        if not await auth(update): return
+        args = context.args
+        if not args or len(args) < 3:
+            await _send(update,
+                "❌ Usage: <code>/journaladd COIN BUY/SELL PRICE [AMOUNT] [notes...]</code>\n"
+                "Example: <code>/journaladd ADA buy 0.262 100 oversold -49% SMA200</code>"
+            )
+            return
+        from modules.journal import DecisionJournal
+        j = DecisionJournal(market=market)
+        coin_arg   = args[0]
+        action_arg = args[1]
+        try:
+            price_arg = float(args[2])
+        except ValueError:
+            await _send(update, f"❌ Invalid price: <code>{args[2]}</code>")
+            return
+        # Fix: is not None check — amount=0 is valid but falsy
+        try:
+            amount_arg = float(args[3]) if len(args) > 3 and _is_num_str(args[3]) else None
+        except (ValueError, IndexError):
+            amount_arg = None
+        notes_start = 4 if amount_arg is not None else 3
+        notes_arg   = " ".join(args[notes_start:]) if len(args) > notes_start else ""
+        try:
+            j.add_entry(coin_arg, action_arg, price_arg, amount_arg, notes_arg)
+            await _send(update,
+                f"✅ Logged: <b>{action_arg.upper()} {coin_arg.upper()}</b> @ ${price_arg:,.4f}"
+                + (f" (${amount_arg:,.2f})" if amount_arg is not None else "")
+                + (f"\n<i>{notes_arg}</i>" if notes_arg else "")
+            )
+        except ValueError as e:
+            await _send(update, f"❌ {e}")
+
+    async def journaldelete_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Usage: /journaldelete <id>"""
+        if not await auth(update): return
+        if not context.args or not context.args[0].isdigit():
+            await _send(update, "❌ Usage: <code>/journaldelete &lt;id&gt;</code>\nFind the id with /journal")
+            return
+        from modules.journal import DecisionJournal
+        j = DecisionJournal(market=market)
+        ok = j.delete_entry(int(context.args[0]))
+        if ok:
+            await _send(update, f"🗑️ Entry #{context.args[0]} deleted.")
+        else:
+            await _send(update, f"❌ No entry with id={context.args[0]}")
+
+    async def journalperf_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        await _send(update, "<i>Calculating journal performance...</i>")
+        from modules.journal import DecisionJournal
+        j = DecisionJournal(market=market)
+        await _send(update, j.format_performance_html())
+
+    app.add_handler(CommandHandler("journal",       journal_cmd))
+    app.add_handler(CommandHandler("journaladd",    journaladd_cmd))
+    app.add_handler(CommandHandler("journaldelete", journaldelete_cmd))
+    app.add_handler(CommandHandler("journalperf",   journalperf_cmd))
+
+    # ── P&L Calculator ───────────────────────────────────────────────────────
+
+    async def pnl_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        await _send(update, "<i>Fetching trade history from Binance (90 days)...</i>")
+        from modules.pnl import PnLCalculator
+        pnl_mod = PnLCalculator(client, market, portfolio_mod)
+        sym = context.args[0].upper() if context.args else None
+        await _send(update, pnl_mod.format_pnl_html(symbol=sym))
+
+    async def pnlexport_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        await _send(update, "<i>Generating P&amp;L export (365 days)...</i>")
+        from modules.pnl import PnLCalculator
+        pnl_mod = PnLCalculator(client, market, portfolio_mod)
+        export_path = pnl_mod.export_csv()
+        if export_path and export_path.exists():
+            await update.message.reply_document(
+                document=open(export_path, "rb"),
+                filename=export_path.name,
+                caption=(
+                    "💰 P&L Export (FIFO, 365 days)\n"
+                    "Import into Koinly or CoinTracking for a full tax report.\n"
+                    "⚠️ Not tax advice — fees excluded."
+                )
+            )
+        else:
+            await _send(update, "❌ No trade history found to export.")
+
+    app.add_handler(CommandHandler("pnl",       pnl_cmd))
+    app.add_handler(CommandHandler("pnlexport", pnlexport_cmd))
+
+    # ── Rebalancing ──────────────────────────────────────────────────────────
+
+    async def rebalance_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        await _send(update, "<i>Analysing portfolio vs targets...</i>")
+        from modules.rebalance import RebalanceAdvisor
+        rb = RebalanceAdvisor(portfolio_mod)
+        await _send(update, rb.format_rebalance_html())
+
+    async def targets_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        from modules.rebalance import RebalanceAdvisor
+        rb = RebalanceAdvisor(portfolio_mod)
+        await _send(update, rb.format_targets_html())
+
+    async def targetsset_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        # /targetsset BTC 40 ETH 30 BNB 20 ADA 10
+        from modules.rebalance import RebalanceAdvisor
+        rb = RebalanceAdvisor(portfolio_mod)
+        args = context.args
+        if not args:
+            await _send(update, "❌ Usage: <code>/targetsset BTC 40 ETH 30 BNB 20 ADA 10</code>")
+            return
+        allocations = {}
+        i = 0
+        while i < len(args) - 1:
+            try:
+                allocations[args[i].upper()] = float(args[i + 1])
+                i += 2
+            except (ValueError, IndexError):
+                i += 1
+        if not allocations:
+            await _send(update, "❌ Usage: <code>/targetsset BTC 40 ETH 30 BNB 20 ADA 10</code>")
+            return
+        # Show what's being replaced before saving
+        old_targets = rb._load_targets()
+        ok = rb.set_targets(allocations)
+        if ok:
+            lines = ["✅ <b>Target allocation saved:</b>"]
+            for coin, pct in sorted(allocations.items(), key=lambda x: -x[1]):
+                lines.append(f"• <b>{coin}</b> — {pct:.1f}%")
+            if old_targets:
+                lines.append("\n<i>Previous targets were replaced.</i>")
+            await _send(update, "\n".join(lines))
+        else:
+            total = sum(allocations.values())
+            await _send(update, f"❌ Targets must sum to 100% (got {total:.1f}%). Check your numbers.")
+
+    app.add_handler(CommandHandler("rebalance",  rebalance_cmd))
+    app.add_handler(CommandHandler("targets",    targets_cmd))
+    app.add_handler(CommandHandler("targetsset", targetsset_cmd))
+
+    # ── Yield Optimizer ──────────────────────────────────────────────────────
+
+    async def yield_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        await _send(update, "<i>Checking Binance Simple Earn rates...</i>")
+        from modules.yield_optimizer import YieldOptimizer
+        yo = YieldOptimizer(client, portfolio_mod)
+        await _send(update, yo.format_yield_html())
+
+    def _is_num_str(s: str) -> bool:
+        try:
+            float(s)
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    app.add_handler(CommandHandler("yield", yield_cmd))
+
+    async def watchstatus_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await auth(update): return
+        from modules.news import watcher_status
+        status = watcher_status()
+        if status["running"]:
+            await _send(update, f"👁 <b>Watcher is running</b> (PID {status['pid']})\nPolling Binance every 2 min via bot job queue.")
+        else:
+            await _send(update, "🔴 <b>Standalone watcher not running.</b>\nThe bot's built-in job checks every 2 min automatically while the bot is active.\nFor always-on watching, run: <code>bc.sh watch-bg</code> on your server.")
+
+    app.add_handler(CommandHandler("watchstatus", watchstatus_cmd))
+
     # ── Background alert polling ───────────────────────────────────────────
     ALERT_POLL_INTERVAL = 300  # seconds (5 minutes)
     authorized_uid = int(os.getenv("TELEGRAM_USER_ID", "0"))
@@ -681,6 +910,38 @@ def build_app(client: Spot, market: MarketData):
         except Exception as exc:
             logger.warning("Alert poll error: %s", exc)
 
+    async def news_check_job(context) -> None:
+        """Background job: check for new Binance announcements every 30 min."""
+        try:
+            from modules.news import BinanceNews
+            news_mod = BinanceNews(portfolio=portfolio_mod)
+            result = news_mod.check_and_format_new()
+            if not result["has_new"] or not authorized_uid:
+                return
+            parts_html = []
+            if result["launchpool"]:
+                parts_html.append(news_mod.format_launchpool_html(result["launchpool"]))
+            if result["listings"]:
+                parts_html.append(news_mod.format_listings_html(result["listings"]))
+            if result["news"]:
+                parts_html.append(news_mod.format_news_html(result["news"], "📰 New Binance Announcement"))
+            if result["portfolio_hits"]:
+                hits_text = "\n".join(
+                    f"⚡ {h.get('matched_asset','?')}: {h['title']}"
+                    for h in result["portfolio_hits"]
+                )
+                parts_html.append(f"<b>⚡ Affects your portfolio:</b>\n{hits_text}")
+            if parts_html:
+                msg = "\n\n".join(parts_html)
+                for chunk in split_html(msg):
+                    await context.bot.send_message(
+                        chat_id=authorized_uid,
+                        text=chunk,
+                        parse_mode=HTML,
+                    )
+        except Exception as exc:
+            logger.warning("News check job error: %s", exc)
+
     async def post_init(application: Application):
         await application.bot.set_my_commands(BOT_COMMANDS)
         logger.info("Bot commands registered with Telegram")
@@ -689,12 +950,19 @@ def build_app(client: Spot, market: MarketData):
             application.job_queue.run_repeating(
                 poll_alerts,
                 interval=ALERT_POLL_INTERVAL,
-                first=60,  # first check after 1 minute
+                first=60,
                 name="alert_poller",
             )
             logger.info("Alert poller started — checking every %ds", ALERT_POLL_INTERVAL)
+            application.job_queue.run_repeating(
+                news_check_job,
+                interval=120,  # 2 minutes
+                first=90,      # first check after 90 seconds
+                name="news_poller",
+            )
+            logger.info("News poller started — checking every 2 minutes")
         else:
-            logger.warning("TELEGRAM_USER_ID not set — alert polling disabled")
+            logger.warning("TELEGRAM_USER_ID not set — alert/news polling disabled")
 
     app.post_init = post_init
 
