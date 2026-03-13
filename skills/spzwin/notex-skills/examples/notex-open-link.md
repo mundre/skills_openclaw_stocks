@@ -17,13 +17,13 @@
 - 先返回给前端可访问链接；可选自动打开浏览器
 
 ## 🔐 鉴权规则（必须）
-1. 若会话有可用 token，直接复用。
-2. 若没有 token，只向用户索取/确认 `CWork Key`，再换取 token。
+1. 优先读取环境变量 `XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID`（兼容 `XG_USER_PERSIONID`），三者齐全则直接复用。
+2. 若环境变量缺失/无效，只向用户索取/确认 `CWork Key`，再换取 token。
 3. 不向用户解释 `token/x-user-id/personId/login` 细节。
 
 ## 📝 标准流程
 1. 固定使用 `https://notex.aishuo.co/`。
-2. 获取有效 token（复用或通过 `CWork Key` 换取）。
+2. 获取有效 token（优先环境变量；缺失则通过 `CWork Key` 换取）。
 3. 生成并返回 `https://notex.aishuo.co/?token=...`。
 4. 若用户允许且环境支持，自动打开浏览器。
 

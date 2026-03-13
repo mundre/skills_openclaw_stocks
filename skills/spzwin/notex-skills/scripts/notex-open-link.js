@@ -6,19 +6,16 @@
  *   # 推荐：提供 CWork Key，脚本自动换取 token
  *   node notex-open-link.js --key CWORK_KEY
  *
+ *   # 若已设置环境变量 XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID，可省略 --key
+ *
  *   # 自动打开浏览器（可选）
  *   node notex-open-link.js --key CWORK_KEY --auto-open true
  *
- *   # 内部调试：复用 token
- *   node notex-open-link.js --access-token TOKEN --user-id u_001
  */
 
 const { spawn } = require('child_process');
 
-const AUTH_CONFIG = {
-  cworkBaseUrl: 'https://cwork-web.mediportal.com.cn',
-  cworkAppCode: 'cms_gpt',
-};
+const AUTH_CONFIG = {};
 
 const PROD_NOTEX_HOST = 'notex.aishuo.co';
 const DEFAULT_NOTEX_HOME_URL = 'https://notex.aishuo.co/';
@@ -89,34 +86,45 @@ async function requestJson(url, options = {}) {
 }
 
 async function exchangeTokenByKey(cworkKey) {
-  const url = `${AUTH_CONFIG.cworkBaseUrl}/user/login/appkey?appCode=${AUTH_CONFIG.cworkAppCode}&appKey=${encodeURIComponent(cworkKey)}`;
+  const url = `https://notex.aishuo.co/noteX/api/user/nologin/appkey?appKey=${encodeURIComponent(cworkKey)}`;
   const data = await requestJson(url, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     timeoutMs: 30000,
   });
 
-  if (!data || !data.xgToken || !data.userId) {
+  if (!data || !data['access-token'] || !data.userId) {
     throw new Error('CWork Key 换 token 失败：返回字段不完整');
   }
 
   return {
-    accessToken: data.xgToken,
+    accessToken: data['access-token'],
     userId: data.userId,
   };
 }
 
+function getEnvAuthContext() {
+  const envToken = process.env.XG_USER_TOKEN;
+  const envUserId = process.env.XG_USER_ID;
+  const envPersonId = process.env.XG_USER_PERSONID || process.env.XG_USER_PERSIONID;
+  if (envToken && envUserId && envPersonId) {
+    return { accessToken: envToken, userId: envUserId, personId: envPersonId };
+  }
+  return null;
+}
+
 async function resolveAccessToken(args) {
-  if (args['access-token']) {
+  const envAuth = getEnvAuthContext();
+  if (envAuth) {
     return {
-      accessToken: args['access-token'],
-      source: 'reused-token',
-      userId: args['user-id'] || '',
+      accessToken: envAuth.accessToken,
+      source: 'env',
+      userId: envAuth.userId,
     };
   }
 
   if (!args.key) {
-    throw new Error('缺少鉴权参数：请提供 --key（推荐），或内部调试时提供 --access-token');
+    throw new Error('缺少鉴权参数：请提供环境变量 (XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID) 或 --key（推荐）');
   }
 
   const data = await exchangeTokenByKey(args.key);
@@ -186,17 +194,14 @@ function printUsage() {
   # 推荐：使用 CWork Key 自动换取 token
   node notex-open-link.js --key <CWorkKey>
 
+  # 若已设置环境变量 XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID，可省略 --key
+
   # 自动打开浏览器（可选）
   node notex-open-link.js --key <CWorkKey> --auto-open true
-
-  # 内部调试：复用 token
-  node notex-open-link.js --access-token <token> --user-id <uid>
 
 可选参数:
   --url <NoteXUrl>            可选，默认 https://notex.aishuo.co/（仅支持首页路由）
   --key <CWorkKey>            CWork Key（推荐）
-  --access-token <token>      内部调试：复用已有 token
-  --user-id <uid>             内部调试：用户 ID（可选）
   --auto-open <true|false>    是否自动打开浏览器（默认 false）
 `);
 }

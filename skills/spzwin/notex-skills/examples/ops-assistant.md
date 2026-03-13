@@ -10,8 +10,8 @@
 
 ## 🔐 前置鉴权 (Mandatory Precheck)
 调用 OPS 接口前必须先做鉴权预检：
-- 若会话中已有可用授权态：直接复用，不再追问鉴权细节
-- 若无可用授权态：只向用户索取/确认 `CWork Key`
+- 优先读取环境变量 `XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID`（兼容 `XG_USER_PERSIONID`），三者齐全则直接复用
+- 若环境变量缺失/无效：只向用户索取/确认 `CWork Key`
 - 对用户隐藏实现细节：不在话术中提及 `token/x-user-id/personId/login`
 
 ## 🏗️ 我的核心架构（Agent + Answer 双层）
@@ -23,6 +23,26 @@
 | **Agent 层** | 多维度数据检索与推理（向系统发起工具调用，最多 20 步）| 结构化数据摘要 (summary) / 追问 (reply) |
 | **Answer 层** | 将收集到的数据摘要转化为拟人化、简洁的中文回答 | Markdown 格式的最终回复 |
 
+## 🧠 本体论思想与实体关系（为什么这样设计）
+
+我们不是把 OPS 问题当成“自然语言检索”，而是当成“实体关系推理”：
+
+- 语义统一：把“用户、部门、任务、分享、查看、告警”统一成实体与关系，避免同义词导致口径漂移。
+- 可解释：每个结论都能追溯到“哪条关系链 + 哪个工具结果”，不是黑盒猜测。
+- 可审计：关系路径可以落库（`ops_agent_traces`），便于复盘“为什么得到这个结论”。
+- 可扩展：新增业务维度时，只需补实体关系或工具，不用推翻整套问答框架。
+
+核心实体关系（示例）：
+
+| From | Relation | To | 典型问题 |
+|---|---|---|---|
+| User | BELONGS_TO | Dept | 这个用户属于哪个部门？ |
+| User | CREATED | SlideTask | 这批用户是否创建过幻灯片？ |
+| SlideTask | SHARED_AS | TaskShare | 这些任务是否被分享？ |
+| TaskShare | VIEWED_BY | TaskShareView | 分享链接是否有人看过？看了几次？ |
+| SlideTask | EDITED | ActivityLog | 任务编辑深度如何？ |
+| Module | TRIGGERED | Alert | 哪个模块引发了告警？ |
+
 ## 🛠️ 什么情况下我来干 (Triggers)
 
 当用户在对话中提问包含以下意图时，由我来介入处理：
@@ -33,7 +53,7 @@
 - 组织维度的使用分析（例如："哪个科室用 AI 最多？"）
 - 内容增长趋势分析（例如："最近用户增长趋势如何？"）
 
-## 🎯 我能干什么 (16 个 Ontology 工具)
+## 🎯 我能干什么 (17 个 Ontology 工具)
 
 我可以调用一组高频的 Ontology 只读接口（Function Calling）来获取多维度的数据事实：
 
@@ -62,10 +82,86 @@
 12. `ontology_getNotebookBreakdown` — 笔记本内容分布统计（按业务类别/分享量/浏览量）
 13. `ontology_getUserGrowthTrend` — 用户注册增长趋势（按日/周统计）
 14. `ontology_getSharingStats` — 分享生态洞察（分享总次数/接收人数/热门内容）
-15. `ontology_getSlideLifecycleByRegistrationCohort` — 注册队列幻灯片闭环分析（创建/分享/被查看）
+15. `ontology_getUserDirectory` — 用户目录检索（分页用户名单/部门/注册时间/重点关注）
+16. `ontology_getSlideLifecycleByRegistrationCohort` — 注册队列幻灯片闭环分析（创建/分享/被查看）
 
 **━━ ⚠️ 兜底工具（最后手段）━━**
-16. `ontology_customQuery` — 受控的自定义查询（白名单4张表、行数上限2000）
+17. `ontology_customQuery` — 受控的自定义查询（白名单4张表、行数上限2000）
+
+## 🧬 关系路径输出规范（Relation Path Output Spec）
+
+当 Agent 进入“情况 B（数据已收集完毕）”时，必须输出三块内容：
+
+1. `relationPath`：实体关系链路数组（按推理顺序）。
+2. `entitySnapshot`：本次结论涉及的关键实体口径（仅展示友好字段）。
+3. `summary`：最终数据发现摘要（给 Answer 层生成用户回复）。
+
+规范示例（简化）：
+
+```json
+{
+  "thought": "[观察]... [反思]... [计划]...",
+  "relationPath": [
+    { "step": 1, "from": "User", "relation": "CREATED", "to": "SlideTask", "constraint": "registeredAfter>=2026-03-20", "evidence": "ontology_getSlideLifecycleByRegistrationCohort.users[].slideCreatedCount" },
+    { "step": 2, "from": "SlideTask", "relation": "SHARED_AS", "to": "TaskShare", "evidence": "ontology_getSlideLifecycleByRegistrationCohort.users[].shareLinkCount" },
+    { "step": 3, "from": "TaskShare", "relation": "VIEWED_BY", "to": "TaskShareView", "evidence": "ontology_getSlideLifecycleByRegistrationCohort.users[].shareViewedCount" }
+  ],
+  "entitySnapshot": {
+    "users": ["用户名+部门（不含ID）"],
+    "modules": ["模块中文名"]
+  },
+  "summary": "..."
+}
+```
+
+约束：
+- 必须可解释到字段级证据（`工具名.字段路径`）。
+- 禁止暴露 `token/x-user-id/personId/内部主键`。
+
+## ♻️ Agent 闭环能力（规划 / 反思 / 检查）
+
+为确保运营问题“可聊全、聊准确、可复盘”，ops-chat 采用固定闭环：
+
+1. 规划（Plan）
+- 把问题拆成主问题和子问题，并映射到实体关系链。
+- 先统一口径：时间范围、对象范围、统计粒度。
+
+2. 执行（Act）
+- 优先调用专用本体工具，`customQuery` 仅作为最后兜底。
+- 单次工具调用只解决一个子问题，避免口径混杂。
+
+3. 反思（Reflect）
+- 检查当前返回值是否足以回答子问题。
+- 发现异常值（全 0、突增、突降）先交叉验证再输出结论。
+
+4. 校验（Check）
+- 输出前逐项确认：维度覆盖完整、关键数字有证据、口径一致、无敏感字段。
+
+## 🗺️ 场景覆盖矩阵（Ontology + Agent）
+
+1. 注册队列转化（例如“3月20号后注册用户是否做过幻灯片、是否分享/被查看”）
+- 推荐链路：`ontology_getSlideLifecycleByRegistrationCohort`
+- 输出：用户（姓名+部门）、创建次数、分享次数、查看次数、闭环转化。
+
+2. 用户目录与对象盘点
+- 推荐链路：`ontology_getUserDirectory`
+- 输出：总用户数、分页名单、部门归属（不展示内部ID）。
+
+3. 用户分层与重点人群
+- 推荐链路：`ontology_getActiveUsersRanking` → `ontology_getUserProfile` → `ontology_getUserActivity`
+- 输出：高价值用户、异常行为用户、分层建议。
+
+4. 模块质量与故障影响
+- 推荐链路：`ontology_getModuleStats` → `ontology_getFailureAnalysis` → `ontology_getAlerts`
+- 输出：失败率、受影响人群/部门、影响范围。
+
+5. 组织经营与增长分析
+- 推荐链路：`ontology_getDeptBreakdown` + `ontology_getUserGrowthTrend`
+- 输出：部门贡献、增长趋势、结构短板。
+
+6. 分享传播链路
+- 推荐链路：`ontology_getSharingStats` 或 `ontology_getSlideLifecycleByRegistrationCohort`
+- 输出：分享发生率、查看转化、传播深度。
 
 ## 🗣️ 追问与消歧协议
 

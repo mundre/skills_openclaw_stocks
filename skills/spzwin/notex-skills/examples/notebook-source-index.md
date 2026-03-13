@@ -10,8 +10,8 @@
 
 ## 🔐 前置鉴权 (Mandatory Precheck)
 调用索引/详情接口前必须先做鉴权预检：
-- 若会话中已有可用授权态：直接复用，不再追问鉴权细节
-- 若无可用授权态：只向用户索取/确认 `CWork Key`
+- 优先读取环境变量 `XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID`（兼容 `XG_USER_PERSIONID`），三者齐全则直接复用
+- 若环境变量缺失/无效：只向用户索取/确认 `CWork Key`
 - 对用户隐藏实现细节：不在话术中提及 `token/x-user-id/personId/login`
 
 ## 🛠️ 什么情况下我来干 (Triggers)

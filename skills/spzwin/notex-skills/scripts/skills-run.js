@@ -6,11 +6,10 @@
  * 
  * 使用方式：
  *   node skills-run.js --skill <技能> --key <CWork Key> --title "标题" --content "内容"
- *   # 内部调试：node skills-run.js --skill <技能> --access-token <token> --user-id <uid> [--person-id <pid>] --title "标题" --content "内容"
+ *   # 若已设置环境变量 XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID，可省略 --key
  * 
  * 示例：
  *   node skills-run.js --skill mindmap --key YOUR_KEY --title "口腔AI趋势" --content "主要数据..."
- *   # 内部调试：node skills-run.js --skill mindmap --access-token YOUR_TOKEN --user-id u_001 --title "口腔AI趋势" --content "主要数据..."
  *   node skills-run.js --skill slide   --key YOUR_KEY --title "年度汇报"   --content "销售数据..."
  *   node skills-run.js --skill quiz    --key YOUR_KEY --title "护理测验"   --content "护理规范..."
  *   node skills-run.js --skill ops-chat --key YOUR_KEY --content "查询活跃用户排名"
@@ -27,10 +26,9 @@ const http = require('http');
 
 // ===================== 配置 =====================
 const CONFIG = {
-    cworkBaseUrl: 'https://cwork-web.mediportal.com.cn',
-    cworkAppCode: 'cms_gpt',
     notexBaseUrl: 'https://notex.aishuo.co/noteX',
-    authorizationKey: 'BP',              // 固定值，已验证可用
+    authorizationKeyCreator: 'skill',    // 创作类固定值
+    authorizationKeyOps: 'skill',           // ops-chat 固定值
     pollIntervalMs: 60000,   // 每 60 秒轮询一次
     pollMaxTimes: 20,        // 最多 20 次（20 分钟上限）
 };
@@ -69,7 +67,6 @@ function ensureProdUrl(rawUrl, expectedHost, label) {
 }
 
 function validateConfig() {
-    CONFIG.cworkBaseUrl = ensureProdUrl(CONFIG.cworkBaseUrl, 'cwork-web.mediportal.com.cn', 'cworkBaseUrl');
     const notexUrl = ensureProdUrl(CONFIG.notexBaseUrl, 'notex.aishuo.co', 'notexBaseUrl');
     if (!/\/noteX(\/api)?$/i.test(notexUrl)) {
         throw new Error('notexBaseUrl 路径必须是 /noteX 或 /noteX/api');
@@ -112,47 +109,67 @@ function request(url, options = {}) {
     });
 }
 
-// Step 1: 用 CWork Key 换取 xgToken
+// Step 1: 用 CWork Key 通过 NoteX 代理换取 token
 async function getXgToken(cwKey) {
-    console.log('\n[Step 1] 用 CWork Key 换取 xgToken...');
-    const url = `${CONFIG.cworkBaseUrl}/user/login/appkey?appCode=${CONFIG.cworkAppCode}&appKey=${cwKey}`;
+    console.log('\n[Step 1] 用 CWork Key 换取 token（通过 NoteX 代理）...');
+    const url = `${CONFIG.notexBaseUrl}/api/user/nologin/appkey?appKey=${encodeURIComponent(cwKey)}`;
     const res = await request(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
     const data = res.json();
 
-    if (data.resultCode !== 1 || !data.data?.xgToken) {
-        throw new Error(`获取 xgToken 失败: ${data.resultMsg || JSON.stringify(data)}`);
+    const resData = data.data || {};
+    const xgToken = resData['access-token'];
+    const userId = resData.userId;
+    const personId = resData.personId;
+    if (data.resultCode !== 1 || !xgToken || !userId || !personId) {
+        throw new Error(`获取 token 失败: ${data.resultMsg || JSON.stringify(data)}`);
     }
 
-    console.log(`✅ xgToken 获取成功`);
-    console.log(`   userId:   ${data.data.userId}`);
-    console.log(`   personId: ${data.data.personId}`);
-    return data.data; // { xgToken, userId, personId }
+    console.log(`✅ token 获取成功`);
+    console.log(`   userId:   ${userId}`);
+    console.log(`   personId: ${personId}`);
+    return { xgToken, userId, personId };
+}
+
+function getEnvAuthContext() {
+    const envToken = process.env.XG_USER_TOKEN;
+    const envUserId = process.env.XG_USER_ID;
+    const envPersonId = process.env.XG_USER_PERSONID || process.env.XG_USER_PERSIONID;
+    if (envToken && envUserId && envPersonId) {
+        return { xgToken: envToken, userId: envUserId, personId: envPersonId };
+    }
+    return null;
 }
 
 /**
  * 统一鉴权预检：
- * 1) 默认使用 CWork Key 自动换取授权
- * 2) 内部调试时可复用传入 token（--access-token + --user-id）
+ * 1) 优先使用环境变量 XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID
+ * 2) 其次使用 CWork Key 自动换取授权
+ *
  */
 async function resolveAuthContext(args) {
-    if (args['access-token'] && args['user-id']) {
-        console.log('\n[Auth] 检测到已提供 token，直接复用...');
-        return {
-            xgToken: args['access-token'],
-            userId: args['user-id'],
-            personId: args['person-id'] || args['user-id']
-        };
+    const envAuth = getEnvAuthContext();
+    if (envAuth) {
+        console.log('\n[Auth] 使用环境变量鉴权 (XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID)');
+        return envAuth;
     }
 
     if (args.key) {
         return await getXgToken(args.key);
     }
-
-    throw new Error('缺少鉴权参数：请提供 --key（推荐），或内部调试时同时提供 --access-token 与 --user-id');
+    throw new Error('缺少鉴权参数：请提供环境变量 (XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID) 或 --key（推荐）');
 }
 
 // Step 2: 提交技能生成任务
 async function createTask(userData, skill, title, content, require_text) {
+    if (!userData?.userId) {
+        throw new Error('缺少 userId：必须先通过环境变量或 CWork Key 获取 x-user-id');
+    }
+    if (!userData?.personId) {
+        throw new Error('缺少 personId：必须先通过环境变量或 CWork Key 获取 personId');
+    }
+    if (!userData?.xgToken) {
+        throw new Error('缺少 access-token：必须先通过环境变量或 CWork Key 获取 access-token');
+    }
     const info = SKILL_INFO[skill];
     console.log(`\n[Step 2] 提交「${info.name}」生成任务...`);
 
@@ -171,7 +188,7 @@ async function createTask(userData, skill, title, content, require_text) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'authorization': CONFIG.authorizationKey,
+            'authorization': CONFIG.authorizationKeyCreator,
             'personId': String(userData.personId),
             'x-user-id': userData.userId,
             'access-token': userData.xgToken,
@@ -226,6 +243,15 @@ async function pollTaskStatus(taskId, xgToken, skillName) {
 
 // Step 2.B: 专门处理 ops-chat 新接口
 async function callOpsChat(userData, message, timeoutMs = 300000) {
+    if (!userData?.userId) {
+        throw new Error('缺少 userId：必须先通过环境变量或 CWork Key 获取 x-user-id');
+    }
+    if (!userData?.personId) {
+        throw new Error('缺少 personId：必须先通过环境变量或 CWork Key 获取 personId');
+    }
+    if (!userData?.xgToken) {
+        throw new Error('缺少 access-token：必须先通过环境变量或 CWork Key 获取 access-token');
+    }
     if (!message) throw new Error('ops-chat 需要提供提问内容 (--content)');
     console.log(`\n[Step 2] 请求 OPS 智能聊天 (自动最长等待 ${timeoutMs / 60000} 分钟)...`);
 
@@ -241,7 +267,8 @@ async function callOpsChat(userData, message, timeoutMs = 300000) {
             'Content-Type': 'application/json',
             'x-user-id': userData.userId,
             'access-token': userData.xgToken,
-            'authorization': CONFIG.authorizationKey, // 透传权限
+            'personId': String(userData.personId),
+            'authorization': CONFIG.authorizationKeyOps, // 透传权限
         },
         body,
         timeout: timeoutMs
@@ -272,9 +299,9 @@ async function main() {
         process.exit(1);
     }
     // 鉴权参数校验：必须满足其一
-    const hasReusableToken = !!(args['access-token'] && args['user-id']);
-    if (!hasReusableToken && !args.key) {
-        console.error('❌ 请提供鉴权信息：--key <CWork Key>（推荐），或内部调试参数 (--access-token <token> + --user-id <uid>)');
+    const hasEnvAuth = !!(process.env.XG_USER_TOKEN && process.env.XG_USER_ID && (process.env.XG_USER_PERSONID || process.env.XG_USER_PERSIONID));
+    if (!hasEnvAuth && !args.key) {
+        console.error('❌ 请提供鉴权信息：环境变量 XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID，或 --key <CWork Key>（推荐）');
         process.exit(1);
     }
 

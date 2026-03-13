@@ -8,22 +8,18 @@
  * 3) 可配置定时轮询，持续全量刷新索引
  *
  * 用法示例：
+ *   # 若已设置环境变量 XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID，可省略 --key
  *   # 方式1（默认）：提供 CWork Key，脚本自动完成授权
  *   node source-index-sync.js --mode index --base-url https://notex.aishuo.co/noteX --key CWORK_KEY
  *   node source-index-sync.js --mode detail --base-url https://notex.aishuo.co/noteX --key CWORK_KEY --notebook-id nb_xxx
  *   node source-index-sync.js --mode detail --base-url https://notex.aishuo.co/noteX --key CWORK_KEY --source-id src_xxx
  *   node source-index-sync.js --mode index --base-url https://notex.aishuo.co/noteX --key CWORK_KEY --interval-minutes 60
  *
- *   # 方式2（内部调试）：复用已拿到的 token
- *   node source-index-sync.js --mode index --base-url https://notex.aishuo.co/noteX --user-id u_001 --access-token TOKEN
  */
 
 const fs = require('fs');
 const path = require('path');
-const AUTH_CONFIG = {
-  cworkBaseUrl: 'https://cwork-web.mediportal.com.cn',
-  cworkAppCode: 'cms_gpt',
-};
+const AUTH_CONFIG = {};
 const PROD_NOTEX_HOST = 'notex.aishuo.co';
 const PROD_NOTEX_BASE_URL = 'https://notex.aishuo.co/noteX';
 
@@ -102,13 +98,22 @@ async function writeJson(filePath, data) {
 }
 
 function buildHeaders(args) {
+  if (!args['user-id']) {
+    throw new Error('缺少 user-id：必须先通过环境变量或 CWork Key 获取 x-user-id');
+  }
+  if (!args['access-token']) {
+    throw new Error('缺少 access-token：必须先通过环境变量或 CWork Key 获取 access-token');
+  }
+  if (!args['person-id']) {
+    throw new Error('缺少 personId：必须先通过环境变量或 CWork Key 获取 personId');
+  }
   const headers = {
     'Content-Type': 'application/json',
     'x-user-id': args['user-id'],
+    'access-token': args['access-token'],
+    'personId': args['person-id'],
   };
-  if (args['access-token']) headers['access-token'] = args['access-token'];
-  headers.authorization = args['authorization'] || 'BP';
-  if (args['person-id']) headers.personId = args['person-id'];
+  headers.authorization = args['authorization'] || 'skill';
   return headers;
 }
 
@@ -154,50 +159,59 @@ function buildApiUrl(baseUrl, apiPath) {
 }
 
 async function exchangeTokenByKey(cworkKey) {
-  const url = `${AUTH_CONFIG.cworkBaseUrl}/user/login/appkey?appCode=${AUTH_CONFIG.cworkAppCode}&appKey=${encodeURIComponent(cworkKey)}`;
+  const url = `${PROD_NOTEX_BASE_URL}/api/user/nologin/appkey?appKey=${encodeURIComponent(cworkKey)}`;
   const data = await requestJson(url, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     timeoutMs: 30000,
   });
 
-  if (!data || !data.xgToken || !data.userId) {
+  if (!data || !data['access-token'] || !data.userId || !data.personId) {
     throw new Error('CWork Key 换 token 失败：返回字段不完整');
   }
 
   return {
-    accessToken: data.xgToken,
+    accessToken: data['access-token'],
     userId: data.userId,
-    personId: data.personId || data.userId,
+    personId: data.personId,
   };
+}
+
+function getEnvAuthContext() {
+  const envToken = process.env.XG_USER_TOKEN;
+  const envUserId = process.env.XG_USER_ID;
+  const envPersonId = process.env.XG_USER_PERSONID || process.env.XG_USER_PERSIONID;
+  if (envToken && envUserId && envPersonId) {
+    return { accessToken: envToken, userId: envUserId, personId: envPersonId };
+  }
+  return null;
 }
 
 /**
  * 统一鉴权预检：
- * 1) 默认使用 --key（CWork Key）完成授权
- * 2) 内部调试可复用 token（--access-token + --user-id）
+ * 1) 优先使用环境变量 XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID
+ * 2) 其次使用 --key（CWork Key）完成授权
  */
 async function resolveAuthContext(args) {
-  if (args['access-token'] && args['user-id']) {
-    console.log('[auth] 检测到传入 token，直接复用');
-    if (!args['person-id']) args['person-id'] = args['user-id'];
+  const envAuth = getEnvAuthContext();
+  if (envAuth) {
+    console.log('[auth] 使用环境变量鉴权 (XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID)');
+    args['access-token'] = envAuth.accessToken;
+    args['user-id'] = envAuth.userId;
+    args['person-id'] = envAuth.personId;
     return;
   }
 
   if (!args.key) {
-    throw new Error('缺少鉴权参数：请提供 --key（推荐），或内部调试时同时提供 --access-token 与 --user-id');
+    throw new Error('缺少鉴权参数：请提供环境变量 (XG_USER_TOKEN/XG_USER_ID/XG_USER_PERSONID) 或 --key（推荐）');
   }
 
   console.log('[auth] 使用 CWork Key 换取 token...');
   const auth = await exchangeTokenByKey(args.key);
 
-  if (args['user-id'] && args['user-id'] !== auth.userId) {
-    console.warn(`[auth] 警告：传入 user-id(${args['user-id']}) 与 key 换取 userId(${auth.userId}) 不一致，已采用换取结果`);
-  }
-
-  args['user-id'] = auth.userId;
   args['access-token'] = auth.accessToken;
-  args['person-id'] = args['person-id'] || auth.personId;
+  args['user-id'] = auth.userId;
+  args['person-id'] = auth.personId;
   console.log(`[auth] 鉴权成功，userId=${args['user-id']}`);
 }
 
@@ -284,17 +298,10 @@ function printUsage() {
   node source-index-sync.js --mode detail --base-url https://notex.aishuo.co/noteX --key <CWorkKey> --notebook-id <nbId>
   node source-index-sync.js --mode detail --base-url https://notex.aishuo.co/noteX --key <CWorkKey> --source-id <srcId>
 
-  # 内部调试：复用 token
-  node source-index-sync.js --mode index  --base-url https://notex.aishuo.co/noteX --user-id <uid> --access-token <token> [--type all]
-  node source-index-sync.js --mode detail --base-url https://notex.aishuo.co/noteX --user-id <uid> --access-token <token> --notebook-id <nbId>
-  node source-index-sync.js --mode detail --base-url https://notex.aishuo.co/noteX --user-id <uid> --access-token <token> --source-id <srcId>
-
 可选参数:
   --key <CWorkKey>            CWork Key（推荐；脚本内部自动换取授权）
-  --access-token <token>      透传访问令牌（内部调试）
-  --user-id <uid>             用户 ID（仅复用 token 模式必填）
   --base-url <url>            生产地址（仅支持 https://notex.aishuo.co/noteX 或 /noteX/api）
-  --authorization <value>     透传 authorization（例如 BP）
+  --authorization <value>     透传 authorization（例如 skill）
   --person-id <id>            透传 personId
   --type <all|owned|collaborated>  index 模式下的可见范围，默认 all
   --cache-dir <path>          本地缓存根目录（默认: docs/skills/cache/notebook-source-index）
