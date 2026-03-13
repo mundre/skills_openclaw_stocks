@@ -1,77 +1,105 @@
 #!/usr/bin/env python3
-"""
-Frugal Orchestrator - Token Efficiency Tracker
-Measures and reports token savings from delegated tasks.
-"""
 import json
-import time
 from pathlib import Path
 from datetime import datetime
 
-class TokenTracker:
-    """Track and analyze token usage across orchestrator operations."""
-    
-    def __init__(self):
-        self.log_file = Path("/a0/usr/projects/frugal_orchestrator/logs/tokens.json")
-        self.log_file.parent.mkdir(parents=True, exist_ok=True)
-    
-    def record_operation(self, profile: str, tokens_before: int, tokens_after: int):
-        """Record a delegation operation's token metrics."""
-        session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        saving = tokens_before - tokens_after
-        percent_saved = (saving / tokens_before * 100) if tokens_before else 0
-        
-        entry = {
-            "timestamp": datetime.now().isoformat(),
-            "session_id": session_id,
-            "profile": profile,
-            "tokens_before": tokens_before,
-            "tokens_after": tokens_after,
-            "tokens_saved": saving,
-            "percent_savings": round(percent_saved, 2)
-        }
-        
-        # Append to log
-        logs = []
-        if self.log_file.exists():
-            try:
-                logs = json.loads(self.log_file.read_text())
-            except:
-                logs = []
-        
-        logs.append(entry)
-        self.log_file.write_text(json.dumps(logs, indent=2))
-        return entry
-    
-    def generate_report(self, last_n=5):
-        """Generate summary report of recent operations."""
-        if not self.log_file.exists():
-            return "No token tracking data yet."
-        
-        logs = json.loads(self.log_file.read_text())
-        recent = logs[-last_n:] if len(logs) >= last_n else logs
-        
-        total_saved = sum(r["tokens_saved"] for r in recent)
-        avg_percent = sum(r["percent_savings"] for r in recent) / len(recent) if recent else 0
-        
-        table = "| Profile | Before | After | Saved | % Savings |\n"
-        table += "|---------|--------|-------|-------|-----------|\n"
-        for r in recent:
-            table += f"| {r['profile']} | {r['tokens_before']:,} | {r['tokens_after']:,} | {r['tokens_saved']:,} | {r['percent_savings']}% |\n"
-        
-        report = f"## Recent Operations (Last {len(recent)})\n\n{table}\n\n"
-        report += f"**Total Saved:** {total_saved:,} tokens\n"
-        report += f"**Average Savings:** {avg_percent:.1f}%\n"
-        
-        return report
+TRACKER_FILE = Path("/a0/usr/projects/frugal_orchestrator/logs/tokens.toon")
 
-if __name__ == "__main__":
+class TokenTracker:
+    """Token tracking for logging and statistics."""
+
+    def __init__(self):
+        self.tracker_file = TRACKER_FILE
+
+    def log_record(self, args):
+        self.tracker_file.parent.mkdir(parents=True, exist_ok=True)
+        task_type, task_map = args[0], args[1]
+        tokens_ai = int(args[2])
+        tokens_exec = int(args[3])
+        success = args[4].lower() == 'true'
+        duration = float(args[5]) if len(args) > 5 else 0.0
+        savings = tokens_ai - tokens_exec
+        savings_pct = (savings / tokens_ai * 100) if tokens_ai > 0 else 0
+
+        ts = datetime.now().isoformat()
+        lines = [
+            "timestamp: " + ts,
+            "task_type: " + task_type,
+            "task_map: " + task_map,
+            "tokens_ai_estimate: " + str(tokens_ai),
+            "tokens_executed: " + str(tokens_exec),
+            "token_savings: " + str(savings),
+            "savings_pct: " + str(round(savings_pct, 2)),
+            "success: " + str(success),
+            "duration_ms: " + str(duration)
+        ]
+        record = "\n".join(lines)
+
+        with open(self.tracker_file, 'a') as f:
+            f.write(record + "\n---\n")
+
+        return {"status": "recorded"}
+
+    def get_stats(self):
+        if not self.tracker_file.exists():
+            return {"task_count": 0, "total_savings": 0}
+
+        records = []
+        blocks = self.tracker_file.read_text().split('---')
+
+        for block in blocks:
+            lines = [l.strip() for l in block.split(chr(10)) if l.strip() and not l.strip().startswith('#')]
+            rec = {}
+            for line in lines:
+                if ':' in line:
+                    key, val = line.split(':', 1)
+                    key = key.strip()
+                    val = val.strip()
+                    try:
+                        if key in ['tokens_ai_estimate', 'tokens_executed', 'token_savings']:
+                            val = int(val)
+                        elif key in ['savings_pct', 'duration_ms']:
+                            val = float(val)
+                        elif key == 'success':
+                            val = val.lower() == 'true'
+                    except:
+                        pass
+                    rec[key] = val
+            if rec and 'task_type' in rec:
+                records.append(rec)
+
+        if not records:
+            return {"task_count": 0, "total_savings": 0}
+
+        total_ai = sum(r.get('tokens_ai_estimate', 0) for r in records)
+        total_exec = sum(r.get('tokens_executed', 0) for r in records)
+        successful = sum(1 for r in records if r.get('success'))
+
+        stats = {
+            "task_count": len(records),
+            "total_savings": total_ai - total_exec,
+            "total_ai_tokens": total_ai,
+            "total_executed_tokens": total_exec,
+            "avg_savings_pct": round((total_ai - total_exec) / total_ai * 100, 2) if total_ai > 0 else 0,
+            "success_rate": round(successful / len(records) * 100, 2) if records else 0
+        }
+        return stats
+
+def main():
     import sys
-    if len(sys.argv) == 4:
-        profile, before, after = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
-        tracker = TokenTracker()
-        entry = tracker.record_operation(profile, before, after)
-        print(f"✓ Recorded: {entry['tokens_saved']:,} tokens saved ({entry['percent_savings']}%)")
+    tracker = TokenTracker()
+    if len(sys.argv) < 2:
+        print(json.dumps(tracker.get_stats(), indent=2))
+        return
+
+    cmd = sys.argv[1]
+    if cmd == 'stats':
+        print(json.dumps(tracker.get_stats(), indent=2))
+    elif cmd == 'record' and len(sys.argv) >= 7:
+        result = tracker.log_record(sys.argv[2:])
+        print(json.dumps(result))
     else:
-        tracker = TokenTracker()
-        print(tracker.generate_report())
+        print(json.dumps(tracker.get_stats(), indent=2))
+
+if __name__ == '__main__':
+    main()
