@@ -1,172 +1,115 @@
 ---
 name: modelshow
-description: Double-blind multi-model comparison with automatic de-anonymization and progress polling. Trigger with "mdls" or "modelshow".
+version: 1.0.1
+description: Blind multi-model comparison with architecturally guaranteed de-anonymization. Trigger with "mdls" or "modelshow" for double-blind evaluation of AI model responses.
 metadata: {"openclaw": {"homepage": "https://github.com/schbz/modelshow", "emoji": "🕶️"}}
 ---
 
-# ModelShow — Blind Multi-Model Comparison
+# ModelShow — Professional Multi-Model Evaluation
 
-## Purpose
+ModelShow provides a sophisticated framework for comparing AI model responses through double-blind evaluation. The system queries multiple models in parallel, anonymizes their outputs, and uses an independent judge model to rank responses purely on merit.
 
-ModelShow runs your prompt through multiple AI models simultaneously, then has an independent judge evaluate the responses without knowing which model wrote which — ensuring unbiased rankings. Results are de-anonymized and presented with model names, scores, and the judge's reasoning.
+## Key Features
 
----
+- **Architecturally Guaranteed De-anonymization**: The judge sub-agent automatically de-anonymizes results before returning them—orchestrators never see placeholder labels
+- **Cryptographic Randomization**: Responses are presented to the judge in cryptographically secure random order using `secrets.SystemRandom()`
+- **Holistic Judge Analysis**: Judges provide both per-model rankings and comprehensive "Overall Assessment" analyzing cross-model patterns
+- **Intelligent Polling**: Automatic progress monitoring with content-free status updates and immediate completion detection
+- **Professional Output**: Formatted results with scores, judge commentary, and actionable insights
 
 ## Detection
 
-Trigger: message starts with `mdls` or `modelshow` (case-insensitive). Strip the keyword to get the prompt.
+**Trigger**: Message starts with `mdls` or `modelshow` (case-insensitive). Extract the prompt by removing the trigger keyword.
 
-Examples:
-- `mdls what is the best way to learn Rust?`
-- `modelshow explain quantum entanglement simply`
-
----
+**Example**: `mdls explain quantum entanglement` → prompt = `explain quantum entanglement`
 
 ## Workflow
 
 ```
-Step 1  → Acknowledge
-Step 2  → Load Config
-Step 3  → Spawn Model Agents (parallel)
-Step 4  → Collect Responses (auto-poll until complete)
-Step 5  → Anonymize via judge_pipeline.py
-Step 6  → Spawn Judge+Deanon Sub-Agent
-          └─ Sub-agent runs judge, then runs judge_pipeline.py finalize
-          └─ Sub-agent returns ONLY deanonymized output
-Step 7  → Receive + Parse de-anonymized results → BUILD formatted output
-Step 8  → Save Results
-Step 9  → Present pre-built formatted output (NEVER raw JSON)
+Step 1  → Acknowledge & Load Configuration
+Step 2  → Spawn Parallel Model Agents
+Step 3  → Collect Responses with Intelligent Polling
+Step 4  → Anonymize with Cryptographic Randomization
+Step 5  → Spawn Judge+Deanon Sub-Agent
+Step 6  → Parse De-anonymized Results
+Step 7  → Build Formatted Output
+Step 8  → Save Results (optionally update web index via update_modelshow_index.py)
 ```
 
----
+### Step 1: Acknowledge & Load Configuration
 
-### Step 1: Acknowledge
-
-Send immediately:
-
+**Immediate Response**:
 ```
-🔄 ModelShow comparison starting...
-Querying models in parallel — results in 30-90 seconds.
+🔄 ModelShow starting — querying models in parallel.
+Results will appear automatically when judging is complete.
 ```
 
----
+**Load Configuration**: Read `{baseDir}/config.json` for model list, judge model, timeouts, and other settings.
 
-### Step 2: Load Config
+### Step 2: Spawn Parallel Model Agents
 
-Read `{baseDir}/config.json`.
+For each model in `config.models`:
+- **Model**: The model alias (e.g., `pro`, `grok`, `kimi`)
+- **Label**: `mdls-{model}-{timestamp}` (unique identifier)
+- **Timeout**: `config.timeoutSeconds` (default: 360 seconds)
+- **Task**: 
+  ```
+  {config.systemPrompt}
+  
+  {extracted user prompt}
+  ```
 
----
+**Parallel Execution**: If `config.parallel` is `true`, spawn all agents simultaneously.
 
-### Step 3: Spawn Model Agents
+**Context Handling**: If the prompt references external content (URLs, files, preferences), fetch and prepend this context to the task.
 
-For each model in `config.models`, spawn a sub-agent:
-- model: the model alias
-- label: `mdls-{model}-{timestamp}`
-- runTimeoutSeconds: from `modelTimeouts[model]` or `config.timeoutSeconds`
-- task:
+### Step 3: Collect Responses with Intelligent Polling
 
-```
-{config.systemPrompt}
+**Polling Strategy**:
+- Poll every 20 seconds
+- Exit immediately when all agents complete
+- Minimum 3 polls before considering timeout
+- Maximum runtime: `config.timeoutSeconds`
 
-{extracted user prompt}
-```
+**Status Updates** (content-free):
+- `⏳ Models responding... {done}/{total} complete. ({elapsed}s elapsed)`
+- `✅ All {N} models responded. Sending to judge...`
 
-If `parallel: true`, spawn all at once. Agents produce **pure text only** — no tools.
-
-If the user's prompt explicitly requests context (e.g. "using my preferences"), YOU fetch it first and prepend it to the task. External URLs or files: fetch them yourself and include content in the task.
-
-After spawning, note the start timestamp and the set of pending agent labels.
-
----
-
-### Step 4: Collect Responses (Auto-Polling)
-
-**You must actively poll for sub-agent completion. Do NOT wait passively.**
-
-After spawning all model agents, enter a polling loop:
-
-```
-POLL LOOP (repeat until done or timeout):
-
-  1. Check agent statuses using the `subagents` tool (action: "list")
-     - Filter for agents matching label prefix "mdls-{model}-{timestamp}"
-     - Mark any agent as DONE if its status is "completed" or "failed" or "timeout"
-
-  2. For each DONE agent, collect its response:
-     - Status "completed": record response text + duration
-     - Status "failed" or "timeout": record as failed, no response text
-
-  3. If ALL spawned agents are now DONE → exit loop immediately
-
-  4. If elapsed_time >= config.timeoutSeconds → exit loop (treat remaining as timed out)
-
-  5. Otherwise: wait 30 seconds, then repeat from step 1
-     - Send a status update to the user every 2nd poll cycle:
-       "⏳ Waiting for models... {N}/{total} complete so far."
-```
-
-**After loop exits:**
-
-- Count successful responses (status = "completed" with non-empty text)
-- Count timed-out/failed agents
-- If successful < `config.minSuccessful`:
-  - Tell the user: "❌ Only {N} models responded (minimum {min} required). Aborting."
-  - Stop here.
-- If some timed out but >= minSuccessful succeeded: continue, note the timed-out models for later
-
-**Store per-model results:**
-```
+**Response Collection**:
+```python
 collected_responses = {
   "model_name": {
     "status": "completed" | "failed" | "timeout",
     "text": "response text or empty string",
-    "duration_seconds": 45
-  },
-  ...
+    "duration_seconds": duration
+  }
 }
 ```
 
----
+**Minimum Success Check**: If successful responses < `config.minSuccessful`, abort with informative message.
 
-### Step 5: Anonymize
+### Step 4: Anonymize with Cryptographic Randomization
 
-Run:
+Execute the anonymization pipeline:
 ```bash
-echo '<json>' | python3 {baseDir}/judge_pipeline.py
-```
-
-With payload:
-```json
-{
+echo '{
   "action": "anonymize",
-  "responses": {
-    "model1": "response text 1",
-    "model2": "response text 2"
-  },
+  "responses": {model: response_dict},
   "label_style": "alphabetic",
   "shuffle": true
-}
+}' | python3 {baseDir}/judge_pipeline.py
 ```
 
-**Only include models with status "completed" and non-empty text.**
+**Key Features**:
+- `shuffle: true` ensures cryptographically random response order
+- Labels are assigned as "Response A", "Response B", etc.
+- `anonymization_map` tracks label-to-model mapping for later de-anonymization
 
-Parse output and store:
-- `anonymization_map` — `{"Response A": "deepseek", "Response B": "grok", ...}`
-- `blind_responses_for_judge` — `{"Response A": "response text", ...}`
+### Step 5: Spawn Judge+Deanon Sub-Agent
 
-**Store `anonymization_map` — you'll pass it to the judge sub-agent in Step 6.**
+The judge sub-agent performs both evaluation and de-anonymization in a single atomic operation:
 
----
-
-### Step 6: Spawn Judge+Deanon Sub-Agent
-
-You spawn ONE sub-agent whose job is:
-1. Evaluate the blind responses
-2. Run `judge_pipeline.py finalize` on its own output
-3. Return ONLY the de-anonymized results
-
-**The sub-agent task:**
-
+**Judge Task Structure**:
 ```
 You are an impartial judge AND a data processor.
 
@@ -176,263 +119,203 @@ Your task has TWO parts. Complete BOTH before returning anything.
 PART 1: JUDGE THE RESPONSES
 ═══════════════════════════════════════════════════════════
 
-You are evaluating responses from multiple AI systems under blind conditions.
-The responses are labeled Response A, Response B, etc. You do not know which
-AI system produced which response. Use ONLY these labels throughout your evaluation.
-
-**Original Prompt:** {extracted_prompt}
-
-**Responses to evaluate:**
-{for each placeholder, text in blind_responses_for_judge.items():}
-### {placeholder}
-{text}
-
-{end for}
-
-**Evaluation criteria:** accuracy, clarity, completeness, usefulness
-
-**Required output format for Part 1:**
-
-### Rankings
-
-1st: {placeholder} — Score: X/10
-Brief justification (2-3 sentences).
-
-2nd: {placeholder} — Score: X/10
-Brief justification (2-3 sentences).
-
-[continue for all responses]
-
-### Overall Summary
-[Key differences and winner's strengths, using only placeholder labels]
+[Blind responses with placeholder labels]
 
 ═══════════════════════════════════════════════════════════
-PART 2: DE-ANONYMIZE YOUR OWN OUTPUT
+PART 2: PROCESS YOUR JUDGMENT
 ═══════════════════════════════════════════════════════════
 
-After writing your judge evaluation above, you MUST run this command
-using the `exec` tool. Do NOT skip this step. Do NOT return Part 1 output
-to the requester. Return ONLY the result of this command.
+1. Write your judgment evaluating Response A, Response B, etc.
+2. Include scores (1-10) for each response
+3. Provide an "Overall Assessment" section analyzing cross-model patterns
 
-Run exactly this command (fill in the JSON values):
+After writing your judgment, run this command:
 
-```bash
-python3 {baseDir}/judge_pipeline.py <<'ENDJSON'
-{
+echo '{
   "action": "finalize",
-  "judge_output": "<YOUR COMPLETE PART 1 OUTPUT — paste it here verbatim>",
-  "anonymization_map": {anonymization_map_json}
-}
-ENDJSON
+  "judge_output": "[YOUR JUDGMENT TEXT HERE]",
+  "anonymization_map": {anonymization_map}
+}' | python3 {baseDir}/judge_pipeline.py
+
+Return ONLY the JSON output from that command.
 ```
 
-The command will output JSON. Return that JSON verbatim as your ENTIRE response.
-Your response must be ONLY the JSON output of that command. Nothing else.
-No preamble, no explanation, no Part 1 text — just the raw JSON.
+**Judge Model**: Uses `config.judgeModel` (e.g. `sonnet`, `gemini31or`)
 
-If the command fails, return: {"error": "pipeline_failed", "raw_judge_output": "<part1>"}
+### Step 6: Parse De-anonymized Results
+
+The judge sub-agent returns:
+- `deanonymized_judge_output`: Full judgment with real model names
+- `ranked_models_deanonymized`: Structured ranking data
+- `deanonymization_complete`: Boolean verification
+
+**Architectural Guarantee**: The orchestrator never receives placeholder labels—only de-anonymized results.
+
+### Step 7: Build Formatted Output
+
+Create professional presentation:
+```
+🕶️ Double-Blind Judging Results:
+
+🏆 Model Name (Score: X.X/10)
+[Full response text]
+Judge's assessment: [Commentary]
+
+🥈 Second Place (Score: X.X/10)
+[Full response text]
+Judge's assessment: [Commentary]
+
+📊 Overall Assessment:
+[Judge's holistic analysis of cross-model patterns]
 ```
 
-**Sub-agent spawn parameters:**
-- model: `config.judgeModel`
-- label: `mdls-judge-{timestamp}`
-- runTimeoutSeconds: `config.timeoutSeconds`
-- The sub-agent HAS access to exec tools (it needs to run judge_pipeline.py)
-
-**After spawning the judge sub-agent, poll for its completion the same way as Step 4:**
-- Check every 30 seconds using `subagents list`
-- Send "⚖️ Judge deliberating..." status after the first 30s check
-- Timeout after `config.timeoutSeconds` seconds
-
----
-
-### Step 7: Receive, Parse, and Format Results
-
-**This step builds the complete formatted output. Step 9 only sends it.**
-
-**7a. Get the judge sub-agent's response**
-
-The sub-agent returns a string. That string should be pure JSON. Parse it.
-
-**7b. Handle parse errors**
-
-If the string is not valid JSON, or contains `"error"` key:
-- Check if `raw_judge_output` is available in the error object
-- If yes, run the fallback finalize command yourself:
-  ```bash
-  python3 {baseDir}/judge_pipeline.py <<'ENDJSON'
-  {
-    "action": "finalize",
-    "judge_output": "<raw_judge_output value>",
-    "anonymization_map": {your stored anonymization_map}
-  }
-  ENDJSON
-  ```
-- Parse that output instead
-- If that also fails: set `fallback_mode = true` (will present unranked results)
-
-**7c. Extract fields from parsed JSON**
-
-```
-parsed = JSON.parse(judge_response)
-
-deanonymized_judge_output   = parsed["deanonymized_judge_output"]   # string
-ranked_models_deanonymized  = parsed["ranked_models_deanonymized"]  # array of objects
-deanonymization_complete    = parsed["deanonymization_complete"]    # boolean
-```
-
-Each item in `ranked_models_deanonymized` looks like:
-```json
-{"rank": 1, "model": "grok", "score": 9.2, "placeholder": "Response A"}
-```
-
-**7d. Verify de-anonymization worked**
-
-Check that `ranked_models_deanonymized` contains REAL model names, not "Response A/B/C":
-- If any `model` field matches pattern `Response [A-Z]` → de-anonymization incomplete
-- Run fallback finalize exec (same as 7b fallback above)
-- If still unresolved → set `fallback_mode = true`
-
-**7e. ⚠️ BUILD THE FORMATTED OUTPUT NOW — store in variable `formatted_output`**
-
-Do NOT proceed to Step 8/9 without building this variable.
-
-Sort `ranked_models_deanonymized` by `rank` ascending (rank 1 = best).
-
-Build the formatted output string:
-
-```
-MEDAL MAP: rank 1 → 🏆 | rank 2 → 🥈 | rank 3 → 🥉 | rank 4+ → (no medal)
-
-formatted_output = "🕶️ **Blind Judging Results:**\n\n"
-
-FOR EACH item in ranked_models_deanonymized (sorted by rank):
-
-  medal = MEDAL MAP[item.rank] or ""
-  header = "{medal} **{item.model}** (Score: {item.score}/10)"
-
-  response_text = collected_responses[item.model]["text"]
-    (from your Step 4 data — the FULL model response text)
-
-  judge_assessment = EXTRACT from deanonymized_judge_output:
-    Find the section mentioning item.model (look for **{item.model}**) and grab
-    the justification sentences that follow, until the next model section starts.
-    If extraction is uncertain, include the full deanonymized_judge_output at the end instead.
-
-  formatted_output += header + "\n\n"
-  formatted_output += response_text + "\n\n"
-  formatted_output += "**Judge's assessment:** " + judge_assessment + "\n\n"
-  formatted_output += "---\n\n"
-
-END FOR
-
-formatted_output += "🕶️ *Blind judging was active — the judge evaluated anonymized responses without knowing which model produced each.*\n\n"
-formatted_output += "📊 Full judge analysis available — reply \"show analysis\" to see it.\n"
-formatted_output += "📄 Results saved to: `{filepath}`\n"
-
-IF any models timed out:
-  formatted_output += "\n⏱️ Timed out (excluded): {list of timed-out model names}\n"
-```
-
-**STOP AND VERIFY before continuing:**
-- [ ] `formatted_output` is a populated string (not empty, not JSON)
-- [ ] It contains medal emojis (🏆, 🥈, 🥉) where applicable
-- [ ] It contains actual model names (not "Response A")
-- [ ] It contains response text from Step 4
-- [ ] It ends with the file path line
-
----
+> ⚠️ **WARNING: Step 8 is MANDATORY.**
+> Sending results to the user is NOT the end of the task.
+> You MUST execute Step 8 (save_results) immediately after sending.
+> The task is NOT complete until `save_results.py` returns `{"success": true}`.
+> Do NOT skip, defer, or omit Step 8 under any circumstances.
 
 ### Step 8: Save Results
 
-Save to `{config.outputDir}/{slug}-{YYYY-MM-DD-HHMM}.md`.
+> 🚨 **THIS STEP IS REQUIRED. DO NOT SKIP.**
+> After every ModelShow run, you MUST save the results using `save_results.py`.
+> Failure to save means the results are not persisted for later use.
 
-Slug = first 5 words of prompt, lowercased, hyphenated.
+**Save to `config.outputDir`** (default: `~/.openclaw/workspace/modelshow-results`):
+- JSON: `{config.outputDir}/{slug}-{timestamp}.json`
+- Markdown: `{config.outputDir}/{slug}-{timestamp}.md`
 
-```markdown
-# ModelShow Results
-**Date:** {timestamp}
-**Prompt:** {prompt}
-**Models:** {model names}
-**Judge:** {judge model}
-**Judging Mode:** Blind (model identities hidden from judge)
+**Exact JSON payload to pipe into `save_results.py`:**
 
----
-
-## Rankings
-
-{for each item in ranked_models_deanonymized (sorted by rank):}
-### {medal} **{item.model}** — {item.score}/10
-{judge notes for this model from deanonymized_judge_output}
-{full response text}
-{end for}
-
----
-
-## Judge's Full Analysis
-{deanonymized_judge_output}
-
----
-
-## Blind Judging Key (Audit)
-{for placeholder, model in anonymization_map.items():}
-- {placeholder} → {model}
-{end for}
-
----
-
-## Metadata
-- Total duration, models queried, successful/failed counts
+```json
+{
+  "prompt": "<the original user prompt>",
+  "timestamp": "<ISO 8601 timestamp, e.g. 2026-03-08T01:00:00Z>",
+  "models": ["model1", "model2", "model3"],
+  "judge_model": "<config.judgeModel>",
+  "output_dir": "<config.outputDir>",
+  "ranked_results": [
+    {
+      "rank": 1,
+      "model": "model_alias",
+      "score": 9.5,
+      "judge_notes": "Judge's per-model commentary here",
+      "response_text": "The full model response text here"
+    },
+    {
+      "rank": 2,
+      "model": "model_alias",
+      "score": 8.0,
+      "judge_notes": "Judge's per-model commentary here",
+      "response_text": "The full model response text here"
+    }
+  ],
+  "deanonymized_judge_output": "<full judge output text with real model names>",
+  "anonymization_map": {
+    "Response A": "model_alias_1",
+    "Response B": "model_alias_2"
+  },
+  "metadata": {
+    "total_duration_ms": 45000,
+    "successful_models": 4,
+    "failed_models": 0,
+    "timed_out_models": ["deepseek"]
+  }
+}
 ```
 
-Update `filepath` in `formatted_output` with the actual saved path.
+**Execute the save command:**
+```bash
+echo '<JSON payload above>' | python3 {baseDir}/save_results.py
+```
 
----
+**Verify success**: The script MUST return `{"success": true, ...}`. If it returns an error, fix and retry. Do NOT proceed without a successful save.
 
-### Step 9: Present Results
+**Optional**: For building a local index of result files (e.g. for a custom dashboard or static site) or for web display (e.g. rexuvia.com), see `update_modelshow_index.py`. This is not part of the mandatory workflow.
 
-**Send `formatted_output` to the user. That's it.**
+> ✅ **Only after `save_results.py` returns success is the ModelShow task complete.**
 
-`formatted_output` was built in Step 7e. It is a formatted string with medal emojis,
-model names, response text, and judge assessments.
+## Configuration (`config.json`)
 
-**⛔ DO NOT send the raw JSON from the judge sub-agent.**
-**⛔ DO NOT send the `parsed` dict or any JSON object.**
-**⛔ DO NOT send `deanonymized_judge_output` as a bare string.**
-**✅ ONLY send `formatted_output`.**
+| Key | Description | Default |
+|-----|-------------|---------|
+| `keyword` | Primary trigger | `"mdls"` |
+| `alternativeKeywords` | Also trigger on | `["modelshow"]` |
+| `models` | List of model aliases to compare | `["pro", "sonnet", "deepseek", "gpt4", "grok", "kimi"]` |
+| `judgeModel` | Model for double-blind evaluation | `"sonnet"` |
+| `outputDir` | Where to save result files | `"~/.openclaw/workspace/modelshow-results"` |
+| `timeoutSeconds` | Maximum wait time per model | `360` |
+| `minSuccessful` | Minimum responses to proceed | `2` |
+| `parallel` | Run models in parallel | `true` |
+| `showTopN` | Number of top results to display | `10` |
+| `includeResponseText` | Include full responses in output | `true` |
+| `blindJudging` | Enable anonymization | `true` |
+| `blindJudgingLabels` | Label style for anonymization | `"alphabetic"` |
+| `shuffleBlindOrder` | Randomize response order | `true` |
 
-If the user later replies "show analysis" or "full analysis", send `deanonymized_judge_output`.
-
----
-
-## Error Handling
-
-| Situation | Response |
-|-----------|----------|
-| < minSuccessful models respond | Tell user, abort |
-| judge sub-agent returns error | Run fallback finalize exec, then format and present |
-| deanonymization_complete = false | Run fallback finalize exec |
-| model names still show as "Response X" after fallback | Present unranked with warning |
-| file save fails | Present results, note save failure |
-| all models fail | Report error with details |
-
----
-
-## Architecture
+## File Structure
 
 ```
-Orchestrator
-    │
-    ├── spawns model agents → polls every 30s until all done → collects responses
-    │
-    ├── exec: judge_pipeline.py anonymize → gets anonymization_map + blind_responses
-    │
-    └── spawns judge+deanon sub-agent → polls every 30s until done
-            │
-            ├── evaluates blind responses (internal)
-            │
-            └── exec: judge_pipeline.py finalize → returns de-anonymized JSON
-                        │
-                        └── Orchestrator receives JSON → PARSES it → FORMATS it → SENDS formatted_output
-                            (never raw JSON to user)
+modelshow/
+├── SKILL.md              # This documentation
+├── config.json           # Configuration settings
+├── judge_pipeline.py     # Anonymization & de-anonymization pipeline
+├── save_results.py       # Result saving with holistic assessment extraction
+├── update_modelshow_index.py # Optional: build local index / web index
+├── blind_judge_manager.py # Anonymization utility (legacy)
+├── README.md             # User documentation
+└── .gitignore            # Git exclusions
 ```
+
+## Scripts
+
+### `judge_pipeline.py`
+Core pipeline for anonymization and de-anonymization:
+- **`action: "anonymize"`**: Creates cryptographically randomized blind responses
+- **`action: "finalize"`**: De-anonymizes judge output and extracts rankings
+
+### `save_results.py`
+Saves results in both JSON and Markdown formats with specialized extraction of the "Overall Assessment" section from judge output. Results are written to `config.outputDir` for local use, scripting, or your own tooling.
+
+### `update_modelshow_index.py`
+Optional utility to build a local index of result JSON files (e.g. for a custom dashboard or static site) or to update the web index for rexuvia.com. Not required for the core workflow.
+
+## Usage Examples
+
+**Basic Comparison**:
+```
+mdls explain the difference between TCP and UDP
+```
+
+**Creative Task**:
+```
+mdls write a short poem about working late at night
+```
+
+**Technical Analysis**:
+```
+mdls pros and cons of event sourcing vs traditional CRUD
+```
+
+**Code Review**:
+```
+mdls review this Python function for potential issues: [code]
+```
+
+## Best Practices
+
+1. **Prompt Clarity**: Provide clear, specific prompts for meaningful comparisons
+2. **Model Selection**: Choose models with complementary strengths for the task type
+3. **Context Inclusion**: Reference relevant context when appropriate
+4. **Result Interpretation**: Consider both scores and the judge's holistic assessment
+5. **Tailor config**: Update `config.json` to match the models available on your instance
+6. **Web Integration**: Optionally use `update_modelshow_index.py` to publish results
+
+## Integration Points
+
+- **Local storage**: Results are saved as JSON and Markdown in `config.outputDir` for local use, scripting, or your own tooling
+- **Web display**: Use `update_modelshow_index.py` to make results available online
+- **Cron Automation**: Can be scheduled for regular comparative analysis
+- **API Access**: JSON results enable programmatic analysis
+
+ModelShow represents state-of-the-art in AI model comparison, combining rigorous methodology with practical usability for both casual exploration and professional evaluation.

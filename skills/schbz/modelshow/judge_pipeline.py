@@ -27,16 +27,23 @@ No intermediate placeholder state is ever returned to the orchestrator.
 import json
 import re
 import random
+import secrets
 import string
 import sys
 import logging
 
 logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
 
+# Use a cryptographically secure random source for anonymization shuffling.
+# This ensures the judge cannot infer model identity from presentation order.
+_secure_rng = secrets.SystemRandom()
+
 
 def generate_mapping(model_names: list, label_style: str = "alphabetic", shuffle: bool = True):
     if shuffle:
-        shuffled = random.sample(model_names, len(model_names))
+        # Use cryptographically secure shuffle — prevents any positional bias
+        shuffled = list(model_names)
+        _secure_rng.shuffle(shuffled)
     else:
         shuffled = list(model_names)
 
