@@ -1,0 +1,11 @@
+{
+  "owner": "samuelhsin",
+  "slug": "alicloud-dataworks",
+  "displayName": "Alibaba Cloud DataWorks",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773153378199,
+    "commit": null
+  },
+  "history": []
+}
