@@ -54,7 +54,9 @@ python3 scripts/cn_quote.py hk00700
 - 无需任何 API key。
 - 优先使用腾讯行情 (`qt.gtimg.cn`)，失败时尝试东方财富 Push2 接口（仅 A 股），再尝试本地安装的 AkShare（如果存在）。
 
-### Single or multiple quotes via Yahoo/Finnhub (default: today)
+### Single or multiple quotes (unified entry: US + A-share/HK)
+
+**一个脚本覆盖美股与 A 股/港股**：`quote.py` 会根据 symbol 自动选择数据源——A 股/港股（`*.SS` / `*.SZ` / `*.HK` 等）走 cn_quote（腾讯→东财→AkShare），美股及其他走 Yahoo/Finnhub。Agent 只需调 `scripts/quote.py` 即可。
 
 ```bash
 python3 scripts/quote.py AAPL
@@ -94,6 +96,7 @@ python3 scripts/news.py MSFT --limit 5 --from 2025-02-01 --to 2025-02-25
 - `--limit`：最多返回条数，默认 10。
 - `--from` / `--to`：日期 YYYY-MM-DD（仅美股 Finnhub 使用），默认最近 7 天。
 - `--json`：输出原始 JSON。
+- **港股个股新闻**：AkShare 对港股个股新闻支持有限，可能返回空，属正常情况。
 
 ### Range options (quote)
 
@@ -126,8 +129,15 @@ On servers, Yahoo often returns 403. Two options:
    **可选：systemd 全局**（仅当你用 systemd 跑 gateway 且希望所有请求走代理时）  
    编辑 `/etc/systemd/system/openclaw-gateway.service` 在 `[Service]` 下增加 `Environment=HTTPS_PROXY=...` / `HTTP_PROXY=...`，然后 `sudo systemctl daemon-reload && sudo systemctl restart openclaw-gateway`。注意这会对该服务下所有请求生效。
 
+**可选环境变量**（仅 `quote.py`）：`OPENCLAW_QUOTE_TIMEOUT`（默认 12 秒）、`OPENCLAW_QUOTE_RETRY_DELAY`（单 symbol 顺序时的间隔，默认 0.4 秒）、`OPENCLAW_QUOTE_CACHE_TTL`（结果缓存秒数，0=关闭）。多 symbol 时默认**并行**请求以提升性能，可通过 `OPENCLAW_QUOTE_PARALLEL=0` 关闭；`OPENCLAW_QUOTE_MAX_WORKERS`（默认 6）控制并行度。**失败重试**：`quote.py` 单次 HTTP 请求默认最多重试 2 次（共 3 次），5xx/超时/断线会指数退避；可通过 `OPENCLAW_QUOTE_RETRIES=0` 关闭。`cn_quote.py` 与 `news.py` 同样对单次请求做最多 2 次重试。
+
 ## Notes
 
 - Yahoo: real-time/near-real-time for **美股 / 港股 / A 股**，但在服务器机房 IP 上可能 403，需要配合代理使用。
 - Finnhub fallback: 只保证 **美股**（AAPL/MSFT 等）有稳定数据；A 股 / 港股 在免费档通常无有效行情或直接 403。
 - 建议：港股 / A 股 查询优先走 Yahoo（必要时加 HTTPS_PROXY），美股在 Yahoo 403 时可以用 Finnhub 作为备份。
+
+## 可改进点 (Possible improvements)
+
+- **测试**：对解析逻辑做单元测试（mock HTTP），便于改版不 regression。
+- **cn_quote 港股**：AkShare 单股接口仅 A 股；港股仍走腾讯/东财，无单股历史接口时保持现状。

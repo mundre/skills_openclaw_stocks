@@ -12,9 +12,11 @@ import json
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+import time
 from urllib import request, error
 
 BASE = "https://finnhub.io/api/v1/company-news"
+NEWS_RETRIES = 2
 
 
 def _is_cn_hk_symbol(symbol: str) -> bool:
@@ -37,13 +39,18 @@ def fetch_news(symbol: str, from_date: str, to_date: str) -> list[dict] | None:
         return None
     url = f"{BASE}?symbol={symbol}&from={from_date}&to={to_date}&token={key}"
     req = request.Request(url, headers={"User-Agent": "OpenClaw/1.0"})
-    try:
-        with request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read().decode())
-        return data if isinstance(data, list) else None
-    except (error.HTTPError, error.URLError, json.JSONDecodeError) as e:
-        print(f"Request failed: {e}", file=sys.stderr)
-        return None
+    for attempt in range(1 + NEWS_RETRIES):
+        try:
+            with request.urlopen(req, timeout=15) as r:
+                data = json.loads(r.read().decode())
+                return data if isinstance(data, list) else None
+        except (error.HTTPError, error.URLError, json.JSONDecodeError, OSError) as e:
+            if attempt < NEWS_RETRIES:
+                time.sleep(0.5 * (attempt + 1))
+                continue
+            print(f"Request failed: {e}", file=sys.stderr)
+            return None
+    return None
 
 
 def format_item(item: dict, index: int) -> str:
@@ -94,7 +101,7 @@ def main() -> None:
             print(json.dumps(items, ensure_ascii=False, indent=2, default=str))
             return
         if not items:
-            print(f"{args.symbol}: 未从 东方财富/AkShare 获取到新闻。")
+            print(f"{args.symbol}: 未从 东方财富/AkShare 获取到新闻。（A 股/港股可尝试安装 akshare；港股个股新闻可能为空。）")
             sys.exit(1)
         print(f"**{args.symbol}** 新闻 (来源: {provider})\n")
         for i, item in enumerate(items, 1):

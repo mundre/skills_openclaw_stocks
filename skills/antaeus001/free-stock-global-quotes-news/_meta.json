@@ -3,9 +3,15 @@
   "slug": "free-stock-global-quotes-news",
   "displayName": "free-stock-global-quotes-news",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773272605540,
-    "commit": "https://github.com/openclaw/skills/commit/db55219e436f793994061ba4aaba2098c8f5c78d"
+    "version": "1.0.3",
+    "publishedAt": 1773277249940,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773272605540,
+      "commit": "https://github.com/openclaw/skills/commit/db55219e436f793994061ba4aaba2098c8f5c78d"
+    }
+  ]
 }

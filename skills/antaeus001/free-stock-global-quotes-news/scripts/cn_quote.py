@@ -21,9 +21,26 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from dataclasses import dataclass
 from typing import Optional, Tuple
 from urllib import error, request
+
+RETRIES = 2  # 最多重试 2 次，共 3 次请求
+
+
+def _http_get(url: str, encoding: str = "utf-8") -> Optional[str]:
+  req = request.Request(url, headers={"User-Agent": "OpenClaw/1.0"})
+  for attempt in range(1 + RETRIES):
+    try:
+      with request.urlopen(req, timeout=10) as r:
+        return r.read().decode(encoding, errors="ignore")
+    except (error.HTTPError, error.URLError, OSError):
+      if attempt < RETRIES:
+        time.sleep(0.5 * (attempt + 1))
+        continue
+      return None
+  return None
 
 
 @dataclass
@@ -35,15 +52,6 @@ class Quote:
   previous_close: Optional[float]
   change: Optional[float]
   change_percent: Optional[float]
-
-
-def _http_get(url: str, encoding: str = "utf-8") -> Optional[str]:
-  req = request.Request(url, headers={"User-Agent": "OpenClaw/1.0"})
-  try:
-    with request.urlopen(req, timeout=10) as r:
-      return r.read().decode(encoding, errors="ignore")
-  except (error.HTTPError, error.URLError):
-    return None
 
 
 def _parse_symbol(raw: str) -> Tuple[str, str, str]:
@@ -185,7 +193,7 @@ def fetch_from_eastmoney(symbol: str) -> Optional[Quote]:
 
 
 def fetch_from_akshare(symbol: str) -> Optional[Quote]:
-  # Optional dependency; best-effort A-share support
+  # Optional dependency; A-shares only. Try single-stock history first (one request).
   try:
     import akshare as ak  # type: ignore
   except Exception:
@@ -196,34 +204,58 @@ def fetch_from_akshare(symbol: str) -> Optional[Quote]:
     return None
 
   try:
+    from datetime import datetime, timedelta
+    end_d = datetime.now().date()
+    start_d = end_d - timedelta(days=10)
+    # Prefer single-stock API (stock_zh_a_hist_em or stock_zh_a_hist depending on akshare version)
+    fn = getattr(ak, "stock_zh_a_hist_em", None) or getattr(ak, "stock_zh_a_hist", None)
+    df = fn(symbol=code, period="daily", start_date=start_d.strftime("%Y%m%d"), end_date=end_d.strftime("%Y%m%d"), adjust="") if fn else None
+  except Exception:
+    df = None
+  if df is not None and not df.empty:
+    try:
+      row = df.iloc[-1]
+      price = float(row["收盘"])
+      prev = float(df.iloc[-2]["收盘"]) if len(df) >= 2 else price
+      change = price - prev
+      pct = (change / prev * 100.0) if prev else None
+      name = str(row.get("名称", display))
+      return Quote(
+        symbol=display,
+        name=name,
+        currency="CNY",
+        price=price,
+        previous_close=prev,
+        change=change,
+        change_percent=pct,
+      )
+    except (KeyError, IndexError, TypeError, ValueError):
+      pass
+
+  # Fallback: full A-share spot then filter (heavier).
+  try:
     df = ak.stock_zh_a_spot_em()
   except Exception:
     return None
-
   try:
-    # AkShare columns are typically: 代码, 名称, 最新价, 昨收, 涨跌幅, etc.
     row = df.loc[df["代码"] == code].iloc[0]
   except Exception:
     return None
-
   try:
     price = float(row["最新价"])
   except Exception:
     return None
-
   name = str(row.get("名称", display))
   prev = row.get("昨收")
   try:
     prev_f = float(prev) if prev is not None else None
   except Exception:
     prev_f = None
-
   change = pct = None
   if prev_f is not None:
     change = price - prev_f
     if prev_f:
       pct = (change / prev_f) * 100.0
-
   return Quote(
     symbol=display,
     name=name,
@@ -250,6 +282,31 @@ def format_quote(q: Quote) -> str:
   return "\n".join(lines)
 
 
+def quote_to_dict(q: Quote) -> dict:
+  """Convert to dict for JSON output (same shape as quote.py)."""
+  return {
+    "symbol": q.symbol,
+    "shortName": q.name,
+    "currency": q.currency,
+    "price": q.price,
+    "previousClose": q.previous_close,
+    "change": q.change,
+    "changePercent": q.change_percent,
+    "volume": None,
+    "fiftyTwoWeekHigh": None,
+    "fiftyTwoWeekLow": None,
+  }
+
+
+def quote_one(symbol: str) -> Optional[Quote]:
+  """Try Tencent -> EastMoney -> AkShare; return first success or None."""
+  for fn in [fetch_from_tencent, fetch_from_eastmoney, fetch_from_akshare]:
+    q = fn(symbol)
+    if q:
+      return q
+  return None
+
+
 def main() -> None:
   ap = argparse.ArgumentParser(
     description=(
@@ -271,7 +328,7 @@ def main() -> None:
       print(format_quote(q))
       return
 
-  print(f"{symbol}: 没有从 腾讯/东方财富/AkShare 拿到有效行情。")
+  print(f"{symbol}: 没有从 腾讯/东方财富/AkShare 拿到有效行情。（A 股可尝试安装 akshare。）")
   sys.exit(1)
 
 

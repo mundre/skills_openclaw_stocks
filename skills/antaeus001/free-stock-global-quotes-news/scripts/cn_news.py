@@ -112,7 +112,7 @@ def main() -> None:
     return
 
   if not items:
-    print(f"{args.symbol}: 未从 东方财富/AkShare 获取到新闻。")
+    print(f"{args.symbol}: 未从 东方财富/AkShare 获取到新闻。（可尝试安装 akshare；港股个股新闻可能不支持。）")
     sys.exit(1)
 
   print(f"**{args.symbol}** 新闻 (来源: {provider})\n")
