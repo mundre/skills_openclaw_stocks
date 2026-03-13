@@ -3,11 +3,16 @@
   "slug": "explorium-agentsource",
   "displayName": "Explorium AgentSource",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1772346971379,
-    "commit": "https://github.com/openclaw/skills/commit/327e8d43af53ad8b5c7f5e28626fd96e225ec610"
+    "version": "1.0.3",
+    "publishedAt": 1773297926167,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1772346971379,
+      "commit": "https://github.com/openclaw/skills/commit/327e8d43af53ad8b5c7f5e28626fd96e225ec610"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1772090273372,

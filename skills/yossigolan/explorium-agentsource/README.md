@@ -4,6 +4,12 @@ B2B prospecting and company intelligence using the AgentSource API. Describe who
 
 Works with **Claude Code**, **Claude Cowork**, **OpenClaw**, and any other AI agent environment that supports skills and plugins.
 
+## Installation
+
+```bash
+clawhub install explorium-agentsource
+```
+
 ## How It Works
 
 1. You describe a target in natural language
@@ -24,6 +30,11 @@ All API responses are written to temp files so that large payloads never appear 
 ## Quick Start
 
 ### 1. Install
+```bash
+clawhub install explorium-agentsource
+```
+
+Then run the setup script to configure the CLI and API key:
 ```bash
 ./setup.sh
 ```

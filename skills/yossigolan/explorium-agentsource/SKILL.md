@@ -1,9 +1,12 @@
 ---
 name: vibe-prospecting
-description: "Use this skill when the user wants to find companies (businesses) or people (contacts/prospects/leads) using the AgentSource B2B database. Trigger keywords include: find companies, find leads, find prospects, find contacts, B2B search, sales prospecting, market research, export to CSV, company events, funding signals, hiring signals, buying intent, intent signals, who is hiring, companies using [technology], decision makers at, CTO/CMO/VP of, enrich companies, enrich contacts, company firmographics, technographics, tech stack, Series A/B/C companies, target list. Requires: EXPLORIUM_API_KEY (env var or ~/.agentsource/config.json)."
+description: "B2B prospecting via Explorium AgentSource API. Requires EXPLORIUM_API_KEY. Find companies, prospects, enrich with firmographics/contacts, track events, export CSV. Trigger keywords: find companies, find leads, find prospects, find contacts, B2B search, sales prospecting, market research, export to CSV, company events, funding signals, hiring signals, buying intent, companies using [technology], decision makers at, CTO/CMO/VP of, enrich companies, enrich contacts, technographics, tech stack, Series A/B/C companies, target list."
 metadata:
-  primary_credential: "EXPLORIUM_API_KEY (env var or ~/.agentsource/config.json) — your Explorium AgentSource API key. Get one at https://developers.explorium.ai/reference/setup/getting_your_api_key"
-  data_sent_to_remote: "Search filters, entity IDs, and optional call_reasoning (opt-in) are sent to https://api.explorium.ai/v1/. See README Data & Privacy for full details."
+  primary_credential: EXPLORIUM_API_KEY
+  required_env_vars: EXPLORIUM_API_KEY
+  credential_description: "Explorium AgentSource API key — set via env var or run: python3 ~/.agentsource/bin/agentsource.py config --api-key <key>. Get one at https://developers.explorium.ai/reference/setup/getting_your_api_key"
+  data_sent_to_remote: "Search filters, entity IDs, and optional call_reasoning (opt-in) sent to https://api.explorium.ai/v1/. See README Data & Privacy."
+  install_script: setup.sh
 ---
 
 # Vibe Prospecting Skill
