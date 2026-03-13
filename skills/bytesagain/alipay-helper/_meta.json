@@ -1,11 +1,17 @@
 {
   "owner": "bytesagain",
   "slug": "alipay-helper",
-  "displayName": "Payment Integration 支付集成",
+  "displayName": "Alipay Helper",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773158720704,
-    "commit": "https://github.com/openclaw/skills/commit/1f53b73530637705e52f79ee689b47120db5ac03"
+    "version": "2.2.0",
+    "publishedAt": 1773420911813,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773158720704,
+      "commit": "https://github.com/openclaw/skills/commit/1f53b73530637705e52f79ee689b47120db5ac03"
+    }
+  ]
 }
