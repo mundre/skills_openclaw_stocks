@@ -25,6 +25,7 @@ src/
   staking.ts        — QFCStaking: validators, stake, scores
   epoch.ts          — QFCEpoch: epoch & finality
   inference.ts      — QFCInference: AI inference tasks
+  agent-wallet.ts   — AgentWalletClient: session-key-aware agent operations
   contract.ts       — QFCContract: read/write/deploy/verify contracts
   token.ts          — QFCToken: ERC-20 deploy/transfer/mint/burn/airdrop
   swap.ts           — QFCSwap: AMM token swap + WQFC wrapper
@@ -76,10 +77,16 @@ npm run build          # tsc → dist/
 npm run dev            # tsc --watch
 ```
 
-Publishing to ClawHub (`npm install -g clawhub` for global install, or use `npx clawhub@latest` instead):
+## Publishing to ClawHub
+
+Install: `npm install -g clawhub`
+
 ```bash
 # Login first (opens browser, one-time)
 clawhub login
+
+# Verify auth
+clawhub whoami
 
 # Publish — version should match package.json
 clawhub publish . --slug qfc --version X.Y.Z --changelog "..."
@@ -88,6 +95,27 @@ clawhub publish . --slug qfc --version X.Y.Z --changelog "..."
 clawhub install qfc
 clawhub update qfc
 ```
+
+### acceptLicenseTerms workaround
+
+ClawHub registry (as of 2026-03) requires `acceptLicenseTerms: true` in the
+publish payload, but the CLI (v0.6–v0.7) doesn't send it. If you get:
+
+```
+Error: Publish payload: acceptLicenseTerms: invalid value
+```
+
+Patch `$(npm root -g)/clawhub/dist/cli/commands/publish.js` — find the
+`form.set('payload', JSON.stringify({` block and add `acceptLicenseTerms: true`
+to the object.
+
+### Full release checklist
+
+1. Bump version in `package.json`
+2. `npm run build` — verify no errors
+3. `git add . && git commit && git push`
+4. `gh release create vX.Y.Z --title "vX.Y.Z — Title" --notes "..."`
+5. `clawhub publish . --slug qfc --version X.Y.Z --changelog "..."`
 
 ## Conventions
 

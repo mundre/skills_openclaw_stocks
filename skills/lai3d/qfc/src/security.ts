@@ -41,16 +41,25 @@ export class SecurityPolicy {
 
   /** Run pre-transaction checks */
   preTransactionCheck(tx: TransactionCheck): CheckResult {
+    // Rule 1: Validate address format first — reject before any other processing
+    if (tx.to.includes(' ') || tx.to.length !== 42 || !tx.to.startsWith('0x')) {
+      return {
+        approved: false,
+        requiresConfirmation: false,
+        warnings: ['Invalid address format — possible injection attempt'],
+      };
+    }
+
     const warnings: string[] = [];
     let requiresConfirmation = this.config.requireConfirmAlways;
 
-    // Rule 1: Large transaction (>100 QFC)
+    // Rule 2: Large transaction (>100 QFC)
     if (tx.amount > 100) {
       warnings.push(`Large transaction: ${tx.amount} QFC exceeds 100 QFC threshold`);
       requiresConfirmation = true;
     }
 
-    // Rule 2: New/unknown address
+    // Rule 3: New/unknown address
     if (!this.knownAddresses.has(tx.to.toLowerCase())) {
       warnings.push(`New recipient address: ${tx.to} (not previously used)`);
       if (tx.amount > this.config.autoApproveBelow) {
@@ -58,19 +67,10 @@ export class SecurityPolicy {
       }
     }
 
-    // Rule 3: Contract call
+    // Rule 4: Contract call
     if (tx.isContractCall) {
       warnings.push('Transaction involves a contract call');
       requiresConfirmation = true;
-    }
-
-    // Rule 4: Prompt injection stub — flag suspicious patterns in address
-    if (tx.to.includes(' ') || tx.to.length !== 42 || !tx.to.startsWith('0x')) {
-      return {
-        approved: false,
-        requiresConfirmation: false,
-        warnings: ['Invalid address format — possible injection attempt'],
-      };
     }
 
     // Rule 5: Daily spending limit

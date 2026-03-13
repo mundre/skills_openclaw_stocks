@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 
 export interface InferenceTaskStatus {
   taskId: string;
-  status: 'Pending' | 'Assigned' | 'Completed' | 'Failed' | 'Expired';
+  status: 'Pending' | 'Assigned' | 'Completed' | 'Failed' | 'Expired' | 'NotFound';
   submitter: string;
   taskType: string;
   modelId: string;
@@ -21,6 +21,23 @@ export interface InferenceTaskStatus {
   resultSize?: number;
   minerAddress?: string;
   executionTimeMs?: number;
+}
+
+export interface SubmitTaskRequest {
+  /** Task type, e.g. "text_generation", "speech_to_text" */
+  taskType: string;
+  /** Model identifier, e.g. "qwen2.5-0.5b" */
+  modelId: string;
+  /** Input data (base64-encoded for binary, plain text for text tasks) */
+  inputData: string;
+  /** Maximum fee in wei (hex string, e.g. "0x2386f26fc10000") */
+  maxFee: string;
+  /** Submitter address (hex) */
+  submitter: string;
+  /** Ed25519 signature over (taskType || modelId || inputData || maxFee) */
+  signature: string;
+  /** Language code for speech_to_text tasks (e.g. "en", "zh") */
+  language?: string;
 }
 
 export interface InferenceModel {
@@ -83,7 +100,23 @@ export class QFCInference {
 
   /** Query the status of a submitted inference task */
   async getTaskStatus(taskId: string): Promise<InferenceTaskStatus> {
-    return rpcCall(this.provider, 'qfc_getPublicTaskStatus', [taskId]);
+    try {
+      return await rpcCall(this.provider, 'qfc_getPublicTaskStatus', [taskId]);
+    } catch (err: any) {
+      if (typeof err?.message === 'string' && err.message.includes('Task not found')) {
+        return {
+          taskId,
+          status: 'NotFound',
+          submitter: '',
+          taskType: '',
+          modelId: '',
+          createdAt: 0,
+          deadline: 0,
+          maxFee: '0',
+        } as InferenceTaskStatus;
+      }
+      throw err;
+    }
   }
 
   /**
@@ -98,9 +131,28 @@ export class QFCInference {
     intervalMs: number = 2_000,
   ): Promise<InferenceTaskStatus> {
     const deadline = Date.now() + timeoutMs;
+    let sawInProgress = false;
     while (Date.now() < deadline) {
       const status = await this.getTaskStatus(taskId);
+      if (status.status === 'Pending' || status.status === 'Assigned') {
+        sawInProgress = true;
+      }
       if (status.status === 'Completed' || status.status === 'Failed' || status.status === 'Expired') {
+        return status;
+      }
+      // qfc-core #69: completed/expired/failed tasks are deleted from TaskPool,
+      // so getTaskStatus returns NotFound. If we previously saw the task in progress,
+      // treat this as Expired rather than an error.
+      if (status.status === 'NotFound' && sawInProgress) {
+        return {
+          ...status,
+          status: 'Expired',
+          result: undefined,
+          resultType: undefined,
+          _note: 'Task disappeared from TaskPool after being in progress (qfc-core #69). Likely Expired.',
+        } as InferenceTaskStatus & { _note: string };
+      }
+      if (status.status === 'NotFound') {
         return status;
       }
       await new Promise((r) => setTimeout(r, intervalMs));
@@ -136,7 +188,7 @@ export class QFCInference {
     const result = await rpcCall(this.provider, 'qfc_submitPublicTask', [
       { ...payload, signature },
     ]);
-    return result.taskId;
+    return typeof result === 'string' ? result : result.taskId;
   }
 
   /** Estimate the fee for an inference task */
@@ -201,7 +253,8 @@ export class QFCInference {
    * JSON envelopes with the same structure.
    */
   decodeResult(base64Result: string): DecodedResult {
-    const envelope = JSON.parse(base64Result);
+    const json = Buffer.from(base64Result, 'base64').toString('utf-8');
+    const envelope = JSON.parse(json);
     const outputRaw = Buffer.from(envelope.output_base64, 'base64').toString('utf-8');
     let output: any;
     try {

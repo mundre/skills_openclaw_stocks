@@ -76,7 +76,10 @@ export class QFCWallet {
       value: ethers.parseEther(amount),
       gasLimit: opts?.gasLimit,
     });
-    await tx.wait();
+    const receipt = await this.waitForReceipt(tx.hash);
+    if (receipt.status !== '0x1') {
+      throw new Error(`Transaction reverted (tx: ${tx.hash})`);
+    }
     return {
       txHash: tx.hash,
       explorerUrl: `${this.networkConfig.explorerUrl}/txs/${tx.hash}`,

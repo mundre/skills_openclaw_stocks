@@ -3,6 +3,7 @@ import { NetworkName, createProvider, getNetworkConfig } from './provider.js';
 import { QFCFaucet } from './faucet.js';
 import { QFCChain } from './chain.js';
 import { QFCToken } from './token.js';
+import { QFCMinerMonitor } from './miner-monitor.js';
 
 export interface BotCommand {
   command: string;
@@ -27,6 +28,7 @@ export class QFCDiscordBot {
   private faucet: QFCFaucet | null;
   private chain: QFCChain;
   private token: QFCToken;
+  private minerMonitor: QFCMinerMonitor;
 
   constructor(network: NetworkName = 'testnet') {
     this.network = network;
@@ -34,6 +36,7 @@ export class QFCDiscordBot {
     this.provider = createProvider(network);
     this.chain = new QFCChain(network);
     this.token = new QFCToken(network);
+    this.minerMonitor = new QFCMinerMonitor(network);
     // Faucet is only available on testnet
     this.faucet = network === 'testnet' ? new QFCFaucet(network) : null;
   }
@@ -71,6 +74,8 @@ export class QFCDiscordBot {
           return await this.cmdBlock(cmd.args);
         case 'price':
           return await this.cmdPrice();
+        case 'miner':
+          return await this.cmdMiner(cmd.args);
         case 'info':
           return await this.cmdInfo();
         default:
@@ -105,6 +110,7 @@ export class QFCDiscordBot {
       '`!tx <hash>` — Look up a transaction',
       '`!block [number|latest]` — Get block info',
       '`!price` — Show current gas price',
+      '`!miner <address>` — Show miner earnings & status',
       '`!info` — Show network info',
     ];
     return { success: true, message: lines.join('\n') };
@@ -246,6 +252,42 @@ export class QFCDiscordBot {
         `> **Current:** \`${gasPrice}\` gwei`,
       ].join('\n'),
     };
+  }
+
+  private async cmdMiner(args: string[]): Promise<BotResponse> {
+    if (args.length === 0) {
+      return { success: false, message: 'Usage: `!miner <address>`' };
+    }
+    const address = args[0];
+    if (!ethers.isAddress(address)) {
+      return { success: false, message: '**Error:** Invalid address format. Expected `0x` + 40 hex characters.' };
+    }
+
+    const status = await this.minerMonitor.getStatus(address);
+    const recentEarnings = await this.minerMonitor.getRecentEarnings(address);
+    const minerUrl = `${this.networkConfig.explorerUrl}/miner/${address}`;
+
+    const lines = [
+      '**⛏️ Miner Status**',
+      `> **Address:** [\`${address.slice(0, 10)}...${address.slice(-8)}\`](${minerUrl})`,
+      `> **Total Earned:** \`${status.totalEarnedQfc}\` QFC`,
+      `> **Available:** \`${ethers.formatEther(BigInt(status.available))}\` QFC`,
+      `> **Locked:** \`${ethers.formatEther(BigInt(status.locked))}\` QFC`,
+      `> **Score:** ${status.contributionScore}/100`,
+      `> **Vesting Tranches:** ${status.activeTranches}`,
+    ];
+
+    if (recentEarnings.length > 0) {
+      lines.push('', '**Recent Earnings:**');
+      for (const e of recentEarnings.slice(0, 5)) {
+        lines.push(`> \`${e.rewardQfc}\` QFC — ${e.taskType} (block ${e.blockHeight})`);
+      }
+      if (recentEarnings.length > 5) {
+        lines.push(`> *...and ${recentEarnings.length - 5} more*`);
+      }
+    }
+
+    return { success: true, message: lines.join('\n') };
   }
 
   private async cmdInfo(): Promise<BotResponse> {

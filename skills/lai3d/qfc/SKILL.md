@@ -2,6 +2,7 @@
 name: qfc-openclaw-skill
 description: QFC blockchain interaction — wallet, faucet, chain queries, staking, epoch & finality, AI inference
 homepage: https://github.com/qfc-network/qfc-openclaw-skill
+license: MIT
 metadata: {"openclaw":{"requires":{"bins":["node"]}}}
 ---
 
@@ -124,6 +125,41 @@ metadata: {"openclaw":{"requires":{"bins":["node"]}}}
 - **Custom Prefix**: Configurable command prefix (default `!`)
 - **Example Script**: See `scripts/discord-bot-example.mjs` for discord.js integration pattern
 
+### Agent Registry (v3.2)
+- **Register Agent**: Register an AI agent on-chain with permissions, daily spending limit, max-per-tx limit, and initial QFC deposit
+- **Fund Agent**: Top up an agent's on-chain deposit with additional QFC
+- **Revoke Agent**: Deactivate a registered agent on the registry
+- **Get Agent**: Query agent info by ID (owner, address, permissions, deposit, daily spend, active status)
+- **List Agents**: List all agent IDs owned by an address
+- **Issue Session Key**: Authorize a session key address for an agent with a time-limited duration
+- **Rotate Session Key**: Atomically revoke an old session key and issue a new one
+- **Revoke Session Key**: Immediately deactivate a session key
+- **Get Session Key**: Query session key details (expiration, active status)
+- **Validate Session Key**: Check if a session key address is currently valid
+
+### Safe Execution Mode (v3.3)
+- **Preflight Check**: Query on-chain agent state before submitting any transaction
+  - Verifies agent exists and is active
+  - Checks required permission is granted
+  - Validates amount within per-tx limit (maxPerTx)
+  - Validates amount within remaining daily budget (dailyLimit − spentToday)
+  - Checks sufficient deposit balance
+  - Optionally validates session key is active and not expired
+- **Human-Readable Deny Reasons**: Returns clear explanations for each failed check
+- **Warnings**: Alerts for near-limit conditions (>80% daily budget, >90% deposit used)
+- **Dry-Run Mode**: Run all checks without submitting the transaction (`dryRun: true`)
+- **Safe Fund Agent**: `safeFundAgent()` — preflight + fund in one call
+- **Generic Safe Execute**: `safeExecute()` — preflight + arbitrary callback, blocks if policy denied
+
+### Agent Wallet Client (v3.4)
+- **AgentWalletClient**: High-level client wrapping QFCAgent + QFCInference for autonomous agent operations
+- **Session-Key Inference**: Submit inference tasks using a session key instead of the owner's long-lived private key — the on-chain registry validates the session key's permissions and spending limits
+- **Preflight-Guarded Submission**: Automatically runs preflight policy checks before every inference submission (permission, daily budget, deposit balance, session key validity)
+- **Full Agent Lifecycle**: register, fund, revoke, status, list — all through a single client
+- **Session Key Management**: issue, rotate, revoke, validate session keys
+- **Fee Estimation**: Estimate inference cost before submission
+- **Demo Scenarios**: Autonomous Trader, Content Generator, AI Oracle — see `scripts/demo-*.mjs`
+
 ### AI Inference (v2.1)
 - **List Models**: Approved AI models from the on-chain registry (name, version, GPU tier)
 - **Inference Stats**: Network-wide statistics (tasks completed, active miners, avg time, FLOPS, pass rate)
@@ -168,6 +204,8 @@ Mainnet RPC: https://rpc.qfc.network (chain ID: 9001)
 | `marketplace` | `QFCMarketplace` | NFT marketplace (list/buy/sell) |
 | `multicall` | `QFCMulticall` | Batch contract reads in single RPC |
 | `events` | `QFCEvents` | Event subscriptions via polling |
+| `agent` | `QFCAgent` | AI agent registry — register, fund, revoke, session keys |
+| `agent-wallet` | `AgentWalletClient` | High-level agent wallet — session-key inference, lifecycle, safe execution |
 | `inference` | `QFCInference` | AI inference task submission & results |
 | `provider` | — | Shared provider creation & RPC helper |
 
@@ -417,6 +455,69 @@ Check the status of inference task 0xdef456...
 Show me QFC inference network statistics
 ```
 
+### Agent Registry
+```
+Register an AI agent called "my-agent" with Transfer permission, 100 QFC daily limit, 10 QFC max per tx, and 5 QFC deposit
+```
+
+```
+Fund agent "my-agent" with 50 QFC
+```
+
+```
+Issue a session key for agent "my-agent" to address 0x1234... valid for 1 hour
+```
+
+```
+Rotate the session key for agent "my-agent" from 0xOLD... to 0xNEW... with 2 hour validity
+```
+
+```
+Revoke the session key at 0x1234... for agent "my-agent"
+```
+
+```
+Is session key 0x1234... still valid?
+```
+
+```
+Show info for agent "my-agent"
+```
+
+```
+List all agents owned by 0xfe913E97238B28abac7a55173f5878fD29147210
+```
+
+### Safe Execution Mode
+```
+Check if agent "my-agent" can spend 50 QFC (dry run, don't submit)
+```
+
+```
+Safely fund agent "my-agent" with 20 QFC — check policy first, then submit if allowed
+```
+
+```
+Run preflight check for agent "my-agent" with Transfer permission and 5 QFC amount
+```
+
+### Agent Wallet Client
+```
+Create an autonomous trader agent: register "trader-1" with InferenceSubmit and Transfer permissions, 100 QFC daily limit, issue a session key, then submit a sentiment analysis inference using only the session key
+```
+
+```
+Set up a content generator agent with InferenceSubmit-only permission and a 7-day session key
+```
+
+```
+Run an AI oracle: register agent, estimate inference fee, run preflight check, then submit a query — all using the session key
+```
+
+```
+Submit an inference task as agent "my-agent" using session key — model qfc-embed-small, input "Hello world"
+```
+
 ### Discord Bot
 ```
 Set up a QFC Discord bot using scripts/discord-bot-example.mjs as a template
@@ -440,3 +541,10 @@ Integrate QFCDiscordBot into my existing Discord bot to handle !balance and !fau
 | MODEL_NOT_FOUND | Unknown model ID | List models with getModels() |
 | TASK_EXPIRED | Inference task timed out | Resubmit with higher fee |
 | FEE_TOO_LOW | Max fee below minimum | Use estimateFee() to get base price |
+| AGENT_NOT_FOUND | Unknown agent ID | Check agentId, list agents with listAgents() |
+| SESSION_KEY_EXPIRED | Session key past expiry | Issue or rotate to a new session key |
+| PREFLIGHT_DENIED | Policy check failed | Inspect preflight.reasons[] for details |
+| DAILY_LIMIT_EXCEEDED | Amount exceeds remaining daily budget | Wait for daily reset or increase limit |
+| PER_TX_LIMIT_EXCEEDED | Amount exceeds per-transaction cap | Split into smaller transactions |
+| DEPOSIT_INSUFFICIENT | Agent deposit too low | Fund agent with fundAgent() |
+| PERMISSION_DENIED | Agent lacks required permission | Re-register with correct permissions |

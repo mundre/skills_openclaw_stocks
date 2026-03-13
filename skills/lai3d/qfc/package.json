@@ -1,6 +1,6 @@
 {
   "name": "@qfc/openclaw-skill",
-  "version": "3.0.0",
+  "version": "3.4.0",
   "description": "QFC blockchain skill for AI agents — wallet management and chain interaction",
   "type": "module",
   "main": "./dist/index.js",

@@ -39,6 +39,20 @@ export class QFCContract {
     this.provider = createProvider(network);
   }
 
+  /** Poll for transaction receipt via raw RPC (avoids ethers.js log-parsing issues on QFC) */
+  private async waitForReceipt(
+    txHash: string,
+    timeoutMs: number = 120_000,
+  ): Promise<{ status: string; hash: string; blockNumber: string; gasUsed: string; logs: Array<{ address: string; topics: string[]; data: string }> }> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const raw = await this.provider.send('eth_getTransactionReceipt', [txHash]);
+      if (raw) return { ...raw, hash: txHash };
+    }
+    throw new Error(`Transaction ${txHash} not confirmed after ${timeoutMs / 1000}s`);
+  }
+
   /**
    * Read contract state (no gas, no signer needed).
    * @param address - contract address
@@ -89,12 +103,15 @@ export class QFCContract {
       overrides.value = ethers.parseEther(value);
     }
     const tx = await contract[method](...args, overrides);
-    const receipt = await tx.wait();
+    const receipt = await this.waitForReceipt(tx.hash);
+    if (receipt.status !== '0x1') {
+      throw new Error(`Transaction reverted (tx: ${tx.hash})`);
+    }
     return {
-      txHash: receipt.hash,
-      explorerUrl: `${this.networkConfig.explorerUrl}/txs/${receipt.hash}`,
+      txHash: tx.hash,
+      explorerUrl: `${this.networkConfig.explorerUrl}/txs/${tx.hash}`,
       gasUsed: Number(receipt.gasUsed),
-      logs: receipt.logs.map((log: ethers.Log) => ({
+      logs: (receipt.logs ?? []).map((log: { address: string; topics: string[]; data: string }) => ({
         address: log.address,
         topics: log.topics as string[],
         data: log.data,
