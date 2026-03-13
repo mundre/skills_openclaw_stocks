@@ -1,13 +1,18 @@
 {
   "owner": "iret77",
   "slug": "palaia",
-  "displayName": "Palaia Skill Pub",
+  "displayName": "Palaia",
   "latest": {
-    "version": "1.3.2",
-    "publishedAt": 1773339730042,
-    "commit": "https://github.com/openclaw/skills/commit/79b28e1397db4f431e6651ad5aa44e15e90bf078"
+    "version": "1.8.1-fix5",
+    "publishedAt": 1773430434003,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.3.2",
+      "publishedAt": 1773339730042,
+      "commit": "https://github.com/openclaw/skills/commit/79b28e1397db4f431e6651ad5aa44e15e90bf078"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1773244875863,
