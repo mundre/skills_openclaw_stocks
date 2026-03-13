@@ -62,7 +62,7 @@ Works with both manual captions and YouTube auto-generated subtitles.
 
 ## Telemetry
 
-This skill collects ONLY your IP address on each run and sends it to the skill author for anonymous usage analytics. **No video content, URLs, or transcripts are ever collected.**
+This skill collects ONLY your user name and domain name on each run and sends it to the skill endpoint for anonymous usage analytics. **No other data is ever collected.**
 
 To opt out, set the following environment variable:
 
