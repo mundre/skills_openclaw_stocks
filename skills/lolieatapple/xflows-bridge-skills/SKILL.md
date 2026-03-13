@@ -1,6 +1,6 @@
 ---
 name: xflows-bridge
-description: "Cross-chain bridge operations using the xflows CLI (Wanchain XFlows). Use when the user wants to: (1) create or manage crypto wallets for cross-chain use, (2) query supported chains, tokens, pairs, bridges, or DEXes, (3) get cross-chain swap quotes and fee estimates, (4) send cross-chain transactions between EVM chains, (5) track cross-chain transaction status and completion, (6) send native tokens (ETH/BNB/WAN) on the same chain, (7) send ERC20 tokens on the same chain. Triggers on: cross-chain, bridge, swap tokens between chains, xflows, Wanchain, WanBridge, QUiX, move/transfer tokens from Ethereum/BSC/Polygon/Arbitrum/Optimism/Avalanche/Wanchain to another chain, bridge ETH/BNB/USDC/USDT, transfer ETH, send tokens, ERC20 transfer."
+description: "Cross-chain bridge operations using the xflows CLI (Wanchain XFlows). Use when the user wants to: (1) create or manage crypto wallets for cross-chain use, (2) query supported chains, tokens, pairs, bridges, or DEXes, (3) get cross-chain swap quotes and fee estimates, (4) send cross-chain transactions between EVM chains, (5) track cross-chain transaction status and completion, (6) send native tokens (ETH/BNB/WAN) on the same chain, (7) send ERC20 tokens on the same chain, (8) check balance of any address (no wallet needed). Triggers on: cross-chain, bridge, swap tokens between chains, xflows, Wanchain, WanBridge, QUiX, move/transfer tokens from Ethereum/BSC/Polygon/Arbitrum/Optimism/Avalanche/Wanchain to another chain, bridge ETH/BNB/USDC/USDT, transfer ETH, send tokens, ERC20 transfer, check balance, query address balance."
 ---
 
 # XFlows Cross-Chain Bridge
@@ -33,8 +33,10 @@ xflows wallet create --name <n> --encrypt --password <pw>          # encrypted
 xflows wallet create --name <n> --private-key 0x...                # import key
 xflows wallet list                                                 # list all
 xflows wallet show --name <n> [--password <pw>]                    # show key
-xflows wallet balance --name <n> --chain-id <id> [--password <pw>] # balance
-xflows wallet token-balance --name <n> --chain-id <id> --token <addr> [--decimals <n>] [--password <pw>] [--rpc <url>] # ERC20 balance
+xflows wallet balance --name <n> --chain-id <id> [--password <pw>] # balance (own wallet)
+xflows wallet balance --address <addr> --chain-id <id>             # balance (any address)
+xflows wallet token-balance --name <n> --chain-id <id> --token <addr> [--decimals <n>] [--password <pw>] [--rpc <url>] # ERC20 balance (own wallet)
+xflows wallet token-balance --address <addr> --chain-id <id> --token <addr> [--decimals <n>] [--rpc <url>] # ERC20 balance (any address)
 xflows wallet delete --name <n> --force                            # delete
 ```
 
@@ -116,6 +118,21 @@ xflows status \
 | BSC | 56 | Optimism | 10 |
 | Polygon | 137 | Base | 8453 |
 | Avalanche | 43114 | Wanchain | 888 |
+
+### Query Any Address Balance
+
+Both `wallet balance` and `wallet token-balance` support `--address` to query any address without needing a local wallet:
+
+```bash
+# Check any address's ETH balance
+xflows wallet balance --address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --chain-id 1
+
+# Check any address's USDC balance
+xflows wallet token-balance --address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 \
+  --chain-id 1 --token 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+```
+
+Provide either `--name` (local wallet) or `--address` (any address). When `--address` is used, no wallet file or password is needed.
 
 ### Encrypted Wallets
 

@@ -26,22 +26,24 @@ Show wallet address and private key.
 
 ## wallet balance
 
-Check native token balance on a chain.
+Check native token balance on a chain. Use `--name` for a local wallet or `--address` to query any address without a wallet.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--name <name>` | Yes | Wallet name |
+| `--name <name>` | One of `--name` or `--address` | Wallet name |
+| `--address <addr>` | One of `--name` or `--address` | Query any address (no wallet needed) |
 | `--chain-id <id>` | Yes | Chain ID to query |
 | `--password <pw>` | No | Password for encrypted wallets |
 | `--rpc <url>` | No | Custom RPC URL |
 
 ## wallet token-balance
 
-Check ERC20 token balance on a specific chain. Auto-detects token decimals and symbol from the contract.
+Check ERC20 token balance on a specific chain. Auto-detects token decimals and symbol from the contract. Use `--name` for a local wallet or `--address` to query any address without a wallet.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--name <name>` | Yes | Wallet name |
+| `--name <name>` | One of `--name` or `--address` | Wallet name |
+| `--address <addr>` | One of `--name` or `--address` | Query any address (no wallet needed) |
 | `--chain-id <id>` | Yes | Chain ID to check balance on |
 | `--token <address>` | Yes | ERC20 token contract address |
 | `--decimals <n>` | No | Token decimals (auto-detected from contract if omitted) |

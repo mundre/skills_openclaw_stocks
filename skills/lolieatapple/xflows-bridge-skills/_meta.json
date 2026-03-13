@@ -3,9 +3,15 @@
   "slug": "xflows-bridge-skills",
   "displayName": "Xflows Bridge",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1773035600011,
-    "commit": "https://github.com/openclaw/skills/commit/a43173e897ab245321928affc0ffe79df2473517"
+    "version": "0.2.0",
+    "publishedAt": 1773210154238,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1773035600011,
+      "commit": "https://github.com/openclaw/skills/commit/a43173e897ab245321928affc0ffe79df2473517"
+    }
+  ]
 }
