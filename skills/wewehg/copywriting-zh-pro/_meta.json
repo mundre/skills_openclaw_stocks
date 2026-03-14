@@ -1,11 +1,17 @@
 {
   "owner": "wewehg",
   "slug": "copywriting-zh-pro",
-  "displayName": "Copywriting ZH Pro",
+  "displayName": "介绍文案大师（跨境/小红书/公众号等）",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1773338694209,
-    "commit": "https://github.com/openclaw/skills/commit/5c155ecd6af61b4e48e67019341dbc119453453f"
+    "version": "0.1.1",
+    "publishedAt": 1773340030185,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1773338694209,
+      "commit": "https://github.com/openclaw/skills/commit/5c155ecd6af61b4e48e67019341dbc119453453f"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 ---
 name: copywriting-zh-pro
-description: Write persuasive, conversion-focused copy in Chinese or English for landing pages, sales pages, ads, email campaigns, product descriptions, scripts, social posts, headlines, hooks, CTAs, and marketing materials. Use when the user asks to 写文案、润色文案、起标题、写广告、写销售页、写落地页、写邮件、写小红书/朋友圈/公众号/短视频脚本、优化转化、提升点击率、做A/B测试文案，或任何需要说服、成交、引导行动的文本。
+description: 中文文案增强大师，擅长跨境推广、小红书、公众号、朋友圈、短视频、电商详情页、广告投放、落地页、销售页、邮件营销、品牌文案与老板过稿版输出。Use when the user asks to 写文案、改文案、润色、起标题、写介绍、写品牌文案、写广告、写跨境营销文案、写小红书、写公众号、写朋友圈、写短视频口播、写商品详情页、提高点击率、提高转化率、做A/B测试，或任何需要说服、种草、成交、引导行动的文本。
 ---
 
 # Copywriting
@@ -399,6 +399,34 @@ Preferred labels:
 
 If the task is ambiguous, choose one primary recommendation and explain the assumption in one short line.
 If the user seems to be presenting upward, avoid slangy over-creativity unless explicitly requested.
+
+### Mode E: Cross-Border / Overseas Marketing Copy
+Use for Amazon / Shopify / 独立站 / TikTok Shop / Meta ads / Google ads / overseas landing pages / product intros for global buyers / bilingual campaigns.
+
+Rules:
+- separate domestic-Chinese tone from export / global-selling tone
+- focus on value proposition, buyer pain, differentiation, compliance-safe claims, and clear CTA
+- avoid untranslated Chinese sales clichés in English output
+- when writing Chinese briefs for cross-border teams, keep terminology production-friendly and channel-specific
+- if writing English copy, prefer natural, concise marketing English over literal translation
+
+Default output:
+- angle summary
+- headline x5
+- product intro x3
+- ad hook x5
+- CTA x5
+- channel adaptation notes
+
+Useful cross-border angles:
+- save time / reduce effort
+- solve a specific pain fast
+- improve workflow or lifestyle
+- premium quality without premium friction
+- better than generic alternatives
+- clearer fit for a defined buyer segment
+
+If the user wants both Chinese and English, provide side-by-side versions only when it stays readable; otherwise separate by language.
 
 ---
 
