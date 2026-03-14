@@ -1,11 +1,30 @@
 ---
 name: tomtat-video
-description: Tóm tắt nội dung video YouTube từ đường link cung cấp. Sử dụng khi anh Vũ gửi link video và yêu cầu tóm tắt, trích xuất ý chính hoặc phân tích nội dung video đó.
+description: Tóm tắt nội dung video YouTube từ đường link cung cấp. Hỗ trợ trích xuất transcript tự động và phân tích ý chính chuyên sâu. Yêu cầu máy chủ có cài đặt yt-dlp và ffmpeg.
 ---
 
 # Tóm tắt Video YouTube
 
-Skill này giúp em lấy transcript (phụ đề) từ video YouTube và tóm tắt lại nội dung theo yêu cầu của anh Vũ.
+Skill này giúp em lấy transcript (phụ đề) từ video YouTube và tóm tắt lại nội dung một cách logic và súc tích nhất.
+
+## Yêu cầu hệ thống
+
+Để skill này hoạt động ổn định, máy của anh cần được cài đặt hai công cụ quan trọng sau:
+
+1.  **yt-dlp**: Công cụ mạnh mẽ để tải thông tin và phụ đề từ YouTube.
+2.  **ffmpeg**: Bộ công cụ xử lý đa phương tiện.
+
+### Lệnh cài đặt nhanh (cho Linux/Ubuntu)
+
+Anh chạy dòng lệnh sau trong terminal nhé:
+
+```bash
+# Cài đặt ffmpeg
+sudo apt update && sudo apt install -y ffmpeg
+
+# Cài đặt yt-dlp bản mới nhất qua pip3
+python3 -m pip install -U yt-dlp
+```
 
 ## Quy trình thực hiện
 
