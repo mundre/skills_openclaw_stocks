@@ -3,9 +3,15 @@
   "slug": "undertow",
   "displayName": "Undertow",
   "latest": {
-    "version": "0.2.0",
-    "publishedAt": 1773264091337,
-    "commit": "https://github.com/openclaw/skills/commit/06d378a87843cc9bab077a145677755bfc538d4c"
+    "version": "0.2.2",
+    "publishedAt": 1773350262703,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.0",
+      "publishedAt": 1773264091337,
+      "commit": "https://github.com/openclaw/skills/commit/06d378a87843cc9bab077a145677755bfc538d4c"
+    }
+  ]
 }
