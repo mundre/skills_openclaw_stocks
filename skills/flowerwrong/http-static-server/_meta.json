@@ -1,0 +1,11 @@
+{
+  "owner": "flowerwrong",
+  "slug": "http-static-server",
+  "displayName": "one line HTTP static server",
+  "latest": {
+    "version": "2026.3.10",
+    "publishedAt": 1773306160564,
+    "commit": null
+  },
+  "history": []
+}
