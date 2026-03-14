@@ -1,0 +1,11 @@
+{
+  "owner": "willin",
+  "slug": "agent-status-monitor",
+  "displayName": "Agent Status Monitor",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773494010966,
+    "commit": null
+  },
+  "history": []
+}
