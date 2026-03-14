@@ -1,0 +1,11 @@
+{
+  "owner": "lilisidu1210-ui",
+  "slug": "gpt-chat",
+  "displayName": "调用closeai的gpt",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773380806696,
+    "commit": null
+  },
+  "history": []
+}
