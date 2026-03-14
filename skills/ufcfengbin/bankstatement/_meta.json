@@ -1,0 +1,11 @@
+{
+  "owner": "ufcfengbin",
+  "slug": "bankstatement",
+  "displayName": "银行流水解析，流水报告生成等",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773300572284,
+    "commit": null
+  },
+  "history": []
+}
