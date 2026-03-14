@@ -3,9 +3,15 @@
   "slug": "bio-chat-qpcr-primer-designer",
   "displayName": "qpcr-primer-designer",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1773242179147,
-    "commit": "https://github.com/openclaw/skills/commit/e89d71e440cfd3da7328920dab1526045e28384f"
+    "version": "1.0.3",
+    "publishedAt": 1773241346032,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1773242179147,
+      "commit": "https://github.com/openclaw/skills/commit/e89d71e440cfd3da7328920dab1526045e28384f"
+    }
+  ]
 }

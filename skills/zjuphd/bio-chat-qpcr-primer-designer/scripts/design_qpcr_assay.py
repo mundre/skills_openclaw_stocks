@@ -2,7 +2,6 @@ import argparse
 import requests
 import json
 import time
-import math
 
 def get_transcript(accession):
     if not accession: return None
@@ -19,6 +18,7 @@ def get_transcript(accession):
     return None
 
 def get_exon_junctions(accession):
+    """获取外显子拼接点坐标"""
     print(f"Fetching exon annotation for {accession}...")
     url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id={accession}&rettype=gb&retmode=text"
     junctions = []
@@ -46,53 +46,47 @@ def get_exon_junctions(accession):
     return junctions
 
 def map_homolog_junctions(target_seq, homolog_acc):
+    """硬核解法：利用同源物种(如Human)的外显子边界映射到目标序列"""
     print(f"Mapping homolog junctions from {homolog_acc} to target...")
     homolog_seq = get_transcript(homolog_acc)
-    if not homolog_seq: return []
+    homolog_gb = ""
+    url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id={homolog_acc}&rettype=gb&retmode=text"
+    for _ in range(3):
+        try:
+            res = requests.get(url, timeout=10)
+            if res.status_code == 200:
+                homolog_gb = res.text
+                break
+        except: time.sleep(1)
+    
+    if not homolog_seq or not homolog_gb:
+        print("Failed to retrieve homolog data.")
+        return []
     
     h_juncs = get_exon_junctions(homolog_acc)
     target_juncs = []
     
     for j in h_juncs:
-        if 20 < j < len(homolog_seq) - 20:
-            anchor = homolog_seq[j-20 : j+20]
+        if 15 < j < len(homolog_seq) - 15:
+            anchor = homolog_seq[j-15 : j+15]
             idx = target_seq.find(anchor)
             if idx != -1:
-                target_juncs.append(idx + 20)
+                target_juncs.append(idx + 15)
             else:
-                # Sliding window alignment (Simplified Smith-Waterman logic)
-                for offset in range(-5, 6):
-                    sub_anchor = homolog_seq[j-15+offset : j+15+offset]
-                    idx_sub = target_seq.find(sub_anchor)
-                    if idx_sub != -1:
-                        target_juncs.append(idx_sub + 15 - offset)
-                        break
+                anchor_left = homolog_seq[j-15 : j]
+                idx_left = target_seq.find(anchor_left)
+                if idx_left != -1:
+                    target_juncs.append(idx_left + 15)
     
-    return sorted(list(set(target_juncs)))
+    print(f"Successfully mapped {len(target_juncs)} junctions using homology.")
+    return target_juncs
 
 def calculate_tm_nn(seq):
-    if not seq: return 0
-    # Values from SantaLucia (1998)
-    nn_data = {
-        'AA': (-7.9, -22.2), 'TT': (-7.9, -22.2), 'AT': (-7.2, -20.4), 'TA': (-7.2, -21.3),
-        'CA': (-8.5, -22.7), 'TG': (-8.5, -22.7), 'GT': (-8.4, -22.4), 'AC': (-8.4, -22.4),
-        'CT': (-7.8, -21.0), 'AG': (-7.8, -21.0), 'GA': (-8.2, -22.2), 'TC': (-8.2, -22.2),
-        'CG': (-10.6, -27.2), 'GC': (-9.8, -24.4), 'GG': (-8.0, -19.9), 'CC': (-8.0, -19.9)
-    }
-    h, s = 0.2, -5.7 # Initial
-    seq = seq.upper()
-    for i in range(len(seq) - 1):
-        dinuc = seq[i:i+2]
-        if dinuc in nn_data:
-            dh, ds = nn_data[dinuc]
-            h += dh
-            s += ds
-    if seq[0] in 'AT': h += 2.2; s += 6.9
-    if seq[-1] in 'AT': h += 2.2; s += 6.9
-    # Na+ = 50mM, Primer = 0.2uM
-    s += 0.368 * (len(seq) - 1) * math.log(0.05)
-    tm = (1000 * h) / (s + 1.987 * math.log(0.0000002 / 4.0)) - 273.15
-    return round(float(tm), 1)
+    """使用基础算法计算 Tm"""
+    if len(seq) == 0: return 0
+    gc = seq.count('G') + seq.count('C')
+    at = len(seq) - gc
+    return float(at * 2 + gc * 4)
 
 def rev_comp(seq):
     complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N'}
@@ -100,18 +94,37 @@ def rev_comp(seq):
 
 def check_self_dimer(seq):
     rc = rev_comp(seq)
-    for length in range(4, 8):
+    for length in range(4, min(8, len(seq))):
         for i in range(len(seq) - length + 1):
-            if seq[i:i+length] in rc: return True
+            if seq[i:i+length] in rc:
+                return True
     return False
 
 def check_3prime_quality(seq):
     last_5 = seq[-5:]
-    return (last_5.count('G') + last_5.count('C')) <= 4
+    gc_count = last_5.count('G') + last_5.count('C')
+    return gc_count <= 4 # 针对高GC物种放宽到4
+
+def check_3prime_mismatch(primer_seq, off_target_seq):
+    if not off_target_seq: return True
+    prefix = primer_seq[:-3]
+    idx = off_target_seq.find(prefix)
+    if idx != -1:
+        match_region = off_target_seq[idx : idx+len(primer_seq)]
+        if match_region[-3:] == primer_seq[-3:]:
+            return False
+    return True
 
 def spans_exon_junction(start, end, junctions):
     for j in junctions:
-        if start + 4 <= j <= end - 4: return True
+        if start + 3 <= j <= end - 3:
+            return True
+    return False
+
+def check_intron_spanning(f_start, f_end, r_start, r_end, junctions):
+    for j in junctions:
+        if f_end < j < r_start:
+            return True
     return False
 
 def design_assay(target_seq, offtarget_seq=None, junctions=None, amplicon_range=(70, 150)):
@@ -119,38 +132,98 @@ def design_assay(target_seq, offtarget_seq=None, junctions=None, amplicon_range=
     seq_len = len(target_seq)
     if not junctions: junctions = []
     
-    for f in range(20, seq_len - amplicon_range[1] - 30):
-        for length in range(17, 24):
+    for f in range(20, seq_len - amplicon_range[1] - 50):
+        for length in range(16, 23):
             f_seq = target_seq[f : f+length]
             f_tm = calculate_tm_nn(f_seq)
-            if 58 <= f_tm <= 65:
+            f_gc = (f_seq.count('G') + f_seq.count('C')) / float(length)
+            
+            if 58 <= f_tm <= 68 and 0.40 <= f_gc <= 0.90:
                 if check_3prime_quality(f_seq) and not check_self_dimer(f_seq):
-                    for r_len in range(17, 24):
-                        for r in range(f + amplicon_range[0], f + amplicon_range[1]):
-                            if r + r_len > seq_len: break
-                            r_seq = rev_comp(target_seq[r : r+r_len])
-                            r_tm = calculate_tm_nn(r_seq)
-                            if 58 <= r_tm <= 65 and abs(f_tm - r_tm) <= 2.5:
-                                if check_3prime_quality(r_seq) and not check_self_dimer(r_seq):
-                                    is_gdna_safe = True if not junctions else (spans_exon_junction(f, f+length, junctions) or spans_exon_junction(r, r+r_len, junctions))
-                                    if is_gdna_safe:
-                                        candidates.append({
-                                            "Amplicon": f"{r + r_len - f}bp",
-                                            "F_Primer": {"seq": f_seq, "tm": f_tm},
-                                            "R_Primer": {"seq": r_seq, "tm": r_tm}
-                                        })
-                                        if len(candidates) >= 5: return candidates
+                    if check_3prime_mismatch(f_seq, offtarget_seq):
+                        for r_len in range(16, 23):
+                            for r in range(f + amplicon_range[0], f + amplicon_range[1]):
+                                if r + r_len > seq_len: break
+                                r_seq_plus = target_seq[r : r+r_len]
+                                r_seq = rev_comp(r_seq_plus)
+                                r_tm = calculate_tm_nn(r_seq)
+                                r_gc = (r_seq.count('G') + r_seq.count('C')) / float(r_len)
+                                
+                                if 58 <= r_tm <= 68 and 0.40 <= r_gc <= 0.90 and abs(f_tm - r_tm) <= 4.0:
+                                    if check_3prime_quality(r_seq) and not check_self_dimer(r_seq):
+                                        if check_3prime_mismatch(r_seq, offtarget_seq):
+                                            
+                                            is_gdna_safe = False
+                                            if junctions:
+                                                if spans_exon_junction(f, f+length, junctions) or spans_exon_junction(r, r+r_len, junctions):
+                                                    is_gdna_safe = True
+                                                elif check_intron_spanning(f, f+length, r, r+r_len, junctions):
+                                                    is_gdna_safe = True
+                                            else:
+                                                is_gdna_safe = True
+
+                                            if is_gdna_safe:
+                                                candidates.append({
+                                                    "Amplicon_Size": r + r_len - f,
+                                                    "gDNA_Safe": "Yes" if junctions else "Unknown",
+                                                    "F_Primer": {"seq": f_seq, "tm": f_tm, "len": length},
+                                                    "R_Primer": {"seq": r_seq, "tm": r_tm, "len": r_len},
+                                                    "Probe": None
+                                                })
+                                                
+                                                for p_len in range(18, 30):
+                                                    for p in range(f + length + 5, r - 5):
+                                                        if p + p_len > r: break
+                                                        p_seq = target_seq[p : p+p_len]
+                                                        p_tm = calculate_tm_nn(p_seq)
+                                                        p_gc = (p_seq.count('G') + p_seq.count('C')) / float(p_len)
+                                                        if f_tm + 3 <= p_tm <= 75 and 0.30 <= p_gc <= 0.85:
+                                                            if p_seq[0] != 'G' and 'GGGG' not in p_seq:
+                                                                candidates[-1]["Probe"] = {"seq": p_seq, "tm": p_tm, "len": p_len}
+                                                                break
+                                                    if candidates[-1]["Probe"]: break
+                                                
+                                                if len(candidates) >= 5: return candidates
+                        break
     return candidates
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--target")
-    parser.add_argument("--homolog")
+    parser = argparse.ArgumentParser(description="Advanced RT-qPCR Assay Designer v5.0 (Hardcore Mode)")
+    parser.add_argument("--target", required=False, help="Target Accession (e.g. NM_001356)")
+    parser.add_argument("--file", required=False, help="Local FASTA file")
+    parser.add_argument("--offtarget", required=False, help="Off-target Accession for 3' mismatch check")
+    parser.add_argument("--homolog", required=False, help="Homolog Accession (e.g. Human NM_) to map junctions")
+    parser.add_argument("--no-gdna-check", action="store_true", help="Disable exon junction check")
     args = parser.parse_args()
-    target_seq = get_transcript(args.target)
+    
+    if args.file:
+        with open(args.file, "r") as f:
+            lines = f.read().strip().split("\n")
+            target_seq = "".join(lines[1:])
+    else:
+        target_seq = get_transcript(args.target)
+    
+    offtarget_seq = get_transcript(args.offtarget) if args.offtarget else None
+    
     junctions = []
+    if target_seq and not args.no_gdna_check:
+        junctions = get_exon_junctions(args.target)
+        if not junctions and args.homolog:
+            print(f"Target lacks exon data. Activating HARDCORE MODE with {args.homolog}...")
+            junctions = map_homolog_junctions(target_seq, args.homolog)
+            
+        if junctions:
+            print(f"Found {len(junctions)} exon junctions.")
+        else:
+            print("No exon junctions found.")
+
     if target_seq:
-        if args.homolog: junctions = map_homolog_junctions(target_seq, args.homolog)
-        else: junctions = get_exon_junctions(args.target)
-        results = design_assay(target_seq, junctions=junctions)
-        print(json.dumps(results, indent=2))
+        print("Searching for highly specific primer/probe sets...")
+        results = design_assay(target_seq, offtarget_seq, junctions)
+        if results:
+            print(f"Found {len(results)} valid assay designs. Showing top 3:")
+            print(json.dumps(results[:3], indent=2))
+        else:
+            print("No valid primer/probe sets found matching all strict criteria.")
+    else:
+        print("Failed to retrieve target sequence.")
