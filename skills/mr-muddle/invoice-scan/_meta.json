@@ -1,0 +1,11 @@
+{
+  "owner": "mr-muddle",
+  "slug": "invoice-scan",
+  "displayName": "Invoice Scan",
+  "latest": {
+    "version": "1.3.0",
+    "publishedAt": 1773423106608,
+    "commit": null
+  },
+  "history": []
+}
