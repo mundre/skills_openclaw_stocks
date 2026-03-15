@@ -1,7 +1,6 @@
 ---
 name: Polymarket Screener
-version: 1.0.0
-description: Screen Polymarket prediction markets by category, probability, liquidity, and track probability changes to find high-value opportunities.
+description: "Screen Polymarket prediction markets by category, probability, liquidity, and track probability changes to find high-value opportunities. Use when you need polymarket screener capabilities. Triggers on: polymarket screener."
 ---
 
 # Polymarket Screener 🎯
@@ -77,13 +76,12 @@ Movement:          Recent probability shifts indicate new information
 
 ## Output Formats
 
-| Command | Output File | Contents |
-|---------|------------|----------|
-| `list` | Console / JSON | Market listings with key stats |
-| `opportunities` | Console / JSON | Scored opportunity list |
-| `track` | `tracking-SLUG.json` | Probability time series |
-| `report` | `polymarket-report.html` | Full visual report |
-| `watchlist` | `watchlist.json` | Saved markets with alerts |
+| Command | Description |
+|---------|-------------|
+| `markets` | Markets |
+| `odds` | Odds |
+| `value-bets` | Value Bets |
+| `watchlist` | Watchlist |
 
 ## API Rate Limits
 
@@ -95,3 +93,10 @@ Polymarket's public API has rate limits. The screener respects these automatical
 ## Disclaimer
 
 ⚠️ Prediction markets involve real money and financial risk. This tool provides analysis only — it does not place bets or manage positions. Always do your own research.
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
+
+## Commands
+
+Run `polymarket-screener help` to see all available commands.
