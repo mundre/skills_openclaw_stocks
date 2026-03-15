@@ -3,11 +3,16 @@
   "slug": "gmail-secretary",
   "displayName": "Gmail Secretary",
   "latest": {
-    "version": "1.0.18",
-    "publishedAt": 1772974842654,
-    "commit": "https://github.com/openclaw/skills/commit/1d9815c1fd767bfc5af0f2adb6a386792cedfb95"
+    "version": "1.0.21",
+    "publishedAt": 1773579680899,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.18",
+      "publishedAt": 1772974842654,
+      "commit": "https://github.com/openclaw/skills/commit/1d9815c1fd767bfc5af0f2adb6a386792cedfb95"
+    },
     {
       "version": "1.0.17",
       "publishedAt": 1772805663114,
