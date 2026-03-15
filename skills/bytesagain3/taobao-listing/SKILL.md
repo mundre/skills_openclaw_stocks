@@ -13,8 +13,6 @@ description: "淘宝商品文案。宝贝标题、详情页文案、主图文案
 需求分析 → 选择命令 → 输入描述 → 获取结果 → 调整优化
 ```
 
-
-
 ## 专业建议
 
 - ```
@@ -28,3 +26,9 @@ description: "淘宝商品文案。宝贝标题、详情页文案、主图文案
 ---
 💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
+
+- Run `taobao-listing help` for all commands
+
+## Commands
+
+Run `taobao-listing help` to see all available commands.
