@@ -183,44 +183,41 @@ def process_content(content: str, access_token: str) -> str:
     
     return processed
 
-def generate_default_cover(title: str, output_path: str = "/tmp/auto_cover.jpg") -> str:
+def generate_default_cover(title: str) -> str:
     """自动生成默认封面图 - 使用纯色背景+文字"""
+    import tempfile
     try:
-        # 使用 Python 创建一张简单的封面图 (900x500，微信公众号推荐尺寸)
         import subprocess
         
-        # 使用 sips 创建一个纯色图片
-        # 先创建 PPM 格式
         width, height = 900, 500
         
-        # 渐变色背景 (蓝紫色)
         rgb_data = bytearray()
         for y in range(height):
             for x in range(width):
-                # 蓝紫色渐变
                 r = int(66 + (x / width) * 50)
                 g = int(133 + (x / width) * 20)
                 b = 244
                 rgb_data.extend([r, g, b])
         
-        # PPM header
         ppm_header = f'P6\n{width} {height}\n255\n'.encode()
         
-        with open('/tmp/temp_cover.ppm', 'wb') as f:
+        ppm_fd, ppm_path = tempfile.mkstemp(suffix='.ppm')
+        jpg_fd, jpg_path = tempfile.mkstemp(suffix='.jpg')
+        os.close(jpg_fd)
+        
+        with os.fdopen(ppm_fd, 'wb') as f:
             f.write(ppm_header + bytes(rgb_data))
         
-        # 转换为 JPEG
         result = subprocess.run(
-            ['sips', '-s', 'format', 'jpeg', '/tmp/temp_cover.ppm', '--out', output_path],
+            ['sips', '-s', 'format', 'jpeg', ppm_path, '--out', jpg_path],
             capture_output=True,
             text=True
         )
         
-        # 清理临时文件
-        os.remove('/tmp/temp_cover.ppm')
+        os.remove(ppm_path)
         
-        if os.path.exists(output_path):
-            return output_path
+        if os.path.exists(jpg_path):
+            return jpg_path
         return None
         
     except Exception as e:
@@ -251,6 +248,10 @@ def create_draft(access_token: str, title: str, content: str, author: str = "",
             thumb_media_id = upload_thumb_image(access_token, default_cover)
             if thumb_media_id:
                 print("✅ 自动封面生成并上传成功")
+            try:
+                os.remove(default_cover)
+            except OSError:
+                pass
     
     if not thumb_media_id:
         print("⚠️  警告: 未能获取封面图 media_id，草稿创建可能失败")
@@ -275,8 +276,12 @@ def create_draft(access_token: str, title: str, content: str, author: str = "",
     
     articles = [{
         "title": title,
+        "author": author,
+        "digest": digest,
         "content": html_content,
-        "thumb_media_id": thumb_media_id
+        "thumb_media_id": thumb_media_id,
+        "need_open_comment": need_open_comment,
+        "only_fans_can_comment": only_fans_can_comment
     }]
     
     url = f"{WECHAT_API_BASE}/draft/add?access_token={access_token}"

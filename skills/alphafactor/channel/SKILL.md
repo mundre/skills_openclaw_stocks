@@ -1,6 +1,9 @@
 ---
 name: channel
 description: WeChat Official Account Draft Box management tool. Create and manage graphic draft articles via WeChat API, supporting text and images. Automatically extracts the first paragraph as summary. Supports draft creation, listing, publishing, and deletion.
+env:
+  - WECHAT_APPID
+  - WECHAT_APPSECRET
 ---
 
 # 微信公众号草稿箱管理

@@ -3,9 +3,15 @@
   "slug": "channel",
   "displayName": "WeChat Official Account Draft Management",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1773117534323,
-    "commit": "https://github.com/openclaw/skills/commit/d73992bb436f3ef4edb0ea9d7e67cd176d38260c"
+    "version": "1.0.6",
+    "publishedAt": 1773324268037,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1773117534323,
+      "commit": "https://github.com/openclaw/skills/commit/d73992bb436f3ef4edb0ea9d7e67cd176d38260c"
+    }
+  ]
 }
