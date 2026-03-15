@@ -25,9 +25,28 @@ description: "Zapier Recipe Book. Use when you need zapier recipe capabilities. 
 | `template` | template |
 | `efficiency` | efficiency |
 
-
 ---
 *Automation Recipe by BytesAgain*
 ---
 💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
+
+## Examples
+
+```bash
+# Show help
+zapier-recipe help
+
+# Run
+zapier-recipe run
+```
+
+- Run `zapier-recipe help` for all commands
+
+## Commands
+
+Run `zapier-recipe help` to see all available commands.
+
+## Output
+
+Results go to stdout. Save with `zapier-recipe run > output.txt`.
