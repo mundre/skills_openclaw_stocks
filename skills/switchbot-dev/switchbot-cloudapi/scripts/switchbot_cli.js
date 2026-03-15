@@ -1,25 +1,18 @@
 #!/usr/bin/env node
-// Minimal SwitchBot OpenAPI CLI (Node.js)
+// SwitchBot OpenAPI v1.1 CLI (Node.js)
 // Requires env: SWITCHBOT_TOKEN, SWITCHBOT_SECRET
 // Usage:
-//   node scripts/switchbot_cli.js list
-//   node scripts/switchbot_cli.js status <deviceId>
-//   node scripts/switchbot_cli.js cmd <deviceId> <command> [--pos 50] [--temp 24] [...]
+//   node switchbot_cli.js list
+//   node switchbot_cli.js status <deviceId>
+//   node switchbot_cli.js cmd <deviceId> <command> [--param=...] [--pos=50] [--commandType=customize]
+//   node switchbot_cli.js scenes
+//   node switchbot_cli.js scene <sceneId>
 
 const crypto = require('crypto');
 const https = require('https');
 
 function baseUrl() {
-  const region = (process.env.SWITCHBOT_REGION || 'global').toLowerCase();
-  // SwitchBot currently uses the same base; keep switch for future routing
-  switch (region) {
-    case 'global':
-    case 'na':
-    case 'eu':
-    case 'jp':
-    default:
-      return 'https://api.switch-bot.com';
-  }
+  return process.env.SWITCHBOT_BASE_URL || 'https://api.switch-bot.com';
 }
 
 function headers() {
@@ -41,6 +34,7 @@ function headers() {
     't': t,
     'nonce': nonce,
     'sign': sign,
+    'src': 'OpenClaw',
   };
 }
 
@@ -57,15 +51,11 @@ function request(method, path, body) {
       let buf = '';
       res.on('data', (c) => (buf += c));
       res.on('end', () => {
-        try {
-          const obj = buf ? JSON.parse(buf) : {};
-          resolve(obj);
-        } catch (e) {
-          resolve(buf);
-        }
+        try { resolve(buf ? JSON.parse(buf) : {}); }
+        catch { resolve(buf); }
       });
     });
-    req.on('error', (e) => reject(e));
+    req.on('error', reject);
     if (data) req.write(data);
     req.end();
   });
@@ -76,8 +66,12 @@ function parseArgs(argv) {
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith('--')) {
-      const [k, v] = a.replace(/^--/, '').split('=');
-      out[k] = v || true;
+      const eq = a.indexOf('=');
+      if (eq > 0) {
+        out[a.slice(2, eq)] = a.slice(eq + 1);
+      } else {
+        out[a.slice(2)] = true;
+      }
     } else {
       out._.push(a);
     }
@@ -85,95 +79,152 @@ function parseArgs(argv) {
   return out;
 }
 
-function main() {
+function printJson(obj) {
+  console.log(JSON.stringify(obj, null, 2));
+}
+
+async function main() {
   const args = parseArgs(process.argv);
   const [cmd, a1, a2] = args._;
+
   if (!cmd || cmd === 'help') {
-    console.log('Commands:\n list\n status <deviceId>\n cmd <deviceId> <command> [--pos 50] [--temp 24] [--speed 1]');
+    console.log(`SwitchBot OpenAPI v1.1 CLI
+
+Commands:
+  list                              List all devices
+  status <deviceId>                 Get device status
+  cmd <deviceId> <command> [opts]   Send a command
+  scenes                            List all scenes
+  scene <sceneId>                   Execute a scene
+
+Command options:
+  --param=<value>         Parameter (string or JSON)
+  --pos=<0-100>           Curtain position shorthand
+  --commandType=customize For IR DIY "Others" devices
+
+Examples:
+  node switchbot_cli.js list
+  node switchbot_cli.js status AABBCCDD1122
+  node switchbot_cli.js cmd AABBCCDD1122 turnOn
+  node switchbot_cli.js cmd AABBCCDD1122 setPosition --pos=50
+  node switchbot_cli.js cmd AABBCCDD1122 setAll --param="26,2,1,on"
+  node switchbot_cli.js cmd AABBCCDD1122 setColor --param="255:100:0"
+  node switchbot_cli.js cmd AABBCCDD1122 createKey --param='{"name":"Guest","type":"permanent","password":"123456"}'
+  node switchbot_cli.js cmd AABBCCDD1122 myButton --commandType=customize
+  node switchbot_cli.js scenes
+  node switchbot_cli.js scene T02-xxxxx`);
     process.exit(0);
   }
+
+  // === LIST ===
   if (cmd === 'list') {
-    return request('GET', '/v1.1/devices').then((obj)=>{
-      console.log(JSON.stringify(obj, null, 2));
-    }).catch((e)=>{ console.error('HTTP error:', e.message); process.exit(1); });
+    try { printJson(await request('GET', '/v1.1/devices')); }
+    catch (e) { console.error('Error:', e.message); process.exit(1); }
+    return;
   }
+
+  // === STATUS ===
   if (cmd === 'status') {
-    if (!a1) { console.error('status requires <deviceId>'); process.exit(2); }
-    return request('GET', `/v1.1/devices/${a1}/status`).then((obj)=>{
-      console.log(JSON.stringify(obj, null, 2));
-    }).catch((e)=>{ console.error('HTTP error:', e.message); process.exit(1); });
+    if (!a1) { console.error('Usage: status <deviceId>'); process.exit(2); }
+    try { printJson(await request('GET', `/v1.1/devices/${a1}/status`)); }
+    catch (e) { console.error('Error:', e.message); process.exit(1); }
+    return;
   }
+
+  // === SCENES ===
+  if (cmd === 'scenes') {
+    try { printJson(await request('GET', '/v1.1/scenes')); }
+    catch (e) { console.error('Error:', e.message); process.exit(1); }
+    return;
+  }
+
+  // === EXECUTE SCENE ===
+  if (cmd === 'scene') {
+    if (!a1) { console.error('Usage: scene <sceneId>'); process.exit(2); }
+    try { printJson(await request('POST', `/v1.1/scenes/${a1}/execute`)); }
+    catch (e) { console.error('Error:', e.message); process.exit(1); }
+    return;
+  }
+
+  // === SEND COMMAND ===
   if (cmd === 'cmd') {
     const deviceId = a1;
     const command = a2;
-    if (!deviceId || !command) { console.error('cmd requires <deviceId> <command>'); process.exit(2); }
+    if (!deviceId || !command) { console.error('Usage: cmd <deviceId> <command> [--param=...]'); process.exit(2); }
 
-    // Preflight: fetch device list and verify cloud/hub readiness
-    return request('GET', '/v1.1/devices').then((obj)=>{
-      const list = (obj && obj.body && obj.body.deviceList) || [];
-      const dev = list.find(d => d.deviceId === deviceId);
-      if (!dev) {
-        console.error(`Device ${deviceId} not found. Run: list`);
-        process.exit(3);
-      }
+    let devicesResp;
+    try { devicesResp = await request('GET', '/v1.1/devices'); }
+    catch (e) { console.error('Error fetching devices:', e.message); process.exit(1); }
+
+    const deviceList = (devicesResp?.body?.deviceList) || [];
+    const irList = (devicesResp?.body?.infraredRemoteList) || [];
+    const dev = deviceList.find(d => d.deviceId === deviceId);
+    const irDev = irList.find(d => d.deviceId === deviceId);
+    const isIR = !!irDev;
+
+    if (!dev && !irDev) {
+      console.error(`Device ${deviceId} not found in device list or IR remote list.`);
+      process.exit(3);
+    }
+
+    // Preflight for BLE devices
+    if (dev) {
+      const btTypes = ['Bot', 'Smart Lock', 'Smart Lock Pro', 'Lock Lite', 'Lock Ultra', 'Blind Tilt', 'Curtain', 'Curtain3'];
+      const isBt = btTypes.includes(dev.deviceType);
       const cloud = dev.enableCloudService === true;
       const hasHub = !!(dev.hubDeviceId && dev.hubDeviceId !== '' && dev.hubDeviceId !== '000000000000');
-      const btTypes = ['Bot','Smart Lock','Smart Lock Pro','Blind Tilt','Curtain'];
-      const isBt = btTypes.includes(dev.deviceType);
       if (isBt && (!cloud || !hasHub)) {
-        console.error(`Preflight failed: ${dev.deviceName || deviceId} (${dev.deviceType}) requires a Hub bound and Cloud Services enabled. Current: enableCloudService=${dev.enableCloudService}, hubDeviceId='${dev.hubDeviceId||''}'. Fix in SwitchBot app, then retry.`);
+        console.error(`Preflight failed: ${dev.deviceName || deviceId} (${dev.deviceType}) requires a Hub + Cloud Services enabled.\n  enableCloudService=${dev.enableCloudService}, hubDeviceId='${dev.hubDeviceId || ''}'\n  Fix in SwitchBot app, then retry.`);
         process.exit(4);
       }
+    }
 
-      let parameter = 'default';
-      // raw parameter override (string)
-      if (args.param) {
-        parameter = String(args.param);
-      }
-      // JSON parameter override (object)
-      if (args.param_json) {
-        try { parameter = JSON.parse(args.param_json); } catch { console.error('Invalid --param_json JSON'); process.exit(5); }
-      }
-      if (command === 'setPosition' && !args.param && !args.param_json) {
+    // Build parameter
+    let parameter = 'default';
+
+    if (args.param != null && args.param !== true) {
+      // Try to parse as JSON, fall back to string
+      try { parameter = JSON.parse(args.param); }
+      catch { parameter = String(args.param); }
+    }
+
+    // Shorthand: --pos for Curtain setPosition
+    if (command === 'setPosition' && !args.param && dev) {
+      const devType = (dev.deviceType || '').toLowerCase();
+      if (devType.includes('curtain')) {
         let pos = Number(args.pos ?? args.position ?? 50);
         if (!Number.isFinite(pos)) pos = 50;
         pos = Math.max(0, Math.min(100, Math.round(pos)));
-        // SwitchBot OpenAPI requires curtain setPosition parameter in the form
-        // "0,ff,<pos>" where 0,ff is fixed and <pos> is 0-100.
-        parameter = `1,ff,${pos}`;
+        parameter = `0,ff,${pos}`;
       }
-      if (command === 'setTemperature' && !args.param && !args.param_json) {
-        const temp = args.temp || 24;
-        parameter = `${temp}`;
-      }
-      let devType=(dev.deviceType||'').toLowerCase()
-      // Some models (e.g., Robot Vacuum K10+ Pro Combo) require commandType 'customize'
-      const isVac = devType.includes('robot vacuum') || devType.includes('k10')|| devType.includes('k20');
-      const vacCmds = new Set(['startClean','pause','dock','setVolume','changeParam']);
-      let commandType = 'command';
-      const body = { commandType, command, parameter };
-      return request('POST', `/v1.1/devices/${deviceId}/commands`, body).then((resp)=>{
-        // If cloud accepted but device offline, API may still say success. Add a hint.
-        if (resp && resp.statusCode === 100) {
-          console.log(JSON.stringify(resp, null, 2));
-          if (isBt && (dev.enableCloudService !== true || !hasHub)) {
-            console.warn('Note: Cloud accepted the request, but device may not actuate without Hub + Cloud Services.');
-          }
-        } else if (resp && resp.statusCode === 160) {
-          // Unknown command – provide guidance, esp. for Robot Vacuums
-          console.log(JSON.stringify(resp, null, 2));
-          if (devType.includes('vacuum')) {
-            console.warn('This robot vacuum model may not expose direct commands via OpenAPI v1.1. Create a Scene in the SwitchBot app (e.g., "Vacuum Start") and execute it via /v1.1/scenes/{id}/execute.');
-          } else {
-            console.warn('Unknown command for this device. Check device-specific command names or use a Scene.');
-          }
+    }
+
+    // Determine commandType
+    let commandType = args.commandType || 'command';
+
+    // Build and send
+    const body = { commandType, command, parameter };
+    try {
+      const resp = await request('POST', `/v1.1/devices/${deviceId}/commands`, body);
+      printJson(resp);
+
+      // Helpful hints on errors
+      if (resp?.statusCode === 160) {
+        const devType = (dev?.deviceType || irDev?.remoteType || '').toLowerCase();
+        if (devType.includes('vacuum')) {
+          console.warn('\nHint: This vacuum model may not support direct commands. Create a Scene in the SwitchBot app and execute via: node switchbot_cli.js scene <sceneId>');
         } else {
-          console.log(JSON.stringify(resp, null, 2));
+          console.warn('\nHint: Unknown command. Check references/commands.md for supported commands, or use a Scene.');
         }
-      });
-    }).catch((e)=>{ console.error('HTTP error:', e.message); process.exit(1); });
+      }
+    } catch (e) {
+      console.error('Error:', e.message);
+      process.exit(1);
+    }
+    return;
   }
-  console.error('Unknown command');
+
+  console.error(`Unknown command: ${cmd}. Run with 'help' for usage.`);
   process.exit(1);
 }
 
