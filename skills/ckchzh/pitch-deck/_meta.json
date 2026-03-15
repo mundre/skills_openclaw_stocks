@@ -3,11 +3,16 @@
   "slug": "pitch-deck",
   "displayName": "Pitch Deck",
   "latest": {
-    "version": "2.2.0",
-    "publishedAt": 1773421655180,
-    "commit": "https://github.com/openclaw/skills/commit/469d16e0cb6e21cffe5b064d0b91487af67d1479"
+    "version": "2.3.1",
+    "publishedAt": 1773578818284,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.0",
+      "publishedAt": 1773421655180,
+      "commit": "https://github.com/openclaw/skills/commit/469d16e0cb6e21cffe5b064d0b91487af67d1479"
+    },
     {
       "version": "2.0.0",
       "publishedAt": 1773346196743,

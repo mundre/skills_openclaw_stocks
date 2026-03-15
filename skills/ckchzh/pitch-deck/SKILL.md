@@ -1,6 +1,6 @@
 ---
 name: Pitch Deck Creator
-description: >-
+description: "Pitch Deck Generator. Use when you need pitch deck capabilities. Triggers on: pitch deck."
   融资演示文稿。幻灯片结构、故事线设计、投资人Q&A、Demo Day准备、反馈改进。Pitch deck creator with slide structure, storytelling, investor Q&A, demo day prep. 融资、路演、BP演示。
 ---
 # Pitch Deck Creator
@@ -25,7 +25,6 @@ description: >-
   feedback        feedback
 ```
 
-
 ## 专业建议
 
 - 封面(公司名+一句话)
@@ -36,3 +35,12 @@ description: >-
 
 ---
 *Pitch Deck Creator by BytesAgain*
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
+
+- Run `pitch-deck help` for all commands
+
+## Commands
+
+Run `pitch-deck help` to see all available commands.
