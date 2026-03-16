@@ -12,7 +12,7 @@ SESSION: aiohttp.ClientSession | None = None
 async def get_meituan_coupon() -> dict:
     """调用美团优惠券接口"""
     try:
-        async with SESSION.get(f"{GATEWAY_BASE_URL}/coupon/meituan") as resp:
+        async with SESSION.get(f"{GATEWAY_BASE_URL}/coupon/takeout") as resp:
             data = await resp.json()
             return data
     except Exception as e:
@@ -21,7 +21,7 @@ async def get_meituan_coupon() -> dict:
 async def get_eleme_coupon() -> dict:
     """调用闪购优惠券接口"""
     try:
-        async with SESSION.get(f"{GATEWAY_BASE_URL}/coupon/eleme") as resp:
+        async with SESSION.get(f"{GATEWAY_BASE_URL}/coupon/takeout") as resp:
             data = await resp.json()
             return data
     except Exception as e:
@@ -29,15 +29,9 @@ async def get_eleme_coupon() -> dict:
 
 
 async def obtain_coupon(keyword, source, page):
-    
-    # 当 source=1 时，先调用美团优惠券接口
-    if source == "1":
-        return await get_meituan_coupon()
-
-    elif source == "2" or source == "3":
-        return await get_eleme_coupon()
-    else:
-        return await get_meituan_coupon()
+    """获取外卖优惠券，统一使用 /coupon/takeout 接口"""
+    # 所有平台都使用统一的接口
+    return await get_meituan_coupon()
 
     
 

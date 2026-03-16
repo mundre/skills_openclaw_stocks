@@ -20,7 +20,7 @@ metadata:
 ---
 
 # 获取最新的外卖优惠券 Obtain Takeout Coupons
-获取中国在线购物平台的外卖优惠券（大额券，隐藏券），支持美团、淘宝闪购、饿了么。
+获取中国在线购物平台的外卖优惠券（大额券，隐藏券），统一使用 `/coupon/takeout` 接口获取。
 
 ```yaml
 # 参数解释
@@ -30,10 +30,12 @@ source:
   3: 饿了么优惠券
 ```
 
-## 获取优惠券口令(字符串格式，不要更改接口返回的内容，否则会时效)  
+## 获取优惠券口令(字符串格式，不要更改接口返回的内容，否则会失效)  
 ```shell
 uv run scripts/route.py search --source={source}
 ```
+
+**注意**: 所有平台现在都使用统一的 API 接口 `/coupon/takeout`，不再区分平台端点。
 
 ## 隐私提示 Privacy Tips
 本技能提供的脚本不会读写本地文件，可放心使用 The scripts provided by this skill do not read or write local files, so you can use them with confidence.
