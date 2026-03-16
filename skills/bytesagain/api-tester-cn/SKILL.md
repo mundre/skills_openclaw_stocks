@@ -1,6 +1,8 @@
 ---
+version: "2.0.0"
 name: api-tester-cn
 description: "API请求构造、curl命令生成、Mock数据、API文档、HTTP状态码速查、Headers说明。API request builder, curl generator, mock data, API documentation, HTTP status codes, headers reference. Use when you need api tester cn capabilities. Triggers on: api tester cn, 真实HTTP请求, 性能评级, 自动JSON格式化, Mock数据生成, HTTP状态码速查."
+author: BytesAgain
 ---
 # api-tester-cn
 

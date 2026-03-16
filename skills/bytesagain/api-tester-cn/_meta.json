@@ -3,11 +3,16 @@
   "slug": "api-tester-cn",
   "displayName": "Api Tester Cn",
   "latest": {
-    "version": "2.3.5",
-    "publishedAt": 1773612276999,
-    "commit": "https://github.com/openclaw/skills/commit/65dd56c833edf2a9b250205569888ab4779bc6cc"
+    "version": "2.3.7",
+    "publishedAt": 1773663377361,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.5",
+      "publishedAt": 1773612276999,
+      "commit": "https://github.com/openclaw/skills/commit/65dd56c833edf2a9b250205569888ab4779bc6cc"
+    },
     {
       "version": "2.2.0",
       "publishedAt": 1773420924489,
