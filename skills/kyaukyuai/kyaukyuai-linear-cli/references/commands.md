@@ -15,6 +15,9 @@
 - [document](./document.md) - Manage Linear documents
 - [notification](./notification.md) - Manage Linear notifications
 - [webhook](./webhook.md) - Manage Linear webhooks
+- [workflow-state](./workflow-state.md) - Manage Linear workflow states
+- [user](./user.md) - Manage Linear users
+- [project-label](./project-label.md) - Manage Linear project labels
 - [config](./config.md) - Interactively generate .linear.toml configuration
 - [schema](./schema.md) - Print the GraphQL schema to stdout
 - [api](./api.md) - Make a raw GraphQL API request
