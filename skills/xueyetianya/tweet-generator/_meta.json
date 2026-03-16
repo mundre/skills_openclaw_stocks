@@ -3,11 +3,16 @@
   "slug": "tweet-generator",
   "displayName": "Tweet Generator",
   "latest": {
-    "version": "2.2.0",
-    "publishedAt": 1773421964233,
-    "commit": "https://github.com/openclaw/skills/commit/115575e2511a7b186042af54168157df995bcea8"
+    "version": "2.3.5",
+    "publishedAt": 1773661788835,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.0",
+      "publishedAt": 1773421964233,
+      "commit": "https://github.com/openclaw/skills/commit/115575e2511a7b186042af54168157df995bcea8"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773209856007,

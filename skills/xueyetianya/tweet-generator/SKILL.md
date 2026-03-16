@@ -1,9 +1,8 @@
 ---
+version: "2.0.0"
 name: tweet-generator
-version: 1.0.0
-description: "推文生成、Thread长推、病毒传播分析、高质量回复、个人简介、发布时间建议。Tweet writer with threads, viral analysis, quality replies, bio optimization, posting schedule."
+description: "推文生成、Thread长推、病毒传播分析、高质量回复、个人简介、发布时间建议。Tweet writer with threads, viral analysis, quality replies, bio optimization, posting schedule. Use when you need tweet generator capabilities. Triggers on: tweet generator."
 author: BytesAgain
-tags: [twitter, x, social-media, tweets, threads, content-creation]
 ---
 # tweet-generator
 
@@ -29,7 +28,6 @@ tags: [twitter, x, social-media, tweets, threads, content-creation]
 | `thread` | thread |
 | `viral` | viral |
 
-
 ## 专业建议
 
 - Replies and quotes** weigh more than likes for reach
@@ -40,3 +38,20 @@ tags: [twitter, x, social-media, tweets, threads, content-creation]
 
 ---
 *tweet-generator by BytesAgain*
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
+
+## Examples
+
+```bash
+# Show help
+tweet-generator help
+
+# Run
+tweet-generator run
+```
+
+## Commands
+
+Run `tweet-generator help` to see all available commands.
