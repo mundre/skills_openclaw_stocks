@@ -1,6 +1,6 @@
 {
   "name": "health-score-pro",
-  "version": "1.3.5",
+  "version": "1.4.3",
   "author": "longerian",
   "description": "Comprehensive health management system integrating 10 best-selling health books' consensus principles. Use when users discuss nutrition, supplements, fitness, diet, anti-aging, anti-inflammation, longevity, or request diet tracking/analysis.",
   "permissions": {
@@ -11,26 +11,24 @@
       "web_search",
       "web_fetch"
     ],
-    "required_paths": [
+    "paths": [
       "~/.openclaw/workspace/memory/health-users/",
       "~/.openclaw/workspace/skills/health-management/",
       "~/Documents/health-backup/"
     ],
-    "required_env_vars": [
-      {
-        "name": "TIMEZONE",
-        "required": false,
-        "description": "User's timezone for proper date/time display in health records",
-        "default": "Asia/Shanghai"
-      },
-      {
-        "name": "LANGUAGE",
-        "required": false,
-        "description": "User's preferred language for all health reports and feedback",
-        "default": "zh-CN"
-      }
+    "executables": [
+      "scripts/backup_health_data.sh",
+      "scripts/check_git_config.sh",
+      "scripts/configure_backup.sh",
+      "scripts/manage_backup.sh",
+      "scripts/language_utils.sh",
+      "scripts/timezone_utils.sh"
     ],
-    "required_config_paths": [
+    "env": [
+      "TIMEZONE",
+      "LANGUAGE"
+    ],
+    "config_paths": [
       "~/.openclaw/workspace/memory/health-users/{username}/profile.md",
       "~/.openclaw/workspace/memory/health-users/{username}/daily/",
       "~/.openclaw/workspace/memory/health-users/{username}/weekly/",
@@ -42,14 +40,6 @@
       "required_for": "GitHub backup functionality",
       "description": "Backup scripts use system git configuration for authentication. This may read ~/.gitconfig (user.name, user.email) and use SSH keys from ~/.ssh/ for repository access"
     },
-    "executables": [
-      "scripts/backup_health_data.sh",
-      "scripts/check_git_config.sh",
-      "scripts/configure_backup.sh",
-      "scripts/manage_backup.sh",
-      "scripts/language_utils.sh",
-      "scripts/timezone_utils.sh"
-    ],
     "domains": [
       "github.com",
       "api.github.com",
@@ -86,13 +76,14 @@
   "rationale": {
     "exec": "Required to run backup scripts for data persistence and git configuration checks",
     "filesystem": "Store user health data in memory/health-users/{username}/ directory",
-    "network": "Backup to GitHub repository (user-provided) for data persistence. Web search for nutritional research via OpenClaw's web_search tool",
+    "network": "Backup to GitHub repository (user-provided) for data persistence",
     "scripts": "Automated backup system ensures data safety and supports multi-language/timezone features",
-    "required_env_vars": {
+    "env": {
       "TIMEZONE": "User's timezone for proper date/time display in health records",
       "LANGUAGE": "User's preferred language for all health reports and feedback"
     },
-    "required_config_paths": "Per-user health profiles, daily records, and supplement database for personalized tracking",
+    "config_paths": "Per-user health profiles, daily records, and supplement database for personalized tracking",
+    "git_config_access": "Backup functionality requires git credentials for pushing to user's repository",
     "external_actions": {
       "backup": "Users can backup their health tracking data to GitHub for persistence across sessions"
     }
@@ -110,7 +101,6 @@
     "Review scripts/ directory before enabling backup",
     "Use private GitHub repository for backup",
     "Test with non-sensitive data first",
-    "Verify Tavily API usage (optional)",
     "Understand data is stored locally by default",
     "Backup is opt-in (disabled by default)"
   ]

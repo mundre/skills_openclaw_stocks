@@ -76,6 +76,27 @@ All scripts are human-readable and auditable. No obfuscated code.
 | `filesystem` | Read/write access to declared paths only |
 | `network` | Outbound HTTP requests to declared domains only |
 
+### 🔐 Optional Credential Access (Backup Feature ONLY)
+
+**⚠️ IMPORTANT**: Credential access is ONLY needed if you enable the optional backup feature.
+
+| Credential Type | When Required | Purpose |
+|----------------|--------------|---------|
+| **Git Credentials** | Only if backup is enabled | Push health data to YOUR GitHub repository |
+
+**Sources accessed (ONLY when backup is enabled)**:
+- `~/.ssh/` - SSH keys for repository authentication
+- `~/.gitconfig` - Git user configuration (user.name, user.email)
+- Git credential manager - System-level credential storage
+
+**User Control**:
+- ✅ **Disabled by default** - No credential access unless you enable backup
+- ✅ **Explicit opt-in required** - Must configure `backup_config.json`
+- ✅ **Can disable anytime** - Set `enabled: false` to revoke access
+- ✅ **You control the repository** - Provide your own repo URL
+
+**If you don't enable backup**: The skill will NEVER access your git credentials or SSH keys.
+
 ## External Actions
 
 ### 1. Backup Action
@@ -134,7 +155,8 @@ All scripts are human-readable and auditable. No obfuscated code.
 
 - Only requests permissions actually used
 - No unnecessary network access
-- No access to sensitive system paths (`.ssh`, `.aws`, etc.)
+- **Core functionality**: No access to sensitive system paths
+- **Backup feature (OPTIONAL)**: May access git credentials in ~/.ssh/ and ~/.gitconfig ONLY if user explicitly enables backup
 - Filesystem access limited to declared directories
 
 ## User Control

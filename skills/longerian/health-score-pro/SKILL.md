@@ -1,8 +1,16 @@
 ---
 name: health-score-pro
-version: 1.3.3
+version: 1.4.3
 description: Comprehensive health management system integrating 10 best-selling health books' consensus principles. Use when users discuss nutrition, supplements, fitness, diet, anti-aging, anti-inflammation, longevity, or request diet tracking/analysis. Supports (1) Daily diet recording with 3-dimension scoring (Greger's Daily Dozen, Li's 5×5×5, consensus checklist), (2) Weekly/monthly/yearly analysis with trend identification, (3) Food defense system identification (angiogenesis, regeneration, microbiome, DNA protection, immunity), (4) Personalized improvement recommendations based on data patterns.
 author: longerian
+requiredEnvVars: []
+requiredConfigPaths:
+  - "~/.openclaw/workspace/memory/health-users/{username}/"
+requiredCredentials: []
+optionalCredentials:
+  - type: "git_credentials"
+    required_for: "GitHub backup (optional)"
+    disabled_by_default: true
 metadata:
   openclaw:
     thinking: "medium"
@@ -2615,6 +2623,31 @@ mv temp.md file.md
 
 ---
 
-**最后更新**：2026-03-07
-**版本**：v1.1
+**最后更新**：2026-03-16
+**版本**：v1.4.2
+
+---
+
+## 📝 更新日志
+
+### v1.4.2 (2026-03-16)
+**🔒 安全修复 - 解决LLM Scanner问题**：
+- ✅ **重命名 required_credentials → optional_credentials** - 明确凭证访问仅用于可选备份功能
+- ✅ **强调默认禁用** - 明确标注 "disabled_by_default: true"，核心功能无需任何凭证
+- ✅ **更新 PERMISSIONS.md** - 新增"Optional Credential Access"章节，详细说明凭证访问条件
+- ✅ **修复元数据不一致** - Registry声称无需凭证，manifest现已明确区分核心功能与可选功能
+- ✅ **透明化访问范围** - 明确列出仅在启用备份时才访问 ~/.ssh/ 和 ~/.gitconfig
+
+### v1.4.1 (2026-03-16)
+**🔒 安全修复**：
+- ✅ **移除未使用的Tavily API声明** - manifest.json中声明了api.tavily.com域名,但实际代码中完全未使用,已移除以消除安全扫描误报
+- ✅ **更新网络访问说明** - 移除关于Tavily的误导性描述,明确仅使用Brave搜索引擎(平台默认)
+- ✅ **修复LLM Scanner suspicious状态** - 解决manifest与实际代码不一致的问题
+
+### v1.4.0 (2026-03-16)
+**🔒 安全修复**：
+- ✅ 移除health-scan-status.json文件(VirusTotal标记为deceptive)
+- ✅ 在required_env_vars中显式声明GitHub凭证需求
+- ✅ 明确git配置访问要求
+- ✅ 增强external_actions中的认证详情
 - "How can I improve [dimension]?" - Get specific improvement suggestions
