@@ -3,11 +3,16 @@
   "slug": "meeting-agenda",
   "displayName": "Meeting Agenda",
   "latest": {
-    "version": "2.2.0",
-    "publishedAt": 1773421520941,
-    "commit": "https://github.com/openclaw/skills/commit/ac239181c6796e10bb3605b134e4aa68217b6870"
+    "version": "1.0.6",
+    "publishedAt": 1773666469800,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.0",
+      "publishedAt": 1773421520941,
+      "commit": "https://github.com/openclaw/skills/commit/ac239181c6796e10bb3605b134e4aa68217b6870"
+    },
     {
       "version": "2.1.0",
       "publishedAt": 1773420867595,
