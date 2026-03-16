@@ -3,9 +3,15 @@
   "slug": "fnclub-signer",
   "displayName": "飞牛论坛签到",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1773142700000,
-    "commit": "https://github.com/openclaw/skills/commit/54e1659ad689d1873f09f26048cbfe3477eb4c4c"
+    "version": "1.0.2",
+    "publishedAt": 1773392605786,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1773142700000,
+      "commit": "https://github.com/openclaw/skills/commit/54e1659ad689d1873f09f26048cbfe3477eb4c4c"
+    }
+  ]
 }
