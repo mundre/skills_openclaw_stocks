@@ -3,9 +3,15 @@
   "slug": "tieba",
   "displayName": "Tieba",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1773243493602,
-    "commit": "https://github.com/openclaw/skills/commit/58229253ab1e4bcd42558c98403a1e16c7ce2a94"
+    "version": "1.0.0",
+    "publishedAt": 1773652796402,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1773243493602,
+      "commit": "https://github.com/openclaw/skills/commit/58229253ab1e4bcd42558c98403a1e16c7ce2a94"
+    }
+  ]
 }
