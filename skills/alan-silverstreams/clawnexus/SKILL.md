@@ -1,7 +1,7 @@
 ---
 name: clawnexus
 description: "Discover, name, and manage OpenClaw instances on your LAN. Scan for AI agents, check status, set aliases, resolve .claw names, and get connection URLs via the ClawNexus daemon."
-version: 0.2.7
+version: 0.4.0
 metadata: {"clawdbot": {"emoji": "🦞", "homepage": "https://github.com/SilverstreamsAI/ClawNexus", "requires": {"env": [], "bins": ["curl"]}}}
 ---
 
@@ -10,6 +10,8 @@ metadata: {"clawdbot": {"emoji": "🦞", "homepage": "https://github.com/Silvers
 ## Overview
 
 ClawNexus is a naming and discovery layer for OpenClaw. It runs a local daemon that automatically discovers OpenClaw instances on your network and assigns them readable names, so you can refer to instances by alias (e.g., "home") instead of IP addresses.
+
+Works across networks too — instances can register `.claw` names (like `home.alan.id.claw`) and connect via encrypted relay from anywhere.
 
 ## Prerequisites
 

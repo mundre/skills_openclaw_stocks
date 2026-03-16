@@ -1,11 +1,17 @@
 {
   "owner": "alan-silverstreams",
   "slug": "clawnexus",
-  "displayName": "ClawNexus",
+  "displayName": "Skill",
   "latest": {
-    "version": "0.2.7",
-    "publishedAt": 1772767423655,
-    "commit": "https://github.com/openclaw/skills/commit/c7cd23d285d3e9d7012be4c4e8769083c328d72d"
+    "version": "0.4.0",
+    "publishedAt": 1773533657057,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.7",
+      "publishedAt": 1772767423655,
+      "commit": "https://github.com/openclaw/skills/commit/c7cd23d285d3e9d7012be4c4e8769083c328d72d"
+    }
+  ]
 }
