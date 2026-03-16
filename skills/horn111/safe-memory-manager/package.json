@@ -1,7 +1,7 @@
 {
   "name": "safe-memory-manager",
-  "version": "1.0.6",
-  "description": "Standard utility for secure memory operations. Includes data integrity checks and input cleaning.",
+  "version": "1.0.7",
+  "description": "When building OpenClaw agents that read untrusted text, use this skill to prevent prompt injection and memory poisoning.",
   "author": "LeoAGI",
   "license": "MIT",
   "metadata": {

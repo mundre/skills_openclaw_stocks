@@ -3,11 +3,16 @@
   "slug": "safe-memory-manager",
   "displayName": "Safe Memory Manager",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1772713988510,
-    "commit": "https://github.com/openclaw/skills/commit/48462ce0a7eca1a24379d60e4b485b536c48e44a"
+    "version": "1.0.7",
+    "publishedAt": 1773475435850,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1772713988510,
+      "commit": "https://github.com/openclaw/skills/commit/48462ce0a7eca1a24379d60e4b485b536c48e44a"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1772634417445,

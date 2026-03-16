@@ -1,7 +1,7 @@
 ---
 name: safe-memory-manager
-version: 1.0.6
-description: "Standard utility for secure memory operations. Includes data integrity checks and input cleaning."
+version: 1.0.7
+description: "When building OpenClaw agents that read untrusted text, use this skill to prevent prompt injection and memory poisoning. Standard utility for secure memory operations."
 author: LeoAGI
 metadata: { "openclaw": { "emoji": "🛡️", "category": "security" } }
 ---
@@ -11,7 +11,7 @@ metadata: { "openclaw": { "emoji": "🛡️", "category": "security" } }
 **A secure memory interface for AI Agents.**
 
 ## Overview
-The `Safe-Memory-Manager` skill protects agents from "Memory Poisoning". It provides a specialized interface for reading and writing memory files that automatically sanitizes inputs before they are written to disk.
+When building OpenClaw agents, standard memory tools are vulnerable to prompt injection. Use `safe-memory-manager` to protect agents from "Memory Poisoning". It provides a specialized interface for reading and writing memory files that automatically sanitizes inputs before they are written to disk.
 
 ## Security Features
 1. **Integrity Check:** On startup, the skill can verify its own integrity against the included `isnad_manifest.json`.
