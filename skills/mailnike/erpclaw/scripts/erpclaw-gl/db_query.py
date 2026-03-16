@@ -159,6 +159,16 @@ def add_account(conn, args):
     currency = args.currency or "USD"
     is_group = 1 if args.is_group else 0
 
+    # Guard: certain account_types must be leaf (posting) accounts, never groups
+    LEAF_ONLY_TYPES = {
+        "receivable", "payable", "bank", "cash", "tax",
+        "cost_of_goods_sold", "stock", "depreciation",
+        "accumulated_depreciation", "round_off",
+    }
+    if is_group and account_type and account_type.lower() in LEAF_ONLY_TYPES:
+        err(f"Account type '{account_type}' must be a posting (leaf) account, "
+            f"not a group. Remove --is-group to create a postable account.")
+
     # Default balance direction
     balance_direction = "debit_normal"
     if root_type in ("liability", "equity", "income"):
@@ -1576,6 +1586,7 @@ def import_opening_balances(conn, args):
         err(f"File not found: {csv_path}")
 
     from erpclaw_lib.csv_import import validate_csv, parse_csv_rows
+    from erpclaw_lib.args import SafeArgumentParser, check_unknown_args
 
     errors = validate_csv(csv_real, "opening_balance")
     if errors:
@@ -1684,7 +1695,7 @@ ACTIONS = {
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="ERPClaw GL Skill")
+    parser = SafeArgumentParser(description="ERPClaw GL Skill")
     parser.add_argument("--action", required=True, choices=sorted(ACTIONS.keys()))
     parser.add_argument("--db-path", default=None)
 
@@ -1738,7 +1749,8 @@ def main():
     # CSV import
     parser.add_argument("--csv-path", default=None)
 
-    args, _unknown = parser.parse_known_args()
+    args, unknown = parser.parse_known_args()
+    check_unknown_args(parser, unknown)
     check_input_lengths(args)
 
     db_path = args.db_path or DEFAULT_DB_PATH

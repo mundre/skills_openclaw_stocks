@@ -278,12 +278,17 @@ def get_item(conn, args):
 def list_items(conn, args):
     """Query items with filtering."""
     i = Table("item").as_("i")
+    ig = Table("item_group").as_("ig")
 
     # Warehouse filter: items that have stock in a specific warehouse
     warehouse_id = getattr(args, "warehouse_id", None)
 
+    company_id = getattr(args, "company_id", None)
+
     # Build count query
     count_q = Q.from_(i).select(fn.Count("*"))
+    if company_id:
+        count_q = count_q.join(ig).on(ig.id == i.item_group_id).where(ig.company_id == P())
     if warehouse_id:
         sle = Table("stock_ledger_entry")
         sub = (Q.from_(sle).select(sle.item_id).distinct()
@@ -299,6 +304,8 @@ def list_items(conn, args):
         )
 
     count_params = []
+    if company_id:
+        count_params.append(company_id)
     if warehouse_id:
         count_params.append(warehouse_id)
     if args.item_group:
@@ -315,11 +322,15 @@ def list_items(conn, args):
     offset = int(args.offset) if args.offset else 0
 
     rows_q = (Q.from_(i)
+              .left_join(ig).on(ig.id == i.item_group_id)
               .select(i.id, i.item_code, i.item_name, i.item_group_id,
+                      ig.name.as_("item_group_name"),
                       i.item_type, i.stock_uom, i.standard_rate, i.status,
                       i.has_batch, i.has_serial)
               .orderby(i.item_name)
               .limit(P()).offset(P()))
+    if company_id:
+        rows_q = rows_q.where(ig.company_id == P())
     if warehouse_id:
         sle = Table("stock_ledger_entry")
         sub = (Q.from_(sle).select(sle.item_id).distinct()
@@ -335,6 +346,8 @@ def list_items(conn, args):
         )
 
     row_params = []
+    if company_id:
+        row_params.append(company_id)
     if warehouse_id:
         row_params.append(warehouse_id)
     if args.item_group:
@@ -360,6 +373,8 @@ def add_item_group(conn, args):
     if not args.name:
         err("--name is required")
 
+    company_id = getattr(args, "company_id", None)
+
     if args.parent_id:
         ig_t = Table("item_group")
         parent_q = Q.from_(ig_t).select(ig_t.id).where(ig_t.id == P())
@@ -369,12 +384,14 @@ def add_item_group(conn, args):
 
     ig_id = str(uuid.uuid4())
     t = Table("item_group")
-    q = Q.into(t).columns("id", "name", "parent_id").insert(P(), P(), P())
+    q = Q.into(t).columns("id", "name", "company_id", "parent_id").insert(P(), P(), P(), P())
     try:
-        conn.execute(q.get_sql(), (ig_id, args.name, args.parent_id))
+        conn.execute(q.get_sql(), (ig_id, args.name, company_id, args.parent_id))
     except sqlite3.IntegrityError as e:
         sys.stderr.write(f"[erpclaw-inventory] {e}\n")
-        err("Item group creation failed — check for duplicates or invalid data")
+        err(f"Item group '{args.name}' already exists"
+            f"{' for this company' if company_id else ''}"
+            f". Choose a different name or update the existing group.")
 
     audit(conn, "erpclaw-inventory", "add-item-group", "item_group", ig_id,
            new_values={"name": args.name})
@@ -390,11 +407,17 @@ def list_item_groups(conn, args):
     """List item groups."""
     t = Table("item_group")
 
+    company_id = getattr(args, "company_id", None)
+
     count_q = Q.from_(t).select(fn.Count("*"))
+    if company_id:
+        count_q = count_q.where(t.company_id == P())
     if args.parent_id:
         count_q = count_q.where(t.parent_id == P())
 
     count_params = []
+    if company_id:
+        count_params.append(company_id)
     if args.parent_id:
         count_params.append(args.parent_id)
 
@@ -407,10 +430,14 @@ def list_item_groups(conn, args):
     rows_q = (Q.from_(t).select(t.star)
               .orderby(t.name)
               .limit(P()).offset(P()))
+    if company_id:
+        rows_q = rows_q.where(t.company_id == P())
     if args.parent_id:
         rows_q = rows_q.where(t.parent_id == P())
 
     row_params = []
+    if company_id:
+        row_params.append(company_id)
     if args.parent_id:
         row_params.append(args.parent_id)
     row_params.extend([limit, offset])
@@ -2345,6 +2372,7 @@ def import_items(conn, args):
         err(f"File not found: {csv_path}")
 
     from erpclaw_lib.csv_import import validate_csv, parse_csv_rows
+    from erpclaw_lib.args import SafeArgumentParser, check_unknown_args
 
     errors = validate_csv(csv_real, "item")
     if errors:
@@ -2443,7 +2471,7 @@ ACTIONS = {
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ERPClaw Inventory Skill")
+    parser = SafeArgumentParser(description="ERPClaw Inventory Skill")
     parser.add_argument("--action", required=True, choices=sorted(ACTIONS.keys()))
     parser.add_argument("--db-path", default=None)
 
@@ -2468,6 +2496,7 @@ def main():
 
     # Warehouse
     parser.add_argument("--warehouse-id")
+    parser.add_argument("--warehouse-name", dest="name")  # alias for --name
     parser.add_argument("--warehouse-type")
     parser.add_argument("--account-id")
     parser.add_argument("--is-group")
@@ -2533,7 +2562,8 @@ def main():
     parser.add_argument("--limit", default="20")
     parser.add_argument("--offset", default="0")
 
-    args, _unknown = parser.parse_known_args()
+    args, unknown = parser.parse_known_args()
+    check_unknown_args(parser, unknown)
     check_input_lengths(args)
 
     db_path = args.db_path or DEFAULT_DB_PATH

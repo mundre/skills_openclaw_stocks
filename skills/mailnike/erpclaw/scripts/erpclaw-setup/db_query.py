@@ -55,6 +55,28 @@ SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(SKILL_DIR, "assets")
 BACKUP_DIR = os.path.expanduser("~/.openclaw/erpclaw/backups")
 
+INDUSTRY_PROFILE_MAP = {
+    "retail": "retail", "store": "retail", "shop": "retail", "ecommerce": "retail",
+    "restaurant": "food-service", "food": "food-service", "catering": "food-service", "cafe": "food-service",
+    "healthcare": "healthcare", "medical": "healthcare", "clinic": "healthcare", "hospital": "healthcare",
+    "dental": "dental", "dentist": "dental",
+    "veterinary": "veterinary", "vet": "veterinary", "animal": "veterinary",
+    "construction": "construction", "contractor": "construction", "builder": "construction",
+    "manufacturing": "manufacturing", "factory": "manufacturing", "production": "manufacturing",
+    "law": "legal", "legal": "legal", "attorney": "legal", "law-firm": "legal",
+    "farm": "agriculture", "agriculture": "agriculture", "ranch": "agriculture", "farming": "agriculture",
+    "hotel": "hospitality", "hospitality": "hospitality", "resort": "hospitality", "motel": "hospitality",
+    "property": "property-management", "real-estate": "property-management", "landlord": "property-management",
+    "school": "k12-school", "k12": "k12-school", "education": "k12-school",
+    "university": "college-university", "college": "college-university", "higher-ed": "college-university",
+    "nonprofit": "nonprofit", "charity": "nonprofit", "foundation": "nonprofit", "ngo": "nonprofit",
+    "auto-repair": "automotive", "mechanic": "automotive", "dealership": "automotive", "automotive": "automotive",
+    "therapy": "mental-health", "therapist": "mental-health", "counseling": "mental-health", "psychiatry": "mental-health",
+    "home-health": "home-health", "home-care": "home-health",
+    "consulting": "professional-services", "agency": "professional-services",
+    "distribution": "distribution", "wholesale": "distribution",
+    "saas": "saas", "subscription": "saas", "software": "saas",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -113,7 +135,8 @@ def setup_company(conn, args):
         conn.execute(q_fy.get_sql(),
                      (fy_id, fy_name, fy_start.isoformat(), fy_end.isoformat(), company_id))
         conn.commit()
-    except Exception:
+    except Exception as e:
+        sys.stderr.write(f"[erpclaw-setup] Fiscal year creation failed: {e}\n")
         pass  # Non-fatal — user can create manually
 
     # Auto-create default cost center
@@ -130,7 +153,8 @@ def setup_company(conn, args):
         q_co = (Q.update(t_co).set(Field("default_cost_center_id"), P()).where(t_co.id == P()))
         conn.execute(q_co.get_sql(), (cc_id, company_id))
         conn.commit()
-    except Exception:
+    except Exception as e:
+        sys.stderr.write(f"[erpclaw-setup] Cost center creation failed: {e}\n")
         pass  # Non-fatal — user can create manually
 
     # Auto-create default warehouse
@@ -147,11 +171,86 @@ def setup_company(conn, args):
         q_co2 = (Q.update(t_co2).set(Field("default_warehouse_id"), P()).where(t_co2.id == P()))
         conn.execute(q_co2.get_sql(), (wh_id, company_id))
         conn.commit()
-    except Exception:
+    except Exception as e:
+        sys.stderr.write(f"[erpclaw-setup] Warehouse creation failed: {e}\n")
         pass  # Non-fatal — user can create manually
 
-    ok({"company_id": company_id, "name": name, "abbr": abbr,
-        "fiscal_year_id": fy_id, "cost_center_id": cc_id, "warehouse_id": wh_id})
+    # Auto-onboard if --industry is provided
+    modules_installed = []
+    onboard_profile = None
+    region_module = None
+    if getattr(args, "industry", None):
+        industry_key = args.industry.lower().replace(" ", "-")
+        onboard_profile = INDUSTRY_PROFILE_MAP.get(industry_key)
+        if onboard_profile:
+            try:
+                # Import onboarding module and call onboard programmatically
+                sys.path.insert(0, os.path.join(SKILL_DIR, ".."))
+                from onboarding import PROFILES, COUNTRY_REGION_MAP
+                from module_manager import _load_registry, _install_module_inner, _registry_to_dict, build_action_cache
+
+                profile = PROFILES.get(onboard_profile)
+                if profile:
+                    registry = _load_registry()
+                    modules_by_name = _registry_to_dict(registry)
+                    installed_rows = conn.execute(
+                        "SELECT name FROM erpclaw_module WHERE install_status = 'installed'"
+                    ).fetchall()
+                    already_installed = {row["name"] for row in installed_rows}
+
+                    for module_name in profile["modules"]:
+                        if module_name in already_installed:
+                            continue
+                        if module_name not in modules_by_name:
+                            continue
+                        try:
+                            install_args = argparse.Namespace(module_name=module_name)
+                            _install_module_inner(install_args, conn, modules_by_name, depth=0)
+                            modules_installed.append(module_name)
+                            already_installed.add(module_name)
+                        except SystemExit:
+                            conn = get_connection()
+                            check = conn.execute(
+                                "SELECT install_status FROM erpclaw_module WHERE name = ?",
+                                (module_name,)
+                            ).fetchone()
+                            if check and check["install_status"] == "installed":
+                                modules_installed.append(module_name)
+                                already_installed.add(module_name)
+                        except Exception:
+                            pass
+
+                    # Also install regional module based on country
+                    country_val = args.country or "United States"
+                    region_module = COUNTRY_REGION_MAP.get(country_val)
+                    if region_module and region_module not in already_installed:
+                        if region_module in modules_by_name:
+                            try:
+                                install_args = argparse.Namespace(module_name=region_module)
+                                _install_module_inner(install_args, conn, modules_by_name, depth=0)
+                                modules_installed.append(region_module)
+                            except SystemExit:
+                                conn = get_connection()
+                                check = conn.execute(
+                                    "SELECT install_status FROM erpclaw_module WHERE name = ?",
+                                    (region_module,)
+                                ).fetchone()
+                                if check and check["install_status"] == "installed":
+                                    modules_installed.append(region_module)
+                            except Exception:
+                                pass
+            except ImportError:
+                pass  # Onboarding not available — skip silently
+
+    result = {"company_id": company_id, "name": name, "abbr": abbr,
+              "fiscal_year_id": fy_id, "cost_center_id": cc_id, "warehouse_id": wh_id}
+    if onboard_profile:
+        result["onboard_profile"] = onboard_profile
+    if modules_installed:
+        result["modules_installed"] = modules_installed
+    if region_module:
+        result["region_module"] = region_module
+    ok(result)
 
 
 def update_company(conn, args):
@@ -1755,6 +1854,7 @@ def check_telegram_permission(conn, args):
 def seed_permissions(conn, args):
     """Seed default role permissions from the shared RBAC library."""
     from erpclaw_lib.rbac import seed_role_permissions
+    from erpclaw_lib.args import SafeArgumentParser, check_unknown_args
     seed_role_permissions(conn)
     t = Table("role_permission")
     q = Q.from_(t).select(fn.Count("*").as_("cnt"))
@@ -2067,7 +2167,7 @@ ACTIONS = {
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ERPClaw Setup Skill")
+    parser = SafeArgumentParser(description="ERPClaw Setup Skill")
     parser.add_argument("--action", required=True, choices=sorted(ACTIONS.keys()))
     parser.add_argument("--db-path", default=None,
                         help="SQLite database path (default: ~/.openclaw/erpclaw/data.sqlite)")
@@ -2077,6 +2177,7 @@ def main():
     parser.add_argument("--abbr", default=None)
     parser.add_argument("--currency", default=None)
     parser.add_argument("--country", default=None)
+    parser.add_argument("--industry", default=None)
     parser.add_argument("--company-id", default=None)
     parser.add_argument("--tax-id", default=None)
     parser.add_argument("--fiscal-year-start-month", type=int, default=None)
@@ -2169,7 +2270,8 @@ def main():
     parser.add_argument("--force", action="store_true", default=False,
                         help="Force re-initialize: drop and recreate the database")
 
-    args, _unknown = parser.parse_known_args()
+    args, unknown = parser.parse_known_args()
+    check_unknown_args(parser, unknown)
     check_input_lengths(args)
 
     # initialize-database handles its own connection lifecycle

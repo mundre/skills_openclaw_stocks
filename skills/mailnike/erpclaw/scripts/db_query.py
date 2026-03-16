@@ -15,10 +15,35 @@ import json
 import os
 import sqlite3
 import sys
+from uuid import uuid4
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODULES_DIR = os.path.expanduser("~/.openclaw/erpclaw/modules")
 DB_PATH = os.path.expanduser("~/.openclaw/erpclaw/data.sqlite")
+
+# Session ID for grouping action calls within one test scenario (set via env var)
+_SESSION_ID = os.environ.get("ERPCLAW_TEST_SESSION")
+
+
+def _log_action_call(action_name, routed_to, route_tier):
+    """Log an action call to action_call_log for L2 test verification.
+
+    Only logs when ERPCLAW_TEST_SESSION env var is set (test mode).
+    Silently ignores errors to never break normal operation.
+    """
+    if not _SESSION_ID:
+        return
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute(
+            "INSERT INTO action_call_log (id, action_name, routed_to, route_tier, session_id) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (str(uuid4()), action_name, routed_to, route_tier, _SESSION_ID),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass  # Never break normal operation
 
 # Action → domain mapping (365 core entries + aliases + 10 module mgmt)
 # Collisions resolved: status→setup, recurring-template→journals,
@@ -207,6 +232,7 @@ ACTION_MAP = {
     "submit-sales-invoice": "erpclaw-selling",
     "cancel-sales-invoice": "erpclaw-selling",
     "create-credit-note": "erpclaw-selling",
+    "list-credit-notes": "erpclaw-selling",
     "update-invoice-outstanding": "erpclaw-selling",
     "add-sales-partner": "erpclaw-selling",
     "list-sales-partners": "erpclaw-selling",
@@ -430,6 +456,24 @@ ACTION_MAP = {
     "list-garnishments": "erpclaw-payroll",
     "get-garnishment": "erpclaw-payroll",
     "payroll-status": "erpclaw-payroll",
+
+    # === ERPClaw OS — Phase 1+2: Validation, Generation, Deploy, Audit (16 actions) ===
+    "validate-module": "erpclaw-os",
+    "list-articles": "erpclaw-os",
+    "build-table-registry": "erpclaw-os",
+    "generate-module": "erpclaw-os",
+    "configure-module": "erpclaw-os",
+    "list-industries": "erpclaw-os",
+    "classify-operation": "erpclaw-os",
+    "schema-plan": "erpclaw-os",
+    "schema-apply": "erpclaw-os",
+    "schema-rollback": "erpclaw-os",
+    "schema-drift": "erpclaw-os",
+    "deploy-module": "erpclaw-os",
+    "deploy-audit-log": "erpclaw-os",
+    "install-suite": "erpclaw-os",
+    "run-audit": "erpclaw-os",
+    "compliance-weather-status": "erpclaw-os",
 }
 
 # Aliases: actions that need to be forwarded with a different --action name
@@ -452,6 +496,16 @@ ALIASES = {
     "list-recurring-invoice-templates": ("erpclaw-selling", "list-recurring-templates"),
     # Buying outstanding alias (selling owns the base name)
     "update-purchase-outstanding": ("erpclaw-buying", "update-invoice-outstanding"),
+    # Common LLM guesses (wrong names → correct names)
+    "create-payment": ("erpclaw-payments", "add-payment"),
+    "create-purchase-order": ("erpclaw-buying", "add-purchase-order"),
+    "create-customer": ("erpclaw-selling", "add-customer"),
+    "create-supplier": ("erpclaw-buying", "add-supplier"),
+    "create-employee": ("erpclaw-hr", "add-employee"),
+    "create-item": ("erpclaw-inventory", "add-item"),
+    "add-invoice": ("erpclaw-selling", "create-sales-invoice"),
+    "create-invoice": ("erpclaw-selling", "create-sales-invoice"),
+    "add-sales-invoice": ("erpclaw-selling", "create-sales-invoice"),
 }
 
 
@@ -461,7 +515,8 @@ ALIASES = {
 MODULE_ACTIONS = {
     "install-module", "remove-module", "update-modules",
     "list-modules", "available-modules", "module-status",
-    "search-modules", "rebuild-action-cache",
+    "search-modules", "rebuild-action-cache", "list-all-actions",
+    "regenerate-skill-md",
 }
 
 ONBOARDING_ACTIONS = {
@@ -534,6 +589,41 @@ def forward_module(module_name, action_override=None):
     os.execvp(sys.executable, [sys.executable, script] + args)
 
 
+def _suggest_module_for_action(action):
+    """Check module registry for which uninstalled module might provide this action.
+
+    Scans module_registry.json tags and naming conventions to suggest a module.
+    Returns module name or None.
+    """
+    # First check: does the action name have a known prefix?
+    PREFIX_MAP = {
+        "health-": "healthclaw",
+        "dental-": "healthclaw-dental",
+        "vet-": "healthclaw-vet",
+        "mental-": "healthclaw-mental",
+        "homehealth-": "healthclaw-homehealth",
+        "retail-": "retailclaw",
+        "construction-": "constructclaw",
+        "agri-": "agricultureclaw",
+        "auto-": "automotiveclaw",
+        "food-": "foodclaw",
+        "hotel-": "hospitalityclaw",
+        "legal-": "legalclaw",
+        "nonprofit-": "nonprofitclaw",
+        "edu-": "educlaw",
+        "prop-": "propertyclaw",
+        "india-": "erpclaw-region-in",
+        "canada-": "erpclaw-region-ca",
+        "uk-": "erpclaw-region-uk",
+        "eu-": "erpclaw-region-eu",
+    }
+    for prefix, module in PREFIX_MAP.items():
+        if action.startswith(prefix):
+            return module
+
+    return None
+
+
 def lookup_module_for_action(action):
     """Query erpclaw_module_action table to find which module owns this action.
 
@@ -576,38 +666,54 @@ def main():
 
     # Tier 0: Module management actions → module_manager.py
     if action in MODULE_ACTIONS:
+        _log_action_call(action, "module_manager", 0)
         forward_script(os.path.join(BASE_DIR, "module_manager.py"))
         return
 
     # Tier 0: Onboarding actions → onboarding.py
     if action in ONBOARDING_ACTIONS:
+        _log_action_call(action, "onboarding", 0)
         forward_script(os.path.join(BASE_DIR, "onboarding.py"))
         return
 
     # Tier 1: Check aliases (need to override action name)
     if action in ALIASES:
         domain, original_action = ALIASES[action]
+        _log_action_call(action, domain, 1)
         forward(domain, action_override=original_action)
         return
 
     # Tier 2: Check static core action map
     domain = ACTION_MAP.get(action)
     if domain:
+        _log_action_call(action, domain, 2)
         forward(domain)
         return
 
     # Tier 3: Dynamic lookup — check installed modules
     module_name = lookup_module_for_action(action)
     if module_name:
+        _log_action_call(action, module_name, 3)
         forward_module(module_name)
         return
 
-    # Unknown action
-    print(json.dumps({
-        "status": "error",
-        "error": f"Unknown action: {action}",
-        "hint": "Run --action status for system overview, or --action available-modules to browse installable modules"
-    }))
+    # Unknown action — check if any module provides it
+    suggestion = _suggest_module_for_action(action)
+    if suggestion:
+        print(json.dumps({
+            "status": "error",
+            "error": f"Unknown action: {action}",
+            "hint": f"This action is provided by module '{suggestion}'. "
+                    f"Install it with: --action install-module --module-name {suggestion}",
+            "suggested_module": suggestion,
+        }))
+    else:
+        print(json.dumps({
+            "status": "error",
+            "error": f"Unknown action: {action}",
+            "hint": "Run --action available-modules --search <keyword> to find modules, "
+                    "or --action list-all-actions to see available actions",
+        }))
     sys.exit(1)
 
 
