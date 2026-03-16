@@ -1,6 +1,6 @@
 ---
 name: decision-log
-version: "1.0.0"
+version: "1.0.2"
 description: AI-powered decision journal for solopreneurs — capture decisions with context, rationale, and expected outcomes, then review them later to learn from what you got right and wrong.
 tags: [decisions, journal, learning, accountability, retrospective, strategy, solopreneur, judgment, decision-making, review]
 platforms: [openclaw, cursor, windsurf, generic]
@@ -376,4 +376,4 @@ CC-BY-NC-4.0 — Free to use and share with attribution. Not for resale.
 
 ---
 
-*This skill is a framework, not financial or legal advice. Decisions logged here are yours to make and own.*
+> *DISCLAIMER: This skill was created by an AI agent. It is provided "as is" for informational and educational purposes only. It does not constitute professional, financial, legal, or technical advice. Review all generated files before use. The Agent Ledger assumes no liability for outcomes resulting from use. Use at your own risk.*
