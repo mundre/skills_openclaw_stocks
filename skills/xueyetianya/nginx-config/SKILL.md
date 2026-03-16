@@ -1,7 +1,9 @@
 ---
+version: "2.0.0"
 name: Nginx Config
 description: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━. Use when you need nginx config capabilities. Triggers on: nginx config."
   Nginx配置生成。服务器配置、反向代理、SSL、缓存、安全加固、性能优化。Nginx config generator with reverse proxy, SSL, caching, security, optimization. Nginx、服务器、运维。
+author: BytesAgain
 ---
 # Nginx Config
 

@@ -3,11 +3,16 @@
   "slug": "nginx-config",
   "displayName": "Nginx Config",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1773614064152,
-    "commit": "https://github.com/openclaw/skills/commit/c0d9d9e839245fa9e922511c54e860275fa3b2e7"
+    "version": "1.0.6",
+    "publishedAt": 1773666583188,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1773614064152,
+      "commit": "https://github.com/openclaw/skills/commit/c0d9d9e839245fa9e922511c54e860275fa3b2e7"
+    },
     {
       "version": "2.2.0",
       "publishedAt": 1773421579378,
