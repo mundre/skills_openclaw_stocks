@@ -7,7 +7,6 @@ name = "futu-trade-bot-skills"
 version = "0.1.0"
 description = "Futu Trade Bot Skills modules for account, trade, and quote services."
 readme = "README.md"
-license = {text = "MIT License"}
 requires-python = ">=3.10"
 dependencies = [
   "futu-api",
