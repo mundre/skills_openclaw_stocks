@@ -12,8 +12,9 @@
     "semantic-search",
     "bm25"
   ],
-  "author": "米粒儿",
+  "author": "思捷娅科技 (SJYKJ)",
   "license": "MIT",
+  "copyright": "© 2026 思捷娅科技 (SJYKJ). All rights reserved.",
   "repository": {
     "type": "git",
     "url": "https://github.com/miliger/qmd-manager"

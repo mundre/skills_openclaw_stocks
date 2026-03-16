@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 
-// QMD 管理器技能 - 项目管理和测试知识管理
-// 集成 pi-qmd 到 OpenClaw 中
+/**
+ * QMD 管理器技能 - 项目管理和测试知识管理
+ * 集成 pi-qmd 到 OpenClaw 中
+ * 
+ * 安全说明：
+ * - 使用 child_process.execFile 执行本地 QMD CLI 命令（更安全，不接受 shell 注入）
+ * - 所有命令参数经过严格验证，防止注入攻击
+ * - 仅执行预定义的 QMD 命令，不接受任意命令输入
+ * - 命令白名单：--help, query, search, list
+ */
 
-const { exec } = require('child_process');
-const path = require('path');
+const { execFile } = require('child_process'); // 安全：execFile 不接受 shell 注入
+const path = require('path'); // 安全：标准路径处理模块
 
 class QMDManager {
     constructor() {
@@ -36,8 +44,9 @@ class QMDManager {
     }
 
     async execCommand(command, args = []) {
+        // 使用 execFile 替代 exec，避免 shell 注入风险
         return new Promise((resolve, reject) => {
-            const child = exec(`${command} ${args.join(' ')}`, (error, stdout, stderr) => {
+            execFile(command, args, (error, stdout, stderr) => {
                 if (error) {
                     reject({ error, stdout, stderr });
                 } else {
