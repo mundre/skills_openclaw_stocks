@@ -1,7 +1,9 @@
 ---
+version: "2.0.0"
 name: Gaokao Essay
-description: >-
+description: "高考作文生成器。议论文、记叙文、材料作文。提供范文、素材、开头结尾模板。. Use when you need gaokao essay capabilities. Triggers on: gaokao essay."
   高考作文助手。议论文模板、素材库、开头结尾、审题技巧、满分作文分析。Gaokao essay assistant with templates, materials, scoring tips. 高考语文、作文素材、议论文、记叙文。Use when preparing for gaokao essays.
+author: BytesAgain
 ---
 
 # gaokao-essay
@@ -35,3 +37,6 @@ bash scripts/essay.sh material "创新"
 - Python 3.6+ compatible
 - No external dependencies
 - All content generated locally from built-in templates
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
