@@ -12,9 +12,10 @@ Solvea Chat CLI
     失败: 错误信息打印到 stderr，exit code 非 0
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.6"
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -22,7 +23,15 @@ from solvea_client import SolveaClient
 
 _WORKSPACE_ROOT = Path(__file__).parents[3]
 SESSIONS_FILE = _WORKSPACE_ROOT / "memory" / "solvea-sessions.json"
-RESET_MARKER = _WORKSPACE_ROOT / "memory" / "solvea-reset-pending"
+RESET_MARKER  = _WORKSPACE_ROOT / "memory" / "solvea-reset-pending"
+LOG_FILE      = _WORKSPACE_ROOT / "memory" / "solvea-chat.log"
+
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 def load_sessions() -> dict:
@@ -63,10 +72,15 @@ def do_chat(peer_id: str, message: str) -> None:
     sessions = load_sessions()
     chat_id = sessions.get(peer_id)
 
+    logging.info("chat peer_id=%s chat_id=%s message=%r", peer_id, chat_id, message)
+
     def _call(cid):
         try:
-            return client.chat(message=message, chat_id=cid)
+            result = client.chat(message=message, chat_id=cid)
+            logging.debug("api result: %s", json.dumps(result, ensure_ascii=False))
+            return result
         except Exception as e:
+            logging.error("api error: %s", e)
             print(f"Error: failed to call Solvea API: {e}", file=sys.stderr)
             sys.exit(1)
 
@@ -74,6 +88,7 @@ def do_chat(peer_id: str, message: str) -> None:
 
     # session 失效：服务端返回无内容且我们传了 chat_id → 清掉重试
     if not result.get("content") and not result.get("handoff") and chat_id:
+        logging.warning("session invalid, retrying without chat_id")
         sessions.pop(peer_id, None)
         save_sessions(sessions)
         result = _call(None)
@@ -94,6 +109,7 @@ def do_chat(peer_id: str, message: str) -> None:
     elif action_type == "CONFUSED":
         print("抱歉，我暂时无法回答您的问题，请稍后再试或联系人工客服。")
     else:
+        logging.error("unexpected result: %s", json.dumps(result, ensure_ascii=False))
         print("客服系统暂时无法响应，请稍后再试。", file=sys.stderr)
         sys.exit(1)
 

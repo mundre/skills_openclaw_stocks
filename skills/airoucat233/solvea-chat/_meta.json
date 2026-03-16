@@ -3,11 +3,16 @@
   "slug": "solvea-chat",
   "displayName": "Solvea Chat",
   "latest": {
-    "version": "0.2.4",
-    "publishedAt": 1773655688956,
-    "commit": "https://github.com/openclaw/skills/commit/00974587db41224f21fb156e79388bb75b5e6fb4"
+    "version": "0.3.6",
+    "publishedAt": 1773663114557,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.2.4",
+      "publishedAt": 1773655688956,
+      "commit": "https://github.com/openclaw/skills/commit/00974587db41224f21fb156e79388bb75b5e6fb4"
+    },
     {
       "version": "0.2.2",
       "publishedAt": 1773655336933,

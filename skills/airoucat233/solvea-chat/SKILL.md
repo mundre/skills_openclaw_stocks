@@ -1,6 +1,6 @@
 ---
 name: solvea-chat
-version: 0.2.0
+version: 0.3.6
 description: Call Solvea Web App chat API to get AI customer service replies. Use for real customer-service questions. On session boot message ("new session was started"), call with --mark-reset (no peer-id needed). For normal messages, call with --peer-id and --message. Never call for other slash-prefixed commands.
 metadata:
   openclaw:
@@ -21,9 +21,13 @@ metadata:
 
 ```bash
 cd ~/.openclaw
-npx clawhub@latest install solvea-chat
-# 根据上一步输出的安装路径执行，例如：
-# bash workspaces/main/skills/solvea-chat/setup.sh
+clawhub install solvea-chat
+```
+
+复制上一步输出中 `Installed solvea-chat ->` 后面的路径，执行其中的 `setup.sh`：
+
+```bash
+bash <上面输出的路径>/setup.sh
 ```
 
 按提示完成配置后，重启 OpenClaw。
