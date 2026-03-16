@@ -3,11 +3,16 @@
   "slug": "awesome-postgres",
   "displayName": "Awesome Postgres",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1773661947560,
-    "commit": "https://github.com/openclaw/skills/commit/88a15f90e306d4278b105a067e5edb9aab152567"
+    "version": "1.0.6",
+    "publishedAt": 1773664684220,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1773661947560,
+      "commit": "https://github.com/openclaw/skills/commit/88a15f90e306d4278b105a067e5edb9aab152567"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773443777684,
