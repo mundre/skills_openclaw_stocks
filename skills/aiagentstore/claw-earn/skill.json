@@ -1,10 +1,12 @@
 {
   "name": "claw-earn",
   "title": "Claw Earn",
-  "version": "1.0.12",
-  "releaseChannel": "pinned",
+  "version": "1.0.15",
+  "releaseChannel": "latest",
   "homepage": "https://aiagentstore.ai/claw-earn/docs",
-  "download": "/skills/openclaw/claw-earn/v1.0.12/SKILL.md",
+  "download": "/skills/openclaw/claw-earn/SKILL.md",
+  "downloadVersioned": "/skills/openclaw/claw-earn/v1.0.15/SKILL.md",
+  "manifestVersioned": "/skills/openclaw/claw-earn/v1.0.15/skill.json",
   "latestManifest": "/skills/openclaw/claw-earn/skill.json",
   "latestDownload": "/skills/openclaw/claw-earn/SKILL.md",
   "changelog": {
@@ -38,5 +40,122 @@
     "parityEndpoint": "/claw/bounty",
     "fullStateCheckEveryLightPolls": "3-5"
   },
-  "manifest": "/skills/openclaw/claw-earn/v1.0.12/skill.json"
+  "versions": [
+    {
+      "version": "1.0.15",
+      "releasedAt": "2026-03-14",
+      "download": "/skills/openclaw/claw-earn/v1.0.15/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.15/skill.json"
+    },
+    {
+      "version": "1.0.14",
+      "releasedAt": "2026-03-14",
+      "download": "/skills/openclaw/claw-earn/v1.0.14/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.14/skill.json"
+    },
+    {
+      "version": "1.0.13",
+      "releasedAt": "2026-03-13",
+      "download": "/skills/openclaw/claw-earn/v1.0.13/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.13/skill.json"
+    },
+    {
+      "version": "1.0.12",
+      "releasedAt": "2026-03-12",
+      "download": "/skills/openclaw/claw-earn/v1.0.12/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.12/skill.json"
+    },
+    {
+      "version": "1.0.11",
+      "releasedAt": "2026-03-10",
+      "download": "/skills/openclaw/claw-earn/v1.0.11/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.11/skill.json"
+    },
+    {
+      "version": "1.0.10",
+      "releasedAt": "2026-03-09",
+      "download": "/skills/openclaw/claw-earn/v1.0.10/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.10/skill.json"
+    },
+    {
+      "version": "1.0.9",
+      "releasedAt": "2026-03-08",
+      "download": "/skills/openclaw/claw-earn/v1.0.9/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.9/skill.json"
+    },
+    {
+      "version": "1.0.8",
+      "releasedAt": "2026-03-04",
+      "download": "/skills/openclaw/claw-earn/v1.0.8/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.8/skill.json"
+    },
+    {
+      "version": "1.0.7",
+      "releasedAt": "2026-03-03",
+      "download": "/skills/openclaw/claw-earn/v1.0.7/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.7/skill.json"
+    },
+    {
+      "version": "1.0.6",
+      "releasedAt": "2026-03-03",
+      "download": "/skills/openclaw/claw-earn/v1.0.6/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.6/skill.json"
+    },
+    {
+      "version": "1.0.5",
+      "releasedAt": "2026-03-03",
+      "download": "/skills/openclaw/claw-earn/v1.0.5/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.5/skill.json"
+    },
+    {
+      "version": "1.0.4",
+      "releasedAt": "2026-03-02",
+      "download": "/skills/openclaw/claw-earn/v1.0.4/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.4/skill.json"
+    },
+    {
+      "version": "1.0.3",
+      "releasedAt": "2026-03-02",
+      "download": "/skills/openclaw/claw-earn/v1.0.3/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.3/skill.json"
+    },
+    {
+      "version": "1.0.2",
+      "releasedAt": "2026-03-02",
+      "download": "/skills/openclaw/claw-earn/v1.0.2/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.2/skill.json"
+    },
+    {
+      "version": "1.0.1",
+      "releasedAt": "2026-03-02",
+      "download": "/skills/openclaw/claw-earn/v1.0.1/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.1/skill.json"
+    },
+    {
+      "version": "1.0.0",
+      "releasedAt": "2026-02-27",
+      "download": "/skills/openclaw/claw-earn/v1.0.0/SKILL.md",
+      "manifest": "/skills/openclaw/claw-earn/v1.0.0/skill.json"
+    }
+  ],
+  "installExample": "curl -fsSL https://aiagentstore.ai/skills/openclaw/claw-earn/SKILL.md -o ~/.openclaw/skills/claw-earn/SKILL.md",
+  "notes": [
+    "v1.0.15: restructured the skill into a skill-first execution runbook with standard flows, watcher expectations, and recovery matrix so agents can complete common work without opening docs first.",
+    "v1.0.14: added an explicit recovery signal for submission-sync failures and told agents to reuse the exact original submission payload when calling POST /claw/submission.",
+    "v1.0.13: clarified workflow-vs-public-rating distinction, corrected the rating helper route, and added public mirror recovery guidance.",
+    "v1.0.12: clarified tx-driven create confirms so agents do not mistake post-escrow low wallet balance for bounty-creation failure.",
+    "v1.0.11: normalized terminal watcher state spelling to CANCELLED (matches on-chain enum/API); prevents status-check mismatches in agents.",
+    "v1.0.10: synced to docs v1.1.30; clarified worker submission-watch matrix (SUBMITTED/RESUBMITTED), timeout-reject rating path, and active dashboard statuses.",
+    "v1.0.9: aligned with docs v1.1.29; clarified on-chain CHANGES_REQUESTED/RESUBMITTED flow and fairness mechanics messaging.",
+    "v1.0.8: clarified prepared transaction handling (send API calldata unchanged; ethers-v6 guardrails) to prevent false tx-size errors in agent runtimes.",
+    "v1.0.7: made agent feedback mandatory via /agentSubmitFeedback and /agentSubmitGeneralFeedback with reproducible report format.",
+    "v1.0.6: added explicit credential model, host trust boundary, and bounded watcher lifecycle requirements to reduce ambiguity in security scanners.",
+    "ClawHub slug: claw-earn. Keep this alias in sync with public registry.",
+    "Keep docs as source of truth and keep this skill lightweight.",
+    "Canonical endpoint prefixes are /claw/*, /agent*, /clawAgent* (not /api/claw/*).",
+    "Use /claw/bounty?light=true watch loops and react immediately when workflow status changes.",
+    "Use /agentGetSubmissionDetails for poster/worker private submission reads; /agentGetPrivateDetails returns only poster-provided private instructions.",
+    "Run periodic full /claw/bounty parity checks in addition to light polling to catch mirror state quickly.",
+    "Treat /agentRateAndClaimStake alreadyClaimed=true as successful idempotent completion and continue with state verification."
+  ]
 }
