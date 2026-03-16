@@ -1,6 +1,8 @@
 ---
+version: "2.0.0"
 name: Dive
 description: "A tool for exploring each layer in a docker image container-inspect, go, cli, docker, docker-image, explorer, inspector. Use when you need container-inspect capabilities. Triggers on: container-inspect."
+author: BytesAgain
 ---
 
 # Dive
@@ -23,7 +25,6 @@ Run any command: `container-inspect <command> [args]`
 💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
 
-
 ## Examples
 
 ```bash
@@ -34,26 +35,18 @@ container-inspect help
 container-inspect run
 ```
 
-## How It Works
-
-Reads input, processes with built-in logic, outputs results.
-
-## Tips
-
 - Run `container-inspect help` for commands
 - No API keys needed
-- Works offline
-
-
-## How It Works
-
-Reads input, processes with built-in logic, outputs structured results.
-
-## Tips
 
 - Run `container-inspect help` for all commands
 
-
-## Tips
-
 - Run `container-inspect help` for all commands
+
+## Configuration
+
+Set `CONTAINER_INSPECT_DIR` to change data directory. Default: `~/.local/share/container-inspect/`
+
+## When to Use
+
+- Quick container tasks from terminal
+- Automation pipelines
