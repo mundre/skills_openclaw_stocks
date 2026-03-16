@@ -1,6 +1,8 @@
 ---
+version: "2.0.0"
 name: Agent Ops Framework
-description: "Production-grade multi-agent team orchestration framework. Define agent roles, task pipelines, quality gates, and monitoring dashboards. Inspired by Google Vertex AI, Microsoft AutoGen, CrewAI, and Anthropic agent patterns. Features: role-based agent registry, task lifecycle (backlog→assigned→in-progress→review→done→deployed), structured handoffs with context passing, quality gates before promotion, centralized state store (single JSON source of truth), quota/budget management, cron-based monitoring with alerts, rollback capability, and human-in-the-loop approval points. Use when: (1) managing 3+ specialized agents on a project, (2) building CI/CD-style pipelines for content or code, (3) tracking task progress across multiple agents, (4) enforcing quality standards before deployment, (5) monitoring agent performance and output quality, (6) managing rate limits and quotas across accounts. multi-agent orchestration, team management, task pipeline, quality assurance, agent coordination, project management, CI/CD, workflow automation, monitoring, alerting."
+description: "Production-grade multi-agent team orchestration framework. Define agent roles, task pipelines, quality gates, and monitoring dashboards. Inspired by Google Vertex AI, Microsoft AutoGen, CrewAI, and Anthropic agent patterns. Features: role-based agent registry, task lifecycle (backlog→assigned→in-progress→review→done→deployed), structured handoffs with context passing, quality gates before promotion, centralized state store (single JSON source of truth), quota/budget management, cron-based monitoring with alerts, rollback capability, and human-in-the-loop approval points. Use when: (1) managing 3+ specialized agents on a project, (2) building CI/CD-style pipelines for content or code, (3) tracking task progress across multiple agents, (4) enforcing quality standards before deployment, (5) monitoring agent performance and output quality, (6) managing rate limits and quotas across accounts. multi-agent orchestration, team management, task pipeline, quality assurance, agent coordination, project management, CI/CD, workflow automation, monitoring, alerting. Triggers on: agent ops framework."
+author: BytesAgain
 ---
 
 # Agent Ops Framework
@@ -157,18 +159,26 @@ All state lives in one JSON file (`state.json`):
 ## Commands Reference
 
 | Command | Description |
-|---|---|
-| `ops.sh init` | Initialize project state |
-| `ops.sh agent add/list/remove` | Manage agent registry |
-| `ops.sh task add/list/move/cancel` | Manage tasks |
-| `ops.sh pipeline define/show` | Define task pipelines |
-| `ops.sh gate add/check` | Quality gate management |
-| `ops.sh quota set/check/reset` | Quota management |
-| `ops.sh dashboard` | Status dashboard (text/html) |
-| `ops.sh monitor` | Run monitoring checks |
-| `ops.sh report` | Generate period report |
-| `ops.sh history` | View task/agent history |
-| `ops.sh rollback` | Rollback a deployment |
+|---------|-------------|
+| `add` | Add |
+| `list` | List |
+| `remove` | Remove |
+| `add` | Add |
+| `move` | Move |
+| `list` | List |
+| `cancel` | Cancel |
+| `set` | Set |
+| `use` | Use |
+| `check` | Check |
+| `init` | Initialize project state |
+| `agent` | Manage agents (add/list/remove) |
+| `task` | Manage tasks (add/list/move/cancel) |
+| `quota` | Manage quotas (set/use/check) |
+| `dashboard` | Show project dashboard |
+| `monitor` | Run monitoring checks |
+| `report` | Generate project report |
+| `history` | View task history |
+| `rollback` | Rollback deployed task |
 
 ## Integration with OpenClaw
 
@@ -194,4 +204,7 @@ Each spawned agent reads its tasks from `state.json` and updates status on compl
 7. **Regular retrospectives** — update process based on data
 
 ---
-Powered by BytesAgain | bytesagain.com | hello@bytesagain.com
+> **Disclaimer**: This skill is an independent, original implementation. It is not affiliated with, endorsed by, or derived from the referenced open-source project. No code was copied. The reference is for context only.
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
