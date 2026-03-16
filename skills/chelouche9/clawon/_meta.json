@@ -3,11 +3,16 @@
   "slug": "clawon",
   "displayName": "Clawon",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1772995052809,
-    "commit": "https://github.com/openclaw/skills/commit/d89f4a01bdfdf2988dd819c2dcf8a16800db195a"
+    "version": "1.0.6",
+    "publishedAt": 1773599963347,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1772995052809,
+      "commit": "https://github.com/openclaw/skills/commit/d89f4a01bdfdf2988dd819c2dcf8a16800db195a"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1772831626182,
