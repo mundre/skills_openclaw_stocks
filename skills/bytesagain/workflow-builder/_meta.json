@@ -3,9 +3,15 @@
   "slug": "workflow-builder",
   "displayName": "Workflow Builder",
   "latest": {
-    "version": "2.3.0",
-    "publishedAt": 1773446995720,
-    "commit": "https://github.com/openclaw/skills/commit/d71b1b861cf7cf52afc254c6827eb28b6626d37b"
+    "version": "1.0.6",
+    "publishedAt": 1773667302763,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.3.0",
+      "publishedAt": 1773446995720,
+      "commit": "https://github.com/openclaw/skills/commit/d71b1b861cf7cf52afc254c6827eb28b6626d37b"
+    }
+  ]
 }

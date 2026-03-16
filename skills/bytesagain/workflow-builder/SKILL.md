@@ -1,6 +1,8 @@
 ---
+version: "2.0.0"
 name: workflow-builder
 description: "工作流设计与优化工具。流程设计、自动化方案、流程优化、文档化、审批流、系统集成。Workflow builder with design, automate, optimize, document, approval, and integration capabilities. Use when you need workflow builder capabilities. Triggers on: workflow builder."
+author: BytesAgain
 ---
 # workflow-builder
 
@@ -24,7 +26,6 @@ description: "工作流设计与优化工具。流程设计、自动化方案、
   integration     integration
 ```
 
-
 ## 专业建议
 
 - Understand the business process and goals
@@ -38,3 +39,9 @@ description: "工作流设计与优化工具。流程设计、自动化方案、
 ---
 💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
+
+## Commands
+
+Run `workflow-builder help` to see all available commands.
+
+- Run `workflow-builder help` for all commands
