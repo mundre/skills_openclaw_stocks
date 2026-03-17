@@ -1,0 +1,11 @@
+{
+  "owner": "a3273283",
+  "slug": "vwu-openai",
+  "displayName": "vwu.ai OpenAI Models",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773635935178,
+    "commit": null
+  },
+  "history": []
+}
