@@ -1,8 +1,8 @@
 # Session Password
 
-**Version:** 1.1.0
+**Version:** 1.6.1
 **Author:** squallsol
-**Price:** 9.9 USDT per call
+**Price:** $0.001 USDT per call
 **Platform:** [SkillPay](https://skillpay.me)
 
 ---
@@ -17,7 +17,7 @@ A secure passphrase authentication guard for OpenClaw sessions. Protects access 
 
 OpenClaw 会话的安全口令认证守护。使用 bcrypt 哈希口令、安全问题和邮箱恢复保护访问。
 
-**触发条件：** 会话启动时，用户提及"口令"、"密码"、"认证"、"密码"等认证相关词汇。
+**触发条件：** 会话启动时，用户提及"口令"、"密码"、"认证"等认证相关词汇。
 
 ---
 
@@ -25,26 +25,20 @@ OpenClaw 会话的安全口令认证守护。使用 bcrypt 哈希口令、安全
 
 | Plan | Price | Description |
 |------|-------|-------------|
-| **Buyout / 买断** | **$29 USDT** | One-time, lifetime access |
-| **Per Call / 按次** | **$0.9 USDT** | Pay per use |
+| **Per Call / 按次** | **$0.01 USDT** | Pay per use |
 
 Billing is handled via [SkillPay](https://skillpay.me) (BNB Chain USDT).
-
-- Users with buyout → No charge per call
-- Users without buyout → $0.9 USDT per call
-- Minimum deposit: 8 USDT
 
 ---
 
 ## Features / 功能特性
 
-- ✅ bcrypt password hashing (cost factor 12) / bcrypt 口令哈希（成本因子 12）
+- ✅ SHA256 / bcrypt password hashing / SHA256 / bcrypt 口令哈希
 - ✅ Configurable timeout (default 60 min) / 可配置超时（默认 60 分钟）
 - ✅ Security question backup / 安全问题备用验证
 - ✅ Email recovery system / 邮箱恢复系统
 - ✅ Failed attempt lockout (5 attempts, 15 min) / 失败锁定（5 次，15 分钟）
 - ✅ Bilingual support (zh-CN/en) / 中英双语支持
-- ✅ Audit logging / 审计日志
 - ✅ SkillPay billing integration / SkillPay 计费集成
 
 ---
@@ -67,10 +61,8 @@ node skills/session-password/scripts/setup.js
 
 | File | Description |
 |------|-------------|
-| `memory/auth-config.json` | Main configuration / 主配置 |
-| `memory/auth-users.json` | User credentials / 用户凭据 |
-| `memory/auth-state.json` | Session state / 会话状态 |
-| `memory/auth-audit.log` | Audit log / 审计日志 |
+| `memory/passphrase.json` | Main configuration (password hash, security question, timeout) / 主配置（口令哈希、安全问题、超时） |
+| `memory/auth-state.json` | Session authentication state / 会话认证状态 |
 
 ---
 

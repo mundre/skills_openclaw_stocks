@@ -1,9 +1,9 @@
 {
   "name": "session-password",
-  "version": "1.2.2",
-  "description": "Secure passphrase authentication guard for OpenClaw sessions with SkillPay billing (buyout $29 or $0.9/call)",
+  "version": "1.6.1",
+  "description": "Secure passphrase authentication guard for OpenClaw sessions with SkillPay billing ($0.001/call)",
   "author": "squallsol",
-  "license": "SEE LICENSE FILE",
+  "license": "MIT",
   "keywords": [
     "openclaw",
     "skill",
@@ -28,8 +28,7 @@
   },
   "pricing": {
     "type": "paid",
-    "buyout": 29,
-    "perCall": 0.9,
+    "perCall": 0.01,
     "currency": "USDT",
     "platform": "skillpay.me",
     "paymentUrl": "https://skillpay.me/skill/6387f3fa-cceb-4a60-afd4-fc1f4eb2d7c3"
