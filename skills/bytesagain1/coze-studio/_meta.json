@@ -3,11 +3,16 @@
   "slug": "coze-studio",
   "displayName": "Coze Studio",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773579704758,
-    "commit": "https://github.com/openclaw/skills/commit/aef14150e1a62aea802752c2946f3f831c6d426c"
+    "version": "1.0.7",
+    "publishedAt": 1773665526134,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773579704758,
+      "commit": "https://github.com/openclaw/skills/commit/aef14150e1a62aea802752c2946f3f831c6d426c"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773450830897,
