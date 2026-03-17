@@ -1,0 +1,11 @@
+{
+  "owner": "deliverydriver",
+  "slug": "notion-workflows",
+  "displayName": "Notion Workflows",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773546321355,
+    "commit": null
+  },
+  "history": []
+}
