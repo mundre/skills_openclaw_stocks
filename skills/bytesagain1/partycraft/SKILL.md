@@ -1,7 +1,9 @@
 ---
+version: "2.0.0"
 name: Event Planner
 description: "Event Planner. Use when you need event planner capabilities. Triggers on: event planner."
   活动策划助手。活动方案(婚礼/生日/年会)、预算编制、准备清单、邀请函文案、时间轴、供应商清单。Event planner for weddings, birthdays, corporate events with budgets, checklists, invitations, timelines. 活动策划、婚礼、年会。
+author: BytesAgain
 ---
 # Event Planner
 
@@ -24,7 +26,6 @@ description: "Event Planner. Use when you need event planner capabilities. Trigg
   vendor          vendor
 ```
 
-
 ## 专业建议
 
 - 场地: 30-40%
@@ -38,3 +39,12 @@ description: "Event Planner. Use when you need event planner capabilities. Trigg
 ---
 💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
+
+- Run `partycraft help` for commands
+- No API keys needed
+
+## Commands
+
+Run `partycraft help` to see all available commands.
+
+- Run `partycraft help` for all commands
