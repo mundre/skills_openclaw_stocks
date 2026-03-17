@@ -3,9 +3,15 @@
   "slug": "chinese-bank-forex-rates",
   "displayName": "银行外汇牌价",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1773464635713,
-    "commit": "https://github.com/openclaw/skills/commit/6f5dfac5729bae4c16da94916ac86b646849c054"
+    "version": "0.1.2",
+    "publishedAt": 1773530027963,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1773464635713,
+      "commit": "https://github.com/openclaw/skills/commit/6f5dfac5729bae4c16da94916ac86b646849c054"
+    }
+  ]
 }

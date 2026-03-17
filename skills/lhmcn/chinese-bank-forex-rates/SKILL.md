@@ -45,5 +45,5 @@ If a bank only publishes one buy and one sell price, the published pair is used 
 From this skill directory:
 
 ```bash
-npm start -- --bank "中国银行" --currencies 美元 EUR
+node index.js --bank "中国银行" --currencies 美元 EUR
 ```
