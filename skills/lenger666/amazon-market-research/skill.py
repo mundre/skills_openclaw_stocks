@@ -64,6 +64,27 @@ PLATFORMS = {
     "walmart": "Walmart"
 }
 
+SOP_SECTIONS = [
+    "1. 市场宏观分析",
+    "2. 电商平台竞争结构",
+    "3. 头部品牌分析",
+    "4. Amazon竞品分析",
+    "5. 关键词需求分析",
+    "6. 用户需求分析",
+    "7. 用户评价分析",
+    "8. 产品成本结构",
+    "9. 认证要求",
+    "10. 专利风险",
+    "11. 用户画像",
+    "12. 使用场景",
+    "13. 产品机会分析",
+    "14. 风险分析",
+    "15. SWOT分析",
+    "16. PEST分析",
+    "17. 市场进入评分",
+    "18. 最终建议",
+]
+
 
 def split_kv_segments(text: str):
     parts = re.split(r'[\n；;]+', text)
@@ -244,6 +265,7 @@ def get_config():
         "base_url": base_url,
         "model": model,
         "env_path": str(env_path),
+        "skill_dir": str(skill_dir),
     }
 
 
@@ -327,7 +349,7 @@ def call_market_model(product: str, market: str, platform: str, raw_text: str, c
   "reasons": ["进入理由1", "进入理由2", "进入理由3"],
   "risks": ["核心风险1", "核心风险2", "核心风险3"],
   "directions": ["推荐切入方向1", "推荐切入方向2", "推荐切入方向3"],
-  "full_report_markdown": "完整18条SOP报告，使用纯文本和 Markdown 标题，不要表格"
+  "full_report_markdown": "完整18条SOP报告，使用纯文本和稳定标题格式，不要表格"
 }
 
 额外强制要求：
@@ -338,7 +360,9 @@ def call_market_model(product: str, market: str, platform: str, raw_text: str, c
    - 结论
    - 关键依据
    - 风险/备注
-5. 语气要像商业报告，不像聊天
+5. 标题统一写成：【1. 市场宏观分析】 这种格式
+6. 语气要像商业报告，不像聊天
+7. 不要在 full_report_markdown 前面再写摘要
 """.strip()
 
     user_prompt = f"""
@@ -418,77 +442,77 @@ def prettify_report(text: str) -> str:
     text = re.sub(r'[ \t]+\n', '\n', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
 
-    if "# Amazon市场调研快照" not in text and "Amazon市场调研快照" not in text:
-        text = "# Amazon市场调研快照\n\n" + text
+    if "【1. 市场宏观分析】" in text:
+        return text.strip()
 
     replacements = [
-        (r'^\s*1[）\.\s]+市场宏观分析', '## 1. 市场宏观分析'),
-        (r'^\s*2[）\.\s]+电商平台竞争结构', '## 2. 电商平台竞争结构'),
-        (r'^\s*3[）\.\s]+头部品牌分析', '## 3. 头部品牌分析'),
-        (r'^\s*4[）\.\s]+Amazon竞品分析', '## 4. Amazon竞品分析'),
-        (r'^\s*5[）\.\s]+关键词需求分析', '## 5. 关键词需求分析'),
-        (r'^\s*6[）\.\s]+用户需求分析', '## 6. 用户需求分析'),
-        (r'^\s*7[）\.\s]+用户评价分析', '## 7. 用户评价分析'),
-        (r'^\s*8[）\.\s]+产品成本结构', '## 8. 产品成本结构'),
-        (r'^\s*9[）\.\s]+认证要求', '## 9. 认证要求'),
-        (r'^\s*10[）\.\s]+专利风险', '## 10. 专利风险'),
-        (r'^\s*11[）\.\s]+用户画像', '## 11. 用户画像'),
-        (r'^\s*12[）\.\s]+使用场景', '## 12. 使用场景'),
-        (r'^\s*13[）\.\s]+产品机会分析', '## 13. 产品机会分析'),
-        (r'^\s*14[）\.\s]+风险分析', '## 14. 风险分析'),
-        (r'^\s*15[）\.\s]+SWOT分析', '## 15. SWOT分析'),
-        (r'^\s*16[）\.\s]+PEST分析', '## 16. PEST分析'),
-        (r'^\s*17[）\.\s]+市场进入评分', '## 17. 市场进入评分'),
-        (r'^\s*18[）\.\s]+最终建议', '## 18. 最终建议'),
+        (r'^\s*#?\s*Amazon市场调研快照\s*$', ''),
+        (r'^\s*##?\s*1[）\.\s]+市场宏观分析', '【1. 市场宏观分析】'),
+        (r'^\s*##?\s*2[）\.\s]+电商平台竞争结构', '【2. 电商平台竞争结构】'),
+        (r'^\s*##?\s*3[）\.\s]+头部品牌分析', '【3. 头部品牌分析】'),
+        (r'^\s*##?\s*4[）\.\s]+Amazon竞品分析', '【4. Amazon竞品分析】'),
+        (r'^\s*##?\s*5[）\.\s]+关键词需求分析', '【5. 关键词需求分析】'),
+        (r'^\s*##?\s*6[）\.\s]+用户需求分析', '【6. 用户需求分析】'),
+        (r'^\s*##?\s*7[）\.\s]+用户评价分析', '【7. 用户评价分析】'),
+        (r'^\s*##?\s*8[）\.\s]+产品成本结构', '【8. 产品成本结构】'),
+        (r'^\s*##?\s*9[）\.\s]+认证要求', '【9. 认证要求】'),
+        (r'^\s*##?\s*10[）\.\s]+专利风险', '【10. 专利风险】'),
+        (r'^\s*##?\s*11[）\.\s]+用户画像', '【11. 用户画像】'),
+        (r'^\s*##?\s*12[）\.\s]+使用场景', '【12. 使用场景】'),
+        (r'^\s*##?\s*13[）\.\s]+产品机会分析', '【13. 产品机会分析】'),
+        (r'^\s*##?\s*14[）\.\s]+风险分析', '【14. 风险分析】'),
+        (r'^\s*##?\s*15[）\.\s]+SWOT分析', '【15. SWOT分析】'),
+        (r'^\s*##?\s*16[）\.\s]+PEST分析', '【16. PEST分析】'),
+        (r'^\s*##?\s*17[）\.\s]+市场进入评分', '【17. 市场进入评分】'),
+        (r'^\s*##?\s*18[）\.\s]+最终建议', '【18. 最终建议】'),
     ]
 
     for pat, repl in replacements:
         text = re.sub(pat, repl, text, flags=re.M)
 
+    text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
 
-def build_summary_header(data: dict) -> str:
-    title = data.get("title", "Amazon 市场调研报告")
-    one_line = data.get("one_line_conclusion", "当前公开数据不足，需要进一步调研")
-    decision = data.get("decision", "谨慎进入")
-    score = data.get("score", "N/A")
-    price_band = data.get("price_band", "当前公开数据不足，需要进一步调研")
-    reasons = data.get("reasons", []) or []
-    risks = data.get("risks", []) or []
-    directions = data.get("directions", []) or []
+def ensure_full_18_sections(text: str) -> str:
+    current = text
+    missing = []
+    for section in SOP_SECTIONS:
+        if f"【{section}】" not in current:
+            missing.append(section)
 
-    msg = []
-    msg.append(f"📊 {title}")
-    msg.append("")
-    msg.append("【一句话结论】")
-    msg.append(one_line)
-    msg.append("")
-    msg.append("【调研快照】")
-    msg.append(f"- 最终建议：{decision}")
-    msg.append(f"- 综合评分：{score}")
-    msg.append(f"- 建议价格带：{price_band}")
+    if not missing:
+        return current
 
-    if reasons:
-        msg.append("- 进入理由：")
-        for x in reasons[:3]:
-            msg.append(f"  - {x}")
+    appendix = ["", "【结构完整性补全说明】", "以下模块模型未完整输出，已自动补齐占位结构：", ""]
+    for section in missing:
+        appendix.extend([
+            f"【{section}】",
+            "结论：",
+            "当前模型未完整返回该模块，建议重新生成或二次深挖。",
+            "",
+            "关键依据：",
+            "当前返回内容不足。",
+            "",
+            "风险/备注：",
+            "该模块缺失会影响完整决策质量。",
+            ""
+        ])
+    return (current.rstrip() + "\n\n" + "\n".join(appendix).strip()).strip()
 
-    if risks:
-        msg.append("- 核心风险：")
-        for x in risks[:3]:
-            msg.append(f"  - {x}")
 
-    if directions:
-        msg.append("- 推荐切入方向：")
-        for x in directions[:3]:
-            msg.append(f"  - {x}")
+def safe_filename(name: str) -> str:
+    name = name.strip().lower()
+    name = re.sub(r'[\s/]+', '_', name)
+    name = re.sub(r'[^a-zA-Z0-9_\u4e00-\u9fa5-]+', '', name)
+    return name[:80] or "market_research"
 
-    msg.append("")
-    msg.append("——————————")
-    msg.append("")
-    msg.append("【完整专业调研报告】")
-    return "\n".join(msg).strip()
+
+def save_report(product: str, report_text: str, cfg: dict) -> str:
+    filename = f"{safe_filename(product)}_research_report.md"
+    path = Path(cfg["skill_dir"]) / filename
+    path.write_text(report_text, encoding="utf-8")
+    return filename
 
 
 def main():
@@ -499,8 +523,8 @@ def main():
             "ok": False,
             "error": "缺少输入参数",
             "help": "Amazon Market Research",
-            "example_feishu": "/amazon_market_research 调研一下午餐盒在美国Amazon市场值不值得做",
-            "example_local": "bash ~/.openclaw/workspace/skills/amazon_market_research/run.sh \"调研一下午餐盒在美国Amazon市场值不值得做\"",
+            "example_feishu": "/amazon-market-research 调研一下午餐盒在美国Amazon市场值不值得做",
+            "example_local": "bash ~/.openclaw/workspace/skills/amazon-market-research/run.sh \"调研一下午餐盒在美国Amazon市场值不值得做\"",
         })
         return
 
@@ -539,16 +563,23 @@ def main():
         return
 
     full_report = prettify_report(strip_markdown_tables(result.get("full_report_markdown", "")))
-    header = build_summary_header(result)
-    final_message = f"{header}\n\n{full_report}".strip()
+    full_report = ensure_full_18_sections(full_report)
+
+    title = result.get("title", f"{product} {market} {platform} 市场调研报告").strip()
+    final_answer = f"📊 {title}\n\n{full_report}".strip()
+
+    report_file = save_report(product, final_answer, cfg)
 
     output({
         "ok": True,
-        "message": final_message,
+        "answer": final_answer,
+        "message": final_answer,
+        "report_file": report_file,
         "meta": {
             "product_name": product,
             "market_country": market,
-            "platform": platform
+            "platform": platform,
+            "report_file": report_file
         }
     })
 

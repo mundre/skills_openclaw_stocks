@@ -3,9 +3,15 @@
   "slug": "amazon-market-research",
   "displayName": "Amazon Market Research",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773503438416,
-    "commit": "https://github.com/openclaw/skills/commit/fe1f945df5ce5edf0008094ea64c6396aaa4e640"
+    "version": "1.0.5",
+    "publishedAt": 1773542733131,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773503438416,
+      "commit": "https://github.com/openclaw/skills/commit/fe1f945df5ce5edf0008094ea64c6396aaa4e640"
+    }
+  ]
 }

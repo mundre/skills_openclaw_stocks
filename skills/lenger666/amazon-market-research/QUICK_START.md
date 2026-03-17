@@ -10,10 +10,10 @@ openclaw skills list | grep amazon
 
 首次运行：
 
-bash ~/.openclaw/workspace/skills/amazon_market_research/run.sh
+bash ~/.openclaw/workspace/skills/amazon-market-research/run.sh "调研一下午餐盒在美国Amazon市场值不值得做"
 
 飞书中推荐调用方式：
 
-/amazon_market_research 调研一下午餐盒在美国Amazon市场值不值得做
+/amazon-market-research 调研一下午餐盒在美国Amazon市场值不值得做
 
 首次使用前，请先填写 .env 中的模型配置。

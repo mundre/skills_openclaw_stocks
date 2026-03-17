@@ -2,13 +2,14 @@
 
 Amazon Market Research 用于快速生成 Amazon 市场调研报告。
 
-输出结果分三层：
+## 当前输出结构
 
-1. 飞书可读摘要
-2. 完整 18 条 SOP 调研报告
-3. 本地 PDF 文件
+1. 飞书直接展示完整 18 步市场调研报告
+2. 本地自动保存 markdown 报告文件
 
-首次安装或更新 Skill 后，请先执行：
+## 首次安装或更新后
+
+执行：
 
 openclaw gateway restart
 
@@ -18,14 +19,21 @@ openclaw skills list | grep amazon
 
 如果看到：
 
-amazon_market_research
+amazon-market-research
 
 说明 Skill 已被 OpenClaw 正确识别。
 
-推荐在飞书中使用 Slash 命令调用：
+## 推荐飞书调用方式
 
-/amazon_market_research 调研一下午餐盒在美国Amazon市场值不值得做
+/amazon-market-research 调研一下午餐盒在美国Amazon市场值不值得做
 
-本地测试：
+## 本地测试
 
-bash ~/.openclaw/workspace/skills/amazon_market_research/run.sh "调研一下午餐盒在美国Amazon市场值不值得做"
+bash ~/.openclaw/workspace/skills/amazon-market-research/run.sh "调研一下午餐盒在美国Amazon市场值不值得做"
+
+## 说明
+
+本版本已针对飞书长文本展示做优化：
+- 优先使用 answer 字段
+- 直接输出完整 18 条，不再前置摘要
+- 标题采用更稳定的 【1. 模块名】 格式
