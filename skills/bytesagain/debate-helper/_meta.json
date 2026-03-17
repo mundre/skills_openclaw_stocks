@@ -3,11 +3,16 @@
   "slug": "debate-helper",
   "displayName": "Debate Helper",
   "latest": {
-    "version": "2.3.0",
-    "publishedAt": 1773446849021,
-    "commit": "https://github.com/openclaw/skills/commit/d0b01c59aeb0a577a5c730cb2beba5425433986a"
+    "version": "2.3.4",
+    "publishedAt": 1773665689262,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.0",
+      "publishedAt": 1773446849021,
+      "commit": "https://github.com/openclaw/skills/commit/d0b01c59aeb0a577a5c730cb2beba5425433986a"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773335830088,
