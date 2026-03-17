@@ -3,9 +3,15 @@
   "slug": "slide-editor",
   "displayName": "Slide Editor",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1773470920295,
-    "commit": "https://github.com/openclaw/skills/commit/844e1978437ee6eb37961cc6aa6fda8d5123b9b9"
+    "version": "0.2.0",
+    "publishedAt": 1773507484910,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1773470920295,
+      "commit": "https://github.com/openclaw/skills/commit/844e1978437ee6eb37961cc6aa6fda8d5123b9b9"
+    }
+  ]
 }
