@@ -1,7 +1,7 @@
 ---
 name: CurrConv
 description: "Currency converter using live exchange rates. Convert between world currencies, check current exchange rates, view rate history, and compare multiple currencies at once. Supports USD, EUR, GBP, JPY, CNY, and 150+ currencies via free API."
-version: "1.0.0"
+version: "2.0.0"
 author: "BytesAgain"
 tags: ["currency","converter","exchange","rate","money","finance","forex","international"]
 categories: ["Finance", "Utility"]
@@ -23,13 +23,11 @@ currconv rates USD
 ---
 Powered by BytesAgain | bytesagain.com
 
-## How It Works
-
-Reads input, processes with built-in logic, outputs results.
-
-## Tips
-
 - Run `currconv help` for commands
 - No API keys needed
-- Works offline
 
+- Run `currconv help` for all commands
+
+---
+*Powered by BytesAgain | bytesagain.com*
+*Feedback & Feature Requests: https://bytesagain.com/feedback*
