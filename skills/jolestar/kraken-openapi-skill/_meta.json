@@ -1,0 +1,11 @@
+{
+  "owner": "jolestar",
+  "slug": "kraken-openapi-skill",
+  "displayName": "Kraken OpenAPI Skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773622300073,
+    "commit": null
+  },
+  "history": []
+}
