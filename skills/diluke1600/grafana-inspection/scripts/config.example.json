@@ -1,11 +1,13 @@
 {
   "grafana_url": "http://localhost:3000",
-  "api_key": "your_grafana_api_key",
-  "dashboard_uid": "your_dashboard_uid",
-  "panel_ids": [1, 2, 3],
+  "api_key": "",
+  "dashboard_uids": [],
+  "auto_discover": true,
+  "discover_limit": 10,
+  "inspection_mode": "hybrid",
+  "username": "",
+  "password": "",
+  "wait_for_load_ms": 3000,
   "screenshot_dir": "./screenshots",
-  "output_dir": "./reports",
-  "feishu_app_id": "your_feishu_app_id",
-  "feishu_app_secret": "your_feishu_app_secret",
-  "feishu_folder_token": "your_folder_token"
+  "output_dir": "./reports"
 }
