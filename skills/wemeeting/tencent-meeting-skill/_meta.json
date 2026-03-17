@@ -1,0 +1,11 @@
+{
+  "owner": "wemeeting",
+  "slug": "tencent-meeting-skill",
+  "displayName": "腾讯会议",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773514095632,
+    "commit": null
+  },
+  "history": []
+}
