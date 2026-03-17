@@ -3,11 +3,16 @@
   "slug": "appsmith",
   "displayName": "Appsmith",
   "latest": {
-    "version": "2.3.3",
-    "publishedAt": 1773579415259,
-    "commit": "https://github.com/openclaw/skills/commit/855d895145b30142026b2e2f0f067afa0e747bd5"
+    "version": "2.3.7",
+    "publishedAt": 1773664615234,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.3",
+      "publishedAt": 1773579415259,
+      "commit": "https://github.com/openclaw/skills/commit/855d895145b30142026b2e2f0f067afa0e747bd5"
+    },
     {
       "version": "2.3.0",
       "publishedAt": 1773446687468,

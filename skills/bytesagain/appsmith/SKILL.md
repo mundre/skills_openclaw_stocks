@@ -1,6 +1,8 @@
 ---
+version: "2.0.0"
 name: Appsmith
 description: "Platform to build admin panels, internal tools, and dashboards. Integrates with 25+ databases and an appsmith, typescript, admin-dashboard, admin-panels, app-builder, automation, crud. Use when you need appsmith capabilities. Triggers on: appsmith."
+author: BytesAgain
 ---
 
 # Appsmith
