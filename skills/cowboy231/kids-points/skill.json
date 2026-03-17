@@ -1,0 +1,76 @@
+{
+  "name": "kids-points",
+  "version": "1.2.0",
+  "description": "儿童积分语音助手 - 支持语音记账、语音播报、音频识别",
+  "author": "老王",
+  "license": "MIT",
+  "tags": ["kids", "education", "points", "voice", "tts", "asr", "chinese"],
+  "emoji": "🎤",
+  
+  "requirements": {
+    "node": ">=18",
+    "python": ">=3.8",
+    "packages": ["requests"],
+    "binaries": ["aplay"]
+  },
+  
+  "dependencies": {
+    "skills": [
+      {
+        "id": "kid-point-voice-component",
+        "name": "Kid Point Voice Component",
+        "required": false,
+        "reason": "语音功能需要此依赖",
+        "features": ["语音播报", "语音识别", "音频消息处理"]
+      }
+    ],
+    "config": {
+      "SENSE_API_KEY": {
+        "required": false,
+        "reason": "语音功能需要 API Key（TTS/ASR）",
+        "help": "https://senseaudio.cn"
+      }
+    }
+  },
+  
+  "entry": {
+    "main": "scripts/handler.js",
+    "type": "node"
+  },
+  
+  "features": [
+    {
+      "name": "文字记账",
+      "command": "学习积分 ...",
+      "requires": []
+    },
+    {
+      "name": "语音记账",
+      "command": "发送音频消息",
+      "requires": ["kid-point-voice-component", "SENSE_API_KEY"]
+    },
+    {
+      "name": "语音播报",
+      "command": "自动触发",
+      "requires": ["kid-point-voice-component", "SENSE_API_KEY"]
+    },
+    {
+      "name": "积分查询",
+      "command": "今日积分",
+      "requires": []
+    }
+  ],
+  
+  "install": {
+    "script": "scripts/install-dependencies.js",
+    "auto": true,
+    "prompt": true
+  },
+  
+  "examples": [
+    "学习积分 今天完成了汉字抄写 2 课，口算题卡 2 篇全对",
+    "积分消费 买零食花了 20 分",
+    "今日积分",
+    "[发送音频] 学习积分 今天自己洗澡了"
+  ]
+}
