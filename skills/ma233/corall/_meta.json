@@ -3,9 +3,15 @@
   "slug": "corall",
   "displayName": "Openclaw Corall Skill",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1773493758380,
-    "commit": "https://github.com/openclaw/skills/commit/57c77349ad250a58f18d0bc901de72b7858d2f8e"
+    "version": "0.1.4",
+    "publishedAt": 1773653290143,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1773493758380,
+      "commit": "https://github.com/openclaw/skills/commit/57c77349ad250a58f18d0bc901de72b7858d2f8e"
+    }
+  ]
 }
