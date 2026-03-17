@@ -1,0 +1,11 @@
+{
+  "owner": "hm-runninghub",
+  "slug": "runninghub-skills",
+  "displayName": "An OpenClaw skill for AI-powered multimedia generation (image, video, audio, 3D) via 170+ RunningHub API endpoints — zero dependencies, pure Python.",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773529670272,
+    "commit": null
+  },
+  "history": []
+}
