@@ -1,0 +1,11 @@
+{
+  "owner": "bytesagain3",
+  "slug": "cert-manager",
+  "displayName": "Cert Manager",
+  "latest": {
+    "version": "1.0.7",
+    "publishedAt": 1773665012363,
+    "commit": null
+  },
+  "history": []
+}
