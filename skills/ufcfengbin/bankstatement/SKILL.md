@@ -81,7 +81,14 @@ python3 /models/openclaw/skills/flow/scripts/generate_report.py token "$server_p
 
 ## 注意
 
-最终输出不需要完整的报告，只需要稍作总结即可。
+- 最终输出不需要完整的报告内容，只需要附带完整的报告链接，用户可以通过链接查看报告。
+- 链接格式如下:
+
+```url
+https://xxxx.dfwytech.com:9003/files/tools/2d22f7e3-2e26-4f6c-8976-bd04f7424965.pdf?timestamp=1773645717&nonce=996e9064791853205cef1d30c2837633&sign=X4TNDsvRM62c4JPYQqFL3PmDg-3TOS1NXJwbPd4iKdI=
+```
+
+- 链接以及链接中的参数timestamp、nonce、sign请根据实际情况替换。
 
 ## API 信息
 
