@@ -1,0 +1,11 @@
+{
+  "owner": "samledger67-dotcom",
+  "slug": "contract-review-agent",
+  "displayName": "Contract Review Agent",
+  "latest": {
+    "version": "98.0.1",
+    "publishedAt": 1773724938415,
+    "commit": null
+  },
+  "history": []
+}
