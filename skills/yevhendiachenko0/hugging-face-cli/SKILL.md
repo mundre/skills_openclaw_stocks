@@ -5,7 +5,7 @@ user-invocable: true
 metadata:
   openclaw:
     emoji: "\U0001F917"
-    version: 1.0.0
+    version: 1.1.0
     homepage: https://huggingface.co
     primaryEnv: HF_TOKEN
     requires:
@@ -17,17 +17,21 @@ metadata:
 
 Hugging Face (https://huggingface.co) is the leading platform for sharing and collaborating on AI models, datasets, and spaces. This skill enables interaction with the Hub through the official `hf` CLI.
 
-## Installation
+# Installation
 
 Check if `hf` is available by running `hf version`. If not installed:
 
 ```bash
-curl -LsSf https://hf.co/cli/install.sh | bash
+pip install -U "huggingface_hub[cli]"
+# or
+brew install hf
 ```
+
+If the options above do not work, follow the [official installation guide](https://huggingface.co/docs/huggingface_hub/guides/cli#getting-started).
 
 After installation, run `hf version` to verify. If the command is not found, run `source ~/.bashrc` (or `source ~/.zshrc` for zsh) to reload the PATH, then try again.
 
-## Authentication
+# Authentication
 
 A Hugging Face User Access Token is required. The token is provided via the `HF_TOKEN` environment variable.
 
@@ -43,9 +47,7 @@ If authentication fails or the token is missing, instruct the user to:
 hf auth whoami
 ```
 
-## CLI Usage
-
-### Key Commands
+# Key Commands
 
 | Task | Command |
 |---|---|
@@ -98,7 +100,7 @@ hf auth whoami
 | Sync to bucket | `hf sync <local_path> hf://buckets/<user>/<bucket>` |
 | Print environment | `hf env` |
 
-### End-to-End Examples
+# End-to-End Examples
 
 **Example 1: Explore trending models, pick one, and preview a download**
 ```bash
@@ -123,7 +125,7 @@ hf upload <username>/my-fine-tuned-model ./output --commit-message "Add fine-tun
 hf repos tag create <username>/my-fine-tuned-model v1.0 -m "Initial release"
 ```
 
-### Further Reference
+# Further Reference
 
 Reference version: `hf` CLI v1.x
 
@@ -136,7 +138,7 @@ hf <command> --help
 - **Full documentation:** https://huggingface.co/docs/huggingface_hub/guides/cli
 - **CLI reference:** https://huggingface.co/docs/huggingface_hub/package_reference/cli
 
-## Safety Rules
+# Safety Rules
 
 - **Destructive commands require explicit user confirmation.** Before running any of the following, describe what will happen and ask the user to confirm:
   - `hf repos delete` — permanently deletes a repository

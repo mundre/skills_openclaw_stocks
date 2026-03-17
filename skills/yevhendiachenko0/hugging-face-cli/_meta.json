@@ -3,9 +3,15 @@
   "slug": "hugging-face-cli",
   "displayName": "Hugging Face CLI",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1773485373181,
-    "commit": "https://github.com/openclaw/skills/commit/c84cb2f9681623e0690d95a4e46b160782e3ae1d"
+    "version": "1.1.0",
+    "publishedAt": 1773513269794,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1773485373181,
+      "commit": "https://github.com/openclaw/skills/commit/c84cb2f9681623e0690d95a4e46b160782e3ae1d"
+    }
+  ]
 }
