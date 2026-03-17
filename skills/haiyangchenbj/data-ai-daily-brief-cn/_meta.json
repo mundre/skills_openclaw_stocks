@@ -3,9 +3,15 @@
   "slug": "data-ai-daily-brief-cn",
   "displayName": "Data+AI Daily Brief CN",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773378946077,
-    "commit": "https://github.com/openclaw/skills/commit/d73e8845a5d7a50b932770d7f9e395f3e8c2b2e3"
+    "version": "1.0.3",
+    "publishedAt": 1773632785966,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773378946077,
+      "commit": "https://github.com/openclaw/skills/commit/d73e8845a5d7a50b932770d7f9e395f3e8c2b2e3"
+    }
+  ]
 }
