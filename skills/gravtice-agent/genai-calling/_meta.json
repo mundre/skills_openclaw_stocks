@@ -1,0 +1,11 @@
+{
+  "owner": "gravtice-agent",
+  "slug": "genai-calling",
+  "displayName": "One API Calling GenAI",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1773827186313,
+    "commit": null
+  },
+  "history": []
+}
