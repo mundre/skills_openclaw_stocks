@@ -1,0 +1,11 @@
+{
+  "owner": "krishnakumarmahadevan-cmd",
+  "slug": "k8s-incident-response-playbook",
+  "displayName": "K8s Incident Response Playbook Generator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773811152383,
+    "commit": null
+  },
+  "history": []
+}
