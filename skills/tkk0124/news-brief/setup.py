@@ -122,7 +122,7 @@ def verify_serper_key(key: str) -> bool:
     """验证 Serper API Key 是否有效"""
     try:
         resp = requests.post(
-            "https://google.serper.dev/news",
+            "https://serper.dev/news",
             headers={"X-API-KEY": key, "Content-Type": "application/json"},
             json={"q": "technology news", "num": 1},
             timeout=8,
@@ -156,7 +156,7 @@ def setup_api_keys() -> tuple[str, str]:
 
   1. Serper API Key（抓取新闻用）
      • 免费额度：2500次/月（每天1次跑一年都够）
-     • 获取地址：{BOLD}https://serper.dev{RESET}{YELLOW}
+     • 获取地址：{BOLD}https://serper.dev/{RESET}{YELLOW}
      • 注册后在 Dashboard → API Key 复制
 
   2. DeepSeek API Key（AI摘要/翻译用）

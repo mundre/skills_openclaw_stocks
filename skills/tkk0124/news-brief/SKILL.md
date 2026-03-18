@@ -1,12 +1,12 @@
 ---
 name: news-brief
 description: "Daily Chinese news brief from top global sources (Reuters, Bloomberg, TechCrunch, FT, BBC). Pick up to 3 categories, run setup.py once, get structured briefs every morning. 每日新闻简报，权威来源，一键配置。"
-version: "1.0.0"
+version: "1.0.3"
 author: ""
 license: MIT
 requires:
   env:
-    - SERPER_API_KEY     # 必填：google.serper.dev 获取，免费额度2500次/月
+    - SERPER_API_KEY     # 必填：serper.dev 获取，免费额度2500次/月
     - DEEPSEEK_API_KEY   # 必填：platform.deepseek.com 获取，极低费用
   python: ">=3.9"
   packages:
