@@ -1,0 +1,11 @@
+{
+  "owner": "nansen-devops",
+  "slug": "nansen-exit-signals",
+  "displayName": "Nansen Exit Signals",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1773742730289,
+    "commit": null
+  },
+  "history": []
+}
