@@ -1,0 +1,11 @@
+{
+  "owner": "ok-james-01",
+  "slug": "okx-audit-log",
+  "displayName": "Okx Audit Log",
+  "latest": {
+    "version": "2.0.0",
+    "publishedAt": 1773843767963,
+    "commit": null
+  },
+  "history": []
+}
