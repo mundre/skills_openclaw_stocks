@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "braintree",
+  "displayName": "Braintree",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773802945005,
+    "commit": null
+  },
+  "history": []
+}
