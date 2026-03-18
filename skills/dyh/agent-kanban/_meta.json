@@ -1,0 +1,11 @@
+{
+  "owner": "dyh",
+  "slug": "agent-kanban",
+  "displayName": "Agent Kanban",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773812982023,
+    "commit": null
+  },
+  "history": []
+}
