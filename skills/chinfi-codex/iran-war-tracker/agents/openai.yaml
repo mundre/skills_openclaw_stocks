@@ -1,0 +1,4 @@
+interface:
+  display_name: "Iran War Tracker"
+  short_description: "Track Iran conflict, CLS news, and risk assets"
+  default_prompt: "使用 $iran-war-tracker 生成中文伊朗局势跟踪报告。必须先加载 skill 根目录下的《伊朗局势关键变量与经济影响分析报告》作为分析框架，再结合 Tavily、CLS Telegraph、BTC/黄金/WTI/天然气/纳指期货数据，输出详尽而非摘要式分析。只对以下三个部分严格套用高可读性播报模板，少量必要 emoji 即可，不能滥用：`战争烈度评估`、`局势进展`、`交易线索`。其他部分保持原有分析结构，不要也改成播报卡片。其中特别要求把原油与天然气分开分析，明确写出霍尔木兹海峡、油气供给、制裁/设施扰动、通胀传导、风险资产定价之间的因果链；每个结论都要标明是事实、市场信号还是推演。"
