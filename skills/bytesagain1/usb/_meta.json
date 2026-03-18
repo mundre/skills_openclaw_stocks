@@ -1,0 +1,11 @@
+{
+  "owner": "bytesagain1",
+  "slug": "usb",
+  "displayName": "Usb",
+  "latest": {
+    "version": "2.0.0",
+    "publishedAt": 1773808100254,
+    "commit": null
+  },
+  "history": []
+}
