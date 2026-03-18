@@ -3,9 +3,15 @@
   "slug": "ai-code-helper",
   "displayName": "Ai Code Helper",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1773663360937,
-    "commit": "https://github.com/openclaw/skills/commit/b403473c23e65bf485207e5d4f39ef82099ed0de"
+    "version": "2.0.2",
+    "publishedAt": 1773830055800,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1773663360937,
+      "commit": "https://github.com/openclaw/skills/commit/b403473c23e65bf485207e5d4f39ef82099ed0de"
+    }
+  ]
 }
