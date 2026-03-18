@@ -1,0 +1,11 @@
+{
+  "owner": "infra403",
+  "slug": "6551-daily-news",
+  "displayName": "Daily News",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1773740122529,
+    "commit": null
+  },
+  "history": []
+}
