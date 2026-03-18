@@ -1,0 +1,11 @@
+{
+  "owner": "xiaojuhao1020-debug",
+  "slug": "gold-price",
+  "displayName": "黄金价格查询",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773814415315,
+    "commit": null
+  },
+  "history": []
+}
