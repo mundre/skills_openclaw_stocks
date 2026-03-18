@@ -1,0 +1,11 @@
+{
+  "owner": "nansen-devops",
+  "slug": "nansen-smart-alerts",
+  "displayName": "Nansen Smart Alerts",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1773750756906,
+    "commit": null
+  },
+  "history": []
+}
