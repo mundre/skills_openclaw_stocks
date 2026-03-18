@@ -1,0 +1,107 @@
+{
+  "current_topic": "机器学习算法优化相关",
+  "topic_history": [
+    {
+      "topic": "记忆管理相关",
+      "keywords": [
+        "记忆管理技能的设计和实现"
+      ],
+      "timestamp": "2026-03-17T12:12:49.560586",
+      "tokens_used": 16,
+      "content_snippet": "记忆管理技能的设计和实现",
+      "is_compressed": false
+    },
+    {
+      "topic": "今天天气很好, 我们去公园吧相关",
+      "keywords": [
+        "今天天气很好",
+        "我们去公园吧"
+      ],
+      "timestamp": "2026-03-17T12:12:49.561048",
+      "tokens_used": 16,
+      "content_snippet": "今天天气很好，我们去公园吧",
+      "is_compressed": false
+    },
+    {
+      "topic": "飞书集成相关",
+      "keywords": [
+        "飞书"
+      ],
+      "timestamp": "2026-03-17T12:12:49.561576",
+      "tokens_used": 11,
+      "content_snippet": "飞书API权限问题处理",
+      "is_compressed": false
+    },
+    {
+      "topic": "一般对话",
+      "keywords": [],
+      "timestamp": "2026-03-17T12:12:49.562072",
+      "tokens_used": 9,
+      "content_snippet": "Python编程技巧分享",
+      "is_compressed": false
+    },
+    {
+      "topic": "机器学习算法优化相关",
+      "keywords": [
+        "机器学习算法优化"
+      ],
+      "timestamp": "2026-03-17T12:12:49.562457",
+      "tokens_used": 10,
+      "content_snippet": "机器学习算法优化",
+      "is_compressed": false
+    },
+    {
+      "topic": "记忆管理相关",
+      "keywords": [
+        "记忆管理技能的设计和实现"
+      ],
+      "timestamp": "2026-03-17T14:38:14.949700",
+      "tokens_used": 16,
+      "content_snippet": "记忆管理技能的设计和实现",
+      "is_compressed": false
+    },
+    {
+      "topic": "今天天气很好, 我们去公园吧相关",
+      "keywords": [
+        "今天天气很好",
+        "我们去公园吧"
+      ],
+      "timestamp": "2026-03-17T14:38:14.950305",
+      "tokens_used": 16,
+      "content_snippet": "今天天气很好，我们去公园吧",
+      "is_compressed": false
+    },
+    {
+      "topic": "飞书集成相关",
+      "keywords": [
+        "飞书"
+      ],
+      "timestamp": "2026-03-17T14:38:14.950571",
+      "tokens_used": 11,
+      "content_snippet": "飞书API权限问题处理",
+      "is_compressed": false
+    },
+    {
+      "topic": "一般对话",
+      "keywords": [],
+      "timestamp": "2026-03-17T14:38:14.950799",
+      "tokens_used": 9,
+      "content_snippet": "Python编程技巧分享",
+      "is_compressed": false
+    },
+    {
+      "topic": "机器学习算法优化相关",
+      "keywords": [
+        "机器学习算法优化"
+      ],
+      "timestamp": "2026-03-17T14:38:14.951007",
+      "tokens_used": 10,
+      "content_snippet": "机器学习算法优化",
+      "is_compressed": false
+    }
+  ],
+  "memory_context": null,
+  "last_switch_time": "2026-03-17T14:38:14.951010",
+  "switch_count": 9,
+  "total_tokens": 0
+}
