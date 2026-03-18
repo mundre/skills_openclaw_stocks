@@ -1,0 +1,11 @@
+{
+  "owner": "fenghaozhe-git",
+  "slug": "invoice-verification-service",
+  "displayName": "Invoice Verification Service",
+  "latest": {
+    "version": "0.4.1",
+    "publishedAt": 1773802519996,
+    "commit": null
+  },
+  "history": []
+}
