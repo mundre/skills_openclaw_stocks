@@ -3,11 +3,16 @@
   "slug": "vibe-notion",
   "displayName": "Vibe Notion",
   "latest": {
-    "version": "0.9.0",
-    "publishedAt": 1772686602050,
-    "commit": "https://github.com/openclaw/skills/commit/f522f251653f884439dbb2385b903d742eb45fe5"
+    "version": "1.2.2",
+    "publishedAt": 1773674092447,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.9.0",
+      "publishedAt": 1772686602050,
+      "commit": "https://github.com/openclaw/skills/commit/f522f251653f884439dbb2385b903d742eb45fe5"
+    },
     {
       "version": "0.8.1",
       "publishedAt": 1772545150737,
