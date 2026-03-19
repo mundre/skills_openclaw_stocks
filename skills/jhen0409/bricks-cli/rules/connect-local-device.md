@@ -2,6 +2,21 @@
 
 Deploy a BRICKS application and connect to devices on the local network.
 
+## Prerequisites: Enable Local Debugging on Device
+
+The device must have **Local Debugging** enabled. Go to **System Menu → Advanced Setting** on the device and enable the following:
+
+| Setting | English | 繁體中文 | 日本語 |
+|---------|---------|----------|--------|
+| Main toggle | Enable local debugging | 啟用 Local Debugging | ローカルデバッグを有効化 |
+| LAN Discovery | Enable LAN Discovery | 啟用區域網路探索 | LAN探索を有効化 |
+| MCP | Enable Model Context Protocol (MCP) | 啟用 Model Context Protocol (MCP) | Model Context Protocol (MCP)を有効化 |
+| CDP *(optional)* | Enable Chrome DevTools Protocol (CDP) | 啟用 Chrome DevTools Protocol (CDP) | Chrome DevTools Protocol (CDP)を有効化 |
+
+- **LAN Discovery** must be on for `bricks devtools scan` to find the device.
+- **MCP** must be on for MCP bridging (step 3).
+- A **Passcode** can be set in the same section (default: `BRICKS_DEVTOOLS`).
+
 ## 1. Discover Devices
 
 Scan the LAN for DevTools-enabled devices:

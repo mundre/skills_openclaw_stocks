@@ -3,11 +3,16 @@
   "slug": "bricks-cli",
   "displayName": "BRICKS CLI",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1772370022298,
-    "commit": "https://github.com/openclaw/skills/commit/2c46759d4af17e34de164145aa101e4551babe78"
+    "version": "0.1.4",
+    "publishedAt": 1773730984800,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1772370022298,
+      "commit": "https://github.com/openclaw/skills/commit/2c46759d4af17e34de164145aa101e4551babe78"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1771740009857,
