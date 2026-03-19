@@ -3,15 +3,36 @@ name: Get笔记
 description: |
   Get笔记 - 个人笔记和知识库管理工具。
 
-  当用户提到以下意图时使用此技能：
-  「记一下」「存到笔记」「保存到Get笔记」「记录到Get笔记」
-  「保存这个链接」「保存这张图」「查我的笔记」「找一下笔记」
-  「加标签」「删标签」「删笔记」
-  「查知识库」「建知识库」「把笔记加到知识库」「从知识库移除」
-  「知识库里订阅了哪些博主」「博主发了什么内容」「直播总结」「直播原文」
-  「搜一下」「找找我哪些笔记提到了 XX」「在我的 XX 知识库搜一下 XX」
+  ## 核心能力
 
-  支持：纯文本笔记、链接笔记（自动抓取网页内容并生成摘要）、图片笔记（OCR识别）、知识库管理（含博主订阅列表、直播总结）、语义搜索召回（全局或指定知识库范围）。
+  **1. 一键保存任意内容为笔记**
+  - 发一个链接 → 帮你保存原文并生成摘要，支持所有公开网页链接
+  - 发一张图片 → OCR 识别文字、AI 分析图片内容
+  - 写一段话 → 直接保存为文本笔记
+  - 触发词：「记一下」「存到笔记」「保存这个链接」「保存这张图」「帮我记录」
+
+  **2. 查询和获取笔记**
+  - 支持图片笔记、链接笔记、语音笔记（录音转写）
+  - 详情接口返回完整原文（网页正文、音频转写、图片 OCR）
+  - 触发词：「查我的笔记」「看看我存了什么」「找一下笔记」「原文是什么」
+
+  **3. 知识库和标签管理**
+  - 创建知识库、将笔记加入/移出知识库
+  - 添加/删除标签，批量管理
+  - 查看知识库订阅的博主和直播内容
+  - 触发词：「查知识库」「建知识库」「加标签」「删标签」
+
+  **4. 语义搜索（无需拉取全部数据）**
+  - 全局搜索：在所有笔记中语义召回
+  - 知识库搜索：在指定知识库范围内搜索
+  - 触发词：「搜一下」「找找我哪些笔记提到了 XX」「在 XX 知识库搜 XX」
+
+  ## 触发场景
+  - 用户要求「配置 Get笔记」「连接 Get笔记」「帮我设置笔记」时（OAuth 授权流程）
+  - 用户发送任意 URL 链接时（自动识别为保存链接笔记）
+  - 用户发送图片时（自动识别为保存图片笔记）
+  - 用户提到「笔记」「记一下」「保存」「收藏」「存起来」等关键词
+  - 用户询问「我之前存过什么」「帮我找一下」「搜一下笔记」等
 metadata: {"openclaw": {"requires": {}, "optionalEnv": ["GETNOTE_CLIENT_ID", "GETNOTE_OWNER_ID"], "primaryEnv": "GETNOTE_API_KEY", "baseUrl": "https://openapi.biji.com", "homepage": "https://biji.com"}}
 ---
 
@@ -31,7 +52,24 @@ https://openapi.biji.com
 
 ### 🔑 首次安装配置
 
-在 `~/.openclaw/openclaw.json` 中添加：
+有两种方式获取凭证：
+
+#### 方式一：OAuth 授权（推荐）
+
+让 AI Agent 为你自动完成授权：
+
+1. 告诉 Agent：「帮我配置 Get笔记」或「连接 Get笔记」
+2. Agent 会生成授权链接，点击链接打开授权页面
+3. 在 Get笔记 页面点击「授权」
+4. 授权成功后 Agent 自动完成配置，无需手动填写任何凭证
+
+> OAuth 授权会自动获取 API Key 和 Client ID，并写入配置文件。
+
+#### 方式二：手动配置
+
+1. 前往 [Get笔记开放平台](https://www.biji.com/openapi) 创建应用
+2. 获取 Client ID 和 API Key
+3. 在 `~/.openclaw/openclaw.json` 中添加：
 
 ```json
 {
@@ -48,8 +86,6 @@ https://openapi.biji.com
   }
 }
 ```
-
-**获取凭证**：前往 [Get笔记开放平台](https://www.biji.com/openapi) 创建应用获取。
 
 ---
 
@@ -89,21 +125,9 @@ https://openapi.biji.com
 
 ### Scope 权限
 
-| Scope | 说明 |
-|-------|------|
-| note.content.read | 笔记列表、内容读取 |
-| note.content.write | 文字/链接/图片笔记写入 |
-| note.tag.write | 添加、删除笔记标签 |
-| note.content.trash | 笔记移入回收站 |
-| topic.read | 知识库列表 |
-| topic.write | 创建知识库 |
-| note.topic.read | 笔记所属知识库查询 |
-| note.topic.write | 笔记加入/移出知识库 |
-| note.image.upload | 获取上传图片签名 |
-| topic.blogger.read | 读取知识库订阅博主列表和博主内容 |
-| topic.live.read | 读取知识库已完成直播列表和直播详情 |
-| note.recall.read | 语义召回笔记（全局） |
-| note.topic.recall.read | 语义召回知识库内容 |
+常用权限：`note.content.read`（读取）、`note.content.write`（写入）、`note.recall.read`（搜索）。
+
+完整权限列表见 [references/api-details.md](references/api-details.md#scope-权限列表)。
 
 ---
 
@@ -113,7 +137,9 @@ Base URL: `https://openapi.biji.com`
 
 | 用户意图 | 接口 | 关键点 |
 |---------|------|--------|
+| 「配置 Get笔记」「连接笔记」 | OAuth Device Flow | 见「OAuth Device Flow」章节 |
 | 「记一下」「保存笔记」 | POST /open/api/v1/resource/note/save | 同步返回 |
+| 「改笔记」「更新笔记」 | POST /open/api/v1/resource/note/update | note_id 必填，内容部分更新 |
 | 「保存这个链接」 | POST /open/api/v1/resource/note/save | note_type:"link" → **必须轮询** |
 | 「保存这张图」 | 见「图片笔记流程」 | **4 步流程，必须轮询** |
 | 「查我的笔记」 | GET /open/api/v1/resource/note/list | since_id=0 起始 |
@@ -173,9 +199,21 @@ GET /open/api/v1/resource/note/list?since_id=0
 GET /open/api/v1/resource/note/detail?id={note_id}
 ```
 
-参数：id (int64, 必填) - 笔记 ID
+参数：
+- `id` (int64, 必填) - 笔记 ID
+- `image_quality` (string, 可选) - 图片质量，传 `original` 返回正文中图片的原图链接（无压缩）
 
-**详情独有字段**（列表不返回）：`audio.original`、`audio.play_url`、`audio.duration`、`web_page.content`、`web_page.url`、`web_page.excerpt`、`attachments[]`。详见 [references/api-details.md](references/api-details.md)。
+**新增字段**：
+- `note_id` (string) - 笔记 ID 的字符串格式，便于 AI Agent 解析，避免 int64 精度问题
+- `children_ids` (string[]) - 子笔记 ID 列表（字符串格式），仅当有子笔记时返回
+
+**图片附件**：`attachments[]` 中每个图片包含：
+- `url` - 缩略图 URL（720px 压缩）
+- `original_url` - 原图 URL（无压缩，适合需要高清图的场景）
+
+**正文原图**：传 `image_quality=original` 时，`content` 中的 markdown 图片链接会返回原图（去掉 OSS 压缩参数）。
+
+**详情独有字段**（列表不返回）：`audio.original`、`audio.play_url`、`audio.duration`、`web_page.content`、`web_page.url`、`web_page.excerpt`、`attachments[]`、`children_ids`。详见 [references/api-details.md](references/api-details.md)。
 
 ---
 
@@ -205,6 +243,35 @@ Content-Type: application/json
 - `link` / `img_text`：返回 task_id，**必须轮询** /task/progress
 
 详细字段说明见 [references/api-details.md](references/api-details.md)。
+
+---
+
+### 更新笔记
+
+```
+POST /open/api/v1/resource/note/update
+Content-Type: application/json
+```
+
+请求体：
+```json
+{
+  "note_id": 123456789,
+  "title": "新标题",
+  "content": "新的 Markdown 内容",
+  "tags": ["标签1", "标签2"]
+}
+```
+
+参数说明：
+- `note_id` (int64, **必填**) - 要更新的笔记 ID
+- `title` (string, 可选) - 新标题，不传则不更新
+- `content` (string, 可选) - 新内容，不传则不更新
+- `tags` (string[], 可选) - 新标签列表，**替换**原有标签（不传则保持原标签）
+
+> ⚠️ **至少需要传 title、content、tags 中的一个**，否则返回错误。
+
+> ⚠️ **仅支持 plain_text 类型笔记**，链接笔记、图片笔记等暂不支持更新。
 
 ---
 
@@ -318,18 +385,11 @@ GET /open/api/v1/resource/image/upload_token?mime_type=jpg&count=1
 
 ### OSS 上传示例
 
-> ⚠️ **字段顺序必须严格遵守**，否则 OSS 签名验证失败。正确顺序：`key → OSSAccessKeyId → policy → signature → callback → Content-Type → file`
+> ⚠️ **字段顺序必须严格遵守**，否则 OSS 签名验证失败。
 
-```bash
-curl -X POST "$host" \
-  -F "key=$object_key" \
-  -F "OSSAccessKeyId=$accessid" \
-  -F "policy=$policy" \
-  -F "signature=$signature" \
-  -F "callback=$callback" \
-  -F "Content-Type=$oss_content_type" \
-  -F "file=@/path/to/image.jpg"
-```
+字段顺序：`key → OSSAccessKeyId → policy → signature → callback → Content-Type → file`
+
+完整示例见 [references/api-details.md](references/api-details.md#oss-上传详细示例)。
 
 ---
 
@@ -622,30 +682,11 @@ GET /open/api/v1/resource/knowledge/bloggers?topic_id={alias_id}&page=1
 GET /open/api/v1/resource/knowledge/blogger/contents?topic_id={alias_id}&follow_id={follow_id}&page=1
 ```
 
-参数：
-- topic_id (string, 必填) - 知识库 AliasID
-- follow_id (int64, 必填) - 博主订阅 ID（来自 /bloggers 的 follow_id）
-- page: 页码，从 1 开始
+参数：`topic_id`（知识库 AliasID）、`follow_id`（博主订阅 ID）、`page`（页码）
 
-每页固定 20 条，用 has_more 判断。
+返回 `contents[]`，关键字段：`post_id_alias`（详情必用）、`post_title`、`post_summary`。
 
-返回 contents[]，每项字段：
-
-| 字段 | 说明 |
-|------|------|
-| post_id_alias | 内容 ID，**查详情/原文时必用** |
-| post_name | 内容名称（原标题）|
-| post_type | 类型：video / audio / article / live |
-| post_cover | 封面图 |
-| post_title | AI 生成标题 |
-| post_summary | AI 摘要（Markdown）|
-| post_url | 原文链接 |
-| post_icon | 博主头像 |
-| post_subtitle | 副标题 |
-| post_create_time | 创建时间（YYYY-MM-DD HH:MM:SS）|
-| post_publish_time | 发布时间（YYYY-MM-DD HH:MM:SS）|
-
-> 列表不含原文（`post_media_text`），需要原文请调 `/blogger/content/detail`。
+> 列表不含原文，需要原文请调详情接口。完整字段见 [references/api-details.md](references/api-details.md#博主内容字段说明)。
 
 ---
 
@@ -655,25 +696,9 @@ GET /open/api/v1/resource/knowledge/blogger/contents?topic_id={alias_id}&follow_
 GET /open/api/v1/resource/knowledge/blogger/content/detail?topic_id={alias_id}&post_id={post_id_alias}
 ```
 
-参数：
-- topic_id (string, 必填) - 知识库 AliasID
-- post_id (string, 必填) - 内容 ID（来自 /blogger/contents 的 post_id_alias）
+参数：`topic_id`（知识库 AliasID）、`post_id`（内容 ID，来自列表的 post_id_alias）
 
-返回字段：
-
-| 字段 | 说明 |
-|------|------|
-| post_id_alias | 内容 ID |
-| post_name | 内容名称（原标题）|
-| post_type | 类型：video / audio / article / live |
-| post_cover | 封面图 |
-| post_subtitle | 副标题 |
-| post_url | 原文链接 |
-| post_title | AI 生成标题 |
-| post_summary | AI 摘要（Markdown）|
-| post_media_text | 原文内容（全文转写/文章正文）|
-| post_create_time | 创建时间（YYYY-MM-DD HH:MM:SS）|
-| post_publish_time | 发布时间（YYYY-MM-DD HH:MM:SS）|
+返回完整内容，包含 `post_media_text`（原文）。
 
 ---
 
@@ -685,25 +710,11 @@ GET /open/api/v1/resource/knowledge/blogger/content/detail?topic_id={alias_id}&p
 GET /open/api/v1/resource/knowledge/lives?topic_id={alias_id}&page=1
 ```
 
-参数：
-- topic_id (string, 必填) - 知识库 AliasID
-- page: 页码，从 1 开始
+参数：`topic_id`（知识库 AliasID）、`page`（页码）
 
-每页固定 20 条，用 has_more 判断。**只返回已结束且 AI 已处理完的直播。**
+返回 `lives[]`，关键字段：`live_id`（详情必用）、`name`、`status`。
 
-返回 lives[]，每项字段：
-
-| 字段 | 说明 |
-|------|------|
-| live_id | 直播 ID，**查直播详情时必用** |
-| follow_id | 订阅关系 ID |
-| name | 直播名称 |
-| cover | 封面图 |
-| sub_title | 副标题 |
-| link | 直播链接 |
-| platform | 平台（如 DEDAO）|
-| status | 直播状态（已结束为 FINISHED）|
-| follow_time | 订阅时间（YYYY-MM-DD HH:MM:SS）|
+**只返回已结束且 AI 已处理完的直播。** 完整字段见 [references/api-details.md](references/api-details.md#直播字段说明)。
 
 ---
 
@@ -713,24 +724,9 @@ GET /open/api/v1/resource/knowledge/lives?topic_id={alias_id}&page=1
 GET /open/api/v1/resource/knowledge/live/detail?topic_id={alias_id}&live_id={live_id}
 ```
 
-参数：
-- topic_id (string, 必填) - 知识库 AliasID
-- live_id (int64, 必填) - 直播 ID（来自 /lives 的 live_id）
+参数：`topic_id`（知识库 AliasID）、`live_id`（直播 ID，来自列表）
 
-返回字段：
-
-| 字段 | 说明 |
-|------|------|
-| post_id_alias | 内容 ID |
-| post_name | 直播名称（原标题）|
-| post_cover | 封面图 |
-| post_subtitle | 副标题（如开播时间）|
-| post_url | 直播原始链接 |
-| post_title | AI 生成标题 |
-| post_summary | AI 摘要（Markdown，含章节纪要、金句）|
-| post_media_text | 直播原文转写文本 |
-| post_create_time | 创建时间（YYYY-MM-DD HH:MM:SS）|
-| post_publish_time | 直播时间（YYYY-MM-DD HH:MM:SS）|
+返回完整内容，包含 `post_summary`（AI 摘要）和 `post_media_text`（原文转写）。
 
 ---
 
@@ -761,3 +757,171 @@ GET /open/api/v1/resource/knowledge/live/detail?topic_id={alias_id}&live_id={liv
 | 20001 | 笔记不存在 | 确认笔记 ID 正确 |
 | 42900 | 限流 | 降低频率，查看 rate_limit 字段 |
 | 50000 | 系统错误 | 稍后重试 |
+
+---
+
+## OAuth Device Flow（自动配置）
+
+当用户要求「配置 Get笔记」「连接 Get笔记」时，使用此流程自动获取凭证。
+
+### 流程概述
+
+1. **申请授权码** → 获取 `code` 和 `verification_uri`
+2. **展示给用户** → 发送授权链接
+3. **轮询等待** → 用户授权后获取 `api_key` 和 `client_id`
+4. **写入配置** → 自动配置完成
+
+### 步骤 1：申请授权码
+
+```
+POST https://openapi.biji.com/open/api/v1/oauth/device/code
+Content-Type: application/json
+```
+
+请求体：
+```json
+{
+  "client_id": "cli_a1b2c3d4e5f6789012345678abcdef90"
+}
+```
+
+> ⚠️ **client_id 固定为 `cli_a1b2c3d4e5f6789012345678abcdef90`**，这是 Get笔记 为 OpenClaw 预注册的应用。
+
+返回：
+```json
+{
+  "success": true,
+  "data": {
+    "code": "abc123...",
+    "verification_uri": "https://biji.com/openapi/oauth/authorize?code=abc123...",
+    "user_code": "ABCD-1234",
+    "expires_in": 600,
+    "interval": 5
+  }
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| code | 授权码，轮询时使用 |
+| verification_uri | 授权链接，**发送给用户点击** |
+| user_code | 确认码，**必须展示给用户核对** |
+| expires_in | 授权码有效期（秒），默认 600 |
+| interval | 建议轮询间隔（秒），默认 5 |
+
+### 步骤 2：展示授权链接
+
+将 `verification_uri` 和 `user_code` 发送给用户：
+
+> 🔗 请点击链接完成授权：
+> 
+> {verification_uri}
+> 
+> ⚠️ **请核对确认码**：`{user_code}`
+> 
+> 授权页面会显示确认码，请确保与上面一致后再点击授权。授权码 10 分钟内有效。
+
+**安全提醒**：`user_code` 用于防止钓鱼攻击。用户在授权页面看到的确认码必须与 Agent 展示的一致，不一致请勿授权。
+
+**发送后立即启动后台轮询**（步骤 3）。
+
+### 步骤 3：轮询等待授权
+
+发送授权链接给用户后，**立即在后台启动轮询**，无需等待用户回复。
+
+```
+POST https://openapi.biji.com/open/api/v1/oauth/token
+Content-Type: application/json
+```
+
+请求体：
+```json
+{
+  "grant_type": "device_code",
+  "client_id": "cli_a1b2c3d4e5f6789012345678abcdef90",
+  "code": "{code}"
+}
+```
+
+**轮询策略**：
+- **间隔**：5 秒查询一次
+- **超时**：最多轮询 10 分钟（与授权码有效期一致）
+- **并行**：轮询在后台进行，不阻塞用户其他操作
+
+**推荐：使用轮询脚本**
+
+```bash
+# 方式 1：后台轮询 + process poll 等待结果（OpenClaw 推荐）
+# exec 启动后台任务，然后用 process poll 等待完成
+exec: python scripts/oauth_poll.py "{code}"
+  background: true
+  
+# 用 process poll 等待结果（最长等 10 分钟）
+process: poll
+  sessionId: {上一步返回的 sessionId}
+  timeout: 600000
+
+# 方式 2：简单等待（适合短时间）
+result=$(python scripts/oauth_poll.py "{code}")
+api_key=$(echo "$result" | jq -r '.api_key')
+client_id=$(echo "$result" | jq -r '.client_id')
+```
+
+脚本会自动处理各种状态，成功时输出 JSON，失败时输出错误到 stderr。
+
+**轮询响应状态**：
+
+| 响应 | 说明 | 处理方式 |
+|------|------|---------|
+| `{"msg": "authorization_pending"}` | 用户尚未操作 | 继续轮询 |
+| `{"msg": "rejected"}` | 用户拒绝授权 | **停止轮询**，告知用户已拒绝 |
+| `{"msg": "expired_token"}` | 授权码已过期 | **停止轮询**，提示重新发起 |
+| `{"msg": "already_consumed"}` | 授权码已使用 | **停止轮询**，可能已配置成功 |
+| `{"api_key": "...", "client_id": "...", ...}` | **授权成功** | 进入步骤 4 |
+
+**授权成功返回**：
+```json
+{
+  "success": true,
+  "data": {
+    "client_id": "cli_a1b2c3d4e5f6789012345678abcdef90",
+    "api_key": "gk_live_xxx",
+    "key_id": "abc123",
+    "expires_at": 1742000000
+  }
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| client_id | 应用 ID |
+| api_key | API Key，**写入配置文件** |
+| key_id | Key ID（管理用） |
+| expires_at | 过期时间戳（Unix 秒），有效期 1 年 |
+
+### 步骤 4：写入配置
+
+将获取的凭证写入 `~/.openclaw/openclaw.json`：
+
+```json
+{
+  "skills": {
+    "entries": {
+      "getnote": {
+        "apiKey": "{api_key}",
+        "env": {
+          "GETNOTE_CLIENT_ID": "{client_id}"
+        }
+      }
+    }
+  }
+}
+```
+
+**告知用户**：
+
+> ✅ Get笔记 配置完成！
+> 
+> - API Key 有效期至 {expires_at 格式化日期}
+> - 现在可以使用「记一下」「查笔记」等功能了
+> - 如需注销授权，请访问：https://www.biji.com/openapi?tab=keys

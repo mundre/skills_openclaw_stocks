@@ -1,13 +1,18 @@
 {
   "owner": "iswalle",
   "slug": "getnote",
-  "displayName": "Get笔记",
+  "displayName": "Getnote Openclaw",
   "latest": {
-    "version": "1.3.1",
-    "publishedAt": 1773661030324,
-    "commit": "https://github.com/openclaw/skills/commit/fa13577d741e732158ebc2749e9cbbc696357969"
+    "version": "1.5.0",
+    "publishedAt": 1773916298580,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.3.1",
+      "publishedAt": 1773661030324,
+      "commit": "https://github.com/openclaw/skills/commit/fa13577d741e732158ebc2749e9cbbc696357969"
+    },
     {
       "version": "1.3.0",
       "publishedAt": 1773310890676,
