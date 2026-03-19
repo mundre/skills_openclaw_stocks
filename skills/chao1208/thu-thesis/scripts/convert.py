@@ -9,7 +9,7 @@ convert.py - 清华 MBA 论文 Word → PDF 转换器
   Step 3: build_parsed.py → parsed_xxx.json（纯 Python 组装）
   Step 4: render.py       → LaTeX 项目
   Step 5: xelatex + bibtex → thesis.pdf
-  Step 6: evaluate.py     → evaluation_report.md
+  Step 6: AI Rubric 评测  → evaluation_report.md
 
 用法：
   # 第一步：机械提取，输出骨架供 AI 阅读
@@ -161,8 +161,8 @@ def compile_pdf(latex_dir: Path) -> Path:
 
     def xelatex():
         result = subprocess.run(
-            'xelatex -interaction=nonstopmode thesis.tex',
-            shell=True, cwd=latex_dir, env=env,
+            ['xelatex', '-interaction=nonstopmode', 'thesis.tex'],
+            cwd=latex_dir, env=env,
             capture_output=True, text=True
         )
         for line in result.stdout.split('\n'):
@@ -180,7 +180,7 @@ def compile_pdf(latex_dir: Path) -> Path:
     xelatex()
 
     print('   运行 bibtex...')
-    subprocess.run('bibtex thesis', shell=True, cwd=latex_dir, env=env,
+    subprocess.run(['bibtex', 'thesis'], cwd=latex_dir, env=env,
                    capture_output=True, text=True)
 
     print('   第 2 次编译（写入参考文献）...')
@@ -203,6 +203,7 @@ def compile_pdf(latex_dir: Path) -> Path:
 def cmd_extract(args):
     """
     Step 1: Word → raw_xxx.json（机械提取）
+    同时确定并创建 LaTeX 工程目录（<docx同目录>/<stem>-latex/），
     输出骨架文本供 AI 阅读，生成 struct.json 后调用 build。
     """
     if not args:
@@ -219,9 +220,15 @@ def cmd_extract(args):
     output_dir = Path(args[1]).resolve() if len(args) >= 2 else project_root / 'output'
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # ── 在项目开始时就确定并创建 LaTeX 工程目录 ──
+    stem = docx_path.stem
+    latex_dir = docx_path.parent / f'{stem}-latex'
+    latex_dir.mkdir(parents=True, exist_ok=True)
+
     print(f'\n{"="*60}')
-    print(f'📄 输入: {docx_path.name}')
-    print(f'📁 输出: {output_dir}')
+    print(f'📄 输入: {docx_path}')
+    print(f'📁 中间文件: {output_dir}')
+    print(f'📁 LaTeX 工程: {latex_dir}')
     print(f'{"="*60}\n')
 
     print('【Step 1】机械提取 Word 文档...')
@@ -249,6 +256,8 @@ def cmd_extract(args):
     import json
     raw = json.loads(raw_path.read_text(encoding='utf-8'))
     paras = raw.get('paragraphs', [])
+    figures = raw.get('figures', [])
+    tables = raw.get('tables', [])
     skip_styles = {'toc 1', 'toc 2', 'toc 3', 'toc1', 'toc2', 'toc3', 'toc'}
     for p in paras:
         style = p.get('style', '').strip().lower()
@@ -260,8 +269,29 @@ def cmd_extract(args):
         print(f"{p['idx']:04d} [{p.get('style', ''):18s}] {text[:70]}")
 
     print(f'\n{"="*60}')
-    print(f'📝 下一步：AI 读取上方骨架，生成 struct.json，然后运行：')
-    print(f'   python3 convert.py build {raw_path} <struct.json> [output_latex_dir]')
+    print(f'📊 图片: {len(figures)} 张  | 图片 para_idx: {[f["para_idx"] for f in figures]}')
+    print(f'📊 表格: {len(tables)} 张  | 表格 before_para: {[t["before_para"] for t in tables]}')
+
+    # ── 检测 .doc 转换工具是否破坏了表格结构 ──
+    if len(tables) == 0:
+        # 检测骨架里是否有疑似表格的段落（如"序号"+"股东名称"相邻或含多个数字列）
+        table_hint_patterns = ['序号', '表头', '合计', '股东名称', '持股', '占比', '金额（万元）']
+        tbl_hint_count = sum(1 for p in paras if any(kw in p.get('text','') for kw in table_hint_patterns))
+        if tbl_hint_count >= 3:
+            print(f'\n{"!"*60}')
+            print('⚠️  警告：提取到 0 张表格，但骨架中检测到疑似表格内容（如"序号"、"合计"等）！')
+            print('   这通常是因为用了 textutil 等工具转换 .doc，表格被压平成了普通段落。')
+            print('   这些表格内容将以纯文本形式出现在正文中，严重影响论文质量。')
+            print('   解决方案：用 Microsoft Word 打开 .doc，另存为 .docx，然后重新运行 extract。')
+            print(f'{"!"*60}')
+        elif len(figures) == 0:
+            print('   ℹ️  论文无图片和表格（纯文字论文），属于正常情况。')
+    print(f'{"="*60}')
+    print(f'\n📝 下一步：')
+    print(f'   1. AI 读取上方骨架，生成 struct.json（写到 {output_dir}/struct_{stem}.json）')
+    print(f'      ⚠️  确保所有图片 para_idx 和表格 before_para 都在 content_range 内！')
+    print(f'   2. 运行 build：')
+    print(f'      python3 convert.py build {raw_path} {output_dir}/struct_{stem}.json {latex_dir}')
     print(f'{"="*60}\n')
 
 
@@ -290,7 +320,7 @@ def cmd_build(args):
 
     # latex_dir 默认用 struct 文件名推断
     stem = raw_path.stem.removeprefix('raw_')
-    latex_dir = Path(args[2]).resolve() if len(args) >= 3 else Path(f'./{stem}-thesis')
+    latex_dir = Path(args[2]).resolve() if len(args) >= 3 else Path(f'./{stem}-latex')
 
     print(f'\n{"="*60}')
     print(f'📄 raw:    {raw_path.name}')
@@ -344,16 +374,11 @@ def cmd_build(args):
     print(f'✅ 完成！PDF 已生成: {pdf_path}  ({size_kb} KB)')
     print(f'{"="*60}\n')
 
-    # Step 6: 评测
-    print('【Step 6】运行 Rubric 评测...')
-    evaluate_script = scripts_dir / 'evaluate.py'
-    if evaluate_script.exists():
-        subprocess.run(
-            [sys.executable, str(evaluate_script), str(parsed_path), str(latex_dir)],
-            capture_output=False
-        )
-    else:
-        print('   ⚠️  evaluate.py 不存在，跳过评测')
+    # Step 6: Rubric 评测由 AI 执行，此处仅提示路径
+    print('\n【Step 6】Rubric 评测（由 AI 执行）')
+    print(f'   parsed JSON : {parsed_path}')
+    print(f'   LaTeX 工程  : {latex_dir}')
+    print('   请 AI 按 SKILL.md 中的 Rubric 细则逐项评测，并输出 evaluation_report.md')
 
     import platform
     if platform.system() == 'Darwin':

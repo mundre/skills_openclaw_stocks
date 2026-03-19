@@ -555,6 +555,37 @@ def _parse_ref_to_bibtex(ref_text: str, key: str) -> str:
     text = re.sub(r'^\[\d+\]\s*', '', ref_text.strip())
     text = text.replace(r'\&', '&').replace(r'\%', '%')
 
+    # ── 优先检测 APA 机构引用格式：机构名. (Year). Title. ──
+    # 例：高力国际. (2025). 2025 年酒店业展望报告.
+    #     美国旅游协会（U.S. Travel Association）. (2024). U.S. Travel & Tourism Statistics
+    #     Washington State University Carson College of Business. (2024). Hospitality...
+    #     德勤. (2024). 2024 年假期旅游调查.
+    m_org_apa = re.match(r'^(.+?)\.\s*\((19|20\d{2})\)\.\s*(.+)', text.strip())
+    if m_org_apa:
+        org_candidate = m_org_apa.group(1).strip()
+        year_org = m_org_apa.group(2)
+        title_raw_org = m_org_apa.group(3).strip().rstrip('.')
+        # 判断是否机构名（不是个人名）：
+        # 个人名特征 = 含逗号 + 较短（如 "Verma, Y" "Quach, T"）
+        # 机构名特征 = 无逗号，或纯汉字机构，或多词英文机构
+        has_comma = ',' in org_candidate
+        is_short_personal = has_comma and len(org_candidate) < 25
+        is_org = not is_short_personal
+        if is_org:
+            def _esc(s):
+                return s.replace('&', r'\&').replace('%', r'\%')
+            # 截取标题到第一个句点
+            title_end_m = re.search(r'\.\s*(Retrieved|Available|http|DOI|doi|\[)', title_raw_org)
+            title_org = title_raw_org[:title_end_m.start()].strip() if title_end_m else title_raw_org
+            title_org = title_org.rstrip('.,。')
+            return (
+                f'@misc{{{key},\n'
+                f'  author    = {{{{{_esc(org_candidate)}}}}},\n'
+                f'  title     = {{{_esc(title_org)}}},\n'
+                f'  year      = {{{year_org}}}\n'
+                f'}}'
+            )
+
     # 判断是否中文条目（首字符是汉字）
     is_zh = bool(re.match(r'^[\u4e00-\u9fff]', text))
 
@@ -789,11 +820,17 @@ def generate_bibtex(refs: list, output_dir: Path) -> tuple:
         year_m = re.search(r'\b(19|20)\d{2}\b', text_clean)
         if year_m:
             year = year_m.group(0)
-            # 提取所有中文作者姓名（逗号/顿号分隔，截止到第一个句点）
-            author_segment = re.split(r'[.。]', text_clean)[0]  # 作者段（句点前）
-            zh_authors = re.findall(r'[\u4e00-\u9fff]{1,4}', author_segment)
+            # 提取作者段：截止到第一个 ". " 或 "。"（句点+空格，排除姓名缩写中的点）
+            # 中文格式：曹玉,肖华.标题  英文格式：Smith J, Tang B. Title
+            author_segment = re.split(r'\.\s+[^\d]|[.。]\s', text_clean)[0]
+            # 中文作者：仅匹配2-4字的姓名（避免把标题词当作者）
+            zh_authors = re.findall(r'[\u4e00-\u9fff]{2,4}(?=\s*[,，、和与&以]|\s*$|\s*等)', author_segment)
+            if not zh_authors:
+                # 兜底：取首字段（逗号或顿号前）的中文词
+                first_author_seg = re.split(r'[,，、和与&]', author_segment)[0].strip()
+                zh_authors = re.findall(r'[\u4e00-\u9fff]{2,4}', first_author_seg)
             if zh_authors:
-                for zh_name in zh_authors:
+                for zh_name in zh_authors[:4]:  # 最多取前4个作者
                     surname_char = zh_name[0]
                     pinyin = _surname_to_pinyin(surname_char)
                     if (pinyin, year) not in ay_lookup:
@@ -804,7 +841,7 @@ def generate_bibtex(refs: list, output_dir: Path) -> tuple:
                 # 英文/拼音作者（单词序列，逗号分隔）
                 # 支持：Biyu Tang, Smith J, BiyuTang 等格式
                 en_authors = re.findall(r'[A-Z][a-zA-ZÀ-ÿ\-]+', author_segment)
-                for en_name in en_authors:
+                for en_name in en_authors[:4]:  # 最多取前4个作者
                     name_lower = re.sub(r'[^a-z]', '', en_name.lower())
                     if name_lower and (name_lower, year) not in ay_lookup:
                         ay_lookup[(name_lower, year)] = key
@@ -1017,7 +1054,20 @@ def render_project(json_path: str, output_dir: str):
     # 补全日期为 ISO 格式：
     #   "2025-11" → "2025-11-01"
     #   "25-11"   → 补全年份前缀（当前世纪）→ "2025-11-01"
+    #   "二○二六年四月" → "2026-04-01"（build_parsed 已处理，此处双重兜底）
     date_str = meta.get('date', '')
+    CN_DIGITS_R = {'○': '0', '〇': '0', '一': '1', '二': '2', '三': '3', '四': '4',
+                   '五': '5', '六': '6', '七': '7', '八': '8', '九': '9'}
+    if date_str and re.search(r'[\u4e00-\u9fff○〇]', date_str):
+        # 含中文字符，先处理复合月份再转阿拉伯数字
+        d_pre = re.sub(r'十二月', '#12月', date_str)
+        d_pre = re.sub(r'十一月', '#11月', d_pre)
+        d_pre = re.sub(r'十月', '#10月', d_pre)
+        d_arabic = ''.join(CN_DIGITS_R.get(c, c) for c in d_pre).replace('#', '')
+        m = re.search(r'(\d{4})\s*年\s*(\d{1,2})\s*月', d_arabic)
+        if m:
+            date_str = f"{m.group(1)}-{int(m.group(2)):02d}"
+            meta['date'] = date_str
     if date_str:
         parts = date_str.split('-')
         if len(parts) == 2:
@@ -1028,6 +1078,13 @@ def render_project(json_path: str, output_dir: str):
         elif len(parts) == 1 and len(date_str) <= 4:
             meta['date'] = ''  # 无效日期清空
 
+    # 日期兜底：如果为空，用当前年月
+    if not meta.get('date'):
+        import datetime
+        today = datetime.date.today()
+        meta['date'] = f"{today.year}-{today.month:02d}-01"
+        print(f'   ℹ️  封面日期为空，使用当前年月：{meta["date"]}')
+
     # 5. 渲染 thusetup.tex
     tmpl = env.get_template('thusetup.tex.j2')
     (output_dir / 'thusetup.tex').write_text(
@@ -1036,13 +1093,26 @@ def render_project(json_path: str, output_dir: str):
     print('✅ thusetup.tex')
 
     # 6. 渲染 abstract.tex
+    # 修复：如果 keywords_en 是逐词拆散的（含停用词），从 abstract_en 末尾重新提取
+    _EN_STOPWORDS = {'and', 'of', 'for', 'the', 'a', 'an', 'in', 'on', 'at',
+                     'to', 'with', 'by', 'from', 'or', 'but', 'nor', 'as'}
+    keywords_en = data.get('keywords_en', [])
+    if keywords_en and any(w.lower() in _EN_STOPWORDS for w in keywords_en):
+        # 检测到逐词拆散，尝试从 abstract_en 重新提取
+        abstract_en_text = data.get('abstract_en', '')
+        m_kw = re.search(r'[Kk]ey\s*[Ww]ords[：:\s]*(.+)$', abstract_en_text.strip())
+        if m_kw:
+            kw_text = m_kw.group(1).strip()
+            keywords_en = [k.strip() for k in re.split(r'[；;，,]+', kw_text) if k.strip()]
+            print(f'   ℹ️  英文关键词已从 abstract 重新提取: {keywords_en}')
+
     tmpl = env.get_template('abstract.tex.j2')
     (output_dir / 'data' / 'abstract.tex').write_text(
         tmpl.render(
             abstract_cn=escape_latex(data.get('abstract_cn', '')),
-            keywords_cn=data.get('keywords_cn', []),
+            keywords_cn=[escape_latex(k) for k in data.get('keywords_cn', [])],
             abstract_en=escape_latex(data.get('abstract_en', '')),
-            keywords_en=data.get('keywords_en', []),
+            keywords_en=[escape_latex(k) for k in keywords_en],
         ), encoding='utf-8'
     )
     print('✅ data/abstract.tex')
@@ -1107,16 +1177,20 @@ def render_project(json_path: str, output_dir: str):
                         })
             elif t == 'table':
                 rows = item.get('rows', [])
-                headers = item.get('headers', [])
                 caption = clean_caption(item.get('caption', ''))
                 if not rows or item.get('caption', '').startswith('图'):
                     continue
-                blocks.append({
-                    'type': 'table',
-                    'headers': [escape_latex(str(h)) for h in headers],
-                    'rows': [[escape_latex(str(c)) for c in row] for row in rows],
-                    'caption': escape_meta(caption),
-                })
+                # 直接用 render_table 生成完整 LaTeX，避免模板列数推断问题
+                table_item = {
+                    'rows': rows,
+                    'caption': caption,
+                }
+                raw_tex = render_table(table_item)
+                if raw_tex.strip():
+                    blocks.append({
+                        'type': 'raw_latex',
+                        'content': raw_tex,
+                    })
         tmpl = env.get_template('chapter.tex.j2')
         # 从章编号提取章序号，用于设置 LaTeX counter（保留原文章号）
         # number 字段可能是 "第3章"、"3"、"" 等形式
@@ -1138,19 +1212,44 @@ def render_project(json_path: str, output_dir: str):
         chapters_info.append({'filename': filename, 'title': title})
         print(f'✅ data/{filename}.tex  ({title})')
 
-    # 8. 渲染 acknowledgements.tex
+    # 统计实际渲染出的图片和表格数量（用于控制是否生成插图/附表清单）
+    actual_has_figures = any(
+        b.get('type') == 'figure'
+        for ci in chapters_info
+        for tex_path in [output_dir / 'data' / f'{ci["filename"]}.tex']
+        if False  # 占位：由下面的 blocks 实时统计
+    )
+    # 更可靠：直接扫描已生成的 .tex 文件
+    has_figures_real = False
+    has_tables_real = False
+    for ci in chapters_info:
+        tex_path = output_dir / 'data' / f'{ci["filename"]}.tex'
+        if tex_path.exists():
+            tex_content = tex_path.read_text(encoding='utf-8')
+            if r'\begin{figure}' in tex_content:
+                has_figures_real = True
+            if r'\begin{table}' in tex_content or r'\begin{tabularx}' in tex_content:
+                has_tables_real = True
+
+    # 8. 渲染 acknowledgements.tex（每行独立段落：单\n → \n\n）
     ack = data.get('acknowledgements', '')
+    ack_paragraphs = '\n\n'.join(
+        escape_latex(line.strip()) for line in ack.split('\n') if line.strip()
+    )
     tmpl = env.get_template('acknowledgements.tex.j2')
     (output_dir / 'data' / 'acknowledgements.tex').write_text(
-        tmpl.render(acknowledgements=escape_latex(ack)), encoding='utf-8'
+        tmpl.render(acknowledgements=ack_paragraphs), encoding='utf-8'
     )
     print('✅ data/acknowledgements.tex')
 
-    # 9. 渲染 resume.tex
+    # 9. 渲染 resume.tex（每行独立段落：单\n → \n\n 让 LaTeX 产生段间距）
     resume = data.get('resume', '')
+    resume_paragraphs = '\n\n'.join(
+        escape_latex(line.strip()) for line in resume.split('\n') if line.strip()
+    )
     tmpl = env.get_template('resume.tex.j2')
     (output_dir / 'data' / 'resume.tex').write_text(
-        tmpl.render(resume_text=escape_latex(resume)), encoding='utf-8'
+        tmpl.render(resume_text=resume_paragraphs), encoding='utf-8'
     )
     print('✅ data/resume.tex')
 
@@ -1212,12 +1311,8 @@ def render_project(json_path: str, output_dir: str):
             chapters=chapters_info,
             has_resume=bool(resume),
             has_acknowledgements=bool(ack),
-            has_figures_list=bool(data.get('figures')),
-            has_tables_list=any(
-                item.get('type') == 'table'
-                for ch in data.get('chapters', [])
-                for item in ch.get('content', [])
-            ),
+            has_figures_list=has_figures_real,
+            has_tables_list=has_tables_real,
         ), encoding='utf-8'
     )
     print('✅ thesis.tex')

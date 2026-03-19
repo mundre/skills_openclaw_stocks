@@ -84,9 +84,13 @@ def extract_meta_from_tables(tables):
                 meta['department'] = cells[i + 2].strip()
             if cell in ('学位类别', '申请学位') and i + 2 < len(cells):
                 meta['degree_category'] = cells[i + 2].strip()
-            CN_DIGITS = {'○': '0', '一': '1', '二': '2', '三': '3', '四': '4',
+            CN_DIGITS = {'○': '0', '〇': '0', '一': '1', '二': '2', '三': '3', '四': '4',
                          '五': '5', '六': '6', '七': '7', '八': '8', '九': '9'}
-            cell_arabic = ''.join(CN_DIGITS.get(c, c) for c in cell)
+            # 先处理复合月份（十二月/十一月/十月），再逐字转数字
+            cell_pre = re.sub(r'十二月', '#12月', cell)
+            cell_pre = re.sub(r'十一月', '#11月', cell_pre)
+            cell_pre = re.sub(r'十月', '#10月', cell_pre)
+            cell_arabic = ''.join(CN_DIGITS.get(c, c) for c in cell_pre).replace('#', '')
             m = re.search(r'(\d{4})\s*年\s*(\d{1,2})\s*月', cell_arabic)
             if m and not meta['date']:
                 meta['date'] = f"{m.group(1)}-{int(m.group(2)):02d}"
@@ -229,17 +233,21 @@ def build_parsed(raw_json_path, struct_json_path, output_dir=None):
     abstract_cn = paras_text(paragraphs, abs_cn_range[0], abs_cn_range[1] if len(abs_cn_range) > 1 else None)
     abstract_en = paras_text(paragraphs, abs_en_range[0], abs_en_range[1] if len(abs_en_range) > 1 else None)
 
-    def parse_keywords(idx):
+    def parse_keywords(idx, is_english=False):
         if idx is None:
             return []
         p = para_by_idx.get(idx, {})
         t = p.get('text', '')
         t = re.sub(r'^关键词[：:\s]*', '', t)
         t = re.sub(r'^[Kk]ey\s*[Ww]ords[：:\s]*', '', t)
-        return [k.strip() for k in re.split(r'[；;，,、\s]+', t) if k.strip()]
+        if is_english:
+            # 英文关键词用分号/逗号分隔，不用空格拆分（关键词可能是多词短语）
+            return [k.strip() for k in re.split(r'[；;，,]+', t) if k.strip()]
+        else:
+            return [k.strip() for k in re.split(r'[；;，,、\s]+', t) if k.strip()]
 
-    keywords_cn = parse_keywords(kw_cn_idx)
-    keywords_en = parse_keywords(kw_en_idx)
+    keywords_cn = parse_keywords(kw_cn_idx, is_english=False)
+    keywords_en = parse_keywords(kw_en_idx, is_english=True)
 
     # ── 图表分配 ──
     figures_by_para = {}

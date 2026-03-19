@@ -1,13 +1,18 @@
 {
   "owner": "chao1208",
   "slug": "thu-thesis",
-  "displayName": "清华MBA论文 Word→PDF",
+  "displayName": "Thu Thesis",
   "latest": {
-    "version": "1.3.0",
-    "publishedAt": 1773591783422,
-    "commit": "https://github.com/openclaw/skills/commit/96f2c0c00644cc750ae8c394653d1d6220bf8778"
+    "version": "1.5.3",
+    "publishedAt": 1773914654575,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.3.0",
+      "publishedAt": 1773591783422,
+      "commit": "https://github.com/openclaw/skills/commit/96f2c0c00644cc750ae8c394653d1d6220bf8778"
+    },
     {
       "version": "1.2.6",
       "publishedAt": 1773553830087,
