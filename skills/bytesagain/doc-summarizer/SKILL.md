@@ -1,7 +1,11 @@
 ---
+version: "2.0.0"
 name: Doc Summarizer
-description: >-
+description: "doc-summarizer — 文档摘要与智能总结助手. Use when you need doc summarizer capabilities. Triggers on: doc summarizer."
   文档摘要和智能总结助手。文件摘要、文本总结、翻译摘要、会议纪要提取、邮件要点、报告生成、思维导图。Document summarizer with translation, meeting notes, email digest, mind map. 文档总结、会议纪要、邮件摘要。
+author: BytesAgain
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
 ---
 # Doc Summarizer
 
@@ -34,7 +38,14 @@ doc-summarizer help
 4. **学术论文: 按IMRaD结构(引言/方法/结果/讨论)提取**
 5. **会议纪要: 关注决议、行动项、截止日期**
 6. **技巧: 先看标题、开头、结尾, 再看中间细节**
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
 
----
-Powered by BytesAgain | bytesagain.com | hello@bytesagain.com
+## Commands
+
+Run `doc-summarizer help` to see all available commands.
+
+## Requirements
+- bash 4+
+- python3 (standard library only)
