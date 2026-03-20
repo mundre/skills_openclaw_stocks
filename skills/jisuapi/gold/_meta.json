@@ -1,13 +1,18 @@
 {
   "owner": "jisuapi",
   "slug": "gold",
-  "displayName": "黄金价格查询 - Gold Price Inquiry",
+  "displayName": "Gold Price Inquiry - 黄金价格查询",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1772680060453,
-    "commit": "https://github.com/openclaw/skills/commit/3bcd3d882c5a33c44baa449fc23777825292fd86"
+    "version": "1.0.4",
+    "publishedAt": 1773721367106,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1772680060453,
+      "commit": "https://github.com/openclaw/skills/commit/3bcd3d882c5a33c44baa449fc23777825292fd86"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1772534311444,
