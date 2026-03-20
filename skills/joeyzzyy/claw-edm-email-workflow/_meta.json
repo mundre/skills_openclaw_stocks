@@ -1,11 +1,17 @@
 {
   "owner": "joeyzzyy",
   "slug": "claw-edm-email-workflow",
-  "displayName": "EDM Email Workflow",
+  "displayName": "EDM Email Manager (via Kanban Plugin)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773398865589,
-    "commit": "https://github.com/openclaw/skills/commit/bd0f36edbd92a59d83e300ed83c5f4f78be9a7d9"
+    "version": "1.0.1",
+    "publishedAt": 1773976823931,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773398865589,
+      "commit": "https://github.com/openclaw/skills/commit/bd0f36edbd92a59d83e300ed83c5f4f78be9a7d9"
+    }
+  ]
 }
