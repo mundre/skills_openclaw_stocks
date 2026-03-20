@@ -3,11 +3,16 @@
   "slug": "ima-tts-ai",
   "displayName": "IMA Studio TTS — seed-tts, DouBao",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1773331724331,
-    "commit": "https://github.com/openclaw/skills/commit/57c3a0dd1e5a07ce1be7a3cf32b675b8a686a081"
+    "version": "1.0.7",
+    "publishedAt": 1773771621284,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1773331724331,
+      "commit": "https://github.com/openclaw/skills/commit/57c3a0dd1e5a07ce1be7a3cf32b675b8a686a081"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773163348573,

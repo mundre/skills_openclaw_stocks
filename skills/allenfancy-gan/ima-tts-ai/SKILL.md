@@ -3,12 +3,23 @@ name: IMA Studio TTS
 version: 1.0.0
 category: file-generation
 author: IMA Studio (imastudio.com)
-keywords: imastudio, tts, text-to-speech, speech synthesis, voice, IMA, seed-tts, seed-tts-2.0
-argument-hint: "[text to speak]"
+keywords: imastudio, tts, text-to-speech, speech synthesis, voice, 语音合成, 文字转语音, IMA, TTS, 多模型
+argument-hint: "[text to speak or 要朗读的文本]"
 description: >
-  TTS (text-to-speech) via IMA Open API with seed-tts-2.0. Voice synthesis, speech from text,
-  dubbing, audio content creation. Output: audio URL (mp3/wav). Flow: query products, create task,
-  poll until done. Requires IMA API key.
+  Use when generating speech from text (text-to-speech) via IMA Open API. Use for: voice synthesis,
+  TTS,朗读, 语音合成, 配音, 有声内容. Output: audio URL (mp3/wav). Flow: query products →
+  create task → poll until done. Requires IMA API key. This skill targets seed-tts-2.0 only
+  (seed-tts-1.1 is not supported). Default model is seed-tts-2.0.
+requires:
+  env:
+    - IMA_API_KEY
+  primaryCredential: IMA_API_KEY
+  credentialNote: IMA_API_KEY is sent only to api.imastudio.com for TTS product/task APIs.
+persistence:
+  readWrite:
+    - ~/.openclaw/memory/ima_prefs.json
+    - ~/.openclaw/logs/ima_skills/
+  retention: Logs are auto-cleaned after 7 days; preferences remain until user deletes them.
 ---
 
 # IMA TTS (Text-to-Speech)
@@ -452,11 +463,3 @@ while True:
 | Poll | `POST /open/v1/tasks/detail` every 2–5s |
 | Done when | All medias: resource_status=1, status≠"failed", url present |
 | Script | `scripts/ima_tts_create.py` (--list-models, --model-id, --prompt, --output-json) |
-
----
-
-## Supported Models & Search Terms
-
-**Model:** seed-tts-2.0 (also known as: seed tts, seed-tts, ByteDance TTS)
-
-**Capabilities:** text-to-speech (TTS), speech synthesis, voice synthesis, voice generation, text to speech, dubbing, narration, voiceover, audio generation

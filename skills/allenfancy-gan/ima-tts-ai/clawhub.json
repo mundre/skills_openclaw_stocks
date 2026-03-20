@@ -5,12 +5,24 @@
   "category": "file-generation",
   "requiredEnvVars": ["IMA_API_KEY"],
   "credentialNotice": "The IMA API key is required at runtime (--api-key or IMA_API_KEY). It is sent only to https://api.imastudio.com. Obtain keys at https://imastudio.com or https://www.imaclaw.ai/ (same provider). Use a scoped or test key if concerned about credential exposure.",
+  "requires": {
+    "env": ["IMA_API_KEY"],
+    "primaryCredential": "IMA_API_KEY",
+    "credentialNote": "IMA_API_KEY is required at runtime and sent only to api.imastudio.com for TTS APIs."
+  },
   "localPaths": {
     "readWrite": [
       "~/.openclaw/memory/ima_prefs.json",
       "~/.openclaw/logs/ima_skills/"
     ],
     "purpose": "Preferences and generation logs; logs auto-deleted after 7 days. User can delete anytime."
+  },
+  "persistence": {
+    "readWrite": [
+      "~/.openclaw/memory/ima_prefs.json",
+      "~/.openclaw/logs/ima_skills/"
+    ],
+    "retention": "Logs are auto-cleaned after 7 days; preferences remain until user deletes them."
   },
   "version": "1.0.0",
   "license": "MIT",
