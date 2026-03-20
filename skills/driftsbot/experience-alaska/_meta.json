@@ -1,11 +1,17 @@
 {
   "owner": "driftsbot",
   "slug": "experience-alaska",
-  "displayName": "Alaska Wilderness — AI Experience on DRIFT",
+  "displayName": "Experience Alaska",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773106150718,
-    "commit": "https://github.com/openclaw/skills/commit/a342c0f9521305805eaca314996fa39a740d81a1"
+    "version": "1.0.1",
+    "publishedAt": 1773698579206,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773106150718,
+      "commit": "https://github.com/openclaw/skills/commit/a342c0f9521305805eaca314996fa39a740d81a1"
+    }
+  ]
 }
