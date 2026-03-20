@@ -1,6 +1,10 @@
 ---
+version: "2.0.0"
 name: slide-maker
-description: "Presentation and slide deck generator. Create outlines, full slide decks, speaker notes, pitch decks, training slides, report presentations, and design recommendations. Outputs Markdown with 
+description: "Presentation and slide deck generator. Create outlines, full slide decks, speaker notes, pitch decks, training slides, report presentations."
+author: BytesAgain
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
 ---
 
 # 🎬 Slide Maker — Presentation Generator
@@ -46,3 +50,10 @@ Each slide separated by `---`, Markdown format. Import directly into Marp / Slid
 
 ## 📂 Scripts
 - `scripts/slides.sh` — Main script
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
+
+## Commands
+
+Run `slide-maker help` to see all available commands.
