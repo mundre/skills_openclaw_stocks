@@ -3,9 +3,15 @@
   "slug": "code-viewer",
   "displayName": "Code Viewer",
   "latest": {
-    "version": "2.3.7",
-    "publishedAt": 1773663490347,
-    "commit": "https://github.com/openclaw/skills/commit/7413615326181333b4a9e61b984d93e16bcc5dbc"
+    "version": "2.0.1",
+    "publishedAt": 1773830295957,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.3.7",
+      "publishedAt": 1773663490347,
+      "commit": "https://github.com/openclaw/skills/commit/7413615326181333b4a9e61b984d93e16bcc5dbc"
+    }
+  ]
 }
