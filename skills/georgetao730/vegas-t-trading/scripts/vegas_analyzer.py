@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
+#!/home/linuxbrew/.linuxbrew/bin/python3.10
 # -*- coding: utf-8 -*-
 """
 维加斯通道 Pro 做 T 分析工具（v2.0）
 基于 EMA12/13/144/169/576/676 均线组合，融合量价共振与多周期分析
-使用 urllib 和 json 标准库，通过 HTTP API 获取数据
+数据源：强制使用 AKShare
 """
 
 import sys
 import json
-import urllib.request
-import urllib.error
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple
@@ -20,6 +18,7 @@ try:
     HAS_PANDAS = True
 except ImportError:
     HAS_PANDAS = False
+    print("❌ pandas 未安装，请运行：pip3 install pandas -U")
 
 
 @dataclass
@@ -700,62 +699,65 @@ def analyze_multi_period(symbol: str, market_type: str, exchange: str) -> tuple:
     return result, tunnel_60m, tunnel_15m, tunnel_5m, klines_5m, fib, score
 
 
-def fetch_a_stock_kline(symbol: str, period: str = "5", count: int = 1000) -> List[KlineData]:
+def fetch_a_stock_kline(symbol: str, period: str = "5", count: int = 1000, max_retries: int = 3) -> List[KlineData]:
     """
-    获取 A 股 K 线数据（使用 AKShare）
+    获取 A 股 K 线数据（强制使用 AKShare）
     
-    ✅ 优势:
-    - 周末/节假日可获取最近交易日数据
-    - 数据稳定可靠
-    - 支持完整的分钟 K 线（5/15/30/60 分钟）
+    ⚠️ 仅使用 AKShare 数据源，确保数据准确性
+    如果 AKShare 失败，不会 fallback 到其他数据源
     
     需要安装：pip install akshare (Python 3.8+)
     """
     period_map = {"5": "5", "15": "15", "60": "60"}
     klt = period_map.get(period, "5")
     
-    # 使用 AKShare 获取分钟 K 线
-    try:
-        import akshare as ak
+    # 强制仅使用 AKShare，带重试机制
+    for attempt in range(1, max_retries + 1):
+        try:
+            if attempt > 1:
+                wait_time = 2 ** (attempt - 1)  # 指数退避：2s, 4s, 8s
+                print(f"  ⏳ 等待 {wait_time} 秒后重试 (第 {attempt}/{max_retries} 次)...")
+                import time
+                time.sleep(wait_time)
+            else:
+                print(f"  [AKShare] 获取 {period} 分钟 K 线中... (第 {attempt}/{max_retries} 次尝试)")
+            
+            import akshare as ak
+            
+            # AKShare 分钟 K 线 API
+            df = ak.stock_zh_a_hist_min_em(symbol=symbol, period=klt)
+            
+            if df is not None and len(df) > 0:
+                klines = []
+                for _, row in df.iterrows():
+                    klines.append(KlineData(
+                        timestamp=pd.Timestamp(row['时间']).timestamp(),
+                        open=float(row['开盘']),
+                        high=float(row['最高']),
+                        low=float(row['最低']),
+                        close=float(row['收盘']),
+                        volume=float(row['成交量']) if '成交量' in row else 0
+                    ))
+                
+                print(f"  ✓ AKShare 成功获取 {len(klines)} 条 {period} 分钟 K 线数据")
+                return klines[-count:]  # 返回最近的 count 条
         
-        # AKShare 分钟 K 线 API
-        df = ak.stock_zh_a_hist_min_em(symbol=symbol, period=klt)
+        except ImportError:
+            print("  ❌ 错误：AKShare 未安装")
+            print("  请运行：pip3 install akshare pandas -U")
+            raise Exception("AKShare 未安装，无法获取数据")
         
-        if len(df) == 0:
-            raise Exception("AKShare 返回空数据")
-        
-        klines = []
-        for _, row in df.iterrows():
-            klines.append(KlineData(
-                timestamp=pd.Timestamp(row['时间']).timestamp(),
-                open=float(row['开盘']),
-                high=float(row['最高']),
-                low=float(row['最低']),
-                close=float(row['收盘']),
-                volume=float(row['成交量']) if '成交量' in row else 0
-            ))
-        
-        return klines
+        except Exception as e:
+            error_msg = str(e)
+            if attempt == max_retries:
+                print(f"  ❌ AKShare 所有重试均失败：{error_msg}")
+                print("  建议：1) 检查网络连接 2) 稍后再试 3) 检查 AKShare 版本")
+                raise Exception(f"AKShare 数据获取失败（已重试 {max_retries} 次）: {error_msg}")
+            else:
+                print(f"  ⚠️ AKShare 尝试 {attempt}/{max_retries} 失败：{error_msg}")
     
-    except ImportError:
-        raise Exception(
-            "未安装 AKShare！请运行：pip3 install akshare\n"
-            "要求：Python 3.8+\n"
-            "AKShare 优势：周末/节假日可获取最近交易日数据，稳定可靠"
-        )
-    except Exception as e:
-        error_msg = str(e)
-        # 友好的错误提示
-        if "Connection" in error_msg or "connection" in error_msg.lower():
-            raise Exception(
-                f"AKShare 网络连接失败：{error_msg}\n"
-                "可能原因：\n"
-                "1. 网络连接问题\n"
-                "2. AKShare 数据源临时限流\n"
-                "建议：稍后重试，或检查网络"
-            )
-        else:
-            raise Exception(f"AKShare 获取数据失败：{error_msg}")
+    # 理论上不会到达这里
+    raise Exception("AKShare 数据获取失败")
 
 
 def fetch_crypto_kline(symbol: str, period: str = "5", exchange: str = "binance") -> List[KlineData]:
