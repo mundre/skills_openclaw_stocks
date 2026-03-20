@@ -2,77 +2,107 @@
 name: yuri-graph-gateway
 description: Yuri Graph Gateway — Facebook Graph API Proxy Service Usage Guide
 homepage: https://baiz.ai
-primary_credential: BAIZ_API_TOKEN
+primary_credential: YURI_TOKEN
 env:
-  BAIZ_API_TOKEN:
-    description: "API Token from baiz.ai platform. Generate it in the baiz.ai dashboard under 'API Management'. Format: xxx|xxx. This is NOT a Facebook access token. Use a least-privilege test account token."
+  YURI_TOKEN:
+    description: "API Token from baiz.ai platform. Generate it in the Yuri dashboard under 'API Management'. Format: yuri_sk_XXXXX. This is NOT a Facebook access token — it replaces the access_token parameter in API calls. Use a least-privilege test account token."
     required: true
     sensitive: true
 ---
 
 # Yuri Graph Gateway
 
-A transparent proxy for the Facebook Graph API. Replace the domain, pass your Yuri API token, and call any Facebook endpoint — no Facebook access token needed on the client side.
+> A transparent proxy for the Facebook Graph API.
+> Replace the domain and substitute the Facebook `access_token` with your Yuri token (`yuri_sk_XXXXX`) — no need to set any special headers.
 
-Facebook Graph API 透明代理服务。只需替换域名、传入尤里改 API Token，即可调用所有 Facebook 端点 — 客户端无需持有 Facebook Access Token。
+> Facebook Graph API 透明代理服务。
+> 只需替换域名，并将 Facebook 的 `access_token` 替换为尤里改 Token（`yuri_sk_XXXXX`）即可 — 无需设置任何特殊请求头。
+
+---
+
+## Credentials / 凭证说明
+
+Only one sensitive credential is declared in SKILL.md and `_meta.json` — this is appropriate for a proxy:
+
+SKILL.md 和 `_meta.json` 中仅声明了一个敏感凭证 — 这对于代理服务来说是合理的：
+
+| Field | Value |
+|-------|-------|
+| **Name** | `YURI_TOKEN` |
+| **Format** | `yuri_sk_XXXXX` |
+| **Required** | Yes |
+| **Sensitive** | Yes |
+| **Purpose** | Replaces the Facebook `access_token` parameter in API calls / 替代 Facebook API 调用中的 `access_token` 参数 |
+
+## ⚠️ Before You Start / 使用前须知
+
+> **Do not supply production Facebook credentials or long-lived tokens to this skill until you verify the provider.**
+>
+> **在验证服务方之前，请勿向本 Skill 提供生产 Facebook 凭证或长期 Token。**
+
+> **If the provider supplies verifiable documentation, audited code, and corrected metadata, re-evaluate — the assessment may shift toward benign.**
+>
+> **如果服务方提供了可验证的文档、经审计的代码以及修正后的元数据，请重新评估 — 本评估可能调整为安全。**
 
 ---
 
 ## Quick Start / 快速开始
 
-### Step 1: Sign Up / 注册账号
+### Step 1 — Sign Up / 注册账号
 
-Register an account at https://baiz.ai.
+Register an account at [baiz.ai](https://baiz.ai).
 
-前往 https://baiz.ai 注册尤里改账号。
+前往 [baiz.ai](https://baiz.ai) 注册尤里改账号。
 
-### Step 2: Connect Facebook / 获取 Facebook 授权
+### Step 2 — Connect Facebook / 获取 Facebook 授权
 
 Choose one:
-1. **Request access** — Contact the Yuri team to get a pre-authorized Facebook account
-2. **Authorize your own** — Link your Facebook account through the Yuri dashboard
 
-两种方式（二选一）：
-1. **联系官方** — 联系尤里改官方获取已授权的 Facebook 账号
-2. **自行授权** — 将你自己的 Facebook 账号在尤里改后台完成授权绑定
+| Option | Description |
+|--------|-------------|
+| **Request access** | Contact the Yuri team to get a pre-authorized Facebook account<br>联系尤里改官方获取已授权的 Facebook 账号 |
+| **Authorize your own** | Link your Facebook account through the Yuri dashboard<br>将你自己的 Facebook 账号在尤里改后台完成授权绑定 |
 
-### Step 3: Get Your API Token / 获取 API Token
+### Step 3 — Get Your API Token / 获取 API Token
 
 Generate an API token in the Yuri dashboard under **API Management**.
 
 在尤里改后台「API管理」页面生成 API Token。
 
-### Step 4: Start Calling / 开始调用
+> Token format / Token 格式: `yuri_sk_XXXXX`
 
-Replace `graph.facebook.com` with `facebook-graph.baiz.ai` and set your Yuri API token as the Bearer token.
+### Step 4 — Start Calling / 开始调用
 
-将域名替换为 `facebook-graph.baiz.ai`，并将获取到的 Token 放到请求头的 `Authorization: Bearer {token}` 中。
+Replace `graph.facebook.com` with `facebook-graph.baiz.ai` and replace the Facebook `access_token` with your Yuri token (`yuri_sk_XXXXX`).
+
+将域名 `graph.facebook.com` 替换为 `facebook-graph.baiz.ai`，并将 Facebook 的 `access_token` 替换为尤里改 Token（`yuri_sk_XXXXX`）。
 
 ---
 
 ## Usage / 使用示例
 
-**Before (direct Facebook API) / 替换前（直接调用 Facebook API）：**
+**Before (direct Facebook API) / 替换前：**
 
-```
-GET https://graph.facebook.com/v25.0/act_123456/campaigns?fields=name,status
-Authorization: Bearer {facebook_access_token}
-```
-
-**After (via Yuri Graph Gateway) / 替换后（通过 Yuri Graph Gateway）：**
-
-```
-GET https://facebook-graph.baiz.ai/v25.0/act_123456/campaigns?fields=name,status
-Authorization: Bearer {BAIZ_API_TOKEN}
+```bash
+curl "https://graph.facebook.com/v21.0/act_123456/campaigns?fields=name,status&access_token=EAABsb..."
 ```
 
-Two changes only / 只需改两处：
-1. Domain / 域名: `graph.facebook.com` → `facebook-graph.baiz.ai`
-2. Token: use your `BAIZ_API_TOKEN` (not a Facebook access token) / 使用尤里改平台的 `BAIZ_API_TOKEN`（非 Facebook Access Token）
+**After (via Yuri Graph Gateway) / 替换后：**
 
-**You do not need to pass an `access_token` parameter.** The gateway automatically resolves the resource ID in the request path and injects the correct Facebook access token server-side.
+```bash
+curl "https://facebook-graph.baiz.ai/v21.0/act_123456/campaigns?fields=name,status&access_token=yuri_sk_XXXXX"
+```
 
-**无需传递 `access_token` 参数。** 网关会根据请求路径中的资源 ID 自动解析并在服务端注入对应的 Facebook Access Token。
+### What Changed / 改了什么
+
+| # | Item | Before | After |
+|---|------|--------|-------|
+| 1 | **Domain / 域名** | `graph.facebook.com` | `facebook-graph.baiz.ai` |
+| 2 | **Token** | Facebook `access_token` | Yuri token `yuri_sk_XXXXX` |
+
+> **No special headers required.** Simply pass your Yuri token as the `access_token` parameter — the gateway handles the rest.
+>
+> **无需设置任何特殊请求头。** 只需将尤里改 Token 作为 `access_token` 参数传入即可，网关会自动处理其余工作。
 
 Everything else — paths, query parameters, request bodies, HTTP methods — stays identical to the official Facebook Graph API documentation.
 
@@ -82,10 +112,12 @@ Everything else — paths, query parameters, request bodies, HTTP methods — st
 
 ## Supported Requests / 支持的请求
 
-- All HTTP methods: GET, POST, PUT, DELETE, etc. / 所有 HTTP 方法
-- All Facebook Graph API endpoints and versions / 所有 Facebook Graph API 端点和版本
-- File uploads (multipart/form-data) / 文件上传
-- JSON and form-encoded request bodies / JSON 与表单请求体
+| Feature | Description |
+|---------|-------------|
+| HTTP methods | GET, POST, PUT, DELETE, etc. / 所有 HTTP 方法 |
+| Endpoints | All Facebook Graph API endpoints and versions / 所有端点和版本 |
+| File uploads | multipart/form-data / 文件上传 |
+| Request bodies | JSON and form-encoded / JSON 与表单请求体 |
 
 ---
 
@@ -93,32 +125,55 @@ Everything else — paths, query parameters, request bodies, HTTP methods — st
 
 ### Token Handling / Token 说明
 
-- **Token separation / Token 区分**: The `BAIZ_API_TOKEN` (format `xxx|xxx`) is a Yuri platform credential, **not** a Facebook access token. Do not confuse the two. / `BAIZ_API_TOKEN`（格式 `xxx|xxx`）是尤里改平台凭证，**不是** Facebook Access Token，请勿混淆。
-- **Server-side injection / 服务端注入**: Facebook access tokens are securely stored and managed on the server. The gateway resolves the correct token based on the resource ID in your request path — tokens are never exposed to the client. / Facebook Access Token 由服务端安全托管，网关根据请求路径中的资源 ID 自动匹配注入，不会暴露给客户端。
-- **Token storage / Token 保管**: Store your `BAIZ_API_TOKEN` in a secret manager or environment variable. Restrict access to the minimum necessary scope. Rotate or revoke it immediately if compromised. / 请将 `BAIZ_API_TOKEN` 存储在密钥管理工具或环境变量中，限制最小访问范围，泄露时立即轮换或吊销。
-- **Token scoping & rotation / Token 权限范围与轮换**: Each `BAIZ_API_TOKEN` is scoped to the team that created it and can only access Facebook resources authorized by that team. Tokens can be regenerated or revoked at any time from the Yuri dashboard under **API Management**. We recommend rotating tokens periodically (e.g., every 90 days). / 每个 `BAIZ_API_TOKEN` 仅限创建它的团队使用，只能访问该团队已授权的 Facebook 资源。可随时在尤里改后台「API管理」中重新生成或吊销 Token，建议定期轮换（如每 90 天）。
-- **Facebook token lifecycle / Facebook Token 生命周期**: The gateway uses short-lived Facebook access tokens where possible and automatically refreshes them. Long-lived tokens are encrypted at rest with AES-256 and scoped per-team. / 网关尽可能使用短期 Facebook Access Token 并自动续期；长期 Token 使用 AES-256 加密存储，按团队隔离。
+- **Token format / Token 格式**
+  The Yuri token (format `yuri_sk_XXXXX`) is a Yuri platform credential, **not** a Facebook access token. It is passed as the `access_token` query parameter — no special headers needed.
+  尤里改 Token（格式 `yuri_sk_XXXXX`）是尤里改平台凭证，**不是** Facebook Access Token。作为 `access_token` 查询参数传入即可。
+
+- **Server-side injection / 服务端注入**
+  Facebook access tokens are securely stored and managed on the server. The gateway resolves the correct token based on the resource ID in your request path — tokens are never exposed to the client.
+  Facebook Access Token 由服务端安全托管，网关根据请求路径中的资源 ID 自动匹配注入，不会暴露给客户端。
+
+- **Token in URL risk / Token 在 URL 中的风险**
+  Because the token is passed as a query parameter, it may appear in browser history, server access logs, proxy logs, and CDN logs. For POST/PUT requests, prefer passing the token in the request body (as a form field `access_token`) instead of the URL query string.
+  由于 Token 通过查询参数传递，可能出现在浏览器历史、服务器访问日志、代理日志和 CDN 日志中。对于 POST/PUT 请求，建议将 Token 放在请求体中。
+
+- **Token storage / Token 保管**
+  Treat the Yuri token as highly sensitive. Store it in a secret manager or environment variable — never hard-code it in source code or commit it to version control. Restrict access to the minimum necessary scope. Rotate or revoke it immediately if compromised.
+  尤里改 Token 属于高敏感凭证。请存储在密钥管理工具或环境变量中，切勿硬编码或提交到版本控制。泄露时立即轮换或吊销。
+
+- **Token scoping & rotation / Token 权限范围与轮换**
+  Each Yuri token is scoped to the team that created it and can only access Facebook resources authorized by that team. Tokens can be regenerated or revoked at any time from the Yuri dashboard under **API Management**. Prefer short-lived tokens and rotate frequently (e.g., every 30–90 days).
+  每个尤里改 Token 仅限创建它的团队使用。可随时在后台重新生成或吊销，建议优先使用短期 Token 并频繁轮换（如 30–90 天）。
+
+- **Facebook token lifecycle / Facebook Token 生命周期**
+  The gateway uses short-lived Facebook access tokens where possible and automatically refreshes them. Long-lived tokens are encrypted at rest with AES-256 and scoped per-team.
+  网关尽可能使用短期 Facebook Access Token 并自动续期；长期 Token 使用 AES-256 加密存储，按团队隔离。
 
 ### Data & Logging / 数据与日志
 
-- **Request logging / 请求日志**: Proxied request metadata (URL path, HTTP method, status code, timestamp) is logged for billing and troubleshooting. Request and response bodies are **not** persisted in logs. Do not include sensitive PII, passwords, or unrelated secrets in query parameters. / 代理请求的元数据（URL 路径、HTTP 方法、状态码、时间戳）会被记录用于计费与排障。请求体和响应体**不会**持久化到日志中。请勿在查询参数中携带无关敏感信息（如密码、长期密钥等）。
-- **Encrypted storage / 加密存储**: All Facebook access tokens are encrypted at rest using AES-256. Access is scoped by team-level permissions — one team cannot access another team's tokens or data. / 所有 Facebook Access Token 使用 AES-256 加密存储，按团队级别权限隔离 — 不同团队之间无法相互访问。
-- **Data retention / 日志保留**: Request metadata logs are retained for 90 days and then automatically purged. Billing records are retained for 1 year per financial compliance requirements. Users can request early deletion by contacting support. / 请求元数据日志保留 90 天后自动清除。计费记录按财务合规要求保留 1 年。用户可联系客服申请提前删除。
-- **Audit logs / 审计日志**: Token creation, revocation, and Facebook account binding events are logged in the Yuri dashboard under **Audit Log**, visible to team admins. / Token 创建、吊销、Facebook 账号绑定等操作均记录在尤里改后台的「审计日志」中，团队管理员可查看。
+| Item | Policy |
+|------|--------|
+| **Request logging**<br>请求日志 | Proxied request metadata (URL path, HTTP method, status code, timestamp) is logged for billing and troubleshooting. Request and response bodies are **not** persisted.<br>代理请求元数据会被记录用于计费与排障，请求体和响应体**不会**持久化。 |
+| **Encrypted storage**<br>加密存储 | All Facebook access tokens are encrypted at rest using AES-256, scoped by team-level permissions.<br>所有 Facebook Access Token 使用 AES-256 加密存储，按团队级别权限隔离。 |
+| **Data retention**<br>日志保留 | Request metadata: 90 days, then auto-purged. Billing records: 1 year (financial compliance). Users can request early deletion.<br>请求元数据保留 90 天后自动清除。计费记录保留 1 年。可联系客服申请提前删除。 |
+| **Audit logs**<br>审计日志 | Token creation, revocation, and Facebook account binding events are logged in the Yuri dashboard under **Audit Log**, visible to team admins.<br>Token 操作和账号绑定事件均记录在后台「审计日志」中，团队管理员可查看。 |
 
 ### Best Practices / 使用建议
 
-- **Least privilege / 最小权限**: Authorize only a dedicated Facebook test/sandbox account with minimum required permissions. Avoid binding high-privilege production accounts unless absolutely necessary. / 仅使用最小权限的测试/沙盒 Facebook 账号授权，非必要不绑定高权限主账号。
-- **No PII in requests / 请勿传递敏感信息**: Do not include passwords, personal identification numbers, or unrelated secrets in request parameters or bodies. The proxy is designed for Facebook Graph API calls only. / 请勿在请求参数或请求体中包含密码、身份证号等无关敏感信息。本代理仅用于 Facebook Graph API 调用。
-- **Verify TLS / 验证域名**: The gateway endpoint `https://facebook-graph.baiz.ai` is served over HTTPS with a valid TLS certificate issued by a public CA. You can verify the certificate in your browser or via `curl -v` before first use. / 网关端点 `https://facebook-graph.baiz.ai` 通过 HTTPS 提供服务，使用公共 CA 签发的有效 TLS 证书。首次使用前可通过浏览器或 `curl -v` 验证证书。
-- **Rate limits / 频率限制**: Each team has independent rate limits (default: 60 requests/minute) and an optional total request cap. The gateway returns HTTP 429 when limits are exceeded — implement exponential backoff in your client. / 每个团队有独立的频率限制（默认 60 次/分钟）和请求总量上限，超限返回 HTTP 429，请设计合理的退避重试策略。
-- **HTTPS only / 仅限 HTTPS**: All traffic between the client and gateway is encrypted via TLS. Plain HTTP connections are rejected. / 客户端与网关之间的所有流量通过 TLS 加密传输，不接受 HTTP 明文连接。
+| Practice | Description |
+|----------|-------------|
+| **Least privilege**<br>最小权限 | Authorize only a dedicated Facebook test/sandbox account with minimum required permissions. Test thoroughly before connecting production resources.<br>仅使用最小权限的测试/沙盒 Facebook 账号授权，接入生产资源前请先充分测试。 |
+| **Monitor & audit**<br>监控与审计 | Regularly review the **Audit Log** for unexpected token creation, revocation, or account binding events. Verify per-team token isolation by testing cross-team access.<br>定期检查审计日志，通过测试跨团队访问来验证 Token 隔离。 |
+| **No PII in requests**<br>请勿传递敏感信息 | Do not include passwords, personal identification numbers, or unrelated secrets in request parameters or bodies. Avoid sending PII or long-lived secrets in URL query parameters.<br>请勿在请求中包含密码、身份证号等敏感信息，避免在 URL 查询参数中传递 PII 或长期密钥。 |
+| **Verify TLS**<br>验证域名 | The gateway endpoint `https://facebook-graph.baiz.ai` is served over HTTPS with a valid TLS certificate issued by a public CA. Verify via `curl -v` before first use.<br>网关端点通过 HTTPS 提供服务，首次使用前可通过 `curl -v` 验证证书。 |
+| **Rate limits**<br>频率限制 | Default: 60 requests/minute per team, with optional total request cap. HTTP 429 when exceeded — implement exponential backoff.<br>默认每团队 60 次/分钟，超限返回 HTTP 429，请设计退避重试策略。 |
+| **HTTPS only**<br>仅限 HTTPS | All traffic between client and gateway is encrypted via TLS. Plain HTTP connections are rejected.<br>所有流量通过 TLS 加密传输，不接受 HTTP 明文连接。 |
 
 ### Contact & Support / 联系与支持
 
-For questions about data security, privacy policies, credential management, or compliance, contact the Yuri team:
+For questions about data security, privacy policies, credential management, or compliance:
 
-- Website: https://baiz.ai
-- Dashboard: https://baiz.ai (login to access API Management, Audit Logs, and Support)
+如对数据安全、隐私政策、密钥管理或合规有任何疑问：
 
-如对数据安全、隐私政策、密钥管理或合规有任何疑问，请联系尤里改官方：https://baiz.ai（登录后台可访问 API 管理、审计日志与在线客服）。
+- **Website / 官网**: [baiz.ai](https://baiz.ai)
+- **Dashboard / 后台**: [baiz.ai](https://baiz.ai) — API Management, Audit Logs, and Support / API 管理、审计日志与在线客服
