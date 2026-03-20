@@ -3,6 +3,8 @@ version: "2.0.0"
 name: docker-helper
 description: "Dockerfile生成、docker-compose编排、命令速查、调试排错、镜像优化、仓库配置. Use when you need docker helper capabilities. Triggers on: docker helper."
 author: BytesAgain
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
 ---
 # docker-helper
 
