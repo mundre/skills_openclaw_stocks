@@ -3,9 +3,15 @@
   "slug": "wp-manager",
   "displayName": "Wp Manager",
   "latest": {
-    "version": "2.3.4",
-    "publishedAt": 1773667311024,
-    "commit": "https://github.com/openclaw/skills/commit/2142c47626c0f54d216da1ea1e5dc5d8f937c884"
+    "version": "3.0.4",
+    "publishedAt": 1773882264174,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.3.4",
+      "publishedAt": 1773667311024,
+      "commit": "https://github.com/openclaw/skills/commit/2142c47626c0f54d216da1ea1e5dc5d8f937c884"
+    }
+  ]
 }

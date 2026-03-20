@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # wp-manager — WordPress site management toolkit
 set -euo pipefail
-VERSION="2.0.0"
+VERSION="3.0.4"
 DATA_DIR="${WP_MANAGER_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/wp-manager}"
 mkdir -p "$DATA_DIR"
 
@@ -41,47 +41,47 @@ cmd_status() {
 cmd_info() {
     local url="${WP_URL:-https://bytesagain.com}"
     echo "  === Site Info ==="
-    curl -s "$url/wp-json/" 2>/dev/null | python3 -c "
+    curl -s "$url/wp-json/" 2>/dev/null | python3 << 'PYEOF' 2>/dev/null || echo "  Could not fetch"
 import json,sys
 d=json.load(sys.stdin)
 print('  Name: ' + d.get('name',''))
 print('  URL:  ' + d.get('url',''))
 print('  Desc: ' + d.get('description',''))
-" 2>/dev/null || echo "  Could not fetch"
+PYEOF
 }
 
 cmd_list_posts() {
     local n="${1:-10}"
     local url="${WP_URL:-https://bytesagain.com}"
     echo "  === Recent Posts ==="
-    curl -s "$url/wp-json/wp/v2/posts?per_page=$n&_fields=id,title,status,date" 2>/dev/null | python3 -c "
+    curl -s "$url/wp-json/wp/v2/posts?per_page=$n&_fields=id,title,status,date" 2>/dev/null | python3 << 'PYEOF' 2>/dev/null || echo "  Could not fetch"
 import json,sys
 for p in json.load(sys.stdin):
     t=p.get('title',{}).get('rendered','?')
     print('  [{}] {} {} ({})'.format(p['id'],p['date'][:10],t,p['status']))
-" 2>/dev/null || echo "  Could not fetch"
+PYEOF
 }
 
 cmd_list_pages() {
     local n="${1:-10}"
     local url="${WP_URL:-https://bytesagain.com}"
     echo "  === Pages ==="
-    curl -s "$url/wp-json/wp/v2/pages?per_page=$n&_fields=id,title,status" 2>/dev/null | python3 -c "
+    curl -s "$url/wp-json/wp/v2/pages?per_page=$n&_fields=id,title,status" 2>/dev/null | python3 << 'PYEOF' 2>/dev/null || echo "  Could not fetch"
 import json,sys
 for p in json.load(sys.stdin):
     t=p.get('title',{}).get('rendered','?')
     print('  [{}] {} ({})'.format(p['id'],t,p['status']))
-" 2>/dev/null || echo "  Could not fetch"
+PYEOF
 }
 
 cmd_search() {
     local query="${1:?Usage: wp-manager search <query>}"
     local url="${WP_URL:-https://bytesagain.com}"
-    curl -s "$url/wp-json/wp/v2/search?search=$query&per_page=10" 2>/dev/null | python3 -c "
+    curl -s "$url/wp-json/wp/v2/search?search=$query&per_page=10" 2>/dev/null | python3 << 'PYEOF' 2>/dev/null
 import json,sys
 for r in json.load(sys.stdin):
     print('  [{}] {} - {}'.format(r.get('id','?'),r.get('type','?'),r.get('title','?')))
-" 2>/dev/null
+PYEOF
 }
 
 cmd_security_scan() {
