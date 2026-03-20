@@ -3,11 +3,16 @@
   "slug": "meegle-connector",
   "displayName": "Meegle Connector",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1773327795021,
-    "commit": "https://github.com/openclaw/skills/commit/d40ec18c976244e21a84c3b9fdf4b442645ae395"
+    "version": "1.0.9",
+    "publishedAt": 1773763968979,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1773327795021,
+      "commit": "https://github.com/openclaw/skills/commit/d40ec18c976244e21a84c3b9fdf4b442645ae395"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773141086654,
