@@ -3,11 +3,16 @@
   "slug": "quiz-generator",
   "displayName": "Quiz Generator",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1773666871906,
-    "commit": "https://github.com/openclaw/skills/commit/667975d853f260c127cffc613ed9c4a06b17c717"
+    "version": "2.0.0",
+    "publishedAt": 1773772881264,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1773666871906,
+      "commit": "https://github.com/openclaw/skills/commit/667975d853f260c127cffc613ed9c4a06b17c717"
+    },
     {
       "version": "2.3.0",
       "publishedAt": 1773446929196,
