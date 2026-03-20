@@ -1,0 +1,11 @@
+{
+  "owner": "sixther-dc",
+  "slug": "cnb-openapi",
+  "displayName": "CNB OpenAPI Skills",
+  "latest": {
+    "version": "1.18.9",
+    "publishedAt": 1773212349626,
+    "commit": null
+  },
+  "history": []
+}
