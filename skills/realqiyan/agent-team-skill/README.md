@@ -1,54 +1,50 @@
 # Agent Team Skill
 
-Agent 团队管理工具，用于管理团队成员信息，包括技能、角色和工作分配。
+AI agent team management tool for managing team member information, including skills, roles, and task delegation.
 
-提供两种使用方式：
+**This skill must be used together with the OpenClaw plugin.**
 
-- **Skill 版本** (`scripts/team.py`) - 通过 ClawHub/ClawDBot 使用，需要 AI Agent 主动调用
-- **Plugin 版本** (`integrations/openclaw/`) - OpenClaw 原生插件，自动注入团队信息到系统提示词
+## How It Works
 
-## 功能特性
+The skill consists of two components that work together:
 
-- 👥 **成员管理** - 管理团队成员信息，包括技能、角色和工作分配
-- 🔍 **智能路由** - 根据成员专长匹配任务
-- 📊 **能力评估** - 了解每个成员的优势和弱点
-- ⚡ **自动注入** - 插件版本可在会话启动时自动加载团队信息
-- 🌐 **全局共享** - 团队数据全局共享，跨会话可用
+1. **Plugin** (`integrations/openclaw/agent-team/`) - OpenClaw native plugin that automatically injects team information and collaboration rules into system context at session start
+2. **Skill** (`scripts/team.py`) - CLI tool for managing team member data (CRUD operations)
 
-## 安装方法
+The plugin reads team data from `~/.agent-team/team.json` and injects it into the AI agent's context, enabling:
+- Team member awareness
+- Task delegation rules
+- Six-phase workflow: SEARCH → RECORD → ORIENT → DISPATCH → REVIEW → UPDATE
 
-### Skill 版本 (ClawHub/ClawDBot)
+## Features
 
-```bash
-# 通过 ClawHub 安装
-clawhub install agent-team-skill
+- 👥 **Member Management** - Manage team member information including skills, roles, and task assignment
+- 👑 **Leader Identification** - Support for team Leader marking (only one Leader per team)
+- 🔍 **Smart Routing** - Match tasks based on member expertise
+- 📊 **Capability Assessment** - Understand each member's strengths and weaknesses
+- ⚡ **Auto Injection** - Plugin automatically loads team information at session start
+- 🌐 **Global Sharing** - Team data is globally shared across sessions
 
-# 或克隆仓库
-git clone https://github.com/realqiyan/agent-team-skill.git
-cd agent-team-skill
+## Installation
 
-# 确保安装了 Python 3.10+
-python3 --version
-```
+### Step 1: Install Plugin (Required)
 
-### Plugin 版本 (OpenClaw)
-
-插件版本可在 OpenClaw 启动时自动注入团队信息到系统提示词，无需 AI Agent 主动调用工具。
+The plugin must be installed for the skill to work properly.
 
 ```bash
-# 方法一：链接到全局扩展目录
-ln -s $(pwd)/integrations/openclaw ~/.openclaw/extensions/agent-team
+# Method 1: Link to global extensions directory
+ln -s $(pwd)/integrations/openclaw/agent-team ~/.openclaw/extensions/agent-team
 
-# 方法二：在配置中指定路径
-# 编辑 ~/.openclaw/config.json
+# Method 2: Specify path in config
+# Edit ~/.openclaw/config.json
 ```
 
-配置示例：
+Config example:
 ```json
 {
   "plugins": {
     "load": {
-      "paths": ["/path/to/agent-team-skill/integrations/openclaw"]
+      "paths": ["/path/to/agent-team-skill/integrations/openclaw/agent-team"]
     },
     "entries": {
       "agent-team": {
@@ -59,116 +55,98 @@ ln -s $(pwd)/integrations/openclaw ~/.openclaw/extensions/agent-team
 }
 ```
 
-详细配置请参考 [integrations/openclaw/README.md](./integrations/openclaw/README.md)。
+For detailed configuration, see [integrations/openclaw/agent-team/README.md](./integrations/openclaw/agent-team/README.md).
 
-## 使用方法
+### Step 2: Verify Python 3.10+
 
-### Plugin 版本（推荐）
+```bash
+python3 --version
+```
 
-安装插件后，团队信息会在会话启动时自动注入到系统提示词，AI Agent 无需执行任何命令即可获得团队上下文。
+## Usage
 
-### Skill 版本
+### Managing Team Members
+
+After installing the plugin, use the CLI to manage team data:
 
 ```bash
 python3 scripts/team.py <command> [options]
 ```
 
-| 命令 | 说明 |
-|------|------|
-| `list` | 列出所有成员 |
-| `update` | 添加/更新成员 |
-| `reset` | 重置成员数据 |
+| Command | Description |
+|---------|-------------|
+| `list` | List all members |
+| `update` | Add/update member |
+| `reset` | Reset member data |
 
-### 团队协作规则
-
-核心流程：**接到任务时** → 查团队 → 找专家 → 转交执行。所有任务必须交给最擅长的伙伴执行。
-
-### 列出成员
-
-列出所有团队成员（YAML 格式）：
+### List Members
 
 ```bash
 python3 scripts/team.py list
 ```
 
-输出示例：
-```yaml
-team:
-  - agent_id: alice
-    name: Alice
-    role: Backend Developer
-    enabled: true
-    tags:
-      - backend
-      - api
-      - database
-    expertise:
-      - python
-      - go
-      - postgresql
-    not_good_at:
-      - frontend
-      - design
-  - agent_id: bob
-    name: Bob
-    role: Designer
-    enabled: true
-    tags:
-      - ui
-      - ux
-    expertise:
-      - figma
-      - css
-    not_good_at:
-      - backend
-# Total: 2 member(s)
+Output example:
+```markdown
+## Team Members
+
+**Alice** ⭐ Leader - coordination,planning,decision-making
+- agent_id: alice
+- expertise: task breakdown, comprehensive decisions, agent coordination
+- not_good_at: code development, investment analysis
+
+**Bob** - Backend Developer - backend,API,database
+- agent_id: bob
+- expertise: Python,Go,PostgreSQL
+- not_good_at: frontend,design
+
+# Total: 2 member(s), Leader: Alice (alice)
 ```
 
-### 添加/更新成员
-
-添加新成员或更新现有成员：
+### Add/Update Member
 
 ```bash
 python3 scripts/team.py update \
   --agent-id "agent-001" \
   --name "Alice" \
   --role "Backend Developer" \
-  --enabled true \
+  --is-leader "true" \
+  --enabled "true" \
   --tags "backend,api,database" \
   --expertise "python,go,postgresql" \
   --not-good-at "frontend,design"
 ```
 
-参数说明：
-- `--agent-id`: 成员唯一标识符 (必需)
-- `--name`: 成员名称 (必需)
-- `--role`: 角色/职位 (必需)
-- `--enabled`: 启用状态 true/false (必需)
-- `--tags`: 标签，逗号分隔 (必需)
-- `--expertise`: 专长技能，逗号分隔 (必需)
-- `--not-good-at`: 弱项领域，逗号分隔 (必需)
+Parameters:
+- `--agent-id`: Member unique identifier (required)
+- `--name`: Member name (required)
+- `--role`: Role/position (required)
+- `--is-leader`: Whether team Leader (required, true/false, only one Leader per team)
+- `--enabled`: Enable status true/false (required)
+- `--tags`: Tags, comma-separated (required)
+- `--expertise`: Expertise skills, comma-separated (required)
+- `--not-good-at`: Weak areas, comma-separated (required)
 
-### 重置数据
+### Reset Data
 
-清除所有团队数据，重置为空状态：
+Clear all team data:
 
 ```bash
 python3 scripts/team.py reset
 ```
 
-## 自定义数据文件
+## Custom Data File
 
-使用 `--data-file` 参数指定自定义数据文件路径：
+Use `--data-file` to specify a custom data file path:
 
 ```bash
 python3 scripts/team.py --data-file /path/to/team.json list
 ```
 
-默认数据存储位置：`~/.agent-team/team.json`
+Default data location: `~/.agent-team/team.json`
 
-## 数据文件说明
+## Data File Format
 
-数据文件使用 JSON 格式存储，结构如下：
+Data is stored in JSON format:
 
 ```json
 {
@@ -177,6 +155,7 @@ python3 scripts/team.py --data-file /path/to/team.json list
       "agent_id": "agent-001",
       "name": "Alice",
       "role": "Backend Developer",
+      "is_leader": true,
       "enabled": true,
       "tags": ["backend", "api", "database"],
       "expertise": ["python", "go", "postgresql"],
@@ -186,22 +165,18 @@ python3 scripts/team.py --data-file /path/to/team.json list
 }
 ```
 
-## 用例场景
+## Use Cases
 
-- Team Building: 记录所有团队成员及其技能信息
-- Task Assignment: 根据成员专长和标签分配任务
-- Capability Assessment: 了解每个成员的优势和弱点
-- Team Collaboration: 快速找到具有特定技能的成员
+- **Team Building**: Record all team members and their skill information
+- **Task Assignment**: Assign tasks based on member expertise and tags
+- **Capability Assessment**: Understand each member's strengths and weaknesses
+- **Team Collaboration**: Quickly find members with specific skills
 
----
-
-## 测试
-
-运行测试：
+## Testing
 
 ```bash
 python3 -m pytest tests/
 ```
 
-测试覆盖：
-- `test_team.py` - 成员管理测试 (14 个测试)
+Test coverage:
+- `test_team.py` - Member management tests (15 tests)

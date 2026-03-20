@@ -31,6 +31,7 @@ def sample_member_data():
         "agent_id": "agent-001",
         "name": "Alice",
         "role": "Developer",
+        "is_leader": True,
         "enabled": True,
         "tags": ["backend", "api"],
         "expertise": ["python", "go"],
@@ -70,18 +71,20 @@ class TestUpdateCommand:
             agent_id="agent-001",
             name="Alice",
             role="Developer",
+            is_leader=True,
             enabled=True,
             tags="backend, api",
             expertise="python, go",
             not_good_at="frontend",
         )
         captured = capsys.readouterr()
-        assert "Added member: Alice (agent-001)" in captured.out
+        assert "Added member: Alice (agent-001) (Leader)" in captured.out
 
         # Verify data was saved
         data = team.load_data()
         assert "agent-001" in data["team"]
         assert data["team"]["agent-001"]["name"] == "Alice"
+        assert data["team"]["agent-001"]["is_leader"] is True
 
     def test_update_existing_member(self, temp_data_file, sample_member_data, capsys):
         """Test updating an existing member."""
@@ -93,6 +96,7 @@ class TestUpdateCommand:
             agent_id="agent-001",
             name="Alice Updated",
             role="Senior Developer",
+            is_leader=False,
             enabled=False,
             tags="backend, api, database",
             expertise="python, go, postgresql",
@@ -106,6 +110,7 @@ class TestUpdateCommand:
         assert data["team"]["agent-001"]["name"] == "Alice Updated"
         assert data["team"]["agent-001"]["role"] == "Senior Developer"
         assert data["team"]["agent-001"]["enabled"] is False
+        assert data["team"]["agent-001"]["is_leader"] is False
 
     def test_tags_parsing(self, temp_data_file):
         """Test that tags are correctly parsed from comma-separated string."""
@@ -113,6 +118,7 @@ class TestUpdateCommand:
             agent_id="agent-001",
             name="Test",
             role="Test",
+            is_leader=False,
             enabled=True,
             tags=" tag1 , tag2 , tag3 ",
             expertise="skill1",
@@ -121,6 +127,42 @@ class TestUpdateCommand:
 
         data = team.load_data()
         assert data["team"]["agent-001"]["tags"] == ["tag1", "tag2", "tag3"]
+
+    def test_only_one_leader_allowed(self, temp_data_file, capsys):
+        """Test that only one leader is allowed per team."""
+        # Add first member as leader
+        team.update_member(
+            agent_id="agent-001",
+            name="Alice",
+            role="Team Lead",
+            is_leader=True,
+            enabled=True,
+            tags="backend",
+            expertise="python",
+            not_good_at="frontend",
+        )
+
+        # Add second member as leader
+        team.update_member(
+            agent_id="agent-002",
+            name="Bob",
+            role="Developer",
+            is_leader=True,
+            enabled=True,
+            tags="frontend",
+            expertise="react",
+            not_good_at="backend",
+        )
+        captured = capsys.readouterr()
+
+        # Should show that Alice's leader status was removed
+        assert "Removed leader status from Alice" in captured.out
+        assert "Added member: Bob (agent-002) (Leader)" in captured.out
+
+        # Verify only Bob is leader
+        data = team.load_data()
+        assert data["team"]["agent-001"]["is_leader"] is False
+        assert data["team"]["agent-002"]["is_leader"] is True
 
 
 class TestResetCommand:
@@ -179,6 +221,7 @@ class TestEdgeCases:
             agent_id="test-001",
             name="Test User",
             role="Tester",
+            is_leader=False,
             enabled=True,
             tags="test",
             expertise="testing",
@@ -215,6 +258,8 @@ class TestCLI:
                 "CLI User",
                 "--role",
                 "CLI Role",
+                "--is-leader",
+                "false",
                 "--enabled",
                 "true",
                 "--tags",
