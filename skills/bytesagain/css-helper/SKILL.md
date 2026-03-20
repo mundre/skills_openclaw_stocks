@@ -1,8 +1,10 @@
 ---
 version: "2.0.0"
 name: css-helper
-description: "CSS代码生成助手。Flexbox布局、Grid布局、CSS动画、渐变色、阴影、响应式断点。CSS helper for flexbox, grid, animation, gradient, shadow, responsive breakpoints. Use when you need css helper capabilities. Triggers on: css helper, direction, justify, align, wrap, gap."
+description: "CSS代码生成助手。Flexbox布局、Grid布局、CSS动画、渐变色、阴影、响应式断点。CSS helper for flexbox, grid, animation, gradient, shadow."
 author: BytesAgain
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
 ---
 # css-helper
 
