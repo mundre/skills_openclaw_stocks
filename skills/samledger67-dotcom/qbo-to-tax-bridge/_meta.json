@@ -1,11 +1,17 @@
 {
   "owner": "samledger67-dotcom",
   "slug": "qbo-to-tax-bridge",
-  "displayName": "test",
+  "displayName": "QBO to Tax Bridge",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773775099976,
-    "commit": "https://github.com/openclaw/skills/commit/0f13c96436460d07cdb99bc0c7a992d624f7ea59"
+    "version": "1.1.0",
+    "publishedAt": 1773926336737,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773775099976,
+      "commit": "https://github.com/openclaw/skills/commit/0f13c96436460d07cdb99bc0c7a992d624f7ea59"
+    }
+  ]
 }
