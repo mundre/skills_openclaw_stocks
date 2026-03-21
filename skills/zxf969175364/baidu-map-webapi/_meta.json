@@ -3,11 +3,16 @@
   "slug": "baidu-map-webapi",
   "displayName": "baidu-map-webapi",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773980031740,
-    "commit": "https://github.com/openclaw/skills/commit/cb1b7d59aff341287ba7005256ce1ef2a89b4d00"
+    "version": "1.0.5",
+    "publishedAt": 1773981809103,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773980031740,
+      "commit": "https://github.com/openclaw/skills/commit/cb1b7d59aff341287ba7005256ce1ef2a89b4d00"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773641402188,

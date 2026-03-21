@@ -2,13 +2,15 @@
 name: baidu-map-webapi
 description: 百度地图 webapi 开发指南。在编写、审查或调试使用百度地图webAPI的代码时应运用此技能，也适用于直接调用百度地图API获取结果的场景。涵盖：地图位置搜索、POI检索、路线规划、建议出发时间、路线耗时预测、实时路况、行政区划查询、地址坐标转换、沿途交通事件、天气查询、智能推荐上车点等。当用户提及出发时间、导航路线、地点查询、坐标转换、地图相关开发需求时自动触发。
 license: MIT
-version: 1.0.3
+version: 1.0.5
 homepage: https://lbs.baidu.com
-source: https://github.com/baidu-maps/webapi-skills
-env:
-  - name: BAIDU_MAP_AK
-    description: 百度地图开放平台 Access Key，调用所有百度地图 WebAPI 的必需凭证
-    required: true
+repository: https://github.com/baidu-maps/webapi-skills
+metadata:
+  openclaw:
+    requires:
+      bins: ["curl"]
+      env: BMAP_WEBAPI_AK
+    primaryEnv: BMAP_WEBAPI_AK
 ---
 
 # webapi 开发指南
@@ -65,21 +67,20 @@ env:
 - 大模型直接调用高级权限功能（如建议出发时间、未来路线规划）进行演示/体验时，使用体验端点
 - **体验端点仅供功能体验和演示，不可用于开发或生产环境**
 - **均需要AK凭证**
-- **调用体验端点前，必须向用户说明：① 将使用体验端点发起外部 API 调用；② 该调用会消耗用户 AK 的配额；并获得用户明确确认后方可执行**
 
 ### 准则 2：AK 凭证安全处理
 
 AK（Access Key）是使用技能之前的必须参数:
 
-1. 优先读取环境变量 `BAIDU_MAP_AK` 中的 AK
-2. `BAIDU_MAP_AK`为空时, 提示用户:**请先前往[百度地图开放平台](https://lbs.baidu.com/apiconsole/key)申请AK**
+1. 优先读取环境变量 `BMAP_WEBAPI_AK` 中的 AK
+2. `BMAP_WEBAPI_AK`为空时, 提示用户:**请先前往[百度地图开放平台](https://lbs.baidu.com/apiconsole/key)申请`服务端`的AK**
 3. 然后设置为环境变量
 ```
-export BAIDU_MAP_AK="百度地图AK"
+export BMAP_WEBAPI_AK="百度地图AK"
 ```
-4. 使用 references/ 所有能力时的ak参数请使用 `$BAIDU_MAP_AK`, 示例如下:
+4. 使用 references/ 所有能力时的ak参数请使用 `$BMAP_WEBAPI_AK`, 示例如下:
 ```
-curl "https://api.map.baidu.com/place/v3/region?query=美食&region=北京&ak=$BAIDU_MAP_AK"
+curl "https://api.map.baidu.com/place/v3/region?query=美食&region=北京&ak=$BMAP_WEBAPI_AK"
 ```
 
 ### 准则 3：地址/地名统一通过 `address_to_poi` 转换
@@ -196,35 +197,3 @@ UID 通过 `references/address_to_poi.md` 描述的方法获取。
 - 触发意图（什么场景适用）
 - 完整调用链与分步说明
 - 常见错误和变体
-
----
-
-## 安全约束
-
-本节为可执行行为规则，agent 必须遵守：
-
-**外部调用控制**
-- 发起任何外部 API 调用前，必须已获得用户在本次会话中的明确确认（参见准则 2 第 5 条）
-- 使用体验端点前，必须额外告知用户该调用会消耗 AK 配额（参见准则 1）
-- 遇到权限错误（如 status 240）时，引导用户前往[百度地图开放平台控制台](https://lbsyun.baidu.com/)开通对应服务权限，不得尝试使用其他凭证绕过
-
-**凭证处理**
-- AK 只能通过环境变量 `BAIDU_MAP_AK` 获取
-- 禁止将 AK 写入任何文件、日志或输出内容
-- 禁止在生成的代码中硬编码 AK
-
-**外部资源范围声明**
-
-本 skill 涉及的所有外部域名如下，不得访问列表之外的任何外部地址：
-
-| 域名 | 用途 | 性质 |
-|------|------|------|
-| `api.map.baidu.com` | 百度地图 WebAPI 标准端点 | 官方 API |
-| `api.map.baidu.com/map_service/` | 高级功能体验端点 | 官方 API |
-| `lbs.baidu.com` | 百度地图开放平台官网 | 官方文档/控制台 |
-| `mapopen-website-wiki.bj.bcebos.com` | 国内天气城市编码表（CSV） | 百度官方静态资源，仅含数据映射表 |
-| `mapopen-website-wiki.cdn.bcebos.com` | 海外天气城市编码表（XLS） | 百度官方静态资源，仅含数据映射表 |
-
-**来源声明**
-- 本 skill 由百度地图开放平台团队维护，作为 WebAPI 开发指南和代码生成参考
-- 官网：https://lbs.baidu.com
