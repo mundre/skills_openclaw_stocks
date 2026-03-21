@@ -1,211 +1,153 @@
+#!/usr/bin/env python3
 """
-OpenClaw mlx-audio TTS Server
+OpenClaw mlx-audio TTS Server (Lightweight)
 
-HTTP server wrapping mlx-audio TTS functionality.
-Provides OpenAI-compatible /v1/audio/speech endpoint.
+Minimal HTTP server for TTS.
+Uses CLI calls for maximum stability.
 """
 
 import argparse
 import logging
 import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
-from typing import Optional
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel
-import uvicorn
-
-# Import mlx-audio
-try:
-    from mlx_audio.tts.utils import load_model
-    from mlx_audio.tts.generate import generate_audio
-except ImportError as e:
-    print(f"Error: mlx-audio not installed. Run: pip install mlx-audio")
-    print(f"Details: {e}")
-    sys.exit(1)
-
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("mlx-tts-server")
 
-# FastAPI app
-app = FastAPI(
-    title="OpenClaw mlx-audio TTS Server",
-    description="Text-to-Speech server using mlx-audio",
-    version="0.1.0"
-)
-
-# Global model instance
-model = None
-model_name: Optional[str] = None
-lang_code: Optional[str] = None
+MODEL = os.getenv("TTS_MODEL", "mlx-community/Kokoro-82M-bf16")
+LANG_CODE = os.getenv("TTS_LANG_CODE", "a")
 
 
-class SpeechRequest(BaseModel):
-    """OpenAI-compatible speech request"""
-    input: str
-    model: Optional[str] = None
-    voice: Optional[str] = None
-    response_format: Optional[str] = "mp3"
-    speed: Optional[float] = 1.0
-    language: Optional[str] = None
+class TTSHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        logger.info(f"{self.address_string()} - {format % args}")
 
+    def do_GET(self):
+        if self.path == "/health":
+            self.send_json({"status": "healthy", "model": MODEL})
+        elif self.path == "/v1/models":
+            self.send_json({
+                "object": "list",
+                "data": [{"id": MODEL, "object": "model"}]
+            })
+        elif self.path == "/v1/tts/status":
+            self.send_json({"status": "ready", "model": MODEL})
+        else:
+            self.send_error(404)
 
-class ModelInfo(BaseModel):
-    """Model information"""
-    id: str
-    object: str = "model"
-    created: int = 0
-    owned_by: str = "mlx-audio"
+    def do_POST(self):
+        if self.path == "/v1/audio/speech":
+            self.handle_speech()
+        else:
+            self.send_error(404)
 
+    def handle_speech(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            req = json.loads(body)
 
-class ModelsResponse(BaseModel):
-    """Models list response"""
-    object: str = "list"
-    data: list[ModelInfo]
+            text = req.get("input", "")
+            voice = req.get("voice", "af_heart")
+            speed = req.get("speed", 1.0)
+            language = req.get("language", LANG_CODE)
+            output_format = req.get("response_format", "mp3")
 
+            if not text:
+                self.send_error(400, "Text is required")
+                return
 
-@app.on_event("startup")
-async def startup_event():
-    """Load TTS model on startup"""
-    global model, model_name, lang_code
-    
-    logger.info(f"Loading TTS model: {model_name}")
-    try:
-        model = load_model(model_name)
-        logger.info(f"Model loaded successfully: {model_name}")
-    except Exception as e:
-        logger.error(f"Failed to load model: {e}")
-        raise
+            # Generate output path
+            output_dir = Path("/tmp/mlx-tts")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"speech_{os.getpid()}.{output_format}"
 
+            # Call CLI
+            cmd = [
+                "mlx_audio.tts.generate",
+                "--model", req.get("model", MODEL),
+                "--text", text,
+                "--voice", voice,
+                "--speed", str(speed),
+                "--lang_code", language,
+                "--output_path", str(output_path),
+                "--audio_format", output_format
+            ]
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "model": model_name,
-        "ready": model is not None
-    }
+            logger.info(f"Running: {' '.join(cmd)}")
+            subprocess.run(cmd, check=True, capture_output=True)
 
+            if not output_path.exists():
+                # Try wav fallback
+                output_path = output_path.with_suffix(".wav")
 
-@app.get("/v1/models", response_model=ModelsResponse)
-async def list_models():
-    """List available models"""
-    return ModelsResponse(
-        data=[ModelInfo(id=model_name or "unknown")]
-    )
+            if not output_path.exists():
+                self.send_error(500, "Audio not generated")
+                return
 
+            # Send file
+            self.send_response(200)
+            self.send_header("Content-Type", "audio/mpeg")
+            self.send_header("Content-Length", output_path.stat().st_size)
+            self.end_headers()
 
-@app.post("/v1/audio/speech")
-async def generate_speech(request: SpeechRequest):
-    """
-    Generate speech from text.
-    
-    Returns MP3 audio file.
-    """
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
-    try:
-        logger.info(f"Generating speech for text: {request.input[:50]}...")
-        
-        # Use voice from request or default
-        voice = request.voice or "af_heart"
-        
-        # Use language from request or global config
-        language = request.language or lang_code or "a"
-        
-        # Generate output path
-        output_dir = Path("/tmp/mlx-tts")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"speech_{os.getpid()}.mp3"
-        
-        # Generate audio using mlx-audio
-        result = generate_audio(
-            model=model,
-            text=request.input,
-            voice=voice,
-            speed=request.speed,
-            lang_code=language,
-            output_path=str(output_path),
-        )
-        
-        logger.info(f"Speech generated: {output_path}")
-        
-        # Return audio file
-        return FileResponse(
-            path=str(output_path),
-            media_type="audio/mpeg",
-            filename="speech.mp3"
-        )
-        
-    except Exception as e:
-        logger.error(f"Speech generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            with open(output_path, "rb") as f:
+                self.wfile.write(f.read())
 
+            logger.info(f"Sent: {output_path}")
 
-@app.get("/v1/tts/status")
-async def tts_status():
-    """Get TTS server status"""
-    return {
-        "status": "ready" if model is not None else "loading",
-        "model": model_name,
-        "language": lang_code,
-        "uptime": "N/A"  # Could track this
-    }
+        except subprocess.CalledProcessError as e:
+            logger.error(f"CLI failed: {e.stderr}")
+            self.send_error(500, str(e.stderr))
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            self.send_error(500, str(e))
+
+    def send_json(self, data):
+        body = json.dumps(data).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", len(body))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def send_error(self, code, message=""):
+        logger.error(f"Error {code}: {message}")
+        super().send_error(code, message)
 
 
 def main():
-    """Main entry point"""
-    global model_name, lang_code
-    
-    parser = argparse.ArgumentParser(description="OpenClaw mlx-audio TTS Server")
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="mlx-community/Kokoro-82M-bf16",
-        help="TTS model to use"
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=19280,
-        help="Server port"
-    )
-    parser.add_argument(
-        "--lang-code",
-        type=str,
-        default="a",
-        help="Default language code (a=en-US, b=en-GB, z=zh, j=ja, etc.)"
-    )
-    parser.add_argument(
-        "--host",
-        type=str,
-        default="127.0.0.1",
-        help="Server host"
-    )
-    
+    parser = argparse.ArgumentParser(description="TTS Server (Lightweight)")
+    parser.add_argument("--model", default=MODEL, help="TTS model")
+    parser.add_argument("--port", type=int, default=19280, help="Server port")
+    parser.add_argument("--lang-code", default=LANG_CODE, help="Language code")
+    parser.add_argument("--host", default="127.0.0.1", help="Server host")
+
     args = parser.parse_args()
-    
-    model_name = args.model
-    lang_code = args.lang_code
-    
+
+    global MODEL, LANG_CODE
+    MODEL = args.model
+    LANG_CODE = args.lang_code
+
     logger.info(f"Starting TTS server on {args.host}:{args.port}")
-    logger.info(f"Model: {model_name}")
-    logger.info(f"Language: {lang_code}")
-    
-    uvicorn.run(
-        app,
-        host=args.host,
-        port=args.port,
-        log_level="info"
-    )
+    logger.info(f"Model: {MODEL}")
+
+    server = HTTPServer((args.host, args.port), TTSHandler)
+    print(f"Server ready on http://{args.host}:{args.port}", flush=True)
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        logger.info("Shutting down")
+        server.shutdown()
 
 
 if __name__ == "__main__":

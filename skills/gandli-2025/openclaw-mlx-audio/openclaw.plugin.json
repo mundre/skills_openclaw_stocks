@@ -1,5 +1,5 @@
 {
-  "name": "openclaw-mlx-audio",
+  "name": "@openclaw/mlx-audio",
   "version": "0.1.0",
   "displayName": "OpenClaw mlx-audio",
   "description": "Local TTS & STT integration for OpenClaw using mlx-audio - Zero API keys, Zero cloud dependency",

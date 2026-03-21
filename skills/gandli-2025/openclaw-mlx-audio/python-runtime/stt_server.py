@@ -1,311 +1,199 @@
+#!/usr/bin/env python3
 """
-OpenClaw mlx-audio STT Server
+OpenClaw mlx-audio STT Server (Lightweight)
 
-HTTP server wrapping mlx-audio STT (Whisper) functionality.
-Provides OpenAI-compatible /v1/audio/transcriptions endpoint.
+Minimal HTTP server for STT.
+Uses CLI calls for maximum stability.
 """
 
 import argparse
 import logging
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Optional, List
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
+import cgi
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import uvicorn
-
-# Import mlx-audio
-try:
-    from mlx_audio.stt.utils import load
-    from mlx_audio.stt.generate import generate_transcription
-except ImportError as e:
-    print(f"Error: mlx-audio not installed. Run: pip install mlx-audio")
-    print(f"Details: {e}")
-    sys.exit(1)
-
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("mlx-stt-server")
 
-# FastAPI app
-app = FastAPI(
-    title="OpenClaw mlx-audio STT Server",
-    description="Speech-to-Text server using mlx-audio Whisper",
-    version="0.1.0"
-)
-
-# Global model instance
-model = None
-model_name: Optional[str] = None
-language: Optional[str] = None
+MODEL = os.getenv("STT_MODEL", "mlx-community/whisper-large-v3-turbo-asr-fp16")
+LANGUAGE = os.getenv("STT_LANGUAGE", "zh")
 
 
-class TranscriptionResponse(BaseModel):
-    """Transcription response"""
-    text: str
-    language: Optional[str] = None
-    duration: Optional[float] = None
-    segments: Optional[List[dict]] = None
+class STTHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        logger.info(f"{self.address_string()} - {format % args}")
 
-
-class TranslationResponse(BaseModel):
-    """Translation response (Whisper translate task)"""
-    text: str
-    language: Optional[str] = None
-    duration: Optional[float] = None
-
-
-class ModelInfo(BaseModel):
-    """Model information"""
-    id: str
-    object: str = "model"
-    created: int = 0
-    owned_by: str = "mlx-audio"
-
-
-class ModelsResponse(BaseModel):
-    """Models list response"""
-    object: str = "list"
-    data: list[ModelInfo]
-
-
-class VerboseTranscriptionResponse(BaseModel):
-    """Verbose transcription with segments"""
-    text: str
-    segments: List[dict]
-    language: str
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Load STT model on startup"""
-    global model, model_name, language
-    
-    logger.info(f"Loading STT model: {model_name}")
-    try:
-        model = load(model_name)
-        logger.info(f"Model loaded successfully: {model_name}")
-    except Exception as e:
-        logger.error(f"Failed to load model: {e}")
-        raise
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "model": model_name,
-        "ready": model is not None
-    }
-
-
-@app.get("/v1/models", response_model=ModelsResponse)
-async def list_models():
-    """List available models"""
-    return ModelsResponse(
-        data=[ModelInfo(id=model_name or "unknown")]
-    )
-
-
-@app.post("/v1/audio/transcriptions")
-async def transcribe_audio(
-    file: UploadFile = File(..., description="Audio file to transcribe"),
-    model: Optional[str] = Form(None, description="Model to use"),
-    language: Optional[str] = Form(None, description="Language code"),
-    prompt: Optional[str] = Form(None, description="Context prompt"),
-    response_format: Optional[str] = Form("json", description="Response format"),
-    temperature: Optional[float] = Form(0.0, description="Sampling temperature"),
-    timestamp_granularities: Optional[List[str]] = Form(None, description="Timestamp granularities")
-):
-    """
-    Transcribe audio to text.
-    
-    Accepts audio file (mp3, wav, m4a, flac, etc.)
-    Returns transcription text.
-    """
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
-    try:
-        # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-        
-        logger.info(f"Transcribing audio: {file.filename} ({len(content)} bytes)")
-        
-        # Use language from request or global config
-        lang = language or globals()["language"]
-        
-        # Transcribe using mlx-audio
-        result = generate_transcription(
-            model=model,
-            audio=tmp_path,
-            language=lang,
-            task="transcribe",
-            temperature=temperature,
-        )
-        
-        # Clean up temp file
-        try:
-            os.unlink(tmp_path)
-        except Exception as e:
-            logger.warning(f"Failed to clean up temp file: {e}")
-        
-        logger.info(f"Transcription complete: {result.text[:50]}...")
-        
-        # Return based on response_format
-        if response_format == "json":
-            return TranscriptionResponse(
-                text=result.text,
-                language=getattr(result, 'language', lang),
-                duration=getattr(result, 'duration', None),
-                segments=getattr(result, 'segments', None)
-            )
-        elif response_format == "verbose_json":
-            return VerboseTranscriptionResponse(
-                text=result.text,
-                segments=getattr(result, 'segments', []),
-                language=getattr(result, 'language', lang)
-            )
+    def do_GET(self):
+        if self.path == "/health":
+            self.send_json({"status": "healthy", "model": MODEL})
+        elif self.path == "/v1/models":
+            self.send_json({
+                "object": "list",
+                "data": [{"id": MODEL, "object": "model"}]
+            })
+        elif self.path == "/v1/stt/status":
+            self.send_json({"status": "ready", "model": MODEL})
         else:
-            # Plain text
-            return JSONResponse(
-                content={"text": result.text},
-                media_type="text/plain"
-            )
-        
-    except Exception as e:
-        logger.error(f"Transcription failed: {e}")
-        # Clean up temp file on error
-        try:
-            os.unlink(tmp_path)
-        except:
-            pass
-        raise HTTPException(status_code=500, detail=str(e))
+            self.send_error(404)
 
+    def do_POST(self):
+        if self.path == "/v1/audio/transcriptions":
+            self.handle_transcription()
+        else:
+            self.send_error(404)
 
-@app.post("/v1/audio/translations")
-async def translate_audio(
-    file: UploadFile = File(..., description="Audio file to translate"),
-    model: Optional[str] = Form(None, description="Model to use"),
-    prompt: Optional[str] = Form(None, description="Context prompt"),
-    response_format: Optional[str] = Form("json", description="Response format"),
-    temperature: Optional[float] = Form(0.0, description="Sampling temperature")
-):
-    """
-    Translate audio to English text.
-    
-    Accepts audio file, returns English translation.
-    """
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
-    try:
-        # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
+    def handle_transcription(self):
+        content_type = self.headers.get("Content-Type", "")
         
-        logger.info(f"Translating audio: {file.filename} ({len(content)} bytes)")
-        
-        # Translate using mlx-audio (Whisper translate task)
-        result = generate_transcription(
-            model=model,
-            audio=tmp_path,
-            task="translate",
-            temperature=temperature,
-        )
-        
-        # Clean up temp file
+        if "multipart/form-data" not in content_type:
+            self.send_error(400, "Expected multipart/form-data")
+            return
+
+        # Parse multipart
+        _, params = cgi.parse_header(content_type)
+        boundary = params.get("boundary", "")
+        if not boundary:
+            self.send_error(400, "Missing boundary")
+            return
+
+        content_length = int(self.headers.get("Content-Length", 0))
+        form_data = self.rfile.read(content_length)
+
+        # Simple multipart parsing
+        parts = form_data.split(b"--{boundary}".encode())
+        audio_data = None
+        model = MODEL
+        language = LANGUAGE
+
+        for part in parts:
+            if not part.strip():
+                continue
+            
+            # Parse headers
+            header_end = part.find(b"\r\n\r\n")
+            if header_end == -1:
+                continue
+            
+            headers = part[:header_end].decode()
+            body = part[header_end + 4:]
+
+            if 'name="file"' in headers:
+                # Extract filename and data
+                filename_start = headers.find('filename="')
+                if filename_start != -1:
+                    filename_end = headers.find('"', filename_start + 10)
+                    filename = headers[filename_start + 10:filename_end]
+                    audio_data = body.rstrip(b"\r\n--")
+            elif 'name="model"' in headers:
+                model = body.decode().strip()
+            elif 'name="language"' in headers:
+                language = body.decode().strip()
+
+        if not audio_data:
+            self.send_error(400, "No audio file")
+            return
+
         try:
-            os.unlink(tmp_path)
+            # Save to temp file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+                tmp.write(audio_data)
+                tmp_path = tmp.name
+
+            output_base = tempfile.mktemp()
+
+            # Call CLI
+            cmd = [
+                "mlx_audio.stt.generate",
+                "--model", model,
+                "--audio", tmp_path,
+                "--format", "txt",
+                "--output", output_base
+            ]
+
+            if language:
+                cmd.extend(["--language", language])
+
+            logger.info(f"Running: {' '.join(cmd)}")
+            subprocess.run(cmd, check=True, capture_output=True)
+
+            # Read result
+            txt_path = Path(f"{output_base}.txt")
+            text = ""
+            if txt_path.exists():
+                text = txt_path.read_text(encoding="utf-8")
+                txt_path.unlink()
+
+            # Cleanup
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+
+            logger.info(f"Transcription complete: {text[:50]}...")
+
+            # Send result
+            self.send_json({
+                "text": text,
+                "language": language or "auto",
+                "model": model
+            })
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"CLI failed: {e.stderr}")
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+            self.send_error(500, str(e.stderr))
         except Exception as e:
-            logger.warning(f"Failed to clean up temp file: {e}")
-        
-        logger.info(f"Translation complete: {result.text[:50]}...")
-        
-        return TranslationResponse(
-            text=result.text,
-            language="en",  # Translation always returns English
-            duration=getattr(result, 'duration', None)
-        )
-        
-    except Exception as e:
-        logger.error(f"Translation failed: {e}")
-        try:
-            os.unlink(tmp_path)
-        except:
-            pass
-        raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"Error: {e}")
+            self.send_error(500, str(e))
 
+    def send_json(self, data):
+        body = json.dumps(data).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", len(body))
+        self.end_headers()
+        self.wfile.write(body)
 
-@app.get("/v1/stt/status")
-async def stt_status():
-    """Get STT server status"""
-    return {
-        "status": "ready" if model is not None else "loading",
-        "model": model_name,
-        "language": language,
-        "uptime": "N/A"
-    }
+    def send_error(self, code, message=""):
+        logger.error(f"Error {code}: {message}")
+        super().send_error(code, message)
 
 
 def main():
-    """Main entry point"""
-    global model_name, language
-    
-    parser = argparse.ArgumentParser(description="OpenClaw mlx-audio STT Server")
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="mlx-community/whisper-large-v3-turbo-asr-fp16",
-        help="STT model to use"
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=19290,
-        help="Server port"
-    )
-    parser.add_argument(
-        "--language",
-        type=str,
-        default="zh",
-        help="Default language code (zh, en, ja, ko, etc.)"
-    )
-    parser.add_argument(
-        "--host",
-        type=str,
-        default="127.0.0.1",
-        help="Server host"
-    )
-    
+    parser = argparse.ArgumentParser(description="STT Server (Lightweight)")
+    parser.add_argument("--model", default=MODEL, help="STT model")
+    parser.add_argument("--port", type=int, default=19290, help="Server port")
+    parser.add_argument("--language", default=LANGUAGE, help="Default language")
+    parser.add_argument("--host", default="127.0.0.1", help="Server host")
+
     args = parser.parse_args()
-    
-    model_name = args.model
-    language = args.language
-    
+
+    global MODEL, LANGUAGE
+    MODEL = args.model
+    LANGUAGE = args.language
+
     logger.info(f"Starting STT server on {args.host}:{args.port}")
-    logger.info(f"Model: {model_name}")
-    logger.info(f"Language: {language}")
-    
-    uvicorn.run(
-        app,
-        host=args.host,
-        port=args.port,
-        log_level="info"
-    )
+    logger.info(f"Model: {MODEL}")
+
+    server = HTTPServer((args.host, args.port), STTHandler)
+    print(f"Server ready on http://{args.host}:{args.port}", flush=True)
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        logger.info("Shutting down")
+        server.shutdown()
 
 
 if __name__ == "__main__":
