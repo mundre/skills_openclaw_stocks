@@ -1,89 +1,112 @@
 ---
 name: process
-version: "2.0.0"
+version: "3.0.1"
 author: BytesAgain
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
 license: MIT-0
 tags: [process, tool, utility]
-description: "Process - command-line tool for everyday use"
+description: "List, filter, and manage system processes. Use when scanning running tasks, monitoring CPU usage, reporting memory hogs, alerting on runaway processes."
 ---
 
-# Process
+# process
 
-Process manager — list, filter, kill, monitor, and log system processes.
+Process manager.
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `process help` | Show usage info |
-| `process run` | Run main task |
-| `process status` | Check state |
-| `process list` | List items |
-| `process add <item>` | Add item |
-| `process export <fmt>` | Export data |
+### `list`
 
-## Usage
+List processes (filter by name)
 
 ```bash
-process help
-process run
-process status
+scripts/script.sh list [filter]
 ```
 
-## Examples
+### `top`
+
+Top N processes by CPU/memory
 
 ```bash
-process help
-process run
-process export json
+scripts/script.sh top [n]
 ```
 
-## Output
+### `find`
 
-Results go to stdout. Save with `process run > output.txt`.
+Find processes by name
 
-## Configuration
+```bash
+scripts/script.sh find <name>
+```
 
-Set `PROCESS_DIR` to change data directory. Default: `~/.local/share/process/`
+### `tree`
+
+Process tree
+
+```bash
+scripts/script.sh tree [pid]
+```
+
+### `ports`
+
+Show listening ports
+
+```bash
+scripts/script.sh ports [port]
+```
+
+### `watch`
+
+Watch process for 10 seconds
+
+```bash
+scripts/script.sh watch <pid>
+```
+
+### `mem`
+
+Memory details for process
+
+```bash
+scripts/script.sh mem <pid>
+```
+
+### `cpu`
+
+CPU details for process
+
+```bash
+scripts/script.sh cpu <pid>
+```
+
+### `env`
+
+Show process environment
+
+```bash
+scripts/script.sh env <pid>
+```
+
+### `kill`
+
+Send signal to process (default: TERM)
+
+```bash
+scripts/script.sh kill <pid> [signal]
+```
+
+### `stats`
+
+System process statistics
+
+```bash
+scripts/script.sh stats
+```
+
+## Requirements
+
+- bash 4.0+
 
 ---
-*Powered by BytesAgain | bytesagain.com*
-*Feedback & Feature Requests: https://bytesagain.com/feedback*
 
-
-## Features
-
-- Simple command-line interface for quick access
-- Local data storage with JSON/CSV export
-- History tracking and activity logs
-- Search across all entries
-- Status monitoring and health checks
-- No external dependencies required
-
-## Quick Start
-
-```bash
-# Check status
-process status
-
-# View help and available commands
-process help
-
-# View statistics
-process stats
-
-# Export your data
-process export json
-```
-
-## How It Works
-
-Process stores all data locally in `~/.local/share/process/`. Each command logs activity with timestamps for full traceability. Use `stats` to see a summary, or `export` to back up your data in JSON, CSV, or plain text format.
-
-## Support
-
-- Feedback: https://bytesagain.com/feedback/
-- Website: https://bytesagain.com
-- Email: hello@bytesagain.com
-
-Powered by BytesAgain | bytesagain.com
+*Powered by BytesAgain | bytesagain.com | hello@bytesagain.com*

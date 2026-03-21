@@ -3,11 +3,16 @@
   "slug": "process",
   "displayName": "Process",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773664027338,
-    "commit": "https://github.com/openclaw/skills/commit/f11df01d055d267edd530bb6f0118f846e1dd48f"
+    "version": "3.0.1",
+    "publishedAt": 1773914039296,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773664027338,
+      "commit": "https://github.com/openclaw/skills/commit/f11df01d055d267edd530bb6f0118f846e1dd48f"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773661662975,
