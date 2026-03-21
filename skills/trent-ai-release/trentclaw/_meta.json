@@ -1,0 +1,11 @@
+{
+  "owner": "trent-ai-release",
+  "slug": "trentclaw",
+  "displayName": "Trent OpenClaw Security Assessment",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1774029411031,
+    "commit": null
+  },
+  "history": []
+}
