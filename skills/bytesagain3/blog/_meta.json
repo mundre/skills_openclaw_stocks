@@ -3,9 +3,15 @@
   "slug": "blog",
   "displayName": "Blog",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1773663414955,
-    "commit": "https://github.com/openclaw/skills/commit/127d32dff1b1f65aef65f3e87d452260929fa4f0"
+    "version": "2.0.1",
+    "publishedAt": 1773842438483,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1773663414955,
+      "commit": "https://github.com/openclaw/skills/commit/127d32dff1b1f65aef65f3e87d452260929fa4f0"
+    }
+  ]
 }
