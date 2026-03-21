@@ -4,7 +4,7 @@
 
 A skill for [Claude Code](https://claude.ai/claude-code) and [OpenClaw](https://openclaw.ai) that generates stunning, zero-dependency HTML presentations.
 
-**v2.0.0** — Restructured as a progressive disclosure skill: SKILL.md is now a thin command router (~150 lines). Full workflow details, style index, base CSS, and per-style references are loaded on demand — each command loads only what it needs. 21 design presets, Presenter Mode, inline SVG diagrams, custom theme system, PPTX export via Playwright.
+**v2.3.3** — Bug fix: macOS trackpad no longer advances multiple pages per swipe. Replaced deltaY-threshold approach with gap-based momentum detection — macOS sends momentum at ~16ms intervals; a new swipe always arrives after a >80ms gap. All 21 styles updated. **v2.3.2** — Bug fix: mouse wheel scroll now advances slides reliably. **v2.3.1** — Bug fix: arrow keys now render slides correctly. `goTo()` manually toggles `.visible` class to fix IntersectionObserver timing issue during keyboard navigation. PPTX/PNG export decoupled to [kai-html-export](https://github.com/kaisersong/kai-html-export). Progressive disclosure architecture: SKILL.md is a thin command router, full workflow loaded on demand.
 
 English | [简体中文](README.zh-CN.md)
 
@@ -12,46 +12,46 @@ English | [简体中文](README.zh-CN.md)
 
 See what slide-creator produces — open directly in your browser:
 
-- 🇺🇸 [slide-creator intro (English)](https://kaisersong.github.io/slide-creator/demos/intro-en.html) — what the skill is and how it works
-- 🇨🇳 [slide-creator 介绍（中文）](https://kaisersong.github.io/slide-creator/demos/intro-zh.html) — 同上，中文版
+- 🇺🇸 [slide-creator intro (English)](https://kaisersong.github.io/slide-creator/demos/blue-sky-en.html) — what the skill is and how it works
+- 🇨🇳 [slide-creator 介绍（中文）](https://kaisersong.github.io/slide-creator/demos/blue-sky-zh.html) — 同上，中文版
 
 Both demos above use the Blue Sky style. Click any screenshot below to open the live demo:
 
 <table>
 <tr>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/intro-en.html"><img src="demos/screenshots/blue-sky.png" width="240" alt="Blue Sky"/><br/><b>Blue Sky</b> ✨</a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/bold-signal.html"><img src="demos/screenshots/bold-signal.png" width="240" alt="Bold Signal"/><br/><b>Bold Signal</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/electric-studio.html"><img src="demos/screenshots/electric-studio.png" width="240" alt="Electric Studio"/><br/><b>Electric Studio</b></a></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/blue-sky-en.html"><img src="demos/screenshots/blue-sky.png" width="240" alt="Blue Sky"/></a><br/><b>Blue Sky</b> ✨</td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/bold-signal-en.html"><img src="demos/screenshots/bold-signal.png" width="240" alt="Bold Signal"/></a><br/><b>Bold Signal</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/electric-studio-en.html"><img src="demos/screenshots/electric-studio.png" width="240" alt="Electric Studio"/></a><br/><b>Electric Studio</b></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/creative-voltage.html"><img src="demos/screenshots/creative-voltage.png" width="240" alt="Creative Voltage"/><br/><b>Creative Voltage</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/dark-botanical.html"><img src="demos/screenshots/dark-botanical.png" width="240" alt="Dark Botanical"/><br/><b>Dark Botanical</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/notebook-tabs.html"><img src="demos/screenshots/notebook-tabs.png" width="240" alt="Notebook Tabs"/><br/><b>Notebook Tabs</b></a></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/creative-voltage-en.html"><img src="demos/screenshots/creative-voltage.png" width="240" alt="Creative Voltage"/></a><br/><b>Creative Voltage</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/dark-botanical-en.html"><img src="demos/screenshots/dark-botanical.png" width="240" alt="Dark Botanical"/></a><br/><b>Dark Botanical</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/notebook-tabs-en.html"><img src="demos/screenshots/notebook-tabs.png" width="240" alt="Notebook Tabs"/></a><br/><b>Notebook Tabs</b></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/pastel-geometry.html"><img src="demos/screenshots/pastel-geometry.png" width="240" alt="Pastel Geometry"/><br/><b>Pastel Geometry</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/split-pastel.html"><img src="demos/screenshots/split-pastel.png" width="240" alt="Split Pastel"/><br/><b>Split Pastel</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/vintage-editorial.html"><img src="demos/screenshots/vintage-editorial.png" width="240" alt="Vintage Editorial"/><br/><b>Vintage Editorial</b></a></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/pastel-geometry-en.html"><img src="demos/screenshots/pastel-geometry.png" width="240" alt="Pastel Geometry"/></a><br/><b>Pastel Geometry</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/split-pastel-en.html"><img src="demos/screenshots/split-pastel.png" width="240" alt="Split Pastel"/></a><br/><b>Split Pastel</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/vintage-editorial-en.html"><img src="demos/screenshots/vintage-editorial.png" width="240" alt="Vintage Editorial"/></a><br/><b>Vintage Editorial</b></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/neon-cyber.html"><img src="demos/screenshots/neon-cyber.png" width="240" alt="Neon Cyber"/><br/><b>Neon Cyber</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/terminal-green.html"><img src="demos/screenshots/terminal-green.png" width="240" alt="Terminal Green"/><br/><b>Terminal Green</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/swiss-modern.html"><img src="demos/screenshots/swiss-modern.png" width="240" alt="Swiss Modern"/><br/><b>Swiss Modern</b></a></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/neon-cyber-en.html"><img src="demos/screenshots/neon-cyber.png" width="240" alt="Neon Cyber"/></a><br/><b>Neon Cyber</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/terminal-green-en.html"><img src="demos/screenshots/terminal-green.png" width="240" alt="Terminal Green"/></a><br/><b>Terminal Green</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/swiss-modern-en.html"><img src="demos/screenshots/swiss-modern.png" width="240" alt="Swiss Modern"/></a><br/><b>Swiss Modern</b></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/paper-ink.html"><img src="demos/screenshots/paper-ink.png" width="240" alt="Paper &amp; Ink"/><br/><b>Paper &amp; Ink</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/aurora-mesh.html"><img src="demos/screenshots/aurora-mesh.png" width="240" alt="Aurora Mesh"/><br/><b>Aurora Mesh</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/enterprise-dark.html"><img src="demos/screenshots/enterprise-dark.png" width="240" alt="Enterprise Dark"/><br/><b>Enterprise Dark</b></a></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/paper-ink-en.html"><img src="demos/screenshots/paper-ink.png" width="240" alt="Paper &amp; Ink"/></a><br/><b>Paper &amp; Ink</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/aurora-mesh-en.html"><img src="demos/screenshots/aurora-mesh.png" width="240" alt="Aurora Mesh"/></a><br/><b>Aurora Mesh</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/enterprise-dark-en.html"><img src="demos/screenshots/enterprise-dark.png" width="240" alt="Enterprise Dark"/></a><br/><b>Enterprise Dark</b></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/glassmorphism.html"><img src="demos/screenshots/glassmorphism.png" width="240" alt="Glassmorphism"/><br/><b>Glassmorphism</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/neo-brutalism.html"><img src="demos/screenshots/neo-brutalism.png" width="240" alt="Neo-Brutalism"/><br/><b>Neo-Brutalism</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/chinese-chan.html"><img src="demos/screenshots/chinese-chan.png" width="240" alt="Chinese Chan"/><br/><b>Chinese Chan</b></a></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/glassmorphism-en.html"><img src="demos/screenshots/glassmorphism.png" width="240" alt="Glassmorphism"/></a><br/><b>Glassmorphism</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/neo-brutalism-en.html"><img src="demos/screenshots/neo-brutalism.png" width="240" alt="Neo-Brutalism"/></a><br/><b>Neo-Brutalism</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/chinese-chan-en.html"><img src="demos/screenshots/chinese-chan.png" width="240" alt="Chinese Chan"/></a><br/><b>Chinese Chan</b></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/data-story.html"><img src="demos/screenshots/data-story.png" width="240" alt="Data Story"/><br/><b>Data Story</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/intro-modern-newspaper.html"><img src="demos/screenshots/modern-newspaper.png" width="240" alt="Modern Newspaper"/><br/><b>Modern Newspaper</b></a></td>
-<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/intro-neo-retro-dev.html"><img src="demos/screenshots/neo-retro-dev.png" width="240" alt="Neo-Retro Dev Deck"/><br/><b>Neo-Retro Dev Deck</b></a></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/data-story-en.html"><img src="demos/screenshots/data-story.png" width="240" alt="Data Story"/></a><br/><b>Data Story</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/modern-newspaper-en.html"><img src="demos/screenshots/modern-newspaper.png" width="240" alt="Modern Newspaper"/></a><br/><b>Modern Newspaper</b></td>
+<td align="center"><a href="https://kaisersong.github.io/slide-creator/demos/neo-retro-dev-en.html"><img src="demos/screenshots/neo-retro-dev.png" width="240" alt="Neo-Retro Dev Deck"/></a><br/><b>Neo-Retro Dev Deck</b></td>
 </tr>
 </table>
 
@@ -65,13 +65,15 @@ Every demo uses the same content (slide-creator's own introduction) — making i
 - **21 design presets** — Bold Signal, Blue Sky, Modern Newspaper, Neo-Retro Dev Deck, and more — each with named layout variations
 - **Content-type routing** — Automatically suggests the best style for pitch decks, dev tools, data reports, editorial, and more
 - **Style discovery** — Generate 3 visual previews before committing to a style
+- **Play Mode** — Press `F5` or click the ▶ button (bottom-right) to enter fullscreen presentation mode; slides scale to fill any screen; controls auto-hide; press `Esc` to exit
 - **Presenter Mode** — Press `P` to open a synced speaker window: notes, timer, slide counter, prev/next nav; window height auto-adapts to notes length
+- **Notes editing panel** — In edit mode (`E` key), a notes bar appears at the bottom; click the title bar to collapse/expand; edits sync live to the presenter window
 - **Inline SVG diagrams** — Flowcharts, timelines, bar charts, comparison grids, org charts — no Mermaid.js, no external libs
 - **Custom theme system** — Drop a `reference.md` into `themes/your-theme/` to add your own design preset; `starter.html` optional for complex visual systems
 - **Blue Sky starter template** — Complete boilerplate so models never mis-implement the visual system
 - **Image pipeline** — Auto-evaluate and process assets (Pillow)
 - **PPT import** — Convert `.pptx` files to web presentations
-- **PPTX export** — `--export pptx` via Playwright + system Chrome
+- **PPTX / PNG export** — via [kai-html-export](https://github.com/kaisersong/kai-html-export) (`clawhub install kai-html-export`)
 - **Inline editing** — Edit text in-browser, Ctrl+S to save
 - **Viewport fitting** — Every slide fits exactly in 100vh, no scrolling ever
 - **Bilingual** — Chinese / English support
@@ -100,7 +102,7 @@ git clone https://github.com/kaisersong/slide-creator ~/.openclaw/skills/slide-c
 
 > ClawHub page: https://clawhub.ai/skills/kai-slide-creator
 
-OpenClaw will automatically detect and install dependencies (Pillow, python-pptx, playwright) on first use.
+OpenClaw will automatically detect and install dependencies (Pillow) on first use.
 
 ---
 
@@ -109,30 +111,33 @@ OpenClaw will automatically detect and install dependencies (Pillow, python-pptx
 ```
 /slide-creator --plan       # Analyze content + resources/, create PLANNING.md
 /slide-creator --generate   # Generate HTML presentation from PLANNING.md
-/slide-creator --export pptx  # Export to PowerPoint
 /slide-creator              # Start from scratch (interactive style discovery)
+/kai-html-export            # Export to PPTX or PNG (separate skill)
 ```
 
 ## Requirements
 
 | Dependency | Purpose | Auto-installed (OpenClaw) |
 |-----------|---------|--------------------------|
-| Python 3 + `Pillow` | Image processing | ✅ via uv |
-| Python 3 + `python-pptx` | PPT import/export | ✅ via uv |
-| Python 3 + `playwright` | PPTX export (uses system Chrome) | ✅ via uv |
+| Python 3 + `Pillow` | Image processing during generation | ✅ via uv |
 
-Node.js is not required. PPTX export uses your existing Chrome/Edge/Brave — no 300MB Chromium download.
+Node.js is not required.
 
 **Claude Code users** — install manually:
 ```bash
-pip install Pillow python-pptx playwright
+pip install Pillow
+```
+
+For PPTX or PNG export, install [kai-html-export](https://github.com/kaisersong/kai-html-export):
+```bash
+clawhub install kai-html-export   # or: pip install playwright python-pptx
 ```
 
 ## Output
 
 Single-file `presentation.html` — zero dependencies, runs entirely in the browser.
 
-Optionally exports `PRESENTATION_SCRIPT.md` (speaker notes) and `.pptx`.
+Optionally generates `PRESENTATION_SCRIPT.md` (speaker notes). For PPTX/PNG export, use [kai-html-export](https://github.com/kaisersong/kai-html-export).
 
 ---
 
@@ -152,6 +157,26 @@ Every generated presentation includes a built-in text editor — no need to touc
 - **`Escape`** — exit edit mode without saving
 
 **To enable inline editing**, answer "Yes" when slide-creator asks during setup (it's the recommended default). If you generated a presentation without it, just re-run `/slide-creator --generate` and opt in.
+
+---
+
+## Play Mode
+
+Every generated presentation includes a fullscreen play mode — no extra software needed.
+
+**How to enter:**
+
+- Press **`F5`** anywhere in the presentation
+- Or hover the bottom-right corner → click the **▶** button that appears
+
+**In play mode:**
+
+- Slides scale to fill the entire screen at 1440×900 (letterboxed on other ratios)
+- Navigation controls and slide counter auto-hide; hover to reveal them
+- All keyboard shortcuts still work: arrow keys, space bar, `P` for presenter window
+- Press **`Esc`** or `F5` again to exit
+
+**Presenter window** — press **`P`** to open a separate synced window showing speaker notes, elapsed time, current / total slide count, and prev/next controls. Useful when presenting from a laptop connected to a projector.
 
 ---
 
