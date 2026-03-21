@@ -1,0 +1,11 @@
+{
+  "owner": "cyecho-io",
+  "slug": "gold-news-sentiment",
+  "displayName": "Gold News Sentiment",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773984408292,
+    "commit": null
+  },
+  "history": []
+}
