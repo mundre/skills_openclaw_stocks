@@ -3,9 +3,15 @@
   "slug": "realtime-web-search",
   "displayName": "Realtime Web Search",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773687411810,
-    "commit": "https://github.com/openclaw/skills/commit/a2cdc4ed70014bb8e7031a7aa2e12ac78181da54"
+    "version": "1.0.1",
+    "publishedAt": 1773829968499,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773687411810,
+      "commit": "https://github.com/openclaw/skills/commit/a2cdc4ed70014bb8e7031a7aa2e12ac78181da54"
+    }
+  ]
 }

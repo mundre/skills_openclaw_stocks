@@ -1,10 +1,12 @@
 ---
 name: realtime-web-search
 description: "Realtime web search and fact-checking via enhanced Baidu routes with fallback and traceable outputs. Use when users ask 查一下/搜一下/最新消息/实时信息 or need cross-source verification. Supports query-based retrieval and result synthesis. Not for private-database queries. ｜增强版百度搜索：适合“查一下/搜一下/最新消息”等实时检索与交叉核验；不用于私有库查询。"
-metadata: { "openclaw": { "emoji": "🔎", "requires": { "bins": ["python3"], "env": ["BAIDU_API_KEY"] }, "primaryEnv": "BAIDU_API_KEY" } }
+metadata: { "openclaw": { "emoji": "🔎", "requires": { "anyBins": ["python", "python3", "py"], "env": ["BAIDU_API_KEY"] }, "primaryEnv": "BAIDU_API_KEY" } }
 ---
 
 # Realtime Web Search
+
+> Cross-platform Python: on Windows prefer `py -3.11`; on Linux/macOS prefer `python3`; if plain `python` already points to Python 3, it also works.
 
 Search live web information via a Baidu-based fallback chain with traceable outputs.
 Use this skill for latest news, changing facts, and cross-source verification when you want speed, fallback safety, and an audit trail.
@@ -28,7 +30,7 @@ Use this skill when you want to:
 Run from the installed skill directory:
 
 ```bash
-python3 scripts/search.py '{"query":"OpenClaw 最新版本","mode":"search"}'
+py -3.11 scripts/search.py '{"query":"OpenClaw 最新版本","mode":"search"}'
 ```
 
 Use `mode=search` for speed and stability. Use `mode=summary` only when you explicitly need a longer summary.
@@ -100,30 +102,30 @@ Use a different skill when you need:
 
 快速自检：
 ```bash
-python3 scripts/search.py '{"query":"OpenClaw 最新版本","mode":"search"}'
+py -3.11 scripts/search.py '{"query":"OpenClaw 最新版本","mode":"search"}'
 ```
 若返回结果或结构化错误码（而非鉴权错误），说明凭据已生效。
 
 ## Usage
 
 ```bash
-python3 scripts/search.py '<JSON>'
+py -3.11 scripts/search.py '<JSON>'
 ```
 
 示例：
 
 ```bash
 # 1) 自动路由
-python3 scripts/search.py '{"query":"今天 AI 领域重要发布"}'
+py -3.11 scripts/search.py '{"query":"今天 AI 领域重要发布"}'
 
 # 2) 搜索优先（推荐）
-python3 scripts/search.py '{"query":"OpenClaw 最新版本","mode":"search"}'
+py -3.11 scripts/search.py '{"query":"OpenClaw 最新版本","mode":"search"}'
 
 # 3) 摘要优先
-python3 scripts/search.py '{"query":"总结本周新能源车新闻","mode":"summary"}'
+py -3.11 scripts/search.py '{"query":"总结本周新能源车新闻","mode":"summary"}'
 
 # 4) 限定站点 + 最近一周
-python3 scripts/search.py '{
+py -3.11 scripts/search.py '{
   "query":"VIN 解析 API",
   "mode":"search",
   "search_recency_filter":"week",
