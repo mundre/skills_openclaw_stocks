@@ -1,123 +1,114 @@
-# 模型列表与参数
+# Live Model Metadata
 
-数据来源：`GET https://api.myreels.ai/api/v1/models/api`
+The single source of truth for available models, parameter definitions, defaults, options, and field descriptions is:
 
-> API 路径中使用 `modelName`，不是 `slug`。例：`POST /generation/nano-banana-pro`
+`GET https://api.myreels.ai/api/v1/models/api`
 
----
+Verified on March 18, 2026:
 
-## 图像生成（t2i / i2i）
+- currently accessible without `Authorization`
+- currently does not require `VITE_API_KEY`
 
-### Nano Banana2
-- modelName：`nano-banana2`
-- 标签：`t2i` `i2i`
-- 预估费用：$0.0872 / 次
+If your runtime can access this endpoint, prefer the live response over any static model list.
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `prompt` | string | ✅ | — | 提示词，最长 2000 字符 |
-| `images` | images | — | — | 参考图片，最多 14 张（用于 i2i） |
-| `imageSize` | select | — | `1K` | 分辨率：`0.5K` `1K` `2K` `4K` |
-| `aspectRatio` | select | — | `1:1` | 宽高比：`1:1` `2:3` `3:2` `3:4` `4:3` `4:5` `5:4` `9:16` `16:9` `21:9` |
+### Cost Display Rule
 
----
+Use `estimatedCost` as the final user-facing cost field.
 
-### Nano Banana Pro
-- modelName：`nano-banana-pro`
-- 标签：`t2i` `i2i`
-- 预估费用：$0.1890 / 次
+- display field: `estimatedCost`
+- display unit: `points`
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `prompt` | string | ✅ | — | 提示词，最长 2000 字符 |
-| `images` | images | — | — | 参考图片（用于 i2i） |
-| `imageSize` | select | — | `1K` | 分辨率：`1K` `2K` `4K` |
-| `aspectRatio` | select | — | `1:1` | 宽高比：`1:1` `2:3` `3:2` `3:4` `4:3` `4:5` `5:4` `9:16` `16:9` `21:9` |
+### Quick Request
 
----
+```bash
+curl -s "https://api.myreels.ai/api/v1/models/api"
+```
 
-### GPT Image 1.5
-- modelName：`gpt-image-1.5`
-- 标签：`t2i` `i2i`
-- 预估费用：$0.0420 / 次
+### Minimal JavaScript Example
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `prompt` | string | ✅ | — | 提示词 |
-| `images` | images | — | — | 参考图片（用于 i2i） |
-| `n` | slider | — | `1` | 生成数量 |
-| `size` | select | — | `1:1` | 宽高比：`1:1` `3:2` `2:3` |
+```typescript
+const res = await fetch('https://api.myreels.ai/api/v1/models/api');
+if (!res.ok) throw new Error(`Load models failed: HTTP ${res.status}`);
 
----
+const payload = await res.json();
+for (const item of payload?.data?.items ?? []) {
+  console.log(item.modelName, item.name, item.tags, item.estimatedCost, 'points');
+}
+```
 
-### Wan2.6 T2I
-- modelName：`wan2.6-t2i`
-- 标签：`t2i`
-- 预估费用：$0.2100 / 次
+### Minimal Python Example
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `prompt` | string | ✅ | — | 提示词 |
-| `negative_prompt` | string | — | — | 负向提示词 |
-| `size` | select | — | `1280*1280` | 分辨率：`1280*1280` `1104*1472` `1472*1104` `960*1696` `1696*960` |
-| `n` | slider | — | `1` | 生成数量 |
-| `seed` | number | — | — | 随机种子 |
-| `prompt_extend` | switch | — | `true` | 自动扩展提示词 |
+```python
+import requests
 
----
+r = requests.get("https://api.myreels.ai/api/v1/models/api")
+r.raise_for_status()
+for item in r.json().get("data", {}).get("items", []):
+    print(
+        item.get("modelName"),
+        item.get("name"),
+        item.get("tags"),
+        item.get("estimatedCost"),
+        "points",
+    )
+```
 
-### Wan2.6 I2I
-- modelName：`wan2.6-image`
-- 标签：`i2i`
-- 预估费用：$0.2100 / 次
+### Important Top-Level Fields
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `images` | images | ✅ | — | 参考图片 |
-| `prompt` | string | ✅ | — | 提示词 |
-| `enable_interleave` | switch | ✅ | — | 启用交错模式 |
-| `negative_prompt` | string | — | — | 负向提示词 |
-| `size` | select | — | `1280*1280` | 分辨率：`1024*1024` `1280*1280` `800*1200` `1200*800` `960*1280` `1280*960` `720*1280` `1280*720` `1344*576` |
-| `n` | slider | — | `1` | 生成数量 |
-| `seed` | number | — | — | 随机种子 |
+- `modelName`
+  - the real identifier used in `POST /generation/:modelName`
+- `name`
+  - display name
+- `tags`
+  - capability tags such as `t2i`, `i2i`, `i2e`, `t2v`, `i2v`, `t2a`, `m2a`
+- `description`
+  - model-level description and usage notes
+- `estimatedCost`
+  - estimated display points
+- `displayConfig.estimatedTime`
+  - estimated generation time
+- `estimatedPoints`
+  - optional backend-provided points field; prefer `estimatedCost` for public display
+- `userInputSchema`
+  - full parameter schema for this model
 
----
+### How To Read `userInputSchema`
 
-## 视频生成（t2v）
+Each entry in `userInputSchema` is a request parameter. These fields matter most:
 
-### Wan2.6 T2V
-- modelName：`wan2.6-t2v`
-- 标签：`t2v`
-- 预估费用：$3.1500 / 次
+- `type`
+- `label`
+- `description`
+- `required`
+- `default` / `defaultValue`
+- `options`
+- `min` / `max` / `step`
+- `placeholder`
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `prompt` | string | ✅ | — | 提示词 |
-| `negative_prompt` | string | — | — | 负向提示词 |
-| `size` | select | — | `1920*1080` | 分辨率：`1280*720` `1920*1080` |
-| `duration` | slider | — | `5` | 时长（秒） |
-| `shot_type` | select | — | `single` | 镜头类型：`single`（单镜头）`multi`（多镜头） |
-| `audio_url` | audio | — | — | 背景音频 URL |
+When mapping natural-language instructions to parameters, prioritize `label` and `description`.
 
----
+Example:
 
-### Google Veo 3.1
-- modelName：`veo3.1-pro`
-- 标签：`t2v`
+- user says: "stronger motion"
+- live schema may show:
+  - `strength.label = "Motion Strength"` or an equivalent localized label
+  - `strength.description` explains that larger values increase motion freedom
 
----
+Without the live description, agents can easily map the request incorrectly.
 
-## 语音生成（t2a）
+### Recommended Selection Flow
 
-### Qwen-TTS
-- modelName：`qwen3-tts-instruct-flash`
-- 标签：`t2a`
-- 预估费用：$0.0210 / 次
+1. Call `GET /api/v1/models/api`.
+2. Filter models by `tags`.
+3. Inspect `name`, `description`, `estimatedCost`, and `estimatedTime`.
+4. Read `userInputSchema`.
+5. Build the request body from `label`, `description`, `default`, and `options`.
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `prompt` | string | ✅ | — | 要转换的文本 |
-| `voice` | select | ✅ | `Cherry` | 音色：`Cherry` `Serena` `Ethan` `Chelsie` `Momo` `Vivian` `Moon` `Maia` `Kai` `Nofish` `Bella` `Mia` `Mochi` `Bellona` `Vincent` `Bunny` `Neil` `Elias` `Arthur` `Nini` `Ebona` `Seren` `Pip` `Stella` |
-| `language_type` | select | — | `Auto` | 语言：`Chinese` `English` `Japanese` `German` `Italian` `Portuguese` `Spanish` `Korean` `French` `Russian` |
-| `instructions` | string | — | — | 语音风格指令 |
-| `optimize_instructions` | select | — | — | 是否优化指令：`true` `false` |
+### Polling Guidance
+
+- image generation / image editing: every 10 seconds
+- video generation: every 30 seconds to 1 minute
+
+### Fallback
+
+If your runtime cannot access `api.myreels.ai`, use the rest of the local reference docs only as a fallback. When live access is available, the live schema should take priority.
