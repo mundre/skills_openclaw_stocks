@@ -1,0 +1,11 @@
+{
+  "owner": "zlin87468-maker",
+  "slug": "linz-openclaw-updater",
+  "displayName": "OpenClaw Updater (LinZ)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773940545011,
+    "commit": null
+  },
+  "history": []
+}
