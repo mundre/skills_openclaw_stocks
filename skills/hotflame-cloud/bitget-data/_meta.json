@@ -1,0 +1,11 @@
+{
+  "owner": "hotflame-cloud",
+  "slug": "bitget-data",
+  "displayName": "Bitget Data",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773950946241,
+    "commit": null
+  },
+  "history": []
+}
