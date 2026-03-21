@@ -1,0 +1,11 @@
+{
+  "owner": "fackee",
+  "slug": "analyze-video-by-qwen",
+  "displayName": "analyze video by qwen",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773989964770,
+    "commit": null
+  },
+  "history": []
+}
