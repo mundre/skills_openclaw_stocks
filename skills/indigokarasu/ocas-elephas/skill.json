@@ -1,8 +1,7 @@
 {
   "name": "ocas-elephas",
-  "version": "1.1.0",
-  "description": "Long-term knowledge graph (Chronicle) maintenance. Use when the system needs to query world knowledge, ingest structured signals from journals, resolve entity identity, consolidate candidates into confirmed facts, or generate pattern-based inferences. Trigger phrases: 'what does Chronicle know about', 'run a consolidation pass', 'resolve these duplicate entities'. Do not use for social graph queries (Weave) or web research (Sift).",
+  "version": "2.0.0",
+  "description": "Long-term knowledge graph (Chronicle) maintenance. Ingests structured signals from system journals, resolves entity identity, promotes confirmed facts, and generates inferences. Use when querying world knowledge, ingesting new signals from skill journals, running consolidation passes, resolving entity duplicates, or promoting candidates to confirmed facts.",
   "author": "Indigo Karasu",
-  "email": "mx.indigo.karasu@gmail.com",
-  "skill_type": "system"
+  "email": "mx.indigo.karasu@gmail.com"
 }

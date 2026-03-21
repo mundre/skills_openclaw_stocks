@@ -3,9 +3,15 @@
   "slug": "ocas-elephas",
   "displayName": "Ocas Elephas",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1773729137608,
-    "commit": "https://github.com/openclaw/skills/commit/5a6dd4822bf6f386a1aecf226da3ba940b4774a7"
+    "version": "2.0.0",
+    "publishedAt": 1773811791972,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1773729137608,
+      "commit": "https://github.com/openclaw/skills/commit/5a6dd4822bf6f386a1aecf226da3ba940b4774a7"
+    }
+  ]
 }
