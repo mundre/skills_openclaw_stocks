@@ -1,58 +1,35 @@
 ---
 name: doc2slides
-version: 1.0.3
-description: "Convert documents to slides. PDF/Word/Markdown → PPT. Runs on your machine, no external APIs."
+version: 1.1.0
+description: "PDF to PowerPoint slides."
 license: MIT-0
 author: lifei68801
-tags: [ppt, slides, document, conversion]
+tags: [ppt, slides, document]
+
+metadata:
+  permissions:
+    - file:read
+    - file:write
+  behavior:
+    network: install-only
+    telemetry: none
+    credentials: none
 ---
 
 # Doc2Slides
 
-Convert PDF, Word, Markdown documents to PowerPoint slides.
+Create slides from documents.
 
-## Quick Start
+Local processing. Works with PDF, Word, Markdown.
 
-```bash
-# Install dependencies (one-time setup)
-pip install playwright python-pptx pdfplumber python-docx
-playwright install chromium
+## Use
 
-# Generate slides
-python scripts/main.py input.pdf output_dir
-```
+1. Install dependencies
+2. Ready documents
+3. Generate slides
 
-## Features
-
-- **Multiple Formats**: PDF, Word, Markdown supported
-- **Professional Design**: 18 layout templates
-- **No External APIs**: All processing on your machine
-
-## How It Works
-
-1. Reads document content
-2. Generates HTML slides
-3. Converts to images (Playwright)
-4. Assembles PowerPoint file
-
-## Requirements
+## Setup
 
 - Python 3.9+
-- Chromium browser (via `playwright install`)
-
-## Metadata
-
-```yaml
-metadata:
-  openclaw:
-    requires:
-      bins: ["python3"]
-      pypi: ["playwright", "python-pptx", "pdfplumber", "python-docx"]
-    permissions:
-      - "file:read"
-      - "file:write"
-    behavior:
-      external_api: none
-      telemetry: none
-      credentials: none
-```
+- Browser engine
+- Python packages for file handling

@@ -1,11 +1,17 @@
 {
   "owner": "lifei68801",
   "slug": "doc2slides",
-  "displayName": "Doc2slides",
+  "displayName": "Doc2Slides",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773644697124,
-    "commit": "https://github.com/openclaw/skills/commit/a90bfd46de151e77a5ab558687d13b8ad88be4c8"
+    "version": "1.1.0",
+    "publishedAt": 1774002084237,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773644697124,
+      "commit": "https://github.com/openclaw/skills/commit/a90bfd46de151e77a5ab558687d13b8ad88be4c8"
+    }
+  ]
 }
