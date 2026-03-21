@@ -16,10 +16,27 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 _ENV_FILE = ROOT_DIR / ".env"
 
 
+_ENV_TEMPLATE = """\
+# SenseAudio TTS API Key (required)
+SENSEAUDIO_API_KEY=
+
+# Feishu / Lark credentials (optional, for send-voice feature)
+# FEISHU_APP_ID=cli_xxx
+# FEISHU_APP_SECRET=xxx
+# FEISHU_CHAT_ID=oc_xxx
+"""
+
+
+def _ensure_env_file():
+    """Create .env template if it does not exist."""
+    if _ENV_FILE.exists():
+        return
+    _ENV_FILE.write_text(_ENV_TEMPLATE, encoding="utf-8")
+
+
 def _load_dotenv():
     """Load .env file into os.environ (simple key=value parser, no dependency)."""
-    if not _ENV_FILE.exists():
-        return
+    _ensure_env_file()
     for line in _ENV_FILE.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
@@ -31,7 +48,7 @@ def _load_dotenv():
         value = value.strip()
         if not key:
             continue
-        os.environ[key] = value
+        os.environ.setdefault(key, value)
 
 
 _load_dotenv()
@@ -687,31 +704,33 @@ def synthesize(args):
         raise SystemExit("Input text is empty.")
 
     output = Path(args.output)
-    debug_log_path = Path(args.debug_log) if args.debug_log else output.with_suffix(f"{output.suffix}.debug.json")
+    debug_log_path = Path(args.debug_log) if args.debug_log else None
 
     try:
         data, payload, attempt_logs = _attempt_tts(api_key, args, text_variants, debug_log_path)
     except SystemExit:
-        print(f"[LanguageHelper] failure debug log written to: {debug_log_path}", file=sys.stderr)
+        if debug_log_path:
+            print(f"[LanguageHelper] failure debug log written to: {debug_log_path}", file=sys.stderr)
         raise
 
-    debug_payload = {
-        "api_url": API_URL,
-        "text_file": str(Path(args.text_file).resolve()),
-        "output": str(output.resolve()),
-        "voice_id_requested": args.voice_id,
-        "voice_id_used": payload["voice_setting"]["voice_id"],
-        "speed": args.speed,
-        "pitch": args.pitch,
-        "vol": args.vol,
-        "format": args.format,
-        "sample_rate": args.sample_rate,
-        "bitrate": args.bitrate,
-        "channel": args.channel,
-        "text_variants": text_variants,
-        "attempts": attempt_logs,
-    }
-    _write_debug_log(debug_log_path, debug_payload)
+    if debug_log_path:
+        debug_payload = {
+            "api_url": API_URL,
+            "text_file": str(Path(args.text_file).resolve()),
+            "output": str(output.resolve()),
+            "voice_id_requested": args.voice_id,
+            "voice_id_used": payload["voice_setting"]["voice_id"],
+            "speed": args.speed,
+            "pitch": args.pitch,
+            "vol": args.vol,
+            "format": args.format,
+            "sample_rate": args.sample_rate,
+            "bitrate": args.bitrate,
+            "channel": args.channel,
+            "text_variants": text_variants,
+            "attempts": attempt_logs,
+        }
+        _write_debug_log(debug_log_path, debug_payload)
 
     base_resp = data.get("base_resp") or {}
     audio_hex = ((data.get("data") or {}).get("audio") or "").strip()
@@ -728,7 +747,6 @@ def synthesize(args):
         "audio_length": (data.get("extra_info") or {}).get("audio_length"),
         "audio_sample_rate": (data.get("extra_info") or {}).get("audio_sample_rate"),
         "status_msg": base_resp.get("status_msg"),
-        "debug_log": str(debug_log_path),
     }
     print(json.dumps(info, ensure_ascii=False))
 

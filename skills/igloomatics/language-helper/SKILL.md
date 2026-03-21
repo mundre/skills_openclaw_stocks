@@ -4,10 +4,6 @@ description: "Use this skill whenever the user wants to learn how to say somethi
 requires:
   env:
     - SENSEAUDIO_API_KEY
-  optional_env:
-    - FEISHU_APP_ID
-    - FEISHU_APP_SECRET
-    - FEISHU_CHAT_ID
   bins:
     - ffmpeg
 ---
@@ -46,27 +42,27 @@ requires:
 
 首次运行前检查：
 
-- `skills/language-helper/.env`
-- `ffmpeg` 是否已安装
+1. 首次运行时 skill 会自动创建 `skills/language-helper/.env` 模板，用户需填写对应的值
+2. 确认 `ffmpeg` 已安装
 
-如 `.env` 不存在，skill 会自动创建模板。若配置缺失，提示用户前往以下路径自行填写：
+`.env` 示例：
 
 ```bash
-skills/language-helper/.env
+SENSEAUDIO_API_KEY=your_key
 
-需要检查的环境变量：
-
-SENSEAUDIO_API_KEY
+# 以下为飞书语音条功能（可选，不用飞书可不填）
+FEISHU_APP_ID=cli_xxx
+FEISHU_APP_SECRET=xxx
+FEISHU_CHAT_ID=oc_xxx
+```
 
 检查 ffmpeg：
 
+```bash
 which ffmpeg
-
-若未安装，提示用户自行安装：
-
-macOS：brew install ffmpeg
-
-Linux：sudo apt install ffmpeg
+# 若未安装：
+# macOS: brew install ffmpeg
+# Linux: sudo apt install ffmpeg
 ```
 
 ## 内置音色映射
@@ -165,7 +161,7 @@ https://api.senseaudio.cn/v1/t2a_v2
 2. **请求体变体**：对每种文本变体，依次尝试 full → no-audio-setting → no-speed-pitch → minimal 四种请求体。
 3. **自动重试**：对 5xx 及网络错误自动重试最多 3 次，带指数退避。
 4. **音色降级**：若 `403 no access to the specified voice`，自动回退到 `child_0001_b` / `male_0004_a` / `male_0018_a`。
-5. **调试日志**：每次请求自动生成 `.debug.json`，记录所有尝试的请求体、响应和错误。
+5. **调试日志**：仅在显式传入 `--debug-log` 参数时才生成 `.debug.json`，默认不写入任何日志文件。
 
 ### 方式一：直接文本播报（推荐）
 
