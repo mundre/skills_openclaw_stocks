@@ -1,8 +1,10 @@
 {
   "name": "zke-trading",
-  "version": "1.0.0",
+  "version": "1.0.13",
   "private": true,
-  "description": "OpenClaw plugin for ZKE Exchange trading tools",
+  "description": "ZKE Exchange Official AI tools for spot, futures and wallet operations.",
+  "author": "ZKE Exchange",
+  "homepage": "https://support.zke.com/skills/",
   "type": "module",
   "main": "dist/index.js",
   "files": [

@@ -3,9 +3,15 @@
   "slug": "zke-trading",
   "displayName": "ZKE Exchange Trading Skill",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1773944184622,
-    "commit": "https://github.com/openclaw/skills/commit/f7e1b48ae985e0e0e6b3f144a7172521c365e652"
+    "version": "1.0.13",
+    "publishedAt": 1773951510116,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1773944184622,
+      "commit": "https://github.com/openclaw/skills/commit/f7e1b48ae985e0e0e6b3f144a7172521c365e652"
+    }
+  ]
 }

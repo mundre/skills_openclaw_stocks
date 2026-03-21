@@ -23,50 +23,32 @@ from tools import withdraw_service
 from tools import ws_service
 from tools import transfer_service
 
-
-CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
-
-
-def load_config() -> dict:
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
 def build_spot_client() -> ZKEClient:
-    config = load_config()
-    spot_conf = config["spot"]
-    api_key = os.environ.get("ZKE_API_KEY") or spot_conf.get("api_key", "")
-    api_secret = os.environ.get("ZKE_SECRET_KEY") or spot_conf.get("api_secret", "")
+    api_key = os.environ.get("ZKE_API_KEY", "")
+    api_secret = os.environ.get("ZKE_SECRET_KEY", "")
     
     return ZKEClient(
-        base_url=spot_conf["base_url"],
+        base_url="https://openapi.zke.com",
         api_key=api_key,
         api_secret=api_secret,
-        recv_window=spot_conf.get("recv_window", 5000),
+        recv_window=5000,
     )
 
 
 def build_futures_client() -> ZKEClient:
-    config = load_config()
-    fut_conf = config["futures"]
-    api_key = os.environ.get("ZKE_API_KEY") or fut_conf.get("api_key", "")
-    api_secret = os.environ.get("ZKE_SECRET_KEY") or fut_conf.get("api_secret", "")
+    api_key = os.environ.get("ZKE_API_KEY", "")
+    api_secret = os.environ.get("ZKE_SECRET_KEY", "")
     
     return ZKEClient(
-        base_url=fut_conf["base_url"],
+        base_url="https://futuresopenapi.zke.com",
         api_key=api_key,
         api_secret=api_secret,
-        recv_window=fut_conf.get("recv_window", 5000),
+        recv_window=5000,
     )
 
 
 def get_ws_url() -> str:
-    config = load_config()
-    ws_conf = config.get("ws", {})
-    url = ws_conf.get("url")
-    if not url:
-        raise ValueError("config.json 中缺少 ws.url")
-    return url
+    return "wss://ws.zke.com/kline-api/ws"
 
 
 def _sanitize_data(data: Any) -> Any:
