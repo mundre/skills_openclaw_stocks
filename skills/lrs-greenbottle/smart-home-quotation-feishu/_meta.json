@@ -1,0 +1,11 @@
+{
+  "owner": "lrs-greenbottle",
+  "slug": "smart-home-quotation-feishu",
+  "displayName": "Smart Home Quotation Feishu",
+  "latest": {
+    "version": "3.0.0",
+    "publishedAt": 1774081766584,
+    "commit": null
+  },
+  "history": []
+}
