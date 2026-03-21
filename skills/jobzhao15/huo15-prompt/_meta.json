@@ -3,9 +3,15 @@
   "slug": "huo15-prompt",
   "displayName": "火一五提示词",
   "latest": {
-    "version": "1.5.0",
-    "publishedAt": 1773900347708,
-    "commit": "https://github.com/openclaw/skills/commit/8a698cd9afb7da2129e786d9a189312f33778e3e"
+    "version": "1.8.0",
+    "publishedAt": 1773905798449,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.5.0",
+      "publishedAt": 1773900347708,
+      "commit": "https://github.com/openclaw/skills/commit/8a698cd9afb7da2129e786d9a189312f33778e3e"
+    }
+  ]
 }
