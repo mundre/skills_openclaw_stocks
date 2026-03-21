@@ -3,9 +3,15 @@
   "slug": "background-remover-claw-skill",
   "displayName": "Background Remover Claw Skill",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773644230951,
-    "commit": "https://github.com/openclaw/skills/commit/3dcd13c1d2fd975d75aab61f91b423748d5c8f33"
+    "version": "1.1.0",
+    "publishedAt": 1773972344811,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773644230951,
+      "commit": "https://github.com/openclaw/skills/commit/3dcd13c1d2fd975d75aab61f91b423748d5c8f33"
+    }
+  ]
 }

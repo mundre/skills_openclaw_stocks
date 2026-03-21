@@ -1,114 +1,94 @@
-![banner](./banner.webp)
+# Background Remover
 
-<!--skill-metadata
-name: background-remover-claw-skill
-description: Remove backgrounds from AI-generated images in one command. Pass a picture UUID and get back a clean transparent-background image URL.
-version: 1.0.0
-metadata:
-  openclaw:
-    requires:
-      env: [NETA_TOKEN]
-      bins: [node]
-    primaryEnv: NETA_TOKEN
-    emoji: "✂️"
--->
-
-# Background Remover Claw Skill
-
-> Core tool: `node bgremove.js` — wraps the background removal API, no extra dependencies required.
-
-Remove backgrounds from AI-generated images in one command. Pass a picture UUID, get back a clean cutout.
+AI-powered ai background remover image generation, backed by the Neta talesofai API. Provide a text prompt and receive a direct image URL in seconds.
 
 ---
 
-## 0. Initialization
+## Install
 
-On trigger, **immediately output**:
-```
-✂️ Background remover ready. Give me a picture UUID or paste an image URL.
+**Via npx skills:**
+```bash
+npx skills add BarbaraLedbettergq/background-remover-claw-skill
 ```
 
-Token check (silent): reads from `NETA_TOKEN` env or `~/.openclaw/workspace/.env`.
+**Via ClawHub:**
+```bash
+clawhub install background-remover-claw-skill
+```
 
 ---
 
-## 1. Usage
+## Usage
 
 ```bash
-node bgremove.js remove <picture_uuid>
-# stderr: ✂️  Removing background from: <uuid>...
-# stderr: ⏳ Task submitted: xxx
-# stdout: {"status":"SUCCESS","url":"https://...","task_uuid":"...","source_uuid":"..."}
+# Basic — uses default prompt
+node backgroundremoverclaw.js
+
+# Custom prompt
+node backgroundremoverclaw.js "product photo, white background removed, transparent PNG"
+
+# Specify size
+node backgroundremoverclaw.js "floating sneaker" --size portrait
+
+# Reference an existing image by UUID
+node backgroundremoverclaw.js "remove background" --ref <picture_uuid>
+
+# Pass token inline
+node backgroundremoverclaw.js "studio shot cutout" --token YOUR_NETA_TOKEN
 ```
 
-**Trigger conditions:**
-- User says: remove background / cut out / transparent background / cutout / no background
-- User shares a picture UUID after generating an image
+The script prints a single image URL to stdout on success.
 
 ---
 
-## 2. Chaining with Image Generation
+## Options
 
-Works great as a two-step pipeline:
+| Flag | Values | Default | Description |
+|------|--------|---------|-------------|
+| `--size` | `square`, `portrait`, `landscape`, `tall` | `square` | Output image dimensions |
+| `--token` | string | — | Neta API token (overrides env/file) |
+| `--ref` | picture_uuid | — | Reference image UUID for inherit_params |
 
-```bash
-# Step 1 — generate image
-node imagegen.js gen "your prompt" --char "character" --size portrait
-# → {"url":"...","task_uuid":"abc123-..."}
+### Size dimensions
 
-# Step 2 — remove background
-node bgremove.js remove abc123-...
-# → {"status":"SUCCESS","url":"...transparent cutout..."}
-```
-
----
-
-## 3. Display Result
-
-On success, output the URL on its own line:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━
-✂️ Background removed!
-{image_url}
-━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-Quick buttons:
-- `Generate new image 🎨` → `@{bot_name} generate an image`
-- `Remove another ✂️` → `@{bot_name} remove background from <uuid>`
+| Name | Width × Height |
+|------|---------------|
+| `square` | 1024 × 1024 |
+| `portrait` | 832 × 1216 |
+| `landscape` | 1216 × 832 |
+| `tall` | 704 × 1408 |
 
 ---
 
-## 4. Error Handling
+## Token setup
 
-| Error | Message |
-|-------|---------|
-| Token missing | "Add `NETA_TOKEN=...` to `~/.openclaw/workspace/.env`" |
-| status=FAILURE | ⚠️ Removal failed — try a different image |
-| status=TIMEOUT | ⏳ Timed out — retry with the same UUID |
+The script resolves `NETA_TOKEN` in this order:
 
----
+1. `--token` CLI flag
+2. `NETA_TOKEN` environment variable
+3. `~/.openclaw/workspace/.env` — line matching `NETA_TOKEN=...`
+4. `~/developer/clawhouse/.env` — line matching `NETA_TOKEN=...`
 
-## CLI Reference
-
-```bash
-node bgremove.js remove <picture_uuid>
-```
-
-**Output (stdout, JSON):**
-```json
-{
-  "status": "SUCCESS",
-  "url": "https://oss.talesofai.cn/picture/<task_uuid>.webp",
-  "task_uuid": "...",
-  "source_uuid": "<input_uuid>"
-}
-```
-
-## Setup
-
-Add your API token to `~/.openclaw/workspace/.env`:
+**Recommended:** add your token to `~/.openclaw/workspace/.env`:
 ```
 NETA_TOKEN=your_token_here
 ```
+
+---
+
+## Examples
+
+```bash
+# Square cutout (default)
+node backgroundremoverclaw.js "remove background, transparent cutout, clean edges"
+
+# Portrait product shot
+node backgroundremoverclaw.js "isolated product, no background" --size portrait
+
+# Landscape banner crop
+node backgroundremoverclaw.js "floating object transparent" --size landscape
+```
+
+---
+
+Built with Claude Code · Powered by Neta

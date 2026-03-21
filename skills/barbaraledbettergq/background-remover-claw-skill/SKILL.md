@@ -1,50 +1,26 @@
 ---
 name: background-remover-claw-skill
-description: Remove backgrounds from AI-generated images in one command. Pass a picture UUID and get back a clean transparent-background image URL.
-version: 1.0.0
-metadata:
-  openclaw:
-    requires:
-      env:
-        - NETA_TOKEN
-      bins:
-        - node
-    primaryEnv: NETA_TOKEN
-    emoji: "✂️"
-    homepage: https://github.com/BarbaraLedbettergq/background-remover-claw-skill
+description: Generate ai background remover images with AI — powered by Neta talesofai API.
+tools: Bash
 ---
 
-# Background Remover Claw Skill
+# Background Remover
 
-Remove backgrounds from AI-generated images in one command.
+Generate stunning ai background remover images from a text description. Get back a direct image URL instantly.
 
-## Usage
+## When to use
+Use when someone asks to generate or create ai background remover images.
 
+## Quick start
 ```bash
-node bgremove.js remove <picture_uuid>
+node backgroundremoverclaw.js "your description here"
 ```
 
-## Workflow
+## Options
+- `--size` — `portrait`, `landscape`, `square`, `tall` (default: `square`)
+- `--style` — `anime`, `cinematic`, `realistic` (default: `realistic`)
 
-Works great chained after `image-generation-claw-skill`:
-
-1. Generate an image → get a `picture_uuid`
-2. Run `bgremove.js remove <picture_uuid>` → get a clean cutout
-
-## Output (JSON)
-
-```json
-{
-  "status": "SUCCESS",
-  "url": "https://oss.talesofai.cn/picture/<task_uuid>.webp",
-  "task_uuid": "...",
-  "source_uuid": "..."
-}
-```
-
-## Setup
-
-Add your API token to `~/.openclaw/workspace/.env`:
-```
-NETA_TOKEN=your_token_here
+## Install
+```bash
+npx skills add BarbaraLedbettergq/background-remover-claw-skill
 ```
