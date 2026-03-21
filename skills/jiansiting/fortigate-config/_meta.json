@@ -1,0 +1,11 @@
+{
+  "owner": "jiansiting",
+  "slug": "fortigate-config",
+  "displayName": "Fortigate Configuration Skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773979133606,
+    "commit": null
+  },
+  "history": []
+}
