@@ -1,34 +1,19 @@
-# Gougoubi Create Condition Skill
+# Gougoubi Create Condition
 
-Reusable skill package for creating conditions under an existing Gougoubi proposal:
+Use this skill when a Gougoubi proposal already exists and the user wants to add one condition from minimal input.
 
-- Target: Gougoubi proposal detail create-condition flow
-- Use case: AI agent browser automation or EVM contract path
-- Goal: deterministic defaults and stable output from minimal input
+Best for:
 
-## Prerequisite
+- proposal id plus condition title only
+- deterministic deadline and trade-deadline defaults
+- normalized condition creation payloads
 
-- Configure and connect an available BNB chain wallet address in the agent runtime before using this skill.
+Not for:
 
-## CLI install
+- creating a brand-new proposal
+- activation, settlement, or reward flows
 
-Install from local repo clone:
-
-```bash
-bash scripts/install-gougoubi-create-condition-skill.sh
-```
-
-Install from GitHub (using Codex skill installer):
-
-```bash
-~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo <owner>/<repo> \
-  --path skills/gougoubi-create-condition
-```
-
-After install, restart Codex/Cursor agent runtime to pick up the new skill.
-
-## Required input (user)
+Typical input:
 
 ```json
 {
@@ -36,12 +21,3 @@ After install, restart Codex/Cursor agent runtime to pick up the new skill.
   "conditionName": "Will Team A win the match?"
 }
 ```
-
-## What it standardizes
-
-- Minimal input schema (`proposalId` + `conditionName`)
-- Proposal resolution before create
-- Deadline default from proposal deadline
-- Trade deadline default to deadline minus 1 hour with valid clamp
-- Canonical `createConditions(...)` argument order
-- Normalized success/failure output shape

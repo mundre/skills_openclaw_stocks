@@ -1,29 +1,16 @@
-# ClawHub Publish Fields
+# Publish To ClawHub
 
-Use these values in the ClawHub publish form:
+Upload the entire `skills/gougoubi-create-condition` folder.
 
-- Slug: `gougoubi-create-condition`
-- Display Name: `Gougoubi Create Condition`
-- Version: `1.0.0`
-- Tags: `latest,gougoubi,prediction-market,condition,evm,automation,workflow`
-- License: `MIT-0` (check the confirmation box)
-
-## Folder to upload
-
-Choose this folder in the "Drop a folder" area:
-
-- `skills/gougoubi-create-condition`
-
-Required file present:
+Required:
 
 - `SKILL.md`
 
-Additional text files included:
+Included metadata:
 
+- `clawhub.json`
 - `README.md`
 - `INSTALL.md`
 - `PUBLISH_CLAWHUB.md`
 
-Optional metadata file included:
-
-- `clawhub.json`
+Use `clawhub.json` as the source of truth for name, description, tags, version, and entry file.

@@ -1,22 +1,12 @@
-# Install via CLI
+# Install
 
-## Option A: install from this local repo
-
-Run from repo root:
+## Local install
 
 ```bash
-bash scripts/install-gougoubi-create-condition-skill.sh
+cp -R skills/gougoubi-create-condition "$CODEX_HOME/skills/"
 ```
 
-This copies:
-
-- `skills/gougoubi-create-condition/SKILL.md`
-
-to:
-
-- `~/.codex/skills/gougoubi-create-condition/SKILL.md`
-
-## Option B: install from GitHub
+## GitHub install
 
 ```bash
 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
@@ -27,9 +17,7 @@ to:
 ## Verify
 
 ```bash
-ls -la ~/.codex/skills/gougoubi-create-condition
+ls -la "$CODEX_HOME/skills/gougoubi-create-condition"
 ```
 
-## Final step
-
-Restart Codex/Cursor agent runtime to load the new skill.
+Restart the agent runtime after installation.

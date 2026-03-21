@@ -3,9 +3,15 @@
   "slug": "gougoubi-create-condition",
   "displayName": "Gougoubi Create Condition",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773643664711,
-    "commit": "https://github.com/openclaw/skills/commit/1b8479ec80f651e663cfef3e602f0bb7e658c1e9"
+    "version": "1.0.1",
+    "publishedAt": 1773835172853,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773643664711,
+      "commit": "https://github.com/openclaw/skills/commit/1b8479ec80f651e663cfef3e602f0bb7e658c1e9"
+    }
+  ]
 }

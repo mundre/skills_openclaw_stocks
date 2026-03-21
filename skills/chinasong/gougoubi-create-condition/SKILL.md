@@ -1,19 +1,32 @@
 ---
 name: gougoubi-create-condition
-description: Create Gougoubi proposal conditions from minimal input (proposalId + conditionName) with deterministic defaults for deadline/tradeDeadline, validation, and transaction submission. Use when users ask to create a condition for an existing proposal on Gougoubi.
-metadata: {"clawdbot":{"emoji":"🧩","os":["darwin","linux","win32"]}}
+description: Create a Gougoubi proposal condition from minimal input with deterministic defaults for deadline, trade deadline, normalization, and transaction submission. Use when users want to add conditions to an existing proposal.
+metadata:
+  pattern: generator
+  interaction: single-turn
+  domain: gougoubi-pbft
+  outputs: structured-json
+  clawdbot:
+    emoji: "🧩"
+    os: ["darwin", "linux", "win32"]
 ---
 
 # Gougoubi Create Condition
 
-Create a new condition for an existing Gougoubi proposal from structured input.
+Use this skill to create a condition under an existing Gougoubi proposal from the smallest practical input.
 
-## Run Conditions
+## Use This Skill When
 
-- Agent runtime must be configured with a usable BNB chain wallet address.
-- Wallet must be connected before submitting any on-chain transaction.
+- The user wants to add one or more conditions to an existing proposal.
+- The user only provides proposal identifier and condition title.
+- The agent should auto-fill default dates and flags.
 
-## Minimal Input (User Only)
+## Do Not Use This Skill When
+
+- The user wants to create a new proposal. Use `gougoubi-create-prediction`.
+- The user wants activation, result submission, or reward claiming.
+
+## Minimal Input
 
 ```json
 {
@@ -22,55 +35,44 @@ Create a new condition for an existing Gougoubi proposal from structured input.
 }
 ```
 
-## Proposal And Date Defaults
+## Defaults
 
-The skill must follow create-condition dialog default policy:
+- Resolve `proposalId` to `proposalAddress`.
+- `deadlineDateTime`: proposal deadline.
+- `deadlineTimezone`: user locale, fallback `UTC`.
+- `tradeDeadlineDateTime`: `deadlineDateTime - 1 hour`, clamped to a valid future time.
+- `tradeDeadlineTimezone`: same as `deadlineTimezone`.
+- `conditionImageUrl`: empty string.
+- `conditionRules`: empty string.
+- `skills`: empty string.
+- `isNormalized`: `true`.
 
-- Resolve `proposalId` to proposal contract address (`proposalAddress`) and fetch proposal detail.
-- `deadlineDateTime` default: proposal deadline (`proposalDeadline`) in UTC ISO.
-- `deadlineTimezone` default: user's local IANA timezone; fallback `UTC`.
-- `tradeDeadlineDateTime` default: `deadlineDateTime - 1 hour` (general policy).
-- `tradeDeadlineTimezone` default: same as `deadlineTimezone`.
+## Generator Flow
 
-Default safety clamp:
+Step 1: Validate minimal input.
 
-- `deadlineDateTime` must be greater than now.
-- `tradeDeadlineDateTime` must be greater than now and not later than `deadlineDateTime`.
-- If `deadlineDateTime - 1 hour` is not valid, set trade deadline to the nearest valid value that keeps `tradeDeadlineDateTime <= deadlineDateTime` (typically equal to `deadlineDateTime` when close to now).
+Step 2: Resolve proposal and load proposal deadline.
 
-## Agent Auto-Fills
+Step 3: Generate all default date fields and clamp invalid values.
 
-The skill auto-fills non-required fields:
+Step 4: Convert datetimes to unix seconds.
 
-- `conditionImageUrl`: empty string by default
-- `conditionRules`: empty string by default
-- `skills`: empty string by default
-- `isNormalized`: `true` by default
+Step 5: Validate final payload:
+- `conditionName` non-empty
+- `deadline > now`
+- `tradeDeadline > now`
+- `tradeDeadline <= deadline`
 
-## Deterministic Steps
+Step 6: Submit the canonical contract call in this order:
+1. `conditionName`
+2. `deadline`
+3. `tradeDeadline`
+4. `conditionImageUrl`
+5. `conditionRules`
+6. `skills`
+7. `isNormalized`
 
-1. Validate minimal input (`proposalId`, `conditionName`).
-2. Resolve `proposalAddress` from `proposalId`.
-3. Load proposal detail and derive default condition deadline from proposal deadline.
-4. Set timezone defaults (local timezone, fallback `UTC`).
-5. Set trade deadline default to condition deadline minus 1 hour, then clamp to valid range.
-6. Convert `deadlineDateTime` and `tradeDeadlineDateTime` to unix seconds.
-7. Validate:
-   - `conditionName` non-empty
-   - `deadline > now`
-   - `tradeDeadline > now`
-   - `tradeDeadline <= deadline`
-8. Ensure wallet is connected.
-9. Submit contract call in canonical order:
-   1) `conditionName`
-   2) `deadline`
-   3) `tradeDeadline`
-   4) `conditionImageUrl`
-   5) `conditionRules`
-   6) `skills`
-   7) `isNormalized`
-10. Wait transaction confirmation.
-11. Return normalized result.
+Step 7: Wait for confirmation and return the normalized payload.
 
 ## Output
 
@@ -95,7 +97,7 @@ The skill auto-fills non-required fields:
 }
 ```
 
-Failure shape:
+Failure:
 
 ```json
 {
@@ -108,6 +110,5 @@ Failure shape:
 
 ## Boundaries
 
-- Do not use private credentials or private hosts.
-- Do not auto-accept wallet signatures.
-- Do not bypass user confirmation for irreversible on-chain actions.
+- Never bypass wallet confirmation.
+- Keep defaults deterministic and explain them in output when relevant.

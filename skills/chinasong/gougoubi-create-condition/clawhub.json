@@ -1,8 +1,8 @@
 {
   "name": "gougoubi-create-condition",
   "displayName": "Gougoubi Create Condition",
-  "tagline": "Create condition with 2 required inputs",
-  "description": "Create Gougoubi condition from proposalId + conditionName. Requires configured and connected BNB wallet. Auto-fills dialog-style deadline defaults and sets trade deadline to deadline-1h (with valid clamp).",
+  "tagline": "Create a Gougoubi condition from minimal input",
+  "description": "Use when a Gougoubi proposal already exists and the user wants to add a condition from proposalId plus conditionName, with deterministic defaults for deadline and trade deadline.",
   "category": "crypto",
   "tags": [
     "latest",
@@ -11,7 +11,9 @@
     "condition",
     "evm",
     "automation",
-    "workflow"
+    "workflow",
+    "generator",
+    "pbft"
   ],
   "version": "1.0.0",
   "license": "MIT-0",
