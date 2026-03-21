@@ -1,0 +1,11 @@
+{
+  "owner": "roojenkins",
+  "slug": "uplo-food-safety",
+  "displayName": "Uplo Food Safety",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774010782192,
+    "commit": null
+  },
+  "history": []
+}
