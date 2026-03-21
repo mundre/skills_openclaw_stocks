@@ -1,0 +1,11 @@
+{
+  "owner": "aipoch-ai",
+  "slug": "faq-generator",
+  "displayName": "Faq Generator",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1773984787648,
+    "commit": null
+  },
+  "history": []
+}
