@@ -1,0 +1,11 @@
+{
+  "owner": "zero2ai-hub",
+  "slug": "skill-smc-multi-strategy-paper-trader",
+  "displayName": "SMC Multi-Strategy Paper Trader",
+  "latest": {
+    "version": "2.1.0",
+    "publishedAt": 1774048430691,
+    "commit": null
+  },
+  "history": []
+}
