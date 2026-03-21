@@ -3,11 +3,16 @@
   "slug": "kai-report-creator",
   "displayName": "Report Creator",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1773743293823,
-    "commit": "https://github.com/openclaw/skills/commit/981030b9a80468be7853bdcd70f048394581df7d"
+    "version": "1.2.3",
+    "publishedAt": 1773895537963,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1773743293823,
+      "commit": "https://github.com/openclaw/skills/commit/981030b9a80468be7853bdcd70f048394581df7d"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773671270565,
