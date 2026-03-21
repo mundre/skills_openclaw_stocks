@@ -1,0 +1,11 @@
+{
+  "owner": "roojenkins",
+  "slug": "uplo-finance",
+  "displayName": "Uplo Finance",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774010768088,
+    "commit": null
+  },
+  "history": []
+}
