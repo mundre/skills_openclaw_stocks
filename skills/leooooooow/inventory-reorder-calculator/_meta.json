@@ -3,9 +3,15 @@
   "slug": "inventory-reorder-calculator",
   "displayName": "Inventory Reorder Calculator",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773659366451,
-    "commit": "https://github.com/openclaw/skills/commit/5bae18dcccf4d0af32fc657b66c89ec5a6b4883b"
+    "version": "1.0.1",
+    "publishedAt": 1773840144145,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773659366451,
+      "commit": "https://github.com/openclaw/skills/commit/5bae18dcccf4d0af32fc657b66c89ec5a6b4883b"
+    }
+  ]
 }

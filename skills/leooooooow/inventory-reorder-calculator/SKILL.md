@@ -7,6 +7,27 @@ description: Estimate ecommerce reorder timing and quantity using demand, lead t
 
 补货不是“快没了再下单”，而是提前算出风险和时间窗口。
 
+## 先交互，再计算
+
+开始时先问：
+1. 你们现在想算的是：
+   - reorder point
+   - reorder quantity
+   - stockout risk window
+   - 大促前备货量
+2. 你们平时怎么设 safety stock？
+3. lead time 是固定值还是波动区间？
+4. 是否要考虑 MOQ、现金约束、季节性或活动影响？
+5. 要沿用现有逻辑，还是让我给推荐补货框架？
+
+## Python script guidance
+
+当用户给出结构化数据后：
+- 生成 Python 脚本完成补货点 / 补货量计算
+- 展示需求、交期、安全库存假设
+- 输出风险区间
+- 返回可复用脚本
+
 ## 解决的问题
 
 很多库存问题不是不会卖，而是：
@@ -35,10 +56,12 @@ description: Estimate ecommerce reorder timing and quantity using demand, lead t
 
 ## 工作流
 
-1. 估算补货周期内需求。
-2. 加上安全库存缓冲。
-3. 计算 reorder point。
-4. 给出建议补货量和风险提示。
+1. 明确补货逻辑和风险目标。
+2. 估算补货周期内需求。
+3. 加上安全库存缓冲。
+4. 计算 reorder point。
+5. 给出建议补货量和风险提示。
+6. 返回可复用 Python 脚本。
 
 ## 输出格式
 
@@ -46,6 +69,7 @@ description: Estimate ecommerce reorder timing and quantity using demand, lead t
 2. Reorder point
 3. 建议补货量
 4. 风险区间与建议
+5. Python 脚本
 
 ## 质量标准
 
@@ -53,6 +77,7 @@ description: Estimate ecommerce reorder timing and quantity using demand, lead t
 - 区分补货点和补货量。
 - 能支持日常运营决策，而不是只给公式。
 - 对波动风险有提醒。
+- 未确认口径前不假装精确。
 
 ## 资源
 
