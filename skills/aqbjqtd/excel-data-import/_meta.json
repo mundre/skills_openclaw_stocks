@@ -3,9 +3,15 @@
   "slug": "excel-data-import",
   "displayName": "Excel Data Import",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773769151627,
-    "commit": "https://github.com/openclaw/skills/commit/43142239eb1fd9f09939522a12bf337a1e74a658"
+    "version": "2.1.0",
+    "publishedAt": 1773841685012,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773769151627,
+      "commit": "https://github.com/openclaw/skills/commit/43142239eb1fd9f09939522a12bf337a1e74a658"
+    }
+  ]
 }

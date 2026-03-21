@@ -5,41 +5,37 @@ description: >
   Use when the user asks to: (1) import data from Excel/CSV into a template,
   (2) batch-process multiple files in a directory, (3) merge/consolidate data from multiple sources,
   (4) map and transform columns with validation rules, (5) do incremental data updates on existing spreadsheets.
+  当用户要求导入Excel、CSV导入、表格数据导入、Excel数据合并、批量处理Excel、字段映射、数据校验、
+  表头自动检测、增量更新Excel、多sheet合并时使用此技能。
   Supports Chinese field names, multi-layer merged cell headers, auto header detection,
   CSV (auto-encoding), custom validators, and multi-source imports.
 ---
 
 # Excel Data Import
 
-Configuration-driven data import from Excel (.xlsx) and CSV files with field mapping, validation, batch processing, and incremental updates.
+Configuration-driven data import from Excel and CSV files with field mapping, validation, and batch processing.
 
 ## Prerequisites
 
 - Python 3.8+
-- Dependencies: `pip3 install openpyxl pyyaml`
-- Source files in `.xlsx`, `.xls`, `.xlsm`, `.ods`, or `.csv` format
-- YAML configuration file
+- **Required**: `pip3 install openpyxl pyyaml`
+- **Optional**: `pip3 install python-calamine` (for .xls legacy format)
 
 ## Quick Start
 
-### 1. Create a config file (`import_config.yaml`)
-
 ```yaml
+# import_config.yaml
 task_name: "人员信息导入"
-
 source:
   file_path: "data/source.xlsx"
   sheet_name: "Sheet1"
   header_row: 1
   key_field: "身份证号"
-
 target:
-  file_path: "templates/template.xlsx"
+  file_path: "output/result.xlsx"
   sheet_name: "人员信息"
   header_row: 2
   data_start_row: 3
-  output_path: "output/result.xlsx"
-
 field_mappings:
   - source: "姓名"
     target: "员工姓名"
@@ -51,161 +47,67 @@ field_mappings:
   - source: "部门"
     target: "所属部门"
     default: "待分配"
-
 error_handling:
   backup: true
-  backup_path: "backups/"
 ```
-
-### 2. Run the import
 
 ```bash
 python3 scripts/excel_import.py import_config.yaml
-python3 scripts/excel_import.py import_config.yaml --dry-run   # 预览模式
-python3 scripts/excel_import.py import_config.yaml --verbose    # 详细输出
-python3 scripts/excel_import.py import_config.yaml --no-backup  # 跳过备份
+python3 scripts/excel_import.py import_config.yaml --dry-run   # preview only
 ```
 
 ## Import Modes
 
-### Single File (default)
+| Mode | Source Config | Use Case |
+|------|--------------|----------|
+| Single file | `source.file_path` | One-to-one import |
+| Directory batch | `source.type: "directory"` | Process all files in a folder |
+| Multi-source | `sources: [...]` | Merge from multiple files |
+| CSV | `.csv` file_path | Auto-encoding detection (UTF-8/GBK/GB2312) |
+| Legacy .xls | `.xls` file_path | Requires `python-calamine` |
+| Auto header | `header_row: "auto"` | Detect header in complex sheets |
 
-Standard one-to-one import from source to target template.
+For full parameter docs, see [data-mapping-guide.md](references/data-mapping-guide.md).
 
-```yaml
-source:
-  file_path: "data/source.xlsx"
-  sheet_name: "Sheet1"
-  header_row: 1
-  key_field: "学号"
-```
+## Key Features
 
-### CSV Import
+- **Incremental update**: Match by `key_field`, update existing or append new rows
+- **Multi-layer merged headers**: Auto-detect and expand merged cell values
+- **Validation rollback**: Failed rows are skipped entirely (no partial writes)
+- **Source deduplication**: Duplicate keys across files are merged
+- **Auto-create target**: Template generated from field_mappings if missing
 
-Supports `.csv` files with auto-encoding detection (UTF-8, GBK, GB2312, Latin-1) and auto-delimiter detection (comma, semicolon, tab).
+## Built-in Transforms & Validators
 
-```yaml
-source:
-  file_path: "data/source.csv"
-  header_row: 1
-  key_field: "学号"
-```
+**Transforms**: `strip`, `upper`, `lower`, `title`, `int`, `float`, `date`
 
-### Legacy Format (.xls/.xlsm)
+**Validators**: `required`, `not_empty`, `id_card`, `phone`, `email`, `numeric`, `range`, `regex`, `length`
 
-Requires `python-calamine` (`pip3 install python-calamine`). Falls back gracefully if not installed.
-
-```yaml
-source:
-  file_path: "data/legacy.xls"
-  header_row: 1
-  key_field: "学号"
-```
-
-### Directory Batch
-
-Process all `.xlsx`/`.csv` files in a directory:
-
-```yaml
-source:
-  type: "directory"
-  directory: "data/imports/"
-  pattern: "*.xlsx"
-  header_row: 1
-  key_field: "学号"
-```
-
-### Multi-Source
-
-Multiple source files with optional per-source field mappings:
-
-```yaml
-sources:
-  - file_path: "input/hr.xlsx"
-    sheet_name: "员工"
-    field_mappings: [...]  # optional per-source overrides
-  - file_path: "input/finance.xlsx"
-    sheet_name: "薪资"
-```
-
-### Auto Header Detection
-
-Set `header_row: "auto"` to automatically detect the header row (supports multi-layer merged headers):
-
-```yaml
-source:
-  file_path: "data/complex.xlsx"
-  header_row: "auto"
-  key_field: "学号"
-target:
-  file_path: "output/template.xlsx"
-  header_row: "auto"
-```
-
-### Auto-Create Target Template
-
-If the target file doesn't exist, it will be automatically created from `field_mappings` + `extra_headers`.
-
-## Field Mapping
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `source` | string | Source field name |
-| `target` | string | Target field name |
-| `required` | bool | Fail if empty |
-| `default` | any | Fallback value |
-| `transform` | string | Transform function name |
-| `validate` | string | Validation rule name |
-| `transform_params` | object | Params for transform |
-| `validate_params` | object | Params for validator |
-
-## Built-in Transforms
-
-`strip`, `upper`, `lower`, `title`, `int`, `float`, `date`
-
-Date transform auto-detects common formats (`2024-01-15`, `2024/01/15`, `20240115`, etc.):
-
-```yaml
-- source: "入职日期"
-  target: "参加工作时间"
-  transform: "date"
-  transform_params:
-    output_format: "%Y年%m月%d日"
-```
-
-## Built-in Validators
-
-`required`, `not_empty`, `id_card` (18/15位), `phone`, `email`, `numeric`, `range`, `regex`, `length`
-
-```yaml
-- source: "年龄"
-  target: "年龄"
-  validate: "range"
-  validate_params:
-    min: 18
-    max: 65
-```
+For advanced usage, see [advanced-features.md](references/advanced-features.md).
 
 ## CLI Options
 
 | Option | Description |
 |--------|-------------|
-| `--dry-run` | Preview mode: analyze and validate without writing any files |
+| `--dry-run` | Preview mode, no file writes |
 | `--verbose` | Detailed per-record output |
 | `--no-backup` | Skip target file backup |
 
-## Key Features
+## Reference Documents
 
-- **Multi-layer merged headers**: Auto-detect and expand merged cell values across header rows
-- **Incremental update**: Match by `key_field`, update existing rows or append new ones
-- **Validation rollback**: If any field fails validation, the entire row is skipped (no partial writes)
-- **Source deduplication**: Duplicate key values across files are automatically merged
-- **Style preservation**: Number format retained when overwriting cells
-- **JSON report**: Import statistics and error details saved alongside output
+- **Data Mapping Guide**: [data-mapping-guide.md](references/data-mapping-guide.md) — field mapping, transforms, validators
+- **Advanced Features**: [advanced-features.md](references/advanced-features.md) — multi-source, batch, auto-header
+- **Auto Header Detection**: [auto_header_detection.md](references/auto_header_detection.md) — complex header detection
+- **Quickstart**: [quickstart.md](references/quickstart.md) — step-by-step tutorial
+- **Workflow**: [workflow.md](references/workflow.md) — detailed execution flow
+- **Best Practices**: [best_practices.md](references/best_practices.md) — usage recommendations
+- **Error Handling**: [error-handling.md](references/error-handling.md) — error codes and recovery
+- **Troubleshooting**: [troubleshooting.md](references/troubleshooting.md) — common issues
 
-## References
+## Workflow
 
-Full parameter docs: [references/config-reference.md](references/data-mapping-guide.md)
-Advanced features: [references/advanced-features.md](references/advanced-features.md)
-Error handling: [references/error-handling.md](references/error-handling.md)
-Troubleshooting: [references/troubleshooting.md](references/troubleshooting.md)
+1. Read user's import requirements and source/target file info
+2. Create or adjust YAML config file
+3. Run `python3 scripts/excel_import.py <config.yaml>` with `--dry-run` first
+4. Review output, fix issues, then run without `--dry-run`
+5. Check the JSON report alongside the output file
