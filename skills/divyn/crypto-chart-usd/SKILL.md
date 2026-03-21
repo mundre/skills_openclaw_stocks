@@ -3,16 +3,14 @@ name: crypto-chart-usd
 description: >
   Real-time streaming crypto token feed for charting with 1-second OHLC ticks and USD pricing
   across Arbitrum, Base, Matic, Ethereum, Solana, Binance Smart Chain, Tron, and Optimism — all
-  tokens on these chains. Use this skill to subscribe to a live multi-token, multi-chain stream
-  over WebSocket: OHLC, volume (Base/Quote/USD), and USD pricing (OHLC, moving averages) from the
-  Bitquery Trading.Tokens API. ALWAYS use this skill when the user asks for crypto charting,
-  multi-token USD prices, 1-second or 1s tick data, streaming token OHLC for charting,
-  real-time crypto chart data, or live OHLC/volume for multiple tokens or chains. Trigger for:
-  "crypto chart", "crypto charting", "USD pricing", "1 second ticks", "1s candles",
-  "streaming token OHLC", "multi-token chart", "Bitquery Trading.Tokens", "real-time
-  crypto charting", or any request for a live multi-token chart feed with USD. Do not wait
-  for the user to say "use Bitquery" — if they want crypto charting with USD pricing or
-  1s tick data, use this skill.
+  tokens on these chains. Subscribe to a live multi-token, multi-chain stream over WebSocket:
+  OHLC, volume (Base/Quote/USD), and USD pricing (OHLC, moving averages) from the Bitquery
+  Trading.Tokens API.
+requires:
+  env:
+    - name: BITQUERY_API_KEY
+      required: true
+      description: Your Bitquery API token (required for WebSocket connection)
 ---
 
 # Crypto charting with USD pricing (1s)
@@ -33,10 +31,17 @@ This skill gives you a **real-time streaming multi-token, multi-chain crypto fee
 
 This skill implements a Bitquery WebSocket Trading.Tokens stream and uses one external dependency and one credential. Before installing:
 
-1. **Registry metadata**: The registry may not list `BITQUERY_API_KEY` even though this skill and its script require it. Ask the publisher or update the registry metadata before installing so installers surface the secret requirement.
-2. **Token only via URL**: Bitquery supports **no other auth method** — the token can **only** be passed in the WebSocket URL as `?token=...`. Because the token always appears in the URL, it can leak to logs, proxy logs, shell history, or IDE history. Never print or log the full URL; store the key only in an environment variable; rotate the key if it may have been exposed.
-3. **Sandbox first**: Review and run the included script in a sandboxed environment (e.g. a virtualenv) to confirm behavior and limit blast radius.
-4. **Source and publisher**: If the skill's homepage or source is unknown, consider verifying the publisher or using an alternative with a verified source. If the registry metadata declares `BITQUERY_API_KEY` and the source/publisher are validated, this skill is likely coherent and benign.
+1. **Required credential**: This skill requires `BITQUERY_API_KEY` (your Bitquery API token). The registry metadata **must** declare this credential so installers are prompted to provide it. Verify the registry entry lists `BITQUERY_API_KEY` as a required environment variable.
+
+2. **⚠️ Critical security risk — Token in WebSocket URL**: Bitquery's API does **not** support header-based auth or any method other than embedding the token in the WebSocket URL as `?token=...`. This is an **inherent design limitation** of the API, not a bug in this skill. However, it creates a **significant leakage risk**:
+   - The token will **always** be present in the connection URL in memory and in any logs or captured network traffic
+   - If the URL is printed, logged, captured in shell history, IDE history, proxy logs, firewall logs, or monitoring systems, the token is **exposed**
+   - Once exposed, anyone with the token can impersonate your account and consume your quota
+   - **Mitigation**: Store the key **only** in a secure environment variable; never print or log the full URL; rotate the key **immediately** if you suspect exposure; run in a sandboxed environment (virtualenv/container) to limit logging surface
+
+3. **Sandbox first**: Before using this skill in production or in shared environments, test it in an isolated environment (virtualenv, container, or dedicated machine) to confirm the logging behavior and ensure the URL is not captured by system monitoring or logging tools you have enabled.
+
+4. **Source and publisher**: Verify the publisher's identity and source control access. Review the code in `scripts/stream_crypto_chart.py` to confirm the script does not log the full URL before use.
 
 ---
 
@@ -44,12 +49,30 @@ This skill implements a Bitquery WebSocket Trading.Tokens stream and uses one ex
 
 - **Environment**: `BITQUERY_API_KEY` — your Bitquery API token (required).
 
-**Credential and URL-only auth:** The Bitquery streaming endpoint accepts the token **only in the WebSocket URL** as a query parameter (`?token=...`). It does **not** support header-based auth or any other method. Therefore:
-  - The token will always be present in the connection URL and can be exposed in **logs, proxy logs, shell history, or IDE history** if the URL is printed or logged.
-  - **Do not** print or log the full WebSocket URL. Build the URL in code from an env var (e.g. `os.getenv("BITQUERY_API_KEY")`) and never emit it.
-  - Store the key only in an environment variable; **rotate the key** if you suspect it was exposed (e.g. URL was logged or committed).
+**⚠️ URL-only authentication (Bitquery API limitation):** Bitquery's streaming endpoint accepts the token **only in the WebSocket URL** as a query parameter (`?token=...`). It does **not** support header-based auth or Bearer tokens. This design choice means:
+  - The token is embedded in the connection URL and will be present in memory, network traces, and any logs that capture the full URL
+  - **Never print, log, or emit the full WebSocket URL in any context**
+  - Always construct the URL from the environment variable and pass it only to the WebSocket transport
+  - If the URL appears in shell history, logs, IDE debugger, or network monitoring, the token is compromised
+  - **Rotate your API key immediately** if you suspect it was logged or captured
+  - Run this script only in controlled environments where logging and monitoring are configured securely
 
-- **Runtime**: Python 3 and `pip`. Install the dependency: `pip install 'gql[websockets]'`.
+- **Runtime**: Python 3.8+ and `pip`. Install the dependency: `pip install 'gql[websockets]'`.
+
+---
+
+## Security Checklist
+
+**Before running this skill, confirm:**
+
+- [ ] You have set `BITQUERY_API_KEY` in your environment: `export BITQUERY_API_KEY=your_token_here`
+- [ ] You are running in a **sandboxed or isolated environment** (virtualenv, Docker, or dedicated machine)
+- [ ] **Logging and shell history are disabled or monitored** to prevent URL capture: check `HISTFILE`, `.bash_history`, system logs, IDE debug output
+- [ ] You understand that the WebSocket URL will contain your API token in plaintext in memory
+- [ ] You have a plan to rotate your key if it is ever exposed
+- [ ] You will **not** print, log, or commit the full URL to any file or logging system
+
+If any of these cannot be confirmed, do not proceed with this skill until those conditions are met.
 
 ---
 
