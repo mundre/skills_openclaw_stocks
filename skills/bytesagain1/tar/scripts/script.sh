@@ -1,364 +1,261 @@
 #!/usr/bin/env bash
-# Tar — sysops tool
+# tar — Archive management tool
 # Powered by BytesAgain | bytesagain.com | hello@bytesagain.com
 set -euo pipefail
+VERSION="3.0.1"
 
-DATA_DIR="${HOME}/.local/share/tar"
-mkdir -p "$DATA_DIR"
+BOLD='\033[1m'; GREEN='\033[0;32m'; RED='\033[0;31m'; DIM='\033[2m'; RESET='\033[0m'
+die() { echo -e "${RED}Error: $1${RESET}" >&2; exit 1; }
+info() { echo -e "${GREEN}✓${RESET} $1"; }
 
-_log() { echo "$(date '+%m-%d %H:%M') $1: $2" >> "$DATA_DIR/history.log"; }
+# === create: create tar archive ===
+cmd_create() {
+    local archive="${1:?Usage: tar create <archive.tar.gz> <files...>}"
+    shift
+    [ $# -eq 0 ] && die "No files specified"
 
-_version() { echo "tar v2.0.0"; }
-
-_help() {
-    echo "Tar v2.0.0 — sysops toolkit"
-    echo ""
-    echo "Usage: tar <command> [args]"
-    echo ""
-    echo "Commands:"
-    echo "  scan               Scan"
-    echo "  monitor            Monitor"
-    echo "  report             Report"
-    echo "  alert              Alert"
-    echo "  top                Top"
-    echo "  usage              Usage"
-    echo "  check              Check"
-    echo "  fix                Fix"
-    echo "  cleanup            Cleanup"
-    echo "  backup             Backup"
-    echo "  restore            Restore"
-    echo "  log                Log"
-    echo "  benchmark          Benchmark"
-    echo "  compare            Compare"
-    echo "  stats              Summary statistics"
-    echo "  export <fmt>       Export (json|csv|txt)"
-    echo "  status             Health check"
-    echo "  help               Show this help"
-    echo "  version            Show version"
-    echo ""
-    echo "Data: $DATA_DIR"
-}
-
-_stats() {
-    echo "=== Tar Stats ==="
-    local total=0
-    for f in "$DATA_DIR"/*.log; do
-        [ -f "$f" ] || continue
-        local name=$(basename "$f" .log)
-        local c=$(wc -l < "$f")
-        total=$((total + c))
-        echo "  $name: $c entries"
-    done
-    echo "  ---"
-    echo "  Total: $total entries"
-    echo "  Data size: $(du -sh "$DATA_DIR" 2>/dev/null | cut -f1)"
-    echo "  Since: $(head -1 "$DATA_DIR/history.log" 2>/dev/null | cut -d'|' -f1 || echo 'N/A')"
-}
-
-_export() {
-    local fmt="${1:-json}"
-    local out="$DATA_DIR/export.$fmt"
-    case "$fmt" in
-        json)
-            echo "[" > "$out"
-            local first=1
-            for f in "$DATA_DIR"/*.log; do
-                [ -f "$f" ] || continue
-                local name=$(basename "$f" .log)
-                while IFS='|' read -r ts val; do
-                    [ $first -eq 1 ] && first=0 || echo "," >> "$out"
-                    printf '  {"type":"%s","time":"%s","value":"%s"}' "$name" "$ts" "$val" >> "$out"
-                done < "$f"
-            done
-            echo "" >> "$out"
-            echo "]" >> "$out"
-            ;;
-        csv)
-            echo "type,time,value" > "$out"
-            for f in "$DATA_DIR"/*.log; do
-                [ -f "$f" ] || continue
-                local name=$(basename "$f" .log)
-                while IFS='|' read -r ts val; do
-                    echo "$name,$ts,$val" >> "$out"
-                done < "$f"
-            done
-            ;;
-        txt)
-            echo "=== Tar Export ===" > "$out"
-            for f in "$DATA_DIR"/*.log; do
-                [ -f "$f" ] || continue
-                echo "--- $(basename "$f" .log) ---" >> "$out"
-                cat "$f" >> "$out"
-                echo "" >> "$out"
-            done
-            ;;
-        *) echo "Formats: json, csv, txt"; return 1 ;;
+    local compress=""
+    case "$archive" in
+        *.tar.gz|*.tgz)   compress="z" ;;
+        *.tar.bz2|*.tbz2) compress="j" ;;
+        *.tar.xz|*.txz)   compress="J" ;;
+        *.tar)             compress="" ;;
+        *) die "Unknown format: $archive (use .tar, .tar.gz, .tar.bz2, .tar.xz)" ;;
     esac
-    echo "Exported to $out ($(wc -c < "$out") bytes)"
-}
 
-_status() {
-    echo "=== Tar Status ==="
-    echo "  Version: v2.0.0"
-    echo "  Data dir: $DATA_DIR"
-    echo "  Entries: $(cat "$DATA_DIR"/*.log 2>/dev/null | wc -l) total"
-    echo "  Disk: $(du -sh "$DATA_DIR" 2>/dev/null | cut -f1)"
-    local last=$(tail -1 "$DATA_DIR/history.log" 2>/dev/null || echo "never")
-    echo "  Last activity: $last"
-    echo "  Status: OK"
-}
-
-_search() {
-    local term="${1:?Usage: tar search <term>}"
-    echo "Searching for: $term"
-    local found=0
-    for f in "$DATA_DIR"/*.log; do
-        [ -f "$f" ] || continue
-        local matches=$(grep -i "$term" "$f" 2>/dev/null || true)
-        if [ -n "$matches" ]; then
-            echo "  --- $(basename "$f" .log) ---"
-            echo "$matches" | while read -r line; do
-                echo "    $line"
-                found=$((found + 1))
-            done
-        fi
+    tar -c${compress}vf "$archive" "$@" 2>&1 | while IFS= read -r line; do
+        echo "  + $line"
     done
-    [ $found -eq 0 ] && echo "  No matches found."
+
+    local size
+    size=$(du -h "$archive" | cut -f1)
+    local count=$#
+    info "Created $archive ($size, $count items)"
 }
 
-_recent() {
-    echo "=== Recent Activity ==="
-    if [ -f "$DATA_DIR/history.log" ]; then
-        tail -20 "$DATA_DIR/history.log" | while IFS='' read -r line; do
-            echo "  $line"
-        done
+# === extract: extract tar archive ===
+cmd_extract() {
+    local archive="${1:?Usage: tar extract <archive> [output-dir]}"
+    local outdir="${2:-.}"
+    [ ! -f "$archive" ] && die "File not found: $archive"
+
+    local compress=""
+    case "$archive" in
+        *.tar.gz|*.tgz)   compress="z" ;;
+        *.tar.bz2|*.tbz2) compress="j" ;;
+        *.tar.xz|*.txz)   compress="J" ;;
+        *.tar)             compress="" ;;
+    esac
+
+    mkdir -p "$outdir"
+    tar -x${compress}vf "$archive" -C "$outdir" 2>&1 | while IFS= read -r line; do
+        echo "  - $line"
+    done
+
+    local count
+    count=$(tar -t${compress}f "$archive" 2>/dev/null | wc -l)
+    info "Extracted $count items to $outdir"
+}
+
+# === list: list archive contents ===
+cmd_list() {
+    local archive="${1:?Usage: tar list <archive>}"
+    [ ! -f "$archive" ] && die "File not found: $archive"
+
+    local compress=""
+    case "$archive" in
+        *.tar.gz|*.tgz)   compress="z" ;;
+        *.tar.bz2|*.tbz2) compress="j" ;;
+        *.tar.xz|*.txz)   compress="J" ;;
+        *.tar)             compress="" ;;
+    esac
+
+    echo -e "${BOLD}Contents of $archive${RESET}"
+    echo ""
+    tar -t${compress}vf "$archive" 2>/dev/null | while IFS= read -r line; do
+        echo "  $line"
+    done
+
+    local count
+    count=$(tar -t${compress}f "$archive" 2>/dev/null | wc -l)
+    echo ""
+    echo "  Total: $count entries"
+}
+
+# === add: add files to existing archive ===
+cmd_add() {
+    local archive="${1:?Usage: tar add <archive.tar> <files...>}"
+    shift
+    [ $# -eq 0 ] && die "No files specified"
+    [ ! -f "$archive" ] && die "Archive not found: $archive"
+
+    case "$archive" in
+        *.tar) ;;
+        *) die "Can only append to uncompressed .tar archives" ;;
+    esac
+
+    tar -rvf "$archive" "$@" 2>&1 | while IFS= read -r line; do
+        echo "  + $line"
+    done
+    info "Added $# items to $archive"
+}
+
+# === diff: compare two archives ===
+cmd_diff() {
+    local a1="${1:?Usage: tar diff <archive1> <archive2>}"
+    local a2="${2:?Missing second archive}"
+    [ ! -f "$a1" ] && die "Not found: $a1"
+    [ ! -f "$a2" ] && die "Not found: $a2"
+
+    echo -e "${BOLD}Comparing archives${RESET}"
+    echo "  A: $a1"
+    echo "  B: $a2"
+    echo ""
+
+    local tmp1 tmp2
+    tmp1=$(mktemp)
+    tmp2=$(mktemp)
+
+    local c1="" c2=""
+    case "$a1" in *.tar.gz|*.tgz) c1="z";; *.tar.bz2) c1="j";; *.tar.xz) c1="J";; esac
+    case "$a2" in *.tar.gz|*.tgz) c2="z";; *.tar.bz2) c2="j";; *.tar.xz) c2="J";; esac
+
+    tar -t${c1}f "$a1" 2>/dev/null | sort > "$tmp1"
+    tar -t${c2}f "$a2" 2>/dev/null | sort > "$tmp2"
+
+    local only1 only2 common
+    only1=$(comm -23 "$tmp1" "$tmp2" | wc -l)
+    only2=$(comm -13 "$tmp1" "$tmp2" | wc -l)
+    common=$(comm -12 "$tmp1" "$tmp2" | wc -l)
+
+    echo "  Common:  $common files"
+    echo "  Only A:  $only1 files"
+    echo "  Only B:  $only2 files"
+
+    if [ "$only1" -gt 0 ]; then
+        echo ""
+        echo "  Only in A:"
+        comm -23 "$tmp1" "$tmp2" | head -20 | while read -r f; do echo "    - $f"; done
+    fi
+    if [ "$only2" -gt 0 ]; then
+        echo ""
+        echo "  Only in B:"
+        comm -13 "$tmp1" "$tmp2" | head -20 | while read -r f; do echo "    + $f"; done
+    fi
+
+    rm -f "$tmp1" "$tmp2"
+}
+
+# === info: archive metadata ===
+cmd_info() {
+    local archive="${1:?Usage: tar info <archive>}"
+    [ ! -f "$archive" ] && die "Not found: $archive"
+
+    local compress=""
+    case "$archive" in
+        *.tar.gz|*.tgz)   compress="z" ;;
+        *.tar.bz2|*.tbz2) compress="j" ;;
+        *.tar.xz|*.txz)   compress="J" ;;
+        *.tar)             compress="" ;;
+    esac
+
+    local size
+    size=$(du -h "$archive" | cut -f1)
+    local count
+    count=$(tar -t${compress}f "$archive" 2>/dev/null | wc -l)
+    local dirs
+    dirs=$(tar -t${compress}f "$archive" 2>/dev/null | grep '/$' | wc -l)
+    local files=$((count - dirs))
+    local mod
+    mod=$(stat -c '%y' "$archive" | cut -d. -f1)
+
+    echo -e "${BOLD}Archive Info${RESET}"
+    echo "  File:       $archive"
+    echo "  Size:       $size"
+    echo "  Format:     $(file --brief "$archive" 2>/dev/null || echo 'unknown')"
+    echo "  Entries:    $count ($files files, $dirs directories)"
+    echo "  Modified:   $mod"
+}
+
+# === verify: check archive integrity ===
+cmd_verify() {
+    local archive="${1:?Usage: tar verify <archive>}"
+    [ ! -f "$archive" ] && die "Not found: $archive"
+
+    local compress=""
+    case "$archive" in
+        *.tar.gz|*.tgz)   compress="z" ;;
+        *.tar.bz2|*.tbz2) compress="j" ;;
+        *.tar.xz|*.txz)   compress="J" ;;
+        *.tar)             compress="" ;;
+    esac
+
+    if tar -t${compress}f "$archive" > /dev/null 2>&1; then
+        local count
+        count=$(tar -t${compress}f "$archive" | wc -l)
+        info "Archive OK — $count entries, no corruption detected"
     else
-        echo "  No activity yet."
+        die "Archive is corrupted or invalid"
     fi
 }
 
-# Main dispatch
-case "${1:-help}" in
-    scan)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent scan entries:"
-            tail -20 "$DATA_DIR/scan.log" 2>/dev/null || echo "  No entries yet. Use: tar scan <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/scan.log"
-            local total=$(wc -l < "$DATA_DIR/scan.log")
-            echo "  [Tar] scan: $input"
-            echo "  Saved. Total scan entries: $total"
-            _log "scan" "$input"
-        fi
-        ;;
-    monitor)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent monitor entries:"
-            tail -20 "$DATA_DIR/monitor.log" 2>/dev/null || echo "  No entries yet. Use: tar monitor <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/monitor.log"
-            local total=$(wc -l < "$DATA_DIR/monitor.log")
-            echo "  [Tar] monitor: $input"
-            echo "  Saved. Total monitor entries: $total"
-            _log "monitor" "$input"
-        fi
-        ;;
-    report)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent report entries:"
-            tail -20 "$DATA_DIR/report.log" 2>/dev/null || echo "  No entries yet. Use: tar report <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/report.log"
-            local total=$(wc -l < "$DATA_DIR/report.log")
-            echo "  [Tar] report: $input"
-            echo "  Saved. Total report entries: $total"
-            _log "report" "$input"
-        fi
-        ;;
-    alert)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent alert entries:"
-            tail -20 "$DATA_DIR/alert.log" 2>/dev/null || echo "  No entries yet. Use: tar alert <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/alert.log"
-            local total=$(wc -l < "$DATA_DIR/alert.log")
-            echo "  [Tar] alert: $input"
-            echo "  Saved. Total alert entries: $total"
-            _log "alert" "$input"
-        fi
-        ;;
-    top)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent top entries:"
-            tail -20 "$DATA_DIR/top.log" 2>/dev/null || echo "  No entries yet. Use: tar top <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/top.log"
-            local total=$(wc -l < "$DATA_DIR/top.log")
-            echo "  [Tar] top: $input"
-            echo "  Saved. Total top entries: $total"
-            _log "top" "$input"
-        fi
-        ;;
-    usage)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent usage entries:"
-            tail -20 "$DATA_DIR/usage.log" 2>/dev/null || echo "  No entries yet. Use: tar usage <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/usage.log"
-            local total=$(wc -l < "$DATA_DIR/usage.log")
-            echo "  [Tar] usage: $input"
-            echo "  Saved. Total usage entries: $total"
-            _log "usage" "$input"
-        fi
-        ;;
-    check)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent check entries:"
-            tail -20 "$DATA_DIR/check.log" 2>/dev/null || echo "  No entries yet. Use: tar check <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/check.log"
-            local total=$(wc -l < "$DATA_DIR/check.log")
-            echo "  [Tar] check: $input"
-            echo "  Saved. Total check entries: $total"
-            _log "check" "$input"
-        fi
-        ;;
-    fix)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent fix entries:"
-            tail -20 "$DATA_DIR/fix.log" 2>/dev/null || echo "  No entries yet. Use: tar fix <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/fix.log"
-            local total=$(wc -l < "$DATA_DIR/fix.log")
-            echo "  [Tar] fix: $input"
-            echo "  Saved. Total fix entries: $total"
-            _log "fix" "$input"
-        fi
-        ;;
-    cleanup)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent cleanup entries:"
-            tail -20 "$DATA_DIR/cleanup.log" 2>/dev/null || echo "  No entries yet. Use: tar cleanup <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/cleanup.log"
-            local total=$(wc -l < "$DATA_DIR/cleanup.log")
-            echo "  [Tar] cleanup: $input"
-            echo "  Saved. Total cleanup entries: $total"
-            _log "cleanup" "$input"
-        fi
-        ;;
-    backup)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent backup entries:"
-            tail -20 "$DATA_DIR/backup.log" 2>/dev/null || echo "  No entries yet. Use: tar backup <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/backup.log"
-            local total=$(wc -l < "$DATA_DIR/backup.log")
-            echo "  [Tar] backup: $input"
-            echo "  Saved. Total backup entries: $total"
-            _log "backup" "$input"
-        fi
-        ;;
-    restore)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent restore entries:"
-            tail -20 "$DATA_DIR/restore.log" 2>/dev/null || echo "  No entries yet. Use: tar restore <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/restore.log"
-            local total=$(wc -l < "$DATA_DIR/restore.log")
-            echo "  [Tar] restore: $input"
-            echo "  Saved. Total restore entries: $total"
-            _log "restore" "$input"
-        fi
-        ;;
-    log)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent log entries:"
-            tail -20 "$DATA_DIR/log.log" 2>/dev/null || echo "  No entries yet. Use: tar log <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/log.log"
-            local total=$(wc -l < "$DATA_DIR/log.log")
-            echo "  [Tar] log: $input"
-            echo "  Saved. Total log entries: $total"
-            _log "log" "$input"
-        fi
-        ;;
-    benchmark)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent benchmark entries:"
-            tail -20 "$DATA_DIR/benchmark.log" 2>/dev/null || echo "  No entries yet. Use: tar benchmark <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/benchmark.log"
-            local total=$(wc -l < "$DATA_DIR/benchmark.log")
-            echo "  [Tar] benchmark: $input"
-            echo "  Saved. Total benchmark entries: $total"
-            _log "benchmark" "$input"
-        fi
-        ;;
-    compare)
-        shift
-        if [ $# -eq 0 ]; then
-            echo "Recent compare entries:"
-            tail -20 "$DATA_DIR/compare.log" 2>/dev/null || echo "  No entries yet. Use: tar compare <input>"
-        else
-            local input="$*"
-            local ts=$(date '+%Y-%m-%d %H:%M')
-            echo "$ts|$input" >> "$DATA_DIR/compare.log"
-            local total=$(wc -l < "$DATA_DIR/compare.log")
-            echo "  [Tar] compare: $input"
-            echo "  Saved. Total compare entries: $total"
-            _log "compare" "$input"
-        fi
-        ;;
-    stats) _stats ;;
-    export) shift; _export "$@" ;;
-    search) shift; _search "$@" ;;
-    recent) _recent ;;
-    status) _status ;;
-    help|--help|-h) _help ;;
-    version|--version|-v) _version ;;
-    *)
-        echo "Unknown command: $1"
-        echo "Run 'tar help' for available commands."
-        exit 1
-        ;;
+# === find: search for file in archive ===
+cmd_find() {
+    local archive="${1:?Usage: tar find <archive> <pattern>}"
+    local pattern="${2:?Missing search pattern}"
+    [ ! -f "$archive" ] && die "Not found: $archive"
+
+    local compress=""
+    case "$archive" in *.tar.gz|*.tgz) compress="z";; *.tar.bz2) compress="j";; *.tar.xz) compress="J";; esac
+
+    echo -e "${BOLD}Searching '$pattern' in $archive${RESET}"
+    local found=0
+    tar -t${compress}f "$archive" 2>/dev/null | grep -i "$pattern" | while IFS= read -r match; do
+        echo "  $match"
+        found=$((found + 1))
+    done
+    echo ""
+}
+
+show_help() {
+    cat << EOF
+tar v$VERSION — Archive management tool
+
+Usage: tar <command> [args]
+
+Archive Operations:
+  create <archive> <files...>    Create tar archive (.tar/.tar.gz/.tar.bz2/.tar.xz)
+  extract <archive> [dir]        Extract archive contents
+  list <archive>                 List archive contents with details
+  add <archive.tar> <files...>   Add files to uncompressed .tar archive
+
+Analysis:
+  info <archive>                 Show archive metadata (size, entries, format)
+  diff <a1> <a2>                 Compare contents of two archives
+  verify <archive>               Check archive integrity
+  find <archive> <pattern>       Search for files matching pattern
+
+  help                           Show this help
+  version                        Show version
+
+Supported formats: .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz
+
+Requires: tar, file
+EOF
+}
+
+[ $# -eq 0 ] && { show_help; exit 0; }
+
+case "$1" in
+    create)   shift; cmd_create "$@" ;;
+    extract)  shift; cmd_extract "$@" ;;
+    list)     cmd_list "$2" ;;
+    add)      shift; cmd_add "$@" ;;
+    diff)     shift; cmd_diff "$@" ;;
+    info)     cmd_info "$2" ;;
+    verify)   cmd_verify "$2" ;;
+    find)     shift; cmd_find "$@" ;;
+    help|-h)  show_help ;;
+    version|-v) echo "tar v$VERSION"; echo "Powered by BytesAgain | bytesagain.com | hello@bytesagain.com" ;;
+    *)        echo "Unknown: $1"; show_help; exit 1 ;;
 esac

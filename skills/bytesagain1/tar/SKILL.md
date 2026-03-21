@@ -1,89 +1,88 @@
 ---
 name: tar
-version: "2.0.0"
+version: "3.0.1"
 author: BytesAgain
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
 license: MIT-0
 tags: [tar, tool, utility]
-description: "Tar - command-line tool for everyday use"
+description: "Create, extract, list, and compress tar archives with format support. Use when scanning contents, monitoring sizes, reporting results, alerting corruption."
 ---
 
-# Tar
+# tar
 
-Tar toolkit — create, extract, list, compress, and manage tar archives.
+Archive management tool.
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `tar help` | Show usage info |
-| `tar run` | Run main task |
-| `tar status` | Check state |
-| `tar list` | List items |
-| `tar add <item>` | Add item |
-| `tar export <fmt>` | Export data |
+### `create`
 
-## Usage
+Create tar archive (.tar/.tar.gz/.tar.bz2/.tar.xz)
 
 ```bash
-tar help
-tar run
-tar status
+scripts/script.sh create <archive> <files...>
 ```
 
-## Examples
+### `extract`
+
+Extract archive contents
 
 ```bash
-tar help
-tar run
-tar export json
+scripts/script.sh extract <archive> [dir]
 ```
 
-## Output
+### `list`
 
-Results go to stdout. Save with `tar run > output.txt`.
+List archive contents with details
 
-## Configuration
+```bash
+scripts/script.sh list <archive>
+```
 
-Set `TAR_DIR` to change data directory. Default: `~/.local/share/tar/`
+### `add`
+
+Add files to uncompressed .tar archive
+
+```bash
+scripts/script.sh add <archive.tar> <files...>
+```
+
+### `info`
+
+Show archive metadata (size, entries, format)
+
+```bash
+scripts/script.sh info <archive>
+```
+
+### `diff`
+
+Compare contents of two archives
+
+```bash
+scripts/script.sh diff <a1> <a2>
+```
+
+### `verify`
+
+Check archive integrity
+
+```bash
+scripts/script.sh verify <archive>
+```
+
+### `find`
+
+Search for files matching pattern
+
+```bash
+scripts/script.sh find <archive> <pattern>
+```
+
+## Requirements
+
+- bash 4.0+
 
 ---
-*Powered by BytesAgain | bytesagain.com*
-*Feedback & Feature Requests: https://bytesagain.com/feedback*
 
-
-## Features
-
-- Simple command-line interface for quick access
-- Local data storage with JSON/CSV export
-- History tracking and activity logs
-- Search across all entries
-- Status monitoring and health checks
-- No external dependencies required
-
-## Quick Start
-
-```bash
-# Check status
-tar status
-
-# View help and available commands
-tar help
-
-# View statistics
-tar stats
-
-# Export your data
-tar export json
-```
-
-## How It Works
-
-Tar stores all data locally in `~/.local/share/tar/`. Each command logs activity with timestamps for full traceability. Use `stats` to see a summary, or `export` to back up your data in JSON, CSV, or plain text format.
-
-## Support
-
-- Feedback: https://bytesagain.com/feedback/
-- Website: https://bytesagain.com
-- Email: hello@bytesagain.com
-
-Powered by BytesAgain | bytesagain.com
+*Powered by BytesAgain | bytesagain.com | hello@bytesagain.com*
