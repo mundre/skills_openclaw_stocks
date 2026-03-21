@@ -8,16 +8,18 @@
 - [工作流 2：智能参数优化](#工作流2智能参数优化)
 - [工作流 3：预设模板系统](#工作流3预设模板系统)
 - [工作流 4：精确文件大小控制](#工作流4精确文件大小控制)
-- [工作流 5：字幕处理](#工作流5字幕处理)
-- [工作流 6：滤镜与特效](#工作流6滤镜与特效)
+- [工作流 5：Smart Cut 混合剪辑](#工作流5smart-cut-混合剪辑)
+- [工作流 6：关键帧分析](#工作流6关键帧分析)
+- [工作流 7：字幕处理](#工作流7字幕处理)
+- [工作流 8：滤镜与特效](#工作流8滤镜与特效)
 - [工作流 9：GIF 转换](#工作流9gif转换)
 - [工作流 10：翻转与镜像](#工作流10翻转与镜像)
 - [工作流 11：速度调节](#工作流11速度调节)
 - [工作流 12：音频提取与移除](#工作流12音频提取与移除)
 - [工作流 13：视频合并](#工作流13视频合并)
 - [工作流 14：宽高比调整](#工作流14宽高比调整)
-- [工作流 7：批量处理](#工作流7批量处理)
-- [工作流 8：实时进度反馈](#工作流8实时进度反馈)
+- [附录：批量处理](#附录批量处理)
+- [附录：实时进度反馈](#附录实时进度反馈)
 
 ---
 
@@ -650,7 +652,74 @@ def assess_quality(input_file, output_file, metric='basic'):
 
 ---
 
-## 工作流5：字幕处理
+## 工作流5：Smart Cut 混合剪辑
+
+Smart Cut 混合剪辑是一种智能剪辑策略，结合了快速模式和精确模式的优势，在关键帧附近进行精确切割，在非关键帧区域使用快速模式。
+
+### 主要特性
+
+- **自动检测关键帧位置**：智能识别视频中的所有关键帧
+- **三种剪辑模式**：
+  - 快速模式：在最近的关键帧处剪切，速度最快
+  - 精确模式：在指定位置精确剪切，质量最高
+  - Smart Cut 混合模式：根据场景自动选择最佳策略
+- **自动音视频同步修复**：剪辑后自动修复音视频同步问题
+- **剪辑点质量评估**：评估每个剪辑点的质量等级（excellent/good/fair/poor）
+
+### 详细文档
+
+Smart Cut 的完整实现细节、使用方法和最佳实践，请参考：
+
+📖 [Smart Cut 详细指南 →](smart_cut_guide.md)
+
+### 快速示例
+
+```bash
+# 快速模式剪辑（在最近关键帧处剪切）
+ffmpeg -y -hide_banner -ss 00:01:00 -i "input.mp4" -to 00:00:30 -c copy "output.mp4"
+
+# 精确模式剪辑（精确到指定位置）
+ffmpeg -y -hide_banner -i "input.mp4" -ss 00:01:00 -t 00:00:30 -c:v libx264 -c:a aac "output.mp4"
+
+# Smart Cut 混合模式（自动选择最佳策略）
+# 请参考 smart_cut_guide.md 中的 Python 实现
+```
+
+---
+
+## 工作流6：关键帧分析
+
+关键帧分析是智能剪辑的基础，它可以帮助识别视频中最佳的剪辑点位置。
+
+### 主要功能
+
+- **关键帧时间轴导出**：支持导出为 JSON、CSV、Markdown、TXT 格式
+- **剪辑点质量评估**：自动评估每个关键帧的质量等级
+- **智能分段策略建议**：根据视频内容提供最优的分段建议
+- **场景变化检测**：识别场景转换点
+
+### 详细文档
+
+关键帧分析的完整实现、使用方法和 API 参考，请参考：
+
+📖 [关键帧分析详细指南 →](keyframe_analysis.md)
+
+### 快速示例
+
+```python
+# 导出关键帧时间轴（JSON 格式）
+ffmpeg -y -hide_banner -i "input.mp4" -vf "select=eq(pict_type\,I)" -vsync 0 -f json "keyframes.json"
+
+# 导出关键帧时间轴（CSV 格式）
+ffmpeg -y -hide_banner -i "input.mp4" -vf "select=eq(pict_type\,I)" -vsync 0 -f csv "keyframes.csv"
+
+# 导出关键帧时间轴（Markdown 格式）
+ffmpeg -y -hide_banner -i "input.mp4" -vf "select=eq(pict_type\,I)" -vsync 0 "keyframes.txt"
+```
+
+---
+
+## 工作流7：字幕处理
 
 ### 字幕提取
 
@@ -707,7 +776,7 @@ def burn_subtitle(input_file, subtitle_file, output_file):
 
 ---
 
-## 工作流6：滤镜与特效
+## 工作流8：滤镜与特效
 
 ### 水印叠加
 
@@ -759,6 +828,55 @@ def rotate_video(input_file, output_file, degrees):
 
     subprocess.run(cmd, check=True)
 ```
+
+### 帧翻转
+
+```python
+def flip_video(input_file, output_file, flip_type='horizontal'):
+    """翻转视频画面"""
+
+    flip_filters = {
+        'horizontal': 'hflip',      # 水平翻转（左右镜像）
+        'vertical': 'vflip',        # 垂直翻转（上下镜像）
+        'both': 'hflip,vflip'       # 组合翻转（180°旋转）
+    }
+
+    if flip_type not in flip_filters:
+        raise ValueError(f"不支持的翻转类型: {flip_type}")
+
+    cmd = [
+        'ffmpeg',
+        '-y',
+        '-hide_banner',
+        '-i', input_file,
+        '-vf', flip_filters[flip_type],
+        '-c:a', 'copy',
+        output_file
+    ]
+
+    subprocess.run(cmd, check=True)
+```
+
+#### 帧翻转使用示例
+
+```bash
+# 水平翻转（左右镜像）
+ffmpeg -y -hide_banner -i "input.mp4" -vf "hflip" -c:a copy "output.mp4"
+
+# 垂直翻转（上下镜像）
+ffmpeg -y -hide_banner -i "input.mp4" -vf "vflip" -c:a copy "output.mp4"
+
+# 组合翻转（180°旋转）
+ffmpeg -y -hide_banner -i "input.mp4" -vf "hflip,vflip" -c:a copy "output.mp4"
+```
+
+#### 翻转类型说明
+
+| 滤镜 | 效果 | 使用场景 |
+|------|------|---------|
+| `hflip` | 水平翻转（左右镜像） | 自拍镜像、文字左右翻转 |
+| `vflip` | 垂直翻转（上下镜像） | 倒置视频效果 |
+| `hflip,vflip` | 组合翻转（180°旋转） | 完全倒置 |
 
 ---
 
@@ -1071,7 +1189,7 @@ ffmpeg -y -hide_banner -i "video.mp4" -vf "scale=1920:1080:force_original_aspect
 
 ---
 
-## 工作流7：批量处理
+## 附录：批量处理
 
 ### 错误重试处理器
 
@@ -1334,7 +1452,7 @@ class OptimizedBatchProcessor:
 
 ---
 
-## 工作流8：实时进度反馈
+## 附录：实时进度反馈
 
 ### 进度跟踪器
 
@@ -1474,4 +1592,4 @@ class BatchProgressDisplay:
 
 ---
 
-本文档持续更新中。如有疑问，请参考 [API 参考手册](api_reference.md) 或 [用户指南](user_guide.md)。
+本文档持续更新中。如有疑问，请参考 [API 参考手册](api_reference.md)、[最佳实践](best_practices.md) 或 [故障排除](troubleshooting.md)。

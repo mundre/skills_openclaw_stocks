@@ -1003,8 +1003,7 @@ except Exception as e:
 ## 更多资源
 
 - **使用指南**: [快速入门](quickstart.md)
-- **版本信息**: [VERSION.md](VERSION.md)
-- **测试报告**: [scripts/TEST_RESULTS.md](scripts/TEST_RESULTS.md)
+- **版本信息**: 参考 [detailed_workflows.md](detailed_workflows.md) 获取最新工作流信息
 
 ---
 
