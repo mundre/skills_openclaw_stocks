@@ -1,0 +1,11 @@
+{
+  "owner": "proxx",
+  "slug": "duckdb-cli",
+  "displayName": "Duckdb Cli",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773858849384,
+    "commit": null
+  },
+  "history": []
+}
