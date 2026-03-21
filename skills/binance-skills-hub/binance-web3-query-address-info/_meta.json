@@ -1,0 +1,11 @@
+{
+  "owner": "binance-skills-hub",
+  "slug": "binance-web3-query-address-info",
+  "displayName": "Binance Query Address Info",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773896585690,
+    "commit": null
+  },
+  "history": []
+}
