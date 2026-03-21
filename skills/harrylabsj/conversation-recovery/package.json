@@ -1,0 +1,31 @@
+{
+  "name": "conversation-recovery",
+  "version": "0.1.0",
+  "description": "Capture and recover conversation state across OpenClaw sessions",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "echo \"Tests not yet implemented\" && exit 0"
+  },
+  "keywords": [
+    "openclaw",
+    "skill",
+    "conversation",
+    "session",
+    "recovery",
+    "state-management"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
