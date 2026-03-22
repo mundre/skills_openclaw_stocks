@@ -3,11 +3,16 @@
   "slug": "audio-cog",
   "displayName": "audio-cog",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1770773864201,
-    "commit": "https://github.com/openclaw/skills/commit/30b19d3cb1ca52511d15f251ffb9b94046ffb380"
+    "version": "1.0.4",
+    "publishedAt": 1773922561785,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1770773864201,
+      "commit": "https://github.com/openclaw/skills/commit/30b19d3cb1ca52511d15f251ffb9b94046ffb380"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1770408137686,
