@@ -1,0 +1,11 @@
+{
+  "owner": "vahagn-madatyan",
+  "slug": "arista-device-health",
+  "displayName": "Arista Device Health",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1774139329264,
+    "commit": null
+  },
+  "history": []
+}
