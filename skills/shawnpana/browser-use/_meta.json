@@ -3,11 +3,16 @@
   "slug": "browser-use",
   "displayName": "Browser Use",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1771476812023,
-    "commit": "https://github.com/openclaw/skills/commit/3ea7fd3ced79a673e1bf8538735ccd0770351ff3"
+    "version": "2.0.0",
+    "publishedAt": 1774158611795,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1771476812023,
+      "commit": "https://github.com/openclaw/skills/commit/3ea7fd3ced79a673e1bf8538735ccd0770351ff3"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1771314805181,
