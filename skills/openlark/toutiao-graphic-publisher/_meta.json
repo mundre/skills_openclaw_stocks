@@ -1,0 +1,11 @@
+{
+  "owner": "openlark",
+  "slug": "toutiao-graphic-publisher",
+  "displayName": "今日头条自动发布文章",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774104285451,
+    "commit": null
+  },
+  "history": []
+}
