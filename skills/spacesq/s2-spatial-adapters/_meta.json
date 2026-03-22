@@ -1,0 +1,11 @@
+{
+  "owner": "spacesq",
+  "slug": "s2-spatial-adapters",
+  "displayName": "S2 Spatial Adapters",
+  "latest": {
+    "version": "2.0.7",
+    "publishedAt": 1774117696585,
+    "commit": null
+  },
+  "history": []
+}
