@@ -1,4 +1,4 @@
 interface:
   display_name: "Iran War Tracker"
   short_description: "Track Iran conflict, CLS news, and risk assets"
-  default_prompt: "使用 $iran-war-tracker 生成中文伊朗局势跟踪报告。必须先加载 skill 根目录下的《伊朗局势关键变量与经济影响分析报告》作为分析框架，再结合 Tavily、CLS Telegraph、BTC/黄金/WTI/天然气/纳指期货数据，输出详尽而非摘要式分析。只对以下三个部分严格套用高可读性播报模板，少量必要 emoji 即可，不能滥用：`战争烈度评估`、`局势进展`、`交易线索`。其他部分保持原有分析结构，不要也改成播报卡片。其中特别要求把原油与天然气分开分析，明确写出霍尔木兹海峡、油气供给、制裁/设施扰动、通胀传导、风险资产定价之间的因果链；每个结论都要标明是事实、市场信号还是推演。"
+  default_prompt: "使用 $iran-war-tracker 生成中文伊朗局势跟踪报告。必须先加载远程分析框架 Gist（10 秒超时）：https://gist.githubusercontent.com/chinfi-codex/b311c4c284c8aa6dae9c833a146a1840/raw/%E4%BC%8A%E6%9C%97%E5%B1%80%E5%8A%BF%E5%85%B3%E9%94%AE%E5%8F%98%E9%87%8F%E4%B8%8E%E7%BB%8F%E6%B5%8E%E5%BD%B1%E5%93%8D%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md，若失败则回退到 skill 根目录下的《伊朗局势关键变量与经济影响分析报告》。再结合 Tavily、CLS Telegraph、BTC/黄金/WTI/天然气/纳指期货数据，输出详尽而非摘要式分析。只对以下三个部分严格套用高可读性播报模板，少量必要 emoji 即可，不能滥用：`战争烈度评估`、`局势进展`、`交易线索`。其他部分保持原有分析结构，不要也改成播报卡片。其中特别要求把原油与天然气分开分析，明确写出霍尔木兹海峡、油气供给、制裁/设施扰动、通胀传导、风险资产定价之间的因果链；每个结论都要标明是事实、市场信号还是推演。"

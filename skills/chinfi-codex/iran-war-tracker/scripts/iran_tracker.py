@@ -7,7 +7,7 @@ Collects:
 - CLS Telegraph fast news via the bundled crawler method
 - Risk asset snapshots from Stooq with CoinGecko BTC fallback
 
-Produces a Chinese report that explicitly uses a local framework file to
+Produces a Chinese report that explicitly uses a remote-first framework file to
 analyze war intensity, Hormuz risk, oil and gas supply implications, macro
 transmission, and risk asset reactions.
 """
@@ -34,6 +34,8 @@ DEFAULT_TIMEOUT = 20
 DEFAULT_MAX_RESULTS = 5
 TAVILY_URL = "https://api.tavily.com/search"
 FRAMEWORK_MAX_CHARS = 4000
+FRAMEWORK_REMOTE_TIMEOUT = 10
+FRAMEWORK_GIST_URL = "https://gist.githubusercontent.com/chinfi-codex/b311c4c284c8aa6dae9c833a146a1840/raw/%E4%BC%8A%E6%9C%97%E5%B1%80%E5%8A%BF%E5%85%B3%E9%94%AE%E5%8F%98%E9%87%8F%E4%B8%8E%E7%BB%8F%E6%B5%8E%E5%BD%B1%E5%93%8D%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md"
 
 # OpenClaw 环境模型搜索配置
 OPENCLAW_SEARCH_URL = os.getenv("OPENCLAW_SEARCH_URL", "")
@@ -623,16 +625,35 @@ def read_text_with_fallbacks(path: Path) -> str:
     return ""
 
 
-def load_framework_excerpt() -> tuple[str, str]:
+def load_framework_remote() -> tuple[str, str, str]:
+    try:
+        response = requests.get(FRAMEWORK_GIST_URL, timeout=FRAMEWORK_REMOTE_TIMEOUT)
+        response.raise_for_status()
+        text = normalize_text(response.text)
+        if text:
+            return text[:FRAMEWORK_MAX_CHARS], FRAMEWORK_GIST_URL, "gist"
+    except Exception:
+        pass
+    return "", "", ""
+
+
+def load_framework_local() -> tuple[str, str, str]:
     base = Path(__file__).resolve().parents[1]
     for candidate in FRAMEWORK_CANDIDATES:
         path = base / candidate
         if path.exists():
-            return read_text_with_fallbacks(path)[:FRAMEWORK_MAX_CHARS], path.name
+            return read_text_with_fallbacks(path)[:FRAMEWORK_MAX_CHARS], path.name, "local"
     for path in sorted(base.glob("*.md")):
         if path.name != "SKILL.md" and ("伊朗局势" in path.name or "经济影响分析报告" in path.name):
-            return read_text_with_fallbacks(path)[:FRAMEWORK_MAX_CHARS], path.name
-    return "", ""
+            return read_text_with_fallbacks(path)[:FRAMEWORK_MAX_CHARS], path.name, "local"
+    return "", "", ""
+
+
+def load_framework_excerpt() -> tuple[str, str, str]:
+    remote_excerpt, remote_name, remote_source = load_framework_remote()
+    if remote_excerpt:
+        return remote_excerpt, remote_name, remote_source
+    return load_framework_local()
 
 
 def bundle_text(bundle: SearchBundle) -> str:
@@ -719,7 +740,7 @@ def describe_asset(asset: dict[str, Any] | None, label: str) -> str:
 
 def extract_framework_dimensions(framework_excerpt: str) -> list[str]:
     if not framework_excerpt:
-        return ["未加载本地分析框架，以下映射基于通用油气冲击逻辑。"]
+        return ["未加载分析框架，以下映射基于通用油气冲击逻辑。"]
     lowered = framework_excerpt.lower()
     hints = []
     if "霍尔木兹" in framework_excerpt or "hormuz" in lowered:
@@ -821,7 +842,7 @@ def build_report(max_results: int, prefer_model_search: bool = True) -> dict[str
         search_method = "failed"
     cls_items = filter_cls_items(cls_telegraphs(session))
     assets = collect_risk_assets(session)
-    framework_excerpt, framework_name = load_framework_excerpt()
+    framework_excerpt, framework_name, framework_source = load_framework_excerpt()
     all_text = " ".join(bundle_text(bundle) for bundle in searches.values()) + " " + cls_text(cls_items)
     heat_level, heat_lines = classify_heat(all_text)
     marginal_lines = marginal_change_assessment(all_text, searches["hormuz"])
@@ -847,6 +868,7 @@ def build_report(max_results: int, prefer_model_search: bool = True) -> dict[str
         "cls_count": len(cls_items),
         "framework_loaded": bool(framework_excerpt),
         "framework_name": framework_name,
+        "framework_source": framework_source,
         "search_method": search_method,
         "openclaw_env": is_openclaw_environment(),
     }
@@ -987,7 +1009,8 @@ def to_markdown(report: dict[str, Any]) -> str:
     # 数据源状态
     search_method_display = "模型搜索" if search_method == "model" else ("智能混合" if search_method == "smart" else "Tavily")
     openclaw_status = f" | OpenClaw环境: {'是' if report.get('openclaw_env') else '否'}"
-    lines.extend(["", "## 数据源状态", f"- 新闻搜索方法: {search_method_display}{openclaw_status}", f"- 主题搜索数: {len(report['searches'])}", f"- CLS 快讯命中数: {report['cls_count']}", f"- 框架已加载: {'是' if report['framework_loaded'] else '否'}", f"- 框架文件: {report['framework_name'] or '未找到'}"])
+    framework_source_display = "远程Gist" if report.get("framework_source") == "gist" else ("本地回退" if report.get("framework_source") == "local" else "未加载")
+    lines.extend(["", "## 数据源状态", f"- 新闻搜索方法: {search_method_display}{openclaw_status}", f"- 主题搜索数: {len(report['searches'])}", f"- CLS 快讯命中数: {report['cls_count']}", f"- 框架已加载: {'是' if report['framework_loaded'] else '否'}", f"- 框架来源: {framework_source_display}", f"- 框架文件: {report['framework_name'] or '未找到'}"])
     return "\n".join(lines) + "\n"
 
 
