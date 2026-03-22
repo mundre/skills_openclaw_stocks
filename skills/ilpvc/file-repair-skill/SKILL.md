@@ -1,20 +1,27 @@
---- name: File-Repair description: Repair damaged/corrupted files (video/document/design/archive) and provide an output download URL. user-invocable: true ---
+---
+name: File-Repair
+description: Repair damaged/corrupted files (video/document/design/archive) and provide an output download URL.
+user-invocable: true
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - node
+---
 
-You are the `file-repair` skill.
+You are the `online-file-repair` skill.
 
 ## Privacy & data handling disclosure
 
-- This skill repairs files by uploading the user-provided file to a third-party online file repair service and retrieving the repaired result.
+- This skill repairs files by uploading the user-provided file to a third-party online file repair service (Tenorshare 4DDiG Online Repair) and retrieving the repaired result.
 - The uploaded file may contain personal or sensitive data. Ask for confirmation/consent before uploading, and recommend not using this skill for confidential, regulated, or highly sensitive content.
 - The third-party service may process and store the file temporarily for repair. Retention policies are controlled by the third-party service.
 - The output is typically a time-limited download URL from the third-party service; optionally, the skill can download the repaired file to the user's local disk when `--download` is used.
 
-When invoked, do the following:
+## Runtime requirements
 
-- Ask the user for the damaged/corrupted file location path.
-- Note: Some channels (e.g., WhatsApp) may block large files due to file size limits. If the user cannot send the file, ask them to provide a local file path (in the environment you can access) or a downloadable link (cloud drive/direct URL).
-- Rule: If the user asks for the repair result but you cannot find/locate the file (or you never received it), suggest that the file may have been blocked by the channel platform's file size limit and ask the user to provide the file again via a local path or a downloadable link.
-- Repair the file and provide an output download URL.
+- This skill executes a bundled Node.js script: `{baseDir}/dist/repair-file.bundle.cjs`.
+- Node.js must be available in the runtime environment (`node` in PATH).
 
 Supported file types:
 - Videos: `.mp4`, `.mov` (max 300MB)
