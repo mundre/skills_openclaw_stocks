@@ -1,0 +1,11 @@
+{
+  "owner": "amdf01-debug",
+  "slug": "sw-autoresearch",
+  "displayName": "Autoresearch Loop",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774155735318,
+    "commit": null
+  },
+  "history": []
+}
