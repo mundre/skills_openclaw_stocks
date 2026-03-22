@@ -1,0 +1,11 @@
+{
+  "owner": "amdf01-debug",
+  "slug": "sw-ab-test-setup",
+  "displayName": "AB Test Setup",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774155728088,
+    "commit": null
+  },
+  "history": []
+}
