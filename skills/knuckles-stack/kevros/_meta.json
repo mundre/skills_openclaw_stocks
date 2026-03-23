@@ -1,13 +1,18 @@
 {
   "owner": "knuckles-stack",
   "slug": "kevros",
-  "displayName": "Kevros",
+  "displayName": "Openclaw Plugin",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773636008135,
-    "commit": "https://github.com/openclaw/skills/commit/f6b7010d94543280e75e9d5daa342061d0c390da"
+    "version": "0.4.6",
+    "publishedAt": 1774036881247,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773636008135,
+      "commit": "https://github.com/openclaw/skills/commit/f6b7010d94543280e75e9d5daa342061d0c390da"
+    },
     {
       "version": "0.4.2",
       "publishedAt": 1773284121237,

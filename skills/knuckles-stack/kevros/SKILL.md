@@ -5,8 +5,7 @@ version: 0.3.8
 metadata:
   openclaw:
     requires:
-      env:
-        - KEVROS_API_KEY
+      env: []
       bins: []
     primaryEnv: KEVROS_API_KEY
     always: false
@@ -16,8 +15,8 @@ metadata:
       - macos
       - windows
     install:
-      - kind: uv
-        package: kevros
+      - kind: npm
+        package: "@kevros/openclaw-plugin"
         bins: []
 ---
 
@@ -28,6 +27,23 @@ Cryptographic governance for autonomous agents: precision decisioning, provenanc
 Every decision gets a signed release token. Every action gets a hash-chained record. Every intent gets a cryptographic binding to its command. Downstream services verify independently — no callbacks, no trust assumptions.
 
 **Base URL:** `https://governance.taskhawktech.com`
+
+## Data Handling
+
+This plugin sends data to the Kevros governance gateway. Understand what is transmitted before installing.
+
+**Before tool execution** (`before_tool_call` hook):
+- Tool name and full input payload are sent to `POST /governance/verify` for policy evaluation.
+- The gateway hashes raw payloads (SHA-256) on receipt. Only digests are stored in the provenance chain.
+
+**After tool execution** (`after_tool_call` hook):
+- Tool name, a **truncated output summary (up to 500 characters)**, and governance metadata (release token, epoch, verification ID) are sent to `POST /governance/attest`.
+- If tool output contains sensitive data, the 500-char summary may include it. Review your tool outputs before enabling attestation, or disable post-execution attestation by setting `autoAttest: false` in config.
+
+**Network behavior:**
+- All transmissions use HTTPS to `https://governance.taskhawktech.com`.
+- If `KEVROS_API_KEY` is not set, the plugin calls `POST /signup` to auto-provision a free-tier key on first use (1,000 calls/month). Set the key explicitly to avoid implicit network signup.
+- In `enforce` mode (default), unreachable gateway blocks high-risk tool calls. Use `advisory` mode for evaluation — it logs decisions without blocking.
 
 ## Quick Start
 
@@ -222,7 +238,7 @@ Status values: `ACHIEVED`, `PARTIALLY_ACHIEVED`, `FAILED`, `BLOCKED`, `TIMEOUT`.
 
 ## Compliance Bundle
 
-**POST /governance/bundle** — $0.25 per call
+**POST /governance/bundle** — $0.05 per call
 
 Export your agent's full cryptographic trust record for compliance, auditing, or regulatory review.
 
@@ -689,7 +705,7 @@ When collaborating with another agent:
 - Attest: $0.02
 - Bind: $0.02
 - Media Attest: $0.05
-- Compliance Bundle: $0.25
+- Compliance Bundle: $0.05
 - Batch: each sub-operation metered individually
 - Verify Outcome: free with Bind
 - Delegation, Replay, Counterfactual, Export, Health, Audit: metered per call

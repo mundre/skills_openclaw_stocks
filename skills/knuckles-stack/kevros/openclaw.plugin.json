@@ -1,10 +1,26 @@
 {
   "name": "kevros-governance",
-  "displayName": "Kevros Governance",
+  "displayName": "Kevros",
   "description": "Cryptographic policy enforcement for agent tool calls. Every action verified, every decision signed, every record hash-chained.",
   "kind": "security",
-  "version": "1.0.0",
+  "version": "0.4.4",
   "entry": "dist/index.js",
+  "distribution": "npm",
+  "install": {
+    "npm": "@kevros/openclaw-plugin"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ndl-systems/kevros",
+    "directory": "contrib/openclaw-plugin"
+  },
+  "homepage": "https://www.taskhawktech.com",
+  "env": {
+    "KEVROS_API_KEY": {
+      "description": "API key for the Kevros governance gateway. Optional: auto-provisions a free-tier key if not set.",
+      "required": false
+    }
+  },
   "configSchema": {
     "type": "object",
     "properties": {
@@ -24,8 +40,8 @@
       "mode": {
         "type": "string",
         "enum": ["enforce", "advisory", "deny"],
-        "default": "enforce",
-        "description": "Enforcement mode: enforce (fail-closed), advisory (log-only), deny (block all)."
+        "default": "advisory",
+        "description": "Enforcement mode: enforce (fail-closed), advisory (log-only, recommended for evaluation), deny (block all)."
       },
       "highRiskTools": {
         "type": "array",
@@ -36,7 +52,7 @@
       "autoAttest": {
         "type": "boolean",
         "default": true,
-        "description": "Automatically attest tool executions to build provenance history."
+        "description": "Post-execution attestation sends truncated output (500 chars) to gateway. Set false to disable."
       }
     }
   }
