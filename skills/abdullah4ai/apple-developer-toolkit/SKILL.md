@@ -230,68 +230,6 @@ describe > analyze > plan > build > fix > run
 | `/info` | Show project info |
 | `/usage` | Token usage and cost |
 
-## Hooks
-
-The toolkit supports lifecycle hooks for automation. Hooks fire at key points during build and store operations, running scripts or sending notifications.
-
-### Quick Start
-
-```bash
-# Initialize hook system with indie dev template
-bash scripts/hook-init.sh --template indie
-
-# Test a hook
-bash scripts/hook-runner.sh build.done STATUS=success APP_NAME=MyApp DURATION_SEC=42
-
-# Dry run (preview without executing)
-bash scripts/hook-runner.sh --dry-run build.done STATUS=success APP_NAME=MyApp
-
-# Per-project hooks
-bash scripts/hook-init.sh --template indie --project
-```
-
-### Config Locations
-
-- **Global:** `~/.appledev/hooks.yaml` (applies to all projects)
-- **Project:** `.appledev/hooks.yaml` (overrides/extends global)
-- **Hook scripts:** `~/.appledev/hooks/` (reusable shell scripts)
-- **Logs:** `~/.appledev/hook-logs/` (daily execution logs)
-
-### Templates
-
-Three templates available via `hook-init.sh --template`:
-
-| Template | Focus |
-|----------|-------|
-| `indie` | Solo dev: Telegram notifications, auto TestFlight |
-| `team` | Team: Slack + Telegram, git tagging, changelog |
-| `ci` | CI/CD: Logging, test running, no interactive notifications |
-
-### Built-in Hook Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `notify-telegram.sh` | Send Telegram notification |
-| `git-tag-release.sh` | Create and push git tag |
-| `run-swift-tests.sh` | Run Swift tests (SPM or Xcode) |
-| `generate-changelog.sh` | Generate changelog from git history |
-
-### Event Catalog
-
-42 events across 4 categories: build (13), store (20), docs (4), pipeline (5). Full reference: [references/hooks-reference.md](references/hooks-reference.md)
-
-### Agent Integration
-
-When running `appledev` commands via the skill, fire appropriate hook events after completion:
-
-```bash
-# After appledev build completes
-bash scripts/hook-runner.sh build.done STATUS=success APP_NAME=AppName DURATION_SEC=30
-
-# After store upload
-bash scripts/hook-runner.sh store.upload.done STATUS=success APP_ID=123 BUILD_NUMBER=42
-```
-
 ## References
 
 | Reference | Content |
