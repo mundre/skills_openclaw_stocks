@@ -51,7 +51,9 @@ Common guidance:
 
 - `INSUFFICIENT_BALANCE`: top up or reduce purchase amount
 - `CARD_NOT_ACTIVE`: card is not ready yet
-- merchant-side error with no clear payment result: read `/api/cards/{cardId}/transactions` before trying again
+- merchant-side error with no clear payment result: inspect the active execution surface before trying again
+- for legacy direct-card compatibility flows, read `/api/cards/{cardId}/transactions`
+- for hidden subscription-card flows, inspect the payment intent or subscription state and reconcile the subscription if provider settlement may already have happened
 
 ## 4. Subscription And Currency Traps
 
