@@ -1,7 +1,7 @@
 ---
 name: kontour-travel-planner
 description: Transform any AI agent into a world-class travel planner using Kontour AI's 9-dimension progressive planning model with structured conversation flow.
-version: 1.1.19
+version: 1.1.24
 license: MIT-0
 metadata:
   openclaw:
@@ -45,12 +45,6 @@ Quick local verification:
 # Should return no matches for network clients used by runtime scripts
 rg -n "python3 -c|eval\(|exec\(|os\.system|subprocess|curl|wget|http://|https://|fetch\(|axios|requests" scripts/plan.sh scripts/export-gmaps.sh
 ```
-
-Static-verdict normalization (marketplace evidence hygiene):
-
-- If a security page does not expose an explicit pass/fail token in static HTML extraction, record it as `INCONCLUSIVE_STATIC` (not pass, not fail).
-- Current Socket page output is treated as `INCONCLUSIVE_STATIC` unless it explicitly emits a verdict string.
-- ATH and Snyk use explicit risk labels and should be reported from those labels directly.
 
 ## How It Works
 
@@ -281,6 +275,7 @@ Generate static embed snippets for travel blogs, SEO articles, and content sites
 2. **Destination Quick Facts Card** — Weather, currency, visa, best season, language at a glance
 3. **Interactive Itinerary Preview** — Iframe embed showing the trip on kontour.ai's map
 4. **Cost Comparison Summary** — Budget vs mid-range vs luxury daily costs
+3. **Cost Comparison Summary** — Budget vs mid-range vs luxury daily costs
 
 ### Generating Widgets On Demand
 

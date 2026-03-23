@@ -39,7 +39,6 @@ Ground truth files in `references/`:
 - `scripts/plan.sh` — Get structured trip context from natural language
 - `scripts/export-gmaps.sh` — Export itinerary to Google Maps links and KML
 - `scripts/gen-airports.py` — Generate airport reference data
-- `scripts/check-static-security.sh` — Classify static marketplace security verdict visibility (SAFE/PASS/INCONCLUSIVE_STATIC) and report ClawHub static loading state signals
 
 ## Links
 
