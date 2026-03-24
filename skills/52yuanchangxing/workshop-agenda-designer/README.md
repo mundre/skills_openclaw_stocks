@@ -1,107 +1,70 @@
-# Workshop Agenda Designer
+# 工作坊议程设计师
 
-Slug: `workshop-agenda-designer`
-
-## 功能定位
-
-Design workshops, trainings, and strategy sessions with timing, facilitation notes, activities, and follow-up artifacts.
+## 功能
+把会议目标、参会人、时间与约束拆成可执行议程、分段脚本、产出物与会后跟进。
 
 ## 适用场景
+- 工作坊设计
+- 客户共创会
+- 内部对齐会
 
-- 当用户需要：设计议程
-- 当用户手头已有原始材料，需要快速整理成可执行输出
-- 当用户希望先预览方案、再决定是否落盘或批量处理
+## 推荐实现边界
+- 模式：`structured_brief` —— 把输入材料整理成结构化 Markdown 成品。
+- 输入：会议目标、参与者、时长、已知冲突点
+- 输出：以 Markdown 为主，强调可审阅、可追踪、可补充。
+- 风险控制：不会自动发出邀请，也不会修改日历。
 
 ## 安装要求
-
-- OpenClaw / AgentSkills 兼容目录结构
-- `python3` 可执行文件在 PATH 中可用
-- 无远程安装脚本、无隐藏联网依赖、无未声明凭据要求
+- `python3`
+- 无额外三方依赖
+- 建议在支持 `skills/` 目录加载的 OpenClaw 工作区中使用
 
 ## 目录结构
-
-- `SKILL.md`：触发描述、工作流、输出契约
-- `scripts/agenda_builder.py`：本地辅助脚本
-- `resources/agenda_template.md`：被 SKILL/README 引用的资源文件
-- `examples/example-prompt.md`：触发与输入示例
-- `tests/smoke-test.md`：最小冒烟测试
-- `SELF_CHECK.md`：规范与安全自检
-- `CHANGELOG.md`：变更记录
+- `SKILL.md`：Skill 说明与路由规则
+- `README.md`：功能、场景、安装、用法和风险说明
+- `SELF_CHECK.md`：本 Skill 的规范与质量自检
+- `scripts/run.py`：本地可执行脚本，负责生成或审计结果
+- `resources/spec.json`：结构化配置，驱动脚本与模板
+- `resources/template.md`：输出模板
+- `examples/example-input.md`：示例输入
+- `examples/example-output.md`：示例输出
+- `tests/smoke-test.md`：冒烟测试步骤
 
 ## 触发示例
-
-- `设计议程`
-- `build a workshop agenda`
-- `培训大纲`
-- `facilitation plan`
-- `会议流程设计`
-
-## 建议输入
-
-- session goal
-- participants
-- duration
-- format online/offline
-- decision needed
-- constraints
-
-## 预期输出
-
-- agenda
-- facilitator run-sheet
-- materials checklist
-- follow-up template
-
-## 辅助脚本
-
-脚本：`scripts/agenda_builder.py`
-
-建议先运行帮助信息确认参数：
-
-```bash
-python3 scripts/agenda_builder.py --help
-```
-
-该脚本设计原则：
-
-- 本地执行，便于审计与回滚
-- 输入输出路径显式传入
-- 不使用 `curl|bash`、远程直灌、base64 混淆执行
-- 仅处理用户明确提供的文件或目录
+- 为 90 分钟跨团队 workshop 设计议程
+- 把目标和参与者整理成工作坊 runbook
 
 ## 输入输出示例
+### 输入侧重点
+- 目标与成功标准
+- 议程分段
+- 主持提示
 
-输入示例见：`examples/example-prompt.md`
+### 本地命令
+```bash
+python3 scripts/run.py --input examples/example-input.md --output out.md
+```
 
-输出示例建议至少包含：
+### 预期输出
+- 结构化 Markdown
+- 明确的待确认项
+- 面向当前场景的下一步建议
 
-- 结构化主结果
-- 未决问题 / 风险项
-- 可交付给他人的摘要或清单
+## 脚本参数
+```text
+--input   输入文件或目录
+--output  输出文件，默认 stdout
+--format  markdown/json，默认 markdown
+--limit   限制扫描或摘要数量
+--dry-run 仅分析不写文件
+```
 
 ## 常见问题
-
-### 1. 这个 skill 会直接改我的文件吗？
-
-默认不应直接进行破坏性批量操作；应优先生成预览、清单或草案，只有在用户明确要求时才建议执行进一步动作。
-
-### 2. 这个 skill 需要联网吗？
-
-当前目录内未声明联网依赖，也没有内置远程下载步骤。是否联网应由具体会话任务决定，而不是由 skill 包本身强制触发。
-
-### 3. 资源文件的作用是什么？
-
-`resources/agenda_template.md` 为脚本或说明提供模板、规则、清单或模式参考，便于输出格式统一、可复用、可审计。
+**问：这个 Skill 会直接修改外部系统吗？**  不会，默认只生成草案、清单或只读审计结果。
+**问：没有 shell/exec 工具还能用吗？**  可以，Skill 会直接按模板产出文本结果。
+**问：脚本依赖什么？**  只依赖 `python3` 和 Python 标准库。
 
 ## 风险提示
-
-- 对用户提供的数据、文本、截图或本地文件进行整理时，应先确认范围与目标。
-- 涉及重命名、移动、合并、覆盖、生成正式对外内容时，应先给预览版本。
-- 对不确定字段使用“待确认”标记，不应编造事实。
-
-## 安全审计结论
-
-- 依赖边界：仅声明 `python3`
-- 凭据边界：未声明环境变量依赖
-- 执行边界：本地脚本、本地资源、显式输入
-- 高风险模式检查：未引入 `curl|bash`、远程管道执行、混淆载荷或私有 API 绑定
+- 仅使用本地输入内容，不联网补事实。
+- 默认不删除、不写外部系统、不发消息、不发布。
+- 若输入含个人信息或敏感材料，建议先脱敏再处理。
