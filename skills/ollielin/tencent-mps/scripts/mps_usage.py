@@ -116,10 +116,12 @@ def query_usage(
     regions: list = None,
     region: str = "ap-guangzhou",
     dry_run: bool = False,
+    raise_on_error: bool = False,
 ) -> dict:
     """
     调用 DescribeUsageData 接口查询用量
     返回原始 API 响应数据
+    raise_on_error=True 时抛出异常而非 sys.exit（用于批量容错场景）
     """
     cred = get_credentials()
     client = mps_client.MpsClient(cred, region)
@@ -145,6 +147,8 @@ def query_usage(
         resp = client.DescribeUsageData(req)
         return json.loads(resp.to_json_string())
     except TencentCloudSDKException as e:
+        if raise_on_error:
+            raise
         print(f"❌ API 调用失败: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -278,16 +282,45 @@ def main():
     print(f"🌏 处理地域: {', '.join(args.process_regions) if args.process_regions else 'ap-guangzhou'}")
 
     # ── 调用 API ──
-    data = query_usage(
-        start_time=start_date,
-        end_time=end_date,
-        types=types,
-        regions=args.process_regions,
-        dry_run=args.dry_run,
-    )
+    if args.all_types:
+        # --all-types 模式：逐个类型查询，容错处理
+        all_data = []
+        failed_types = []
+        for t in types:
+            try:
+                data = query_usage(
+                    start_time=start_date,
+                    end_time=end_date,
+                    types=[t],
+                    regions=args.process_regions,
+                    dry_run=args.dry_run,
+                    raise_on_error=True,
+                )
+                if not args.dry_run:
+                    task_list = data.get("Data", [])
+                    if task_list:
+                        all_data.extend(task_list)
+            except TencentCloudSDKException as e:
+                print(f"  ⚠️  {t} 查询失败: {e}", file=sys.stderr)
+                failed_types.append(t)
 
-    if not args.dry_run:
-        print_report(data, output_json=args.json)
+        if failed_types:
+            print(f"\n⚠️  以下类型查询失败（可能不支持或无权限）: {', '.join(failed_types)}", file=sys.stderr)
+
+        if not args.dry_run:
+            merged = {"Data": all_data}
+            print_report(merged, output_json=args.json)
+    else:
+        data = query_usage(
+            start_time=start_date,
+            end_time=end_date,
+            types=types,
+            regions=args.process_regions,
+            dry_run=args.dry_run,
+        )
+
+        if not args.dry_run:
+            print_report(data, output_json=args.json)
 
 
 if __name__ == "__main__":

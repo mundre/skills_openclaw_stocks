@@ -27,11 +27,11 @@
 COS 存储约定：
   通过环境变量 TENCENTCLOUD_COS_BUCKET 指定 COS Bucket 名称。
   - 输入文件默认路径：{TENCENTCLOUD_COS_BUCKET}/input/   （即 COS Object 以 /input/ 开头）
-  - 输出文件默认路径：{TENCENTCLOUD_COS_BUCKET}/output/  （即输出目录为 /output/）
+  - 输出文件默认路径：{TENCENTCLOUD_COS_BUCKET}/output/subtitle/  （即输出目录为 /output/subtitle/）
 
   当使用 COS 输入时，如果未显式指定 --cos-bucket，自动使用 TENCENTCLOUD_COS_BUCKET。
   当未显式指定 --output-bucket，自动使用 TENCENTCLOUD_COS_BUCKET 作为输出 Bucket。
-  当未显式指定 --output-dir，自动使用 /output/ 作为输出目录。
+  当未显式指定 --output-dir，自动使用 /output/subtitle/ 作为输出目录。
 
 用法：
   # 最简用法：ASR 识别字幕（源语言字幕，自动识别语言）
@@ -539,7 +539,7 @@ def build_request_params(args):
     if output_storage:
         params["OutputStorage"] = output_storage
 
-    # 输出目录：默认 /output/av_erase/，用户可通过 --output-dir 覆盖
+    # 输出目录：默认 /output/subtitle/，用户可通过 --output-dir 覆盖
     params["OutputDir"] = args.output_dir if args.output_dir else "/output/subtitle/"
 
     # 智能字幕任务
@@ -678,7 +678,7 @@ def process_media(args):
         no_wait = getattr(args, 'no_wait', False)
         if not no_wait and _POLL_AVAILABLE and task_id != 'N/A':
             poll_interval = getattr(args, 'poll_interval', 10)
-            max_wait = getattr(args, 'max_wait', 600)
+            max_wait = getattr(args, 'max_wait', 1800)
             poll_video_task(task_id, region=region, interval=poll_interval,
                             max_wait=max_wait, verbose=args.verbose)
         else:
@@ -798,13 +798,13 @@ OCR 识别源语言（--src-lang）：
                              help="COS 对象路径，建议以 /input/ 开头，如 /input/video/test.mp4")
 
     # ---- 输出 ----
-    output_group = parser.add_argument_group("输出配置（可选，默认输出到 TENCENTCLOUD_COS_BUCKET/output/）")
+    output_group = parser.add_argument_group("输出配置（可选，默认输出到 TENCENTCLOUD_COS_BUCKET/output/subtitle/）")
     output_group.add_argument("--output-bucket", type=str,
                               help="输出 COS Bucket 名称（默认取 TENCENTCLOUD_COS_BUCKET 环境变量）")
     output_group.add_argument("--output-region", type=str,
                               help="输出 COS Bucket 区域（默认取 TENCENTCLOUD_COS_REGION 环境变量，默认 ap-guangzhou）")
     output_group.add_argument("--output-dir", type=str,
-                              help="输出目录（默认 /output/），以 / 开头和结尾")
+                              help="输出目录（默认 /output/subtitle/），以 / 开头和结尾")
     output_group.add_argument("--output-object-path", type=str,
                               help="输出字幕文件路径，如 /output/{inputName}_subtitle.{format}")
 
@@ -868,8 +868,8 @@ OCR 识别源语言（--src-lang）：
                              help="仅提交任务，不等待结果（默认会自动轮询直到完成）")
     other_group.add_argument("--poll-interval", type=int, default=10,
                              help="轮询间隔（秒），默认 10")
-    other_group.add_argument("--max-wait", type=int, default=600,
-                             help="最长等待时间（秒），默认 600（10分钟）")
+    other_group.add_argument("--max-wait", type=int, default=1800,
+                             help="最长等待时间（秒），默认 1800（30分钟）")
     other_group.add_argument("--verbose", "-v", action="store_true", help="输出详细信息")
     other_group.add_argument("--dry-run", action="store_true", help="仅打印请求参数，不实际调用 API")
 

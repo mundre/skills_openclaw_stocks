@@ -24,6 +24,7 @@
   - 多图参考生视频（GV/Vidu）：最多3张参考图
   - 参考视频生视频（Kling O1）：基于参考视频进行编辑或特征参考
   - 特效场景（Kling 动作控制 / Vidu 特效模板等）
+  - 分镜生成（Kling 专属）：支持单分镜和多分镜自动生成
   - 自定义时长、分辨率、宽高比
   - 水印控制、音频生成、背景音乐
   - 结果存储到 COS
@@ -43,6 +44,17 @@ COS 存储配置（可选）：
   # 图生视频：首帧图片 + 描述
   python mps_aigc_video.py --prompt "让画面动起来" \
       --image-url https://example.com/photo.jpg
+
+  # Kling 分镜：单分镜（自动智能拆分）
+  python mps_aigc_video.py --prompt "旅行日记，记录美好瞬间" --model Kling --multi-shot
+
+  # Kling 分镜：多分镜（自定义每个分镜）
+  python mps_aigc_video.py --model Kling --multi-shot --duration 12 \
+      --multi-prompts-json '[
+        {"index": 1, "prompt": "日出时分，从酒店窗户看城市天际线", "duration": "3"},
+        {"index": 2, "prompt": "在咖啡馆享用早餐，窗外街道行人", "duration": "4"},
+        {"index": 3, "prompt": "公园里散步，阳光透过树叶", "duration": "5"}
+      ]'
 
   # 首尾帧生视频（GV / Kling 2.1 / Vidu q2-pro）
   python mps_aigc_video.py --prompt "过渡动画" --model GV \
@@ -129,36 +141,42 @@ SUPPORTED_MODELS = {
         "versions": [],
         "duration_options": [],
         "default_duration": None,
+        "supports_multishot": False,
     },
     "Hailuo": {
         "description": "海螺视频模型",
         "versions": ["02", "2.3"],
         "duration_options": [6, 10],
         "default_duration": 6,
+        "supports_multishot": False,
     },
     "Kling": {
         "description": "可灵视频模型",
         "versions": ["2.0", "2.1", "2.5", "O1", "2.6", "3.0", "3.0-Omni"],
         "duration_options": [5, 10],
         "default_duration": 5,
+        "supports_multishot": True,  # 支持分镜
     },
     "Vidu": {
         "description": "Vidu 视频模型",
         "versions": ["q2", "q2-pro", "q2-turbo", "q3-pro", "q3-turbo"],
         "duration_options": list(range(1, 11)),
         "default_duration": 4,
+        "supports_multishot": False,
     },
     "OS": {
         "description": "OS 视频模型",
         "versions": ["2.0"],
         "duration_options": [4, 8, 12],
         "default_duration": 8,
+        "supports_multishot": False,
     },
     "GV": {
         "description": "GV 视频模型",
         "versions": ["3.1"],
         "duration_options": [8],
         "default_duration": 8,
+        "supports_multishot": False,
     },
 }
 
@@ -251,7 +269,7 @@ def resolve_cos_input(cos_bucket: str, cos_region: str, cos_key: str,
 
 # 轮询配置
 DEFAULT_POLL_INTERVAL = 10   # 秒（视频生成较慢）
-DEFAULT_MAX_WAIT = 600       # 最长等待10分钟
+DEFAULT_MAX_WAIT = 1800       # 最长等待30分钟
 
 
 def get_cos_bucket():
@@ -308,6 +326,152 @@ def create_mps_client(cred, region):
     client_profile.httpProfile = http_profile
 
     return mps_client.MpsClient(cred, region, client_profile)
+
+
+def build_multishot_params(args):
+    """
+    构建分镜参数（仅 Kling 模型支持）
+
+    规则说明：
+    - 单分镜模式：multi_shot=true, shot_type=intelligence, multi_prompt 不填写
+    - 多分镜模式：multi_shot=true, shot_type=intelligence, multi_prompt 为数组
+    - 多分镜场景下，ModelVersion 参数是必须的（值为 3.0 或 3.0-Omni），由调用方在顶层 params 中设置
+
+    Args:
+        args: 命令行参数
+
+    Returns:
+        分镜参数字典，失败返回 None
+    """
+    if not args.multi_shot:
+        return None
+
+    # 分镜功能仅 Kling 模型支持
+    if args.model != "Kling":
+        print(f"❌ 错误：分镜功能目前仅支持 Kling 模型", file=sys.stderr)
+        return None
+
+    multishot_params = {
+        "multi_shot": True,  # 注意：是 multi_shot 不是 multi_shots
+        "shot_type": "intelligence"  # 无论是单分镜还是多分镜，都是 intelligence
+    }
+
+    # 如果提供了多分镜 JSON 配置
+    if args.multi_prompts_json:
+        try:
+            multi_prompts = json.loads(args.multi_prompts_json)
+        except json.JSONDecodeError as e:
+            print(f"❌ 错误：--multi-prompts-json 参数必须是有效的 JSON 格式: {e}", file=sys.stderr)
+            return None
+
+        # 校验多分镜配置，并获取计算的总时长
+        total_shots_duration = validate_multi_prompts(multi_prompts, args.duration, parser=None)
+        if total_shots_duration is None:
+            return None  # 校验失败
+
+        # 确保 duration 字段为整数类型（API 要求）
+        for shot in multi_prompts:
+            if isinstance(shot.get("duration"), str):
+                shot["duration"] = int(shot["duration"])
+
+        # multi_prompt 作为数组对象（不是 JSON 字符串）
+        multishot_params["multi_prompt"] = multi_prompts
+
+        # 如果用户没有指定总时长，自动使用分镜时长之和
+        if args.duration is None:
+            print(f"ℹ️  未指定总时长，自动设置为分镜时长之和: {total_shots_duration} 秒")
+            multishot_params["duration"] = total_shots_duration
+    # 否则使用单分镜模式（multi_prompt 不填写，系统自动拆分）
+    # 此时只设置 multi_shot=True 和 shot_type=intelligence
+
+    return multishot_params
+
+
+def validate_multi_prompts(multi_prompts, total_duration, parser=None):
+    """
+    校验多分镜配置
+    
+    Args:
+        multi_prompts: 分镜配置列表
+        total_duration: 总时长
+        parser: ArgumentParser 对象（用于错误提示）
+    
+    Returns:
+        校验通过返回 True，否则返回 False
+    """
+    if not isinstance(multi_prompts, list):
+        print("❌ 错误：multi_prompt 必须是数组格式", file=sys.stderr)
+        return False
+    
+    if len(multi_prompts) == 0:
+        print("❌ 错误：multi_prompt 不能为空", file=sys.stderr)
+        return False
+    
+    if len(multi_prompts) > 6:
+        print("❌ 错误：最多支持 6 个分镜，当前配置了 {} 个".format(len(multi_prompts)), file=sys.stderr)
+        return False
+    
+    if len(multi_prompts) < 1:
+        print("❌ 错误：至少需要 1 个分镜", file=sys.stderr)
+        return False
+    
+    # 检查每个分镜的格式
+    for i, shot in enumerate(multi_prompts):
+        if not isinstance(shot, dict):
+            print(f"❌ 错误：分镜 {i+1} 必须是对象格式", file=sys.stderr)
+            return False
+        
+        # 检查必需字段
+        if "index" not in shot:
+            print(f"❌ 错误：分镜 {i+1} 缺少 index 字段", file=sys.stderr)
+            return False
+        if "prompt" not in shot:
+            print(f"❌ 错误：分镜 {i+1} 缺少 prompt 字段", file=sys.stderr)
+            return False
+        if "duration" not in shot:
+            print(f"❌ 错误：分镜 {i+1} 缺少 duration 字段", file=sys.stderr)
+            return False
+        
+        # 检查字段类型
+        if not isinstance(shot["index"], int):
+            print(f"❌ 错误：分镜 {i+1} 的 index 必须是整数", file=sys.stderr)
+            return False
+        if not isinstance(shot["prompt"], str):
+            print(f"❌ 错误：分镜 {i+1} 的 prompt 必须是字符串", file=sys.stderr)
+            return False
+        if not isinstance(shot["duration"], (int, str)):
+            print(f"❌ 错误：分镜 {i+1} 的 duration 必须是数字", file=sys.stderr)
+            return False
+        
+        # 检查提示词长度
+        if len(shot["prompt"]) > 512:
+            print(f"❌ 错误：分镜 {i+1} 的 prompt 长度不能超过 512 字符（当前 {len(shot['prompt'])} 字符）", file=sys.stderr)
+            return False
+        
+        # 检查时长范围
+        try:
+            duration = int(shot["duration"])
+            if duration < 1:
+                print(f"❌ 错误：分镜 {i+1} 的时长不能小于 1 秒（当前 {duration} 秒）", file=sys.stderr)
+                return False
+            # 检查分镜时长不大于总时长
+            if total_duration is not None and duration > total_duration:
+                print(f"❌ 错误：分镜 {i+1} 的时长（{duration} 秒）不能大于总时长（{total_duration} 秒）", file=sys.stderr)
+                return False
+        except ValueError:
+            print(f"❌ 错误：分镜 {i+1} 的 duration 必须是有效的数字", file=sys.stderr)
+            return False
+    
+    # 计算所有分镜时长之和
+    total_shots_duration = sum(int(shot["duration"]) for shot in multi_prompts)
+    
+    # 检查时长是否等于总时长（仅在 total_duration 指定时校验）
+    if total_duration is not None and total_shots_duration != total_duration:
+        print(f"❌ 错误：所有分镜时长之和（{total_shots_duration} 秒）必须等于总时长（{total_duration} 秒）", file=sys.stderr)
+        return False
+    
+    # 返回总时长（用于自动设置）
+    return total_shots_duration
 
 
 def build_create_params(args):
@@ -461,6 +625,38 @@ def build_create_params(args):
     if args.duration is not None:
         params["Duration"] = args.duration
 
+    # 分镜参数（AdditionalParameters）
+    multishot_params = build_multishot_params(args)
+    if multishot_params:
+        # 多分镜场景下，ModelVersion 是必须的（值为 3.0 或 3.0-Omni）
+        if not params.get("ModelVersion"):
+            params["ModelVersion"] = "3.0-Omni"
+            print(f"ℹ️  多分镜模式下自动设置 ModelVersion: {params['ModelVersion']}")
+
+        # 提取 duration 到顶层参数（如果存在）
+        if "duration" in multishot_params:
+            duration_value = multishot_params.pop("duration")
+            # 优先使用用户指定的 duration
+            if params.get("Duration") is None:
+                params["Duration"] = duration_value
+
+        # 分镜参数需要合并到 AdditionalParameters 中
+        # 注意：AdditionalParameters 保持为 dict 结构，SDK 会自动序列化为 JSON 字符串
+        if args.additional_params:
+            try:
+                # 解析用户提供的 additional_params
+                existing_additional = json.loads(args.additional_params)
+                # 合并分镜参数
+                existing_additional.update(multishot_params)
+                # 直接使用 dict 结构（SDK 的 from_json_string 会自动序列化）
+                params["AdditionalParameters"] = existing_additional
+            except json.JSONDecodeError:
+                print("❌ 错误：--additional-params 参数必须是有效的 JSON 格式", file=sys.stderr)
+                sys.exit(1)
+        else:
+            # 没有用户提供的 additional_params，直接使用分镜参数（dict 结构）
+            params["AdditionalParameters"] = multishot_params
+
     # 额外参数（ExtraParameters）
     extra = {}
     if args.resolution:
@@ -470,7 +666,8 @@ def build_create_params(args):
     if args.no_logo:
         extra["LogoAdd"] = 0
     if args.enable_audio is not None:
-        extra["EnableAudio"] = args.enable_audio
+        # 将字符串转换为布尔值
+        extra["EnableAudio"] = args.enable_audio.lower() in ["true", "1", "yes"]
     if args.off_peak:
         extra["OffPeak"] = True
     if args.enable_bgm:
@@ -483,9 +680,16 @@ def build_create_params(args):
     if cos_param:
         params["StoreCosParam"] = cos_param
 
-    # 附加参数（JSON 字符串）
-    if args.additional_params:
-        params["AdditionalParameters"] = args.additional_params
+    # 附加参数（AdditionalParameters）
+    # 注意：如果有分镜参数，已经在上面的代码块中合并处理了
+    # 只有非分镜模式下，这里才需要单独设置 additional_params
+    if args.additional_params and not multishot_params:
+        try:
+            # 解析为 dict 结构，不要直接使用字符串
+            params["AdditionalParameters"] = json.loads(args.additional_params)
+        except json.JSONDecodeError as e:
+            print(f"❌ 错误：--additional-params 参数必须是有效的 JSON 格式: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # 操作者
     if args.operator:
@@ -513,8 +717,13 @@ def build_store_cos_param(args):
 
 
 def create_aigc_video_task(client, params):
-    """调用 CreateAigcVideoTask API 创建生视频任务。"""
+    """调用 CreateAigc_video_task API 创建生视频任务。"""
     req = models.CreateAigcVideoTaskRequest()
+    
+    # AdditionalParameters 需要是 JSON 字符串，需要先序列化
+    if "AdditionalParameters" in params and isinstance(params["AdditionalParameters"], dict):
+        params["AdditionalParameters"] = json.dumps(params["AdditionalParameters"], ensure_ascii=False)
+    
     req.from_json_string(json.dumps(params))
     resp = client.CreateAigcVideoTask(req)
     return json.loads(resp.to_json_string())
@@ -575,6 +784,22 @@ def validate_args(args, parser):
                 f"模型 {args.model} 支持的版本为: {', '.join(valid_versions)}，"
                 f"当前指定: {args.model_version}"
             )
+
+    # 分镜功能校验
+    if args.multi_shot:
+        if not model_info or not model_info.get("supports_multishot", False):
+            parser.error(f"分镜功能目前仅支持 Kling 模型")
+        
+        # 如果使用多分镜配置，必须校验
+        if args.multi_prompts_json:
+            try:
+                multi_prompts = json.loads(args.multi_prompts_json)
+            except json.JSONDecodeError as e:
+                parser.error(f"--multi-prompts-json 参数必须是有效的 JSON 格式: {e}")
+            
+            total_shots_duration = validate_multi_prompts(multi_prompts, args.duration, parser)
+            if total_shots_duration is None:
+                parser.error("多分镜配置校验失败")
 
     # COS 路径参数校验 - 首帧图片
     if args.image_cos_key:
@@ -677,6 +902,11 @@ def run(args):
         print(f"TaskId: {args.task_id}")
         print("-" * 60)
 
+        if args.dry_run:
+            print("【Dry Run 模式】仅打印查询信息，不实际调用 API")
+            print(f"查询参数: {{\"TaskId\": \"{args.task_id}\"}}")
+            return
+
         try:
             result = describe_aigc_video_task(client, args.task_id)
             status = result.get("Status", "")
@@ -729,6 +959,18 @@ def run(args):
     if args.scene_type:
         scene_desc = SCENE_TYPES.get(args.scene_type, args.scene_type)
         print(f"场景: {scene_desc}")
+    if args.multi_shot:
+        print("分镜: 启用")
+        if args.multi_prompts_json:
+            try:
+                multi_prompts = json.loads(args.multi_prompts_json)
+                print(f"分镜数量: {len(multi_prompts)}")
+                for shot in multi_prompts:
+                    print(f"  分镜 {shot['index']}: 时长 {shot['duration']}s - {shot['prompt'][:50]}...")
+            except json.JSONDecodeError:
+                pass
+        else:
+            print("分镜模式: 单分镜（系统自动拆分）")
     if args.prompt:
         prompt_display = args.prompt[:80] + "..." if len(args.prompt) > 80 else args.prompt
         print(f"提示词: {prompt_display}")
@@ -739,11 +981,7 @@ def run(args):
     # 首帧图片（URL 或 COS 路径）
     if args.image_url:
         print(f"首帧图片: {args.image_url}")
-    elif getattr(args, 'cos_image_key', None):
-        # 新版 COS 路径
-        print(f"首帧图片: [COS] {args.cos_image_bucket}/{args.cos_image_region}{args.cos_image_key}")
     elif getattr(args, 'image_cos_key', None):
-        # 旧版 COS 路径（兼容）
         bucket = args.image_cos_bucket or get_cos_bucket()
         region = args.image_cos_region or get_cos_region()
         print(f"首帧图片: [COS] {bucket}/{region}{args.image_cos_key}")
@@ -751,11 +989,7 @@ def run(args):
     # 尾帧图片（URL 或 COS 路径）
     if args.last_image_url:
         print(f"尾帧图片: {args.last_image_url}")
-    elif getattr(args, 'cos_last_image_key', None):
-        # 新版 COS 路径
-        print(f"尾帧图片: [COS] {args.cos_last_image_bucket}/{args.cos_last_image_region}{args.cos_last_image_key}")
     elif getattr(args, 'last_image_cos_key', None):
-        # 旧版 COS 路径（兼容）
         bucket = args.last_image_cos_bucket or get_cos_bucket()
         region = args.last_image_cos_region or get_cos_region()
         print(f"尾帧图片: [COS] {bucket}/{region}{args.last_image_cos_key}")
@@ -764,9 +998,6 @@ def run(args):
     total_ref_images = 0
     if args.ref_image_url:
         total_ref_images += len(args.ref_image_url)
-    cos_ref_keys = getattr(args, 'cos_ref_image_key', None)
-    if cos_ref_keys:
-        total_ref_images += len(cos_ref_keys)
     if getattr(args, 'ref_image_cos_key', None):
         total_ref_images += len(args.ref_image_cos_key)
     
@@ -779,25 +1010,9 @@ def run(args):
                 if args.ref_image_type and i - 1 < len(args.ref_image_type):
                     ref_type = f"（{args.ref_image_type[i - 1]}）"
                 print(f"  图片 {i}{ref_type}: {url}")
-        # 显示新版 COS 路径
-        if cos_ref_keys:
-            start_idx = len(args.ref_image_url) if args.ref_image_url else 0
-            cos_buckets = getattr(args, 'cos_ref_image_bucket', [])
-            cos_regions = getattr(args, 'cos_ref_image_region', [])
-            for i, key in enumerate(cos_ref_keys, 1):
-                idx = start_idx + i
-                ref_type = ""
-                if args.ref_image_type and idx - 1 < len(args.ref_image_type):
-                    ref_type = f"（{args.ref_image_type[idx - 1]}）"
-                bucket = cos_buckets[i-1] if i-1 < len(cos_buckets) else None
-                region = cos_regions[i-1] if cos_regions and i-1 < len(cos_regions) else None
-                if bucket and region:
-                    print(f"  图片 {idx}{ref_type}: [COS] {bucket}/{region}{key}")
-        # 显示旧版 COS 路径
+        # 显示 COS 路径
         if getattr(args, 'ref_image_cos_key', None):
             start_idx = len(args.ref_image_url) if args.ref_image_url else 0
-            if cos_ref_keys:
-                start_idx += len(cos_ref_keys)
             for i, key in enumerate(args.ref_image_cos_key, 1):
                 idx = start_idx + i
                 ref_type = ""
@@ -811,9 +1026,6 @@ def run(args):
     total_ref_videos = 0
     if args.ref_video_url:
         total_ref_videos += len(args.ref_video_url)
-    cos_ref_video_keys = getattr(args, 'cos_ref_video_key', None)
-    if cos_ref_video_keys:
-        total_ref_videos += len(cos_ref_video_keys)
     if getattr(args, 'ref_video_cos_key', None):
         total_ref_videos += len(args.ref_video_cos_key)
     
@@ -829,28 +1041,9 @@ def run(args):
                 if args.keep_original_sound and i - 1 < len(args.keep_original_sound):
                     keep_sound = f" [原声: {args.keep_original_sound[i - 1]}]"
                 print(f"  视频 {i}{ref_type}{keep_sound}: {url}")
-        # 显示新版 COS 路径
-        if cos_ref_video_keys:
-            start_idx = len(args.ref_video_url) if args.ref_video_url else 0
-            cos_buckets = getattr(args, 'cos_ref_video_bucket', [])
-            cos_regions = getattr(args, 'cos_ref_video_region', [])
-            for i, key in enumerate(cos_ref_video_keys, 1):
-                idx = start_idx + i
-                ref_type = ""
-                if args.ref_video_type and idx - 1 < len(args.ref_video_type):
-                    ref_type = f"（{args.ref_video_type[idx - 1]}）"
-                keep_sound = ""
-                if args.keep_original_sound and idx - 1 < len(args.keep_original_sound):
-                    keep_sound = f" [原声: {args.keep_original_sound[idx - 1]}]"
-                bucket = cos_buckets[i-1] if i-1 < len(cos_buckets) else None
-                region = cos_regions[i-1] if cos_regions and i-1 < len(cos_regions) else None
-                if bucket and region:
-                    print(f"  视频 {idx}{ref_type}{keep_sound}: [COS] {bucket}/{region}{key}")
-        # 显示旧版 COS 路径
+        # 显示 COS 路径
         if getattr(args, 'ref_video_cos_key', None):
             start_idx = len(args.ref_video_url) if args.ref_video_url else 0
-            if cos_ref_video_keys:
-                start_idx += len(cos_ref_video_keys)
             for i, key in enumerate(args.ref_video_cos_key, 1):
                 idx = start_idx + i
                 ref_type = ""
@@ -938,12 +1131,23 @@ def main():
   # 指定 Kling 模型 2.5 版本 + 10秒时长
   python mps_aigc_video.py --prompt "赛博朋克" --model Kling --model-version 2.5 --duration 10
 
+  # Kling 分镜：单分镜（自动智能拆分）
+  python mps_aigc_video.py --prompt "旅行日记，记录美好瞬间" --model Kling --multi-shot
+
+  # Kling 分镜：多分镜（自定义每个分镜）
+  python mps_aigc_video.py --model Kling --multi-shot --duration 12 \\
+      --multi-prompts-json '[
+        {"index": 1, "prompt": "日出时分，从酒店窗户看城市天际线", "duration": "3"},
+        {"index": 2, "prompt": "在咖啡馆享用早餐，窗外街道行人", "duration": "4"},
+        {"index": 3, "prompt": "公园里散步，阳光透过树叶", "duration": "5"}
+      ]'
+
   # 图生视频（首帧图片 URL）
   python mps_aigc_video.py --prompt "让画面动起来" --image-url https://example.com/photo.jpg
 
-  # 图生视频（首帧图片 COS 路径 - 推荐，本地上传后使用）
+  # 图生视频（首帧图片 COS 路径）
   python mps_aigc_video.py --prompt "让画面动起来" \\
-      --cos-image-bucket mybucket-125xxx --cos-image-region ap-guangzhou --cos-image-key /input/photo.jpg
+      --image-cos-bucket mybucket-125xxx --image-cos-region ap-guangzhou --image-cos-key /input/photo.jpg
 
   # 首尾帧生视频（GV 模型）
   python mps_aigc_video.py --prompt "过渡" --model GV \\
@@ -957,8 +1161,8 @@ def main():
 
   # GV 多图参考（COS 路径）
   python mps_aigc_video.py --prompt "融合" --model GV \\
-      --cos-ref-image-bucket mybucket-125xxx --cos-ref-image-region ap-guangzhou --cos-ref-image-key /input/img1.jpg --ref-image-type asset \\
-      --cos-ref-image-bucket mybucket-125xxx --cos-ref-image-region ap-guangzhou --cos-ref-image-key /input/img2.jpg --ref-image-type style
+      --ref-image-cos-bucket mybucket-125xxx --ref-image-cos-region ap-guangzhou --ref-image-cos-key /input/img1.jpg --ref-image-type asset \\
+      --ref-image-cos-bucket mybucket-125xxx --ref-image-cos-region ap-guangzhou --ref-image-cos-key /input/img2.jpg --ref-image-type style
 
   # Kling O1 参考视频 + 保留原声
   python mps_aigc_video.py --prompt "风格化" --model Kling --model-version O1 \\
@@ -967,7 +1171,7 @@ def main():
 
   # Kling O1 参考视频（COS 路径）
   python mps_aigc_video.py --prompt "风格化" --model Kling --model-version O1 \\
-      --cos-ref-video-bucket mybucket-125xxx --cos-ref-video-region ap-guangzhou --cos-ref-video-key /input/video.mp4 \\
+      --ref-video-cos-bucket mybucket-125xxx --ref-video-cos-region ap-guangzhou --ref-video-cos-key /input/video.mp4 \\
       --ref-video-type base --keep-original-sound yes
 
   # 1080P + 16:9 + 去水印 + 音频 + BGM
@@ -986,7 +1190,7 @@ def main():
 支持的模型：
   Hunyuan     腾讯混元大模型（默认）
   Hailuo      海螺视频模型，版本 02 / 2.3，时长 6 / 10 秒
-  Kling       可灵视频模型，版本 2.0-3.0/O1/3.0-Omni，时长 5 / 10 秒
+  Kling       可灵视频模型，版本 2.0-3.0/O1/3.0-Omni，时长 5 / 10 秒，**支持分镜**
   Vidu        Vidu 视频模型，版本 q2/q2-pro/q2-turbo/q3-pro/q3-turbo，时长 1-10 秒
   OS          OS 视频模型，版本 2.0，时长 4 / 8 / 12 秒
   GV          GV 视频模型，版本 3.1，时长 8 秒
@@ -995,6 +1199,10 @@ def main():
   motion_control   Kling — 动作控制
   land2port        Mingmou — 横转竖
   template_effect  Vidu — 特效模板
+
+分镜功能（Kling 专属）：
+  --multi-shot              启用分镜功能（单分镜模式，系统自动拆分）
+  --multi-prompts-json      多分镜配置（JSON 数组格式，自定义每个分镜）
 
 分辨率选项：
   720P  1080P  2K  4K
@@ -1026,6 +1234,13 @@ def main():
                              choices=["motion_control", "land2port", "template_effect"],
                              help="场景类型（部分模型支持）")
 
+    # ---- 分镜配置（Kling 专属） ----
+    multishot_group = parser.add_argument_group("分镜配置（Kling 专属）")
+    multishot_group.add_argument("--multi-shot", action="store_true",
+                                 help="启用分镜功能（Kling 专属）。单分镜模式：系统自动智能拆分；多分镜模式：配合 --multi-prompts-json 自定义每个分镜")
+    multishot_group.add_argument("--multi-prompts-json", type=str,
+                                 help='多分镜配置（JSON 数组格式）。每个分镜包含 index（序号）、prompt（提示词）、duration（时长）。示例：\'[{"index":1,"prompt":"分镜1描述","duration":"5"},...]\'. 分镜数量 1-6 个，每个提示词最长 512 字符，每个时长≥1秒，所有时长之和必须等于总时长')
+
     # ---- 生视频内容 ----
     content_group = parser.add_argument_group("生视频内容")
     content_group.add_argument("--prompt", type=str,
@@ -1041,19 +1256,6 @@ def main():
                              help="首帧图片 URL（推荐 < 10M，支持 jpeg/png）")
     image_group.add_argument("--last-image-url", type=str,
                              help="尾帧图片 URL（部分模型支持，需同时传 --image-url）")
-    # COS 路径输入（本地上传后使用）
-    image_group.add_argument("--cos-image-bucket", type=str,
-                             help="首帧图片 COS Bucket（与 --cos-image-region/--cos-image-key 配合使用）")
-    image_group.add_argument("--cos-image-region", type=str,
-                             help="首帧图片 COS 区域（如 ap-guangzhou）")
-    image_group.add_argument("--cos-image-key", type=str,
-                             help="首帧图片 COS Key（如 /input/image.jpg）")
-    image_group.add_argument("--cos-last-image-bucket", type=str,
-                             help="尾帧图片 COS Bucket")
-    image_group.add_argument("--cos-last-image-region", type=str,
-                             help="尾帧图片 COS 区域")
-    image_group.add_argument("--cos-last-image-key", type=str,
-                             help="尾帧图片 COS Key")
     # COS 路径输入（首帧图片）
     image_group.add_argument("--image-cos-bucket", type=str,
                              help="首帧图片所在 COS Bucket（与 --image-cos-region/--image-cos-key 配合使用）")
@@ -1076,13 +1278,6 @@ def main():
     multi_image_group.add_argument("--ref-image-type", type=str, action="append",
                                    choices=["asset", "style"],
                                    help="参考类型（与 --ref-image-url 一一对应）: asset=素材 | style=风格")
-    # COS 路径输入（本地上传后使用）
-    multi_image_group.add_argument("--cos-ref-image-bucket", type=str, action="append",
-                                   help="参考图片 COS Bucket（与 --cos-ref-image-key 对应）")
-    multi_image_group.add_argument("--cos-ref-image-region", type=str, action="append",
-                                   help="参考图片 COS 区域")
-    multi_image_group.add_argument("--cos-ref-image-key", type=str, action="append",
-                                   help="参考图片 COS Key")
     # COS 路径输入（多图参考）
     multi_image_group.add_argument("--ref-image-cos-bucket", type=str, action="append",
                                    help="参考图片所在 COS Bucket（与 --ref-image-cos-region/--ref-image-cos-key 配合使用，可多次指定）")
@@ -1101,13 +1296,6 @@ def main():
     video_ref_group.add_argument("--keep-original-sound", type=str, action="append",
                                  choices=["yes", "no"],
                                  help="是否保留视频原声（与 --ref-video-url 对应）")
-    # COS 路径输入（本地上传后使用）
-    video_ref_group.add_argument("--cos-ref-video-bucket", type=str, action="append",
-                                 help="参考视频 COS Bucket")
-    video_ref_group.add_argument("--cos-ref-video-region", type=str, action="append",
-                                 help="参考视频 COS 区域")
-    video_ref_group.add_argument("--cos-ref-video-key", type=str, action="append",
-                                 help="参考视频 COS Key")
     # COS 路径输入（参考视频）
     video_ref_group.add_argument("--ref-video-cos-bucket", type=str, action="append",
                                  help="参考视频所在 COS Bucket（与 --ref-video-cos-region/--ref-video-cos-key 配合使用，可多次指定）")
@@ -1119,7 +1307,7 @@ def main():
     # ---- 视频输出配置 ----
     output_group = parser.add_argument_group("视频输出配置")
     output_group.add_argument("--duration", type=int,
-                              help="视频时长（秒）。不同模型支持不同选项，详见说明")
+                              help="视频时长（秒）。多分镜模式下会自动计算为所有分镜时长之和；单分镜或非分镜模式下不同模型支持不同选项，详见说明")
     output_group.add_argument("--resolution", type=str,
                               choices=["720P", "1080P", "2K", "4K"],
                               help="输出分辨率（不同模型默认不同）")
@@ -1127,8 +1315,8 @@ def main():
                               help="宽高比（如 16:9, 9:16, 1:1）。不同模型支持不同选项")
     output_group.add_argument("--no-logo", action="store_true",
                               help="去除图标水印（Hailuo/Kling/Vidu 支持）")
-    output_group.add_argument("--enable-audio", type=bool, default=None,
-                              help="是否为视频生成音频（GV/OS 支持，默认 true）")
+    output_group.add_argument("--enable-audio", type=str,
+                              help="是否为视频生成音频（GV/OS 支持，可选值: true/false）")
     output_group.add_argument("--enable-bgm", action="store_true",
                               help="是否添加背景音乐（部分模型版本支持）")
     output_group.add_argument("--off-peak", action="store_true",

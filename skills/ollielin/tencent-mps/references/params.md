@@ -17,6 +17,7 @@
 | `mps_qualitycontrol.py` | `--cos-object <key>` | 使用环境变量中的 bucket/region |
 | `mps_av_understand.py` | `--cos-object <key>` | 使用环境变量中的 bucket/region |
 | `mps_vremake.py` | `--cos-object <key>` | 使用环境变量中的 bucket/region |
+| `mps_narrate.py` | `--cos-object <key>` | 使用环境变量中的 bucket/region |
 | `mps_aigc_image.py` | `--cos-input-bucket <b> --cos-input-region <r> --cos-input-key <k>` | 需完整 COS 信息 |
 | `mps_aigc_video.py` | `--cos-input-bucket <b> --cos-input-region <r> --cos-input-key <k>` | 需完整 COS 信息 |
 
@@ -44,6 +45,7 @@
 - [COS 文件列表参数 mps_cos_list.py](#cos-文件列表参数-mps_cos_listpy)
 - [大模型音视频理解参数 mps_av_understand.py](#大模型音视频理解参数-mps_av_understandpy)
 - [视频去重参数 mps_vremake.py](#视频去重参数-mps_vremakepy)
+- [AI 解说二创参数 mps_narrate.py](#ai-解说二创参数-mps_narratepy)
 - [媒体质检参数 mps_qualitycontrol.py](#媒体质检参数-mps_qualitycontrolpy)
 - [用量统计参数 mps_usage.py](#用量统计参数-mps_usagepy)
 
@@ -69,13 +71,13 @@
 | `--cos-region` | 指定输入 COS 区域 |
 | `--output-bucket` | 输出 COS Bucket |
 | `--output-region` | 输出 COS Bucket 区域（默认取环境变量） |
-| `--output-dir` | 输出目录，各脚本默认值不同：<br>- `mps_transcode.py`: `/output/transcode/`<br>- `mps_enhance.py`: `/output/enhance/`<br>- `mps_erase.py`: `/output/erase/`<br>- `mps_subtitle.py`: `/output/subtitle/`<br>- `mps_imageprocess.py`: `/output/imageprocess/` |
+| `--output-dir` | 输出目录，各脚本默认值不同：<br>- `mps_transcode.py`: `/output/transcode/`<br>- `mps_enhance.py`: `/output/enhance/`<br>- `mps_erase.py`: `/output/erase/`<br>- `mps_subtitle.py`: `/output/subtitle/`<br>- `mps_imageprocess.py`: `/output/image/` |
 | `--output-object-path` | 输出文件路径模板，如 `/output/{inputName}_transcode.{format}`（适用：`mps_transcode.py`、`mps_enhance.py`、`mps_subtitle.py`、`mps_erase.py`） |
 | `--output-path` | 输出文件路径模板（仅适用：`mps_imageprocess.py`） |
 | `--notify-url` | 任务完成回调 URL（**仅适用音视频脚本**：`mps_transcode.py`、`mps_enhance.py`、`mps_subtitle.py`、`mps_erase.py`；**不适用** `mps_imageprocess.py`） |
 | `--no-wait` | 仅提交任务，不等待结果（返回 TaskId 后退出） |
 | `--poll-interval` | 轮询间隔（秒），音视频类默认 `10`，图片处理默认 `5` |
-| `--max-wait` | 最长等待时间（秒），音视频类默认 `600`，图片处理默认 `300` |
+| `--max-wait` | 最长等待时间（秒），音视频类默认 `1800`（30分钟），图片处理默认 `300` |
 
 ## AIGC 类脚本通用参数
 
@@ -86,7 +88,7 @@
 | `--no-wait` | 仅提交任务，不等待结果 |
 | `--task-id` | 查询已有任务的结果 |
 | `--poll-interval` | 轮询间隔（秒），生图默认 5，生视频默认 10 |
-| `--max-wait` | 最长等待时间（秒），生图默认 300，生视频默认 600 |
+| `--max-wait` | 最长等待时间（秒），生图默认 300，生视频默认 1800 |
 | `--cos-bucket-name` | 结果存储 COS Bucket（可选，不配置则使用 MPS 临时存储 12 小时） |
 | `--cos-bucket-region` | 结果存储 COS 区域 |
 | `--cos-bucket-path` | 结果存储 COS 路径前缀，各脚本默认值不同：<br>- `mps_aigc_image.py`: `/output/aigc-image/`<br>- `mps_aigc_video.py`: `/output/aigc-video/` |
@@ -159,16 +161,13 @@
 
 **模板 ID 速查表**：
 
-| 模板 ID | 适用场景 | 分辨率 |
-|---------|---------|--------|
-| 327001 | 真人视频-细节最强 | 720P |
-| 327002 | 真人视频-人脸保真 | 720P |
-| 327003 | 真人视频-抖动优化 | 720P |
-| 327004 | 漫剧视频-细节最强 | 720P |
-| 327005 | 漫剧视频-人脸保真 | 720P |
-| 327006-327010 | 1080P 对应版本 | 1080P |
-| 327011-327015 | 2K 对应版本 | 2K |
-| 327016-327020 | 4K 对应版本 | 4K |
+| 模板 ID | 适用场景 | 720P | 1080P | 2K | 4K |
+|---------|---------|------|-------|----|----|
+| 真人（Real，人脸与文字区域保护） | — | 327001 | 327003 | 327005 | 327007 |
+| 漫剧（Anime，动漫线条色块增强） | — | 327002 | 327004 | 327006 | 327008 |
+| 抖动优化（JitterOpt，减少帧间抖动） | — | 327009 | 327010 | 327011 | 327012 |
+| 细节最强（DetailMax，最大化纹理细节） | — | 327013 | 327014 | 327015 | 327016 |
+| 人脸保真（FaceFidelity，保留人脸五官） | — | 327017 | 327018 | 327019 | 327020 |
 
 ## 智能字幕参数（mps_subtitle.py）
 
@@ -202,7 +201,7 @@
 | `--template` | 模板 ID（优先级高于自定义参数）|
 | `--method` | 擦除方式：`auto`（自动）/ `custom`（自定义区域）|
 | `--model` | 擦除模型：`standard`（标准）/ `area`（区域）|
-| `--position` | 预设位置：`top`、`bottom`、`left`、`right`、`center`、`top-left`、`top-right`、`bottom-left`、`bottom-right`、`top-half`、`bottom-half`、`fullscreen`，共 12 种；不传则默认识别视频**中下部**区域 |
+| `--position` | 预设位置：`fullscreen`（全屏幕）、`top-half`（上半屏幕）、`bottom-half`（下半屏幕）、`center`（屏幕中间）、`left`（屏幕左边）、`right`（屏幕右边），共 6 种；不传则默认识别视频**中下部**区域 |
 | `--area` | 自动擦除区域（百分比坐标 `X1,Y1,X2,Y2`，0~1）|
 | `--custom-area` | 自定义区域（`BEGIN,END,X1,Y1,X2,Y2`）|
 | `--ocr` | 开启 OCR 字幕提取（自动识别字幕区域文字）|
@@ -310,6 +309,8 @@
 | `--model` | 模型：`Hunyuan` / `Hailuo` / `Kling` / `Vidu` / `OS` / `GV` |
 | `--model-version` | 模型版本，如 Kling `2.5`/`O1`，Hailuo `2.3`，Vidu `q2-pro` |
 | `--scene-type` | 场景类型（部分模型支持）：`motion_control`（Kling 动作控制）、`land2port`（明眸横转竖）、`template_effect`（Vidu 特效模板） |
+| `--multi-shot` | **Kling 专属**。启用分镜功能（单分镜模式：系统自动智能拆分；多分镜模式：需配合 `--multi-prompts-json` 自定义每个分镜） |
+| `--multi-prompts-json` | **Kling 专属**。多分镜配置（JSON 数组格式）。每个分镜包含 `index`（序号）、`prompt`（提示词）、`duration`（时长）。示例：`'[{"index":1,"prompt":"分镜1描述","duration":"5"},...]'`。限制：分镜数量 1-6 个，每个提示词最长 512 字符，每个时长≥1秒，所有时长之和必须等于总时长 |
 | `--negative-prompt` | 负向提示词 |
 | `--enhance-prompt` | 开启提示词增强 |
 | `--image-url` | 参考图（首帧）URL |
@@ -327,7 +328,7 @@
 | `--cos-bucket-path` | 结果存储 COS 路径前缀，各脚本默认值不同：<br>- `mps_aigc_image.py`: `/output/aigc-image/`<br>- `mps_aigc_video.py`: `/output/aigc-video/` |
 | `--operator` | 操作者名称（可选） |
 | `--poll-interval` | 轮询间隔（秒），默认 10 |
-| `--max-wait` | 最长等待时间（秒），默认 600 |
+| `--max-wait` | 最长等待时间（秒），默认 1800 |
 | `--ref-video-url` | 参考视频 URL（仅 Kling O1 支持）|
 | `--ref-video-type` | 参考视频类型：`feature`（特征参考）、`base`（待编辑视频，默认）|
 | `--keep-original-sound` | 保留原声：`yes`、`no` |
@@ -335,6 +336,51 @@
 | `--additional-params` | JSON 格式附加参数，用于传递模型专属扩展参数。如 Kling 的相机控制（**仅 Kling 支持**）：`'{"camera_control":{"type":"simple"}}'` |
 | `--region` | MPS 服务区域（默认 `ap-guangzhou`）|
 | `--dry-run` | 只打印参数，不调用 API |
+
+### 分镜功能说明（Kling 专属）
+
+Kling 模型支持分镜生成功能，可通过 `AdditionalParameters` 中的 `multi_shot`、`shot_type`、`multi_prompt` 参数控制。
+
+#### 单分镜模式
+
+用户输入一段文字，没有指明要求多个分镜或指明只要 1 个分镜时：
+
+```bash
+python mps_aigc_video.py --prompt "旅行日记，记录美好瞬间" --model Kling --multi-shot
+```
+
+参数配置：
+- `multi_shot`: `true`
+- `shot_type`: `intelligence`
+- `multi_prompt`: 不填写（系统自动拆分）
+
+#### 多分镜模式
+
+用户需要明确定义每个分镜的信息：
+
+```bash
+python mps_aigc_video.py --model Kling --multi-shot --duration 12 \
+    --multi-prompts-json '[
+      {"index": 1, "prompt": "日出时分，从酒店窗户看城市天际线", "duration": "3"},
+      {"index": 2, "prompt": "在咖啡馆享用早餐，窗外街道行人", "duration": "4"},
+      {"index": 3, "prompt": "公园里散步，阳光透过树叶", "duration": "5"}
+    ]'
+```
+
+参数配置：
+- `multi_shot`: `true`
+- `shot_type`: `intelligence`
+- `multi_prompt`: 分镜数组，每个分镜包含：
+  - `index`: 镜头号（整数）
+  - `prompt`: 镜头提示词（字符串，最多 512 字符）
+  - `duration`: 时间长度（字符串或数字，≥1 秒）
+
+#### 校验规则
+
+1. **分镜数量**：最多支持 6 个分镜，最小支持 1 个分镜
+2. **提示词长度**：每个分镜相关内容的最大长度不超过 512 字符
+3. **时长限制**：每个分镜的时长不大于当前任务的总时长，不小于 1 秒
+4. **总时长匹配**：所有分镜的时长之和必须等于当前任务的总时长
 
 ## COS 文件上传参数（mps_cos_upload.py）
 
@@ -396,10 +442,7 @@
 | `--dry-run` | 只打印参数预览（含 ExtendedParameter 构建结果），不调用 API |
 | `--output-dir` | 将结果 JSON 保存到指定目录 |
 | `--region` | 处理地域，默认 `ap-guangzhou` |
-
-**ExtendedParameter 结构说明**（脚本自动构建）：
-
-## 视频去重参数（mps_vremake.py）
+| `--verbose` / `-v` | 显示详细日志信息 |
 
 > **核心机制**：`AiAnalysisTask.Definition=29` + `ExtendedParameter(vremake.mode + 模式参数)`。
 > 脚本**默认异步**（只提交任务返回 TaskId），加 `--wait` 才等待完成。
@@ -434,6 +477,96 @@
 **SwapFace 限制**：视频分辨率 ≤ 4K；单张图片 < 10MB（jpg/png）；图片中有多个人脸时取最大；人脸总数 ≤ 6 张。  
 **SwapCharacter 限制**：视频时长 ≤ 20 分钟；需正面全身图。
 
+## AI 解说二创参数（mps_narrate.py）
+
+> **核心机制**：`AiAnalysisTask.Definition=35` + `ExtendedParameter(reel.processType=narrate + 场景参数)`。
+> 脚本**默认同步等待**任务完成，加 `--no-wait` 只提交任务返回 TaskId。
+
+### 预设场景
+
+| 场景值 | 说明 | 擦除设置 |
+|--------|------|----------|
+| `short-drama` | 短剧视频，画面上有字幕（默认） | 开启擦除 |
+| `short-drama-no-erase` | 短剧视频，画面上没有字幕 | 关闭擦除 |
+
+### 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| `--url` | 输入视频 URL（HTTP/HTTPS），第一集视频 |
+| `--cos-object` | COS 对象路径（第一集视频），需配置 `TENCENTCLOUD_COS_BUCKET` |
+| `--cos-input-bucket` | COS 输入 Bucket 名称（完整路径方式）|
+| `--cos-input-region` | COS 输入 Bucket 区域 |
+| `--cos-input-key` | COS 输入 Object Key |
+| `--cos-bucket` | 指定输入 COS Bucket（覆盖环境变量，用于 `--cos-object`）|
+| `--cos-region` | 指定输入 COS 区域（用于 `--cos-object`）|
+| `--extra-urls` | 第2集及之后的视频 URL 列表（按顺序，分辨率须与第一集一致）|
+| `--scene` | **必填**。预设场景：`short-drama` / `short-drama-no-erase` |
+| `--output-count` | 输出视频数量，默认 1，最大 5（超过 5 将截断为 5）|
+| `--output-bucket` | 输出 COS Bucket |
+| `--output-region` | 输出 COS Region |
+| `--output-dir` | 输出目录，默认 `/output/narrate/` |
+| `--region` | MPS 服务区域，默认 `ap-guangzhou` |
+| `--notify-url` | 任务完成回调 URL |
+| `--no-wait` | 仅提交任务，不等待结果（返回 TaskId 后退出）|
+| `--poll-interval` | 轮询间隔（秒），默认 10 |
+| `--max-wait` | 最长等待时间（秒），默认 1800 |
+| `--dry-run` | 只打印参数预览（含 ExtendedParameter），不调用 API |
+| `--verbose` / `-v` | 输出详细信息 |
+
+### ExtendedParameter 结构
+
+脚本根据 `--scene` 自动构建 ExtendedParameter：
+
+**short-drama（含擦除）**：
+```json
+{
+  "reel": {
+    "processType": "narrate",
+    "narrateParam": {
+      "onlyNarration": 1,
+      "concatTransition": "flashwhite",
+      "concatTransitionDuration": 0.3
+    },
+    "outputLanguage": "zh",
+    "ttsParam": {
+      "engine": "auto"
+    },
+    "outputVideoCount": 1
+  }
+}
+```
+
+**short-drama-no-erase（无擦除）**：
+```json
+{
+  "reel": {
+    "processType": "narrate",
+    "narrateParam": {
+      "onlyNarration": 1,
+      "concatTransition": "flashwhite",
+      "concatTransitionDuration": 0.3
+    },
+    "outputLanguage": "zh",
+    "eraseParam": {
+      "eraseOff": 1
+    },
+    "ttsParam": {
+      "engine": "auto"
+    },
+    "outputVideoCount": 1
+  }
+}
+```
+
+### 注意事项
+
+1. **不支持自定义脚本**：本次实现不支持输入自定义解说脚本（`scriptUrls`），仅支持由 MPS 自动生成解说脚本
+2. **多集视频分辨率**：使用 `--extra-urls` 追加多集视频时，所有视频的分辨率须保持一致
+3. **场景选择规则**：
+   - 用户说"有字幕"/"带硬字幕"时 → 使用 `short-drama`
+   - 用户说"没有字幕"/"原片无字幕"/"不擦除"时 → 使用 `short-drama-no-erase`
+
 ## 媒体质检参数（mps_qualitycontrol.py）
 
 ### 质检模板
@@ -462,8 +595,137 @@
 
 | 参数 | 说明 |
 |------|------|
-| `--start` | 开始日期，格式 `YYYY-MM-DD`（默认 7 天前）|
+| `--days` | 查询最近 N 天（默认 7 天，最大 90），与 `--start` 互斥 |
+| `--start` | 开始日期，格式 `YYYY-MM-DD`（与 `--end` 配合使用）|
 | `--end` | 结束日期，格式 `YYYY-MM-DD`（默认今天）|
-| `--type` | 统计类型：`task`（任务数，默认）/ `duration`（时长）/ `flow`（流量）|
-| `--region` | MPS 服务区域（默认 `ap-guangzhou`）|
+| `--type` | 任务类型（可多选），默认 `Transcode`。可选值：`Transcode`（转码）/ `Enhance`（增强）/ `AIAnalysis`（智能分析）/ `AIRecognition`（智能识别）/ `AIReview`（内容审核）/ `Snapshot`（截图）/ `AnimatedGraphics`（转动图）/ `AiQualityControl`（质检）/ `Evaluation`（视频评测）/ `ImageProcess`（图片处理）/ `AddBlindWatermark`（数字水印）/ `AIGC`（生图/生视频）|
+| `--all-types` | 查询所有任务类型（与 `--type` 互斥）|
+| `--region` | MPS 服务区域（可多选），默认 `ap-guangzhou` |
 | `--json` | 以 JSON 格式输出结果 |
+| `--dry-run` | 仅打印请求参数，不实际调用 |
+
+## 精彩集锦参数（mps_highlight.py）
+
+> **核心机制**：`AiAnalysisTask.Definition=26`（智能分析模板）+ `ExtendedParameter(hht 场景参数)`。
+> 脚本**默认同步等待**任务完成，加 `--no-wait` 只提交任务返回 TaskId。
+> ⚠️ **重要限制**：仅支持离线文件，不支持直播流；ExtendedParameter 必须从预设场景参数中选择，禁止自行拼装。
+
+### 预设场景
+
+| 场景值 | 说明 | 计费版本 | 支持 --top-clip |
+|--------|------|---------|----------------|
+| `vlog` | VLOG、风景、无人机视频 | 大模型版 | ✅ |
+| `vlog-panorama` | 全景相机（开启全景优化） | 大模型版 | ✅ |
+| `short-drama` | 短剧、影视剧，提取主角出场/BGM高光 | 大模型版 | ❌ |
+| `football` | 足球赛事，识别射门/进球/红黄牌/回放 | 高级版 | ❌ |
+| `basketball` | 篮球赛事 | 高级版 | ❌ |
+| `custom` | 自定义场景，可传 --prompt 和 --scenario | 大模型版 | ✅ |
+
+### 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| `--url` | 输入视频 URL（HTTP/HTTPS） |
+| `--cos-object` | COS 对象路径，需配置 `TENCENTCLOUD_COS_BUCKET` |
+| `--cos-input-bucket` | COS 输入 Bucket 名称（完整路径方式）|
+| `--cos-input-region` | COS 输入 Bucket 区域 |
+| `--cos-input-key` | COS 输入 Object Key |
+| `--cos-bucket` | 指定输入 COS Bucket（覆盖环境变量，用于 `--cos-object`）|
+| `--cos-region` | 指定输入 COS 区域（用于 `--cos-object`）|
+| `--scene` | **必填**。预设场景：`vlog` / `vlog-panorama` / `short-drama` / `football` / `basketball` / `custom` |
+| `--prompt` | 自定义场景时使用，`multimodal_prompt` 内容，描述需要提取的高光内容（仅 `--scene custom` 生效）|
+| `--scenario` | 自定义场景时使用，场景名称描述（仅 `--scene custom` 生效）|
+| `--top-clip` | 最多输出集锦片段数（仅 `vlog` / `vlog-panorama` / `custom` 场景可用，默认 5）|
+| `--output-bucket` | 输出 COS Bucket |
+| `--output-region` | 输出 COS Region |
+| `--output-dir` | 输出目录，默认 `/output/highlight/` |
+| `--region` | MPS 服务区域，默认 `ap-guangzhou` |
+| `--notify-url` | 任务完成回调 URL |
+| `--no-wait` | 仅提交任务，不等待结果（返回 TaskId 后退出）|
+| `--poll-interval` | 轮询间隔（秒），默认 10 |
+| `--max-wait` | 最长等待时间（秒），默认 1800（30分钟，精彩集锦耗时较长）|
+| `--dry-run` | 只打印参数预览（含 ExtendedParameter），不调用 API |
+| `--verbose` / `-v` | 输出详细信息 |
+
+### ExtendedParameter 结构
+
+脚本根据 `--scene` 自动构建 ExtendedParameter，**禁止自行拼装或扩展字段**：
+
+**vlog**：
+```json
+{
+  "hht": {
+    "top_clip": 5,
+    "force_cls": 10020,
+    "model_segment_limit": [3, 6]
+  }
+}
+```
+
+**vlog-panorama**：
+```json
+{
+  "hht": {
+    "top_clip": 5,
+    "force_cls": 10020,
+    "model_segment_limit": [3, 6],
+    "use_panorama_direct": 1,
+    "panorama_video": 1
+  }
+}
+```
+
+**short-drama**：
+```json
+{
+  "hht": {
+    "force_cls": "10010",
+    "merge_type": 0,
+    "need_vad": 1,
+    "top_clip": 100,
+    "res_save_type": 1,
+    "scenario": "电视剧高光"
+  }
+}
+```
+
+**football**：
+```json
+{
+  "hht": {
+    "force_cls": "4001",
+    "merge_type": 0,
+    "need_vad": 1,
+    "top_clip": 100,
+    "res_save_type": 1
+  }
+}
+```
+
+**basketball**：
+```json
+{
+  "hht": {
+    "force_cls": "4002",
+    "merge_type": 0,
+    "need_vad": 1,
+    "top_clip": 100,
+    "res_save_type": 1
+  }
+}
+```
+
+**custom**（带 prompt 和 scenario）：
+```json
+{
+  "hht": {
+    "top_clip": 5,
+    "force_cls": 10020,
+    "prompts": {
+      "multimodal_prompt": "滑雪场景，输出人物高光"
+    },
+    "scenario": "滑雪",
+    "model_segment_limit": [3, 6]
+  }
+}
+```

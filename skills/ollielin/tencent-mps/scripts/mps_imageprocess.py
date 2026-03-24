@@ -18,7 +18,7 @@
 COS 存储约定：
   通过环境变量 TENCENTCLOUD_COS_BUCKET 指定 COS Bucket 名称。
   - 输入文件默认路径：{TENCENTCLOUD_COS_BUCKET}/input/
-  - 输出文件默认路径：{TENCENTCLOUD_COS_BUCKET}/output/
+  - 输出文件默认路径：{TENCENTCLOUD_COS_BUCKET}/output/image/
 
 用法：
   # 最简用法：仅指定输入图片（不做任何处理，用于测试连通性）
@@ -1310,8 +1310,8 @@ def main():
     # 输出信息
     out_bucket = args.output_bucket or cos_bucket_env or "未设置"
     out_region = args.output_region or cos_region_env
-    # 设置输出目录，默认为 /output/imageprocess/
-    out_dir = args.output_dir or "/output/imageprocess/"
+    # 设置输出目录，默认为 /output/image/
+    out_dir = args.output_dir or "/output/image/"
     print(f"输出: COS - {out_bucket}:{out_dir} (region: {out_region})")
 
     if cos_bucket_env:

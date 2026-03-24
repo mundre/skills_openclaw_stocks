@@ -17,11 +17,11 @@
 COS 存储约定：
   通过环境变量 TENCENTCLOUD_COS_BUCKET 指定 COS Bucket 名称。
   - 输入文件默认路径：{TENCENTCLOUD_COS_BUCKET}/input/   （即 COS Object 以 /input/ 开头）
-  - 输出文件默认路径：{TENCENTCLOUD_COS_BUCKET}/output/quality_control  （即输出目录为 /output/quality_control）
+  - 输出文件默认路径：{TENCENTCLOUD_COS_BUCKET}/output/quality_control/  （即输出目录为 /output/quality_control/）
 
   当使用 COS 输入时，如果未显式指定 --cos-bucket，自动使用 TENCENTCLOUD_COS_BUCKET。
   当未显式指定 --output-bucket，自动使用 TENCENTCLOUD_COS_BUCKET 作为输出 Bucket。
-  当未显式指定 --output-dir，自动使用 /output/quality_control 作为输出目录。
+  当未显式指定 --output-dir，自动使用 /output/quality_control/ 作为输出目录。
 用法：
   # 基础：对视频 URL 发起质检（默认模板 60，检测画面模糊/花屏等画面问题）
   python scripts/mps_qualitycontrol.py --url https://example.com/video.mp4
@@ -110,6 +110,39 @@ def get_credentials():
 
 
 # ─────────────────────────────────────────────
+# 辅助函数
+# ─────────────────────────────────────────────
+def get_cos_bucket():
+    """获取 COS Bucket 名称（从环境变量或默认值）。"""
+    return os.environ.get("TENCENTCLOUD_COS_BUCKET", "")
+
+def get_cos_region():
+    """获取 COS Region（从环境变量或默认值）。"""
+    return os.environ.get("TENCENTCLOUD_COS_REGION", "")
+
+def build_output_storage(args):
+    """
+    构建输出存储信息。
+
+    优先级：
+    1. 命令行参数 --output-bucket / --output-region
+    2. 环境变量 TENCENTCLOUD_COS_BUCKET / TENCENTCLOUD_COS_REGION
+    """
+    bucket = args.output_bucket or get_cos_bucket()
+    region = args.output_region or get_cos_region()
+
+    if bucket and region:
+        return {
+            "Type": "COS",
+            "CosOutputStorage": {
+                "Bucket": bucket,
+                "Region": region
+            }
+        }
+    return None
+
+
+# ─────────────────────────────────────────────
 # 占位符检测
 # ─────────────────────────────────────────────
 def is_placeholder(value: str) -> bool:
@@ -170,7 +203,7 @@ def build_input_info(url: str = None, cos_object: str = None,
 # ─────────────────────────────────────────────
 # 提交质检任务
 # ─────────────────────────────────────────────
-def submit_quality_check(client, input_info: dict, definition: int) -> str:
+def submit_quality_check(client, input_info: dict, definition: int, output_storage: dict = None) -> str:
     req = models.ProcessMediaRequest()
     req.InputInfo = models.MediaInputInfo()
     req.InputInfo.Type = input_info["Type"]
@@ -186,6 +219,14 @@ def submit_quality_check(client, input_info: dict, definition: int) -> str:
 
     req.AiQualityControlTask = models.AiQualityControlTaskInput()
     req.AiQualityControlTask.Definition = definition
+
+    # 设置输出存储（URL 输入时必填）
+    if output_storage:
+        req.OutputStorage = models.TaskOutputStorage()
+        req.OutputStorage.Type = output_storage["Type"]
+        req.OutputStorage.CosOutputStorage = models.CosOutputStorage()
+        req.OutputStorage.CosOutputStorage.Bucket = output_storage["CosOutputStorage"]["Bucket"]
+        req.OutputStorage.CosOutputStorage.Region = output_storage["CosOutputStorage"]["Region"]
 
     resp = client.ProcessMedia(req)
     return resp.TaskId
@@ -226,13 +267,13 @@ def poll_task(client, task_id: str, timeout: int = POLL_TIMEOUT, interval: int =
 def extract_qc_result(result: dict) -> tuple:
     """
     从 DescribeTaskDetail 返回值中提取质检结论和结果集。
-    返回 (no_audio_video: str, quality_eval_score: int|None, result_set: list)
+    返回 (no_audio_video: str, quality_eval_score: int|None, result_set: list, result_set_type: str)
 
-    DescribeTaskDetail 对于 ProcessMedia 任务，结构为：
+    DescribeTaskDetail 对于 WorkflowTask 任务，结构为：
       {
-        "TaskType": "ProcessMedia",
+        "TaskType": "WorkflowTask",
         "Status": "FINISH",
-        "AiQualityControl": {
+        "AiQualityControlTaskResult": {
           "Status": "SUCCESS",
           "ErrCode": 0,
           "ErrMsg": "",
@@ -240,28 +281,48 @@ def extract_qc_result(result: dict) -> tuple:
           "Output": {
             "NoAudioVideo": "Yes"|"No",
             "QualityEvaluationScore": 80,
-            "QualityEvaluationResultSet": [
+            "ContainerDiagnoseResultSet": [  # 60模板：格式质检结果
               {
-                "Type": "LowEvaluation",
-                "Confidence": 90,
-                "StartTimeOffset": 0.0,
-                "EndTimeOffset": 3.5,
+                "Type": "DecodeException",
+                "Confidence": 95,
+                "StartTimeOffset": 48.649,
+                "EndTimeOffset": 48.7,
                 "AreaCoordSet": [],
                 "Suggestion": "review"
               },
+              ...
+            ],
+            "QualityEvaluationResultSet": [  # 50模板：音频质检结果
               ...
             ]
           }
         }
       }
+
+    对于 ProcessMedia 任务，结构为：
+      {
+        "TaskType": "ProcessMedia",
+        "Status": "FINISH",
+        "AiQualityControl": {
+          ...
+        }
+      }
     """
-    # 优先从 AiQualityControl 子任务结果中取
-    qc_task = result.get("AiQualityControl") or {}
+    # 优先从 AiQualityControlTaskResult（WorkflowTask）获取，兼容 AiQualityControl（ProcessMedia）
+    qc_task = result.get("AiQualityControlTaskResult") or result.get("AiQualityControl") or {}
     output = qc_task.get("Output") or {}
 
     no_av = output.get("NoAudioVideo", "")
     score = output.get("QualityEvaluationScore")
-    result_set = output.get("QualityEvaluationResultSet") or []
+
+    # 优先解析 ContainerDiagnoseResultSet（60模板：格式质检-Pro版）
+    # 如果为空，则解析 QualityEvaluationResultSet（50模板：音频质检等）
+    result_set = output.get("ContainerDiagnoseResultSet") or []
+    result_set_type = "ContainerDiagnoseResultSet"
+
+    if not result_set:
+        result_set = output.get("QualityEvaluationResultSet") or []
+        result_set_type = "QualityEvaluationResultSet"
 
     # 兼容：部分旧版本或不同字段名
     if not result_set:
@@ -270,8 +331,9 @@ def extract_qc_result(result: dict) -> tuple:
             or result.get("AiQualityControlResultSet")
             or []
         )
+        result_set_type = "Legacy"
 
-    return no_av, score, result_set
+    return no_av, score, result_set, result_set_type
 
 
 # ─────────────────────────────────────────────
@@ -299,7 +361,7 @@ def format_result(result: dict) -> str:
         desc = DEFINITION_DESC.get(int(definition), str(definition))
         lines.append(f"质检模板: {definition} — {desc}")
 
-    no_av, score, result_set = extract_qc_result(result)
+    no_av, score, result_set, result_set_type = extract_qc_result(result)
 
     if no_av:
         flag = "是" if no_av == "Yes" else "否"
@@ -314,7 +376,7 @@ def format_result(result: dict) -> str:
         lines.append("未检测到质量问题（或暂无质检结论，可使用 --json 查看原始数据）")
         return "\n".join(lines)
 
-    lines.append(f"质检问题列表（共 {len(result_set)} 条）：")
+    lines.append(f"质检问题列表（共 {len(result_set)} 条，数据源: {result_set_type}）：")
     for idx, item in enumerate(result_set, 1):
         item_type   = item.get("Type", "未知")
         confidence  = item.get("Confidence", "")
@@ -373,6 +435,8 @@ def main():
         ),
     )
     parser.add_argument("--region",   default=DEFAULT_REGION, help=f"地域（默认 {DEFAULT_REGION}）")
+    parser.add_argument("--output-bucket", type=str, help="输出 COS Bucket 名称（默认从环境变量 TENCENTCLOUD_COS_BUCKET 读取）")
+    parser.add_argument("--output-region", type=str, help="输出 COS Region（默认从环境变量 TENCENTCLOUD_COS_REGION 读取）")
     parser.add_argument("--no-wait",  action="store_true",    help="异步模式：只提交任务，不等待结果")
     parser.add_argument("--json",     action="store_true",    dest="json_output", help="JSON 格式输出原始结果")
     parser.add_argument("--dry-run",  action="store_true",    help="只打印参数，不实际调用 API")
@@ -458,6 +522,17 @@ def main():
         cos_input_key=getattr(args, 'cos_input_key', None),
         region=args.region
     )
+    
+    # URL 输入时必须设置输出存储
+    output_storage = None
+    if args.url:
+        output_storage = build_output_storage(args)
+        if not output_storage:
+            print("❌ URL 输入时必须指定输出存储", file=sys.stderr)
+            print("   请配置环境变量 TENCENTCLOUD_COS_BUCKET 和 TENCENTCLOUD_COS_REGION，", file=sys.stderr)
+            print("   或使用 --output-bucket 和 --output-region 参数", file=sys.stderr)
+            sys.exit(1)
+    
     def_desc   = DEFINITION_DESC.get(args.definition, str(args.definition))
     print(f"🚀 提交媒体质检任务")
     if args.url:
@@ -468,9 +543,11 @@ def main():
         print(f"   输入:     COS={args.cos_object}")
     print(f"   模板:     {args.definition} — {def_desc}")
     print(f"   地域:     {args.region}")
+    if output_storage:
+        print(f"   输出:     COS={output_storage['CosOutputStorage']['Bucket']} (region: {output_storage['CosOutputStorage']['Region']})")
 
     try:
-        task_id = submit_quality_check(client, input_info, args.definition)
+        task_id = submit_quality_check(client, input_info, args.definition, output_storage)
     except TencentCloudSDKException as e:
         print(f"❌ 提交任务失败: {e}", file=sys.stderr)
         sys.exit(1)

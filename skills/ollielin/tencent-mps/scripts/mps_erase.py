@@ -39,11 +39,11 @@
 COS 存储约定：
   通过环境变量 TENCENTCLOUD_COS_BUCKET 指定 COS Bucket 名称。
   - 输入文件默认路径：{TENCENTCLOUD_COS_BUCKET}/input/   （即 COS Object 以 /input/ 开头）
-  - 输出文件默认路径：{TENCENTCLOUD_COS_BUCKET}/output/  （即输出目录为 /output/）
+  - 输出文件默认路径：{TENCENTCLOUD_COS_BUCKET}/output/erase/  （即输出目录为 /output/erase/）
 
   当使用 COS 输入时，如果未显式指定 --cos-bucket，自动使用 TENCENTCLOUD_COS_BUCKET。
   当未显式指定 --output-bucket，自动使用 TENCENTCLOUD_COS_BUCKET 作为输出 Bucket。
-  当未显式指定 --output-dir，自动使用 /output/ 作为输出目录。
+  当未显式指定 --output-dir，自动使用 /output/erase/ 作为输出目录。
 
 用法：
   # 最简用法：使用 URL 输入 + 默认预设模板 101（自动擦除中下部字幕）
@@ -703,7 +703,7 @@ def process_media(args):
         no_wait = getattr(args, 'no_wait', False)
         if not no_wait and _POLL_AVAILABLE and task_id != 'N/A':
             poll_interval = getattr(args, 'poll_interval', 10)
-            max_wait = getattr(args, 'max_wait', 600)
+            max_wait = getattr(args, 'max_wait', 1800)
             poll_video_task(task_id, region=region, interval=poll_interval,
                             max_wait=max_wait, verbose=args.verbose)
         else:
@@ -723,7 +723,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例：
-  # URL输入 + 默认模板（去字幕 101），输出到 TENCENTCLOUD_COS_BUCKET/output/
+  # URL输入 + 默认模板（去字幕 101），输出到 TENCENTCLOUD_COS_BUCKET/output/erase/
   python mps_erase.py --url https://example.com/video.mp4
 
   # COS输入（bucket 和 region 自动从环境变量获取）
@@ -843,13 +843,13 @@ def main():
                              help="COS 对象路径，建议以 /input/ 开头，如 /input/video/test.mp4")
 
     # ---- 输出 ----
-    output_group = parser.add_argument_group("输出配置（可选，默认输出到 TENCENTCLOUD_COS_BUCKET/output/）")
+    output_group = parser.add_argument_group("输出配置（可选，默认输出到 TENCENTCLOUD_COS_BUCKET/output/erase/）")
     output_group.add_argument("--output-bucket", type=str,
                               help="输出 COS Bucket 名称（默认取 TENCENTCLOUD_COS_BUCKET 环境变量）")
     output_group.add_argument("--output-region", type=str,
                               help="输出 COS Bucket 区域（默认取 TENCENTCLOUD_COS_REGION 环境变量，默认 ap-guangzhou）")
     output_group.add_argument("--output-dir", type=str,
-                              help="输出目录（默认 /output/），以 / 开头和结尾")
+                              help="输出目录（默认 /output/erase/），以 / 开头和结尾")
     output_group.add_argument("--output-object-path", type=str,
                               help="输出文件路径，如 /output/{inputName}_erase.{format}")
 
@@ -887,10 +887,7 @@ def main():
         help=(
             "区域预设: "
             "fullscreen=全屏幕 | top-half=上半屏幕 | bottom-half=下半屏幕 | "
-            "center=屏幕中间 | left=屏幕左边 | right=屏幕右边 | "
-            "top=屏幕顶部 | bottom=屏幕底部 | "
-            "top-left=屏幕左上方 | top-right=屏幕右上方 | "
-            "bottom-left=屏幕左下方 | bottom-right=屏幕右下方"
+            "center=屏幕中间 | left=屏幕左边 | right=屏幕右边"
         )
     )
     position_group.add_argument("--area", type=str, action="append", metavar="X1,Y1,X2,Y2",
@@ -924,8 +921,8 @@ def main():
                              help="仅提交任务，不等待结果（默认会自动轮询直到完成）")
     other_group.add_argument("--poll-interval", type=int, default=10,
                              help="轮询间隔（秒），默认 10")
-    other_group.add_argument("--max-wait", type=int, default=600,
-                             help="最长等待时间（秒），默认 600（10分钟）")
+    other_group.add_argument("--max-wait", type=int, default=1800,
+                             help="最长等待时间（秒），默认 1800（30分钟）")
     other_group.add_argument("--verbose", "-v", action="store_true", help="输出详细信息")
     other_group.add_argument("--dry-run", action="store_true", help="仅打印请求参数，不实际调用 API")
 
@@ -974,6 +971,11 @@ def main():
     # 5. --custom-area 需要 --method custom
     if args.custom_area and (args.method is None or args.method != "custom"):
         parser.error("--custom-area 需要配合 --method custom 使用")
+
+    # 5b. 提前校验 --custom-area 坐标合法性（避免打印摘要后才报错）
+    if args.custom_area:
+        for area_str in args.custom_area:
+            parse_custom_area_string(area_str)  # 内部校验失败会 sys.exit(1)
 
     # 6. --area / --position 不能与 --method custom 同时使用
     if args.method == "custom" and (args.area or args.position):

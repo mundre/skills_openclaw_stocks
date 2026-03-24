@@ -10,9 +10,12 @@
 | `mps_enhance.py` | 视频增强 | `/output/enhance/` |
 | `mps_erase.py` | 智能擦除 | `/output/erase/` |
 | `mps_subtitle.py` | 智能字幕 | `/output/subtitle/` |
-| `mps_imageprocess.py` | 图片处理 | `/output/imageprocess/` |
+| `mps_imageprocess.py` | 图片处理 | `/output/image/` |
 | `mps_aigc_image.py` | AIGC 生图 | `/output/aigc-image/` |
 | `mps_aigc_video.py` | AIGC 生视频 | `/output/aigc-video/` |
+| `mps_narrate.py` | AI 解说二创 | `/output/narrate/` |
+| `mps_highlight.py` | 精彩集锦 | `/output/highlight/` |
+| `mps_qualitycontrol.py` | 媒体质检 | `/output/quality_control/` |
 
 > **说明**：
 > - 所有默认路径均以 `/` 开头，表示绝对路径
@@ -608,7 +611,88 @@ python scripts/mps_vremake.py \
     --mode BackgroundExtend --min-scene-secs 3.0 --dry-run
 ```
 
-## 15. 媒体质检 — `mps_qualitycontrol.py`
+## 15. AI 解说二创 — `mps_narrate.py`
+
+### 功能
+
+调用 MPS `ProcessMedia` 接口的 `AiAnalysisTask`（固定使用 35 号预设模板），输入原始视频，一站式自动完成解说脚本生成、脚本匹配成片、AI 配音、去字幕等操作，输出带有解说文案、配音和字幕的新视频。
+
+### 预设场景
+
+| 场景值 | 说明 | 擦除设置 |
+|--------|------|----------|
+| `short-drama` | 短剧视频，画面上有字幕（默认） | 开启擦除 |
+| `short-drama-no-erase` | 短剧视频，画面上没有字幕 | 关闭擦除 |
+
+### 默认行为
+
+- 解说模式：`onlyNarration=1`（纯解说视频）
+- 转场效果：`flashwhite`，时长 0.3s
+- 配音音色：使用 MPS 默认系统音色（`engine=auto`）
+- 输出语言：`zh`（中文）
+- 输出数量：默认 1 个，可通过 `--output-count` 指定，最大 5
+
+### 示例命令
+
+```bash
+# 基础用法：短剧单集解说（默认含擦除）
+python scripts/mps_narrate.py \
+    --url https://example.com/drama.mp4 \
+    --scene short-drama
+
+# COS 对象输入
+python scripts/mps_narrate.py \
+    --cos-object /input/drama.mp4 \
+    --scene short-drama
+
+# 原视频无字幕，关闭擦除
+python scripts/mps_narrate.py \
+    --url https://example.com/drama.mp4 \
+    --scene short-drama-no-erase
+
+# 多集视频合并解说（第一集用 --url，后续集用 --extra-urls）
+python scripts/mps_narrate.py \
+    --url https://example.com/ep01.mp4 \
+    --extra-urls https://example.com/ep02.mp4 https://example.com/ep03.mp4 \
+    --scene short-drama
+
+# 输出 3 个不同版本的视频
+python scripts/mps_narrate.py \
+    --url https://example.com/drama.mp4 \
+    --scene short-drama \
+    --output-count 3
+
+# 自定义输出目录
+python scripts/mps_narrate.py \
+    --url https://example.com/drama.mp4 \
+    --scene short-drama \
+    --output-dir /custom/narrate/
+
+# 异步提交（不等待结果）
+python scripts/mps_narrate.py \
+    --url https://example.com/drama.mp4 \
+    --scene short-drama \
+    --no-wait
+
+# Dry Run（预览转义后的 ExtendedParameter）
+python scripts/mps_narrate.py \
+    --url https://example.com/drama.mp4 \
+    --scene short-drama \
+    --dry-run
+
+# 查询任务状态
+python scripts/mps_get_video_task.py --task-id 2600011633-WorkflowTask-xxxxx
+```
+
+### 注意事项
+
+1. **不支持自定义脚本**：本次实现不支持输入自定义解说脚本（`scriptUrls`），仅支持由 MPS 自动生成解说脚本
+2. **多集视频分辨率**：使用 `--extra-urls` 追加多集视频时，所有视频的分辨率须保持一致
+3. **场景选择规则**：
+   - 用户说"有字幕"/"带硬字幕"时 → 使用 `short-drama`
+   - 用户说"没有字幕"/"原片无字幕"/"不擦除"时 → 使用 `short-drama-no-erase`
+
+## 16. 媒体质检 — `mps_qualitycontrol.py`
 
 ### 功能
 
@@ -648,7 +732,7 @@ python scripts/mps_qualitycontrol.py --task-id 2600011633-WorkflowTask-xxxxx --j
 python scripts/mps_qualitycontrol.py --url https://example.com/video.mp4 --definition 70 --dry-run
 ```
 
-## 16. 用量统计查询 — `mps_usage.py`
+## 17. 用量统计查询 — `mps_usage.py`
 
 ```bash
 # 查询最近 7 天用量（默认）
@@ -678,3 +762,81 @@ python scripts/mps_usage.py --days 7 --all-types --json
 # dry-run 模式
 python scripts/mps_usage.py --days 30 --all-types --dry-run
 ```
+
+## 18. 精彩集锦 — `mps_highlight.py`
+
+使用 MPS 智能分析功能，通过 AI 算法自动捕捉并生成视频中的精彩片段（高光集锦）。固定使用 26 号预设模板，支持 VLOG、短剧、足球赛事、篮球赛事等多种场景。
+
+### 预设场景
+
+| 场景 | 说明 | 计费版本 | 支持 --top-clip |
+|------|------|---------|----------------|
+| `vlog` | VLOG、风景、无人机视频 | 大模型版 | ✅ |
+| `vlog-panorama` | 全景相机（开启全景优化） | 大模型版 | ✅ |
+| `short-drama` | 短剧、影视剧，提取主角出场/BGM高光 | 大模型版 | ❌ |
+| `football` | 足球赛事，识别射门/进球/红黄牌/回放 | 高级版 | ❌ |
+| `basketball` | 篮球赛事 | 高级版 | ❌ |
+| `custom` | 自定义场景，可传 --prompt 和 --scenario | 大模型版 | ✅ |
+
+### 示例命令
+
+```bash
+# ========== 足球赛事精彩集锦 ==========
+python scripts/mps_highlight.py --cos-object /input/football.mp4 --scene football
+
+# URL 输入
+python scripts/mps_highlight.py --url https://example.com/football.mp4 --scene football
+
+# ========== 短剧影视高光 ==========
+python scripts/mps_highlight.py --cos-object /input/drama.mp4 --scene short-drama
+
+# ========== VLOG 全景相机 ==========
+python scripts/mps_highlight.py --url https://example.com/vlog.mp4 --scene vlog-panorama
+
+# 普通 VLOG
+python scripts/mps_highlight.py --cos-object /input/vlog.mp4 --scene vlog
+
+# 指定输出片段数（最多10个）
+python scripts/mps_highlight.py --cos-object /input/vlog.mp4 --scene vlog --top-clip 10
+
+# ========== 篮球赛事 ==========
+python scripts/mps_highlight.py --cos-object /input/basketball.mp4 --scene basketball
+
+# ========== 自定义场景（大模型版） ==========
+# 带 prompt 和 scenario
+python scripts/mps_highlight.py --url https://example.com/skiing.mp4 \
+    --scene custom --prompt "滑雪场景，输出人物高光" --scenario "滑雪"
+
+# 仅指定 scenario
+python scripts/mps_highlight.py --url https://example.com/skiing.mp4 \
+    --scene custom --scenario "滑雪"
+
+# 仅指定 prompt
+python scripts/mps_highlight.py --url https://example.com/skiing.mp4 \
+    --scene custom --prompt "滑雪场景，输出人物高光"
+
+# 自定义场景 + 指定片段数
+python scripts/mps_highlight.py --url https://example.com/skiing.mp4 \
+    --scene custom --prompt "滑雪场景" --scenario "滑雪" --top-clip 8
+
+# ========== 其他常用选项 ==========
+# 指定输出目录
+python scripts/mps_highlight.py --cos-object /input/football.mp4 --scene football \
+    --output-dir /output/my-highlights/
+
+# 仅提交任务，不等待结果
+python scripts/mps_highlight.py --cos-object /input/football.mp4 --scene football --no-wait
+
+# Dry Run（预览请求参数）
+python scripts/mps_highlight.py --cos-object /input/football.mp4 --scene football --dry-run
+
+# 查询任务状态
+python scripts/mps_get_video_task.py --task-id 2600011633-WorkflowTask-xxxxx
+```
+
+### 重要限制
+
+- ⚠️ 本脚本**仅支持处理离线文件，不支持直播流**
+- `--top-clip` 仅允许在 `vlog` / `vlog-panorama` / `custom` 场景下使用
+- `--prompt` 和 `--scenario` 仅在 `--scene custom` 时生效，但二者非必填
+- ExtendedParameter 必须从预设场景参数中选择，**禁止自行拼装**

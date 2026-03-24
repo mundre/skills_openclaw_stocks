@@ -9,7 +9,7 @@
     from poll_task import poll_video_task, poll_image_task
 
     # 提交任务后直接轮询
-    result = poll_video_task(task_id, region="ap-guangzhou", interval=10, max_wait=600)
+    result = poll_video_task(task_id, region="ap-guangzhou", interval=10, max_wait=1800)
     result = poll_image_task(task_id, region="ap-guangzhou", interval=5, max_wait=300)
 """
 
@@ -74,18 +74,18 @@ def _print_video_result(result):
 
     TASK_KEY_MAP = {
         "Transcode": "TranscodeTask",
-        "AnimatedGraphic": "AnimatedGraphicTask",
+        "AnimatedGraphics": "AnimatedGraphicsTask",
         "SnapshotByTimeOffset": "SnapshotByTimeOffsetTask",
         "SampleSnapshot": "SampleSnapshotTask",
-        "ImageSprite": "ImageSpriteTask",
+        "ImageSprites": "ImageSpritesTask",
         "AdaptiveDynamicStreaming": "AdaptiveDynamicStreamingTask",
     }
     TASK_NAME_MAP = {
         "Transcode": "转码",
-        "AnimatedGraphic": "转动图",
+        "AnimatedGraphics": "转动图",
         "SnapshotByTimeOffset": "时间点截图",
         "SampleSnapshot": "采样截图",
-        "ImageSprite": "雪碧图",
+        "ImageSprites": "雪碧图",
         "AdaptiveDynamicStreaming": "自适应码流",
         "AiAnalysis": "AI 内容分析",
         "AiRecognition": "AI 内容识别",
@@ -164,7 +164,7 @@ def _print_image_result(result):
             print(f"       📝 图生文结果: {display}")
 
 
-def poll_video_task(task_id, region="ap-guangzhou", interval=10, max_wait=600, verbose=False):
+def poll_video_task(task_id, region="ap-guangzhou", interval=10, max_wait=1800, verbose=False):
     """
     轮询音视频处理任务（ProcessMedia 提交的任务）直到完成。
 
@@ -172,7 +172,7 @@ def poll_video_task(task_id, region="ap-guangzhou", interval=10, max_wait=600, v
         task_id:   任务 ID
         region:    MPS 服务区域
         interval:  轮询间隔（秒），默认 10
-        max_wait:  最长等待时间（秒），默认 600（10分钟）
+        max_wait:  最长等待时间（秒），默认 1800（30分钟）
         verbose:   是否输出完整 JSON
 
     Returns:

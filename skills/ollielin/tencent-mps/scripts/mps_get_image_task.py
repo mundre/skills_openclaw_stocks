@@ -118,6 +118,9 @@ def print_output_info(output):
     out_storage = output.get("OutputStorage", {}) or {}
     out_type = out_storage.get("Type", "")
 
+    bucket = ""
+    region = ""
+
     if out_type == "COS":
         cos_out = out_storage.get("CosOutputStorage", {}) or {}
         bucket = cos_out.get("Bucket", "")
@@ -128,6 +131,12 @@ def print_output_info(output):
         bucket = s3_out.get("S3Bucket", "")
         region = s3_out.get("S3Region", "")
         print(f"       输出: S3 - {bucket}:{out_path} (region: {region})")
+    elif out_type == "VOD":
+        vod_out = out_storage.get("VODOutputStorage", {}) or {}
+        bucket = vod_out.get("Bucket", "")
+        region = vod_out.get("Region", "")
+        sub_app_id = vod_out.get("SubAppId", "")
+        print(f"       输出: VOD - {bucket}:{out_path} (region: {region}, SubAppId: {sub_app_id})")
     elif out_path:
         print(f"       输出路径: {out_path}")
 
@@ -217,6 +226,11 @@ def query_task(args):
         message = result.get("Message", "")
         create_time = result.get("CreateTime", "")
         finish_time = result.get("FinishTime", "")
+
+        # 无效 TaskId：API 返回成功但任务不存在（Status 为空/None）
+        if not status and not task_type and not create_time:
+            print(f"❌ 任务不存在或已过期（超过7天）: {args.task_id}", file=sys.stderr)
+            sys.exit(1)
 
         print("=" * 60)
         print("腾讯云 MPS 图片处理任务详情")

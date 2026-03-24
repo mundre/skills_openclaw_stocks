@@ -348,6 +348,10 @@ def build_create_params(args):
     if cos_param:
         params["StoreCosParam"] = cos_param
 
+    # 额外参数（特殊场景）
+    if args.additional_parameters:
+        params["AdditionalParameters"] = args.additional_parameters
+
     # 操作者
     if args.operator:
         params["Operator"] = args.operator
@@ -479,6 +483,16 @@ def validate_args(args, parser):
             f"不支持的分辨率: {args.resolution}，"
             f"支持: {', '.join(SUPPORTED_RESOLUTIONS)}"
         )
+
+    # AdditionalParameters JSON 格式校验
+    if args.additional_parameters:
+        try:
+            json.loads(args.additional_parameters)
+        except json.JSONDecodeError:
+            parser.error(
+                f"--additional-parameters 必须是有效的 JSON 格式字符串。\n"
+                f"示例: '{{\"size\":\"2048x2048\"}}'"
+            )
 
 
 def run(args):
@@ -727,6 +741,8 @@ def main():
     output_group.add_argument("--resolution", type=str,
                               choices=["720P", "1080P", "2K", "4K"],
                               help="输出分辨率（部分模型支持）")
+    output_group.add_argument("--additional-parameters", type=str,
+                              help="特殊场景参数（JSON格式字符串），例如：'{\"size\":\"2048x2048\"}'")
 
     # ---- COS 存储 ----
     cos_group = parser.add_argument_group("COS 存储配置（可选，不配置则使用 MPS 临时存储，12小时有效）")
