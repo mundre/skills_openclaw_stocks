@@ -3,9 +3,15 @@
   "slug": "xxyy-trade-skill",
   "displayName": "Xxyy Trade",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1773396205417,
-    "commit": "https://github.com/openclaw/skills/commit/74d70ecaebc402428853347f523bc8b0d6fb2807"
+    "version": "1.2.3",
+    "publishedAt": 1773918277405,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1773396205417,
+      "commit": "https://github.com/openclaw/skills/commit/74d70ecaebc402428853347f523bc8b0d6fb2807"
+    }
+  ]
 }
