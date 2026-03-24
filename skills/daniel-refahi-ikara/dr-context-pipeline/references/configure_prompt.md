@@ -1,12 +1,15 @@
-# Configure prompt (copy/paste)
+# Activation prompt (copy/paste fallback)
 
-Paste this to another OpenClaw agent to enable DR Context Pipeline v1 as default behavior.
+Preferred activation phrase:
+`Apply dr-context-pipeline as default behavior`
+
+If needed, use this longer fallback prompt:
 
 ---
 
-Use **DR Context Pipeline v1** as your default context-loading and memory protocol.
+Use **DR Context Pipeline** as your default context-loading and memory protocol.
 
-**Spec:** `dr-context-pipeline-v1` (read `references/` as needed).
+**Spec:** `dr-context-pipeline` (read `references/` as needed).
 **Prerequisite:** a file-based memory layout providing `memory/always_on.md` + topic files under `memory/topics/` (recommended: install **dr-memory-foundation**).
 
 For every user message:
