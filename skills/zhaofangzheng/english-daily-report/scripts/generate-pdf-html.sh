@@ -2,57 +2,114 @@
 # Generate English Daily Report PDF
 # Usage: generate-pdf-html.sh "DATE" "ENGLISH_TITLE" "ENGLISH_CONTENT" "CHINESE_TRANSLATION" "WORD1:MEANING1" "WORD2:MEANING2" ...
 
-cd ~/.openclaw/workspace
+set -euo pipefail
+
+# Get workspace directory (portable across users and OS)
+WORKSPACE_DIR="${HOME}/.openclaw/workspace"
+cd "$WORKSPACE_DIR"
 
 # Parse arguments
-DATE="$1"
-ENGLISH_TITLE="$2"
-ENGLISH_CONTENT="$3"
-CHINESE_TRANSLATION="$4"
-shift 4
+DATE="${1:-$(date +%Y-%m-%d)}"
+ENGLISH_TITLE="${2:-Daily Report}"
+ENGLISH_CONTENT="${3:-No content provided}"
+CHINESE_TRANSLATION="${4:-无内容}"
+shift 4 || true
 VOCAB_WORDS=("$@")
 
-# Default values if not provided
-DATE=${DATE:-$(date +%Y-%m-%d)}
-PDF_FILE="/Users/fzzhao/.openclaw/workspace/uploads/english-daily-${DATE}.pdf"
+# Output paths (portable)
+PDF_FILE="${WORKSPACE_DIR}/uploads/english-daily-${DATE}.pdf"
+HTML_FILE="${WORKSPACE_DIR}/uploads/report-temp.html"
 
-# Build vocabulary HTML
+# Function to escape HTML special characters
+escape_html() {
+    local text="$1"
+    text="${text//&/&amp;}"
+    text="${text//</&lt;}"
+    text="${text//>/&gt;}"
+    text="${text//\"/&quot;}"
+    text="${text//\'/&#39;}"
+    printf '%s' "$text"
+}
+
+# Escape all user-provided content to prevent XSS/injection
+ENGLISH_TITLE_ESCAPED=$(escape_html "$ENGLISH_TITLE")
+ENGLISH_CONTENT_ESCAPED=$(escape_html "$ENGLISH_CONTENT")
+CHINESE_TRANSLATION_ESCAPED=$(escape_html "$CHINESE_TRANSLATION")
+
+# Build vocabulary HTML safely
 VOCAB_HTML=""
 for word in "${VOCAB_WORDS[@]}"; do
-  WORD_NAME=$(echo "$word" | cut -d':' -f1)
-  WORD_MEANING=$(echo "$word" | cut -d':' -f2-)
-  VOCAB_HTML="${VOCAB_HTML}    <div class=\"vocab\"><span class=\"word\">${WORD_NAME}</span> - ${WORD_MEANING}</div>\n"
+    if [[ -n "$word" ]]; then
+        WORD_NAME=$(echo "$word" | cut -d':' -f1)
+        WORD_MEANING=$(echo "$word" | cut -d':' -f2-)
+        WORD_NAME_ESCAPED=$(escape_html "$WORD_NAME")
+        WORD_MEANING_ESCAPED=$(escape_html "$WORD_MEANING")
+        VOCAB_HTML="${VOCAB_HTML}    <div class=\"vocab\"><span class=\"word\">${WORD_NAME_ESCAPED}</span> - ${WORD_MEANING_ESCAPED}</div>\n"
+    fi
 done
 
+# Detect Chrome/Chromium executable (cross-platform)
+detect_chrome() {
+    # macOS
+    if [[ -f "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]]; then
+        echo "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        return 0
+    fi
+    # Linux (common paths)
+    for chrome in "google-chrome" "chromium" "chromium-browser"; do
+        if command -v "$chrome" &>/dev/null; then
+            echo "$chrome"
+            return 0
+        fi
+    done
+    # Windows (WSL or native)
+    if [[ -f "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe" ]]; then
+        echo "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
+        return 0
+    fi
+    echo ""
+    return 1
+}
+
+CHROME_BIN=$(detect_chrome || echo "")
+
 # Create HTML file with embedded CSS for print
-cat > /Users/fzzhao/.openclaw/workspace/uploads/report-temp.html << HTMLEOF
+cat > "$HTML_FILE" << HTMLEOF
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <style>
-    @page { size: A4; margin: 2cm; }
+    @page { 
+      size: A4;
+      margin: 1.5cm 1cm;
+      @top-left { content: none; }
+      @top-center { content: none; }
+      @top-right { content: none; }
+      @bottom-left {
+        content: none;  /* 移除左下角路径 */
+      }
+    }
     body { 
       font-family: "PingFang SC", "Microsoft YaHei", "SimSun", sans-serif; 
       max-width: 800px; 
-      margin: 0 auto; 
-      padding: 20px;
+      margin: 0 auto;
       line-height: 1.6;
     }
     .header { 
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
       color: white; 
-      padding: 30px; 
+      padding: 20px; 
       border-radius: 10px; 
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
     .title { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
     .date { font-size: 16px; opacity: 0.9; }
     .section { 
-      margin: 25px 0; 
+      margin: 20px 0; 
       padding: 20px; 
       background: #f8f9fa; 
       border-radius: 8px;
@@ -67,8 +124,9 @@ cat > /Users/fzzhao/.openclaw/workspace/uploads/report-temp.html << HTMLEOF
       border-bottom: 2px solid #667eea; 
       padding-bottom: 8px; 
     }
-    .english { font-size: 16px; color: #333; white-space: pre-line; }
-    .chinese { font-size: 16px; color: #555; margin-top: 15px; white-space: pre-line; }
+    .english { font-size: 16px; color: #333; }
+    .chinese { font-size: 16px; color: #555; margin-top: 15px; }
+    .english-title { margin-bottom: 8px; display: block; }
     .vocab { 
       background: white; 
       padding: 15px; 
@@ -95,15 +153,15 @@ cat > /Users/fzzhao/.openclaw/workspace/uploads/report-temp.html << HTMLEOF
   <div class="section">
     <div class="section-title">📄 News Summary</div>
     <div class="english">
-      <strong>${ENGLISH_TITLE}</strong><br><br>
-${ENGLISH_CONTENT}
+      <strong class="english-title">${ENGLISH_TITLE_ESCAPED}</strong>
+${ENGLISH_CONTENT_ESCAPED}
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">📖 全文释义</div>
     <div class="chinese">
-${CHINESE_TRANSLATION}
+${CHINESE_TRANSLATION_ESCAPED}
     </div>
   </div>
 
@@ -119,13 +177,18 @@ $(echo -e "${VOCAB_HTML}")
 </html>
 HTMLEOF
 
-echo "HTML created at /Users/fzzhao/.openclaw/workspace/uploads/report-temp.html"
+echo "HTML created at ${HTML_FILE}"
 
 # Convert to PDF with date in filename
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu --print-to-pdf="${PDF_FILE}" /Users/fzzhao/.openclaw/workspace/uploads/report-temp.html 2>&1
-
-echo "PDF created at ${PDF_FILE}"
+if [[ -n "$CHROME_BIN" ]]; then
+    "$CHROME_BIN" --headless --disable-gpu --print-to-pdf="${PDF_FILE}" "${HTML_FILE}" 2>&1
+    echo "PDF created at ${PDF_FILE}"
+else
+    echo "ERROR: Chrome/Chromium not found. Please install Chrome or Chromium."
+    echo "PDF file would be: ${PDF_FILE}"
+    exit 1
+fi
 
 # Audio file path (for reference, TTS will be called separately)
-AUDIO_FILE="/Users/fzzhao/.openclaw/workspace/uploads/english-daily-${DATE}.mp3"
+AUDIO_FILE="${WORKSPACE_DIR}/uploads/english-daily-${DATE}.mp3"
 echo "Audio should be saved to: ${AUDIO_FILE}"
