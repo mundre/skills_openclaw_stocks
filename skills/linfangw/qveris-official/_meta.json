@@ -3,11 +3,16 @@
   "slug": "qveris-official",
   "displayName": "QVeris Official",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1773290444606,
-    "commit": "https://github.com/openclaw/skills/commit/c9a15f4fe1f2e7b5f0fc9e80e6c668b860595bc4"
+    "version": "1.0.9",
+    "publishedAt": 1774352464519,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1773290444606,
+      "commit": "https://github.com/openclaw/skills/commit/c9a15f4fe1f2e7b5f0fc9e80e6c668b860595bc4"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1772450644787,
