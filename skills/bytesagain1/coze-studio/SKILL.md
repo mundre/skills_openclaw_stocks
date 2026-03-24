@@ -1,8 +1,10 @@
 ---
 version: "2.0.0"
 name: Coze Studio
-description: "An AI agent development platform with all-in-one visual tools, simplifying agent creation, debugging coze studio, typescript, agent, agent-platform, ai-plugins, chatbot, chatbot-framework. Use when you need coze studio capabilities. Triggers on: coze studio."
+description: "An AI agent development platform with all-in-one visual tools, simplifying agent creation, debugging coze studio, typescript, agent, agent-platform."
 author: BytesAgain
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
 ---
 
 # Coze Studio
