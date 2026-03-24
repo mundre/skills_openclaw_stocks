@@ -1,6 +1,6 @@
 # RQAlpha 米筐回测 Skill
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/ricequant/rqalpha)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/ricequant/rqalpha)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![ClawHub](https://img.shields.io/badge/ClawHub-BossQuant-purple.svg)](https://clawhub.com)
 
@@ -86,6 +86,11 @@ def handle_bar(context, bar_dict):
 Apache License 2.0
 
 ## 📊 更新日志
+
+### v1.2.0 (2026-03-23)
+- 🎉 增加更丰富的AI Agent演示和高阶使用指南
+- 🔄 更新版本号并清理失效链接
+
 
 ### v1.1.0 (2026-03-15)
 - 🎉 初始版本发布

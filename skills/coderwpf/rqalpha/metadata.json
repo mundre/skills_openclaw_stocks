@@ -1,6 +1,6 @@
 {
   "name": "rqalpha",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "RQAlpha 米筐开源事件驱动回测框架 - 支持A股和期货，模块化架构，可自由扩展。",
   "author": "BossQuant",
   "tags": [
