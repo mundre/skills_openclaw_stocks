@@ -48,6 +48,16 @@ Match user requests to endpoints in references/api-spec.lap. Key patterns:
 - List endpoints may support pagination; check for limit, offset, or cursor params
 - Create/update endpoints typically return the created/updated object
 
+## CLI
+
+```bash
+# Update this spec to the latest version
+npx @lap-platform/lapsh get abuse-api -o references/api-spec.lap
+
+# Search for related APIs
+npx @lap-platform/lapsh search abuse-api
+```
+
 ## References
 - Full spec: See references/api-spec.lap for complete endpoint details, parameter tables, and response schemas
 
