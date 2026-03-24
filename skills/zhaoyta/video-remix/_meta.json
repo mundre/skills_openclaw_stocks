@@ -3,11 +3,16 @@
   "slug": "video-remix",
   "displayName": "video-remix",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1773840455968,
-    "commit": "https://github.com/openclaw/skills/commit/c258b994d24ae7c4a0dec3ff9acbd8a538580deb"
+    "version": "1.0.7",
+    "publishedAt": 1774236952839,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1773840455968,
+      "commit": "https://github.com/openclaw/skills/commit/c258b994d24ae7c4a0dec3ff9acbd8a538580deb"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773664205925,
