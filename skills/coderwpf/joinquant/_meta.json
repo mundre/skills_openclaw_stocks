@@ -3,11 +3,16 @@
   "slug": "joinquant",
   "displayName": "joinquant",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773643446173,
-    "commit": "https://github.com/openclaw/skills/commit/686821dbfb99dd3d468a8b77e5c68d7253884994"
+    "version": "1.0.2",
+    "publishedAt": 1774260210387,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773643446173,
+      "commit": "https://github.com/openclaw/skills/commit/686821dbfb99dd3d468a8b77e5c68d7253884994"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773364692025,

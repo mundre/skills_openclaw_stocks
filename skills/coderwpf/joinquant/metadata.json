@@ -1,6 +1,6 @@
 {
   "name": "joinquant",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "聚宽量化交易平台 - 提供A股、期货、基金数据查询，事件驱动策略回测，支持在线研究与模拟实盘。",
   "author": "BossQuant",
   "tags": [
