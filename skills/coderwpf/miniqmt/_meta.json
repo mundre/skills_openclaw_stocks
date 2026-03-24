@@ -3,11 +3,16 @@
   "slug": "miniqmt",
   "displayName": "miniQMT",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773643530520,
-    "commit": "https://github.com/openclaw/skills/commit/4664c0362e5c8aad5612f0af70684358201ff138"
+    "version": "1.0.3",
+    "publishedAt": 1774260274119,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773643530520,
+      "commit": "https://github.com/openclaw/skills/commit/4664c0362e5c8aad5612f0af70684358201ff138"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773364791825,
