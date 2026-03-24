@@ -3,11 +3,16 @@
   "slug": "banner",
   "displayName": "Banner",
   "latest": {
-    "version": "2.0.1",
-    "publishedAt": 1773830105520,
-    "commit": "https://github.com/openclaw/skills/commit/f5587ef84405661e9820ca1d58b0d887f9aa38bf"
+    "version": "3.0.2",
+    "publishedAt": 1774314709700,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.1",
+      "publishedAt": 1773830105520,
+      "commit": "https://github.com/openclaw/skills/commit/f5587ef84405661e9820ca1d58b0d887f9aa38bf"
+    },
     {
       "version": "1.0.7",
       "publishedAt": 1773663391201,
