@@ -2,10 +2,8 @@ import requests
 import json
 import urllib3
 import re
-from urllib.parse import urlparse
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -128,7 +126,7 @@ def check_sensitive(content: str, userKey: str = None, sensitive_code_list: list
 
     # 2. 校验userKey，缺失则提示申请
     if not userKey:
-        apply_url = "https://safeguard-pre.ucap.com.cn/"
+        apply_url = "https://safeguard.ucap.com.cn/"
         return {
             "code": -2,
             "message": f"缺少接口调用密钥（userKey）！请访问 {apply_url} 申请专属userKey后再使用该技能",
@@ -143,7 +141,7 @@ def check_sensitive(content: str, userKey: str = None, sensitive_code_list: list
 
     # 4. 调用 UCAP 预发环境接口
     try:
-        url = "https://safeguard-pre.ucap.com.cn/safe-apiinterface/open/skill/skillSensitiveCheck"
+        url = "https://safeguard.ucap.com.cn/safe-apiinterface/open/skill/skillSensitiveCheck"
         headers = {"Content-Type": "application/json", "userKey": userKey}
 
         response = requests.post(
