@@ -11,7 +11,7 @@ metadata:
 ---
 
 # 1Password Connect
-API version: 1.7.1
+API version: 1.5.7
 
 ## Auth
 Bearer bearer
@@ -87,6 +87,16 @@ Match user requests to endpoints in references/api-spec.lap. Key patterns:
 - Check response schemas in references/api-spec.lap for field details
 - List endpoints may support pagination; check for limit, offset, or cursor params
 - Create/update endpoints typically return the created/updated object
+
+## CLI
+
+```bash
+# Update this spec to the latest version
+npx @lap-platform/lapsh get 1password-connect -o references/api-spec.lap
+
+# Search for related APIs
+npx @lap-platform/lapsh search 1password-connect
+```
 
 ## References
 - Full spec: See references/api-spec.lap for complete endpoint details, parameter tables, and response schemas
