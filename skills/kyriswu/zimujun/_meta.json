@@ -3,9 +3,15 @@
   "slug": "zimujun",
   "displayName": "字幕菌",
   "latest": {
-    "version": "1.0.13",
-    "publishedAt": 1773502215455,
-    "commit": "https://github.com/openclaw/skills/commit/faad8d4c75d49d51abb62e3849557b027d4c39cc"
+    "version": "1.0.17",
+    "publishedAt": 1774189406231,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.13",
+      "publishedAt": 1773502215455,
+      "commit": "https://github.com/openclaw/skills/commit/faad8d4c75d49d51abb62e3849557b027d4c39cc"
+    }
+  ]
 }
