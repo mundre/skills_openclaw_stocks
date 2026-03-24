@@ -3,9 +3,15 @@
   "slug": "recipe-find-free-time",
   "displayName": "Recipe Find Free Time",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773432604099,
-    "commit": "https://github.com/openclaw/skills/commit/b7bbb0a1398ccd783670517c611a1ce11b81f00b"
+    "version": "1.0.2",
+    "publishedAt": 1774300609897,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773432604099,
+      "commit": "https://github.com/openclaw/skills/commit/b7bbb0a1398ccd783670517c611a1ce11b81f00b"
+    }
+  ]
 }
