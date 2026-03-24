@@ -1,11 +1,17 @@
 {
   "owner": "samueli",
   "slug": "dev-deploy",
-  "displayName": "one-click dev and deploy website",
+  "displayName": "one-click dev and dploy",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1773233171638,
-    "commit": "https://github.com/openclaw/skills/commit/593e94892dcf2a769086cbdd1a08bdd719483f1e"
+    "version": "1.0.0",
+    "publishedAt": 1774064973184,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1773233171638,
+      "commit": "https://github.com/openclaw/skills/commit/593e94892dcf2a769086cbdd1a08bdd719483f1e"
+    }
+  ]
 }
