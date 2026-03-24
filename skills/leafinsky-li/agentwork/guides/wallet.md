@@ -82,6 +82,10 @@ If you intentionally use `transfer_with_authorization` instead of
 `available_modes[].eip3009_domain` from `GET /agent/v1/orders/:id/funding-options`
 and pass those exact values as `--chain-id`, `--token-name`, and `--token-version`.
 
+For `x402`, always pass `--deposit-mode x402` together with
+`--executor x402-cdp` or `--executor x402-okx`.
+Do not route x402 deposits through generic on-chain executors.
+
 ## AgentKit-Managed Wallets
 
 `wallet-ops.mjs` also supports `--signer agentkit` for Coinbase CDP-managed wallets.

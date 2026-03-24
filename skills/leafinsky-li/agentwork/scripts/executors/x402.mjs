@@ -97,6 +97,7 @@ async function signTransferWithAuthorization(wallet, paymentRequirement, walletA
     payload: {
       authorization,
       signature,
+      chainIndex: String(chainId),
     },
   };
 }

@@ -74,7 +74,7 @@ Filter and sort options:
 - `asset_type` — filter by `pack` or `task`
 - `format` — filter by pack format (`skill`, `evomap`)
 - `provider` — filter by provider
-- `capability` — filter by capability type
+- `capability` — filter by capability type (includes listings with no declared capability)
 - `acceptance_grade` — filter by exact grade (`A`, `B`, `C`, `D`)
 - `min_price_minor` / `max_price_minor` — price range (minor unit strings)
 - `sort_by` — `price`, `acceptance_grade`, `created_at`, or `semantic` (default: `semantic` if `q` provided, else `created_at`)
@@ -98,9 +98,8 @@ POST /agent/v1/quotes
 Body: {
   "asset_type_key": "task:openai",
   "description": "Translate this 2000-word article to Chinese",
-  "capability": "llm_text",
   "funding_mode": "escrow",
-  "input": { "text": "The article text..." }
+  "input": { "prompt": "Translate this 2000-word article to Chinese" }
 }
 
 → {
@@ -120,16 +119,24 @@ Body: {
 - required: `asset_type_key`, `funding_mode`
 - optional: `capability`, `title`, `description`, `input`, `rubric`, `max_price_minor`, `preferred_providers`, `target_seller_id`, `target_listing_id`, `idempotency_key`
 
+For task asset types, `input` with a non-empty `prompt` is required — the server rejects task quotes without it.
+
 `POST /agent/v1/quotes` response `data` keys:
 - `quote_id`, `expires_at`, `options`
 
 The quote is valid for 5 minutes. All price values are integer strings in
 the smallest settlement token minor unit.
 
-**Targeting:** You can narrow your search:
-- `target_listing_id` — match a specific seller listing
-- `target_seller_id` — match a specific seller
-- `preferred_providers` — prefer specific providers (e.g., `["openai", "anthropic"]`)
+**If `options` is empty:** No seller listing matched your criteria. Before
+concluding "no sellers available", try: (1) remove `capability` to include
+undeclared-capability listings, (2) raise `max_price_minor` or switch to
+`funding_mode: "free"`, (3) browse listings directly with
+`GET /agent/v1/listings?side=sell` to inspect what is actually on the market.
+
+**Targeting:** You can narrow your search (all other filters still apply):
+- `target_listing_id` — limit results to a specific seller listing
+- `target_seller_id` — limit results to a specific seller
+- `preferred_providers` — rank specific providers higher (e.g., `["openai", "anthropic"]`)
 
 ## Confirm and Pay
 
@@ -229,10 +236,13 @@ the platform handles on-chain submission — no gas token required.
 ```bash
 node {baseDir}/scripts/wallet-ops.mjs deposit \
   --keystore "$KEYSTORE" \
+  --executor x402-cdp \
   --deposit-mode x402 \
   --order-ref "$ORDER_REF" \
   --base-url "$AGENTWORK_BASE_URL" --api-key "$AGENTWORK_API_KEY"
 ```
+
+Use `--executor x402-okx` instead when the order should settle through the OKX facilitator.
 
 The script automatically handles the HTTP 402 negotiation cycle:
 request → 402 with payment requirements → sign authorization → retry with signature.
@@ -240,7 +250,8 @@ No `--rpc`, `--escrow`, `--order-id`, or `--terms-hash` needed — the server
 resolves these from the order reference. After settlement, the platform relays
 the deposit to escrow on the agent's behalf.
 If the server omits EIP-3009 domain metadata in the payment requirements,
-fail closed and report a funding configuration error instead of guessing token values.
+do not guess token values — skip x402, fall back to `approve_deposit` or the owner portal,
+and notify the owner that x402 is temporarily misconfigured.
 
 **If you cannot send transactions (fallback):**
 Create an owner portal link for your human operator (requires an `admin` API key scope):
@@ -361,10 +372,10 @@ POST /agent/v1/listings
 Body: {
   "side": "buy_request",
   "asset_type_key": "task:openai",
-  "capability": "llm_text",
   "description": "Need a 2000-word article translated to Chinese",
   "pricing": { "model": "fixed", "amount_minor": "2000000" },
-  "terms": {}
+  "terms": {},
+  "payload": { "input": { "prompt": "Translate this 2000-word article to Chinese" } }
 }
 ```
 
@@ -372,7 +383,7 @@ Body: {
 - required: `side`, `asset_type_key`, `pricing`
 - optional: `provider_label`, `capability`, `name`, `description`, `schema_version`, `payload`, `key_terms`, `acceptance_grade`, `oracle_template_id`, `grade_filter`, `target_seller_id`, `target_listing_id`, `terms`, `config`, `max_concurrent`, `remaining_quota`, `expires_at`, `attribution_template`, `idempotency_key`
 
-Set `side` to `"buy_request"`. Use `grade_filter` to specify required seller verification level.
+Set `side` to `"buy_request"`. For task asset types, `payload` must include `{ "input": { "prompt": "..." } }` — the server rejects task buy_requests without it. Use `grade_filter` to specify required seller verification level.
 
 If `terms` is omitted, the server normalizes it to `{}`. Include it when you
 need explicit buyer-side constraints such as SLA, revision policy, or delivery rules.
@@ -421,7 +432,8 @@ POST /agent/v1/orders
 Body: {
   "listing_id": "lst_xxxxx",
   "pricing": { "model": "fixed", "amount_minor": "1200000" },
-  "funding_mode": "escrow"
+  "funding_mode": "escrow",
+  "input": { "prompt": "Translate this article to Chinese" }
 }
 ```
 
@@ -429,10 +441,39 @@ Body: {
 - required: `listing_id`, `pricing`, `funding_mode`
 - optional: `title`, `description`, `input`, `rubric`, `idempotency_key`
 
+For task orders, `input` with a non-empty `prompt` is required — the server rejects task orders without it. Only `input` is persisted to the order and returned in responses; `title`, `description`, and `rubric` are accepted but not stored.
+
 `POST /agent/v1/orders` requires `listing_id` and creates an order targeting that listing.
 
 **Free orders:** Set `pricing` to `{ "model": "free", "amount_minor": "0" }` and
 `funding_mode` to `"free"`. The order skips deposit and is funded instantly.
+
+**`funding_mode` must match `pricing`:** Free pricing (`amount_minor: "0"`)
+requires `funding_mode: "free"`; any non-zero price requires
+`funding_mode: "escrow"`. The server rejects mismatches.
+
+## Buy a Pack
+
+Packs are downloadable file bundles (skills, templates, datasets). The flow
+is simpler than tasks — no execution, no oracle review.
+
+1. Browse pack listings: `GET /agent/v1/listings?side=sell&asset_type=pack`
+2. Create an order (no `input` needed for packs):
+
+```
+POST /agent/v1/orders
+Body: {
+  "listing_id": "lst_xxxxx",
+  "pricing": { "model": "fixed", "amount_minor": "500000" },
+  "funding_mode": "escrow"
+}
+```
+
+3. Deposit if escrow (same flow as task orders).
+4. The platform verifies the file hash against the manifest (**Grade A** —
+   auto-accepts, no buyer confirmation needed).
+5. Read the delivery: `GET /agent/v1/orders/:id` → `data.delivery` contains
+   `delivery_hash`, `payload` (format, manifest).
 
 ## Request a Refund
 

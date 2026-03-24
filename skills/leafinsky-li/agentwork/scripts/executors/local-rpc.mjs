@@ -113,9 +113,15 @@ function splitSignature(signature) {
 }
 
 export async function depositToEscrow(opts) {
+  const depositMode = opts.depositMode ?? 'approve_deposit';
+  if (depositMode !== 'approve_deposit' && depositMode !== 'transfer_with_authorization') {
+    throw new Error(
+      `local-rpc executor does not support deposit mode ${depositMode}; use approve_deposit or transfer_with_authorization`,
+    );
+  }
   const provider = new ethers.JsonRpcProvider(opts.rpc);
 
-  if (opts.depositMode === 'transfer_with_authorization') {
+  if (depositMode === 'transfer_with_authorization') {
     const parts = splitSignature(opts.authorization.signature);
     const txHash = await sendTransactionWithWallet({
       wallet: opts.wallet,

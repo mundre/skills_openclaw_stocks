@@ -15,6 +15,7 @@ const EXECUTOR_MODULES = {
   'x402-cdp': './executors/x402.mjs',
   'x402-okx': './executors/x402.mjs',
 };
+const X402_EXECUTORS = new Set(['x402-cdp', 'x402-okx']);
 
 function error(code, message, details = {}) {
   process.stderr.write(JSON.stringify({ error: code, message, details }) + '\n');
@@ -105,8 +106,20 @@ function resolveSignerName(args) {
   return args.signer ?? process.env.AGENTWORK_SIGNER ?? 'ethers-keystore';
 }
 
+function resolveDepositMode(args) {
+  return args['deposit-mode'] ?? 'approve_deposit';
+}
+
+function defaultX402ExecutorName(args) {
+  return readOptionalString(args['facilitator-id']) === 'okx_payments' ? 'x402-okx' : 'x402-cdp';
+}
+
 function resolveExecutorName(args) {
-  return args.executor ?? process.env.AGENTWORK_EXECUTOR ?? 'local-rpc';
+  const explicitExecutor = readOptionalString(args.executor) ?? readOptionalString(process.env.AGENTWORK_EXECUTOR);
+  if (resolveDepositMode(args) === 'x402') {
+    return explicitExecutor ?? defaultX402ExecutorName(args);
+  }
+  return explicitExecutor ?? 'local-rpc';
 }
 
 async function loadSignerModule(args) {
@@ -125,6 +138,34 @@ async function loadExecutorModule(args) {
     error('UNKNOWN_EXECUTOR', `Unknown executor: ${executorName}`, { valid: Object.keys(EXECUTOR_MODULES) });
   }
   return await import(modulePath);
+}
+
+function assertDepositExecutorConsistency(depositMode, executorName) {
+  if (depositMode === 'x402') {
+    if (!X402_EXECUTORS.has(executorName)) {
+      error(
+        'INVALID_DEPOSIT_EXECUTOR',
+        'deposit-mode=x402 requires executor x402-cdp or x402-okx',
+        {
+          deposit_mode: depositMode,
+          executor: executorName,
+          valid: [...X402_EXECUTORS],
+        },
+      );
+    }
+    return;
+  }
+
+  if (X402_EXECUTORS.has(executorName)) {
+    error(
+      'INVALID_DEPOSIT_EXECUTOR',
+      `${executorName} only supports deposit-mode=x402`,
+      {
+        deposit_mode: depositMode,
+        executor: executorName,
+      },
+    );
+  }
 }
 
 function readSignerMeta(args) {
@@ -399,9 +440,11 @@ async function buildAuthorization(args, signerModule) {
 }
 
 async function cmdDeposit(args) {
+  const depositMode = resolveDepositMode(args);
+  const executorName = resolveExecutorName(args);
+  assertDepositExecutorConsistency(depositMode, executorName);
   const signer = await loadSignerModule(args);
   const executor = await loadExecutorModule(args);
-  const depositMode = args['deposit-mode'] ?? 'approve_deposit';
   const signerInputs = resolveSignerInputs(args, signer, {
     requireKeystore: signerNeedsKeystore(signer),
     requireExisting: signerNeedsKeystore(signer),
@@ -420,7 +463,7 @@ async function cmdDeposit(args) {
       baseUrl: requireArg(args, 'base-url'),
       apiKey: args['api-key'] ?? process.env.AGENTWORK_API_KEY,
       facilitatorId: args['facilitator-id'],
-      executorType: resolveExecutorName(args),
+      executorType: executorName,
       paymentSignature: args['payment-signature'],
     }).catch((e) => {
       error('DEPOSIT_FAILED', e.message);
@@ -446,7 +489,7 @@ async function cmdDeposit(args) {
       baseUrl: args['base-url'],
       apiKey: args['api-key'] ?? process.env.AGENTWORK_API_KEY,
       facilitatorId: args['facilitator-id'],
-      executorType: resolveExecutorName(args),
+      executorType: executorName,
       paymentSignature: args['payment-signature'],
     }).catch((e) => {
       error(
