@@ -3,11 +3,16 @@
   "slug": "freshippo",
   "displayName": "Freshippo",
   "latest": {
-    "version": "2.0.1",
-    "publishedAt": 1774013475354,
-    "commit": "https://github.com/openclaw/skills/commit/709b023623d8e2dde9d45009a91167d40f8f9862"
+    "version": "2.0.2",
+    "publishedAt": 1774072492876,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.1",
+      "publishedAt": 1774013475354,
+      "commit": "https://github.com/openclaw/skills/commit/709b023623d8e2dde9d45009a91167d40f8f9862"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1773529078934,
