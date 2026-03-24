@@ -1,7 +1,7 @@
 ---
 name: "hashtag"
-version: "2.0.0"
-description: "Powered by BytesAgain"
+version: "2.0.4"
+description: "Reference tool for devtools — covers intro, quickstart, patterns and more. Quick lookup for Hashtag concepts, best practices, and implementation patterns."
 author: "BytesAgain"
 homepage: "https://bytesagain.com"
 source: "https://github.com/bytesagain/ai-skills"
@@ -11,7 +11,7 @@ category: "devtools"
 
 # Hashtag
 
-Powered by BytesAgain. No API keys or credentials required — outputs reference documentation only.
+Reference tool for devtools — covers intro, quickstart, patterns and more. Quick lookup for Hashtag concepts, best practices, and implementation patterns. No API keys or credentials required.
 
 ## Commands
 
