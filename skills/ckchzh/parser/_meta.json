@@ -3,9 +3,15 @@
   "slug": "parser",
   "displayName": "Parser",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773673852956,
-    "commit": "https://github.com/openclaw/skills/commit/1a4033dc2b3320d097226f03b66586da231e0f7a"
+    "version": "3.0.2",
+    "publishedAt": 1773914382362,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773673852956,
+      "commit": "https://github.com/openclaw/skills/commit/1a4033dc2b3320d097226f03b66586da231e0f7a"
+    }
+  ]
 }
