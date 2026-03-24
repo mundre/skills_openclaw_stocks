@@ -3,11 +3,16 @@
   "slug": "encode",
   "displayName": "Encode",
   "latest": {
-    "version": "2.0.1",
-    "publishedAt": 1773830548659,
-    "commit": "https://github.com/openclaw/skills/commit/b22b41d43c13447ac1ae9be98bb6ee42932a8a02"
+    "version": "2.0.5",
+    "publishedAt": 1774314918265,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.1",
+      "publishedAt": 1773830548659,
+      "commit": "https://github.com/openclaw/skills/commit/b22b41d43c13447ac1ae9be98bb6ee42932a8a02"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1773663675983,
