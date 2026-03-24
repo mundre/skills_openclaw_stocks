@@ -1,0 +1,11 @@
+{
+  "owner": "teneoprotocoldev",
+  "slug": "teneo-agent-amazon",
+  "displayName": "Amazon - powered by Teneo Protocol",
+  "latest": {
+    "version": "1.0.5",
+    "publishedAt": 1774335579565,
+    "commit": null
+  },
+  "history": []
+}
