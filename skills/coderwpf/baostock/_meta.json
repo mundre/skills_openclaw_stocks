@@ -3,11 +3,16 @@
   "slug": "baostock",
   "displayName": "BaoStock",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773643705794,
-    "commit": "https://github.com/openclaw/skills/commit/71f9a0e742fe203e7d1dfd5be094fa42421f5de0"
+    "version": "1.0.3",
+    "publishedAt": 1774260431823,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773643705794,
+      "commit": "https://github.com/openclaw/skills/commit/71f9a0e742fe203e7d1dfd5be094fa42421f5de0"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773365144287,
