@@ -1,7 +1,7 @@
 ---
 name: crs-tax-calculator
 description: CRS境外补税计算工具 - 上传券商月结单PDF/Excel，AI自动解析交易数据，FIFO/ACB成本法计算资本利得，生成Excel税务审计底稿。支持多文件年度汇总。
-version: 3.3.0
+version: 3.4.0
 metadata:
   openclaw:
     requires:
@@ -37,16 +37,15 @@ echo "CRS_API_KEY=${CRS_API_KEY:-(未设置)}"
 如果显示"未设置"，引导用户：
 
 1. **获取 API Key**：如果用户还没有 API Key，告知他们在 https://wealthlplantation.com 注册账户（免费送 20 页体验额度），然后在用户中心生成 API Key
-2. **设置环境变量**：让用户提供 API Key 后，帮他们写入 shell 配置文件（永久生效）：
+2. **设置环境变量**：让用户在当前终端会话中设置：
 
 ```bash
-echo 'export CRS_API_KEY="用户提供的key"' >> ~/.zshrc
-source ~/.zshrc
+export CRS_API_KEY="用户提供的key"
 ```
 
-如果用户使用 bash，替换为 `~/.bashrc`。
+如果用户希望永久生效，可以手动将上述行添加到 `~/.zshrc` 或 `~/.bashrc`。
 
-设置完成后重新验证：`echo $CRS_API_KEY`，确认已生效再继续。
+设置完成后验证：`echo $CRS_API_KEY`，确认已生效再继续。
 
 ## 数据安全
 
@@ -86,12 +85,7 @@ SCRIPT=$(find ~/.claude/skills/crs-tax-calculator ~/.openclaw/skills/crs-tax-cal
 echo "Script: $SCRIPT"
 ```
 
-如果找不到脚本，从 GitHub 下载：
-```bash
-mkdir -p ~/.claude/skills/crs-tax-calculator
-curl -sL https://raw.githubusercontent.com/Halleymagic/crs-api/main/skill/do_audit.py -o ~/.claude/skills/crs-tax-calculator/do_audit.py
-SCRIPT=~/.claude/skills/crs-tax-calculator/do_audit.py
-```
+如果找不到脚本，提示用户重新安装此 skill（通过 ClawHub 或 Claude Code 的 `/install` 命令），脚本包含在 skill 包内。
 
 ### 步骤 3：运行脚本
 
@@ -129,7 +123,7 @@ python3 "$SCRIPT" /path/to/file1.pdf /path/to/file2.pdf --method FIFO --output /
 
 ## 支持的券商
 
-盈立证券(uSMART)、长桥证券(Longbridge)、富途证券(Futu/Moomoo)、老虎证券(Tiger)、盈透证券(IBKR)、卓锐证券(Excellence) 等主流券商的月结单。
+盈立证券(uSMART)、长桥证券(Longbridge)、富途证券(Futu/Moomoo)、老虎证券(Tiger)、盈透证券(IBKR)、卓锐证券(Zircon) 等主流券商的月结单。
 
 ## 定价
 
@@ -141,6 +135,7 @@ python3 "$SCRIPT" /path/to/file1.pdf /path/to/file2.pdf --method FIFO --output /
 | 个人版 | $9.99 | 100页 |
 | 家庭版 | $19.99 | 300页 |
 | 尊享版 | $29.99 | 500页 |
+| 企业版 | $49.99 | 1000页 |
 
 详情和购买：https://wealthlplantation.com/pricing
 
