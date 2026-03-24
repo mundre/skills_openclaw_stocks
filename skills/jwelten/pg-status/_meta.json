@@ -1,13 +1,18 @@
 {
   "owner": "jwelten",
   "slug": "pg-status",
-  "displayName": "ProxyGate Status",
+  "displayName": "Pg Status",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773687454145,
-    "commit": "https://github.com/openclaw/skills/commit/e1a2e1579f2d03bcbeb859d3973000ed0bd3d021"
+    "version": "0.2.1",
+    "publishedAt": 1774132420173,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773687454145,
+      "commit": "https://github.com/openclaw/skills/commit/e1a2e1579f2d03bcbeb859d3973000ed0bd3d021"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773686632350,
