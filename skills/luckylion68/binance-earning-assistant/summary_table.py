@@ -11,9 +11,45 @@
 import json
 import requests
 import re
-from datetime import datetime, timedelta
+import html
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from activity_names import get_chinese_name, extract_token, is_region_restricted, is_square_task, get_reward_apr
+
+def extract_text_from_json_node(node):
+    """递归提取 JSON 结构中的所有文本"""
+    texts = []
+    if isinstance(node, dict):
+        if node.get('node') == 'text':
+            text = node.get('text', '')
+            # 清理 HTML 实体
+            text = html.unescape(text.replace('&nbsp;', ' '))
+            texts.append(text)
+        elif 'child' in node:
+            for child in node['child']:
+                texts.extend(extract_text_from_json_node(child))
+    elif isinstance(node, list):
+        for item in node:
+            texts.extend(extract_text_from_json_node(item))
+    return texts
+
+def strip_html_tags(html_text):
+    """提取 HTML 或 JSON 结构中的纯文本"""
+    # 尝试解析为 JSON（币安文章 body 可能是 JSON 格式）
+    try:
+        parsed = json.loads(html_text)
+        texts = extract_text_from_json_node(parsed)
+        text = ' '.join(texts)
+        # 清理多余空白
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+    except (json.JSONDecodeError, TypeError):
+        # 不是 JSON，按 HTML 处理
+        text = re.sub(r'<[^>]+>', ' ', html_text)
+        text = html.unescape(text)
+        # 清理多余空白
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
 
 # 缓存已获取的文章详情，避免重复请求
 ARTICLE_DETAIL_CACHE = {}
@@ -65,53 +101,203 @@ def get_article_details(code):
             body = data.get("data", {}).get("body", "")
             title = data.get("data", {}).get("title", "")
             
-            # 提取截止日期
-            end_date = ""
-            end_match = re.search(r'(?:End|截止)[:\s]*(2026[-/]\d{2}[-/]\d{2})', body, re.IGNORECASE)
-            if end_match:
-                end_date = end_match.group(1)
-            else:
-                until_match = re.search(r'(?:until|to)[:\s]*(2026[-/]\d{2}[-/]\d{2})', body, re.IGNORECASE)
-                if until_match:
-                    end_date = until_match.group(1)
+            # 提取 HTML 中的纯文本
+            pure_body = strip_html_tags(body)
+            
+            # 获取发布日期（从 API 响应中）
+            release_date = ""
+            release_ts = data.get("data", {}).get("publishDate", 0)
+            if release_ts:
+                if isinstance(release_ts, str):
+                    release_date = release_ts
                 else:
-                    dates = re.findall(r'\b(2026[-/]\d{2}[-/]\d{2})\b', body)
-                    if dates:
-                        end_date = max(dates)
+                    # UTC 时间戳转 UTC+8
+                    tz_utc8 = timezone(timedelta(hours=8))
+                    release_dt = datetime.fromtimestamp(release_ts / 1000, tz=timezone.utc)
+                    release_dt_utc8 = release_dt.astimezone(tz_utc8)
+                    release_date = release_dt_utc8.strftime('%Y-%m-%d')
+            
+            # 提取截止日期（支持多格式）
+            end_date = ""
+            
+            def parse_date(text, current_year, next_year):
+                """解析多种日期格式，返回 YYYY-MM-DD 或 None"""
+                # 格式 1: YYYY-MM-DD 或 YYYY/MM/DD
+                match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', text)
+                if match:
+                    y, m, d = match.groups()
+                    return f"{y}-{int(m):02d}-{int(d):02d}"
+                
+                # 格式 2: DD/MM/YYYY 或 MM/DD/YYYY（根据上下文判断）
+                match = re.search(r'(\d{1,2})[-/](\d{1,2})[-/](\d{4})', text)
+                if match:
+                    a, b, y = match.groups()
+                    # 如果第一个数字>12，则是 DD/MM/YYYY
+                    if int(a) > 12:
+                        return f"{y}-{int(b):02d}-{int(a):02d}"
+                    # 否则假设是 MM/DD/YYYY（美股惯用）
+                    else:
+                        return f"{y}-{int(a):02d}-{int(b):02d}"
+                
+                # 格式 3: March 25, 2026 或 25 March 2026
+                months = {'january':1,'february':2,'march':3,'april':4,'may':5,'june':6,
+                          'july':7,'august':8,'september':9,'october':10,'november':11,'december':12,
+                          'jan':1,'feb':2,'mar':3,'apr':4,'jun':6,'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12}
+                match = re.search(r'([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})', text)
+                if match:
+                    mon, day, year = match.groups()
+                    mon_num = months.get(mon.lower())
+                    if mon_num:
+                        return f"{year}-{mon_num:02d}-{int(day):02d}"
+                
+                # 格式 4: 25 March 2026
+                match = re.search(r'(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})', text)
+                if match:
+                    day, mon, year = match.groups()
+                    mon_num = months.get(mon.lower())
+                    if mon_num:
+                        return f"{year}-{mon_num:02d}-{int(day):02d}"
+                
+                return None
+            
+            # 获取当前年份和下一年（动态年份支持）
+            tz_utc8 = timezone(timedelta(hours=8))
+            current_year = datetime.now(tz_utc8).year
+            next_year = current_year + 1
+            
+            # 优先级 1：Activity Period / Promotion Period: YYYY-MM-DD to YYYY-MM-DD
+            # 优先提取活动周期中的结束日期，而不是奖励发放日期
+            # 支持格式：Activity Period: 2026-03-23 00:00 (UTC) to 2026-03-29 23:59 (UTC)
+            # 注意：使用 .*? 而非 [^0-9]*? 以支持时间格式（如 10:30）
+            period_match = re.search(r'(?:Activity|Promotion) Period\s*:\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2}).*?(?:to|–|-).*?(\d{4}[-/]\d{1,2}[-/]\d{1,2})', pure_body, re.IGNORECASE)
+            if period_match:
+                end_date = period_match.group(2)  # 取结束日期
+                print(f"[DEBUG] 找到 Activity/Promotion Period: {end_date}")
+                # 找到 Activity Period 后，不再继续匹配其他日期
+            else:
+                # 优先级 2：其他日期匹配逻辑
+                # 尝试多种模式匹配截止日期
+                patterns = [
+                    r'(?:End|截止|Until|To|结束|到期)[:\s]*([A-Za-z0-9,\s\-/]+?)(?:\s|$|\n)',
+                    r'([A-Za-z]+\s+\d{1,2},?\s+\d{4})',  # March 25, 2026
+                    r'(\d{1,2}\s+[A-Za-z]+\s+\d{4})',     # 25 March 2026
+                    r'(\d{4}[-/]\d{1,2}[-/]\d{1,2})',     # 2026-03-25
+                    r'(\d{1,2}[-/]\d{1,2}[-/]\d{4})',     # 25/03/2026
+                ]
+                
+                candidate_dates = []
+                for pattern in patterns:
+                    matches = re.findall(pattern, pure_body, re.IGNORECASE)
+                    for m in matches:
+                        parsed = parse_date(m, current_year, next_year)
+                        if parsed:
+                            candidate_dates.append(parsed)
+                
+                # 排除奖励发放相关日期（distribution, distribute by 等）
+                filtered_dates = []
+                for date in candidate_dates:
+                    # 检查该日期附近是否有 distribution 相关词汇
+                    date_pattern = re.escape(date)
+                    # 查找日期前后 50 个字符
+                    context_pattern = r'.{0,50}' + date_pattern + r'.{0,50}'
+                    context_matches = re.findall(context_pattern, pure_body, re.IGNORECASE)
+                    
+                    is_distribution = False
+                    for context in context_matches:
+                        if any(kw in context.lower() for kw in ['distribution', 'distribute by', 'distribute', 'reward date', 'disbursement']):
+                            is_distribution = True
+                            break
+                    
+                    if not is_distribution:
+                        filtered_dates.append(date)
+                
+                # 使用过滤后的日期列表
+                if filtered_dates:
+                    candidate_dates = filtered_dates
+                
+                # 验证逻辑：截止日期必须 > 发布日期
+                if candidate_dates and release_date:
+                    valid_dates = [d for d in candidate_dates if d > release_date]
+                    if valid_dates:
+                        end_date = max(valid_dates)
+                    else:
+                        # 如果没有有效日期，取最大的候选（可能是格式问题）
+                        end_date = max(candidate_dates)
+                elif candidate_dates:
+                    end_date = max(candidate_dates)
+            
+            # Fallback 机制：匹配失败返回"详见页面"
+            if not end_date:
+                end_date = "详见页面"
             
             # 判断是否华语区活动
             is_chinese_region = True
             
             # 检查非华语区关键词
             non_chinese_keywords = ["pakistan", "africa", "balkans", "nigeria", "uganda", "ghana", "kenya", "morocco", "cameroon", "turkmenistan", "ramadan"]
-            if any(kw in body.lower() for kw in non_chinese_keywords):
+            if any(kw in pure_body.lower() for kw in non_chinese_keywords):
+                is_chinese_region = False
+            
+            # 添加中东货币代码检测
+            middle_east_currencies = ["PKR", "SAR", "EGP", "KWD", "JOD", "QAR", "OMR", "IQD", "LBP"]
+            if any(currency in pure_body.upper() for currency in middle_east_currencies):
+                is_chinese_region = False
+            
+            # 添加伊斯兰节日关键词（只检测完整短语，避免误判 URL 中的片段）
+            islamic_holidays = ["eid al-fitr", "eid al-adha", "eid mubarak", "ramadan"]
+            if any(kw in pure_body.lower() for kw in islamic_holidays):
                 is_chinese_region = False
             
             # 检查特定奖励类型（可能是区域限制活动）
             # 如果活动奖励是 HOME Token、Referral Code 等，通常是区域限制活动
             special_rewards = ["home token", "home rewards", "referral code", "new users", "welcome rewards"]
-            if any(kw in body.lower() for kw in special_rewards):
+            if any(kw in pure_body.lower() for kw in special_rewards):
                 # 这类活动通常在华语区不可用
                 is_chinese_region = False
             
             # 判断活动类型
             activity_type = "other"
-            if "super earn" in body.lower():
+            if "super earn" in pure_body.lower():
                 activity_type = "super_earn"
-            elif "earn" in body.lower() or "apr" in body.lower():
+            elif "earn" in pure_body.lower() or "apr" in pure_body.lower():
                 activity_type = "earn"
-            elif "reward" in body.lower():
+            elif "reward" in pure_body.lower():
                 activity_type = "reward"
-            elif "competition" in body.lower() or "trading" in body.lower():
+            elif "competition" in pure_body.lower() or "trading" in pure_body.lower():
                 activity_type = "competition"
-            elif "airdrop" in body.lower():
+            elif "airdrop" in pure_body.lower():
                 activity_type = "airdrop"
+            
+            # SIGN 任务检测（关键词：SIGN, Sign Protocol, Web3 身份，SBT, NFT 身份）
+            sign_keywords = ["sign", "sign protocol", "web3 身份", "web3 identity", 
+                           "sbt", "soulbound", "nft 身份", "nft identity", "identity protocol"]
+            has_sign_content = any(kw in pure_body.lower() for kw in sign_keywords)
+            
+            # 如果是 SIGN 相关内容，标记特殊标识
+            if has_sign_content:
+                result = {
+                    "end_date": end_date,
+                    "is_chinese_region": is_chinese_region,
+                    "activity_type": "sign_task",  # 特殊类型
+                    "body": pure_body,
+                    "title": title,
+                    "is_sign_task": True
+                }
+            else:
+                result = {
+                    "end_date": end_date,
+                    "is_chinese_region": is_chinese_region,
+                    "activity_type": activity_type,
+                    "body": pure_body,
+                    "title": title,
+                    "is_sign_task": False
+                }
             
             result = {
                 "end_date": end_date,
                 "is_chinese_region": is_chinese_region,
                 "activity_type": activity_type,
-                "body": body,
+                "body": pure_body,
                 "title": title
             }
             ARTICLE_DETAIL_CACHE[code] = result
@@ -128,7 +314,9 @@ MONEY_KEYWORDS = [
     "airdrop", "空投", "alpha", "web3", "task", "任务",
     "launchpool", "挖矿", "earn", "质押", "staking", "simple earn", "理财",
     "hodler", "竞赛", "比赛", "competition", "challenge", "trading", "reward", "奖励",
-    "share", "瓜分", "super"
+    "share", "瓜分", "super",
+    # SIGN 任务关键词
+    "sign", "sign protocol", "web3 身份", "sbt", "soulbound", "nft 身份"
 ]
 
 # 排除关键词（非撸毛活动 + 非华语地区）
@@ -194,10 +382,14 @@ def categorize(title):
     # 优先判断 Launchpool
     if "launchpool" in title_lower:
         return "💰 Launchpool"
-    # 理财类
-    elif "super earn" in title_lower or "apr" in title_lower or "flexible" in title_lower or "yield arena" in title_lower:
+    # 理财类（需要明确是 Binance Earn 或 Simple Earn 产品）
+    elif "super earn" in title_lower or "simple earn" in title_lower or "yield arena" in title_lower:
         return "💰 理财"
-    elif "理财" in title or "earn" in title_lower or "simple earn" in title_lower or "hodler" in title_lower:
+    elif "flexible products" in title_lower or "flexible 理财" in title_lower:
+        return "💰 理财"
+    elif "binance earn" in title_lower and ("apr" in title_lower or "share" in title_lower):
+        return "💰 理财"
+    elif "理财" in title:
         return "💰 理财"
     # 所有其他都归类为活动奖励（包括空投、交易竞赛、奖励等）
     else:
@@ -253,45 +445,39 @@ def format_summary_table():
         if not is_chinese_region:
             continue
         
-        # 去重检查：使用 活动类型 + 代币 作为 key（广场任务优先）
-        title_lower = title.lower()
-        activity_type = details.get("activity_type", "other")
-        token_key = ""
-        for token in ["shell", "night", "opn", "robo", "tria", "kite", "velvet", "ethgas", "humanity", "kat", "usdc", "rlusd", "u"]:
-            if token in title_lower:
-                token_key = token
-                break
+        # 去重检查：使用 code 作为唯一标识（最准确）
+        # 每个活动都是独立的，不能仅凭 token 或活动类型判断
+        code_key = f"code_{code}"
         
-        # 判断是否是广场任务（通过 title 中的关键词）
-        is_square = "creatorpad" in title_lower or "square" in title_lower
-        
-        # 广场任务使用特殊的 key，避免被普通 reward 活动过滤
-        if is_square:
-            name_key = f"square_{token_key}" if token_key else f"square_{title_lower[:30]}"
-        else:
-            name_key = f"{activity_type}_{token_key}" if token_key else f"{activity_type}_{title_lower[:30]}"
-        
-        if name_key in seen_names:
+        if code_key in seen_names:
             continue  # 重复活动，跳过
-        seen_names.add(name_key)
+        seen_names.add(code_key)
         
         # 过滤 2: 只保留正在进行中的活动（截止日期 >= 今天 UTC+8）
-        if end_date:
+        # 严格过滤：截止日期必须 >= 今天
+        if end_date and end_date != "详见页面":
             try:
-                end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+                end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=tz_utc8)
                 if end_dt.date() < today.date():
+                    print(f"[过期活动已过滤] {title[:60]}... - 截止日期：{end_date} (已过期)")
                     continue  # 已过期，跳过
-            except:
-                pass
+            except Exception as e:
+                print(f"[日期解析失败已过滤] {title[:60]}... - end_date: {end_date}, 错误：{e}")
+                continue  # 日期解析失败，过滤
         else:
             # 没有截止日期的，检查是否在 7 天内发布
             if release_date:
                 try:
-                    release_dt = datetime.strptime(release_date, "%Y-%m-%d")
+                    release_dt = datetime.strptime(release_date, "%Y-%m-%d").replace(tzinfo=tz_utc8)
                     if (today - release_dt).days > 7:
+                        print(f"[过期活动已过滤] {title[:60]}... - 发布日期：{release_date} (超过 7 天)")
                         continue  # 超过 7 天，跳过
-                except:
-                    pass
+                except Exception as e:
+                    print(f"[日期解析失败已过滤] {title[:60]}... - release_date: {release_date}, 错误：{e}")
+                    continue  # 日期解析失败，过滤
+            else:
+                print(f"[日期解析失败已过滤] {title[:60]}... - 无截止日期且无发布日期")
+                continue  # 无日期信息，过滤
         
         # 提取信息
         chinese_name = get_chinese_name(title)

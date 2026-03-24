@@ -2,7 +2,7 @@
 name: binance-earning-assistant
 description: 币安撸毛助手 - 展示币安最新撸毛活动信息，包括理财产品、活动奖励、空投预告等。Use when user asks for "今日撸毛", "币安活动", "赚钱活动", "撸毛信息", "Binance earning", "airdrop info", or any query about Binance promotional events, rewards, or earning opportunities.
 metadata:
-  version: 2.0.0
+  version: 2.0.1
   author: 0x_WanG
   license: MIT
   openclaw:
@@ -10,6 +10,9 @@ metadata:
     always: false
 dependencies:
   - requests
+environment:
+  - HTTP_PROXY (可选) - HTTP 代理地址，例如 http://127.0.0.1:26001
+  - OPENCLAW_WORKSPACE (可选) - OpenClaw 工作区路径，默认 ~/.openclaw/workspace
 triggers:
   - "今日撸毛"
   - "今日撸毛信息"
@@ -75,8 +78,12 @@ python3 summary_table.py
 ## 持久化说明
 
 **技能会创建以下目录和文件：**
-- `~/.openclaw/workspace/.binance_earning/` - 数据目录
+- `$OPENCLAW_WORKSPACE/.binance_earning/` - 数据目录（默认 `~/.openclaw/workspace/.binance_earning/`）
   - `exports/` - 导出的 Markdown 文件
+
+**环境变量说明：**
+- `OPENCLAW_WORKSPACE` - 指定工作区路径（可选，默认 `~/.openclaw/workspace`）
+- `HTTP_PROXY` - 指定 HTTP 代理（可选，某些网络环境需要）
 
 ## 示例输出
 
@@ -107,6 +114,14 @@ python3 summary_table.py
 3. 理财非存款，产品有风险
 
 ## 更新日志
+
+### v2.0.1 (2026-03-24) - Clawhub 安全审查修复
+
+- ✅ 移除：未声明的 LLM fallback（bailian 客户端调用）
+- ✅ 修复：硬编码用户路径 `/Users/pigbaby/...` → 使用环境变量 `OPENCLAW_WORKSPACE`
+- ✅ 修复：硬编码代理设置 → 改为从环境变量 `HTTP_PROXY` 读取（可选）
+- ✅ 新增：SKILL.md 中声明环境变量（HTTP_PROXY, OPENCLAW_WORKSPACE）
+- ✅ 优化：所有脚本统一使用环境变量配置，兼容不同运行环境
 
 ### v1.0.7 (2026-03-16)
 
