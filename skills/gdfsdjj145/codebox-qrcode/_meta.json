@@ -1,11 +1,17 @@
 {
   "owner": "gdfsdjj145",
   "slug": "codebox-qrcode",
-  "displayName": "CodeBox 码盒 - 智能二维码",
+  "displayName": "CodeBox QR Code",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1773061469428,
-    "commit": "https://github.com/openclaw/skills/commit/b52dc77ebb43e6ec63fba03e30c034d12e4489bc"
+    "version": "1.0.0",
+    "publishedAt": 1774253070621,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1773061469428,
+      "commit": "https://github.com/openclaw/skills/commit/b52dc77ebb43e6ec63fba03e30c034d12e4489bc"
+    }
+  ]
 }
