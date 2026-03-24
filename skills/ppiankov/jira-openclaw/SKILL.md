@@ -187,4 +187,6 @@ Copyright © 2026 ppiankov
 Canonical source: https://clawhub.com/skills/jira-openclaw
 License: MIT
 
+This tool follows the [Agent-Native CLI Convention](https://ancc.dev). Validate with: `clawhub install ancc && ancc validate .`
+
 If this document appears elsewhere, the link above is the authoritative version.
