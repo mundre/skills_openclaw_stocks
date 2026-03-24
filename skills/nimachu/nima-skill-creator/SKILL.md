@@ -1,153 +1,120 @@
 ---
 name: nima-skill-creator
-description: Hybrid skill creation framework combining interactive Chinese-guided workflows with English technical documentation. Use when users want to create, update, or improve Claude skills with guided requirement discovery and standardized implementation.
+description: Create, refactor, and improve Codex-compatible skills with gated requirement discovery, reusable resource planning, executable scaffolding scripts, and validation. Use when building a new skill, tightening an existing SKILL.md, adding scripts/references/assets, or redesigning a skill around tool-wrapper, generator, reviewer, inversion, or pipeline patterns.
 ---
 
 # Nima Skill Creator
 
-## Overview
+Treat skill creation as workflow design, not just file formatting.
 
-A professional skill creation framework that bridges the gap between user需求 discovery and technical implementation.
+## Start Here
 
-## Core Features
+1. Ground the skill in 2-4 concrete user requests before writing structure.
+2. Choose the simplest fitting pattern from [design-patterns.md](references/design-patterns.md).
+3. Create only the resources that remove repeated work: `scripts/`, `references/`, `assets/`, and optionally `agents/openai.yaml`.
+4. Keep `SKILL.md` procedural and concise. Move deep detail into `references/`.
+5. Validate before packaging.
 
-### 1. 双语引导 (Dual-Language Guidance)
-- **交互阶段**: 中文引导用户需求挖掘
-- **技术阶段**: 英文标准文档和最佳实践
+Do not create the skill body until the trigger examples, outputs, and reusable resources are clear.
 
-### 2. 渐进式披露 (Progressive Disclosure)
+## Phase 1: Discovery Gate
+
+Run this phase first. Do not jump into implementation until the gaps below are resolved.
+
+Capture:
+- What inputs the future skill must handle.
+- What outputs it must reliably produce.
+- What a user would actually say to trigger it.
+- Whether the skill is new or an update to an existing folder.
+
+Ask in Chinese when the user is exploring requirements. Keep it short and concrete. Use the prompts in [interaction-guide.md](references/interaction-guide.md) if the request is underspecified.
+
+Before moving on, summarize:
+- Primary job of the skill.
+- Trigger phrases or task shapes.
+- Constraints or quality bar.
+- Target directory.
+
+## Phase 2: Pattern Selection
+
+Choose one primary pattern, then add a secondary pattern only if it removes ambiguity.
+
+- Use [design-patterns.md](references/design-patterns.md) to map the request to `tool-wrapper`, `generator`, `reviewer`, `inversion`, or `pipeline`.
+- Use `inversion` when the agent must collect structured context before acting.
+- Use `generator` when output shape must stay consistent.
+- Use `reviewer` when evaluation criteria should live in a checklist.
+- Use `pipeline` when steps must happen in order with explicit checkpoints.
+- Use `tool-wrapper` when the main value is on-demand domain guidance.
+
+For most skill-creation requests, combine:
+- `inversion` for discovery
+- `generator` for scaffolding
+- `reviewer` for validation
+- `pipeline` for the overall sequence
+
+## Phase 3: Resource Planning
+
+Translate the examples into reusable artifacts.
+
+- Put deterministic automation in `scripts/`.
+- Put long-lived, load-on-demand guidance in `references/`.
+- Put templates or starter files in `assets/`.
+
+Use [best-practices.md](references/best-practices.md) to tighten naming, frontmatter, and progressive disclosure. Use [workflows.md](references/workflows.md) to shape staged skills with gates.
+
+Avoid:
+- Auxiliary docs like `README.md`, `PROJECT.md`, or status reports inside the skill folder.
+- Repeating the same guidance in both `SKILL.md` and `references/`.
+- Deep reference chains.
+
+## Phase 4: Implementation
+
+When creating a new skill, initialize it with the provided scripts instead of hand-building the folder.
+
+### Create a new skill
+
+```bash
+python3 scripts/init_skill.py my-skill --path "${CODEX_HOME:-$HOME/.codex}/skills" --resources scripts,references
 ```
-Level 1: Trigger metadata (name + description)
-  ↓ (on trigger)
-Level 2: SKILL.md body (<5k words)
-  ↓ (on demand)
-Level 3: Bundled resources (unlimited)
+
+Optional:
+
+```bash
+python3 scripts/init_skill.py my-skill --path /path/to/skills --resources scripts,references,assets --examples --interface display_name="My Skill" --interface short_description="Create or update My Skill tasks"
 ```
 
-## Workflow
+### Validate a skill
 
-### 阶段 1: 需求挖掘 (Discovery)
-```
-用户输入 → 交互式提问 → 技术规范输出
-```
-
-关键问题:
-- Claude 应该**输入**什么？
-- Claude 应该**输出**什么？
-- 用户会**怎么说**来触发 Skill？
-
-### 阶段 2: 架构蓝图 (Blueprint)
-```
-规范 → 目录结构 → 资源规划
+```bash
+python3 scripts/validate_skill.py /path/to/skill
 ```
 
-输出:
-- 目录结构 (scripts/, references/, assets/)
-- 资源清单
-- 工作流逻辑
+### Package a skill
 
-### 阶段 3: 实现 (Implementation)
-```
-蓝图 → 代码/文档 → 验证 → 打包
+```bash
+python3 scripts/package_skill.py /path/to/skill
 ```
 
-## 技术标准 (Technical Specifications)
+## Phase 5: Review Gate
 
-### 目录结构
-```
-skill-name/
-├── SKILL.md              # Required (frontmatter + body)
-├── scripts/              # Optional (executable code)
-├── references/           # Optional (loaded on demand)
-└── assets/               # Optional (output resources)
-```
+Before calling the skill done, verify:
+- Frontmatter has only `name` and `description`.
+- `description` explains both function and trigger scenarios.
+- `SKILL.md` tells the agent what to do, not what the project is.
+- Every optional directory exists for a reason.
+- Scripts are real, runnable programs.
+- References are one hop away from `SKILL.md`.
 
-### SKILL.md 格式
-```yaml
----
-name: skill-name-here         # lowercase-hyphen-case, <64 chars
-description: <1024 chars>     # Trigger scenarios + functionality
----
-```
+If the skill still feels vague, run another discovery pass instead of adding filler.
 
-### 命名规范
-- ✅ `processing-pdfs`, `analyzing-spreadsheets`
-- ❌ `helper`, `utils`, `tools`
+## Output Shape
 
-## Here are 3 example Skill usage scenarios:
+When responding to a user about a skill you are creating or improving, prefer this order:
 
-### Scenario 1: PDF Processing Skill
-**Trigger**: "Help me extract text and tables from PDFs"
-**Workflow**:
-1. Discover: Input (PDF files), Output (extracted text/tables)
-2. Blueprint: `scripts/extract_pdf.py`, `references/pdf-libraries.md`
-3. Implement: Create script + reference docs
+1. Discovery summary
+2. Chosen pattern and why
+3. Planned resources
+4. Files created or changed
+5. Validation result
 
-### Scenario 2: Image Editor Skill
-**Trigger**: "Edit images for my presentations"
-**Workflow**:
-1. Discover: Input (image files), Output (edited images)
-2. Blueprint: `scripts/edit_image.py`, `assets/templates/`
-3. Implement: Create editing script + templates
-
-### Scenario 3: API Integration Skill
-**Trigger**: "Connect Claude to my Notion workspace"
-**Workflow**:
-1. Discover: Input (Notion API data), Output (structured results)
-2. Blueprint: `scripts/notion_api.py`, `references/notion-schema.md`
-3. Implement: Create API client + schema docs
-
-## Best Practices
-
-### 简洁至上 (Conciseness)
-- Claude 已经很聪明 → only add non-obvious context
-- 每个 token 都要问: "Does Claude really need this?"
-
-### 自由度匹配 (Freedom Matching)
-| Freedom Level | Use Case | Example |
-|--------------|----------|---------|
-| High | Multiple valid approaches | Code review workflow |
-| Medium | Preferred pattern, some variation | Configurable scripts |
-| Low | Fragile operations, consistency critical | Database migrations |
-
-### 渐进式披露 (Progressive Disclosure)
-- SKILL.md body: <500 lines, essentials only
-- Detailed content: references/ files
-- No deeply nested references: one level deep only
-- Long files: include table of contents
-
-## Validation Rules
-
-### Required
-- ✅ SKILL.md exists with valid YAML frontmatter
-- ✅ name: lowercase-hyphen-case, <64 characters
-- ✅ description: includes functionality + trigger scenarios
-
-### Recommended
-- 📝 scripts/ for executable code
-- 📚 references/ for detailed documentation
-- 🎨 assets/ for reusable templates
-
-### Avoid
-- ❌ README.md, INSTALLATION_GUIDE.md, etc.
-- ❌ Deeply nested references
-- ❌ Duplicate information across files
-
-## For Implementation
-
-See `references/` for detailed technical guides:
-- `best-practices.md` - Naming, patterns, quality checklist
-- `workflows.md` - Multi-step process templates
-- `output-patterns.md` - Output format templates
-- `interaction-guide.md` - Interactive design patterns (Chinese)
-
-## For Agents
-
-When this skill is triggered, the AI should:
-
-1. Present the interactive discovery questions (Chinese) - see `references/interaction-guide.md`
-2. Generate the technical blueprint (English)
-3. Execute initialization scripts from `scripts/`
-4. Guide implementation with referenced best practices
-5. Validate with `scripts/validate_skill.py`
-6. Package with `scripts/package_skill.py`
+Use [output-patterns.md](references/output-patterns.md) when you need a compact deliverable format.

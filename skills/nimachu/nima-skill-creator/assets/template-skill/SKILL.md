@@ -1,50 +1,25 @@
-# Template for New Skills
-
-This is a starter template following the Nima Skill Creator framework.
-
-## Directory Structure
-
-```
-template-skill/
-├── SKILL.md              # Required
-├── scripts/              # Optional
-├── references/           # Optional
-└── assets/               # Optional
-```
-
-## SKILL.md Template
-
-```markdown
 ---
-name: skill-name-here
-description: Clear description of what the skill does and when to use it
+name: your-skill-name
+description: Explain what this skill does and when to use it. Include trigger scenarios, file types, or request shapes that should activate it.
 ---
 
-# Skill Name
+# Your Skill Name
 
-## Overview
-Brief overview of what this skill does.
+Start with the shortest set of instructions that lets another agent succeed.
 
-## Core Features
-- Feature 1
-- Feature 2
-- Feature 3
+## Quick Flow
 
-## How to Use
-Basic usage instructions.
+1. Confirm the task shape.
+2. Load only the references needed for this request.
+3. Run any bundled scripts or apply the relevant assets.
+4. Validate the result before finishing.
 
-## Example
-Example of the skill in action.
+## Main Procedure
 
-## Best Practices
-Any important tips or guidelines.
-```
+Replace this section with the real workflow for the skill.
 
-## Next Steps
+## Resources
 
-1. Copy this template
-2. Rename to your skill name
-3. Edit SKILL.md with your content
-4. Add any needed scripts, references, or assets
-5. Test your skill
-6. Package and distribute
+- `references/...` for detailed guidance that should load on demand
+- `scripts/...` for deterministic automation
+- `assets/...` for templates or starter files
