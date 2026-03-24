@@ -1,59 +1,86 @@
 ---
 name: wander-monitor
-description: "Guides users on using Wander to monitor GitHub Actions workflows. Use when user asks how to watch CI/CD runs, avoid polling Actions page, get notified when workflows complete, or integrate Wander with a project. Covers smart-push, foreground/background/detached modes, edge cases, and project integration."
+description: "Guides use of Wander to monitor GitHub Actions without polling. Use when the user pushes code and wants CI notifications, asks how to watch workflows, avoid refreshing the Actions page, or integrate Wander (smart-push, foreground/background/detached, wrappers, edge cases)."
 ---
 
-# Wander — CI/CD Monitor Skill
+# Wander — CI Workflow Monitor
 
-**Don't watch. Wander.** Elegant automation for monitoring GitHub Actions without polling.
+**Don't watch. Wander.** CLI toolkit for monitoring GitHub Actions. No polling; optional macOS notifications when runs finish.
+
+## Agent auto-trigger (mandatory)
+
+**After every `git push` that triggers GitHub Actions, start Wander in background mode** unless the user opts out.
+
+1. If `.workflows.yml` exists in the repo root: prefer a project wrapper (`scripts/watch-*.sh`) when present.
+2. Otherwise: `"$WANDER_HOME/watch-workflow-bg.sh" <workflow.yml>` (or pass the workflow file the project uses).
+3. Run in the background so the session stays responsive.
+4. After ~8s, check terminal output and report initial status.
+
+If there is no `.workflows.yml` but `.github/workflows/` exists, offer monitoring but do not auto-start without confirmation.
 
 ## When to use this skill
 
-- User wants to monitor a GitHub Actions workflow after push
-- User asks how to get notified when CI completes
-- User wants to avoid refreshing the Actions page
-- User integrates CI monitoring into a project (e.g. ClawHub publish)
+- User wants to monitor a workflow after `git push`
+- User asks for notifications when CI completes
+- User wants to avoid manually refreshing the Actions page
+- Long-running E2E or publish pipelines (minutes)
+- Project integrates CI monitoring (e.g. ClawHub publish)
 
----
+## Prerequisites
 
-## Install
+- `gh` CLI installed and authenticated
+- `jq` (used by scripts)
+- Wander clone on disk; `WANDER_HOME` or default `~/code/wander`
+- macOS for notification center integration
+
+## Install (tool)
 
 ```bash
-git clone https://github.com/ERerGB/wander.git
-cd wander
+git clone https://github.com/ERerGB/wander.git ~/code/wander
+cd ~/code/wander
 chmod +x *.sh
 ```
 
-**Prerequisites**: `gh` CLI (authenticated), `jq`, macOS (for notifications)
+Add to `~/.zshrc` or `~/.bashrc`:
 
----
+```bash
+export WANDER_HOME="${WANDER_HOME:-$HOME/code/wander}"
+export PATH="$WANDER_HOME:$PATH"
+alias wf='watch-workflow.sh'
+alias wfbg='watch-workflow-bg.sh'
+alias wfdt='watch-workflow-detached.sh'
+```
+
+Or run `./scripts/install-personal.sh` from the Wander repo (see main README).
 
 ## Usage patterns
 
-### 1. Smart push (recommended for Wander's own repo)
+### Smart push (Wander repo or similar)
 
 ```bash
-cd wander
+cd /path/to/wander
 ./smart-push.sh
 ```
 
-Recommends smoke / e2e / skip based on changed files. Pushes and monitors.
+Suggests smoke / e2e / skip from changed files, then push and monitor.
 
-### 2. Manual control (any repo)
+### Manual control (any repo)
 
 ```bash
-# From target repo (e.g. openclaw-uninstall)
 git push
-
-# Choose monitoring mode:
-../wander/watch-workflow.sh publish.yml      # Foreground, block until done
-../wander/watch-workflow-bg.sh publish.yml  # Background, macOS notify when done
-../wander/watch-workflow-detached.sh publish.yml  # Detached, can close terminal
+cd /path/to/target-repo
+"$WANDER_HOME/watch-workflow-bg.sh" publish.yml
 ```
 
-### 3. Project integration
+### Modes
 
-Add a wrapper script in the project:
+| Mode | Script | Use case |
+|------|--------|----------|
+| Foreground | `watch-workflow.sh` | Block until result |
+| Background | `watch-workflow-bg.sh` | Keep working; notify when done |
+| Detached | `watch-workflow-detached.sh` | Close terminal; logs under `~/.wander_logs/` |
+
+### Project wrapper (recommended)
 
 ```bash
 #!/bin/bash
@@ -66,22 +93,11 @@ exec "$WANDER_DIR/watch-workflow-bg.sh" publish.yml "$@"
 
 Then: `git push && ./scripts/watch-publish.sh`
 
----
-
-## Edge cases (from experience)
-
-| Scenario | Behavior | Tip |
-|----------|----------|-----|
-| Workflow finishes in &lt; 30s | "Already completed" + immediate notify | Use `watch-workflow-bg`; it detects recent completion |
-| Push then monitor immediately | Workflow may not start for 5–10s | Script waits up to 30s for workflow to appear |
-| Wrong branch | No workflow after 30s | Ensure workflow is configured for current branch |
-| No lock file in repo | setup-node `cache: npm` fails | Remove `cache: "npm"` from workflow if no package-lock.json |
-
----
+Examples elsewhere: `openclaw-uninstall` uses `./scripts/watch-publish.sh` and `watch-publish-detached.sh` when present.
 
 ## Workflow registry
 
-For custom `check_window` / `expected_duration`, add `.workflows.yml` in project root or set `WORKFLOW_REGISTRY_FILE`:
+For `check_window` / `expected_duration`, add `.workflows.yml` at project root or set `WORKFLOW_REGISTRY_FILE`:
 
 ```yaml
 workflows:
@@ -92,9 +108,28 @@ workflows:
     category: "publish"
 ```
 
-Default: `check_window=300` when workflow not in registry.
+Default `check_window` is 300 seconds when a workflow is not listed.
 
----
+## Edge cases
+
+| Scenario | Behavior | Tip |
+|----------|----------|-----|
+| Workflow finishes in under ~30s | May show "already completed" + quick notify | `watch-workflow-bg.sh` detects recent completion |
+| Push then monitor immediately | Run may not appear for 5–10s | Scripts wait up to ~30s for the run to show |
+| Wrong branch | No workflow after wait window | Confirm workflow `on:` filters match current branch |
+| No lockfile in repo | `setup-node` with `cache: npm` can fail | Remove `cache: npm` if there is no package lockfile |
+
+## When CI fails
+
+1. Note the run ID from output or notification.
+2. View failed logs: `gh run view <RUN_ID> --log-failed`
+3. Fix and `git push`, or `gh run rerun <RUN_ID> --failed`
+
+## WANDER_HOME resolution
+
+- Environment variable `WANDER_HOME` if set
+- Sibling path: `$(dirname "$REPO_ROOT")/wander` (common in wrappers)
+- Default: `~/code/wander`
 
 ## Reference
 
