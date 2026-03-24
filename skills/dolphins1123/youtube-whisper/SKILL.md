@@ -1,14 +1,25 @@
 ---
 name: youtube-whisper
-description: Download YouTube videos and transcribe audio using local Whisper. Use when you need to extract text from YouTube videos that don't have subtitles, or when youtube-watcher fails due to missing captions. Returns: (1) Source used - subtitles or audio download + Whisper (2) Time spent (3) Full transcript text.
-version: 1.3.0
+description: YouTube影片一鍵轉文字！自動下載影片並用AI轉成中文/英文字幕，沒有字幕的影片也能用。
 ---
 
-# YouTube Whisper / YouTube Whisper 語音轉文字
+# YouTube 影片轉文字神器 🎬→📝
 
-下載 YouTube 影片並使用本地 Whisper 進行語音轉文字。
+## 這能做什麼？
 
-## 回覆格式 / Response Format
+✅ 任何 YouTube 影片轉成文字  
+✅ 沒有字幕的影片也可以  
+✅ 自動偵測語言 (中/英/日/韓)  
+✅ 支援長影片
+
+## 使用情境
+
+- 學習國外教學影片
+- 保存喜歡的演講
+- 做成文字筆記
+- 製作字幕檔
+
+## 回覆格式
 
 回覆會包含以下資訊：
 
@@ -20,7 +31,7 @@ version: 1.3.0
 [轉錄文字內容]
 ```
 
-## 硬體需求 / Hardware Requirements
+## 硬體需求
 
 | 項目 | 最低需求 | 建議需求 |
 |------|----------|----------|
@@ -28,7 +39,7 @@ version: 1.3.0
 | 儲存空間 | 1 GB | 5 GB+ |
 | CPU | 任意 | Apple Silicon M 系列 |
 
-## 測試環境 / Test Environment
+## 測試環境
 
 | 項目 | 規格 |
 |------|------|
@@ -38,47 +49,35 @@ version: 1.3.0
 | 影片時長 | 5:55 |
 | 轉錄時間 | 約 3-5 分鐘 |
 
-## When to Use / 使用時機
-
-- YouTube 影片沒有字幕 / YouTube video has no subtitles
-- youtube-watcher 因為沒有字幕而失敗 / youtube-watcher fails due to missing captions
-- 需要離線轉錄 / Need offline transcription
-- 高品質本地轉錄 (比 YouTube 自動字幕更好) / High-quality local transcription
-
-## Usage / 使用方式
+## 使用方式
 
 ```bash
-# 基本轉錄 / Basic transcription
-youtube-whisper.sh "https://www.youtube.com/watch?v=VIDEO_ID"
+# 基本轉錄
+youtube-whisper "https://www.youtube.com/watch?v=VIDEO_ID"
 
-# 指定輸出檔案 / Specify output filename
-youtube-whisper.sh "URL" "output.txt"
+# 指定輸出檔案
+youtube-whisper "URL" "output.txt"
 
-# 指定模型 / Use specific Whisper model (tiny, base, small, medium, large)
-# 預設語言: 繁體中文 / Default language: Traditional Chinese (zh)
-youtube-whisper.sh "URL" "output.txt" "small"
+# 指定模型 (tiny, base, small, medium, large)
+youtube-whisper "URL" "output.txt" "small"
 ```
 
-## Requirements / 需求
+## 需求
 
 - yt-dlp: `brew install yt-dlp`
-- Whisper: `pip3 install openai-whisper` or use openai-whisper skill
+- Whisper: `pip3 install openai-whisper`
 - ffmpeg: `brew install ffmpeg`
 
-## Output / 輸出
+## 輸出
 
 轉錄文字檔案 (Transcript text file).
 
-## Notes / 備註
+## 備註
 
-- 影片會下載到 /tmp 並在轉錄後刪除 / Videos are downloaded to /tmp and cleaned up after transcription
-- 預設模型: small (速度與準確度的最佳平衡) / Default model: small
-- 較大的模型 (medium, large) 較慢但更準確 / Larger models are slower but more accurate
+- 影片會下載到 /tmp 並在轉錄後刪除
+- 預設模型: small (速度與準確度的最佳平衡)
+- 較大的模型 (medium, large) 較慢但更準確
 
-## Author
+## 作者
 
 Kuanlin
-
-## Author
-- Kuanlin (GitHub: kuanlin)
-

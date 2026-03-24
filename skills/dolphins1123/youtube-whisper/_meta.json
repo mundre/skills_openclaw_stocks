@@ -3,11 +3,16 @@
   "slug": "youtube-whisper",
   "displayName": "Youtube Whisper",
   "latest": {
-    "version": "1.3.0",
-    "publishedAt": 1773966109803,
-    "commit": "https://github.com/openclaw/skills/commit/f6b9a79848b5533fbd880ce3f4cc5ff3af940055"
+    "version": "1.3.1",
+    "publishedAt": 1774181348313,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.3.0",
+      "publishedAt": 1773966109803,
+      "commit": "https://github.com/openclaw/skills/commit/f6b9a79848b5533fbd880ce3f4cc5ff3af940055"
+    },
     {
       "version": "1.2.2",
       "publishedAt": 1773648622593,
