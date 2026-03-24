@@ -3,9 +3,15 @@
   "slug": "polyfly",
   "displayName": "PolyFly Predictions",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773675114446,
-    "commit": "https://github.com/openclaw/skills/commit/98e80c003d4b8797760acb1630c650ec732b8086"
+    "version": "2.0.0",
+    "publishedAt": 1774034518171,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773675114446,
+      "commit": "https://github.com/openclaw/skills/commit/98e80c003d4b8797760acb1630c650ec732b8086"
+    }
+  ]
 }
