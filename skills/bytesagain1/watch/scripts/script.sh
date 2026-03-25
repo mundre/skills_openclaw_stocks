@@ -1,227 +1,255 @@
 #!/usr/bin/env bash
+# watch — Watch reference tool. Use when working with watch in devtools contexts.
+# Powered by BytesAgain | bytesagain.com | hello@bytesagain.com
 set -euo pipefail
 
-# watch — skill script
-# Powered by BytesAgain | bytesagain.com | hello@bytesagain.com
-
-DATA_DIR="${HOME}/.watch"
-mkdir -p "$DATA_DIR"
+VERSION="2.0.0"
 
 show_help() {
     cat << 'HELPEOF'
-watch — command-line tool
+watch v$VERSION — Watch Reference Tool
+
+Usage: watch <command>
 
 Commands:
-  start          Run start operation
-  stop           Run stop operation
-  list           Run list operation
-  log            Run log operation
-  filter         Run filter operation
-  ignore         Run ignore operation
-  config         Run config operation
-  status         Run status operation
-  export         Run export operation
-  history        Run history operation
-  stats      Show statistics
-  export     Export data (json|csv|txt)
-  search     Search across entries
-  recent     Show recent entries
-  status     Show current status
-  help       Show this help message
-  version    Show version number
+  intro           Overview and core concepts
+  quickstart      Getting started guide
+  patterns        Common patterns and best practices
+  debugging       Debugging and troubleshooting
+  performance     Performance optimization tips
+  security        Security considerations
+  migration       Migration and upgrade guide
+  cheatsheet      Quick reference cheat sheet
+  help              Show this help
+  version           Show version
 
-Data stored in: ~/.watch/
+Powered by BytesAgain | bytesagain.com
 HELPEOF
 }
 
-show_version() {
-    echo "watch v1.0.0 — Powered by BytesAgain"
+cmd_intro() {
+    cat << 'EOF'
+# Watch — Overview
+
+## What is Watch?
+Watch (watch) is a specialized tool/concept in the devtools domain.
+It provides essential capabilities for professionals working with watch.
+
+## Key Concepts
+- Core watch principles and fundamentals
+- How watch fits into the broader devtools ecosystem  
+- Essential terminology every practitioner should know
+
+## Why Watch Matters
+Understanding watch is critical for:
+- Improving efficiency in devtools workflows
+- Reducing errors and downtime
+- Meeting industry standards and compliance requirements
+- Enabling better decision-making with accurate data
+
+## Getting Started
+1. Understand the basic watch concepts
+2. Learn the standard tools and interfaces
+3. Practice with common scenarios
+4. Review safety and compliance requirements
+EOF
 }
 
-cmd_stats() {
-    echo "=== watch Statistics ==="
-    local total=0
-    for f in "$DATA_DIR"/*.log; do
-        [ -f "$f" ] || continue
-        local name=$(basename "$f" .log)
-        local c=$(wc -l < "$f" 2>/dev/null || echo 0)
-        total=$((total + c))
-        echo "  $name: $c entries"
-    done
-    echo "  Total: $total entries"
-    echo "  Data size: $(du -sh "$DATA_DIR" 2>/dev/null | cut -f1 || echo 'N/A')"
-    echo "  Since: $(head -1 "$DATA_DIR/history.log" 2>/dev/null | cut -d'|' -f1 || echo 'N/A')"
+cmd_quickstart() {
+    cat << 'EOF'
+# Watch — Quick Start Guide
+
+## Prerequisites
+- Basic understanding of devtools concepts
+- Required tools and access credentials
+- System meeting minimum requirements
+
+## Installation
+1. Download or clone the watch package
+2. Install dependencies
+3. Configure initial settings
+4. Verify installation
+
+## First Steps
+1. Run the hello-world example
+2. Review the default configuration
+3. Try a simple real-world task
+4. Explore available commands and options
+
+## Next Steps
+- Read the full documentation
+- Join the community forum
+- Try advanced features
+- Set up automated workflows
+EOF
 }
 
-cmd_export() {
-    local fmt="${1:-json}"
-    local out="watch-export.$fmt"
-    case "$fmt" in
-        json)
-            echo "[" > "$out"
-            local first=1
-            for f in "$DATA_DIR"/*.log; do
-                [ -f "$f" ] || continue
-                while IFS= read -r line; do
-                    [ $first -eq 1 ] && first=0 || echo "," >> "$out"
-                    local ts=$(echo "$line" | cut -d'|' -f1)
-                    local cmd=$(echo "$line" | cut -d'|' -f2)
-                    local data=$(echo "$line" | cut -d'|' -f3-)
-                    printf '  {"timestamp":"%s","command":"%s","data":"%s"}' "$ts" "$cmd" "$data" >> "$out"
-                done < "$f"
-            done
-            echo "" >> "$out"
-            echo "]" >> "$out"
-            ;;
-        csv)
-            echo "timestamp,command,data" > "$out"
-            for f in "$DATA_DIR"/*.log; do
-                [ -f "$f" ] || continue
-                while IFS= read -r line; do
-                    echo "$line" | awk -F'|' '{printf "\"%s\",\"%s\",\"%s\"\n", $1, $2, $3}' >> "$out"
-                done < "$f"
-            done
-            ;;
-        txt)
-            > "$out"
-            for f in "$DATA_DIR"/*.log; do
-                [ -f "$f" ] || continue
-                echo "--- $(basename "$f" .log) ---" >> "$out"
-                cat "$f" >> "$out"
-                echo "" >> "$out"
-            done
-            ;;
-        *)
-            echo "Unknown format: $fmt (use json, csv, or txt)"
-            return 1
-            ;;
-    esac
-    echo "Exported to $out ($(wc -c < "$out" 2>/dev/null || echo 0) bytes)"
+cmd_patterns() {
+    cat << 'EOF'
+# Watch — Common Patterns & Best Practices
+
+## Design Patterns
+1. **Standard Pattern**: The most common approach for watch
+2. **Scalable Pattern**: For high-volume or distributed scenarios
+3. **Resilient Pattern**: For fault-tolerant implementations
+
+## Best Practices
+- Follow the principle of least privilege
+- Use version control for all configurations
+- Implement comprehensive logging
+- Test changes in staging before production
+- Document all custom configurations
+
+## Anti-Patterns to Avoid
+- Hardcoding credentials or configuration
+- Skipping validation and error handling
+- Ignoring monitoring and alerting
+- Making changes without documentation
+- Over-engineering simple solutions
+EOF
 }
 
-cmd_search() {
-    local term="${1:-}"
-    [ -z "$term" ] && { echo "Usage: watch search <term>"; return 1; }
-    echo "=== Search: $term ==="
-    local found=0
-    for f in "$DATA_DIR"/*.log; do
-        [ -f "$f" ] || continue
-        local matches=$(grep -i "$term" "$f" 2>/dev/null || true)
-        if [ -n "$matches" ]; then
-            echo "--- $(basename "$f" .log) ---"
-            echo "$matches"
-            found=$((found + 1))
-        fi
-    done
-    [ $found -eq 0 ] && echo "No matches found."
+cmd_debugging() {
+    cat << 'EOF'
+# Watch — Debugging Guide
+
+## Common Errors
+1. **Connection refused**: Check service status and network
+2. **Permission denied**: Verify credentials and access rights
+3. **Timeout**: Check network, increase limits, optimize queries
+4. **Invalid input**: Validate data format and encoding
+
+## Debugging Tools
+- Built-in logging and diagnostics
+- Network analysis tools (tcpdump, wireshark)
+- System monitoring (top, htop, iostat)
+- Application-specific debug modes
+
+## Debug Workflow
+1. Reproduce the issue consistently
+2. Check logs for error messages
+3. Isolate the failing component
+4. Test with minimal configuration
+5. Apply fix and verify
+EOF
 }
 
-cmd_recent() {
-    local n="${1:-10}"
-    echo "=== Recent $n entries ==="
-    for f in "$DATA_DIR"/*.log; do
-        [ -f "$f" ] || continue
-        tail -n "$n" "$f" 2>/dev/null
-    done | sort -t'|' -k1 | tail -n "$n"
+cmd_performance() {
+    cat << 'EOF'
+# Watch — Performance Optimization
+
+## Key Metrics
+- Response time / latency
+- Throughput / operations per second
+- Resource utilization (CPU, memory, I/O)
+- Error rate and retry frequency
+
+## Optimization Strategies
+1. **Caching**: Reduce redundant operations
+2. **Batching**: Group small operations
+3. **Indexing**: Speed up data lookups
+4. **Compression**: Reduce data transfer size
+5. **Parallel Processing**: Utilize multiple cores
+
+## Monitoring
+- Set up baseline performance metrics
+- Configure alerts for anomalies
+- Track trends over time
+- Regular capacity planning reviews
+EOF
 }
 
-cmd_status() {
-    echo "=== watch Status ==="
-    echo "  Entries: $(cat "$DATA_DIR"/*.log 2>/dev/null | wc -l || echo 0)"
-    echo "  Disk: $(du -sh "$DATA_DIR" 2>/dev/null | cut -f1 || echo 'N/A')"
-    local last=$(tail -1 "$DATA_DIR/history.log" 2>/dev/null || echo "never")
-    echo "  Last activity: $last"
+cmd_security() {
+    cat << 'EOF'
+# Watch — Security Considerations
+
+## Authentication & Authorization
+- Use strong, unique credentials
+- Implement role-based access control
+- Enable multi-factor authentication where possible
+- Regularly review and rotate credentials
+
+## Data Protection
+- Encrypt data at rest and in transit
+- Implement proper backup procedures
+- Follow data retention policies
+- Sanitize inputs to prevent injection
+
+## Network Security
+- Use firewalls and network segmentation
+- Monitor for suspicious activity
+- Keep all software patched and updated
+- Disable unnecessary services and ports
+EOF
 }
 
-# Main
+cmd_migration() {
+    cat << 'EOF'
+# Watch — Migration & Upgrade Guide
+
+## Pre-Migration Checklist
+- [ ] Current system fully documented
+- [ ] Complete backup taken and verified
+- [ ] Target environment prepared
+- [ ] Rollback plan documented
+- [ ] Stakeholders notified
+
+## Migration Steps
+1. Prepare target environment
+2. Export data from source
+3. Transform data if needed
+4. Import to target
+5. Verify data integrity
+6. Update configurations
+7. Test all functionality
+8. Switch traffic / go live
+
+## Post-Migration
+- Monitor for errors and performance
+- Verify all integrations working
+- Update documentation
+- Decommission old system after confirmation
+EOF
+}
+
+cmd_cheatsheet() {
+    cat << 'EOF'
+# Watch — Quick Reference
+
+## Essential Commands
+| Command | Description |
+|---------|-------------|
+| help | Show available commands |
+| version | Display version info |
+| intro | Overview and fundamentals |
+| troubleshooting | Common problems and fixes |
+
+## Common Workflows
+1. **Setup**: install → configure → verify → test
+2. **Daily**: check → monitor → report → review
+3. **Issue**: diagnose → isolate → fix → verify → document
+
+## Key Shortcuts
+- Use tab completion for commands
+- Check logs first when troubleshooting
+- Always backup before making changes
+- Document everything you change
+EOF
+}
+
 CMD="${1:-help}"
 shift 2>/dev/null || true
 
 case "$CMD" in
-    start)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|start|${*}" >> "$DATA_DIR/start.log"
-        local total=$(wc -l < "$DATA_DIR/start.log" 2>/dev/null || echo 0)
-        echo "[watch] start recorded (entry #$total)"
-        ;;
-    stop)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|stop|${*}" >> "$DATA_DIR/stop.log"
-        local total=$(wc -l < "$DATA_DIR/stop.log" 2>/dev/null || echo 0)
-        echo "[watch] stop recorded (entry #$total)"
-        ;;
-    list)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|list|${*}" >> "$DATA_DIR/list.log"
-        local total=$(wc -l < "$DATA_DIR/list.log" 2>/dev/null || echo 0)
-        echo "[watch] list recorded (entry #$total)"
-        ;;
-    log)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|log|${*}" >> "$DATA_DIR/log.log"
-        local total=$(wc -l < "$DATA_DIR/log.log" 2>/dev/null || echo 0)
-        echo "[watch] log recorded (entry #$total)"
-        ;;
-    filter)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|filter|${*}" >> "$DATA_DIR/filter.log"
-        local total=$(wc -l < "$DATA_DIR/filter.log" 2>/dev/null || echo 0)
-        echo "[watch] filter recorded (entry #$total)"
-        ;;
-    ignore)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|ignore|${*}" >> "$DATA_DIR/ignore.log"
-        local total=$(wc -l < "$DATA_DIR/ignore.log" 2>/dev/null || echo 0)
-        echo "[watch] ignore recorded (entry #$total)"
-        ;;
-    config)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|config|${*}" >> "$DATA_DIR/config.log"
-        local total=$(wc -l < "$DATA_DIR/config.log" 2>/dev/null || echo 0)
-        echo "[watch] config recorded (entry #$total)"
-        ;;
-    status)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|status|${*}" >> "$DATA_DIR/status.log"
-        local total=$(wc -l < "$DATA_DIR/status.log" 2>/dev/null || echo 0)
-        echo "[watch] status recorded (entry #$total)"
-        ;;
-    export)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|export|${*}" >> "$DATA_DIR/export.log"
-        local total=$(wc -l < "$DATA_DIR/export.log" 2>/dev/null || echo 0)
-        echo "[watch] export recorded (entry #$total)"
-        ;;
-    history)
-        local ts=$(date '+%Y-%m-%d %H:%M')
-        echo "$ts|history|${*}" >> "$DATA_DIR/history.log"
-        local total=$(wc -l < "$DATA_DIR/history.log" 2>/dev/null || echo 0)
-        echo "[watch] history recorded (entry #$total)"
-        ;;
-    stats)
-        cmd_stats
-        ;;
-    export)
-        cmd_export "$@"
-        ;;
-    search)
-        cmd_search "$@"
-        ;;
-    recent)
-        cmd_recent "$@"
-        ;;
-    status)
-        cmd_status
-        ;;
-    help|--help|-h)
-        show_help
-        ;;
-    version|--version|-v)
-        show_version
-        ;;
-    *)
-        echo "Unknown command: $CMD"
-        echo "Run 'watch help' for usage."
-        exit 1
-        ;;
+    intro) cmd_intro "$@" ;;
+    quickstart) cmd_quickstart "$@" ;;
+    patterns) cmd_patterns "$@" ;;
+    debugging) cmd_debugging "$@" ;;
+    performance) cmd_performance "$@" ;;
+    security) cmd_security "$@" ;;
+    migration) cmd_migration "$@" ;;
+    cheatsheet) cmd_cheatsheet "$@" ;;
+    help|--help|-h) show_help ;;
+    version|--version|-v) echo "watch v$VERSION — Powered by BytesAgain" ;;
+    *) echo "Unknown: $CMD"; echo "Run: watch help"; exit 1 ;;
 esac
