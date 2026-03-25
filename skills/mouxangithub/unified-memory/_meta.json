@@ -3,11 +3,16 @@
   "slug": "unified-memory",
   "displayName": "Unified Memory",
   "latest": {
-    "version": "0.5.0",
-    "publishedAt": 1773962078585,
-    "commit": "https://github.com/openclaw/skills/commit/9b548446f703c985332b6d8db0464730ba54bf0e"
+    "version": "1.5.1",
+    "publishedAt": 1774258703664,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.5.0",
+      "publishedAt": 1773962078585,
+      "commit": "https://github.com/openclaw/skills/commit/9b548446f703c985332b6d8db0464730ba54bf0e"
+    },
     {
       "version": "0.2.1",
       "publishedAt": 1773834869044,

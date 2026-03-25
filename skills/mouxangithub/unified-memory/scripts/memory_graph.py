@@ -134,6 +134,47 @@ def extract_relations(memories: List[Dict]) -> List[Dict]:
     return relations
 
 
+def search_context(query: str, limit: int = 5) -> Dict:
+    """搜索与查询相关的实体和关系（用于会话上下文增强）"""
+    memories = load_memories()
+    query_lower = query.lower()
+    
+    # 找出相关记忆
+    relevant_memories = []
+    for m in memories:
+        text_lower = m.get("text", "").lower()
+        if any(kw in text_lower for kw in query_lower.split()):
+            relevant_memories.append(m)
+    
+    # 提取相关实体
+    all_entities = []
+    for m in relevant_memories[:limit]:
+        entities = extract_entities(m["text"])
+        for e in entities:
+            e["memory_id"] = m["id"]
+            e["memory_text"] = m["text"][:100]
+        all_entities.extend(entities)
+    
+    # 去重
+    seen = set()
+    unique_entities = []
+    for e in all_entities:
+        key = e.get("name", "")
+        if key and key not in seen:
+            seen.add(key)
+            unique_entities.append(e)
+    
+    # 提取相关关系
+    relations = extract_relations(relevant_memories)
+    
+    return {
+        "query": query,
+        "memories_count": len(relevant_memories),
+        "entities": unique_entities[:limit * 2],
+        "relations": relations[:limit]
+    }
+
+
 def build_graph() -> Dict:
     """构建知识图谱"""
     memories = load_memories()

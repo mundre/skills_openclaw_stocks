@@ -1,402 +1,196 @@
-# Unified Memory - AI Agent Memory System
+# 🧠 Unified Memory - 统一记忆系统
 
-> **Version 0.4.0** | An intelligent memory system designed for AI Agents with hierarchical caching, knowledge merging, predictive loading, automatic maintenance, proactive injection, adaptive confidence, audit logging, and multi-agent sync.
+> AI Agent 专用记忆系统 v1.5.0 | 零依赖 | Context Tree + 知识图谱 + 工作流引擎
 
-[![ClawHub](https://img.shields.io/badge/ClawHub-Publish-green)](https://clawhub.com)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python: 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 
-English Documentation | [中文文档](./README_CN.md)
+## 🎯 核心价值
 
----
+**为什么需要统一记忆系统？**
 
-## ☁️ Cloud Sync (v0.2.2)
+AI Agent 每次会话从头开始 —— 记忆系统让 AI 记住：
+- 用户的偏好和习惯
+- 项目进展和决策
+- 关键上下文和关系
+- 历史交互模式
 
-### Supported Cloud Storage
+## ✨ 功能特性
 
-| Type | Description | Status |
-|------|-------------|--------|
-| **local** | Local filesystem backup | ✅ Implemented |
-| **s3** | AWS S3 compatible (MinIO, Aliyun OSS, Tencent COS, etc.) | ✅ Implemented |
-| **webdav** | WebDAV protocol (Nutstore, Nextcloud, etc.) | ✅ Implemented |
-| **dropbox** | Dropbox cloud storage | ✅ Implemented |
-| **gdrive** | Google Drive cloud storage | ✅ Implemented |
+### 1. Context Tree（上下文树）🆕
+**双层架构**：记忆上下文 + 项目上下文
 
-### Quick Setup
+```
+Layer 1: 记忆上下文
+  qmd://notes, qmd://meetings, user:, project:
 
-#### 1. Local Backup (Default)
-
-```bash
-# Enable local backup
-python3 scripts/memory_cloud.py enable --storage local
-
-# Create backup
-python3 scripts/memory_cloud.py backup
-
-# List backups
-python3 scripts/memory_cloud.py list
-
-# Restore backup
-python3 scripts/memory_cloud.py restore --timestamp 20260318_120000
+Layer 2: 项目上下文 (.context/)
+  current.md + decisions/ + architecture.md
 ```
 
-#### 2. AWS S3 / Compatible Storage
+### 2. Knowledge Graph（知识图谱）🆕
+自动提取实体和关系，构建记忆网络
 
-```bash
-# Configure S3
-python3 scripts/memory_cloud.py configure-s3 \
-  --endpoint https://s3.amazonaws.com \
-  --bucket my-memory-backup \
-  --access-key YOUR_ACCESS_KEY \
-  --secret-key YOUR_SECRET_KEY \
-  --region us-east-1
-
-# Create backup and upload
-python3 scripts/memory_cloud.py backup
+```
+实体类型: person, project, tool, action, time
+关系类型: 喜欢, 使用, 决定, 创建, 完成
 ```
 
-**Install**: `pip install boto3`
-
-#### 3. WebDAV (Nutstore/Nextcloud)
+### 3. Smart Summarizer（智能摘要）
+自动压缩历史日志，提取关键决策
 
 ```bash
-# Configure WebDAV
-python3 scripts/memory_cloud.py configure-webdav \
-  --url https://dav.jianguoyun.com/dav/ \
-  --username your@email.com \
-  --password your-app-password
-
-# Create backup
-python3 scripts/memory_cloud.py backup
+mem summary compress --days 7    # 压缩 7 天日志
+mem summary decisions --days 30 # 提取决策
 ```
 
-**Install**: `pip install webdavclient3`
-
-#### 4. Dropbox
+### 4. Workflow Engine（工作流引擎）
+SOP + DAG 混合引擎，支持 6 步软件工程流程
 
 ```bash
-# Configure Dropbox
-python3 scripts/memory_cloud.py configure-dropbox --token YOUR_ACCESS_TOKEN
-
-# Create backup
-python3 scripts/memory_cloud.py backup
+python3 workflow_engine.py demo --type hybrid
 ```
 
-**Install**: `pip install dropbox`
+### 5. Project Templates（项目模板）
+3 种项目模板，开箱即用
 
-#### 5. Google Drive
+- `software-project` - 软件开发项目
+- `content-creation` - 内容创作项目
+- `research` - 研究项目
 
-```bash
-# Configure Google Drive
-python3 scripts/memory_cloud.py configure-gdrive \
-  --credentials /path/to/credentials.json
+## 🚀 快速开始
 
-# Create backup
-python3 scripts/memory_cloud.py backup
-```
-
-**Install**: `pip install google-api-python-client google-auth-oauthlib`
-
-### 📖 Detailed Usage Guide
-
-See [examples/memory_cloud_usage.md](./examples/memory_cloud_usage.md) for:
-- Complete setup guide for each provider
-- Multi-device sync workflow
-- Troubleshooting tips
-- Security recommendations
-
----
-
-## 🤖 Ollama Integration (Optional)
-
-### ✨ Highlight: Works Without Ollama!
-
-This system is designed with **graceful fallback** - it works perfectly even without Ollama!
-
-| Mode | Ollama Status | Search Method | Functionality |
-|------|---------------|---------------|---------------|
-| **Full Mode** | ✅ Online | Vector semantic search | Full features |
-| **Fallback Mode** | ❌ Offline | Keyword matching | Core features work |
-
-### With vs Without Ollama
-
-| Feature | With Ollama | Without Ollama |
-|---------|-------------|----------------|
-| **Search Quality** | Semantic understanding (finds related concepts) | Keyword matching (finds exact words) |
-| **Auto Extraction** | AI-powered intelligent extraction | Rule-based extraction |
-| **Memory Summarization** | LLM-generated summaries | Template-based summaries |
-| **Importance Scoring** | ML-based scoring | Rule-based scoring |
-| **Storage & CRUD** | ✅ Full support | ✅ Full support |
-| **WebUI** | ✅ Full support | ✅ Full support |
-| **Backup/Restore** | ✅ Full support | ✅ Full support |
-
-### Ollama Configuration
+### 安装
 
 ```bash
-# Set Ollama host (default: http://localhost:11434)
-export OLLAMA_HOST=http://192.168.2.155:11434
-
-# Required embedding model
-ollama pull nomic-embed-text:latest
-
-# Optional LLM for advanced features
-ollama pull deepseek-v3.2:cloud
-```
-
-**Network Access**: If your Ollama is on another machine (e.g., NAS Docker), use LAN IP:
-```bash
-export OLLAMA_HOST=http://192.168.2.155:11434
-```
-
----
-
-## ✨ Features (31 Total)
-
-### Core Features
-
-| Feature | Description | Benefit |
-|---------|-------------|---------|
-| **Hierarchical Cache** | 3-tier memory management (L1 Hot/L2 Warm/L3 Cold) | 90% reduction in access latency |
-| **Knowledge Merging** | Combine similar memories into knowledge blocks | 75% token savings |
-| **Predictive Loading** | Predict and preload relevant memories | Zero-delay response |
-| **Cloud Sync** | Multi-cloud backup (S3/WebDAV/Dropbox/GDrive) | Data safety & multi-device sync |
-| **Smart Q&A** | RAG-based question answering | Direct answers from memory |
-| **Knowledge Graph** | Visual memory relationships | Intuitive understanding |
-
-### All Features
-
-| Category | Feature | Description |
-|----------|---------|-------------|
-| **Core** | Store | Vector semantic storage |
-| | Search | Hybrid retrieval (Vector + BM25) |
-| | Context | Auto-load relevant memories |
-| **Intelligence** | Smart Q&A | RAG Q&A, direct answer generation |
-| | Knowledge Graph | Memory relationship visualization |
-| | User Insights | Preference analysis, trend suggestions |
-| | Smart Reminders | Time-sensitive memory alerts |
-| **Quality** | Health Check | System health score |
-| | Deduplication | Auto-detect and merge duplicates |
-| | Privacy Scan | Sensitive information detection |
-| | Quality Report | Accuracy/timeliness/utilization |
-| **Data** | Import/Export | JSON/CSV/Markdown |
-| | Cloud Backup | 5 cloud storage support |
-| | Restore | Restore from backup |
-| **Visualization** | Web UI | Browser access (port 38080) |
-| | Knowledge Graph | HTML visualization |
-| | Knowledge Cards | Beautiful card export |
-| | Memory Summary | Auto-generate summary |
-| **Performance** | L1/L2/L3 Cache | Hot memory fast access |
-| | Batch Preheat | Preload hotspots at startup |
-| | Concurrent Query | Multi-condition parallel search |
-| | Async Storage | Non-blocking writes |
-| **Multimodal** | Image Memory | Store image descriptions |
-| | Audio Memory | Speech-to-text |
-| | File Memory | File information extraction |
-| **Automation** | Auto Store | Smart importance detection |
-| | Auto Extract | Extract memories from conversation |
-| | Auto Dedup | Auto-merge duplicates |
-| **Agent Integration** | Session Start Hook | Auto-load context |
-| | Session End Hook | Auto-store important info |
-| | Heartbeat Check | Periodic health check |
-
----
-
-## 🚀 Quick Start
-
-### Installation
-
-```bash
-# Install from ClawHub
-clawhub install unified-memory
-
-# Or manual install
 git clone https://github.com/mouxangithub/unified-memory.git
 cd unified-memory
 ./scripts/install.sh
 ```
 
-### Basic Usage
+### 基础使用
 
 ```bash
-# Quick commands
-mem health                    # Health report
-mem store "content"           # Store memory
-mem load "query"              # Load memories
-mem ask "question"            # Smart Q&A
-mem webui 38080               # Start Web UI
-mem backup                    # Cloud backup
-mem insights analyze          # User insights
+# 初始化项目
+mem init --template software-project "我的项目"
+
+# 存储记忆
+mem store "用户偏好深色主题" --tags "preference"
+
+# 搜索
+mem search "主题"
+
+# 项目管理
+mem ctx open "官网重构"
+mem ctx update "完成首页" --progress 50
+mem ctx decision "选择技术栈" "使用 Next.js"
+
+# 健康检查
+mem health
 ```
 
----
+## 📁 项目结构
 
-## 📖 Quick Command Reference
+```
+unified-memory/
+├── SKILL.md                    # 技能说明
+├── README.md                   # 本文档
+├── CHANGELOG.md               # 变更日志
+├── scripts/
+│   ├── mem                     # 统一 CLI 入口
+│   ├── context/
+│   │   └── context_tree.py    # 🆕 统一上下文管理
+│   ├── intelligence/
+│   │   └── smart_summarizer.py # 智能摘要
+│   ├── templates/
+│   │   └── project_templates.py # 项目模板
+│   ├── memory_graph.py         # 🆕 知识图谱
+│   ├── workflow_engine.py       # 工作流引擎
+│   ├── memory_integration.py    # 🆕 Agent 集成钩子
+│   └── visualizer/
+│       └── workflow_visualizer.py # HTML 可视化
+```
+
+## 🧩 模块详解
+
+### mem - 统一 CLI
 
 ```bash
-mem start "task"          # Session start, load context
-mem end "content"         # Session end, store memory
-mem heartbeat             # Heartbeat check
-mem store "content"       # Quick store
-mem load "query"          # Load memories
-mem remind                # Check reminders
-mem health                # Health report
-mem webui 38080           # Web UI
-mem ask "question"        # Smart Q&A
-mem graph build           # Build knowledge graph
-mem graph export          # Export HTML
-mem insights analyze      # User insights
-mem insights trends       # Behavior trends
-mem backup                # Cloud backup
-mem privacy               # Privacy scan
+# 记忆
+mem store "text" --tags "tag1,tag2"
+mem search "query"
+mem health
+
+# 上下文
+mem ctx init "项目名"
+mem ctx open "项目名"
+mem ctx update "任务" --progress 50
+mem ctx decision "标题" "内容"
+mem ctx status
+mem ctx list
+
+# 模板
+mem init --template software-project "项目名"
+mem template list
+
+# 摘要
+mem summary compress --days 7
+mem summary decisions --days 30
 ```
 
----
+### session_start 集成
 
-## ⚙️ Configuration
+Agent 会话启动时自动加载上下文：
 
-### Environment Variables
+```python
+# 集成到 agent 流程
+mem-int session-start --context "当前任务"
+
+# 返回:
+# - 相关记忆 (Top 10)
+# - 最佳上下文路径
+# - 项目状态
+# - 知识图谱实体
+# - 个性化建议
+```
+
+## 🆚 对比
+
+| 特性 | Unified Memory | QMD | MetaGPT |
+|------|---------------|-----|---------|
+| **依赖数量** | 0 ✅ | ~5 | 70+ |
+| **Context Tree** | ✅ 双层 | ✅ | ⚠️ |
+| **知识图谱** | ✅ | ❌ | ❌ |
+| **智能摘要** | ✅ | ✅ | ❌ |
+| **多模态** | ✅ | ❌ | ⚠️ |
+| **工作流引擎** | ✅ SOP+DAG | ❌ | ✅ |
+| **零依赖** | ✅ | ❌ | ❌ |
+
+## 📊 健康检查
 
 ```bash
-# Ollama (for embeddings and LLM)
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_LLM_MODEL=deepseek-v3.2:cloud
-OLLAMA_EMBED_MODEL=nomic-embed-text:latest
+$ mem health
+🏥 系统健康检查
+
+1️⃣ 向量库... ✅ (1 表)
+2️⃣ Ollama... ✅ (2 模型)
+3️⃣ Context Tree... ✅
+4️⃣ Smart Summarizer... ✅
+
+========================================
+✅ 系统健康
 ```
 
-### Parameters
+## 🔗 链接
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `L1_HOT_HOURS` | 24 | L1 time window |
-| `L2_WARM_DAYS` | 7 | L2 time window |
-| `L1_MAX_SIZE` | 20 | L1 max capacity |
-| `L2_MAX_SIZE` | 100 | L2 max capacity |
-| `SIMILARITY_THRESHOLD` | 0.85 | Knowledge merge threshold |
-| `STALE_DAYS` | 30 | Outdated memory threshold |
-| `FORGET_IMPORTANCE` | 0.1 | Forget below this importance |
+- **GitHub**: https://github.com/mouxangithub/unified-memory
+- **文档**: [SKILL.md](./SKILL.md)
+- **变更日志**: [CHANGELOG.md](./CHANGELOG.md)
+
+## 📜 许可证
+
+MIT License - 自由使用、修改、分发
 
 ---
 
-## 📁 File Structure
-
-```
-~/.openclaw/workspace/
-├── memory/
-│   ├── vector/                # LanceDB vector database
-│   ├── hierarchy/             # Hierarchical cache
-│   ├── knowledge_blocks/      # Knowledge blocks
-│   ├── memory_backup/         # Local backups
-│   ├── cloud_config.json      # Cloud sync config
-│   └── memory_graph.html      # Knowledge graph
-└── skills/unified-memory/
-    ├── scripts/
-    │   ├── memory.py              # Main entry
-    │   ├── memory_cloud.py        # Cloud sync
-    │   ├── memory_qa.py           # Smart Q&A
-    │   ├── memory_graph.py       # Knowledge graph
-    │   ├── memory_insights.py    # Insights
-    │   ├── memory_privacy.py     # Privacy
-    │   ├── memory_perf.py        # Performance
-    │   ├── memory_multimodal.py  # Multimodal
-    │   ├── memory_auto.py        # Automation
-    │   ├── memory_recommend.py   # Smart recommendations
-    │   ├── memory_adaptive.py    # Adaptive confidence
-    │   ├── memory_audit.py       # Audit logging
-    │   ├── memory_sync.py       # Multi-agent sync
-    │   ├── memory_summary.py    # Memory summaries
-    │   ├── memory_integration.py # Agent integration
-    │   └── mem                 # Quick command
-    ├── README.md                 # English docs
-    ├── README_CN.md              # Chinese docs
-    ├── SKILL.md
-    └── VERSION.md
-```
-
----
-
-## 🔧 Dependencies
-
-### Required
-- Python 3.8+
-- `requests`
-
-### Recommended
-- `lancedb` - Vector database
-- Ollama - Local embeddings and LLM
-
-### Cloud Sync (Optional)
-- `boto3` - AWS S3
-- `webdavclient3` - WebDAV
-- `dropbox` - Dropbox
-- `google-api-python-client google-auth-oauthlib` - Google Drive
-
-### Install
-
-```bash
-# Basic
-pip install requests lancedb
-
-# Cloud sync (as needed)
-pip install boto3                          # S3
-pip install webdavclient3                  # WebDAV
-pip install dropbox                        # Dropbox
-pip install google-api-python-client google-auth-oauthlib  # Google Drive
-```
-
----
-
-## 🗺️ Roadmap
-
-### v0.3.2 (Current)
-- ✅ Proactive context injection (主动上下文注入)
-- ✅ Adaptive confidence with feedback (动态置信度自适应)
-- ✅ Smart recommendations (智能关联推荐)
-- ✅ Audit logging (可审计日志)
-- ✅ Multi-agent sync (多Agent同步)
-- ✅ Memory summaries (记忆摘要生成)
-- ✅ Topic switch detection (主题切换检测)
-
-### v0.2.2
-- ✅ Multi-cloud sync (S3/WebDAV/Dropbox/GDrive)
-- ✅ Bilingual documentation
-
-### v0.3.0
-- [ ] Team knowledge sharing
-- [ ] Real-time sync
-
-### v1.0.0
-- [ ] Production-grade stability
-- [ ] Full test coverage
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please read [Contributing Guide](CONTRIBUTING.md).
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE)
-
----
-
-## 🙏 Acknowledgments
-
-- Built for [OpenClaw](https://openclaw.ai) AI Agent framework
-- Inspired by human memory systems
-- Powered by [LanceDB](https://lancedb.github.io/lancedb/) vector database
-
----
-
-**Made with ❤️ for AI Agents**
-
----
-
-## 📚 Documentation Index
-
-- [English Documentation](./README.md) (Current)
-- [中文文档](./README_CN.md)
-- [Version History](./VERSION.md)
-- [Skill Description](./SKILL.md)
+*最后更新: 2026-03-23 | v1.5.0*
