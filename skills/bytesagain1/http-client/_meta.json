@@ -3,9 +3,15 @@
   "slug": "http-client",
   "displayName": "Http Client",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1773919079558,
-    "commit": "https://github.com/openclaw/skills/commit/53dfe824dd651f74d91f308b255fda9d811887b6"
+    "version": "2.0.3",
+    "publishedAt": 1774312847032,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1773919079558,
+      "commit": "https://github.com/openclaw/skills/commit/53dfe824dd651f74d91f308b255fda9d811887b6"
+    }
+  ]
 }
