@@ -3,9 +3,15 @@
   "slug": "networkmanager",
   "displayName": "Networkmanager",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1773897608749,
-    "commit": "https://github.com/openclaw/skills/commit/3f2beb107b02afe7110b95294c74d22654d5fb37"
+    "version": "2.0.2",
+    "publishedAt": 1774313209526,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1773897608749,
+      "commit": "https://github.com/openclaw/skills/commit/3f2beb107b02afe7110b95294c74d22654d5fb37"
+    }
+  ]
 }
