@@ -3,9 +3,15 @@
   "slug": "ai-caption-zh",
   "displayName": "AI 字幕",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1773827073221,
-    "commit": "https://github.com/openclaw/skills/commit/8caf93c3de57ffc9595c3599f52ed1571594854f"
+    "version": "1.0.12",
+    "publishedAt": 1774307682434,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1773827073221,
+      "commit": "https://github.com/openclaw/skills/commit/8caf93c3de57ffc9595c3599f52ed1571594854f"
+    }
+  ]
 }

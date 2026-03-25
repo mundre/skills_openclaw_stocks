@@ -1,33 +1,28 @@
 # ai-caption-zh
 
 [![ClawHub Skill](https://img.shields.io/badge/ClawHub-Skill-blueviolet)](https://clawhub.io)
-[![Version](https://img.shields.io/badge/version-1.0.8-blue)](SKILL.md)
+[![Version](https://img.shields.io/badge/version-1.0.12-blue)](SKILL.md)
 
-> **AI 字幕**
-> 中文场景版，由 Sparki 提供能力。
->
-> Powered by [Sparki](https://sparki.io).
+> **给视频加上清晰易读的字幕，让内容在静音状态下也更容易看懂。**
 
-## 这个 Skill 做什么
+## 适合什么场景
+适合口播、讲解、字幕优先的短视频，以及需要“静音可看”的内容。
 
-这个 skill 是 Sparki AI 视频工作流的中文场景入口。
-
-- 上传视频文件
-- 根据场景创建 AI 处理任务
-- 轮询直到处理完成
-- 返回结果下载链接
-
-## 适合这些需求
-- “帮我加字幕”
-- “给这个视频自动上字”
-- “让视频静音也能看懂”
-- “做成带字幕的短视频”
-
-## 快速开始
+## 一条命令直接开始
 
 ```bash
-export SPARKI_API_KEY="sk_live_your_key_here"
-export SPARKI_API_BASE="https://business-agent-api.sparki.io/api/v1"
-RESULT_URL=$(bash scripts/edit_video.sh my_video.mp4 "24" "加干净易读的字幕，并让节奏更紧凑" "9:16")
-echo "$RESULT_URL"
+sparki run --file ./video.mp4 --mode prompt-driven --prompt "加上清晰易读的字幕，并把节奏收紧" --aspect-ratio 9:16
 ```
+
+## 推荐提示词
+- 加上清晰易读的字幕，并把节奏收紧。
+- 把它做成字幕优先的短视频。
+- 让这条视频在静音状态下也能看懂。
+
+## 相关技能
+- `长视频转短视频`
+- `TikTok 爆款剪辑`
+- `口播视频剪辑`
+
+## 共享核心
+这个 skill 继承官方 `sparki-video-editor` 最新的安装、API key、上传和命令说明。
