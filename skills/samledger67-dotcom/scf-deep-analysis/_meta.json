@@ -3,9 +3,15 @@
   "slug": "scf-deep-analysis",
   "displayName": "SCF Deep Analysis",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773854282398,
-    "commit": "https://github.com/openclaw/skills/commit/bbe5583a103cb3c455635945c0d0742875f8b09e"
+    "version": "1.0.2",
+    "publishedAt": 1774166536809,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773854282398,
+      "commit": "https://github.com/openclaw/skills/commit/bbe5583a103cb3c455635945c0d0742875f8b09e"
+    }
+  ]
 }

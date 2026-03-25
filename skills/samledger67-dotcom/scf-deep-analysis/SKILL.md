@@ -56,8 +56,8 @@ Runs a controller-level Statement of Cash Flows deep analysis for a QBO-connecte
 
 ## Prerequisites
 
-- QBO client connected for the slug: `integrations/qbo-client/`
-- Auth token set in `.env.wallet`
+- QBO client connected for the slug
+- QBO auth token configured
 - `openpyxl` installed: `pip install openpyxl`
 - Node.js available on PATH
 
