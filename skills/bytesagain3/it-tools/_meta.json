@@ -3,9 +3,15 @@
   "slug": "it-tools",
   "displayName": "It Tools",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1773919087458,
-    "commit": "https://github.com/openclaw/skills/commit/7b4ea3479562350849de54be8937600cc8714c54"
+    "version": "2.0.2",
+    "publishedAt": 1774312912405,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1773919087458,
+      "commit": "https://github.com/openclaw/skills/commit/7b4ea3479562350849de54be8937600cc8714c54"
+    }
+  ]
 }
