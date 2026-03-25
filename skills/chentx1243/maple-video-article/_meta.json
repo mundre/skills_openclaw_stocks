@@ -3,9 +3,15 @@
   "slug": "maple-video-article",
   "displayName": "maple-video2article",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1774110175958,
-    "commit": "https://github.com/openclaw/skills/commit/864375a27c68ee9e7c078ff327a825cbe2dac241"
+    "version": "1.0.4",
+    "publishedAt": 1774436605147,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1774110175958,
+      "commit": "https://github.com/openclaw/skills/commit/864375a27c68ee9e7c078ff327a825cbe2dac241"
+    }
+  ]
 }
