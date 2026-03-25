@@ -683,6 +683,17 @@ For larger multi-agent systems:
 6. **Test agents individually** - Before integrating into team
 7. **Update gateway config safely** - Always use config.patch, never manual edits
 
+## Security
+
+This skill follows OpenClaw security best practices:
+
+- **No direct config file access** — Uses `openclaw config get` and `openclaw gateway config.patch` CLI commands instead of reading/writing `~/.openclaw/config.json` directly
+- **No binary execution** — All scripts are plain text (bash/python), no compiled binaries
+- **Cron jobs are optional** — Agent creation prompts for user confirmation before creating any cron jobs
+- **Gateway changes use config.patch** — Safe, atomic configuration updates with rollback support
+- **Discord API calls use bot token from CLI** — Never stores or exposes tokens in skill files
+- **All actions are logged** — Script output shows exactly what was created/changed
+
 ## Requirements
 
 **Bot Permissions:**

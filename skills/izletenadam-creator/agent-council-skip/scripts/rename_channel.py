@@ -21,18 +21,35 @@ from typing import Optional, Dict, Any, List
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-# Configuration
-CONFIG_FILE = Path.home() / ".openclaw" / "config.json"
+# Configuration - uses OpenClaw CLI instead of direct file access
+import subprocess
 
 
 def load_config() -> Dict[str, Any]:
-    """Load OpenClaw configuration."""
-    if not CONFIG_FILE.exists():
-        print(f"❌ Config not found: {CONFIG_FILE}")
+    """Load OpenClaw configuration via CLI (safe, no direct file access)."""
+    try:
+        result = subprocess.run(
+            ["openclaw", "config", "get", ""],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode != 0:
+            path_result = subprocess.run(
+                ["openclaw", "config", "file"],
+                capture_output=True, text=True, timeout=10
+            )
+            config_file = Path(path_result.stdout.strip())
+            if config_file.exists():
+                with open(config_file, 'r') as f:
+                    return json.load(f)
+            print("❌ Could not load config via OpenClaw CLI")
+            sys.exit(1)
+        return json.loads(result.stdout)
+    except FileNotFoundError:
+        print("❌ OpenClaw CLI not found. Install with: npm i -g openclaw")
         sys.exit(1)
-    
-    with open(CONFIG_FILE, 'r') as f:
-        return json.load(f)
+    except Exception as e:
+        print(f"❌ Config load error: {e}")
+        sys.exit(1)
 
 
 def get_discord_info(config: Dict[str, Any]) -> tuple[str, str]:
