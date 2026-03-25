@@ -1,12 +1,12 @@
 """
-Data Validator
+数据验证器
 
-Validates data quality and detects common issues:
-- Missing values
-- Outliers
-- Duplicate records
-- Data type inconsistencies
-- Business rule violations
+验证数据质量，检测常见问题：
+- 缺失值
+- 异常值
+- 重复记录
+- 数据类型不一致
+- 业务规则违反
 """
 
 import pandas as pd
@@ -22,50 +22,50 @@ logger = logging.getLogger(__name__)
 
 
 class IssueSeverity(Enum):
-    """Issue severity level"""
-    CRITICAL = "critical"    # Must fix
-    WARNING = "warning"      # Recommended to fix
-    INFO = "info"            # For reference only
+    """问题严重程度"""
+    CRITICAL = "critical"    # 必须修复
+    WARNING = "warning"      # 建议修复
+    INFO = "info"            # 仅供参考
 
 
 class CleaningActionType(Enum):
-    """Cleaning action type"""
-    DELETE_ROWS = "delete_rows"       # Delete rows
-    DELETE_COLUMN = "delete_column"   # Delete column
-    FILL_NA = "fill_na"               # Fill missing values
-    CLIP = "clip"                     # Clip outliers
-    CONVERT_TYPE = "convert_type"     # Type conversion
-    KEEP = "keep"                     # Keep but flag
-    REVIEW = "review"                 # Manual review
+    """清洗操作类型"""
+    DELETE_ROWS = "delete_rows"       # 删除行
+    DELETE_COLUMN = "delete_column"   # 删除列
+    FILL_NA = "fill_na"               # 填充缺失值
+    CLIP = "clip"                     # 截断异常值
+    CONVERT_TYPE = "convert_type"     # 类型转换
+    KEEP = "keep"                     # 保留但标记
+    REVIEW = "review"                 # 人工审核
 
 
 @dataclass
 class CleaningAction:
-    """Cleaning action recommendation"""
+    """清洗操作建议"""
     action_type: CleaningActionType
-    target: str                       # Operation target (column name or whole table)
-    affected_rows: int                # Number of affected rows
-    description: str                  # Action description
-    reason: str                       # Reason for action
-    recommended: bool = True          # Whether recommended to execute
+    target: str                       # 操作目标（列名或整表）
+    affected_rows: int               # 影响行数
+    description: str                 # 操作描述
+    reason: str                      # 操作原因
+    recommended: bool = True         # 是否建议执行
 
 
 @dataclass
 class ValidationIssue:
-    """Validation issue"""
+    """验证问题"""
     severity: IssueSeverity
     category: str                    # missing/duplicate/outlier/type/business
-    column: Optional[str]            # Related column
+    column: Optional[str]           # 相关列
     description: str
     affected_rows: int
     affected_percent: float
     suggestion: str
-    cleaning_action: Optional[CleaningAction] = None  # Recommended cleaning action
+    cleaning_action: Optional[CleaningAction] = None  # 建议的清洗操作
 
 
 @dataclass
 class ValidationReport:
-    """Validation report"""
+    """验证报告"""
     total_rows: int
     total_columns: int
     overall_score: float   # 0-100
@@ -79,7 +79,7 @@ class ValidationReport:
         return [i for i in self.issues if i.severity == severity]
 
     def get_cleaning_summary(self) -> Dict[str, Any]:
-        """Get cleaning action summary"""
+        """获取清洗操作汇总"""
         summary = {
             'total_issues': len(self.issues),
             'recommended_deletions': 0,
@@ -96,7 +96,7 @@ class ValidationReport:
                 action = issue.cleaning_action
                 action_type = action.action_type.value
 
-                # Count each action type
+                # 统计各类操作
                 if action_type not in summary['actions_by_type']:
                     summary['actions_by_type'][action_type] = []
                 summary['actions_by_type'][action_type].append({
@@ -105,7 +105,7 @@ class ValidationReport:
                     'description': action.description
                 })
 
-                # Count recommended deletions
+                # 统计建议删除的行数
                 if action.action_type == CleaningActionType.DELETE_ROWS:
                     summary['recommended_deletions'] += action.affected_rows
                     summary['rows_to_delete_estimate'] += action.affected_rows
@@ -121,87 +121,87 @@ class ValidationReport:
         return summary
 
     def generate_cleaning_report(self) -> str:
-        """Generate cleaning report text"""
+        """生成清洗报告文本"""
         summary = self.get_cleaning_summary()
-        lines = ["\n=== Data Cleaning Recommendation Report ===\n"]
+        lines = ["\n=== 数据清洗建议报告 ===\n"]
 
-        # Overall statistics
-        lines.append(f"Original data: {self.total_rows:,} rows x {self.total_columns} columns")
-        lines.append(f"Issues found: {summary['total_issues']}")
+        # 总体统计
+        lines.append(f"原始数据: {self.total_rows:,} 行 × {self.total_columns} 列")
+        lines.append(f"发现问题: {summary['total_issues']} 个")
         lines.append("")
 
-        # Recommended row deletions
+        # 建议删除的行
         if summary['recommended_deletions'] > 0:
-            lines.append(f"[Recommended Row Deletions] Total: {summary['recommended_deletions']:,} rows")
+            lines.append(f"【建议删除行】共 {summary['recommended_deletions']:,} 行")
             if 'delete_rows' in summary['actions_by_type']:
                 for action in summary['actions_by_type']['delete_rows']:
-                    lines.append(f"  - {action['target']}: {action['rows']:,} rows - {action['description']}")
+                    lines.append(f"  - {action['target']}: {action['rows']:,} 行 - {action['description']}")
             lines.append("")
         else:
-            lines.append("[Recommended Row Deletions] None")
-            lines.append("  Strategy: Retain all rows, do not delete data directly")
+            lines.append("【建议删除行】无")
+            lines.append("  策略: 保留所有行，不直接删除数据")
             lines.append("")
 
-        # Recommended column deletions
+        # 建议删除的列
         if summary['columns_to_delete']:
-            lines.append(f"[Recommended Column Deletions] Total: {len(summary['columns_to_delete'])} columns")
+            lines.append(f"【建议删除列】共 {len(summary['columns_to_delete'])} 列")
             for col in summary['columns_to_delete']:
                 lines.append(f"  - {col}")
             lines.append("")
 
-        # Missing value field analysis
+        # 缺失值字段分析说明（核心修改）
         missing_issues = [i for i in self.issues if i.category == 'missing' and i.affected_rows > 0]
         if missing_issues:
-            lines.append("[Missing Value Field Handling Notes]")
-            lines.append(f"  {len(missing_issues)} fields have missing values. All original rows are retained; handle per-field as needed during analysis:")
+            lines.append("【缺失值字段处理说明】")
+            lines.append(f"  共有 {len(missing_issues)} 个字段存在缺失值，保留所有原始行，分析时按需处理：")
             lines.append("")
             for issue in missing_issues:
                 col = issue.column
                 missing_count = issue.affected_rows
                 missing_pct = issue.affected_percent
                 valid_rows = self.total_rows - missing_count
-                lines.append(f"  ▶ Field '{col}':")
-                lines.append(f"    - Missing values: {missing_count:,} ({missing_pct:.2f}%)")
-                lines.append(f"    - Valid data: {valid_rows:,} rows")
-                lines.append(f"    - Handling: When analyzing this field, use {valid_rows:,} valid rows and note the data source")
+                lines.append(f"  ▶ 字段 '{col}':")
+                lines.append(f"    - 缺失值: {missing_count:,} 个 ({missing_pct:.2f}%)")
+                lines.append(f"    - 有效数据: {valid_rows:,} 行")
+                lines.append(f"    - 处理方式: 分析该字段时，使用 {valid_rows:,} 条有效数据，备注说明数据来源")
                 if issue.cleaning_action:
-                    lines.append(f"    - Recommendation: {issue.cleaning_action.description}")
+                    lines.append(f"    - 建议: {issue.cleaning_action.description}")
                 lines.append("")
 
-        # Recommended type conversions
+        # 建议类型转换
         if summary['recommended_conversions'] > 0:
-            lines.append("[Recommended Type Conversions]")
+            lines.append(f"【建议类型转换】")
             if 'convert_type' in summary['actions_by_type']:
                 for action in summary['actions_by_type']['convert_type']:
                     lines.append(f"  - {action['target']}: {action['description']}")
             lines.append("")
 
-        # Recommended manual reviews
+        # 建议人工审核
         if summary['recommended_reviews'] > 0:
-            lines.append(f"[Recommended Manual Reviews] Total: {summary['recommended_reviews']:,} rows")
+            lines.append(f"【建议人工审核】共 {summary['recommended_reviews']:,} 行")
             if 'review' in summary['actions_by_type']:
                 for action in summary['actions_by_type']['review']:
-                    lines.append(f"  - {action['target']}: {action['rows']:,} rows - {action['description']}")
+                    lines.append(f"  - {action['target']}: {action['rows']:,} 行 - {action['description']}")
             lines.append("")
 
-        # Anomalous but retained
+        # 异常但保留
         if 'keep' in summary['actions_by_type']:
             keep_actions = summary['actions_by_type']['keep']
-            # Filter out non-missing keep items
-            outlier_keep = [a for a in keep_actions if 'missing' not in a['description'].lower()]
+            # 筛选出非缺失值的保留项
+            outlier_keep = [a for a in keep_actions if '缺失' not in a['description']]
             if outlier_keep:
-                lines.append("[Outliers Retained]")
+                lines.append("【异常值但保留】")
                 for action in outlier_keep:
                     lines.append(f"  - {action['target']}: {action['description']}")
                 lines.append("")
 
-        # Estimated result after cleaning
+        # 预计结果
         remaining_rows = self.total_rows - summary['rows_to_delete_estimate']
-        lines.append("[Estimated Cleaning Result]")
-        lines.append(f"  - Original rows: {self.total_rows:,}")
-        lines.append(f"  - Rows to delete: {summary['rows_to_delete_estimate']:,}")
-        lines.append(f"  - Rows retained: {remaining_rows:,} (100%)")
-        lines.append("  - Note: All original data retained; each field handled independently based on its valid row count")
+        lines.append(f"【预计清洗结果】")
+        lines.append(f"  - 原始数据: {self.total_rows:,} 行")
+        lines.append(f"  - 删除行数: {summary['rows_to_delete_estimate']:,}")
+        lines.append(f"  - 保留行数: {remaining_rows:,} (100%)")
+        lines.append(f"  - 说明: 保留所有原始数据，各字段分析时根据有效数据量独立处理")
 
         return "\n".join(lines)
 
@@ -220,23 +220,23 @@ class ValidationReport:
 
 class DataValidator:
     """
-    Data Validator
+    数据验证器
 
-    Automatically detects data quality issues.
+    自动检测数据质量问题
     """
 
     tool_name = "data_validator"
-    tool_description = "Validate data quality: detect missing values, outliers, duplicates, etc."
+    tool_description = "验证数据质量，检测缺失值、异常值、重复等问题"
 
-    # Threshold configuration (can be loaded from config file)
+    # 阈值配置（可从配置文件读取）
     DEFAULT_THRESHOLDS = {
-        'missing_critical': 0.5,    # >50% missing is critical
-        'missing_warning': 0.1,     # >10% missing is warning
-        'duplicate_critical': 0.1,  # >10% duplicates is critical
-        'duplicate_warning': 0.01,  # >1% duplicates is warning
-        'outlier_zscore': 3,        # Z-score > 3 is outlier
-        'outlier_iqr': 1.5,         # IQR multiplier
-        'cardinality_ratio': 0.9,   # High cardinality ratio (unique/total)
+        'missing_critical': 0.5,    # 缺失率超过50%为严重问题
+        'missing_warning': 0.1,     # 缺失率超过10%为警告
+        'duplicate_critical': 0.1,  # 重复率超过10%为严重问题
+        'duplicate_warning': 0.01,  # 重复率超过1%为警告
+        'outlier_zscore': 3,        # Z-score超过3为异常
+        'outlier_iqr': 1.5,         # IQR倍数
+        'cardinality_ratio': 0.9,   # 高基数比例（唯一值/总行数）
     }
 
     def __init__(self, thresholds: Optional[Dict] = None):
@@ -245,12 +245,12 @@ class DataValidator:
     def execute(self, data: pd.DataFrame,
                 params: Optional[Dict] = None) -> ValidationReport:
         """
-        Execute data validation
+        执行数据验证
 
         Args:
             params: {
-                'business_rules': [...],     # Business rules
-                'custom_thresholds': {...},  # Custom thresholds
+                'business_rules': [...],  # 业务规则
+                'custom_thresholds': {...},  # 自定义阈值
             }
         """
         issues = []
@@ -261,36 +261,36 @@ class DataValidator:
         custom_thresholds = params.get('custom_thresholds', {})
         thresholds = {**self.thresholds, **custom_thresholds}
 
-        # 1. Check missing values
+        # 1. 检查缺失值
         missing_issues = self._check_missing_values(data, thresholds)
         issues.extend(missing_issues)
         if not missing_issues:
-            passed.append("Missing value check")
+            passed.append("缺失值检查")
 
-        # 2. Check duplicates
+        # 2. 检查重复值
         duplicate_issues = self._check_duplicates(data, thresholds)
         issues.extend(duplicate_issues)
         if not duplicate_issues:
-            passed.append("Duplicate check")
+            passed.append("重复值检查")
 
-        # 3. Check outliers
+        # 3. 检查异常值
         outlier_issues = self._check_outliers(data, thresholds)
         issues.extend(outlier_issues)
         if not outlier_issues:
-            passed.append("Outlier check")
+            passed.append("异常值检查")
 
-        # 4. Check data types
+        # 4. 检查数据类型
         type_issues = self._check_data_types(data)
         issues.extend(type_issues)
         if not type_issues:
-            passed.append("Data type check")
+            passed.append("数据类型检查")
 
-        # 5. Check business rules
+        # 5. 检查业务规则
         if custom_rules:
             rule_issues = self._check_business_rules(data, custom_rules)
             issues.extend(rule_issues)
 
-        # Calculate overall score
+        # 计算总分
         score = self._calculate_score(data, issues)
 
         report = ValidationReport(
@@ -301,31 +301,31 @@ class DataValidator:
             passed_checks=passed
         )
 
-        # Generate and log cleaning report
+        # 生成并打印清洗报告
         cleaning_report = report.generate_cleaning_report()
         logger.info(cleaning_report)
 
-        logger.info(f"Data validation complete: score {score:.1f}/100, "
-                   f"{len(issues)} issues found")
+        logger.info(f"数据验证完成: 得分 {score:.1f}/100, "
+                   f"发现 {len(issues)} 个问题")
 
         return report
 
     def interpret_results(self, results: Dict[str, Any]) -> str:
-        """Interpret validation results"""
+        """解释验证结果"""
         report = ValidationReport(**results)
 
         if report.overall_score >= 90:
-            return f"Excellent data quality ({report.overall_score:.0f}/100) — ready for analysis"
+            return f"数据质量优秀 ({report.overall_score:.0f}/100)，可直接用于分析"
         elif report.overall_score >= 70:
-            return f"Good data quality ({report.overall_score:.0f}/100) — recommended to address warnings"
+            return f"数据质量良好 ({report.overall_score:.0f}/100)，建议处理警告项"
         elif report.overall_score >= 50:
-            return f"Fair data quality ({report.overall_score:.0f}/100) — cleaning needed"
+            return f"数据质量一般 ({report.overall_score:.0f}/100)，需要清洗"
         else:
-            return f"Poor data quality ({report.overall_score:.0f}/100) — fix critical issues first"
+            return f"数据质量较差 ({report.overall_score:.0f}/100)，建议先修复严重问题"
 
     def _check_missing_values(self, data: pd.DataFrame,
                               thresholds: Dict) -> List[ValidationIssue]:
-        """Check missing values"""
+        """检查缺失值"""
         issues = []
         total_rows = len(data)
 
@@ -334,41 +334,41 @@ class DataValidator:
             missing_pct = missing_count / total_rows
 
             if missing_pct > thresholds['missing_critical']:
-                # Critical missing: recommend deleting the column (not rows)
+                # 严重缺失：建议删除列（但不删除行）
                 cleaning_action = CleaningAction(
                     action_type=CleaningActionType.DELETE_COLUMN,
                     target=col,
-                    affected_rows=0,  # Don't delete rows
-                    description=f"Delete column '{col}' (missing rate {missing_pct:.1%} is too high)",
-                    reason=f"Missing rate {missing_pct:.1%} exceeds critical threshold {thresholds['missing_critical']:.1%}; recommend deleting the column rather than rows"
+                    affected_rows=0,  # 不删除行
+                    description=f"删除列 '{col}'（缺失率 {missing_pct:.1%} 过高）",
+                    reason=f"缺失率 {missing_pct:.1%} 超过临界阈值 {thresholds['missing_critical']:.1%}，建议删除该列而非删除行"
                 )
                 issues.append(ValidationIssue(
                     severity=IssueSeverity.CRITICAL,
                     category='missing',
                     column=col,
-                    description=f"Column '{col}' has {missing_pct:.1%} missing rate ({missing_count:,} values)",
+                    description=f"列 '{col}' 缺失率 {missing_pct:.1%}，共 {missing_count:,} 个缺失值",
                     affected_rows=missing_count,
                     affected_percent=missing_pct * 100,
-                    suggestion=f"Column is heavily missing; recommend deleting it. If needed for analysis, temporarily remove {missing_count:,} missing rows",
+                    suggestion=f"该列缺失严重，建议删除此列；如需分析该字段，可临时删除 {missing_count:,} 个缺失行进行分析",
                     cleaning_action=cleaning_action
                 ))
             elif missing_pct > thresholds['missing_warning']:
-                # Warning-level missing: retain all rows, handle per-analysis
+                # 警告级别缺失：保留所有行，分析时按需处理
                 cleaning_action = CleaningAction(
                     action_type=CleaningActionType.KEEP,
                     target=col,
-                    affected_rows=0,  # Don't delete rows
-                    description=f"Retain all rows; handle {missing_count:,} missing values in '{col}' when analyzing that field",
-                    reason=f"Missing rate {missing_pct:.1%}; recommend retaining all data and noting when analyzing '{col}'"
+                    affected_rows=0,  # 不删除行
+                    description=f"保留所有行，列 '{col}' 的 {missing_count:,} 个缺失值在分析该字段时再处理",
+                    reason=f"缺失率 {missing_pct:.1%}，建议保留全部数据；分析 '{col}' 字段时需删除 {missing_count:,} 个缺失行"
                 )
                 issues.append(ValidationIssue(
                     severity=IssueSeverity.WARNING,
                     category='missing',
                     column=col,
-                    description=f"Column '{col}' has {missing_pct:.1%} missing rate ({missing_count:,} values)",
+                    description=f"列 '{col}' 缺失率 {missing_pct:.1%}，共 {missing_count:,} 个缺失值",
                     affected_rows=missing_count,
                     affected_percent=missing_pct * 100,
-                    suggestion=f"Retain all rows; when analyzing '{col}', temporarily exclude {missing_count:,} missing rows and note this",
+                    suggestion=f"保留所有行；如需分析 '{col}' 字段，临时删除该列缺失的 {missing_count:,} 行并备注说明",
                     cleaning_action=cleaning_action
                 ))
 
@@ -376,48 +376,48 @@ class DataValidator:
 
     def _check_duplicates(self, data: pd.DataFrame,
                          thresholds: Dict) -> List[ValidationIssue]:
-        """Check duplicates"""
+        """检查重复值"""
         issues = []
         total_rows = len(data)
 
-        # Fully duplicate rows
+        # 完全重复
         dup_count = data.duplicated().sum()
         dup_pct = dup_count / total_rows
 
         if dup_pct > thresholds['duplicate_critical']:
             cleaning_action = CleaningAction(
                 action_type=CleaningActionType.DELETE_ROWS,
-                target="entire table",
+                target="整表",
                 affected_rows=dup_count,
-                description=f"Delete {dup_count:,} fully duplicate records",
-                reason=f"Duplicate rate {dup_pct:.1%} exceeds critical threshold — must delete"
+                description=f"删除 {dup_count:,} 行完全重复的记录",
+                reason=f"重复率 {dup_pct:.1%} 超过临界阈值，必须删除"
             )
             issues.append(ValidationIssue(
                 severity=IssueSeverity.CRITICAL,
                 category='duplicate',
                 column=None,
-                description=f"Found {dup_count} fully duplicate records ({dup_pct:.1%})",
+                description=f"发现 {dup_count} 行完全重复记录 ({dup_pct:.1%})",
                 affected_rows=dup_count,
                 affected_percent=dup_pct * 100,
-                suggestion="Delete duplicates and review data collection process",
+                suggestion="删除重复记录，检查数据采集流程",
                 cleaning_action=cleaning_action
             ))
         elif dup_pct > thresholds['duplicate_warning']:
             cleaning_action = CleaningAction(
                 action_type=CleaningActionType.DELETE_ROWS,
-                target="entire table",
+                target="整表",
                 affected_rows=dup_count,
-                description=f"Delete {dup_count:,} fully duplicate records",
-                reason=f"Duplicate rate {dup_pct:.1%} exceeds warning threshold — recommended to delete"
+                description=f"删除 {dup_count:,} 行完全重复的记录",
+                reason=f"重复率 {dup_pct:.1%} 超过警告阈值，建议删除"
             )
             issues.append(ValidationIssue(
                 severity=IssueSeverity.WARNING,
                 category='duplicate',
                 column=None,
-                description=f"Found {dup_count} fully duplicate records ({dup_pct:.1%})",
+                description=f"发现 {dup_count} 行完全重复记录 ({dup_pct:.1%})",
                 affected_rows=dup_count,
                 affected_percent=dup_pct * 100,
-                suggestion="Review and remove duplicate records",
+                suggestion="检查并删除重复记录",
                 cleaning_action=cleaning_action
             ))
 
@@ -425,10 +425,10 @@ class DataValidator:
 
     def _check_outliers(self, data: pd.DataFrame,
                        thresholds: Dict) -> List[ValidationIssue]:
-        """Check outliers"""
+        """检查异常值"""
         issues = []
 
-        # Exclude boolean columns (bool is a subclass of np.number but can't do arithmetic)
+        # 排除 boolean 列（bool 是 np.number 的子类，但无法做减法运算）
         numeric_cols = data.select_dtypes(include=[np.number], exclude=['bool']).columns
 
         for col in numeric_cols:
@@ -436,7 +436,7 @@ class DataValidator:
             if len(series) < 10:
                 continue
 
-            # IQR method
+            # IQR 方法
             Q1 = series.quantile(0.25)
             Q3 = series.quantile(0.75)
             IQR = Q3 - Q1
@@ -447,57 +447,57 @@ class DataValidator:
             outliers = series[(series < lower_bound) | (series > upper_bound)]
             outlier_pct = len(outliers) / len(series)
 
-            if outlier_pct > 0.05:  # More than 5% outliers
-                # Decide cleaning strategy based on outlier proportion
-                if outlier_pct > 0.2:  # >20%: recommend clipping
+            if outlier_pct > 0.05:  # 超过5%的异常值
+                # 根据异常值比例决定清洗策略
+                if outlier_pct > 0.2:  # 超过20%建议保留但截断
                     cleaning_action = CleaningAction(
                         action_type=CleaningActionType.CLIP,
                         target=col,
                         affected_rows=len(outliers),
-                        description=f"Clip outliers in column '{col}' (lower: {lower_bound:.2f}, upper: {upper_bound:.2f})",
-                        reason=f"Outlier rate {outlier_pct:.1%} is high; recommend clipping rather than deleting"
+                        description=f"对列 '{col}' 的异常值进行截断处理（下限:{lower_bound:.2f}, 上限:{upper_bound:.2f}）",
+                        reason=f"异常值比例 {outlier_pct:.1%} 较高，建议截断而非删除"
                     )
-                elif outlier_pct > 0.1:  # 10-20%: recommend manual review
+                elif outlier_pct > 0.1:  # 10%-20%建议人工审核
                     cleaning_action = CleaningAction(
                         action_type=CleaningActionType.REVIEW,
                         target=col,
                         affected_rows=len(outliers),
-                        description=f"Manually review {len(outliers):,} outliers in column '{col}'",
-                        reason=f"Outlier rate {outlier_pct:.1%}; manual judgment needed"
+                        description=f"人工审核列 '{col}' 的 {len(outliers):,} 个异常值",
+                        reason=f"异常值比例 {outlier_pct:.1%}，建议人工判断是否删除"
                     )
-                else:  # <10%: recommend deleting rows
+                else:  # 低于10%建议删除行
                     cleaning_action = CleaningAction(
                         action_type=CleaningActionType.DELETE_ROWS,
                         target=col,
                         affected_rows=len(outliers),
-                        description=f"Delete {len(outliers):,} rows containing outliers in '{col}'",
-                        reason=f"Outlier rate {outlier_pct:.1%}; recommend removing outlier rows"
+                        description=f"删除列 '{col}' 中 {len(outliers):,} 个异常值所在行",
+                        reason=f"异常值比例 {outlier_pct:.1%}，建议删除异常行"
                     )
 
                 issues.append(ValidationIssue(
                     severity=IssueSeverity.WARNING,
                     category='outlier',
                     column=col,
-                    description=f"Column '{col}' has {len(outliers)} outliers ({outlier_pct:.1%})",
+                    description=f"列 '{col}' 发现 {len(outliers)} 个异常值 ({outlier_pct:.1%})",
                     affected_rows=len(outliers),
                     affected_percent=outlier_pct * 100,
-                    suggestion="Check if data error; or use robust statistical methods",
+                    suggestion="检查是否为数据错误，或使用稳健统计方法",
                     cleaning_action=cleaning_action
                 ))
 
         return issues
 
     def _check_data_types(self, data: pd.DataFrame) -> List[ValidationIssue]:
-        """Check data type issues"""
+        """检查数据类型问题"""
         issues = []
 
-        # Check string columns that may be dates
+        # 检查可能是日期的字符串列
         for col in data.select_dtypes(include=['object']).columns:
             sample = data[col].dropna().head(100)
             if len(sample) == 0:
                 continue
 
-            # Simple check for date-like formats
+            # 简单判断是否为日期格式
             date_patterns = [
                 r'^\d{4}-\d{2}-\d{2}',
                 r'^\d{4}/\d{2}/\d{2}',
@@ -516,17 +516,17 @@ class DataValidator:
                     action_type=CleaningActionType.CONVERT_TYPE,
                     target=col,
                     affected_rows=data[col].notna().sum(),
-                    description=f"Convert column '{col}' from string to datetime type",
-                    reason="Column content matches date format — converting enables time series analysis"
+                    description=f"将列 '{col}' 从字符串转换为 datetime 类型",
+                    reason="该列内容符合日期格式特征，转换为日期类型便于时间序列分析"
                 )
                 issues.append(ValidationIssue(
                     severity=IssueSeverity.INFO,
                     category='type',
                     column=col,
-                    description=f"Column '{col}' looks like a date but is currently a string type",
+                    description=f"列 '{col}' 看起来像是日期，但当前为字符串类型",
                     affected_rows=len(sample),
                     affected_percent=100.0,
-                    suggestion="Consider converting to datetime type for time series analysis",
+                    suggestion="考虑转换为 datetime 类型以便时间序列分析",
                     cleaning_action=cleaning_action
                 ))
 
@@ -534,12 +534,12 @@ class DataValidator:
 
     def _check_business_rules(self, data: pd.DataFrame,
                              rules: List[Dict]) -> List[ValidationIssue]:
-        """Check business rules"""
+        """检查业务规则"""
         issues = []
 
         for rule in rules:
-            name = rule.get('name', 'Unnamed rule')
-            condition = rule.get('condition')  # lambda or column name
+            name = rule.get('name', '未命名规则')
+            condition = rule.get('condition')  # lambda或列名
             threshold = rule.get('threshold', 0)
             action = rule.get('action', 'review')  # delete/review/keep
 
@@ -553,40 +553,40 @@ class DataValidator:
             violation_pct = violated / len(data)
 
             if violation_pct > threshold:
-                # Determine cleaning action based on rule config
+                # 根据规则配置决定清洗动作
                 if action == 'delete':
                     cleaning_action = CleaningAction(
                         action_type=CleaningActionType.DELETE_ROWS,
                         target=name,
                         affected_rows=violated,
-                        description=f"Delete {violated:,} rows violating business rule '{name}'",
-                        reason="Business rule violation — recommend deletion"
+                        description=f"删除违反业务规则 '{name}' 的 {violated:,} 行",
+                        reason=f"违反业务规则，建议删除"
                     )
                 elif action == 'keep':
                     cleaning_action = CleaningAction(
                         action_type=CleaningActionType.KEEP,
                         target=name,
                         affected_rows=violated,
-                        description=f"Retain but flag {violated:,} rows violating business rule '{name}'",
-                        reason="Business rule violation but data can be retained for analysis"
+                        description=f"保留但标记违反业务规则 '{name}' 的 {violated:,} 行",
+                        reason="业务规则违反但数据可保留分析"
                     )
                 else:  # default review
                     cleaning_action = CleaningAction(
                         action_type=CleaningActionType.REVIEW,
                         target=name,
                         affected_rows=violated,
-                        description=f"Manually review {violated:,} rows violating business rule '{name}'",
-                        reason="Manual judgment needed on whether to delete"
+                        description=f"人工审核违反业务规则 '{name}' 的 {violated:,} 行",
+                        reason="需要人工判断是否删除"
                     )
 
                 issues.append(ValidationIssue(
                     severity=IssueSeverity.WARNING,
                     category='business',
                     column=None,
-                    description=f"Business rule '{name}' violated {violated} times ({violation_pct:.1%})",
+                    description=f"业务规则 '{name}' 违反 {violated} 次 ({violation_pct:.1%})",
                     affected_rows=violated,
                     affected_percent=violation_pct * 100,
-                    suggestion=rule.get('suggestion', 'Review business rule'),
+                    suggestion=rule.get('suggestion', '检查业务规则'),
                     cleaning_action=cleaning_action
                 ))
 
@@ -594,7 +594,7 @@ class DataValidator:
 
     def _calculate_score(self, data: pd.DataFrame,
                         issues: List[ValidationIssue]) -> float:
-        """Calculate data quality score"""
+        """计算数据质量得分"""
         score = 100.0
 
         for issue in issues:
@@ -608,10 +608,10 @@ class DataValidator:
         return max(0, min(100, score))
 
 
-# Global instance
+# 全局实例
 validator = DataValidator()
 
-# Convenience function
+# 便捷函数
 def validate(data: pd.DataFrame, **kwargs) -> ValidationReport:
-    """Convenience validation function"""
+    """便捷验证函数"""
     return validator.execute(data, kwargs)
