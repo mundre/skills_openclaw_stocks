@@ -5,13 +5,14 @@ prompt injection, data theft, and dangerous permissions before you install it.
 
 ## Why?
 
-In early 2026, over 1,900 malicious skills were found on ClawHub — including
+In early 2026, over 2,300 malicious skills were found on ClawHub — including
 wallet-stealing malware downloaded 14,000+ times. VirusTotal catches known
 malware, but misses prompt injection, permission abuse, and novel attacks.
 
-Agora Sentinel continuously scans **every skill on ClawHub** (24,000+) and
-assigns trust scores based on static analysis, permission auditing, and
-prompt injection detection.
+Agora Sentinel continuously scans **every skill on ClawHub** (30,000+) using
+8 specialized scanners: static analysis, permission auditing, prompt injection
+detection, ClickFix social engineering, two-stage loader detection, credential
+theft patterns, infrastructure IOCs, and typosquat detection.
 
 ## How It Works
 

@@ -10,7 +10,7 @@ description: >
   about skill safety. Also use when the user says "install [skill-name]" to
   pre-check it automatically. Use when reviewing installed skills for risks.
   Free, no API key needed, checks against continuously updated trust database
-  scanning all 24,000+ ClawHub skills.
+  scanning all 30,000+ ClawHub skills.
 homepage: https://checksafe.dev
 metadata:
   openclaw:
@@ -110,7 +110,7 @@ curl -s https://checksafe.dev/api/v1/skills/<skill-slug>/report
 
 ## What Gets Scanned
 
-Agora Sentinel continuously monitors every skill on ClawHub (24,000+) for:
+Agora Sentinel continuously monitors every skill on ClawHub (30,000+) for:
 
 - **Malware patterns**: wallet theft, credential stealing, crypto stealing code, hidden downloads
 - **Prompt injection**: instructions that override system prompts or manipulate the LLM
@@ -119,7 +119,12 @@ Agora Sentinel continuously monitors every skill on ClawHub (24,000+) for:
 - **Dangerous permission combos**: file_write+network enables data theft, shell+network enables RCE
 - **Obfuscated code**: base64 encoded commands, hidden hex payloads, eval of dynamic content
 - **Hidden instructions**: zero-width characters, HTML comment tricks, fake system prompts
-- **Trust rating decay**: skills that change content frequently without version bumps
+- **ClickFix social engineering**: fake prerequisites telling users to run malicious terminal commands
+- **Two-stage loaders**: download-and-execute patterns, base64 decode pipelines, fetch+eval
+- **Credential theft**: SSH keys, browser cookies, crypto wallets, OpenClaw env files, keychain access
+- **Infrastructure IOCs**: known malicious IPs and domains from the ClawHavoc campaign
+- **Typosquatting**: skill names mimicking popular legitimate skills (Levenshtein distance)
+- **Campaign detection**: coordinated bulk uploads from suspicious authors
 
 All scans run automatically. No API key needed. Results update continuously.
 Dashboard: https://checksafe.dev/dashboard/
