@@ -1,6 +1,6 @@
 ---
 name: "holy-ceremony-transform-video-gen-seedance2.0"
-version: 1.0.0
+version: 1.0.1
 description: "Bathe any moment in sacred celebration: gold-white light, confetti blessings, coronation slow-mo—WeryAI Seedance 2.0 only. Use when you need wedding-grade uplift, award-show glow, or gratitude verticals. SEO: holy ceremony video; celebration blessing short video."
 
 tags: [ceremony, celebration, sacred, blessing, short-video, video-gen]
