@@ -3,9 +3,15 @@
   "slug": "vargai",
   "displayName": "vargai",
   "latest": {
-    "version": "2.0.2",
-    "publishedAt": 1774047655519,
-    "commit": "https://github.com/openclaw/skills/commit/4b85c9867a107405e13d07083c783db54f775204"
+    "version": "2.0.3",
+    "publishedAt": 1774313110865,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.2",
+      "publishedAt": 1774047655519,
+      "commit": "https://github.com/openclaw/skills/commit/4b85c9867a107405e13d07083c783db54f775204"
+    }
+  ]
 }
