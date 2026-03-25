@@ -3,9 +3,15 @@
   "slug": "social-publish",
   "displayName": "social video -publish寒武纪视频发布",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774166395858,
-    "commit": "https://github.com/openclaw/skills/commit/5e084c79b68dc44c2cd93e9662805774015625f6"
+    "version": "1.0.2",
+    "publishedAt": 1774324666019,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774166395858,
+      "commit": "https://github.com/openclaw/skills/commit/5e084c79b68dc44c2cd93e9662805774015625f6"
+    }
+  ]
 }
