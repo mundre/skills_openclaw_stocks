@@ -30,7 +30,7 @@ clawhub install feedto
 
 Every minute, the skill:
 1. Polls FeedTo for pending feeds
-2. Processes each feed (summarize, extract key points)
+2. Relays each feed's content verbatim to the user
 3. Marks processed feeds as read
 
 Use the [FeedTo Chrome Extension](https://feedto.ai/setup) to feed content from any webpage.
