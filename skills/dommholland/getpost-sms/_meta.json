@@ -1,0 +1,11 @@
+{
+  "owner": "dommholland",
+  "slug": "getpost-sms",
+  "displayName": "GetPost SMS API",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773893094890,
+    "commit": null
+  },
+  "history": []
+}
