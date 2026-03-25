@@ -80,8 +80,9 @@
 |-----------|------|----------|-------------|
 | subject_reference | array | Yes | Array of subject objects |
 
+Each object has `type` and `image` (array of image URLs):
 ```json
-{ "type": "character", "image": ["<image_url>"] }
+[{ "type": "character", "image": ["<image_url>"] }]
 ```
 
 ---

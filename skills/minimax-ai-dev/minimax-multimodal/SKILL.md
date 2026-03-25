@@ -1,11 +1,11 @@
 ---
 name: minimax-multimodal-toolkit
-description: MiniMax multimodal model skill — use MiniMax  Multi-Modal models for speech, music, and video. Create voice, music, and video with MiniMax AI: TTS (text-to-speech, voice cloning, voice design, multi-segment), music (songs, instrumentals), video (text-to-video, image-to-video, start-end frame, subject reference, templates, long-form multi-scene), and media processing (convert, concat, trim, extract). Use when the user mentions MiniMax, multimodal generation, or wants speech/music/video AI, MiniMax APIs, or FFmpeg workflows alongside MiniMax outputs.
+description: MiniMax multimodal model skill — use MiniMax  Multi-Modal models for speech, music, video, and image. Create voice, music, video, and images with MiniMax AI: TTS (text-to-speech, voice cloning, voice design, multi-segment), music (songs, instrumentals), video (text-to-video, image-to-video, start-end frame, subject reference, templates, long-form multi-scene), image (text-to-image, image-to-image with character reference), and media processing (convert, concat, trim, extract). Use when the user mentions MiniMax, multimodal generation, or wants speech/music/video/image AI, MiniMax APIs, or FFmpeg workflows alongside MiniMax outputs.
 ---
 
 # MiniMax Multi-Modal Toolkit
 
-Generate voice, music, and video content via MiniMax APIs — the unified entry for **MiniMax multimodal** use cases (audio + music + video). Includes voice cloning & voice design for custom voices, and FFmpeg-based media tools for audio/video format conversion, concatenation, trimming, and extraction.
+Generate voice, music, video, and image content via MiniMax APIs — the unified entry for **MiniMax multimodal** use cases (audio + music + video + image). Includes voice cloning & voice design for custom voices, image generation with character reference, and FFmpeg-based media tools for audio/video format conversion, concatenation, trimming, and extraction.
 
 ## Output Directory
 
@@ -20,10 +20,35 @@ Generate voice, music, and video content via MiniMax APIs — the unified entry 
 ## Prerequisites
 
 ```bash
-pip install -r requirements.txt   # requests, websockets, ffmpeg-python
-brew install ffmpeg                # macOS
-python scripts/check_environment.py
+brew install ffmpeg jq              # macOS (or apt install ffmpeg jq on Linux)
+bash scripts/check_environment.sh
 ```
+
+No Python or pip required — all scripts are pure bash using `curl`, `ffmpeg`, `jq`, and `xxd`.
+
+### API Host Configuration
+
+MiniMax provides two service endpoints for different regions. Set `MINIMAX_API_HOST` before running any script:
+
+| Region | Platform URL | API Host Value |
+|--------|-------------|----------------|
+| China Mainland（中国大陆） | https://platform.minimaxi.com | `https://api.minimaxi.com` |
+| Global（全球） | https://platform.minimax.io | `https://api.minimax.io` |
+
+```bash
+# China Mainland
+export MINIMAX_API_HOST="https://api.minimaxi.com"
+
+# or Global
+export MINIMAX_API_HOST="https://api.minimax.io"
+```
+
+**IMPORTANT — When API Host is missing:**
+Before running any script, check if `MINIMAX_API_HOST` is set in the environment. If it is NOT configured:
+1. Ask the user which service endpoint their MiniMax account uses:
+   - **China Mainland** → `https://api.minimaxi.com`
+   - **Global** → `https://api.minimax.io`
+2. Instruct and help user to set it via `export MINIMAX_API_HOST="https://api.minimaxi.com"` (or the global variant) in their terminal or add it to their shell profile (`~/.zshrc` / `~/.bashrc`) for persistence
 
 ### API Key Configuration
 
@@ -33,7 +58,7 @@ Set the `MINIMAX_API_KEY` environment variable before running any script:
 export MINIMAX_API_KEY="your-api-key-here"
 ```
 
-The key starts with `sk-api-` or `sk-cp-`, obtainable from https://platform.minimaxi.com
+The key starts with `sk-api-` or `sk-cp-`, obtainable from https://platform.minimaxi.com (China) or https://platform.minimax.io (Global)
 
 **IMPORTANT — When API Key is missing:**
 Before running any script, check if `MINIMAX_API_KEY` is set in the environment. If it is NOT configured:
@@ -44,17 +69,18 @@ Before running any script, check if `MINIMAX_API_KEY` is set in the environment.
 
 | Capability | Description | Entry point |
 |------------|-------------|-------------|
-| TTS | Text-to-speech synthesis with multiple voices and emotions | `scripts/tts/generate_voice.py` |
-| Voice Cloning | Clone a voice from an audio sample (10s–5min) | `scripts/tts/generate_voice.py clone` |
-| Voice Design | Create a custom voice from a text description | `scripts/tts/generate_voice.py design` |
-| Music Generation | Generate songs with lyrics or instrumental tracks | `scripts/music/generate_music.py` |
-| Video Generation | Text-to-video, image-to-video, subject reference, templates | `scripts/video/generate_video.py` |
-| Long Video | Multi-scene chained video with crossfade transitions | `scripts/video/generate_long_video.py` |
-| Media Tools | Audio/video format conversion, concatenation, trimming, extraction | `scripts/media_tools.py` |
+| TTS | Text-to-speech synthesis with multiple voices and emotions | `scripts/tts/generate_voice.sh` |
+| Voice Cloning | Clone a voice from an audio sample (10s–5min) | `scripts/tts/generate_voice.sh clone` |
+| Voice Design | Create a custom voice from a text description | `scripts/tts/generate_voice.sh design` |
+| Music Generation | Generate songs with lyrics or instrumental tracks | `scripts/music/generate_music.sh` |
+| Image Generation | Text-to-image, image-to-image with character reference | `scripts/image/generate_image.sh` |
+| Video Generation | Text-to-video, image-to-video, subject reference, templates | `scripts/video/generate_video.sh` |
+| Long Video | Multi-scene chained video with crossfade transitions | `scripts/video/generate_long_video.sh` |
+| Media Tools | Audio/video format conversion, concatenation, trimming, extraction | `scripts/media_tools.sh` |
 
 ## TTS (Text-to-Speech)
 
-Entry point: `scripts/tts/generate_voice.py`
+Entry point: `scripts/tts/generate_voice.sh`
 
 ### IMPORTANT: Single voice vs Multi-segment — Choose the right approach
 
@@ -73,8 +99,8 @@ Only use multi-segment `generate` when:
 ### Single-voice generation (DEFAULT)
 
 ```bash
-python scripts/tts/generate_voice.py tts "Hello world" -o minimax-output/hello.mp3
-python scripts/tts/generate_voice.py tts "你好世界" -v female-shaonv -o minimax-output/hello_cn.mp3
+bash scripts/tts/generate_voice.sh tts "Hello world" -o minimax-output/hello.mp3
+bash scripts/tts/generate_voice.sh tts "你好世界" -v female-shaonv -o minimax-output/hello_cn.mp3
 ```
 
 ### Multi-segment generation (multi-voice / audiobook / podcast)
@@ -90,7 +116,7 @@ python scripts/tts/generate_voice.py tts "你好世界" -v female-shaonv -o mini
 
 # Step 2: Generate audio from segments.json — this is the CRITICAL step
 # It generates each segment individually and merges them into one file
-python scripts/tts/generate_voice.py generate minimax-output/segments.json \
+bash scripts/tts/generate_voice.sh generate minimax-output/segments.json \
   -o minimax-output/output.mp3 --crossfade 200
 ```
 
@@ -100,20 +126,20 @@ python scripts/tts/generate_voice.py generate minimax-output/segments.json \
 
 ```bash
 # List all available voices
-python scripts/tts/generate_voice.py list-voices
+bash scripts/tts/generate_voice.sh list-voices
 
 # Voice cloning (from audio sample, 10s–5min)
-python scripts/tts/generate_voice.py clone sample.mp3 --voice-id my-voice
+bash scripts/tts/generate_voice.sh clone sample.mp3 --voice-id my-voice
 
 # Voice design (from text description)
-python scripts/tts/generate_voice.py design "A warm female narrator voice" --voice-id narrator
+bash scripts/tts/generate_voice.sh design "A warm female narrator voice" --voice-id narrator
 ```
 
 ### Audio processing
 
 ```bash
-python scripts/tts/generate_voice.py merge part1.mp3 part2.mp3 -o minimax-output/combined.mp3
-python scripts/tts/generate_voice.py convert input.wav -o minimax-output/output.mp3
+bash scripts/tts/generate_voice.sh merge part1.mp3 part2.mp3 -o minimax-output/combined.mp3
+bash scripts/tts/generate_voice.sh convert input.wav -o minimax-output/output.mp3
 ```
 
 ### TTS Models
@@ -170,7 +196,7 @@ A sentence like `"Tom said: The weather is great today!"` must be split into two
 
 ## Music Generation
 
-Entry point: `scripts/music/generate_music.py`
+Entry point: `scripts/music/generate_music.sh`
 
 ### IMPORTANT: Instrumental vs Lyrics — When to use which
 
@@ -187,30 +213,159 @@ Entry point: `scripts/music/generate_music.py`
 
 ```bash
 # Instrumental (for BGM or when user chooses instrumental)
-python scripts/music/generate_music.py \
+bash scripts/music/generate_music.sh \
   --instrumental \
   --prompt "ambient electronic, atmospheric" \
   --output minimax-output/ambient.mp3 --download
 
 # Song with lyrics (when user chooses vocal music)
-python scripts/music/generate_music.py \
+bash scripts/music/generate_music.sh \
   --lyrics "[verse]\nHello world\n[chorus]\nLa la la" \
   --prompt "indie folk, melancholic" \
   --output minimax-output/song.mp3 --download
 
 # With style fields
-python scripts/music/generate_music.py \
+bash scripts/music/generate_music.sh \
   --lyrics "[verse]\nLyrics here" \
   --genre "pop" --mood "upbeat" --tempo "fast" \
   --output minimax-output/pop_track.mp3 --download
 ```
 
-### Music Models
+### Music Model
 
-| Model | Notes |
-|-------|-------|
-| music-2.5+ | Recommended, supports `--instrumental` |
-| music-2.5 | Previous version |
+Default model: `music-2.5`
+
+`music-2.5` does **not** support `--instrumental` directly. When instrumental music is needed, the script automatically applies a workaround:
+- Sets lyrics to `[intro] [outro]` (empty structural tags, no actual vocals), appends `pure music, no lyrics` to the prompt
+
+This produces instrumental-style output without requiring manual intervention. You can always use `--instrumental` and the script handles the rest.
+
+## Image Generation
+
+Entry point: `scripts/image/generate_image.sh`
+
+Model: `image-01` — photorealistic image generation from text prompts, with optional character reference for image-to-image.
+
+### IMPORTANT: Mode Selection — t2i vs i2i
+
+| User intent | Mode |
+|-------------|------|
+| Generate image from text description (default) | `t2i` — text-to-image |
+| Generate image with a character reference photo (keep same person) | `i2i` — image-to-image |
+
+**Default behavior:** When the user asks to generate/create an image without mentioning a reference photo, use `t2i` mode (default). Only use `i2i` mode when the user provides a character reference image or explicitly asks to base the image on an existing person's appearance.
+
+### IMPORTANT: Aspect Ratio — Infer from user context
+
+Do NOT always default to `1:1`. Analyze the user's request and choose the most appropriate aspect ratio:
+
+| User intent / context | Recommended ratio | Resolution |
+|-----------------------|-------------------|------------|
+| 头像、图标、社交媒体头像、avatar、icon、profile pic | `1:1` | 1024×1024 |
+| 风景、横幅、桌面壁纸、landscape、banner、desktop wallpaper | `16:9` | 1280×720 |
+| 传统照片、经典比例、classic photo | `4:3` | 1152×864 |
+| 摄影作品、杂志封面、photography、magazine | `3:2` | 1248×832 |
+| 人像竖图、海报、portrait photo、poster | `2:3` | 832×1248 |
+| 竖版海报、书籍封面、tall poster、book cover | `3:4` | 864×1152 |
+| 手机壁纸、社交媒体故事、phone wallpaper、story、reel | `9:16` | 720×1280 |
+| 超宽全景、电影画幅、panoramic、cinematic ultrawide | `21:9` | 1344×576 |
+| 未指定特定需求 / ambiguous | `1:1` | 1024×1024 |
+
+### IMPORTANT: Image Count — When to generate multiple images
+
+| User intent | Count (`-n`) |
+|-------------|--------------|
+| Default / single image request | `1` (default) |
+| 用户说"几张"、"多张"、"一些" / "a few", "several" | `3` |
+| 用户说"多种方案"、"备选" / "variations", "options" | `3`–`4` |
+| 用户明确指定数量 | Use the specified number (1–9) |
+
+### Text-to-Image Examples
+
+```bash
+# Basic text-to-image
+bash scripts/image/generate_image.sh \
+  --prompt "A cat sitting on a rooftop at sunset, cinematic lighting, warm tones, photorealistic" \
+  -o minimax-output/cat.png
+
+# Landscape with inferred aspect ratio
+bash scripts/image/generate_image.sh \
+  --prompt "Mountain landscape with misty valleys, photorealistic, golden hour" \
+  --aspect-ratio 16:9 \
+  -o minimax-output/landscape.png
+
+# Phone wallpaper (portrait 9:16)
+bash scripts/image/generate_image.sh \
+  --prompt "Aurora borealis over a snowy forest, vivid colors, magical atmosphere" \
+  --aspect-ratio 9:16 \
+  -o minimax-output/wallpaper.png
+
+# Multiple variations
+bash scripts/image/generate_image.sh \
+  --prompt "Abstract geometric art, vibrant colors" \
+  -n 3 \
+  -o minimax-output/art.png
+
+# With prompt optimizer
+bash scripts/image/generate_image.sh \
+  --prompt "A man standing on Venice Beach, 90s documentary style" \
+  --aspect-ratio 16:9 --prompt-optimizer \
+  -o minimax-output/beach.png
+
+# Custom dimensions (must be multiple of 8)
+bash scripts/image/generate_image.sh \
+  --prompt "Product photo of a luxury watch on marble surface" \
+  --width 1024 --height 768 \
+  -o minimax-output/watch.png
+```
+
+### Image-to-Image (Character Reference)
+
+Use a reference photo to generate images with the same character in new scenes. Best results with a single front-facing portrait. Supported formats: JPG, JPEG, PNG (max 10MB).
+
+```bash
+# Character reference — place same person in a new scene
+bash scripts/image/generate_image.sh \
+  --mode i2i \
+  --prompt "A girl looking into the distance from a library window, warm afternoon light" \
+  --ref-image face.jpg \
+  --aspect-ratio 16:9 \
+  -o minimax-output/girl_library.png
+
+# Multiple character variations
+bash scripts/image/generate_image.sh \
+  --mode i2i \
+  --prompt "A woman in a red dress at a gala event, elegant, cinematic" \
+  --ref-image face.jpg -n 3 \
+  -o minimax-output/gala.png
+```
+
+### Aspect Ratio Reference
+
+| Ratio | Resolution | Best for |
+|-------|------------|----------|
+| `1:1` | 1024×1024 | Default, avatars, icons, social media |
+| `16:9` | 1280×720 | Landscape, banner, desktop wallpaper |
+| `4:3` | 1152×864 | Classic photo, presentations |
+| `3:2` | 1248×832 | Photography, magazine layout |
+| `2:3` | 832×1248 | Portrait photo, poster |
+| `3:4` | 864×1152 | Book cover, tall poster |
+| `9:16` | 720×1280 | Phone wallpaper, social story/reel |
+| `21:9` | 1344×576 | Ultra-wide panoramic, cinematic |
+
+### Key Options
+
+| Option | Description |
+|--------|-------------|
+| `--prompt TEXT` | Image description, max 1500 chars (required) |
+| `--aspect-ratio RATIO` | Aspect ratio (see table above). Infer from user context |
+| `--width PX` / `--height PX` | Custom size, 512–2048, must be multiple of 8, both required together. Overridden by `--aspect-ratio` if both set |
+| `-n N` | Number of images to generate, 1–9 (default 1) |
+| `--seed N` | Random seed for reproducibility. Same seed + same params → similar results |
+| `--prompt-optimizer` | Enable automatic prompt optimization by the API |
+| `--ref-image FILE` | Character reference image for i2i mode (local file or URL, JPG/JPEG/PNG, max 10MB) |
+| `--no-download` | Print image URLs instead of downloading files |
+| `--aigc-watermark` | Add AIGC watermark to generated images |
 
 ## Video Generation
 
@@ -218,13 +373,13 @@ python scripts/music/generate_music.py \
 
 | User intent | Script to use |
 |-------------|---------------|
-| Default / no special request | `scripts/video/generate_video.py` (single segment, **10s, 768P**) |
-| User explicitly asks for "long video", "multi-scene", "story", or duration > 10s | `scripts/video/generate_long_video.py` (multi-segment) |
+| Default / no special request | `scripts/video/generate_video.sh` (single segment, **10s, 768P**) |
+| User explicitly asks for "long video", "multi-scene", "story", or duration > 10s | `scripts/video/generate_long_video.sh` (multi-segment) |
 
-**Default behavior:** Always use single-segment `generate_video.py` with **duration 10s and resolution 768P** unless the user explicitly asks for a long video, multi-scene video, or specifies a total duration exceeding 10 seconds. Do NOT automatically split into multiple segments — a single 10s video is the standard output. Only use `generate_long_video.py` when the user clearly needs multi-scene or longer content.
+**Default behavior:** Always use single-segment `generate_video.sh` with **duration 10s and resolution 768P** unless the user explicitly asks for a long video, multi-scene video, or specifies a total duration exceeding 10 seconds. Do NOT automatically split into multiple segments — a single 10s video is the standard output. Only use `generate_long_video.sh` when the user clearly needs multi-scene or longer content.
 
-Entry point (single video): `scripts/video/generate_video.py`
-Entry point (long/multi-scene): `scripts/video/generate_long_video.py`
+Entry point (single video): `scripts/video/generate_video.sh`
+Entry point (long/multi-scene): `scripts/video/generate_long_video.sh`
 
 ### Video Model Constraints (MUST follow)
 
@@ -278,33 +433,33 @@ Before calling any video generation script, you MUST optimize the user's prompt 
 
 ```bash
 # Text-to-video (default: 10s, 768P)
-python scripts/video/generate_video.py \
+bash scripts/video/generate_video.sh \
   --mode t2v \
   --prompt "A golden retriever puppy bounds toward the camera on a sunlit grass path, [跟随] tracking shot, warm golden hour, shallow depth of field, joyful" \
   --output minimax-output/puppy.mp4
 
 # Text-to-video with 1080P (must use --duration 6)
-python scripts/video/generate_video.py \
+bash scripts/video/generate_video.sh \
   --mode t2v \
   --prompt "A golden retriever puppy bounds toward the camera" \
   --duration 6 --resolution 1080P \
   --output minimax-output/puppy_hd.mp4
 
 # Image-to-video (prompt focuses on MOTION, not image content)
-python scripts/video/generate_video.py \
+bash scripts/video/generate_video.sh \
   --mode i2v \
   --prompt "The petals begin to sway gently in the breeze, soft light shifts across the surface, [固定] fixed framing, dreamy pastel tones" \
   --first-frame photo.jpg \
   --output minimax-output/animated.mp4
 
 # Start-end frame interpolation (sef mode uses MiniMax-Hailuo-02)
-python scripts/video/generate_video.py \
+bash scripts/video/generate_video.sh \
   --mode sef \
   --first-frame start.jpg --last-frame end.jpg \
   --output minimax-output/transition.mp4
 
 # Subject reference (face consistency, ref mode uses S2V-01, 6s only)
-python scripts/video/generate_video.py \
+bash scripts/video/generate_video.sh \
   --mode ref \
   --prompt "A young woman in a white dress walks slowly through a sunlit garden, [跟随] smooth tracking, warm natural lighting, cinematic depth of field" \
   --subject-image face.jpg \
@@ -331,7 +486,7 @@ Multi-scene long videos chain segments together: the first segment generates via
 
 ```bash
 # Example: 3-segment story with optimized per-segment prompts (default: 10s/segment, 768P)
-python scripts/video/generate_long_video.py \
+bash scripts/video/generate_long_video.sh \
   --scenes \
     "A lone astronaut stands on a red desert planet surface, wind blowing dust particles, [推进] slow push in toward the visor, dramatic rim lighting, cinematic sci-fi atmosphere" \
     "The astronaut turns and begins walking toward a distant glowing structure on the horizon, dust swirling around boots, [跟随] tracking from behind, vast desolate landscape, golden light from the structure" \
@@ -340,7 +495,7 @@ python scripts/video/generate_long_video.py \
   --output minimax-output/long_video.mp4
 
 # With custom settings
-python scripts/video/generate_long_video.py \
+bash scripts/video/generate_long_video.sh \
   --scenes "Scene 1 prompt" "Scene 2 prompt" \
   --segment-duration 10 \
   --resolution 768P \
@@ -352,7 +507,7 @@ python scripts/video/generate_long_video.py \
 ### Add Background Music
 
 ```bash
-python scripts/video/add_bgm.py \
+bash scripts/video/add_bgm.sh \
   --video input.mp4 \
   --generate-bgm --instrumental \
   --music-prompt "soft piano background" \
@@ -363,7 +518,7 @@ python scripts/video/add_bgm.py \
 ### Template Video
 
 ```bash
-python scripts/video/generate_template_video.py \
+bash scripts/video/generate_template_video.sh \
   --template-id 392753057216684038 \
   --media photo.jpg \
   --output minimax-output/template_output.mp4
@@ -380,7 +535,7 @@ python scripts/video/generate_template_video.py \
 
 ## Media Tools (Audio/Video Processing)
 
-Entry point: `scripts/media_tools.py`
+Entry point: `scripts/media_tools.sh`
 
 Standalone FFmpeg-based utilities for format conversion, concatenation, extraction, trimming, and audio overlay. Use these when the user needs to process existing media files without generating new content via MiniMax API.
 
@@ -388,11 +543,11 @@ Standalone FFmpeg-based utilities for format conversion, concatenation, extracti
 
 ```bash
 # Convert between formats (mp4, mov, webm, mkv, avi, ts, flv)
-python scripts/media_tools.py convert-video input.webm -o output.mp4
-python scripts/media_tools.py convert-video input.mp4 -o output.mov
+bash scripts/media_tools.sh convert-video input.webm -o output.mp4
+bash scripts/media_tools.sh convert-video input.mp4 -o output.mov
 
 # With quality / resolution / fps options
-python scripts/media_tools.py convert-video input.mp4 -o output.mp4 \
+bash scripts/media_tools.sh convert-video input.mp4 -o output.mp4 \
   --crf 18 --preset medium --resolution 1920x1080 --fps 30
 ```
 
@@ -400,8 +555,8 @@ python scripts/media_tools.py convert-video input.mp4 -o output.mp4 \
 
 ```bash
 # Convert between formats (mp3, wav, flac, ogg, aac, m4a, opus, wma)
-python scripts/media_tools.py convert-audio input.wav -o output.mp3
-python scripts/media_tools.py convert-audio input.mp3 -o output.flac \
+bash scripts/media_tools.sh convert-audio input.wav -o output.mp3
+bash scripts/media_tools.sh convert-audio input.mp3 -o output.flac \
   --bitrate 320k --sample-rate 48000 --channels 2
 ```
 
@@ -409,85 +564,77 @@ python scripts/media_tools.py convert-audio input.mp3 -o output.flac \
 
 ```bash
 # Concatenate with crossfade transition (default 0.5s)
-python scripts/media_tools.py concat-video seg1.mp4 seg2.mp4 seg3.mp4 -o merged.mp4
+bash scripts/media_tools.sh concat-video seg1.mp4 seg2.mp4 seg3.mp4 -o merged.mp4
 
 # Hard cut (no crossfade)
-python scripts/media_tools.py concat-video seg1.mp4 seg2.mp4 -o merged.mp4 --crossfade 0
+bash scripts/media_tools.sh concat-video seg1.mp4 seg2.mp4 -o merged.mp4 --crossfade 0
 ```
 
 ### Audio Concatenation
 
 ```bash
 # Simple concatenation
-python scripts/media_tools.py concat-audio part1.mp3 part2.mp3 -o combined.mp3
+bash scripts/media_tools.sh concat-audio part1.mp3 part2.mp3 -o combined.mp3
 
 # With crossfade
-python scripts/media_tools.py concat-audio part1.mp3 part2.mp3 -o combined.mp3 --crossfade 1
+bash scripts/media_tools.sh concat-audio part1.mp3 part2.mp3 -o combined.mp3 --crossfade 1
 ```
 
 ### Extract Audio from Video
 
 ```bash
 # Extract as mp3
-python scripts/media_tools.py extract-audio video.mp4 -o audio.mp3
+bash scripts/media_tools.sh extract-audio video.mp4 -o audio.mp3
 
 # Extract as wav with higher bitrate
-python scripts/media_tools.py extract-audio video.mp4 -o audio.wav --bitrate 320k
+bash scripts/media_tools.sh extract-audio video.mp4 -o audio.wav --bitrate 320k
 ```
 
 ### Video Trimming
 
 ```bash
 # Trim by start/end time (seconds)
-python scripts/media_tools.py trim-video input.mp4 -o clip.mp4 --start 5 --end 15
+bash scripts/media_tools.sh trim-video input.mp4 -o clip.mp4 --start 5 --end 15
 
 # Trim by start + duration
-python scripts/media_tools.py trim-video input.mp4 -o clip.mp4 --start 10 --duration 8
+bash scripts/media_tools.sh trim-video input.mp4 -o clip.mp4 --start 10 --duration 8
 ```
 
 ### Add Audio to Video (Overlay / Replace)
 
 ```bash
 # Mix audio with existing video audio
-python scripts/media_tools.py add-audio --video video.mp4 --audio bgm.mp3 -o output.mp4 \
+bash scripts/media_tools.sh add-audio --video video.mp4 --audio bgm.mp3 -o output.mp4 \
   --volume 0.3 --fade-in 2 --fade-out 3
 
 # Replace original audio entirely
-python scripts/media_tools.py add-audio --video video.mp4 --audio narration.mp3 -o output.mp4 \
+bash scripts/media_tools.sh add-audio --video video.mp4 --audio narration.mp3 -o output.mp4 \
   --replace
 ```
 
 ### Media File Info
 
 ```bash
-python scripts/media_tools.py probe input.mp4
+bash scripts/media_tools.sh probe input.mp4
 ```
 
 ## Script Architecture
 
 ```
 scripts/
-├── check_environment.py          # Env verification
-├── env_loader.py                # Optional .env fallback loader
-├── media_tools.py               # Audio/video conversion, concat, trim, extract
+├── check_environment.sh         # Env verification (curl, ffmpeg, jq, xxd, API key)
+├── media_tools.sh               # Audio/video conversion, concat, trim, extract
 ├── tts/
-│   ├── generate_voice.py         # CLI entry point
-│   ├── sync_tts.py               # Synchronous TTS API
-│   ├── async_tts.py              # Async (task-based) TTS API
-│   ├── segment_tts.py            # Multi-segment pipeline
-│   ├── audio_processing.py       # FFmpeg audio processing
-│   ├── voice_clone.py            # Voice cloning API
-│   ├── voice_design.py           # Voice design API
-│   ├── voice_management.py       # Voice CRUD operations
-│   └── utils.py                  # Shared: API config, VoiceSetting, AudioSetting
+│   └── generate_voice.sh        # Unified TTS CLI (tts, clone, design, list-voices, generate, merge, convert)
 ├── music/
-│   ├── generate_music.py         # Music generation CLI
-│   └── utils_audio.py            # Audio format utilities
+│   └── generate_music.sh        # Music generation CLI
+├── image/
+│   └── generate_image.sh        # Image generation CLI (2 modes: t2i, i2i)
 └── video/
-    ├── generate_video.py         # Video generation CLI (4 modes)
-    ├── generate_long_video.py    # Multi-scene long video
-    ├── generate_template_video.py # Template-based video
-    └── add_bgm.py               # Background music overlay
+    ├── generate_video.sh        # Video generation CLI (4 modes: t2v, i2v, sef, ref)
+    ├── generate_long_video.sh   # Multi-scene long video
+    ├── generate_template_video.sh # Template-based video
+    └── add_bgm.sh              # Background music overlay
 ```
 
 ## References
@@ -497,5 +644,6 @@ Read these for detailed API parameters, voice catalogs, and prompt engineering:
 - [tts-guide.md](references/tts-guide.md) — TTS setup, voice management, audio processing, segment format, troubleshooting
 - [tts-voice-catalog.md](references/tts-voice-catalog.md) — Full voice catalog with IDs, descriptions, and parameter reference
 - [music-api.md](references/music-api.md) — Music generation API: endpoints, parameters, response format
+- [image-api.md](references/image-api.md) — Image generation API: text-to-image, image-to-image, parameters
 - [video-api.md](references/video-api.md) — Video API: endpoints, models, parameters, camera instructions, templates
 - [video-prompt-guide.md](references/video-prompt-guide.md) — Video prompt engineering: formulas, styles, image-to-video tips
