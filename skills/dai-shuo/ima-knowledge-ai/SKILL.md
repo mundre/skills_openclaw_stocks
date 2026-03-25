@@ -1,18 +1,19 @@
 ---
-name: "Knowledge Base for AI Video, Image & Audio Generation"
-version: 1.0.6
+name: "AI Content Brief, Script & Outline Generator — Research Assistant for Video & Image"
+version: 1.0.7
 category: knowledge
 author: IMA Studio (imastudio.com)
-keywords: imastudio, knowledge, workflow, model selection, visual consistency, video modes, parameter guide, 知识库, 工作流, 模型选择, IMA, 图像视频音乐, SeeDream, Midjourney, Suno, Kling, Veo, Sora
+keywords: imastudio, knowledge, workflow, model selection, visual consistency, video modes, parameter guide, 知识库, 工作流, 模型选择, IMA, 图像视频音乐, SeeDream, Midjourney, Suno, Kling, Veo, Sora, brief, script, outline, research
 description: >
-  Critical knowledge base for AI content creation — READ THIS FIRST before any image/video/music 
-  generation task. Provides expert guidance on workflow design, model selection, parameter optimization, 
-  visual consistency, character design, and production best practices. Essential reading before using 
-  ima-image-ai, ima-video-ai, ima-voice-ai, ima-all-ai, or any other media generation skills 
-  (ai-image-generation, ai-video-gen, suno-music, etc.). Use for: planning workflows, choosing models, 
-  optimizing prompts and parameters, maintaining character/style consistency, multi-shot production, 
-  avoiding common mistakes. Transforms beginner attempts into professional-grade results. This is a 
-  knowledge skill — it provides strategic guidance, not API calls.
+  AI content brief, script, and outline generator for video, image, and audio production.
+  Works as an AI research assistant that provides expert guidance on workflow design,
+  model selection, parameter optimization, and visual consistency. Generate briefs, scripts,
+  and production outlines before using ima-image-ai, ima-video-ai, ima-voice-ai, or ima-all-ai.
+  Essential reading for planning workflows, choosing models, optimizing prompts and parameters,
+  maintaining character/style consistency, multi-shot production, and avoiding common mistakes.
+  Transforms beginner attempts into professional-grade results. This is a knowledge skill —
+  it provides strategic guidance, not API calls. Covers: content brief generation, script writing,
+  outline creation, AI research assistance, and production best practices for all media types.
 ---
 
 # IMA Knowledge AI

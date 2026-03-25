@@ -1,13 +1,18 @@
 {
   "owner": "dai-shuo",
   "slug": "ima-knowledge-ai",
-  "displayName": "Knowledge Base for AI Video, Image & Audio Generation",
+  "displayName": "AI Content Brief, Script & Outline Generator — Research Assistant for Video & Image generation",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1773890964833,
-    "commit": "https://github.com/openclaw/skills/commit/ae6fbb12889bb883ea2265107573530d889ad52f"
+    "version": "1.0.7",
+    "publishedAt": 1774421274502,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1773890964833,
+      "commit": "https://github.com/openclaw/skills/commit/ae6fbb12889bb883ea2265107573530d889ad52f"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1773161498730,

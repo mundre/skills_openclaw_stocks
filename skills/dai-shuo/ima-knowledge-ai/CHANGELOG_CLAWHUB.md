@@ -1,6 +1,16 @@
-# Changelog — Knowledge Base for AI Video, Image & Audio Generation
+# Changelog — AI Content Brief, Script & Outline Generator
 
 All notable changes to this skill will be documented in this file.
+
+---
+
+## [1.0.7] - 2026-03-25
+
+### Changed
+- Renamed display name to "AI Content Brief, Script & Outline Generator — Research Assistant for Video & Image" for SDO optimization
+- Rewrote description to naturally include target search terms (brief, script, outline, generator, research assistant)
+- Added keywords: brief, script, outline, research
+- SDO impact: lexical boost from 0 → +1.1 for all 5 target search queries
 
 ---
 

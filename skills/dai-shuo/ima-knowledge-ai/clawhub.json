@@ -1,7 +1,7 @@
 {
-  "name": "Knowledge Base for AI Video, Image & Audio Generation",
-  "tagline": "Strategic guidance for IMA Studio multi-media content creation workflows",
-  "description": "Critical knowledge base for AI content creation — READ THIS FIRST before any image/video/music \n  generation task. Provides expert guidance on workflow design, model selection, parameter optimization, \n  visual consistency, character design, and production best practices. Essential reading before using \n  ima-image-ai, ima-video-ai, ima-voice-ai, ima-all-ai, or any other media generation skills \n  (ai-image-generation, ai-video-gen, suno-music, etc.). Use for: planning workflows, choosing models, \n  optimizing prompts and parameters, maintaining character/style consistency, multi-shot production, \n  avoiding common mistakes. Transforms beginner attempts into professional-grade results. This is a \n  knowledge skill — it provides strategic guidance, not API calls.",
+  "name": "AI Content Brief, Script & Outline Generator — Research Assistant for Video & Image",
+  "tagline": "AI brief, script & outline generator — research assistant for video, image & audio production",
+  "description": "AI content brief, script, and outline generator for video, image, and audio production. Works as an AI research assistant that provides expert guidance on workflow design, model selection, parameter optimization, and visual consistency. Generate briefs, scripts, and production outlines before using ima-image-ai, ima-video-ai, ima-voice-ai, or ima-all-ai. Essential reading for planning workflows, choosing models, optimizing prompts and parameters, maintaining character/style consistency, multi-shot production, and avoiding common mistakes. Transforms beginner attempts into professional-grade results. This is a knowledge skill — it provides strategic guidance, not API calls. Covers: content brief generation, script writing, outline creation, AI research assistance, and production best practices for all media types.",
   "category": "productivity",
   "tags": [
     "knowledge",
@@ -35,7 +35,7 @@
     "ai-content",
     "creative-strategy"
   ],
-  "version": "1.0.6",
+  "version": "1.0.7",
   "license": "MIT",
   "pricing": "free",
   "author": {
