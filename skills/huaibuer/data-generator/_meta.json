@@ -3,9 +3,15 @@
   "slug": "data-generator",
   "displayName": "Data Generator",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1774096867625,
-    "commit": "https://github.com/openclaw/skills/commit/f3b552fad2e34d5dcd58931ff2fa105957bce73a"
+    "version": "2.2.0",
+    "publishedAt": 1774172408938,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1774096867625,
+      "commit": "https://github.com/openclaw/skills/commit/f3b552fad2e34d5dcd58931ff2fa105957bce73a"
+    }
+  ]
 }
