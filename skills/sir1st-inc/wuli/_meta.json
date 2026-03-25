@@ -1,11 +1,17 @@
 {
   "owner": "sir1st-inc",
   "slug": "wuli",
-  "displayName": "Wuli",
+  "displayName": "Wuli Clawhub Publish 1.0.6",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1773729112176,
-    "commit": "https://github.com/openclaw/skills/commit/83b666b24dcaaac7198f39a33ad63408ea1a862a"
+    "version": "1.0.6",
+    "publishedAt": 1774322680326,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1773729112176,
+      "commit": "https://github.com/openclaw/skills/commit/83b666b24dcaaac7198f39a33ad63408ea1a862a"
+    }
+  ]
 }
