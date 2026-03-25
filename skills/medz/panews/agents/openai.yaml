@@ -1,0 +1,7 @@
+interface:
+  display_name: "PANews"
+  short_description: "Search PANews articles, rankings, and must-reads"
+  default_prompt: "Use $panews to search PANews articles or fetch rankings and daily must-reads."
+
+policy:
+  allow_implicit_invocation: true

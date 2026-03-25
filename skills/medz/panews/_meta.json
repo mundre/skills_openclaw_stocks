@@ -1,0 +1,11 @@
+{
+  "owner": "medz",
+  "slug": "panews",
+  "displayName": "Panews",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1773895828047,
+    "commit": null
+  },
+  "history": []
+}
