@@ -9,6 +9,7 @@ const VERSION = "0.4.0";
 const DEFAULT_API_BASE_URL = "https://test.51yzt.cn/assetInnovate";
 const CONFIG_DIR = path.join(os.homedir(), ".openclaw", "invoice-skill");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
+const IDENTITY_FILE = path.join(CONFIG_DIR, "identity.json");
 const LEGACY_CONFIG_FILE = path.join(os.homedir(), ".openclaw", "invoice-plugin", "config.json");
 const IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 const SUPPORTED_FORMATS = new Set(["json", "base64", "base64+json", "both"]);
@@ -161,6 +162,30 @@ function readConfig() {
   };
 }
 
+function readIdentity() {
+  const identity = readJsonFile(IDENTITY_FILE);
+  return {
+    clientInstanceId: identity.clientInstanceId ? String(identity.clientInstanceId) : "",
+    deviceFingerprint: identity.deviceFingerprint ? String(identity.deviceFingerprint) : ""
+  };
+}
+
+function writeIdentity(next) {
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(
+    IDENTITY_FILE,
+    JSON.stringify(
+      {
+        clientInstanceId: String(next.clientInstanceId || ""),
+        deviceFingerprint: String(next.deviceFingerprint || "")
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
+}
+
 function writeConfig(next) {
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(next, null, 2), "utf8");
@@ -182,18 +207,84 @@ function randomId(prefix) {
   return `${prefix}${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
+function safeUserName() {
+  try {
+    const user = os.userInfo();
+    return user && user.username ? user.username : "";
+  } catch {
+    return "";
+  }
+}
+
+function collectMacAddresses() {
+  const result = [];
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const records of Object.values(interfaces || {})) {
+      for (const item of records || []) {
+        const mac = String(item && item.mac ? item.mac : "").toLowerCase();
+        if (!mac || mac === "00:00:00:00:00:00") continue;
+        result.push(mac);
+      }
+    }
+  } catch {
+    return [];
+  }
+  return [...new Set(result)].sort();
+}
+
+function stableHash(prefix, payload) {
+  const digest = crypto.createHash("sha256").update(String(payload || ""), "utf8").digest("hex");
+  return `${prefix}${digest.slice(0, 32)}`;
+}
+
+function deriveStableDeviceFingerprint() {
+  const parts = [
+    os.platform(),
+    os.arch(),
+    os.hostname(),
+    safeUserName(),
+    collectMacAddresses().join("|")
+  ];
+  return stableHash("device_", parts.join("||"));
+}
+
+function deriveStableClientInstanceId(deviceFingerprint) {
+  const seed = [
+    "invoice-skill",
+    os.platform(),
+    os.arch(),
+    os.hostname(),
+    safeUserName(),
+    String(deviceFingerprint || "")
+  ].join("||");
+  return stableHash("client_", seed);
+}
+
 function ensurePersistentIds(config, options = {}) {
+  const identity = readIdentity();
+  const stableDeviceFingerprint = deriveStableDeviceFingerprint();
+  const resolvedDeviceFingerprint =
+    options.deviceFingerprint ||
+    config.deviceFingerprint ||
+    identity.deviceFingerprint ||
+    process.env.OPENCLAW_DEVICE_FINGERPRINT ||
+    stableDeviceFingerprint ||
+    randomId("device_");
+  const resolvedClientInstanceId =
+    options.clientInstanceId ||
+    config.clientInstanceId ||
+    identity.clientInstanceId ||
+    process.env.OPENCLAW_CLIENT_INSTANCE_ID ||
+    deriveStableClientInstanceId(resolvedDeviceFingerprint) ||
+    randomId("client_");
+  writeIdentity({
+    clientInstanceId: resolvedClientInstanceId,
+    deviceFingerprint: resolvedDeviceFingerprint
+  });
   return {
-    clientInstanceId:
-      options.clientInstanceId ||
-      config.clientInstanceId ||
-      process.env.OPENCLAW_CLIENT_INSTANCE_ID ||
-      randomId("client_"),
-    deviceFingerprint:
-      options.deviceFingerprint ||
-      config.deviceFingerprint ||
-      process.env.OPENCLAW_DEVICE_FINGERPRINT ||
-      randomId("device_")
+    clientInstanceId: resolvedClientInstanceId,
+    deviceFingerprint: resolvedDeviceFingerprint
   };
 }
 
@@ -317,11 +408,9 @@ async function withBoundConfig(handler, options = {}) {
       throw error;
     }
 
-    clearStoredAppKey();
-    const rebound = await initKey({ ...options, rotateClientInstanceId: true });
+    const rebound = await initKey(options);
     if (!rebound.appKey) {
-      const message =
-        "key init succeeded but backend did not return a usable key; clear local config or rotate clientInstanceId manually";
+      const message = "key init succeeded but backend did not return a usable key";
       const wrapped = new Error(message);
       wrapped.code = "KEY_REINIT_NO_KEY";
       wrapped.status = error && error.status ? error.status : null;
