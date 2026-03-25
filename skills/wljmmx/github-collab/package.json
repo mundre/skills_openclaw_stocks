@@ -1,38 +1,44 @@
 {
-  "name": "github-collab-skill",
+  "name": "github-collab-git",
   "version": "1.0.0",
-  "description": "GitHub 多 Agent 协作开发技能 - 支持任务管理、多 Agent 协作、STP 任务规划",
-  "main": "core/main-controller.js",
+  "description": "GitHub 协作 Agent 系统 - 统一数据库版本（支持 Agent 和任务管理）",
+  "main": "index.js",
   "scripts": {
-    "start": "node scripts/main.js",
-    "test": "node tests/test-all.js",
-    "test:basic": "node tests/test-task-manager.js",
-    "test:agent": "node tests/test-agent-binding.js",
-    "test:stp": "node tests/test-stp-integration.js",
-    "example": "node examples/basic-example.js",
-    "example:complete": "node examples/complete-example.js",
-    "example:stp": "node examples/stp-example.js"
+    "start": "node index.js",
+    "dev": "node index.js",
+    "test": "node test/index.js",
+    "db:init": "node scripts/init-db.js",
+    "db:list": "node scripts/update-agent.js list",
+    "db:sync": "node scripts/sync-config.js",
+    "db:validate": "node scripts/validate-config.js",
+    "config": "node scripts/config-cli.js",
+    "config:status": "node scripts/config-cli.js status",
+    "config:list": "node scripts/config-cli.js list",
+    "config:update": "node scripts/config-cli.js update",
+    "config:backup": "node scripts/config-cli.js backup",
+    "config:restore": "node scripts/config-cli.js restore",
+    "config:export": "node scripts/config-cli.js export",
+    "config:import": "node scripts/config-cli.js import",
+    "config:cleanup": "node scripts/config-cli.js cleanup",
+    "config:summary": "node scripts/config-cli.js summary",
+    "task:list": "node scripts/config-cli.js task:list",
+    "task:show": "node scripts/config-cli.js task:show",
+    "task:assign": "node scripts/config-cli.js task:assign",
+    "task:complete": "node scripts/config-cli.js task:complete",
+    "task:stats": "node scripts/config-cli.js task:stats"
   },
-  "dependencies": {
-    "better-sqlite3": "^9.0.0"
-  },
-  "devDependencies": {},
   "keywords": [
-    "github",
     "agent",
     "collaboration",
-    "task-management",
-    "multi-agent",
-    "stp",
-    "openclaw"
+    "github",
+    "automation",
+    "task-management"
   ],
-  "author": "OpenClaw",
+  "author": "OpenClaw Team",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/openclaw/github-collab"
-  },
-  "engines": {
-    "node": ">=14.0.0"
+  "dependencies": {
+    "sqlite3": "^5.1.6",
+    "axios": "^1.6.0",
+    "uuid": "^9.0.0"
   }
 }

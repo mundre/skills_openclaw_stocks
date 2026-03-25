@@ -1,76 +1,85 @@
 /**
- * Basic Example - 基础示例
- * 展示 GitHub Collaboration 的基本用法
+ * GitHub 协作 - 基础示例
+ * 
+ * 本示例展示如何使用 GitHub 协作技能的基础功能：
+ * - 创建任务
+ * - 分配任务
+ * - 执行任务
+ * 
+ * @author OpenClaw Team
+ * @version 1.0.0
  */
 
-const { TaskManagerEnhanced, DevAgent, TestAgent } = require('../skills/github-collab');
+const { TaskManager } = require('../core/task-manager-enhanced');
+const { DevAgent } = require('../core/dev-agent');
+const { TestAgent } = require('../core/test-agent');
 
-async function runBasicExample() {
-    console.log('=== GitHub Collaboration Basic Example ===\n');
-    
-    // 1. 创建任务管理器
-    const taskManager = new TaskManagerEnhanced();
-    
-    // 2. 创建项目
-    const project = await taskManager.createProject({
-        name: 'Example Project',
-        description: 'A basic example project',
-        github_url: 'https://github.com/example/repo'
-    });
-    
-    console.log('✅ Created project:', project.id);
-    
-    // 3. 创建任务
-    const task = await taskManager.createTask({
-        project_id: project.id,
-        name: 'Implement basic feature',
-        description: 'Implement a basic feature for the project',
-        priority: 10,
-        type: 'development'
-    });
-    
-    console.log('✅ Created task:', task.id);
-    
-    // 4. 创建 Dev Agent
-    const devAgent = new DevAgent('dev-agent-1');
+async function main() {
+    console.log('=== GitHub 协作 - 基础示例 ===\n');
+
+    // 1. 初始化任务管理器
+    console.log('1. 初始化任务管理器...');
+    const taskManager = new TaskManager();
+    await taskManager.initialize();
+    console.log('✅ 任务管理器初始化完成\n');
+
+    // 2. 初始化 Agent
+    console.log('2. 初始化 Agent...');
+    const devAgent = new DevAgent();
     await devAgent.initialize();
-    
-    // 5. 分配任务给 Dev Agent
-    await taskManager.assignTask(task.id, 'dev-agent-1');
-    console.log('✅ Assigned task to dev-agent-1');
-    
-    // 6. Dev Agent 处理任务
-    await devAgent.processQueue();
-    
-    // 7. 创建测试任务
-    const testTask = await taskManager.createTask({
-        project_id: project.id,
-        name: 'Test basic feature',
-        description: 'Test the implemented feature',
-        priority: 9,
+    console.log('✅ Dev Agent 初始化完成');
+
+    const testAgent = new TestAgent();
+    await testAgent.initialize();
+    console.log('✅ Test Agent 初始化完成\n');
+
+    // 3. 创建任务
+    console.log('3. 创建任务...');
+    const task = await taskManager.createTask({
+        name: '基础功能开发',
+        description: '实现一个基础功能',
+        type: 'development',
+        priority: 'high',
+        assignee: devAgent.agentId,
+        dependencies: []
+    });
+    console.log(`✅ 任务创建成功: ${task.id}\n`);
+
+    // 4. 分配任务
+    console.log('4. 分配任务...');
+    await taskManager.assignTask(task.id, devAgent.agentId);
+    console.log('✅ 任务分配成功\n');
+
+    // 5. 执行任务
+    console.log('5. 执行任务...');
+    const result = await devAgent.processTask({
+        id: task.id,
+        name: task.name,
+        description: task.description,
+        type: task.type
+    });
+    console.log(`✅ 任务执行完成: ${result.status}\n`);
+
+    // 6. 运行测试
+    console.log('6. 运行测试...');
+    const testResult = await testAgent.processTask({
+        id: task.id,
+        name: task.name,
+        description: task.description,
         type: 'testing'
     });
-    
-    // 8. 添加依赖关系
-    taskManager.addTaskDependency(testTask.id, task.id);
-    console.log('✅ Added dependency: testTask depends on task');
-    
-    // 9. 创建 Test Agent
-    const testAgent = new TestAgent('test-agent-1');
-    await testAgent.initialize();
-    
-    // 10. 分配测试任务
-    const dependenciesMet = taskManager.checkTaskDependencies(testTask.id);
-    if (dependenciesMet) {
-        await taskManager.assignTask(testTask.id, 'test-agent-1');
-        console.log('✅ Assigned test task to test-agent-1');
-        
-        // 11. Test Agent 处理任务
-        await testAgent.processQueue();
-    }
-    
-    console.log('\n=== Basic Example Completed ===');
+    console.log(`✅ 测试完成: ${testResult.status}\n`);
+
+    // 7. 完成任务
+    console.log('7. 完成任务...');
+    await taskManager.completeTask(task.id);
+    console.log('✅ 任务完成\n');
+
+    console.log('=== 基础示例完成 ===');
 }
 
 // 运行示例
-runBasicExample().catch(console.error);
+main().catch(error => {
+    console.error('示例运行失败:', error);
+    process.exit(1);
+});

@@ -2,12 +2,12 @@
  * Task Manager Test - 任务管理器测试
  */
 
-const { TaskManagerEnhanced } = require('../skills/github-collab');
+const TaskManager = require('../core/task-manager');
 
 async function runTests() {
     console.log('=== Task Manager Tests ===\n');
     
-    const taskManager = new TaskManagerEnhanced();
+    const taskManager = new TaskManager({ dbPath: ':memory:' });
     
     // 测试 1: 创建项目
     console.log('Test 1: Create project');

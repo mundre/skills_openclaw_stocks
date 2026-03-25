@@ -3,12 +3,12 @@
  * 验证真实 STP skill 的集成
  */
 
-const { STPIntegratorEnhanced } = require('../core/stp-integrator-enhanced');
+const STPIntegrator = require('../core/stp-integrator-enhanced');
 
 async function testSTPIntegration() {
     console.log('===== STP 对接验证 =====\n');
     
-    const stpIntegrator = new STPIntegratorEnhanced();
+    const stpIntegrator = new STPIntegrator();
     
     try {
         // 1. 检查 STP 安装状态

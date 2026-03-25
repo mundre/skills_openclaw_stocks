@@ -5,6 +5,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { validateAndUpdate } = require('./db/config-sync');
+const { validateSessionConfig } = require('./db/session-validator');
 
 class Config {
     constructor() {
@@ -15,7 +17,7 @@ class Config {
     /**
      * 加载配置
      */
-    load() {
+    async load() {
         // 从环境变量加载
         this.config.github = {
             token: process.env.GITHUB_TOKEN || '',
@@ -33,11 +35,39 @@ class Config {
             file: process.env.LOG_FILE || 'github-collab.log'
         };
 
-        this.config.qq = {
-            enabled: process.env.QQ_ENABLED === 'true',
-            token: process.env.QQ_TOKEN || '',
-            target: process.env.QQ_TARGET || 'qqbot:c2c:3512D704E5667F4DF660228B731965C2'
-        };
+        // 从数据库加载并同步 Agent 配置（方案 C）
+        try {
+            await validateAndUpdate();
+            const { AGENT_ADDRESSES } = require('./agent-addresses');
+            
+            this.config.qq = {
+                enabled: process.env.QQ_ENABLED === 'true',
+                token: process.env.QQ_TOKEN || '',
+                // 默认使用 main-agent 地址
+                defaultTarget: process.env.QQ_TARGET || AGENT_ADDRESSES['main-agent'].target,
+                // 所有 Agent 的独立地址
+                agentAddresses: AGENT_ADDRESSES,
+                // 数据库配置状态
+                dbConfigured: true,
+                lastSync: new Date().toISOString()
+            };
+            
+            console.log('✅ Agent 配置已从数据库加载并同步');
+        } catch (error) {
+            console.warn('⚠️ 从数据库加载配置失败，使用默认配置:', error.message);
+            
+            // 降级到默认配置
+            const { AGENT_ADDRESSES } = require('./agent-addresses');
+            
+            this.config.qq = {
+                enabled: process.env.QQ_ENABLED === 'true',
+                token: process.env.QQ_TOKEN || '',
+                defaultTarget: process.env.QQ_TARGET || AGENT_ADDRESSES['main-agent'].target,
+                agentAddresses: AGENT_ADDRESSES,
+                dbConfigured: false,
+                error: error.message
+            };
+        }
 
         // 从配置文件加载（如果存在）
         const configPath = path.join(__dirname, '.github-collab-config.json');

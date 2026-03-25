@@ -3,7 +3,7 @@
  * 职责：从自己的任务队列获取任务、执行测试任务、验证结果
  */
 
-const TaskManager = require('../core/task-manager').TaskManager;
+const TaskManager = require('./task-manager').TaskManager;
 
 class TestAgent {
     constructor(agentId = 'test-agent') {
@@ -158,44 +158,6 @@ class TestAgent {
             failed: queue.filter(t => t.status === 'failed').length
         };
         return { queue, stats };
-    }
-
-    /**
-     * 处理指定任务（由 AgentRegistry 调用）
-     * @param {number} taskId - 任务 ID
-     */
-    async processTask(taskId) {
-        console.log(`[Test Agent] 收到任务分配：${taskId}`);
-        
-        // 获取任务详情
-        const task = await this.taskManager.getTask(taskId);
-        
-        if (!task) {
-            console.error(`[Test Agent] 任务不存在：${taskId}`);
-            return false;
-        }
-        
-        // 检查任务是否分配给当前 Agent
-        if (task.assigned_agent !== this.agentId) {
-            console.warn(`[Test Agent] 任务 ${taskId} 未分配给 ${this.agentId}`);
-            return false;
-        }
-        
-        // 执行任务
-        try {
-            await this.executeTask(task, {
-                passed: 5,
-                failed: 0,
-                total: 5,
-                coverage: 85,
-                progress: 100
-            });
-            return true;
-        } catch (error) {
-            console.error(`[Test Agent] 执行任务失败：${error.message}`);
-            await this.reportBlocked(task.id, error.message);
-            return false;
-        }
     }
 
     /**

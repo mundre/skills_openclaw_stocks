@@ -5,8 +5,6 @@
 
 const path = require('path');
 const fs = require('fs');
-const { AgentRegistry } = require('./agent-registry');
-const { TaskManagerEnhanced } = require('./task-manager-enhanced');
 
 class MainController {
     constructor(config = {}) {
@@ -18,10 +16,7 @@ class MainController {
             ...config
         };
         
-        // 使用 AgentRegistry 管理 Agent
-        this.registry = new AgentRegistry();
-        this.taskManager = new TaskManagerEnhanced();
-        
+        this.agents = new Map();
         this.taskQueue = [];
         this.running = false;
         this.locks = new Map();
@@ -83,8 +78,8 @@ class MainController {
      */
     async startAgent(agentType, agentId = null, options = {}) {
         // 检查并行数量限制
-        const runningAgents = this.registry.getAll().length;
-        if (runningAgents >= this.config.maxParallelAgents) {
+        const runningAgents = Array.from(this.agents.values()).filter(a => a.running);
+        if (runningAgents.length >= this.config.maxParallelAgents) {
             this.logger.warn(`Max parallel agents (${this.config.maxParallelAgents}) reached`);
             return null;
         }
@@ -94,21 +89,52 @@ class MainController {
             agentId = `${agentType}-agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         }
 
-        // 使用 AgentRegistry 创建 Agent
-        let agent;
-        if (agentType === 'dev') {
-            agent = this.registry.createDevAgent(agentId);
-        } else if (agentType === 'test') {
-            agent = this.registry.createTestAgent(agentId);
-        } else {
-            this.logger.error(`Unknown agent type: ${agentType}`);
+        // 动态加载 Agent 类
+        let AgentClass;
+        try {
+            switch (agentType.toLowerCase()) {
+                case 'dev':
+                    const DevModule = require('./dev-agent');
+                    AgentClass = DevModule.DevAgent;
+                    break;
+                case 'test':
+                    const TestModule = require('./test-agent');
+                    AgentClass = TestModule.TestAgent;
+                    break;
+                case 'review':
+                    // 未来扩展
+                    this.logger.warn('Review agent not implemented yet');
+                    return null;
+                default:
+                    this.logger.error(`Unknown agent type: ${agentType}`);
+                    return null;
+            }
+        } catch (error) {
+            this.logger.error(`Failed to load ${agentType} agent:`, error.message);
             return null;
         }
 
-        // 初始化 Agent
-        await agent.initialize();
-        this.logger.info(`Agent started: ${agentId} (type: ${agentType})`);
-        return agent;
+        // 创建 Agent 实例
+        const agent = new AgentClass(agentId);
+        agent.controller = this; // 设置控制器引用
+        
+        try {
+            await agent.initialize();
+            agent.running = true;
+            this.agents.set(agentId, agent);
+            
+            this.logger.info(`Agent ${agentId} started (type: ${agentType})`);
+            
+            // 启动崩溃恢复监听
+            if (this.config.autoRecovery) {
+                this.setupCrashRecovery(agent);
+            }
+            
+            return agent;
+        } catch (error) {
+            this.logger.error(`Failed to start agent ${agentId}:`, error.message);
+            return null;
+        }
     }
 
     /**
@@ -116,20 +142,16 @@ class MainController {
      * @param {string} agentId - Agent ID
      */
     async stopAgent(agentId) {
-        const agent = this.registry.get(agentId);
+        const agent = this.agents.get(agentId);
         if (!agent) {
             this.logger.warn(`Agent ${agentId} not found`);
             return false;
         }
 
         try {
-            // 停止 Agent
-            if (agent.shutdown) {
-                await agent.shutdown();
-            }
-            
-            // 从注册表移除
-            this.registry.unregister(agentId);
+            agent.running = false;
+            await agent.shutdown();
+            this.agents.delete(agentId);
             
             this.logger.info(`Agent ${agentId} stopped`);
             return true;
@@ -152,7 +174,7 @@ class MainController {
      * 获取当前运行的 Agent 数量
      */
     getRunningAgentCount() {
-        return this.registry.getAll().length;
+        return Array.from(this.agents.values()).filter(a => a.running).length;
     }
 
     /**
@@ -193,7 +215,7 @@ class MainController {
         }
 
         for (const depId of task.dependencies) {
-            const depTask = await this.taskManager.getTask(depId);
+            const depTask = await this.getTask(depId);
             if (!depTask || depTask.status !== 'completed') {
                 return false;
             }
@@ -206,35 +228,12 @@ class MainController {
      * 获取任务
      */
     async getTask(taskId) {
-        return await this.taskManager.getTask(taskId);
-    }
-
-    /**
-     * 分配任务给 Agent（核心绑定逻辑）
-     * @param {number} taskId - 任务 ID
-     * @param {string} agentId - Agent ID
-     */
-    async assignTask(taskId, agentId) {
-        this.logger.info(`[MainController] Assigning task ${taskId} to agent ${agentId}`);
-        
-        try {
-            // 1. 更新任务状态到数据库
-            await this.taskManager.assignTaskToAgent(taskId, agentId);
-            
-            // 2. 通过 AgentRegistry 调用对应 Agent 处理任务
-            const success = await this.registry.dispatchTask(taskId, agentId);
-            
-            if (success) {
-                this.logger.info(`[MainController] Task ${taskId} assigned successfully`);
-                return true;
-            } else {
-                this.logger.error(`[MainController] Failed to assign task ${taskId}`);
-                return false;
-            }
-        } catch (error) {
-            this.logger.error(`[MainController] Error assigning task ${taskId}:`, error.message);
-            return false;
-        }
+        // 从任务管理器获取
+        const TaskManager = require('./task-manager-enhanced');
+        const taskManager = new TaskManager.TaskManagerEnhanced({
+            dbPath: this.config.dbPath || process.env.GITHUB_COLLAB_DB_PATH || './github-collab.db'
+        });
+        return await taskManager.getTask(taskId);
     }
 
     /**
@@ -242,6 +241,15 @@ class MainController {
      */
     async processQueue() {
         while (this.running && this.taskQueue.length > 0) {
+            // 检查是否有可用 Agent
+            const runningAgents = Array.from(this.agents.values()).filter(a => a.running);
+            
+            if (runningAgents.length === 0) {
+                // 没有运行中的 Agent，等待或启动新 Agent
+                await this.delay(1000);
+                continue;
+            }
+
             // 获取最高优先级任务
             const queueItem = this.taskQueue[0];
             const task = queueItem.task;
@@ -259,16 +267,11 @@ class MainController {
                 continue;
             }
 
-            // 查找可用 Agent
-            const availableAgents = this.registry.getByType(queueItem.agentType);
-            const agentId = availableAgents.find(id => {
-                const agent = this.registry.get(id);
-                return agent && !agent.currentTask;
-            });
-
-            if (agentId) {
+            // 分配任务给 Agent
+            const agent = this.findAvailableAgent(queueItem.agentType);
+            if (agent) {
                 this.taskQueue.shift();
-                await this.assignTask(task.id, agentId);
+                await this.assignTaskToAgent(task, agent);
             } else {
                 // 没有可用 Agent，等待
                 await this.delay(1000);
@@ -277,9 +280,37 @@ class MainController {
     }
 
     /**
+     * 查找可用 Agent
+     */
+    findAvailableAgent(agentType) {
+        return Array.from(this.agents.values()).find(
+            a => a.running && a.type === agentType && !a.busy
+        );
+    }
+
+    /**
+     * 分配任务给 Agent
+     */
+    async assignTaskToAgent(task, agent) {
+        try {
+            agent.busy = true;
+            await agent.processTask(task);
+            agent.busy = false;
+        } catch (error) {
+            this.logger.error(`Failed to assign task ${task.id} to agent ${agent.id}:`, error.message);
+            agent.busy = false;
+            
+            // 崩溃恢复
+            if (this.config.autoRecovery) {
+                await this.handleTaskFailure(task, agent, error);
+            }
+        }
+    }
+
+    /**
      * 处理任务失败
      */
-    async handleTaskFailure(task, agentId, error) {
+    async handleTaskFailure(task, agent, error) {
         const attempts = this.recoveryAttempts.get(task.id) || 0;
         
         if (attempts < 3) {
@@ -287,7 +318,7 @@ class MainController {
             this.logger.warn(`Task ${task.id} failed, retry ${attempts + 1}/3`);
             
             // 重新添加到队列
-            await this.addTask(task, this.registry.getAgentType(agentId));
+            await this.addTask(task, agent.type);
         } else {
             this.logger.error(`Task ${task.id} failed after 3 attempts`);
         }
@@ -296,7 +327,7 @@ class MainController {
     /**
      * 设置崩溃恢复
      */
-    setupCrashRecovery() {
+    setupCrashRecovery(agent) {
         // 监听进程崩溃
         process.on('SIGTERM', async () => {
             this.logger.info('Received SIGTERM, saving state...');
@@ -341,7 +372,7 @@ class MainController {
                 task: item.task,
                 agentType: item.agentType
             })),
-            runningAgents: this.registry.getAll()
+            runningAgents: Array.from(this.agents.keys())
         };
 
         const statePath = path.join(__dirname, 'controller-state.json');
@@ -357,9 +388,6 @@ class MainController {
         this.running = true;
         this.logger.info('Main Controller started');
         
-        // 设置崩溃恢复
-        this.setupCrashRecovery();
-        
         // 启动任务队列处理
         this.processQueue();
     }
@@ -371,8 +399,8 @@ class MainController {
         this.running = false;
         
         // 停止所有 Agent
-        for (const agentId of this.registry.getAll()) {
-            await this.stopAgent(agentId);
+        for (const [id, agent] of this.agents) {
+            await this.stopAgent(id);
         }
         
         // 保存状态
@@ -386,27 +414,6 @@ class MainController {
      */
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    /**
-     * 获取所有 Agent 状态
-     */
-    async getAgentStatus() {
-        return await this.registry.getAllAgentStatus();
-    }
-
-    /**
-     * 获取任务队列状态
-     */
-    getQueueStatus() {
-        return {
-            total: this.taskQueue.length,
-            tasks: this.taskQueue.map(item => ({
-                taskId: item.task.id,
-                agentType: item.agentType,
-                priority: item.task.priority
-            }))
-        };
     }
 }
 

@@ -12,7 +12,10 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 class TaskManager {
-  constructor(dbPath = './github-collab.db') {
+  constructor(options = {}) {
+    // 支持自定义数据库路径
+    const dbPath = options.dbPath || process.env.GITHUB_COLLAB_DB_PATH || './github-collab.db';
+    this.dbPath = dbPath;
     this.db = new Database(dbPath);
     this.initDatabase();
   }
@@ -467,4 +470,4 @@ class TaskManager {
   }
 }
 
-module.exports = { TaskManager };
+module.exports = TaskManager;

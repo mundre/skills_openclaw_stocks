@@ -1,6 +1,16 @@
 /**
  * OpenClaw Message Tool Integration
  * 集成 OpenClaw message 工具接口调用能力
+ * 
+ * 功能增强：
+ * 1. 指挥其他 Agent 工作
+ * 2. 发送任务指令
+ * 3. 进度跟踪与报告
+ * 4. 多通道消息发送
+ * 5. 富媒体支持
+ * 
+ * 注意：OpenClaw message 工具是内置工具，直接调用 message() 函数即可
+ * 不需要通过 CLI 命令调用
  */
 
 /**
@@ -38,7 +48,7 @@ async function sendMessage(options) {
         if (contentType) messageParams.contentType = contentType;
     }
 
-    // 调用 OpenClaw message 工具
+    // 调用 OpenClaw message 工具（内置工具函数）
     try {
         const result = await message(messageParams);
         return {
@@ -54,6 +64,41 @@ async function sendMessage(options) {
 }
 
 /**
+ * 指挥 Agent 执行任务
+ * @param {object} options - 任务指令选项
+ * @param {string} options.agentId - Agent 标识
+ * @param {string} options.task - 任务描述
+ * @param {string} options.channel - 目标通道
+ * @param {string} options.target - 目标用户/群聊 ID
+ * @param {object} [options.params] - 任务参数
+ * @returns {Promise<object>} - 发送结果
+ */
+async function assignTaskToAgent(options) {
+    const { agentId, task, channel, target, params = {} } = options;
+
+    const taskPayload = {
+        agent: agentId,
+        task: task,
+        params: params,
+        timestamp: new Date().toISOString(),
+        priority: params.priority || 'normal'
+    };
+
+    const messageText = `🤖 Agent 任务指令
+目标 Agent: ${agentId}
+任务：${task}
+参数：${JSON.stringify(params)}
+优先级：${taskPayload.priority}
+时间：${new Date().toLocaleString('zh-CN')}`;
+
+    return await sendMessage({
+        channel,
+        target,
+        message: messageText
+    });
+}
+
+/**
  * 发送进度更新
  * @param {object} options - 进度更新选项
  * @param {string} options.channel - 目标通道
@@ -61,21 +106,25 @@ async function sendMessage(options) {
  * @param {number} options.taskId - 任务 ID
  * @param {number} options.progress - 进度百分比
  * @param {string} options.status - 状态
+ * @param {string} [options.agentId] - 执行 Agent ID
  * @returns {Promise<object>} - 发送结果
  */
 async function sendProgressUpdate(options) {
-    const { channel, target, taskId, progress, status } = options;
+    const { channel, target, taskId, progress, status, agentId } = options;
 
-    const message = `📊 任务进度更新
+    const progressBar = '█'.repeat(Math.floor(progress / 5)) + '░'.repeat(20 - Math.floor(progress / 5));
+    
+    const messageText = `📊 任务进度更新
 任务 ID: ${taskId}
-进度：${progress}%
+执行 Agent: ${agentId || 'N/A'}
+进度：[${progressBar}] ${progress}%
 状态：${status}
 时间：${new Date().toLocaleString('zh-CN')}`;
 
     return await sendMessage({
         channel,
         target,
-        message
+        message: messageText
     });
 }
 
@@ -88,22 +137,24 @@ async function sendProgressUpdate(options) {
  * @param {string} options.taskName - 任务名称
  * @param {string} options.agentName - Agent 名称
  * @param {string} [options.result] - 任务结果
+ * @param {string} [options.duration] - 执行时长
  * @returns {Promise<object>} - 发送结果
  */
 async function sendTaskCompletion(options) {
-    const { channel, target, taskId, taskName, agentName, result } = options;
+    const { channel, target, taskId, taskName, agentName, result, duration } = options;
 
-    const message = `✅ 任务完成
+    const messageText = `✅ 任务完成
 任务 ID: ${taskId}
 任务名称：${taskName}
 执行 Agent: ${agentName}
+执行时长：${duration || 'N/A'}
 结果：${result || '成功'}
 时间：${new Date().toLocaleString('zh-CN')}`;
 
     return await sendMessage({
         channel,
         target,
-        message
+        message: messageText
     });
 }
 
@@ -115,21 +166,23 @@ async function sendTaskCompletion(options) {
  * @param {number} options.taskId - 任务 ID
  * @param {string} options.taskName - 任务名称
  * @param {string} options.error - 错误信息
+ * @param {string} [options.agentId] - 执行 Agent ID
  * @returns {Promise<object>} - 发送结果
  */
 async function sendErrorNotification(options) {
-    const { channel, target, taskId, taskName, error } = options;
+    const { channel, target, taskId, taskName, error, agentId } = options;
 
-    const message = `❌ 任务失败
+    const messageText = `❌ 任务失败
 任务 ID: ${taskId}
 任务名称：${taskName}
+执行 Agent: ${agentId || 'N/A'}
 错误：${error}
 时间：${new Date().toLocaleString('zh-CN')}`;
 
     return await sendMessage({
         channel,
         target,
-        message
+        message: messageText
     });
 }
 
@@ -139,18 +192,18 @@ async function sendErrorNotification(options) {
  * @param {string} options.channel - 目标通道
  * @param {string} options.target - 目标用户/群聊 ID
  * @param {string} options.report - 报告内容
+ * @param {string} [options.projectName] - 项目名称
  * @returns {Promise<object>} - 发送结果
  */
 async function sendProjectReport(options) {
-    const { channel, target, report } = options;
+    const { channel, target, report, projectName } = options;
 
-    // 将报告作为文件发送
-    const filename = `project-report-${Date.now()}.md`;
+    const filename = `${projectName || 'project'}-report-${Date.now()}.md`;
     
     return await sendMessage({
         channel,
         target,
-        message: `📋 项目报告已生成`,
+        message: `📋 ${projectName || '项目'}报告已生成`,
         media: report,
         filename,
         contentType: 'text/markdown'
@@ -213,21 +266,94 @@ async function sendFile(options) {
     return await sendMessage({
         channel,
         target,
-        message: `📎 文件：${filename || path.basename(filePath)}`,
+        message: `📎 文件：${filename || require('path').basename(filePath)}`,
         media: filePath,
-        filename: filename || path.basename(filePath),
+        filename: filename || require('path').basename(filePath),
         contentType: 'file'
+    });
+}
+
+/**
+ * 发送 Agent 状态报告
+ * @param {object} options - 状态报告选项
+ * @param {string} options.channel - 目标通道
+ * @param {string} options.target - 目标用户/群聊 ID
+ * @param {string} options.agentId - Agent ID
+ * @param {string} options.status - 状态（idle, busy, error）
+ * @param {number} [options.tasksCompleted] - 完成任务数
+ * @param {number} [options.tasksFailed] - 失败任务数
+ * @returns {Promise<object>} - 发送结果
+ */
+async function sendAgentStatusReport(options) {
+    const { channel, target, agentId, status, tasksCompleted = 0, tasksFailed = 0 } = options;
+
+    const statusEmoji = {
+        idle: '🟢',
+        busy: '🟡',
+        error: '🔴'
+    }[status] || '⚪';
+
+    const messageText = `📊 Agent 状态报告
+Agent ID: ${agentId}
+状态：${statusEmoji} ${status}
+完成任务：${tasksCompleted}
+失败任务：${tasksFailed}
+时间：${new Date().toLocaleString('zh-CN')}`;
+
+    return await sendMessage({
+        channel,
+        target,
+        message: messageText
+    });
+}
+
+/**
+ * 发送多 Agent 协作状态
+ * @param {object} options - 协作状态选项
+ * @param {string} options.channel - 目标通道
+ * @param {string} options.target - 目标用户/群聊 ID
+ * @param {Array} options.agents - Agent 状态列表
+ * @param {string} options.projectName - 项目名称
+ * @returns {Promise<object>} - 发送结果
+ */
+async function sendMultiAgentStatus(options) {
+    const { channel, target, agents, projectName } = options;
+
+    let messageText = `🔄 ${projectName} 多 Agent 协作状态\n\n`;
+    
+    agents.forEach((agent, index) => {
+        const statusEmoji = {
+            idle: '🟢',
+            busy: '🟡',
+            error: '🔴'
+        }[agent.status] || '⚪';
+        
+        messageText += `${index + 1}. ${statusEmoji} ${agent.name} (${agent.status})\n`;
+        if (agent.currentTask) {
+            messageText += `   当前任务：${agent.currentTask}\n`;
+        }
+    });
+
+    messageText += `\n时间：${new Date().toLocaleString('zh-CN')}`;
+
+    return await sendMessage({
+        channel,
+        target,
+        message: messageText
     });
 }
 
 // 导出所有消息发送函数
 module.exports = {
     sendMessage,
+    assignTaskToAgent,
     sendProgressUpdate,
     sendTaskCompletion,
     sendErrorNotification,
     sendProjectReport,
     sendImage,
     sendVoice,
-    sendFile
+    sendFile,
+    sendAgentStatusReport,
+    sendMultiAgentStatus
 };

@@ -3,7 +3,7 @@
  * 职责：从自己的任务队列获取任务、执行开发任务、更新进度
  */
 
-const TaskManager = require('../core/task-manager').TaskManager;
+const TaskManager = require('./task-manager').TaskManager;
 
 class DevAgent {
     constructor(agentId = 'dev-agent') {
@@ -151,41 +151,6 @@ class DevAgent {
             failed: queue.filter(t => t.status === 'failed').length
         };
         return { queue, stats };
-    }
-
-    /**
-     * 处理指定任务（由 AgentRegistry 调用）
-     * @param {number} taskId - 任务 ID
-     */
-    async processTask(taskId) {
-        console.log(`[Dev Agent] 收到任务分配：${taskId}`);
-        
-        // 获取任务详情
-        const task = await this.taskManager.getTask(taskId);
-        
-        if (!task) {
-            console.error(`[Dev Agent] 任务不存在：${taskId}`);
-            return false;
-        }
-        
-        // 检查任务是否分配给当前 Agent
-        if (task.assigned_agent !== this.agentId) {
-            console.warn(`[Dev Agent] 任务 ${taskId} 未分配给 ${this.agentId}`);
-            return false;
-        }
-        
-        // 执行任务
-        try {
-            await this.executeTask(task, {
-                code: `console.log("Implementing ${task.name}");`,
-                progress: 100
-            });
-            return true;
-        } catch (error) {
-            console.error(`[Dev Agent] 执行任务失败：${error.message}`);
-            await this.reportBlocked(task.id, error.message);
-            return false;
-        }
     }
 
     /**
