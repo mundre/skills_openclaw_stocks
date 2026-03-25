@@ -1,0 +1,11 @@
+{
+  "owner": "blucaru",
+  "slug": "block-on-exchange",
+  "displayName": "ics to exchange-blocker",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774213506822,
+    "commit": null
+  },
+  "history": []
+}
