@@ -3,9 +3,15 @@
   "slug": "36kr-ainotes",
   "displayName": "[36kr]获取36氪AI测评的每日最新测评笔记内容",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773832783606,
-    "commit": "https://github.com/openclaw/skills/commit/a55e566eea47a76f114f651391c90d5df13349cc"
+    "version": "1.0.4",
+    "publishedAt": 1773922481015,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773832783606,
+      "commit": "https://github.com/openclaw/skills/commit/a55e566eea47a76f114f651391c90d5df13349cc"
+    }
+  ]
 }

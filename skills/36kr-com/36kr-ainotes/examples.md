@@ -18,12 +18,12 @@ def get_today_ainotes():
     for i, item in enumerate(notes, 1):
         pub_ts = item.get("publishTime", 0)
         pub_str = datetime.datetime.fromtimestamp(pub_ts / 1000).strftime("%Y-%m-%d %H:%M") if pub_ts else "?"
-        circles = "、".join(item.get("circleNames") or []) or "—"
-        products = "、".join(item.get("productNames") or []) or "—"
+        circles = "、".join(c.get("circleName", "") for c in (item.get("circleNames") or [])) or "—"
+        products = "、".join(p.get("productName", "") for p in (item.get("productNames") or [])) or "—"
         print(f"  #{i:>2}  {item['title']}")
         print(f"       作者：{item['authorName']}  发布：{pub_str}")
         print(f"       圈子：{circles}  产品：{products}")
-        print(f"       链接：{item['url']}")
+        print(f"       链接：{item['noteUrl']}")
         print()
 
 # 运行
@@ -36,7 +36,7 @@ get_today_ainotes()
    #1  服装电商必备：美图设计室AI功能全测
        作者：氪友5sc4  发布：2026-03-18 10:30
        圈子：营销辅助  产品：—
-       链接：https://www.36dianping.com/note-detail/3477557660550660?channel=skills
+       链接：https://36aidianping.com/note-detail/3477557660550660?channel=skills
 ```
 
 ---
@@ -147,12 +147,12 @@ fetch(url)
     console.log(`=== 36kr AI 测评笔记 ${today}  共 ${notes.length} 篇 ===`);
     notes.forEach((item, i) => {
       const pubTime = new Date(item.publishTime).toLocaleString("zh-CN");
-      const circles = (item.circleNames || []).join("、") || "—";
-      const products = (item.productNames || []).join("、") || "—";
+      const circles = (item.circleNames || []).map(c => c.circleName).join("、") || "—";
+      const products = (item.productNames || []).map(p => p.productName).join("、") || "—";
       console.log(`  #${i + 1}  ${item.title}`);
       console.log(`       作者: ${item.authorName}  |  发布: ${pubTime}`);
       console.log(`       圈子: ${circles}  产品: ${products}`);
-      console.log(`       ${item.url}\n`);
+      console.log(`       ${item.noteUrl}\n`);
     });
   })
   .catch(err => console.error('[ERROR]', err.message));
@@ -173,7 +173,7 @@ curl -s "https://openclaw.36krcdn.com/media/ainotes/$DATE/ai_notes.json" \
 import sys, json
 notes = json.load(sys.stdin)
 for i, n in enumerate(notes, 1):
-    print(f'#{i:>2} {n[\"title\"]} — {n[\"authorName\"]}')
+    print(f'#{i:>2} {n[\"title\"]} — {n[\"authorName\"]}  {n[\"noteUrl\"]}')
 "
 ```
 
@@ -194,11 +194,11 @@ def get_ainotes_by_circle(circle_name: str, date: str = None):
     with urllib.request.urlopen(url, timeout=10) as resp:
         notes = json.loads(resp.read().decode("utf-8"))
 
-    matched = [n for n in notes if circle_name in (n.get("circleNames") or [])]
+    matched = [n for n in notes if circle_name in [c.get("circleName") for c in (n.get("circleNames") or [])]]
     print(f"圈子「{circle_name}」共 {len(matched)} 篇笔记：")
     for n in matched:
         print(f"  {n['title']} — {n['authorName']}")
-        print(f"  {n['url']}")
+        print(f"  {n['noteUrl']}")
     return matched
 
 # Demo: 查看「营销辅助」圈子的笔记
@@ -222,11 +222,11 @@ def get_ainotes_by_product(product_name: str, date: str = None):
     with urllib.request.urlopen(url, timeout=10) as resp:
         notes = json.loads(resp.read().decode("utf-8"))
 
-    matched = [n for n in notes if product_name in (n.get("productNames") or [])]
+    matched = [n for n in notes if product_name in [p.get("productName") for p in (n.get("productNames") or [])]]
     print(f"产品「{product_name}」相关笔记 {len(matched)} 篇：")
     for n in matched:
         print(f"  {n['title']} — {n['authorName']}")
-        print(f"  {n['url']}")
+        print(f"  {n['noteUrl']}")
     return matched
 
 # Demo: 查看包含「豌豆云」的测评笔记

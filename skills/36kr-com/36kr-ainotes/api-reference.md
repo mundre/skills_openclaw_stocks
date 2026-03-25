@@ -32,12 +32,14 @@ GET https://openclaw.36krcdn.com/media/ainotes/2026-03-18/ai_notes.json
 
 | 字段 | 类型 | 说明 | 示例 |
 |------|------|------|------|
-| `noteId` | long | 笔记唯一 ID | `3538549317966729` |
-| `title` | string | 笔记标题 | `"服装电商必备：美图设计室AI功能全测"` |
+| `noteId` | long | 笔记唯一 ID | `3568010593718423` |
+| `title` | string | 笔记标题 | `"WPS AI测评"` |
 | `authorName` | string | 作者名称 | `"氪友5sc4"` |
-| `url` | string | 笔记链接，带 `?channel=skills` 参数 | `"https://www.36dianping.com/note-detail/xxxx?channel=skills"` |
-| `circleNames` | array | 所属圈子名称列表，可为空数组 | `["营销辅助"]` |
-| `productNames` | array | 关联产品名称列表，可为空数组 | `["美图设计室"]` |
+| `content` | string | 正文摘要，可为 null | `"简短介绍..."`  |
+| `imgUrl` | string | 封面图片链接 | `"https://img.36dianping.com/..."` |
+| `noteUrl` | string | 笔记详情链接，带 `?channel=skills` 参数 | `"https://36aidianping.com/note-detail/xxxx?channel=skills"` |
+| `circleNames` | array | 所属圈子列表，每项含 `circleName`、`circleUrl`，可为空数组 | `[{"circleName":"营销辅助","circleUrl":"..."}]` |
+| `productNames` | array | 关联产品列表，每项含 `productName`、`productUrl`，可为空数组 | `[{"productName":"美图设计室","productUrl":"..."}]` |
 | `publishTime` | long | 发布时间戳（毫秒） | `1758525280903` |
 
 ## 完整响应示例
@@ -45,31 +47,34 @@ GET https://openclaw.36krcdn.com/media/ainotes/2026-03-18/ai_notes.json
 ```json
 [
   {
-    "noteId": 3538549317966729,
-    "title": "圈子",
-    "authorName": "氪友97u3",
-    "url": "https://www.36dianping.com/note-detail/3538549317966729?channel=skills",
-    "circleNames": ["OpenClaw"],
-    "productNames": [],
-    "publishTime": 1773024440268
+    "noteId": 3568010593718423,
+    "title": "WPS AI测评",
+    "authorName": "aaaaaal",
+    "content": null,
+    "imgUrl": "https://img.36dianping.com/hsossms/36dianping/img/20260319/v2_b512d444820e41d9b4fdebac06ad5683@534797_img_jpeg",
+    "noteUrl": "https://36aidianping.com/note-detail/3568010593718423?channel=skills",
+    "circleNames": [
+      { "circleName": "办公辅助", "circleUrl": "https://36aidianping.com/circle/6?channel=skills" }
+    ],
+    "productNames": [
+      { "productName": "WPS AI", "productUrl": "https://36aidianping.com/product-detail/14554?channel=skills" }
+    ],
+    "publishTime": 1773917737506
   },
   {
-    "noteId": 3538549317966695,
-    "title": "哄哄你435435345435345",
-    "authorName": "模",
-    "url": "https://www.36dianping.com/note-detail/3538549317966695?channel=skills",
-    "circleNames": ["文本处理"],
-    "productNames": ["腾讯云 — 语音合成TTS"],
-    "publishTime": 1769049857794
-  },
-  {
-    "noteId": 3477557660550660,
-    "title": "服装电商必备：美图设计室AI功能全测",
-    "authorName": "氪友5sc4",
-    "url": "https://www.36dianping.com/note-detail/3477557660550660?channel=skills",
-    "circleNames": ["营销辅助"],
-    "productNames": [],
-    "publishTime": 1758525280903
+    "noteId": 3568010593718421,
+    "title": "小悟空：AI工具的集合口袋",
+    "authorName": "70KI",
+    "content": null,
+    "imgUrl": "https://img.36dianping.com/hsossms/36dianping/img/20260319/v2_4fb45afca8084a85a8e195dbdb65279c@534524_img_png",
+    "noteUrl": "https://36aidianping.com/note-detail/3568010593718421?channel=skills",
+    "circleNames": [
+      { "circleName": "办公辅助", "circleUrl": "https://36aidianping.com/circle/6?channel=skills" }
+    ],
+    "productNames": [
+      { "productName": "小悟空", "productUrl": "https://36aidianping.com/product-detail/14639?channel=skills" }
+    ],
+    "publishTime": 1773910511010
   }
 ]
 ```
@@ -133,11 +138,11 @@ if notes:
     for i, note in enumerate(notes, 1):
         pub_ts = note.get("publishTime", 0)
         pub_str = datetime.datetime.fromtimestamp(pub_ts / 1000).strftime("%Y-%m-%d %H:%M") if pub_ts else "?"
-        circles = "、".join(note.get("circleNames") or []) or "—"
-        products = "、".join(note.get("productNames") or []) or "—"
-        print(f"#{i} [{pub_str}] {note['title']} — {note['authorName']}")
+        circles  = "\u3001".join(c.get("circleName", "") for c in (note.get("circleNames") or [])) or "—"
+        products = "\u3001".join(p.get("productName", "") for p in (note.get("productNames") or [])) or "—"
+        print(f"#{i}  [{pub_str}] {note['title']} — {note['authorName']}")
         print(f"   圈子: {circles}  产品: {products}")
-        print(f"   {note['url']}\n")
+        print(f"   {note['noteUrl']}\n")
 ```
 
 ## 数据来源说明
@@ -146,7 +151,7 @@ if notes:
 
 1. 从数据库查询每日已发布测评笔记（`status = published`）
 2. 按 `publishTime` 降序取前 20 条
-3. 拼接笔记链接：`https://www.36dianping.com/note-detail/{noteId}?channel=skills`
+3. 拼接笔记详情链接：`https://36aidianping.com/note-detail/{noteId}?channel=skills`
 4. 生成 JSON 数组并上传至 CDN
 5. CDN 路径：`media/ainotes/{YYYY-MM-DD}/ai_notes.json`
 

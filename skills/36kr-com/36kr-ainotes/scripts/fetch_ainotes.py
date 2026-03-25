@@ -108,9 +108,9 @@ def print_table(notes: list, top: int = None):
     for idx, item in enumerate(notes, 1):
         title = item.get("title", "")
         author = item.get("authorName", "")
-        url = item.get("url", "")
-        circles = "、".join(item.get("circleNames") or []) or "—"
-        products = "、".join(item.get("productNames") or []) or "—"
+        url = item.get("noteUrl", "")
+        circles = "、".join(c.get("circleName", "") for c in (item.get("circleNames") or [])) or "—"
+        products = "、".join(p.get("productName", "") for p in (item.get("productNames") or [])) or "—"
         pub_time = format_time(item.get("publishTime"))
 
         print(f"  #{idx:<3} {title}")
@@ -187,8 +187,9 @@ def demo_with_products():
         for item in notes:
             products = item.get("productNames") or []
             if products:
-                print(f"[{', '.join(products)}] {item['title']} — {item['authorName']}")
-                print(f"  {item['url']}")
+                names = ", ".join(p.get("productName", "") for p in products)
+                print(f"[{names}] {item['title']} — {item['authorName']}")
+                print(f"  {item['noteUrl']}")
 
 
 def demo_date_range():

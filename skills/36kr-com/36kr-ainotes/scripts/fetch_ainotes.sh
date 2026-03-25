@@ -105,9 +105,9 @@ print(f"{'─'*70}")
 for idx, item in enumerate(notes, 1):
     title   = item.get("title", "")
     author  = item.get("authorName", "")
-    url     = item.get("url", "")
-    circles = "、".join(item.get("circleNames") or []) or "—"
-    products = "、".join(item.get("productNames") or []) or "—"
+    url     = item.get("noteUrl", "")
+    circles  = "、".join(c.get("circleName", "") for c in (item.get("circleNames") or [])) or "—"
+    products = "、".join(p.get("productName", "") for p in (item.get("productNames") or [])) or "—"
     pub_time = fmt_time(item.get("publishTime"))
     print(f"  #{idx:<3} {title}")
     print(f"       作者: {author}  |  发布: {pub_time}")
