@@ -8,7 +8,7 @@
   python run_reminders.py --dry-run   # 只列出将播报的提醒，不请求 TTS
 
 数据目录：项目 .memory-assistant/ 或 ~/.memory-assistant/，与 speak.py 一致。
-依赖: .env 中 SENSEAUDIO_API_KEY；pip install requests python-dotenv
+依赖: 环境变量 SENSEAUDIO_API_KEY；pip install requests
 """
 
 import argparse
@@ -24,20 +24,6 @@ try:
 except ImportError:
     print("Error: pip install requests", file=sys.stderr)
     sys.exit(1)
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    print("Error: pip install python-dotenv", file=sys.stderr)
-    sys.exit(1)
-
-# 加载 .env
-_SCRIPT_DIR = Path(__file__).resolve().parent
-_SKILL_DIR = _SCRIPT_DIR.parent
-for _d in (_SKILL_DIR, Path.cwd()):
-    _env = _d / ".env"
-    if _env.exists():
-        load_dotenv(_env)
-        break
 
 TTS_URL = "https://api.senseaudio.cn/v1/t2a_v2"
 DEFAULT_VOICE = "male_0004_a"
@@ -55,7 +41,7 @@ def get_data_dir():
 def get_api_key():
     key = os.environ.get("SENSEAUDIO_API_KEY")
     if not key:
-        print("Error: SENSEAUDIO_API_KEY not set. Add it to .env.", file=sys.stderr)
+        print("Error: SENSEAUDIO_API_KEY not set in environment variables.", file=sys.stderr)
         sys.exit(1)
     return key
 
@@ -104,16 +90,18 @@ def play_audio(filepath: Path) -> None:
     system = platform.system()
     if system == "Darwin":
         subprocess.run(["afplay", path], check=True)
+    elif system == "Windows":
+        os.startfile(path)
     elif system == "Linux":
-        for cmd in (["paplay", path], ["aplay", path]):
+        for cmd in (["paplay", path], ["aplay", path], ["ffplay", "-nodisp", "-autoexit", path]):
             try:
                 subprocess.run(cmd, check=True, capture_output=True)
                 return
             except (FileNotFoundError, subprocess.CalledProcessError):
                 continue
-        print("Warning: no paplay/aplay, audio saved only.", file=sys.stderr)
+        print("Warning: no paplay/aplay/ffplay found, audio saved only.", file=sys.stderr)
     else:
-        print("Warning: play not implemented, audio saved only.", file=sys.stderr)
+        print("Warning: play not supported on this OS, audio saved only.", file=sys.stderr)
 
 
 def now_utc():

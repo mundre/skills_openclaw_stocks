@@ -9,8 +9,8 @@ description: Helps users remember where they put things and schedule voice remin
 
 ## 前置条件
 
-- 在技能目录复制 `.env.example` 为 `.env`，填入 `SENSEAUDIO_API_KEY`（<https://senseaudio.cn/platform/api-key>）；或在工作区根目录 `.env` 中配置。请勿提交 `.env` 到版本库。
-- 使用语音脚本需 Python 3.8+，并安装：`pip install requests python-dotenv`。播放时 macOS 使用系统自带的 `afplay`。
+- 环境变量中配置 `SENSEAUDIO_API_KEY`（<https://senseaudio.cn/platform/api-key>）。
+- 使用语音脚本需 Python 3.8+，并安装：`pip install requests`。播放时 macOS 使用 `afplay`，Windows 使用系统默认播放器，Linux 使用 `paplay`/`aplay`/`ffplay`。
 
 ## 核心场景
 
@@ -84,12 +84,15 @@ description: Helps users remember where they put things and schedule voice remin
 - **常驻定时检查**：`python {baseDir}/scripts/run_reminders.py --daemon`（默认每 60 秒检查一次，可用 `--interval N` 修改）。
 - **仅查看将播报的提醒**：`python {baseDir}/scripts/run_reminders.py --dry-run`。
 
-建议用 cron 或 launchd 定期执行（如每分钟一次）：`cd {baseDir} && python scripts/run_reminders.py`，以实现到点语音提醒。
+建议用系统定时任务定期执行（如每分钟一次），以实现到点语音提醒：
+- **macOS**：cron 或 launchd：`cd {baseDir} && python scripts/run_reminders.py`
+- **Windows**：任务计划程序（Task Scheduler）：`python {baseDir}\scripts\run_reminders.py`
+- **Linux**：cron：`cd {baseDir} && python scripts/run_reminders.py`
 
 ## 配置
 
 - **{baseDir}**：表示本技能所在根目录，由运行环境解析，文档与命令中均不写死 `.cursor/skills` 或绝对路径。
-- **SenseAudio API Key**：在 `{baseDir}` 下复制 `.env.example` 为 `.env`，填入 `SENSEAUDIO_API_KEY=your_key`；或在工作区根目录 `.env` 中配置。勿写死在代码中。密钥申请：<https://senseaudio.cn/platform/api-key>。
+- **SenseAudio API Key**：在环境变量中配置 `SENSEAUDIO_API_KEY`。密钥申请：<https://senseaudio.cn/platform/api-key>。
 - **存储路径**：物品记录与提醒列表的默认路径见 [reference.md](reference.md)，可配置覆盖。
 
 ## 参考

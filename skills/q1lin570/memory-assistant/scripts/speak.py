@@ -12,10 +12,10 @@
   --text TEXT    要播报的文本（直接合成）
   --item NAME    从 items.json 查询物品位置，合成「XXX 在 YYY」并播报
   --out FILE     输出音频文件路径（默认临时文件）
-  --play         合成后调用系统播放器播放（macOS: afplay, Linux: aplay/paplay）
+  --play         合成后调用系统播放器播放（macOS: afplay, Windows: 默认播放器, Linux: paplay/aplay/ffplay）
   --voice ID     音色 ID，默认 male_0004_a
 
-依赖: .env 中 SENSEAUDIO_API_KEY；pip install requests python-dotenv
+依赖: 环境变量 SENSEAUDIO_API_KEY；pip install requests
 """
 
 import argparse
@@ -29,20 +29,6 @@ try:
 except ImportError:
     print("Error: pip install requests", file=sys.stderr)
     sys.exit(1)
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    print("Error: pip install python-dotenv", file=sys.stderr)
-    sys.exit(1)
-
-# 加载 .env：技能目录或工作区根目录
-_SCRIPT_DIR = Path(__file__).resolve().parent
-_SKILL_DIR = _SCRIPT_DIR.parent
-for _d in (_SKILL_DIR, Path.cwd(), Path.cwd().root):
-    _env = _d / ".env"
-    if _env.exists():
-        load_dotenv(_env)
-        break
 
 TTS_URL = "https://api.senseaudio.cn/v1/t2a_v2"
 DEFAULT_VOICE = "male_0004_a"
@@ -60,7 +46,7 @@ def get_data_dir():
 def get_api_key():
     key = os.environ.get("SENSEAUDIO_API_KEY")
     if not key:
-        print("Error: SENSEAUDIO_API_KEY not set. Add it to .env in skill dir or workspace root.", file=sys.stderr)
+        print("Error: SENSEAUDIO_API_KEY not set in environment variables.", file=sys.stderr)
         sys.exit(1)
     return key
 
@@ -89,23 +75,25 @@ def tts_senseaudio(text: str, out_path: Path, api_key: str, voice_id: str = DEFA
 
 
 def play_audio(filepath: Path) -> None:
-    """用系统默认方式播放音频。"""
+    """用系统默认方式播放音频（macOS / Windows / Linux）。"""
     import platform
     import subprocess
     path = str(filepath.resolve())
     system = platform.system()
     if system == "Darwin":
         subprocess.run(["afplay", path], check=True)
+    elif system == "Windows":
+        os.startfile(path)
     elif system == "Linux":
-        for cmd in (["paplay", path], ["aplay", path]):
+        for cmd in (["paplay", path], ["aplay", path], ["ffplay", "-nodisp", "-autoexit", path]):
             try:
                 subprocess.run(cmd, check=True, capture_output=True)
                 return
             except (FileNotFoundError, subprocess.CalledProcessError):
                 continue
-        print("Warning: no afplay/aplay/paplay found, audio saved only.", file=sys.stderr)
+        print("Warning: no paplay/aplay/ffplay found, audio saved only.", file=sys.stderr)
     else:
-        print("Warning: play not implemented for this OS, audio saved only.", file=sys.stderr)
+        print("Warning: play not supported on this OS, audio saved only.", file=sys.stderr)
 
 
 def find_item_location(item_name: str, data_dir: Path) -> str | None:
