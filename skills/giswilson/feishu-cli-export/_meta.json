@@ -1,0 +1,11 @@
+{
+  "owner": "giswilson",
+  "slug": "feishu-cli-export",
+  "displayName": "Feishu Cli Export",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773908256742,
+    "commit": null
+  },
+  "history": []
+}
