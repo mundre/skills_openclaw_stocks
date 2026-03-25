@@ -41,9 +41,13 @@ is sponsoring. Main concern: agents think they're being replaced.
 
 We deploy managed AI agents that handle operations end-to-end — and change management is built into every deployment. [Learn more](https://afrexai.com).
 
-## Related Skills
+## Works With
 
-- [Compliance Readiness Assessment](https://clawhub.com/skills/afrexai-compliance-readiness) — AI governance and regulatory prep
-- [Incident Response Plan](https://clawhub.com/skills/afrexai-incident-response-plan) — Production incident playbooks
-- [Customer Onboarding Checklist](https://clawhub.com/skills/afrexai-customer-onboarding-checklist) — SaaS onboarding automation
-- [Vendor Risk Assessment](https://clawhub.com/skills/afrexai-vendor-risk-assessment) — Third-party vendor evaluation
+Part of the **Enterprise AI Deployment Pipeline**:
+
+1. **[AI Adoption Readiness](https://clawhub.com/skills/afrexai-ai-adoption-readiness)** → Are you ready for AI?
+2. **[Compliance Readiness](https://clawhub.com/skills/afrexai-compliance-readiness)** → Are you regulatory-ready?
+3. **Change Management Plan** (this) → How do you roll it out?
+4. **[Vendor Risk Assessment](https://clawhub.com/skills/afrexai-vendor-risk-assessment)** → Which AI vendor to pick?
+5. **[Incident Response Plan](https://clawhub.com/skills/afrexai-incident-response-plan)** → What if it breaks?
+6. **[SLA Monitor](https://clawhub.com/skills/afrexai-sla-monitor)** → How do you keep it running?
