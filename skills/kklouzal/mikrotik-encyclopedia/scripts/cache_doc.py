@@ -11,6 +11,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 ALLOWED_NETLOC = 'help.mikrotik.com'
+ALLOWED_SCHEMES = {'https'}
 
 
 class TextExtractor(HTMLParser):
@@ -65,10 +66,16 @@ def default_root() -> Path:
     return Path.cwd() / '.MikroTik-Encyclopedia'
 
 
-def build_output_path(root: Path, url: str) -> Path:
+def validate_url(url: str) -> urllib.parse.ParseResult:
     parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ALLOWED_SCHEMES:
+        raise ValueError(f'Only {sorted(ALLOWED_SCHEMES)} URLs are supported')
     if parsed.netloc != ALLOWED_NETLOC:
         raise ValueError(f'Only {ALLOWED_NETLOC} URLs are supported')
+    return parsed
+
+
+def build_output_path(root: Path, parsed: urllib.parse.ParseResult) -> Path:
     path = parsed.path or '/'
     if path.endswith('/'):
         path += 'index'
@@ -89,13 +96,14 @@ def main() -> int:
     parser.add_argument('--root', default=str(default_root()), help='MikroTik Encyclopedia data root (default: <cwd>/.MikroTik-Encyclopedia)')
     args = parser.parse_args()
 
+    parsed = validate_url(args.url)
     root = Path(args.root).expanduser().resolve()
     html_body = fetch_html(args.url)
     extractor = TextExtractor()
     extractor.feed(html_body)
-    title = extractor.title.strip() or Path(urllib.parse.urlparse(args.url).path).name or 'MikroTik Doc'
+    title = extractor.title.strip() or Path(parsed.path).name or 'MikroTik Doc'
     body = extractor.text()
-    out = build_output_path(root, args.url)
+    out = build_output_path(root, parsed)
     out.parent.mkdir(parents=True, exist_ok=True)
     content = (
         f'# {title}\n\n'
