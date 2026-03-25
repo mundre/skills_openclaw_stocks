@@ -110,7 +110,48 @@ Every suggestion gets tracked in `state.json` so you don't see the same thing tw
 - **rejected** → Gone, won't come back
 - **deferred** → Come back in 14 days
 
-## Auto-Apply Configuration
+## Configuration (lucid.config.json)
+
+All features are configurable via `config/lucid.config.json`. This file is created automatically when you install the skill. Defaults are conservative — opt into more powerful features as you get comfortable.
+
+```json
+{
+  "trends": {
+    "enabled": true,
+    "recurringIssues": { "enabled": true, "lookbackDays": 14, "minOccurrences": 3 },
+    "staleProjects": { "enabled": true, "staleAfterDays": 30 },
+    "escalatedPatterns": { "enabled": true, "minOccurrences": 3 }
+  },
+  "autoApply": {
+    "enabled": false,
+    "categories": {
+      "versionNumbers": false,
+      "staleCronIds": false,
+      "newProjectEntries": false,
+      "infrastructureFacts": false,
+      "lessonsLearned": false,
+      "modelStrategy": false,
+      "closedOpenLoops": false,
+      "staleProjectStatus": false
+    }
+  },
+  "review": {
+    "maxLinesPerSection": 50,
+    "confidenceThreshold": "high",
+    "requireMultipleDays": true
+  }
+}
+```
+
+**Trend Detection** (`trends.*`) — enabled by default. Scans 14 days of daily notes for recurring problems, stale projects, and repeated mistakes. Disable any detector individually or set `trends.enabled: false` to turn off completely.
+
+**Auto-Apply** (`autoApply.*`) — **disabled by default**. When enabled, Lucid commits high-confidence changes to `MEMORY.md` automatically without waiting for your review. Enable individual categories as you trust the results. All auto-applied changes are git-committed and revertable.
+
+**Review settings** (`review.*`) — controls how conservative Lucid is. `requireMultipleDays: true` means a fact must appear on 2+ separate days before being suggested.
+
+---
+
+## Auto-Apply Categories
 
 Lucid can automatically apply high-confidence changes without requiring your review. This is opt-in and configurable.
 
@@ -144,7 +185,8 @@ Lucid is conservative by design:
 
 - Only suggests new facts if mentioned on **2+ separate days**
 - Only flags stale entries if the newer info **clearly** replaces the old
-- **Never** suggests adding passwords, API keys, tokens, or temporary debug info
+- Designed to avoid suggesting passwords, API keys, tokens, or temporary debug info in memory updates
+- ⚠️ The skill reads all workspace markdown files. Do not run on a workspace containing unencrypted API keys or secrets in plain markdown files.
 - Every suggestion includes a source link to the original daily note
 - Auto-apply only triggers on **high confidence** — medium/low always require human review
 
@@ -164,6 +206,8 @@ Lucid takes the best concepts from each and implements them with zero infrastruc
 - [x] V1.5 — Auto-apply for high-confidence, low-risk suggestions (git-backed, revertable)
 - [x] V1.5 — Configurable auto-apply categories via `config/auto-apply.md`
 - [x] V1.5 — Stricter confidence gate: medium/low never auto-applied
+- [x] V0.4.0 — Trend Detection: recurring issues, stale projects, escalated patterns
+- [x] V0.4.0 — Configurable via `config/lucid.config.json` (all features toggleable)
 - [ ] V2 — Embedding-based dedup for similar suggestions
 - [ ] V2 — Auto-promotion (facts referenced N times → suggest for memory)
 - [ ] V2 — Weekly consolidation

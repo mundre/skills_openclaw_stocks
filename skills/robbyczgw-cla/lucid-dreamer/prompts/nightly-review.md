@@ -51,7 +51,7 @@ For suggestions that are HIGH confidence AND fall into these safe categories, ap
 
 For AUTO-APPLY:
 1. Edit MEMORY.md directly using the write tool
-2. Run `cd $CLAWD_DIR && git add MEMORY.md && git commit -m "dreamer: auto-apply — DESCRIPTION"` 
+2. Run `cd $CLAWD_DIR && git add MEMORY.md && git commit -m "dreamer: auto-apply $(date +%Y-%m-%d)"` 
 3. Track these in state.json with status "accepted"
 
 Do NOT auto-apply:
@@ -62,6 +62,22 @@ Do NOT auto-apply:
 - OpenCami status changes
 - Anything you are uncertain about
 - Anything with medium or low confidence
+
+### Step 7b: Run Trend Detection
+
+Run the trend detection script to analyze patterns across the last 14 days:
+
+```bash
+python3 scripts/trend_detection.py \
+  --workspace "$CLAWD_DIR" \
+  --date "$(date +%Y-%m-%d)" \
+  --days 14 \
+  --stale-days 30 \
+  --state memory/review/state.json
+```
+
+Capture the stdout output — this is the `## Trends` section to include in the review file.
+If the script fails or no daily notes exist, skip the Trends section gracefully.
 
 ### Step 8: Generate review file
 Create `memory/review/TODAY.md` with:
@@ -87,6 +103,10 @@ Create `memory/review/TODAY.md` with:
 
 ## Stale Facts (needs your decision)
 <!-- Non-safe stale entries -->
+
+## Trends
+<!-- Output from trend_detection.py — recurring issues, stale projects, escalated patterns -->
+<!-- If script produced no output, write: "No trends detected." -->
 ```
 
 ### Decision Policy (MANDATORY):

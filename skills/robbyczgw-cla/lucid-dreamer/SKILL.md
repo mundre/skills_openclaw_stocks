@@ -1,7 +1,8 @@
 ---
 name: lucid-dreamer
-description: "Nightly AI memory reasoning system. Lucid runs every night while you sleep — it reads your daily notes and memory files, detects stale facts, unresolved todos, recurring problems, and forgotten decisions, then generates a review report for your approval. Zero dependencies, no database, no embeddings. Just a cron job and markdown files. Use when you want your AI agent to automatically maintain and improve its long-term memory over time. Triggers on \"memory dreamer\", \"nightly memory review\", \"lucid\", \"auto memory\", \"memory cleanup\", \"memory hygiene\"."
-metadata: {"openclaw":{"requires":{"bins":["git","date"],"env":{"CLAWD_DIR":"optional — workspace path, defaults to cwd"},"note":"Set CLAWD_DIR to your workspace. Auto-apply is opt-in and disabled by default."}}}
+version: 0.4.0
+description: "Nightly AI memory reasoning system. Lucid runs every night while you sleep — it reads your daily notes and memory files, detects stale facts, unresolved todos, recurring problems, and forgotten decisions, then generates a review report for your approval. v0.4.0 adds Trend Detection — recurring issues, stale projects, and escalated patterns across 14 days of notes. Zero dependencies, no database, no embeddings. Just a cron job and markdown files. Use when you want your AI agent to automatically maintain and improve its long-term memory over time. Triggers on \"memory dreamer\", \"nightly memory review\", \"lucid\", \"auto memory\", \"memory cleanup\", \"memory hygiene\"."
+metadata: {"openclaw":{"requires":{"bins":["git","date","python3"],"env":{"CLAWD_DIR":"optional — workspace path, defaults to cwd"},"note":"Set CLAWD_DIR to your workspace. Auto-apply is opt-in and disabled by default — set autoApply.enabled: true in config/lucid.config.json to enable. python3 required for trend detection."}}}
 ---
 
 # Lucid Dreamer 🧠
@@ -42,12 +43,13 @@ See `README.md` for full setup, `ARCHITECTURE.md` for internals, and `config/` f
 - `memory/review/YYYY-MM-DD.md` — the generated review report
 - `memory/review/state.json` — approval/rejection tracking state
 
-**What this skill never does:**
-- Never reads or outputs API keys, tokens, or credentials
+**What this skill is designed to avoid:**
+- Avoid suggesting or outputting passwords, API keys, tokens, or other credentials in generated memory updates
 - Never accesses files outside the configured workspace directory
 - Never pushes to remote git automatically — all commits are local only, and no `git push` is performed unless you explicitly run it
 - Announce/notification delivery is opt-in and off by default — no messages are sent without explicit configuration
 
 **Recommendations:**
 - Set `CLAWD_DIR` explicitly in your environment to ensure the skill operates on the correct workspace
+- This skill reads workspace markdown files such as `MEMORY.md`, `USER.md`, and recent daily notes. Do not run it on a workspace containing unencrypted API keys or other secrets in plain markdown files.
 - Review generated reports before approving suggestions — Lucid proposes changes, but you remain in control

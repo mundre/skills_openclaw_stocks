@@ -3,7 +3,7 @@
 ## Candidate Updates
 
 ### 1. Nova Agent — New Infrastructure (high confidence)
-- **Add to Projects section:** `nova-node` container (Tailscale `100.99.99.35`) running Nova agent with GPT-5.4 via Codex OAuth, systemd service `nova-gateway.service`, Telegram bot `REDACTED`, mem0 Vector-DB memory
+- **Add to Projects section:** `nova-node` container (Tailscale `100.99.99.35`) running Nova agent with GPT-5.4 via Codex OAuth, systemd service `nova-gateway.service`, chat automation enabled, local memory store configured
 - **Source:** `memory/2026-03-15.md` (Nova Agent Setup) + `memory/2026-03-13.md` (initial install)
 - **Context:** Replaces legacyBot (deleted 2026-03-13), MiniBot vs Nova decision pending as of 2026-03-15
 
@@ -23,8 +23,8 @@
 - **MEMORY.md Published Skills table** shows `smart-search 2.7.2` but notes show it was bumped to 2.9.0 (2026-03-12) and the plugin to 1.2.2 (2026-03-11). Table is stale.
 - **Source:** `memory/2026-03-12.md` (smart-search v2.9.0) + `memory/2026-03-11.md` (plugin v1.2.2)
 
-### 6. SEARCH_API_KEY TODO (low confidence)
-- **Lessons Learned / Operational:** `SEARCH_API_KEY` still missing from config — noted as TODO since 2026-03-12. Worth adding as a formal TODO or note.
+### 6. Search config follow-up (low confidence)
+- **Lessons Learned / Operational:** search configuration is still incomplete and has been noted as a follow-up since 2026-03-12. Worth adding as a formal TODO or note.
 - **Source:** `memory/2026-03-12.md` (smart-search v2.9.0 section, end)
 
 ---
@@ -93,7 +93,7 @@
 ### 2. Persistent low-priority TODOs (personas, agent-chronicle)
 - `personas --force update to 2.2.6` and `publish agent-chronicle 0.6.2` appear in every single daily note from 2026-03-10 through 2026-03-16 (7 days) — never acted on
 - Both are trivial 5-minute tasks that keep getting deprioritized
-- **Source:** `memory/2026-03-10.md`, `2026-03-12.md`, `2026-03-14.md`, `2026-03-15.md`
+- **Source:** `memory/2026-03-10.md`, `2026-03-12.md`, `memory/2026-03-14.md`, `memory/2026-03-15.md`
 
 ---
 
@@ -137,6 +137,26 @@
 - MEMORY.md still shows: "Reminder Cron: set for 2026-03-16 09:00 (ID: `b40d8516`)"
 - Today is 2026-03-16 — this cron has already fired (or was due to). Should be removed from MEMORY.md once Acme Corp loop closes.
 - **Source:** MEMORY.md Acme Corp section + `memory/2026-03-14.md`
+
+---
+
+## Trends
+
+### 🔁 Recurring Issues
+_Same issue/topic flagged on 3+ separate days in the last 14 days._
+
+1. **tailscale down / disconnect** — appeared on 4 days (2026-03-10, 2026-03-12, 2026-03-14, 2026-03-15)
+2. **personas --force update pending** — appeared on 7 days (2026-03-10, 2026-03-11, 2026-03-12, 2026-03-13, 2026-03-14, 2026-03-15, 2026-03-16)
+
+### 🕸️ Possibly Stale Projects
+_Projects in MEMORY.md not mentioned in any daily note for 30+ days._
+
+_All tracked projects appear active._
+
+### ⚠️ Escalated Patterns (Repeated Mistakes)
+_Same lesson/mistake appearing in 3+ daily notes — pattern not yet broken._
+
+_No escalated patterns detected._
 
 ---
 

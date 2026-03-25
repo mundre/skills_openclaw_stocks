@@ -6,6 +6,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-03-25
+
+### Added
+- **Trend Detection** module (`scripts/trend_detection.py`) — analyzes patterns across 14 days of daily notes:
+  - **Recurring Issues** — flags topics/problems appearing on 3+ separate days
+  - **Stale Project Detection** — finds projects in MEMORY.md not mentioned in any daily note for 30+ days
+  - **Escalated Patterns** — detects the same lesson/mistake appearing in 3+ daily notes (repeated mistakes not yet fixed)
+- **Configurable features** via `config/lucid.config.json` — enable/disable trends, auto-apply categories, review thresholds, and notifications
+- New `## Trends` section in nightly review output (`memory/review/YYYY-MM-DD.md`)
+- Trend history tracking in `state.json` under `trends` key (accumulates across runs, keeps last 30 entries)
+- Nightly review prompt updated with Step 7b to invoke trend detection script
+- Example review and state files updated with trend output samples
+
+### Fixed
+- fix: autoApply now correctly defaults to false in shipped config (matches README)
+- **Security: hardcoded commit messages** — git commit commands in nightly-review.md now use date-only messages (`dreamer: auto-apply $(date +%Y-%m-%d)`) instead of interpolating user-controlled content, preventing potential injection
+
+### Technical Details
+- Standalone Python script with no external dependencies (stdlib only)
+- Uses difflib SequenceMatcher for fuzzy clustering of similar issues/lessons
+- Configurable via CLI flags: `--days`, `--stale-days`, `--min-recurrence`
+- All trend settings also configurable via `lucid.config.json`
+
 ## [0.3.0] — 2026-03-21
 
 ### Added
