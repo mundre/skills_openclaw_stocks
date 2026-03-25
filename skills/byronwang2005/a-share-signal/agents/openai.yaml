@@ -1,4 +1,4 @@
 interface:
   display_name: "A股信号"
   short_description: "用筹码、共振、KDJ、威科夫、缠论分析A股。"
-  default_prompt: "使用这个技能基于 AkShare 数据和用户提供的规则分析一只 A 股，结合筹码分布、三周期共振、优化 KDJ、威科夫、缠论以及评分体系，输出明确结论和交易含义。"
+  default_prompt: "分析002594这只票。"

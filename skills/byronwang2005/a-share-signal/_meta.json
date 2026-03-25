@@ -3,9 +3,15 @@
   "slug": "a-share-signal",
   "displayName": "A股信号",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774162053772,
-    "commit": "https://github.com/openclaw/skills/commit/fc87a18b9a6730c01817259afa3571ca2aa05bc3"
+    "version": "1.0.1",
+    "publishedAt": 1774238674601,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774162053772,
+      "commit": "https://github.com/openclaw/skills/commit/fc87a18b9a6730c01817259afa3571ca2aa05bc3"
+    }
+  ]
 }

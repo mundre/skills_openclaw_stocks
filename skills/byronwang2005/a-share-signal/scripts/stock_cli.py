@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-A股数据查询脚本，基于 AkShare。
-用于快速查看行情、K线、板块、资金流和股票搜索结果。
+A股数据查询脚本，本地回退方案基于 AkShare。
+当环境中没有可用的 mx-skills 时，可用它快速查看行情、K线、板块、资金流和股票搜索结果。
 """
 
 import argparse
@@ -65,7 +65,7 @@ def 搜索股票(keyword):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="A股数据查询工具")
+    parser = argparse.ArgumentParser(description="A股数据查询工具（本地 AkShare 回退）")
     parser.add_argument(
         "action",
         choices=["quote", "kline", "industry", "concept", "flow", "search"],
