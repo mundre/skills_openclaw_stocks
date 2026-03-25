@@ -2,27 +2,12 @@
 name: study-buddy
 description: Interactive study assistant that creates flashcards, quizzes, and spaced repetition reviews from any source material (notes, PDFs, photos, text, URLs). Use when the user wants to study, memorize, review, prepare for exams, create flashcards, take a quiz, practice questions, or learn any topic. Triggers on phrases like "study", "quiz me", "flashcards", "review", "exam prep", "test me", "help me memorize", "spaced repetition", "study session".
 metadata:
-  { "openclaw": { "emoji": "📚" } }
+  { "openclaw": { "emoji": "📚", "requires": { "bins": ["python3"] } } }
 ---
 
 # Study Buddy
 
 AI-powered study assistant that turns any material into interactive learning sessions with flashcards, quizzes, and spaced repetition — delivered through chat.
-
-## When to Use
-
-- User sends notes, photos of handwritten notes, PDFs, or text to study from
-- User asks to create flashcards from any topic or material
-- User wants to be quizzed on a subject
-- User asks for exam preparation or practice questions
-- User wants spaced repetition reviews of previously created decks
-- User says "quiz me", "test me", "study session", or similar
-
-## When NOT to Use
-
-- User wants to write an essay or paper (not studying)
-- User needs real-time tutoring with back-and-forth explanation (use a conversation instead)
-- User wants to search for study material online (use a web skill)
 
 ## Core Workflow
 
@@ -145,24 +130,7 @@ python3 scripts/deck_manager.py import deck_file.json
 python3 scripts/deck_manager.py delete "Biology Exam"
 ```
 
-## Handling Different Input Types
-
-| Input | How to Process |
-|-------|---------------|
-| **Text/notes** | Extract key concepts directly |
-| **Photo of handwritten notes** | Describe the image, extract text and concepts |
-| **PDF document** | Read and extract key sections |
-| **URL/webpage** | Fetch content, extract main points |
-| **Topic name only** | Generate cards from AI knowledge on the topic |
-| **Conversation history** | Summarize and create cards from recent discussion |
-
-## Tips for Effective Cards
-
-- **Atomic**: One fact per card, never compound questions
-- **Clear**: Unambiguous questions with definitive answers
-- **Bidirectional**: For definitions, create both "What is X?" and "X is the definition of?"
-- **Visual mnemonics**: Suggest memory tricks when possible
-- **Progressive**: Start with basic recall, add application questions later
+For guidance on handling different input types (text, photos, PDFs, URLs) and tips for creating effective cards, see [references/guidelines.md](references/guidelines.md).
 
 ## Storage
 

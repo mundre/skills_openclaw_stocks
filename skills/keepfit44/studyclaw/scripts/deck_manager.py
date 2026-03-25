@@ -3,6 +3,8 @@
 Study Buddy - Deck Manager
 Manages flashcard decks with spaced repetition (SM-2 algorithm).
 
+License: MIT
+
 Usage:
     deck_manager.py create <deck_name> --cards '<json_array>'
     deck_manager.py add <deck_name> --cards '<json_array>'
@@ -18,58 +20,102 @@ Usage:
     deck_manager.py delete <deck_name>
 """
 
+from __future__ import annotations
+
 import argparse
 import json
+import logging
 import os
 import random
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
+__all__ = [
+    "DECKS_DIR",
+    "ensure_dir",
+    "deck_path",
+    "load_deck",
+    "save_deck",
+    "new_card",
+    "sm2_update",
+    "cmd_create",
+    "cmd_add",
+    "cmd_list",
+    "cmd_stats",
+    "cmd_review",
+    "cmd_quiz",
+    "cmd_exam",
+    "cmd_record",
+    "cmd_due",
+    "cmd_export",
+    "cmd_import",
+    "cmd_delete",
+    "main",
+]
+
+# --- Named constants ---
+MASTERY_THRESHOLD = 5          # Repetitions needed to consider a card mastered
+DEFAULT_EASE = 2.5             # Starting ease factor for new cards
+MIN_EASE = 1.3                 # Minimum ease factor (SM-2 floor)
+EASE_BONUS_CORRECT = 0.1      # Ease increase on correct answer
+EASE_PENALTY_PARTIAL = -0.15   # Ease decrease on partial answer
+EASE_PENALTY_MISSED = -0.2    # Ease decrease on missed answer
+DEFAULT_QUIZ_COUNT = 10        # Default number of quiz questions
+DEFAULT_EXAM_QUESTIONS = 20    # Default number of exam questions
+
 DECKS_DIR = Path.home() / ".openclaw" / "study-buddy" / "decks"
 
 
-def ensure_dir():
+def ensure_dir() -> None:
+    """Create the decks directory if it does not exist."""
     DECKS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def deck_path(name):
+def deck_path(name: str) -> Path:
+    """Return the filesystem path for a deck given its name."""
     safe = name.lower().replace(" ", "_").replace("/", "_")
     return DECKS_DIR / f"{safe}.json"
 
 
-def load_deck(name):
+def load_deck(name: str) -> dict:
+    """Load a deck from disk by name, exiting if not found."""
     path = deck_path(name)
     if not path.exists():
+        logger.error("Deck '%s' not found.", name)
         print(f"Error: Deck '{name}' not found.", file=sys.stderr)
         sys.exit(1)
     with open(path) as f:
         return json.load(f)
 
 
-def save_deck(deck):
+def save_deck(deck: dict) -> None:
+    """Persist a deck dictionary to its JSON file on disk."""
     ensure_dir()
     path = deck_path(deck["name"])
     with open(path, "w") as f:
         json.dump(deck, f, indent=2, ensure_ascii=False)
 
 
-def new_card(card_id, question, answer):
+def new_card(card_id: int, question: str, answer: str) -> dict:
+    """Create a new flashcard with default SM-2 scheduling values."""
     return {
         "id": card_id,
         "q": question,
         "a": answer,
         "interval": 0,
-        "ease": 2.5,
+        "ease": DEFAULT_EASE,
         "repetitions": 0,
         "next_review": datetime.now().isoformat(),
         "created_at": datetime.now().isoformat(),
     }
 
 
-def sm2_update(card, result):
-    """SM-2 spaced repetition algorithm."""
-    ease = card.get("ease", 2.5)
+def sm2_update(card: dict, result: str) -> dict:
+    """Apply the SM-2 spaced repetition algorithm to update a card's scheduling."""
+    ease = card.get("ease", DEFAULT_EASE)
     interval = card.get("interval", 0)
     reps = card.get("repetitions", 0)
 
@@ -81,13 +127,13 @@ def sm2_update(card, result):
         else:
             interval = int(interval * ease)
         reps += 1
-        ease = max(1.3, ease + 0.1)
+        ease = max(MIN_EASE, ease + EASE_BONUS_CORRECT)
     elif result == "partial":
-        ease = max(1.3, ease - 0.15)
+        ease = max(MIN_EASE, ease + EASE_PENALTY_PARTIAL)
     elif result == "missed":
         reps = 0
         interval = 1
-        ease = max(1.3, ease - 0.2)
+        ease = max(MIN_EASE, ease + EASE_PENALTY_MISSED)
 
     card["interval"] = interval
     card["ease"] = round(ease, 2)
@@ -96,14 +142,42 @@ def sm2_update(card, result):
     return card
 
 
-def cmd_create(args):
+def _validate_cards_json(cards_json: str) -> list[dict]:
+    """Parse and validate a JSON string of cards, ensuring each has 'q' and 'a' keys."""
+    try:
+        cards_data = json.loads(cards_json)
+    except json.JSONDecodeError as exc:
+        logger.error("Invalid JSON for cards: %s", exc)
+        print(f"Error: Invalid JSON for cards: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if not isinstance(cards_data, list):
+        logger.error("Cards must be a JSON array.")
+        print("Error: Cards must be a JSON array.", file=sys.stderr)
+        sys.exit(1)
+
+    for i, card in enumerate(cards_data):
+        if "q" not in card or "a" not in card:
+            logger.error("Card at index %d is missing required 'q' and/or 'a' keys.", i)
+            print(
+                f"Error: Card at index {i} is missing required 'q' and/or 'a' keys.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    return cards_data
+
+
+def cmd_create(args: argparse.Namespace) -> None:
+    """Create a new flashcard deck from a JSON array of cards."""
     ensure_dir()
     path = deck_path(args.deck_name)
     if path.exists():
+        logger.error("Deck '%s' already exists. Use 'add' to add cards.", args.deck_name)
         print(f"Error: Deck '{args.deck_name}' already exists. Use 'add' to add cards.", file=sys.stderr)
         sys.exit(1)
 
-    cards_data = json.loads(args.cards)
+    cards_data = _validate_cards_json(args.cards)
     cards = [new_card(i + 1, c["q"], c["a"]) for i, c in enumerate(cards_data)]
 
     deck = {
@@ -117,9 +191,10 @@ def cmd_create(args):
     print(json.dumps({"status": "created", "deck": args.deck_name, "cards": len(cards)}, indent=2))
 
 
-def cmd_add(args):
+def cmd_add(args: argparse.Namespace) -> None:
+    """Add new cards to an existing deck."""
     deck = load_deck(args.deck_name)
-    cards_data = json.loads(args.cards)
+    cards_data = _validate_cards_json(args.cards)
     next_id = deck.get("next_id", len(deck["cards"]) + 1)
 
     new_cards = []
@@ -133,9 +208,10 @@ def cmd_add(args):
     print(json.dumps({"status": "added", "deck": args.deck_name, "new_cards": len(new_cards), "total_cards": len(deck["cards"])}, indent=2))
 
 
-def cmd_list(args):
+def cmd_list(args: argparse.Namespace) -> None:
+    """List all decks with card counts and due counts."""
     ensure_dir()
-    decks = []
+    decks: list[dict] = []
     for f in sorted(DECKS_DIR.glob("*.json")):
         with open(f) as fh:
             d = json.load(fh)
@@ -150,13 +226,14 @@ def cmd_list(args):
     print(json.dumps({"decks": decks}, indent=2))
 
 
-def cmd_stats(args):
+def cmd_stats(args: argparse.Namespace) -> None:
+    """Show statistics for a specific deck."""
     deck = load_deck(args.deck_name)
     now = datetime.now()
     cards = deck["cards"]
     due = [c for c in cards if datetime.fromisoformat(c["next_review"]) <= now]
-    mastered = [c for c in cards if c.get("repetitions", 0) >= 5]
-    learning = [c for c in cards if 0 < c.get("repetitions", 0) < 5]
+    mastered = [c for c in cards if c.get("repetitions", 0) >= MASTERY_THRESHOLD]
+    learning = [c for c in cards if 0 < c.get("repetitions", 0) < MASTERY_THRESHOLD]
     new = [c for c in cards if c.get("repetitions", 0) == 0]
 
     print(json.dumps({
@@ -166,11 +243,12 @@ def cmd_stats(args):
         "mastered": len(mastered),
         "learning": len(learning),
         "new": len(new),
-        "average_ease": round(sum(c.get("ease", 2.5) for c in cards) / max(len(cards), 1), 2),
+        "average_ease": round(sum(c.get("ease", DEFAULT_EASE) for c in cards) / max(len(cards), 1), 2),
     }, indent=2))
 
 
-def cmd_review(args):
+def cmd_review(args: argparse.Namespace) -> None:
+    """Return due cards for review, shuffled randomly."""
     deck = load_deck(args.deck_name)
     now = datetime.now()
     due = [c for c in deck["cards"] if datetime.fromisoformat(c["next_review"]) <= now]
@@ -186,25 +264,27 @@ def cmd_review(args):
     print(json.dumps({"deck": args.deck_name, "due_count": len(due), "cards": cards_out}, indent=2))
 
 
-def cmd_quiz(args):
+def cmd_quiz(args: argparse.Namespace) -> None:
+    """Generate a random quiz from the deck's cards."""
     deck = load_deck(args.deck_name)
-    count = min(args.count or 10, len(deck["cards"]))
+    count = min(args.count or DEFAULT_QUIZ_COUNT, len(deck["cards"]))
     selected = random.sample(deck["cards"], count)
     cards_out = [{"id": c["id"], "q": c["q"], "a": c["a"]} for c in selected]
     print(json.dumps({"deck": args.deck_name, "quiz_count": count, "cards": cards_out}, indent=2))
 
 
-def cmd_exam(args):
+def cmd_exam(args: argparse.Namespace) -> None:
+    """Generate a structured exam with multiple question types."""
     deck = load_deck(args.deck_name)
-    count = min(args.questions or 20, len(deck["cards"]))
+    count = min(args.questions or DEFAULT_EXAM_QUESTIONS, len(deck["cards"]))
     types = (args.types or "multiple_choice,short_answer,true_false").split(",")
     selected = random.sample(deck["cards"], count)
     all_answers = [c["a"] for c in deck["cards"]]
 
-    questions = []
+    questions: list[dict] = []
     for i, card in enumerate(selected):
         q_type = types[i % len(types)]
-        q = {"number": i + 1, "type": q_type, "question": card["q"], "card_id": card["id"]}
+        q: dict = {"number": i + 1, "type": q_type, "question": card["q"], "card_id": card["id"]}
 
         if q_type == "multiple_choice":
             distractors = [a for a in all_answers if a != card["a"]]
@@ -233,7 +313,8 @@ def cmd_exam(args):
     print(json.dumps({"deck": args.deck_name, "exam": questions}, indent=2))
 
 
-def cmd_record(args):
+def cmd_record(args: argparse.Namespace) -> None:
+    """Record a review result for a specific card and update its schedule."""
     deck = load_deck(args.deck_name)
     card_id = args.card_id
 
@@ -252,14 +333,16 @@ def cmd_record(args):
             }, indent=2))
             return
 
+    logger.error("Card ID %d not found in deck '%s'.", card_id, args.deck_name)
     print(f"Error: Card ID {card_id} not found in deck '{args.deck_name}'.", file=sys.stderr)
     sys.exit(1)
 
 
-def cmd_due(args):
+def cmd_due(args: argparse.Namespace) -> None:
+    """List all decks that have cards due for review."""
     ensure_dir()
     now = datetime.now()
-    results = []
+    results: list[dict] = []
     for f in sorted(DECKS_DIR.glob("*.json")):
         with open(f) as fh:
             d = json.load(fh)
@@ -269,32 +352,48 @@ def cmd_due(args):
     print(json.dumps({"due_decks": results, "total_due": sum(r["due_count"] for r in results)}, indent=2))
 
 
-def cmd_export(args):
+def cmd_export(args: argparse.Namespace) -> None:
+    """Export a deck as formatted JSON to stdout."""
     deck = load_deck(args.deck_name)
     print(json.dumps(deck, indent=2, ensure_ascii=False))
 
 
-def cmd_import(args):
+def cmd_import(args: argparse.Namespace) -> None:
+    """Import a deck from a JSON file on disk."""
     ensure_dir()
-    with open(args.file_path) as f:
-        deck = json.load(f)
+    try:
+        with open(args.file_path) as f:
+            deck = json.load(f)
+    except FileNotFoundError:
+        logger.error("File not found: %s", args.file_path)
+        print(f"Error: File not found: {args.file_path}", file=sys.stderr)
+        sys.exit(1)
+    except json.JSONDecodeError as exc:
+        logger.error("Invalid JSON in file '%s': %s", args.file_path, exc)
+        print(f"Error: Invalid JSON in file '{args.file_path}': {exc}", file=sys.stderr)
+        sys.exit(1)
+
     if "name" not in deck or "cards" not in deck:
+        logger.error("Invalid deck format. Must have 'name' and 'cards'.")
         print("Error: Invalid deck format. Must have 'name' and 'cards'.", file=sys.stderr)
         sys.exit(1)
     save_deck(deck)
     print(json.dumps({"status": "imported", "deck": deck["name"], "cards": len(deck["cards"])}, indent=2))
 
 
-def cmd_delete(args):
+def cmd_delete(args: argparse.Namespace) -> None:
+    """Delete a deck file from disk."""
     path = deck_path(args.deck_name)
     if not path.exists():
+        logger.error("Deck '%s' not found.", args.deck_name)
         print(f"Error: Deck '{args.deck_name}' not found.", file=sys.stderr)
         sys.exit(1)
     path.unlink()
     print(json.dumps({"status": "deleted", "deck": args.deck_name}, indent=2))
 
 
-def main():
+def main() -> None:
+    """Entry point: parse CLI arguments and dispatch to the appropriate command."""
     parser = argparse.ArgumentParser(description="Study Buddy - Flashcard Deck Manager")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -341,7 +440,7 @@ def main():
 
     args = parser.parse_args()
 
-    commands = {
+    commands: dict[str, callable] = {
         "create": cmd_create, "add": cmd_add, "list": cmd_list,
         "stats": cmd_stats, "review": cmd_review, "quiz": cmd_quiz,
         "exam": cmd_exam, "record": cmd_record, "due": cmd_due,
