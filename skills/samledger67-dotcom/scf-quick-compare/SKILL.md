@@ -53,8 +53,8 @@ scripts/pipelines/scf-quick-compare.py
 ## Requirements
 
 - `pip install openpyxl` (already installed in workspace)
-- Node.js `qbo-client` at `integrations/qbo-client/` with valid auth token
-- `.env.wallet` containing QBO credentials
+- Node.js QBO client with valid auth token
+- QBO credentials configured
 
 ## Usage
 
@@ -183,6 +183,3 @@ Stores the flat map of all SCF line names → amounts for the most recent run. O
 
 All calculations use Python `Decimal` with `ROUND_HALF_UP` — no floating-point rounding errors in financial outputs.
 
-## Pipeline Number
-
-Pipeline #14 in the 14-Day Deterministic Pipeline Build.

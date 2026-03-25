@@ -3,9 +3,15 @@
   "slug": "scf-quick-compare",
   "displayName": "SCF Quick Compare",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773857643679,
-    "commit": "https://github.com/openclaw/skills/commit/da305384a701f630b9ce7c237ac0d5822e38eafc"
+    "version": "1.0.2",
+    "publishedAt": 1774166538444,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773857643679,
+      "commit": "https://github.com/openclaw/skills/commit/da305384a701f630b9ce7c237ac0d5822e38eafc"
+    }
+  ]
 }
