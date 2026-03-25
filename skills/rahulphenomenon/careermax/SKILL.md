@@ -1,6 +1,6 @@
 ---
 name: careermax
-description: All the tools you need to land your next job. Use when the user wants to track job applications, review their resume, write cover letters, prep for interviews, find referrals, or identify skill gaps.
+description: Careermax (careermax.ai) gives you all the tools you need to land your next job. Use when the user wants to track job applications, review their resume, write cover letters, prep for interviews, find referrals, or identify skill gaps.
 version: 0.1.2
 metadata:
   openclaw:
@@ -13,13 +13,13 @@ metadata:
     homepage: https://careermax.ai
 ---
 
-# CareerMax Agent Toolkit
+# Careermax Agent Toolkit
 
 All the tools you need to land your next job — powered by AI.
 
 ## Setup
 
-1. Get an API key from [CareerMax Settings](https://careermax.ai/dashboard/settings/api-keys)
+1. Get an API key from [Careermax Settings](https://careermax.ai/dashboard/settings/api-keys)
 2. Set the environment variable: `export CAREERMAX_API_KEY="cmx_live_..."`
 
 ## What You Can Do
@@ -68,9 +68,9 @@ Learning plans, resources, and quizzes for target roles.
 
 ## How It Works
 
-1. The skill connects to CareerMax via the `@careermax/agent-toolkit` MCP server
+1. The skill connects to Careermax via the `@careermax/agent-toolkit` MCP server
 2. Read operations are instant. Write operations use preview/confirm — you see a summary before anything changes.
-3. All AI processing happens server-side on the same backend as the CareerMax web app.
+3. All AI processing happens server-side on the same backend as the Careermax web app.
 
 ## Usage
 
