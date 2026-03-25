@@ -58,7 +58,7 @@ Grep("repositoryURL|location", path="**/Package.resolved", output_mode="content"
 ```bash
 # Scan #if macro usage
 Grep("#if\\s+(\\w+)", glob="**/*.swift", output_mode="content", head_limit=30)
-# Common patterns: #if INSPO, #if MINIMAX, #if DEBUG, #if targetEnvironment
+# Common patterns: #if TARGET_A, #if TARGET_B, #if DEBUG, #if targetEnvironment
 # Filter out standard macros (DEBUG, targetEnvironment) — the rest indicate dual targets
 
 # Extract from pbxproj
@@ -87,8 +87,8 @@ Glob("Packages/*/Sources/**/*.swift")
 ### Business modules
 ```bash
 # List first-level subdirectories with .swift files
-Bash("ls -d Inspo/*/")  # adjust to actual main directory name
-Glob("Inspo/*/*.swift")
+Bash("ls -d App/*/")  # adjust to actual main directory name
+Glob("App/*/*.swift")
 ```
 
 ## Swift Code Scanning
@@ -156,8 +156,8 @@ Grep("class\\s+\\w+Manager", glob="**/*.swift", output_mode="files_with_matches"
 
 ```bash
 # File naming patterns (prefix detection)
-Bash("ls Inspo/**/*.swift | head -30")
-# Common prefixes: MM, HL, HY, etc.
+Bash("ls App/**/*.swift | head -30")
+# Common prefixes: XX, YY, ZZ, etc.
 
 # Localization method
 Grep("NSLocalizedString|localized|\\.mm\\.localized", glob="**/*.swift", output_mode="content", head_limit=10)

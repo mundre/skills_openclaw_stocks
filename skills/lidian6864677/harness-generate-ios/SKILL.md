@@ -10,7 +10,7 @@ Scan an iOS project and auto-generate the Claude Code harness file system. Core 
 ## Arguments
 
 - **None** (default): Full project initialization — generate the complete harness
-- **`<module-path>`**: Process a single module (e.g. `Packages/HLPaymentKit`, `Inspo/LoginModule`)
+- **`<module-path>`**: Process a single module (e.g. `Packages/SomeKit`, `App/LoginModule`)
 
 Routing: if an argument is provided and is not `--init` → single-module mode; otherwise → full-project mode.
 
@@ -212,7 +212,7 @@ Check each condition — generate a rule if **any** is met:
 | Thread constraint | Has `@MainActor` or UI class with async methods | "UI updates must be on main thread" |
 | Easy-to-misuse API | Method names contain `unsafe`/`force`, or parameters include Bool toggles | "Do not call unsafeXxx directly" |
 | Design token constraint | Module is a UI component library | "Colors/fonts must use semantic tokens" |
-| Compiler flag divergence | Files contain `#if INSPO`/`#if MINIMAX` | "Build both schemes when modifying" |
+| Compiler flag divergence | Files contain `#if TARGET_A`/`#if TARGET_B` | "Build both schemes when modifying" |
 
 **None met → do not generate a rule file.**
 
@@ -220,7 +220,7 @@ Generated rules use the "Rule file" template from [templates.md](references/temp
 
 ### Step 4: Update Indexes
 
-- If the module belongs to an umbrella package (e.g. MMUIComponents sub-component) → update that package's README index table
+- If the module belongs to an umbrella package (e.g. UIComponents sub-component) → update that package's README index table
 - **MUST** add a CLAUDE.md task routing entry for every newly created README
 - **MUST** annotate the auto-load relationship in CLAUDE.md for every newly created rule file
 

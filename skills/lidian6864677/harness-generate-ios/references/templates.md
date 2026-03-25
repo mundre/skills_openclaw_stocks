@@ -138,8 +138,8 @@ A → B → C
 # Style Guide
 
 ## 命名规范
-- **文件名**: {检测到的模式，如 MMXxxViewController.swift}
-- **类名前缀**: {检测到的前缀，如 MM / HL}
+- **文件名**: {检测到的模式，如 XXXxxViewController.swift}
+- **类名前缀**: {检测到的前缀，如 XX / YY}
 - **ViewController**: {命名模式}
 - **ViewModel**: {命名模式}
 
@@ -181,7 +181,7 @@ A → B → C
 
 ## 编译
 - [ ] 修改 public API → 编译通过
-- [ ] 修改 #if INSPO/#if MINIMAX → 两个 scheme 都编译
+- [ ] 修改 #if TARGET_A/#if TARGET_B → 两个 scheme 都编译
 - [ ] SwiftLint 无新增 error
 ```
 
@@ -251,6 +251,6 @@ paths:
 2. 有线程约束（如：UI 方法必须在主线程调用）
 3. 有容易误用的 API（如：参数含义不直观）
 4. 有 design token 约束（如：颜色必须用语义化 token）
-5. 有编译宏差异（如：#if INSPO 和 #if MINIMAX 行为不同）
+5. 有编译宏差异（如：#if TARGET_A 和 #if TARGET_B 行为不同）
 
 **全部不满足 → 不生成 rule 文件。**
