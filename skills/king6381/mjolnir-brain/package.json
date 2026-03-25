@@ -1,0 +1,23 @@
+{
+  "name": "mjolnir-brain",
+  "version": "1.0.5",
+  "description": "AI Agent Self-Evolving Memory System — persistent memory, self-learning, and auto-correction. Core functions are local-only (pure Markdown + JSON). Optional scripts require: bash 4+, git, grep. Optional backup requires: curl, ssh/scp.",
+  "keywords": ["ai-agent", "memory", "self-learning", "openclaw", "strategy-registry", "write-through", "local-first"],
+  "author": "king6381",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/king6381/mjolnir-brain"
+  },
+  "os": ["linux", "darwin"],
+  "optionalDependencies_note": "Core memory system needs NO binaries. Scripts optionally use: bash 4+, git, grep, tar/gzip, curl (WebDAV backup), ssh/scp (SSH backup)",
+  "env": {
+    "MJOLNIR_BRAIN_WORKSPACE": "可选：覆盖工作空间路径（默认：$HOME/.openclaw/workspace）",
+    "MJOLNIR_USER": "可选：多用户模式当前用户名（默认：当前系统用户）",
+    "WEBDAV_URL": "可选：WebDAV 备份地址（如：http://192.168.110.29/remote.php/webdav/）",
+    "WEBDAV_USER": "可选：WebDAV 用户名",
+    "WEBDAV_PASS": "可选：WebDAV 密码",
+    "SSH_HOST": "可选：SSH 备份主机（如：user@host）",
+    "SSH_PATH": "可选：SSH 备份路径（如：/backup/mjolnir/）"
+  }
+}
