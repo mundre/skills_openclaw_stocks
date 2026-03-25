@@ -8,6 +8,23 @@ metadata: {"clawdbot":{"emoji":"🎵","requires":{"bins":["uv"],"env":["ELEVENLA
 
 Generate complete songs from text prompts with AI-generated lyrics and vocals.
 
+---
+
+## 💰 付费服务
+
+**AI 音乐定制**:
+
+| 服务 | 价格 | 交付 |
+|------|------|------|
+| 短视频 BGM | ¥300/首 | 30 秒定制音乐 |
+| 完整歌曲 | ¥800/首 | 2-3 分钟 + 歌词 |
+| 品牌 Jingle | ¥1500/首 | 企业专属音乐 |
+| 专辑定制 | ¥5000/套 | 5 首系列音乐 |
+
+**联系**: 微信/Telegram 私信，备注"音乐定制"
+
+---
+
 ## Quick Start
 
 ```bash
