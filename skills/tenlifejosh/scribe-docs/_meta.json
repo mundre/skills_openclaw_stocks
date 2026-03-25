@@ -1,11 +1,17 @@
 {
   "owner": "tenlifejosh",
   "slug": "scribe-docs",
-  "displayName": "Scribe Docs",
+  "displayName": "Scribe Docs — World-Class AI Writing & Copy System",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774134394855,
-    "commit": "https://github.com/openclaw/skills/commit/55e1c7afc1acb7c1852276ce9c8fd67c21cb5a8e"
+    "version": "1.0.1",
+    "publishedAt": 1774198439131,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774134394855,
+      "commit": "https://github.com/openclaw/skills/commit/55e1c7afc1acb7c1852276ce9c8fd67c21cb5a8e"
+    }
+  ]
 }
