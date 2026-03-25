@@ -3,9 +3,15 @@
   "slug": "hive-commander",
   "displayName": "hive-commander",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773741675326,
-    "commit": "https://github.com/openclaw/skills/commit/5107a29d366e047e6044d5ccfb0d2aa51a6c780c"
+    "version": "1.0.3",
+    "publishedAt": 1774003571829,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773741675326,
+      "commit": "https://github.com/openclaw/skills/commit/5107a29d366e047e6044d5ccfb0d2aa51a6c780c"
+    }
+  ]
 }
