@@ -5,6 +5,13 @@ version: "1.0.0"
 tags: [backup, sync, identity, version-control]
 license: MIT-0
 min_openclaw: "2026.1"
+source: "https://github.com/clawco-io/clawdna/tree/main/packages/skill"
+homepage: "https://github.com/clawco-io/clawdna#readme"
+repository: "https://github.com/clawco-io/clawdna.git"
+env:
+  CLAWDNA_HUB_TOKEN:
+    description: "Authentication token for ClawDNA Hub sync operations (push/pull/clone)"
+    required: false
 ---
 
 # ClawDNA -- Identity Backup & Sync

@@ -3,9 +3,15 @@
   "slug": "clawco-clawdna",
   "displayName": "ClawDNA -- Identity Backup & Sync",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774015419771,
-    "commit": "https://github.com/openclaw/skills/commit/1c046ff8ea503db198a23ed4159ab694a8c6207b"
+    "version": "1.0.1",
+    "publishedAt": 1774154794402,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774015419771,
+      "commit": "https://github.com/openclaw/skills/commit/1c046ff8ea503db198a23ed4159ab694a8c6207b"
+    }
+  ]
 }

@@ -44,5 +44,5 @@ clawdna init
 
 ## Links
 
-- [ClawDNA Repository](https://github.com/triplehelix/clawdna)
-- [ClawDNA Documentation](https://github.com/triplehelix/clawdna#readme)
+- [ClawDNA Repository](https://github.com/clawco-io/clawdna)
+- [ClawDNA Documentation](https://github.com/clawco-io/clawdna#readme)
