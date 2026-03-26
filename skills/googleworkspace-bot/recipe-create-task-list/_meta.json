@@ -3,11 +3,16 @@
   "slug": "recipe-create-task-list",
   "displayName": "Recipe Create Task List",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774300599025,
-    "commit": "https://github.com/openclaw/skills/commit/b71e31d1adea65cb2d8afad7cdc6b2e943c95240"
+    "version": "1.0.9",
+    "publishedAt": 1774540796703,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774300599025,
+      "commit": "https://github.com/openclaw/skills/commit/b71e31d1adea65cb2d8afad7cdc6b2e943c95240"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773393373704,
