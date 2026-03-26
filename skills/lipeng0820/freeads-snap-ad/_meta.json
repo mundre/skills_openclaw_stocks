@@ -3,11 +3,16 @@
   "slug": "freeads-snap-ad",
   "displayName": "FreeAds 随手拍广告",
   "latest": {
-    "version": "3.5.2",
-    "publishedAt": 1774432538662,
-    "commit": "https://github.com/openclaw/skills/commit/9fb9370f5b8bafca09d9c2f53f04c6a42161c676"
+    "version": "3.7.0",
+    "publishedAt": 1774433220554,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.5.2",
+      "publishedAt": 1774432538662,
+      "commit": "https://github.com/openclaw/skills/commit/9fb9370f5b8bafca09d9c2f53f04c6a42161c676"
+    },
     {
       "version": "3.0.0",
       "publishedAt": 1774364430148,
