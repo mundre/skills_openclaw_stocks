@@ -63,22 +63,40 @@ export SCAN_WEBSERVICE_KEY="your_scan_webservice_key_here"
 - 按照下面列出的意图*从上到下顺序匹配。命中第一个即停止*
 - 命中后，*只确定当前意图对应的scene标识*
 
-第四步：**构建执行命令(固定格式，严禁修改)**：
+第四步：**执行 Python 脚本**（安全参数传递）：
 
-根据图片类型，严格使用下面对应格式：
-```bash
-# URL类型
-python3 scripts/scan.py --scene "${SCENE_VALUE}" --url "${IMAGE_URL}"
+使用 `subprocess` 模块执行脚本，**参数以列表形式传递**（避免 shell 注入风险）：
+
+```python
+import subprocess
+
+# URL 类型
+subprocess.run([
+    "python3", "scripts/scan.py",
+    "--scene", "SCENE_VALUE",
+    "--url", "IMAGE_URL"
+], capture_output=True, text=True)
 
 # 本地文件类型
-python3 scripts/scan.py --scene "${SCENE_VALUE}" --path "${IMAGE_FILE_PATH}"
+subprocess.run([
+    "python3", "scripts/scan.py",
+    "--scene", "SCENE_VALUE",
+    "--path", "IMAGE_FILE_PATH"
+], capture_output=True, text=True)
 
-# BASE64类型
-python3 scripts/scan.py --scene "${SCENE_VALUE}" --base64 "${IMAGE_BASE64}"
+# BASE64 类型
+subprocess.run([
+    "python3", "scripts/scan.py",
+    "--scene", "SCENE_VALUE",
+    "--base64", "IMAGE_BASE64"
+], capture_output=True, text=True)
 ```
-- 把`${IMAGE_URL}`/`${IMAGE_FILE_PATH}`/`${IMAGE_BASE64}`替换为真实值
-- 把`${SCENE_VALUE}`替换为当前意图对应的scene值
-- 直接执行命令，不增删任何参数，不修改JSON，不加引号，不换行
+
+**安全说明**：
+- ✅ 参数以列表形式传递，`subprocess` 会自动处理转义
+- ✅ Python 脚本内部使用 `argparse` 验证参数
+- ✅ 文件路径/URL 由脚本内部验证器校验
+- ❌ 不要使用 `shell=True` 或直接拼接 shell 字符串
 
 第五步：**结果透出**：
 - 执行完成后，*原样返回执行结果*，不修改，不翻译，不美化，不总结
@@ -100,10 +118,10 @@ python3 scripts/scan.py --scene "${SCENE_VALUE}" --base64 "${IMAGE_BASE64}"
 - 触发意图：当用户请求将图片、截图、照片或扫描件转换为Word 文档 触发此意图
 - 场景scene标识：image-to-word
 - 参考示例指令：
-    - “把这张会议记录的拍照图片转成 Word 文档。”
-    - “请将这张包含长篇文章的截图转换为 .docx 格式。”
-    - “将这张产品说明书的截图转为 Word 格式。”
-    - “将这张产品说明书的截图转为 Word 格式。”
+  - “把这张会议记录的拍照图片转成 Word 文档。”
+  - “请将这张包含长篇文章的截图转换为 .docx 格式。”
+  - “将这张产品说明书的截图转为 Word 格式。”
+  - “将这张产品说明书的截图转为 Word 格式。”
 
 **客户端脚本增强字段**：当 `scan.py` 调用夸克 API 成功（`code == "00000"`）且响应 `data` 中包含 `"ImageBase64"` 时，`scan.py` 会**主动调用 `file_saver.py` 将其解码并保存为本地文件**，并在最终返回的 JSON 响应中，于 `data` 对象内**追加 `"path": "/tmp/xx.docx"` 字段**。该行为由 `scan.py` 脚本实现，与模型无关，也不依赖 OpenClaw 平台自动介入。
 
