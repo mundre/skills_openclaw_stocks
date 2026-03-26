@@ -1,0 +1,11 @@
+{
+  "owner": "tacitlab",
+  "slug": "any-cloud-ops",
+  "displayName": "CloudQ - Cross-Cloud Ops (Tencent/AWS/Azure/GCP/Aliyun)",
+  "latest": {
+    "version": "1.0.9",
+    "publishedAt": 1774455151136,
+    "commit": null
+  },
+  "history": []
+}
