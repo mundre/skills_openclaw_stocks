@@ -1,9 +1,10 @@
 ---
 name: word-studio
 description: Professional Word document generator. Use when user needs to create reports, papers, contracts, resumes, or any professional document. Supports docx/doc formats, charts, images, tables, TOC, and multi-language. Generates publication-ready documents. Word文档生成、专业报告、论文模板、合同制作。
-version: 1.0.2
+version: 1.0.3
 license: MIT-0
 metadata: {"openclaw": {"emoji": "📄", "requires": {"bins": ["python3"]}}}
+dependencies: "pip install python-docx pillow"
 ---
 
 # Word Studio
