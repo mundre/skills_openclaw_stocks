@@ -3,9 +3,15 @@
   "slug": "moltassist",
   "displayName": "MoltAssist",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1774517122161,
-    "commit": "https://github.com/openclaw/skills/commit/c544355070d3de50d00dd16fb56fd88be01e6053"
+    "version": "0.2.1",
+    "publishedAt": 1774520650997,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1774517122161,
+      "commit": "https://github.com/openclaw/skills/commit/c544355070d3de50d00dd16fb56fd88be01e6053"
+    }
+  ]
 }
