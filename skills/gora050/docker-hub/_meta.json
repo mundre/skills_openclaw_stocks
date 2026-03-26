@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "docker-hub",
+  "displayName": "Docker Hub",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774293821694,
+    "commit": null
+  },
+  "history": []
+}
