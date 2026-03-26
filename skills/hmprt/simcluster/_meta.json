@@ -1,0 +1,11 @@
+{
+  "owner": "hmprt",
+  "slug": "simcluster",
+  "displayName": "Simcluster - coop social video game for humans and agents",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1774306804478,
+    "commit": null
+  },
+  "history": []
+}
