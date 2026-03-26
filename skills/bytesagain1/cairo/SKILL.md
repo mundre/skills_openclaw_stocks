@@ -1,103 +1,61 @@
 ---
-name: "cairo"
-version: "1.0.0"
-description: "Cairo reference tool. Use when working with cairo in blockchain contexts."
+name: "Cairo — StarkNet Smart Contract Reference"
+description: "Use when writing Cairo smart contracts for StarkNet, looking up syntax and types, defining storage and events, generating contract templates, or reviewing test patterns."
+version: "2.0.0"
 author: "BytesAgain"
-homepage: "https://bytesagain.com"
-source: "https://github.com/bytesagain/ai-skills"
-tags: [cairo, blockchain, finance, reference, cli]
-category: "blockchain"
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
+tags: ["cairo", "starknet", "smart-contract", "blockchain", "ethereum", "zk-rollup"]
 ---
 
-# Cairo
+# Cairo — StarkNet Smart Contract Reference
 
-Cairo reference tool. Use when working with cairo in blockchain contexts.
-
-## When to Use
-
-- Working with cairo and need quick reference
-- Looking up blockchain standards or best practices for cairo
-- Troubleshooting cairo issues
-- Need a checklist or guide for cairo tasks
+Quick reference for Cairo language syntax, types, storage patterns, events, contract templates, and testing guidance for StarkNet development.
 
 ## Commands
 
-### `intro`
-
+### syntax
+Core Cairo syntax reference — variables, functions, control flow.
 ```bash
-scripts/script.sh intro
+bash scripts/script.sh syntax
 ```
 
-Overview and fundamentals
-
-### `formulas`
-
+### types
+Cairo type system — felt252, integers, structs, enums, arrays.
 ```bash
-scripts/script.sh formulas
+bash scripts/script.sh types
 ```
 
-Key formulas and calculations
-
-### `regulations`
-
+### storage
+Storage variable patterns and access.
 ```bash
-scripts/script.sh regulations
+bash scripts/script.sh storage
 ```
 
-Regulatory framework and compliance
-
-### `risks`
-
+### events
+Event declaration, emission, and indexing.
 ```bash
-scripts/script.sh risks
+bash scripts/script.sh events
 ```
 
-Risk factors and mitigation
-
-### `instruments`
-
+### template
+Generate a starter contract template.
 ```bash
-scripts/script.sh instruments
+bash scripts/script.sh template erc20
+bash scripts/script.sh template ownable
 ```
 
-Instruments and tools overview
-
-### `strategies`
-
+### help
+Show all commands.
 ```bash
-scripts/script.sh strategies
+bash scripts/script.sh help
 ```
 
-Common strategies and approaches
+## Output
+- Syntax examples with explanations
+- Contract boilerplate code
+- Storage and event patterns
 
-### `glossary`
-
-```bash
-scripts/script.sh glossary
-```
-
-Key terms and definitions
-
-### `checklist`
-
-```bash
-scripts/script.sh checklist
-```
-
-Due diligence checklist
-
-### `help`
-
-```bash
-scripts/script.sh help
-```
-
-### `version`
-
-```bash
-scripts/script.sh version
-```
-
----
-
-*Powered by BytesAgain | bytesagain.com | hello@bytesagain.com*
+## Feedback
+https://bytesagain.com/feedback/
+Powered by BytesAgain | bytesagain.com
