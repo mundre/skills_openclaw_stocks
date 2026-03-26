@@ -1,0 +1,71 @@
+# 技能间知识映射规则
+
+# 概念映射
+concepts:
+  - source: "算法备案"
+    description: "算法推荐服务备案要求"
+    targets:
+      - skill: zhang-ai-law
+        term: "算法推荐备案"
+        context: "互联网信息服务算法推荐管理规定"
+      - skill: zhang-data-privacy
+        term: "算法透明度"
+        context: "个人信息保护法中的算法解释权"
+      
+  - source: "出口管制"
+    description: "技术出口管制合规"
+    targets:
+      - skill: zhang-chip-law
+        term: "EAR出口管制"
+        context: "美国出口管理条例"
+      - skill: zhang-cross-border-trade
+        term: "技术出口管制"
+        context: "中国技术进出口管理条例"
+        
+  - source: "数据安全"
+    description: "数据安全保护要求"
+    targets:
+      - skill: zhang-data-privacy
+        term: "数据安全"
+        context: "数据安全法"
+      - skill: zhang-ai-law
+        term: "训练数据合规"
+        context: "生成式AI服务管理暂行办法"
+      - skill: zhang-medical-law
+        term: "医疗数据保护"
+        context: "个人信息保护法敏感信息"
+
+# 规则映射
+rules:
+  - id: "data_minimal"
+    description: "数据最小化原则"
+    content: "收集个人信息应当限于实现处理目的的最小范围"
+    applicable_skills:
+      - zhang-data-privacy
+      - zhang-ai-law
+      - zhang-medical-law
+      - zhang-financial-law
+    
+  - id: "security_assessment"
+    description: "安全评估要求"
+    content: "重要数据处理活动应进行安全评估"
+    applicable_skills:
+      - zhang-data-privacy
+      - zhang-ai-law
+      - zhang-cross-border-trade
+      
+  - id: "transparency"
+    description: "透明度义务"
+    content: "应向用户公开算法推荐服务的基本原理"
+    applicable_skills:
+      - zhang-ai-law
+      - zhang-data-privacy
+      - zhang-ecommerce-law
+
+# 迁移配置
+transfer_config:
+  similarity_threshold: 0.85
+  min_case_length: 100
+  auto_transfer_enabled: false
+  require_approval: true
+  conflict_check: true
