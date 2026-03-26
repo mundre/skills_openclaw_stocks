@@ -28,6 +28,9 @@ Skill 端调用流程:
 
 from __future__ import annotations
 
+import os
+import time as _time
+from pathlib import Path
 from typing import Optional
 
 import httpx
@@ -35,7 +38,7 @@ from loguru import logger
 
 from machine_auth import MachineAuth
 
-DEFAULT_SERVER_URL = "https://generous-hope-production-6cf6.up.railway.app"
+DEFAULT_SERVER_URL = "https://dex-quant-app-production.up.railway.app"
 API_PREFIX = "/api/v1"
 
 
@@ -257,14 +260,14 @@ class QuantAPIClient:
 
     # ═══════════════ 服务器端执行回测 ═══════════════
 
-    def run_server_backtest(
+    def submit_backtest(
         self,
         script_content: str,
         strategy_name: str,
-        symbol: str,
-        timeframe: str,
-        start_date: str,
-        end_date: str,
+        symbol: str = "BTCUSDT",
+        timeframe: str = "4h",
+        start_date: str = "",
+        end_date: str = "",
         strategy_id: str = "",
         initial_capital: float = 100_000.0,
         leverage: int = 1,
@@ -272,13 +275,11 @@ class QuantAPIClient:
         slippage_bps: float = 5.0,
         margin_mode: str = "isolated",
         direction: str = "long_short",
-    ) -> dict:
+    ) -> str:
         """
-        服务器端一站式回测 — 上传脚本，服务器执行+回测。
+        提交回测任务，立即返回 job_id（不等待结果）。
 
-        与 run_backtest() 的区别:
-        - run_backtest(): 本地跑脚本生成信号，只传信号给服务器
-        - run_server_backtest(): 把脚本源码传给服务器，服务器执行一切
+        用 check_backtest(job_id) 查看进度和获取结果。
         """
         payload = {
             "script_content": script_content,
@@ -296,32 +297,308 @@ class QuantAPIClient:
             "direction": direction,
         }
 
-        logger.info(
-            "上传脚本到服务器执行 | {} {} {} | {} → {}",
-            strategy_name, symbol, timeframe, start_date, end_date,
-        )
         resp = self._client.post(
-            f"{self.base_url}/backtest/run-server",
+            f"{self.base_url}/backtest/submit",
             json=payload,
             headers=self._headers(),
         )
         resp.raise_for_status()
-        result = resp.json()
+        job_id = resp.json()["job_id"]
+        print(
+            f"📋 回测已提交: {job_id} | {strategy_name} ({symbol} {timeframe}, {start_date} → {end_date})",
+            flush=True,
+        )
+        return job_id
 
-        status = result.get("status", "unknown")
-        if status == "completed":
-            metrics = result.get("metrics", {})
-            logger.info(
-                "服务器回测完成 | 收益={:.2%} | Sharpe={:.2f} | 交易={} | 结论={}",
-                metrics.get("total_return_pct", 0),
-                metrics.get("sharpe_ratio", 0),
-                metrics.get("total_trades", 0),
-                result.get("conclusion", ""),
-            )
-        else:
-            logger.error("服务器回测失败 | {}", result.get("error"))
+    def check_backtest(self, job_id: str) -> dict:
+        """
+        查询回测任务状态。返回 dict，status 为 running/completed/failed。
 
-        return result
+        completed 时包含完整的 metrics/trades/equity_curve。
+        """
+        resp = self._client.get(
+            f"{self.base_url}/backtest/job/{job_id}",
+            headers=self._headers(),
+        )
+        resp.raise_for_status()
+        job = resp.json()
+
+        status = job.get("status", "running")
+        stage = job.get("stage_label", "")
+        progress = job.get("progress_pct", 0)
+        elapsed_s = job.get("elapsed_ms", 0) / 1000
+
+        if status == "running":
+            print(f"⏳ [{elapsed_s:.0f}s] {stage} ({progress:.0f}%)", flush=True)
+        elif status == "completed":
+            print(f"✅ 回测完成（耗时 {elapsed_s:.1f}s）", flush=True)
+        elif status == "failed":
+            print(f"❌ 回测失败: {job.get('error', '未知错误')}", flush=True)
+
+        return job
+
+    def wait_backtest(
+        self,
+        job_id: str,
+        poll_interval: float = 5.0,
+        max_running_logs: int | None = None,
+    ) -> dict:
+        """
+        轮询等待回测完成。
+
+        参数:
+            job_id: submit_backtest() 返回的任务 ID
+            poll_interval: 轮询间隔秒数
+            max_running_logs: 最多打印多少条 running 进度，None 表示不限制
+        """
+        running_logs = 0
+        last_stage = None
+        last_progress = None
+
+        while True:
+            _time.sleep(poll_interval)
+            job = self.check_backtest(job_id)
+            status = job.get("status")
+
+            if status == "running":
+                running_logs += 1
+                stage = job.get("stage_label")
+                progress = job.get("progress_pct")
+                should_stop_logging = (
+                    max_running_logs is not None and running_logs >= max_running_logs
+                )
+                if should_stop_logging and stage == last_stage and progress == last_progress:
+                    print("⏳ 回测仍在执行中，继续等待...", flush=True)
+                last_stage = stage
+                last_progress = progress
+                if should_stop_logging:
+                    max_running_logs = None
+                continue
+
+            if status in ("completed", "failed"):
+                return job
+
+    def run_server_backtest(
+        self,
+        script_content: str,
+        strategy_name: str,
+        symbol: str = "BTCUSDT",
+        timeframe: str = "4h",
+        start_date: str = "",
+        end_date: str = "",
+        strategy_id: str = "",
+        initial_capital: float = 100_000.0,
+        leverage: int = 1,
+        fee_rate: float = 0.0005,
+        slippage_bps: float = 5.0,
+        margin_mode: str = "isolated",
+        direction: str = "long_short",
+        poll_interval: float = 5.0,
+    ) -> dict:
+        """
+        提交 + 轮询一步到位（适合支持流式输出的平台）。
+
+        如果平台不支持流式输出（如 OpenClaw），请改用：
+        1. job_id = client.submit_backtest(...)
+        2. result = client.check_backtest(job_id)
+        """
+        job_id = self.submit_backtest(
+            script_content=script_content,
+            strategy_name=strategy_name,
+            symbol=symbol,
+            timeframe=timeframe,
+            start_date=start_date,
+            end_date=end_date,
+            strategy_id=strategy_id,
+            initial_capital=initial_capital,
+            leverage=leverage,
+            fee_rate=fee_rate,
+            slippage_bps=slippage_bps,
+            margin_mode=margin_mode,
+            direction=direction,
+        )
+
+        return self.wait_backtest(job_id, poll_interval=poll_interval)
+
+    # ═══════════════ 参数优化 ═══════════════
+
+    def run_optimization(
+        self,
+        script_content: str,
+        params: list[dict],
+        strategy_name: str = "",
+        symbol: str = "BTCUSDT",
+        timeframe: str = "4h",
+        start_date: str = "",
+        end_date: str = "",
+        initial_capital: float = 100_000.0,
+        leverage: int = 3,
+        fee_rate: float = 0.0005,
+        slippage_bps: float = 5.0,
+        margin_mode: str = "isolated",
+        direction: str = "long_short",
+        method: str = "grid",
+        max_combinations: int = 200,
+        fitness_metric: str = "sharpe_ratio",
+        poll_interval: int = 10,
+    ) -> dict:
+        """
+        参数优化 — 提交任务后自动轮询进度，完成后返回结果。
+
+        脚本中用 PARAMS['xxx'] 引用可调参数。
+        服务器异步执行，客户端每 poll_interval 秒查一次进度并打印。
+
+        参数:
+            params: 参数空间列表，每项:
+                {"name": "fast_ema", "type": "int", "low": 5, "high": 30, "step": 5}
+                {"name": "sl_pct", "type": "float", "low": 0.01, "high": 0.10, "step": 0.01}
+                {"name": "direction", "type": "choice", "choices": ["long", "short"]}
+            method: 搜索算法
+                "grid"      — 网格穷举（组合数 ≤ 200）
+                "genetic"   — 遗传算法（推荐，大空间通用）
+                "bayesian"  — 贝叶斯 TPE（少量评估快速收敛）
+                "random"    — 随机采样
+                "annealing" — 模拟退火
+                "pso"       — 粒子群优化
+            fitness_metric: 优化目标 (sharpe_ratio / total_return_pct / sortino_ratio / win_rate)
+            poll_interval: 轮询间隔秒数（默认10秒）
+
+        返回:
+            {status, best_params, best_fitness, results: [{rank, params, fitness, metrics...}]}
+        """
+        payload = {
+            "script_content": script_content,
+            "params": params,
+            "strategy_name": strategy_name,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "start_date": start_date,
+            "end_date": end_date,
+            "initial_capital": initial_capital,
+            "leverage": leverage,
+            "fee_rate": fee_rate,
+            "slippage_bps": slippage_bps,
+            "margin_mode": margin_mode,
+            "direction": direction,
+            "method": method,
+            "max_combinations": max_combinations,
+            "fitness_metric": fitness_metric,
+        }
+
+        logger.info(
+            "提交参数优化 | {} {} {} | {} → {} | 目标={}",
+            strategy_name, symbol, timeframe, start_date, end_date, fitness_metric,
+        )
+
+        resp = self._client.post(
+            f"{self.base_url}/backtest/optimize",
+            json=payload,
+            headers=self._headers(),
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        submit_result = resp.json()
+
+        job_id = submit_result.get("job_id")
+        total = submit_result.get("total_combinations", 0)
+        logger.info("任务已提交 | job_id={} | 共{}种组合", job_id, total)
+        print(f"\n⏳ 优化任务已提交 (job_id: {job_id})，共 {total} 种参数组合\n")
+
+        last_completed = 0
+        printed_milestones = set()
+        milestones = {25, 50, 90}
+        interval = 5
+
+        while True:
+            _time.sleep(interval)
+
+            try:
+                resp = self._client.get(
+                    f"{self.base_url}/backtest/optimize/{job_id}",
+                    headers=self._headers(),
+                    timeout=15.0,
+                )
+                resp.raise_for_status()
+                progress = resp.json()
+            except Exception as e:
+                logger.warning("查询进度失败: {}", e)
+                interval = min(interval * 2, 300)
+                continue
+
+            status = progress.get("status", "running")
+            completed = progress.get("completed", 0)
+            failed = progress.get("failed", 0)
+            progress_pct = progress.get("progress_pct", 0)
+            best_fitness = progress.get("current_best_fitness", 0)
+            best_params = progress.get("current_best_params", {})
+            elapsed = progress.get("elapsed_ms", 0)
+
+            for ms in sorted(milestones):
+                if ms not in printed_milestones and progress_pct >= ms:
+                    params_str = ", ".join(f"{k}={v}" for k, v in best_params.items()) if best_params else "-"
+                    print(
+                        f"   📊 {ms}% ({completed}/{total}) | "
+                        f"最优 fitness={best_fitness:.4f} | "
+                        f"{params_str} | "
+                        f"{elapsed/1000:.0f}s"
+                    )
+                    printed_milestones.add(ms)
+
+            if completed > last_completed:
+                done_delta = completed - last_completed
+                time_per_item = (elapsed / 1000) / max(completed, 1)
+                remaining = (total - completed) * time_per_item
+                interval = max(5, min(remaining / 4, 300))
+            last_completed = completed
+
+            if status == "completed":
+                logger.info(
+                    "优化完成 | 评估={} 失败={} | 最优fitness={:.4f} | 耗时={}ms",
+                    completed - failed, failed, best_fitness, elapsed,
+                )
+                return progress
+
+            if status == "failed":
+                logger.error("优化失败: {}", progress.get("error", ""))
+                print(f"\n❌ 优化失败: {progress.get('error', '未知错误')}")
+                return progress
+
+    @staticmethod
+    def print_optimization(result: dict) -> None:
+        """格式化打印参数优化结果。"""
+        status = result.get("status", "")
+        if status != "completed":
+            print(f"优化失败: {result.get('error', '未知错误')}")
+            return
+
+        total = result.get("total", result.get("total_combinations", 0))
+        completed = result.get("completed", result.get("evaluated", 0))
+        failed = result.get("failed", 0)
+        elapsed = result.get("elapsed_ms", 0) / 1000
+        method = result.get("method", "genetic")
+        best = result.get("best_params", result.get("current_best_params", {}))
+        fitness = result.get("best_fitness", result.get("current_best_fitness", 0))
+
+        print(f"\n{'━' * 50}")
+        print(f"  参数优化  {method} | {completed - failed}/{total} 组 | {elapsed:.0f}s")
+        print(f"{'━' * 50}")
+
+        results = result.get("results", [])
+        for r in (results or [{}])[:5]:
+            rank = r.get("rank", 1)
+            medal = "🥇🥈🥉"[rank - 1] if rank <= 3 else f"#{rank}"
+            ret = r.get("total_return_pct", 0)
+            sharpe = r.get("sharpe_ratio", 0)
+            dd = r.get("max_drawdown_pct", 0)
+            wr = r.get("win_rate", 0)
+            trades = r.get("total_trades", 0)
+            params = r.get("params", best)
+
+            print(f"  {medal} {ret:>+.2%}  Sharpe {sharpe:.2f}  回撤 {abs(dd):.2%}  胜率 {wr:.0%}  {trades}笔")
+            params_str = "  ".join(f"{k}={v}" for k, v in params.items())
+            print(f"     {params_str}")
+
+        print(f"{'━' * 50}")
 
     # ═══════════════ 配额 ═══════════════
 
@@ -337,115 +614,439 @@ class QuantAPIClient:
 
     @staticmethod
     def print_metrics(result: dict) -> None:
-        """格式化打印回测结果"""
+        """生成回测报告图片并打印 caption + 文件路径。
+
+        所有指标、评分、资金曲线合并到一张 PNG 中。
+        AI 只需发送这一张图片（附带 caption），无需单独发文字。
+        """
         if result.get("status") != "completed":
             print(f"回测失败: {result.get('error', '未知错误')}")
             return
 
         m = result.get("metrics", {})
+        ret = m.get('total_return_pct', 0)
+        bal = m.get('final_balance', 0)
+        init_cap = m.get('initial_capital', 100000)
+        margin_mode = result.get('margin_mode', 'isolated')
+        leverage = result.get('leverage', m.get('leverage', 1))
+        mode_label = "逐仓" if margin_mode == "isolated" else "全仓"
+        evaluation = m.get('evaluation', {})
+        grade = evaluation.get('grade', '')
+        grade_label = evaluation.get('grade_label', '')
+        name = result.get('strategy_name', '策略')
+
+        chart_path = QuantAPIClient._print_equity_chart(
+            result.get("equity_curve", []),
+            init_cap,
+            strategy_name=name,
+            metrics=m,
+            evaluation=evaluation,
+            leverage=leverage,
+            mode_label=mode_label,
+            trades=result.get("trades", []),
+        )
+        if chart_path:
+            result["_equity_chart_path"] = chart_path
+
+        sign = "+" if ret else ""
+        ret_icon = "📈" if ret >= 0 else "📉"
+        lines = [
+            f"📊 {name} 回测报告",
+            f"━━━━━━━━━━━━━━━━━━━━",
+            f"💰 本金 {init_cap:,.0f} → 余额 {bal:,.0f}",
+            f"{ret_icon} 收益 {ret:+.2%}  📐 Sharpe {m.get('sharpe_ratio', 0):.2f}  📐 Sortino {m.get('sortino_ratio', 0):.2f}",
+            f"⚡ 回撤 {abs(m.get('max_drawdown_pct', 0)):.2%}  🎯 胜率 {m.get('win_rate', 0):.1%}  ⚖️ 盈亏比 {m.get('profit_loss_ratio', 0):.2f}",
+            f"🔄 交易 {m.get('total_trades', 0)}笔  🏗️ 杠杆 {leverage}x  📦 仓位 {mode_label}",
+        ]
+        if m.get('liquidation_count', 0) > 0:
+            lines.append(f"💥 爆仓 {m['liquidation_count']} 次")
+
         conclusion = result.get("conclusion", "")
         conclusion_map = {
-            "approved": "✅ 通过 — 可以上线",
-            "paper_trade_first": "⚠️  先模拟 — 建议观察",
-            "rejected": "❌ 驳回 — 需要调整",
+            "approved": "✅ 通过，可考虑实盘",
+            "paper_trade_first": "⚠️ 先模拟，不建议直接实盘",
+            "rejected": "❌ 驳回，建议重新设计策略",
         }
 
-        print("\n" + "=" * 55)
-        print("  回测绩效报告")
-        print("=" * 55)
-        print(f"  策略:          {result.get('strategy_name', '')}")
-        print(f"  结论:          {conclusion_map.get(conclusion, conclusion)}")
-        print("-" * 55)
-        print(f"  总收益率:      {m.get('total_return_pct', 0):>+10.2%}")
-        print(f"  年化收益:      {m.get('annual_return_pct', 0):>+10.2%}")
-        print(f"  Sharpe:        {m.get('sharpe_ratio', 0):>10.3f}")
-        print(f"  Sortino:       {m.get('sortino_ratio', 0):>10.3f}")
-        print(f"  最大回撤:      {abs(m.get('max_drawdown_pct', 0)):>10.2%}")
-        print(f"  Calmar:        {m.get('calmar_ratio', 0):>10.3f}")
-        print("-" * 55)
-        print(f"  胜率:          {m.get('win_rate', 0):>10.2%}")
-        print(f"  盈亏比:        {m.get('profit_loss_ratio', 0):>10.2f}")
-        print(f"  总交易数:      {m.get('total_trades', 0):>10d}")
-        print(f"  盈利交易:      {m.get('winning_trades', 0):>10d}")
-        print(f"  亏损交易:      {m.get('losing_trades', 0):>10d}")
-        print(f"  平均持仓:      {m.get('avg_holding_bars', 0):>10.1f} bars")
-        print("-" * 55)
-        print(f"  总手续费:      {m.get('total_commission', 0):>10.2f}")
-        print(f"  总滑点成本:    {m.get('total_slippage_cost', 0):>10.2f}")
-        print(f"  资金费率净值:  {m.get('net_funding', 0):>+10.2f}")
-        print(f"  爆仓次数:      {m.get('liquidation_count', 0):>10d}")
-        print("-" * 55)
-        print(f"  总信号数:      {m.get('total_signals', 0):>10d}")
-        print(f"  已执行信号:    {m.get('signals_executed', 0):>10d}")
-        print(f"  最终余额:      {m.get('final_balance', 0):>10.2f}")
-        print("=" * 55)
+        items = evaluation.get("items", [])
+        lines.append(f"━━━━━━━━━━━━━━━━━━━━")
+        if items:
+            score_val = evaluation.get("score", 0)
+            max_score = evaluation.get("max_score", 14)
+            lines.append(f"🏆 评分 {score_val}/{max_score}  {grade}级")
+            for item in items:
+                s = item["score"]
+                dot = "🟢" if s == 2 else ("🟡" if s == 1 else "🔴")
+                label = "优" if s == 2 else ("及格" if s == 1 else "差")
+                lines.append(f"{dot} {item['name']} {item['value']}（{label}）")
+            lines.append(f"━━━━━━━━━━━━━━━━━━━━")
+
+        if grade_label:
+            conclusion_text = f"[{grade}] {grade_label}"
+        elif conclusion:
+            conclusion_text = conclusion_map.get(conclusion, conclusion)
+        elif ret >= 0 and m.get('sharpe_ratio', 0) > 0.5:
+            conclusion_text = "⚠️ 建议先模拟观察"
+        elif ret < 0:
+            conclusion_text = "❌ 策略亏损，建议优化后重测"
+        else:
+            conclusion_text = "⚠️ 收益偏低，建议优化参数"
+
+        if ret > 0.2 and m.get('sharpe_ratio', 0) > 1.5:
+            advice = "可考虑小仓实盘或优化参数"
+        elif ret > 0:
+            advice = "建议优化参数后重测"
+        elif m.get('total_trades', 0) == 0:
+            advice = "没有交易信号，入场条件可能太严格"
+        else:
+            advice = "可优化参数或重新设计入场/出场逻辑"
+
+        lines.append(f"📋 {conclusion_text}，{advice}")
+
+        trades = result.get("trades", [])
+        if trades:
+            opens = [t for t in trades if t.get("action") == "open"]
+            closes = [t for t in trades if t.get("action") != "open"]
+            lines.append(f"")
+            lines.append(f"📝 交易摘要 ({len(opens)}开/{len(closes)}平，前5笔)")
+            for t in trades[:5]:
+                dt = t.get('datetime', '')[:16].replace('T', ' ')
+                action = "开" if t.get('action') == 'open' else "平"
+                side = "多" if t.get('side') == 'long' else "空"
+                price = t.get('price', 0)
+                pnl = t.get('pnl', 0)
+                pnl_s = f"盈亏{pnl:+.1f}" if t.get('action') != 'open' else ""
+                lines.append(f"  {dt} {action}{side} {price:,.1f} {pnl_s}")
+            if len(trades) > 5:
+                lines.append(f"  ...还有 {len(trades) - 5} 笔")
+
+        caption = "\n".join(lines)
+        result["_caption"] = caption
+
+        print(f"\n{caption}")
+        if chart_path:
+            print(f"\n📊 报告图片: {chart_path}")
+            print(f"👉 请将此图片作为附件发送，caption 用上面的文字")
 
     @staticmethod
-    def print_trades(result: dict, limit: int = 20) -> None:
-        """格式化打印交易记录"""
-        trades = result.get("trades", [])
-        if not trades:
-            print("无交易记录")
+    def _print_evaluation(evaluation: dict) -> None:
+        """评分卡：逐项展示达标/不达标"""
+        if not evaluation or not evaluation.get("items"):
             return
 
-        print(f"\n交易记录（共 {len(trades)} 笔，显示前 {min(limit, len(trades))} 笔）")
-        print("-" * 100)
-        print(f"{'#':>4} {'时间':<20} {'动作':<10} {'方向':<6} {'价格':>12} {'数量':>10} {'盈亏':>12} {'余额':>14}")
-        print("-" * 100)
+        items = evaluation["items"]
+        score = evaluation.get("score", 0)
+        max_score = evaluation.get("max_score", 14)
+        grade = evaluation.get("grade", "?")
+
+        grade_bar = "█" * score + "░" * (max_score - score)
+        print(f"\n  📊 策略评分  {score}/{max_score}  [{grade_bar}]  {grade}级")
+        print(f"  {'─' * 52}")
+        print(f"  {'指标':<8} {'实际值':>8}  {'得分':>4}  {'标准'}")
+        print(f"  {'─' * 52}")
+
+        for item in items:
+            s = item["score"]
+            icon = "🟢" if s == 2 else ("🟡" if s == 1 else "🔴")
+            print(f"  {icon} {item['name']:<6} {item['value']:>8}  {s}/{item['max']}   {item['thresholds']}")
+
+        print(f"  {'─' * 52}")
+        print(f"  结论: {evaluation.get('grade_label', '')}")
+        print()
+
+    _font_configured = False
+
+    @staticmethod
+    def _setup_chinese_font() -> None:
+        """配置 matplotlib 中文字体（只执行一次）。"""
+        if QuantAPIClient._font_configured:
+            return
+        QuantAPIClient._font_configured = True
+
+        import matplotlib
+        import matplotlib.font_manager as fm
+
+        candidates = [
+            "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC",
+            "WenQuanYi Micro Hei", "WenQuanYi Zen Hei",
+            "SimHei", "Microsoft YaHei", "PingFang SC", "Heiti SC",
+            "Arial Unicode MS", "DejaVu Sans",
+        ]
+        available = {f.name for f in fm.fontManager.ttflist}
+        for name in candidates:
+            if name in available:
+                matplotlib.rcParams["font.sans-serif"] = [name, "DejaVu Sans"]
+                matplotlib.rcParams["axes.unicode_minus"] = False
+                return
+
+        font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fonts")
+        font_file = os.path.join(font_dir, "NotoSansSC-Regular.ttf")
+
+        if not os.path.exists(font_file):
+            print("  ⏳ 下载中文字体 ...", flush=True)
+            try:
+                Path(font_dir).mkdir(parents=True, exist_ok=True)
+                import subprocess, sys
+                url = "https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf"
+                subprocess.check_call(
+                    ["curl", "-sL", "-o", font_file, url],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    timeout=30,
+                )
+            except Exception:
+                try:
+                    url2 = "https://raw.githubusercontent.com/googlefonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf"
+                    subprocess.check_call(
+                        ["curl", "-sL", "-o", font_file, url2],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                        timeout=30,
+                    )
+                except Exception:
+                    print("  ⚠ 中文字体下载失败，图表中文可能显示为方框")
+                    return
+
+        if os.path.exists(font_file):
+            fm.fontManager.addfont(font_file)
+            prop = fm.FontProperties(fname=font_file)
+            matplotlib.rcParams["font.sans-serif"] = [prop.get_name(), "DejaVu Sans"]
+            matplotlib.rcParams["axes.unicode_minus"] = False
+
+    @staticmethod
+    def _print_equity_chart(
+        equity_curve: list,
+        initial_capital: float,
+        strategy_name: str = "",
+        output_dir: str = "",
+        metrics: dict | None = None,
+        evaluation: dict | None = None,
+        leverage: int = 1,
+        mode_label: str = "逐仓",
+        trades: list | None = None,
+    ) -> str | None:
+        """生成完整回测报告图（指标 + 评分 + 资金曲线），返回文件路径。"""
+        if not equity_curve or len(equity_curve) < 2:
+            return None
+
+        try:
+            import matplotlib
+        except ImportError:
+            print("  ⏳ 正在安装 matplotlib ...", flush=True)
+            import subprocess, sys
+            try:
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "-q", "matplotlib"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+                import matplotlib
+            except Exception:
+                print("  ⚠ matplotlib 安装失败，跳过图表生成")
+                return None
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+        from matplotlib.gridspec import GridSpec
+        from datetime import datetime
+
+        QuantAPIClient._setup_chinese_font()
+
+        metrics = metrics or {}
+        evaluation = evaluation or {}
+        trades = trades or []
+
+        equities = [e.get("equity", initial_capital) for e in equity_curve]
+        raw_dates = [e.get("datetime", "") for e in equity_curve]
+        dates = []
+        for d in raw_dates:
+            if not d:
+                dates = None
+                break
+            try:
+                if "T" in d:
+                    dates.append(datetime.fromisoformat(d.replace("Z", "+00:00").replace("+00:00", "")))
+                elif len(d) >= 19:
+                    dates.append(datetime.strptime(d[:19], "%Y-%m-%d %H:%M:%S"))
+                elif len(d) >= 10:
+                    dates.append(datetime.strptime(d[:10], "%Y-%m-%d"))
+                else:
+                    dates = None
+                    break
+            except Exception:
+                dates = None
+                break
+        if dates is None or len(dates) != len(equities):
+            dates = list(range(len(equities)))
+
+        hi_val, lo_val = max(equities), min(equities)
+        hi_idx = equities.index(hi_val)
+        lo_idx = equities.index(lo_val)
+        final_val = equities[-1]
+        ret_pct = (final_val - initial_capital) / initial_capital * 100
+
+        BG = "#0f0f1a"
+        PANEL = "#161b2e"
+        CARD = "#1c2333"
+        WHITE = "#e8e8e8"
+        GREEN = "#00d4aa"
+        RED = "#ff6b6b"
+        YELLOW = "#ffd93d"
+        GRAY = "#8a8fa0"
+        LIGHT = "#c8cad0"
+        color = GREEN if final_val >= initial_capital else RED
+
+        from matplotlib.patches import FancyBboxPatch
+
+        fig = plt.figure(figsize=(10, 7), facecolor=BG)
+        gs = GridSpec(2, 1, figure=fig,
+                      height_ratios=[1, 3],
+                      hspace=0.15,
+                      left=0.06, right=0.94, top=0.96, bottom=0.06)
+
+        title = strategy_name or "Backtest Report"
+        sign = "+" if ret_pct >= 0 else ""
+
+        # ════════ 顶部: 策略名 + KPI 卡片 ════════
+        ax_top = fig.add_subplot(gs[0])
+        ax_top.set_facecolor(BG)
+        ax_top.axis("off")
+
+        ax_top.text(0.5, 0.88, title, transform=ax_top.transAxes,
+                    fontsize=22, color=WHITE, weight="bold", ha="center", va="center")
+        ax_top.text(0.5, 0.74, f"{initial_capital:,.0f}  →  {final_val:,.0f}",
+                    transform=ax_top.transAxes,
+                    fontsize=13, color=GRAY, ha="center", va="center")
+
+        lev_label = "Iso" if mode_label == "逐仓" else "Cross"
+        kpi_data = [
+            ("Return", f"{sign}{ret_pct:.2f}%", color),
+            ("Sharpe", f"{metrics.get('sharpe_ratio', 0):.2f}", LIGHT),
+            ("MaxDD", f"{abs(metrics.get('max_drawdown_pct', 0)):.2%}", LIGHT),
+            ("WinRate", f"{metrics.get('win_rate', 0):.1%}", LIGHT),
+            ("P/L", f"{metrics.get('profit_loss_ratio', 0):.2f}", LIGHT),
+            ("Trades", f"{metrics.get('total_trades', 0)}", LIGHT),
+            ("Lev", f"{leverage}x {lev_label}", LIGHT),
+        ]
+        n_kpi = len(kpi_data)
+        card_w = 0.88 / n_kpi
+        card_x0 = 0.06
+        for i, (label, val, val_color) in enumerate(kpi_data):
+            cx = card_x0 + i * card_w + card_w / 2
+            ax_top.add_patch(FancyBboxPatch(
+                (card_x0 + i * card_w + 0.005, 0.12), card_w - 0.01, 0.52,
+                transform=ax_top.transAxes,
+                boxstyle="round,pad=0.015", facecolor=CARD, edgecolor="#2a3050", linewidth=0.8,
+            ))
+            ax_top.text(cx, 0.50, val, transform=ax_top.transAxes,
+                        fontsize=15, color=val_color, weight="bold", ha="center", va="center")
+            ax_top.text(cx, 0.22, label, transform=ax_top.transAxes,
+                        fontsize=11, color=GRAY, ha="center", va="center")
+
+        # ════════ 中部: 资金曲线 ════════
+        ax_chart = fig.add_subplot(gs[1])
+        ax_chart.set_facecolor(PANEL)
+        ax_chart.plot(dates, equities, color=color, linewidth=1.8, zorder=3)
+        ax_chart.fill_between(dates, equities, initial_capital, alpha=0.12, color=color, zorder=2)
+        ax_chart.axhline(y=initial_capital, color=WHITE, linewidth=0.8, linestyle="--", alpha=0.3, zorder=1)
+
+        ax_chart.plot(dates[hi_idx], hi_val, "^", color=GREEN, markersize=10, zorder=4)
+        ax_chart.annotate(f"High {hi_val:,.0f}", (dates[hi_idx], hi_val),
+                          textcoords="offset points", xytext=(6, 12),
+                          fontsize=10, color=GREEN, weight="bold")
+        ax_chart.plot(dates[lo_idx], lo_val, "v", color=RED, markersize=10, zorder=4)
+        ax_chart.annotate(f"Low {lo_val:,.0f}", (dates[lo_idx], lo_val),
+                          textcoords="offset points", xytext=(6, -16),
+                          fontsize=10, color=RED, weight="bold")
+
+        ax_chart.tick_params(colors=GRAY, labelsize=10)
+        ax_chart.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:,.0f}"))
+        if isinstance(dates[0], datetime):
+            span_days = (dates[-1] - dates[0]).days
+            if span_days > 180:
+                ax_chart.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+            elif span_days > 60:
+                ax_chart.xaxis.set_major_locator(mdates.MonthLocator())
+            else:
+                ax_chart.xaxis.set_major_locator(mdates.WeekdayLocator(interval=2))
+            ax_chart.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+            plt.setp(ax_chart.get_xticklabels(), rotation=30, ha="right")
+        ax_chart.grid(True, alpha=0.12, color=WHITE)
+        for spine in ax_chart.spines.values():
+            spine.set_color("#2a3050")
+
+        if not output_dir:
+            output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+        safe_name = (strategy_name or "report").replace(" ", "_").replace("/", "_")[:30]
+        ts = int(_time.time())
+        filepath = os.path.join(output_dir, f"{safe_name}_{ts}.png")
+
+        fig.savefig(filepath, dpi=150, facecolor=fig.get_facecolor())
+        plt.close(fig)
+
+        print(f"\n  📈 回测报告图已保存: {filepath}")
+        print(f"  👉 请将此图片作为附件发送给用户")
+        return filepath
+
+    @staticmethod
+    def _print_trade_details(trades: list, default_leverage: int = 1, mode_label: str = "逐仓", limit: int = 30) -> None:
+        """带仓位/杠杆/保证金的交易明细表"""
+        if not trades:
+            return
+
+        opens = [t for t in trades if t.get("action") == "open"]
+        closes = [t for t in trades if t.get("action") != "open"]
+        total = len(trades)
+
+        print(f"  📋 交易明细（共 {total} 笔: {len(opens)} 开 / {len(closes)} 平，显示前 {min(limit, total)} 笔）")
+        print(f"  {'━' * 88}")
+        print(f"  {'#':>3} {'时间':<17} {'动作':<5} {'方向':<5} {'价格':>10} {'数量':>8} {'杠杆':>4} {'仓位模式':<5} {'保证金':>10} {'盈亏':>10}")
+        print(f"  {'─' * 88}")
 
         for t in trades[:limit]:
+            tid = t.get('trade_id', 0)
+            dt = t.get('datetime', '')[:16]
+            action = t.get('action', '')
+            side = t.get('side', '')
+            price = t.get('price', 0)
+            qty = t.get('quantity', 0)
+            lev = t.get('leverage', default_leverage)
+            pnl = t.get('pnl', 0)
+
+            margin = t.get('margin_used', 0)
+            if margin == 0:
+                nominal = price * qty
+                margin = nominal / lev if lev > 0 else nominal
+
+            t_mode = t.get('margin_mode', '')
+            t_mode_label = ("逐仓" if t_mode == "isolated" else "全仓") if t_mode else mode_label
+
+            action_icon = "🟢" if action == "open" else "🔴"
+            side_label = "多" if side == "long" else "空"
+            pnl_str = f"{pnl:>+10.2f}" if action != "open" else f"{'—':>10}"
+
             print(
-                f"{t.get('trade_id', 0):>4} "
-                f"{t.get('datetime', ''):<20} "
-                f"{t.get('action', ''):<10} "
-                f"{t.get('side', ''):<6} "
-                f"{t.get('price', 0):>12.2f} "
-                f"{t.get('quantity', 0):>10.4f} "
-                f"{t.get('pnl', 0):>+12.2f} "
-                f"{t.get('balance_after', 0):>14.2f}"
+                f"  {tid:>3} {dt:<17} {action_icon}{action:<4} {side_label:<5}"
+                f" {price:>10.2f} {qty:>8.4f} {lev:>3}x {t_mode_label:<5}"
+                f" {margin:>10.2f} {pnl_str}"
             )
 
-        if len(trades) > limit:
-            print(f"  ... 还有 {len(trades) - limit} 笔交易")
-        print("-" * 100)
+        if total > limit:
+            print(f"  ... 还有 {total - limit} 笔未显示")
+        print(f"  {'━' * 88}")
+
+    @staticmethod
+    def print_trades(result: dict, limit: int = 30) -> None:
+        """打印交易记录（复用详细表格）"""
+        leverage = result.get("leverage", result.get("metrics", {}).get("leverage", 1))
+        margin_mode = result.get("margin_mode", "isolated")
+        mode_label = "逐仓" if margin_mode == "isolated" else "全仓"
+        QuantAPIClient._print_trade_details(result.get("trades", []), leverage, mode_label, limit)
 
     @staticmethod
     def print_conclusion(result: dict) -> None:
-        """打印回测结论和建议"""
-        conclusion = result.get("conclusion", "")
-        metrics = result.get("metrics", {})
-
-        print("\n" + "=" * 50)
-        if conclusion == "approved":
-            print("  结论: 通过")
-            print("  建议: 可以进入监控执行阶段")
-        elif conclusion == "paper_trade_first":
-            print("  结论: 先模拟")
-            print("  建议: 先跑模拟盘观察 1-2 周")
-        elif conclusion == "rejected":
-            print("  结论: 驳回")
-            print("  建议: 调整策略参数后重新回测")
-        else:
-            print(f"  结论: {conclusion}")
-
-        if metrics:
-            issues = []
-            if metrics.get("total_return_pct", 0) < 0:
-                issues.append("总收益为负")
-            if abs(metrics.get("max_drawdown_pct", 0)) > 0.2:
-                issues.append("最大回撤超过 20%")
-            if metrics.get("sharpe_ratio", 0) < 1.0:
-                issues.append("夏普比率低于 1.0")
-            if metrics.get("win_rate", 0) < 0.3:
-                issues.append("胜率低于 30%")
-            if metrics.get("liquidation_count", 0) > 0:
-                issues.append(f"发生 {metrics['liquidation_count']} 次爆仓")
-
-            if issues:
-                print("  风险点:")
-                for issue in issues:
-                    print(f"    - {issue}")
-        print("=" * 50)
+        """兼容旧调用，现在 print_metrics 已包含结论"""
+        pass
 
     # ═══════════════ 生命周期 ═══════════════
 
