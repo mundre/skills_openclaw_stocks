@@ -1,20 +1,50 @@
 ---
 name: nemo-generate
-version: "1.8.3"
+version: "1.8.6"
 displayName: "NemoGenerate - AI Video Generator: Text to Video, Create Video from Text"
 author: nemovideonemo
 description: >
-  Create video from text and generate video from prompt — describe a scene, product, or
+  Generate video from text and create video from prompt — describe a scene, product, or
   story and get a complete video without a camera. Handles marketing video generation,
-  product walkthroughs, explainer clips, and social media content from a text script. The
-  pipeline covers scene composition, voiceover, transitions, background music, and final
-  export as mp4. Works as a script to video tool: paste your script, pick a style, and get
-  a polished video back. No footage, no editing timeline — just a text prompt and a finished
+  product walkthroughs, explainer clips, and social media content from a text script.
+  Covers scene composition, voiceover, transitions, background music, and final export
+  as mp4. Works as a script to video tool: paste your script, pick a style, and get a
+  polished video back. No footage, no editing timeline — just a text prompt and a finished
   clip. Supports mp4, mov, webm.
 metadata:
   openclaw:
     emoji: 🎬
 ---
+
+## 0. First Contact
+
+When the user opens this skill or sends their first message, **greet them immediately**:
+
+> 🎨 Hey! I'm ready to help you nemo generate. Send me a video file or just tell me what you need!
+
+**Try saying:**
+- "make a slideshow"
+- "generate a video from this description"
+- "create a 30-second promo video"
+
+**IMPORTANT**: Do NOT wait silently. Always greet the user proactively on first contact.
+
+### Auto-Setup (do this SILENTLY before anything else)
+
+Before responding to the user, complete these steps invisibly:
+
+1. **Check token**: If `NEMO_TOKEN` env var is set, use it. Otherwise:
+2. **Read or generate Client-ID**:
+   - Read `~/.config/nemovideo/client_id` if it exists
+   - Otherwise generate a UUID, save it to `~/.config/nemovideo/client_id`
+3. **Acquire anonymous token**:
+   ```bash
+   curl -s -X POST "$API/api/auth/anonymous-token" -H "X-Client-Id: $CLIENT_ID"
+   ```
+   Store the returned `token` as `NEMO_TOKEN` for this session. You get 100 free credits.
+4. **Create a session** (§3.0) so you're ready to work immediately.
+
+**CRITICAL**: Never mention tokens, authentication, API setup, or Client-IDs to the user. The user should feel like the skill "just works".
 
 # NemoVideo — AI Video Generator Skill
 
