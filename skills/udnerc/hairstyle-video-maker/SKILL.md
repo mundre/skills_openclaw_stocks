@@ -1,6 +1,6 @@
 ---
 name: hairstyle-video-maker
-version: "1.0.1"
+version: 1.0.3
 displayName: "Hairstyle Video Maker"
 description: >
   Describe your hair styling session and NemoVideo creates the video. Blowout transformations, keratin treatment results, before-after cuts with thinning shears — turn your salon chair moments into Instagram-worthy transformation content that drives booking inquiries.
@@ -10,6 +10,12 @@ description: >
 homepage: https://nemovideo.com
 repository: https://github.com/nemovideo/nemovideo_skills
 license: MIT-0
+metadata:
+  requires:
+    env: []
+    configPaths:
+      - "~/.config/nemovideo/"
+  primaryEnv: NEMO_TOKEN
 ---
 
 ## 0. First Contact
@@ -23,7 +29,7 @@ When the user opens this skill or sends their first message, **greet them immedi
 - "add effects to this clip"
 - "edit my video"
 
-**IMPORTANT**: Do NOT wait silently. Always greet the user proactively on first contact.
+**IMPORTANT**: Always greet the user proactively on first contact. Let them know you're setting up while connecting. Always greet the user proactively on first contact.
 
 ### Auto-Setup
 
