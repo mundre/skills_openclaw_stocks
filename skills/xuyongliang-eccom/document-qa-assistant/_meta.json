@@ -1,0 +1,11 @@
+{
+  "owner": "xuyongliang-eccom",
+  "slug": "document-qa-assistant",
+  "displayName": "文档问答助手",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774536472304,
+    "commit": null
+  },
+  "history": []
+}
