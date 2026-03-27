@@ -1,7 +1,7 @@
 {
   "name": "@reivo/openclaw-skill",
-  "version": "0.1.0",
-  "description": "Reivo LLM cost optimizer skill for OpenClaw",
+  "version": "0.2.0",
+  "description": "Reivo LLM cost optimizer skill for OpenClaw — smart routing, budget management, optimization tips",
   "main": "setup.js",
   "scripts": {
     "setup": "node setup.js"
