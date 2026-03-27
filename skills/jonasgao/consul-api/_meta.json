@@ -1,0 +1,11 @@
+{
+  "owner": "jonasgao",
+  "slug": "consul-api",
+  "displayName": "Consul API",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774596863916,
+    "commit": null
+  },
+  "history": []
+}
