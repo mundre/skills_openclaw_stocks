@@ -1,0 +1,11 @@
+{
+  "owner": "llm-pm",
+  "slug": "cmg",
+  "displayName": "云迁移CMG",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774583993917,
+    "commit": null
+  },
+  "history": []
+}
