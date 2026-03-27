@@ -1,0 +1,59 @@
+---
+name: html-extract
+description: "HTML Extract - extract text and content from local HTML files to Markdown using MinerU. For live web page URLs, use url-to-markdown (crawl) instead."
+homepage: https://mineru.net
+metadata: {"openclaw": {"emoji": "📄", "requires": {"bins": ["mineru-open-api"], "env": ["MINERU_TOKEN"]}, "primaryEnv": "MINERU_TOKEN", "install": [{"id": "npm", "kind": "node", "package": "mineru-open-api", "bins": ["mineru-open-api"], "label": "Install via npm"}, {"id": "go", "kind": "go", "package": "github.com/opendatalab/MinerU-Ecosystem/cli/mineru-open-api", "bins": ["mineru-open-api"], "label": "Install via go install", "os": ["darwin", "linux"]}]}}
+---
+
+# HTML Extract
+
+Extract text and content from local HTML files to Markdown using MinerU. For live web page URLs, use `mineru-open-api crawl`.
+
+## Install
+
+```bash
+npm install -g mineru-open-api
+# or via Go (macOS/Linux):
+go install github.com/opendatalab/MinerU-Ecosystem/cli/mineru-open-api@latest
+```
+
+## Quick Start
+
+```bash
+# Extract from a local HTML file (requires token)
+mineru-open-api extract page.html -o ./out/
+
+# Extract from a remote HTML URL (requires token)
+mineru-open-api extract https://example.com/page.html -o ./out/
+
+# Extract web page content via crawl (requires token)
+mineru-open-api crawl https://example.com/article -o ./out/
+
+# With language hint
+mineru-open-api extract page.html --language en -o ./out/
+```
+
+## Authentication
+
+Token required:
+
+```bash
+mineru-open-api auth             # Interactive token setup
+export MINERU_TOKEN="your-token" # Or via environment variable
+```
+
+Create token at: https://mineru.net/apiManage/token
+
+## Capabilities
+
+- Supported input: local .html file or remote HTML URL
+- HTML requires `extract` (token required) — not supported by `flash-extract`
+- For live web pages, use `mineru-open-api crawl <URL>` (also requires token)
+- Language hint with `--language` (default: `ch`, use `en` for English)
+
+## Notes
+
+- HTML is NOT supported by `flash-extract` — always use `extract` or `crawl`
+- Output goes to stdout by default; use `-o <dir>` to save to a file or directory
+- All progress/status messages go to stderr; document content goes to stdout
+- MinerU is open-source by OpenDataLab (Shanghai AI Lab): https://github.com/opendatalab/MinerU
