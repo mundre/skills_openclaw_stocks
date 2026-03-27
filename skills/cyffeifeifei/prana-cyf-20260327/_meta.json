@@ -3,9 +3,15 @@
   "slug": "prana-cyf-20260327",
   "displayName": "prana-cyf-20260327",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774609121300,
-    "commit": "https://github.com/openclaw/skills/commit/b051304769da3cae64ec8cfffe08883497ec6ed2"
+    "version": "1.0.1",
+    "publishedAt": 1774610766600,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774609121300,
+      "commit": "https://github.com/openclaw/skills/commit/b051304769da3cae64ec8cfffe08883497ec6ed2"
+    }
+  ]
 }
