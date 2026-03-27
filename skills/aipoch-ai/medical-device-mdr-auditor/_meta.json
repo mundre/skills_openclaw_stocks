@@ -1,0 +1,11 @@
+{
+  "owner": "aipoch-ai",
+  "slug": "medical-device-mdr-auditor",
+  "displayName": "Medical Device MDR Auditor",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774513283464,
+    "commit": null
+  },
+  "history": []
+}
