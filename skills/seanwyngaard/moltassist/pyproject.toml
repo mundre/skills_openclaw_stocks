@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moltassist"
+version = "1.0.59"
+description = "Event-driven notification backbone for OpenClaw"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov"]
+
+[project.scripts]
+moltassist = "moltassist.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["moltassist*"]
+
+[tool.setuptools.package-data]
+moltassist = ["*.html", "*.json", "data/*.json", "research/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

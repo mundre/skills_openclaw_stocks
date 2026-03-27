@@ -1,0 +1,2286 @@
+{
+  "roles": [
+    {
+      "id": "restaurant_manager",
+      "label": "Restaurant Manager",
+      "aliases": [
+        "restaurant owner",
+        "venue manager",
+        "F&B manager"
+      ],
+      "tags": [
+        "hospitality",
+        "food",
+        "manager",
+        "operator"
+      ],
+      "keywords": [
+        "restaurant",
+        "venue",
+        "tables",
+        "covers",
+        "kitchen",
+        "front of house",
+        "dining",
+        "menu"
+      ],
+      "visible_categories": [
+        "email",
+        "calendar",
+        "finance",
+        "compliance",
+        "staff",
+        "social"
+      ],
+      "hidden_categories": [
+        "health",
+        "dev",
+        "travel"
+      ],
+      "label_overrides": {
+        "calendar": "Reservations & Events",
+        "finance": "Takings & Invoices",
+        "staff": "Roster & Staffing",
+        "compliance": "Licences & Certifications"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "staff": "high",
+        "social": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "liquor_licence_renewal",
+        "food_hygiene_cert_expiry",
+        "staff_no_show",
+        "negative_review",
+        "cover_vs_stock_mismatch"
+      ],
+      "llm_enrich_defaults": {
+        "email": true,
+        "calendar": true,
+        "finance": false,
+        "compliance": false
+      }
+    },
+    {
+      "id": "head_chef",
+      "label": "Head Chef",
+      "aliases": [
+        "chef",
+        "executive chef",
+        "kitchen manager",
+        "sous chef"
+      ],
+      "tags": [
+        "hospitality",
+        "food",
+        "kitchen"
+      ],
+      "keywords": [
+        "chef",
+        "kitchen",
+        "cook",
+        "cooking",
+        "prep",
+        "food",
+        "menu",
+        "recipe",
+        "HACCP"
+      ],
+      "visible_categories": [
+        "calendar",
+        "compliance",
+        "staff",
+        "finance"
+      ],
+      "hidden_categories": [
+        "travel",
+        "dev",
+        "email"
+      ],
+      "label_overrides": {
+        "calendar": "Kitchen Prep & Deliveries",
+        "compliance": "HACCP & Food Safety",
+        "staff": "Kitchen Roster",
+        "finance": "Supplier Orders"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "staff": "high",
+        "finance": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "delivery_shortage_vs_covers",
+        "food_safety_cert_expiry",
+        "allergen_flag_tonight",
+        "waste_cost_spike",
+        "staff_no_show"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "compliance": false,
+        "staff": false,
+        "finance": true
+      }
+    },
+    {
+      "id": "cafe_owner",
+      "label": "Caf\u00e9 Owner",
+      "aliases": [
+        "coffee shop owner",
+        "barista owner",
+        "cafe manager"
+      ],
+      "tags": [
+        "hospitality",
+        "food",
+        "owner"
+      ],
+      "keywords": [
+        "cafe",
+        "caf\u00e9",
+        "coffee",
+        "espresso",
+        "barista",
+        "coffee shop"
+      ],
+      "visible_categories": [
+        "finance",
+        "compliance",
+        "social",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev",
+        "travel"
+      ],
+      "label_overrides": {
+        "finance": "Supplier Orders & Revenue",
+        "compliance": "Equipment & Licences",
+        "social": "Reviews & Social"
+      },
+      "urgency_defaults": {
+        "finance": "high",
+        "compliance": "critical",
+        "social": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "milk_order_cutoff",
+        "espresso_machine_service_overdue",
+        "google_review_posted",
+        "loyalty_platform_billing",
+        "supplier_delivery_failure"
+      ],
+      "llm_enrich_defaults": {
+        "finance": true,
+        "compliance": false,
+        "social": true,
+        "email": true
+      }
+    },
+    {
+      "id": "bar_manager",
+      "label": "Bar Manager",
+      "aliases": [
+        "pub manager",
+        "bar owner",
+        "nightclub manager"
+      ],
+      "tags": [
+        "hospitality",
+        "food",
+        "manager"
+      ],
+      "keywords": [
+        "bar",
+        "pub",
+        "drinks",
+        "liquor",
+        "cocktails",
+        "nightclub"
+      ],
+      "visible_categories": [
+        "compliance",
+        "staff",
+        "finance",
+        "social",
+        "calendar"
+      ],
+      "hidden_categories": [
+        "health",
+        "dev"
+      ],
+      "label_overrides": {
+        "compliance": "Licences & RSA",
+        "staff": "Roster & RSA Tracking",
+        "finance": "Stock & Revenue"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "staff": "high",
+        "social": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "liquor_licence_renewal",
+        "rsa_expiry_per_staff",
+        "music_licence_renewal",
+        "pour_cost_variance_spike",
+        "negative_review_safety"
+      ],
+      "llm_enrich_defaults": {
+        "compliance": false,
+        "staff": false,
+        "finance": true,
+        "social": true
+      }
+    },
+    {
+      "id": "hotel_manager",
+      "label": "Hotel Manager",
+      "aliases": [
+        "hotel owner",
+        "hospitality manager",
+        "accommodation manager"
+      ],
+      "tags": [
+        "hospitality",
+        "manager"
+      ],
+      "keywords": [
+        "hotel",
+        "rooms",
+        "guests",
+        "hospitality",
+        "accommodation",
+        "booking",
+        "OTA",
+        "occupancy"
+      ],
+      "visible_categories": [
+        "calendar",
+        "compliance",
+        "finance",
+        "social",
+        "staff"
+      ],
+      "hidden_categories": [
+        "dev",
+        "health"
+      ],
+      "label_overrides": {
+        "calendar": "Reservations & Maintenance",
+        "compliance": "Fire Safety & Certs",
+        "social": "Reviews & OTA Scores",
+        "staff": "Housekeeping & Staff"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "social": "high",
+        "staff": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "ota_review_score_drop",
+        "room_issue_vs_incoming_vip",
+        "occupancy_vs_adr",
+        "fire_safety_cert_expiry",
+        "staff_cert_renewal"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "compliance": false,
+        "social": true,
+        "finance": true
+      }
+    },
+    {
+      "id": "food_truck_owner",
+      "label": "Food Truck Owner",
+      "aliases": [
+        "food van owner",
+        "mobile food vendor"
+      ],
+      "tags": [
+        "hospitality",
+        "food",
+        "owner",
+        "mobile"
+      ],
+      "keywords": [
+        "food truck",
+        "food van",
+        "mobile food",
+        "pitch",
+        "street food"
+      ],
+      "visible_categories": [
+        "compliance",
+        "finance",
+        "social",
+        "weather",
+        "calendar"
+      ],
+      "hidden_categories": [
+        "dev",
+        "health"
+      ],
+      "label_overrides": {
+        "compliance": "Permits & Gas Certs",
+        "finance": "Revenue & Costs",
+        "social": "Social & Reviews",
+        "weather": "Pitch Weather"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "weather": "high",
+        "finance": "medium"
+      },
+      "required_skills": [],
+      "key_triggers": [
+        "gas_certificate_expiry",
+        "mot_due",
+        "pitch_permit_confirmation",
+        "weather_forecast_outdoor_pitch",
+        "sold_out_alert"
+      ],
+      "llm_enrich_defaults": {
+        "compliance": false,
+        "finance": false,
+        "weather": true,
+        "social": true
+      }
+    },
+    {
+      "id": "catering_owner",
+      "label": "Catering Business Owner",
+      "aliases": [
+        "caterer",
+        "catering manager",
+        "event caterer"
+      ],
+      "tags": [
+        "hospitality",
+        "food",
+        "owner",
+        "events"
+      ],
+      "keywords": [
+        "catering",
+        "caterer",
+        "events",
+        "functions",
+        "banquet",
+        "dietary"
+      ],
+      "visible_categories": [
+        "calendar",
+        "staff",
+        "compliance",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "calendar": "Event Calendar",
+        "staff": "Event Staff Roster",
+        "compliance": "Dietary & Food Safety",
+        "finance": "Event Invoicing"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "staff": "high",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "dietary_confirmation_overdue",
+        "staff_no_show_day_of",
+        "allergen_documentation_update",
+        "equipment_hire_not_booked",
+        "event_prep_deadline"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "staff": false,
+        "compliance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "general_contractor",
+      "label": "General Contractor / Builder",
+      "aliases": [
+        "builder",
+        "construction manager",
+        "site manager",
+        "GC"
+      ],
+      "tags": [
+        "trades",
+        "construction",
+        "manager"
+      ],
+      "keywords": [
+        "builder",
+        "construction",
+        "building",
+        "site",
+        "contractor",
+        "subcontractor",
+        "renovations"
+      ],
+      "visible_categories": [
+        "compliance",
+        "calendar",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "health",
+        "social"
+      ],
+      "label_overrides": {
+        "calendar": "Site Schedule",
+        "finance": "Progress Claims & Invoices",
+        "compliance": "Licences & Insurance"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "finance": "high",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "contract_works_insurance_expiry",
+        "builders_licence_renewal",
+        "inspection_booking_due",
+        "long_lead_item_order_deadline",
+        "payment_claim_deadline",
+        "subcontractor_confirmation"
+      ],
+      "llm_enrich_defaults": {
+        "compliance": false,
+        "calendar": true,
+        "finance": true,
+        "email": true
+      }
+    },
+    {
+      "id": "electrician",
+      "label": "Electrician",
+      "aliases": [
+        "sparky",
+        "electrical contractor",
+        "electrical engineer"
+      ],
+      "tags": [
+        "trades",
+        "electrical"
+      ],
+      "keywords": [
+        "electrician",
+        "electrical",
+        "wiring",
+        "circuits",
+        "power",
+        "solar",
+        "sparky"
+      ],
+      "visible_categories": [
+        "compliance",
+        "finance",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "social",
+        "travel"
+      ],
+      "label_overrides": {
+        "compliance": "Licences & CES Lodgement",
+        "calendar": "Job Schedule",
+        "finance": "Invoices"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "finance": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "electrical_licence_renewal",
+        "ces_lodgement_deadline",
+        "distributor_connection_booking",
+        "solar_accreditation_renewal",
+        "test_and_tag_overdue"
+      ],
+      "llm_enrich_defaults": {
+        "compliance": false,
+        "finance": false,
+        "calendar": true,
+        "email": true
+      }
+    },
+    {
+      "id": "plumber",
+      "label": "Plumber",
+      "aliases": [
+        "plumbing contractor",
+        "drainer"
+      ],
+      "tags": [
+        "trades",
+        "plumbing"
+      ],
+      "keywords": [
+        "plumber",
+        "plumbing",
+        "pipes",
+        "water",
+        "drainage",
+        "hot water"
+      ],
+      "visible_categories": [
+        "compliance",
+        "finance",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "social",
+        "travel"
+      ],
+      "label_overrides": {
+        "compliance": "Licences & CCP Lodgement",
+        "calendar": "Job Schedule",
+        "finance": "Invoices & Quotes"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "finance": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "plumbing_licence_renewal",
+        "ccp_lodgement_deadline",
+        "slab_penetration_window",
+        "hot_water_unit_lead_time",
+        "backflow_prevention_testing"
+      ],
+      "llm_enrich_defaults": {
+        "compliance": false,
+        "finance": false,
+        "calendar": true,
+        "email": true
+      }
+    },
+    {
+      "id": "hvac_technician",
+      "label": "HVAC Technician",
+      "aliases": [
+        "air conditioning tech",
+        "refrigeration tech",
+        "HVAC installer"
+      ],
+      "tags": [
+        "trades",
+        "hvac",
+        "refrigeration"
+      ],
+      "keywords": [
+        "hvac",
+        "air conditioning",
+        "aircon",
+        "refrigeration",
+        "heating",
+        "cooling",
+        "ARC",
+        "ARCTICK"
+      ],
+      "visible_categories": [
+        "compliance",
+        "finance",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "social",
+        "travel"
+      ],
+      "label_overrides": {
+        "compliance": "ARC Licence & Refrigerant Logs",
+        "calendar": "Maintenance Schedule",
+        "finance": "Invoices & Contracts"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "arc_licence_renewal",
+        "refrigerant_log_discrepancy",
+        "maintenance_contract_schedule",
+        "warranty_registration_30_days",
+        "equipment_order_lead_time"
+      ],
+      "llm_enrich_defaults": {
+        "compliance": false,
+        "finance": false,
+        "calendar": true,
+        "email": true
+      }
+    },
+    {
+      "id": "carpenter",
+      "label": "Carpenter / Joiner",
+      "aliases": [
+        "joiner",
+        "cabinet maker",
+        "woodworker"
+      ],
+      "tags": [
+        "trades",
+        "woodwork"
+      ],
+      "keywords": [
+        "carpenter",
+        "joiner",
+        "cabinet",
+        "woodwork",
+        "timber",
+        "furniture",
+        "kitchen install"
+      ],
+      "visible_categories": [
+        "calendar",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "social",
+        "health"
+      ],
+      "label_overrides": {
+        "calendar": "Site Schedule",
+        "finance": "Quotes & Invoices"
+      },
+      "urgency_defaults": {
+        "calendar": "high",
+        "finance": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "kitchen_measure_to_delivery_lead_time",
+        "hardware_backorder",
+        "timber_delivery_vs_site_readiness",
+        "site_prep_check",
+        "material_order_deadline"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "finance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "painter",
+      "label": "Painter & Decorator",
+      "aliases": [
+        "decorator",
+        "painting contractor"
+      ],
+      "tags": [
+        "trades",
+        "painting"
+      ],
+      "keywords": [
+        "painter",
+        "painting",
+        "decorator",
+        "decorating",
+        "paint",
+        "wallpaper"
+      ],
+      "visible_categories": [
+        "calendar",
+        "compliance",
+        "finance",
+        "weather",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev",
+        "travel"
+      ],
+      "label_overrides": {
+        "calendar": "Site & Weather Schedule",
+        "compliance": "Lead Paint & Licences",
+        "weather": "Exterior Work Weather"
+      },
+      "urgency_defaults": {
+        "weather": "high",
+        "compliance": "critical"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "weather_window_exterior",
+        "lead_paint_cert_renewal",
+        "paint_colour_discontinuation",
+        "scaffold_hire_return_date",
+        "quote_staleness_material_price"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "weather": true,
+        "compliance": false,
+        "finance": false
+      }
+    },
+    {
+      "id": "tiler",
+      "label": "Tiler / Flooring Specialist",
+      "aliases": [
+        "flooring installer",
+        "tile setter"
+      ],
+      "tags": [
+        "trades",
+        "tiling",
+        "flooring"
+      ],
+      "keywords": [
+        "tiler",
+        "tiling",
+        "tiles",
+        "flooring",
+        "floor",
+        "grout",
+        "waterproofing"
+      ],
+      "visible_categories": [
+        "calendar",
+        "compliance",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "social",
+        "dev"
+      ],
+      "label_overrides": {
+        "compliance": "Waterproofing Inspections",
+        "calendar": "Job Schedule"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "tile_delivery_lead_time",
+        "waterproofing_inspection_booking",
+        "dye_lot_reorder_window",
+        "grout_cure_timing",
+        "underfloor_heating_activation"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "compliance": false,
+        "finance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "landscaper",
+      "label": "Landscaper",
+      "aliases": [
+        "gardener",
+        "landscape designer",
+        "grounds keeper"
+      ],
+      "tags": [
+        "trades",
+        "landscaping",
+        "outdoor"
+      ],
+      "keywords": [
+        "landscaper",
+        "landscaping",
+        "garden",
+        "turf",
+        "plants",
+        "lawn",
+        "outdoor"
+      ],
+      "visible_categories": [
+        "weather",
+        "calendar",
+        "compliance",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "compliance": "Chemical Licence & DBYD",
+        "calendar": "Job Schedule",
+        "weather": "Planting & Work Weather"
+      },
+      "urgency_defaults": {
+        "weather": "high",
+        "compliance": "critical"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "turf_delivery_timing",
+        "planting_season_window",
+        "chemical_applicator_licence",
+        "dial_before_you_dig_response",
+        "equipment_service_due"
+      ],
+      "llm_enrich_defaults": {
+        "weather": true,
+        "calendar": true,
+        "compliance": false,
+        "finance": false
+      }
+    },
+    {
+      "id": "solar_installer",
+      "label": "Solar Installer",
+      "aliases": [
+        "solar technician",
+        "solar electrician",
+        "PV installer"
+      ],
+      "tags": [
+        "trades",
+        "solar",
+        "electrical"
+      ],
+      "keywords": [
+        "solar",
+        "panels",
+        "photovoltaic",
+        "PV",
+        "inverter",
+        "CEC",
+        "STC"
+      ],
+      "visible_categories": [
+        "compliance",
+        "finance",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "social"
+      ],
+      "label_overrides": {
+        "compliance": "CEC & STC Compliance",
+        "finance": "STC Claims & Invoices",
+        "calendar": "Install Schedule"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "finance": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "cec_accreditation_renewal",
+        "stc_creation_deadline_90_days",
+        "network_connection_approval_delay",
+        "inverter_warranty_registration",
+        "stc_price_fluctuation"
+      ],
+      "llm_enrich_defaults": {
+        "compliance": false,
+        "finance": true,
+        "calendar": true,
+        "email": true
+      }
+    },
+    {
+      "id": "roofing_contractor",
+      "label": "Roofing Contractor",
+      "aliases": [
+        "roofer",
+        "roof tiler"
+      ],
+      "tags": [
+        "trades",
+        "roofing",
+        "construction"
+      ],
+      "keywords": [
+        "roofing",
+        "roofer",
+        "roof",
+        "gutters",
+        "scaffold",
+        "tiles",
+        "rooftop"
+      ],
+      "visible_categories": [
+        "weather",
+        "compliance",
+        "finance",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "weather": "Work Weather",
+        "compliance": "Height Safety & Licences",
+        "calendar": "Site Schedule"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "weather": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "height_safety_equipment_inspection",
+        "scaffold_hire_cost_overrun",
+        "tile_availability_discontinued",
+        "weather_window_decision",
+        "heatwave_surge_planning"
+      ],
+      "llm_enrich_defaults": {
+        "weather": true,
+        "compliance": false,
+        "finance": false,
+        "calendar": true
+      }
+    },
+    {
+      "id": "primary_teacher",
+      "label": "Primary School Teacher",
+      "aliases": [
+        "elementary teacher",
+        "primary educator"
+      ],
+      "tags": [
+        "education",
+        "teacher",
+        "primary"
+      ],
+      "keywords": [
+        "teacher",
+        "primary",
+        "elementary",
+        "school",
+        "classroom",
+        "students",
+        "kids",
+        "children"
+      ],
+      "visible_categories": [
+        "calendar",
+        "compliance",
+        "email"
+      ],
+      "hidden_categories": [
+        "finance",
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "calendar": "Class Schedule & Deadlines",
+        "compliance": "Certifications & Welfare"
+      },
+      "urgency_defaults": {
+        "compliance": "high",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "report_card_deadline",
+        "parent_teacher_interviews_prep",
+        "curriculum_submission",
+        "welfare_referral_overdue",
+        "excursion_permission_slip"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "compliance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "high_school_teacher",
+      "label": "High School Teacher",
+      "aliases": [
+        "secondary teacher",
+        "high school educator"
+      ],
+      "tags": [
+        "education",
+        "teacher",
+        "secondary"
+      ],
+      "keywords": [
+        "high school",
+        "secondary",
+        "teacher",
+        "exams",
+        "marking",
+        "students",
+        "teaching"
+      ],
+      "visible_categories": [
+        "calendar",
+        "compliance",
+        "email"
+      ],
+      "hidden_categories": [
+        "finance",
+        "dev"
+      ],
+      "label_overrides": {
+        "calendar": "Assessment & Term Dates",
+        "compliance": "Certifications"
+      },
+      "urgency_defaults": {
+        "compliance": "high",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "exam_creation_due_to_hod",
+        "marking_return_deadline",
+        "reference_letter_season",
+        "parent_evening_prep",
+        "at_risk_student_welfare_flag"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "compliance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "university_lecturer",
+      "label": "University Lecturer",
+      "aliases": [
+        "professor",
+        "academic",
+        "researcher"
+      ],
+      "tags": [
+        "education",
+        "academic",
+        "university"
+      ],
+      "keywords": [
+        "lecturer",
+        "professor",
+        "university",
+        "academic",
+        "research",
+        "grants",
+        "PhD",
+        "faculty"
+      ],
+      "visible_categories": [
+        "calendar",
+        "finance",
+        "email",
+        "compliance"
+      ],
+      "hidden_categories": [
+        "health",
+        "social"
+      ],
+      "label_overrides": {
+        "calendar": "Academic Calendar & Deadlines",
+        "finance": "Grants & Funding",
+        "compliance": "Research Milestones"
+      },
+      "urgency_defaults": {
+        "finance": "critical",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "grant_application_deadline",
+        "grade_submission_deadline",
+        "phd_student_milestone_review",
+        "conference_abstract_deadline",
+        "journal_review_turnaround"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "finance": true,
+        "email": true,
+        "compliance": false
+      }
+    },
+    {
+      "id": "school_principal",
+      "label": "School Principal",
+      "aliases": [
+        "headmaster",
+        "headteacher",
+        "school director"
+      ],
+      "tags": [
+        "education",
+        "manager",
+        "leadership"
+      ],
+      "keywords": [
+        "principal",
+        "headmaster",
+        "headteacher",
+        "school leader",
+        "school management"
+      ],
+      "visible_categories": [
+        "calendar",
+        "staff",
+        "compliance",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "staff": "Staff Reviews & HR",
+        "compliance": "Inspections & Reporting",
+        "finance": "Budget & Enrolments"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "staff": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "inspection_readiness",
+        "report_sign_off_volume",
+        "staff_performance_review_cycle",
+        "budget_submission_deadline",
+        "mandatory_reporting",
+        "safety_drills_overdue"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "staff": true,
+        "compliance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "private_tutor",
+      "label": "Private Tutor",
+      "aliases": [
+        "tutor",
+        "tutoring business"
+      ],
+      "tags": [
+        "education",
+        "freelance"
+      ],
+      "keywords": [
+        "tutor",
+        "tutoring",
+        "private lessons",
+        "homework help",
+        "exam prep"
+      ],
+      "visible_categories": [
+        "calendar",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "calendar": "Sessions & Exam Dates",
+        "finance": "Invoices & Payments"
+      },
+      "urgency_defaults": {
+        "finance": "high",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "invoice_overdue",
+        "new_inquiry_unanswered_24h",
+        "exam_countdown_per_student",
+        "late_cancellation_policy",
+        "seasonal_income_gap_warning"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "finance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "early_childhood_worker",
+      "label": "Early Childhood Worker",
+      "aliases": [
+        "childcare worker",
+        "daycare teacher",
+        "childcare educator"
+      ],
+      "tags": [
+        "education",
+        "childcare"
+      ],
+      "keywords": [
+        "childcare",
+        "daycare",
+        "early childhood",
+        "nursery",
+        "preschool",
+        "kindy",
+        "kindergarten"
+      ],
+      "visible_categories": [
+        "compliance",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "compliance": "WWCC, CPR & ACECQA",
+        "calendar": "Room Schedule & Ratios"
+      },
+      "urgency_defaults": {
+        "compliance": "critical"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "cpr_renewal",
+        "wwcc_expiry",
+        "incident_report_unsigned",
+        "acecqa_assessment_prep",
+        "ratio_compliance_alert"
+      ],
+      "llm_enrich_defaults": {
+        "compliance": false,
+        "calendar": true,
+        "email": true
+      }
+    },
+    {
+      "id": "retail_store_manager",
+      "label": "Retail Store Manager",
+      "aliases": [
+        "shop manager",
+        "store manager",
+        "retail manager"
+      ],
+      "tags": [
+        "retail",
+        "manager"
+      ],
+      "keywords": [
+        "retail",
+        "store",
+        "shop",
+        "sales floor",
+        "inventory",
+        "POS",
+        "till"
+      ],
+      "visible_categories": [
+        "finance",
+        "staff",
+        "compliance",
+        "social",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "travel",
+        "dev"
+      ],
+      "label_overrides": {
+        "finance": "Sales & Cash",
+        "staff": "Roster & Staffing",
+        "social": "Reviews & Promos",
+        "compliance": "Compliance & Rates"
+      },
+      "urgency_defaults": {
+        "staff": "high",
+        "finance": "high",
+        "compliance": "critical"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "hero_sku_stockout_during_promo",
+        "cash_variance_repeated_till",
+        "black_friday_staffing_request",
+        "planogram_change_timeline",
+        "minimum_wage_rate_change"
+      ],
+      "llm_enrich_defaults": {
+        "finance": true,
+        "staff": false,
+        "social": true,
+        "email": true
+      }
+    },
+    {
+      "id": "ecommerce_owner",
+      "label": "E-commerce Store Owner",
+      "aliases": [
+        "online store owner",
+        "Shopify owner",
+        "ecom owner"
+      ],
+      "tags": [
+        "retail",
+        "ecommerce",
+        "owner"
+      ],
+      "keywords": [
+        "ecommerce",
+        "e-commerce",
+        "online store",
+        "Shopify",
+        "WooCommerce",
+        "dropshipping",
+        "online shop"
+      ],
+      "visible_categories": [
+        "finance",
+        "social",
+        "compliance",
+        "email",
+        "calendar"
+      ],
+      "hidden_categories": [
+        "health",
+        "travel"
+      ],
+      "label_overrides": {
+        "finance": "Sales & Ad Spend",
+        "social": "Reviews & Returns",
+        "compliance": "SSL & Domain Renewals",
+        "calendar": "Launches & Promotions"
+      },
+      "urgency_defaults": {
+        "finance": "high",
+        "compliance": "critical",
+        "social": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "ad_account_suspension_risk",
+        "cart_abandonment_spike",
+        "ssl_domain_renewal",
+        "stockout_during_campaign",
+        "black_friday_prep",
+        "carrier_failure_during_peak"
+      ],
+      "llm_enrich_defaults": {
+        "finance": true,
+        "social": true,
+        "compliance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "software_developer",
+      "label": "Software Developer",
+      "aliases": [
+        "programmer",
+        "software engineer",
+        "coder",
+        "web developer",
+        "full stack developer"
+      ],
+      "tags": [
+        "tech",
+        "developer"
+      ],
+      "keywords": [
+        "developer",
+        "software",
+        "programming",
+        "code",
+        "coding",
+        "engineer",
+        "dev",
+        "web dev",
+        "fullstack",
+        "backend",
+        "frontend"
+      ],
+      "visible_categories": [
+        "dev",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "social",
+        "travel"
+      ],
+      "label_overrides": {
+        "dev": "GitHub & Sprint",
+        "calendar": "Standups & Deadlines"
+      },
+      "urgency_defaults": {
+        "dev": "high",
+        "calendar": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "pr_awaiting_review_24h",
+        "ci_build_failure",
+        "sprint_risk_ticket_count",
+        "deployment_confirmation",
+        "github_issue_assigned"
+      ],
+      "llm_enrich_defaults": {
+        "dev": true,
+        "calendar": true,
+        "email": true
+      }
+    },
+    {
+      "id": "startup_founder",
+      "label": "Startup Founder / CEO",
+      "aliases": [
+        "founder",
+        "CEO",
+        "co-founder",
+        "entrepreneur"
+      ],
+      "tags": [
+        "tech",
+        "business",
+        "founder"
+      ],
+      "keywords": [
+        "founder",
+        "startup",
+        "CEO",
+        "entrepreneur",
+        "company",
+        "MRR",
+        "churn",
+        "runway",
+        "venture"
+      ],
+      "visible_categories": [
+        "finance",
+        "calendar",
+        "email",
+        "dev"
+      ],
+      "hidden_categories": [
+        "health",
+        "social"
+      ],
+      "label_overrides": {
+        "finance": "MRR, Churn & Burn",
+        "dev": "Sprint & Code"
+      },
+      "urgency_defaults": {
+        "finance": "critical",
+        "dev": "high",
+        "calendar": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "mrr_milestone",
+        "churn_event",
+        "cash_runway_alert",
+        "board_meeting_prep",
+        "competitor_mention"
+      ],
+      "llm_enrich_defaults": {
+        "finance": true,
+        "calendar": true,
+        "email": true,
+        "dev": true
+      }
+    },
+    {
+      "id": "freelancer",
+      "label": "Freelancer / Contractor",
+      "aliases": [
+        "independent contractor",
+        "self-employed",
+        "consultant",
+        "solopreneur"
+      ],
+      "tags": [
+        "business",
+        "freelance"
+      ],
+      "keywords": [
+        "freelancer",
+        "freelance",
+        "contractor",
+        "self-employed",
+        "consultant",
+        "gig",
+        "independent"
+      ],
+      "visible_categories": [
+        "finance",
+        "calendar",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "finance": "Invoices & Client Payments",
+        "email": "Client Comms"
+      },
+      "urgency_defaults": {
+        "finance": "high",
+        "email": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "invoice_overdue",
+        "client_silent_x_days",
+        "tax_deadline",
+        "proposal_win_loss",
+        "contract_renewal"
+      ],
+      "llm_enrich_defaults": {
+        "finance": true,
+        "calendar": true,
+        "email": true
+      }
+    },
+    {
+      "id": "sales_manager",
+      "label": "Sales Manager / BDM",
+      "aliases": [
+        "business development manager",
+        "account executive",
+        "sales rep",
+        "BDM"
+      ],
+      "tags": [
+        "business",
+        "sales"
+      ],
+      "keywords": [
+        "sales",
+        "deals",
+        "CRM",
+        "pipeline",
+        "business development",
+        "BDM",
+        "account",
+        "quota"
+      ],
+      "visible_categories": [
+        "email",
+        "calendar",
+        "finance"
+      ],
+      "hidden_categories": [
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "email": "Warm Intros & Follow-ups",
+        "calendar": "Pre-Call Briefs",
+        "finance": "Deal Revenue"
+      },
+      "urgency_defaults": {
+        "email": "high",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "deal_silent_7_days",
+        "pre_meeting_brief",
+        "warm_intro_detected",
+        "proposal_overdue_response",
+        "contract_renewal_approaching"
+      ],
+      "llm_enrich_defaults": {
+        "email": true,
+        "calendar": true,
+        "finance": true
+      }
+    },
+    {
+      "id": "marketing_manager",
+      "label": "Marketing Manager",
+      "aliases": [
+        "marketing director",
+        "growth manager",
+        "digital marketing manager"
+      ],
+      "tags": [
+        "business",
+        "marketing"
+      ],
+      "keywords": [
+        "marketing",
+        "campaign",
+        "ads",
+        "SEO",
+        "content marketing",
+        "brand",
+        "growth"
+      ],
+      "visible_categories": [
+        "social",
+        "finance",
+        "email",
+        "calendar"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "social": "Campaign & Social",
+        "finance": "Ad Spend & Budget"
+      },
+      "urgency_defaults": {
+        "finance": "high",
+        "social": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "ad_budget_pacing",
+        "product_launch_date",
+        "email_list_health",
+        "competitor_product_launch",
+        "attribution_model_drift"
+      ],
+      "llm_enrich_defaults": {
+        "social": true,
+        "finance": true,
+        "email": true,
+        "calendar": true
+      }
+    },
+    {
+      "id": "doctor",
+      "label": "Doctor / GP",
+      "aliases": [
+        "physician",
+        "general practitioner",
+        "GP",
+        "medical doctor"
+      ],
+      "tags": [
+        "healthcare",
+        "medical",
+        "professional"
+      ],
+      "keywords": [
+        "doctor",
+        "GP",
+        "physician",
+        "medical",
+        "patients",
+        "clinic",
+        "surgery",
+        "practice"
+      ],
+      "visible_categories": [
+        "calendar",
+        "email",
+        "compliance",
+        "health"
+      ],
+      "hidden_categories": [
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "calendar": "Patient Appointments",
+        "compliance": "Registration & CPD",
+        "email": "Referrals & Comms",
+        "health": "Personal Health"
+      },
+      "urgency_defaults": {
+        "compliance": "critical",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "medical_registration_renewal",
+        "cpd_hours_completion",
+        "ahpra_compliance",
+        "referral_response_overdue",
+        "repeat_prescription_due"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "email": true,
+        "compliance": false,
+        "health": false
+      }
+    },
+    {
+      "id": "nurse",
+      "label": "Nurse / Allied Health",
+      "aliases": [
+        "registered nurse",
+        "RN",
+        "allied health professional",
+        "physiotherapist"
+      ],
+      "tags": [
+        "healthcare",
+        "nursing"
+      ],
+      "keywords": [
+        "nurse",
+        "nursing",
+        "RN",
+        "allied health",
+        "hospital",
+        "ward",
+        "patients",
+        "clinical"
+      ],
+      "visible_categories": [
+        "calendar",
+        "compliance",
+        "email",
+        "health"
+      ],
+      "hidden_categories": [
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "compliance": "Registration & CPR",
+        "health": "Personal Health"
+      },
+      "urgency_defaults": {
+        "compliance": "critical"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "nursing_registration_renewal",
+        "cpr_first_aid_renewal",
+        "mandatory_training_due",
+        "patient_handover_flag"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "compliance": false,
+        "email": true,
+        "health": false
+      }
+    },
+    {
+      "id": "accountant",
+      "label": "Accountant / Bookkeeper",
+      "aliases": [
+        "bookkeeper",
+        "CPA",
+        "tax accountant",
+        "financial controller"
+      ],
+      "tags": [
+        "professional",
+        "finance"
+      ],
+      "keywords": [
+        "accountant",
+        "accounting",
+        "bookkeeper",
+        "bookkeeping",
+        "tax",
+        "BAS",
+        "audit",
+        "payroll",
+        "CPA"
+      ],
+      "visible_categories": [
+        "finance",
+        "calendar",
+        "email",
+        "compliance"
+      ],
+      "hidden_categories": [
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "finance": "Client Accounts & Filings",
+        "calendar": "Filing Deadlines",
+        "compliance": "Audit & Regulatory"
+      },
+      "urgency_defaults": {
+        "finance": "critical",
+        "compliance": "critical",
+        "calendar": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "tax_filing_deadline",
+        "bas_due",
+        "client_document_overdue",
+        "payroll_processing_window",
+        "audit_deadline"
+      ],
+      "llm_enrich_defaults": {
+        "finance": true,
+        "calendar": true,
+        "email": true,
+        "compliance": false
+      }
+    },
+    {
+      "id": "lawyer",
+      "label": "Lawyer / Solicitor",
+      "aliases": [
+        "solicitor",
+        "attorney",
+        "barrister",
+        "legal counsel"
+      ],
+      "tags": [
+        "professional",
+        "legal"
+      ],
+      "keywords": [
+        "lawyer",
+        "solicitor",
+        "attorney",
+        "legal",
+        "law",
+        "court",
+        "barrister",
+        "litigation"
+      ],
+      "visible_categories": [
+        "calendar",
+        "email",
+        "finance",
+        "compliance"
+      ],
+      "hidden_categories": [
+        "dev",
+        "social"
+      ],
+      "label_overrides": {
+        "calendar": "Court Dates & Filings",
+        "finance": "Billings & Trust",
+        "compliance": "CPD & Trust Compliance"
+      },
+      "urgency_defaults": {
+        "calendar": "critical",
+        "compliance": "critical",
+        "finance": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "court_date_approaching",
+        "filing_deadline_hard",
+        "cpd_hours_due",
+        "trust_account_compliance",
+        "client_response_overdue"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "email": true,
+        "finance": true,
+        "compliance": false
+      }
+    },
+    {
+      "id": "content_creator",
+      "label": "Content Creator",
+      "aliases": [
+        "YouTuber",
+        "TikToker",
+        "influencer",
+        "vlogger",
+        "streamer"
+      ],
+      "tags": [
+        "creative",
+        "media",
+        "social"
+      ],
+      "keywords": [
+        "content creator",
+        "YouTuber",
+        "TikTok",
+        "influencer",
+        "streaming",
+        "vlog",
+        "videos",
+        "creator"
+      ],
+      "visible_categories": [
+        "social",
+        "calendar",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "social": "Analytics & Milestones",
+        "calendar": "Upload Schedule",
+        "finance": "Brand Deals & Revenue"
+      },
+      "urgency_defaults": {
+        "social": "high",
+        "finance": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "upload_cadence_broken",
+        "sponsored_deliverable_deadline",
+        "engagement_anomaly",
+        "subscriber_milestone",
+        "brand_deal_expiry"
+      ],
+      "llm_enrich_defaults": {
+        "social": true,
+        "calendar": true,
+        "finance": true,
+        "email": true
+      }
+    },
+    {
+      "id": "podcaster",
+      "label": "Podcaster",
+      "aliases": [
+        "podcast host",
+        "podcast producer"
+      ],
+      "tags": [
+        "creative",
+        "media",
+        "audio"
+      ],
+      "keywords": [
+        "podcast",
+        "podcaster",
+        "episodes",
+        "audio",
+        "RSS",
+        "listeners"
+      ],
+      "visible_categories": [
+        "calendar",
+        "social",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "calendar": "Episode Schedule",
+        "social": "Listeners & Growth",
+        "finance": "Sponsorships"
+      },
+      "urgency_defaults": {
+        "calendar": "high",
+        "finance": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "publishing_cadence_gap",
+        "guest_no_show",
+        "sponsor_deliverable_deadline",
+        "rss_hosting_renewal",
+        "listener_milestone"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "social": true,
+        "finance": true,
+        "email": true
+      }
+    },
+    {
+      "id": "graphic_designer",
+      "label": "Graphic Designer / Creative Director",
+      "aliases": [
+        "designer",
+        "creative director",
+        "art director",
+        "UX designer"
+      ],
+      "tags": [
+        "creative",
+        "design"
+      ],
+      "keywords": [
+        "designer",
+        "graphic design",
+        "creative",
+        "design",
+        "Adobe",
+        "Figma",
+        "branding",
+        "UX",
+        "UI"
+      ],
+      "visible_categories": [
+        "calendar",
+        "finance",
+        "email"
+      ],
+      "hidden_categories": [
+        "social",
+        "dev"
+      ],
+      "label_overrides": {
+        "calendar": "Project Deadlines",
+        "finance": "Invoices & Licences"
+      },
+      "urgency_defaults": {
+        "calendar": "critical",
+        "finance": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "print_deadline_hard",
+        "font_plugin_licence_renewal",
+        "adobe_cc_renewal",
+        "client_revision_round_exceeded",
+        "project_deadline_approaching"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "finance": false,
+        "email": true
+      }
+    },
+    {
+      "id": "general_personal",
+      "label": "General Personal",
+      "aliases": [
+        "personal",
+        "general user"
+      ],
+      "tags": [
+        "personal"
+      ],
+      "keywords": [
+        "personal",
+        "general",
+        "home",
+        "life"
+      ],
+      "visible_categories": [
+        "calendar",
+        "email",
+        "finance",
+        "weather",
+        "health"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "finance": "Bills & Subscriptions"
+      },
+      "urgency_defaults": {
+        "calendar": "medium",
+        "finance": "medium"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "bill_due_3_days",
+        "birthday_approaching",
+        "subscription_renewal",
+        "weather_outdoor_plans"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "email": true,
+        "finance": false,
+        "weather": false
+      }
+    },
+    {
+      "id": "parent",
+      "label": "Parent / Family Manager",
+      "aliases": [
+        "parent",
+        "stay-at-home parent",
+        "family manager",
+        "mum",
+        "dad"
+      ],
+      "tags": [
+        "personal",
+        "family"
+      ],
+      "keywords": [
+        "parent",
+        "family",
+        "kids",
+        "children",
+        "school",
+        "pickup",
+        "mum",
+        "dad",
+        "mom"
+      ],
+      "visible_categories": [
+        "calendar",
+        "health",
+        "finance",
+        "weather",
+        "email"
+      ],
+      "hidden_categories": [
+        "dev"
+      ],
+      "label_overrides": {
+        "calendar": "School & Family Events",
+        "finance": "Household Bills",
+        "health": "Family Health"
+      },
+      "urgency_defaults": {
+        "calendar": "high",
+        "health": "high"
+      },
+      "required_skills": [
+        "gog"
+      ],
+      "key_triggers": [
+        "school_event_approaching",
+        "medical_appointment",
+        "bill_overdue",
+        "birthday_reminder",
+        "weather_for_school_events"
+      ],
+      "llm_enrich_defaults": {
+        "calendar": true,
+        "health": false,
+        "finance": false,
+        "weather": true
+      }
+    },
+    {
+      "id": "fallback",
+      "label": "General",
+      "aliases": [],
+      "tags": [],
+      "keywords": [],
+      "visible_categories": [
+        "email",
+        "calendar",
+        "finance",
+        "weather",
+        "health"
+      ],
+      "hidden_categories": [
+        "dev",
+        "travel",
+        "social",
+        "compliance",
+        "staff"
+      ],
+      "label_overrides": {},
+      "urgency_defaults": {},
+      "required_skills": [],
+      "key_triggers": [],
+      "llm_enrich_defaults": {}
+    }
+  ]
+}

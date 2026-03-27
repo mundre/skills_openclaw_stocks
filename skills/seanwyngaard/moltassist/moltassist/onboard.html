@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MoltAssist -- Onboarding</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--muted); margin-bottom: 0.5rem; font-size: 0.95rem; }
+  .role-text { color: var(--muted); font-style: italic; margin-bottom: 2rem; font-size: 0.9rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; margin-bottom: 1.2rem; }
+  .card h2 { font-size: 1.1rem; margin-bottom: 1rem; }
+  .priority-section { margin-bottom: 1.5rem; }
+  .priority-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+  .priority-high { background: rgba(248,81,73,0.15); color: var(--red); }
+  .priority-medium { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .priority-low { background: rgba(139,148,158,0.15); color: var(--muted); }
+  .suggestion-row { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid var(--border); }
+  .suggestion-row:last-child { border-bottom: none; }
+  .suggestion-row input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+  .suggestion-info { flex: 1; }
+  .suggestion-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.2rem; }
+  .suggestion-desc { color: var(--muted); font-size: 0.85rem; line-height: 1.4; }
+  .cat-badge { font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; background: rgba(88,166,255,0.1); color: var(--accent); border: 1px solid rgba(88,166,255,0.2); margin-left: 0.5rem; vertical-align: middle; }
+  .skill-row { display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 0.5rem; }
+  .skill-row:last-child { border-bottom: none; }
+  .skill-name { font-weight: 600; font-size: 0.95rem; }
+  .badge { font-size: 0.75rem; padding: 2px 10px; border-radius: 12px; font-weight: 500; white-space: nowrap; }
+  .badge-installed { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-builtin { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .badge-missing { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge-build { font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; background: rgba(210,153,34,0.18); color: var(--yellow); border: 1px solid rgba(210,153,34,0.25); margin-left: 0.5rem; vertical-align: middle; font-weight: 600; }
+  .btn { padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 0.85rem; transition: all 0.15s; }
+  .btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; padding: 10px 28px; font-size: 1rem; width: 100%; margin-top: 1rem; }
+  .btn-primary:hover { background: #79beff; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-back { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 4px 0; display: flex; align-items: center; gap: 4px; }
+  .btn-back:hover { color: var(--text); }
+  .step-indicator { text-align: center; color: var(--muted); font-size: 0.8rem; margin-bottom: 1.5rem; letter-spacing: 0.05em; }
+  .error-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .error-state h2 { font-size: 1.2rem; margin-bottom: 0.75rem; color: var(--text); }
+  .loading { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .success-state { text-align: center; padding: 3rem 1rem; }
+  .success-state h2 { font-size: 1.4rem; color: var(--green); margin-bottom: 0.75rem; }
+  .success-state p { color: var(--muted); font-size: 0.95rem; }
+  .step-wrap { max-width: 520px; margin: 2rem auto; }
+  .step-wrap h1 { text-align: center; margin-bottom: 1rem; }
+  .step-wrap p.desc { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.95rem; text-align: center; }
+  .role-input-wrap { display: flex; gap: 0.5rem; }
+  .role-input-wrap input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px 16px; border-radius: 8px; font-size: 1rem; }
+  .role-input-wrap input:focus { outline: none; border-color: var(--accent); }
+  .role-input-wrap button { padding: 12px 24px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .choice-grid { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
+  .choice-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 14px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.15s; }
+  .choice-btn:hover { border-color: var(--accent); background: rgba(88,166,255,0.08); }
+  .choice-btn.selected { border-color: var(--accent); background: rgba(88,166,255,0.12); }
+  .quiet-hours-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .quiet-hours-row label { font-size: 0.9rem; color: var(--muted); }
+  .quiet-hours-row input[type="time"] { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 0.9rem; }
+  .quiet-hours-row input[type="time"]:focus { outline: none; border-color: var(--accent); }
+  .quiet-hours-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  #confirm-btn-wrap { position: sticky; bottom: 0; background: var(--bg); padding: 1rem 0 0.5rem; border-top: 1px solid var(--border); margin-top: 1rem; }
+  .question-text { font-size: 1.15rem; font-weight: 600; text-align: center; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+
+<!-- Loading state (initial check) -->
+<div id="loading" class="loading">
+  <p>Loading...</p>
+</div>
+
+<!-- Error state -->
+<div id="error" class="error-state" style="display:none">
+  <h2>Something went wrong</h2>
+  <p>Could not connect to MoltAssist server. Make sure it's running on localhost:7430.</p>
+</div>
+
+<!-- Success state -->
+<div id="success" class="success-state" style="display:none">
+  <h2>You're all set!</h2>
+  <p>MoltAssist is configured and watching.<br>Head back to your chat and type <strong>done</strong>.</p>
+  <a href="/dashboard" style="display:inline-block;margin-top:1.5rem;padding:12px 28px;background:var(--accent);color:#000;font-weight:600;font-size:1rem;border-radius:8px;text-decoration:none;">Go to dashboard &rarr;</a>
+</div>
+
+<!-- Dynamic step container -->
+<div id="step-container" style="display:none"></div>
+
+<script>
+var state = {
+  currentStep: 0,
+  totalSteps: 2,
+  roleText: '',
+  detectedRole: '',
+  roleLabel: '',
+  followUpQuestions: [],
+  answers: {},
+  suggestions: [],
+  installedSkills: [],
+  sessionData: null
+};
+
+function init() {
+  fetch('/api/onboard/suggestions')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('loading').style.display = 'none';
+      if (data.needs_role) {
+        state.totalSteps = 2;
+        state.currentStep = 1;
+        renderStep();
+        return;
+      }
+      if (data.error) { showError(); return; }
+      state.roleText = data.role_text || '';
+      state.roleLabel = data.role_label || '';
+      state.detectedRole = data.detected_role || '';
+      state.suggestions = data.suggestions || [];
+      state.installedSkills = data.installed_skills || [];
+      state.sessionData = data;
+      state.totalSteps = 2;
+      state.currentStep = 2;
+      renderStep();
+    })
+    .catch(function() { showError(); });
+}
+
+function showError() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('step-container').style.display = 'none';
+  document.getElementById('error').style.display = 'block';
+}
+
+function renderStep() {
+  var container = document.getElementById('step-container');
+  container.style.display = 'block';
+  container.innerHTML = '';
+
+  if (state.currentStep === 1) {
+    renderRoleStep(container);
+  } else if (state.currentStep > 1 && state.currentStep <= 1 + state.followUpQuestions.length) {
+    renderQuestionStep(container, state.currentStep - 2);
+  } else {
+    renderFinalStep(container);
+  }
+}
+
+function renderStepIndicator() {
+  var div = document.createElement('div');
+  div.className = 'step-indicator';
+  div.textContent = 'Step ' + state.currentStep + ' of ' + state.totalSteps;
+  return div;
+}
+
+function renderBackButton(onclick) {
+  var btn = document.createElement('button');
+  btn.className = 'btn-back';
+  btn.innerHTML = '&#8592; Back';
+  btn.onclick = onclick;
+  return btn;
+}
+
+function renderRoleStep(container) {
+  var wrap = document.createElement('div');
+  wrap.className = 'step-wrap';
+  wrap.appendChild(renderStepIndicator());
+
+  var h1 = document.createElement('h1');
+  h1.textContent = 'MoltAssist Setup';
+  wrap.appendChild(h1);
+
+  var desc = document.createElement('p');
+  desc.className = 'desc';
+  desc.textContent = 'Tell us about yourself. The more you share, the better your notifications will be.';
+  wrap.appendChild(desc);
+
+  var hints = document.createElement('ul');
+  hints.style.cssText = 'color:var(--muted);font-size:0.875rem;margin:0.75rem 0 1rem 1.25rem;line-height:1.7';
+  [
+    'What do you do for work? (job title, company, main responsibilities)',
+    'Any side projects or personal dev work?',
+    'Hobbies and interests (sports, gaming, travel, music...)',
+    'Things you want to stay on top of (finances, health, social media, emails...)',
+    'Tools and platforms you use day-to-day',
+  ].forEach(function(hint) {
+    var li = document.createElement('li');
+    li.textContent = hint;
+    hints.appendChild(li);
+  });
+  wrap.appendChild(hints);
+
+  var input = document.createElement('textarea');
+  input.id = 'role-input';
+  input.rows = 6;
+  input.style.cssText = 'width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:14px 16px;border-radius:8px;font-size:1rem;font-family:inherit;resize:vertical;line-height:1.5';
+  input.placeholder = "e.g. I'm a freelance developer, I manage a small e-commerce store, I do social media for clients...";
+  input.value = state.roleText;
+  input.addEventListener('focus', function() { input.style.borderColor = 'var(--accent)'; input.style.outline = 'none'; });
+  input.addEventListener('blur', function() { input.style.borderColor = 'var(--border)'; });
+  wrap.appendChild(input);
+
+  var btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.style.marginTop = '1rem';
+  btn.id = 'role-submit-btn';
+  btn.textContent = 'Next ->';
+  btn.onclick = submitRole;
+  wrap.appendChild(btn);
+
+  var loadingP = document.createElement('p');
+  loadingP.id = 'role-loading';
+  loadingP.style.display = 'none';
+  loadingP.style.marginTop = '1rem';
+  loadingP.style.color = 'var(--muted)';
+  loadingP.innerHTML = '<span class="spinner"></span> Detecting your role & generating suggestions...';
+  wrap.appendChild(loadingP);
+
+  container.appendChild(wrap);
+  setTimeout(function() { input.focus(); }, 50);
+}
+
+function submitRole() {
+  var input = document.getElementById('role-input');
+  var roleText = input.value.trim();
+  if (!roleText) { input.focus(); return; }
+
+  var btn = document.getElementById('role-submit-btn');
+  btn.disabled = true;
+  document.getElementById('role-loading').style.display = 'block';
+  state.roleText = roleText;
+
+  fetch('/api/onboard/role', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ role_text: roleText })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) { showError(); return; }
+    state.detectedRole = data.detected_role || '';
+    state.roleLabel = data.role_label || '';
+    state.followUpQuestions = data.follow_up_questions || [];
+    state.answers = {};
+
+    // totalSteps = 1 (role) + N (questions) + 1 (final)
+    state.totalSteps = 1 + state.followUpQuestions.length + 1;
+
+    if (state.followUpQuestions.length > 0) {
+      state.currentStep = 2;
+    } else {
+      // No follow-up questions, go straight to suggestions
+      fetchSuggestions();
+      return;
+    }
+    renderStep();
+  })
+  .catch(function() { showError(); });
+}
+
+function renderQuestionStep(container, qIdx) {
+  var q = state.followUpQuestions[qIdx];
+  var wrap = document.createElement('div');
+  wrap.className = 'step-wrap';
+
+  wrap.appendChild(renderBackButton(function() {
+    state.currentStep--;
+    renderStep();
+  }));
+  wrap.appendChild(renderStepIndicator());
+
+  var h1 = document.createElement('h1');
+  h1.textContent = 'MoltAssist Setup';
+  wrap.appendChild(h1);
+
+  var qText = document.createElement('div');
+  qText.className = 'question-text';
+  qText.textContent = q.question;
+  wrap.appendChild(qText);
+
+  // Multi-select toggle
+  var isMulti = !!q.multi;
+  var multiToggleWrap = document.createElement('div');
+  multiToggleWrap.style.cssText = 'display:flex;justify-content:flex-end;margin-top:0.5rem;margin-bottom:0.25rem;';
+  var multiToggleBtn = document.createElement('button');
+  multiToggleBtn.style.cssText = 'background:none;border:1px solid var(--border);color:var(--muted);font-size:0.75rem;padding:3px 10px;border-radius:12px;cursor:pointer;transition:all 0.15s;';
+  function updateToggleBtn() {
+    multiToggleBtn.textContent = isMulti ? '✓ Select multiple' : 'Select multiple';
+    multiToggleBtn.style.color = isMulti ? 'var(--accent)' : 'var(--muted)';
+    multiToggleBtn.style.borderColor = isMulti ? 'var(--accent)' : 'var(--border)';
+    multiToggleBtn.style.background = isMulti ? 'rgba(88,166,255,0.08)' : 'none';
+  }
+  updateToggleBtn();
+  multiToggleWrap.appendChild(multiToggleBtn);
+  wrap.appendChild(multiToggleWrap);
+
+  var subLabel = document.createElement('div');
+  subLabel.style.cssText = 'color:var(--muted);font-size:0.85rem;margin-bottom:0.5rem;min-height:1.2em;';
+  subLabel.textContent = isMulti ? 'Select all that apply' : '';
+  wrap.appendChild(subLabel);
+
+  var grid = document.createElement('div');
+  grid.className = 'choice-grid';
+
+  var currentAnswer = state.answers[q.id] || (isMulti ? [] : '');
+  if (isMulti && !Array.isArray(currentAnswer)) {
+    currentAnswer = currentAnswer ? [currentAnswer] : [];
+  }
+
+  // "Other" freeform input
+  var otherInput = document.createElement('textarea');
+  otherInput.placeholder = 'Describe what you use or anything else relevant...';
+  otherInput.style.cssText = 'display:none;margin-top:0.75rem;width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:12px 16px;border-radius:8px;font-size:0.95rem;font-family:inherit;line-height:1.5;resize:vertical;min-height:80px;box-sizing:border-box;';
+  otherInput.addEventListener('focus', function() { otherInput.style.borderColor='var(--accent)'; otherInput.style.boxShadow='0 0 0 3px rgba(88,166,255,0.12)'; otherInput.style.outline='none'; });
+  otherInput.addEventListener('blur', function() { otherInput.style.borderColor='var(--border)'; otherInput.style.boxShadow='none'; });
+
+  // Next button
+  var nextBtn = document.createElement('button');
+  nextBtn.className = 'btn btn-primary';
+  nextBtn.style.display = isMulti ? 'block' : 'none';
+  nextBtn.style.marginTop = '1rem';
+  nextBtn.textContent = 'Next \u2192';
+  nextBtn.onclick = function() {
+    if (isMulti) {
+      var selected = Array.from(grid.querySelectorAll('.choice-btn.selected')).map(function(b) { return b.dataset.opt; });
+      var otherVal = otherInput.style.display !== 'none' ? otherInput.value.trim() : '';
+      if (otherVal) selected = selected.filter(function(s) { return s !== 'Other'; }).concat([otherVal]);
+      if (selected.length === 0) return;
+      state.answers[q.id] = selected;
+    } else {
+      var val = otherInput.value.trim();
+      if (!val) { otherInput.focus(); return; }
+      state.answers[q.id] = val;
+    }
+    advanceFromQuestion(qIdx);
+  };
+  otherInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !isMulti) nextBtn.onclick();
+  });
+
+  function rebuildButtons() {
+    grid.innerHTML = '';
+    q.options.forEach(function(opt) {
+      var choiceBtn = document.createElement('button');
+      choiceBtn.className = 'choice-btn';
+      choiceBtn.dataset.opt = opt;
+      var curAns = state.answers[q.id] || (isMulti ? [] : '');
+      var wasSelected = isMulti
+        ? (Array.isArray(curAns) ? curAns.indexOf(opt) !== -1 : false)
+        : curAns === opt;
+      if (wasSelected) choiceBtn.classList.add('selected');
+      choiceBtn.textContent = opt;
+      choiceBtn.onclick = function() {
+        if (isMulti) {
+          choiceBtn.classList.toggle('selected');
+          if (opt === 'Other') {
+            var isNowSelected = choiceBtn.classList.contains('selected');
+            otherInput.style.display = isNowSelected ? 'block' : 'none';
+            if (isNowSelected) otherInput.focus();
+          }
+        } else {
+          grid.querySelectorAll('.choice-btn').forEach(function(b) { b.classList.remove('selected'); });
+          choiceBtn.classList.add('selected');
+          if (opt === 'Other') {
+            otherInput.style.display = 'block';
+            nextBtn.style.display = 'block';
+            otherInput.focus();
+          } else {
+            otherInput.style.display = 'none';
+            nextBtn.style.display = 'none';
+            state.answers[q.id] = opt;
+            advanceFromQuestion(qIdx);
+          }
+        }
+      };
+      grid.appendChild(choiceBtn);
+    });
+    // Restore Other input visibility for single-select with custom answer
+    if (!isMulti) {
+      var curAns2 = state.answers[q.id] || '';
+      if (curAns2 && !q.options.includes(curAns2)) {
+        var lastBtn = grid.querySelector('.choice-btn:last-child');
+        if (lastBtn && lastBtn.dataset.opt === 'Other') {
+          lastBtn.classList.add('selected');
+          otherInput.style.display = 'block';
+          nextBtn.style.display = 'block';
+          otherInput.value = curAns2;
+        }
+      }
+    }
+  }
+
+  // Toggle handler
+  multiToggleBtn.onclick = function() {
+    isMulti = !isMulti;
+    // Save/clear answers on mode switch
+    state.answers[q.id] = isMulti ? [] : '';
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+    updateToggleBtn();
+    subLabel.textContent = isMulti ? 'Select all that apply' : '';
+    nextBtn.style.display = isMulti ? 'block' : 'none';
+    rebuildButtons();
+  };
+
+  rebuildButtons();
+  wrap.appendChild(grid);
+  wrap.appendChild(otherInput);
+  wrap.appendChild(nextBtn);
+  container.appendChild(wrap);
+}
+
+function advanceFromQuestion(qIdx) {
+  if (qIdx + 1 < state.followUpQuestions.length) {
+    state.currentStep++;
+    renderStep();
+  } else {
+    // Last question answered, fetch suggestions
+    state.currentStep++;
+    fetchSuggestions();
+  }
+}
+
+function fetchSuggestions() {
+  var container = document.getElementById('step-container');
+  container.innerHTML = '<div class="loading"><p><span class="spinner"></span> Generating your suggestions...</p></div>';
+
+  fetch('/api/onboard/answers', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ role_text: state.roleText, answers: state.answers })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) { showError(); return; }
+    state.suggestions = data.suggestions || [];
+    state.installedSkills = data.installed_skills || [];
+    state.sessionData = data;
+    state.roleLabel = data.role_label || state.roleLabel;
+    renderStep();
+  })
+  .catch(function() { showError(); });
+}
+
+function renderFinalStep(container) {
+  container.innerHTML = '';
+
+  var wrap = document.createElement('div');
+
+  var backBtn = renderBackButton(function() {
+    state.currentStep--;
+    renderStep();
+  });
+  wrap.appendChild(backBtn);
+  wrap.appendChild(renderStepIndicator());
+
+  var h1 = document.createElement('h1');
+  h1.textContent = 'MoltAssist Setup';
+  wrap.appendChild(h1);
+
+  var sub = document.createElement('p');
+  sub.className = 'subtitle';
+  sub.textContent = state.roleLabel || 'Your role';
+  wrap.appendChild(sub);
+
+  if (state.roleText) {
+    var rt = document.createElement('p');
+    rt.className = 'role-text';
+    rt.textContent = '\u201c' + state.roleText + '\u201d';
+    wrap.appendChild(rt);
+  }
+
+  // Suggestions card
+  var sugCard = document.createElement('div');
+  sugCard.className = 'card';
+  sugCard.innerHTML = '<h2>Your notification suggestions</h2><p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem">Pre-checked the ones most relevant to your role. Uncheck anything you don\'t need.</p>';
+  var sugList = document.createElement('div');
+  sugList.id = 'suggestions-list';
+
+  var high = state.suggestions.filter(function(s) { return s.priority === 'high'; });
+  var medium = state.suggestions.filter(function(s) { return s.priority === 'medium'; });
+  var low = state.suggestions.filter(function(s) { return s.priority === 'low'; });
+
+  if (high.length) sugList.appendChild(renderPrioritySection('High priority', 'priority-high', high));
+  if (medium.length) sugList.appendChild(renderPrioritySection('Medium priority', 'priority-medium', medium));
+  if (low.length) sugList.appendChild(renderPrioritySection('Low priority', 'priority-low', low));
+
+  sugCard.appendChild(sugList);
+  wrap.appendChild(sugCard);
+
+  // Quiet hours card
+  var quietCard = document.createElement('div');
+  quietCard.className = 'card';
+  quietCard.innerHTML = '<h2>Quiet hours</h2><p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem">No notifications during these hours (critical alerts always get through).</p><div class="quiet-hours-row"><input type="checkbox" id="quiet-enabled" checked><label for="quiet-enabled">Enable quiet hours</label><label for="quiet-start">From</label><input type="time" id="quiet-start" value="23:00"><label for="quiet-end">to</label><input type="time" id="quiet-end" value="08:00"></div>';
+  wrap.appendChild(quietCard);
+
+  // Skills card
+  var skillsCard = document.createElement('div');
+  skillsCard.className = 'card';
+  skillsCard.innerHTML = '<h2>Skills required</h2>';
+  var skillsList = document.createElement('div');
+  skillsList.id = 'skills-list';
+  renderSkills(skillsList);
+  skillsCard.appendChild(skillsList);
+  wrap.appendChild(skillsCard);
+
+  // Confirm button
+  var confirmWrap = document.createElement('div');
+  confirmWrap.id = 'confirm-btn-wrap';
+  var confirmBtn = document.createElement('button');
+  confirmBtn.className = 'btn btn-primary';
+  confirmBtn.id = 'confirm-btn';
+  confirmBtn.textContent = 'Confirm & Save';
+  confirmBtn.onclick = confirmSelections;
+  confirmWrap.appendChild(confirmBtn);
+  wrap.appendChild(confirmWrap);
+
+  container.appendChild(wrap);
+}
+
+function renderPrioritySection(label, cls, items) {
+  var wrap = document.createElement('div');
+  wrap.className = 'priority-section';
+  var lbl = document.createElement('div');
+  lbl.className = 'priority-label ' + cls;
+  lbl.textContent = label;
+  wrap.appendChild(lbl);
+
+  items.forEach(function(s) {
+    var idx = state.suggestions.indexOf(s);
+    var row = document.createElement('div');
+    row.className = 'suggestion-row';
+    var checked = s.pre_checked !== false ? 'checked' : '';
+    var skills = Array.isArray(s.required_skill) ? s.required_skill : (s.required_skill ? [s.required_skill] : []);
+    var badgeHtml = s.build_needed
+      ? '<span class="badge-build">\u2692 build needed</span>'
+      : skills.length
+        ? skills.map(function(sk) { return '<span class="cat-badge">' + esc(sk) + '</span>'; }).join('')
+        : '<span class="cat-badge">built-in</span>';
+    row.innerHTML =
+      '<input type="checkbox" id="sug-' + idx + '" data-idx="' + idx + '" ' + checked + '>' +
+      '<div class="suggestion-info">' +
+        '<div class="suggestion-title">' + esc(s.title) + badgeHtml + '</div>' +
+        '<div class="suggestion-desc">' + esc(s.description) + '</div>' +
+      '</div>';
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
+function renderSkills(container) {
+  var skillMap = {};
+  state.suggestions.forEach(function(s) {
+    var skills = Array.isArray(s.required_skill) ? s.required_skill : (s.required_skill ? [s.required_skill] : []);
+    if (skills.length === 0) {
+      if (!skillMap['__builtin__']) skillMap['__builtin__'] = null;
+    } else {
+      skills.forEach(function(skill) {
+        if (skill && skill !== '__build_needed__' && !skillMap[skill]) skillMap[skill] = skill;
+      });
+    }
+  });
+
+  if (skillMap['__builtin__'] === null) {
+    var row = document.createElement('div');
+    row.className = 'skill-row';
+    row.innerHTML =
+      '<span class="skill-name">Built-in categories (finance, compliance, staff, social)</span>' +
+      '<span class="badge badge-builtin">Built-in</span>';
+    container.appendChild(row);
+  }
+
+  Object.keys(skillMap).filter(function(k) { return k !== '__builtin__'; }).forEach(function(skill) {
+    var installed = state.installedSkills.indexOf(skill) !== -1;
+    var row = document.createElement('div');
+    row.className = 'skill-row';
+    if (installed) {
+      row.innerHTML =
+        '<span class="skill-name">' + esc(skill) + '</span>' +
+        '<span class="badge badge-installed">Installed</span>';
+    } else {
+      row.innerHTML =
+        '<span class="skill-name">' + esc(skill) + '</span>' +
+        '<span class="badge badge-missing">Not installed</span>' +
+        '<div style="width:100%;margin-top:0.35rem;font-size:0.85rem;color:var(--muted)">' +
+          'This category requires the <strong>' + esc(skill) + '</strong> skill. ' +
+          'Ask your OpenClaw agent to install or build it, then re-run <code>/moltassist onboard</code>.' +
+        '</div>';
+    }
+    container.appendChild(row);
+  });
+
+  if (container.children.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:0.9rem">No skills required -- all categories are built-in.</p>';
+  }
+}
+
+function confirmSelections() {
+  var checkboxes = document.querySelectorAll('#suggestions-list input[type="checkbox"]:checked');
+  if (checkboxes.length === 0) {
+    alert('Please select at least one notification to activate.');
+    return;
+  }
+  var selected = Array.from(checkboxes).map(function(cb) {
+    var idx = parseInt(cb.dataset.idx);
+    return state.suggestions[idx];
+  });
+
+  var quietEnabled = document.getElementById('quiet-enabled').checked;
+  var quietStart = document.getElementById('quiet-start').value || '23:00';
+  var quietEnd = document.getElementById('quiet-end').value || '08:00';
+
+  var btn = document.getElementById('confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  fetch('/onboard/confirm', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      selected: selected,
+      quiet_hours: { enabled: quietEnabled, start: quietStart, end: quietEnd }
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      document.getElementById('step-container').style.display = 'none';
+      document.getElementById('success').style.display = 'block';
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Confirm & Save';
+      alert('Save failed: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.textContent = 'Confirm & Save';
+    alert('Could not reach server -- is MoltAssist still running?');
+  });
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>

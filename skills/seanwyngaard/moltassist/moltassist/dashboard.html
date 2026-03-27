@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoltAssist -- Dashboard</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3345;
+  --text: #e2e4ea;
+  --text-dim: #8b8fa3;
+  --accent: #6c8cff;
+  --accent-dim: #4a5f99;
+  --green: #4ade80;
+  --yellow: #facc15;
+  --red: #f87171;
+  --orange: #fb923c;
+  --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-width: 1024px; line-height: 1.5;
+}
+.container { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+/* Header */
+header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 20px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px;
+}
+header .brand h1 { font-size: 22px; font-weight: 600; }
+header .brand h1 span { margin-right: 8px; }
+header .brand p { color: var(--text-dim); font-size: 13px; margin-top: 2px; }
+header .status { text-align: right; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 6px; }
+.status-text { font-size: 13px; color: var(--text-dim); }
+.btn {
+  display: inline-block; padding: 8px 18px; border-radius: var(--radius);
+  border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity .15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-danger { background: var(--red); color: #fff; }
+#save-btn { margin-top: 8px; }
+
+/* Sections */
+section { margin-bottom: 32px; }
+section h2 {
+  font-size: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--text-dim); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+
+/* Category table */
+.cat-table { width: 100%; border-collapse: collapse; }
+.cat-table th {
+  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--text-dim); padding: 8px 10px; border-bottom: 1px solid var(--border);
+}
+.cat-table td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+.cat-row.greyed td { opacity: 0.4; }
+.cat-row.greyed select { pointer-events: none; }
+.cat-emoji { font-size: 16px; margin-right: 6px; }
+.skill-ok { color: var(--green); font-size: 13px; }
+.skill-missing { color: var(--yellow); font-size: 13px; }
+.skill-missing code {
+  background: var(--surface2); padding: 2px 6px; border-radius: 4px; font-size: 12px;
+  cursor: pointer; user-select: all;
+}
+
+/* Toggle switch */
+.toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle .slider {
+  position: absolute; inset: 0; background: var(--surface2); border-radius: 11px;
+  border: 1px solid var(--border); cursor: pointer; transition: background .2s;
+}
+.toggle .slider::before {
+  content: ''; position: absolute; width: 16px; height: 16px; left: 2px; bottom: 2px;
+  background: var(--text-dim); border-radius: 50%; transition: transform .2s, background .2s;
+}
+.toggle input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+.toggle input:checked + .slider::before { transform: translateX(18px); background: #fff; }
+
+/* Selects */
+select {
+  background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+  padding: 5px 10px; border-radius: var(--radius); font-size: 13px; cursor: pointer;
+}
+select:focus { outline: 2px solid var(--accent); }
+
+/* Tooltip */
+.tooltip-wrap { position: relative; display: inline-block; }
+.tooltip-wrap .tooltip {
+  display: none; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
+  background: var(--surface2); border: 1px solid var(--border); padding: 10px 14px;
+  border-radius: var(--radius); font-size: 12px; color: var(--text-dim);
+  width: 280px; z-index: 10; line-height: 1.5; white-space: normal;
+}
+.tooltip-wrap:hover .tooltip { display: block; }
+
+/* Delivery grid */
+.delivery-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 0; }
+.delivery-grid .dg-header {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--text-dim); padding: 8px 10px; border-bottom: 1px solid var(--border);
+}
+.delivery-grid .dg-cell { padding: 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.routing-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 14px; }
+.routing-row .urg-label { width: 70px; font-weight: 500; }
+.routing-row .arrow { color: var(--text-dim); }
+.routing-note { font-size: 12px; color: var(--text-dim); font-style: italic; }
+
+/* Schedule */
+.schedule-grid { display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; align-items: center; font-size: 14px; }
+.schedule-grid label { color: var(--text-dim); font-size: 13px; text-align: right; }
+.schedule-grid input[type="time"] {
+  background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+  padding: 5px 10px; border-radius: var(--radius); font-size: 13px;
+}
+.schedule-grid input[type="number"] {
+  background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+  padding: 5px 10px; border-radius: var(--radius); font-size: 13px; width: 70px;
+}
+
+/* Urgency threshold */
+.urg-options { display: flex; flex-direction: column; gap: 8px; }
+.urg-option {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: border-color .15s;
+}
+.urg-option:hover { border-color: var(--accent-dim); }
+.urg-option.selected { border-color: var(--accent); background: var(--surface2); }
+.urg-option input[type="radio"] { accent-color: var(--accent); }
+.urg-option .urg-name { font-weight: 500; }
+.urg-option .urg-desc { color: var(--text-dim); font-size: 13px; margin-left: 6px; }
+
+/* Activity table */
+.log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.log-table th {
+  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--text-dim); padding: 8px 10px; border-bottom: 1px solid var(--border);
+}
+.log-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.log-table .urg-low { color: var(--text-dim); }
+.log-table .urg-medium { color: var(--yellow); }
+.log-table .urg-high { color: var(--orange); }
+.log-table .urg-critical { color: var(--red); }
+.delivered-yes { color: var(--green); }
+.delivered-no { color: var(--text-dim); }
+
+/* Show all toggle */
+.show-all-row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 0;
+  font-size: 13px; color: var(--text-dim);
+}
+
+/* Enabled badge */
+.enabled-badge {
+  display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .4px; padding: 2px 7px; border-radius: 4px;
+  background: rgba(74,222,128,0.15); color: var(--green); margin-left: 8px; vertical-align: middle;
+}
+
+/* Section meta */
+.section-meta {
+  font-size: 12px; color: var(--text-dim); margin-bottom: 14px; margin-top: -6px;
+}
+
+/* Info icon tooltip */
+.info-icon {
+  display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 10px; text-align: center; line-height: 14px; cursor: default;
+  margin-left: 5px; vertical-align: middle; user-select: none;
+}
+.tooltip-wrap .tooltip.left { left: auto; right: 0; transform: none; }
+.tooltip-wrap .tooltip.wide { width: 320px; }
+
+/* Expandable trigger rows */
+.cat-row td:first-child .expand-btn {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 11px; padding: 0 4px; margin-left: 4px; vertical-align: middle;
+  transition: transform .15s;
+}
+.cat-row.expanded td:first-child .expand-btn { transform: rotate(90deg); }
+.triggers-row { display: none; }
+.triggers-row.open { display: table-row; }
+.triggers-row td {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 10px 14px 12px 28px;
+}
+.triggers-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.trigger-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px 3px 8px; font-size: 12px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.trigger-chip:hover { border-color: var(--accent-dim); }
+.trigger-chip.chip-on { border-color: var(--green); background: rgba(74,222,128,0.08); }
+.trigger-chip.chip-on .chip-dot { background: var(--green); }
+.trigger-chip.chip-off { opacity: 0.55; }
+.chip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+.chip-priority-high .chip-dot { background: var(--orange); }
+.trigger-chip.chip-on.chip-priority-high .chip-dot { background: var(--green); }
+.triggers-empty { font-size: 13px; color: var(--text-dim); font-style: italic; }
+.triggers-label { font-size: 12px; color: var(--text-dim); margin-bottom: 2px; }
+
+/* Your notifications table */
+.notif-title { font-weight: 500; font-size: 0.9rem; }
+.notif-desc { color: var(--text-dim); font-size: 0.8rem; margin-top: 2px; line-height: 1.4; }
+.prio-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 4px; display: inline-block; white-space: nowrap; }
+.prio-high { background: rgba(248,81,73,0.15); color: var(--red); }
+.prio-medium { background: rgba(88,166,255,0.15); color: var(--accent); }
+.prio-low { background: rgba(139,148,158,0.15); color: var(--text-dim); }
+.skill-multi { display: flex; flex-wrap: wrap; gap: 4px; }
+.skill-chip { font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: rgba(88,166,255,0.1); color: var(--accent); border: 1px solid rgba(88,166,255,0.2); white-space: nowrap; }
+.skill-chip.missing { background: rgba(248,81,73,0.1); color: var(--red); border-color: rgba(248,81,73,0.2); }
+.skill-chip.build { background: rgba(210,153,34,0.15); color: var(--yellow); border-color: rgba(210,153,34,0.25); }
+.role-banner { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px; }
+.role-banner .role-icon { font-size: 1.5rem; }
+.role-banner .role-info { flex: 1; }
+.role-banner .role-label { font-weight: 600; font-size: 0.95rem; }
+.role-banner .role-text-quote { color: var(--text-dim); font-size: 0.82rem; font-style: italic; margin-top: 3px; line-height: 1.4; }
+
+/* Update section */
+.update-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.update-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+.update-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; }
+.update-card p { color: var(--text-dim); font-size: 0.82rem; line-height: 1.6; margin-bottom: 14px; }
+.update-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px 14px; border-radius: 8px; font-size: 0.9rem; font-family: inherit; line-height: 1.5; resize: vertical; min-height: 90px; box-sizing: border-box; margin-bottom: 10px; }
+.update-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,0.1); }
+.update-textarea::placeholder { color: var(--text-dim); }
+.locked-cats-toggle { font-size: 0.82rem; color: var(--accent); cursor: pointer; background: none; border: none; padding: 6px 0; display: block; margin-top: 10px; }
+.locked-cats-toggle:hover { text-decoration: underline; }
+.locked-cats-list { display: none; margin-top: 8px; }
+.locked-cats-list.open { display: block; }
+.locked-cat-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-dim); }
+.locked-cat-row:last-child { border-bottom: none; }
+
+/* Footer */
+footer {
+  margin-top: 40px; padding: 20px 0; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+}
+footer .meta { font-size: 12px; color: var(--text-dim); }
+footer .actions { display: flex; gap: 10px; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; padding: 12px 20px;
+  background: var(--green); color: #000; font-size: 14px; font-weight: 500;
+  border-radius: var(--radius); opacity: 0; transition: opacity .3s; z-index: 100;
+}
+.toast.show { opacity: 1; }
+.toast.error { background: var(--red); color: #fff; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<header>
+  <div class="brand">
+    <h1><span>&#x1F514;</span>MoltAssist</h1>
+    <p>OpenClaw notification layer</p>
+  </div>
+  <div class="status">
+    <div><span class="status-dot"></span><span class="status-text" id="status-text">Loading...</span></div>
+    <button class="btn btn-primary" id="save-btn" onclick="saveConfig()">Save changes</button>
+  </div>
+</header>
+
+<!-- Section 0: Your personalised notifications -->
+<section id="sec-your-notifications" style="display:none">
+  <h2>Your Notifications</h2>
+  <p class="section-meta" id="your-notif-meta"></p>
+  <table class="cat-table" id="your-notif-table">
+    <thead>
+      <tr>
+        <th>Notification</th>
+        <th>Enabled</th>
+        <th>Priority</th>
+        <th>Skill</th>
+      </tr>
+    </thead>
+    <tbody id="your-notif-tbody"></tbody>
+  </table>
+</section>
+
+<!-- Section 1: Category Settings -->
+<section id="sec-notifications">
+  <h2>Category Settings</h2>
+  <p class="section-meta" id="notif-meta"></p>
+  <table class="cat-table">
+    <thead>
+      <tr>
+        <th>
+          <span class="tooltip-wrap">Category
+            <span class="tooltip wide">What MoltAssist monitors. Your enabled categories are shown first.<br>Toggle &ldquo;Show all&rdquo; below to see every available category.</span>
+          </span>
+        </th>
+        <th>Enabled</th>
+        <th>
+          <span class="tooltip-wrap">Check Interval
+            <span class="tooltip">How often MoltAssist auto-polls this category.<br><strong>Manual only</strong> means it won&rsquo;t poll &mdash; alerts only fire when a skill explicitly calls notify().</span>
+          </span>
+        </th>
+        <th>
+          <span class="tooltip-wrap">AI Summary
+            <span class="tooltip">Adds one line of context using your configured AI model.<br>Example: &ldquo;BTC dropped 6.2% &mdash; largest single-day move in 3 weeks.&rdquo;<br>Turn off to reduce token usage. The alert still fires either way.</span>
+          </span>
+        </th>
+        <th>
+          <span class="tooltip-wrap">Skill
+            <span class="tooltip wide">Some categories require an OpenClaw skill to fetch data.<br>Built-in categories work out of the box. Missing skills can be installed via the clawhub CLI.</span>
+          </span>
+        </th>
+      </tr>
+    </thead>
+    <tbody id="cat-tbody"></tbody>
+  </table>
+  <button class="locked-cats-toggle" onclick="toggleLockedCats(this)">&#x25B6; More categories (not in your onboarding)</button>
+  <div class="locked-cats-list" id="locked-cats-list"></div>
+</section>
+
+<!-- Section 2: Delivery -->
+<section id="sec-delivery">
+  <h2>Delivery</h2>
+  <p class="section-meta">Where MoltAssist sends your alerts. You can route different urgency levels to different channels below.</p>
+  <div class="delivery-grid" id="delivery-grid">
+    <div class="dg-header">Channel</div>
+    <div class="dg-header">
+      <span class="tooltip-wrap">Active
+        <span class="tooltip">Enable the channels you want MoltAssist to deliver to. At least one must be active.</span>
+      </span>
+    </div>
+    <div class="dg-header">Used For</div>
+  </div>
+  <div style="margin-top: 16px;">
+    <span class="tooltip-wrap">
+      <label style="font-size:13px;color:var(--text-dim)">Default channel: </label>
+      <span class="tooltip">Fallback channel used when a category doesn&rsquo;t have a specific urgency routing rule.</span>
+    </span>
+    <select id="default-channel" onchange="markDirty()"></select>
+  </div>
+  <div style="margin-top: 18px;">
+    <h3 style="font-size:13px;color:var(--text-dim);margin-bottom:6px;font-weight:400">
+      Urgency routing
+      <span class="tooltip-wrap">
+        <span class="info-icon">?</span>
+        <span class="tooltip wide">Route each urgency level to a specific channel. Useful if you want critical alerts on Telegram but low-priority ones on Discord.<br><br><strong>Critical</strong> always fires immediately, even during quiet hours.<br><strong>Low</strong> alerts are queued and sent after quiet hours end.</span>
+      </span>
+    </h3>
+    <div id="urgency-routing"></div>
+  </div>
+</section>
+
+<!-- Section 3: Schedule -->
+<section id="sec-schedule">
+  <h2>Schedule</h2>
+  <p class="section-meta">Control when MoltAssist is allowed to notify you and how often.</p>
+  <div class="schedule-grid">
+    <label>
+      <span class="tooltip-wrap">Quiet hours
+        <span class="tooltip">No alerts will fire between these times (except <strong>Critical</strong> urgency, which always goes through).<br>Times are in your selected timezone.</span>
+      </span>
+    </label>
+    <div>
+      <input type="time" id="quiet-start" onchange="markDirty()"> to
+      <input type="time" id="quiet-end" onchange="markDirty()">
+    </div>
+    <label>Timezone:</label>
+    <div>
+      <select id="timezone" onchange="markDirty()"></select>
+      <span class="tooltip-wrap">
+        <span class="info-icon">?</span>
+        <span class="tooltip">Used for quiet hours and the morning digest. Set this to your local timezone.</span>
+      </span>
+    </div>
+    <label>
+      <span class="tooltip-wrap">Morning digest
+        <span class="tooltip">Sends a summary of overnight alerts at the end of your quiet hours window — instead of firing them one-by-one while you sleep.</span>
+      </span>
+    </label>
+    <div><label class="toggle"><input type="checkbox" id="morning-digest" onchange="markDirty()"><span class="slider"></span></label></div>
+    <label>
+      <span class="tooltip-wrap">Per category / hour
+        <span class="tooltip">Maximum alerts per category, per hour. Prevents one noisy source from flooding you. Default: 3.</span>
+      </span>
+    </label>
+    <div><input type="number" id="rate-cat" min="1" max="50" onchange="markDirty()"></div>
+    <label>
+      <span class="tooltip-wrap">Global / hour
+        <span class="tooltip">Hard cap across all categories combined, per hour. Even if multiple categories are active, you won&rsquo;t get more than this many alerts. Default: 10.</span>
+      </span>
+    </label>
+    <div><input type="number" id="rate-global" min="1" max="100" onchange="markDirty()"></div>
+  </div>
+</section>
+
+<!-- Section 4: Urgency Threshold -->
+<section id="sec-urgency">
+  <h2>Urgency Threshold</h2>
+  <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">
+    Minimum urgency level to notify you.
+    <span class="tooltip-wrap">
+      <span class="info-icon">?</span>
+      <span class="tooltip wide">Alerts below this level are silently dropped &mdash; they won&rsquo;t be queued or delivered.<br><br>Each notification source assigns its own urgency. You control the floor here.<br><br><strong>Recommended:</strong> Medium for most users. Low if you want everything.</span>
+    </span>
+  </p>
+  <div class="urg-options" id="urg-options">
+    <label class="urg-option" data-urg="low">
+      <input type="radio" name="urg-threshold" value="low" onchange="markDirty()">
+      <span class="urg-name">Low</span><span class="urg-desc">-- everything (weather, FYI alerts, reminders)</span>
+    </label>
+    <label class="urg-option" data-urg="medium">
+      <input type="radio" name="urg-threshold" value="medium" onchange="markDirty()">
+      <span class="urg-name">Medium</span><span class="urg-desc">-- recommended</span>
+    </label>
+    <label class="urg-option" data-urg="high">
+      <input type="radio" name="urg-threshold" value="high" onchange="markDirty()">
+      <span class="urg-name">High</span><span class="urg-desc">-- only important stuff</span>
+    </label>
+    <label class="urg-option" data-urg="critical">
+      <input type="radio" name="urg-threshold" value="critical" onchange="markDirty()">
+      <span class="urg-name">Critical</span><span class="urg-desc">-- emergencies only</span>
+    </label>
+  </div>
+</section>
+
+<!-- Section 5: Update notifications -->
+<section id="sec-update">
+  <h2>Update My Notifications</h2>
+  <p class="section-meta">Things changed? Add to your existing setup or start fresh.</p>
+  <div class="update-section">
+    <div class="update-card">
+      <h3>&#x270F;&#xFE0F; Add to my notifications</h3>
+      <p>Tell MoltAssist about anything new — a new job, a side project, a hobby, a tool you've started using. It'll generate additional notifications on top of what you already have.</p>
+      <textarea class="update-textarea" id="update-context" placeholder="e.g. I've started using Notion for project tracking, and I've joined a local football league on weekends..."></textarea>
+      <button class="btn btn-primary" style="width:100%" onclick="updateNotifications()">Generate new suggestions &rarr;</button>
+    </div>
+    <div class="update-card">
+      <h3>&#x1F504; Reset onboarding</h3>
+      <p>Want to start completely fresh? This will clear your current notification setup and take you back through the onboarding flow from the beginning.</p>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:10px" onclick="window.location='/'">Start onboarding again &rarr;</button>
+      <p style="font-size:0.78rem;color:var(--text-dim)">Your delivery channel and quiet hours settings will be preserved.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Section 6: Recent Activity -->
+<section id="sec-activity">
+  <h2>Recent Activity</h2>
+  <table class="log-table">
+    <thead>
+      <tr><th>When</th><th>Category</th><th>Urgency</th><th>Message</th><th>Delivered</th></tr>
+    </thead>
+    <tbody id="log-tbody"></tbody>
+  </table>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="meta" id="footer-meta">MoltAssist &middot; OpenClaw plugin &middot; MIT Licence</div>
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="sendTest()">Run test notification</button>
+    <button class="btn btn-secondary" onclick="resetDefaults()">Reset to defaults</button>
+    <button class="btn btn-primary" onclick="saveConfig()">Save changes</button>
+  </div>
+</footer>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---- State ---- */
+let config = {};
+let skills = [];
+let logEntries = [];
+let dirty = false;
+
+const CATEGORY_META = {
+  email:      { emoji: '\u{1F4E7}', label: 'Email',         skill: 'gog',         builtIn: false,
+                desc: 'Monitors your Gmail inbox and alerts you to messages from whitelisted senders or matching urgency rules.' },
+  calendar:   { emoji: '\u{1F5D3}', label: 'Calendar',      skill: 'gog',         builtIn: false,
+                desc: 'Watches your Google Calendar and alerts you to upcoming events, changes, or conflicts.' },
+  health:     { emoji: '\u{1F4AA}', label: 'Health',        skill: 'healthcheck', builtIn: false,
+                desc: 'Monitors system and service health on your machine. Alerts when services go down or resources are under pressure.' },
+  weather:    { emoji: '\u{1F324}\uFE0F', label: 'Weather', skill: 'weather',     builtIn: false,
+                desc: 'Checks weather conditions for your location and alerts to significant changes, rain, storms, or temperature shifts.' },
+  dev:        { emoji: '\u{1F468}\u200D\u{1F4BB}', label: 'Dev / GitHub', skill: 'github', builtIn: false,
+                desc: 'Monitors GitHub for PR reviews, CI failures, new issues, and mentions across your repositories.' },
+  finance:    { emoji: '\u{1F4B0}', label: 'Finance',       skill: null,          builtIn: false,
+                desc: 'Tracks invoicing, payments, and cash flow. Skill depends on your configured finance tool.' },
+  compliance: { emoji: '\u{1F4CB}', label: 'Compliance',    skill: null,          builtIn: true,
+                desc: 'Built-in category for custom compliance alerts. No skill required &mdash; fires when another skill calls notify() with this category.' },
+  travel:     { emoji: '\u2708\uFE0F', label: 'Travel',     skill: 'tripit',      builtIn: false,
+                desc: 'Monitors trip itineraries, flight status, and travel alerts via TripIt.' },
+  staff:      { emoji: '\u{1F465}', label: 'Staff',         skill: null,          builtIn: true,
+                desc: 'Built-in category for team or staff-related alerts. Fired by skills that monitor HR or team activity.' },
+  social:     { emoji: '\u{1F4F1}', label: 'Social',        skill: null,          builtIn: true,
+                desc: 'Built-in category for social media and messaging alerts. Fired by skills that monitor Twitter/X, LinkedIn, etc.' },
+  system:     { emoji: '\u{1F527}', label: 'System',        skill: null,          builtIn: true,
+                desc: 'Built-in category for low-level system events: disk space, memory pressure, crashed services, and similar.' },
+  custom:     { emoji: '\u{1F514}', label: 'Custom',        skill: null,          builtIn: true,
+                desc: 'Catch-all for any notification that doesn&rsquo;t fit a specific category. Skills can use this for one-off alerts.' },
+};
+
+const INTERVAL_OPTIONS = [
+  { value: 5,    label: 'Every 5 min' },
+  { value: 10,   label: 'Every 10 min' },
+  { value: 15,   label: 'Every 15 min' },
+  { value: 30,   label: 'Every 30 min' },
+  { value: 60,   label: 'Every 1 hour' },
+  { value: 360,  label: 'Every 6 hours' },
+  { value: 1440, label: 'Every 24 hours' },
+  { value: 0,    label: 'Manual only' },
+];
+
+const URGENCY_LABELS = { low: '\u26AA Low', medium: '\u{1F7E1} Medium', high: '\u{1F7E0} High', critical: '\u{1F534} Critical' };
+const URGENCY_CLASSES = { low: 'urg-low', medium: 'urg-medium', high: 'urg-high', critical: 'urg-critical' };
+
+/* ---- API ---- */
+async function apiGet(path) {
+  const r = await fetch(path);
+  return r.json();
+}
+async function apiPost(path, body) {
+  const r = await fetch(path, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+/* ---- Init ---- */
+async function init() {
+  try {
+    [config, logEntries, skills] = await Promise.all([
+      apiGet('/api/config'),
+      apiGet('/api/log'),
+      apiGet('/api/skills'),
+    ]);
+  } catch (e) {
+    config = {};
+    logEntries = [];
+    skills = [];
+  }
+  populateTimezones();
+  renderAll();
+}
+
+function renderAll() {
+  renderYourNotifications();
+  renderCategories();
+  renderDelivery();
+  renderSchedule();
+  renderUrgency();
+  renderLog();
+  updateStatus();
+}
+
+/* ---- Your personalised notifications ---- */
+function renderYourNotifications() {
+  var selections = config.onboarding_selections || [];
+  var section = document.getElementById('sec-your-notifications');
+  if (!selections.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  // Role banner
+  var meta = document.getElementById('your-notif-meta');
+  var roleLabel = (config.role || '').replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+  var roleText = config.role_text || '';
+  var answers = config.onboarding_answers || {};
+  var answerLines = Object.entries(answers).map(function(kv) {
+    var label = kv[0].replace(/_/g, ' ');
+    var val = Array.isArray(kv[1]) ? kv[1].join(', ') : kv[1];
+    return label + ': ' + val;
+  });
+
+  var bannerHtml = '<div class="role-banner">'
+    + '<div class="role-icon">&#x1F464;</div>'
+    + '<div class="role-info">'
+    + '<div class="role-label">' + escHtml(roleLabel) + '</div>';
+  if (roleText) bannerHtml += '<div class="role-text-quote">&ldquo;' + escHtml(roleText.slice(0, 200)) + (roleText.length > 200 ? '&hellip;' : '') + '&rdquo;</div>';
+  if (answerLines.length) bannerHtml += '<div style="margin-top:6px;font-size:0.8rem;color:var(--text-dim)">' + answerLines.map(escHtml).join(' &middot; ') + '</div>';
+  bannerHtml += '</div></div>';
+  meta.innerHTML = bannerHtml + '<span style="font-size:0.85rem;color:var(--text-dim)">' + selections.length + ' notifications configured during onboarding. Toggle any on or off below.</span>';
+
+  var tbody = document.getElementById('your-notif-tbody');
+  tbody.innerHTML = '';
+
+  selections.forEach(function(s, idx) {
+    var tr = document.createElement('tr');
+    tr.className = 'cat-row';
+
+    // Title + description
+    var tdTitle = document.createElement('td');
+    tdTitle.innerHTML = '<div class="notif-title">' + escHtml(s.title || '') + '</div>'
+      + (s.description ? '<div class="notif-desc">' + escHtml(s.description) + '</div>' : '');
+    tr.appendChild(tdTitle);
+
+    // Enabled toggle — driven by config.onboarding_selections[idx].enabled
+    var tdEnabled = document.createElement('td');
+    var isEnabled = s.enabled !== false; // default true if not set
+    tdEnabled.innerHTML = '<label class="toggle"><input type="checkbox" data-sel-idx="' + idx + '"'
+      + (isEnabled ? ' checked' : '') + ' onchange="toggleSelection(' + idx + ', this)"><span class="slider"></span></label>';
+    tr.appendChild(tdEnabled);
+
+    // Priority badge
+    var tdPrio = document.createElement('td');
+    var prio = s.priority || 'medium';
+    tdPrio.innerHTML = '<span class="prio-badge prio-' + escHtml(prio) + '">' + escHtml(prio) + '</span>';
+    tr.appendChild(tdPrio);
+
+    // Skill(s)
+    var tdSkill = document.createElement('td');
+    if (s.build_needed) {
+      tdSkill.innerHTML = '<span class="skill-chip build">&#x2692; build needed</span>';
+    } else {
+      var skillArr = Array.isArray(s.required_skill) ? s.required_skill : (s.required_skill ? [s.required_skill] : []);
+      if (!skillArr.length) {
+        tdSkill.innerHTML = '<span class="skill-chip" style="background:rgba(74,222,128,0.08);color:var(--green);border-color:rgba(74,222,128,0.2)">built-in</span>';
+      } else {
+        var chipsHtml = '<div class="skill-multi">';
+        skillArr.forEach(function(sk) {
+          var installed = skills.some(function(i) { return i.name === sk; });
+          chipsHtml += '<span class="skill-chip' + (installed ? '' : ' missing') + '">' + escHtml(sk) + (installed ? '' : ' &#x26A0;') + '</span>';
+        });
+        chipsHtml += '</div>';
+        tdSkill.innerHTML = chipsHtml;
+      }
+    }
+    tr.appendChild(tdSkill);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleSelection(idx, el) {
+  if (!config.onboarding_selections) return;
+  if (config.onboarding_selections[idx]) {
+    config.onboarding_selections[idx].enabled = el.checked;
+  }
+  markDirty();
+}
+
+/* ---- Trigger chips ---- */
+function getCategoryTriggers(catId) {
+  // Only show triggers from onboarding_selections for this specific category
+  // key_triggers are internal role profile triggers — not user-facing per-category chips
+  const selections = config.onboarding_selections || [];
+  return selections
+    .filter(s => s.category === catId)
+    .map(s => ({ title: s.title, priority: s.priority || 'medium', enabled: s.enabled !== false }));
+}
+
+function renderTriggerChips(container, catId, triggers) {
+  // Read disabled triggers from config
+  const disabledTriggers = (config.categories || {})[catId]?.disabled_triggers || [];
+  const disabledSet = new Set(disabledTriggers);
+
+  container.innerHTML = '';
+  const label = document.createElement('div');
+  label.className = 'triggers-label';
+  label.textContent = 'What MoltAssist is watching for in this category — click to toggle:';
+  container.appendChild(label);
+
+  const list = document.createElement('div');
+  list.className = 'triggers-list';
+
+  if (!triggers.length) {
+    list.innerHTML = '<span class="triggers-empty">No specific triggers configured — alerts from any source in this category will pass through.</span>';
+  } else {
+    for (const t of triggers) {
+      const isOn = !disabledSet.has(t.title);
+      const chip = document.createElement('span');
+      chip.className = 'trigger-chip'
+        + (isOn ? ' chip-on' : ' chip-off')
+        + (t.priority === 'high' ? ' chip-priority-high' : '');
+      chip.title = isOn ? 'Click to disable this trigger' : 'Click to re-enable this trigger';
+      chip.innerHTML = '<span class="chip-dot"></span>' + escHtml(t.title);
+      chip.onclick = () => toggleTriggerChip(catId, t.title, chip);
+      list.appendChild(chip);
+    }
+  }
+  container.appendChild(list);
+}
+
+function toggleTriggerChip(catId, title, chipEl) {
+  if (!config.categories) config.categories = {};
+  if (!config.categories[catId]) config.categories[catId] = {};
+  if (!config.categories[catId].disabled_triggers) config.categories[catId].disabled_triggers = [];
+
+  const disabled = config.categories[catId].disabled_triggers;
+  const idx = disabled.indexOf(title);
+  if (idx >= 0) {
+    disabled.splice(idx, 1); // re-enable
+    chipEl.classList.remove('chip-off');
+    chipEl.classList.add('chip-on');
+    chipEl.title = 'Click to disable this trigger';
+  } else {
+    disabled.push(title); // disable
+    chipEl.classList.add('chip-off');
+    chipEl.classList.remove('chip-on');
+    chipEl.title = 'Click to re-enable this trigger';
+  }
+  markDirty();
+}
+
+function toggleTriggers(catId, btn) {
+  const row = document.getElementById('triggers-row-' + catId);
+  if (!row) return;
+  const catRow = btn.closest('.cat-row');
+  const isOpen = row.classList.contains('open');
+  row.classList.toggle('open', !isOpen);
+  if (catRow) catRow.classList.toggle('expanded', !isOpen);
+}
+
+/* ---- Categories ---- */
+function isSkillInstalled(skillName) {
+  if (!skillName) return true; // built-in
+  if (Array.isArray(skillName)) return skillName.every(s => skills.some(i => i.name === s));
+  return skills.some(s => s.name === skillName);
+}
+
+function getSkillForCategory(catId) {
+  // First check onboarding_selections for the actual skill assigned during onboarding
+  const selections = config.onboarding_selections || [];
+  for (const s of selections) {
+    if (s.category === catId && s.required_skill && s.required_skill !== '__build_needed__') {
+      return s.required_skill;
+    }
+  }
+  // Fall back to static CATEGORY_META
+  return (CATEGORY_META[catId] || {}).skill || null;
+}
+
+function isCategoryUsable(catId) {
+  // A category is usable if it's built-in OR has its required skill installed
+  const meta = CATEGORY_META[catId] || {};
+  if (meta.builtIn) return true;
+  const skill = getSkillForCategory(catId);
+  if (!skill) return true; // no skill needed
+  return isSkillInstalled(skill);
+}
+
+function getEnabledCategories() {
+  const cats = config.categories || {};
+  const enabled = new Set();
+  for (const [id, cfg] of Object.entries(cats)) {
+    if (cfg.enabled) enabled.add(id);
+  }
+  const selections = config.onboarding_selections || [];
+  for (const s of selections) {
+    if (s.category) enabled.add(s.category);
+  }
+  const roleCats = (config.role_profile || {}).visible_categories || [];
+  for (const id of roleCats) {
+    if ((cats[id] || {}).enabled) enabled.add(id);
+  }
+  return enabled;
+}
+
+function toggleLockedCats(btn) {
+  const list = document.getElementById('locked-cats-list');
+  const open = list.classList.toggle('open');
+  btn.textContent = (open ? '▼' : '▶') + ' More categories (not in your onboarding)';
+}
+
+function renderLockedCategories() {
+  const list = document.getElementById('locked-cats-list');
+  list.innerHTML = '';
+  const allIds = Object.keys(CATEGORY_META);
+  const onboardingCats = new Set([
+    ...(config.onboarding_selections || []).map(s => s.category).filter(Boolean),
+    ...Object.keys(config.categories || {}).filter(id => (config.categories[id] || {}).enabled),
+  ]);
+  const extras = allIds.filter(id => !onboardingCats.has(id));
+  const toggleBtn = document.querySelector('.locked-cats-toggle');
+  if (!extras.length) { if (toggleBtn) toggleBtn.style.display = 'none'; return; }
+  if (toggleBtn) toggleBtn.style.display = '';
+
+  for (const id of extras) {
+    const meta = CATEGORY_META[id] || {};
+    const skill = getSkillForCategory(id);
+    const usable = isCategoryUsable(id);
+    const row = document.createElement('div');
+    row.className = 'locked-cat-row';
+    const right = usable
+      ? '<span style="color:var(--text-dim);font-size:0.8rem">Not in your onboarding — re-run onboarding to add</span>'
+      : '<span>Requires: <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:0.8rem">clawhub install ' + escHtml(skill || '?') + '</code></span>';
+    row.innerHTML = '<span>' + (meta.emoji || '') + ' <strong>' + escHtml(meta.label || id) + '</strong></span>' + right;
+    list.appendChild(row);
+  }
+}
+
+function renderCategories() {
+  const tbody = document.getElementById('cat-tbody');
+  tbody.innerHTML = '';
+  const cats = config.categories || {};
+  const enabledSet = getEnabledCategories();
+
+  // Main table: only show categories the user set up during onboarding (enabled or selected)
+  // Everything else goes in the collapsed "Get more" section
+  const allIds = Object.keys(CATEGORY_META);
+  const onboardingCats = new Set([
+    ...enabledSet,
+    ...(config.onboarding_selections || []).map(s => s.category).filter(Boolean),
+  ]);
+
+  const sorted = [
+    ...allIds.filter(id => onboardingCats.has(id) && enabledSet.has(id)),
+    ...allIds.filter(id => onboardingCats.has(id) && !enabledSet.has(id)),
+  ];
+
+  const toRender = sorted;
+  renderLockedCategories();
+
+  let enabledCount = 0;
+  for (const id of toRender) {
+    const meta = CATEGORY_META[id];
+    if (!meta) continue;
+    const catCfg = cats[id] || {};
+    const isEnabled = !!catCfg.enabled;
+    if (isEnabled) enabledCount++;
+    const resolvedSkill = getSkillForCategory(id);
+    const installed = isSkillInstalled(resolvedSkill);
+    const greyed = !meta.builtIn && !installed && !isEnabled;
+
+    const tr = document.createElement('tr');
+    tr.className = 'cat-row' + (greyed ? ' greyed' : '');
+    tr.dataset.cat = id;
+
+    // Get triggers for this category
+    const catTriggers = getCategoryTriggers(id);
+
+    // Name + description tooltip + ENABLED badge + expand button
+    const tdName = document.createElement('td');
+    let nameHtml = '<span class="tooltip-wrap" style="cursor:default">'
+      + '<span class="cat-emoji">' + meta.emoji + '</span>'
+      + ' <strong>' + meta.label + '</strong>';
+    if (isEnabled) {
+      nameHtml += ' <span class="enabled-badge">ON</span>';
+    }
+    if (meta.desc) {
+      nameHtml += '<span class="tooltip">' + meta.desc + '</span>';
+    }
+    nameHtml += '</span>';
+    // Expand button if there are triggers
+    if (catTriggers.length > 0) {
+      nameHtml += ' <button class="expand-btn" title="Show what\'s being monitored" onclick="toggleTriggers(\'' + id + '\', this)">▶</button>';
+    }
+    tdName.innerHTML = nameHtml;
+    tr.appendChild(tdName);
+
+    // Enabled toggle
+    const tdEnabled = document.createElement('td');
+    const lbl = document.createElement('label');
+    lbl.className = 'toggle';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = isEnabled;
+    chk.disabled = greyed;
+    chk.dataset.cat = id;
+    chk.dataset.field = 'enabled';
+    chk.onchange = function() { markDirty(); renderCategories(); };
+    const slider = document.createElement('span');
+    slider.className = 'slider';
+    lbl.appendChild(chk);
+    lbl.appendChild(slider);
+    tdEnabled.appendChild(lbl);
+    tr.appendChild(tdEnabled);
+
+    // Interval selector
+    const tdInterval = document.createElement('td');
+    const intSel = document.createElement('select');
+    intSel.dataset.cat = id;
+    intSel.dataset.field = 'interval_minutes';
+    intSel.disabled = greyed;
+    intSel.onchange = function() { markDirty(); };
+    const polling = ((config.schedule || {}).polling || {})[id] || {};
+    const currentInterval = polling.interval_minutes !== undefined ? polling.interval_minutes : 0;
+    for (const opt of INTERVAL_OPTIONS) {
+      const o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.label;
+      if (opt.value === currentInterval) o.selected = true;
+      intSel.appendChild(o);
+    }
+    tdInterval.appendChild(intSel);
+    tr.appendChild(tdInterval);
+
+    // AI enrichment toggle
+    const tdAi = document.createElement('td');
+    const aiLbl = document.createElement('label');
+    aiLbl.className = 'toggle tooltip-wrap';
+    const aiChk = document.createElement('input');
+    aiChk.type = 'checkbox';
+    aiChk.checked = !!catCfg.llm_enrich;
+    aiChk.disabled = greyed;
+    aiChk.dataset.cat = id;
+    aiChk.dataset.field = 'llm_enrich';
+    aiChk.onchange = function() { markDirty(); };
+    const aiSlider = document.createElement('span');
+    aiSlider.className = 'slider';
+    const aiTip = document.createElement('span');
+    aiTip.className = 'tooltip';
+    aiTip.textContent = 'Adds one line of context using your OpenClaw model. Turn off to save tokens.';
+    aiLbl.appendChild(aiChk);
+    aiLbl.appendChild(aiSlider);
+    aiLbl.appendChild(aiTip);
+    tdAi.appendChild(aiLbl);
+    tr.appendChild(tdAi);
+
+    // Skill status
+    const tdSkill = document.createElement('td');
+    if (meta.builtIn || !resolvedSkill) {
+      tdSkill.innerHTML = '<span class="skill-ok">\u2705 built-in</span>';
+    } else if (installed) {
+      tdSkill.innerHTML = '<span class="skill-ok">\u2705 ' + escHtml(resolvedSkill) + '</span>';
+    } else {
+      tdSkill.innerHTML = '<span class="tooltip-wrap skill-missing">\u26A0\uFE0F '
+        + escHtml(resolvedSkill)
+        + '<span class="tooltip">Install with: <code style="user-select:all;background:var(--bg);padding:2px 6px;border-radius:3px">clawhub install ' + escHtml(resolvedSkill) + '</code></span>'
+        + '</span>';
+    }
+    tr.appendChild(tdSkill);
+
+    tbody.appendChild(tr);
+
+    // Trigger expansion row
+    if (catTriggers.length > 0) {
+      const trExpand = document.createElement('tr');
+      trExpand.className = 'triggers-row';
+      trExpand.id = 'triggers-row-' + id;
+      const tdExpand = document.createElement('td');
+      tdExpand.colSpan = 5;
+      renderTriggerChips(tdExpand, id, catTriggers);
+      trExpand.appendChild(tdExpand);
+      tbody.appendChild(trExpand);
+    }
+  }
+
+  // Update meta count
+  const metaEl = document.getElementById('notif-meta');
+  if (metaEl) {
+    const totalEnabled = getEnabledCategories().size;
+    if (totalEnabled === 0) {
+      metaEl.textContent = 'No categories enabled yet. Toggle categories on below to start receiving alerts.';
+    } else {
+      const names = [...getEnabledCategories()].map(id => CATEGORY_META[id] ? CATEGORY_META[id].label : id).join(', ');
+      metaEl.textContent = totalEnabled + ' active: ' + names + '.';
+    }
+  }
+}
+
+/* ---- Delivery ---- */
+function getChannelNames() {
+  // Derive channel list from config — never hardcode
+  const channels = (config.delivery || {}).channels || {};
+  return Object.keys(channels).filter(ch => channels[ch] !== null && channels[ch] !== undefined);
+}
+
+function renderDelivery() {
+  const d = config.delivery || {};
+  const channels = d.channels || {};
+  const channelNames = getChannelNames();
+
+  // Rebuild delivery grid dynamically
+  const grid = document.getElementById('delivery-grid');
+  // Remove old channel rows (keep the 3 header cells)
+  while (grid.children.length > 3) grid.removeChild(grid.lastChild);
+
+  for (const ch of channelNames) {
+    const cfg = channels[ch] || {};
+    const nameCell = document.createElement('div');
+    nameCell.className = 'dg-cell';
+    nameCell.textContent = ch.charAt(0).toUpperCase() + ch.slice(1);
+    grid.appendChild(nameCell);
+
+    const toggleCell = document.createElement('div');
+    toggleCell.className = 'dg-cell';
+    toggleCell.innerHTML = '<label class="toggle"><input type="checkbox" id="ch-' + ch + '" onchange="markDirty()"' + (cfg.active ? ' checked' : '') + '><span class="slider"></span></label>';
+    grid.appendChild(toggleCell);
+
+    const usageCell = document.createElement('div');
+    usageCell.className = 'dg-cell';
+    usageCell.id = 'ch-' + ch + '-usage';
+    usageCell.textContent = '\u2014';
+    grid.appendChild(usageCell);
+  }
+
+  // Rebuild default channel select
+  const defaultSel = document.getElementById('default-channel');
+  defaultSel.innerHTML = '';
+  for (const ch of channelNames) {
+    const opt = document.createElement('option');
+    opt.value = ch;
+    opt.textContent = ch.charAt(0).toUpperCase() + ch.slice(1);
+    if (ch === (d.default_channel || channelNames[0])) opt.selected = true;
+    defaultSel.appendChild(opt);
+  }
+
+  updateChannelUsage();
+  renderRouting();
+
+  // Footer version
+  const footerMeta = document.getElementById('footer-meta');
+  if (footerMeta && config.version) {
+    footerMeta.textContent = 'MoltAssist v' + config.version + ' \u00B7 OpenClaw plugin \u00B7 MIT Licence';
+  }
+}
+
+function updateChannelUsage() {
+  const routing = (config.delivery || {}).urgency_routing || {};
+  for (const ch of getChannelNames()) {
+    const levels = Object.entries(routing).filter(([,v]) => v === ch).map(([k]) => k);
+    const el = document.getElementById('ch-' + ch + '-usage');
+    if (el) el.textContent = levels.length ? levels.map(l => l.charAt(0).toUpperCase()+l.slice(1)).join(', ') : '\u2014';
+  }
+}
+
+function renderRouting() {
+  const container = document.getElementById('urgency-routing');
+  container.innerHTML = '';
+  const routing = (config.delivery || {}).urgency_routing || {};
+  const channelNames = getChannelNames();
+  const notes = { critical: '(always fires, ignores quiet hours)', low: '(queued during quiet hours)' };
+  for (const urg of ['critical','high','medium','low']) {
+    const row = document.createElement('div');
+    row.className = 'routing-row';
+    let opts = channelNames.map(ch =>
+      '<option value="' + ch + '"' + (routing[urg]===ch?' selected':'') + '>' + ch.charAt(0).toUpperCase()+ch.slice(1) + '</option>'
+    ).join('');
+    row.innerHTML =
+      '<span class="urg-label">' + urg.charAt(0).toUpperCase()+urg.slice(1) + '</span>' +
+      '<span class="arrow">\u2192</span>' +
+      '<select data-routing="' + urg + '" onchange="markDirty()">' + opts + '</select>' +
+      (notes[urg] ? '<span class="routing-note">' + notes[urg] + '</span>' : '');
+    container.appendChild(row);
+  }
+}
+
+/* ---- Schedule ---- */
+function renderSchedule() {
+  const s = config.schedule || {};
+  const qh = s.quiet_hours || {};
+  document.getElementById('quiet-start').value = qh.start || '23:00';
+  document.getElementById('quiet-end').value = qh.end || '08:00';
+  document.getElementById('morning-digest').checked = s.morning_digest !== false;
+  const rl = s.rate_limits || {};
+  document.getElementById('rate-cat').value = rl.per_category_per_hour || 3;
+  document.getElementById('rate-global').value = rl.global_per_hour || 10;
+  const tz = document.getElementById('timezone');
+  if (tz.value !== (s.timezone || 'UTC')) {
+    tz.value = s.timezone || 'UTC';
+  }
+}
+
+function populateTimezones() {
+  const sel = document.getElementById('timezone');
+  let zones = [];
+  try { zones = Intl.supportedValuesOf('timeZone'); } catch(e) {}
+  if (!zones.length) zones = ['UTC','America/New_York','America/Los_Angeles','Europe/London','Asia/Tokyo','Australia/Sydney'];
+  for (const tz of zones) {
+    const opt = document.createElement('option');
+    opt.value = tz; opt.textContent = tz;
+    sel.appendChild(opt);
+  }
+}
+
+/* ---- Urgency ---- */
+function renderUrgency() {
+  const threshold = config.urgency_threshold || 'medium';
+  document.querySelectorAll('#urg-options .urg-option').forEach(el => {
+    const radio = el.querySelector('input[type=radio]');
+    radio.checked = radio.value === threshold;
+    el.classList.toggle('selected', radio.checked);
+  });
+  // Click handler to update visual state
+  document.querySelectorAll('#urg-options input[type=radio]').forEach(r => {
+    r.addEventListener('change', () => {
+      document.querySelectorAll('#urg-options .urg-option').forEach(el => {
+        el.classList.toggle('selected', el.querySelector('input').checked);
+      });
+    });
+  });
+}
+
+/* ---- Log ---- */
+function renderLog() {
+  const tbody = document.getElementById('log-tbody');
+  tbody.innerHTML = '';
+  const entries = (logEntries || []).slice(0, 10);
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:20px">No recent activity</td></tr>';
+    return;
+  }
+  const emojis = {};
+  for (const [k,v] of Object.entries(CATEGORY_META)) emojis[k] = v.emoji;
+  for (const e of entries) {
+    const tr = document.createElement('tr');
+    const when = formatAgo(e.timestamp);
+    const cat = e.category || '?';
+    const urg = e.urgency || '?';
+    const msg = (e.message || '').slice(0, 60);
+    const del = e.delivered;
+    tr.innerHTML =
+      '<td>' + when + '</td>' +
+      '<td>' + (emojis[cat]||'') + ' ' + cat.charAt(0).toUpperCase()+cat.slice(1) + '</td>' +
+      '<td class="' + (URGENCY_CLASSES[urg]||'') + '">' + (URGENCY_LABELS[urg]||urg) + '</td>' +
+      '<td>' + escHtml(msg) + '</td>' +
+      '<td class="' + (del ? 'delivered-yes' : 'delivered-no') + '">' +
+        (del ? '\u2705 ' + (e.channel_used||'') : (e.error ? '\u274C ' + escHtml((e.error||'').slice(0,30)) : '\u23F8 Queued')) +
+      '</td>';
+    tbody.appendChild(tr);
+  }
+}
+
+function formatAgo(isoStr) {
+  if (!isoStr) return '?';
+  try {
+    const dt = new Date(isoStr);
+    const diff = (Date.now() - dt.getTime()) / 1000;
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    if (diff < 172800) return 'Yesterday';
+    return Math.floor(diff/86400) + 'd ago';
+  } catch(e) { return '?'; }
+}
+
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+/* ---- Status ---- */
+function updateStatus() {
+  const el = document.getElementById('status-text');
+  if (logEntries.length) {
+    const last = logEntries[0];
+    el.textContent = 'Live \u2014 last alert ' + formatAgo(last.timestamp);
+  } else {
+    el.textContent = 'Live \u2014 no recent alerts';
+  }
+}
+
+/* ---- Dirty tracking ---- */
+function markDirty() { dirty = true; }
+
+/* ---- Collect config from UI ---- */
+function collectConfig() {
+  const c = JSON.parse(JSON.stringify(config));
+
+  // Categories + polling intervals
+  if (!c.schedule) c.schedule = {};
+  if (!c.schedule.polling) c.schedule.polling = {};
+  document.querySelectorAll('.cat-row').forEach(row => {
+    const id = row.dataset.cat;
+    if (!c.categories) c.categories = {};
+    if (!c.categories[id]) c.categories[id] = {};
+    const enabledChk = row.querySelector('input[data-field="enabled"]');
+    const aiChk = row.querySelector('input[data-field="llm_enrich"]');
+    if (enabledChk) c.categories[id].enabled = enabledChk.checked;
+    if (aiChk) c.categories[id].llm_enrich = aiChk.checked;
+    // Polling interval
+    const intSel = row.querySelector('select[data-field="interval_minutes"]');
+    if (intSel) {
+      if (!c.schedule.polling[id]) c.schedule.polling[id] = {};
+      c.schedule.polling[id].interval_minutes = parseInt(intSel.value);
+      c.schedule.polling[id].enabled = enabledChk ? enabledChk.checked : false;
+    }
+  });
+
+  // Delivery — dynamic channel list, no hardcoding
+  if (!c.delivery) c.delivery = {};
+  if (!c.delivery.channels) c.delivery.channels = {};
+  for (const ch of getChannelNames()) {
+    const el = document.getElementById('ch-' + ch);
+    if (el) {
+      if (!c.delivery.channels[ch]) c.delivery.channels[ch] = {};
+      c.delivery.channels[ch].active = el.checked;
+    }
+  }
+  c.delivery.default_channel = document.getElementById('default-channel').value;
+
+  // Routing
+  if (!c.delivery.urgency_routing) c.delivery.urgency_routing = {};
+  document.querySelectorAll('[data-routing]').forEach(sel => {
+    c.delivery.urgency_routing[sel.dataset.routing] = sel.value;
+  });
+
+  // Schedule
+  if (!c.schedule) c.schedule = {};
+  if (!c.schedule.quiet_hours) c.schedule.quiet_hours = {};
+  c.schedule.quiet_hours.start = document.getElementById('quiet-start').value;
+  c.schedule.quiet_hours.end = document.getElementById('quiet-end').value;
+  c.schedule.timezone = document.getElementById('timezone').value;
+  c.schedule.morning_digest = document.getElementById('morning-digest').checked;
+  if (!c.schedule.rate_limits) c.schedule.rate_limits = {};
+  c.schedule.rate_limits.per_category_per_hour = parseInt(document.getElementById('rate-cat').value) || 3;
+  c.schedule.rate_limits.global_per_hour = parseInt(document.getElementById('rate-global').value) || 10;
+
+  // Urgency threshold
+  const checked = document.querySelector('#urg-options input[type=radio]:checked');
+  if (checked) c.urgency_threshold = checked.value;
+
+  return c;
+}
+
+/* ---- Save ---- */
+async function saveConfig() {
+  const c = collectConfig();
+  try {
+    const res = await apiPost('/api/config', c);
+    if (res.ok) {
+      config = c;
+      dirty = false;
+      toast('Settings saved');
+    } else {
+      toast('Save failed: ' + (res.error || 'unknown'), true);
+    }
+  } catch (e) {
+    toast('Save failed: ' + e.message, true);
+  }
+}
+
+/* ---- Update notifications ---- */
+async function updateNotifications() {
+  const context = document.getElementById('update-context').value.trim();
+  if (!context) {
+    document.getElementById('update-context').focus();
+    return;
+  }
+  // Open onboard page with update context pre-filled
+  const encoded = encodeURIComponent(context);
+  window.location = '/?update_context=' + encoded;
+}
+
+/* ---- Test ---- */
+async function sendTest() {
+  try {
+    const res = await apiPost('/api/test', {});
+    toast(res.ok ? 'Test notification sent' : 'Test failed: ' + (res.error || ''));
+  } catch (e) {
+    toast('Test failed: ' + e.message, true);
+  }
+}
+
+/* ---- Reset ---- */
+async function resetDefaults() {
+  if (!confirm('Reset all settings to defaults? This cannot be undone.')) return;
+  try {
+    const res = await apiGet('/api/config');
+    // Re-fetch default by posting an empty-ish config won't work--
+    // instead reload from server (which merges with defaults)
+    config = res;
+    renderAll();
+    dirty = true;
+    toast('Reset to defaults -- click Save to apply');
+  } catch(e) {
+    toast('Reset failed', true);
+  }
+}
+
+/* ---- Toast ---- */
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { el.className = 'toast'; }, 3000);
+}
+
+/* ---- Boot ---- */
+init();
+</script>
+</body>
+</html>
