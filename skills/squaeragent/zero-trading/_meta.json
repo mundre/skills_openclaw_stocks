@@ -3,11 +3,16 @@
   "slug": "zero-trading",
   "displayName": "ZERO Trading Agent",
   "latest": {
-    "version": "3.2.0",
-    "publishedAt": 1774625674017,
-    "commit": "https://github.com/openclaw/skills/commit/3f81e10f9fc001b9deb9fdf74e1120937f28d0fb"
+    "version": "4.0.0",
+    "publishedAt": 1774628427961,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.2.0",
+      "publishedAt": 1774625674017,
+      "commit": "https://github.com/openclaw/skills/commit/3f81e10f9fc001b9deb9fdf74e1120937f28d0fb"
+    },
     {
       "version": "2.0.0",
       "publishedAt": 1774620906236,
