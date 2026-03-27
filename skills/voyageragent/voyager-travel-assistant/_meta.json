@@ -1,0 +1,11 @@
+{
+  "owner": "voyageragent",
+  "slug": "voyager-travel-assistant",
+  "displayName": "voyager-travel-assistant",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774533151812,
+    "commit": null
+  },
+  "history": []
+}
