@@ -1,13 +1,18 @@
 {
   "owner": "nitishgargiitd",
   "slug": "game-cog",
-  "displayName": "game-cog",
+  "displayName": "Game Cog",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1771064077488,
-    "commit": "https://github.com/openclaw/skills/commit/3e170ccbc02aa752fd4340f116cbace451ebbbe7"
+    "version": "1.0.4",
+    "publishedAt": 1774585045610,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1771064077488,
+      "commit": "https://github.com/openclaw/skills/commit/3e170ccbc02aa752fd4340f116cbace451ebbbe7"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1770774148387,
