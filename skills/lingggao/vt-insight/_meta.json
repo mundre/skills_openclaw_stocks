@@ -3,11 +3,16 @@
   "slug": "vt-insight",
   "displayName": "VirusTotal 样本查询",
   "latest": {
-    "version": "1.6.0",
-    "publishedAt": 1774368390049,
-    "commit": "https://github.com/openclaw/skills/commit/8cefbb98c62641b07f83e0b996a6858b5bd774dd"
+    "version": "1.7.3",
+    "publishedAt": 1774631894435,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.6.0",
+      "publishedAt": 1774368390049,
+      "commit": "https://github.com/openclaw/skills/commit/8cefbb98c62641b07f83e0b996a6858b5bd774dd"
+    },
     {
       "version": "1.4.2",
       "publishedAt": 1773998539590,
