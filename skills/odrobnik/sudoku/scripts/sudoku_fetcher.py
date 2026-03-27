@@ -160,7 +160,7 @@ import zlib
 import base64
 import json
 
-def generate_scl_link(grid, size, title="Sudoku", author="Moltbot"):
+def generate_scl_link(grid, size, title="Sudoku", author="Sudoku Skill"):
     """
     Generate a SudokuPad SCL link (native format).
     Pipeline: JSON -> Deflate -> Base64URL -> Strip Padding
@@ -198,7 +198,7 @@ def generate_scl_link(grid, size, title="Sudoku", author="Moltbot"):
     # 5. Strip padding
     b64 = b64.rstrip("=")
     
-    link = f"https://sudokupad.app/scl/{b64}"
+    link = f"https://sudokupad.app/scl{b64}"
     return link
 
 import lzstring as _lzstring
@@ -229,12 +229,8 @@ def _zip_classic_sudoku2(puzzle: str) -> str:
     return "".join(res)
 
 
-def generate_puzzle_link(grid, size, title="Sudoku", author="Moltbot"):
-    """Generate a SudokuPad /puzzle/ link (LZString compressed).
-    
-    Note: URL-encodes the payload to prevent issues with '+' being interpreted
-    as space in URLs (particularly in Telegram and other messaging apps).
-    """
+def generate_puzzle_link(grid, size, title="Sudoku", author="Sudoku Skill"):
+    """Generate a SudokuPad web player link (CTC format, LZString compressed)."""
     givens_str = ""
     for r in range(size):
         for c in range(size):
@@ -249,20 +245,16 @@ def generate_puzzle_link(grid, size, title="Sudoku", author="Moltbot"):
     json_str = json.dumps(scl_obj, separators=(',', ':'))
 
     try:
-        compressed = _lz.compressToBase64(json_str)
-        # URL-encode to prevent '+' from being interpreted as space
-        # SudokuPad correctly decodes URL-encoded payloads
-        url_safe = urllib.parse.quote(compressed, safe='')
-        return f"https://sudokupad.svencodes.com/puzzle/{url_safe}"
+        encoded = _lz.compressToEncodedURIComponent(json_str)
+        return f"https://sudokupad.svencodes.com/puzzle/{encoded}"
     except Exception as e:
         return f"Error generating puzzle link: {e}"
 
 
 def generate_native_link(grid, size, title="Sudoku"):
-    """Generate a SudokuPad /puzzle/ share link for classic 9x9 sudoku.
+    """Generate a SudokuPad web player link for classic 9x9 sudoku.
     
-    Note: URL-encodes the payload to prevent issues with '+' being interpreted
-    as space in URLs (particularly in Telegram and other messaging apps).
+    Uses CTC format (ctc prefix + LZString base64) on sudokupad.app.
     """
     if size != 9:
         return "Native /puzzle/ classic format currently implemented for 9x9 only."
@@ -275,19 +267,30 @@ def generate_native_link(grid, size, title="Sudoku"):
         "p": p,
         "n": title,
         "s": "",
-        "m": f'Hi, please take a look at this puzzle: "{title}"',
+        "m": "",
     }
 
+    _BASE = "https://sudokupad.svencodes.com/puzzle/"
+    _MAX_URL = 251  # iOS SudokuPad universal link length limit
+
     try:
-        compressed = _lz.compressToBase64(json.dumps(wrapper, separators=(',', ':')))
-        # URL-encode to prevent '+' from being interpreted as space
-        # SudokuPad correctly decodes URL-encoded payloads
-        url_safe = urllib.parse.quote(compressed, safe='')
-        return f"https://sudokupad.svencodes.com/puzzle/{url_safe}"
+        payload = json.dumps(wrapper, separators=(',', ':'), ensure_ascii=False)
+        blob = _lz.compressToBase64(payload)
+        # Strip '=' padding — iOS import path rejects it.
+        blob = blob.rstrip('=')
+        # Encode '/' to keep payload as single path segment.
+        blob = blob.replace('/', '%2F')
+        url = f"{_BASE}{blob}"
+        if len(url) > _MAX_URL:
+            # Fallback: drop message entirely to shorten
+            payload = json.dumps({"p": p, "n": title}, separators=(',', ':'), ensure_ascii=False)
+            blob = _lz.compressToBase64(payload).rstrip('=').replace('/', '%2F')
+            url = f"{_BASE}{blob}"
+        return url
     except Exception as e:
         return f"Error generating native link: {e}"
 
-def generate_fpuzzles_link(grid, size, title="Sudoku", author="Moltbot"):
+def generate_fpuzzles_link(grid, size, title="Sudoku", author="Sudoku Skill"):
     """
     Generate a SudokuPad link using F-Puzzles format (fallback).
     """
@@ -321,7 +324,7 @@ def generate_fpuzzles_link(grid, size, title="Sudoku", author="Moltbot"):
     # Base64 encode (standard, but SudokuPad accepts it)
     b64 = base64.b64encode(compressed).decode('utf-8')
     
-    link = f"https://sudokupad.app/fpuzzles/{b64}"
+    link = f"https://sudokupad.app/fpuzzles{b64}"
     return link
 
 # Render constants (used by both rendering and image cropping helpers)
