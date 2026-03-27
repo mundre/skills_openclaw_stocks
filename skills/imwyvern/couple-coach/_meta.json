@@ -3,9 +3,15 @@
   "slug": "couple-coach",
   "displayName": "Relationship Coach Skill",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774324065164,
-    "commit": "https://github.com/openclaw/skills/commit/7242c6416cc23c9b45ea17b6447ba35e375646b1"
+    "version": "1.0.1",
+    "publishedAt": 1774580824499,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774324065164,
+      "commit": "https://github.com/openclaw/skills/commit/7242c6416cc23c9b45ea17b6447ba35e375646b1"
+    }
+  ]
 }
