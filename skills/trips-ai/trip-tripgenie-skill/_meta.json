@@ -1,0 +1,11 @@
+{
+  "owner": "trips-ai",
+  "slug": "trip-tripgenie-skill",
+  "displayName": "TripGenie",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774524976041,
+    "commit": null
+  },
+  "history": []
+}
