@@ -1,0 +1,11 @@
+{
+  "owner": "cohnen",
+  "slug": "shellbot-creative-studio",
+  "displayName": "Test Skill 3",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1774555169535,
+    "commit": null
+  },
+  "history": []
+}
