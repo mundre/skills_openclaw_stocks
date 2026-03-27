@@ -1,0 +1,11 @@
+{
+  "owner": "rogue-agent1",
+  "slug": "siteaudit",
+  "displayName": "Siteaudit",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774646830692,
+    "commit": null
+  },
+  "history": []
+}
