@@ -1,11 +1,17 @@
 {
   "owner": "imo14reifey",
   "slug": "video-editor-deutsch",
-  "displayName": "Video Editor Deutsch - KI Video Bearbeiten, Schneiden und Exportieren",
+  "displayName": "Video Editor Deutsch",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1774341046792,
-    "commit": "https://github.com/openclaw/skills/commit/955561574d63e386085796f46c8a08668a1f2391"
+    "version": "1.2.0",
+    "publishedAt": 1774653797164,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1774341046792,
+      "commit": "https://github.com/openclaw/skills/commit/955561574d63e386085796f46c8a08668a1f2391"
+    }
+  ]
 }

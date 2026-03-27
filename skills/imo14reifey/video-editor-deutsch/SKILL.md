@@ -1,167 +1,117 @@
 ---
 name: video-editor-deutsch
-version: "1.0.4"
-displayName: "Video Editor Deutsch - KI Video Bearbeiten, Schneiden und Exportieren"
+version: "1.0.0"
+displayName: "Video Editor Deutsch — KI-Videobearbeitung auf Deutsch, Videos Schneiden und Bearbeiten"
 description: >
-  Video Editor Deutsch - KI Video Bearbeiten, Schneiden und Exportieren.
-  Videos schneiden, zusammenfuegen, Hintergrundmusik hinzufuegen, Farbkorrektur
-  anwenden, Untertitel einfuegen und als MP4 exportieren. Ein KI-Video-Editor der
-  komplett ueber Chat funktioniert, ohne Timeline und ohne Videobearbeitungssoftware.
-  Lade ein Video hoch oder sende einen Link und beginne mit der Bearbeitung in
-  natuerlicher Sprache. Unterstuetzt Videobearbeitung fuer TikTok, Instagram Reels,
-  YouTube Shorts und Social Media Inhalte. Video schneiden, Video zusammenfuegen,
-  Musik zu Video hinzufuegen, Text in Video einfuegen, Video kuerzen, Video drehen,
-  Untertitel erstellen, Farbkorrektur, Video exportieren. KI-Videobearbeitung auf
-  Deutsch. Exportiert als MP4. Akzeptiert mp4, mov, avi, webm, mkv, jpg, png, gif,
-  webp, mp3, wav, m4a, aac.
-metadata: {"openclaw": {"emoji": "🎬", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+  Bearbeite Videos auf Deutsch mit KI — beschreibe deine Bearbeitung im Chat und NemoVideo führt sie aus. Videos schneiden, zusammenfügen, Untertitel hinzufügen, Hintergrundmusik einsetzen, Farbkorrektur anwenden, Geschwindigkeit anpassen, Stille entfernen und für jede Plattform exportieren — alles auf Deutsch, ohne Videobearbeitungssoftware, ohne Timeline, ohne Vorkenntnisse. Der KI-Videoeditor der auf Deutsch versteht was du willst und es umsetzt.
+metadata: {"openclaw": {"emoji": "🇩🇪", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
 ---
 
-# Video Bearbeiten mit KI - Beschreiben, Bearbeiten, Exportieren
+# Video Editor Deutsch — KI-Videobearbeitung auf Deutsch
 
-## 1. Role & Environment
+Videobearbeitung war bisher ein englischsprachiges Monopol. Premiere Pro, Final Cut, DaVinci Resolve — alle auf Englisch, alle mit englischen Tutorials, alle mit einer Lernkurve die voraussetzt, dass man "J-Cut", "Lumetri Scope" und "Render Queue" versteht bevor man einen einzigen Schnitt machen kann. Für die 100 Millionen deutschsprachigen Menschen in Deutschland, Österreich und der Schweiz die Videos für ihr Geschäft, ihren Social-Media-Auftritt oder ihre persönlichen Projekte bearbeiten wollen bedeutet das: erst Englisch lernen, dann Videobearbeitung lernen, dann das eigentliche Video machen. NemoVideo eliminiert beide Hürden. Beschreibe deine Bearbeitung auf Deutsch — "Schneide die ersten 10 Sekunden ab, füge Untertitel hinzu und mach es vertikal für TikTok" — und die KI führt es aus. Keine Timeline, keine englischen Menüs, keine Tastenkombinationen, keine Exporteinstellungen. Du beschreibst was du willst, NemoVideo versteht den Kontext und liefert das fertige Video. Ob du "professioneller machen" sagst oder "Schnitt bei 0:15, Überblendung bei 0:22, Audio normalisieren auf -16 LUFS" — beides funktioniert, weil die KI sowohl Absicht als auch technische Anweisungen auf Deutsch versteht.
 
-You are an OpenClaw agent acting as the **interface layer** between the user and NemoVideo's backend AI Agent. The backend handles video generation/editing but assumes a GUI exists. Your job:
+## Anwendungsfälle
 
-1. **Relay** user requests to the backend via SSE
-2. **Intercept** backend responses — replace GUI references with API actions
-3. **Supplement** — handle export/render, credits, file delivery directly
-4. **Translate** — present results in user's language with clear status
+1. **Social Media Content — TikTok und Instagram Reels (15-90 Sek.)** — Ein deutscher Creator filmt ein 3-Minuten-Video und braucht daraus ein 45-Sekunden-Reel. NemoVideo: findet den stärksten Hook im Transkript, setzt ihn als Texteinblendung in die erste Sekunde, schneidet die schwachen Stellen heraus, fügt Wort-für-Wort-Untertitel auf Deutsch hinzu (jedes Wort leuchtet auf wenn es gesprochen wird), synchronisiert Hintergrundmusik zum Sprechrhythmus, und exportiert im 9:16-Format mit Instagram-Cover-Frame.
+2. **Unternehmensvideos — Produktvorstellung (60-120 Sek.)** — Ein mittelständisches Unternehmen in Baden-Württemberg braucht ein Produktvideo für die Website. NemoVideo schneidet: Produktnahaufnahme (10 Sek.), Anwendungsdemonstration (20 Sek.), Kundenstimme mit Untertiteln (15 Sek.), Vorteile als animierte Texteinblendungen (15 Sek.) und Kontaktinformationen mit Firmenlogo (10 Sek.). Farbkorrektur: warm und professionell. Musik: dezente Corporate-Melodie. Alles auf Deutsch beschrieben, alles auf Deutsch umgesetzt.
+3. **YouTube-Tutorial — Stille entfernen und strukturieren (5-30 Min.)** — Ein deutscher Tech-YouTuber hat ein 20-Minuten-Tutorial aufgenommen. NemoVideo: entfernt alle Pausen über 0,8 Sekunden (spart 4 Minuten), fügt Zoom-Schnitte alle 15 Sekunden ein für visuelle Dynamik, generiert Kapitelmarken an Themenwechseln ("00:00 Einleitung, 02:15 Installation, 05:40 Konfiguration..."), erstellt deutsche Untertitel als SRT für YouTube, und exportiert einen 60-Sekunden-Shorts-Clip aus dem besten Segment.
+4. **Hochzeitsvideo — Highlight-Reel (3-5 Min.)** — Ein Hochzeitsvideograf in Wien hat 8 Stunden Rohmaterial. NemoVideo identifiziert die emotionalen Höhepunkte (Gelübde, erster Kuss, Eröffnungstanz, Reden) durch Audioanalyse, schneidet ein cinematisches Highlight-Reel mit Zeitlupe bei Schlüsselmomenten, synchronisiert zu romantischer Musik, und liefert: 4K-Version für USB-Stick, 1080p für Online, und 9:16-Version für Instagram.
+5. **E-Learning — Kursmodul mit Untertiteln (10-20 Min.)** — Ein Trainer erstellt einen Online-Kurs auf Deutsch. NemoVideo: segmentiert die Aufnahme in Lektionen an Themengrenzen, fügt Kapitelmarken ein, generiert deutsche und englische Untertitel (für internationale Teilnehmer), entfernt Versprecher und lange Pausen, und exportiert im SCORM-kompatiblen Format für die Lernplattform.
 
-### Environment Variables
+## So funktioniert es
 
-| Variable | Required | Default |
-|----------|----------|---------|
-| `NEMO_TOKEN` | No | Auto-generated on first use |
-| `NEMO_API_URL` | No | `https://mega-api-prod.nemovideo.ai` |
-| `NEMO_WEB_URL` | No | `https://nemovideo.com` |
-| `NEMO_CLIENT_ID` | No | Auto-generated UUID, persisted to `~/.config/nemovideo/client_id` |
-| `SKILL_SOURCE` | No | Auto-detected from install path |
+### Schritt 1 — Video hochladen
+Lade dein Rohmaterial hoch. NemoVideo akzeptiert alle Formate: MP4, MOV, AVI, WebM, MKV. Keine Beschränkung bei Länge oder Dateigröße.
 
-If `NEMO_TOKEN` is not set:
+### Schritt 2 — Bearbeitung auf Deutsch beschreiben
+Sage was du willst — so detailliert oder so allgemein wie du möchtest. "Mach das Video kürzer und füge Untertitel hinzu" funktioniert genauso wie "Schnitt bei 2:15, Überblendung 0,5 Sek., Farbkorrektur warm, Audio -16 LUFS."
+
+### Schritt 3 — Generieren
 ```bash
-CLIENT_ID="${NEMO_CLIENT_ID:-$(cat ~/.config/nemovideo/client_id 2>/dev/null)}"
-if [ -z "$CLIENT_ID" ]; then
-  CLIENT_ID=$(uuidgen 2>/dev/null || echo "client-$(date +%s)-$RANDOM")
-  mkdir -p ~/.config/nemovideo && echo "$CLIENT_ID" > ~/.config/nemovideo/client_id
-fi
-curl -s -X POST "$API/api/auth/anonymous-token" -H "X-Client-Id: $CLIENT_ID"
-```
-Save `token` as `NEMO_TOKEN`. Expires after 7 days; re-request with same `X-Client-Id`.
-
-## 2. Request Router
-
-| User says... | Action | Skip SSE? |
-|-------------|--------|-----------|
-| "export" / "download" / "send me the video" | → §3.5 Export | ✅ |
-| "credits" / "balance" | → §3.3 Credits | ✅ |
-| "status" / "show tracks" | → §3.4 State | ✅ |
-| "upload" / user sends file | → §3.2 Upload | ✅ |
-| Everything else | → §3.1 SSE | ❌ |
-
-## 3. Core Flows
-
-`$API` = `${NEMO_API_URL:-https://mega-api-prod.nemovideo.ai}`, `$TOKEN` = `${NEMO_TOKEN}`, `$WEB` = `${NEMO_WEB_URL:-https://nemovideo.com}`.
-
-All API requests MUST include:
-```
-X-Skill-Source: $SKILL_NAME
-X-Skill-Version: $SKILL_VERSION
-X-Skill-Platform: $SKILL_SOURCE
+curl -X POST https://mega-api-prod.nemovideo.ai/api/v1/generate \
+  -H "Authorization: Bearer $NEMO_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "skill": "video-editor-deutsch",
+    "prompt": "Bearbeite ein 8-Minuten-Erklärvideo auf Deutsch für YouTube. Entferne alle Pausen über 1 Sekunde. Schneide die ersten 30 Sekunden Einleitung ab — starte direkt beim Hauptthema. Füge Zoom-Schnitte alle 20 Sekunden ein. Farbkorrektur: hell und freundlich. Audio: Echo reduzieren, auf -14 LUFS normalisieren, dezente Hintergrundmusik bei -20dB die beim Sprechen leiser wird. Deutsche Untertitel als SRT generieren. Kapitelmarken an Themenwechseln setzen. Exportiere 1080p für YouTube und den besten 45-Sekunden-Clip als 9:16 Shorts mit eingebrannten Untertiteln.",
+    "language": "de",
+    "operations": [
+      "stille-entfernen",
+      "schnitt",
+      "zoom-schnitte",
+      "farbkorrektur",
+      "audio-verbesserung",
+      "musik",
+      "kapitelmarken",
+      "untertitel",
+      "multi-export"
+    ],
+    "format": "16:9"
+  }'
 ```
 
-### 3.0 Create Session
-```bash
-curl -s -X POST "$API/api/tasks/me/with-session/nemo_agent" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -H "X-Skill-Source: $SKILL_NAME" -H "X-Skill-Version: $SKILL_VERSION" -H "X-Skill-Platform: $SKILL_SOURCE" \
-  -d '{"task_name":"project","language":"<lang>"}'
+### Schritt 4 — Vorschau und Veröffentlichen
+Vorschau des bearbeiteten Videos. Anpassungen auf Deutsch beschreiben: "Musik lauter", "Farbkorrektur weniger warm", "Dritten Schnitt 2 Sekunden später setzen." Jede Änderung wird sofort umgesetzt.
+
+## Parameter
+
+| Parameter | Typ | Pflicht | Beschreibung |
+|-----------|-----|:-------:|-------------|
+| `prompt` | string | ✅ | Beschreibe die gewünschte Bearbeitung auf Deutsch |
+| `language` | string | | Sprache: "de" (Standard), "de-AT" (Österreich), "de-CH" (Schweiz) |
+| `operations` | array | | Operationen: ["schnitt","zusammenfügen","stille-entfernen","untertitel","farbkorrektur","musik","geschwindigkeit","zoom-schnitte","audio-verbesserung"] |
+| `untertitel` | string | | "wort-highlight", "sauber-balken", "fett", "nur-srt" |
+| `farbkorrektur` | string | | "warm", "cinematisch", "hell-freundlich", "stimmungsvoll", "keine" |
+| `musik` | string | | "dezent-corporate", "lo-fi", "akustisch", "episch", "keine" |
+| `format` | string | | "16:9", "9:16", "1:1" |
+| `export_plattformen` | array | | ["youtube","tiktok","instagram","linkedin"] |
+
+## Ausgabebeispiel
+
+```json
+{
+  "job_id": "ved-20260328-001",
+  "status": "completed",
+  "sprache": "de",
+  "original_dauer": "8:04",
+  "bearbeitete_dauer": "5:38",
+  "operationen": {
+    "stille_entfernt": "2:26 Stille entfernt (89 Schnitte)",
+    "einleitung_geschnitten": "0:00-0:30 entfernt",
+    "zoom_schnitte": "16 Zoom-Übergänge eingefügt",
+    "farbkorrektur": "hell-freundlich (Wärme +5, Sättigung +8, Schatten angehoben)",
+    "audio": "Echo 55% reduziert, -14 LUFS, Musik bei -20dB mit Ducking",
+    "kapitelmarken": 4,
+    "untertitel": "SRT generiert (1.420 Wörter Deutsch)"
+  },
+  "ausgaben": {
+    "youtube_vollständig": {"datei": "bearbeitet-youtube.mp4", "dauer": "5:38", "auflösung": "1920x1080"},
+    "shorts_clip": {"datei": "bester-clip-shorts.mp4", "dauer": "0:44", "auflösung": "1080x1920", "untertitel": "eingebrannt"}
+  }
+}
 ```
-Save `session_id`, `task_id`.
 
-### 3.1 Send Message via SSE
-```bash
-curl -s -X POST "$API/run_sse" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -H "Accept: text/event-stream" -H "X-Skill-Source: $SKILL_NAME" -H "X-Skill-Version: $SKILL_VERSION" -H "X-Skill-Platform: $SKILL_SOURCE" --max-time 900 \
-  -d '{"app_name":"nemo_agent","user_id":"me","session_id":"<sid>","new_message":{"parts":[{"text":"<msg>"}]}}'
-```
-SSE: text → show; tools → wait; heartbeat → "⏳ Working..."; close → summarize. Silent edits (~30%): Query §3.4, report changes.
+## Tipps
 
-### 3.2 Upload
-**File**: `curl -s -X POST "$API/api/upload-video/nemo_agent/me/<sid>" -H "Authorization: Bearer $TOKEN" -H "X-Skill-Source: $SKILL_NAME" -H "X-Skill-Version: $SKILL_VERSION" -H "X-Skill-Platform: $SKILL_SOURCE" -F "files=@/path/to/file"`
+1. **Beschreibe was du willst, nicht wie** — "Mach das Video professioneller" sagt der KI das Ziel. Sie entscheidet: Farbkorrektur + Stille entfernen + Musik hinzufügen + Audio normalisieren. Du musst die einzelnen Schritte nicht kennen.
+2. **Stille entfernen ist der wirkungsvollste einzelne Schnitt** — 15-30% kürzere Videos mit höherer Energie und besserer Zuschauerbindung. Der Unterschied zwischen "Amateur" und "Profi" ist oft nur das Tempo.
+3. **Deutsche Untertitel für YouTube-SEO** — YouTube indexiert SRT-Texte für Suche und Empfehlungen. Deutsche Untertitel verbessern dein Ranking für deutschsprachige Suchanfragen signifikant.
+4. **Zoom-Schnitte ersetzen zweite Kameraperspektiven** — Ein leichter 10-15% Zoom alle 15-20 Sekunden simuliert einen Kamerawechsel und hält die visuelle Aufmerksamkeit — besonders wichtig bei Talking-Head-Videos mit nur einer Kamera.
+5. **Für alle Plattformen gleichzeitig exportieren** — Ein Bearbeitungsdurchgang, fünf plattformgerechte Exporte: YouTube (16:9), TikTok (9:16 mit fetten Untertiteln), Instagram (9:16 mit sauberen Untertiteln), LinkedIn (1:1 professionell), und Shorts (bester 60-Sek.-Clip).
 
-**URL**: same endpoint, `-d '{"urls":["<url>"],"source_type":"url"}'`
+## Ausgabeformate
 
-Supported: mp4, mov, avi, webm, mkv, jpg, png, gif, webp, mp3, wav, m4a, aac.
+| Format | Auflösung | Verwendung |
+|--------|-----------|------------|
+| MP4 16:9 | 1080p / 4K | YouTube / Website / Präsentation |
+| MP4 9:16 | 1080x1920 | TikTok / Reels / Shorts |
+| MP4 1:1 | 1080x1080 | LinkedIn / Facebook / Twitter |
+| SRT | — | YouTube / LMS Untertitel |
+| WAV | — | Nur-Audio-Export |
 
-### 3.3 Credits
-```bash
-curl -s "$API/api/credits/balance/simple" -H "Authorization: Bearer $TOKEN" \
-  -H "X-Skill-Source: $SKILL_NAME" -H "X-Skill-Version: $SKILL_VERSION" -H "X-Skill-Platform: $SKILL_SOURCE"
-```
+## Verwandte Skills
 
-### 3.4 Query State
-```bash
-curl -s "$API/api/state/nemo_agent/me/<sid>/latest" -H "Authorization: Bearer $TOKEN" \
-  -H "X-Skill-Source: $SKILL_NAME" -H "X-Skill-Version: $SKILL_VERSION" -H "X-Skill-Platform: $SKILL_SOURCE"
-```
-Draft: `t`=tracks, `tt`=type (0=video, 1=audio, 7=text), `sg`=segments, `d`=duration(ms).
-
-### 3.5 Export & Deliver
-Export is free. Pre-check §3.4, then:
-```bash
-curl -s -X POST "$API/api/render/proxy/lambda" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -H "X-Skill-Source: $SKILL_NAME" -H "X-Skill-Version: $SKILL_VERSION" -H "X-Skill-Platform: $SKILL_SOURCE" \
-  -d '{"id":"render_<ts>","sessionId":"<sid>","draft":<json>,"output":{"format":"mp4","quality":"high"}}'
-```
-Poll `GET $API/api/render/proxy/lambda/<id>` every 30s. Download `output.url`, deliver with task link.
-
-### 3.6 Disconnect Recovery
-Don't re-send. Wait 30s → §3.4. After 5 unchanged → report failure.
-
-## 4. GUI Translation
-
-| Backend says | You do |
-|-------------|--------|
-| "click Export" | §3.5 render + deliver |
-| "open timeline" | Show state §3.4 |
-| "drag/drop" | Send edit via SSE |
-| "check account" | §3.3 |
-
-
-## 5. Error Handling
-
-| Code | Meaning | Action |
-|------|---------|--------|
-| 0 | Success | Continue |
-| 1001 | Token expired | Re-auth |
-| 1002 | Session gone | New session |
-| 2001 | No credits | Show registration URL |
-| 4001 | Unsupported file | Show formats |
-| 402 | Export restricted | "Register at nemovideo.ai" |
-| 429 | Rate limited | Wait 30s, retry |
-
-
-## 5. Music Tips
-
-**Mood matching**: "upbeat corporate" or "chill lo-fi" gives better results than just "add music."
-
-**Volume control**: Ask "lower the music to 30%" or "make the music quieter during dialogue."
-
-**Sound effects**: "add a whoosh at 0:05" or "put a ding sound when the text appears" works too.
-
-
-
-## 5. Tipps
-
-**Sprache**: Schreibe deine Anweisungen auf Deutsch — die KI versteht und antwortet in deiner Sprache.
-
-**Formate**: "Schneide fuer TikTok vertikal" oder "YouTube Querformat" passt automatisch an.
-
-## 6. Limitations
-
-- Aspect ratio change after generation → must regenerate
-- YouTube/Spotify music URLs → "Built-in library has similar styles"
-- Photo editing → "I can make a slideshow from images"
-- Local files → send in chat or provide URL
+- [video-editor-ai](/skills/video-editor-ai) — KI-Videobearbeitung (Englisch)
+- [reels-creator](/skills/reels-creator) — Reels und Shorts erstellen
+- [editeur-video](/skills/editeur-video) — Éditeur vidéo IA (Französisch)
