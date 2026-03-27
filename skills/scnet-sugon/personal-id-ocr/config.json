@@ -1,0 +1,11 @@
+{
+  "name": "personal_id_ocr",
+  "version": "1.0.0",
+  "description": "身份证 OCR 识别",
+  "author": "SCNet",
+  "entry": "scripts/main.py",
+  "api_type": "external",
+  "permissions": ["network", "filesystem"],
+  "environment_variables": ["SCNET_API_KEY"],
+  "tags": ["ocr", "invoice", "id-card", "receipt"]
+}
