@@ -5,6 +5,8 @@ description: Thesis-driven macro-to-execution market workflow in natural Chinese
 
 # Stanley Druckenmiller Workflow
 
+> Published version: **1.1.11**
+
 ## 1) Positioning
 
 Use a public-data process that approximates a Druckenmiller-style workflow.
@@ -287,19 +289,32 @@ Include:
 - Underpriced / Ignored
 
 A-share ranking priority:
-1. China policy / regulation / domestic macro events
-2. Global central banks and rates (Fed / ECB / BOJ / PBOC / U.S. yields / EUR / JPY)
-3. Geopolitics and commodities (war / sanctions / oil / gas / gold / copper)
-4. HK market / RMB / offshore China assets
+1. Domestic policy, regulation, and domestic macro events
+2. Global central-bank, rates, and FX developments that materially change China-facing pricing
+3. Geopolitics and commodity moves that materially change inflation, growth, or risk appetite
+4. HK market, RMB, and offshore China assets
 5. Industry-specific catalysts only when they can realistically change today's A-share pricing
 
-Rules:
-- start with real-world events first, then market interpretation
-- include only the 2-4 events that can realistically move pricing
-- do not default to Fed / war / PPI as routine opening items
-- ECB, BOJ, China policy, commodities, HK market, and RMB should be included whenever they matter more than the default U.S. macro trio
+Event selection rule:
+- before writing any Morning Brief, identify the top 2-4 events from the last 24 hours that are still actively influencing market pricing today
+- do not include events that are merely recent but no longer being repriced
+- if an event is widely covered by major market media or clearly reflected in cross-asset pricing, omitting it is an error
+- do not hardcode recurring example headlines into the template
+
+Market interpretation rule:
+- for each included event, always state:
+  - what happened
+  - how the market interpreted it
+  - what assets confirmed that interpretation
+  - why it matters for today's A-share pricing
+- if an event cannot be translated into a clear A-share implication, downgrade it to background context or omit it
+- if an older theme still matters but is no longer a fresh catalyst, move it into Background Context / Regime Context language instead of keeping it as a top event
+
+Headline-driven ordering rule:
+- on headline-driven days, event interpretation must appear before indicator discussion
 - do not start this section with indicators, ETF tickers, or proxy jargon
 - if no single event dominates, explicitly say the session looks more structure-driven or positioning-driven
+- a brief that jumps straight into indicators while ignoring obvious market-moving events is incomplete
 
 ### 8.2 Macro Position Snapshot
 Put this before Today’s Regime.
@@ -392,11 +407,31 @@ Sort by decision relevance.
 ### 8.7 Internal Structure [Intraday / 1–10D]
 This section is a standalone health-check layer, not a sub-item of transmission.
 
-Focus on:
-- Breadth (涨跌家数 / 新高新低 / 涨停跌停)
-- Relative strength (大盘 vs 小盘 / 成长 vs 价值)
-- Sector expression (领涨板块属性 / 防御 or 进攻 or 混合)
-- Price / trend quality (趋势质量 / 确认 or 背离)
+Required fields to inspect:
+- Breadth:
+  - advancers / decliners
+  - limit-up / limit-down
+  - new highs / new lows when available
+  - median stock return or equivalent money-making-effect proxy when available
+- Relative strength:
+  - CSI 300 vs CSI 1000
+  - ChiNext / STAR / main board when relevant
+  - growth vs value / dividend vs high-beta when relevant
+- Sector expression:
+  - top 5 industry gainers
+  - top 5 industry losers
+  - classify leadership as financial / cyclical / growth / defensive / mixed
+  - note whether leadership is broadening or narrowly clustered
+- Price / trend quality:
+  - turnover expansion or contraction versus the prior session
+  - whether breadth confirms the index move
+  - whether the move is a healthy diffusion, short squeeze, or weak rebound
+
+Rules:
+- do not leave this section at the level of broad adjectives only
+- if sector and breadth data are available, the brief must mention them explicitly
+- if a rebound is led only by a narrow cluster, say so clearly
+- if breadth is strong but leadership is low quality, say so clearly
 
 Output:
 - one integrated read on whether the move is healthy diffusion or narrow clustering
@@ -489,14 +524,16 @@ Always end with:
 #### 8.10.5 A-Share Market Liquidity
 Focus on:
 - northbound flow or valid proxy when northbound fails
-- turnover
-- ETF flows
+- total market turnover and turnover delta versus the prior session
+- ETF flows when reliably available
 - leverage / margin
 - style flow
+- concentration versus diffusion in turnover when available
 
 Daily rule:
 - if northbound truth is unavailable or upstream values are clearly invalid, do not report it as a routine hard gap
 - use a northbound proxy built from Stock Connect breadth, core-vs-growth style relative strength, and offshore China-beta confirmation when available
+- do not discuss liquidity without at least referencing turnover and whether the tape expanded or contracted
 
 Output:
 - one integrated read
@@ -515,11 +552,14 @@ Focus on:
 - which sectors best express the current regime
 - which sectors should be avoided
 - whether leadership is defensive, cyclical, growth, or mixed
+- top 5 industry gainers and top 5 industry losers when data is available
+- whether leadership is broad, rotational, or concentrated in one theme
 
 Daily rule:
 - do not require a stable daily 'industry net flow' truth series to produce this section
 - use industry-expression proxy from sector relative performance, basket leadership, and participation structure when direct industry fund-flow data is unstable
 - treat exact industry fund-flow truth as enhancement, not as a daily hard dependency
+- do not leave this section generic if sector ranking data is available
 
 Output:
 - one integrated read
@@ -620,17 +660,31 @@ Include:
 - Underpriced / Ignored
 
 U.S. ranking priority:
-1. Fed / Treasury / inflation / labor / growth data
-2. Geopolitics and commodities when they affect inflation or risk premia
+1. Domestic macro, policy, and rates developments that materially change U.S. asset pricing
+2. Geopolitics and commodities when they affect inflation, growth, or risk premia
 3. Other major central banks and FX when they feed back into U.S. rates, dollar, or global risk appetite
 4. Large-cap earnings / sector catalysts only when they are truly index-relevant
 
-Rules:
-- start with real-world events first, then market interpretation
-- include only the 2-4 events that can realistically move pricing
-- do not default to a fixed news trio; rank by actual market relevance each day
+Event selection rule:
+- before writing any Morning Brief, identify the top 2-4 events from the last 24 hours that are still actively influencing market pricing today
+- do not include events that are merely recent but no longer being repriced
+- if an event is widely covered by major market media or clearly reflected in cross-asset pricing, omitting it is an error
+- do not hardcode recurring example headlines into the template
+- rank by actual market relevance each day
+
+Market interpretation rule:
+- for each included event, always state:
+  - what happened
+  - how the market interpreted it
+  - what assets confirmed that interpretation
+  - why it matters for today's U.S. market pricing
+- if an older theme still matters but is no longer a fresh catalyst, move it into Background Context / Regime Context language instead of keeping it as a top event
+
+Headline-driven ordering rule:
+- on headline-driven days, event interpretation must appear before indicator discussion
 - do not start this section with indicators, ETF tickers, or proxy jargon
 - if no single event dominates, explicitly say the session looks more structure-driven or positioning-driven
+- a brief that jumps straight into indicators while ignoring obvious market-moving events is incomplete
 
 ### 9.2 Macro Position Snapshot
 Put this before Today’s Regime.
@@ -685,15 +739,16 @@ Rules:
 Place this section immediately after Primary Drivers Today.
 
 This section answers one question only:
-- what does the market believe, where may it be wrong, and what follows next?
+- what does the market believe, where is the thesis most vulnerable, and what follows next?
 
 Keep it compressed.
 Use three one-line bullets only:
 - Consensus
-- Anti-consensus
+- Open Attack Surface
 - Second-order
 
 Do not repeat the regime definition or simply restate the driver list.
+Do not force a fake anti-consensus view here. This slot should identify the weakest part of the thesis or the most attackable assumption, not manufacture a contrarian take for its own sake.
 
 ### 9.6 Top Breakouts / Key Moves
 Place this section near the top.
@@ -723,11 +778,39 @@ Sort by decision relevance.
 ### 9.7 Internal Structure [Intraday / 1–10D]
 This section is a standalone health-check layer, not a sub-item of transmission.
 
-Focus on:
-- Breadth (RSP / SPY, IWM / SPY, SPHB / SPLV)
-- Relative strength (growth vs value, large vs small)
-- Sector expression (which sectors are leading / lagging)
-- Price / trend quality (trend confirmation or divergence)
+Required fields to inspect:
+- Breadth:
+  - RSP / SPY
+  - IWM / SPY
+  - SPHB / SPLV
+  - whether equal-weight and high-beta confirm the index move
+- Relative strength:
+  - SPX / NDQ / RTY relative behavior
+  - growth vs defensives
+  - cyclicals vs defensives when relevant
+- Sector expression:
+  - top 5 sector gainers
+  - top 5 sector losers
+  - whether leadership is broad, rotational, or narrow mega-cap concentration
+- U.S. leading market-internal basket (must inspect when relevant):
+  - Russell 2000 / IWM as small-cap risk appetite proxy
+  - homebuilders (XHB / ITB)
+  - transports / trucking (IYT)
+  - retail (XRT)
+  - regional banks (KRE)
+  - industrial metals / copper proxy (HG=F or equivalent)
+  - explicit note on whether these baskets confirm or contradict the thesis
+- Price / trend quality:
+  - whether breadth confirms the index move
+  - whether credit confirms the move
+  - whether the tape looks like healthy diffusion, short squeeze, weak rebound, or trend continuation
+
+Rules:
+- do not leave this section at the level of broad adjectives only
+- if sector and ratio data are available, the brief must mention them explicitly
+- if the market is being held up by mega-cap concentration, say so clearly
+- if small-caps or equal-weight fail to confirm the move, say so clearly
+- treat the U.S. leading market-internal basket as economic telltales, not optional side notes
 
 Output:
 - one integrated read on whether the move is healthy diffusion or narrow clustering
@@ -781,6 +864,10 @@ Focus on:
 - IG OAS if available
 - HYG / SPY
 - KRE / SPY
+- homebuilders, transports, and retail as credit-sensitive confirmation baskets when relevant
+
+Rules:
+- when the thesis depends on tightening risk, recession risk, or credit deterioration, explicitly check whether regional banks, homebuilders, transports, retail, and copper are confirming or contradicting the view
 
 Output:
 - one integrated credit read
@@ -859,6 +946,11 @@ Focus on:
 - volume / participation
 - breadth
 - positioning / crowdedness proxies
+- whether equal-weight, small-caps, and high-beta are confirming the move
+
+Daily rule:
+- do not discuss U.S. market liquidity without at least referencing whether breadth and participation confirm the index move
+- if the move is driven primarily by mega-cap concentration, say so explicitly
 
 Output:
 - one integrated read
@@ -1075,6 +1167,40 @@ Examples of what it cannot fully replace:
 When users ask if this is “real Stan”, answer in two layers:
 1. The skill can meaningfully help with first-layer macro environment judgment.
 2. The human still owns second-layer execution judgment.
+
+---
+
+## 13) Confidence Mapping
+
+- high: most panels align and data coverage is complete
+- medium: mixed signals or proxy data exists
+- low: conflicting signals or major panel gaps
+
+---
+
+## 14) Safety Footer
+
+Always append the standard disclaimer in the resolved user language:
+- `Disclaimer: The above content is research framework information and does not constitute investment advice or trading instructions.`
+ormation and does not constitute investment advice or trading instructions.`
+ owns second-layer execution judgment.
+
+---
+
+## 13) Confidence Mapping
+
+- high: most panels align and data coverage is complete
+- medium: mixed signals or proxy data exists
+- low: conflicting signals or major panel gaps
+
+---
+
+## 14) Safety Footer
+
+Always append the standard disclaimer in the resolved user language:
+- `Disclaimer: The above content is research framework information and does not constitute investment advice or trading instructions.`
+nstitute investment advice or trading instructions.`
+ owns second-layer execution judgment.
 
 ---
 
