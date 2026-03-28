@@ -1,18 +1,32 @@
 ---
 name: tistory-publish
-description: Automate Tistory blog publishing via agent-browser (Playwright CLI). Supports any post format — handles TinyMCE editor manipulation, OG card insertion, banner upload, tag registration, category setting, and representative image selection. Includes template examples (newspaper review, simple post). Works around Tistory's isTrusted event filtering.
+description: Automate Tistory blog publishing via OpenClaw Playwright CDP. Supports any post format — handles TinyMCE editor manipulation, OG card insertion, banner upload, tag registration, category setting, and representative image selection. Includes template presets (mk-review, simple-post). Works around Tistory's isTrusted event filtering.
+runtime:
+  - python3
+  - playwright
+  - node (optional, for banner generation)
+credentials:
+  - path: ~/.openclaw/secrets/kakao.json
+    purpose: Kakao login for Tistory session recovery (used only by scripts/login.sh)
+    required: false
+    format: '{"email": "...", "password": "..."}'
 ---
 
 # Tistory Publish
 
-티스토리 블로그 범용 자동 발행 스킬. 어떤 형식의 글이든 agent-browser로 자동 발행할 수 있습니다.
+티스토리 블로그 범용 자동 발행 스킬. 어떤 형식의 글이든 자동 발행할 수 있습니다.
 
 Tistory Open API 종료(2024.02) 이후 유일한 자동화 경로인 브라우저 자동화를 제공합니다.
 
 ## 전제 조건
 
-- [agent-browser](https://github.com/anthropics/agent-browser) CLI + 프로필 (Kakao 로그인 완료)
+- OpenClaw 브라우저 서비스 (Chrome CDP, 기본 port 18800)
+- 티스토리 카카오 로그인 완료 (OpenClaw Chrome에서)
+- Python 3 + Playwright (`pip install playwright`)
 - Node.js 18+ (배너 생성 시, 선택)
+- (선택) `~/.openclaw/secrets/kakao.json` — 로그인 세션 만료 시 자동 복구용 (`scripts/login.sh`에서 사용)
+  - 형식: `{"email": "카카오 이메일", "password": "비밀번호"}`
+  - `publish.sh`는 이 파일을 읽지 않음 (로그인은 `login.sh`에서만 처리)
 
 ## 구조
 
@@ -43,6 +57,14 @@ bash scripts/publish.sh \
   --category "카테고리명" \
   --blog "your-blog.tistory.com"
 
+# 매경 리뷰 (템플릿 사용)
+bash scripts/publish.sh \
+  --template mk-review \
+  --article-title "기사 제목" \
+  --body-file body.html \
+  --banner /tmp/banner.jpg \
+  --tags "매경,경제뉴스"
+
 # 배너 + 태그 + 비공개
 bash scripts/publish.sh \
   --title "글 제목" \
@@ -60,11 +82,21 @@ bash scripts/publish.sh \
 | `--title` | ✅ | 글 제목 |
 | `--body-file` | ✅ | 본문 HTML 파일 경로 |
 | `--category` | ✅ | 카테고리 이름 (에디터에 표시되는 이름 그대로) |
+| `--template` | | 템플릿 preset (mk-review, simple-post) |
+| `--article-title` | | mk-review용 기사 제목 (자동 날짜 접두사) |
 | `--tags` | | 쉼표 구분 태그 목록 |
 | `--banner` | | 배너 이미지 파일 경로 |
 | `--blog` | | 블로그 도메인 (기본: tistory.com 첫 번째 블로그) |
+| `--cdp-port` | | OpenClaw Chrome CDP 포트 (기본: 18800) |
 | `--helper` | | tistory-publish.js 경로 (기본: scripts/ 내) |
 | `--private` | | 비공개 발행 |
+
+### 템플릿 preset
+
+| 이름 | 카테고리 | 블로그 | 제목 형식 | 배너 |
+|------|---------|--------|----------|------|
+| `mk-review` | 신문 리뷰 | bongman.tistory.com | `[매경] YYYY.MM.DD(요일) - 기사제목` | 필수 |
+| `simple-post` | (직접 지정) | (직접 지정) | (직접 지정) | 선택 |
 
 ## 자동 처리 항목
 
@@ -125,13 +157,4 @@ templates/my-template/
 
 ## 변경 이력
 
-### v4.0.0 (2026-03-07)
-- **범용 스킬로 재설계**: 매경 리뷰 전용 → 어떤 포맷이든 발행 가능
-- 범용 `publish.sh` 스크립트 추가 (`--category`, `--blog` 등 인자)
-- 매경 리뷰를 `templates/mk-review/` 예시로 이동
-- 단순 발행 예시 `templates/simple-post/` 추가
-
-### v3.0.0 (2026-03-07)
-- OpenClaw Playwright → agent-browser 전환
-- 카테고리: JS eval → Playwright native ARIA combobox click
-- 배너: base64 chunk → agent-browser upload
+[CHANGELOG.md](CHANGELOG.md) 참조

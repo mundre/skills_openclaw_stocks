@@ -36,16 +36,15 @@ node templates/mk-review/banner.js
 
 ```bash
 bash scripts/publish.sh \
-  --title "[매경] YYYY.MM.DD(요일) - 키워드1, 키워드2, 키워드3" \
+  --title "[매경] YYYY.MM.DD(요일) - 첫 번째 기사 제목 그대로" \
   --body-file "/path/to/review-body.html" \
   --category "신문 리뷰" \
   --tags "매경,매일경제,신문리뷰,태그4,태그5" \
   --banner "/tmp/mk-banner-YYYY-MM-DD.jpg" \
-  --blog "your-blog.tistory.com" \
-  --private
+  --blog "your-blog.tistory.com"
 ```
 
-> 실전 발행 시 `--private` 제거.
+> ⚠️ `--private` 플래그 사용 금지 (기본 공개 발행).
 
 ---
 
