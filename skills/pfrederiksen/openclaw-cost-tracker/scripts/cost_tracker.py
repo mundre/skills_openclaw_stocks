@@ -17,7 +17,6 @@ def find_agents_dir() -> Path:
     """Auto-discover the OpenClaw agents directory."""
     candidates = [
         Path.home() / ".openclaw" / "agents",
-        Path("/root/.openclaw/agents"),
     ]
     # Also check OPENCLAW_HOME env
     env_home = os.environ.get("OPENCLAW_HOME")
