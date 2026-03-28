@@ -3,11 +3,16 @@
   "slug": "slow-motion-video",
   "displayName": "Slow Motion Video",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1774651604841,
-    "commit": "https://github.com/openclaw/skills/commit/4a5abb94681134691cfa115ae156917b8639543d"
+    "version": "1.3.0",
+    "publishedAt": 1774674966768,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1774651604841,
+      "commit": "https://github.com/openclaw/skills/commit/4a5abb94681134691cfa115ae156917b8639543d"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1774443012960,
