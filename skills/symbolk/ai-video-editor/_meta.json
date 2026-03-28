@@ -3,11 +3,16 @@
   "slug": "ai-video-editor",
   "displayName": "AI Video Editor",
   "latest": {
-    "version": "1.0.11",
-    "publishedAt": 1774099014615,
-    "commit": "https://github.com/openclaw/skills/commit/85ee24babda10ed4af5fadc5d4b06f05eec2deaf"
+    "version": "1.0.12",
+    "publishedAt": 1774319543518,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.11",
+      "publishedAt": 1774099014615,
+      "commit": "https://github.com/openclaw/skills/commit/85ee24babda10ed4af5fadc5d4b06f05eec2deaf"
+    },
     {
       "version": "1.0.10",
       "publishedAt": 1773922168357,
