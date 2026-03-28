@@ -1,10 +1,12 @@
 ---
 name: insta-cog
-description: "Full video production from a single prompt. Script, shoot, stitch, score — automatically. 30s to 4-minute Instagram Reels, TikToks, Stories, and carousels with consistent characters and agentic editing. The most advanced AI video suite for social media content, powered by #1 on DeepResearch Bench (Feb 2026)."
+description: "AI social media video and content creation powered by CellCog. Instagram Reels, TikTok videos, Stories, carousels, and social posts. Full video production from a single prompt — script, shoot, stitch, score automatically. 30s to 4-minute videos with consistent characters. Powered by #1 on DeepResearch Bench (Feb 2026)."
 metadata:
   openclaw:
     emoji: "📸"
+    os: [darwin, linux, windows]
 author: CellCog
+homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
 
@@ -119,7 +121,7 @@ Ephemeral content that connects:
 
 | Format | Dimensions | Duration |
 |--------|------------|----------|
-| Video | 1080×1920 (9:16) | 15 sec - 10 min |
+| Video | 1080×1920 (9:16) | 15 sec - 4 min |
 | Photo Mode | 1080×1920 | Up to 35 images |
 
 ---
@@ -188,6 +190,14 @@ CellCog can create content in various aesthetics:
 > Text overlay: None (let the image speak)
 > 
 > Should feel like it belongs on a curated feed."
+
+---
+
+## ⚠️ Important — Video Generation Expectations
+
+AI video production for social media is still at the frontier of what's possible. While some users generate high-quality Reels and TikToks that are ready to post, others may spend significant credits and still not achieve a usable result. Even spending thousands of credits does not guarantee a satisfactory outcome — this is the nature of where AI video technology stands today.
+
+There is a real learning curve to generating videos with CellCog. It takes time, money, and patience. Your prompting skill, the complexity of what you're trying to create, and how well the foundation models perform on your specific request all play a role. Results improve as you develop intuition for what works, but we want to be upfront: video generation is inherently unpredictable, and there is always a risk that the output may not meet your expectations.
 
 ---
 
