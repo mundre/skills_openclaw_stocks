@@ -1,0 +1,11 @@
+{
+  "owner": "moltenbot000",
+  "slug": "agent-orchestrate",
+  "displayName": "Agent Orchestrate",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771688601395,
+    "commit": null
+  },
+  "history": []
+}
