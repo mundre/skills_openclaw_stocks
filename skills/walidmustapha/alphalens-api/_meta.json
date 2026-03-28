@@ -3,11 +3,16 @@
   "slug": "alphalens-api",
   "displayName": "AlphaLens API",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1774533674564,
-    "commit": "https://github.com/openclaw/skills/commit/638e3e3980b987e4133a381f8935a84357ddb684"
+    "version": "1.0.20",
+    "publishedAt": 1774698665057,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1774533674564,
+      "commit": "https://github.com/openclaw/skills/commit/638e3e3980b987e4133a381f8935a84357ddb684"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1774432632574,

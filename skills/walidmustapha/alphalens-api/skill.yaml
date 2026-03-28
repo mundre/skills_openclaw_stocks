@@ -1,7 +1,7 @@
 name: alphalens-api
-version: 1.0.4
+version: 1.0.18
 author: walidmustapha
-description: Use the AlphaLens API for organization and product discovery and pipeline workflows. Use when the user wants to query AlphaLens data, find similar companies or products, build target lists, enrich pipeline items, or integrate against the AlphaLens API.
+description: Use this skill whenever the user wants to discover companies, search for products, build market maps, manage pipelines, or run enrichment workflows using AlphaLens. Triggers include: any mention of 'AlphaLens', 'market map', 'competitive landscape', 'company discovery', 'product search', 'similar companies', 'find companies like', 'company enrichment', 'target list', 'bottom-up', 'investor network', 'peer benchmark', 'headcount comparison', 'growth comparison', 'pipeline', 'enrich', or requests to find, enrich, or visualize company/product data. Also use when the user asks to build a market landscape, research competitors, or automate prospecting workflows.
 license: MIT-0
 
 config:
