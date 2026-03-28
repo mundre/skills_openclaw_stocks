@@ -1,7 +1,7 @@
 ---
 name: investoday-stock-message-analysis
 title: "股票消息解读"
-version: 1.2.0
+version: 1.4.0
 description: 面向A股个股消息解读，聚焦近期新闻、事件情绪、机构验证与市场反馈。基于今日投资金融数据接口，自动识别股票代码并输出结构化消息解读报告。触发词：最近新闻、消息面、消息解读、事件驱动、利好利空、催化、风险消息。
 tags:
   - news-event-analysis
@@ -17,9 +17,7 @@ metadata:
     emoji: "📰"
     category: "finance"
     requires:
-      env: ["INVESTODAY_API_KEY"]
       skills: ["investoday-finance-data"]
-    primaryEnv: "INVESTODAY_API_KEY"
 ---
 
 # 📰 股票消息解读
@@ -54,13 +52,13 @@ metadata:
 
 ## 前置依赖
 
-本 Skill 依赖 `investoday-finance-data`（今日投资金融数据）Skill 获取实时金融数据，调用方式以该 Skill 为准。
+本 Skill 依赖 `investoday-finance-data`（今日投资金融数据）Skill 获取实时金融数据。
 
-确保 `INVESTODAY_API_KEY` 已配置为环境变量。
+基础 API 调用与底层执行方式统一以该 Skill 为准，业务 Skill 不重复展开底层接入细节。
 
 ## 工具说明
 
-以下为本 Skill 使用的数据接口。在 System Prompt 中以 `工具ID` 标识调用。
+以下为本 Skill 通过 `investoday-finance-data` 使用的数据接口。在 System Prompt 中以 `工具ID` 标识调用。
 
 ### 基础工具
 
@@ -235,7 +233,3 @@ Agent 获取数据后，按以下 5 步框架进行结构化分析：
 - 仅通过今日投资 API 查询公开市场数据
 - 不记录、不存储用户的查询记录
 - 分析结论仅供参考，不构成投资建议
-
-## Keywords
-
-股票消息解读, 最近新闻, 消息面, 消息解读, 事件驱动, 利好利空, 催化, 风险消息, 市场反馈, stock message analysis, news interpretation, catalysts

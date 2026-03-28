@@ -3,9 +3,15 @@
   "slug": "investoday-stock-message-analysis",
   "displayName": "investoday-stock-message-analysis",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1774530804634,
-    "commit": "https://github.com/openclaw/skills/commit/9229c63537d5b30c1cd0d9df9c8afe427a6f061a"
+    "version": "1.4.0",
+    "publishedAt": 1774681394676,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1774530804634,
+      "commit": "https://github.com/openclaw/skills/commit/9229c63537d5b30c1cd0d9df9c8afe427a6f061a"
+    }
+  ]
 }
