@@ -1,11 +1,17 @@
 {
   "owner": "shenmeng",
   "slug": "shenmeng-income-lab",
-  "displayName": "Income Lab 收入实验室",
+  "displayName": "Income Lab",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774601901571,
-    "commit": "https://github.com/openclaw/skills/commit/cec4bdfa427eae575ea373f6cf47a5b191beb328"
+    "version": "1.1.0",
+    "publishedAt": 1774662523293,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774601901571,
+      "commit": "https://github.com/openclaw/skills/commit/cec4bdfa427eae575ea373f6cf47a5b191beb328"
+    }
+  ]
 }
