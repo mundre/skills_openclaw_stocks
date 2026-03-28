@@ -271,13 +271,17 @@ bot.on("text", async msg => {
       core.logger.info(`Reply: ${result.text.length} chars`);
     } else {
       if (core.isTrialExpired(userId)) {
-        await bot.sendMessage(chatId, core.T.trialExpired);
+        const { getMachineId } = await import('./license-client.mjs');
+        const buyUrl = `https://claudeanywhere.com/buy.html?mid=${getMachineId()}`;
+        await bot.sendMessage(chatId, `⚠️ Free trial expired (7 days).\n\n🛒 Upgrade to Pro — pay and it activates instantly:\n${buyUrl}\n\n• Monthly ¥39.99 | Yearly ¥399.9 (save 2 months)`);
         return;
       }
 
       const quota = await core.checkQuotaRemote(userId);
       if (!quota.allowed) {
-        await bot.sendMessage(chatId, core.T.limitMsg);
+        const { getMachineId } = await import('./license-client.mjs');
+        const buyUrl = `https://claudeanywhere.com/buy.html?mid=${getMachineId()}`;
+        await bot.sendMessage(chatId, `⚠️ Daily limit reached (5/5).\n\n🛒 Upgrade to Pro for unlimited — pay and it activates instantly:\n${buyUrl}\n\n• Monthly ¥39.99 | Yearly ¥399.9 (save 2 months)`);
         return;
       }
 
