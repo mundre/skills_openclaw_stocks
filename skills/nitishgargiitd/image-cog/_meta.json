@@ -1,13 +1,18 @@
 {
   "owner": "nitishgargiitd",
   "slug": "image-cog",
-  "displayName": "image-cog",
+  "displayName": "Image Cog",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773888915289,
-    "commit": "https://github.com/openclaw/skills/commit/5d5e380469476598ebe9462df750a153e99f7357"
+    "version": "1.0.4",
+    "publishedAt": 1774585048415,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773888915289,
+      "commit": "https://github.com/openclaw/skills/commit/5d5e380469476598ebe9462df750a153e99f7357"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1770774170371,
