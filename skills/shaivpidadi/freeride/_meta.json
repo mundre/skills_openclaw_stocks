@@ -1,11 +1,17 @@
 {
   "owner": "shaivpidadi",
   "slug": "freeride",
-  "displayName": "Freeride",
+  "displayName": "Free Ride - Unlimited free AI",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1770314547032,
-    "commit": "https://github.com/openclaw/skills/commit/00e09c9a1fda747655feee2d04277cd69335496c"
+    "version": "1.0.6",
+    "publishedAt": 1774618303046,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1770314547032,
+      "commit": "https://github.com/openclaw/skills/commit/00e09c9a1fda747655feee2d04277cd69335496c"
+    }
+  ]
 }

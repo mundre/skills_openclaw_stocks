@@ -207,29 +207,31 @@ def save_openclaw_config(config: dict):
     OPENCLAW_CONFIG_PATH.write_text(json.dumps(config, indent=2))
 
 
-def format_model_for_openclaw(model_id: str, with_provider_prefix: bool = True) -> str:
+def format_model_for_openclaw(model_id: str, with_provider_prefix: bool = True, append_free: bool = True) -> str:
     """Format model ID for OpenClaw config.
 
     OpenClaw uses two formats:
     - Primary model: "openrouter/<author>/<model>:free" (with provider prefix)
     - Fallbacks/models list: "<author>/<model>:free" (without prefix sometimes)
     """
-    # Ensure :free suffix
-    if ":free" not in model_id:
-        base_id = model_id
-    else:
-        base_id = model_id
+    base_id = model_id
 
-    # Handle openrouter/free special case
-    if model_id == "openrouter/free" or model_id == "openrouter/free:free":
-        return "openrouter/openrouter/free:free" if with_provider_prefix else "openrouter/free:free"
+    # Handle openrouter/free special case: "openrouter" is both the routing 
+    # prefix OpenClaw adds AND the actual provider name in the API model ID.
+    # The API model ID is "openrouter/free" (no :free suffix — it's a router, not a free-tier model).
+    #   - with prefix:    "openrouter/openrouter/free" (routing prefix + API ID)
+    #   - without prefix: "openrouter/free" (just the API ID)
+    if model_id in ("openrouter/free", "openrouter/free:free"):
+        if with_provider_prefix:
+            return "openrouter/openrouter/free"
+        return "openrouter/free"
 
-    # Remove existing openrouter/ prefix if present
+    # Remove existing openrouter/ routing prefix if present to get the base API ID
     if base_id.startswith("openrouter/"):
         base_id = base_id[len("openrouter/"):]
 
     # Ensure :free suffix
-    if ":free" not in base_id:
+    if append_free and ":free" not in base_id:
         base_id = f"{base_id}:free"
 
     if with_provider_prefix:
@@ -286,7 +288,8 @@ def update_model_config(
     as_primary: bool = True,
     add_fallbacks: bool = True,
     fallback_count: int = 5,
-    setup_auth: bool = False
+    setup_auth: bool = False,
+    append_free: bool = True
 ) -> bool:
     """Update OpenClaw config with the specified model.
 
@@ -303,8 +306,8 @@ def update_model_config(
     if setup_auth:
         config = setup_openrouter_auth(config)
 
-    formatted_primary = format_model_for_openclaw(model_id, with_provider_prefix=True)
-    formatted_for_list = format_model_for_openclaw(model_id, with_provider_prefix=False)
+    formatted_primary = format_model_for_openclaw(model_id, with_provider_prefix=True, append_free=append_free)
+    formatted_for_list = format_model_for_openclaw(model_id, with_provider_prefix=False, append_free=append_free)
 
     if as_primary:
         # Set as primary model
@@ -326,8 +329,8 @@ def update_model_config(
 
             # Always add openrouter/free as first fallback (smart router)
             # Skip if it's being set as primary
-            free_router = "openrouter/free:free"
-            free_router_primary = "openrouter/openrouter/free:free"
+            free_router = "openrouter/free"
+            free_router_primary = format_model_for_openclaw("openrouter/free", with_provider_prefix=True)
             if formatted_primary != free_router_primary and formatted_for_list != free_router:
                 new_fallbacks.append(free_router)
                 config["agents"]["defaults"]["models"][free_router] = {}
@@ -471,7 +474,8 @@ def cmd_switch(args):
         matched_model,
         as_primary=not as_fallback,
         add_fallbacks=not args.no_fallbacks,
-        setup_auth=args.setup_auth
+        setup_auth=args.setup_auth,
+        append_free=False
     ):
         config = load_openclaw_config()
 
@@ -532,21 +536,15 @@ def cmd_auto(args):
     # Determine if we should change primary or just add fallbacks
     as_fallback = args.fallback_only
 
-    # If user already has a primary and didn't explicitly ask to change it
-    if current_primary and not as_fallback:
-        print(f"\nYou already have a primary model: {current_primary}")
-        print(f"Best available model: {model_id} ({context:,} tokens, score: {score:.3f})")
-        print("\nOptions:")
-        print(f"  freeride auto           - Replace primary with {model_id}")
-        print(f"  freeride auto -f        - Keep your primary, just add fallbacks")
-        print(f"  freeride switch <model> - Choose a specific model")
-        print("\nProceeding to add fallbacks only (use 'freeride auto' again to confirm replacement)...")
-        as_fallback = True  # Default to safe behavior
-
     if not as_fallback:
+        if current_primary:
+            print(f"\nReplacing current primary: {current_primary}")
         print(f"\nBest free model: {model_id}")
         print(f"Context length: {context:,} tokens")
         print(f"Quality score: {score:.3f}")
+    else:
+        print(f"\nKeeping current primary, adding fallbacks only.")
+        print(f"Best available: {model_id} ({context:,} tokens, score: {score:.3f})")
 
     if update_model_config(
         model_id,
@@ -668,11 +666,22 @@ def cmd_fallbacks(args):
 
     # Get fallbacks excluding current model
     fallbacks = []
+
+    # Always add openrouter/free as first fallback (smart router)
+    free_router = "openrouter/free"
+    free_router_primary = format_model_for_openclaw("openrouter/free", with_provider_prefix=True)
+    if not current or current != free_router_primary:
+        fallbacks.append(free_router)
+        config["agents"]["defaults"]["models"][free_router] = {}
+
     for m in models:
         formatted = format_model_for_openclaw(m["id"], with_provider_prefix=False)
         formatted_primary = format_model_for_openclaw(m["id"], with_provider_prefix=True)
 
         if current and (formatted_primary == current):
+            continue
+        # Skip openrouter/free (already added as first)
+        if "openrouter/free" in m["id"]:
             continue
         if len(fallbacks) >= args.count:
             break
