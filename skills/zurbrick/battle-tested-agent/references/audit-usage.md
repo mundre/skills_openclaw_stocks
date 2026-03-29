@@ -12,7 +12,7 @@ Or point it at any workspace:
 bash scripts/audit.sh /path/to/workspace
 ```
 
-The script checks for all **16** patterns and prints:
+The script checks for all **19** patterns and prints:
 - what is present
 - what is missing
 - a total score

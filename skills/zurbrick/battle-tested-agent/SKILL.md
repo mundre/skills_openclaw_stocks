@@ -1,13 +1,16 @@
 ---
 name: battle-tested-agent
-version: 1.3.0
+version: 1.5.0
 description: >
- 16 production-hardened patterns for AI agents — memory, verification, ambiguity
- handling, compaction survival, delegation, handoffs, and self-improvement. Use when
- hardening an agent for production reliability, when an agent keeps hallucinating or
- losing context, when handoffs between agents drop details, when you need a pre-deploy
- checklist, or when someone says "my agent is unreliable" or "how do I make this more
- robust." Works with OpenClaw, Claude Code, Cowork, or any SKILL.md-based agent setup.
+ 19 production-hardened patterns for AI agents — memory, verification, ambiguity
+ handling, compaction survival, delegation, proof-based handoffs, stale-worker recovery,
+ and self-improvement. Use when hardening an agent for production reliability, when an
+ agent keeps hallucinating or losing context, when handoffs between agents drop details,
+ when delegated work silently fails, or when someone says "my agent is unreliable" or
+ "how do I make this more robust." Works with OpenClaw, Claude Code, Cowork, or any
+ SKILL.md-based agent setup. Includes the Isolated Agent Fabrication Guard plus new
+ delegation hardening patterns for brief quality, completion contracts, acceptance gates,
+ silent-worker recovery, and scoped verifier use.
 author: Zye ⚡ (Don Zurbrick)
 license: MIT
 tags: [production, reliability, memory, compaction, multi-agent, security, self-improvement, heartbeat, delegation, battle-tested]
@@ -22,7 +25,7 @@ metadata:
 
 # Battle-Tested Agent
 
-**16 production-hardened patterns for AI agents. Every one earned from failure.**
+**19 production-hardened patterns for AI agents. Every one earned from failure.**
 
 Use this skill when you are:
 - hardening an agent that will run repeatedly or autonomously
@@ -67,12 +70,13 @@ mode calls for it:
 
 - **Trust chain:** WAL Protocol + Anti-Hallucination + Agent Verification — ensures
   data is captured, sourced, and measured before reporting
-- **Handoff loop:** Delegation Rules + 5-Point Handoff + Task State Tracking — prevents
-  work from disappearing between agents
-- **Survival kit:** Working Buffer + Compaction Injection Hardening — keeps context
-  alive across long sessions and compaction events
+- **Handoff loop:** Delegation Rules + Completion Contract + Acceptance Gate + Task State Tracking — prevents
+  work from disappearing between agents or being certified without proof
+- **Survival kit:** Working Buffer + Compaction Injection Hardening + Silent Worker Recovery — keeps context
+  alive across long sessions and prevents silent delegated drift
 - **Quality gate:** QA Gates + Verify Implementation + Decision Logs — ensures output
   quality and traceable reasoning
+- **Delegation hardening:** Brief Quality Gate + Scoped Verifier Gate — keeps delegation tight without turning the whole system into bureaucracy
 
 ### When patterns conflict
 
@@ -107,12 +111,12 @@ Read `references/audit-usage.md` for the full rollout order and bootstrap workfl
 
 - `references/starter-patterns.md` — WAL, anti-hallucination, ambiguity, simple-path-first, unblock-before-shelve
 - `references/intermediate-patterns.md` — verification, working buffer, QA gates, decision logs, verify implementation
-- `references/advanced-patterns.md` — delegation, handoffs, orchestration, task tracking, compaction hardening, recurrence tracking
+- `references/advanced-patterns.md` — delegation, brief quality, proof-based handoffs, acceptance gates, orchestration, stale-worker recovery, compaction hardening, recurrence tracking
 - `references/audit-usage.md` — audit script usage, install/copy snippets, and expected outcomes
 
 ## Included scripts
 
-- `scripts/audit.sh` — workspace audit for all 16 patterns (supports AGENTS.md, CLAUDE.md, SOUL.md, and system.md)
+- `scripts/audit.sh` — workspace audit for all 19 patterns (supports AGENTS.md, CLAUDE.md, SOUL.md, and system.md)
 
 ## Rules of thumb
 
@@ -122,6 +126,8 @@ Read `references/audit-usage.md` for the full rollout order and bootstrap workfl
 - Ambiguity is a stop sign, not permission
 - The orchestrator should preserve oversight, not sink into implementation
 - Mechanism changes beat wording changes
+- After acting, verify the new state before declaring success
+- Partial progress is not success; recovery steps matter as much as first-attempt steps
 
 ## Outcome
 

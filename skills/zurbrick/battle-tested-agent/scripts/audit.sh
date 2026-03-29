@@ -3,7 +3,7 @@ set -uo pipefail
 
 WORKSPACE="${1:-$HOME/workspace}"
 SCORE=0
-TOTAL=16
+TOTAL=19
 MISSING=()
 
 # Build list of config files to search — supports OpenClaw, Claude Code, and custom setups
@@ -93,8 +93,15 @@ echo "🔴 Advanced"
 r="no"; found_in_configs 'Delegation' && r="yes"
 check "Delegation Rules" "$r"
 
-r="no"; found_in_configs 'Handoff Template\|5-Point' && r="yes"
-check "Handoff Template" "$r"
+r="no"; found_in_configs 'Brief Quality Gate\|deliverable.*artifact.*verification.*success' && r="yes"
+check "Brief Quality Gate" "$r"
+echo ""
+
+r="no"; found_in_configs 'Completion Contract\|Exact commands run\|Verification performed' && r="yes"
+check "Completion Contract" "$r"
+
+r="no"; found_in_configs 'Acceptance Gate\|Fail-Closed Rule\|artifact exists' && r="yes"
+check "Acceptance Gate" "$r"
 echo ""
 
 r="no"; found_in_configs 'Orchestrator.*build\|orchestrator.*build' && r="yes"
@@ -102,7 +109,13 @@ check "Orchestrator Rule" "$r"
 
 r="no"; found_in_configs 'Task State Tracking\|Spawned.*In Progress' && r="yes"
 check "Task State Tracking" "$r"
+
+r="no"; found_in_configs 'Silent Worker Recovery\|no start signal within 10 minutes\|materially new output for 30 minutes' && r="yes"
+check "Silent Worker Recovery" "$r"
 echo ""
+
+r="no"; found_in_configs 'Scoped Verifier Gate\|0–3.*4\+\|0-3.*4\+' && r="yes"
+check "Scoped Verifier Gate" "$r"
 
 r="no"; found_in_configs 'Compaction.*Injection\|INERT DATA' && r="yes"
 check "Compaction Hardening" "$r"
