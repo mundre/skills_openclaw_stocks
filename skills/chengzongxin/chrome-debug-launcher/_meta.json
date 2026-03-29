@@ -1,11 +1,17 @@
 {
   "owner": "chengzongxin",
   "slug": "chrome-debug-launcher",
-  "displayName": "chrome-debug-launcher",
+  "displayName": "Chrome Debug Launcher",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772764814585,
-    "commit": "https://github.com/openclaw/skills/commit/13b59efc5b6b2aaa9ed01083b9733ac2a93a7260"
+    "version": "1.0.1",
+    "publishedAt": 1774410607438,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772764814585,
+      "commit": "https://github.com/openclaw/skills/commit/13b59efc5b6b2aaa9ed01083b9733ac2a93a7260"
+    }
+  ]
 }
