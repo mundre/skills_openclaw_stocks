@@ -8,8 +8,8 @@ import os
 import requests
 
 # 从环境变量或配置文件读取
-APP_ID = os.environ.get('FEISHU_APP_ID', 'cli_a924975faab8dcce')
-APP_SECRET = os.environ.get('FEISHU_APP_SECRET', 'lwTDEbR0jR34HjuaC74Du3TcJit5Qx6a')
+APP_ID = os.environ.get('FEISHU_APP_ID', '')
+APP_SECRET = os.environ.get('FEISHU_APP_SECRET', '')
 
 
 def get_tenant_access_token(app_id: str, app_secret: str) -> str:
