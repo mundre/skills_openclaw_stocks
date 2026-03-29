@@ -10,7 +10,7 @@ import re
 # SkillPay Configuration
 SKILLPAY_API_KEY = "sk_93c5ff38cc3e6112623d361fffcc5d1eb1b5844eac9c40043b57c0e08f91430e"
 PRICE_USDT = "0.001"
-SKILLPAY_API_URL = "https://api.skillpay.me/v1/charge"
+SKILLPAY_API_URL = "https://skillpay.me/api/v1/billing"
 
 # CoinGecko ID mapping
 CRYPTO_MAP = {
@@ -37,10 +37,11 @@ def charge_user(user_id: str) -> dict:
             "api_key": SKILLPAY_API_KEY,
             "user_id": user_id,
             "amount": PRICE_USDT,
-            "currency": "USDT",
+            "skill_id": SKILL_ID, "currency": "USDT",
             "description": "Crypto price query"
         }
-        response = requests.post(SKILLPAY_API_URL, json=payload, timeout=10)
+            headers = {"Content-Type": "application/json", "X-API-Key": SKILLPAY_API_KEY}
+        response = requests.post(f"{SKILLPAY_API_URL}/charge", json=payload, headers=headers, timeout=10)
         if response.status_code == 200:
             return {"success": True, "data": response.json()}
         return {"success": False, "error": response.text}
@@ -98,7 +99,7 @@ def handle(input_text: str, user_id: str = "default") -> dict:
         return {
             "payment_required": True,
             "amount": PRICE_USDT,
-            "payment_url": charge_result.get("payment_url", "https://skillpay.me")
+            "skill_id": SKILL_ID, "payment_url": charge_result.get("payment_url", "https://skillpay.me")
         }
     
     if "top" in input_text.lower() or "list" in input_text.lower() or "all" in input_text.lower():
