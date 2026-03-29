@@ -3,11 +3,16 @@
   "slug": "resignation-letter",
   "displayName": "Resignation Letter",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1773773986164,
-    "commit": "https://github.com/openclaw/skills/commit/218a6e86fbb7668a4510a7f8d9653c56535fe1f4"
+    "version": "3.0.0",
+    "publishedAt": 1773930256728,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1773773986164,
+      "commit": "https://github.com/openclaw/skills/commit/218a6e86fbb7668a4510a7f8d9653c56535fe1f4"
+    },
     {
       "version": "2.3.6",
       "publishedAt": 1773666906358,
