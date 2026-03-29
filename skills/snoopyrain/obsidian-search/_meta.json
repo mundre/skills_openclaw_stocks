@@ -3,11 +3,16 @@
   "slug": "obsidian-search",
   "displayName": "Obsidian Search",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1774786836989,
-    "commit": "https://github.com/openclaw/skills/commit/f74156e3842cdc4f81dd307f338fa86535851e08"
+    "version": "1.0.8",
+    "publishedAt": 1774786941320,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1774786836989,
+      "commit": "https://github.com/openclaw/skills/commit/f74156e3842cdc4f81dd307f338fa86535851e08"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1774703217502,

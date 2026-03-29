@@ -14,12 +14,12 @@ AI-powered semantic search for your Obsidian notes — find notes by meaning, no
 
 ## Security & Data Handling
 
-- **MCP link is a credential**: Your MCP Server URL contains an embedded authentication token. Treat it like a password — do not share it publicly. You can regenerate it anytime in Settings.
-- **Token scope**: The token grants **read-only** access to your indexed Obsidian notes. It can search, list, retrieve note content, and analyze connections. It cannot modify, delete, or create notes in your vault.
-- **Token storage**: The token is generated and managed server-side. When you paste the MCP link into a Claude Connector, the link (containing the token) is stored locally by your MCP client. You can regenerate or revoke the token anytime at [obsidian.10xboost.org](https://obsidian.10xboost.org), which invalidates any previously shared links.
-- **Data flow**: To enable semantic search, your note content is uploaded to the Obvec service and indexed as vector embeddings on a secure cloud server. Search queries are also sent to the server for similarity matching. No data is shared with other users or used for model training.
+- **MCP link is a credential**: Your MCP Server URL (`https://rag.10xboost.org/mcp?token=xxxxx`) contains an embedded authentication token. Treat it like a password — do not share it publicly.
+- **Token scope**: The token grants **read-only** access. It can search, list, retrieve note content, and analyze connections. It cannot modify, delete, or create notes in your Obsidian vault.
+- **Token lifetime**: Tokens are valid for 30 days. After expiry, you will need to get a new MCP link from [obsidian.10xboost.org](https://obsidian.10xboost.org). You can also regenerate the token at any time in Settings, which invalidates any previously shared links.
+- **Where the token is stored**: The token is generated server-side by Obvec. When you paste the MCP link into a Claude Connector or MCP client config, that client stores the link locally on your device. Revoking or regenerating the token server-side invalidates all copies.
+- **Your note data**: To provide semantic search, your Obsidian note content is uploaded to the Obvec server and stored as text and vector embeddings. This means **your note content is stored on a third-party server** (Obvec, hosted on Google Cloud). Notes are isolated per user and are not shared with other users or used for model training. You can delete your indexed data at any time from your account dashboard.
 - **No additional credentials**: No separate API keys, environment variables, or secrets are needed beyond the MCP link.
-- **Third-party service**: This skill relies on [Obvec](https://obsidian.10xboost.org), an AI-powered Obsidian search service. By using this skill, you are sending your note content to the Obvec server for indexing and search. Review the [privacy policy](https://obsidian.10xboost.org) before use.
 
 
 ## Prerequisites
@@ -107,4 +107,4 @@ Returns notes most semantically similar to the reference — great for finding r
 |-------|----------|
 | No results found | Try a broader query or lower `minScore` |
 | Note not found | Use `list_notes` to find the correct path |
-| Token expired | Re-authenticate via browser (tokens last 30 days by default) |
+| Token expired | Get a new MCP link from [obsidian.10xboost.org](https://obsidian.10xboost.org) Settings (tokens last 30 days) |
