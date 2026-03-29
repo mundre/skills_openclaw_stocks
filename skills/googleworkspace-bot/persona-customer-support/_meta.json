@@ -3,11 +3,16 @@
   "slug": "persona-customer-support",
   "displayName": "Persona Customer Support",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774300532520,
-    "commit": "https://github.com/openclaw/skills/commit/848e365838e2004aaaa9ef276d9d4b4878adff99"
+    "version": "1.0.10",
+    "publishedAt": 1774551074553,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774300532520,
+      "commit": "https://github.com/openclaw/skills/commit/848e365838e2004aaaa9ef276d9d4b4878adff99"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772838531252,
