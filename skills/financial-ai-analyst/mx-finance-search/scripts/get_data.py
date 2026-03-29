@@ -81,14 +81,16 @@ def get_metadata(
     自动补充 callId，并将 EM_API_KEY 注入 userInfo。
     返回值可直接作为请求体中的上下文字段使用。
     """
+    call_id = f"call_{uuid.uuid4().hex[:8]}"
+    user_id = f"user_{uuid.uuid4().hex[:8]}"
 
     return {
         "query": query,
         "selectType": selectType,
         "toolContext": {
-            "callId": str(uuid.uuid4()),
+            "callId": call_id,
             "userInfo": {
-                "userId": EM_API_KEY,
+                "userId": user_id,
             },
         },
     }
