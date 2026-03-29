@@ -3,11 +3,16 @@
   "slug": "esign-automation",
   "displayName": "eSign Automation",
   "latest": {
-    "version": "1.5.5",
-    "publishedAt": 1773292178912,
-    "commit": "https://github.com/openclaw/skills/commit/038989e352354ccd6dde9c6a37676931eaf60225"
+    "version": "1.7.0",
+    "publishedAt": 1774441020933,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.5",
+      "publishedAt": 1773292178912,
+      "commit": "https://github.com/openclaw/skills/commit/038989e352354ccd6dde9c6a37676931eaf60225"
+    },
     {
       "version": "1.4.0",
       "publishedAt": 1773145881546,
