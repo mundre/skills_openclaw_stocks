@@ -3,190 +3,277 @@ name: brainmd
 description: "Neuroplastic self-modifying runtime for AI agents. Creates a file-based 'brain' that learns from interactions: reflexes (fast-path responses), habits (learned patterns), weighted pathways (reinforcement), and a cortex (self-review loop). Use when: setting up adaptive agent behavior, creating learning loops, building persistent behavioral memory, or making an agent that improves over time."
 ---
 
-# BRAIN.md
+# brainmd
 
-*Self-modifying file system mimicking neuroplasticity for AI agents.*
+*File-based nervous system for AI agents. Behaviors that work get stronger. Behaviors that fail get weaker. Unused patterns decay. Mistakes leave scars.*
 
-## Concept
+---
 
-brainmd gives an AI agent a file-based nervous system that strengthens successful behaviors, weakens failed ones, grows new pathways, and prunes unused ones. No separation between code and data — everything is mutable except the audit log.
+## What It Is
 
-## Quick Start
+brainmd gives your agent a persistent behavioral memory that survives session restarts. It's not a knowledge base — it's muscle memory. It tracks *how* the agent behaves, not *what* it knows.
 
-1. Initialize the brain structure:
+Three layers complement each other:
+
+| Layer | File | Purpose |
+|---|---|---|
+| **brainmd** | `brain/weights/pathways.json` | Behavioral reinforcement — what works, what doesn't |
+| **Long-term memory** | `MEMORY.md` | Semantic facts — decisions, people, context |
+| **Daily log** | `memory/YYYY-MM-DD.md` | Episodic notes — what happened today |
+
+brainmd is the only layer that self-modifies. The others are written by the agent, not evolved by it.
+
+---
+
+## Installation
+
 ```bash
-./scripts/init-brain.sh [path]
+clawhub install brainmd
 ```
 
-2. Seed initial pathways from observed behavior:
+Then initialize the brain in your workspace:
+
 ```bash
-node cortex/review.js record "reflex:my-pattern" true "Description of what worked"
+cd ~/.openclaw/workspace
+./skills/brainmd/scripts/init-brain.sh brain/
 ```
 
-3. Run self-review (wire into heartbeat/cron):
-```bash
-node cortex/review.js review
+This creates:
+
+```
+brain/
+├── reflexes/           # Fast-path decision scripts
+├── habits/
+│   └── preferences.json
+├── weights/
+│   └── pathways.json   # ← the core state file
+├── cortex/
+│   └── review.js       # ← the self-review engine
+└── mutations/          # Immutable audit log
 ```
 
-4. Check neural status:
+---
+
+## Wiring Into OpenClaw
+
+### Step 1 — AGENTS.md
+
+Add a startup check so the agent reads its neural state at session start:
+
+```markdown
+## 🧠 brainmd — Consult Your Brain
+
+After reading memory files, check your neural state:
+
 ```bash
-node cortex/review.js status
+node ~/.openclaw/workspace/brain/cortex/review.js status
 ```
 
-## Heartbeat Integration (Recommended)
+Before acting on anything non-trivial, scan for relevant pathways:
+- Weak pathways (< 0.5) = you've failed here before. Be careful, double-check.
+- Strong pathways (> 0.8) = proven patterns. Trust them, act fast.
+- Dying pathways (decaying) = you're forgetting something. Re-evaluate.
 
-The key to making brainmd work is **automatic self-checks**. Without periodic review, the agent has to remember to use it — defeating the purpose.
+After notable outcomes, record them:
+```bash
+node brain/cortex/review.js record "pathway-name" true/false "what happened"
+```
+```
 
-Add this to your agent's heartbeat/periodic routine (e.g. HEARTBEAT.md for OpenClaw):
+### Step 2 — HEARTBEAT.md
+
+Wire the review cycle into your heartbeat so it runs automatically:
 
 ```markdown
 ## 🧠 brainmd Self-Check (every heartbeat)
 
-Run cortex review and record any notable outcomes from recent interactions:
-
+```bash
 node ~/.openclaw/workspace/brain/cortex/review.js review
 node ~/.openclaw/workspace/brain/cortex/review.js status
+```
 
 On each heartbeat, ask yourself:
-1. Did I make a mistake since last check? → record <pathway> false "what happened"
-2. Did something work well? → record <pathway> true "what worked"
+1. Did I make a mistake since last check? → `record <pathway> false "what happened"`
+2. Did something work well? → `record <pathway> true "what worked"`
 3. Did a new pattern emerge? → let neurogenesis create it
-4. Any pathways need manual weight adjustment?
 ```
 
-This closes the loop: behavior → outcome → record → review → strengthen/weaken → behavior. Every heartbeat cycle. The agent can't forget because the schedule forces self-reflection.
+### Step 3 — Seed Initial Pathways
 
-## Architecture
+Don't hypothesize — seed from real behavior. Run a few sessions first, then record what you observed:
 
-```
-brain/
-├── reflexes/       # Fast-path automatic responses
-│   └── timing.js   # Example: when to notify vs stay quiet
-├── habits/         # Learned behavioral patterns
-│   └── preferences.json  # Evolving user preferences
-├── skills/         # Self-generated micro-scripts
-├── weights/        # Pathway strength tracking
-│   └── pathways.json     # The core state file
-├── cortex/         # Meta-scripts that modify everything else
-│   └── review.js   # Self-review engine
-└── mutations/      # Immutable audit log of all changes
-```
-
-## Core Mechanisms
-
-### 1. Pathways (weights/pathways.json)
-
-Every learned behavior is a pathway with:
-- **weight** (0.0–1.0): How reinforced this behavior is
-- **fires**: How many times it activated
-- **successes/failures**: Outcome tracking
-- **lastFired**: For decay calculation
-
-### 2. Reinforcement
-
-After each interaction, record the outcome:
 ```bash
-node cortex/review.js record "habit:some-behavior" true "What happened"
-node cortex/review.js record "habit:some-behavior" false "What went wrong"
+node brain/cortex/review.js record "reflex:morning-briefing" true "Supplement reminders sent, user confirmed"
+node brain/cortex/review.js record "habit:check-files-before-search" true "Read apartment-search.md before googling apartments"
+node brain/cortex/review.js record "reflex:safe-file-deletion" false "Used xargs rm with bad grep, deleted workspace files"
 ```
 
-The cortex review cycle then:
-- **Strengthens** pathways with >80% success rate (+0.05 weight)
-- **Weakens** pathways with <50% success rate (-0.10 weight)
-- **Decays** pathways unused for 7+ days (-0.02 weight)
+Start with 5–10 pathways. Let the system grow from there.
 
-### 3. Neurogenesis
+---
 
-When a novel situation is encountered, recording it auto-creates a new pathway at weight 0.3:
+## Daily Usage
+
+### Check neural state
+
 ```bash
-node cortex/review.js record "reflex:new-behavior" true "First time doing this"
+node brain/cortex/review.js status
 ```
 
-### 4. Mutation Log
+Output shows all pathways with visual weight bars, success rate, fire count, and last outcome. Use this to calibrate confidence before non-trivial actions.
 
-Every self-modification is logged to `mutations/` with timestamp, type, and reason. Types:
-- `strengthen` — pathway weight increased
-- `weaken` — pathway weight decreased
-- `decay` — pathway faded from disuse
-- `neurogenesis` — new pathway created
-- `prune` — pathway removed (weight hit 0)
+### Record an outcome
 
-The mutation log is the one immutable thing. Never delete it.
-
-### 5. Reflexes
-
-Scripts in `reflexes/` implement fast-path decision logic. They should be:
-- Self-contained (no external dependencies)
-- Self-modifying (thresholds/config embedded, patchable by cortex)
-- Callable from CLI for quick checks
-
-Example — timing reflex decides whether to notify:
 ```bash
-node reflexes/timing.js check 0.8  # Check with urgency=0.8
+# Something worked
+node brain/cortex/review.js record "habit:remote-service-recovery" true "Fixed broken systemd service, used journalctl to diagnose"
+
+# Something failed
+node brain/cortex/review.js record "habit:bulk-subagent-spawning" false "Rate limited all 3 models by spawning 2 Opus agents simultaneously"
 ```
 
-### 6. Habits
+New pathways are auto-created at weight 0.30 (neurogenesis). Existing pathways update their stats.
 
-JSON files in `habits/` capture learned patterns with confidence scores. Each preference includes:
-- The learned value
-- Confidence (0.0–1.0)
-- How it was learned (explicit correction, inference, reinforcement)
+### Run the review cycle
 
-Habits with low confidence should be treated as hypotheses, not facts.
+```bash
+node brain/cortex/review.js review
+```
 
-### 7. Cortex Integration
+The cortex examines all pathways and applies reinforcement rules:
+- **Strengthen** (+0.05): ≥3 fires, ≥80% success rate
+- **Weaken** (−0.10): ≥3 fires, <50% success rate
+- **Decay** (−0.02): unused for 7+ days
+- **Prune**: weight hits 0 (pathway removed)
 
-Wire the cortex review into your agent's periodic routine (heartbeat, cron, etc.):
+All changes are logged to `mutations/` with timestamp and reason.
+
+---
+
+## Pathway Naming Conventions
 
 ```
-# In heartbeat/periodic check:
-1. Run: node cortex/review.js review
-2. Check mutation output for significant changes
-3. If a pathway was pruned or weakened significantly, consider adjusting behavior
+reflex:timing          # Automatic, fast-path behaviors
+habit:check-files      # Learned patterns from repeated interaction
+skill:osint-workflow   # Acquired capabilities
+instinct:safe-delete   # Safety behaviors (start at high weight, floor at 0.8)
 ```
+
+### Reading pathway weights
+
+| Weight | Meaning | How to use |
+|---|---|---|
+| 0.8–1.0 | Proven, trusted | Act confidently, don't second-guess |
+| 0.5–0.8 | Developing | Use but verify |
+| 0.3–0.5 | Weak / new | Proceed carefully, double-check |
+| < 0.3 | Failing / dying | Investigate before using; may need rethinking |
+
+---
+
+## Tuning the Learning Rate
+
+Edit thresholds in `brain/cortex/review.js`:
+
+```js
+// Strengthen when success rate >= this
+const STRENGTHEN_THRESHOLD = 0.8;
+
+// Weaken when success rate < this
+const WEAKEN_THRESHOLD = 0.5;
+
+// Days of inactivity before decay starts
+const DECAY_ONSET_DAYS = 7;
+
+// Weight change per review cycle
+const DECAY_RATE = 0.02;
+const STRENGTHEN_DELTA = 0.05;
+const WEAKEN_DELTA = 0.10;
+```
+
+### Floor weights (prevent over-pruning)
+
+`instinct:*` pathways should have a minimum weight floor so they can't be trained away:
+
+```json
+{
+  "id": "instinct:safe-file-deletion",
+  "weight": 0.85,
+  "floor": 0.80,
+  "fires": 1,
+  "successes": 0
+}
+```
+
+Add a `floor` field to pathways in `pathways.json` to protect them from decay.
+
+---
+
+## Architecture Notes
+
+### pathways.json — the core state
+
+```json
+{
+  "version": 42,
+  "pathways": {
+    "habit:check-files-before-search": {
+      "weight": 0.95,
+      "fires": 13,
+      "successes": 11,
+      "lastFired": "2026-03-25T18:00:00.000Z",
+      "lastOutcome": "Read AESTHETIC.md before recommending clothes. Saved a web search.",
+      "created": "2025-11-01T00:00:00.000Z"
+    }
+  }
+}
+```
+
+### mutations/ — the audit log
+
+Every self-modification writes a timestamped JSON file. Never delete these. They're how you trace *why* the agent's behavior changed over time.
+
+```json
+{
+  "type": "strengthen",
+  "target": "habit:check-files-before-search",
+  "from": 0.90,
+  "to": 0.95,
+  "reason": "11/13 success rate",
+  "timestamp": "2026-03-26T07:00:00.000Z"
+}
+```
+
+---
+
+## Integration With Auto-Dream
+
+If you're using `scripts/dream.js` for memory consolidation, the two systems complement each other:
+
+- **brainmd** answers: *how should I behave?*
+- **dream.js** answers: *what do I know?*
+
+Neither replaces the other. Wire both into HEARTBEAT.md for full coverage.
+
+---
+
+## Bootstrapping Checklist
+
+- [ ] Run `init-brain.sh` to create directory structure
+- [ ] Add brainmd status check to AGENTS.md startup routine
+- [ ] Add heartbeat entry to HEARTBEAT.md
+- [ ] Seed 5–10 pathways from real observed behavior (not theory)
+- [ ] Run one manual `review` to verify reinforcement logic works
+- [ ] Check `mutations/` after first review to confirm logging
+- [ ] Set `floor` weights on any `instinct:*` pathways
+
+---
 
 ## Design Principles
 
-1. **Everything is mutable** — no file is sacred except the audit log
+1. **Everything is mutable** — no file is sacred except the mutation log
 2. **Use strengthens, disuse weakens** — pathways that fire together wire together
-3. **Outcomes matter** — track what worked, what didn't
-4. **Mutations are logged** — every self-modification is audited
-5. **Small scripts > monoliths** — composable, replaceable, evolvable
-6. **Seed from real behavior** — don't hypothesize, observe first then codify
-7. **Confidence tracking** — know what you know vs what you're guessing
-
-## Bootstrapping Tips
-
-### Seed from real behavior, not theory
-Don't pre-fill pathways with what you *think* the agent should do. Run the agent for a session, observe what worked and failed, then record those as the initial pathways. Real data beats hypotheticals.
-
-### Let failures create pathways
-The most valuable pathways are born from mistakes. When something goes wrong, `record` it — neurogenesis creates a new pathway at 0.30 weight. The agent now has a scar that reminds it.
-
-### Start small
-Begin with 5-10 pathways. Let the system grow organically. Over-engineering the initial set defeats the purpose — the whole point is emergent behavior.
-
-## Customization
-
-### Adding New Pathway Types
-
-Prefix conventions:
-- `reflex:` — automatic, fast-path behaviors
-- `habit:` — learned patterns from repeated interaction
-- `skill:` — acquired capabilities
-- `instinct:` — hardcoded safety behaviors (high initial weight)
-
-### Adjusting Learning Rates
-
-Edit thresholds in `cortex/review.js`:
-- Strengthen threshold: success rate >= 0.8 (default)
-- Weaken threshold: success rate < 0.5 (default)
-- Decay onset: 7 days of inactivity (default)
-- Decay rate: -0.02 per review cycle (default)
-
-### Safety Boundaries
-
-Some pathways should never be pruned. Set minimum weight floors:
-- `instinct:*` pathways: minimum weight 0.8
-- `reflex:*` pathways: minimum weight 0.2
-- `habit:*` pathways: can decay to 0 and be pruned
+3. **Outcomes matter** — track what worked, what didn't; guesses don't count
+4. **Failures leave scars** — the most valuable pathways come from mistakes
+5. **Seed from reality** — observe first, codify second
+6. **Small and composable** — one pathway per behavior pattern
+7. **The schedule forces honesty** — if it's not in HEARTBEAT.md, you'll skip it
