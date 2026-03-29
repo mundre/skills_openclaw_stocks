@@ -1,0 +1,11 @@
+{
+  "owner": "krishna-505",
+  "slug": "skill-compass-canary",
+  "displayName": "SkillCompass Canary (Internal)",
+  "latest": {
+    "version": "1.0.5-canary.3",
+    "publishedAt": 1774796773767,
+    "commit": null
+  },
+  "history": []
+}
