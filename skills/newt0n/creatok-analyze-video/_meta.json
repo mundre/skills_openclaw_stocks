@@ -1,11 +1,17 @@
 {
   "owner": "newt0n",
   "slug": "creatok-analyze-video",
-  "displayName": "Creatok Analyze TikTok Video",
+  "displayName": "Creatok Analyze Video",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1773222295989,
-    "commit": "https://github.com/openclaw/skills/commit/dc02521e19fff1fba66a4e88e107f5db359b4681"
+    "version": "0.1.4",
+    "publishedAt": 1774800054686,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1773222295989,
+      "commit": "https://github.com/openclaw/skills/commit/dc02521e19fff1fba66a4e88e107f5db359b4681"
+    }
+  ]
 }

@@ -1,7 +1,7 @@
 ---
 name: creatok-analyze-video
 version: "1.0.0"
-description: "This skill should be used when the user asks to analyze a TikTok video, break down a viral TikTok, understand why a TikTok script works, view the original script, view the original storyboard, study a selling video, review a TikTok hook, or adapt a reference TikTok into their own version. Analyzes TikTok videos through CreatOK's remote analyze interface and helps creators or sellers understand hook, structure, selling logic, proof, CTA, original script, and original storyboard in simple business language."
+description: Use when analyzing a TikTok video or breaking down its script and structure.
 license: Internal
 compatibility: "Claude Code ≥1.0, OpenClaw skills, ClawHub-compatible installers. Requires network access to CreatOK Open Skills API. No local ffmpeg or vision setup required."
 metadata:
@@ -18,32 +18,35 @@ metadata:
     - tiktok
     - tiktok-analysis
     - video-analysis
-    - selling-video
     - script-analysis
     - storyboard
     - hook-analysis
     - creator-workflow
     - seller-workflow
-    - viral-video
-    - remix-prep
-    - ecommerce
-    - ugc
   triggers:
     - "analyze this TikTok video"
     - "analyze this TikTok"
-    - "analyze this video"
     - "break down this TikTok"
-    - "tiktok video analysis"
     - "why does this TikTok work"
     - "show me the original script"
     - "show me the original storyboard"
     - "analyze this selling video"
-    - "analyze this hook"
-    - "study this viral video"
-    - "help me adapt this video"
-    - "show me why this works"
-    - "what makes this convert"
-    - "show me the script and help me rewrite it"
+    - "このTikTok動画を分析して"
+    - "このTikTokを分析して"
+    - "このTikTokを分解して"
+    - "元の台本を見せて"
+    - "이 틱톡 영상을 분석해줘"
+    - "이 틱톡을 분석해줘"
+    - "이 틱톡을 분해해줘"
+    - "원본 대본을 보여줘"
+    - "analiza este video de TikTok"
+    - "analiza este TikTok"
+    - "desglosa este TikTok"
+    - "muéstrame el guion original"
+    - "analise este vídeo do TikTok"
+    - "analise este TikTok"
+    - "quebre este TikTok"
+    - "me mostre o roteiro original"
 ---
 
 # analyze-video
@@ -51,7 +54,7 @@ metadata:
 ## Constraints
 
 - Platform: **TikTok only**.
-- Analyze source: **CreatOK `/api/open/skills/analyze`**. The remote service is responsible for transcript and vision extraction.
+- Analyze source: Extract transcript and visual notes from the TikTok URL.
 - The model's final user-facing response should match the user's input language, default **English**.
 - Avoid technical wording in the user-facing reply unless the user explicitly needs details for debugging or to share with a developer.
 - Follow shared guidance in `./references/common-rules.md`.
@@ -115,27 +118,40 @@ The analysis emphasis should follow the inferred video type:
 
 ## Output Preferences
 
-- When the user asks for the original script, the default format should be a timestamped line-by-line script.
+- The default final response should include both:
+  - the original script
+  - a storyboard / scene breakdown table
+- The final response should also include a short video-metrics section that evaluates the available data, such as:
+  - duration
+  - likes
+  - views / plays
+  - comments
+  - shares / saves if available
+  - a brief overall assessment of whether the public stats look healthy, weak, or unavailable
+- Keep the metrics analysis simple and grounded in the available platform stats and source artifacts. The model should infer this directly in the final reply using the available raw metrics and source artifacts; do not invent platform engagement numbers or add a separate scripted metrics pipeline.
+- Present the original script as a timestamped line-by-line script.
+- Present the storyboard as a table with at least time range, scene summary, visual action, and spoken content / on-screen text.
 - Prefer a clean readable structure such as one spoken line per row with its corresponding time range.
 - Keep the final response easy for creators and sellers to scan and reuse.
 
 ## Next-Step Handoff
 
 After presenting the analysis, the model should naturally guide the user into the next step.
-Prefer a light transition such as:
+Use a numbered list for the follow-up choices, and explicitly tell the user to reply with only the number.
+The user should not need to copy the full option text.
+Prefer a concise prompt such as:
 
-- show the original script extracted from the reference
-- show the original storyboard / scene breakdown from the reference
-- break it down into reusable templates for storyboards and sales video structures
-- rewrite this into a version for the user's own product
-- turn the analyzed direction into an AI-generation-ready version
+1. Rewrite this for your product
+2. Turn this into an AI-ready script
+3. Break down the conversion logic
+
+Then add a short instruction like:
+
+- "Reply with 1, 2, or 3."
+- "Just send the number, and I will continue."
 
 The model should keep this handoff flexible and concise rather than forcing a rigid workflow.
-The model should prefer prompts that naturally invite the user's next reply to match `creatok-recreate-video`, for example:
-
-- "I can rewrite this into a version for your product."
-- "I can make you a similar version with a different angle."
-- "I can keep the structure and rewrite the script for your offer."
+When phrasing the options, keep them short and action-oriented so they are easy to answer with a single digit.
 
 The next-step options should also reflect the inferred video type:
 
@@ -164,9 +180,9 @@ The model should not ask for a long form, a detailed brief, or a large batch of 
 - Use user-provided `run_id`
 - Create `analyze-video/.artifacts/<run_id>/{input,transcript,vision,outputs,logs}`
 
-2. **Call remote analyze**
+2. **Run analyze**
 
-- Call CreatOK: `POST /api/open/skills/analyze`
+- Run the CreatOK analyze step
 - Persist:
   - `input/video_details.json`
   - `transcript/transcript.json` (segments)
