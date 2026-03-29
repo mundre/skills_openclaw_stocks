@@ -3,11 +3,16 @@
   "slug": "jisu-recipe",
   "displayName": "Recipe - 菜谱大全",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1773728446888,
-    "commit": "https://github.com/openclaw/skills/commit/d14f704cb8c937f72f8a533f7d9079d8635d501e"
+    "version": "1.0.5",
+    "publishedAt": 1774585483667,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1773728446888,
+      "commit": "https://github.com/openclaw/skills/commit/d14f704cb8c937f72f8a533f7d9079d8635d501e"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1772534201681,
