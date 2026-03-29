@@ -3,11 +3,16 @@
   "slug": "recipe-create-shared-drive",
   "displayName": "Recipe Create Shared Drive",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774300596003,
-    "commit": "https://github.com/openclaw/skills/commit/c0c4b55a52bb84890b1ae093c051748b18d6ade6"
+    "version": "1.0.10",
+    "publishedAt": 1774551137767,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774300596003,
+      "commit": "https://github.com/openclaw/skills/commit/c0c4b55a52bb84890b1ae093c051748b18d6ade6"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773393370432,
