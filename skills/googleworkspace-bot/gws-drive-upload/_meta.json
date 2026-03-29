@@ -3,11 +3,16 @@
   "slug": "gws-drive-upload",
   "displayName": "Gws Drive Upload",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774300444579,
-    "commit": "https://github.com/openclaw/skills/commit/211303097078390004db29f32cd31d10259f3a30"
+    "version": "1.0.10",
+    "publishedAt": 1774550978859,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774300444579,
+      "commit": "https://github.com/openclaw/skills/commit/211303097078390004db29f32cd31d10259f3a30"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772670406064,
