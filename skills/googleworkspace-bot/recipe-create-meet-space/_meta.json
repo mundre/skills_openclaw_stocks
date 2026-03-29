@@ -3,11 +3,16 @@
   "slug": "recipe-create-meet-space",
   "displayName": "Recipe Create Meet Space",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774300591177,
-    "commit": "https://github.com/openclaw/skills/commit/d70622a9350dba3c9bc5d0760b21342dce57113a"
+    "version": "1.0.10",
+    "publishedAt": 1774551131679,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774300591177,
+      "commit": "https://github.com/openclaw/skills/commit/d70622a9350dba3c9bc5d0760b21342dce57113a"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772933761947,
