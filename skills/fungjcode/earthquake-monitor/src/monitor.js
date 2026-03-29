@@ -1,97 +1,122 @@
 /**
- * 地震监控推送模块
- * 定时检查并推送地震预警
+ * Earthquake Monitoring & Alert Module (v1.1.0)
+ * - Fixed CWA data source integration
+ * - Multi-language alert support
+ * - Enhanced deduplication
+ * - Webhook payload format support
  */
 
 const { getCENCData, getCachedData: getCENCCached } = require('./cenc');
-const { getCWAData, getCachedWarning: getCWACached } = require('./cwa');
+const { getCWAData, getCachedData: getCWACached } = require('./cwa');
 const { getJMAData, getCachedData: getJMACached } = require('./jma');
-const { calculateDistance, parseLocation } = require('./distance');
+const { calculateDistance } = require('./distance');
 const { getConfig, setConfig } = require('./config');
+const { formatAlertMessage, detectLang } = require('./i18n');
 
 let monitorInterval = null;
 let lastNotificationTime = 0;
-const NOTIFICATION_COOLDOWN = 300000; // 5分钟内不重复通知同一级别地震
+const NOTIFICATION_COOLDOWN = 300000; // 5 minutes
+
+// Track notified earthquake IDs (EventID level deduplication)
+const notifiedEarthquakes = new Set();
 
 /**
- * 启动地震监控
- * @param {Object} options 选项
- * @param {Function} onAlert 预警回调函数
- * @param {number} interval 检查间隔（毫秒），默认 60000 (1分钟)
+ * Generate unique earthquake ID
+ */
+function generateEarthquakeId(eq, source) {
+  const time = eq.time || '';
+  const mag = eq.magnitude || '0';
+  const loc = eq.location || '';
+  const depth = eq.depth || '0';
+  return `${source}-${time}-${mag}-${loc}-${depth}`;
+}
+
+/**
+ * Start earthquake monitoring
+ * @param {Object} options - Configuration options
+ * @param {Function} onAlert - Alert callback function
+ * @param {number} interval - Check interval in ms (default 60000)
  */
 async function startMonitor(options = {}, onAlert = null, interval = 60000) {
   const config = await getConfig();
   
   if (!config.notify.enabled) {
-    console.log('[Earthquake Monitor] 预警未启用');
-    return { success: false, message: '预警未启用，请在配置中开启' };
+    return { success: false, message: 'Alerts disabled. Enable in config.' };
   }
   
   if (!config.location || !config.location.latitude) {
-    return { success: false, message: '请先设置监控位置，使用 init() 函数' };
+    return { success: false, message: 'Please set monitoring location first using init().' };
   }
   
-  // 如果已有监控在运行，先停止
+  // Stop existing monitor if running
   if (monitorInterval) {
     stopMonitor();
   }
   
-  console.log(`[Earthquake Monitor] 启动监控: ${config.location.name}`);
-  console.log(`[Earthquake Monitor] 预警条件: 距离 ${config.notify.distanceThreshold}km 内、震级 ${config.notify.minMagnitude}+`);
+  console.log(`[Earthquake Monitor] Started: ${config.location.name}`);
+  console.log(`[Earthquake Monitor] Alert: Within ${config.notify.distanceThreshold}km, Mag ${config.notify.minMagnitude}+`);
+  console.log(`[Earthquake Monitor] Language: ${config.language}`);
   
-  // 立即执行一次检查
+  // Initial check
   await checkAndNotify(onAlert);
   
-  // 设置定时检查
+  // Set interval
   monitorInterval = setInterval(async () => {
     await checkAndNotify(onAlert);
   }, interval);
   
   return { 
     success: true, 
-    message: `✅ 地震监控已启动！\n📍 监控位置: ${config.location.name}\n🔔 预警条件: 距离 ${config.notify.distanceThreshold}km 内、震级 ${config.notify.minMagnitude}+ 级\n⏰ 检查间隔: ${interval/1000}秒` 
+    message: `✅ Earthquake monitoring started!\n📍 Location: ${config.location.name}\n🔔 Alert: Within ${config.notify.distanceThreshold}km, Mag ${config.notify.minMagnitude}+\n⏰ Check interval: ${interval/1000}s\n🌐 Language: ${config.language}` 
   };
 }
 
 /**
- * 停止地震监控
+ * Stop monitoring
  */
 function stopMonitor() {
   if (monitorInterval) {
     clearInterval(monitorInterval);
     monitorInterval = null;
-    console.log('[Earthquake Monitor] 监控已停止');
+    console.log('[Earthquake Monitor] Stopped');
   }
-  return { success: true, message: '✅ 地震监控已停止' };
+  return { success: true, message: '✅ Monitoring stopped' };
 }
 
 /**
- * 检查并通知
+ * Check earthquakes and send notifications
  */
 async function checkAndNotify(onAlert) {
   const config = await getConfig();
   if (!config.notify.enabled) return;
   
   try {
-    // 获取最新数据
+    // Fetch all data sources in parallel
     const [cencData, cwaData, jmaData] = await Promise.allSettled([
-      getCENCCached(),
-      getCWACached(),
-      getJMACached()
+      config.sources.CENC !== false ? getCENCCached() : Promise.resolve([]),
+      config.sources.CWA !== false ? getCWACached() : Promise.resolve(null),
+      config.sources.JMA !== false ? getJMACached() : Promise.resolve([])
     ]);
     
     const earthquakes = [];
     const now = Date.now();
     
-    // 处理 CENC 数据
+    // Process CENC data (China)
     if (cencData.status === 'fulfilled' && cencData.value.length > 0) {
       for (const eq of cencData.value) {
-        const id = eq.EventID || `${eq.time}-${eq.location}`;
-        if (id !== config.lastEarthquakeIds?.CENC) {
+        const id = generateEarthquakeId({
+          time: eq.time,
+          magnitude: eq.magnitude,
+          location: eq.location,
+          depth: eq.depth
+        }, 'CENC');
+        
+        if (!notifiedEarthquakes.has(id) && eq.time !== config.lastEarthquakeIds?.CENC) {
           earthquakes.push({
             source: 'CENC',
             sourceName: '中国地震台网',
-            id: id,
+            id,
+            EventID: eq.EventID,
             time: eq.time,
             location: eq.location,
             magnitude: parseFloat(eq.magnitude),
@@ -104,15 +129,49 @@ async function checkAndNotify(onAlert) {
       }
     }
     
-    // 处理 JMA 数据
+    // Process CWA data (Taiwan)
+    if (cwaData.status === 'fulfilled' && cwaData.value && cwaData.value.ID) {
+      const eq = cwaData.value;
+      const id = generateEarthquakeId({
+        time: eq.OriginTime,
+        magnitude: eq.Magunitude,
+        location: eq.HypoCenter,
+        depth: eq.Depth
+      }, 'CWA');
+      
+      if (!notifiedEarthquakes.has(id) && eq.OriginTime !== config.lastEarthquakeIds?.CWA) {
+        earthquakes.push({
+          source: 'CWA',
+          sourceName: '台湾中央气象署',
+          id,
+          EventID: eq.ID,
+          time: eq.OriginTime,
+          location: eq.HypoCenter,
+          magnitude: parseFloat(eq.Magunitude),
+          latitude: parseFloat(eq.Latitude),
+          longitude: parseFloat(eq.Longitude),
+          depth: parseFloat(eq.Depth),
+          intensity: eq.MaxIntensity
+        });
+      }
+    }
+    
+    // Process JMA data (Japan)
     if (jmaData.status === 'fulfilled' && jmaData.value.length > 0) {
       for (const eq of jmaData.value) {
-        const id = eq.EventID || eq.no;
-        if (id !== config.lastEarthquakeIds?.JMA) {
+        const id = generateEarthquakeId({
+          time: eq.time,
+          magnitude: eq.magnitude,
+          location: eq.location,
+          depth: eq.depth
+        }, 'JMA');
+        
+        if (!notifiedEarthquakes.has(id) && eq.time !== config.lastEarthquakeIds?.JMA) {
           earthquakes.push({
             source: 'JMA',
             sourceName: '日本气象厅',
-            id: id,
+            id,
+            EventID: eq.EventID || eq.no,
             time: eq.time,
             location: eq.location,
             magnitude: parseFloat(eq.magnitude),
@@ -125,22 +184,22 @@ async function checkAndNotify(onAlert) {
       }
     }
     
-    // 检查是否有新地震且符合预警条件
+    // No new earthquakes
     if (earthquakes.length === 0) return;
     
-    // 按时间排序
+    // Sort by time
     earthquakes.sort((a, b) => new Date(b.time) - new Date(a.time));
     
-    // 更新 lastEarthquakeIds
+    // Update last earthquake IDs
     const newConfig = { ...config };
     newConfig.lastEarthquakeIds = {
-      CENC: earthquakes.find(e => e.source === 'CENC')?.id || config.lastEarthquakeIds?.CENC || '',
-      JMA: earthquakes.find(e => e.source === 'JMA')?.id || config.lastEarthquakeIds?.JMA || '',
-      CWA: config.lastEarthquakeIds?.CWA || ''
+      CENC: earthquakes.find(e => e.source === 'CENC')?.EventID || config.lastEarthquakeIds?.CENC || '',
+      CWA: earthquakes.find(e => e.source === 'CWA')?.EventID || config.lastEarthquakeIds?.CWA || '',
+      JMA: earthquakes.find(e => e.source === 'JMA')?.EventID || config.lastEarthquakeIds?.JMA || ''
     };
     await setConfig(newConfig);
     
-    // 检查是否符合预警条件
+    // Filter by distance and magnitude
     const alerts = earthquakes.filter(eq => {
       const dist = calculateDistance(
         config.location.latitude,
@@ -153,50 +212,56 @@ async function checkAndNotify(onAlert) {
              eq.magnitude >= config.notify.minMagnitude;
     });
     
-    // 发送通知
+    // Send notification
     if (alerts.length > 0 && now - lastNotificationTime > NOTIFICATION_COOLDOWN) {
       lastNotificationTime = now;
-      const message = formatAlertMessage(alerts, config.location.name);
+      
+      // Add to notified set
+      alerts.forEach(eq => notifiedEarthquakes.add(eq.id));
+      
+      // Get language for message formatting
+      const lang = config.language || 'zh';
+      const message = formatAlertMessage(alerts, config.location.name, lang);
+      const webhookPayload = formatWebhookPayload(alerts, config.location.name);
       
       if (onAlert) {
-        onAlert({ alerts, message });
+        onAlert({ alerts, message, webhookPayload, lang });
       }
       
-      console.log(`[Earthquake Monitor] 发送预警: ${alerts.length} 条`);
+      console.log(`[Earthquake Monitor] Alert sent: ${alerts.length} earthquake(s)`);
     }
     
   } catch (e) {
-    console.error('[Earthquake Monitor] 检查失败:', e.message);
+    console.error('[Earthquake Monitor] Check failed:', e.message);
   }
 }
 
 /**
- * 格式化预警消息
+ * Format webhook payload for DingTalk/Feishu
  */
-function formatAlertMessage(earthquakes, locationName) {
-  const lines = ['⚠️ 地震预警提醒！'];
-  lines.push(`📍 震中距离 ${locationName} 较近：\n`);
-  
-  earthquakes.forEach((eq, i) => {
-    const emoji = eq.magnitude >= 5 ? '🔴' : eq.magnitude >= 4 ? '🟠' : '🟡';
-    lines.push(`${i + 1}. ${emoji} M${eq.magnitude} 级`);
-    lines.push(`   📍 ${eq.location}`);
-    lines.push(`   📏 距离约 ${Math.round(eq.distance)}km`);
-    lines.push(`   ⏰ ${eq.time}`);
-    lines.push('');
-  });
-  
-  lines.push('请注意安全！');
-  return lines.join('\n');
+function formatWebhookPayload(earthquakes, locationName) {
+  return {
+    msgtype: 'news',
+    news: {
+      articles: [{
+        title: `⚠️ Earthquake Alert - M${earthquakes[0]?.magnitude} near ${locationName}`,
+        description: earthquakes.map((eq, i) => 
+          `${i + 1}. ${eq.location} M${eq.magnitude} - ${Math.round(eq.distance)}km away`
+        ).join('\n'),
+        url: 'https://www.ceic.ac.cn/'
+      }]
+    }
+  };
 }
 
 /**
- * 获取监控状态
+ * Get monitoring status
  */
 function getStatus() {
   return {
     isRunning: monitorInterval !== null,
-    lastNotification: lastNotificationTime > 0 ? new Date(lastNotificationTime).toISOString() : null
+    lastNotification: lastNotificationTime > 0 ? new Date(lastNotificationTime).toISOString() : null,
+    notifiedCount: notifiedEarthquakes.size
   };
 }
 

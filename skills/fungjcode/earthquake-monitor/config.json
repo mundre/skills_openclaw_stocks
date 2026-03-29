@@ -1,0 +1,25 @@
+{
+  "initialized": true,
+  "location": {
+    "name": "大理",
+    "latitude": 25.6069,
+    "longitude": 100.2679
+  },
+  "notify": {
+    "distanceThreshold": 300,
+    "minMagnitude": 3,
+    "enabled": true
+  },
+  "language": "en",
+  "sources": {
+    "CENC": true,
+    "JMA": true,
+    "CWA": true
+  },
+  "webhook": null,
+  "lastEarthquakeIds": {
+    "CENC": "",
+    "CWA": "",
+    "JMA": ""
+  }
+}

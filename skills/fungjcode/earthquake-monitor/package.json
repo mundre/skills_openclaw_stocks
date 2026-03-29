@@ -1,7 +1,7 @@
 {
   "name": "earthquake-monitor",
-  "version": "1.0.0",
-  "description": "中日地震实时监控 - CENC/CWA/JMA WebSocket 推送，支持地震预警通知",
+  "version": "1.1.1",
+  "description": "Real-time earthquake monitoring for China, Taiwan, and Japan. v1.1.1 - Multi-language support, enhanced location matching, security & performance optimization",
   "author": {
     "name": "fungjcode",
     "github": "https://github.com/fungjcode"
@@ -13,7 +13,8 @@
     "JMA",
     "CWA",
     "monitor",
-    "alert"
+    "alert",
+    "i18n"
   ],
   "homepage": "https://github.com/fungjcode/earthquake-monitor",
   "repository": {

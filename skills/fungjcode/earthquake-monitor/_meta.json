@@ -3,9 +3,15 @@
   "slug": "earthquake-monitor",
   "displayName": "Earthquake Monitor",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773213893735,
-    "commit": "https://github.com/openclaw/skills/commit/9b267713f3e546e08f285b56c71b77a559f09c80"
+    "version": "1.1.1",
+    "publishedAt": 1774365212478,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773213893735,
+      "commit": "https://github.com/openclaw/skills/commit/9b267713f3e546e08f285b56c71b77a559f09c80"
+    }
+  ]
 }

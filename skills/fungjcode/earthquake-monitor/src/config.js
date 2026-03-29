@@ -1,5 +1,7 @@
 /**
- * 配置管理模块
+ * Configuration Management Module (v1.1.1)
+ * - Enhanced location fuzzy matching (supports pinyin, abbreviations)
+ * - Note: Encryption removed for ClawHub compatibility
  */
 
 const fs = require('fs');
@@ -7,7 +9,7 @@ const path = require('path');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'config.json');
 
-// 默认配置
+// Default configuration
 const DEFAULT_CONFIG = {
   initialized: false,
   location: {
@@ -20,6 +22,13 @@ const DEFAULT_CONFIG = {
     minMagnitude: 3.0,
     enabled: true
   },
+  language: 'zh', // Default language (zh/en/ja)
+  sources: {
+    CENC: true,
+    JMA: true,
+    CWA: true
+  },
+  webhook: null,
   lastEarthquakeIds: {
     CENC: '',
     CWA: '',
@@ -27,19 +36,28 @@ const DEFAULT_CONFIG = {
   }
 };
 
-// 常用城市坐标
+// City coordinates with pinyin and abbreviations
 const CITY_COORDINATES = {
-  '大理': { latitude: 25.6069, longitude: 100.2679 },
-  '昆明': { latitude: 25.04, longitude: 102.71 },
-  '丽江': { latitude: 26.87, longitude: 100.23 },
-  '北京': { latitude: 39.90, longitude: 116.40 },
-  '上海': { latitude: 31.23, longitude: 121.47 },
-  '广州': { latitude: 23.12, longitude: 113.26 },
-  '深圳': { latitude: 22.54, longitude: 114.06 },
-  '成都': { latitude: 30.57, longitude: 104.07 },
-  '台北': { latitude: 25.03, longitude: 121.56 },
-  '东京': { latitude: 35.68, longitude: 139.69 },
-  '大阪': { latitude: 34.69, longitude: 135.50 }
+  '大理': { name: '大理', pinyin: ['dali', 'dl'], abbr: 'DL', latitude: 25.6069, longitude: 100.2679 },
+  '昆明': { name: '昆明', pinyin: ['kunming', 'km'], abbr: 'KM', latitude: 25.04, longitude: 102.71 },
+  '丽江': { name: '丽江', pinyin: ['lijiang', 'lj'], abbr: 'LJ', latitude: 26.87, longitude: 100.23 },
+  '北京': { name: '北京', pinyin: ['beijing', 'bj'], abbr: 'BJ', latitude: 39.90, longitude: 116.40 },
+  '上海': { name: '上海', pinyin: ['shanghai', 'sh'], abbr: 'SH', latitude: 31.23, longitude: 121.47 },
+  '广州': { name: '广州', pinyin: ['guangzhou', 'gz'], abbr: 'GZ', latitude: 23.12, longitude: 113.26 },
+  '深圳': { name: '深圳', pinyin: ['shenzhen', 'sz'], abbr: 'SZ', latitude: 22.54, longitude: 114.06 },
+  '成都': { name: '成都', pinyin: ['chengdu', 'cd'], abbr: 'CD', latitude: 30.57, longitude: 104.07 },
+  '重庆': { name: '重庆', pinyin: ['chongqing', 'cq'], abbr: 'CQ', latitude: 29.55, longitude: 106.55 },
+  '杭州': { name: '杭州', pinyin: ['hangzhou', 'hz'], abbr: 'HZ', latitude: 30.27, longitude: 120.15 },
+  '西安': { name: '西安', pinyin: ['xian', 'xa'], abbr: 'XA', latitude: 34.27, longitude: 108.95 },
+  '南京': { name: '南京', pinyin: ['nanjing', 'nj'], abbr: 'NJ', latitude: 32.06, longitude: 118.78 },
+  '武汉': { name: '武汉', pinyin: ['wuhan', 'wh'], abbr: 'WH', latitude: 30.58, longitude: 114.29 },
+  '台北': { name: '台北', pinyin: ['taipei', 'tb'], abbr: 'TB', latitude: 25.03, longitude: 121.56 },
+  '东京': { name: '东京', pinyin: ['tokyo', 'dj'], abbr: 'DJ', latitude: 35.68, longitude: 139.69 },
+  '大阪': { name: '大阪', pinyin: ['osaka', 'db'], abbr: 'DB', latitude: 34.69, longitude: 135.50 },
+  '首尔': { name: '首尔', pinyin: ['seoul', 'se'], abbr: 'SE', latitude: 37.57, longitude: 126.98 },
+  '香港': { name: '香港', pinyin: ['hongkong', 'hk'], abbr: 'HK', latitude: 22.32, longitude: 114.17 },
+  '三亚': { name: '三亚', pinyin: ['sanya', 'sy'], abbr: 'SY', latitude: 18.25, longitude: 109.51 },
+  '青岛': { name: '青岛', pinyin: ['qingdao', 'qd'], abbr: 'QD', latitude: 36.07, longitude: 120.37 }
 };
 
 function loadConfig() {
@@ -65,17 +83,50 @@ function saveConfig(config) {
   }
 }
 
+/**
+ * Enhanced location parsing with pinyin and abbreviation support
+ */
 function parseLocation(cityName) {
-  const normalized = cityName.trim();
+  if (!cityName) return null;
+  const normalized = cityName.trim().toLowerCase();
+  
+  // Direct match
   if (CITY_COORDINATES[normalized]) {
-    return { name: normalized, ...CITY_COORDINATES[normalized] };
+    const city = CITY_COORDINATES[normalized];
+    return { name: city.name, latitude: city.latitude, longitude: city.longitude };
   }
-  // 模糊匹配
-  for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
-    if (city.includes(normalized) || normalized.includes(city)) {
-      return { name: city, ...coords };
+  
+  // Search by pinyin or abbreviation
+  for (const [name, city] of Object.entries(CITY_COORDINATES)) {
+    // Match pinyin
+    if (city.pinyin.some(py => py.toLowerCase() === normalized)) {
+      return { name: city.name, latitude: city.latitude, longitude: city.longitude };
+    }
+    // Match abbreviation
+    if (city.abbr.toLowerCase() === normalized) {
+      return { name: city.name, latitude: city.latitude, longitude: city.longitude };
+    }
+    // Partial match (contains)
+    if (city.pinyin.some(py => py.toLowerCase().includes(normalized)) || 
+        normalized.includes(city.name.toLowerCase())) {
+      return { name: city.name, latitude: city.latitude, longitude: city.longitude };
+    }
+    // Chinese character partial match
+    if (name.includes(normalized) || normalized.includes(name)) {
+      return { name: city.name, latitude: city.latitude, longitude: city.longitude };
     }
   }
+  
+  // Try to parse as coordinates directly
+  const coords = normalized.match(/^([-\d.]+)[,\s]+([-\d.]+)$/);
+  if (coords) {
+    const lat = parseFloat(coords[1]);
+    const lon = parseFloat(coords[2]);
+    if (isValidCoordinates(lat, lon)) {
+      return { name: `${lat.toFixed(2)},${lon.toFixed(2)}`, latitude: lat, longitude: lon };
+    }
+  }
+  
   return null;
 }
 
@@ -109,6 +160,18 @@ async function setConfig(newConfig) {
     config.notify = { ...config.notify, ...newConfig.notify };
   }
   
+  if (newConfig.language && ['zh', 'en', 'ja'].includes(newConfig.language)) {
+    config.language = newConfig.language;
+  }
+  
+  if (newConfig.sources) {
+    config.sources = { ...config.sources, ...newConfig.sources };
+  }
+  
+  if (newConfig.webhook !== undefined) {
+    config.webhook = newConfig.webhook;
+  }
+  
   config.initialized = true;
   saveConfig(config);
   return config;
@@ -117,7 +180,7 @@ async function setConfig(newConfig) {
 async function initConfig(options = {}) {
   const config = loadConfig();
   
-  // 设置位置
+  // Set location
   if (options.location) {
     if (typeof options.location === 'string') {
       const parsed = parseLocation(options.location);
@@ -137,6 +200,12 @@ async function initConfig(options = {}) {
   
   if (options.distanceThreshold) config.notify.distanceThreshold = options.distanceThreshold;
   if (options.minMagnitude) config.notify.minMagnitude = options.minMagnitude;
+  if (options.language && ['zh', 'en', 'ja'].includes(options.language)) {
+    config.language = options.language;
+  }
+  if (options.sources) {
+    config.sources = { ...config.sources, ...options.sources };
+  }
   
   config.notify.enabled = true;
   config.initialized = true;
@@ -157,5 +226,7 @@ module.exports = {
   initConfig,
   updateLastIds,
   parseLocation,
+  isValidCoordinates,
+  CITY_COORDINATES,
   DEFAULT_CONFIG
 };
