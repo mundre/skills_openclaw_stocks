@@ -3,11 +3,16 @@
   "slug": "recipe-create-classroom-course",
   "displayName": "Recipe Create Classroom Course",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774300572044,
-    "commit": "https://github.com/openclaw/skills/commit/e170a2196b2184fb5ceb90d00ec1d02bd090af0f"
+    "version": "1.0.10",
+    "publishedAt": 1774551116991,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774300572044,
+      "commit": "https://github.com/openclaw/skills/commit/e170a2196b2184fb5ceb90d00ec1d02bd090af0f"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772921155569,
