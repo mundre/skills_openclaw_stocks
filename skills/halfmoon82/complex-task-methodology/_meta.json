@@ -3,11 +3,16 @@
   "slug": "complex-task-methodology",
   "displayName": "Complex Task Methodology",
   "latest": {
-    "version": "1.1.4",
-    "publishedAt": 1773941800179,
-    "commit": "https://github.com/openclaw/skills/commit/d51f4f3bbb43bea25b20fe27855aae09a1cb6e44"
+    "version": "1.1.5",
+    "publishedAt": 1774600485028,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.4",
+      "publishedAt": 1773941800179,
+      "commit": "https://github.com/openclaw/skills/commit/d51f4f3bbb43bea25b20fe27855aae09a1cb6e44"
+    },
     {
       "version": "1.1.3",
       "publishedAt": 1772624237460,
