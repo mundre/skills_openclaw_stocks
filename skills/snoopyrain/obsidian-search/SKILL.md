@@ -16,10 +16,10 @@ AI-powered semantic search for your Obsidian notes — find notes by meaning, no
 
 - **MCP link is a credential**: Your MCP Server URL contains an embedded authentication token. Treat it like a password — do not share it publicly. You can regenerate it anytime in Settings.
 - **Token scope**: The token grants **read-only** access to your indexed Obsidian notes. It can search, list, retrieve note content, and analyze connections. It cannot modify, delete, or create notes in your vault.
-- **Token storage**: The token is stored server-side. It is never written to your local filesystem. You can regenerate or revoke it anytime at [obsidian.10xboost.org](https://obsidian.10xboost.org).
-- **Data flow**: Your notes are indexed as vector embeddings on a secure cloud server. Only search queries and note content are transmitted — no other data leaves your vault.
-- **No local credentials**: No local API keys, environment variables, or secrets are needed. All auth is embedded in the MCP link.
-- **Third-party service**: This skill relies on [Obvec](https://obsidian.10xboost.org), an AI-powered Obsidian search service.
+- **Token storage**: The token is generated and managed server-side. When you paste the MCP link into a Claude Connector, the link (containing the token) is stored locally by your MCP client. You can regenerate or revoke the token anytime at [obsidian.10xboost.org](https://obsidian.10xboost.org), which invalidates any previously shared links.
+- **Data flow**: To enable semantic search, your note content is uploaded to the Obvec service and indexed as vector embeddings on a secure cloud server. Search queries are also sent to the server for similarity matching. No data is shared with other users or used for model training.
+- **No additional credentials**: No separate API keys, environment variables, or secrets are needed beyond the MCP link.
+- **Third-party service**: This skill relies on [Obvec](https://obsidian.10xboost.org), an AI-powered Obsidian search service. By using this skill, you are sending your note content to the Obvec server for indexing and search. Review the [privacy policy](https://obsidian.10xboost.org) before use.
 
 
 ## Prerequisites
