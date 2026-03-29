@@ -50,8 +50,8 @@ Copy or create `.env` with at minimum:
 
 ```
 MONIKER=MyAgentNode
-NETWORK_VERSION=109b
-NETWORK_CHAIN_ID=structstestnet-109
+NETWORK_VERSION=111b
+NETWORK_CHAIN_ID=structstestnet-111
 ```
 
 ### 3. Start the Stack
