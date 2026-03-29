@@ -3,11 +3,16 @@
   "slug": "mx-finance-data",
   "displayName": "All-Market Financial Data Hub",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1774260357818,
-    "commit": "https://github.com/openclaw/skills/commit/4d42e4add6fcf3caaa9786049fe94811339cc651"
+    "version": "1.0.9",
+    "publishedAt": 1774606872908,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1774260357818,
+      "commit": "https://github.com/openclaw/skills/commit/4d42e4add6fcf3caaa9786049fe94811339cc651"
+    },
     {
       "version": "1.0.7",
       "publishedAt": 1774019758729,

@@ -260,13 +260,15 @@ def _build_request_body(query: str) -> Dict[str, Any]:
     自动生成 callId，并写入 userInfo.userId。
     返回可直接用于 HTTP JSON 请求的字典对象。
     """
-    call_id = str(uuid.uuid4())
+    call_id = f"call_{uuid.uuid4().hex[:8]}"
+    user_id = f"user_{uuid.uuid4().hex[:8]}"
+    
     return {
         "query": query,
         "toolContext": {
             "callId": call_id,
             "userInfo": {
-                "userId": EM_API_KEY,
+                "userId": user_id,
             },
         },
     }
