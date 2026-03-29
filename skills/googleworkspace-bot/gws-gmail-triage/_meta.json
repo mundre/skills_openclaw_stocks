@@ -3,11 +3,16 @@
   "slug": "gws-gmail-triage",
   "displayName": "Gws Gmail Triage",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774300475220,
-    "commit": "https://github.com/openclaw/skills/commit/9b8db983971391a214446d923ef133b6a4e474d7"
+    "version": "1.0.10",
+    "publishedAt": 1774551007641,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774300475220,
+      "commit": "https://github.com/openclaw/skills/commit/9b8db983971391a214446d923ef133b6a4e474d7"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772741643620,
