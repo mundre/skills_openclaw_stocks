@@ -3,11 +3,16 @@
   "slug": "tronscan-contract-analysis",
   "displayName": "TronScan Contract Analysis",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1774248432063,
-    "commit": "https://github.com/openclaw/skills/commit/e75b2282a190f95ee6b065e4b63df4acd0550192"
+    "version": "1.0.5",
+    "publishedAt": 1774596256819,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1774248432063,
+      "commit": "https://github.com/openclaw/skills/commit/e75b2282a190f95ee6b065e4b63df4acd0550192"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1773451342830,

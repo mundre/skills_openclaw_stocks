@@ -121,3 +121,4 @@ Ensure the address is a valid TRON contract (not an EOA address). Use TRC20/721/
 
 - To assess malicious risk: check verification, top methods (unusual names), energy spike, and event patterns.
 - Top 5 callers and top methods come from `getContractCallStatistic`.
+- **Contract verification scope**: `getContractDetail` returns **contract-level** verification status (whether the contract source code has been open-sourced and verified on TronScan). This is a code-level check only — it does not indicate whether the token project itself has been officially endorsed or certified.
