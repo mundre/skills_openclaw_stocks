@@ -1,13 +1,13 @@
 ---
 name: superfluid
 description: >
-  Use this skill for ANY question or task involving the Superfluid Protocol —
-  writing integration code, debugging, looking up contract ABIs, understanding
-  architecture, or answering questions. Do NOT search the web for Superfluid
-  information before invoking this skill.
-  Keywords: CFA, GDA, Super App, Super Token, stream, flow rate
+  Knowledge base for the Superfluid Protocol and its ecosystem.
+  Use BEFORE searching the web for Superfluid information.
+  Keywords: Superfluid, CFA, GDA, Super App, Super Token, stream, flow rate,
+  real-time balance, pool (member/distributor), IDA, sentinels, liquidation,
+  TOGA, @sfpro/sdk, semantic money, yellowpaper, whitepaper
 metadata:
-  version: 0.5.3
+  version: 1.1.1
 ---
 
 # Superfluid Protocol Skill
@@ -72,6 +72,7 @@ from signatures alone.
 - Create pools, distribute, stream to pool → `references/contracts/GDAv1Forwarder.abi.yaml`
 - Pool member management, units, claims → also `references/contracts/SuperfluidPool.abi.yaml`
 - Low-level agreement details → also `references/contracts/GeneralDistributionAgreementV1.abi.yaml`
+- How GDA achieves O(1) scalability (formal math deep-dive) → also `references/deep-researches/gda-scalability.md`
 
 ### Token operations
 
@@ -101,12 +102,14 @@ callbacks. See the YAML header and glossary for Foundry testing gotchas.
 - CFA callback hooks (simplified base) → `references/contracts/CFASuperAppBase.abi.yaml`
 - Token-centric API for callback logic → `references/contracts/SuperTokenV1Library.abi.yaml` (use `WithCtx` variants)
 - App registration, Host context, batch calls → `references/contracts/Superfluid.abi.yaml`
+- Smart contract patterns (GDA pools, callbacks, custom tokens, automation, proxies) → `references/guides/smart-contract-patterns.md`
 
 Super Apps that relay incoming flows use **app credit** — a temporary deposit
 allowance enabling zero-balance operation. A 1:1 relay (one in, one out at
 the same rate) always works without tokens. Fan-out (1:N) requires the app to
 hold tokens for extra deposits. The sender's locked capital roughly doubles
 because outgoing stream deposits are backed as owed deposit on the sender.
+**App credit is CFA-only** — GDA has no app credit rule. See Common Gotchas below.
 See `references/guides/super-apps.md` for the full guide.
 
 ### Macro forwarders (composable batch operations)
@@ -115,6 +118,7 @@ See `references/guides/super-apps.md` for the full guide.
 - MacroForwarder contract address and interface → also `references/guides/macro-forwarders.md`
 - Batch operation types and encoding rules → also `references/contracts/Superfluid.abi.yaml` (batch_operation_types)
 - EIP-712 signed macro patterns → `references/guides/macro-forwarders-eip712-example.md`
+- **Clear Signing** — supersedes MacroForwarder with native EIP-712 clear signing for Super Token operations. Human-readable transaction display (multilingual), third-party relaying (not limited to `msg.sender`), gasless transactions (fees paid in the Super Token), and custom fee schemes. https://tokens.superfluid.org/clear
 
 ### Sentinels and liquidation
 
@@ -131,6 +135,11 @@ Contracts use "FLUID" and "Locker" internally — public-facing names are "SUP" 
 - Create / fund / stop emission programs → `references/contracts/FluidEPProgramManager.abi.yaml`
 - Understand tax distribution to stakers and LPs → `references/contracts/StakingRewardController.abi.yaml`
 - Unlock SUP via time-delayed stream (Fontaine) → `references/contracts/FluidLocker.abi.yaml` and `references/contracts/Fontaine.abi.yaml`
+
+### ERC-8004 Agent Pools
+
+- ERC-8004 standard, Identity/Reputation/Validation registries, AgentPoolDistributor integration → `references/deep-researches/erc8004-agent-pools.md`
+- GDA pool mechanics (units, claims, connections) → `references/contracts/GDAv1Forwarder.abi.yaml` and `references/contracts/SuperfluidPool.abi.yaml`
 
 ### Querying indexed data (Subgraphs)
 
@@ -157,7 +166,40 @@ Contracts use "FLUID" and "Locker" internally — public-facing names are "SUP" 
 - Resolve ENS / Farcaster / Lens handles → See API Services (Whois) below
 - Query protocol data via GraphQL → See Subgraphs below
 - Run a sentinel / liquidation bot → See Sentinels below
-- Get a Super Token listed / enable automations → See Processes below
+- Get a Super Token listed → https://tokens.superfluid.org/listing (submit via GitHub) — See also Processes below
+
+### Displaying flowing balances (frontend)
+
+- Animate a real-time streaming balance counter → `references/guides/flowing-balances.md`
+  **Read the guide first** — it has production-ready implementations (React, vanilla JS, Vue, Svelte, Solid). Do not generate flowing balance code from scratch.
+- Fix layout shift / jumping in a flowing balance display → also `references/guides/flowing-balances.md`
+- Format wei amounts, flow rates, token prices → also `references/guides/flowing-balances.md`
+
+### Ecosystem deep-dives
+
+- Protocol history, founding, exploit, SUP launch → `references/deep-researches/superfluid-history.md`
+- Semantic Money formal spec (yellowpaper, Haskell reference, BasicParticle, agreement hierarchy) → `references/deep-researches/semantic-money-yellowpaper.md`
+- GDA scalability (PDPool math, O(1) distributions, rounding model, settle-on-write) → `references/deep-researches/gda-scalability.md`
+- GoodDollar (G$ Pure Super Token on Celo, UBI, streaming) → `references/deep-researches/gooddollar.md`
+- Flow State (Streaming Quadratic Funding, cooperative) → `references/deep-researches/flowstate.md`
+- ERC-8004 Agent Pools (AI agent identity + GDA distribution on Base) → `references/deep-researches/erc8004-agent-pools.md`
+- Planet IX (GameFi, CFA, custom Super Tokens, SuperApp callbacks) → `references/deep-researches/planet-ix.md`
+- Nerite (USND stablecoin, Custom Pure Super Token, CFA+GDA) → `references/deep-researches/nerite.md`
+- SuperBoring (DCA, CFA→GDA TOREX pattern, Superfluid Labs) → `references/deep-researches/superboring.md`
+- TOREX (TWAP Oracle Exchange — streaming DEX, discount model, back charge/refund between LMEs, liquidity movers, Twin TOREX) → `references/deep-researches/torex.md`
+- Giveth (zero-fee donations, CFA recurring streams) → `references/deep-researches/giveth.md`
+- Streme.fun (token launcher, Pure Super Tokens, GDA staking) → `references/deep-researches/streme.md`
+
+### Superfluid team brand & design
+
+- Color palette, typography, visual identity → `references/guides/brand-design.md`
+  Covers the Superfluid team's product design, not the broader protocol ecosystem.
+
+### Formal specification and protocol theory
+
+- Yellowpaper foundations (payment primitives, conservation of value, agreement framework) → `references/deep-researches/semantic-money-yellowpaper.md`
+- How GDA achieves O(1) streaming to unlimited receivers → `references/deep-researches/gda-scalability.md`
+- BasicParticle and the real-time balance formula → also `references/deep-researches/semantic-money-yellowpaper.md`
 
 ## Debugging Reverts
 
@@ -178,10 +220,13 @@ Error prefixes map to contracts:
 - `PROGRAM_*`, `INVALID_SIGNATURE`, `NOT_PROGRAM_ADMIN` → FluidEPProgramManager
 - `NOT_APPROVED_LOCKER`, `NOT_LOCKER_FACTORY`, `NOT_PROGRAM_MANAGER` → StakingRewardController
 - `NOT_CONNECTED_LOCKER`, `NO_ACTIVE_UNLOCK`, `TOO_EARLY_TO_TERMINATE_UNLOCK` → Fontaine
+- `NotAgentOwner`, `AlreadyJoined`, `AgentNotRegistered`, `InsufficientFee`, `FeeTransferFailed` → AgentPoolDistributor
 
 Each YAML's `errors:` section is the complete error index for that contract,
-with selector hashes and descriptions. Per-function `errors:` fields show
-which errors a specific function can throw.
+with descriptions. Per-function `errors:` fields show which errors a specific
+function can throw. To look up a hex selector (function, event, or error),
+read the companion `.selectors.yaml` file — every `Foo.abi.yaml` has a
+`Foo.selectors.yaml` alongside it with full signatures and computed hashes.
 
 ## Common Gotchas (Quick Reference)
 
@@ -209,6 +254,8 @@ rounding remainder becomes an **adjustment flow to the pool admin**. If
 entire flow goes to admin. `distribute` (instant): the remainder simply
 isn't taken from the distributor — actual distributed amount < requested.
 Pools hold no balance; tokens flow through directly to members.
+See `references/deep-researches/gda-scalability.md` for the full rounding
+model with `align2` and adjustment flow math.
 
 **SuperTokenV1Library `address(this)`** — Convenience functions (`flow`,
 `flowX`, `distribute`, `distributeFlow`, `createPool`, `claimAll`) use
@@ -233,6 +280,19 @@ redistributed to stakers and LPs. All unlocks (including instant) require
 `msg.value` of 0.0001 ETH (`UNLOCKING_FEE`, sent to DAO treasury). Periods
 of 7–365 days deploy a Fontaine beacon proxy that streams tokens over the
 unlock period with a proportional tax.
+
+**GDA has no app credit** — Unlike CFA, GDA does not support the app credit
+mechanism. A Super App that receives CFA inflows and distributes via GDA
+cannot borrow the deposit buffer — it must fund the GDA stream's buffer
+deposit from its own balance or via ERC-20 `transferFrom` from the user.
+This is the most common reason CFA→GDA stream-splitting contracts fail.
+See `references/guides/smart-contract-patterns.md` § A for the workaround.
+
+**balanceOf clamps to zero** — `balanceOf` returns `max(0, availableBalance)` for
+ERC-20 compatibility. Accounts with active outgoing streams can go negative
+(critical), but `balanceOf` will still show 0. Use `realtimeBalanceOfNow` to
+detect negative balances — a negative `availableBalance` means the account is
+critical and awaiting liquidation. Once liquidated, the balance resets to zero.
 
 ## Reading the Rich ABI YAMLs
 
@@ -335,16 +395,27 @@ resolved URL for a specific chain.
 
 ### Apps
 
+- Super Tokens https://tokens.superfluid.org — Official Super Tokens site: ERC20x overview, Clear Signing, Super App hooks, and token listing
 - Dashboard https://app.superfluid.org — Stream management for end-users
 - Explorer https://explorer.superfluid.org — Block explorer for Superfluid Protocol
 - Claim https://claim.superfluid.org — SUP token, SUP points, reserves/lockers
 - TOGA https://toga.superfluid.finance — View recent liquidations by token
 - Dune https://dune.com/superfluid_hq/superfluid-overview — Official protocol analytics dashboards
+- Campaigns https://campaigns.superfluid.org — Mint exclusive NFTs powered by Superfluid, with SUP reward campaigns
+- x402 https://x402.superfluid.org — Open standard for internet-native subscriptions via HTTP 402 + Superfluid streams. One-time EIP-712 signature, no gas fees, real-time payment verification, zero protocol fees. Works for human users and AI agents.
+- 8004 Agent Pool https://8004-demo.superfluid.org/ — AI agent pool powered by ERC-8004 identity and Superfluid GDA. Agents register, join a pool, and earn proportional SUP distributions.
 
 Repos:
 [Dashboard](https://github.com/superfluid-org/superfluid-dashboard) ·
 [Explorer](https://github.com/superfluid-org/superfluid-explorer) ·
-[TOGA](https://github.com/superfluid-org/toga-suit)
+[TOGA](https://github.com/superfluid-org/toga-suit) ·
+[8004 Demo](https://github.com/superfluid-org/8004-demo)
+
+### Community & Social
+
+- Twitter/X https://x.com/Superfluid_HQ
+- Farcaster https://warpcast.com/superfluid
+- Discord https://discord.gg/EFAUmTnPd9
 
 ### Sentinels
 
