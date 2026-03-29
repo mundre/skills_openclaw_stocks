@@ -1,0 +1,11 @@
+{
+  "owner": "ugpoor",
+  "slug": "tencentcloud-manager",
+  "displayName": "腾讯云资源统一管理",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774761049822,
+    "commit": null
+  },
+  "history": []
+}
