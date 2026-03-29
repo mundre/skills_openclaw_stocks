@@ -1,3 +1,5 @@
+# Copyright (c) 2026 思捷娅科技 (SJYKJ)
+# License: MIT
 #!/bin/bash
 
 # 终端OCR主脚本
@@ -5,12 +7,16 @@
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SKILL_DIR/../venv"
 
-if [ ! -f "$VENV_DIR/bin/activate" ]; then
-    echo "❌ 虚拟环境未安装，请先运行 install.sh"
-    exit 1
+# 优先使用 venv，没有则用系统 Python
+if [ -f "$VENV_DIR/bin/activate" ]; then
+    source "$VENV_DIR/bin/activate"
+else
+    # 检查系统依赖
+    if ! python3 -c "import pytesseract" 2>/dev/null; then
+        echo "❌ pytesseract 未安装，请运行: pip3 install pytesseract"
+        exit 1
+    fi
 fi
-
-source "$VENV_DIR/bin/activate"
 
 IMAGE_PATH="$1"
 

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 思捷娅科技 (SJYKJ)
+# License: MIT
 #!/usr/bin/env python3
 
 """
@@ -181,10 +183,30 @@ class TerminalOCR:
             processed_blocks = self.preprocess_image(image_path, output_dir)
             
             # 选择OCR引擎
-            if force_engine == "tesseract" or (force_engine is None and self.detect_tesseract()):
+            if force_engine == "ai":
+                result = self.ocr_with_ai_vision(image_path)
+            elif force_engine == "tesseract" or (force_engine is None and self.detect_tesseract()):
                 print("🔍 使用Tesseract OCR...")
-                # Tesseract OCR实现（待完成）
-                result = {"text": "[Tesseract OCR结果待实现]", "engine": "tesseract"}
+                import pytesseract
+                import cv2
+                import numpy as np
+                
+                # 读取并预处理
+                img = cv2.imread(image_path)
+                if img is None:
+                    raise ValueError(f"无法读取图片: {image_path}")
+                
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                alpha = self.config["preprocessing"]["contrast_enhancement"]
+                enhanced = cv2.convertScaleAbs(gray, alpha=alpha, beta=0)
+                _, binary = cv2.threshold(enhanced, self.config["preprocessing"]["binary_threshold"], 255, cv2.THRESH_BINARY)
+                
+                # OCR
+                langs = '+'.join(self.config["ocr_engines"]["tesseract"].get("languages", ["eng"]))
+                tess_config = self.config["ocr_engines"]["tesseract"].get("config", "--psm 6 --oem 3")
+                text = pytesseract.image_to_string(binary, lang=langs, config=tess_config)
+                
+                result = {"text": text.strip(), "engine": "tesseract", "success": True}
             else:
                 print("🤖 使用AI视觉分析（备用方案）...")
                 result = self.ocr_with_ai_vision(image_path)

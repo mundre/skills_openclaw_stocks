@@ -1,3 +1,5 @@
+# Copyright (c) 2026 思捷娅科技 (SJYKJ)
+# License: MIT
 #!/usr/bin/env python3
 
 """
