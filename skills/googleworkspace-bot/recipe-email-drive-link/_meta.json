@@ -3,11 +3,16 @@
   "slug": "recipe-email-drive-link",
   "displayName": "Recipe Email Drive Link",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774300606551,
-    "commit": "https://github.com/openclaw/skills/commit/bf5956d574f168fb18895fd97f8afd89c9a5cd73"
+    "version": "1.0.10",
+    "publishedAt": 1774551147123,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774300606551,
+      "commit": "https://github.com/openclaw/skills/commit/bf5956d574f168fb18895fd97f8afd89c9a5cd73"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773400368192,
