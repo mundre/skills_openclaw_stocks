@@ -1,13 +1,18 @@
 {
   "owner": "wanikua",
   "slug": "ai-court",
-  "displayName": "Ai Court",
+  "displayName": "Ai Court Skill",
   "latest": {
-    "version": "1.5.0",
-    "publishedAt": 1772375113525,
-    "commit": "https://github.com/openclaw/skills/commit/3ff1502f66e9f0042bdb72d4e55e576c8a308ce5"
+    "version": "2.0.0",
+    "publishedAt": 1774616290067,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.0",
+      "publishedAt": 1772375113525,
+      "commit": "https://github.com/openclaw/skills/commit/3ff1502f66e9f0042bdb72d4e55e576c8a308ce5"
+    },
     {
       "version": "1.4.0",
       "publishedAt": 1772355755023,
