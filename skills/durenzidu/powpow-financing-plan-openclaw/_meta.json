@@ -1,13 +1,18 @@
 {
   "owner": "durenzidu",
   "slug": "powpow-financing-plan-openclaw",
-  "displayName": "POWPOW Integration",
+  "displayName": "powpow-financing-plan-openclaw",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1774426559612,
-    "commit": "https://github.com/openclaw/skills/commit/a58ba5c2bcb0f17ce59dacdb1f192e4c596cf9aa"
+    "version": "1.1.0",
+    "publishedAt": 1774750502590,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1774426559612,
+      "commit": "https://github.com/openclaw/skills/commit/a58ba5c2bcb0f17ce59dacdb1f192e4c596cf9aa"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774007131231,
