@@ -1,34 +1,91 @@
 ---
 name: feishu-voice
-description: Send voice/audio messages to Feishu (Lark) chats using macOS TTS. Converts text to speech via macOS `say` command, transcodes to opus format with ffmpeg, uploads to Feishu Open API, and delivers as a native audio message. Use when asked to "send a voice message", "发语音", "用语音说", or any request to send audio to Feishu/Lark. Requires macOS + ffmpeg + Feishu bot credentials.
+description: Send voice/audio messages to Feishu (Lark) chats using TTS. Automatically uses OpenAI TTS (gpt-4o-mini-tts) if OPENAI_API_KEY is set, otherwise falls back to macOS `say`. Transcodes to opus and delivers as a native Feishu audio message. Use when asked to "send a voice message", "发语音", "用语音说", or any request to send audio to Feishu/Lark.
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - ffmpeg
+        - ffprobe
+        - curl
+        - python3
+      bins_conditional:
+        - bin: say
+          condition: OPENAI_API_KEY not set (macOS fallback TTS)
+      config:
+        - path: ~/.openclaw/openclaw.json
+          keys:
+            - channels.feishu.appId
+            - channels.feishu.appSecret
+          reason: Feishu bot credentials (app_id + app_secret) for API authentication
+      env_optional:
+        - name: OPENAI_API_KEY
+          reason: If set, uses OpenAI TTS (gpt-4o-mini-tts) instead of macOS say
+      platform: macOS
 ---
 
 # Feishu Voice Message
 
 Send voice messages to Feishu (Lark) via TTS → opus → Feishu API.
 
+## TTS Engine Priority
+
+| Priority | Engine | Condition |
+|----------|--------|-----------|
+| 1st | **OpenAI TTS** (`gpt-4o-mini-tts`) | `OPENAI_API_KEY` env var is set |
+| 2nd | **macOS `say`** (fallback) | No `OPENAI_API_KEY` |
+
 ## Prerequisites
 
-- macOS (uses `say` command for TTS)
 - `ffmpeg` with libopus: `brew install ffmpeg`
 - Feishu bot `app_id` + `app_secret` — read from `~/.openclaw/openclaw.json` → `channels.feishu`
+- **OpenAI TTS (optional):** `OPENAI_API_KEY` environment variable
 
 ## Quick Send
 
-Use the bundled script for one-shot sending:
-
 ```bash
-scripts/feishu-voice.sh "你好，谢欣！" <open_id_or_chat_id> [open_id|chat_id] [voice]
+scripts/feishu-voice.sh <text> <receive_id> [receive_id_type] [voice] [openai_instructions]
 ```
 
 Examples:
 ```bash
-# Send to a user (open_id)
-scripts/feishu-voice.sh "今天天气不错！" ou_xxxxxxxx open_id Tingting
+# Auto-selects engine based on OPENAI_API_KEY
+scripts/feishu-voice.sh "今天天气不错！" ou_xxxxxxxx open_id
 
-# Send to a group (chat_id)
-scripts/feishu-voice.sh "会议提醒" oc_xxxxxxxx chat_id Tingting
+# OpenAI TTS with Taiwan accent instructions
+scripts/feishu-voice.sh "你好！" ou_xxxxxxxx open_id shimmer "Speak with a Taiwan Mandarin accent"
+
+# macOS TTS with specific voice (when no OPENAI_API_KEY)
+scripts/feishu-voice.sh "会议提醒" oc_xxxxxxxx chat_id Meijia
+
+# Send to a group
+scripts/feishu-voice.sh "下午三点开会" oc_xxxxxxxx chat_id
 ```
+
+## Voice Options
+
+### OpenAI TTS voices
+| Voice | Character |
+|-------|-----------|
+| `shimmer` | Warm, expressive (recommended for Chinese) |
+| `nova` | Friendly, natural |
+| `alloy` | Neutral |
+| `echo` | Clear |
+| `fable` | Expressive |
+| `onyx` | Deep |
+
+Use `openai_instructions` (5th arg) for accent/style control, e.g.:
+- `"Speak with a Taiwan Mandarin accent"`
+- `"Use a warm and friendly tone"`
+
+### macOS `say` voices (fallback)
+| Voice | Language | Notes |
+|-------|----------|-------|
+| `Tingting` | 普通话 zh_CN | Recommended default |
+| `Meijia` | 台湾 zh_TW | Taiwan accent |
+| `Sinji` | 粤语 zh_HK | Cantonese |
+
+List all: `say -v '?'`
 
 ## Manual Step-by-Step
 
@@ -39,7 +96,17 @@ APP_ID=$(python3 -c "import json; d=json.load(open('$HOME/.openclaw/openclaw.jso
 APP_SECRET=$(python3 -c "import json; d=json.load(open('$HOME/.openclaw/openclaw.json')); print(d['channels']['feishu']['appSecret'])")
 ```
 
-### 2. TTS → AIFF
+### 2a. TTS → mp3 (OpenAI)
+
+```bash
+curl -s -X POST "https://api.openai.com/v1/audio/speech" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o-mini-tts","input":"要说的文字","voice":"shimmer","response_format":"mp3"}' \
+  -o /tmp/voice.mp3
+```
+
+### 2b. TTS → AIFF (macOS fallback)
 
 ```bash
 say -v "Tingting" "要说的文字" -o /tmp/voice.aiff
@@ -48,6 +115,10 @@ say -v "Tingting" "要说的文字" -o /tmp/voice.aiff
 ### 3. Transcode to opus ⚠️ All three flags required
 
 ```bash
+# From mp3 (OpenAI)
+ffmpeg -y -i /tmp/voice.mp3 -acodec libopus -ac 1 -ar 16000 /tmp/voice.opus
+
+# From aiff (macOS)
 ffmpeg -y -i /tmp/voice.aiff -acodec libopus -ac 1 -ar 16000 /tmp/voice.opus
 ```
 
@@ -92,24 +163,11 @@ FILE_KEY=$(curl -s -X POST "https://open.feishu.cn/open-apis/im/v1/files" \
 ### 7. Send audio message
 
 ```bash
-# To a user (open_id)
 curl -s -X POST "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id" \
   -H "Authorization: Bearer $TENANT_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"receive_id\":\"$RECEIVE_ID\",\"msg_type\":\"audio\",\"content\":\"{\\\"file_key\\\":\\\"$FILE_KEY\\\"}\"}"
-
-# To a group, change receive_id_type=chat_id and use oc_xxx
 ```
-
-## Voice Options (Chinese)
-
-| Voice | Language | Notes |
-|-------|----------|-------|
-| `Tingting` | 普通话 zh_CN | Recommended default |
-| `Meijia` | 台湾 zh_TW | |
-| `Sinji` | 粤语 zh_HK | |
-
-List all available: `say -v '?'`
 
 ## Common Issues
 
@@ -119,3 +177,4 @@ List all available: `say -v '?'`
 | Upload fails 400 | `file_type=audio` used | Change to `opus` |
 | Silent/tiny AIFF | Voice pack not installed | System Settings → Accessibility → Spoken Content → download voice |
 | Garbled audio | Missing `-ac 1 -ar 16000` | Add both ffmpeg flags |
+| OpenAI 401 error | `OPENAI_API_KEY` invalid or not set | Check env var; falls back to macOS say |
