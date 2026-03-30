@@ -1,0 +1,120 @@
+# 微信公众号图文生成与推送技能
+
+[ClawHub](https://clawhub.ai/skills/weixin-mp-push)
+
+支持通过AI生成符合公众号规范的图文（文章和贴图），并推送到公众号草稿箱或直接发布，兼容其它SKILL生成的图文、图片进行推送。通过配置向导扫码授权，无需泄露公众号Secret密钥，无需配置公众号IP白名单。
+
+## ✨ 功能特性
+
+- 🔒 **扫码授权** - 通过配置向导扫码授权，无需泄露公众号Secret密钥，无需配置公众号IP白名单
+- 📝 **图文生成** - 按照 design.md 规范生成标准的 HTML 文件，会自动适配公众号格式
+- 🚀 **一键推送** - 支持 HTML 与图片链接两种推送方式，推送成功后有服务通知
+
+## 📥 安装
+
+在 AI 对话中发送技能链接，或在终端执行以下命令，安装后即可使用本技能：
+
+- **链接安装**：发送 [https://clawhub.ai/lihengdao/weixin-mp-push](https://clawhub.ai/lihengdao/weixin-mp-push) 给 AI
+- **命令行安装**：
+
+```bash
+npx skills add lihengdao/weixin-mp-push
+```
+
+## 📦 快速开始
+
+### 1. 配置公众号
+
+用户访问配置向导完成公众号配置:
+
+```
+https://app.pcloud.ac.cn/design/weixin-mp-push.html
+```
+
+1. 用户微信扫码
+2. 选择要推送的公众号
+3. 复制生成的配置文件发给AI
+
+### 2. 保存配置
+
+AI将用户发送的配置保存到技能目录下的 `config.json` 文件中。
+
+### 3. 写公众号图文
+
+用户发送图文创作要求给AI，AI根据 `design.md` 规范生成标准的 HTML 文件。后续在推送图文的时候，标准的 HTML 会自动适配公众号格式。
+
+- **文章或通用**：默认宽度 677px，适合文章或通用类型
+- **图文卡片**：宽度 375px，固定分页比例（默认 3:4），适合贴图类型（俗称小绿书，类似小红书图文卡片），可截图分发至朋友圈、小红书或其它社群
+
+### 4. 推送到公众号
+
+推送方式：`html` 模式传入生成的 HTML 文件（本技能或外部产出均可，其它素材可先按 `design.md` 整理成 HTML）；`img` 模式传入已是公网可访问的图片 URL 数组及标题、正文。
+
+#### 推送 HTML
+
+AI 调用脚本，首参为 `html`，再传与脚本同目录下的 HTML 文件名，再传 `sendMode`（可选）：
+
+```bash
+cd weixin-mp-push
+node push-to-wechat-mp.js html 你的文件.html draft
+```
+
+#### 推送图片链接
+
+AI 调用脚本，首参为 `img`，第二参为**图片链接的 JSON 数组字符串**（整段一个参数；Bash 与 PowerShell 都可用单引号包住整段 JSON，例如 `'["https://...","https://..."]'`）。再依次传标题、正文、`sendMode`（可选）。
+
+```bash
+cd weixin-mp-push
+node push-to-wechat-mp.js img '["https://cdn.example.com/1.png","https://cdn.example.com/2.png"]' "标题" "正文" draft
+```
+
+**标题、正文**（命令行各一个参数，含空格时用英文双引号）：标题和正文可为空。
+
+#### 说明
+
+**sendMode**：`draft` 推送到草稿箱（缺省）；发布用 `send`；群发用 `masssend`（需已认证号等条件）。
+ 
+## 📖 详细文档
+
+- **SKILL.md** - 完整技能说明
+- **design.md** - HTML格式规范
+- **config.example.json** - 配置字段说明与示例
+
+## 🎯 使用场景
+
+- 📰 日常公众号图文创作
+- 🤖 兼容搭配其它SKILL使用
+- 🗓️ 定期内容推送自动化
+
+## 🔧 配置说明
+
+配置文件 `config.json` 包含以下关键字段:
+
+- `openId` - 微信用户 openId(必填)
+- `pushMode` - 推送模式: `default`（系统默认公众号） 或 `custom`（用户自定义公众号）
+- `isBindPhoneNumber` - 仅 pushMode=default 时有意义：boolean。用户配置向导中，用户选择是否绑定手机号。true → AI/脚本应用 sendMode可以是send（正式发布，链接长期有效）或draft（草稿预览链接12小时后失效）；false 或缺省 → sendMode仅可以是 draft。pushMode=custom 时为 null，可忽略
+- `accountId` - 公众号账号 ID(custom 模式必填)
+
+## 🚨 注意事项
+
+- 通过系统默认公众号推送，若需要发布，则需要在向导中先绑定手机号
+- 通过自定义公众号推送，未认证公众号只能推送到草稿箱，认证的公众号可以使用草稿、发布或群发
+- 推送前请确保运行了配置向导并复制发给了AI
+- 推送公众号图文链路较长（转换、平台接口、异步任务等），若返回「超时」可视为成功，无需重复推送，请用户关注微信服务通知或草稿箱
+
+## 📄 许可证
+
+MIT - 免费使用、修改和分发，无需署名
+
+## 🔗 相关链接
+
+- [ClawHub 技能页面](https://clawhub.ai/skills/weixin-mp-push)
+- [OpenClaw 官方文档](https://docs.openclaw.ai)
+
+## 👨‍💻 维护者
+
+[@lihengdao](https://clawhub.ai/users/lihengdao)
+
+---
+
+**需要帮助?** 查看 SKILL.md 获取详细使用说明。
