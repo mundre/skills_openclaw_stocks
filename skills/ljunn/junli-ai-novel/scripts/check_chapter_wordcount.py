@@ -9,6 +9,11 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    from chapter_text import extract_content_from_chapter, is_chapter_file
+except ModuleNotFoundError:
+    from scripts.chapter_text import extract_content_from_chapter, is_chapter_file
+
 # 修复 Windows 控制台编码问题
 if sys.platform == 'win32':
     import io
@@ -29,45 +34,6 @@ def count_chinese_words(text: str) -> int:
     # 统计中文字符（汉字）
     chinese_chars = re.findall(r'[\u4e00-\u9fff]', text)
     return len(chinese_chars)
-
-
-def extract_body_section(content: str) -> str:
-    """优先提取“## 正文”区块，避免把概要和备注算进正文。"""
-    match = re.search(
-        r'(?ms)^##\s*正文\s*\n+(.*?)(?:\n---\s*$|\n##\s+章节备注|\Z)',
-        content,
-    )
-    if match:
-        return match.group(1).strip()
-    return content.strip()
-
-
-def is_chapter_file(path: Path) -> bool:
-    """兼容 `001_标题.md` 和 `第1章_标题.md` 两种命名。"""
-    name = path.name
-    return bool(re.match(r'^\d{3}[_-].+\.md$', name)) or ('第' in name and '章' in name and name.endswith('.md'))
-
-
-def extract_content_from_chapter(file_path: Path) -> str:
-    """从章节文件中提取正文内容（排除标题等元数据）"""
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-
-    content = extract_body_section(content)
-
-    # 查找正文开始位置（通常是第一个一级标题或二级标题之后）
-    lines = content.split('\n')
-
-    # 跳过开头的元数据（如 # 第XX章 标题）
-    content_start = 0
-    for i, line in enumerate(lines):
-        if line.startswith('#') and '章' in line:
-            content_start = i + 1
-            break
-
-    # 提取正文
-    main_content = '\n'.join(lines[content_start:])
-    return main_content
 
 
 def check_chapter(file_path: str, min_words: int = 3000) -> dict:

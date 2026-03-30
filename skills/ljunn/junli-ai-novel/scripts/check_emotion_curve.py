@@ -10,6 +10,11 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
+try:
+    from chapter_text import extract_content_from_chapter, is_chapter_file
+except ModuleNotFoundError:
+    from scripts.chapter_text import extract_content_from_chapter, is_chapter_file
+
 if sys.platform == 'win32':
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -79,22 +84,6 @@ def extract_paragraphs(text: str) -> list:
     return paragraphs
 
 
-def extract_body_section(content: str) -> str:
-    """优先提取章节正文区块。"""
-    match = re.search(
-        r'(?ms)^##\s*正文\s*\n+(.*?)(?:\n---\s*$|\n##\s+章节备注|\Z)',
-        content,
-    )
-    if match:
-        return match.group(1).strip()
-    return content.strip()
-
-
-def is_chapter_file(path: Path) -> bool:
-    name = path.name
-    return bool(re.match(r'^\d{3}[_-].+\.md$', name)) or ('第' in name and '章' in name and name.endswith('.md'))
-
-
 def analyze_paragraph_emotions(paragraph: str) -> dict:
     """分析单个段落的情绪倾向"""
     scores = defaultdict(int)
@@ -128,18 +117,7 @@ def analyze_chapter_emotion_curve(file_path: str) -> dict:
             'error': f'文件不存在: {file_path}'
         }
 
-    with open(path, 'r', encoding='utf-8') as f:
-        content = f.read()
-
-    content = extract_body_section(content)
-    lines = content.split('\n')
-    content_start = 0
-    for i, line in enumerate(lines):
-        if line.startswith('#') and '章' in line:
-            content_start = i + 1
-            break
-
-    main_content = '\n'.join(lines[content_start:])
+    main_content = extract_content_from_chapter(path)
     paragraphs = extract_paragraphs(main_content)
 
     if len(paragraphs) < 3:

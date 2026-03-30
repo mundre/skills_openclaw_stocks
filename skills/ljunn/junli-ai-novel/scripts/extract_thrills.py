@@ -9,6 +9,11 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    from chapter_text import extract_content_from_chapter, is_chapter_file
+except ModuleNotFoundError:
+    from scripts.chapter_text import extract_content_from_chapter, is_chapter_file
+
 if sys.platform == 'win32':
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -129,6 +134,33 @@ POISON_PATTERNS = {
         'description': 'AI常用的华丽但空洞的词汇',
         'scope': 'full'
     },
+    '高风险感官套语': {
+        'keywords': [
+            '血腥味', '铁锈味', '金属的甜腥味',
+            '周遭的空气仿佛凝固了', '令人疯狂的窒息感', '呼吸如破风箱'
+        ],
+        'weight': 2,
+        'description': '高频 AI 感官套语，若反复出现建议改写为更具体的场面',
+        'scope': 'full'
+    },
+    '高风险微表情套语': {
+        'keywords': [
+            '瞳孔骤缩', '倒吸一口凉气', '嘴角勾起了一抹弧度',
+            '修长的手指', '深邃的眼眸', '眉头微蹙',
+            '呢喃', '叹息声空气中回荡'
+        ],
+        'weight': 2,
+        'description': '常见 AI 微表情或人物描写套语，重复时容易失真',
+        'scope': 'full'
+    },
+    '高风险抽象形容': {
+        'keywords': [
+            '宛如实质的杀气', '恐怖如斯', '不可名状'
+        ],
+        'weight': 2,
+        'description': '抽象压迫形容过重，容易替代具体场面',
+        'scope': 'full'
+    },
     '感悟式结尾': {
         'keywords': [
             '他明白了', '她明白了', '他懂了', '她懂了',
@@ -178,7 +210,8 @@ POISON_PATTERNS = {
     '过度解释': {
         'keywords': [
             '这是因为', '原因在于',
-            '也就是说', '换言之', '换句话说'
+            '也就是说', '换言之', '换句话说',
+            '归根结底', '说到底', '总而言之'
         ],
         'weight': 1,
         'description': '过度解释角色行为动机',
@@ -194,39 +227,6 @@ POISON_PATTERNS = {
         'scope': 'full'
     }
 }
-
-
-def extract_content_from_chapter(file_path: Path) -> str:
-    """从章节文件中提取正文内容"""
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-
-    content = extract_body_section(content)
-    lines = content.split('\n')
-    content_start = 0
-    for i, line in enumerate(lines):
-        if line.startswith('#') and '章' in line:
-            content_start = i + 1
-            break
-
-    main_content = '\n'.join(lines[content_start:])
-    return main_content
-
-
-def extract_body_section(content: str) -> str:
-    """优先提取章节正文区块。"""
-    match = re.search(
-        r'(?ms)^##\s*正文\s*\n+(.*?)(?:\n---\s*$|\n##\s+章节备注|\Z)',
-        content,
-    )
-    if match:
-        return match.group(1).strip()
-    return content.strip()
-
-
-def is_chapter_file(path: Path) -> bool:
-    name = path.name
-    return bool(re.match(r'^\d{3}[_-].+\.md$', name)) or ('第' in name and '章' in name and name.endswith('.md'))
 
 
 def get_scope_text(text: str, scope: str) -> str:
@@ -362,7 +362,10 @@ def print_thrill_poison_analysis(result: dict):
     if result['thrill_score'] < 10:
         print('   • 建议增加爽点：打脸反转、境界突破、宝物获得')
     if result['poison_score'] > 5:
-        print('   • 建议减少毒点：避免AI常用词、感悟式结尾')
+        print('   • 建议减少毒点：避免AI常用词、感悟式结尾和过度解释')
+    poison_names = {item['pattern'] for item in result['poisons']}
+    if poison_names & {'高风险感官套语', '高风险微表情套语', '高风险抽象形容'}:
+        print('   • 高风险套语偏多时，不要只删词，优先改写成具体动作、环境、物件或后果')
     if result['thrill_density'] < 0.5:
         print('   • 爽点密度偏低，每500字应有1个以上爽点')
 
