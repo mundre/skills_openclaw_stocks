@@ -53,7 +53,7 @@ The endpoint **fails closed**: if the server secret is not configured, all reque
 
 ```bash
 curl -X POST https://riskstate.netlify.app/v1/risk-state \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer $RISKSTATE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"asset": "BTC"}'
 ```
@@ -62,7 +62,7 @@ curl -X POST https://riskstate.netlify.app/v1/risk-state \
 
 ```bash
 curl -X POST https://riskstate.netlify.app/v1/risk-state \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer $RISKSTATE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"asset": "BTC", "include_details": true}'
 ```
@@ -71,7 +71,7 @@ curl -X POST https://riskstate.netlify.app/v1/risk-state \
 
 ```bash
 curl -X POST https://riskstate.netlify.app/v1/risk-state \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer $RISKSTATE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"asset": "ETH", "wallet": "0xYOUR_WALLET_ADDRESS", "protocol": "aave", "include_details": true}'
 ```
@@ -137,7 +137,7 @@ Three blocks: **Permissioning**, **Classification**, **Auditability**.
 |-------|------|-------------|
 | `policy_hash` | string | SHA-256 hash of policy inputs for non-repudiation |
 | `scoring_version` | string | `"score_v2"` — scoring algorithm version |
-| `version` | string | `"1.2.0"` — API version |
+| `version` | string | `"1.2.2"` — API version |
 | `timestamp` | string | ISO 8601 timestamp |
 | `asset` | string | Asset evaluated |
 | `cached` | boolean | Whether response was served from cache |
@@ -368,7 +368,7 @@ Where `agent_conviction` is the agent's own confidence (0–1).
 
 ```
 1. curl -X POST https://riskstate.netlify.app/v1/risk-state \
-     -H "Authorization: Bearer $TOKEN" \
+     -H "Authorization: Bearer $RISKSTATE_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"asset": "BTC"}'
 2. If structural_blockers non-empty → ABORT new entries
@@ -386,7 +386,7 @@ Where `agent_conviction` is the agent's own confidence (0–1).
 
 ```bash
 curl -X POST https://riskstate.netlify.app/v1/risk-state \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer $RISKSTATE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"asset": "ETH", "wallet": "0xYOUR_WALLET_ADDRESS_HERE", "include_details": true}'
 ```

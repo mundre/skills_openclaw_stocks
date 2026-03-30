@@ -1,15 +1,16 @@
 ---
 name: riskstate
-version: 1.1.1
+version: 1.2.2
 description: Deterministic risk governance API for autonomous crypto trading agents. Returns position limits, allowed actions, and policy constraints from 30+ real-time signals.
 category: risk-management
 auth: bearer-token
-endpoint: POST /v1/risk-state
+env: RISKSTATE_API_KEY
+endpoint: POST https://riskstate.netlify.app/v1/risk-state
 assets: [BTC, ETH]
 refresh: 60s cache, recommend 5min polling
 homepage: https://riskstate.ai
 docs: https://github.com/likidodefi/riskstate-docs
-tags: [defi, risk, governance, trading, crypto, policy, agents, btc, eth, mev-protection, position-sizing]
+tags: [crypto, ai, bitcoin, trading, ethereum, trading-bot, agents, policy-engine, ai-agents, defi, decentralized-finance, ai-trading, agent-skills, defi-risk-management, risk-governance, skills-sh]
 pricing: free-beta
 author: RiskState
 license: proprietary
@@ -46,10 +47,10 @@ This is a **risk governor**, not a trading oracle.
 
 ## Authentication
 
-Request a free API key at [https://riskstate.ai](https://riskstate.ai) (email only). Pass it as a Bearer token:
+Request a free API key at [https://riskstate.ai](https://riskstate.ai) (email only). You will receive a key with the `rs_live_` prefix. Set it as the `RISKSTATE_API_KEY` environment variable and pass it as a Bearer token:
 
 ```
-Authorization: Bearer <your_api_key>
+Authorization: Bearer $RISKSTATE_API_KEY
 ```
 
 ## Binding precedence
@@ -87,13 +88,19 @@ When consuming the response, agents MUST evaluate fields in this order:
 | HTTP 500 or timeout | Assume worst case (BLOCK). Retry after 60s. |
 | `cached: true` + `stale_fields` non-empty | Re-request after cache TTL (60s) for fresh data. |
 
+## Security
+
+**API host**: All API calls go to `https://riskstate.netlify.app` (the `/v1/*` endpoints). The `https://riskstate.ai` domain is the landing page only — no API endpoints are served there.
+
+**API keys**: All keys have the `rs_live_` prefix and are rate-limited to 60 req/min. Store your key in the `RISKSTATE_API_KEY` environment variable. Do not hardcode keys in source code.
+
 ## Example requests
 
 ### Minimal (BTC)
 
 ```bash
 curl -X POST https://riskstate.netlify.app/v1/risk-state \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer $RISKSTATE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"asset": "BTC"}'
 ```
@@ -102,7 +109,7 @@ curl -X POST https://riskstate.netlify.app/v1/risk-state \
 
 ```bash
 curl -X POST https://riskstate.netlify.app/v1/risk-state \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer $RISKSTATE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"asset": "BTC", "include_details": true}'
 ```
@@ -111,7 +118,7 @@ curl -X POST https://riskstate.netlify.app/v1/risk-state \
 
 ```bash
 curl -X POST https://riskstate.netlify.app/v1/risk-state \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer $RISKSTATE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"asset": "ETH", "wallet": "0xYOUR_WALLET_ADDRESS", "include_details": true}'
 ```
@@ -150,7 +157,7 @@ curl -X POST https://riskstate.netlify.app/v1/risk-state \
   "defi": null,
   "policy_hash": "a1b2c3d4e5f6...",
   "scoring_version": "score_v2",
-  "version": "1.1.1",
+  "version": "1.2.2",
   "timestamp": "2026-03-13T14:30:00.000Z",
   "asset": "BTC",
   "cached": false,
