@@ -3,9 +3,15 @@
   "slug": "product-hunt-playbook",
   "displayName": "Product Hunt Playbook",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773644580440,
-    "commit": "https://github.com/openclaw/skills/commit/872d51599846cab6c4be207b4b635e16e68ebca5"
+    "version": "1.2.0",
+    "publishedAt": 1774840195666,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773644580440,
+      "commit": "https://github.com/openclaw/skills/commit/872d51599846cab6c4be207b4b635e16e68ebca5"
+    }
+  ]
 }

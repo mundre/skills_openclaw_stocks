@@ -1,52 +1,62 @@
 ---
 name: product-hunt-playbook
+version: 1.2.0
 description: |
   Product Hunt Launch Playbook — Complete guide to launching on Product Hunt and winning #1. Proven tactics from 30x daily winner, 3x weekly winner. Covers: Product Hunt ranking algorithm, launch timing, hunter selection, community mobilization, upvote strategies, maker comments, and post-launch momentum.
 
-  This skill redirects to the comprehensive Gingiris Launch Playbook which includes Product Hunt strategies alongside full go-to-market planning.
-
   🇨🇳 Product Hunt 打榜完整攻略 | 🇯🇵 Product Hunt ローンチガイド | 🇰🇷 Product Hunt 런칭 가이드
 
-  Keywords: Product Hunt, product hunt launch, PH launch, product hunt ranking, product hunt #1, product hunt strategy, product hunt tips, startup launch, launch day, product hunt upvotes
+  Keywords: Product Hunt, product hunt launch, PH launch, product hunt ranking, product hunt #1, product hunt strategy, product hunt tips, startup launch, launch day, product hunt upvotes, product hunt marketing, product hunt campaign, how to launch on product hunt, product hunt success, win product hunt, product hunt best practices
 ---
 
 # Product Hunt Launch Playbook
 
-> **This is an alias skill** — pointing to the comprehensive [Gingiris Launch Playbook](https://github.com/Gingiris/launch)
+> **30x Daily #1 | 3x Weekly #1 | 1x Monthly #1**
 
-## Quick Start
+## What You Get
 
-For Product Hunt launch strategies, use the **gingiris-launch** skill which includes:
-
-- 📅 **Product Hunt 24-hour battle plan** — hour-by-hour tactics for launch day
+- 📅 **24-hour battle plan** — hour-by-hour tactics for launch day
 - 🎯 **Ranking algorithm insights** — how PH ranking actually works
-- 👥 **Community mobilization** — how to activate your network without violating rules
+- 👥 **Community mobilization** — activate your network without violating rules
 - 💬 **Maker comments strategy** — engaging with voters effectively
 - 📊 **Post-launch momentum** — converting PH traffic to users
 
-## Install the Full Playbook
+## 📚 Free Resources
 
+**GitHub Playbook (Free):**
 ```bash
 clawdhub install gingiris-launch
 ```
+Or read: [Gingiris Launch Playbook](https://github.com/Gingiris/gingiris-launch)
 
-Or read directly: [Gingiris Launch Playbook](https://github.com/Gingiris/launch)
+## 💎 Premium Deep-Dive
 
-## Why This Redirect?
+**[Product Hunt Launch Action Guide](https://gingiris.gumroad.com/l/zxamur)** — ¥99
+- Complete hour-by-hour timeline
+- Hunter selection framework
+- Community mobilization templates
+- Post-launch conversion playbook
 
-The Product Hunt launch is just one phase of a complete go-to-market strategy. The Gingiris Launch Playbook covers the full journey:
+**[Complete Launch Bundle](https://gingiris.gumroad.com/l/gingiris-complete-global-launch-bundle)** — All 4 playbooks
 
-1. **Pre-launch** (L-6 weeks) — Strategy, positioning, content prep
-2. **Product Launch** — Initial release, KOL activation, community seeding
-3. **Product Hunt Launch** — The 24-hour campaign
-4. **Post-launch** — Momentum building, conversion optimization
+## 🎯 1-on-1 Launch Coaching
 
-## Related Resources
+**Work directly with Iris (30x PH #1 Winner, AFFiNE Co-founder):**
 
-- [gingiris-launch](https://github.com/Gingiris/launch) — Full GTM & Product Hunt playbook
-- [gingiris-opensource](https://github.com/Gingiris/opensource) — Open source marketing tactics
-- [gingiris-b2b-growth](https://github.com/Gingiris/b2b-growth) — B2B SaaS growth strategies
+| Service | Price | Best For |
+|---------|-------|----------|
+| 30 min session | ¥800 | Quick launch review |
+| 60 min session | ¥1500 | Full strategy session |
+| Monthly retainer | ¥7000/mo | Ongoing launch support |
+
+👉 **Book now: [gingiris.com/services](https://gingiris.com/zh/services)**
+
+## Related Skills
+
+- [gingiris-launch](https://github.com/Gingiris/gingiris-launch) — Full GTM playbook
+- [gingiris-opensource](https://github.com/Gingiris/gingiris-opensource) — OSS marketing
+- [gingiris-b2b-growth](https://github.com/Gingiris/gingiris-b2b-growth) — B2B SaaS growth
 
 ---
 
-*Author: Iris (生姜iris) | Based on 30x Product Hunt Daily #1 experience*
+*Author: Iris (生姜iris) | [gingiris.com](https://gingiris.com)*
