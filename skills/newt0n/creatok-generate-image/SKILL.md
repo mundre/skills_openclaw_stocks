@@ -36,6 +36,22 @@ metadata:
     - "check this image generation task"
     - "did my image finish"
     - "check this image task id"
+    - "画像を生成して"
+    - "画像を作って"
+    - "商品画像を作って"
+    - "このプロンプトで画像を作って"
+    - "이미지 생성해줘"
+    - "이미지 만들어줘"
+    - "상품 이미지 만들어줘"
+    - "이 프롬프트로 이미지를 만들어줘"
+    - "genera una imagen"
+    - "crea una imagen"
+    - "genera una imagen de producto"
+    - "convierte este prompt en una imagen"
+    - "gere uma imagem"
+    - "crie uma imagem"
+    - "gere uma imagem de produto"
+    - "transforme este prompt em uma imagem"
 ---
 
 # generate-image
@@ -106,14 +122,14 @@ The model should recommend a model before generation based on the use case:
   - `outputs/result.json` with `task_id/status/images/raw`
   - `outputs/result.md`
 - Persist the `task_id` immediately after submission so the user can recover later.
-- Return the final image URLs.
+- Return the final image URLs verbatim.
 
 ## Existing Task Recovery
 
 - If the user already has a `task_id`, continue from that task instead of starting a new one.
 - In recovery mode, do not ask the user to restate the prompt if the task id is already available.
 - The model can either check status once or keep polling if the user wants to wait.
-- If the task succeeded, return the final image URLs.
+- If the task succeeded, return the final image URLs verbatim.
 - If the task is still queued or running, explain clearly and offer to keep checking.
 - If the task failed, explain the failure and suggest next steps.
 
