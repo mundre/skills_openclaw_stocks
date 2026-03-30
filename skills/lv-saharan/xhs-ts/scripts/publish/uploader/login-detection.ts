@@ -8,7 +8,7 @@
 import type { Page } from 'playwright';
 import { XhsError, XhsErrorCode } from '../../shared';
 import { TIMEOUTS } from '../../shared';
-import { delay, debugLog } from '../../utils/helpers';
+import { debugLog } from '../../utils/helpers';
 
 /**
  * Check if we're on the login page
@@ -92,37 +92,21 @@ export async function waitForUserLogin(page: Page): Promise<void> {
   console.log('\n⚠️  Session expired or security check triggered.');
   console.log('📱 Please log in using the browser window (QR code or SMS).\n');
 
-  const startTime = Date.now();
-  const LOGIN_TIMEOUT = TIMEOUTS.LOGIN; // 2 minutes
-
-  while (Date.now() - startTime < LOGIN_TIMEOUT) {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-
-    // Check if we're back on the publish page
-    const url = page.url();
-    if (url.includes('creator.xiaohongshu.com/publish')) {
-      // Check for editor elements
-      const hasEditor = await page
-        .locator('button:has-text("上传图片")')
-        .isVisible()
-        .catch(() => false);
-      if (hasEditor) {
-        debugLog('User logged in successfully, back to publish page');
-        console.log('✅ Login successful! Continuing with publish...\n');
-        return;
-      }
-    }
-
-    // Log status every 10 seconds
-    if (elapsed % 10 === 0 && elapsed > 0) {
-      debugLog(`[${elapsed}s] Waiting for user login...`);
-    }
-
-    await delay(1000);
+  try {
+    // Wait for URL to match publish page
+    await page.waitForURL('**/creator.xiaohongshu.com/publish**', {
+      timeout: TIMEOUTS.LOGIN,
+    });
+    // Then wait for upload button to appear
+    await page.locator('button:has-text("上传图片")').waitFor({
+      timeout: TIMEOUTS.LOGIN,
+    });
+    debugLog('User logged in successfully, back to publish page');
+    console.log('✅ Login successful! Continuing with publish...\n');
+  } catch {
+    throw new XhsError(
+      'Login timeout. Please try again with fresh cookies.',
+      XhsErrorCode.NOT_LOGGED_IN
+    );
   }
-
-  throw new XhsError(
-    'Login timeout. Please try again with fresh cookies.',
-    XhsErrorCode.NOT_LOGGED_IN
-  );
 }

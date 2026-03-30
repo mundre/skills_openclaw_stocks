@@ -12,6 +12,7 @@ export {
   config,
   delay,
   randomDelay,
+  gaussianDelay,
   randomString,
   XHS_URLS,
   isXhsUrl,
@@ -22,8 +23,6 @@ export {
 // Helper types
 export type { WaitForConditionOptions } from './helpers';
 
-// Auth wait utilities
-export { waitForCreatorLogin, saveContextCookies, resolveHeadless } from './auth-wait';
 // Anti-detect utilities
 export {
   humanClick,
@@ -33,6 +32,7 @@ export {
   checkCaptcha,
   checkLoginStatus,
   waitForStable,
+  simulateReading,
 } from './anti-detect';
 
 // Output functions

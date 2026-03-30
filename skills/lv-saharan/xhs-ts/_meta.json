@@ -1,13 +1,18 @@
 {
   "owner": "lv-saharan",
   "slug": "xhs-ts",
-  "displayName": "多用户的小红书ts版本，openclaw 可以自行修改增加功能。feishu & wechat",
+  "displayName": "xhs 多用户",
   "latest": {
-    "version": "0.0.4",
-    "publishedAt": 1774418883851,
-    "commit": "https://github.com/openclaw/skills/commit/120c704187fa99b10fd6809c5e5cd7f9065fd317"
+    "version": "0.0.9",
+    "publishedAt": 1774859630727,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.0.4",
+      "publishedAt": 1774418883851,
+      "commit": "https://github.com/openclaw/skills/commit/120c704187fa99b10fd6809c5e5cd7f9065fd317"
+    },
     {
       "version": "0.0.2",
       "publishedAt": 1774157144535,
