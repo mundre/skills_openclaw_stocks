@@ -52,7 +52,8 @@ Useful filters for `comment list`:
 Common flows:
 
 ```bash
-halo comment reply list comment-abc123
+halo comment reply list
+halo comment reply list --comment comment-abc123
 halo comment reply get reply-abc123
 halo comment reply approve reply-abc123
 halo comment reply delete reply-abc123 --force
@@ -62,14 +63,13 @@ Create a reply:
 
 ```bash
 halo comment create-reply comment-abc123 --content "Thanks for your feedback"
-halo comment create-reply comment-abc123 --content-file ./reply.txt
 halo comment create-reply comment-abc123 --content "Following up here" --quote-reply reply-abc123
 halo comment create-reply comment-abc123 --content "Internal note" --hidden
 ```
 
 Rules:
 
-- In non-interactive mode, `create-reply` requires `--content` or `--content-file`.
+- In non-interactive mode, `create-reply` requires `--content`.
 - `create-reply` creates an already approved reply in console context.
 - Replies can be quoted with `--quote-reply`.
 
