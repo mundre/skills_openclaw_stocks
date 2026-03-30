@@ -1,0 +1,11 @@
+{
+  "owner": "sh1-5",
+  "slug": "yuque-export",
+  "displayName": "语雀知识库导出",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1774337057730,
+    "commit": null
+  },
+  "history": []
+}
