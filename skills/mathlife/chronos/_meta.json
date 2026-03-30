@@ -3,11 +3,16 @@
   "slug": "chronos",
   "displayName": "Chronos",
   "latest": {
-    "version": "1.5.1",
-    "publishedAt": 1773802718476,
-    "commit": "https://github.com/openclaw/skills/commit/3162201a63f6179ad673865289b5477ef41876ae"
+    "version": "1.6.0",
+    "publishedAt": 1774583286961,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.1",
+      "publishedAt": 1773802718476,
+      "commit": "https://github.com/openclaw/skills/commit/3162201a63f6179ad673865289b5477ef41876ae"
+    },
     {
       "version": "1.5.0",
       "publishedAt": 1773717604013,

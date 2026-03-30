@@ -8,31 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Major Refactor**: Renamed to **Chronos** - Universal Periodic Task Manager
-- Generic naming: `financial_*` → `periodic_*` (tables, variables, scripts)
-- Standalone unified entry: `todo.py` (replaces `unified_todo.py`)
-- New manager: `periodic_task_manager.py` (replaces `financial_activity_manager.py`)
-- Database schema: `periodic_tasks` + `periodic_occurrences`
-- Support for all periodic use cases (not just financial)
-- Robust cron scheduling with past-time protection
-- Quota auto-complete fix (only completes up to today)
-- **End date support**: Tasks can have `end_date`; scheduling respects it (no occurrences after end)
-- **Natural language parsing**: Extract end date from phrases like "到2025年3月31日结束"
-- **Double-loop learning integration**: Added LearningContext to all critical operations
+- End-to-end reminder chain coverage for occurrence creation, reminder persistence, immediate reminder fallback, missing-config behavior, and cleanup.
+- `scripts/check_git_hygiene.sh` to fail fast when tracked `__pycache__` or `*.pyc` artifacts leak into the repo.
+- `core/openclaw_cron.py` helper to centralize OpenClaw cron add/remove command construction.
+- `scripts/schema_preflight.py` to verify the actual runtime DB, required tables, key constraints, duplicate occurrence groups, and invalid statuses before any schema migration.
+- `scripts/migrate_legacy_entries.py` for conservative Phase-2 migration of deterministic legacy recurring/system rows from `entries` into canonical task metadata.
+- `scripts/archive_legacy_entries.py` for the final conservative legacy cleanup step that marks migrated linked `entries` rows readonly+archived without deleting them.
+- `tests/test_migrate_legacy_entries.py` covering deterministic link/create decisions, Meta-Review migration, and explicit manual-review quarantine for unsupported every-N-hours rows.
+- `tests/test_archive_legacy_entries.py` covering readonly archive application, audit metadata, and idempotent rereads.
 
 ### Changed
-- Unified todo no longer calls `todo.sh` - direct database access
-- Improved `complete_activity_cycle` logic to avoid auto-completing future dates
-- TaskScheduler now considers `end_date` in `should_remind_today()` and `get_occurrences_for_month()`
+- Reminder cron creation/removal now goes through a shared helper instead of duplicating argv construction.
+- README verification steps now include config diagnostics, schema preflight, full test discovery, legacy cron dry-run cleanup, legacy archive dry-run/apply, and git hygiene checks.
+- Phase-2 docs now document the conservative migration policy, including `legacy_entry_id` / `source` traceability and the deliberate refusal to auto-migrate unsupported cadences such as `每 4 小时 ...`.
+- Legacy archive handling now treats `entries.status='archived'` as the preferred first-class archive state when the schema allows it, while still honoring `chronos_archived_*` metadata as a backward-compatible fallback for constrained old schemas.
+- `todo.py` now treats archived migrated legacy rows as readonly compatibility records: live list/snapshot flows ignore them, `show` exposes the archive trail, and direct `complete` / `skip` fail closed.
+- Extracted shared `core/legacy_archive.py` so archive/readonly semantics, SQL projection helpers, and operator-facing messages are defined once and reused by both `archive_legacy_entries.py` and `todo.py`.
 
 ### Fixed
-- Cron scheduling failures for past times (now skipped)
-- monthly_n_times auto-complete bug (limited to current month up to today)
+- Removed previously tracked Python cache artifacts from git history going forward.
+- Eliminated changelog duplication and aligned the current hardening notes with real behavior.
+- `complete-overdue` now merges same-day overdue hourly special-handler batches per task so one handler run can complete multiple overdue occurrences while preserving per-occurrence merge trace metadata.
 
 ## [1.0.0] - 2026-03-16
 
-Initial stable release.
-
-## [1.0.0] - 2026-03-16
-
-Initial stable release.
+### Added
+- Initial stable release.

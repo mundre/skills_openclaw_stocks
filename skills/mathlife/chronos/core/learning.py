@@ -2,26 +2,38 @@
 import subprocess
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from typing import Optional
+
+from .paths import PYTHON_BIN, get_prediction_logger_path
 
 SHANGHAI_TZ = ZoneInfo('Asia/Shanghai')
 
 def now_shanghai() -> datetime:
     return datetime.now(SHANGHAI_TZ)
 
+def _run_prediction_logger(*args: str) -> None:
+    """Invoke the prediction logger when it is available."""
+    logger_path = get_prediction_logger_path()
+    if logger_path is None:
+        return
+
+    try:
+        subprocess.run(
+            [PYTHON_BIN, str(logger_path), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        # Missing interpreter/binary should not break the main task flow.
+        return
+
 def log_prediction(task: str, prediction: str, confidence: str = "M", uncertainty: str = ""):
     """Record a prediction before starting a task."""
-    subprocess.run([
-        "python3", "/home/ubuntu/.openclaw/workspace/scripts/prediction_logger.py",
-        "log", task, prediction, confidence, uncertainty
-    ], capture_output=True)
+    _run_prediction_logger("log", task, prediction, confidence, uncertainty)
 
 def log_outcome(task: str, outcome: str, delta: str, lesson: str):
     """Record outcome after task completion."""
-    subprocess.run([
-        "python3", "/home/ubuntu/.openclaw/workspace/scripts/prediction_logger.py",
-        "complete", task, outcome, delta, lesson
-    ], capture_output=True)
+    _run_prediction_logger("complete", task, outcome, delta, lesson)
 
 class LearningContext:
     """Context manager for automatic prediction/outcome logging."""
