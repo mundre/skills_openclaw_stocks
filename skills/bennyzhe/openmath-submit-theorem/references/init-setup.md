@@ -4,8 +4,8 @@
 
 Triggered when:
 
-1. No `openmath-env.json` found in `./.openmath-skills/` or `~/.openmath-skills/` -> full authz submission setup
-2. `openmath-env.json` found but one or more required identity fields are missing -> missing-fields setup
+1. No usable `openmath-env.json` is found through the shared resolution order -> full authz submission setup
+2. The selected `openmath-env.json` exists but one or more required identity fields are missing -> missing-fields setup
 
 Required identity fields:
 
@@ -15,9 +15,17 @@ Required identity fields:
 
 Default local agent key name: `agent-prover`
 
-This is a hard gate for authz submission. Until setup is complete and `python3 scripts/check_authz_setup.py --config .openmath-skills/openmath-env.json` returns `Status: ready`, do not generate stage 1 or stage 2 authz submission commands.
+This is a hard gate for authz submission. Until setup is complete and `python3 scripts/check_authz_setup.py [--config <selected-path>]` returns `Status: ready`, do not generate stage 1 or stage 2 authz submission commands.
 
-Before any step that writes `openmath-env.json`, creates or recovers a local `shentud` key, downloads `shentud`, or appends to a shell rc file, get explicit user approval.
+Before any step that writes `openmath-env.json` or creates or recovers a local `shentud` key, get explicit user approval. For least-privilege operation, treat these as manual setup steps and have the user run the file-copy or key-creation commands themselves. `shentud` installation should also stay a manual user action outside the default skill flow.
+
+Shared config resolution order:
+1. `--config <path>`
+2. `OPENMATH_ENV_CONFIG`
+3. `./.openmath-skills/openmath-env.json`
+4. `~/.openmath-skills/openmath-env.json`
+
+If `OPENMATH_ENV_CONFIG` is set, treat it as the selected config path. If that file is missing or invalid, fix it or unset it instead of silently falling back.
 
 ## Setup Flow
 
@@ -36,9 +44,10 @@ No project/global config found        Config found, required fields missing
   +------------------------+              +------------------------+
             |                                       |
             v                                       v
-  +--------------------------+            +--------------------------+
-  | Create openmath-env.json |            | Update openmath-env.json |
-  +--------------------------+            +--------------------------+
+  +------------------------------+        +------------------------------+
+  | User creates openmath-env    |        | User updates openmath-env    |
+  | manually from the template   |        | manually in the chosen file  |
+  +------------------------------+        +------------------------------+
             |                                       |
             v                                       v
   +------------------------+              +------------------------+
@@ -54,9 +63,11 @@ No project/global config found        Config found, required fields missing
          Continue                                Continue
 ```
 
-## Flow 1: No `openmath-env.json` (Full Authz Setup)
+## Flow 1: No Usable `openmath-env.json` (Full Authz Setup)
 
 **Language**: Use the user's input language or saved conversation language preference.
+
+If `--config` or `OPENMATH_ENV_CONFIG` already selects a specific config path, do not ask the user to choose Project vs User first. Guide the user to create or edit that selected file manually in place.
 
 Use AskUserQuestion with all independent questions in one call:
 
@@ -126,15 +137,15 @@ Resolve this without asking for alternate key names first:
 
 ### If the key does not exist
 
-Stop and ask the user whether to create a new local key or recover an existing one. Do not run `shentud keys add` without explicit approval.
+Stop and ask the user whether to create a new local key or recover an existing one. For least-privilege setup, do not run `shentud keys add` from the skill. Instead, show one of the following commands for the user to run manually after review.
 
-Create a new key only if the user approves:
+Create a new key:
 
 ```bash
 shentud keys add agent-prover --keyring-backend os
 ```
 
-Recover an existing key only if the user approves:
+Recover an existing key:
 
 ```bash
 shentud keys add agent-prover --recover --keyring-backend os
@@ -167,9 +178,27 @@ Only ask for a different key name or different `agent_address` if the user expli
 }
 ```
 
+Manual setup commands:
+
+Project-local config:
+
+```bash
+mkdir -p .openmath-skills
+cp references/openmath-env.example.json .openmath-skills/openmath-env.json
+```
+
+User-local config:
+
+```bash
+mkdir -p ~/.openmath-skills
+cp references/openmath-env.example.json ~/.openmath-skills/openmath-env.json
+```
+
+After copying, have the user open the selected file and fill in the required fields manually.
+
 ## Flow 2: Config Exists, Required Fields Missing
 
-Do not create a second config file. Update the existing file in place.
+Do not create a second config file. Have the user update the existing file in place.
 
 Use AskUserQuestion only for the missing fields.
 
@@ -205,15 +234,15 @@ If it exists, save:
 - `agent_key_name`: `agent-prover`
 - `agent_address`: the detected address
 
-If it does not exist, stop and ask the user whether to create a new key or recover an existing one. Do not run `shentud keys add` without explicit approval.
+If it does not exist, stop and ask the user whether to create a new key or recover an existing one. For least-privilege setup, do not run `shentud keys add` from the skill. Instead, show one of the following commands for the user to run manually after review.
 
-Create a new key only if the user approves:
+Create a new key:
 
 ```bash
 shentud keys add agent-prover --keyring-backend os
 ```
 
-Recover an existing key only if the user approves:
+Recover an existing key:
 
 ```bash
 shentud keys add agent-prover --recover --keyring-backend os
@@ -228,7 +257,7 @@ Only ask the user for a different key name or different `agent_address` if they 
 
 After the answers:
 
-1. Update the existing `openmath-env.json` in place
+1. Have the user update the existing `openmath-env.json` manually in place
 2. Run the local default key resolution step if needed
 3. Continue to website authorization
 
@@ -243,7 +272,7 @@ Recommended flow:
 3. Enter `agent_address`
 4. Click `Authorize`
 5. Confirm the wallet transaction(s) for authz and feegrant
-6. Run `python3 scripts/check_authz_setup.py --config .openmath-skills/openmath-env.json`
+6. Run `python3 scripts/check_authz_setup.py [--config <selected-path>]`
 7. Only after `Status: ready`, continue to `generate_submission.py`
 
 If the website flow is unavailable, use `references/authz_setup.md`.
@@ -265,7 +294,7 @@ Expected behavior after setup:
 
 1. `openmath-env.json` exists and contains the required identity fields
 2. The local `agent_key_name` resolves to the configured `agent_address`
-3. `python3 scripts/check_authz_setup.py --config .openmath-skills/openmath-env.json` returns `Status: ready`
+3. `python3 scripts/check_authz_setup.py [--config <selected-path>]` returns `Status: ready`
 4. Only then may `generate_submission.py` in authz mode continue
 
 ## Notes
