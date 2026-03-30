@@ -1,12 +1,39 @@
 ---
 name: ziniao-assistant
-description: Control Ziniao Browser via the local ZClaw bridge—list/open stores, navigate, read content, click, input, screenshot, run automation. Use only tools in Core Tools; API key can be set by user in conversation (written to ~/.zclaw/config.json) or read from env ZCLAW_API_KEY / ~/.zclaw/config.json. On bridge/tool failure you MUST stop and end the turn—no retries, no templates, no follow-up plans.
+description: Control Ziniao Browser via the local Ziniao bridge. On skill load or before first invoke, GET /zclaw/tools and treat returned name list as the only allowed tool strings; then POST /zclaw/tools/invoke. API key for invoke via ~/.zclaw/config.json or ZCLAW_API_KEY. On bridge failure stop the turn per skill.
 ---
 # Ziniao Assistant
 
+## Session tool allowlist (Mandatory — fetch first)
+
+**Goal:** Put the **authoritative** tool names into context before any `invoke`, so every `tool` field is chosen from that set only (reduces hallucinated names).
+
+1. **First HTTP call** when handling a ZClaw task (or immediately after this skill is loaded):  
+   **`GET {baseUrl}/zclaw/tools`**  
+   Same `baseUrl` as invoke (`ZCLAW_BASE_URL` / `ZINIAO_ZCLAW_BASE_URL`, default `http://127.0.0.1:9481`).  
+   **No `X-ZClaw-Api-Key` and no Ziniao login are required** for this GET (public registry on the bridge).
+
+2. **Parse the response:** JSON shape `{ ret, data }` where `data` is an array of `{ name, description, inputSchema }`. Build  
+   **`allowedTools = data.map((t) => t.name)`**  
+   and **retain it in working memory** for the session. Optionally keep `description` / `inputSchema` next to each name when choosing args.
+
+3. **Before every `POST {baseUrl}/zclaw/tools/invoke`:** ensure **`allowedTools.includes(tool)`**. If the name you intend is not in `allowedTools`, **do not send the request**—map the user’s intent to a real name from `allowedTools` (e.g. open URL → `visit_page` or `open_store` + `launchUrl`).
+
+4. **If `invoke` returns an error** like unsupported / unknown tool: re-run **`GET /zclaw/tools`**, refresh `allowedTools`, and retry with a valid `name`.
+
+5. **If `GET /zclaw/tools` fails** (connection refused, timeout): follow **Stop on Blocker** for unreachable bridge; if you must proceed with static knowledge only, use the **Static fallback allowlist** below—still **no** invented names.
+
+### Static fallback allowlist (when GET is impossible)
+
+Comma-separated `tool` names that match a healthy bridge (re-sync when GET works):
+
+`list_stores`, `resolve_store`, `open_store`, `close_store`, `visit_page`, `get_page_content`, `query_elements`, `click_element`, `input_text`, `scroll_page`, `take_screenshot`, `wait_for_element`, `wait_for_navigation`, `execute_script`, `run_automation`, `extract_data`, `prepare_agent`, `get_logs`, `download_file`, `debug_compare_lists`
+
+---
+
 ## Available Capabilities
 
-All operations go through `POST {baseUrl}/zclaw/tools/invoke` with `tool` + `args`. Only the following tools are valid.
+All **`invoke`** operations use `POST {baseUrl}/zclaw/tools/invoke` with `tool` + `args`. **Authoritative names** come from **`GET /zclaw/tools`** (see above); the table below is documentation aligned with that registry.
 
 | Category | Tool | Description |
 |----------|------|-------------|
@@ -29,8 +56,26 @@ All operations go through `POST {baseUrl}/zclaw/tools/invoke` with `tool` + `arg
 | **Utilities** | `prepare_agent` | Prepare agent resources. |
 | | `download_file` | Write content to Downloads (content, filename). |
 | | `get_logs` | Get bridge logs. |
+| **Debug** | `debug_compare_lists` | Debug: compare account/list vs store/list (optional; in GET /zclaw/tools registry). |
 
 **Do not use:** `run_script` → use `execute_script`; `screenshot` / `get_screenshot` → use `take_screenshot`; `execute_automation` → use `run_automation`.
+
+---
+
+## Tool names: no hallucination (Mandatory)
+
+The bridge **only** accepts the `tool` strings listed in **Core Tools** below. There is no separate “navigate API”, “browser API”, or “store tool” namespace—everything is one `POST .../zclaw/tools/invoke` body field `tool`.
+
+**You MUST NOT** invent or guess tool names from general automation habits (Playwright, Selenium, browser-use, etc.). If a name is not in Core Tools, it **does not exist**.
+
+**These and similar names are INVALID** (will fail or be rejected): `navigate`, `navigation`, `go_to`, `goto`, `open_url`, `openUrl`, `goto_url`, `load_url`, `browse`, `open_page`, `openPage`, `call_store_tool`, `store_tool`, `browser_navigate`, `visit`, `goto_tab`, `switch_tab` (as a tool name—use `visit_page` / `open_store` instead).
+
+**Opening a URL in a store—only two supported ways:**
+
+1. **`visit_page`** — args: `storeId`, `url` (and optional `waitUntil`, `timeoutMs`, `targetId`). Use after the store is already open.
+2. **`open_store`** — args: `storeId` or `storeName`, and optional **`launchUrl`** so the first tab opens that URL when the store starts.
+
+Do not chain imaginary tools before trying `visit_page` or `open_store` + `launchUrl`.
 
 ---
 
@@ -38,14 +83,38 @@ All operations go through `POST {baseUrl}/zclaw/tools/invoke` with `tool` + `arg
 
 **All tools are invoked through one endpoint only.** Do not call other paths.
 
+- **Discover tools (no auth):** `GET {baseUrl}/zclaw/tools` — use first; see **Session tool allowlist**.
 - **Method and path:** `POST {baseUrl}/zclaw/tools/invoke` (e.g. `POST http://127.0.0.1:9481/zclaw/tools/invoke`). Base URL from `ZCLAW_BASE_URL` or `ZINIAO_ZCLAW_BASE_URL` (default `http://127.0.0.1:9481`).
+- **Auth is mandatory for invoke:** Every `POST {baseUrl}/zclaw/tools/invoke` **must carry API key credentials**. Preferred header: `X-ZClaw-Api-Key: <key>`. Also accepted: body `apiKey`, or `Authorization: Bearer <key>` (compatibility only). **Never send invoke without key.**
 - **Request body (JSON):** `{ "tool": "<name>", "args": { ... } }`. Optional: `"action": "json"`.
 - **`tool`** must be exactly one of the tool names in the **Core Tools** list below (e.g. `list_stores`, `visit_page`, `get_page_content`, `click_element`, `take_screenshot`, `execute_script`, `run_automation`). Wrong names (e.g. `run_script`, `screenshot`) or custom paths will fail.
 - **Do not** call paths like `/zclaw/page/execute`, `/zclaw/page/visit`, `/zclaw/page/click`, etc. Every tool call must be `POST /zclaw/tools/invoke` with the correct `tool` name in the body.
 
+### Invoke Auth Examples (Mandatory)
+
+**Correct (preferred):**
+
+```bash
+curl -X POST http://127.0.0.1:9481/zclaw/tools/invoke \
+  -H "Content-Type: application/json" \
+  -H "X-ZClaw-Api-Key: <ZCLAW_API_KEY>" \
+  -d '{"tool":"open_store","args":{"storeName":"Rosehut"}}'
+```
+
+**Also accepted (compatibility):**
+
+```bash
+curl -X POST http://127.0.0.1:9481/zclaw/tools/invoke \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <ZCLAW_API_KEY>" \
+  -d '{"tool":"open_store","args":{"storeName":"Rosehut"}}'
+```
+
+**Invalid (must not generate):** no API key in header/body.
+
 ## When To Use
 
-Use when the user wants to operate Ziniao Browser or configure the Ziniao–ZClaw bridge (list stores, open store, visit pages, read content, click, input, screenshot, export, automation). When a task has multiple similar sub-items (e.g. several order types or reports), visit or check each one separately before concluding; do not infer from a subset.
+Use when the user wants to operate Ziniao Browser or configure the Ziniao bridge (list stores, open store, visit pages, read content, click, input, screenshot, export, automation). When a task has multiple similar sub-items (e.g. several order types or reports), visit or check each one separately before concluding; do not infer from a subset.
 
 ## Stop on Blocker (Mandatory — Enforced First)
 
@@ -59,10 +128,11 @@ Use when the user wants to operate Ziniao Browser or configure the Ziniao–ZCla
 ## Hard Constraints
 
 - **Stop on blocker:** If the bridge is unreachable or a required tool call fails, stop and end the turn; do not retry, read code, or create templates or follow-up plans. See "Stop on Blocker" above.
+- **Invoke must include API key:** Every `POST /zclaw/tools/invoke` request must include API key credentials (`X-ZClaw-Api-Key` preferred; or body `apiKey`; or `Authorization: Bearer <key>`). Do not generate keyless invoke commands.
 - **No script files:** Do not create or run any scripts (`.sh`/`.js`/`.py` or other code files) to execute tasks; use only the tools in **Core Tools** via `POST /zclaw/tools/invoke`. **Temporary files are allowed** (e.g. intermediate data, content for `download_file`); **script/executable files are not.**
 - All browser actions must stay inside **Ziniao Browser** or a Ziniao store exposed by the bridge. Do not open system browser, Chrome, Safari, Edge, Firefox, or use Playwright/Puppeteer/browser-use when the bridge fails.
-- Use only the tools in **Core Tools**. Do NOT use: `run_script` (use `execute_script`), `screenshot` or `get_screenshot` (use `take_screenshot`), `execute_automation` (use `run_automation`), or any tool not listed there.
-- Prefer tool-based flow: open store → visit_page → get_page_content / query_elements / click_element / input_text / take_screenshot / download_file / run_automation. Use `execute_script` only for in-page JavaScript (e.g. DOM extraction), not for orchestration.
+- Use only the tools in **Core Tools**. Do NOT use: `run_script` (use `execute_script`), `screenshot` or `get_screenshot` (use `take_screenshot`), `execute_automation` (use `run_automation`), or any tool not listed there. Do NOT invent `navigate`, `open_url`, `call_store_tool`, or any name not in Core Tools.
+- Prefer tool-based flow: open store (optionally with `launchUrl`) → **`visit_page`** for further URLs → get_page_content / query_elements / click_element / input_text / take_screenshot / download_file / run_automation. Use `execute_script` only for in-page JavaScript (e.g. DOM extraction), not for orchestration.
 
 ## API Key: Configure via Conversation (Preferred)
 
@@ -129,8 +199,10 @@ If **open_store** or **visit_page** returns 400 "Store detail not found", the ba
 
 ## Recommended Workflow
 
-1. **Store:** One `list_stores` or one `resolve_store` → get `storeId` / `storeName` → one `open_store`. Match by `storeName` from list; if ambiguous, ask user or use exact `storeId`. No fuzzy/substring matching.
-2. **Page:** Before page operations, ensure store is open and call `visit_page` if needed. Use `get_page_content`, `query_elements`, `click_element`, `input_text`, `take_screenshot`, `download_file` as needed; prefer `run_automation` for multi-step flows.
+0. **Allowlist:** `GET /zclaw/tools` → keep `allowedTools` (and schemas) in context; every `invoke` uses `tool` ∈ `allowedTools`.
+0.5. **Auth:** Resolve API key first (`conversation-provided` > env `ZCLAW_API_KEY` > `~/.zclaw/config.json`) and include it in **every** invoke request.
+1. **Store:** One `list_stores` or one `resolve_store` → get `storeId` / `storeName` → one `open_store` (pass **`launchUrl`** if the user gave a target URL up front—avoids a second navigation step). Match by `storeName` from list; if ambiguous, ask user or use exact `storeId`. No fuzzy/substring matching.
+2. **Page:** If the store is open and you need a URL: **`visit_page`** only (`storeId` + `url`). Never use `navigate`, `open_url`, or other non-listed tool names. Then use `get_page_content`, `query_elements`, `click_element`, `input_text`, `take_screenshot`, `download_file` as needed; prefer `run_automation` for multi-step flows.
 3. **Errors:** Use `get_logs` on failure; after API key rotation, update config and refresh skills.
 4. **Multiple similar items:** When a task involves multiple similar sub-items (e.g. several order types, several reports), visit or check **each item separately** before drawing a conclusion; do not infer "all have no data" or "all behave the same" from only a subset.
 
@@ -171,4 +243,7 @@ Pass one arguments object per call (as `args`); required keys must be present. W
 - **download_file** — Write to Downloads. Args: `content`, `filename`.
 - **get_logs** — Bridge logs.
 
-Invalid tool names (will fail): `run_script`, `screenshot`, `get_screenshot`, `execute_automation` — use `execute_script` and `take_screenshot`, `run_automation` instead.
+### Debug
+- **debug_compare_lists** — Compare account/list vs store/list (debug). Args: `limit?`.
+
+Invalid tool names (will fail): `run_script`, `screenshot`, `get_screenshot`, `execute_automation` — use `execute_script` and `take_screenshot`, `run_automation` instead. Also invalid: any name in **Tool names: no hallucination** (e.g. `navigate`, `open_url`, `call_store_tool`).
