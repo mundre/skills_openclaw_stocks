@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 import { marked } from 'marked';
-import puppeteer from 'puppeteer-core';
-import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from 'fs';
+import { chromium } from 'playwright';
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, unlinkSync } from 'fs';
 import { resolve, dirname, extname, basename } from 'path';
-import { execSync } from 'child_process';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
 
 // ============================================================================
 // Exit Codes - For AI Agent error understanding
@@ -15,7 +12,7 @@ const EXIT_CODES = {
   INVALID_ARGS: 1,
   FILE_NOT_FOUND: 2,
   FILE_READ_ERROR: 3,
-  CHROME_NOT_FOUND: 4,
+  CHROME_NOT_FOUND: 4,   // kept for backward compat; now means Playwright browser unavailable
   BROWSER_LAUNCH_ERROR: 5,
   RENDER_ERROR: 6,
   SCREENSHOT_ERROR: 7,
@@ -30,15 +27,40 @@ const PRESETS = {
     width: 600,              // CSS pixels
     deviceScaleFactor: 2,    // Actual output: 1200px (matches OpenClaw Agent limit)
     maxFileSizeMB: 5,        // Matches OpenClaw Agent 5MB limit
+    maxHeightPx: 99999,      // No height splitting by default (channel flag overrides this)
     jpegQuality: 85,
-    description: 'Optimized for OpenClaw (1200px max, 5MB limit)'
+    description: 'Optimized for OpenClaw (1200px wide, 5MB limit)'
   },
   generic: {
     width: 800,              // CSS pixels
     deviceScaleFactor: 2,    // Actual output: 1600px
-    maxFileSizeMB: 8,        // Discord limit
+    maxFileSizeMB: 8,
+    maxHeightPx: 99999,      // No height splitting by default
     jpegQuality: 85,
-    description: 'High resolution for Claude Code / Discord (1600px, 8MB)'
+    description: 'High resolution for Claude Code / local (1600px wide, 8MB)'
+  }
+};
+
+// ============================================================================
+// Channel-specific overrides - Applied AFTER preset, controls splitting behavior
+// ============================================================================
+const CHANNELS = {
+  discord: {
+    maxHeightPx: 1800,       // Under OpenClaw's imageMaxDimensionPx=2000 limit
+    maxFileSizeMB: 5,        // Discord + OpenClaw file size limit
+    description: 'Discord: auto-split for readability (max 1200×1800px per image)'
+  },
+  wechat: {
+    maxHeightPx: 99999,      // WeChat handles long images natively
+    description: 'WeChat: long image preserved (no splitting)'
+  },
+  imessage: {
+    maxHeightPx: 99999,      // iMessage handles long images well
+    description: 'iMessage: long image preserved (no splitting)'
+  },
+  local: {
+    maxHeightPx: 99999,      // Local use, no platform constraints
+    description: 'Local: original long image (no splitting)'
   }
 };
 
@@ -54,8 +76,13 @@ const CONFIG = {
   jpegQuality: 85,
   // Maximum file size in bytes before splitting (8MB for Discord)
   maxFileSizeMB: 8,
-  // Browser operation timeout (30 seconds)
-  timeout: 30000,
+  // Maximum actual pixel height per image before splitting
+  // Default: no splitting. Use --channel=discord to enable height-based splitting.
+  maxHeightPx: 99999,
+  // Target channel (null = not specified, agents should ask user)
+  channel: null,
+  // Browser operation timeout (30 seconds default, configurable via --timeout or MD2IMG_TIMEOUT)
+  timeout: parseInt(process.env.MD2IMG_TIMEOUT, 10) || 30000,
   // Default output format
   defaultFormat: 'jpeg',
   // Auto theme: day hours (6:00-18:00 = light, 18:00-6:00 = dark)
@@ -91,6 +118,7 @@ function applyPreset(presetName) {
   CONFIG.width = actualPreset.width;
   CONFIG.deviceScaleFactor = actualPreset.deviceScaleFactor;
   CONFIG.maxFileSizeMB = actualPreset.maxFileSizeMB;
+  CONFIG.maxHeightPx = actualPreset.maxHeightPx;
   CONFIG.jpegQuality = actualPreset.jpegQuality;
   CONFIG.preset = presetName;
   console.log(`[INFO] Applied preset: ${presetName} (${actualPreset.description})`);
@@ -166,79 +194,13 @@ const THEMES = {
 };
 
 // ============================================================================
-// Chrome Path Detection - Cross-platform support
-// ============================================================================
-function findChromePath() {
-  // 1. Check environment variable override
-  if (process.env.CHROME_PATH) {
-    if (existsSync(process.env.CHROME_PATH)) {
-      return process.env.CHROME_PATH;
-    }
-    console.error(`[ERROR] CHROME_PATH environment variable set but file not found: ${process.env.CHROME_PATH}`);
-    process.exit(EXIT_CODES.CHROME_NOT_FOUND);
-  }
-
-  // 2. Platform-specific paths
-  const platform = process.platform;
-  const paths = {
-    darwin: [
-      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      '/Applications/Chromium.app/Contents/MacOS/Chromium',
-      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
-    ],
-    linux: [
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser',
-      '/snap/bin/chromium',
-      '/usr/bin/brave-browser'
-    ],
-    win32: [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files\\Chromium\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Chromium\\Application\\chrome.exe',
-      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
-    ]
-  };
-
-  const platformPaths = paths[platform] || [];
-
-  for (const chromePath of platformPaths) {
-    if (existsSync(chromePath)) {
-      return chromePath;
-    }
-  }
-
-  // 3. Try to find using 'which' or 'where' command
-  try {
-    const cmd = platform === 'win32' ? 'where chrome' : 'which google-chrome || which chromium || which chromium-browser';
-    const result = execSync(cmd, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-    if (result && existsSync(result.split('\n')[0])) {
-      return result.split('\n')[0];
-    }
-  } catch (e) {
-    // Command failed, continue with error
-  }
-
-  // 4. Chrome not found
-  console.error('[ERROR] Chrome/Chromium browser not found.');
-  console.error('');
-  console.error('Please install Google Chrome or Chromium, or set the CHROME_PATH environment variable:');
-  console.error('  macOS/Linux: export CHROME_PATH="/path/to/chrome"');
-  console.error('  Windows:     set CHROME_PATH=C:\\path\\to\\chrome.exe');
-  process.exit(EXIT_CODES.CHROME_NOT_FOUND);
-}
-
-// ============================================================================
 // Argument Parsing
 // ============================================================================
 function parseArgs() {
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-    console.log('MD to Share - Markdown to Long Image Converter');
+    console.log('MD to Share - Markdown to Long Image Converter (Playwright)');
     console.log('');
     console.log('Usage: md2img <input.md> [output] [options]');
     console.log('');
@@ -248,36 +210,43 @@ function parseArgs() {
     console.log('');
     console.log('Options:');
     console.log('  --preset=<name>     Configuration preset: openclaw | generic (default: auto-detect)');
+    console.log('  --channel=<name>    Target channel: discord | wechat | imessage | local');
+    console.log('                      discord: auto-split tall images for readability');
+    console.log('                      wechat/imessage/local: keep original long image');
     console.log('  --width=<px>        CSS width in pixels (default: preset value)');
     console.log('  --scale=<factor>    Device scale factor (default: 2)');
     console.log('  --max-size=<MB>     Max file size before splitting (default: preset value)');
+    console.log('  --max-height=<px>   Max actual pixel height per image (default: channel value)');
     console.log('  --quality=<1-100>   JPEG quality (default: 85)');
     console.log('  --theme=<light|dark> Force theme (default: auto by time)');
+    console.log('  --timeout=<ms>      Browser operation timeout in ms (default: 30000)');
     console.log('');
     console.log('Presets:');
-    console.log('  openclaw  600px × 2 = 1200px actual, 5MB limit (for OpenClaw/Discord)');
-    console.log('  generic   800px × 2 = 1600px actual, 8MB limit (for Claude Code/local)');
+    console.log('  openclaw  1200px wide, 5MB limit (for OpenClaw agents)');
+    console.log('  generic   1600px wide, 8MB limit (for Claude Code/local)');
     console.log('');
     console.log('Output formats:');
     console.log('  .jpg/.jpeg  JPEG format (default, smaller file size)');
     console.log('  .png        PNG format (lossless, larger file size)');
     console.log('');
     console.log('Features:');
+    console.log('  - Bundled Chromium via Playwright (no system Chrome needed)');
     console.log('  - Environment auto-detection (OpenClaw vs generic)');
     console.log('  - High resolution output with configurable scale factor');
-    console.log('  - Automatic splitting for large files');
-    console.log('  - Cross-platform Chrome detection');
+    console.log('  - Channel-aware splitting (Discord=split, WeChat/iMessage=long image)');
     console.log('  - Auto theme: light mode (6:00-18:00), dark mode (18:00-6:00)');
+    console.log('  - Browser launch retry for robustness');
     console.log('');
     console.log('Environment variables:');
-    console.log('  CHROME_PATH  Override Chrome executable path');
+    console.log('  CHROME_PATH      Override browser executable path');
+    console.log('  MD2IMG_TIMEOUT   Override default timeout in ms');
     console.log('');
     console.log('Exit codes:');
     console.log('  0 - Success');
     console.log('  1 - Invalid arguments');
     console.log('  2 - Input file not found');
     console.log('  3 - File read error');
-    console.log('  4 - Chrome not found');
+    console.log('  4 - Browser not found (run: npx playwright install chromium)');
     console.log('  5 - Browser launch error');
     console.log('  6 - Render error');
     console.log('  7 - Screenshot error');
@@ -290,20 +259,27 @@ function parseArgs() {
   const positionalArgs = args.filter(arg => !arg.startsWith('--'));
 
   let preset = null;
+  let channel = null;
   const customOverrides = {};
 
   // Parse flag arguments - track which values were explicitly set
   for (const flag of flagArgs) {
     if (flag.startsWith('--preset=')) {
       preset = flag.split('=')[1];
+    } else if (flag.startsWith('--channel=')) {
+      channel = flag.split('=')[1].toLowerCase();
     } else if (flag.startsWith('--width=')) {
       customOverrides.width = parseInt(flag.split('=')[1], 10);
     } else if (flag.startsWith('--scale=')) {
       customOverrides.deviceScaleFactor = parseFloat(flag.split('=')[1]);
     } else if (flag.startsWith('--max-size=')) {
       customOverrides.maxFileSizeMB = parseInt(flag.split('=')[1], 10);
+    } else if (flag.startsWith('--max-height=')) {
+      customOverrides.maxHeightPx = parseInt(flag.split('=')[1], 10);
     } else if (flag.startsWith('--quality=')) {
       customOverrides.jpegQuality = parseInt(flag.split('=')[1], 10);
+    } else if (flag.startsWith('--timeout=')) {
+      customOverrides.timeout = parseInt(flag.split('=')[1], 10);
     } else if (flag === '--theme=light') {
       CONFIG.forceTheme = 'light';
     } else if (flag === '--theme=dark') {
@@ -330,7 +306,21 @@ function parseArgs() {
   }
   applyPreset(preset);
 
-  // Apply custom overrides after preset (custom values take precedence)
+  // Apply channel-specific overrides (after preset, before custom overrides)
+  if (channel) {
+    const channelConfig = CHANNELS[channel];
+    if (channelConfig) {
+      if (channelConfig.maxHeightPx !== undefined) CONFIG.maxHeightPx = channelConfig.maxHeightPx;
+      if (channelConfig.maxFileSizeMB !== undefined) CONFIG.maxFileSizeMB = channelConfig.maxFileSizeMB;
+      CONFIG.channel = channel;
+      console.log(`[INFO] Channel: ${channel} (${channelConfig.description})`);
+    } else {
+      console.log(`[WARN] Unknown channel "${channel}", treating as local (no splitting)`);
+      CONFIG.channel = channel;
+    }
+  }
+
+  // Apply custom overrides last (explicit flags take highest precedence)
   Object.assign(CONFIG, customOverrides);
   if (Object.keys(customOverrides).length > 0) {
     console.log(`[INFO] Custom overrides applied: ${Object.keys(customOverrides).join(', ')}`);
@@ -557,9 +547,46 @@ function findSplitPoints(sections, totalHeight, targetCount) {
 }
 
 // ============================================================================
+// Browser Launch with Retry
+// ============================================================================
+async function launchBrowser(maxRetries = 2) {
+  const launchOptions = {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--disable-gpu'
+    ]
+  };
+
+  // Allow overriding browser executable (e.g. system Chrome)
+  if (process.env.CHROME_PATH) {
+    launchOptions.executablePath = process.env.CHROME_PATH;
+    console.log(`[INFO] Using custom browser: ${process.env.CHROME_PATH}`);
+  } else {
+    console.log(`[INFO] Using Playwright bundled Chromium`);
+  }
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await chromium.launch(launchOptions);
+    } catch (e) {
+      if (attempt === maxRetries) {
+        throw e;
+      }
+      console.log(`[WARN] Browser launch failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in 1s...`);
+      console.log(`[WARN]   ${e.message}`);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+}
+
+// ============================================================================
 // Main Conversion Logic
 // ============================================================================
-async function convertMarkdownToImage(input, output, browser) {
+async function convertMarkdownToImage(input, output, context) {
   const inputPath = resolve(input);
   const outputPath = resolve(output);
 
@@ -591,29 +618,105 @@ async function convertMarkdownToImage(input, output, browser) {
   // Create page and render
   let page;
   try {
-    page = await browser.newPage();
-
-    // Set timeout for page operations
+    page = await context.newPage();
     page.setDefaultTimeout(CONFIG.timeout);
-
-    await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+    await page.setContent(fullHtml, { waitUntil: 'networkidle' });
   } catch (e) {
     console.error(`[ERROR] Failed to render page: ${e.message}`);
     if (page) await page.close().catch(() => {});
     throw { code: EXIT_CODES.RENDER_ERROR, message: e.message };
   }
 
-  // Get content dimensions
-  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  // Get content dimensions (CSS pixels)
+  const cssHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  const actualHeight = cssHeight * CONFIG.deviceScaleFactor;
+  const actualWidth = CONFIG.width * CONFIG.deviceScaleFactor;
 
-  // Set viewport with high DPI
-  await page.setViewport({
+  // Max CSS height per split (derived from maxHeightPx in actual pixels)
+  const maxCSSHeight = Math.floor(CONFIG.maxHeightPx / CONFIG.deviceScaleFactor);
+
+  console.log(`[INFO] Content: ${actualWidth}×${actualHeight}px (CSS: ${CONFIG.width}×${cssHeight}px)`);
+
+  // Determine if splitting is needed based on HEIGHT
+  const needsHeightSplit = actualHeight > CONFIG.maxHeightPx;
+
+  if (needsHeightSplit) {
+    // --- Height-based smart splitting ---
+    const heightSplitCount = Math.ceil(cssHeight / maxCSSHeight);
+    console.log(`[INFO] Height ${actualHeight}px exceeds ${CONFIG.maxHeightPx}px limit`);
+    console.log(`[INFO] Smart splitting into ~${heightSplitCount} segments at semantic boundaries...`);
+
+    const sections = await getContentSections(page);
+    const splitPoints = findSplitPoints(sections, cssHeight, heightSplitCount);
+
+    // Ensure we have split points; fallback to uniform height splits
+    if (splitPoints.length === 0) {
+      for (let i = 1; i < heightSplitCount; i++) {
+        splitPoints.push(Math.round(i * cssHeight / heightSplitCount));
+      }
+    }
+
+    const outputBase = outputPath.replace(/\.[^.]+$/, '');
+    const outputExt = extname(outputPath);
+    const outputFiles = [];
+
+    // Set viewport to full height so the entire content is laid out
+    await page.setViewportSize({
+      width: CONFIG.width,
+      height: cssHeight
+    });
+
+    for (let i = 0; i <= splitPoints.length; i++) {
+      const startY = i === 0 ? 0 : splitPoints[i - 1];
+      const endY = i === splitPoints.length ? cssHeight : splitPoints[i];
+      const segmentHeight = endY - startY;
+
+      if (segmentHeight <= 0) continue;
+
+      const segmentPath = `${outputBase}-${i + 1}${outputExt}`;
+      const screenshotOptions = {
+        path: segmentPath,
+        type: format,
+        clip: {
+          x: 0,
+          y: startY,
+          width: CONFIG.width,
+          height: segmentHeight
+        }
+      };
+
+      if (format === 'jpeg') {
+        screenshotOptions.quality = CONFIG.jpegQuality;
+      }
+
+      try {
+        await page.screenshot(screenshotOptions);
+      } catch (e) {
+        console.error(`[ERROR] Failed to capture segment ${i + 1}: ${e.message}`);
+        await page.close().catch(() => {});
+        throw { code: EXIT_CODES.SCREENSHOT_ERROR, message: e.message };
+      }
+
+      const segSize = statSync(segmentPath).size / (1024 * 1024);
+      outputFiles.push(segmentPath);
+      const segActualH = segmentHeight * CONFIG.deviceScaleFactor;
+      console.log(`[INFO] Split ${i + 1}/${splitPoints.length + 1}: ${actualWidth}×${segActualH}px, ${segSize.toFixed(2)}MB → ${segmentPath}`);
+    }
+
+    await page.close();
+
+    console.log(`[SUCCESS] Generated ${outputFiles.length} images:`);
+    outputFiles.forEach((f, idx) => console.log(`  ${idx + 1}. ${f}`));
+
+    return outputFiles;
+  }
+
+  // --- No height split needed: single image ---
+  await page.setViewportSize({
     width: CONFIG.width,
-    height: Math.max(height, 100),
-    deviceScaleFactor: CONFIG.deviceScaleFactor
+    height: Math.max(cssHeight, 100)
   });
 
-  // Take screenshot
   try {
     const screenshotOptions = {
       path: outputPath,
@@ -634,50 +737,40 @@ async function convertMarkdownToImage(input, output, browser) {
 
   await page.close();
 
-  // Check file size and potentially split
+  // Post-check: if file size exceeds limit, re-split by file size
   const stats = statSync(outputPath);
   const fileSizeMB = stats.size / (1024 * 1024);
 
   if (fileSizeMB > CONFIG.maxFileSizeMB) {
     console.log(`[INFO] File size (${fileSizeMB.toFixed(2)}MB) exceeds ${CONFIG.maxFileSizeMB}MB limit`);
-    console.log(`[INFO] Attempting smart split...`);
+    console.log(`[INFO] Re-splitting by file size...`);
 
-    // Re-open page for splitting
-    const splitPage = await browser.newPage();
+    const splitPage = await context.newPage();
     splitPage.setDefaultTimeout(CONFIG.timeout);
-    await splitPage.setContent(fullHtml, { waitUntil: 'networkidle0' });
+    await splitPage.setContent(fullHtml, { waitUntil: 'networkidle' });
+    await splitPage.setViewportSize({ width: CONFIG.width, height: cssHeight });
 
     const sections = await getContentSections(splitPage);
     const splitCount = Math.ceil(fileSizeMB / CONFIG.maxFileSizeMB);
-    const splitPoints = findSplitPoints(sections, height, splitCount);
+    const splitPoints = findSplitPoints(sections, cssHeight, splitCount);
 
     if (splitPoints.length > 0) {
       const outputBase = outputPath.replace(/\.[^.]+$/, '');
       const outputExt = extname(outputPath);
       const outputFiles = [];
 
-      // Generate split images
       for (let i = 0; i <= splitPoints.length; i++) {
         const startY = i === 0 ? 0 : splitPoints[i - 1];
-        const endY = i === splitPoints.length ? height : splitPoints[i];
+        const endY = i === splitPoints.length ? cssHeight : splitPoints[i];
         const segmentHeight = endY - startY;
 
-        await splitPage.setViewport({
-          width: CONFIG.width,
-          height: segmentHeight,
-          deviceScaleFactor: CONFIG.deviceScaleFactor
-        });
+        if (segmentHeight <= 0) continue;
 
         const segmentPath = `${outputBase}-${i + 1}${outputExt}`;
         const screenshotOptions = {
           path: segmentPath,
           type: format,
-          clip: {
-            x: 0,
-            y: startY,
-            width: CONFIG.width,
-            height: segmentHeight
-          }
+          clip: { x: 0, y: startY, width: CONFIG.width, height: segmentHeight }
         };
 
         if (format === 'jpeg') {
@@ -690,23 +783,19 @@ async function convertMarkdownToImage(input, output, browser) {
       }
 
       await splitPage.close();
-
-      // Remove original large file
-      const { unlinkSync } = await import('fs');
       unlinkSync(outputPath);
 
       console.log(`[SUCCESS] Generated ${outputFiles.length} images:`);
-      outputFiles.forEach((f, i) => console.log(`  ${i + 1}. ${f}`));
-
+      outputFiles.forEach((f, idx) => console.log(`  ${idx + 1}. ${f}`));
       return outputFiles;
     } else {
-      console.log(`[WARN] Could not find suitable split points. Output file may be too large for some platforms.`);
+      console.log(`[WARN] Could not find suitable split points. Output may exceed size limit.`);
       await splitPage.close();
     }
   }
 
   console.log(`[SUCCESS] Image saved: ${outputPath}`);
-  console.log(`[INFO] File size: ${fileSizeMB.toFixed(2)}MB`);
+  console.log(`[INFO] Dimensions: ${actualWidth}×${actualHeight}px, Size: ${fileSizeMB.toFixed(2)}MB`);
 
   return [outputPath];
 }
@@ -721,33 +810,31 @@ async function main() {
   validateInput(input);
   validateOutputPath(output);
 
-  // Find Chrome
-  const chromePath = findChromePath();
-  console.log(`[INFO] Using Chrome: ${chromePath}`);
-
   let browser = null;
 
   try {
-    // Launch browser
+    // Launch browser with retry
     try {
-      browser = await puppeteer.launch({
-        executablePath: chromePath,
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--disable-gpu'
-        ]
-      });
+      browser = await launchBrowser();
     } catch (e) {
       console.error(`[ERROR] Failed to launch browser: ${e.message}`);
+      console.error('');
+      console.error('Ensure Playwright Chromium is installed:');
+      console.error('  npx playwright install chromium');
       process.exit(EXIT_CODES.BROWSER_LAUNCH_ERROR);
     }
 
+    // Create browser context with deviceScaleFactor for high-DPI rendering
+    const context = await browser.newContext({
+      viewport: { width: CONFIG.width, height: 100 },
+      deviceScaleFactor: CONFIG.deviceScaleFactor
+    });
+
     // Convert
-    await convertMarkdownToImage(input, output, browser);
+    await convertMarkdownToImage(input, output, context);
+
+    // Clean up context
+    await context.close();
 
   } catch (error) {
     if (error.code) {

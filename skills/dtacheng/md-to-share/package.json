@@ -1,16 +1,21 @@
 {
   "name": "md-to-share",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "2.0.0",
+  "description": "Markdown to long-image converter with bundled Chromium via Playwright. Designed for AI Agents (OpenClaw, Claude Code).",
+  "main": "md2img.mjs",
+  "type": "module",
+  "bin": {
+    "md2img": "./md2img"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "scripts": {
+    "postinstall": "npx playwright install chromium",
+    "test": "node md2img.mjs --help"
+  },
+  "keywords": ["markdown", "image", "screenshot", "playwright", "ai-agent", "openclaw"],
+  "author": "DT.acheng",
+  "license": "MIT",
   "dependencies": {
     "marked": "^17.0.4",
-    "puppeteer-core": "^24.39.1"
+    "playwright": "^1.52.0"
   }
 }

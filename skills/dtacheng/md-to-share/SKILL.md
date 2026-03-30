@@ -1,6 +1,6 @@
 ---
 name: md-to-share
-version: 2.1.0
+version: 2.2.0
 description: "将 Markdown 文件转换为原生长图的 skill，可被 OpenClaw、Claude Code 等 AI Agent 直接调用。A skill that converts Markdown to long images, callable by AI Agents like OpenClaw and Claude Code."
 author: DTacheng
 license: MIT
@@ -18,7 +18,7 @@ A skill that converts Markdown files to long images, directly callable by AI Age
 - **High Resolution**: Configurable width up to 1600px (2x scale factor) for crisp display
 - **Auto Theme**: Light mode (6:00-18:00) / Dark mode (18:00-6:00) based on time
 - **Discord Optimized**: JPEG format at 85% quality, auto-splits large files
-- **Cross-Platform**: Auto-detects Chrome on macOS, Linux, and Windows
+- **Self-Contained**: Bundled Chromium via Playwright — no system browser needed
 - **Smart Splitting**: Splits at semantic boundaries (headings, hr) not mid-paragraph
 - **Robust Error Handling**: Clear exit codes for AI agents to understand failures
 
@@ -26,7 +26,7 @@ A skill that converts Markdown files to long images, directly callable by AI Age
 - **高分辨率**：可配置宽度最高 1600px（2x 缩放因子），在所有平台上清晰显示
 - **自动主题**：根据时间自动切换浅色（6:00-18:00）/ 深色（18:00-6:00）模式
 - **Discord 优化**：JPEG 格式 85% 质量，自动切分大文件
-- **跨平台**：自动检测 macOS、Linux、Windows 上的 Chrome
+- **独立运行**：内置 Playwright Chromium，无需系统安装浏览器
 - **智能切分**：在语义边界（标题、分隔线）处切分，不会在段落中间
 - **健壮错误处理**：清晰的退出码，方便 AI Agent 理解错误
 
@@ -35,6 +35,23 @@ A skill that converts Markdown files to long images, directly callable by AI Age
 Use this skill when user asks to "forward", "convert to image", "share", "generate long image".
 
 当用户要求"转发"、"转成图片"、"方便分享"、"生成长图"时使用此 skill。
+
+## ⚠️ Decision Flow for Agents / Agent 决策流程
+
+**IMPORTANT: Before calling md2img, determine the target channel first.**
+
+```
+用户要求生成图片
+  ├── 明确要发到 Discord → 使用 --channel=discord（自动切图，确保清晰）
+  ├── 明确要发到 WeChat  → 使用 --channel=wechat（保留长图，微信原生支持）
+  ├── 明确要发到 iMessage → 使用 --channel=imessage（保留长图）
+  ├── 本地使用 / 保存文件  → 使用 --channel=local（保留长图）
+  └── 不确定目标渠道      → ❗ 先反问用户确认渠道，再执行
+```
+
+**Why this matters**: Discord has strict image dimension limits (images taller than ~2000px get scaled down to unreadable sizes). WeChat and iMessage handle long images natively — splitting would break the reading experience.
+
+**为什么这很重要**：Discord 对图片尺寸有严格限制（超过 ~2000px 高的图会被缩放到无法阅读）。微信和 iMessage 原生支持长图 — 切分反而会破坏阅读体验。
 
 ## Usage / 使用方法
 
@@ -49,36 +66,42 @@ md2img <input.md> [output] [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--preset=<name>` | Configuration preset: `openclaw` \| `generic` | Auto-detect |
+| `--channel=<name>` | Target channel: `discord` \| `wechat` \| `imessage` \| `local` | None |
 | `--width=<px>` | CSS width in pixels | Preset value |
 | `--scale=<factor>` | Device scale factor | 2 |
 | `--max-size=<MB>` | Max file size before splitting | Preset value |
+| `--max-height=<px>` | Max pixel height per image | Channel value |
 | `--quality=<1-100>` | JPEG quality | 85 |
 | `--theme=<light\|dark>` | Force theme | Auto by time |
+| `--timeout=<ms>` | Browser operation timeout | 30000 |
+
+**Channel behavior / 渠道行为:**
+
+| Channel | Splitting | Reason |
+|---------|-----------|--------|
+| `discord` | ✅ Auto-split at 1800px height | Discord scales tall images, making them unreadable |
+| `wechat` | ❌ Keep long image | WeChat handles long images natively |
+| `imessage` | ❌ Keep long image | iMessage handles long images well |
+| `local` | ❌ Keep long image | No platform constraints |
+| Not specified | ❌ No splitting | Default safe behavior |
 
 **Output formats / 输出格式:**
-- `.jpg` / `.jpeg` - JPEG format (default, recommended for Discord)
+- `.jpg` / `.jpeg` - JPEG format (default, recommended)
 - `.png` - PNG format (lossless, larger files)
 
 Example / 示例：
 ```bash
-# Basic usage (auto-detects environment, outputs to document-长图.jpg)
-md2img "~/Downloads/document.md"
+# For Discord (auto-split for readability)
+md2img report.md report.jpg --preset=openclaw --channel=discord
 
-# Specify output path with format
-md2img "~/Downloads/document.md" "~/Downloads/output.jpg"
-md2img "~/Downloads/document.md" "~/Downloads/output.png"
+# For WeChat (keep as long image)
+md2img report.md report.jpg --preset=openclaw --channel=wechat
 
-# Force OpenClaw preset for 1200px output
-md2img "~/Downloads/document.md" --preset=openclaw
-
-# Force generic preset for 1600px output
-md2img "~/Downloads/document.md" --preset=generic
-
-# Custom parameters
-md2img "~/Downloads/document.md" --width=600 --scale=2 --max-size=5
+# For local use (no splitting)
+md2img report.md report.jpg
 
 # Force dark theme
-md2img "~/Downloads/document.md" --theme=dark
+md2img report.md report.jpg --theme=dark
 ```
 
 ### 2. Configuration Presets / 配置预设
@@ -166,7 +189,7 @@ When the skill fails, check the exit code to understand the error:
 | 1 | INVALID_ARGS | Missing or invalid command line arguments |
 | 2 | FILE_NOT_FOUND | Input markdown file does not exist |
 | 3 | FILE_READ_ERROR | Cannot read the input file (permissions, encoding) |
-| 4 | CHROME_NOT_FOUND | Chrome/Chromium browser not found on system |
+| 4 | BROWSER_NOT_FOUND | Playwright Chromium not installed (run: npx playwright install chromium) |
 | 5 | BROWSER_LAUNCH_ERROR | Failed to launch browser |
 | 6 | RENDER_ERROR | Failed to render the HTML content |
 | 7 | SCREENSHOT_ERROR | Failed to capture screenshot |
@@ -180,7 +203,7 @@ When the skill fails, check the exit code to understand the error:
 | 1 | 参数无效 | 缺少或无效的命令行参数 |
 | 2 | 文件未找到 | 输入的 markdown 文件不存在 |
 | 3 | 文件读取错误 | 无法读取输入文件（权限、编码） |
-| 4 | Chrome 未找到 | 系统上未找到 Chrome/Chromium 浏览器 |
+| 4 | 浏览器未安装 | Playwright Chromium 未安装（运行: npx playwright install chromium） |
 | 5 | 浏览器启动错误 | 无法启动浏览器 |
 | 6 | 渲染错误 | 无法渲染 HTML 内容 |
 | 7 | 截图错误 | 无法捕获截图 |
@@ -192,7 +215,8 @@ When the skill fails, check the exit code to understand the error:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `CHROME_PATH` | Override Chrome executable path | `/usr/bin/chromium` |
+| `CHROME_PATH` | Override Playwright's bundled Chromium | `/usr/bin/chromium` |
+| `MD2IMG_TIMEOUT` | Override default 30s timeout (ms) | `60000` |
 | `OPENCLAW_CHANNEL` | OpenClaw channel (auto-detection) | - |
 | `OPENCLAW_SKILLS_DIR` | OpenClaw skills directory (auto-detection) | - |
 
@@ -214,11 +238,10 @@ When the skill fails, check the exit code to understand the error:
 ## Dependencies / 依赖
 
 - Node.js 18+
-- puppeteer-core
-- marked
-- Google Chrome or Chromium (uses system-installed browser)
+- playwright (bundles its own Chromium — no system browser required)
+- marked (markdown parser)
 
-Dependencies are installed at `~/.openclaw/skills/md-to-share/node_modules/`
+Install: `npm install` or `bun install` (postinstall automatically downloads Chromium)
 
 ## Styling / 样式说明
 
@@ -241,15 +264,11 @@ When user says "share this to WeChat" or "make it easy to forward":
 
 ## Troubleshooting / 故障排除
 
-### Chrome not found / Chrome 未找到
+### Browser not found / 浏览器未安装
 
-Set the CHROME_PATH environment variable:
+Playwright's bundled Chromium should be installed automatically during `npm install`. If not:
 ```bash
-# macOS/Linux
-export CHROME_PATH="/Applications/Chromium.app/Contents/MacOS/Chromium"
-
-# Windows
-set CHROME_PATH=C:\Program Files\Chromium\Application\chrome.exe
+npx playwright install chromium
 ```
 
 ### Image too large / 图片太大
