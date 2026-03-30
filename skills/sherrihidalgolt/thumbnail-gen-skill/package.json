@@ -1,16 +1,7 @@
 {
   "name": "thumbnail-gen-skill",
-  "version": "1.7.0",
+  "version": "2.1.0",
   "type": "module",
-  "description": "YouTube Thumbnail Generator — AI-powered ai youtube thumbnail generator",
-  "license": "MIT",
-  "clawhub": {
-    "env": [
-      {
-        "name": "NETA_TOKEN",
-        "description": "Neta AI API token. Get it at https://www.neta.art/open/",
-        "required": true
-      }
-    ]
-  }
+  "description": "YouTube Thumbnail Generator \u2014 AI-powered ai youtube thumbnail generator",
+  "license": "MIT"
 }

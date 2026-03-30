@@ -3,11 +3,16 @@
   "slug": "thumbnail-gen-skill",
   "displayName": "Thumbnail Gen Skill",
   "latest": {
-    "version": "1.7.0",
-    "publishedAt": 1774572085396,
-    "commit": "https://github.com/openclaw/skills/commit/c69511f3387945ee00ce98822420725132a7f3f2"
+    "version": "2.1.0",
+    "publishedAt": 1774583700512,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.7.0",
+      "publishedAt": 1774572085396,
+      "commit": "https://github.com/openclaw/skills/commit/c69511f3387945ee00ce98822420725132a7f3f2"
+    },
     {
       "version": "1.3.5",
       "publishedAt": 1774422149998,

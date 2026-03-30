@@ -1,5 +1,7 @@
 # YouTube Thumbnail Generator
 
+> Powered by the **Neta AI image generation API** (`api.talesofai.com`) — the same service as [neta.art](https://www.neta.art/open/).
+
 Generate eye-catching, AI-powered YouTube thumbnails from a text description. Returns a direct image URL instantly — no sign-up required beyond your Neta API token.
 
 ---
@@ -44,7 +46,7 @@ node thumbnailgen.js "travel vlog thumbnail" --token YOUR_TOKEN_HERE
 | Flag | Values | Default | Description |
 |------|--------|---------|-------------|
 | `--size` | `square`, `portrait`, `landscape`, `tall` | `landscape` | Output image dimensions |
-| `--token` | string | — | Neta API token (overrides env) |
+| `--token` | string | — | Neta API token (required) |
 | `--ref` | UUID string | — | Reference image UUID for style inheritance |
 
 ### Size dimensions
@@ -60,22 +62,13 @@ node thumbnailgen.js "travel vlog thumbnail" --token YOUR_TOKEN_HERE
 
 ## Token setup
 
-The script resolves your Neta token from the following sources, in order:
+This skill requires a Neta API token (free trial available at <https://www.neta.art/open/>).
 
-1. `--token` CLI flag
-2. `NETA_TOKEN` environment variable
+Pass it via the `--token` flag:
 
-**Recommended setup** — add to your `.env` file:
 ```bash
-NETA_TOKEN=your_token_here
+node <script> "your prompt" --token YOUR_TOKEN
 ```
-
-Or export it in your shell profile:
-```bash
-export NETA_TOKEN=your_token_here
-```
-
----
 
 ## Examples
 
@@ -90,10 +83,7 @@ node thumbnailgen.js "food thumbnail, delicious pasta closeup, warm lighting, re
 node thumbnailgen.js "product review thumbnail, smartphone on desk, clean modern background, professional"
 ```
 
-Each command prints a direct image URL to stdout on success:
-```
-https://cdn.talesofai.cn/artifacts/abc123.jpg
-```
+Each command prints a direct image URL to stdout on success.
 
 ---
 
@@ -106,4 +96,4 @@ youtube thumbnail, bold colors, eye-catching design, professional
 
 ## Example Output
 
-![Generated example](https://oss.talesofai.cn/picture/182e7357-7c6f-4b9a-9708-373ea38ccd4a.webp)
+![Generated example](https://cdn.talesofai.com/picture/182e7357-7c6f-4b9a-9708-373ea38ccd4a.webp)
