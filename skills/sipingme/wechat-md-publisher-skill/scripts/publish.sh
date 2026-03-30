@@ -10,6 +10,14 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# 获取脚本所在目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 自动检查和更新依赖
+if [ -f "$SCRIPT_DIR/check-deps.sh" ]; then
+    bash "$SCRIPT_DIR/check-deps.sh"
+fi
+
 # 检查是否安装了工具
 if ! command -v wechat-pub &> /dev/null; then
     echo -e "${RED}错误: wechat-pub 未安装${NC}"

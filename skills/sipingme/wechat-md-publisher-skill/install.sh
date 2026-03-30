@@ -3,7 +3,7 @@
 
 set -e
 
-echo "🚀 Installing wechat-md-publisher OpenClaw Skill..."
+echo "🚀 Setting up wechat-md-publisher OpenClaw Skill..."
 
 # Check if npm is installed
 if ! command -v npm &> /dev/null; then
@@ -12,25 +12,28 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
-# Install the main package
-echo "📦 Installing wechat-md-publisher package..."
-npm install -g wechat-md-publisher
+# Check if wechat-md-publisher is already installed
+if command -v wechat-pub &> /dev/null; then
+    echo "✓ wechat-pub is already installed"
+    wechat-pub --version
+else
+    echo ""
+    echo "⚠️  wechat-md-publisher is not installed."
+    echo ""
+    echo "To install, please run the following command manually:"
+    echo ""
+    echo "    npm install -g wechat-md-publisher"
+    echo ""
+    echo "This skill requires user confirmation before installing packages."
+    exit 1
+fi
 
 # Make scripts executable
 echo "🔧 Setting up permissions..."
 chmod +x scripts/publish.sh
 
-# Verify installation
-echo "✅ Verifying installation..."
-if command -v wechat-pub &> /dev/null; then
-    echo "✓ wechat-pub command is available"
-    wechat-pub --version
-else
-    echo "⚠️  Warning: wechat-pub command not found in PATH"
-fi
-
 echo ""
-echo "🎉 Installation complete!"
+echo "🎉 Setup complete!"
 echo ""
 echo "📚 Next steps:"
 echo "1. Configure your WeChat account:"

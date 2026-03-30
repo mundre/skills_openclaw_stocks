@@ -1,7 +1,7 @@
 ---
 name: wechat-md-publisher
-description: 发布 Markdown 文章到微信公众号，支持草稿管理、多主题、智能图片处理、自动封面图。推荐与 news-to-markdown-skill 配合使用实现一键转载。
-version: 0.2.4
+description: 发布 Markdown 文章到微信公众号，支持草稿管理、多主题、智能图片处理、自动封面图。推荐与 news-to-markdown-skill 配合使用实现一键转载（支持本地图片）。
+version: 0.8.15
 author: Ping Si <sipingme@gmail.com>
 user-invocable: true
 requires:
@@ -10,6 +10,25 @@ requires:
   - env:
       - WECHAT_APP_ID: "微信公众号 AppID（必需）"
       - WECHAT_APP_SECRET: "微信公众号 AppSecret（必需）"
+permissions:
+  filesystem:
+    read:
+      - "*.md": "读取用户指定的 Markdown 文件"
+      - "*.jpg,*.png,*.gif": "读取文章中引用的本地图片"
+    write:
+      - "~/.config/wechat-md-publisher-nodejs/": "存储账号配置和缓存（凭证使用 AES-256 加密）"
+  network:
+    required:
+      - "api.weixin.qq.com": "微信公众号 API（发布、草稿、素材管理）"
+      - "mp.weixin.qq.com": "微信公众号素材上传"
+    optional:
+      - "User-configured remote theme API": "仅当用户使用 theme add-remote 命令时才会访问（⚠️ 需用户明确配置并信任该端点）"
+  credentials:
+    - name: "WECHAT_APP_SECRET"
+      storage: "由 wechat-md-publisher npm 包加密存储于 ~/.config/wechat-md-publisher-nodejs/"
+      handler: "wechat-md-publisher npm 包（https://github.com/sipingme/wechat-md-publisher）"
+      consent: "需要用户明确提供，不会自动收集"
+      note: "本 skill 不直接处理凭证加密，需信任上游 npm 包的实现"
 tags:
   - wechat
   - publishing
@@ -57,24 +76,32 @@ wechat-pub account add \
 ```bash
 wechat-pub publish create \
   --file article.md \
-  --theme orangeheart
+  --theme orangesun
 ```
 
 ### 与 news-to-markdown 配合使用
 
 ```bash
-# 一键转载新闻到微信公众号
-# news-to-markdown 会自动提取封面图（og:image 或第一张图片）
-# wechat-md-publisher 会自动使用提取的封面图
-convert-url --url "https://www.toutiao.com/article/123" --output /tmp/article.md
-wechat-pub publish create --file /tmp/article.md --theme orangeheart
+# 一键转载新闻到微信公众号（推荐：下载图片到本地）
+# news-to-markdown 会自动下载图片到本地，避免远程 URL 过期问题
+convert-url --url "https://www.toutiao.com/article/123" \
+  --output /tmp/article.md \
+  --download-images \
+  --output-dir /tmp/article
+
+# wechat-md-publisher 会自动读取本地图片并上传
+wechat-pub publish create --file /tmp/article/article.md --theme orangesun
 ```
 
-**封面图自动处理**：
-- news-to-markdown v1.2.0+ 自动提取最佳封面图
-- 优先级：og:image > twitter:image > 第一张图片
-- wechat-md-publisher 自动上传并使用封面图
-- 无需手动指定，完全自动化
+**图片处理最佳实践**（v0.8.3+）：
+- ✅ **推荐**：使用 `--download-images` 下载图片到本地
+  - 避免远程 URL 签名过期（如头条图片）
+  - 避免防盗链问题
+  - 提高发布成功率
+- news-to-markdown 自动提取封面图（og:image > twitter:image > 第一张图片）
+- 图片保存到 `./images/` 目录，Markdown 使用相对路径
+- wechat-md-publisher 自动上传本地图片到微信素材库
+- 完全自动化，无需手动处理
 
 ---
 
@@ -88,6 +115,8 @@ wechat-pub publish create --file /tmp/article.md --theme orangeheart
 - ✅ 查看已发布的文章列表
 - ✅ 删除草稿或已发布文章
 - ✅ 使用不同主题渲染 Markdown
+- ✅ 在文章开头/结尾添加固定图文（Wrapper 功能）
+- ✅ 查看或回滚 Wrapper 历史版本
 
 **触发关键词**：
 - "发布到微信公众号"
@@ -95,6 +124,8 @@ wechat-pub publish create --file /tmp/article.md --theme orangeheart
 - "配置微信公众号"
 - "查看微信文章"
 - "使用 [主题名] 主题发布"
+- "文章开头结尾固定内容"
+- "Wrapper"
 
 ## 📋 前置要求
 
@@ -195,7 +226,7 @@ EOF
 ```bash
 wechat-pub publish create \
   --file /tmp/article.md \
-  --theme orangeheart
+  --theme orangesun
 ```
 
 3. 解析输出，提取 `publish_id`
@@ -213,15 +244,12 @@ wechat-pub publish create \
 4. 向用户报告成功，并提供发布 ID
 
 **可用主题**：
-- `default` - 简洁经典
-- `orangeheart` - 温暖优雅
-- `rainbow` - 活泼清爽
-- `lapis` - 清新极简
-- `pie` - 现代锐利
-- `maize` - 柔和舒适
-- `purple` - 简约文艺
-- `phycat` - 薄荷清新
-- `sports` - 运动风（活力动感，v0.2.4已修复微信渲染问题）
+- `default` - 默认主题（简洁清爽）
+- `orangesun` - Orange Sun（温暖明亮）
+- `redruby` - Red Ruby（优雅醒目）
+- `greenmint` - Green Mint（清新舒适）
+- `purplerain` - Purple Rain（梦幻柔和）
+- `blackink` - Black Ink（深色模式）
 
 **异常处理**：
 - 图片上传失败：检查图片路径和网络
@@ -242,7 +270,7 @@ wechat-pub publish create \
 ```bash
 wechat-pub draft create \
   --file /tmp/article.md \
-  --theme lapis
+  --theme default
 ```
 
 3. 记录返回的 `media_id`
@@ -340,15 +368,63 @@ wechat-pub theme list
 ┌─────────────┬──────────────┬────────────────────┐
 │ ID          │ 名称         │ 描述               │
 ├─────────────┼──────────────┼────────────────────┤
-│ default     │ 默认         │ 简洁经典风格       │
-│ orangeheart │ Orange Heart │ 温暖优雅风格       │
-│ lapis       │ Lapis        │ 清新极简风格       │
+│ default     │ 默认主题     │ 简洁清爽风格       │
+│ orangesun   │ Orange Sun   │ 温暖明亮风格       │
+│ redruby     │ Red Ruby     │ 优雅醒目风格       │
+│ greenmint   │ Green Mint   │ 清新舒适风格       │
+│ purplerain  │ Purple Rain  │ 梦幻柔和风格       │
+│ blackink    │ Black Ink    │ 深色模式风格       │
 └─────────────┴──────────────┴────────────────────┘
 ```
+
 
 ---
 
 ## 🔧 高级用法
+
+### Wrapper 功能：文章开头/结尾固定图文
+
+在发布文章时自动在开头和结尾添加固定的图文内容（如关注引导、底部二维码等）。
+
+**开启功能**：
+```bash
+wechat-pub wrapper on
+```
+
+**设置内容**：
+```bash
+wechat-pub wrapper set \
+  --header "<div>欢迎关注我们的公众号</div>" \
+  --footer "<div>觉得有帮助请点赞+收藏</div>"
+```
+
+**查看状态**：
+```bash
+wechat-pub wrapper status
+```
+
+**查看历史版本**：
+```bash
+wechat-pub wrapper history
+```
+
+**回滚到指定版本**：
+```bash
+wechat-pub wrapper rollback 1
+```
+
+**关闭功能**：
+```bash
+wechat-pub wrapper off
+```
+
+**注意事项**：
+- 功能默认关闭，需要手动开启
+- 每次 `set` 会创建新版本，支持历史回滚
+- 图片处理：目前直接存储原始 HTML，需要公网可访问的图片 URL
+- 数据库文件：`data/wmp.db`
+
+---
 
 ### 使用编程 API
 
@@ -508,7 +584,7 @@ cover: ./cover.jpg（可选，封面图路径）
 
 **用户**：[提供内容]
 
-**AI**：收到！我将使用 orangeheart 主题发布。正在处理...
+**AI**：收到！我将使用 orangesun 主题发布。正在处理...
 
 [执行命令]
 
@@ -520,8 +596,13 @@ cover: ./cover.jpg（可选，封面图路径）
 
 ## 📝 维护说明
 
-- **版本**: 0.2.4
-- **最后更新**: 2026-03-25
+- **版本**: 0.8.4
+- **最后更新**: 2026-03-27
+- **更新内容**: 
+  - 优化主题样式：添加 text-align: left 到标题和 strong 元素
+  - 移除 code 背景色以提高微信兼容性
+  - 更新 wrapper header 为居中对齐
+  - 应用于所有主题：default, greenmint, orangesun, purplerain, redruby, blackink
 - **维护者**: Ping Si <sipingme@gmail.com>
 - **许可证**: Apache-2.0
 
@@ -553,20 +634,26 @@ cover: ./cover.jpg（可选，封面图路径）
 
 #### 完整工作流
 
-**场景 1：转载单篇新闻**
+**场景 1：转载单篇新闻（推荐方式）**
 
 ```bash
-# 步骤 1: 使用 news-to-markdown 提取新闻
+# 步骤 1: 使用 news-to-markdown 提取新闻并下载图片
 convert-url --url "https://www.toutiao.com/article/123" \
-  --output /tmp/article.md \
-  --platform toutiao \
+  --output /tmp/article/article.md \
+  --download-images \
+  --output-dir /tmp/article \
   --verbose
 
 # 步骤 2: 使用 wechat-md-publisher 发布到微信
 wechat-pub publish create \
-  --file /tmp/article.md \
-  --theme orangeheart
+  --file /tmp/article/article.md \
+  --theme orangesun
 ```
+
+**为什么要下载图片到本地？**
+- 头条图片 URL 包含签名和过期时间，几小时后会失效
+- 本地图片更可靠，不受网络波动影响
+- 避免防盗链导致的图片加载失败
 
 **场景 2：批量转载新闻**
 
@@ -579,12 +666,20 @@ urls=(
 )
 
 # 批量处理
-for url in "${urls[@]}"; do
-  # 提取新闻
-  convert-url --url "$url" --output "/tmp/$(basename $url).md"
+for i in "${!urls[@]}"; do
+  url="${urls[$i]}"
+  output_dir="/tmp/article-$i"
+  
+  # 提取新闻并下载图片
+  convert-url --url "$url" \
+    --output "$output_dir/article.md" \
+    --download-images \
+    --output-dir "$output_dir"
   
   # 发布到微信（创建草稿）
-  wechat-pub draft create --file "/tmp/$(basename $url).md" --theme lapis
+  wechat-pub draft create \
+    --file "$output_dir/article.md" \
+    --theme default
   
   echo "✓ 已处理: $url"
 done
@@ -648,9 +743,11 @@ convert-url --url "$news_url" --output /tmp/article.md
 ```
 
 **3. 选择合适主题**
-- 科技类文章：`lapis`（清新极简）
-- 情感类文章：`orangeheart`（温暖优雅）
-- 教程类文章：`default`（简洁经典）
+- 科技类文章：`default`（简洁蓝调）、`greenmint`（绿薄荷）
+- 情感类文章：`orangesun`（橙色阳光）、`purplerain`（紫色雨）
+- 教程类文章：`default`（简洁蓝调）、`greenmint`（绿薄荷）
+- 正式商务：`redruby`（红宝石）、`purplerain`（紫色雨）
+- 夜间阅读：`blackink`（黑墨水深色模式）
 
 #### 示例对话
 
@@ -677,7 +774,7 @@ https://www.toutiao.com/article/7000000000000000000/
 ✅ **完成！**
 - 文章标题：《xxx》
 - 发布 ID: 2247483647_1
-- 使用主题: orangeheart
+- 使用主题: orangesun
 - 你可以在微信公众平台查看
 
 #### 相关资源

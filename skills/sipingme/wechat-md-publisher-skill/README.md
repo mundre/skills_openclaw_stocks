@@ -190,6 +190,7 @@ AI 自动执行：
 - `maize` - 柔和舒适
 - `purple` - 简约文艺
 - `phycat` - 薄荷清新
+- `sport` - 运动风 🏃 活力动感
 
 ## 🔧 高级配置
 
@@ -204,12 +205,14 @@ export WECHAT_APP_SECRET="your_app_secret"
 ### 自定义主题
 
 ```bash
-# 添加本地主题
+# 添加本地主题（推荐）
 wechat-pub theme add-local --name my-theme --path ./my-theme.css
 
-# 添加远程主题 API
+# 添加远程主题 API（⚠️ 见下方安全警告）
 wechat-pub theme add-remote --name md2wechat --url https://api.md2wechat.cn --key xxx
 ```
+
+> ⚠️ **远程主题安全警告**：使用 `theme add-remote` 会向第三方服务器发送请求。请仅使用您信任的远程主题 API。远程主题端点不在本 skill 的默认网络权限范围内，需要用户明确配置并承担相应风险。
 
 ## ⚠️ 常见问题
 
@@ -244,22 +247,60 @@ wechat-pub account remove <account-id>
 wechat-pub account add --name "新账号" --app-id xxx --app-secret xxx
 ```
 
+### 问题 5：更新 Skill 后依赖未更新
+
+**✨ 自动更新（v0.2.2+）**
+
+从 v0.2.2 开始，skill 会在每次运行时**自动检查并更新依赖**：
+
+```bash
+# 直接使用，无需手动操作
+openclaw run wechat-md-publisher publish article.md
+
+# 输出示例：
+# 检查 wechat-md-publisher 依赖...
+# 当前版本: v0.3.1
+# 需要版本: v0.3.2
+# 正在更新...
+# ✓ 更新成功: v0.3.1 → v0.3.2
+```
+
+**手动更新（如果自动更新失败）**：
+
+```bash
+# 方法 1：强制重新安装（推荐）
+npm uninstall -g wechat-md-publisher
+npm install -g wechat-md-publisher@0.3.2
+
+# 方法 2：清除缓存后安装
+npm cache clean --force
+npm install -g wechat-md-publisher@latest
+
+# 验证版本
+wechat-pub --version  # 应显示 0.3.2
+```
+
+**工作原理**：
+- ✅ 每次运行时检查版本
+- ⚠️ 版本不匹配时提示用户手动更新（不会自动安装）
+- ✅ 提供明确的安装命令供用户执行
+
 ## 🔒 安全性
 
 ### 权限要求
 
 - ✅ 读取本地 Markdown 和图片文件
-- ✅ 网络访问（仅限微信官方 API）
+- ✅ 网络访问（微信官方 API）
 - ✅ 写入配置文件到 `~/.config/wechat-md-publisher-nodejs/`
+- ⚠️ 可选：远程主题 API（仅当用户使用 `theme add-remote` 时）
 
 ### 数据隐私
 
-- ❌ 不会上传数据到第三方服务器
-- ❌ 不会收集用户信息
-- ✅ 所有通信仅限于微信官方 API
-- ✅ 配置文件仅存储在本地
-[news-to-markdown](https://github.com/sipingme/news-to-markdown) - 新闻提取核心库
-- 
+- ✅ 默认情况下，所有通信仅限于微信官方 API
+- ✅ 配置文件仅存储在本地（凭证加密由 [wechat-md-publisher](https://github.com/sipingme/wechat-md-publisher) npm 包处理）
+- ❌ 不会自动收集用户信息
+- ⚠️ **例外**：如果用户配置了远程主题（`theme add-remote`），会向该第三方端点发送请求
+
 ### 安全检查
 
 ```bash
