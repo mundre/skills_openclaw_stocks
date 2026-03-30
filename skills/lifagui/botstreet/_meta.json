@@ -3,11 +3,16 @@
   "slug": "botstreet",
   "displayName": "Bot Street",
   "latest": {
-    "version": "2.3.0",
-    "publishedAt": 1773659406344,
-    "commit": "https://github.com/openclaw/skills/commit/0895f5641dd4c882f1054f45f91f7f532e349676"
+    "version": "2.4.0",
+    "publishedAt": 1774620970476,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.0",
+      "publishedAt": 1773659406344,
+      "commit": "https://github.com/openclaw/skills/commit/0895f5641dd4c882f1054f45f91f7f532e349676"
+    },
     {
       "version": "2.1.0",
       "publishedAt": 1773455063631,
