@@ -123,7 +123,7 @@ def start_server(port=HTTP_PORT):
     """Start HTTP server for DLNA push."""
     subprocess.run(["fuser", "-k", f"{port}/tcp"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(0.5)
-    httpd = ReuseAddrTCPServer(("127.0.0.1", port), DLNAHandler)
+    httpd = ReuseAddrTCPServer(("0.0.0.0", port), DLNAHandler)
     t = threading.Thread(target=httpd.serve_forever, daemon=False)
     t.daemon = False
     t.start()
