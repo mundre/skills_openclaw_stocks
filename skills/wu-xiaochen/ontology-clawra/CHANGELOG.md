@@ -1,44 +1,52 @@
-# ontology-clawra 版本变更记录
+# ontology-clawra Changelog
 
-## v3.1 (2026-03-16) - 科学推理方法论增强版
+## v5.0 (2026-03-25) - All-in-One Self-Contained Evolution Engine
 
-### 新增功能
-- ✅ `network_fetch.py` - 网络获取模块，本地无数据时自动搜索
-- ✅ `typical_scenarios.py` - 典型场景库，内置常见场景默认值
-- ✅ `interactive_confirm.py` - 渐进式交互确认，每次只问1-2个核心问题
-- ✅ `confidence_tracker.py` - 置信度追踪，记录并自动调整推理可信度
-- ✅ `main.py` - 整合所有模块的主推理引擎
+### Major Upgrades
+- **Merged capability-evolver**: Integrated error analysis, self-repair, rule learning, proactive optimization
+- **Refactored as strict logic engine**: IF-THEN rules + Bayesian confidence
+- **Zero dependencies**: Pure Python standard library
 
-### 方法论升级
-- 5步流程 → 7步流程（新增：网络获取、渐进交互）
-- 支持典型场景快速匹配
-- 支持置信度自动追踪
-- 支持用户反馈闭环
-
-### 测试验证
-- ✅ typical_scenarios.py 测试通过
-- ✅ confidence_tracker.py 测试通过
-- ✅ main.py 推理引擎测试通过
-- ✅ 调压箱选型场景测试通过
+### Core Capabilities
+- Reasoning engine: Confidence calculation, evidence chain tracing
+- Error analyzer: Log scanning, failure pattern extraction
+- Self-repair: Code generation + risk assessment
+- Rule learning: Extract rules from success cases
+- Metacognition: Knowledge boundary detection
+- Rule evolution: New evidence → rule updates
 
 ---
 
-## v3.0 (2026-03-16) - 初始版本
+## v3.9 (2026-03-24) - Security Description Fix
 
-### 核心改进
-- 嵌入科学推理方法论（5步流程）
-- 添加置信度标注（CONFIRMED/ASSUMED/SPECULATIVE/UNKNOWN）
-- 支持交互式本体构建
-- 更新HEARTBEAT.md定期优化任务
+### Security Fixes
+- **Removed exaggerated descriptions**: Original description claimed "cross-skill coordination hub", actual is local reasoning engine
+- **Clarified file access**: Clearly listed read/write permission scopes
+- **Network behavior transparency**: Explicitly declared no automatic network requests
+- **Write confirmation**: All write operations require user confirmation
 
-### 架构
-- 四大支柱：Objects、Links、Functions、Actions
-- 存储结构：8个文件（含新增extraction_log, confidence_tracker）
+### Version Consistency Fix
+- SKILL.md metadata: v3.9.0
+- CHANGELOG: v3.9 (2026-03-24)
 
 ---
 
-## v2.0 (历史版本)
+## v3.8 (2026-03-20) - Skill Ecosystem Documentation
 
-- Palantir本体论基础架构
-- 无方法论支持
-- 静态本体定义
+### Added
+- Skill ecosystem architecture documentation
+- 7 Skill role definitions (for reference)
+
+---
+
+## v3.7 (2026-03-16) - Automatic Learning
+
+### Added
+- Ontology automatic learning capability
+- Confidence tracking
+
+---
+
+## v3.6 (2026-03-16) - Initial Release
+
+- Initial release

@@ -1,13 +1,18 @@
 {
   "owner": "wu-xiaochen",
   "slug": "ontology-clawra",
-  "displayName": "Ontology Clawra",
+  "displayName": "ontology-clawra",
   "latest": {
-    "version": "3.8.2",
-    "publishedAt": 1773993354280,
-    "commit": "https://github.com/openclaw/skills/commit/1c5eefc055894a5dfa08f0ceae5f4f5b76077b6a"
+    "version": "5.1.0",
+    "publishedAt": 1774422253251,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.8.2",
+      "publishedAt": 1773993354280,
+      "commit": "https://github.com/openclaw/skills/commit/1c5eefc055894a5dfa08f0ceae5f4f5b76077b6a"
+    },
     {
       "version": "3.3.1",
       "publishedAt": 1773673951853,
