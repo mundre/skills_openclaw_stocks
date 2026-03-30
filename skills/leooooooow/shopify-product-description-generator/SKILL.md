@@ -1,60 +1,75 @@
 ---
 name: shopify-product-description-generator
-description: Generate Shopify-ready product descriptions from raw product facts, audience pain points, and proof. Use when teams need faster PDP copy drafting without sounding generic.
+description: Build Shopify-ready product descriptions that turn raw product facts into clearer PDP copy with stronger benefits, objections handling, and conversion intent.
 ---
 
 # Shopify Product Description Generator
 
-把零散卖点整理成能上架、能读懂、能转化的 Shopify 商品描述。
+Turn raw product facts into Shopify-ready PDP copy that is clearer, more persuasive, and easier to publish.
 
-## 解决的问题
+## Use when
 
-很多商品页文案的问题不是“没有字”，而是：
-- 只会堆参数，不会讲清楚用户为什么该买；
-- 文案像 AI 拼接，读起来空；
-- 卖点顺序混乱，重点不突出；
-- CTA 太弱，描述写完却没有推动下单。
+- You need a new Shopify product description from messy notes, specs, or bullets
+- A PDP has traffic but weak conversion because the copy is feature-heavy and benefit-light
+- You want multiple product-description angles for testing
+- A team needs faster first drafts without publishing generic AI copy
 
-这个 skill 的目标是：
-**把产品事实、用户痛点、证据和语气要求，转成一版 Shopify 可直接使用的商品描述。**
+## Do not use when
 
-## 何时使用
+- You need a full landing page, email sequence, or ad campaign
+- The main task is regulated claim review or legal approval
+- Product facts, proof, or audience are still unknown
+- You only want proofreading with no structural rewrite
 
-- 新品上架，需要快速起草 PDP 描述；
-- 老商品转化一般，想重写商品描述结构；
-- 同一商品要做多个角度版本用于 A/B 测试。
+## Inputs
 
-## 输入要求
+Provide as many as possible:
+- product name
+- product type and core use case
+- target buyer and buying context
+- features, materials, specs, or ingredients
+- biggest pain points or desired outcomes
+- differentiators versus alternatives
+- proof: reviews, test results, materials, creator feedback, usage data
+- tone preference: direct, warm, premium, practical, etc.
+- constraints: banned claims, words to avoid, brand rules, SEO terms
 
-- 产品名称与核心用途
-- 目标用户 / 购买场景
-- 核心卖点与差异化点
-- 证据（材质、功能、测试、评论、数据）
-- 禁止夸大的 claim 边界
-- 语气偏好（直接、温和、专业、种草等）
+## Workflow
 
-## 工作流
+1. Identify the real buying motive behind the product.
+2. Convert features into buyer-facing benefits.
+3. Surface likely objections such as price, fit, complexity, trust, or results uncertainty.
+4. Use available proof to support claims without overpromising.
+5. Build a Shopify-friendly structure: hook, description, key benefits, usage/scenario, CTA.
+6. Keep wording SEO-aware but conversion-first.
+7. Flag any claims that need human review before publishing.
 
-1. 提炼用户购买这个产品的核心理由。
-2. 将事实卖点改写为 benefit-led 表达。
-3. 组织描述结构：开头、卖点模块、使用场景、CTA。
-4. 标记需要谨慎表达的风险 claim。
-5. 输出可直接粘贴到 Shopify 的成稿版本。
+## Output
 
-## 输出格式
+1. Main Shopify-ready product description
+2. Feature → benefit breakdown
+3. Objection-handling lines
+4. Suggested CTA line
+5. Risk flags / human-review items
 
-1. 商品描述主版本
-2. 卖点拆解
-3. CTA 建议
-4. 风险提示 / 需人工确认项
+## Quality bar
 
-## 质量标准
+- Starts from buyer value, not a dry feature dump
+- Sounds commercially strong without sounding fake or overhyped
+- Makes the product easier to understand in under one screen of reading
+- Uses proof where possible instead of empty adjectives
+- Can be pasted into Shopify with minimal cleanup
 
-- 先讲用户收益，再讲产品参数。
-- 语言具体，不空泛，不堆套话。
-- 不制造无依据的功效承诺。
-- 结果应便于直接进入 Shopify 编辑器。
+## What better looks like
 
-## 资源
+Better output does **not** just make the copy longer.
+It makes the PDP easier to buy from:
+- clearer reason to care
+- sharper differentiation
+- stronger benefit hierarchy
+- fewer generic lines
+- more believable persuasion
 
-参考 `references/output-template.md`。
+## Resource
+
+See `references/output-template.md`.
