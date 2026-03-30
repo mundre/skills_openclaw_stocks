@@ -4,7 +4,7 @@ description: "Dynamic grid trading strategy for any token pair on EVM L2 chains 
 license: Apache-2.0
 metadata:
   author: SynthThoughts
-  version: "1.4.0"
+  version: "1.5.0"
   pattern: "pipeline, tool-wrapper"
   steps: "5"
   openclaw:
@@ -22,7 +22,12 @@ metadata:
         - onchainos
         - python3
     primaryEnv: OKX_API_KEY
-    entrypoint: references/eth_grid_v1.py
+    entrypoint: references/eth_grid.py
+    skills:
+      - okx-dex-swap
+      - okx-dex-market
+      - okx-agentic-wallet
+      - okx-onchain-gateway
     os:
       - darwin
       - linux
@@ -53,11 +58,11 @@ New grid dict fields: `buy_step`, `sell_step` (backward-compatible `step` = aver
 ```
 Cron (5min) → Python script → onchainos CLI → OKX Web3 API → Chain
                   ↓                ↓
-            state_v1.json    Wallet (TEE signing)
+            grid_state.json    Wallet (TEE signing)
                   ↓
             ┌─────────────┐
             │ MTF Analysis │ ← price_history (288 bars = 24h)
-            │ K-line ATR   │ ← onchainos market kline (1H × 24)
+            │ K-line ATR   │ ← okx-dex-market kline (1H × 24)
             └──────┬──────┘
                    ↓
             Trend-Adaptive Grid Decision
@@ -65,15 +70,11 @@ Cron (5min) → Python script → onchainos CLI → OKX Web3 API → Chain
             Discord embed (notification)
 ```
 
-**OKX Skill Dependencies** (via `onchainos` CLI — handles auth, chain resolution, error retry):
-- Price: `okx-dex-market` → `onchainos swap quote --from <A> --to <B> --amount <amt> --chain <chain>`
-- K-line: `okx-dex-market` → `onchainos market kline --address <token> --chain <chain> --bar 1H --limit 24`
-- Quote: `okx-dex-swap` → `onchainos swap quote --from <A> --to <B> --amount <amt> --chain <chain>`
-- Swap: `okx-dex-swap` → `onchainos swap swap --from <A> --to <B> --amount <amt> --chain <chain> --wallet <addr> --slippage <pct>`
-- Approve: `okx-dex-swap` → `onchainos swap approve --token <addr> --amount <amt> --chain <chain>`
-- Simulate: `okx-onchain-gateway` → `onchainos gateway simulate --from <addr> --to <addr> --data <hex> --chain <chain>`
-- Broadcast: `okx-onchain-gateway` → `onchainos gateway broadcast --signed-tx <hex> --address <addr> --chain <chain>`
-- Balance: `okx-wallet-portfolio` → `onchainos wallet balance --chain <chain>`
+**OKX Skill Dependencies** (command syntax defined in each skill, do not duplicate here):
+- `okx-dex-swap` — quote, approve, swap execution
+- `okx-dex-market` — K-line / OHLC data
+- `okx-agentic-wallet` — wallet switch, balance, contract-call (TEE signing)
+- `okx-onchain-gateway` — transaction simulation
 
 ## Pipeline: Execution Steps
 
@@ -82,8 +83,8 @@ Cron (5min) → Python script → onchainos CLI → OKX Web3 API → Chain
 ### Step 1: Data Acquisition
 
 **Actions**:
-1. Fetch ETH price via `onchainos swap quote`
-2. Fetch on-chain balances via `onchainos wallet balance`
+1. Fetch ETH price via `okx-dex-swap` (swap quote)
+2. Fetch on-chain balances via `okx-agentic-wallet` (wallet balance)
 3. Update `price_history` (append, cap at 288 = 24h @ 5min)
 4. Detect external deposits/withdrawals (unexplained balance changes > $100)
 
@@ -122,7 +123,7 @@ def analyze_multi_timeframe(history, price) -> dict:
 
 **Actions**:
 1. Calculate dynamic grid with trend-adaptive volatility multiplier:
-   - Grid center = EMA(20) on **1H kline** (20-hour EMA, fetched via `onchainos market kline`). Falls back to 5min tick history if kline unavailable.
+   - Grid center = EMA(20) on **1H kline** (20-hour EMA, fetched via `okx-dex-market` kline). Falls back to 5min tick history if kline unavailable.
    - Base: `VOLATILITY_MULTIPLIER_BASE=2.0`
    - In trend (strength > 0.3): blend toward `VOLATILITY_MULTIPLIER_TREND=3.0`
    - Wider grid in trends → fewer trades → more holding
@@ -142,9 +143,9 @@ def analyze_multi_timeframe(history, price) -> dict:
 
 **Actions**:
 1. Get swap quote + tx data from OKX DEX aggregator
-2. Pre-simulate via `onchainos gateway simulate` (diagnostic, non-blocking)
-3. For BUY: ensure USDC approval for router
-4. Sign + broadcast via `onchainos wallet contract-call` (TEE signing)
+2. Pre-simulate via `okx-onchain-gateway` (diagnostic, non-blocking)
+3. For BUY: ensure USDC approval via `okx-dex-swap`
+4. Sign + broadcast via `okx-agentic-wallet` contract-call (TEE signing)
 5. On failure: 1 auto-retry with 3s delay and fresh quote
 6. Record trade in state, update grid level ONLY on success
 
@@ -162,45 +163,6 @@ def analyze_multi_timeframe(history, price) -> dict:
 5. Emit `---JSON---` block with enriched fields
 
 **Output**: Discord notification + structured JSON
-
-## Tool Wrapper: onchainos CLI Reference
-
-### Prerequisites
-
-```bash
-which onchainos  # must be installed
-# Auth via environment variables
-OKX_API_KEY=...
-OKX_SECRET_KEY=...
-OKX_PASSPHRASE=...
-```
-
-### Core Operations
-
-| Operation | Command | Input | Output |
-|---|---|---|---|
-| Get Price | `onchainos swap quote --from $ETH --to $USDC --amount 1e18 --chain base` | Token addresses | `{"toTokenAmount": "2090450000"}` → parse / 1e6 |
-| Get K-line | `onchainos market kline --address $ETH --chain base --bar 1H --limit 24` | Token, bar size, limit | `[{ts, open, high, low, close, volume}]` |
-| Get Balance | `onchainos wallet balance --chain 8453` | Chain ID | `{details: [{tokenAssets: [{symbol, balance}]}]}` |
-| Swap Quote+TX | `onchainos swap swap --from $A --to $B --amount $amt --chain base --wallet $addr --slippage 1` | Tokens, amount, wallet | `{data: [{tx: {to, data, value, gas}}]}` |
-| Approve ERC-20 | `onchainos swap approve --token $USDC --amount $max --chain base` | Token, amount | Approval TX data |
-| Simulate TX | `onchainos gateway simulate --from $wallet --to $to --data $hex --chain base` | TX params | `{failReason, gasUsed}` |
-| Sign+Broadcast | `onchainos wallet contract-call --to $addr --chain 8453 --input-data $hex --value $eth` | TX params | `{txHash}` |
-
-### Error Handling Protocol
-
-Every function returns `(result, failure_info)`. Failure info is structured:
-
-```python
-failure_info = {
-    "reason": str,      # machine-readable: "swap_quote_failed", "approval_failed", etc.
-    "detail": str,      # human-readable context
-    "retriable": bool,  # safe to auto-retry?
-    "hint": str         # "transient_api_error", "retry_with_fresh_quote", "low_balance"
-}
-```
-
-Auto-retry policy: 1 retry for `retriable=True` with 3s delay and fresh quote.
 
 ## Tunable Parameters
 
@@ -678,47 +640,9 @@ if abs(unexplained_change) > $100:
 
 ### Logging
 
-- File: `grid_bot_v1.log` in script directory
+- File: `grid_bot.log` in script directory
 - Rotation: simple half-file rotation at 1MB
 - Format: `[YYYY-MM-DD HH:MM:SS] message`
-
-## Backtest Results Summary
-
-Based on 10-day backtest (2026-03-06 to 2026-03-16, ETH +9.00%):
-
-### Best Configuration: 6 Levels + trend_adaptive
-
-| Metric | Value |
-|---|---|
-| Initial Capital | $511.44 |
-| Final Value | $513.66 |
-| Total Return | +0.43% |
-| Annualized Return | +17.13% |
-| **Sharpe Ratio** | **4.45** |
-| Sortino Ratio | 4.04 |
-| Max Drawdown | 11.92% ($61.72) |
-| Total Trades | 54 |
-| Total Costs | $42.09 (1.32%) |
-
-### HODL Comparison
-
-| Strategy | Return | Final Value |
-|---|---|---|
-| Grid | +0.43% | $513.66 |
-| HODL | +5.48% | $539.47 |
-| Alpha | -5.05% | -$25.81 |
-
-Note: In a +9% uptrend, grid strategies naturally underperform HODL because they sell into the rise. The trend-adaptive features (wider grid, sell delay, momentum protection) aim to reduce this gap.
-
-### Parameter Scan Key Findings
-
-| Finding | Detail |
-|---|---|
-| `trend_adaptive` > `equal` | +1.8% better return across all grid level configs |
-| 6 levels optimal | Best Sharpe (4.45) vs 4 levels (2.05) or 8 levels (4.46 but -0.84% return) |
-| `step_min_pct` insensitive | 0.006-0.012 gave identical results at 6 levels — vol floor binding |
-| 8 levels + 0.012 step | Sharpe 9.63 but -0.03% return — fewer, higher-quality trades |
-| Cost impact | ~1.3% of traded volume — critical to maintain step > 3x DEX cost |
 
 ## Adapting to Different Pairs
 
@@ -807,7 +731,7 @@ Simulate new parameters against historical data, then: backup → patch → reca
 ### Review Checklist (AI Agent Prompt)
 
 ```
-1. Read grid_state_v1.json and grid_bot_v1.log
+1. Read grid_state.json and grid_bot.log
 2. Filter trades to review window (default: last 48h)
 3. Pair trades into round trips
 4. Compute: win_rate, avg_spread, loss_count, micro_count, total_pnl, hodl_alpha
@@ -822,7 +746,7 @@ Simulate new parameters against historical data, then: backup → patch → reca
 
 ```
 IF Step N fails:
-  1. Log failure reason to grid_bot_v1.log
+  1. Log failure reason to grid_bot.log
   2. Increment errors.consecutive
   3. If errors.consecutive >= 5: trigger circuit breaker (1h cooldown)
   4. Cache failed trade for retry command (10min expiry)
