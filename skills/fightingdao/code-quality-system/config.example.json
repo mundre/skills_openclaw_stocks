@@ -1,0 +1,16 @@
+{
+  "codebaseDir": "/path/to/your/codebase",
+  "teams": {
+    "webhookUrl": "https://im.360teams.com/api/qfin-api/rce-app/robot/send?access_token=xxxxxxxxx",
+    "secret": "your-teams-secret"
+  },
+  "smtp": {
+    "host": "smtp.example.com",
+    "port": 465,
+    "secure": true,
+    "user": "your-email@example.com",
+    "pass": "your-email-password-or-auth-code",
+    "fromName": "代码质量分析助手"
+  },
+  "emailRecipients": ["recipient1@example.com", "recipient2@example.com"]
+}
