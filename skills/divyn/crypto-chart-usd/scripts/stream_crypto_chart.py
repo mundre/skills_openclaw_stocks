@@ -29,7 +29,7 @@ BITQUERY_WS_BASE = "wss://streaming.bitquery.io/graphql"
 CRYPTO_CHART_SUBSCRIPTION = gql("""
 subscription CryptoChartUsd {
   Trading {
-    Tokens(where: { Interval: { Time: { Duration: { eq: 1 } } } }) {
+    Tokens(where: {Interval: {Time: {Duration: {eq: 1}}}}) {
       Token {
         Address
         Id
@@ -71,9 +71,15 @@ subscription CryptoChartUsd {
           WeightedSimpleMoving
         }
       }
+      Supply {
+        TotalSupply
+        MarketCap
+        FullyDilutedValuationUsd
+      }
     }
   }
 }
+
 """)
 
 
