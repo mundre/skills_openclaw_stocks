@@ -3,11 +3,16 @@
   "slug": "recipe-share-doc-and-notify",
   "displayName": "Recipe Share Doc And Notify",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1774375529257,
-    "commit": "https://github.com/openclaw/skills/commit/c754f80d16dcaec9d7094f5badfdc5e634b6b8de"
+    "version": "1.0.10",
+    "publishedAt": 1774551191077,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1774375529257,
+      "commit": "https://github.com/openclaw/skills/commit/c754f80d16dcaec9d7094f5badfdc5e634b6b8de"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774300660554,
