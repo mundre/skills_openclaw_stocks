@@ -3,9 +3,15 @@
   "slug": "halo-cli-operations",
   "displayName": "Halo Cli Operations",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1773996249106,
-    "commit": "https://github.com/openclaw/skills/commit/a6a0f2cd0f539bded1dbcec2b167034c8a94ce1d"
+    "version": "0.1.1",
+    "publishedAt": 1774448870022,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1773996249106,
+      "commit": "https://github.com/openclaw/skills/commit/a6a0f2cd0f539bded1dbcec2b167034c8a94ce1d"
+    }
+  ]
 }
