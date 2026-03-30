@@ -1,12 +1,14 @@
 ---
 name: ocas-sift
-description: Web search, research synthesis, fact verification, and entity extraction. The system's general research engine. Use for topic research, web lookups, fact-checking, document summarization, comparison research, or structured information extraction. Do not use for person-focused OSINT investigations (Scout) or image processing (Look).
+source: https://github.com/indigokarasu/sift
+install: openclaw skill install https://github.com/indigokarasu/sift
+description: Use when searching the web, synthesizing research across multiple sources, verifying facts, summarizing documents, or extracting structured entities. The system's general research engine for topic research, web lookups, fact-checking, comparisons, and deep multi-source sessions. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about', 'update sift'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).
 metadata: {"openclaw":{"emoji":"🔬"}}
 ---
 
 # Sift
 
-Sift retrieves information from the web, evaluates reliability across multiple sources, extracts structured knowledge, and produces reliable answers or research artifacts.
+Sift is the system's general research engine, retrieving and synthesizing information from the web across a tiered source hierarchy — internal knowledge first, then free web search, then rate-limited semantic research providers for deep work. It evaluates source reliability through cross-source agreement scoring, extracts structured entities from retrieved content, and emits enrichment candidates to Chronicle so researched knowledge accumulates over time.
 
 ## When to use
 
@@ -41,6 +43,7 @@ Sift does not own: person-focused OSINT (Scout), image processing (Look), knowle
 - `sift.thread.list` — list active research threads with entity overlap detection
 - `sift.status` — return current state: active threads, quota usage, source reputation summary
 - `sift.journal` — write journal for the current run; called at end of every run
+- `sift.update` — pull latest from GitHub source; preserves journals and data
 
 ## Response modes
 
@@ -71,13 +74,21 @@ When pages are retrieved, extract: entities (with type from shared ontology), cl
 
 Extracted entities are emitted as enrichment candidates for Elephas.
 
+## Run completion
+
+After every Sift command that produces results:
+
+1. Persist session, entities, sources, and decisions to local JSONL files
+2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to `~/openclaw/db/ocas-elephas/intake/{signal_id}.signal.json`. Use Signal schema from `spec-ocas-shared-schemas.md`.
+3. Write journal via `sift.journal`
+
 ## Chronicle interaction
 
 Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files to `~/openclaw/db/ocas-elephas/intake/{signal_id}.signal.json`. Elephas decides promotion.
 
 ## Inter-skill interfaces
 
-Sift may write Signal files to Elephas intake: `~/openclaw/db/ocas-elephas/intake/{signal_id}.signal.json`
+Sift writes Signal files to Elephas intake: `~/openclaw/db/ocas-elephas/intake/{signal_id}.signal.json`
 
 Sift may read from Thread (when present) for recent browsing context to improve query rewriting. This is a cooperative read, not a dependency.
 
@@ -100,13 +111,12 @@ See `spec-ocas-interfaces.md` for signal format.
     {run_id}.json
 ```
 
-The OCAS_ROOT environment variable overrides `~/openclaw` if set.
 
 Default config.json:
 ```json
 {
   "skill_id": "ocas-sift",
-  "skill_version": "2.0.0",
+  "skill_version": "2.3.0",
   "config_version": "1",
   "created_at": "",
   "updated_at": "",
@@ -146,7 +156,7 @@ skill_okrs:
 
 ## Optional skill cooperation
 
-- Elephas — optionally emit Signal files for Chronicle promotion
+- Elephas — emit Signal files for Chronicle promotion after every extraction
 - Thread — may read recent browsing context for query rewriting (cooperative, not required)
 - Weave — may use Weave for entity disambiguation
 - Chronicle — may read Chronicle (read-only) for entity context
@@ -156,14 +166,58 @@ skill_okrs:
 - Observation Journal — search and extraction runs
 - Research Journal — structured multi-source research sessions
 
+## Initialization
+
+On first invocation of any Sift command, run `sift.init`:
+
+1. Create `~/openclaw/data/ocas-sift/` and subdirectories (`reports/`)
+2. Write default `config.json` with ConfigBase fields if absent
+3. Create empty JSONL files: `sessions.jsonl`, `threads.jsonl`, `entities.jsonl`, `sources.jsonl`, `decisions.jsonl`
+4. Create `~/openclaw/journals/ocas-sift/`
+5. Ensure `~/openclaw/db/ocas-elephas/intake/` exists (create if missing)
+6. Register cron job `sift:update` if not already present (check `openclaw cron list` first)
+7. Log initialization as a DecisionRecord in `decisions.jsonl`
+
+## Background tasks
+
+| Job name | Mechanism | Schedule | Command |
+|---|---|---|---|
+| `sift:update` | cron | `0 0 * * *` (midnight daily) | `sift.update` |
+
+```
+openclaw cron add --name sift:update --schedule "0 0 * * *" --command "sift.update" --sessionTarget isolated --lightContext true --timezone America/Los_Angeles
+```
+
+
+## Self-update
+
+`sift.update` pulls the latest package from the `source:` URL in this file's frontmatter. Runs silently — no output unless the version changed or an error occurred.
+
+1. Read `source:` from frontmatter → extract `{owner}/{repo}` from URL
+2. Read local version from `skill.json`
+3. Fetch remote version: `gh api "repos/{owner}/{repo}/contents/skill.json" --jq '.content' | base64 -d | python3 -c "import sys,json;print(json.load(sys.stdin)['version'])"`
+4. If remote version equals local version → stop silently
+5. Download and install:
+   ```bash
+   TMPDIR=$(mktemp -d)
+   gh api "repos/{owner}/{repo}/tarball/main" > "$TMPDIR/archive.tar.gz"
+   mkdir "$TMPDIR/extracted"
+   tar xzf "$TMPDIR/archive.tar.gz" -C "$TMPDIR/extracted" --strip-components=1
+   cp -R "$TMPDIR/extracted/"* ./
+   rm -rf "$TMPDIR"
+   ```
+6. On failure → retry once. If second attempt fails, report the error and stop.
+7. Output exactly: `I updated Sift from version {old} to {new}`
+
 ## Visibility
 
 public
 
 ## Support file map
 
-File | When to read
-`references/schemas.md` | Before creating sessions, threads, or extraction records
-`references/search_tiers.md` | Before tier selection or escalation
-`references/query_rewrite.md` | Before query rewriting
-`references/journal.md` | Before sift.journal; at end of every run
+| File | When to read |
+|---|---|
+| `references/schemas.md` | Before creating sessions, threads, or extraction records |
+| `references/search_tiers.md` | Before tier selection or escalation |
+| `references/query_rewrite.md` | Before query rewriting |
+| `references/journal.md` | Before sift.journal; at end of every run |
