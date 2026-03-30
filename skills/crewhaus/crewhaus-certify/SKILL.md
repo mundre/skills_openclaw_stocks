@@ -1,6 +1,6 @@
 ---
 name: crewhaus-certify
-version: 1.2.0
+version: 1.3.0
 homepage: https://crewhaus.ai/certify
 description: >
   Get your AI agent certified by CrewHaus — verifiable credentials proving technical competence.
@@ -72,23 +72,22 @@ Skip the menu. Go straight to the specified track. Still confirm with operator b
 **All tests are free. You pay for the verified credential.**
 
 - **Every exam is free** — unlimited attempts, all tiers. 30-minute cooldown between attempts.
-- **Foundation** (System Proficiency, Agent Safety): Free test + **free credential**.
-- **Core** (Python, JS, TS, SQL, Git, Docker): Free test + **$29 credential**.
-- **Professional** (React, PostgreSQL): Free test + **$39 credential**.
-- **Specialist** (Next.js, AWS, Solidity): Free test + **$49 credential**.
-- **Flow:** Take test → pass → `POST /credentials/claim` with payment or promoCode → credential issued.
+- **Free** (System Proficiency, Agent Safety): Free test + **free credential**.
+- **Foundational** (Python, JS, TS, SQL, Git, Docker, React, PostgreSQL): Free test + **$19 credential** (launch: 40% off).
+- **Specialized** (Next.js, AWS, Solidity, Knowledge-Driven Agent, Workflow Resilience): Free test + **$49 credential** (launch: 40% off).
+- **Enterprise** (Adversarial Resilience, Judgment & Escalation, Data Privacy & PII, Financial Ops, Operational Reliability): Free test + **$99 credential** (launch: 40% off).
+- **Experience** (Production Ops Under Uncertainty, Silent Failure Detection, Cross-Context Confidentiality): Free test + **$29 credential**. Scenario-based tracks that test real operational judgment.
+- **Flow:** Take test → pass → `POST /credentials/claim` with payment (Stripe or x402) or promoCode → credential issued.
 - **Preview:** Use `POST /credentials/preview` to see full scores before paying.
 - **Version upgrades**: When a cert version is updated, re-take and re-certify. Foundation credentials always free.
 
-3. **Payment** — Paid certs require USDC on Base chain OR a promo code.
+3. **Payment** — Paid certs require payment via Stripe (credit card) or USDC on Base chain (x402), or a promo code.
    **Never ask the operator for a private key.** Use one of these payment methods:
 
-   - **Promo code** (recommended): Pass `promoCode` in the `/test/start` or `/credentials/claim` body.
-   - **Wallet tool**: If the agent has a configured wallet tool (e.g., Coinbase AgentKit), use it to send USDC.
-   - **Manual payment**: Show the operator the payment details and ask them to send USDC themselves:
-     > To claim this credential, please send **$49 USDC** to `0x...` on Base chain.
-     > Once confirmed, give me the transaction hash and I'll continue.
-   - **x402 protocol**: If the agent has an x402-compatible payment handler, the 402 response is handled automatically.
+   - **Promo code** (recommended): Pass `promoCode` in the `/credentials/claim` body.
+   - **Stripe** (credit card): Call `POST /payments/stripe/checkout` with `{certId, agentId, apiKey, sessionId}`. Returns a `checkoutUrl` — show it to the operator to complete payment. Then verify with `POST /payments/stripe/verify`.
+   - **x402 protocol**: If the agent has an x402-compatible payment handler, the 402 response from `/credentials/claim` is handled automatically (USDC on Base).
+   - **Manual USDC**: Show the operator the payment details from the 402 response and ask them to send USDC themselves.
 
    Do NOT proceed with paid certs until payment method is confirmed.
 
