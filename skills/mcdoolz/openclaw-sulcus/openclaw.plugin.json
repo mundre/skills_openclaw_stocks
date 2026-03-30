@@ -1,0 +1,120 @@
+{
+  "id": "openclaw-sulcus",
+  "kind": "memory",
+  "name": "Sulcus",
+  "description": "Thermodynamic memory for AI agents. Opt-in persistent memory with heat-based decay, semantic search, triggers, and cross-agent sync. Connects to a user-configured Sulcus server (cloud or self-hosted). No data is sent unless the user provides an API key and explicitly enables the plugin.",
+  "privacy": {
+    "dataFlows": [
+      {
+        "direction": "outbound",
+        "destination": "User-configured Sulcus server (default: api.sulcus.ca, Canada)",
+        "data": "Memory text content, search queries",
+        "trigger": "User invokes memory_store/memory_search tools, or auto-recall/auto-capture (both opt-in via config)",
+        "auth": "Bearer API key (user-provided, stored in plugin config)"
+      }
+    ],
+    "storage": "Memories stored on configured server, isolated by tenant and namespace. Self-hosted option available via sulcus-local.",
+    "optOut": "Set autoRecall: false and autoCapture: false to disable all automatic data transmission."
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "serverUrl": {
+        "type": "string",
+        "description": "Sulcus server URL",
+        "default": "https://api.sulcus.ca"
+      },
+      "apiKey": {
+        "type": "string",
+        "description": "Sulcus API key (Bearer token)"
+      },
+      "agentId": {
+        "type": "string",
+        "description": "Agent identifier for memory namespacing"
+      },
+      "namespace": {
+        "type": "string",
+        "description": "Memory namespace (defaults to agentId)"
+      },
+      "autoRecall": {
+        "type": "boolean",
+        "description": "Inject relevant memories before agent starts",
+        "default": true
+      },
+      "autoCapture": {
+        "type": "boolean",
+        "description": "Auto-capture memories from conversations",
+        "default": true
+      },
+      "maxRecallResults": {
+        "type": "number",
+        "description": "Max memories to inject on auto-recall",
+        "default": 5
+      },
+      "minRecallScore": {
+        "type": "number",
+        "description": "Min relevance score for auto-recall (0-1)",
+        "default": 0.3
+      },
+      "captureFromAssistant": {
+        "type": "boolean",
+        "description": "Also auto-capture from assistant messages (not just user)",
+        "default": false
+      },
+      "captureOnCompaction": {
+        "type": "boolean",
+        "description": "Preserve important memories before compaction discards history",
+        "default": true
+      },
+      "captureOnReset": {
+        "type": "boolean",
+        "description": "Capture session summary when /new or /reset is issued",
+        "default": true
+      },
+      "trackSessions": {
+        "type": "boolean",
+        "description": "Record session start/end events as episodic memories",
+        "default": false
+      },
+      "boostOnRecall": {
+        "type": "boolean",
+        "description": "Boost memory heat when recalled (spaced repetition)",
+        "default": true
+      },
+      "captureToolResults": {
+        "type": "boolean",
+        "description": "Capture significant tool results as memories",
+        "default": false
+      },
+      "captureLlmInsights": {
+        "type": "boolean",
+        "description": "Capture assistant messages containing decisions/preferences",
+        "default": false
+      },
+      "maxCapturePerTurn": {
+        "type": "number",
+        "description": "Max memories to auto-capture per agent turn",
+        "default": 3
+      }
+    }
+  },
+  "uiHints": {
+    "serverUrl": { "label": "Server URL", "placeholder": "https://api.sulcus.ca" },
+    "apiKey": { "label": "API Key", "sensitive": true, "placeholder": "sk-..." },
+    "agentId": { "label": "Agent ID", "placeholder": "daedalus" },
+    "namespace": { "label": "Namespace", "placeholder": "daedalus" },
+    "autoRecall": { "label": "Auto-Recall (inject memories into context)" },
+    "autoCapture": { "label": "Auto-Capture (store important info from conversations)" },
+    "maxRecallResults": { "label": "Max Recall Results" },
+    "minRecallScore": { "label": "Min Recall Score" },
+    "captureFromAssistant": { "label": "Capture from Assistant Messages" },
+    "captureOnCompaction": { "label": "Preserve Memories on Compaction" },
+    "captureOnReset": { "label": "Capture Summary on Session Reset" },
+    "trackSessions": { "label": "Track Session Start/End" },
+    "boostOnRecall": { "label": "Boost Heat on Recall (Spaced Repetition)" },
+    "captureToolResults": { "label": "Capture Tool Results" },
+    "captureLlmInsights": { "label": "Capture LLM Insights" },
+    "maxCapturePerTurn": { "label": "Max Auto-Capture per Turn" }
+  }
+}
