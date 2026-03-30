@@ -1,9 +1,10 @@
 ---
 name: nemo-subtitle
-version: "1.8.4"
-displayName: "NemoSubtitle - AI Subtitle: Add, Burn, Translate Subtitles"
+version: "1.8.12"
+displayName: "NemoSubtitle - AI Subtitle: Add, Burn, Translate Subtitles to Video"
 author: nemovideonemo
 description: >
+  NemoSubtitle - AI Subtitle: Add, Burn, Translate Subtitles to Video.
   Add subtitles, burn subtitles, and translate subtitles for any video through chat — the
   complete subtitle editing workflow. Transcribes speech with word-level timing, lets you
   review and adjust the text, then hardcode subtitles directly onto the footage or export
@@ -12,8 +13,16 @@ description: >
   what you need. Handles accessibility captions, bilingual overlays, and batch processing
   across multiple clips. Supports mp4, mov, avi, webm, mkv.
 metadata:
+  primaryEnv: NEMO_TOKEN
+  requires:
+    env: ["NEMO_TOKEN"]
+    configPaths:
+      - "~/.config/nemovideo/"
   openclaw:
     emoji: 💬
+homepage: https://nemovideo.com
+apiDomain: https://mega-api-prod.nemovideo.ai
+repository: https://github.com/nemovideo/nemovideo_skills
 ---
 
 # NemoSubtitle Skill
