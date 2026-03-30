@@ -19,11 +19,9 @@ class ApiService(BaseApiService):
                 "expireSeconds": expireSeconds * 24
             }
         )
-        # return super().page(ApiEnum.GET_DOWNLOAD_URL__URL, pageNum, pageSize, *args, **argss)
 
     def page(self, url, pageNum=None, pageSize=None, *args, **argss):
         data = args[0] if len(args) > 0 else argss.get('data') or {}
-        # data = argss.get('data') or {}
         if pageNum is None:
             pageNum = 1
         if pageSize is None:

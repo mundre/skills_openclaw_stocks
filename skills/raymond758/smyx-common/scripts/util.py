@@ -10,6 +10,7 @@ from .base import BaseUtil
 import time
 import logging
 from typing import Any, Callable, Optional, TypeVar, Dict
+import pydash as _
 
 if ConstantEnum.IS_DEBUG:
     import http.client
@@ -26,15 +27,63 @@ if ConstantEnum.IS_DEBUG:
     requests_log.propagate = True
 
 
+class StringUtil(BaseUtil):
+
+    @staticmethod
+    def camel_to_snake(name):
+        import re
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+    @staticmethod
+    def snake_to_pascal(name):
+        import re
+        name = re.sub(r'^([a-z])', lambda m: m.group(1).upper(), name)
+        return re.sub(r'_([a-z])', lambda m: m.group(1).upper(), name)
+
+    @staticmethod
+    def snake_to_camel(name):
+        import re
+        # 逻辑：匹配 '_[a-z]' (下划线+小写字母)，将其替换为对应的大写字母（去掉下划线）
+        return re.sub(r'_([a-z])', lambda m: m.group(1).upper(), name)
+
+
+class FileUtil(BaseUtil):
+
+    @staticmethod
+    def open(path):
+        try:
+            return open(path, 'w', encoding='utf-8')
+        except Exception as e:
+            CommonUtil.trace_exception_stack(e)
+
+    @staticmethod
+    def mkdir(path):
+        try:
+            os.makedirs(path, exist_ok=True)
+        except Exception as e:
+            CommonUtil.trace_exception_stack(e)
+
+
 class JsonUtil(BaseUtil):
 
     @staticmethod
-    def stringify(json_obj):
+    def stringify(json_obj, default_str=""):
         try:
             return json.dumps(json_obj, ensure_ascii=False, indent=2)
-        except:
+        except Exception as e:
+            CommonUtil.trace_exception_stack(e)
             pass
-        return ""
+        return default_str
+
+    @staticmethod
+    def parse(json_str, default_json={}):
+        try:
+            return json.loads(json_str)
+        except Exception as e:
+            CommonUtil.trace_exception_stack(e)
+            pass
+        return default_json
 
 
 class CommonUtil(BaseUtil):
@@ -155,6 +204,14 @@ class DatetimeUtil(BaseUtil):
     FORMAT__DATETIME = "%Y-%m-%d %H:%M:%S"
 
     @staticmethod
+    def now_str():
+        return DatetimeUtil.format(DatetimeUtil.now())
+
+    @staticmethod
+    def today_str():
+        return DatetimeUtil.format_date(DatetimeUtil.today())
+
+    @staticmethod
     def now():
         return datetime.now()
 
@@ -167,7 +224,13 @@ class DatetimeUtil(BaseUtil):
         return date.strftime('%Y-%m-%d %H:%M:%S') if type(date) == datetime else date
 
     @staticmethod
+    def format_date(date):
+        return date.strftime('%Y-%m-%d') if type(date) == datetime else date
+
+    @staticmethod
     def parse(date_str):
+        if type(date_str) == int:
+            return datetime.fromtimestamp(date_str)
         return datetime.strptime(date_str, DatetimeUtil.FORMAT__DATETIME) if type(date_str) == str else date_str
 
     @staticmethod
@@ -177,6 +240,8 @@ class DatetimeUtil(BaseUtil):
 
 class RequestUtil(BaseUtil):
     BASE_URL = ApiEnum.BASE_URL_OPEN_API
+    AUTHORIZATION_RETRY_COUNT_MAX = 3
+    authorization_retry_count = 0
 
     @classmethod
     def http_post(cls, url, data=None, params=None, headers=None, *args, **argss):
@@ -221,6 +286,7 @@ class RequestUtil(BaseUtil):
             if not url.startswith("https://") and not url.startswith("http://"):
                 url = cls.BASE_URL + url
             headers['App-Id'] = ConstantEnum.APP__ID
+            # ConstantEnum.CURRENT__USER_NAME = ConstantEnum.CURRENT__OPEN_ID = "ou_86fdd8e0d5f116c18a9dd550abefe6d2"
             current__user_name = ConstantEnum.CURRENT__USER_NAME or ConstantEnum.CURRENT__OPEN_ID
             if (not ApiEnum.TOKEN or not ApiEnum.OPEN_TOKEN) and current__user_name:
                 try:
@@ -230,18 +296,26 @@ class RequestUtil(BaseUtil):
                     if found_user:
                         ApiEnum.TOKEN = found_user.token
                         ApiEnum.OPEN_TOKEN = found_user.open_token
-                    else:
+                    if not ApiEnum.TOKEN or not ApiEnum.OPEN_TOKEN:
                         new_current_user = _get_or_create_user(current__user_name)
                         if new_current_user:
                             ApiEnum.TOKEN = new_current_user.get("token")
                             ApiEnum.OPEN_TOKEN = new_current_user.get("openToken")
-                            new_found_user = user_dao.update_by_username(current__user_name, token=ApiEnum.TOKEN,
-                                                                         open_token=ApiEnum.OPEN_TOKEN,
-                                                                         source=ConstantEnum.APP__SOURCE)
+
+                            current_user_info = new_current_user.get("userInfo")
+                            if current_user_info:
+                                current_user_info["token"] = new_current_user.get("token")
+                                current_user_info["openToken"] = new_current_user.get(
+                                    "openToken")
+                                user_model = User.load(current_user_info)
+
+                                user = user_dao.save(
+                                    user_model
+                                )
+
                 except Exception as e:
-                    ApiEnum.TOKEN = ApiEnum.OPEN_TOKEN = "Bearer eyJhbGciOiJIUzUxMiJ9.eyJ0ZW5hbnROYW1lIjoi55Sf5ZG95raM546w5Lqn56CU5Zui6ZifIiwidXNlclJlYWxOYW1lIjoi55Sf5ZG95raM546w5Lqn56CU5Zui6ZifIiwidGVuYW50SWQiOjE3Njk2MTM3NzgyMjcxMDAwMDAsInJvbGVDb2RlcyI6WyJST0xFX1NNWVhfQURNSU4iLCJST0xFX1BBVElFTlQiLCJST0xFX0RPQ1RPUiIsIlJPTEVfQUlfQU5BTFlTSVMiXSwidGVuYW50Q29kZSI6IjEzMjYwNjU3MDA4IiwicGVybWlzc2lvbkNvZGVzIjpbXSwidXNlcklkIjoxNzY5NjEzNzc4MjI3MTAwMDA4LCJ1c2VybmFtZSI6MTc2OTYxMzc3ODIyNzEwMDAwMCwic3ViIjoiMTMyNjA2NTcwMDgiLCJpYXQiOjE3NzMzODIzNjcsImV4cCI6MTc3Mzk4NzE2N30.C129EZR9NCaNZNOu11uCE8N5qYoGuo3QBpC-fjwQyepXifFJIyEtdx0RU3LRH8GXtNiq67a6AixAxP7tukGoQA"
                     CommonUtil.trace_exception_stack(e)
-                    # raise
+                    raise
 
             headers.setdefault("X-Access-Token", ApiEnum.TOKEN)
             headers.setdefault("Authorization", ApiEnum.OPEN_TOKEN)
@@ -253,7 +327,7 @@ class RequestUtil(BaseUtil):
             if current__user_name:
                 data.setdefault('pnaUserName', current__user_name)
 
-            if bool(options.get("data_as_params")):
+            if bool(options.get("dataAsParams")):
                 params.update(data)
 
             print(f"🔄 请求拦截, URL:{url}", "method", method, "params", params, "data", data, "headers", headers,
@@ -262,15 +336,22 @@ class RequestUtil(BaseUtil):
                   timeout)
             response = requests.request(method, url, *args, json=data, params=params, headers=headers,
                                         timeout=int(timeout), **argss)
-            responseText = response.text if ConstantEnum.is_debug() else response
-            print(f"✅ 请求拦截, 成功:{responseText}, url:{url}", "method", method, "params", params,
-                  "data",
-                  data,
-                  "headers",
-                  headers,
-                  "timeout",
-                  timeout)
-            if response.status_code != 200:
+            response_text = response.text if ConstantEnum.is_debug() else response
+            if response.status_code == 401 and cls.authorization_retry_count < cls.AUTHORIZATION_RETRY_COUNT_MAX:
+                print(f"❌ 请求拦截, 鉴权:{response_text}, url:{url}", "method", method, "params", params,
+                      "data",
+                      data,
+                      "headers",
+                      headers,
+                      "timeout",
+                      timeout)
+                ApiEnum.TOKEN = ApiEnum.OPEN_TOKEN = None
+                if found_user:
+                    found_user.token = found_user.open_token = None
+                    user_dao.update(found_user)
+                cls.authorization_retry_count += 1
+                return cls.http_request(method, url, data, params, headers, options, *args, timeout=timeout, **argss)
+            elif response.status_code != 200:
                 raise requests.exceptions.RequestException(
                     response, response=response)
             response_json = response.json()
@@ -280,13 +361,19 @@ class RequestUtil(BaseUtil):
             response_json_data = response_json.get("data", response_json.get("result"))
             response_json_data = response_json_data.get("records") if response_json_data and type(
                 response_json_data) == dict and "records" in response_json_data else response_json_data
+            print(f"✅ 请求拦截, 成功:{response_text}, url:{url}", "method", method, "params", params,
+                  "data",
+                  data,
+                  "headers",
+                  headers,
+                  "timeout",
+                  timeout)
             return response_json_data
         except Exception as e:
-            import pydash as _
             CommonUtil.trace_exception_stack(e)
-            responseText = _.get(e.args, '0.text')
+            response_text = _.get(e.args, '0.text')
             print(
-                f"❌ 请求拦截, 失败: {e}, e.response.text: {responseText}, url:{url}",
+                f"❌ 请求拦截, 失败: {e}, e.response.text: {response_text}, url:{url}",
                 "method",
                 method,
                 "params",

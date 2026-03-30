@@ -2,6 +2,14 @@ class BaseUtil:
     pass
 
 
+class BaseMixin:
+    pass
+
+
+class BaseDao:
+    pass
+
+
 class BaseService:
     def __init__(self):
         super().__init__()

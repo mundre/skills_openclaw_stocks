@@ -5,13 +5,19 @@
 支持基础CRUD操作，通过继承BaseDao快速实现各表的Dao层
 """
 import datetime
+import sys
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, TypeVar
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, func, Select, Table, MetaData, select, or_
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.sql.expression import text
 
 from skills.smyx_common.scripts.config import ConstantEnum, ApiEnum
+
+from skills.smyx_common.scripts.util import StringUtil, DatetimeUtil, FileUtil
+
+from skills.smyx_common.scripts.base import BaseMixin, BaseDao
 
 # 基础模型类
 Base = declarative_base()
@@ -24,7 +30,24 @@ meta = MetaData()
 DATABASE_URL = ApiEnum.DATABASE_URL
 
 
-class BaseDao:
+class BaseModelMixin(BaseMixin):
+
+    @classmethod
+    def load(cls, source: dict):
+        """
+        获取源枚举
+        :param source: 源
+        :return: User
+        """
+        column_names = cls.__table__.columns.keys()
+        user_dict = {k: source.get(StringUtil.snake_to_camel(k)) for k in column_names}
+        user_dict["create_time"] = DatetimeUtil.parse(user_dict["create_time"])
+        user_dict["update_time"] = DatetimeUtil.parse(user_dict["update_time"])
+        model = cls(**user_dict)
+        return model
+
+
+class Dao(BaseDao):
     """
     基础Dao类，提供通用的CRUD操作
     子类只需配置__model__和__tablename__即可使用
@@ -32,34 +55,75 @@ class BaseDao:
     __model__: Type[T] = None  # 对应的模型类，子类必须配置
     __tablename__: str = None  # 表名，子类必须配置
 
-    def __init__(self, db_path: str = "local.db"):
+    def get_db_path(self, db_path):
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        parent_dir = os.path.join(parent_dir, "data")
+        FileUtil.mkdir(parent_dir)
+        db_path = os.path.join(parent_dir, db_path)
+        return db_path
+
+    def __init__(self, db_path: str = None):
         """
         初始化Dao
         :param db_path: SQLite数据库文件路径
         """
 
-        self.engine = create_engine(
-            DATABASE_URL,
-            echo=False,
-            pool_pre_ping=True,  # 自动重连机制，防止 MySQL 断开连接报错
-            pool_size=10,  # 连接池大小
-            max_overflow=30  # 允许超过 pool_size 的最大连接数
-        )
+        if not db_path:
+            db_path = "smyx-common-claw.db"
+            db_path = self.get_db_path(db_path)
+
+        self.engine = create_engine(f"sqlite:///{db_path}", echo=False)
 
         # 创建会话工厂
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         # 初始化表结构
-        # self._create_tables()
+        self._create_tables()
+        self._alter_tables()
 
     def _create_tables(self) -> None:
         """创建所有表结构"""
         Base.metadata.create_all(bind=self.engine)
 
+    def _alter_tables(self) -> None:
+        """创建所有表结构"""
+        sql_statement = "ALTER TABLE sys_user ADD COLUMN source_id INT;"
+
+        # 3. 执行语句
+        try:
+            with self.engine.connect() as connection:
+                connection.execute(text(sql_statement))
+                connection.commit()  # 对于数据定义语言(DDL)，需要显式提交
+        except Exception as e:
+            connection.rollback()
+            if len(e.args) and "duplicate column name" in e.args[0]:
+                pass
+            else:
+                raise
+
     def get_session(self) -> Session:
         """获取数据库会话"""
         return self.SessionLocal()
 
-    def create(self, **kwargs) -> T:
+    def save(self, model) -> T:
+        """
+        创建新记录
+        :param kwargs: 字段键值对
+        :return: 创建的模型实例
+        """
+
+        try:
+            return self.add(
+                model
+            )
+
+        except Exception as e:
+            return self.update(
+                model
+            )
+
+    def add(self, model) -> T:
         """
         创建新记录
         :param kwargs: 字段键值对
@@ -67,13 +131,21 @@ class BaseDao:
         """
         session = self.get_session()
         try:
-            instance = self.__model__(**kwargs)
-            session.add(instance)
+            session.add(model)
             session.commit()
-            session.refresh(instance)
-            return instance
+            session.refresh(model)
+            return model
         finally:
             session.close()
+
+    def create(self, **kwargs) -> T:
+        """
+        创建新记录
+        :param kwargs: 字段键值对
+        :return: 创建的模型实例
+        """
+        instance = self.__model__(**kwargs)
+        return self.add(instance)
 
     def get_by_id(self, record_id: int) -> Optional[T]:
         """
@@ -135,7 +207,32 @@ class BaseDao:
         finally:
             session.close()
 
-    def update(self, record_id: int, **kwargs) -> Optional[T]:
+    def update(self, model) -> Optional[T]:
+        """
+        更新记录
+        :param record_id: 记录ID
+        :param kwargs: 要更新的字段键值对
+        :return: 更新后的模型实例或None
+        """
+        session = self.get_session()
+        try:
+            instance = session.query(self.__model__).filter(self.__model__.id == model.id).first()
+            if not instance:
+                return None
+
+            column_names = self.__model__.__table__.columns.keys()
+
+            for key in column_names:
+                value = getattr(model, key)
+                setattr(instance, key, value)
+
+            session.commit()
+            session.refresh(instance)
+            return instance
+        finally:
+            session.close()
+
+    def modify(self, record_id: int, **kwargs) -> Optional[T]:
         """
         更新记录
         :param record_id: 记录ID
@@ -216,15 +313,17 @@ class BaseDao:
             session.close()
 
 
-class User(Base):
+class User(Base, BaseModelMixin):
     """用户模型"""
     __tablename__ = "sys_user"
 
     id = Column(String(32), primary_key=True, index=True)
+    source_id = Column(String(32), comment="源头id")
     username = Column(String(100), unique=True, index=True, nullable=False, comment="用户名")
     email = Column(String(45), unique=True, index=True, comment="邮箱")
     birthday = Column(DateTime, unique=True, index=True, comment="邮箱")
     sex = Column(Integer, comment="性别")
+    age = Column(Integer, comment="年龄")
     token = Column(String(500), comment="token")
     open_token = Column(String(1000), comment="开放token")
     source = Column(String(50), comment="token")
@@ -235,7 +334,7 @@ class User(Base):
     SourceEnum = ConstantEnum.SourceEnum
 
 
-class UserDao(BaseDao):
+class UserDao(Dao):
     """用户Dao，继承BaseDao即可拥有所有基础CRUD功能"""
     __model__ = User
     __tablename__ = "users"

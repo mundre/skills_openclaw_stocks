@@ -1,8 +1,9 @@
 env: test
 
 ApiEnum:
-  database-url: mysql+pymysql://admin:Smyx2025@db@172.31.16.2:3306/health-cloud?charset=utf8mb4
+  database-url: mysql+pymysql://root:root@localhost:3306/smyx-claw?charset=utf8mb4
   base-url-open-api: "https://open.lifeemergence.com/smyx-open-api"
+  base-url-open-h5: "http://livemonitor.lifeemergence.com"
   base-url-health: "https://lifeemergence.com/jeecg-boot"
 
 ConstantEnum:
@@ -11,3 +12,4 @@ ConstantEnum:
   current--tentant-code: "PEI_NI_AN"
   feishu-app--id: cli_a93d769369badcb1
   feishu-app--secret: zYJMyYcB4kIF5uPCwFACBdmvbr3JkK8r
+#  default--scene-code: PEI_NI_AN_DEFAULT
