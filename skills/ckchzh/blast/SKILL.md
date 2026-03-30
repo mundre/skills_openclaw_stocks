@@ -1,103 +1,60 @@
 ---
-name: "blast"
-version: "1.0.0"
-description: "Blast reference tool. Use when working with blast in blockchain contexts."
+name: "Blast L2 — Ethereum L2 Chain Reference"
+description: "Use when exploring Blast L2 chain features, understanding native yield mechanics, comparing gas costs, bridging assets, or discovering Blast ecosystem projects and DApps."
+version: "2.0.0"
 author: "BytesAgain"
-homepage: "https://bytesagain.com"
-source: "https://github.com/bytesagain/ai-skills"
-tags: [blast, blockchain, finance, reference, cli]
-category: "blockchain"
+homepage: https://bytesagain.com
+source: https://github.com/bytesagain/ai-skills
+tags: ["blast", "ethereum", "l2", "layer2", "yield", "defi", "blockchain"]
 ---
 
-# Blast
+# Blast L2 — Ethereum L2 Chain Reference
 
-Blast reference tool. Use when working with blast in blockchain contexts.
-
-## When to Use
-
-- Working with blast and need quick reference
-- Looking up blockchain standards or best practices for blast
-- Troubleshooting blast issues
-- Need a checklist or guide for blast tasks
+Comprehensive reference for the Blast L2 chain — native yield, gas mechanics, bridging, and ecosystem overview for developers and users.
 
 ## Commands
 
-### `intro`
-
+### overview
+Blast chain architecture, key stats, and design philosophy.
 ```bash
-scripts/script.sh intro
+bash scripts/script.sh overview
 ```
 
-Overview and fundamentals
-
-### `formulas`
-
+### yield
+Native yield mechanics — ETH staking yield, USDB, and auto-rebasing.
 ```bash
-scripts/script.sh formulas
+bash scripts/script.sh yield
 ```
 
-Key formulas and calculations
-
-### `regulations`
-
+### gas
+Gas costs comparison with L1 and other L2s.
 ```bash
-scripts/script.sh regulations
+bash scripts/script.sh gas
 ```
 
-Regulatory framework and compliance
-
-### `risks`
-
+### bridge
+Bridging guide — deposit/withdraw, timelines, and security.
 ```bash
-scripts/script.sh risks
+bash scripts/script.sh bridge
 ```
 
-Risk factors and mitigation
-
-### `instruments`
-
+### ecosystem
+Blast ecosystem projects and key DApps.
 ```bash
-scripts/script.sh instruments
+bash scripts/script.sh ecosystem
 ```
 
-Instruments and tools overview
-
-### `strategies`
-
+### help
+Show all commands.
 ```bash
-scripts/script.sh strategies
+bash scripts/script.sh help
 ```
 
-Common strategies and approaches
+## Output
+- Chain specs and architecture details
+- Yield calculations and mechanics
+- Gas comparisons and bridging steps
 
-### `glossary`
-
-```bash
-scripts/script.sh glossary
-```
-
-Key terms and definitions
-
-### `checklist`
-
-```bash
-scripts/script.sh checklist
-```
-
-Due diligence checklist
-
-### `help`
-
-```bash
-scripts/script.sh help
-```
-
-### `version`
-
-```bash
-scripts/script.sh version
-```
-
----
-
-*Powered by BytesAgain | bytesagain.com | hello@bytesagain.com*
+## Feedback
+https://bytesagain.com/feedback/
+Powered by BytesAgain | bytesagain.com
