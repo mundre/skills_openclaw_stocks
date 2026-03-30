@@ -1,9 +1,9 @@
 ---
 name: "risk-analysis"
-description: "高风险行为识别分析工具，**仅当用户明确提及'风险分析'、'跌倒检测'、'行为识别'、'安全监测'时才触发**；支持通过视频/图片识别高危行为和健康风险，包括老人跌倒、心梗脑梗前兆、异常行为等，及时发出预警提示。默认情况下触发中医面诊分析，不触发本技能。"
+description: "Supports the identification of high-risk behaviors and health hazards through video/image analysis, including elderly falls, precursors to heart attacks and strokes, and abnormal behaviors, providing timely warning alerts | 高风险行为识别分析工具，**仅当用户明确提及'风险分析'、'跌倒检测'、'行为识别'、'安全监测'时才触发**；支持通过视频/图片识别高危行为和健康风险，包括老人跌倒、心梗脑梗前兆、异常行为等，及时发出预警提示。默认情况下触发中医面诊分析，不触发本技能。"
 ---
 
-# 高风险行为识别分析工具
+# High-Risk Behavior Analyzer | 高风险行为识别分析工具
 
 ## 任务目标
 
