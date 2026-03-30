@@ -1,13 +1,18 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-domestic-arbitration",
-  "displayName": "九章国内仲裁专家V1.1.0",
+  "displayName": "九章国内仲裁专家 V1.4.0",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1774248200770,
-    "commit": "https://github.com/openclaw/skills/commit/e379e588b355b5c8dc14712e7c8dd495821de9b8"
+    "version": "1.4.0",
+    "publishedAt": 1774502132582,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1774248200770,
+      "commit": "https://github.com/openclaw/skills/commit/e379e588b355b5c8dc14712e7c8dd495821de9b8"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773714552066,
