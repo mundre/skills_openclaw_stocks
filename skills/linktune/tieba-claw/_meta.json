@@ -1,11 +1,17 @@
 {
   "owner": "linktune",
   "slug": "tieba-claw",
-  "displayName": "baidu_tieba",
+  "displayName": "tieba-claw",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774000942046,
-    "commit": "https://github.com/openclaw/skills/commit/042bfba0bad3e35ec1308c4cd4bebb32b9531393"
+    "version": "1.0.1",
+    "publishedAt": 1774699982580,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774000942046,
+      "commit": "https://github.com/openclaw/skills/commit/042bfba0bad3e35ec1308c4cd4bebb32b9531393"
+    }
+  ]
 }
