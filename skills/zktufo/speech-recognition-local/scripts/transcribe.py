@@ -22,8 +22,11 @@ def get_model():
     )
     return _cached_model
 
-def transcribe(audio_file, language="zh"):
-    """转录音频文件"""
+def transcribe(audio_file, language="auto"):
+    """转录音频文件
+    
+    language: auto(自动检测，默认) / zh(中文) / en(英文) / ja(日语)
+    """
     # 检查文件存在
     if not os.path.exists(audio_file):
         return f"错误：文件不存在: {audio_file}"
@@ -42,10 +45,11 @@ def transcribe(audio_file, language="zh"):
         model = get_model()
         print(f"正在转录: {audio_file}")
         
+        # language=None 时 faster-whisper 会自动检测语言
         segments, info = model.transcribe(
             audio_file, 
-            language=language if language != "auto" else None,
-            beam_size=1,
+            language=None if language == "auto" else language,
+            beam_size=5,
             vad_filter=True,
         )
         
@@ -64,7 +68,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     audio_file = sys.argv[1]
-    language = sys.argv[2] if len(sys.argv) > 2 else "zh"
+    language = sys.argv[2] if len(sys.argv) > 2 else "auto"
     
     result = transcribe(audio_file, language)
     print("=" * 50)

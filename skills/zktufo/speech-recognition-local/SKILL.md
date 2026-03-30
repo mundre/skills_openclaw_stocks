@@ -36,7 +36,7 @@ python3 ~/.openclaw/workspace/skills/speech-recognition-local/scripts/transcribe
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
 | `audio_file` | — | 音频文件路径 / Audio file path |
-| `language` | `zh` | 语言：zh / en / ja / auto |
+| `language` | `auto` | 语言：zh / en / ja / auto（默认自动检测） |
 
 ---
 
