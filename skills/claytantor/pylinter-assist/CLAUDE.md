@@ -49,26 +49,27 @@ the user.
 ### Usage examples
 
 ```bash
-# Install dependencies
+# Install dependencies and CLI
 uv sync
+uv pip install -e .
 
 # Lint PR #42 and post a comment
-uv run lint-pr pr 42 --post-comment
+lint-pr pr 42 --post-comment
 
-# Lint staged files before commit
-uv run lint-pr staged --format text
+# Lint staged changes
+lint-pr staged
 
-# Lint from a saved diff
-uv run lint-pr diff changes.patch
+# Lint a diff file
+lint-pr diff /tmp/changes.diff
 
-# Lint a whole directory, output JSON
-uv run lint-pr files src/ --format json
+# Lint specific files
+lint-pr files src/ tests/
 
 # Use custom rules
-uv run lint-pr files src/ --config my-rules.yml
+lint-pr files src/ --config .linting-rules.yml
 
-# Run directly without install (script embeds its own deps)
-uv run scripts/lint_pr.py pr 42
+# Development mode (without installing CLI):
+uv run lint-pr pr 42
 ```
 
 ---
@@ -103,8 +104,9 @@ github:
 ### Triggering the GitHub Action as an agent
 
 The `lint-pr.yml` workflow supports `workflow_dispatch`, so it can be triggered
-programmatically via the GitHub API:
+programmatically via the GitHub CLI or API:
 
+**Via GitHub CLI:**
 ```bash
 gh workflow run lint-pr.yml \
   -f pr_number=42 \
@@ -112,14 +114,67 @@ gh workflow run lint-pr.yml \
   -f post_comment=true
 ```
 
-Or via the API:
-
+**Via REST API:**
 ```bash
 curl -X POST \
   -H "Authorization: token $GITHUB_TOKEN" \
   -H "Accept: application/vnd.github.v3+json" \
   https://api.github.com/repos/OWNER/REPO/actions/workflows/lint-pr.yml/dispatches \
   -d '{"ref":"main","inputs":{"pr_number":"42","format":"markdown","post_comment":"true"}}'
+```
+
+### Enabling a new project for support
+
+To enable a new project for pylinter-assist support, run these commands on the `dev` branch:
+
+```bash
+cd <your-project-root>
+git checkout dev
+git pull origin dev
+
+mkdir -p .github/workflows
+curl -o .github/workflows/lint-pr.yml \
+  https://raw.githubusercontent.com/claytantor/pylinter-assist/main/.github/workflows/lint-pr.yml
+
+curl -o .linting-rules.yml \
+  https://raw.githubusercontent.com/claytantor/pylinter-assist/main/.linting-rules.yml
+
+git add .github/workflows/lint-pr.yml .linting-rules.yml
+git commit -m "ci: add pylinter-assist workflow for PRs targeting dev"
+git push origin dev
+```
+
+The workflow requires these permissions in your repository settings:
+```yaml
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+```
+
+---
+
+### GitHub Actions Monitoring
+
+The skill can monitor workflow runs and notify when lint results are ready:
+
+```bash
+# Monitor a repository's workflow runs
+lint-pr monitor owner/repo --token $GITHUB_TOKEN --callback telegram:TOKEN:CHAT_ID
+
+# Configuration in .linting-rules.yml:
+github_actions:
+  polling_interval: 30    # seconds between checks
+  max_timeout: 1800       # max wait time (seconds)
+
+notifications:
+  enabled: true
+  channels:
+    - type: telegram
+      bot_token: $TELEGRAM_BOT_TOKEN
+      chat_id: 123456
+    - type: discord
+      webhook_url: $DISCORD_WEBHOOK_URL
 ```
 
 ---

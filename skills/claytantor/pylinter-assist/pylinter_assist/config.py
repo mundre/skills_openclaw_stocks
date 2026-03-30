@@ -39,6 +39,15 @@ _DEFAULTS: dict[str, Any] = {
         "fail_on_error": True,
         "fail_on_warning": False,
     },
+    "github_actions": {
+        "polling_interval": 30,
+        "max_timeout": 1800,
+        "retry_attempts": 3,
+    },
+    "notifications": {
+        "enabled": False,
+        "channels": [],
+    },
 }
 
 

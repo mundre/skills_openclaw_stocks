@@ -3,9 +3,15 @@
   "slug": "pylinter-assist",
   "displayName": "Pylinter Assist",
   "latest": {
-    "version": "0.2.0+0",
-    "publishedAt": 1774804621295,
-    "commit": "https://github.com/openclaw/skills/commit/18e4e618d1943045415c2f39979b0a22faf99c0d"
+    "version": "0.5.1+0",
+    "publishedAt": 1774848982230,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.0+0",
+      "publishedAt": 1774804621295,
+      "commit": "https://github.com/openclaw/skills/commit/18e4e618d1943045415c2f39979b0a22faf99c0d"
+    }
+  ]
 }

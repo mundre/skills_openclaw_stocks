@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from pathlib import Path
 
 import click
 
 from pylinter_assist.config import load_config
+from pylinter_assist.github_actions import GitHubActionsMonitor, WorkflowRunInfo
 from pylinter_assist.linter import Linter
+from pylinter_assist.notifications import (
+    send_notifications,
+)
 from pylinter_assist.reporter import render
 
 
@@ -159,3 +164,126 @@ def _exit_with_code(report, cfg):
     if fail_on_warning and report.has_warnings():
         sys.exit(1)
     sys.exit(0)
+
+
+@main.command("monitor")
+@click.argument("repo", type=str)
+@click.option("--token", envvar="GITHUB_TOKEN", help="GitHub token (defaults to $GITHUB_TOKEN)")
+@click.option("--branch", default=None, help="Branch to monitor (default: main)")
+@click.option("--timeout", default=1800, type=int, help="Max seconds to wait for workflow completion")
+@click.option("--poll-interval", default=30, type=int, help="Seconds between status checks")
+@click.option(
+    "--callback",
+    "callbacks",
+    multiple=True,
+    help="Notification callback (format: type:config_json or type:key:value)",
+)
+@click.option(
+    "--download-all/--download-json-only",
+    default=False,
+    help="Download both JSON and Markdown reports (default: JSON only)",
+)
+@click.option("--output-dir", default=None, help="Directory to save report artifacts")
+def lint_monitor(repo, token, branch, timeout, poll_interval, callbacks, download_all, output_dir):
+    """Monitor GitHub Actions workflow runs and notify when complete."""
+    click.echo(f"Monitoring workflow for {repo}...")
+
+    monitor = GitHubActionsMonitor(token=token)
+
+    try:
+        # Get latest completed workflow run
+        runs = monitor.get_workflow_runs(repo, branch=branch, status="completed", per_page=1)
+        if not runs:
+            click.echo(f"ERROR: No completed workflow runs found for {repo}", err=True)
+            sys.exit(2)
+
+        latest_run = runs[0]
+        click.echo(f"Found workflow run #{latest_run.id} ({latest_run.name})")
+        click.echo(f"Status: {latest_run.status}, Conclusion: {latest_run.conclusion}")
+        click.echo(f"URL: {latest_run.html_url}")
+
+        # Download the artifacts
+        output_path = output_dir or Path.home() / ".cache" / "pylinter-artifacts"
+        Path(output_path).mkdir(parents=True, exist_ok=True)
+
+        if download_all:
+            click.echo("Downloading all reports (JSON + Markdown)...")
+            reports = monitor.download_all_reports(repo, latest_run.id, output_dir=output_path)
+        else:
+            click.echo("Downloading JSON report...")
+            json_file = monitor.download_latest_artifact(
+                repo, latest_run.id, artifact_name="lint-report-json", output_dir=output_path
+            )
+            reports = {"json": json_file} if json_file else {}
+
+        if not reports:
+            click.echo("ERROR: Could not find any lint reports in artifact", err=True)
+            sys.exit(2)
+
+        # Output downloaded files
+        for report_type, file_path in reports.items():
+            click.echo(f"Report ({report_type}) downloaded: {file_path}")
+
+        # Load and parse the JSON report
+        if "json" in reports:
+            report_data = monitor.load_report_from_json(reports["json"])
+
+            # Parse into LintReport for notification formatting
+            from pylinter_assist.linter import LintReport
+            report = LintReport(
+                files_checked=report_data.get("files_checked", []),
+                pylint_results=[],  # Would need to reconstruct from report_data
+                pattern_results=[],  # Would need to reconstruct from report_data
+                errors=report_data.get("errors", []),
+            )
+
+            run_info = WorkflowRunInfo(
+                run=latest_run,
+                report_data=report_data,
+            )
+
+            # Send notifications if callbacks configured
+            if callbacks:
+                channels = []
+                for cb in callbacks:
+                    parts = cb.split(":")
+                    if len(parts) >= 2:
+                        channel_type = parts[0]
+                        if channel_type == "telegram" and len(parts) >= 4:
+                            channels.append({
+                                "type": "telegram",
+                                "bot_token": parts[1],
+                                "chat_id": parts[2],
+                            })
+                        elif channel_type == "discord" and len(parts) >= 3:
+                            channels.append({
+                                "type": "discord",
+                                "webhook_url": parts[1],
+                            })
+
+                if channels:
+                    click.echo(f"Sending notifications to {len(channels)} channel(s)...")
+                    results = send_notifications(report, run_info, channels=channels)
+                    for ch, success in results.items():
+                        status = "OK" if success else "FAILED"
+                        click.echo(f"  {ch}: {status}")
+
+        # Output Markdown report if available
+        if "markdown" in reports:
+            click.echo("")
+            click.echo("=== Markdown Report ===")
+            md_content = Path(reports["markdown"]).read_text()
+            click.echo(md_content)
+
+        # Also output JSON to stdout for programmatic use
+        if "json" in reports:
+            click.echo("")
+            click.echo("=== JSON Report ===")
+            click.echo(json.dumps(report_data, indent=2))
+
+    except KeyboardInterrupt:
+        click.echo("\nMonitoring interrupted by user", err=True)
+        sys.exit(130)
+    except RuntimeError as exc:
+        click.echo(f"ERROR: {exc}", err=True)
+        sys.exit(2)

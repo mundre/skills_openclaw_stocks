@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylinter-assist"
-version = "0.2.0+0"
+version = "0.5.1+0"
 description = "Context-aware Python linting with smart pattern heuristics for PR review"
 requires-python = ">=3.10"
 dependencies = [
@@ -32,6 +32,7 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
 
 [tool.ruff]
 line-length = 120
