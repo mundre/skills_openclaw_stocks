@@ -1,0 +1,11 @@
+{
+  "owner": "hlgate",
+  "slug": "wechat-article-fetcher",
+  "displayName": "WeChat Article Fetcher",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773891829802,
+    "commit": null
+  },
+  "history": []
+}
