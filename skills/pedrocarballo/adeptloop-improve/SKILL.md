@@ -1,7 +1,7 @@
 ---
 name: adeptloop-improve
 description: "Daily improvement briefings with one-click fixes for your AI agent. Observes traces, diagnoses failures, and applies fixes conversationally."
-version: 0.1.0
+version: 0.1.2
 author: adeptloop
 homepage: https://adeptloop.com
 metadata:
@@ -20,7 +20,7 @@ You help the user improve their AI agent by delivering daily performance briefin
 
 - Name: AdeptLoop Improve
 - Author: AdeptLoop
-- Version: 0.1.0
+- Version: 0.1.2
 - Description: Daily improvement briefings with one-click fixes for your AI agent.
 
 ## Self-Configuration
@@ -38,7 +38,7 @@ If `diagnostics-otel` is not configured (or no `ADEPTLOOP_API_KEY` found), start
 1. Call the device auth endpoint via `web_fetch`:
 
 - Method: `POST`
-- URL: `https://adeptloop.com/api/v1/auth/device`
+- URL: `https://www.adeptloop.com/api/v1/auth/device`
 - Headers: `{ "Content-Type": "application/json" }`
 - Body: `{ "framework": "openclaw" }`
 
@@ -69,7 +69,7 @@ Waiting for verification...
 3. Poll for the token every 5 seconds via `web_fetch`:
 
 - Method: `POST`
-- URL: `https://adeptloop.com/api/v1/auth/device/token`
+- URL: `https://www.adeptloop.com/api/v1/auth/device/token`
 - Headers: `{ "Content-Type": "application/json" }`
 - Body: `{ "device_code": "<device_code>", "grant_type": "urn:ietf:params:oauth:grant-type:device_code" }`
 
@@ -162,7 +162,7 @@ If cron is unavailable, fall back to checking on the user's first interaction ea
 1. Read `ADEPTLOOP_API_KEY` from `~/.openclaw/.env`.
 2. Call via `web_fetch`:
    - Method: `GET`
-   - URL: `https://adeptloop.com/api/v1/briefings/latest`
+   - URL: `https://www.adeptloop.com/api/v1/briefings/latest`
    - Headers: `{ "Authorization": "Bearer <api_key>" }`
 3. The response shape is:
 
@@ -210,7 +210,8 @@ topRecommendations: array of
   targetFile: string
   failureType: string
 topRecommendations have associated diffs. Fetch the full recommendation
-  to get the diff field when the user wants to see or apply a fix.
+  to get the diff, expected_outcome, and rollback_instructions fields
+  when the user wants to see or apply a fix.
 verificationResults: array of
   recommendationId: string
   title: string
@@ -248,7 +249,7 @@ Target: {targetFile}
 Impact: {impactScore}/10
 
 {Show the diff for this recommendation. Fetch the full recommendation
-from GET https://adeptloop.com/api/v1/recommendations?id={recommendationId}
+from GET https://www.adeptloop.com/api/v1/recommendations?id={recommendationId}
 with Authorization: Bearer <api_key> if the diff was not included in the briefing payload.}
 
 Want me to apply this fix?
@@ -264,6 +265,12 @@ Fix from yesterday verified.
 "{title}" {if outcome is "keep": "improvement confirmed" | if outcome is "revert": "reverted, didn't help"}.
 {reason}
 ```
+
+For each result with `outcome === "revert"`:
+- Check if a branch `adeptloop/fix-{id}` exists locally by running `git branch --list adeptloop/fix-{id}`.
+- If found, offer to undo: "Want me to revert the git commit for this fix?"
+- If the user confirms, run `git revert <commit>` where `<commit>` is the result of `git log --oneline adeptloop/fix-{id} | head -1` (first commit on the fix branch). Then delete the branch: `git branch -D adeptloop/fix-{id}`.
+- Confirm: "Reverted. Your {target_file} is back to its previous state."
 
 ### Briefing example
 
@@ -299,14 +306,20 @@ Want me to apply this fix?
 
 ### When the user says "Yes, apply it" or equivalent
 
-1. Read the `diff` and `target_file` from the recommendation. If not already fetched, call `GET https://adeptloop.com/api/v1/recommendations?id={recommendationId}` with `Authorization: Bearer <api_key>`.
+1. Read the `diff`, `target_file`, and `rollback_instructions` from the recommendation. If not already fetched, call `GET https://www.adeptloop.com/api/v1/recommendations?id={recommendationId}` with `Authorization: Bearer <api_key>`.
 2. Show the diff one more time. State the target file.
-3. Use the `edit` tool to apply the changes to `target_file`. Apply each hunk from the diff. If the file content doesn't match the diff context lines, tell the user and ask how to proceed.
-4. After successful edit, call via `web_fetch`:
+3. **Git branch** — Check if the project is in a git repo by running `git rev-parse --is-inside-work-tree`. If it returns `true`:
+   - Run `git checkout -b adeptloop/fix-{first 8 chars of recommendationId}` to create an isolated branch for this fix.
+   - If that branch already exists (exit code non-zero), run `git checkout adeptloop/fix-{id}` instead.
+4. Use the `edit` tool to apply the changes to `target_file`. Apply each hunk from the diff. If the file content doesn't match the diff context lines, tell the user and ask how to proceed.
+5. **Git commit** — If in a git repo, run:
+   - `git add {target_file}`
+   - `git commit -m "fix: {title} [adeptloop:{recommendationId}]"`
+6. After successful edit, call via `web_fetch`:
    - Method: `POST`
-   - URL: `https://adeptloop.com/api/v1/recommendations/{recommendationId}/apply`
+   - URL: `https://www.adeptloop.com/api/v1/recommendations/{recommendationId}/apply`
    - Headers: `{ "Authorization": "Bearer <api_key>" }`
-5. The response:
+7. The response:
 
 ```json
 {
@@ -317,13 +330,19 @@ Want me to apply this fix?
 }
 ```
 
-6. Confirm: "Fix applied to {target_file}. I'll verify whether it helped in the next briefing."
+8. Confirm with branch info if in a git repo:
+   ```
+   Fix applied to {target_file} on branch adeptloop/fix-{id}.
+   I'll verify whether it helped in the next briefing.
+   To undo: git checkout main && git branch -D adeptloop/fix-{id}
+   ```
+   If not in a git repo: "Fix applied to {target_file}. I'll verify whether it helped in the next briefing."
 
 ### When the user says "Show me the affected traces"
 
 1. Fetch traces via `web_fetch`:
    - Method: `GET`
-   - URL: `https://adeptloop.com/api/v1/traces?status=error&limit=5`
+   - URL: `https://www.adeptloop.com/api/v1/traces?status=error&limit=5`
    - Headers: `{ "Authorization": "Bearer <api_key>" }`
 2. Summarize each trace in 1-2 lines: trace ID, timestamp, error type, duration.
 3. Link to the web view: "Full trace detail at adeptloop.com/traces"
@@ -332,7 +351,7 @@ Want me to apply this fix?
 
 1. Call via `web_fetch`:
    - Method: `POST`
-   - URL: `https://adeptloop.com/api/v1/recommendations/{recommendationId}/dismiss`
+   - URL: `https://www.adeptloop.com/api/v1/recommendations/{recommendationId}/dismiss`
    - Headers: `{ "Authorization": "Bearer <api_key>" }`
 2. Acknowledge: "Skipped. I'll keep monitoring."
 
@@ -340,7 +359,7 @@ Want me to apply this fix?
 
 1. Call via `web_fetch`:
    - Method: `POST`
-   - URL: `https://adeptloop.com/api/v1/recommendations/{recommendationId}/snooze`
+   - URL: `https://www.adeptloop.com/api/v1/recommendations/{recommendationId}/snooze`
    - Headers: `{ "Authorization": "Bearer <api_key>" }`
 2. Acknowledge: "Snoozed. I'll bring this up again if it keeps happening."
 

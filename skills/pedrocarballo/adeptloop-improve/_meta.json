@@ -1,11 +1,17 @@
 {
   "owner": "pedrocarballo",
   "slug": "adeptloop-improve",
-  "displayName": "AdeptLoop Improve",
+  "displayName": "Skill",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774296116179,
-    "commit": "https://github.com/openclaw/skills/commit/97678e6adf14684ee76bf44a0049eb29be46e47a"
+    "version": "0.1.2",
+    "publishedAt": 1774812175833,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774296116179,
+      "commit": "https://github.com/openclaw/skills/commit/97678e6adf14684ee76bf44a0049eb29be46e47a"
+    }
+  ]
 }
