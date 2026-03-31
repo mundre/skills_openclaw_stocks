@@ -3,9 +3,15 @@
   "slug": "leafengines-clawhub-skill",
   "displayName": "Leafengines Clawhub Skill",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774543118193,
-    "commit": "https://github.com/openclaw/skills/commit/b1a19036ba05a5d7554e97acafb5fdb6a0162fef"
+    "version": "1.1.0",
+    "publishedAt": 1774920815392,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774543118193,
+      "commit": "https://github.com/openclaw/skills/commit/b1a19036ba05a5d7554e97acafb5fdb6a0162fef"
+    }
+  ]
 }
