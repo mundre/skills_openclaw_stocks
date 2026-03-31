@@ -1,0 +1,11 @@
+{
+  "owner": "gangrammer",
+  "slug": "cet4vocabularymemory",
+  "displayName": "基于艾宾浩斯遗忘曲线的英语四级词汇记忆系统",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1774679383883,
+    "commit": null
+  },
+  "history": []
+}
