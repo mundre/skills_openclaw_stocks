@@ -3,9 +3,15 @@
   "slug": "wanderclaw",
   "displayName": "虾游 WanderClaw",
   "latest": {
-    "version": "1.5.1",
-    "publishedAt": 1774594733144,
-    "commit": "https://github.com/openclaw/skills/commit/6ed23d11da96c458fc7ff909aa6f02ef5e5be870"
+    "version": "1.5.4",
+    "publishedAt": 1774710307259,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.5.1",
+      "publishedAt": 1774594733144,
+      "commit": "https://github.com/openclaw/skills/commit/6ed23d11da96c458fc7ff909aa6f02ef5e5be870"
+    }
+  ]
 }
