@@ -3,11 +3,16 @@
   "slug": "recipe-log-deal-update",
   "displayName": "Recipe Log Deal Update",
   "latest": {
-    "version": "1.0.10",
-    "publishedAt": 1774551162596,
-    "commit": "https://github.com/openclaw/skills/commit/d3d64f9d095d1498f43e58c5b91823a686599480"
+    "version": "1.0.11",
+    "publishedAt": 1774981519688,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.10",
+      "publishedAt": 1774551162596,
+      "commit": "https://github.com/openclaw/skills/commit/d3d64f9d095d1498f43e58c5b91823a686599480"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773482894052,
