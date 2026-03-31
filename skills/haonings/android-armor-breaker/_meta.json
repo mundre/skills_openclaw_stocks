@@ -1,11 +1,17 @@
 {
   "owner": "haonings",
   "slug": "android-armor-breaker",
-  "displayName": "android-armor-breaker",
+  "displayName": "Android Armor Breaker",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774252478757,
-    "commit": "https://github.com/openclaw/skills/commit/9dd88dc9765d4de4187d7020a9b788b6ecc15d62"
+    "version": "1.2.0",
+    "publishedAt": 1774753444494,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774252478757,
+      "commit": "https://github.com/openclaw/skills/commit/9dd88dc9765d4de4187d7020a9b788b6ecc15d62"
+    }
+  ]
 }

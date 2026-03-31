@@ -1,5 +1,7 @@
 # Android Armor Breaker
 
+> **Internationalized Version 1.2.0** - This skill has been fully internationalized with English documentation, command-line interface, and core output messages. Complete skill package verified with all required files included.
+
 Android应用护甲破坏者 - 基于OpenClaw平台的Frida脱壳技术，针对从商业级到企业级的Android应用保护方案，提供**APK加固分析**与**DEX智能提取**的完整解决方案。
 
 ## 功能特性
