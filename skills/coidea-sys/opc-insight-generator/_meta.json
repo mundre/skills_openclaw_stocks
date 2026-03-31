@@ -1,0 +1,11 @@
+{
+  "owner": "coidea-sys",
+  "slug": "opc-insight-generator",
+  "displayName": "OPC Insight Generation",
+  "latest": {
+    "version": "2.2.1",
+    "publishedAt": 1774548287462,
+    "commit": null
+  },
+  "history": []
+}
