@@ -20,16 +20,18 @@ MIN_DELAY = 2
 MAX_DELAY = 5
 
 # 模拟浏览器 User-Agent
-UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+UA_MOBILE = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+UA_PC = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+UA = UA_PC  # 默认 PC 端
 
-# 分类配置
+# 分类配置（PC 端）
 CATEGORIES = {
-    "baby":  {"name": "亲子", "url": "https://m.mama.cn/bk/baby/"},
-    "yingyang": {"name": "营养", "url": "https://m.mama.cn/bk/yingyang/"},
-    "disease": {"name": "疾病", "url": "https://m.mama.cn/bk/disease/"},
-    "lady":   {"name": "女性", "url": "https://m.mama.cn/bk/lady/"},
-    "yongpin": {"name": "用品", "url": "https://m.mama.cn/bk/yongpin/"},
-    "life":   {"name": "生活", "url": "https://m.mama.cn/bk/life/"},
+    "baby":  {"name": "亲子", "url": "https://www.mama.cn/z/baby/"},
+    "yingyang": {"name": "营养", "url": "https://www.mama.cn/z/yingyang/"},
+    "disease": {"name": "疾病", "url": "https://www.mama.cn/z/disease/"},
+    "lady":   {"name": "女性", "url": "https://www.mama.cn/z/lady/"},
+    "yongpin": {"name": "用品", "url": "https://www.mama.cn/z/yongpin/"},
+    "life":   {"name": "生活", "url": "https://www.mama.cn/z/life/"},
 }
 
 # 搜索关键词列表（用于爬取）
@@ -47,15 +49,11 @@ def get(url, timeout=15):
     return result.stdout
 
 def extract_article_urls(html):
-    """从列表页提取文章 URL（兼容 /bk/<id>/ 和 /bk/art/<id>/ 两种格式）"""
-    # 匹配两种格式: /bk/<id>/ 和 /bk/art/<id>/
-    pattern = r'href="(https://m\.mama\.cn/bk/(?:art/)?(\d+)/)"'
+    """从列表页提取文章 URL（PC: www.mama.cn/z/art/<id>/）"""
+    # 匹配 PC 文章 URL: https://www.mama.cn/z/art/<id>/
+    pattern = r'href="(https://www\.mama\.cn/z/art/\d+)/"'
     matches = re.findall(pattern, html)
-    urls = []
-    for url, _ in matches:
-        # 过滤分类页面和标签页面
-        if "/t" not in url and url not in urls:
-            urls.append(url)
+    urls = list(dict.fromkeys(matches))  # 去重保持顺序
     return urls
 
 def extract_article_content(html, url):
@@ -70,31 +68,46 @@ def extract_article_content(html, url):
         if title_match:
             title = title_match.group(1).split('_')[0].strip()
 
-    # 提取正文区域（rich-text div）
-    content_match = re.search(r'<div[^>]*class="rich-text[^"]*"[^>]*>(.*?)</div>\s*</div>', html, re.DOTALL)
+    # 提取正文区域（PC: detail-mod > mod-ctn，移动: rich-text）
     content = ""
-    if content_match:
-        raw = content_match.group(1)
+    raw = None
+    # PC: 提取 mod-ctn 内部所有文本（可能有嵌套 div）
+    mod_ctn = re.search(r'<div class="mod-ctn">(.*)</div>\s*</div>\s*<div style=', html, re.DOTALL)
+    if mod_ctn:
+        raw = mod_ctn.group(1)
+    if not raw:
+        # 移动端
+        for pattern in [
+            r'<div[^>]*class="g-area rich-text"[^>]*>(.*?)</div>\s*<div',
+            r'<div[^>]*class="rich-text[^"]*"[^>]*>(.*?)</div>\s*</div>',
+            r'<div[^>]*class="rich-text[^"]*"[^>]*>(.*?)</div>',
+        ]:
+            content_match = re.search(pattern, html, re.DOTALL)
+            if content_match and len(content_match.group(1)) > 50:
+                raw = content_match.group(1)
+                break
+
+    if raw:
         # 替换块级标签为换行
-        for tag in ['</p>', '</h1>', '</h2>', '</h3>', '</li>', '</tr>']:
+        for tag in ['</p>', '</h1>', '</h2>', '</h3>', '</h4>', '</li>', '</tr>']:
             raw = raw.replace(tag, '\n')
         raw = raw.replace('<br\s*/?>', '\n', re.DOTALL)
         # 去除所有标签
         content = re.sub(r'<[^>]+>', '', raw)
         content = re.sub(r'\n{3,}', '\n\n', content).strip()
 
-    # 如果 rich-text 为空，尝试从 search 页面格式提取
+    # 如果仍然为空，从 meta description 提取
     if not content or len(content) < 50:
-        content_match = re.search(r'<div[^>]*class="text-wrap[^"]*"[^>]*>(.*?)</div>', html, re.DOTALL)
-        if content_match:
-            content = re.sub(r'<[^>]+>', '', content_match.group(1)).strip()
+        desc_match = re.search(r'<meta[^>]*name="description"[^>]*content="([^"]+)"', html)
+        if desc_match:
+            content = desc_match.group(1)
 
     # 提取发布时间
     date_match = re.search(r'(\d{4}-\d{2}-\d{2})', html)
     pub_date = date_match.group(1) if date_match else ""
 
     # 提取来源
-    source_match = re.search(r'来源[:：]\s*([^\s<]+)', html)
+    source_match = re.search(r'来源[:：]\s*([^\s<，,]+)', html)
     source = source_match.group(1) if source_match else "妈妈网"
 
     return {
@@ -162,7 +175,7 @@ def crawl_category(cat_key, cat_info, max_pages=3, max_articles=20):
             print(f"  ⏳ 等待 {delay:.1f}s ...")
             time.sleep(delay)
 
-            article_html = get(url)
+            article_html = get(url + "/")
             if not article_html:
                 continue
 
@@ -185,13 +198,15 @@ def crawl_category(cat_key, cat_info, max_pages=3, max_articles=20):
 
 def crawl_search(keyword, max_results=20):
     """通过搜索爬取文章"""
+    import urllib.parse
     print(f"\n🔍 搜索关键词: {keyword}")
     seen_urls = set()
     fetched = 0
     page = 1
 
     while fetched < max_results:
-        search_url = f"https://m.mama.cn/bk/Search/index?key={keyword}&page={page}"
+        encoded_key = urllib.parse.quote(keyword)
+        search_url = f"https://www.mama.cn/search/?key={encoded_key}&page={page}"
         print(f"  📄 第 {page} 页...")
         html = get(search_url)
         if not html:
@@ -202,6 +217,12 @@ def crawl_search(keyword, max_results=20):
             break
         print(f"     找到 {len(article_urls)} 个链接")
 
+        # 如果所有 URL 都已见过，说明到底了，停止翻页
+        new_urls = [u for u in article_urls if u not in seen_urls]
+        if not new_urls:
+            print(f"     所有文章已爬取，停止翻页")
+            break
+
         for url in article_urls:
             if url in seen_urls or fetched >= max_results:
                 continue
@@ -211,7 +232,7 @@ def crawl_search(keyword, max_results=20):
             print(f"  ⏳ 等待 {delay:.1f}s ... 抓取: {url}")
             time.sleep(delay)
 
-            article_html = get(url)
+            article_html = get(url + "/")
             if not article_html:
                 continue
 
