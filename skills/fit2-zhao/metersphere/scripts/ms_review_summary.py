@@ -106,19 +106,26 @@ def main():
         case_id = c.get('id')
         review_items = fetch_case_reviews(case_id)
         detail = fetch_case_detail(case_id)
+        
+        # 获取用例的评审状态
+        review_status = detail.get('reviewStatus')
+
+        # 新逻辑：review_status in ['PASS', 'UN_PASS']  # 只有评审完成
+        is_reviewed = review_status in ['PASS', 'UN_PASS']
+        
         out.append({
             'caseId': case_id,
             'num': c.get('num'),
             'name': c.get('name'),
             'caseEditType': c.get('caseEditType'),
-            'reviewStatus': detail.get('reviewStatus'),
+            'reviewStatus': review_status,
             'lastExecuteResult': detail.get('lastExecuteResult'),
             'bugCount': detail.get('bugCount', 0),
             'caseReviewCount': detail.get('caseReviewCount', 0),
             'testPlanCount': detail.get('testPlanCount', 0),
             'demandCount': detail.get('demandCount', 0),
             'reviewCount': len(review_items),
-            'reviewed': len(review_items) > 0,
+            'reviewed': is_reviewed,  # 使用修复后的逻辑
             'reviews': [
                 {
                     'reviewId': r.get('reviewId'),
