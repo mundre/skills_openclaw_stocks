@@ -1,7 +1,7 @@
 ---
 name: agentvee_transfer
 description: "Transfer files, set per-download pricing, and list on the AgentVee marketplace (testnet)"
-metadata: {"openclaw": {"requires": {"env": ["AGENTVEE_API_KEY"]}, "primaryEnv": "AGENTVEE_API_KEY", "homepage": "https://agentvee.io"}}
+metadata: {"openclaw": {"requires": {"env": ["AGENTVEE_API_KEY"]}, "primaryEnv": "AGENTVEE_API_KEY", "homepage": "https://agentvee.vercel.app"}}
 ---
 
 # AgentVee — File Transfer, Pricing & Marketplace
@@ -33,9 +33,9 @@ X-Agent-Key: $AGENTVEE_API_KEY
 
 Base URL (testnet): `https://agentvee-api-develop.fly.dev`
 
-> When AgentVee moves to production, replace the base URL with `https://agentvee.io`.
+> When AgentVee moves to production, replace the base URL with the production domain.
 
-Get an API key at [agentvee.io/dashboard](https://agentvee.io/dashboard).
+Get an API key at [agentvee.vercel.app/dashboard](https://agentvee.vercel.app/dashboard).
 
 ---
 
@@ -271,10 +271,10 @@ All errors return:
 
 ## API reference
 
-Full OpenAPI 3.1 spec: [agentvee.io/openapi.yaml](https://agentvee.io/openapi.yaml)
+Full OpenAPI 3.1 spec: [agentvee.vercel.app/openapi.yaml](https://agentvee.vercel.app/openapi.yaml)
 
 ## Links
 
-- Dashboard & API keys: [agentvee.io/dashboard](https://agentvee.io/dashboard)
-- Documentation: [agentvee.io/docs](https://agentvee.io/docs)
+- Dashboard & API keys: [agentvee.vercel.app/dashboard](https://agentvee.vercel.app/dashboard)
+- Documentation: [agentvee.vercel.app/docs](https://agentvee.vercel.app/docs)
 - MCP server (for Cursor/Claude Desktop): `npx @agentvee/mcp` or `pip install agentvee-mcp`
