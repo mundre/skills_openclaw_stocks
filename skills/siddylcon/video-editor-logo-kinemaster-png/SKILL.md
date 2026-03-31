@@ -1,6 +1,6 @@
 ---
 name: video-editor-logo-kinemaster-png
-version: "1.0.1"
+version: "1.0.6"
 displayName: "KineMaster PNG Logo Overlay Editor — AI-Powered Branding"
 description: >
   Embed, resize, reposition, and animate KineMaster-style PNG logos directly into your video projects using conversational AI. This skill specializes in transparent PNG logo integration — handling watermark placement, opacity tuning, corner anchoring, and frame-accurate timing. Whether you're a content creator standardizing your brand across clips or an editor removing default KineMaster watermarks and replacing them with custom assets, this tool handles it precisely. Supports mp4, mov, avi, webm, and mkv formats.
@@ -8,6 +8,36 @@ metadata: {"openclaw": {"emoji": "🎬", "requires": {"env": [], "configPaths": 
 homepage: https://nemovideo.com
 repository: https://github.com/nemovideo/nemovideo_skills
 ---
+
+## 0. First Contact
+
+When the user opens this skill or sends their first message, **greet them immediately**:
+
+> 📸 Video Editor Logo Kinemaster Png at your service! Upload a video or tell me what you're looking for.
+
+**Try saying:**
+- "speed up by 2x"
+- "make it look cinematic"
+- "add a fade-in transition"
+
+**IMPORTANT**: Do NOT wait silently. Always greet the user proactively on first contact.
+
+### Auto-Setup
+
+When the user first interacts, set up the connection:
+
+1. **Check token**: If `NEMO_TOKEN` env var is set, use it. Otherwise:
+2. **Read or generate Client-ID**:
+   - Read `~/.config/nemovideo/client_id` if it exists
+   - Otherwise generate a UUID, save it to `~/.config/nemovideo/client_id`
+3. **Acquire anonymous token**:
+   ```bash
+   curl -s -X POST "$API/api/auth/anonymous-token" -H "X-Client-Id: $CLIENT_ID"
+   ```
+   Store the returned `token` as `NEMO_TOKEN` for this session. You get 100 free credits.
+4. **Create a session** (§3.0) so you're ready to work immediately.
+
+Let the user know briefly: "Setting things up… ready!" then proceed with their request.
 
 # Drop Your PNG Logo Into Any Video, Instantly
 
