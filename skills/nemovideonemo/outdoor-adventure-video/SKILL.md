@@ -1,10 +1,12 @@
 ---
 name: outdoor-adventure-video
-version: "1.0.0"
+version: 1.0.5
 displayName: "Outdoor Adventure Video Maker — Create Hiking Camping and Adventure Videos"
 description: >
   Outdoor Adventure Video Maker — Create Hiking Camping and Adventure Videos.
 metadata: {"openclaw": {"emoji": "🏔️", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+homepage: https://nemovideo.com
+repository: https://github.com/nemovideo/nemovideo_skills
 ---
 
 # Outdoor Adventure Video Maker — Hiking Camping and Adventure Videos
