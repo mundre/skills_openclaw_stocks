@@ -141,13 +141,8 @@ async function main() {
     // Step 4: 执行
     console.log('\nStep 3: 执行上链和生成保管单...\n');
     
-    // 组装上链数据
-    const chainData = {
-      applicantName,
-      applicantAccount,
-      ...customFields,
-      timestamp: new Date().toISOString()
-    };
+    // 更新上链数据时间戳
+    chainData.timestamp = new Date().toISOString();
     
     console.log('上链数据:', JSON.stringify(chainData));
     
@@ -161,16 +156,24 @@ async function main() {
     });
     console.log('✅ 交易索引:', uploadResult.index);
     
-    // 查询结果
-    console.log('\n⏳ 正在查询上链结果...');
-    const queryResult = await chain.queryResult([uploadResult.index]);
-    const firstChain = queryResult[0]?.chain_results?.[0] || {};
-    console.log('✅ 上链状态:', firstChain.status === 1 ? '成功' : (firstChain.status === 2 ? '等待中' : '失败'));
-    console.log('   区块链哈希:', firstChain.hash || 'N/A');
+    // 等待上链完成
+    console.log('\n⏳ 等待上链确认...');
+    const uploadComplete = await chain.waitUntilUploaded(uploadResult.index, {
+      interval: 3000,
+      timeout: 60000
+    });
+    const firstChain = uploadComplete.chain_results?.[0] || {};
+    console.log('✅ 上链状态: 成功');
+    console.log('   链类型:', firstChain.chain || 'N/A');
+    console.log('   交易哈希:', firstChain.hash || 'N/A');
     console.log('   区块高度:', firstChain.height || 'N/A');
     
     // 生成保管单
     console.log('\n⏳ 正在生成保管单...');
+    
+    // 转换为本地时间字符串 (GMT+8)
+    const localTime = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().substring(0, 19).replace('T', ' ');
+    
     const custodyParams = {
       templateId: selectedTemplate.id,
       requestId: crypto.randomBytes(16).toString('hex'),
@@ -180,7 +183,7 @@ async function main() {
         evidenceHash: crypto.createHash('sha256').update(JSON.stringify(chainData)).digest('hex'),
         blockchainHash: firstChain.hash || '',
         blockchainHeight: String(firstChain.height || 0),
-        attestTime: new Date().toISOString().substring(0, 19).replace('T', ' ')
+        attestTime: localTime
       },
       customFieldList: Object.entries(customFields).map(([name, value]) => ({ name, value }))
     };
@@ -202,6 +205,12 @@ async function main() {
       await new Promise(r => setTimeout(r, 5000));
     }
     
+    // 保存下载链接到文件
+    if (downloadUrl) {
+      const linkFile = path.join(process.cwd(), 'last-download-link.txt');
+      require('fs').writeFileSync(linkFile, downloadUrl);
+    }
+    
     // 输出结果
     console.log('\n' + '='.repeat(50));
     console.log('🎉 保管单生成完成！');
@@ -213,11 +222,19 @@ async function main() {
     console.log('   姓名:', applicantName);
     console.log('   账号:', applicantAccount);
     console.log('\n🔗 区块链信息:');
+    console.log('   链类型:', firstChain.chain || 'N/A');
     console.log('   交易索引:', uploadResult.index);
-    console.log('   区块链哈希:', firstChain.hash || 'N/A');
+    console.log('   交易哈希:', firstChain.hash || 'N/A');
     console.log('   区块高度:', firstChain.height || 'N/A');
     console.log('\n📥 下载链接:');
-    console.log('  ', downloadUrl || '生成中，请稍后重试');
+    if (downloadUrl) {
+      // Markdown 格式链接（适用于更多终端）
+      console.log('\n   [点击下载保管单](' + downloadUrl + ')\n');
+      console.log('   或复制以下链接：');
+      console.log(downloadUrl);
+    } else {
+      console.log('   生成中，请稍后重试');
+    }
     console.log('\n💡 后续操作:');
     console.log('   下载保管单：node scripts/certificate/download.js --cert-no ' + certNo);
     console.log('='.repeat(50) + '\n');
