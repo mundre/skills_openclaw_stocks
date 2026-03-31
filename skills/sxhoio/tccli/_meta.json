@@ -1,0 +1,11 @@
+{
+  "owner": "sxhoio",
+  "slug": "tccli",
+  "displayName": "TCCLI - 腾讯云命令行工具",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774687838941,
+    "commit": null
+  },
+  "history": []
+}
