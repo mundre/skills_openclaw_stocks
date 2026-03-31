@@ -3,9 +3,15 @@
   "slug": "china-poster-studio",
   "displayName": "China Poster Studio",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1774461088306,
-    "commit": "https://github.com/openclaw/skills/commit/ff4a6e03eb23243c542dc08881c424d9512013c7"
+    "version": "1.0.3",
+    "publishedAt": 1774664062878,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1774461088306,
+      "commit": "https://github.com/openclaw/skills/commit/ff4a6e03eb23243c542dc08881c424d9512013c7"
+    }
+  ]
 }
