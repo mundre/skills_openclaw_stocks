@@ -3,11 +3,16 @@
   "slug": "agieth",
   "displayName": "Agieth",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774590757958,
-    "commit": "https://github.com/openclaw/skills/commit/de37a15345c3dffe7f57fbe80182063cb7465eff"
+    "version": "1.0.11",
+    "publishedAt": 1774672369473,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774590757958,
+      "commit": "https://github.com/openclaw/skills/commit/de37a15345c3dffe7f57fbe80182063cb7465eff"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774581721913,
