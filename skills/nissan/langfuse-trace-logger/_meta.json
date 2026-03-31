@@ -1,0 +1,11 @@
+{
+  "owner": "nissan",
+  "slug": "langfuse-trace-logger",
+  "displayName": "Langfuse Trace Logger",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774682275048,
+    "commit": null
+  },
+  "history": []
+}
