@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "chef-integration",
+  "displayName": "Chef",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774685063798,
+    "commit": null
+  },
+  "history": []
+}
