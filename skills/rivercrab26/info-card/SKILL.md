@@ -344,7 +344,7 @@ sections 支持类型：`section_header`、`points`、`alert`(blue/orange)、`co
   "name": "张小明",
   "title": "独立开发者 / AI 探索者",
   "org": "前字节跳动高级工程师",
-  "avatar_emoji": "👨‍💻",
+  "avatar_emoji": "💻",
   "bio": "10 年全栈开发经验，专注 AI 应用和开发者工具。",
   "tags": ["AI 应用", "全栈开发", "开源贡献者"],
   "stats": [
