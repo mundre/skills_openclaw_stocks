@@ -1,10 +1,13 @@
 ---
 name: dog-grooming-video
-version: "1.0.0"
+version: 1.0.4
 displayName: "Dog Grooming Video Maker — Create Dog Grooming and Pet Care Tutorial Videos"
 description: >
-  Dog Grooming Video Maker — Create Dog Grooming and Pet Care Tutorial Videos.
-metadata: {"openclaw": {"emoji": "🐕", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+    Dog Grooming Video Maker — Create Dog Grooming and Pet Care Tutorial Videos. Works by connecting to the NemoVideo AI backend. Supports MP4, MOV, AVI, WebM, and MKV output formats. Automatic credential setup on first use — no manual configuration needed.
+metadata: {"openclaw": {"emoji": "🐕", "requires": {"env": ["NEMO_TOKEN"], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+homepage: https://nemovideo.com
+apiDomain: https://mega-api-prod.nemovideo.ai
+repository: https://github.com/nemovideo/nemovideo_skills
 ---
 
 # Dog Grooming Video Maker — Dog Grooming and Pet Care Tutorial Videos
