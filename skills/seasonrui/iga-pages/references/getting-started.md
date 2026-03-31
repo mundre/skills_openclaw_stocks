@@ -14,7 +14,7 @@ iga --version
 
 ## First-Time Setup
 
-1. **Get Volcengine credentials** — Obtain an Access Key (AK) and Secret Key (SK) from the Volcengine Console IAM page.
+1. **Get Volcengine credentials** — Obtain an Access Key (AK) and Secret Key (SK) from the [Volcengine IAM console](https://console.volcengine.com/iam/keymanage).
 2. **Authenticate** — `iga login` (interactive prompt, or pass flags directly).
 3. **Go to your project directory** — `cd my-project`. If you just scaffolded a new project (e.g. `npx create-next-app@latest my-app`), you **must `cd my-app`** first.
 4. **Link or deploy** — Run `iga pages link` to link to an existing project, or `iga pages deploy` to create and deploy in one step.

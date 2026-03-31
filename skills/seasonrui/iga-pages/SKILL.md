@@ -11,12 +11,19 @@ Run `iga <command> -h` for full flag details.
 
 ## Critical: Project Linking
 
-`iga pages deploy` and `iga pages dev` require a linked project. State is stored in:
+State is stored in:
 
 - **`.iga/project.json`** — project link (projectId, projectName, provider). Created by `iga pages link` or first `iga pages deploy`.
-- **`~/.iga/auth.json`** — AK/SK credentials. Created by `iga login`.
+- **`~/.iga/auth.json`** — AK/SK credentials. Created by `iga login`. Obtain AK/SK from the [Volcengine IAM console](https://console.volcengine.com/iam/keymanage).
 
-**Troubleshooting**: missing `.iga/project.json` → run `iga pages link`. Missing/invalid `~/.iga/auth.json` → run `iga login`.
+**When to use `deploy` vs `link`**:
+
+- **New project** → prefer `iga pages deploy` directly. It creates the project and writes `.iga/project.json` in one step, no need to `link` first.
+- **Connect to an existing project without deploying** → use `iga pages link`.
+
+## Critical: Framework Compatibility
+
+Before deploying or scaffolding a project, verify the framework is supported. IGA Pages **only** supports: Next.js, Vite, Vue CLI, Create React App, Angular, Hexo, Docusaurus, VitePress, VuePress, Hugo. If the user's framework is not in this list, **proactively inform them it is not supported** before proceeding. See `references/frameworks.md` for output directory details.
 
 ## Critical: Working Directory
 
@@ -37,9 +44,14 @@ Never run `iga pages deploy` or `iga pages dev` from the parent directory — it
 npm i -g @iga-pages/cli
 iga login                      # authenticate with AK/SK
 cd my-project                  # enter project directory first!
+iga pages deploy               # deploy (auto-creates project on first run)
 iga pages link                 # link to existing project (or create new)
-iga pages dev                  # local development server
-iga pages deploy               # deploy to IGA Pages
+```
+
+For local development:
+
+```bash
+iga pages dev                  # local development server (no linking needed)
 ```
 
 ## Command Structure

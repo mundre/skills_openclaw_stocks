@@ -1,5 +1,9 @@
 # Authentication
 
+## Obtaining AK/SK
+
+Get your Access Key (AK) and Secret Key (SK) from the Volcengine IAM console: <https://console.volcengine.com/iam/keymanage>
+
 ## Commands
 
 ```bash

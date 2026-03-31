@@ -38,5 +38,5 @@ On success:
 ✔ Project deployed!
   Project ID  : proj_xxxx
   Console     : https://console.volcengine.com/dcdn/pages/detail/proj_xxxx
-  Preview URL : https://xxxx.igapages.com
+  Preview URL : https://xxx.iga-pages.com?iga_token=<token>&iga_time=<timestamp>
 ```
