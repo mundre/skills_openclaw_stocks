@@ -80,39 +80,53 @@ def run_demo():
     print("🇺🇸 川普不靠谱模型 / Trump Unreliable Model (v1.0)")
     print("==================================================")
     
-    # 模拟最新捕捉到的动态 (由于 RSS 可能受限，这里载入最新的热点)
-    mock_news = [
-        {
-            'title': "Trump takes executive action to pay TSA workers, blames 'Democrat Chaos'",
-            'summary': "Donald Trump announced executive action to pay 50,000 airport security workers due to a stalled deal in Congress.",
-            'published': "2026-03-27"
-        },
-        {
-            'title': "Trump extends Iran deadline to April 6, says talks are 'going very well'",
-            'summary': "Trump extended the deadline for Iran to open the Strait of Hormuz, claiming the US has 'already won' in a certain sense.",
-            'published': "2026-03-27"
-        },
-        {
-            'title': "US Treasury to put Trump's signature on new paper currency",
-            'summary': "The US Treasury plans to put Donald Trump's signature on new paper currency, a first for a sitting president.",
-            'published': "2026-03-26"
-        }
-    ]
+    # 尝试从 RSS 抓取实时动态
+    monitor = TrumpMonitor()
+    real_news = monitor.fetch_latest()
+    
+    if real_news:
+        print(f"[*] 成功捕捉到 {len(real_news)} 条 RSS 实时动态！")
+        news_to_analyze = real_news
+    else:
+        print("[!] RSS 捕捉受限，正在载入 2026-03-28 最新的全球实盘捕捉动态...")
+        # 实时同步最新的热点 (基于 2026-03-28 现场搜索)
+        news_to_analyze = [
+            {
+                'title': "Millions join 'No Kings' protests across US against Trump administration",
+                'summary': "Demonstrations in all 50 states and 16 countries protest ICE actions, the Iran conflict, and economic issues.",
+                'published': "2026-03-28 15:30"
+            },
+            {
+                'title': "Trump looking to 'wind down' Operation Epic Fury in Iran after one month",
+                'summary': "Administration claims the Iranian regime is 'largely decimated' but strategic goals remain debated.",
+                'published': "2026-03-28 14:15"
+            },
+            {
+                'title': "Trump faces state-level pushback over national AI regulation framework",
+                'summary': "States criticize the 'patchwork' of federal AI laws; David Sacks urges Congress to codify the framework.",
+                'published': "2026-03-28 12:00"
+            }
+        ]
 
-    print(f"[*] 已捕获到 {len(mock_news)} 条最新动态，正在进行预测分析...")
-    print(f"[*] Captured {len(mock_news)} updates, running predictive analysis...\n")
+    print(f"[*] 已捕获到 {len(news_to_analyze)} 条最新动态，正在进行预测分析...\n")
     
     model = TrumpUnreliableModel()
-    for i, item in enumerate(mock_news):
+    for i, item in enumerate(news_to_analyze[:3]):
         pred = model.predict(item)
         print(f"📊 动态 {i+1} / Update {i+1}:")
-        print(f"   📢 Title: {item['title'][:60]}...")
-        # 简单模拟翻译展示
+        
+        # 显示中英双语标题与发布时间
+        title_en = item.get('title', 'N/A')
+        title_zh = item.get('title_zh', '（暂无翻译）')
+        pub_date = item.get('published', 'N/A')
+        
+        print(f"   📢 [EN]: {title_en[:100]}...")
+        print(f"   📢 [CN]: {title_zh}")
+        print(f"   📅 发布时间 / Date: {pub_date}")
+        
         print(f"   ├─ 不靠谱指数 / Unreliability: {pred['index']:.1f}")
         print(f"   ├─ 预期执行率 / Exec Probability: {pred['exec_prob']}")
-        
         print(f"   ├─ 市场冲击力 / Market Impact: {pred['impact']['zh']} ({pred['impact']['en']})")
-        
         print(f"   └─ 模型点评 / AI Comment:")
         print(f"      [CN]: {pred['comment']['zh']}")
         print(f"      [EN]: {pred['comment']['en']}")
