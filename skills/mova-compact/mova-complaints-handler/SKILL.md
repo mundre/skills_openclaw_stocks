@@ -2,7 +2,7 @@
 name: mova-complaints-handler
 description: Submit a customer complaint for EU-compliant AI classification and human-in-the-loop handling decision via MOVA. Handles compensation claims, regulator threats, fraud signals, and repeat customer cases with mandatory human review and a full signed audit trail.
 license: MIT-0
-metadata: {"openclaw":{"primaryEnv":"MOVA_API_KEY","plugin":{"name":"MOVA","installCmd":"openclaw plugins install openclaw-mova","configKey":"plugins.entries.mova.config.apiKey"},"dataSentToExternalServices":[{"service":"MOVA API (api.mova-lab.eu)","data":"complaint text, customer ID, product category, prior complaints, human decision, audit metadata"}]}}
+metadata: {"openclaw":{"plugin":{"name":"MOVA","installCmd":"openclaw plugins install openclaw-mova"},"dataSentToExternalServices":[{"service":"MOVA API (api.mova-lab.eu)","data":"complaint text, customer ID, product category, prior complaints, human decision, audit metadata"}]}}
 ---
 
 # MOVA EU Consumer Complaints Handler
@@ -18,8 +18,7 @@ Turn any customer complaint into a structured, auditable handling decision — w
 
 ## Requirements
 
-**Plugin:** MOVA OpenClaw plugin must be installed and configured with your API key.
-Get your key at [mova-lab.eu/register](https://mova-lab.eu/register).
+**Plugin:** MOVA OpenClaw plugin must be installed in your OpenClaw workspace.
 
 ## Quick start
 
