@@ -320,7 +320,7 @@ from scripts.state_consistency_validator import ConsistencyLevel
 ### ConflictSeverity（冲突严重程度）
 
 ```python
-from scripts.state_consistency_validator import ConflictSeverity
+from scripts.types import ConflictSeverity
 ```
 
 | 值 | 说明 |

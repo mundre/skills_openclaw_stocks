@@ -1,6 +1,6 @@
 ---
 name: agent-memory
-description: 当智能体需要"memory"与"Context"操作时触发；智能体底层记忆基础设施，完整实现Context Engineering五大核心能力：选择（噪声过滤+相关性筛选）、压缩（因果结构提取+工具结果压缩）、检索（结果重排序+多样性保证）、状态（任务进度追踪+目标对齐）、记忆（冲突检测+跨会话关联）；认知模型层支持认知模型构建、因果链提取、知识缺口识别、检索时机决策、质量评估、状态一致性校验、状态推理、跨会话关联、遗忘机制；作为元技能强制常驻运行
+description: 当智能体涉及"memory"与"Context"的操作时触发skill；智能体底层记忆基础设施，完整实现Context Engineering五大核心能力：选择（噪声过滤+相关性筛选）、压缩（因果结构提取+工具结果压缩）、检索（结果重排序+多样性保证）、状态（任务进度追踪+目标对齐）、记忆（冲突检测+跨会话关联）；认知模型层支持认知模型构建、因果链提取、知识缺口识别、检索时机决策、质量评估、状态一致性校验、状态推理、跨会话关联、遗忘机制；作为元技能强制常驻运行
 always: true
 dependency:
   python:
@@ -12,23 +12,6 @@ dependency:
 ---
 
 # Agent Memory System
-
-## 许可证声明
-
-Copyright (C) 2026 kiwifruit
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ## 任务目标
 
@@ -446,49 +429,67 @@ if result["should_reflect"]:
 
 ## 资源索引
 
-### 核心脚本（30个）
+### 核心脚本（40个）
 
-| 脚本                                                                                   | 用途                 | 层级     |
-| -------------------------------------------------------------------------------------- | -------------------- | -------- |
-| [scripts/types.py](scripts/types.py)                                                   | 核心类型定义         | 基础     |
-| [scripts/redis_adapter.py](scripts/redis_adapter.py)                                   | Redis 连接管理       | 基础设施 |
-| [scripts/perception.py](scripts/perception.py)                                         | 感知记忆             | 存储层   |
-| [scripts/short_term.py](scripts/short_term.py)                                         | 短期记忆（文件存储） | 存储层   |
-| [scripts/long_term.py](scripts/long_term.py)                                           | 长期记忆             | 存储层   |
-| [scripts/state_capture.py](scripts/state_capture.py)                                   | 状态捕捉             | 协调层   |
-| [scripts/chain_reasoning.py](scripts/chain_reasoning.py)                               | 链式推理增强         | 协调层   |
-| [scripts/context_reconstructor.py](scripts/context_reconstructor.py)                   | 上下文重构           | 协调层   |
-| [scripts/insight_module.py](scripts/insight_module.py)                                 | 独立洞察             | 协调层   |
-| [scripts/context_orchestrator.py](scripts/context_orchestrator.py)                     | 上下文编排器（总控） | 编排层   |
-| [scripts/token_budget.py](scripts/token_budget.py)                                     | Token 预算管理       | 编排层   |
-| [scripts/result_compressor.py](scripts/result_compressor.py)                           | 结果压缩器           | 编排层   |
-| [scripts/task_progress.py](scripts/task_progress.py)                                   | 任务进度追踪器       | 协调层   |
-| [scripts/memory_conflict.py](scripts/memory_conflict.py)                               | 记忆冲突检测器       | 协调层   |
-| [scripts/retrieval_organizer.py](scripts/retrieval_organizer.py)                       | 检索结果组织器       | 编排层   |
-| [scripts/noise_filter.py](scripts/noise_filter.py)                                     | 噪声过滤器           | 编排层   |
-| [scripts/multi_source_coordinator.py](scripts/multi_source_coordinator.py)             | 多源协调器           | 编排层   |
-| [scripts/context_lazy_loader.py](scripts/context_lazy_loader.py)                       | 上下文懒加载器       | 编排层   |
-| [scripts/permission_boundary_controller.py](scripts/permission_boundary_controller.py) | 权限边界控制器       | 编排层   |
-| [scripts/observability_manager.py](scripts/observability_manager.py)                   | 可观测性管理器       | 编排层   |
-| [scripts/cognitive_model_builder.py](scripts/cognitive_model_builder.py)               | 认知模型构建器       | 编排层   |
-| [scripts/causal_chain_extractor.py](scripts/causal_chain_extractor.py)                 | 因果链提取器         | 编排层   |
-| [scripts/knowledge_gap_identifier.py](scripts/knowledge_gap_identifier.py)             | 知识缺口识别器       | 编排层   |
-| [scripts/retrieval_decision_engine.py](scripts/retrieval_decision_engine.py)           | 检索时机决策引擎     | 编排层   |
-| [scripts/retrieval_quality_evaluator.py](scripts/retrieval_quality_evaluator.py)       | 检索质量评估器       | 编排层   |
-| [scripts/state_consistency_validator.py](scripts/state_consistency_validator.py)       | 状态一致性校验器     | 协调层   |
-| [scripts/state_inference_engine.py](scripts/state_inference_engine.py)                 | 状态推理引擎         | 协调层   |
-| [scripts/cross_session_memory_linker.py](scripts/cross_session_memory_linker.py)       | 跨会话记忆关联器     | 协调层   |
-| [scripts/memory_forgetting_mechanism.py](scripts/memory_forgetting_mechanism.py)       | 记忆遗忘机制         | 协调层   |
-| [scripts/privacy.py](scripts/privacy.py)                                               | 隐私配置             | 基础     |
+| 脚本 | 用途 | 层级 |
+|------|------|------|
+| [scripts/types.py](scripts/types.py) | 核心类型定义 | 基础 |
+| [scripts/redis_adapter.py](scripts/redis_adapter.py) | Redis 连接管理 | 基础设施 |
+| [scripts/encryption.py](scripts/encryption.py) | 数据加密模块 | 基础设施 |
+| [scripts/credential_manager.py](scripts/credential_manager.py) | 凭证管理 | 基础设施 |
+| [scripts/perception.py](scripts/perception.py) | 感知记忆 | 存储层 |
+| [scripts/short_term.py](scripts/short_term.py) | 短期记忆（文件存储） | 存储层 |
+| [scripts/short_term_insight.py](scripts/short_term_insight.py) | 短期记忆洞察分析 | 存储层 |
+| [scripts/long_term.py](scripts/long_term.py) | 长期记忆 | 存储层 |
+| [scripts/memory_index.py](scripts/memory_index.py) | 记忆索引管理 | 存储层 |
+| [scripts/heat_manager.py](scripts/heat_manager.py) | 热度管理 | 存储层 |
+| [scripts/memory_forgetting_mechanism.py](scripts/memory_forgetting_mechanism.py) | 记忆遗忘机制 | 存储层 |
+| [scripts/async_writer.py](scripts/async_writer.py) | 异步写入器（性能优化） | 基础设施 |
+| [scripts/batched_writer.py](scripts/batched_writer.py) | 批量写入器（性能优化） | 基础设施 |
+| [scripts/state_capture.py](scripts/state_capture.py) | 状态捕捉 | 协调层 |
+| [scripts/incremental_sync.py](scripts/incremental_sync.py) | 增量同步 | 协调层 |
+| [scripts/chain_reasoning.py](scripts/chain_reasoning.py) | 链式推理增强 | 协调层 |
+| [scripts/context_reconstructor.py](scripts/context_reconstructor.py) | 上下文重构 | 协调层 |
+| [scripts/insight_module.py](scripts/insight_module.py) | 独立洞察 | 协调层 |
+| [scripts/task_progress.py](scripts/task_progress.py) | 任务进度追踪器 | 协调层 |
+| [scripts/memory_conflict.py](scripts/memory_conflict.py) | 记忆冲突检测器 | 协调层 |
+| [scripts/conflict_resolver.py](scripts/conflict_resolver.py) | 冲突解决器 | 协调层 |
+| [scripts/state_consistency_validator.py](scripts/state_consistency_validator.py) | 状态一致性校验器 | 协调层 |
+| [scripts/state_inference_engine.py](scripts/state_inference_engine.py) | 状态推理引擎 | 协调层 |
+| [scripts/cross_session_memory_linker.py](scripts/cross_session_memory_linker.py) | 跨会话记忆关联器 | 协调层 |
+| [scripts/context_orchestrator.py](scripts/context_orchestrator.py) | 上下文编排器（总控） | 编排层 |
+| [scripts/token_budget.py](scripts/token_budget.py) | Token 预算管理 | 编排层 |
+| [scripts/result_compressor.py](scripts/result_compressor.py) | 结果压缩器 | 编排层 |
+| [scripts/retrieval_organizer.py](scripts/retrieval_organizer.py) | 检索结果组织器 | 编排层 |
+| [scripts/noise_filter.py](scripts/noise_filter.py) | 噪声过滤器 | 编排层 |
+| [scripts/multi_source_coordinator.py](scripts/multi_source_coordinator.py) | 多源协调器 | 编排层 |
+| [scripts/context_lazy_loader.py](scripts/context_lazy_loader.py) | 上下文懒加载器 | 编排层 |
+| [scripts/permission_boundary_controller.py](scripts/permission_boundary_controller.py) | 权限边界控制器 | 编排层 |
+| [scripts/observability_manager.py](scripts/observability_manager.py) | 可观测性管理器 | 编排层 |
+| [scripts/cognitive_model_builder.py](scripts/cognitive_model_builder.py) | 认知模型构建器 | 编排层 |
+| [scripts/causal_chain_extractor.py](scripts/causal_chain_extractor.py) | 因果链提取器 | 编排层 |
+| [scripts/knowledge_gap_identifier.py](scripts/knowledge_gap_identifier.py) | 知识缺口识别器 | 编排层 |
+| [scripts/retrieval_decision_engine.py](scripts/retrieval_decision_engine.py) | 检索时机决策引擎 | 编排层 |
+| [scripts/retrieval_quality_evaluator.py](scripts/retrieval_quality_evaluator.py) | 检索质量评估器 | 编排层 |
+| [scripts/privacy.py](scripts/privacy.py) | 隐私配置 | 基础 |
 
 ### 参考文档
 
-| 文档                                                            | 何时读取         |
-| --------------------------------------------------------------- | ---------------- |
+| 文档 | 何时读取 |
+|------|----------|
 | [architecture_overview.md](references/architecture_overview.md) | 需要全局架构视角 |
-| [api_enums.md](references/api_enums.md)                         | 查阅枚举类型定义 |
-| [memory_types.md](references/memory_types.md)                   | 深入理解记忆结构 |
+| [api_enums.md](references/api_enums.md) | 查阅枚举类型定义 |
+| [api_class_reference.md](references/api_class_reference.md) | 查看所有导出类名和职责 |
+| [memory_types.md](references/memory_types.md) | 深入理解记忆结构 |
 | [chain_reasoning_guide.md](references/chain_reasoning_guide.md) | 链式推理增强集成 |
+| [encryption_guide.md](references/encryption_guide.md) | 了解数据加密机制 |
+| [async_optimization_guide.md](references/async_optimization_guide.md) | 异步写入优化方案 |
+| [privacy_guide.md](references/privacy_guide.md) | 隐私配置和合规要求 |
+| [insight_design.md](references/insight_design.md) | 洞察生成机制设计 |
+| [activation_mechanism.md](references/activation_mechanism.md) | 记忆激活机制 |
+| [agent_loops_guide.md](references/agent_loops_guide.md) | 智能体循环集成 |
+| [index_sync_guide.md](references/index_sync_guide.md) | 索引同步机制 |
+| [short_term_insight_guide.md](references/short_term_insight_guide.md) | 短期记忆洞察分析 |
 
 ## 注意事项
 

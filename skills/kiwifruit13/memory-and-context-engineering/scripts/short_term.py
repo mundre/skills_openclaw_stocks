@@ -1185,6 +1185,47 @@ class ShortTermMemoryManager:
             "indexer_enabled": self._memory_indexer is not None,
         }
 
+    def get_stats(self) -> dict[str, Any]:
+        """
+        获取短期记忆管理器统计信息
+        
+        Returns:
+            统计信息字典，包含：
+            - total_items: 总记忆项数
+            - items_by_bucket: 各桶的记忆项数
+            - total_topics: 话题总数
+            - active_topics: 活跃话题列表
+            - turn_count: 对话轮次
+            - session_id: 会话ID
+            - cross_layer: 跨层关联统计
+        """
+        # 统计各桶项数
+        items_by_bucket: dict[str, int] = {}
+        total_items: int = 0
+        
+        for bucket_type, bucket in self._buckets.items():
+            count = bucket.size
+            items_by_bucket[bucket_type.value] = count
+            total_items += count
+        
+        # 获取活跃话题
+        topic_summary = self.get_topic_summary()
+        active_topics = [
+            topic for topic, stats in topic_summary.items()
+            if stats["count"] >= 2
+        ]
+        
+        return {
+            "total_items": total_items,
+            "items_by_bucket": items_by_bucket,
+            "total_topics": len(topic_summary),
+            "active_topics": active_topics[:10],  # 最多返回10个
+            "turn_count": self._turn_count,
+            "session_id": self._session_id,
+            "cross_layer": self.get_cross_layer_stats(),
+            "similarity_threshold": self._similarity_threshold,
+        }
+
 
 class AsynchronousExtractor:
     """

@@ -598,6 +598,24 @@ class ShortTermInsightAnalyzer:
             summary="无记忆项需要分析",
         )
 
+    def get_stats(self) -> dict[str, Any]:
+        """
+        获取分析器统计信息
+        
+        Returns:
+            统计信息字典，包含：
+            - similarity_threshold: 相似度阈值
+            - priority_threshold: 优先级阈值
+            - coherence_threshold: 内聚性阈值
+            - domain_keywords_count: 领域关键词数量
+        """
+        return {
+            "similarity_threshold": self._similarity_threshold,
+            "priority_threshold": self._priority_threshold,
+            "coherence_threshold": self._coherence_threshold,
+            "domain_keywords_count": len(self._domain_keywords),
+        }
+
 
 # ============================================================================
 # 导出
