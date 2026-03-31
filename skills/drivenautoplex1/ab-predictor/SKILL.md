@@ -1,8 +1,8 @@
 ---
 name: ab-predictor
-description: Predict which ad hook, email subject, or social post wins before you spend a dollar. Compare up to 5 variants against ICP-specific neural weight profiles — each buyer type (crypto holder, credit-repair lead, veteran, first-timer) has a different brain-response pattern. Returns ranked winner with dimension-level scores and fix flags.
-version: 1.0.0
-author: dfw-area-house-hunt
+description: Predict which ad hook, email subject, or social post wins before you spend a dollar. Depth 3 — confidence intervals on every prediction, rewrite surgery with specific fix instructions per losing variant, cross-ICP scoring to find your best audience, and quality gate mode. Each buyer type has a different neural weight profile — the same hook scores 80/100 for crypto holders and 12/100 for generic traffic.
+version: 2.0.0
+author: drivenautoplex1
 price: 0
 tags:
   - marketing
@@ -26,29 +26,38 @@ metadata:
       anyBins:
         - python3
     emoji: "🧠"
-    homepage: https://github.com/dfw-area-house-hunt/openclaw-skills
+    homepage: https://github.com/drivenautoplex1/openclaw-skills
     install: []
 ---
 
-# A/B Hook Predictor
+# A/B Hook Predictor — v2.0.0
 
-Know which hook wins before you run the test. Predict performance of up to 5 content variants against the neural response profile of a specific buyer type — no ad spend required.
+Know which hook wins before you run the test. Depth 3 upgrade: every prediction now includes a confidence interval, specific rewrite surgery for losers (not just warning flags), and cross-ICP scoring to find the best audience for any hook.
+
+## What's New in v2.0.0
+
+- **Confidence intervals** — `91/100 (±8)` instead of just `91/100`. CI derived from dimension variance: concentrated signals → shakier prediction; spread signals → reliable.
+- **Rewrite surgery** — losing variants get specific fix instructions per ICP: not "add loss framing" but "add: 'Every month at 580 costs you $410 more than a buyer at 760.'"
+- **Cross-ICP scoring** (`--cross-icp`) — score any hook against all 5 ICP profiles to find its best audience. A hook written for crypto-mortgage buyers might score higher for veterans.
+- **Quality gate** (`--min-score=N`) — flag variants below threshold with ⛔ marker. Use in content pipelines.
+- **Margin analysis** — neck-and-neck (<10pt gap) vs dominant winner (>25pt) changes the recommendation: run a real test vs ship immediately.
 
 ## Free vs Premium
 
 **Free tier (no API key, no server needed):**
-- `--demo` — full ranked comparison of 3 hooks against the crypto-mortgage ICP, zero external calls
-- `--text` — score a single piece of copy against any ICP, runs locally
+- `--demo` — full ranked comparison with rewrite surgery + cross-ICP table, zero API calls
+- `--text` — score a single piece of copy against any ICP, with `--rewrite` and `--cross-icp` support
 - `--version` — verify install
-- All 5 ICP profiles available: crypto-mortgage, credit-repair, va-loan, realtor-partner, first-time-buyer
+- All 5 ICP profiles: crypto-mortgage, credit-repair, va-loan, realtor-partner, first-time-buyer
+- All depth-3 features (CI, rewrites, cross-ICP) run on rule-based scoring — no API key needed
 
 **Premium tier (content_resonance_scorer.py backend loaded):**
-- `--variants` — compare a JSON file of up to 5 variants with full dimension breakdown
-- `--json` — pipe scores into agent workflows
-- Richer feature scoring (second-person density, concrete noun density, TRIBE v2–calibrated weights)
-- Batch prediction across multiple ICP targets in one pass
+- `--variants` — full dimension breakdown on up to 5 variants
+- `--json` — structured output for agent pipelines
+- Richer CRS-backed feature scoring (TRIBE v2–calibrated weights)
+- Divergence detection between ICP-weighted score and CRS baseline
 
-The free `--demo` and `--text` modes run on rule-based scoring — no API key, no local server. Install and use immediately.
+The free tier is fully functional. Install and use immediately.
 
 ## What this skill does
 
@@ -79,11 +88,23 @@ python3 ab_predictor.py --demo
 # Score one piece of copy against a specific ICP
 python3 ab_predictor.py --text "You don't have to sell your BTC to buy a house." --product crypto-mortgage
 
+# Score with rewrite surgery (specific fix instructions if below 70)
+python3 ab_predictor.py --text "Buy a home today with great rates." --product va-loan --rewrite
+
 # Compare variants from a JSON file
 python3 ab_predictor.py --variants hooks.json --product va-loan
 
-# JSON output for pipelines
-python3 ab_predictor.py --variants hooks.json --product credit-repair --json | jq '.[0]'
+# Compare with rewrite surgery for losers
+python3 ab_predictor.py --variants hooks.json --product credit-repair --rewrite
+
+# Find best audience for a hook across all ICPs
+python3 ab_predictor.py --variants hooks.json --cross-icp
+
+# Quality gate: flag anything below 60
+python3 ab_predictor.py --variants hooks.json --product first-time-buyer --min-score 60
+
+# JSON output for pipelines (includes CI, rewrite suggestions)
+python3 ab_predictor.py --variants hooks.json --product credit-repair --json --rewrite | jq '.[0]'
 
 # Check version
 python3 ab_predictor.py --version
@@ -93,8 +114,8 @@ python3 ab_predictor.py --version
 ```json
 [
   {"label": "Hook A — Direct benefit", "text": "You earned zero down. Here's how to use it."},
-  {"label": "Hook B — Loss frame", "text": "Every month you wait, another DFW home goes under contract."},
-  {"label": "Hook C — Identity", "text": "Veterans in DFW are buying homes with $0 down. Here's the exact process."}
+  {"label": "Hook B — Loss frame", "text": "Every month you wait, another home goes under contract."},
+  {"label": "Hook C — Identity", "text": "Veterans are buying homes with $0 down. Here's the exact process."}
 ]
 ```
 
@@ -107,7 +128,7 @@ A/B Resonance Comparison — ICP: crypto-mortgage
 ================================================
 
 #1  Hook C — Identity + concrete          91/100  ✅ WINNER
-    ✓ Identity alignment: BTC holders in DFW — specific, in-group signal
+    ✓ Identity alignment: BTC holders — specific, in-group signal
     ✓ Gain framing: "unrealized gains", "appreciate while you build equity"
     ✓ Concrete noun density: $200K-$2M, 2022, Fannie Mae
     ✓ Loss avoidance framing: "zero capital gains event, zero coins sold"
@@ -178,7 +199,7 @@ done
 ## Use cases
 
 **Before running paid ads:**
-"Which of these 3 Facebook hook variants will perform best for DFW first-time buyers?"
+"Which of these 3 Facebook hook variants will perform best for first-time buyers?"
 
 **Before sending email:**
 "Score these 2 subject lines against credit-repair leads — which one opens more?"
