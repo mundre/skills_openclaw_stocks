@@ -71,7 +71,7 @@ For Claude Code / Cursor users who prefer structured tool calls, add to `~/.clau
   "mcpServers": {
     "vmware-vks": {
       "command": "uvx",
-      "args": ["vmware-vks-mcp"],
+      "args": ["--from", "vmware-vks", "vmware-vks-mcp"],
       "env": {
         "VMWARE_VKS_CONFIG": "/Users/you/.vmware-vks/config.yaml",
         "VMWARE_MYVENTER_PASSWORD": "your-password"
