@@ -1,10 +1,12 @@
 ---
 name: charity-video-maker
-version: "1.0.0"
+version: 1.0.5
 displayName: "Charity Video Maker — Create Nonprofit Cause and Awareness Videos"
 description: >
   Charity Video Maker — Create Nonprofit Cause and Awareness Videos.
 metadata: {"openclaw": {"emoji": "❤️", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+homepage: https://nemovideo.com
+repository: https://github.com/nemovideo/nemovideo_skills
 ---
 
 # Charity Video Maker — Nonprofit Cause and Awareness Videos
