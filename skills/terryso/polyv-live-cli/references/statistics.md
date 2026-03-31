@@ -4,149 +4,127 @@
 
 统计命令提供频道表现、观众行为和直播质量的洞察数据。
 
-## 概览统计
+## 查看每日观看统计
 
 ```bash
-# 频道概览
-npx polyv-live-cli@latest statistics overview -c 3151318
+npx polyv-live-cli@latest statistics view -c <频道ID> --start-day 2024-01-01 --end-day 2024-01-31
 
-# 输出包含：
-# 总观看次数: 15,420
-# 独立观众数: 8,234
-# 平均观看时长: 32:15
-# 峰值并发: 1,245
-# 总点赞数: 3,456
-# 总评论数: 892
+# JSON格式输出
+npx polyv-live-cli@latest statistics view -c 3151318 --start-day "2024-01-01" --end-day "2024-01-31" -o json
 ```
 
-### JSON输出
-
-```bash
-npx polyv-live-cli@latest statistics overview -c 3151318 -o json
-```
-
-## 观看数据
-
-按时间查看详细观看统计。
-
-```bash
-# 默认观看数据
-npx polyv-live-cli@latest statistics viewdata -c 3151318
-
-# 指定日期范围
-npx polyv-live-cli@latest statistics viewdata \
-  -c 3151318 \
-  --start-date 2024-06-01 \
-  --end-date 2024-06-30
-```
-
-### 观看数据选项
+### 选项
 
 | 选项 | 说明 | 格式 |
 |------|------|------|
+| `-c, --channel-id` | 频道ID | 必填 |
+| `--start-day` | 开始日期 | YYYY-MM-DD |
+| `--end-day` | 结束日期 | YYYY-MM-DD |
+| `-o, --output` | 输出格式 | table（默认）/ json |
+
+## 历史并发数据
+
+查看指定日期范围内的并发数据。
+
+```bash
+npx polyv-live-cli@latest statistics concurrency -c <频道ID> --start-date 2024-01-01 --end-date 2024-01-31
+
+# JSON格式输出
+npx polyv-live-cli@latest statistics concurrency -c 3151318 --start-date 2024-01-01 --end-date 2024-01-31 -o json
+```
+
+### 选项
+
+| 选项 | 说明 | 格式 |
+|------|------|------|
+| `-c, --channel-id` | 频道ID | 必填 |
 | `--start-date` | 开始日期 | YYYY-MM-DD |
 | `--end-date` | 结束日期 | YYYY-MM-DD |
-| `--interval` | 数据分组 | hour/day/week |
+| `-o, --output` | 输出格式 | table（默认）/ json |
 
-## 汇总报告
+## 历史最高并发人数
+
+查看指定时间范围内的最高并发观看人数。
 
 ```bash
-# 频道汇总
-npx polyv-live-cli@latest statistics summary -c 3151318
+npx polyv-live-cli@latest statistics max-concurrent -c <频道ID> --start-time 1704067200000 --end-time 1735689600000
 
-# 输出包含：
-# 直播场次: 45
-# 总时长: 67:30:00
-# 平均时长: 01:30:00
-# 最佳日期: 2024-06-15 (2,345 观众)
+# JSON格式输出
+npx polyv-live-cli@latest statistics max-concurrent -c 3151318 --start-time 1704067200000 --end-time 1735689600000 -o json
 ```
 
-## 导出统计
+### 选项
 
-### 导出为CSV
+| 选项 | 说明 | 格式 |
+|------|------|------|
+| `-c, --channel-id` | 频道ID | 必填 |
+| `--start-time` | 开始时间戳 | 13位毫秒时间戳 |
+| `--end-time` | 结束时间戳 | 13位毫秒时间戳 |
+| `-o, --output` | 输出格式 | table（默认）/ json |
+
+**注意：** 时间范围不能超过3个月
+
+## 观众统计
+
+查看观众的设备和地区分布。
+
+### 设备分布
 
 ```bash
-npx polyv-live-cli@latest statistics export \
-  -c 3151318 \
-  -f csv \
-  -o channel-stats.csv
-
-# 输出：
-# ✅ 已导出到 channel-stats.csv
-# 记录数: 1,234
+npx polyv-live-cli@latest statistics audience device -c <频道ID>
 ```
 
-### 导出为JSON
+### 地区分布
 
 ```bash
-npx polyv-live-cli@latest statistics export \
-  -c 3151318 \
-  -f json \
-  -o channel-stats.json
+npx polyv-live-cli@latest statistics audience region -c <频道ID>
+```
+
+## 导出统计数据
+
+导出频道统计数据到文件。
+
+```bash
+npx polyv-live-cli@latest statistics export -c <频道ID> -f csv -o report.csv
+
+# 导出为JSON
+npx polyv-live-cli@latest statistics export -c 3151318 -f json -o channel-stats.json
 ```
 
 ### 导出选项
 
 | 选项 | 说明 | 可选值 |
 |------|------|--------|
-| `-f, --format` | 导出格式 | csv, json, xlsx |
+| `-c, --channel-id` | 频道ID | 必填 |
+| `-f, --format` | 导出格式 | csv, json |
 | `-o, --output` | 输出文件路径 | - |
-| `--start-date` | 开始日期 | YYYY-MM-DD |
-| `--end-date` | 结束日期 | YYYY-MM-DD |
-
-## 场次统计
-
-获取特定直播场次的统计数据。
-
-```bash
-# 场次列表
-npx polyv-live-cli@latest statistics sessions -c 3151318
-
-# 特定场次
-npx polyv-live-cli@latest statistics session -c 3151318 --sessionId sess001
-```
-
-## 观众分析
-
-```bash
-# 观众地域分布
-npx polyv-live-cli@latest statistics viewers -c 3151318
-
-# 输出包含：
-# 热门地区: 北京(23%), 上海(18%), 广州(12%)
-# 设备类型: 移动端(65%), 桌面端(35%)
-# 热门浏览器: Chrome(45%), Safari(30%), 微信(15%)
-```
-
-## 互动指标
-
-```bash
-# 互动汇总
-npx polyv-live-cli@latest statistics engagement -c 3151318
-
-# 输出包含：
-# 平均互动率: 78%
-# 峰值互动率: 95% (00:32:15)
-# 聊天消息: 1,234
-# 点赞数: 3,456
-# 分享数: 234
-```
 
 ## 常用工作流程
 
 ### 生成周报
 
 ```bash
-# 生成周报
+# 查看一周的观看数据
+npx polyv-live-cli@latest statistics view \
+  -c 3151318 \
+  --start-day 2024-06-10 \
+  --end-day 2024-06-16
+
+# 导出为CSV
 npx polyv-live-cli@latest statistics export \
   -c 3151318 \
   -f csv \
-  -o weekly-report.csv \
-  --start-date 2024-06-10 \
-  --end-date 2024-06-16
+  -o weekly-report.csv
+```
 
-# 获取汇总
-npx polyv-live-cli@latest statistics summary -c 3151318 -o json > summary.json
+### 查看并发峰值
+
+```bash
+# 查看一个月内的最高并发
+npx polyv-live-cli@latest statistics max-concurrent \
+  -c 3151318 \
+  --start-time 1704067200000 \
+  --end-time 1706745600000
 ```
 
 ### 对比多个频道
@@ -154,35 +132,9 @@ npx polyv-live-cli@latest statistics summary -c 3151318 -o json > summary.json
 ```bash
 # 导出多个频道的统计
 for channel in 3151318 3151319 3151320; do
-  npx polyv-live-cli@latest statistics overview -c $channel -o json > "channel-$channel.json"
+  npx polyv-live-cli@latest statistics view -c $channel -o json > "channel-$channel.json"
 done
-
-# 对比分析
-jq -s '.' channel-*.json > comparison.json
 ```
-
-### 增长追踪
-
-```bash
-# 每日追踪脚本
-#!/bin/bash
-DATE=$(date +%Y-%m-%d)
-npx polyv-live-cli@latest statistics overview -c 3151318 -o json | \
-  jq --arg date "$DATE" '. + {date: $date}' >> daily-stats.jsonl
-```
-
-## 可用指标
-
-| 指标 | 说明 |
-|------|------|
-| `totalViews` | 总观看次数 |
-| `uniqueViewers` | 独立观众数 |
-| `avgWatchTime` | 平均观看时长 |
-| `peakConcurrent` | 峰值并发人数 |
-| `totalLikes` | 总点赞数 |
-| `totalComments` | 总评论数 |
-| `totalShares` | 总分享数 |
-| `engagementRate` | 互动率 |
 
 ## 故障排除
 
@@ -192,14 +144,15 @@ npx polyv-live-cli@latest statistics overview -c 3151318 -o json | \
 - 确认频道已有直播场次
 - 确保数据已处理完成（最多需要24小时）
 
-### "Export failed"（导出失败）
-
-- 检查输出路径的写入权限
-- 确保有足够的磁盘空间
-- 尝试其他导出格式
-
 ### "Date range too large"（日期范围过大）
 
-- 最大范围通常为90天
-- 分成较小的日期范围
-- 使用 --interval 聚合数据
+- max-concurrent: 时间范围不能超过3个月
+- view: 日期范围不能超过60天
+
+### 时间戳转换
+
+```bash
+# 将日期转换为13位毫秒时间戳
+date -j -f "%Y-%m-%d" "2024-01-01" "+%s"000
+# 输出: 1704067200000
+```

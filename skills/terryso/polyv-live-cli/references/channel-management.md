@@ -29,21 +29,28 @@ npx polyv-live-cli@latest channel create \
 npx polyv-live-cli@latest channel create -n "API频道" -o json
 ```
 
-### 场景类型
+### 场景类型 (newScene)
 
-| 场景 | 说明 | 适用场景 |
-|------|------|----------|
-| `topclass` | 三分屏（默认） | 专业直播、培训 |
-| `cloudclass` | 云课堂 | 在线教育 |
-| `telecast` | 纯视频 | 活动直播 |
-| `akt` | 活动直播 | 互动活动 |
+| 场景 | 说明 | 备注 |
+|------|------|------|
+| `topclass` | 大班课（默认） | ✅ 推荐 |
+| `alone` | 活动营销 | ✅ |
+| `seminar` | 研讨会 | ✅ |
+| `train` | 企业培训 | ✅ |
+| `double` | 双师课 | ⚠️ 需开通权限 |
+| `guide` | 导播 | ⚠️ 需开通权限 |
 
-### 模板类型
+### 模板类型 (template)
 
 | 模板 | 说明 |
 |------|------|
-| `ppt` | PPT模板（默认） |
-| `video` | 视频模板 |
+| `ppt` | 三分屏-横屏（默认） |
+| `portrait_ppt` | 三分屏-竖屏 |
+| `alone` | 纯视频-横屏 |
+| `portrait_alone` | 纯视频-竖屏 |
+| `topclass` | 纯视频极速-横屏 |
+| `portrait_topclass` | 纯视频极速-竖屏 |
+| `seminar` | 研讨会 |
 
 ### 查看频道列表
 
@@ -195,8 +202,8 @@ npx polyv-live-cli@latest channel list -o json
 npx polyv-live-cli@latest channel create \
   -n "Q4战略研讨会" \
   -d "全员季度战略回顾" \
-  --scene topclass \
-  --template ppt \
+  --scene seminar \
+  --template seminar \
   --max-viewers 500 \
   --auto-record \
   -o json
@@ -208,8 +215,8 @@ npx polyv-live-cli@latest channel create \
 npx polyv-live-cli@latest channel create \
   -n "限时特卖活动" \
   -d "24小时限时特卖直播" \
-  --scene cloudclass \
-  --template video \
+  --scene alone \
+  --template portrait_alone \
   --max-viewers 10000 \
   -o json
 ```
@@ -234,8 +241,9 @@ npx polyv-live-cli@latest channel batch-delete --channelIds 123 456 789 -f
 
 ### "Invalid scene type"（无效场景类型）
 
-- 使用以下之一：`topclass`、`cloudclass`、`telecast`、`akt`
+- 使用以下之一：`topclass`、`alone`、`seminar`、`train`、`double`、`guide`
 - 场景名称区分大小写
+- `double` 和 `guide` 需要开通权限
 
 ### "密码必须是6-16位字母数字"
 
