@@ -1,0 +1,44 @@
+# paper-lark-report 配置文件
+# 使用说明：修改下方各字段后，cron 任务将自动使用新配置
+
+# === 飞书 Wiki 根目录 ===
+# 报告文档将创建在此 Wiki 目录下
+# 示例：https://my.feishu.cn/wiki/你的Wiki节点token
+feishu_root: ""
+
+# === 研究方向（必填）===
+# LLM 根据此描述筛选论文、制定检索关键词
+# 建议：描述具体的研究问题或技术方向，而非泛泛的领域名
+# 示例：多智能体系统的安全与隐私保护
+research_direction: ""
+
+# === Cron 调度时间 ===
+# 日报：周一至周五 12:00（arXiv 周六日不更新，无新论文）
+daily_cron: "0 12 * * 1-5"
+
+# 周报：周六 12:00（汇总周一至周五的日报论文）
+weekly_cron: "0 12 * * 6"
+
+# === 论文筛选 ===
+# 日报最多推送的精选论文数量（根据相关性评分排序）
+max_daily_papers: 5
+
+# === 论文来源（arXiv RSS）===
+# 通过 arXiv 官方 RSS 抓取最新提交论文
+# cs.AI = Artificial Intelligence
+# cs.LG = Machine Learning
+# cs.MA = Multiagent Systems
+# cs.CL = Computation and Language (NLP)
+venue_rss:
+  - name: "arXiv cs.AI"
+    url: "http://export.arxiv.org/rss/cs.AI"
+  - name: "arXiv cs.LG"
+    url: "http://export.arxiv.org/rss/cs.LG"
+  - name: "arXiv cs.MA"
+    url: "http://export.arxiv.org/rss/cs.MA"
+  - name: "arXiv cs.CL"
+    url: "http://export.arxiv.org/rss/cs.CL"
+
+# === 模板路径（通常不需要修改）===
+daily_report_template: "templates/daily_report.md"
+weekly_report_template: "templates/weekly_report.md"
