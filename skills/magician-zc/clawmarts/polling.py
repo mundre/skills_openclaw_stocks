@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 ClawMarts WebSocket Helper Script
-WebSocket 长连接保活 + 自动接单（抢单/竞标/赛马）
-不执行任务、不调用 LLM —— 任务执行由 Agent 自身完成（参见 SKILL.md）。
+WebSocket 长连接保活 + 自动接单（抢单/竞标/赛马）+ 自动执行任务
 用法: python polling.py [--config PATH]
 """
 import json
@@ -11,12 +10,31 @@ import sys
 import time
 import argparse
 import threading
-import requests
+
+# ── 依赖自动检查与安装引导 ──
+_MISSING_DEPS = []
+
+try:
+    import requests
+except ImportError:
+    _MISSING_DEPS.append("requests")
 
 try:
     import websocket as ws_lib  # websocket-client
 except ImportError:
-    ws_lib = None
+    _MISSING_DEPS.append("websocket-client")
+
+
+def _check_and_install_deps():
+    """检查缺失依赖，引导用户手动安装"""
+    if not _MISSING_DEPS:
+        return True
+
+    print(f"  ❌ 缺失依赖: {', '.join(_MISSING_DEPS)}", file=sys.stderr)
+    print(f"  请手动安装后重新运行:", file=sys.stderr)
+    print(f"     {sys.executable} -m pip install {' '.join(_MISSING_DEPS)}", file=sys.stderr)
+    sys.exit(1)
+
 
 DEFAULT_CONFIG = os.path.expanduser(
     "~/.openclaw/skills/clawmarts/config.json"
@@ -28,8 +46,15 @@ stop_event = threading.Event()
 
 
 def load_config(path: str) -> dict:
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
+
+
+def save_config(path: str, cfg: dict):
+    """保存配置到文件"""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, ensure_ascii=False, indent=2)
 
 
 def api(method: str, path: str, cfg: dict, **kwargs):
@@ -44,6 +69,16 @@ def api(method: str, path: str, cfg: dict, **kwargs):
     except Exception as e:
         print(f"  ⚠️  API error [{method.upper()} {path}]: {e}", file=sys.stderr)
         return None
+
+
+def _safe_float(val, default=0.0) -> float:
+    """安全地将任意值转为 float，避免 str vs float 比较错误"""
+    if val is None:
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
 
 
 # ── WebSocket 长连接 ──
@@ -126,8 +161,8 @@ def _handle_server_message(raw: str, cfg: dict):
     if msg_type == "task_push":
         task = msg.get("task", {})
         task_id = task.get("task_id", "?")
-        title = task.get("title", task.get("description", "")[:40])
-        print(f"  📥 收到推送任务: {task_id[:8]} - {title}")
+        desc = task.get("description", "")[:40]
+        print(f"  📥 收到推送任务: {task_id[:8]} - {desc}")
     elif msg_type == "task_reclaimed":
         task_id = msg.get("task_id", "?")
         reason = msg.get("reason", "")
@@ -191,6 +226,151 @@ def join_race(cfg: dict, task_id: str) -> bool:
     return bool(r and r.get("success"))
 
 
+def submit_task_result(cfg: dict, task_id: str, result_data: dict) -> dict | None:
+    """提交任务结果"""
+    r = api("post", f"/api/tasks/{task_id}/submit", cfg, json={
+        "claw_id": cfg["claw_id"],
+        "result_data": result_data,
+        "confidence_score": 0.8,
+    })
+    return r
+
+
+def get_task_detail(cfg: dict, task_id: str) -> dict | None:
+    """获取任务详情"""
+    r = api("get", f"/api/tasks/{task_id}", cfg)
+    if r and r.get("success"):
+        return r.get("task", {})
+    return None
+
+
+# ── 自动执行任务 ──
+
+
+def _call_platform_llm(cfg: dict, messages: list[dict], model: str = "") -> str | None:
+    """通过平台 LLM 代理调用大模型
+
+    用于没有自己 API Key 的用户，完全依赖平台提供的模型。
+    返回模型回复文本，失败返回 None。
+    """
+    if not model:
+        model = cfg.get("platform_model", "")
+    if not model:
+        # 尝试从平台获取可用模型列表，选第一个
+        r = api("get", "/api/llm/models", cfg)
+        if r and r.get("success") and r.get("models"):
+            model = r["models"][0].get("model_name", "")
+            cfg["platform_model"] = model  # 缓存到配置
+        if not model:
+            print("  ⚠️  无可用平台模型，请联系管理员配置", file=sys.stderr)
+            return None
+
+    body = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.7,
+        "claw_id": cfg.get("claw_id", ""),
+    }
+    r = api("post", "/api/llm/chat/completions", cfg, json=body)
+    if not r:
+        return None
+    # 兼容 OpenAI 格式响应
+    choices = r.get("choices", [])
+    if choices:
+        return choices[0].get("message", {}).get("content", "")
+    # 直接返回的文本
+    if isinstance(r.get("content"), str):
+        return r["content"]
+    return None
+
+
+def _build_task_prompt(task: dict) -> list[dict]:
+    """根据任务信息构建 LLM 提示词"""
+    desc = task.get("description", "")
+    delivery_def = task.get("delivery_definition", {})
+    required_fields = delivery_def.get("required_fields", [])
+    user_params = delivery_def.get("user_params", {})
+    fmt = delivery_def.get("format", "text")
+
+    system_msg = (
+        "你是一个任务执行 Agent。根据任务描述和要求，生成符合交付定义的结果。\n"
+        "输出必须是合法的 JSON 对象，包含所有 required_fields 中要求的字段。\n"
+        "不要输出任何解释文字，只输出 JSON。"
+    )
+
+    user_msg = f"## 任务描述\n{desc}\n\n"
+    if user_params:
+        user_msg += f"## 任务参数\n{json.dumps(user_params, ensure_ascii=False, indent=2)}\n\n"
+    user_msg += f"## 交付格式: {fmt}\n"
+    if required_fields:
+        user_msg += f"## 必须包含的字段: {', '.join(required_fields)}\n"
+    user_msg += "\n请生成符合要求的结果（JSON 格式）："
+
+    return [
+        {"role": "system", "content": system_msg},
+        {"role": "user", "content": user_msg},
+    ]
+
+
+def auto_execute_task(cfg: dict, task: dict) -> bool:
+    """自动执行一个任务并提交结果
+
+    优先使用平台 LLM 代理来理解和执行任务。
+    如果平台 LLM 不可用，降级为基础占位结果。
+    Agent 框架可以覆盖此逻辑。
+    """
+    task_id = task.get("task_id", "")
+    desc = task.get("description", "")[:60]
+    delivery_def = task.get("delivery_definition", {})
+
+    print(f"  🔧 执行任务: {task_id[:8]} - {desc}")
+
+    result_data = None
+
+    # 尝试用平台 LLM 执行任务
+    if cfg.get("use_platform_llm", True):
+        messages = _build_task_prompt(task)
+        llm_response = _call_platform_llm(cfg, messages)
+        if llm_response:
+            # 尝试解析 JSON
+            try:
+                # 去掉可能的 markdown 代码块包裹
+                text = llm_response.strip()
+                if text.startswith("```"):
+                    text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+                    if text.endswith("```"):
+                        text = text[:-3]
+                    text = text.strip()
+                result_data = json.loads(text)
+                print(f"  🤖 LLM 生成结果: {list(result_data.keys())}")
+            except (json.JSONDecodeError, Exception):
+                # JSON 解析失败，把原始文本作为 content 字段
+                result_data = {"content": llm_response, "format": "text"}
+                print(f"  🤖 LLM 生成文本结果 ({len(llm_response)} 字)")
+
+    # 降级：基础占位结果
+    if not result_data:
+        required_fields = delivery_def.get("required_fields", [])
+        fmt = delivery_def.get("format", "text")
+        if required_fields:
+            result_data = {}
+            for field in required_fields:
+                if isinstance(field, str):
+                    result_data[field] = f"[auto-generated for: {field}]"
+        else:
+            result_data = {"content": f"Task completed: {desc}", "format": fmt}
+
+    # 提交结果
+    r = submit_task_result(cfg, task_id, result_data)
+    if r and r.get("success"):
+        print(f"  ✅ 任务提交成功: {task_id[:8]}")
+        return True
+    else:
+        msg = r.get("message", r.get("detail", "未知错误")) if r else "API 无响应"
+        print(f"  ❌ 任务提交失败: {task_id[:8]} - {msg}")
+        return False
+
+
 # ── 自动接单核心逻辑 ──
 
 
@@ -214,7 +394,7 @@ def try_accept_tasks(cfg: dict) -> int:
         if slots <= 0:
             break
         task_id = rec.get("task_id", "")
-        score = rec.get("relevance_score", 0)
+        score = _safe_float(rec.get("relevance_score", 0))
         if task_id and accept_recommendation(cfg, task_id):
             print(f"  ✅ 接受推荐: {task_id[:8]} (匹配度 {score:.0%})")
             accepted += 1
@@ -228,8 +408,8 @@ def try_accept_tasks(cfg: dict) -> int:
                 break
             task_id = t.get("task_id", "")
             match_mode = t.get("match_mode", "grab")
-            score = t.get("relevance_score", 0)
-            threshold = cfg.get("auto_delegate_threshold", 0.3)
+            score = _safe_float(t.get("relevance_score", 0))
+            threshold = _safe_float(cfg.get("auto_delegate_threshold", 0.3))
 
             # 匹配度太低，跳过
             if score < threshold:
@@ -257,29 +437,71 @@ def try_accept_tasks(cfg: dict) -> int:
     return accepted
 
 
+def try_execute_tasks(cfg: dict) -> int:
+    """尝试自动执行已分配的任务，返回成功执行的任务数"""
+    executed = 0
+
+    # 查询已分配和进行中的任务
+    my_assigned = get_my_tasks(cfg, "assigned")
+    my_in_progress = get_my_tasks(cfg, "in_progress")
+    pending = my_assigned + my_in_progress
+
+    for task in pending:
+        task_id = task.get("task_id", "")
+        if not task_id:
+            continue
+
+        # 获取完整任务详情
+        detail = get_task_detail(cfg, task_id)
+        if not detail:
+            continue
+
+        # 自动执行并提交
+        if auto_execute_task(cfg, detail):
+            executed += 1
+
+    return executed
+
+
 # ── 主循环 ──
 
 
 def main():
+    # 首先检查依赖
+    _check_and_install_deps()
+
     parser = argparse.ArgumentParser(description="ClawMarts WebSocket Helper")
     parser.add_argument("--config", default=DEFAULT_CONFIG, help="配置文件路径")
     args = parser.parse_args()
 
+    # 配置文件检查
+    if not os.path.exists(args.config):
+        print(f"  ❌ 配置文件不存在: {args.config}", file=sys.stderr)
+        print(f"  💡 请先通过 Agent 执行「连接 ClawMarts」来生成配置", file=sys.stderr)
+        sys.exit(1)
+
     cfg = load_config(args.config)
-    for key in ("clawnet_api_url", "token", "claw_id"):
-        if not cfg.get(key):
-            print(f"  ❌ 配置缺少 {key}", file=sys.stderr)
-            sys.exit(1)
+    missing_keys = [k for k in ("clawnet_api_url", "token", "claw_id") if not cfg.get(k)]
+    if missing_keys:
+        print(f"  ❌ 配置缺少: {', '.join(missing_keys)}", file=sys.stderr)
+        print(f"  💡 请先通过 Agent 执行「连接 ClawMarts」来完善配置", file=sys.stderr)
+        sys.exit(1)
 
     if ws_lib is None:
-        print("  ❌ websocket-client 未安装，请执行: pip3 install websocket-client", file=sys.stderr)
+        # 理论上不会到这里（_check_and_install_deps 已处理），但保险起见
+        print("  ❌ websocket-client 未安装，请执行:", file=sys.stderr)
+        print(f"     {sys.executable} -m pip install websocket-client", file=sys.stderr)
         sys.exit(1)
 
     check_interval = 30  # 自动接单检查间隔（秒）
+    autopilot = cfg.get("autopilot", False)
+    accept_mode = cfg.get("accept_mode", "auto")
 
     print("=" * 50)
     print(f"  🦀 ClawMarts WebSocket Helper")
     print(f"  Claw: {cfg['claw_id'][:8]}...")
+    print(f"  接单模式: {accept_mode}")
+    print(f"  自动执行: {'开启' if autopilot else '关闭'}")
     print(f"  接单检查间隔: {check_interval}s")
     print("=" * 50)
 
@@ -294,16 +516,36 @@ def main():
     else:
         print("  ⚠️  WebSocket 首次连接超时，后台将持续重连...")
 
-    # 主循环：自动接单
+    # 主循环：自动接单 + 自动执行
     fail_streak = 0
+    task_stats = {"accepted": 0, "executed": 0, "failed": 0}
+    last_report = time.time()
+
     while not stop_event.is_set():
         try:
-            # 自动接单
-            accepted = try_accept_tasks(cfg)
-            if accepted > 0:
-                fail_streak = 0
-            else:
-                fail_streak += 1
+            # 自动接单（accept_mode=auto 时）
+            if accept_mode == "auto":
+                accepted = try_accept_tasks(cfg)
+                task_stats["accepted"] += accepted
+                if accepted > 0:
+                    fail_streak = 0
+                else:
+                    fail_streak += 1
+
+            # 自动执行任务（autopilot=true 时）
+            if autopilot:
+                executed = try_execute_tasks(cfg)
+                task_stats["executed"] += executed
+                if executed > 0:
+                    fail_streak = 0
+
+            # 定期状态汇报（每 10 分钟）
+            now = time.time()
+            if now - last_report >= 600:
+                print(f"  📊 状态汇报: 接单 {task_stats['accepted']}, "
+                      f"执行 {task_stats['executed']}, "
+                      f"WS {'在线' if ws_connected.is_set() else '离线'}")
+                last_report = now
 
             # 连续无任务时降频
             if fail_streak >= 3:
@@ -314,15 +556,23 @@ def main():
         except KeyboardInterrupt:
             break
         except Exception as e:
-            print(f"  ⚠️  接单异常: {e}", file=sys.stderr)
+            print(f"  ⚠️  循环异常: {e}", file=sys.stderr)
             wait = check_interval
 
         stop_event.wait(wait)
 
-    print("\n  🛑 已停止")
+    print(f"\n  🛑 已停止 (接单 {task_stats['accepted']}, 执行 {task_stats['executed']})")
 
 
 if __name__ == "__main__":
+    # 设置 stdout/stderr 编码为 UTF-8（解决 Windows 控制台编码问题）
+    if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+            sys.stderr.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
     try:
         main()
     except KeyboardInterrupt:

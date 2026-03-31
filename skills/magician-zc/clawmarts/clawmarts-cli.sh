@@ -79,13 +79,16 @@ cmd_init() {
   # 初始化配置（交互式）
   mkdir -p "$CONFIG_DIR"
 
-  # 自动将 Skill 文件安装到目标目录
+  # 将 Skill 文件安装到配置目录
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  for f in SKILL.md README.md clawmarts-cli.sh; do
-    if [ -f "${SCRIPT_DIR}/${f}" ] && [ "${SCRIPT_DIR}" != "${CONFIG_DIR}" ]; then
-      cp "${SCRIPT_DIR}/${f}" "${CONFIG_DIR}/${f}"
-    fi
-  done
+  if [ "${SCRIPT_DIR}" != "${CONFIG_DIR}" ]; then
+    echo "将 Skill 文件安装到: ${CONFIG_DIR}"
+    for f in SKILL.md README.md clawmarts-cli.sh polling.py; do
+      if [ -f "${SCRIPT_DIR}/${f}" ]; then
+        cp "${SCRIPT_DIR}/${f}" "${CONFIG_DIR}/${f}"
+      fi
+    done
+  fi
 
   echo "=== ClawMarts Connector 初始化 ==="
   read -rp "ClawMarts API 地址: " api
@@ -122,13 +125,16 @@ cmd_connect() {
   # 一步接入：登录 → 查看已有 Claw → 选择或注册新 Claw
   mkdir -p "$CONFIG_DIR"
 
-  # 自动将 Skill 文件安装到目标目录
+  # 将 Skill 文件安装到配置目录
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  for f in SKILL.md README.md clawmarts-cli.sh; do
-    if [ -f "${SCRIPT_DIR}/${f}" ] && [ "${SCRIPT_DIR}" != "${CONFIG_DIR}" ]; then
-      cp "${SCRIPT_DIR}/${f}" "${CONFIG_DIR}/${f}"
-    fi
-  done
+  if [ "${SCRIPT_DIR}" != "${CONFIG_DIR}" ]; then
+    echo "将 Skill 文件安装到: ${CONFIG_DIR}"
+    for f in SKILL.md README.md clawmarts-cli.sh polling.py; do
+      if [ -f "${SCRIPT_DIR}/${f}" ]; then
+        cp "${SCRIPT_DIR}/${f}" "${CONFIG_DIR}/${f}"
+      fi
+    done
+  fi
 
   # 确保 websockets 库已安装（WebSocket 在线模式需要）
   python3 -c "import websockets" 2>/dev/null || {
@@ -261,7 +267,7 @@ json.dump(cfg, open('$CONFIG_FILE', 'w'), indent=2, ensure_ascii=False)
       echo ""
       echo "平台 LLM 代理已自动配置:"
       echo "  OPENAI_BASE_URL=${api}/api/llm"
-      echo "  OPENAI_API_KEY=${token}"
+      echo "  OPENAI_API_KEY=${token}  # 这是 ClawMarts 平台令牌，非 OpenAI 官方 Key"
       echo ""
       echo "配置已保存到 $CONFIG_FILE"
       return
@@ -667,7 +673,7 @@ print('LLM 代理配置已写入 config.json')
   echo ""
   echo "在你的 Agent 框架中配置以下环境变量即可使用平台 LLM："
   echo "  OPENAI_BASE_URL=${api}/api/llm"
-  echo "  OPENAI_API_KEY=${tok}"
+  echo "  OPENAI_API_KEY=${tok}  # ClawMarts 平台令牌，用于代理认证"
   echo ""
   echo "或在代码中直接调用:"
   echo "  curl ${api}/api/llm/chat/completions \\"
