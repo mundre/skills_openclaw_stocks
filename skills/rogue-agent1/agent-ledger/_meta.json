@@ -1,0 +1,11 @@
+{
+  "owner": "rogue-agent1",
+  "slug": "agent-ledger",
+  "displayName": "Agent Ledger",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774638907963,
+    "commit": null
+  },
+  "history": []
+}
