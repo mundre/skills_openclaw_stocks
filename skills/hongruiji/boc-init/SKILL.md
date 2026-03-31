@@ -1,20 +1,20 @@
 ---
 name: boc-init
-description: BOC 3.10 部署机初始化工具。自动完成部署机环境检查、部署包校验、解压和 bocctl init 初始化。使用场景：用户需要初始化 BOC 3.10 部署机时使用。
-version: 1.0.0
+description: 博云BOC容器平台 部署机初始化工具。自动完成部署机环境检查、部署包校验、解压和 bocctl init 初始化。使用场景：用户需要初始化 BOC容器平台 部署机时使用。
+version: 1.0.1
 icon: 🚀
 ---
 
 # BOC 部署机初始化
 
-自动化完成 BOC 3.10 部署机的初始化工作。
+自动化完成 博云BOC容器平台 部署机的初始化工作。
 
 ## 输入参数
 
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | deploy_pkg_dir | 部署包和校验文件所在目录 | /opt |
-| deploy_pkg_file | 部署包文件名 | BOC_3.10_Release_k8s_noarch_20260302.tar.gz |
+| deploy_pkg_file | 部署包文件名 | BOC.tar.gz |
 | ssh_host | 部署机IP | <部署机IP> |
 | ssh_port | SSH端口 | 22 |
 | ssh_user | SSH用户名 | root |
@@ -58,7 +58,7 @@ nohup tar -xzf <deploy_pkg_file> > /tmp/unpack.log 2>&1 &
 
 # 定期检查解压，通过进程判断
 ## 1 检查是否有以下进程，有就代表还在解压
-ps aux |grep 'tar -xzf BOC_3.10_Release_k8s_noarch_20260302.tar.gz'
+ps aux |grep 'tar -xzf <deploy_pkg_file>'
 
 ## 2 没有就再检查/opt/BOC_k8s_noarch  占用空间正常应该在 31GB
 du -sh /opt/BOC_k8s_noarch
@@ -108,7 +108,7 @@ nerdctl -n k8s.io ps | grep -E "(yum_registry|bocloud_deploy_registry)"
 ```
 请使用 boc-init 初始化部署机：
 - 部署包目录：/opt
-- 部署包文件：BOC_3.10_Release_k8s_noarch_20260302.tar.gz
+- 部署包文件：BOC.tar.gz
 - 部署机IP：10.50.6.181
 - SSH端口：22
 - SSH用户：root
@@ -131,8 +131,6 @@ A: 重新执行解压，确保先删除旧目录
 ### Q: bocctl init 卡住不动
 A: 检查是否有 yum 进程卡住，如有则杀掉后重试
 
-### Q: 初始化完成后容器未运行
-A: 检查 /tmp/bocctl_init.log 日志确认具体错误
 
 ### Q: 忽略./bocctl 参数参考
 A：忽略./bocctl 参数参考，只使用./bocctl init 。不需要远程初始化部署，只用本地初始化。
