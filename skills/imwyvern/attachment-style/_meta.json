@@ -3,9 +3,15 @@
   "slug": "attachment-style",
   "displayName": "Attachment Style Skill",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774581061416,
-    "commit": "https://github.com/openclaw/skills/commit/0e91edca23cc10d28669c992c593d8906a5e2032"
+    "version": "1.0.1",
+    "publishedAt": 1774896584247,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774581061416,
+      "commit": "https://github.com/openclaw/skills/commit/0e91edca23cc10d28669c992c593d8906a5e2032"
+    }
+  ]
 }

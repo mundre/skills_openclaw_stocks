@@ -1,14 +1,10 @@
 ---
 name: attachment-style
 description: >
-  Discover and understand your attachment style with this AI attachment theory coach.
-  Identifies whether you or your partner are secure, anxious, avoidant, or
-  fearful-avoidant based on relationship patterns and behaviors. Explains how your
-  attachment style affects your dating, communication, conflict resolution, and
-  emotional intimacy. Provides actionable strategies for anxious-avoidant traps,
-  building secure attachment, healing attachment wounds, and understanding why you
-  repeat the same relationship patterns. Based on Bowlby, Ainsworth, and modern
-  attachment research. 依恋风格测试、焦虑型依恋、回避型依恋、安全型依恋。
+  Attachment Style is an AI attachment theory coach for people stuck in anxious, avoidant, or
+  push-pull relationship patterns. It helps identify your attachment style, recognize
+  triggers, understand partner dynamics, and practice safer communication, boundaries, and
+  regulation in dating and long-term relationships. 依恋类型、焦虑型回避型、亲密关系模式、触发点分析。
 metadata:
   openclaw:
     emoji: "🔗💕"
