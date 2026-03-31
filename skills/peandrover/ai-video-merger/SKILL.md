@@ -1,10 +1,12 @@
 ---
 name: ai-video-merger
-version: "1.0.0"
+version: 1.0.1
 displayName: "AI Video Merger — Merge Combine and Join Multiple Videos into One with AI"
 description: >
   Merge, combine, and join multiple videos into one polished video with AI — NemoVideo intelligently merges clips with color matching, audio normalization, smooth transitions, and consistent formatting. Combine phone clips into one continuous video, merge multi-camera footage, join chapters into a full movie, assemble highlight compilations, and stitch together content from different sources. The AI handles what simple concatenation cannot: matching colors across clips, normalizing volume levels, smoothing audio transitions, and maintaining visual continuity. Merge videos online, combine videos, join video clips, video merger, video combiner, video joiner AI, stitch videos together.
 metadata: {"openclaw": {"emoji": "🔗", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+homepage: https://nemovideo.com
+repository: https://github.com/nemovideo/nemovideo_skills
 ---
 
 # AI Video Merger — Multiple Clips Become One Seamless Video
