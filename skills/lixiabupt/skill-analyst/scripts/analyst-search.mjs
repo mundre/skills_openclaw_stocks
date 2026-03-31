@@ -3,7 +3,7 @@
  * analyst-search.mjs — Search ClawHub for skills
  * Usage: node analyst-search.mjs <query> [--limit N]
  */
-import { execFileSync } from 'child_process';
+import { runCommand } from './exec.mjs';
 
 const args = process.argv.slice(2);
 const limitIdx = args.indexOf('--limit');
@@ -27,11 +27,7 @@ if (/[|&;$`\\()\n\r\0]/.test(query)) {
 }
 
 try {
-  const raw = execFileSync('clawhub', ['search', query, '--limit', String(limit)], {
-    encoding: 'utf-8',
-    timeout: 15000,
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
+  const raw = runCommand('clawhub', ['search', query, '--limit', String(limit)]);
 
   // Parse search results
   const results = [];

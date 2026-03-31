@@ -3,7 +3,7 @@
  * analyst-inspect.mjs — Get ClawHub skill details
  * Usage: node analyst-inspect.mjs <skill-name> [--files]
  */
-import { execFileSync } from 'child_process';
+import { runCommand } from './exec.mjs';
 
 const args = process.argv.slice(2);
 const withFiles = args.includes('--files');
@@ -24,11 +24,7 @@ try {
   const cmdArgs = ['inspect', name];
   if (withFiles) cmdArgs.push('--files');
 
-  const raw = execFileSync('clawhub', cmdArgs, {
-    encoding: 'utf-8',
-    timeout: 15000,
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
+  const raw = runCommand('clawhub', cmdArgs);
 
   // Parse inspect output
   const info = { name, raw: raw.trim() };
