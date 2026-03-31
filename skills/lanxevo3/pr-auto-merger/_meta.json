@@ -1,0 +1,11 @@
+{
+  "owner": "lanxevo3",
+  "slug": "pr-auto-merger",
+  "displayName": "PR Auto-Merge Agent",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774726301846,
+    "commit": null
+  },
+  "history": []
+}
