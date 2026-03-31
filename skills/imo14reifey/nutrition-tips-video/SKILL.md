@@ -1,10 +1,13 @@
 ---
 name: nutrition-tips-video
-version: "1.0.0"
+version: 1.0.4
 displayName: "Nutrition Tips Video Maker — Create Diet and Healthy Eating Education Videos"
 description: >
-  Nutrition Tips Video Maker — Create Diet and Healthy Eating Education Videos.
-metadata: {"openclaw": {"emoji": "🥗", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+    Nutrition Tips Video Maker — Create Diet and Healthy Eating Education Videos. Works by connecting to the NemoVideo AI backend. Supports MP4, MOV, AVI, WebM, and MKV output formats. Automatic credential setup on first use — no manual configuration needed.
+metadata: {"openclaw": {"emoji": "🥗", "requires": {"env": ["NEMO_TOKEN"], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+homepage: https://nemovideo.com
+apiDomain: https://mega-api-prod.nemovideo.ai
+repository: https://github.com/nemovideo/nemovideo_skills
 ---
 
 # Nutrition Tips Video Maker — Diet and Healthy Eating Education Videos
