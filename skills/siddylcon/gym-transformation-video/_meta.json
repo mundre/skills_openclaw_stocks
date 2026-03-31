@@ -3,9 +3,15 @@
   "slug": "gym-transformation-video",
   "displayName": "Gym Transformation Video",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774586724361,
-    "commit": "https://github.com/openclaw/skills/commit/d26ea99bff1defecc1308ee7b273abdb53cd326a"
+    "version": "1.0.0",
+    "publishedAt": 1774730320313,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774586724361,
+      "commit": "https://github.com/openclaw/skills/commit/d26ea99bff1defecc1308ee7b273abdb53cd326a"
+    }
+  ]
 }
