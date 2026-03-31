@@ -1,7 +1,7 @@
 ---
 name: upkuajing-trade-company-search
-description: Query customs trade data through the UpKuaJing Open Platform（跨境魔方）. Supports：querying trade order details (import/export records, transaction amounts, trade routes); discovering potential customers and business partners (buyer development, supplier research, customer mining); getting company details and contact information (email, phone, social media). Use cases：foreign trade customer development, competitive supply chain analysis, logistics industry customer mining, import/export market research.
-metadata: {"version":"1.0.3","homepage":"https://www.upkuajing.com","clawdbot":{"emoji":"🏢","requires":{"bins":["python"],"env":["UPKUAJING_API_KEY"]},"primaryEnv":"UPKUAJING_API_KEY"}}
+description: Official skill for upkuajing (跨境魔方). Find companies (找公司) and global buyers using customs trade data. Get trade order details, business contact info, and lead generation tools for import/export market research and supply chain analysis.
+metadata: {"version":"1.0.4","homepage":"https://www.upkuajing.com","clawdbot":{"emoji":"🏢","requires":{"bins":["python"],"env":["UPKUAJING_API_KEY"]},"primaryEnv":"UPKUAJING_API_KEY"}}
 ---
 
 # UpKuaJing Customs Trade Company Search
