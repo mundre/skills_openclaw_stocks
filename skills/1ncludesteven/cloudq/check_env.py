@@ -39,6 +39,7 @@ from tcloud_api import call_api  # noqa: E402
 # ============== 配置 ==============
 CONFIG_DIR = Path.home() / ".tencent-cloudq"
 CONFIG_FILE = CONFIG_DIR / "config.json"
+VERSION_CACHE_FILE = CONFIG_DIR / "version_check_cache.json"
 ADVISOR_ROLE_NAME = "advisor"
 
 # 版本检查配置
@@ -177,9 +178,43 @@ def get_remote_info(slug: str) -> dict | None:
     return None
 
 
+def _load_version_cache() -> dict | None:
+    """读取版本检查缓存，返回缓存内容或 None"""
+    if not VERSION_CACHE_FILE.exists():
+        return None
+    try:
+        return json.loads(VERSION_CACHE_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, IOError):
+        return None
+
+
+def _save_version_cache(result: dict):
+    """保存版本检查结果到缓存文件"""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    cache = {
+        "checked_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "status": result.get("status"),
+        "local_version": result.get("local_version"),
+        "remote_version": result.get("remote_version"),
+        "changelog": result.get("changelog", []),
+        "message": result.get("message"),
+    }
+    try:
+        VERSION_CACHE_FILE.write_text(
+            json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except IOError:
+        pass
+
+
 def check_version_update() -> dict:
     """
     检查本地版本与远端版本是否一致，并提取 changelog。
+
+    每次新对话的首次运行都会请求远端 API 拉取最新版本信息，
+    结果保存到 ~/.tencent-cloudq/version_check_cache.json 供参考。
+    若发现新版本，向用户展示 changelog 并建议更新。
 
     返回 dict:
       - status: "up_to_date" | "update_available" | "check_failed" | "no_meta"
@@ -198,6 +233,15 @@ def check_version_update() -> dict:
             "slug": slug,
             "message": "未找到 _meta.json 或版本信息缺失",
         }
+
+    # 每次都请求远端拉取最新版本
+    result = _fetch_remote_version(slug, local_ver)
+    _save_version_cache(result)
+    return result
+
+
+def _fetch_remote_version(slug: str, local_ver: str) -> dict:
+    """请求远端获取最新版本信息（内部函数）"""
 
     remote_data = get_remote_info(slug)
     if remote_data is None:

@@ -98,10 +98,10 @@ def _get_ssl_context():
         import certifi
         return ssl.create_default_context(cafile=certifi.where())
     except ImportError:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        return ctx
+        raise ImportError(
+            "certifi is required for secure SSL/TLS verification. "
+            "Please install it with: pip install certifi"
+        )
 
 
 def _sign_tc3(key: bytes, msg: str) -> bytes:
@@ -305,8 +305,12 @@ def _parse_sse_stream(resp, on_event) -> dict:
             content_parts.append(content)
         last_event_data = data
 
+    raw_content = "".join(content_parts)
+    processed = _replace_console_urls(raw_content)
+    processed = _ensure_login_url(processed)
+
     merged = {
-        "content": _replace_console_urls("".join(content_parts)),
+        "content": processed,
         "is_final": last_event_data.get("IsFinal", True),
     }
 
@@ -346,11 +350,11 @@ def _generate_login_url(target_url: str) -> str | None:
 
 
 def _append_hide_nav(url: str) -> str:
-    """为控制台 URL 追加 hideLeftNav=true&hideTopNav=true 参数"""
-    if "hideLeftNav=true" in url:
+    """为控制台 URL 追加 hideTopNav=true 参数"""
+    if "hideTopNav=true" in url:
         return url
     sep = "&" if "?" in url else "?"
-    return f"{url}{sep}hideLeftNav=true&hideTopNav=true"
+    return f"{url}{sep}hideTopNav=true"
 
 
 def _enrich_url_with_arch_id(url: str, arch_id: str) -> str:
@@ -374,7 +378,7 @@ def _replace_console_urls(content: str) -> str:
     处理逻辑：
     1. 跳过已是免密登录链接的 URL
     2. 如果控制台链接不含 archId，但 content 中有 archId，自动拼入
-    3. 追加 hideLeftNav/hideTopNav 参数
+    3. 追加 hideTopNav 参数
     4. 调用 login_url.py 生成免密链接替换
     5. 生成失败时保留原链接
     """
@@ -402,6 +406,51 @@ def _replace_console_urls(content: str) -> str:
         login_url = _generate_login_url(target)
         if login_url:
             content = content.replace(raw_url, login_url)
+    return content
+
+
+def _is_advisor_content(content: str) -> bool:
+    """判断内容是否属于智能顾问场景（架构图、评估、巡检等）"""
+    advisor_keywords = [
+        "架构图", "架构目录", "架构详情", "架构评估", "风险评估",
+        "巡检", "智能顾问", "advisor", "ArchId", "archId",
+        "arch-", "评估项", "评估结果", "扫描", "架构健康",
+    ]
+    lower = content.lower()
+    return any(kw.lower() in lower for kw in advisor_keywords)
+
+
+def _ensure_login_url(content: str) -> str:
+    """
+    确保 content 中包含免密登录链接。
+    如果 content 不含任何免密链接，自动生成一个并追加到末尾。
+
+    场景判断：
+    - 智能顾问场景（含架构图/评估/巡检等关键词）:
+      有 archId 时: advisor?hideTopNav=true&archId={archId}
+      无 archId 时: advisor?hideTopNav=true
+    - 非智能顾问场景（CVM/Lighthouse/COS 等云产品）:
+      目标 URL: https://console.cloud.tencent.com/
+    """
+    if not content or _LOGIN_URL_MARKER in content:
+        return content
+
+    first_arch_id = _extract_first_arch_id(content)
+
+    if _is_advisor_content(content) or first_arch_id:
+        base = "https://console.cloud.tencent.com/advisor?hideTopNav=true"
+        if first_arch_id:
+            target = f"{base}&archId={first_arch_id}"
+        else:
+            target = base
+        label = "前往智能顾问控制台"
+    else:
+        target = "https://console.cloud.tencent.com/"
+        label = "前往腾讯云控制台"
+
+    login_url = _generate_login_url(target)
+    if login_url:
+        content += f"\n\n[{label}]({login_url})"
     return content
 
 

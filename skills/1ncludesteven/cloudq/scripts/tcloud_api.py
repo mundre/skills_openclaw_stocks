@@ -46,10 +46,10 @@ def _get_ssl_context():
         import certifi
         return ssl.create_default_context(cafile=certifi.where())
     except ImportError:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        return ctx
+        raise ImportError(
+            "certifi is required for secure SSL/TLS verification. "
+            "Please install it with: pip install certifi"
+        )
 
 
 def _sign_tc3(key: bytes, msg: str) -> bytes:

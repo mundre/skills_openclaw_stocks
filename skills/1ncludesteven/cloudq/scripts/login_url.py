@@ -82,10 +82,10 @@ def _get_ssl_context():
         import certifi
         return ssl.create_default_context(cafile=certifi.where())
     except ImportError:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        return ctx
+        raise ImportError(
+            "certifi is required for secure SSL/TLS verification. "
+            "Please install it with: pip install certifi"
+        )
 
 
 def _sign_tc3(key: bytes, msg: str) -> bytes:
@@ -126,9 +126,19 @@ def _get_role_arn(secret_id: str, secret_key: str) -> str:
         account_uin = ""
 
         if uin_cache_file.exists():
-            cache_age = time.time() - uin_cache_file.stat().st_mtime
-            if cache_age < 86400:  # 24 小时
-                account_uin = uin_cache_file.read_text().strip()
+            try:
+                import stat
+                stat_info = uin_cache_file.stat()
+                # 检查文件权限是否安全 (600)
+                if stat.S_IMODE(stat_info.st_mode) == 0o600:
+                    cache_age = time.time() - stat_info.st_mtime
+                    if cache_age < 3600:  # 1 小时
+                        account_uin = uin_cache_file.read_text().strip()
+                else:
+                    # 权限不安全，删除缓存
+                    uin_cache_file.unlink()
+            except (OSError, IOError):
+                pass
 
         if not account_uin:
             # 调用 tcloud_api 模块获取 UIN
@@ -141,6 +151,8 @@ def _get_role_arn(secret_id: str, secret_key: str) -> str:
                 account_uin = str(result.get("data", {}).get("AccountId", ""))
                 if account_uin and account_uin not in ("", "None", "null"):
                     uin_cache_file.write_text(account_uin)
+                    # 设置文件权限为 600（仅所有者读写）
+                    os.chmod(uin_cache_file, 0o600)
             except Exception:
                 pass
 

@@ -1,6 +1,6 @@
 ---
 name: cloudq
-description: 当用户涉及多云相关问题（腾讯云、阿里云、AWS、Azure、GCP 等）、查看云架构、查询架构目录、获取架构详情、查看架构评估结果、查看风险评估项、巡检项、云资源风险、开通智能顾问、多云统一治理、架构可视化、多云管理、AI智能巡检、AI容量监测、AI混沌演练、AI云诊断、主动预警、架构健康度、全局拓扑、Finops治理、云运维问答、云资源查询、云成本优化、安全合规等相关操作时使用。
+description: 用户咨询腾讯云产品资源、AWS、阿里云等多云资源时，查看智能顾问架构图、架构目录、架构详情、架构评估结果、绘制架构图、开通智能顾问时、AI智能巡检、AI容量监测、AI混沌演练、AI云诊断、主动预警、架构健康度、云运维问答、云资源查询、云成本优化、安全合规、云资源盘点、闲置资源检查、云产品最佳实践等AIOps、ChatOps、CloudOps操作时使用。
 allowed-tools: execute_command, read_file
 metadata: {"openclaw": {"emoji": "☁️", "requires": {"bins": ["python3"], "env": ["TENCENTCLOUD_SECRET_ID", "TENCENTCLOUD_SECRET_KEY"]}, "permissions": ["network:https://*.tencentcloudapi.com", "network:https://cloud.tencent.com", "network:https://clawhub.ai", "fs:~/.tencent-cloudq/"], "security": {"iam_operations": ["cam:GetRole", "cam:CreateRole", "cam:AttachRolePolicy", "cam:DeleteRole", "cam:DescribeRoleList", "sts:AssumeRole", "sts:GetCallerIdentity", "advisor:CreateAdvisorAuthorization"], "iam_note": "角色创建/删除为独立步骤，需用户明确同意后执行：create_role.py 创建角色，cleanup.py --cloud 删除角色；check_env.py 仅做只读检测；CreateAdvisorAuthorization 开通智能顾问需用户明确同意", "data_handling": "临时凭证仅在内存中使用，不持久化存储；配置文件仅保存角色 ARN，不保存密钥"}}}
 ---
@@ -152,9 +152,9 @@ source ~/.bashrc
 
 ## 二、前置检查（初始化工作流）
 
-每次操作前必须先执行环境检测。初始化分为 **版本检查**、**环境检测** 和 **角色创建** 三个阶段，角色创建属于 IAM 写入操作，必须在用户明确同意后才能执行。
+**每次对话的首次操作前必须先执行环境检测**（含版本检查）。同一对话中后续操作无需重复执行。初始化分为 **版本检查**、**环境检测** 和 **角色创建** 三个阶段，角色创建属于 IAM 写入操作，必须在用户明确同意后才能执行。
 
-### 2.1 初始化工作流（必须严格按顺序执行）
+### 2.1 初始化工作流（每次对话首次操作时必须严格按顺序执行）
 
 **第一步：运行环境检测**
 
@@ -176,7 +176,7 @@ python3 {baseDir}/check_env.py
 - `2` = AK/SK 未配置或无效 → 提示用户配置密钥
 - `3` = 角色未配置 → 执行第二步
 
-**版本检查说明**：脚本首次运行时会自动对比本地版本与远端版本。若远端有新版本，脚本会输出当前版本、最新版本号和 changelog（变更日志），提示用户可前往更新，但**不会阻断流程**，当前版本仍可正常使用。网络不可用或远端接口异常时，版本检查会被跳过，不影响后续检测。可通过 `--skip-update` 参数主动跳过版本检查。
+**版本检查说明**：每次新对话的首次运行都会请求远端 API 拉取最新版本信息。若发现新版本，向用户展示当前版本、最新版本号和 changelog（变更日志），建议用户更新。版本检查**不会阻断流程**，当前版本仍可正常使用。检查结果会保存到 `~/.tencent-cloudq/version_check_cache.json` 供参考。网络不可用或远端接口异常时版本检查会被跳过。可通过 `--skip-update` 参数主动跳过。
 
 **第二步：向用户展示角色创建方案**（仅当返回码为 3 时）
 
@@ -247,7 +247,7 @@ python3 {baseDir}/scripts/tcloud_sse_api.py '详细说说' '550e8400-e29b-41d4-a
 脚本会自动对返回的 Markdown 内容进行以下处理（无需手动干预）：
 1. **控制台链接自动替换**：`console.cloud.tencent.com` 链接自动转为免密登录链接
 2. **archId 智能拼接**：如果链接不含 archId 但内容中有架构图 ID，自动拼入
-3. **导航栏隐藏**：自动追加 `hideLeftNav=true&hideTopNav=true` 参数
+3. **导航栏隐藏**：自动追加 `hideTopNav=true` 参数
 4. **已是免密链接则跳过**：不会重复替换
 
 > **注意**：脚本输出的 content 已完成链接替换，可直接展示给用户。如果 content 中没有任何链接，仍需按第六节规则在回答末尾附加一个免密登录链接。
@@ -280,10 +280,12 @@ python3 {baseDir}/scripts/tcloud_sse_api.py '详细说说' '550e8400-e29b-41d4-a
 | version | `2020-07-21` |
 
 支持的功能场景：
-- 列出架构图、查看架构详情、查询架构目录
+- 腾讯云产品资源查询（CVM、Lighthouse、CLB、COS、CDN、TKE、CBS、VPC、数据库、缓存、中间件、Serverless 等所有云产品）
+- 列出架构图、查看架构详情、查询架构目录、绘制架构图
 - 架构评估、风险评估、巡检分析
-- 多云问答（腾讯云、AWS、阿里云等）
-- 云资源查询、成本优化、安全合规
+- 多云问答（腾讯云、AWS、阿里云、Azure、GCP 等）
+- 云资源盘点、闲置资源检查、云产品最佳实践
+- 云成本优化、安全合规、云运维问答
 
 ### 4.2 CreateAdvisorAuthorization（开通智能顾问）
 
@@ -306,10 +308,14 @@ python3 {baseDir}/scripts/tcloud_api.py advisor advisor.tencentcloudapi.com Crea
 
 3. **成功后生成免密链接并引导下一步**：
    ```bash
-   python3 {baseDir}/scripts/login_url.py "https://console.cloud.tencent.com/advisor?hideLeftNav=true&hideTopNav=true"
+   python3 {baseDir}/scripts/login_url.py "https://console.cloud.tencent.com/advisor?hideTopNav=true"
    ```
    > ✅ 智能顾问已开通！[点击进入控制台]({免密登录链接})
-   > 接下来可以：手动画架构图，或通过网络扫描自动生图。
+   >
+   > 接下来可以：
+   > 1. 让我帮您**绘制架构图**（先获取资源列表，再根据资源绘制）
+   > 2. 在控制台使用**网络扫描自动生图**（系统自动扫描账号下所有云资源及网络拓扑，自动生成可视化架构图）
+   > 3. 在控制台**手动绘制架构图**
 
 ---
 
@@ -352,22 +358,68 @@ CloudQ **不支持查询其他账号（UIN）的数据**。当用户请求查询
 > 1. 当前 AK/SK 对应账号下没有相关数据
 > 2. 当前账号可能尚未开通智能顾问服务
 >
-> 如需开通智能顾问，请告知我，我将协助您完成开通（需要您的确认）。
+> 您可以：
+> - 让我帮您**绘制架构图**：我会先获取当前账号的云资源列表，然后根据资源绘制架构图
+> - 登录腾讯云智能顾问控制台，通过**网络扫描自动生图**
+> - 如需开通智能顾问，请告知我，我将协助您完成开通（需要您的确认）
 
 ### 5.4 开通智能顾问服务
 
 当用户确认需要开通智能顾问时，按照「4.2 CreateAdvisorAuthorization」的流程执行。**CloudQ 对话无法执行此操作，必须通过 REST 接口调用。**
 
+### 5.5 绘制架构图
+
+当用户要求绘制架构图（如"帮我画一张架构图"、"根据我的资源生成架构图"等），按以下流程执行：
+
+**触发关键词**：绘制架构图、画架构图、生成架构图、创建架构图、根据资源画图
+
+**工作流**：
+
+**第一步：获取当前账号资源列表**
+
+通过 CloudQChatCompletions 接口查询当前账号下的云资源：
+
+```bash
+python3 {baseDir}/scripts/tcloud_sse_api.py '列出当前账号下所有云资源' [session_id]
+```
+
+**第二步：根据资源列表绘制架构图**
+
+将资源列表整理为结构化的架构图描述，包含：
+- 各产品的资源实例（CVM、Lighthouse、COS、数据库等）
+- 资源所在地域和可用区
+- 资源间的网络关系（VPC、子网、安全组）
+- 以 Mermaid / ASCII 等文本格式绘制架构拓扑图
+
+**第三步：引导用户使用智能顾问网络生图**
+
+绘制完成后，向用户说明：
+
+> 以上是根据当前账号云资源绘制的架构图。
+>
+> 如需更专业的可视化架构图，可以登录腾讯云智能顾问控制台，使用**网络扫描自动生图**功能：
+> 1. 系统会自动扫描账号下的所有云资源及网络拓扑
+> 2. 自动生成可交互的可视化架构图
+> 3. 支持架构评估、风险巡检等高级功能
+>
+> [前往智能顾问控制台]({免密登录链接})
+
 ---
 
 ## 六、免密登录链接生成
 
-**每次给用户的回答都必须生成免密登录链接**，根据返回结果选择目标 URL：
+**每次给用户的回答都必须生成免密登录链接**，根据用户问题的场景选择目标 URL：
 
-- **结果中包含架构图（含 `ArchId` 字段）**：使用第一张架构图的 ID
-  `https://console.cloud.tencent.com/advisor?hideLeftNav=true&hideTopNav=true&archId={ArchId}`
-- **结果中不包含架构图**：使用智能顾问首页
-  `https://console.cloud.tencent.com/advisor?hideLeftNav=true&hideTopNav=true`
+### 6.0 场景判断规则
+
+| 场景 | 目标 URL |
+|------|----------|
+| **智能顾问相关**：架构图、架构目录、架构详情、架构评估、风险评估、巡检分析、开通智能顾问等 | `https://console.cloud.tencent.com/advisor?hideTopNav=true`（有 ArchId 时追加 `&archId={ArchId}`） |
+| **其他所有腾讯云产品**：CVM、Lighthouse、CLB、COS、CDN、数据库、成本优化、安全合规、云资源查询等非智能顾问场景 | `https://console.cloud.tencent.com/` |
+
+**判断逻辑**：
+- 用户问题涉及**架构图、架构目录、架构评估、风险评估、巡检、智能顾问**等关键词 → **智能顾问场景**
+- 用户问题涉及**具体云产品（CVM、Lighthouse、COS 等）、成本优化、安全合规、云资源查询**等 → **非智能顾问场景**
 
 > **⚠️ 重要**：免密登录链接**每次都必须重新生成**，不可缓存或复用之前生成的链接。
 
@@ -387,7 +439,7 @@ python3 {baseDir}/scripts/login_url.py "<目标页面URL>"
   "action": "GenerateLoginURL",
   "data": {
     "loginUrl": "https://cloud.tencent.com/login/roleAccessCallback?algorithm=sha256&secretId=...&token=...&signature=...&s_url=...",
-    "targetUrl": "https://console.cloud.tencent.com/advisor?hideLeftNav=true&hideTopNav=true&archId=arch-gvqocc25",
+    "targetUrl": "https://console.cloud.tencent.com/advisor?hideTopNav=true&archId=arch-gvqocc25",
     "expireSeconds": 3600
   },
   "requestId": "xxx"
@@ -404,6 +456,8 @@ python3 {baseDir}/scripts/login_url.py "<目标页面URL>"
 
 免密登录 URL 非常长，**严禁直接展示完整 URL**，必须以 Markdown 超链接格式展示：
 
+**智能顾问场景**（架构图、评估、巡检等）：
+
 ```
 架构图名称：生产环境架构
 架构图 ID：arch-gvqocc25
@@ -418,11 +472,18 @@ python3 {baseDir}/scripts/login_url.py "<目标页面URL>"
 3. 预发布环境架构（arch-ghi789）
 ```
 
-无架构图场景：
+智能顾问无架构图场景：
 
 ```
 查询结果：...
 [前往智能顾问控制台](免密登录URL)
+```
+
+**非智能顾问场景**（CVM、Lighthouse、COS 等云产品查询）：
+
+```
+查询结果：...
+[前往腾讯云控制台](免密登录URL)
 ```
 
 ---
@@ -478,7 +539,7 @@ references/plugins/tsa-risk/
 3. **频率限制**：接口限制 20 次/秒（维度：API + 接入地域 + 子账号）
 4. **跨平台支持**：所有脚本均使用纯 Python 实现，支持 Windows / Linux / macOS
 5. **免密链接有效期**：默认 1 小时（3600 秒），可通过 `TENCENTCLOUD_STS_DURATION` 调整（最大 43200 秒）
-6. **免密登录链接**：**每次回答都必须生成免密登录链接**。结果含架构图时，目标 URL 为 `https://console.cloud.tencent.com/advisor?hideLeftNav=true&hideTopNav=true&archId={第一张架构图ID}`；无架构图时为 `https://console.cloud.tencent.com/advisor?hideLeftNav=true&hideTopNav=true`。以 `[跳转控制台](免密登录URL)` 超链接形式展示，严禁直接展示完整 URL。**每次都必须重新调用 `login_url.py` 生成新链接，不可缓存或复用**
+6. **免密登录链接**：**每次回答都必须生成免密登录链接**。智能顾问场景（架构图、评估、巡检等）目标 URL 为 `https://console.cloud.tencent.com/advisor?hideTopNav=true`（有 ArchId 时追加 `&archId={ArchId}`）；其他腾讯云产品场景（CVM、Lighthouse、COS 等）目标 URL 为 `https://console.cloud.tencent.com/`。以 `[跳转控制台](免密登录URL)` 超链接形式展示，严禁直接展示完整 URL。**每次都必须重新调用 `login_url.py` 生成新链接，不可缓存或复用**
 7. **数据范围提示**：所有查询结果仅限当前 AK/SK 对应账号的数据，展示结果时**必须**告知用户数据范围
 8. **跨账号查询拦截**：用户指定其他 UIN 查询时，直接告知仅支持查询当前 AK/SK 对应的 UIN，并提示切换 AK/SK
 9. **SessionID 管理**：**同一对话全程使用同一个 SessionID**，新对话时不传 session_id 让脚本重新生成
