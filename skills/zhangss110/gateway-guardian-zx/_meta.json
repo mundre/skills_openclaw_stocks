@@ -3,9 +3,15 @@
   "slug": "gateway-guardian-zx",
   "displayName": "OpenClaw Gateway Guardian",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1774513993366,
-    "commit": "https://github.com/openclaw/skills/commit/5892a0c30aa4cd917270b1da20e33b52d07bc911"
+    "version": "1.1.1",
+    "publishedAt": 1774658896724,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1774513993366,
+      "commit": "https://github.com/openclaw/skills/commit/5892a0c30aa4cd917270b1da20e33b52d07bc911"
+    }
+  ]
 }

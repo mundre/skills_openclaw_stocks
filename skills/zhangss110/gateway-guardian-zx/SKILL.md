@@ -41,7 +41,7 @@ tags: latest=1.1.0,watchdog=1.1.0,gateway=1.1.0,monitoring=1.1.0,backup=1.1.0,de
 
 ```bash
 # 直接运行安装脚本
-C:\Users\zhang\.openclaw\workspace\skills\openclaw-watchdog\scripts\install.bat
+.\scripts\install.bat
 ```
 
 ### 方式二：手动安装
