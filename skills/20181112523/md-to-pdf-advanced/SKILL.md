@@ -128,3 +128,39 @@ sudo apt-get install fonts-liberation fonts-dejavu
 # macOS
 brew install --cask font-liberation
 ```
+
+### Emoji display as □ (boxes) or not rendered
+
+PDF 中 emoji（如 ✅、🔄、📋）显示为方框是因为系统缺少彩色 Emoji 字体支持。
+
+**解决方案：**
+
+```bash
+# 1. 安装 Google Noto Color Emoji 字体（支持全量 Unicode Emoji）
+# Fedora/RHEL/CentOS
+dnf install -y google-noto-emoji-color-fonts
+
+# Ubuntu/Debian
+sudo apt-get install fonts-noto-color-emoji
+
+# 2. 刷新字体缓存让系统识别新字体
+fc-cache -fv
+
+# 3. 重新转换 PDF
+python3 skills/md-to-pdf-advanced/scripts/md_to_pdf.py input.md output.pdf
+```
+
+**替代方案（如果不想安装字体）：**
+
+将 Markdown 中的 emoji 替换为文字描述或 ASCII 符号：
+
+| Emoji | 文字替代 | ASCII 替代 |
+|-------|----------|------------|
+| ✅ | `[OK]` 或 `(完成)` | `[x]` |
+| ❌ | `[FAIL]` 或 `(失败)` | `[ ]` |
+| 🔄 | `[更新]` 或 `(刷新)` | `~>` |
+| 📋 | `[列表]` 或 `(任务)` | `[#]` |
+| ⚠️ | `[警告]` 或 `(注意)` | `!` |
+| 💡 | `[提示]` 或 `(建议)` | `i` |
+| 🔧 | `[修复]` 或 `(工具)` | `|` |
+| 🐛 | `[BUG]` 或 `(缺陷)` | `*` |
