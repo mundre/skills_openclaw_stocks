@@ -1,213 +1,155 @@
-# -*- coding: utf-8 -*-
 """
-JAKA 通用控制脚本 - 命令行模式
+JAKA Robot Command Line Tool
+命令行控制 JAKA 协作机器人
+
 用法:
-  python jaka_cmd.py state                    # 读取状态
-  python jaka_cmd.py home                     # 回零
-  python jaka_cmd.py joint J1 J2 J3 J4 J5 J6  # 关节运动(角度)
-  python jaka_cmd.py linear X Y Z RX RY RZ    # 直线运动(mm,度)
-  python jaka_cmd.py jog JOINT_ID DIRECTION   # 点动
-  python jaka_cmd.py power_on                  # 上电使能
-  python jaka_cmd.py clear_error               # 清除错误
+    python jaka_cmd.py state           # 读取当前状态
+    python jaka_cmd.py home             # 回零位
+    python jaka_cmd.py joint 90 90 90 90 90 90   # 关节运动(角度)
+    python jaka_cmd.py linear 300 0 200 180 0 0  # 直线运动(mm,度)
+    python jaka_cmd.py io 1 on          # 设置DO1为ON
+    python jaka_cmd.py io 1 off         # 设置DO1为OFF
 """
 
 import sys
-import os
-import time
 import math
-import json
 
-sys.stdout.reconfigure(encoding='utf-8')
+# 配置机器人 IP
+ROBOT_IP = "192.168.28.18"
 
-JAKA_DIR = "C:/Users/Administrator/.openclaw-fullbackup-20260313-161518/workspace/projects/OpenClaw_Jaka_Integration"
-sys.path.insert(0, JAKA_DIR)
+# 导入 JAKA Skill
+sys.path.insert(0, __file__.rsplit('\\', 1)[0] if '\\' in __file__ else __file__.rsplit('/', 1)[0])
 try:
-    os.add_dll_directory(JAKA_DIR)
-except:
-    pass
+    from jaka_skill import JAKARobot
+except ImportError:
+    print("[错误] 无法导入 jaka_skill，请确保 jaka_skill.py 在同一目录")
+    sys.exit(1)
 
-import jkrc
 
-ROBOT_IP = "192.168.57.128"
+def cmd_state():
+    """读取机器人状态"""
+    robot = JAKARobot(ROBOT_IP)
+    if not robot.connect():
+        return
+    
+    state = robot.get_state()
+    print("\n=== 机器人状态 ===")
+    print(f"连接状态: {'已连接' if state.get('connected') else '未连接'}")
+    
+    if state.get('joints_deg'):
+        print(f"关节角度(°): {state['joints_deg']}")
+    if state.get('tcp_position'):
+        p = state['tcp_position']
+        print(f"末端位置: X={p[0]:.1f}mm, Y={p[1]:.1f}mm, Z={p[2]:.1f}mm")
+        print(f"          RX={p[3]:.1f}°, RY={p[4]:.1f}°, RZ={p[5]:.1f}°")
+    
+    robot.disconnect()
 
-def connect():
-    r = jkrc.RC(ROBOT_IP)
-    ret = r.login(1)
-    if ret[0] != 0:
-        print(json.dumps({"ok": False, "error": f"连接失败: {ret}"}))
-        sys.exit(1)
-    return r
 
-def cmd_state(r):
-    pos_ret = r.get_joint_position()
-    tcp_ret = r.get_tcp_position()
-    status_ret = r.get_robot_status()
-    rate_ret = r.get_rapidrate()
-    err_ret = r.get_last_error()
+def cmd_home():
+    """回零位"""
+    robot = JAKARobot(ROBOT_IP)
+    if not robot.connect():
+        return
+    
+    print("执行回零...")
+    robot.home()
+    robot.disconnect()
 
-    result = {"ok": True}
 
-    if pos_ret and pos_ret[0] == 0:
-        joints_rad = list(pos_ret[1])
-        result["joints_rad"] = [round(j, 4) for j in joints_rad]
-        result["joints_deg"] = [round(math.degrees(j), 2) for j in joints_rad]
-
-    if tcp_ret and tcp_ret[0] == 0:
-        tcp = tcp_ret[1]
-        result["tcp"] = {
-            "x": round(tcp[0], 1), "y": round(tcp[1], 1), "z": round(tcp[2], 1),
-            "rx_deg": round(math.degrees(tcp[3]), 1),
-            "ry_deg": round(math.degrees(tcp[4]), 1),
-            "rz_deg": round(math.degrees(tcp[5]), 1)
-        }
-
-    if status_ret and status_ret[0] == 0:
-        s = status_ret[1]
-        result["mode"] = "auto" if s[2] == 1 else "manual"
-        result["enabled"] = s[3] == 1
-
-    if rate_ret and rate_ret[0] == 0:
-        result["rapidrate"] = rate_ret[1]
-
-    if err_ret and len(err_ret) > 1:
-        result["error_code"] = err_ret[1][0]
-        result["error_msg"] = err_ret[1][1]
-
-    print(json.dumps(result, ensure_ascii=False))
-
-def cmd_joint(r, args):
+def cmd_joint(args):
+    """关节运动（角度）"""
     if len(args) < 6:
-        print(json.dumps({"ok": False, "error": "需要6个关节角度"}))
+        print("[错误] 需要6个关节角度: joint 90 90 90 90 90 90")
         return
-    target = [math.radians(float(a)) for a in args[:6]]
-    speed = float(args[6]) if len(args) > 6 else 0.5
-
-    ret = r.joint_move(tuple(target), 0, False, speed)
-    if ret[0] != 0:
-        print(json.dumps({"ok": False, "error": f"指令失败: {ret}"}))
+    
+    try:
+        joints_deg = [float(a) for a in args[:6]]
+        joints_rad = [j * math.pi / 180 for j in joints_deg]
+    except ValueError:
+        print("[错误] 无效的角度值")
         return
+    
+    robot = JAKARobot(ROBOT_IP)
+    if not robot.connect():
+        return
+    
+    print(f"关节运动: {joints_deg}°")
+    robot.move_joint(joints_rad, speed=0.3)
+    robot.disconnect()
 
-    # 轮询等待完成
-    for i in range(60):
-        time.sleep(0.2)
-        pos_ret = r.get_joint_position()
-        if pos_ret and pos_ret[0] == 0:
-            current = list(pos_ret[1])
-            err = max(abs(c - t) for c, t in zip(current, target))
-            if err < 0.01:
-                actual_deg = [round(math.degrees(c), 2) for c in current]
-                print(json.dumps({"ok": True, "joints_deg": actual_deg}))
-                return
 
-    print(json.dumps({"ok": False, "error": "超时"}))
-
-def cmd_linear(r, args):
+def cmd_linear(args):
+    """直线运动（mm, 度）"""
     if len(args) < 6:
-        print(json.dumps({"ok": False, "error": "需要6个参数: X Y Z RX RY RZ"}))
+        print("[错误] 需要6个参数: linear 300 0 200 180 0 0")
+        print("       [x, y, z, rx, ry, rz] - 位置(mm) + 姿态(度)")
         return
-    x, y, z = float(args[0]), float(args[1]), float(args[2])
-    rx = math.radians(float(args[3]))
-    ry = math.radians(float(args[4]))
-    rz = math.radians(float(args[5]))
-    speed = float(args[6]) if len(args) > 6 else 100  # mm/s
-
-    target = (x, y, z, rx, ry, rz)
-    ret = r.linear_move(target, 0, False, speed)
-    if ret[0] != 0:
-        print(json.dumps({"ok": False, "error": f"指令失败: {ret}"}))
+    
+    try:
+        pose = [float(a) for a in args[:6]]
+    except ValueError:
+        print("[错误] 无效的参数值")
         return
-
-    for i in range(60):
-        time.sleep(0.2)
-        tcp_ret = r.get_tcp_position()
-        if tcp_ret and tcp_ret[0] == 0:
-            tcp = tcp_ret[1]
-            err = math.sqrt(sum((a - b)**2 for a, b in zip(tcp[:3], target[:3])))
-            if err < 1.0:
-                result = {
-                    "ok": True,
-                    "tcp": {"x": round(tcp[0],1), "y": round(tcp[1],1), "z": round(tcp[2],1)},
-                    "error_mm": round(err, 2)
-                }
-                print(json.dumps(result, ensure_ascii=False))
-                return
-
-    print(json.dumps({"ok": False, "error": "超时"}))
-
-def cmd_home(r):
-    target = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    ret = r.joint_move(target, 0, False, 0.5)
-    if ret[0] != 0:
-        print(json.dumps({"ok": False, "error": str(ret)}))
+    
+    robot = JAKARobot(ROBOT_IP)
+    if not robot.connect():
         return
+    
+    print(f"直线运动: 位置={pose[:3]}mm, 姿态={pose[3:]}°")
+    robot.move_linear(pose, speed=100)
+    robot.disconnect()
 
-    for i in range(60):
-        time.sleep(0.2)
-        pos_ret = r.get_joint_position()
-        if pos_ret and pos_ret[0] == 0:
-            err = max(abs(c) for c in pos_ret[1])
-            if err < 0.01:
-                print(json.dumps({"ok": True, "msg": "已回零"}))
-                return
 
-    print(json.dumps({"ok": False, "error": "超时"}))
-
-def cmd_power_on(r):
-    r.power_on()
-    time.sleep(3)
-    r.enable_robot()
-    time.sleep(2)
-    print(json.dumps({"ok": True, "msg": "已上电使能"}))
-
-def cmd_clear_error(r):
-    ret = r.clear_error()
-    print(json.dumps({"ok": ret is None or (ret and ret[0]==0), "result": str(ret)}))
-
-def cmd_jog(r, args):
+def cmd_io(args):
+    """设置 I/O"""
     if len(args) < 2:
-        print(json.dumps({"ok": False, "error": "需要: JOINT_ID(1-6) DIRECTION(1/-1) [DURATION]"}))
+        print("[错误] 用法: io <引脚号> <on|off>")
         return
-    joint = int(args[0]) - 1
-    direction = int(args[1])
-    duration = float(args[2]) if len(args) > 2 else 0.5
-    speed = float(args[3]) if len(args) > 3 else 0.1
+    
+    try:
+        pin = int(args[0])
+        value = args[1].lower() == 'on'
+    except ValueError:
+        print("[错误] 无效的参数")
+        return
+    
+    robot = JAKARobot(ROBOT_IP)
+    if not robot.connect():
+        return
+    
+    robot.set_io(pin, value)
+    robot.disconnect()
 
-    r.joint_move(list(r.get_joint_position()[1]), 0, True, 0.01)  # 确保在运动模式
 
-    # 使用关节小幅增量代替 jog
-    pos_ret = r.get_joint_position()
-    if pos_ret and pos_ret[0] == 0:
-        current = list(pos_ret[1])
-        step = math.radians(5) * direction  # 5度步进
-        current[joint] += step
-        ret = r.joint_move(tuple(current), 0, True, speed)
-        print(json.dumps({"ok": ret[0]==0, "joint": joint+1, "step_deg": 5*direction}))
-
-if __name__ == "__main__":
+def main():
     if len(sys.argv) < 2:
         print(__doc__)
-        sys.exit(0)
-
+        print("\n可用命令:")
+        print("  state           - 读取当前状态")
+        print("  home            - 回零位")
+        print("  joint <j1> <j2> <j3> <j4> <j5> <j6>  - 关节运动(角度)")
+        print("  linear <x> <y> <z> <rx> <ry> <rz>      - 直线运动(mm,度)")
+        print("  io <pin> <on|off>                      - 设置数字输出")
+        sys.exit(1)
+    
     cmd = sys.argv[1].lower()
     args = sys.argv[2:]
+    
+    if cmd == 'state':
+        cmd_state()
+    elif cmd == 'home':
+        cmd_home()
+    elif cmd == 'joint':
+        cmd_joint(args)
+    elif cmd == 'linear':
+        cmd_linear(args)
+    elif cmd == 'io':
+        cmd_io(args)
+    else:
+        print(f"[错误] 未知命令: {cmd}")
+        sys.exit(1)
 
-    r = connect()
-    try:
-        if cmd == "state":
-            cmd_state(r)
-        elif cmd == "home":
-            cmd_home(r)
-        elif cmd == "joint":
-            cmd_joint(r, args)
-        elif cmd == "linear":
-            cmd_linear(r, args)
-        elif cmd == "jog":
-            cmd_jog(r, args)
-        elif cmd == "power_on":
-            cmd_power_on(r)
-        elif cmd == "clear_error":
-            cmd_clear_error(r)
-        else:
-            print(json.dumps({"ok": False, "error": f"未知命令: {cmd}"}))
-    finally:
-        r.logout()
+
+if __name__ == '__main__':
+    main()

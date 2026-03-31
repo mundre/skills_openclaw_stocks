@@ -1,18 +1,34 @@
 # JAKA Robotics Control Skill
 
-节卡机器人控制技能，支持 Zu20/Zu12/Zu7 全系列协作机器人。
+节卡机器人控制技能，支持 Zu20/Zu12/Zu7/MiniCobo 全系列协作机器人。
 
 ## 功能特性
 
-- ✅ 关节运动控制 (精度 < 0.01°)
-- ✅ 直线插补 (精度 < 0.5mm)
-- ✅ 圆弧插补 (支持整圆)
-- ✅ gRPC/TCP 双模式
-- ✅ 仿真同步支持
-- ✅ 状态实时监控
-- ✅ 命令行工具
+- ✅ 关节运动控制
+- ✅ 直线运动控制
+- ✅ 状态读取
+- ✅ 末端工具 I/O 控制
+- ✅ gRPC 通信（低延迟、高可靠）
 
 ## 快速开始
+
+### 1. 安装 JAKA SDK
+
+```bash
+pip install jaka-sdk
+```
+
+或访问 JAKA 官网下载：
+https://www.jaka.com/docs/guide/SDK/introduction.html
+
+### 2. 配置机器人 IP
+
+编辑 `jaka_cmd.py`，修改：
+```python
+ROBOT_IP = "192.168.57.128"  # 改成你的 MiniCobo IP
+```
+
+### 3. 使用 Python API
 
 ```python
 from jaka_skill import JAKARobot
@@ -33,7 +49,7 @@ print(state['joints_deg'])
 robot.disconnect()
 ```
 
-## 命令行工具
+### 4. 命令行工具
 
 ```bash
 # 读取状态
@@ -49,32 +65,26 @@ python jaka_cmd.py joint 90 90 90 90 90 90
 python jaka_cmd.py linear 300 0 200 180 0 0
 ```
 
-## 演示脚本
+## 支持机型
 
-- `demos/heart_jaka.py` - 心形 +JAKA 绘制
-- `demos/spiral.py` - 阿基米德螺旋线
-- `demos/pendulum.py` - 单摆模拟 (T=2s)
-- `demos/dance.py` - 舞蹈序列
+- JAKA Zu20（实验室主力）
+- JAKA Zu12
+- JAKA Zu7
+- JAKA MiniCobo（本技能测试机型）
 
 ## 环境要求
 
 - Python 3.8+
-- JAKA SDK V2.3.1+ (jkrc.pyd)
+- JAKA SDK V2.3.1+
 - Windows
-
-## 安装
-
-1. 下载 JAKA SDK: https://www.jaka.com/docs/guide/SDK/introduction.html
-2. 复制 `jkrc.pyd` 到技能目录
-3. 配置机器人 IP (编辑 `jaka_cmd.py`)
 
 ## 安全提示
 
 ⚠️ 首次使用前请确保：
 - 工作空间内无人
 - 急停按钮可用
-- 先在仿真环境测试
-- 速度倍率从低速开始
+- 先在低速环境测试
+- T1 模式调试
 
 ## 作者
 
