@@ -1,357 +1,281 @@
-#!/usr/bin/env node
-/**
- * process.js - 处理滴滴打车截图
- * 
- * Usage: node process.js <image1> [image2] ...
- * 
- * 功能:
- * 1. Tesseract OCR 识别文字+坐标
- * 2. 检测目的地文字并马赛克脱敏（保留首尾字）
- * 3. 按月生成报销 Excel
- * 4. 自动去重
- */
-
+const sharp = require('sharp');
+const Tesseract = require('tesseract.js');
+const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 
-// === CWD 修复：tesseract.js 需要从 /tmp 运行 ===
-process.chdir('/tmp');
-
-// === 路径配置 ===
-const SKILL_DIR = path.resolve(__dirname, '..');
-const DEPS_DIR = path.join(SKILL_DIR, 'deps');
-const TESSDATA_DIR = path.join(SKILL_DIR, 'tessdata');
-const WORKSPACE = process.env.HOME + '/.openclaw/workspace';
-const BASE_DIR = path.join(WORKSPACE, 'taxi_expense');
-const SCREEN_DIR = path.join(BASE_DIR, 'screenshots');
-const DATA_FILE = path.join(BASE_DIR, 'taxi_data.json');
-
-// === 马赛克参数 ===
-const PIXEL_SIZE = 8;
-const CARD_TOP_OFFSET = 160;   // 目的地文字上方保留的像素
-const CARD_BOT_OFFSET = 200;   // 目的地文字下方保留的像素
-const MOSAIC_PADDING = 3;      // 首尾字保护边距
-
-// === 加载依赖 ===
-let Tesseract, sharp, ExcelJS;
-try {
-  Tesseract = require(path.join(DEPS_DIR, 'node_modules', 'tesseract.js'));
-  sharp = require(path.join(DEPS_DIR, 'node_modules', 'sharp'));
-  ExcelJS = require(path.join(DEPS_DIR, 'node_modules', 'exceljs'));
-} catch (e) {
-  console.error('❌ 依赖未安装，请先运行: bash scripts/setup.sh');
-  process.exit(1);
-}
-
-// === 目录初始化 ===
-fs.mkdirSync(SCREEN_DIR, { recursive: true });
-
-function maskDestination(text) {
-  if (!text || text.length <= 2) return text;
-  return text[0] + '*'.repeat(text.length - 2) + text[text.length - 1];
-}
-
-// === 去重：基于日期+金额 ===
-function loadExisting() {
-  if (fs.existsSync(DATA_FILE)) return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  return [];
-}
-
-function isDuplicate(orders, date, amount) {
-  return orders.some(o => o.date === date && o.amount === amount);
-}
-
-// === OCR 识别 ===
-async function ocrImage(imagePath) {
-  const worker = await Tesseract.createWorker({ langPath: TESSDATA_DIR, logger: () => {} });
-  await worker.loadLanguage('chi_sim+eng');
-  await worker.initialize('chi_sim+eng');
-  const { data } = await worker.recognize(imagePath);
-  await worker.terminate();
-  return data;
-}
-
-// === 提取订单 ===
-function extractOrders(data) {
-  const orders = [];
-
-  // 找目的地行
-  const destLines = data.lines.filter(l => l.text.replace(/\s/g, '').match(/终[点炭]/));
-  // 找日期行
-  const dateLines = data.lines.filter(l => l.text.match(/20\d{2}/) && l.text.match(/月.*日/));
-  // 找金额行
-  const amountLines = data.lines.filter(l => l.text.includes('¥') || l.text.includes('￥'));
-
-  for (const dl of destLines) {
-    // 匹配最近的日期和金额
-    const dateLine = dateLines.reduce((best, cur) => {
-      if (!best || Math.abs(cur.bbox.y0 - dl.bbox.y0) < Math.abs(best.bbox.y0 - dl.bbox.y0)) return cur;
-      return best;
-    }, null);
-
-    const amountLine = amountLines.reduce((best, cur) => {
-      if (!best || Math.abs(cur.bbox.y0 - dl.bbox.y0) < Math.abs(best.bbox.y0 - dl.bbox.y0)) return cur;
-      return best;
-    }, null);
-
-    if (!dateLine || !amountLine) continue;
-
-    // 解析日期
-    const dateMatch = dateLine.text.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*(\d{1,2})[.:：](\d{2})/);
-    if (!dateMatch) continue;
-
-    const [, y, m, d, hh, mm] = dateMatch;
-    const date = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-    const time = `${hh.padStart(2,'0')}:${mm}`;
-
-    // 解析金额
-    const amountMatch = amountLine.text.match(/[¥￥]\s*([\d.]+)/);
-    if (!amountMatch) continue;
-    const amount = parseFloat(amountMatch[1]);
-
-    // 解析目的地
-    const destText = dl.text.replace(/\s/g, '').replace(/终[点炭][:：]?\s*/, '');
-    const startText = amountLine.text.replace(/\s/g, '').replace(/.*起点[:：]?\s*/, '').replace(/[¥￥][\d.]+.*/, '');
-
-    orders.push({
-      date, time, amount,
-      start: startText || '未知',
-      end: destText || '未知',
-      destBbox: dl.bbox,
-      qualified: isQualified(date, time)
-    });
-  }
-
-  return orders;
-}
-
-// === 报销判定 ===
-function isQualified(date, time) {
-  const d = new Date(date);
-  const dow = d.getDay(); // 0=Sun, 6=Sat
-  if (dow === 0 || dow === 6) return false;
-  const [hh] = time.split(':').map(Number);
-  return hh >= 18;
-}
-
-// === 马赛克处理 ===
-async function processMosaic(imagePath, order, data, outputName) {
-  const metadata = await sharp(imagePath).metadata();
-  const w = metadata.width;
-  const h = metadata.height;
-
-  // 找目的地行的所有字
-  const dl = data.lines.find(l =>
-    l.text.replace(/\s/g, '').match(/终[点炭]/) &&
-    Math.abs(l.bbox.y0 - order.destBbox.y0) < 30
-  );
-  if (!dl) return null;
-
-  const lineWords = data.words.filter(w =>
-    w.bbox.y0 >= dl.bbox.y0 - 5 && w.bbox.y1 <= dl.bbox.y1 + 5 &&
-    w.bbox.x0 >= dl.bbox.x0
-  ).sort((a, b) => a.bbox.x0 - b.bbox.x0);
-
-  // 过滤掉标签字
-  const addrWords = lineWords.filter(w => {
-    const t = w.text.replace(/\s/g, '');
-    return t.length > 0 && !['终', '点', '炭', ':', '：'].includes(t);
-  });
-
-  if (addrWords.length < 2) return null;
-
-  const firstWord = addrWords[0];
-  const lastWord = addrWords[addrWords.length - 1];
-
-  // 裁剪订单卡片
-  const cardTop = Math.max(0, dl.bbox.y0 - CARD_TOP_OFFSET);
-  const cardBot = Math.min(h, dl.bbox.y1 + CARD_BOT_OFFSET);
-  const cardH = cardBot - cardTop;
-
-  // 马赛克区域
-  const mX = firstWord.bbox.x1 + MOSAIC_PADDING;
-  const mW = lastWord.bbox.x0 - mX - MOSAIC_PADDING;
-  const mY = dl.bbox.y0 - cardTop;
-  const mH = dl.bbox.y1 - dl.bbox.y0;
-
-  if (mW <= 0) return null;
-
-  // 裁剪 + 马赛克
-  await sharp(imagePath).extract({ left: 0, top: cardTop, width: w, height: cardH }).toFile('/tmp/_card.png');
-  await sharp('/tmp/_card.png').extract({ left: mX, top: mY, width: mW, height: mH }).toFile('/tmp/_cs.png');
-  await sharp('/tmp/_cs.png')
-    .resize(Math.ceil(mW / PIXEL_SIZE), Math.ceil(mH / PIXEL_SIZE), { kernel: 'nearest', fit: 'fill' })
-    .toFile('/tmp/_csm.png');
-  await sharp('/tmp/_csm.png')
-    .resize(mW, mH, { kernel: 'nearest', fit: 'fill' })
-    .toFile('/tmp/_ct.png');
-
-  // 合成
-  const { data: origData } = await sharp('/tmp/_card.png').raw().toBuffer({ resolveWithObject: true });
-  const { data: tileData } = await sharp('/tmp/_ct.png').raw().toBuffer({ resolveWithObject: true });
-
-  const result = Buffer.from(origData);
-  for (let y = 0; y < mH; y++)
-    for (let x = 0; x < mW; x++) {
-      const di = ((y + mY) * w + (x + mX)) * 3;
-      const si = (y * mW + x) * 3;
-      result[di] = tileData[si];
-      result[di + 1] = tileData[si + 1];
-      result[di + 2] = tileData[si + 2];
-    }
-
-  const outPath = path.join(SCREEN_DIR, outputName);
-  await sharp(result, { raw: { width: w, height: cardH, channels: 3 } }).png().toFile(outPath);
-  return outPath;
-}
-
-// === 生成 Excel ===
-async function generateExcel(orders) {
-  const months = [...new Set(orders.map(o => o.date.substring(0, 7)))].sort();
-  const results = [];
-
-  for (const month of months) {
-    const mo = orders.filter(o => o.date.startsWith(month)).sort((a, b) => a.date.localeCompare(b.date));
-    if (mo.length === 0) continue;
-
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet('打车报销');
-
-    // 表头
-    ws.columns = [
-      { header: '序号', key: 'no', width: 6 },
-      { header: '日期', key: 'date', width: 15 },
-      { header: '时间', key: 'time', width: 10 },
-      { header: '起点', key: 'start', width: 30 },
-      { header: '终点', key: 'end', width: 20 },
-      { header: '金额', key: 'amount', width: 10 },
-      { header: '备注', key: 'note', width: 12 }
-    ];
-    ws.getRow(1).font = { bold: true };
-    ws.getRow(1).alignment = { horizontal: 'center' };
-
-    mo.forEach((o, i) => ws.addRow({
-      no: i + 1, date: o.date, time: o.time,
-      start: o.start, end: o.end, amount: o.amount,
-      note: o.note || '加班打车'
-    }));
-
-    ws.getColumn('amount').numFmt = '¥#,##0.00';
-
-    const totalRow = ws.addRow([
-      '', '', '', '', '合计',
-      { formula: `SUM(F2:F${mo.length + 1})` }, ''
-    ]);
-    totalRow.font = { bold: true };
-    totalRow.getCell('amount').numFmt = '¥#,##0.00';
-
-    // 截图 Sheet
-    const imgSheet = wb.addWorksheet('订单截图');
-    imgSheet.getColumn(1).width = 25;
-    let curRow = 1;
-
-    for (const o of mo) {
-      if (!o.file) continue;
-      const imgPath = path.join(SCREEN_DIR, o.file);
-      if (!fs.existsSync(imgPath)) continue;
-
-      imgSheet.getRow(curRow).getCell(1).value = `📅 ${o.date}  💰 ¥${o.amount.toFixed(2)}`;
-      imgSheet.getRow(curRow).getCell(1).font = { bold: true, size: 11 };
-      imgSheet.getRow(curRow).height = 18;
-      curRow++;
-
-      const imgBuf = fs.readFileSync(imgPath);
-      const imgId = wb.addImage({ buffer: imgBuf, extension: 'png' });
-      imgSheet.addImage(imgId, {
-        tl: { col: 0, row: curRow },
-        ext: { width: 500, height: 150 }
-      });
-      imgSheet.getRow(curRow).height = 112;
-      curRow++;
-      imgSheet.getRow(curRow).height = 2;
-      curRow++;
-    }
-
-    const outPath = path.join(BASE_DIR, `${month}-taxi_expense.xlsx`);
-    await wb.xlsx.writeFile(outPath);
-
-    const total = mo.reduce((s, o) => s + o.amount, 0);
-    results.push({ month, count: mo.length, total, path: outPath });
-  }
-
-  return results;
-}
-
-// === 主流程 ===
+const BASE = path.join(__dirname);
+const DATA_FILE = path.join(BASE, 'taxi_data.json');
+const SCREENSHOT_DIR = path.join(BASE, 'screenshots');
 async function main() {
-  const args = process.argv.slice(2);
-  if (args.length === 0) {
-    console.log('Usage: node process.js <image1> [image2] ...');
+  const imagePaths = process.argv.slice(2);
+  if (imagePaths.length === 0) {
+    console.error('Usage: node process.js <image1> [image2] ...');
     process.exit(1);
   }
 
-  const existingOrders = loadExisting();
-  let newOrders = [];
-  const allOcrData = {};
-
-  for (const imagePath of args) {
-    if (!fs.existsSync(imagePath)) {
-      console.log(`⚠️  文件不存在: ${imagePath}`);
-      continue;
-    }
-
-    console.log(`\n🔍 OCR: ${path.basename(imagePath)}`);
-    const data = await ocrImage(imagePath);
-    allOcrData[imagePath] = data;
-
-    const orders = extractOrders(data);
-    console.log(`   找到 ${orders.length} 笔订单`);
-
-    for (const o of orders) {
-      if (isDuplicate(existingOrders, o.date, o.amount)) {
-        console.log(`   ⏭️  ${o.date} ¥${o.amount} (已存在，跳过)`);
-        continue;
-      }
-
-      if (!o.qualified) {
-        console.log(`   ❌ ${o.date} ${o.time} ¥${o.amount} (非工作日加班，跳过)`);
-        continue;
-      }
-
-      // 马赛克
-      const fileName = `order_${o.date}.png`;
-      console.log(`   ✅ ${o.date} ${o.time} ¥${o.amount} → 马赛克...`);
-      await processMosaic(imagePath, o, data, fileName);
-
-      existingOrders.push({
-        date: o.date, time: o.time,
-        start: o.start, end: maskDestination(o.end),
-        amount: o.amount, note: '加班打车',
-        file: fileName
-      });
-      newOrders.push(o);
-    }
-  }
-
-  // 保存数据
-  fs.writeFileSync(DATA_FILE, JSON.stringify(existingOrders, null, 2));
-
-  // 生成所有月份的 Excel
-  const results = await generateExcel(existingOrders);
-
-  // 输出结果
-  console.log('\n📊 处理结果:');
-  console.log(`   新增: ${newOrders.length} 笔`);
-  for (const r of results) {
-    console.log(`   ${r.month}: ${r.count} 笔, ¥${r.total.toFixed(2)}`);
-  }
-  console.log(`   数据文件: ${DATA_FILE}`);
-  console.log(`   截图目录: ${SCREEN_DIR}`);
-
-  // 清理临时文件
-  ['/tmp/_card.png', '/tmp/_cs.png', '/tmp/_csm.png', '/tmp/_ct.png'].forEach(f => {
-    try { fs.unlinkSync(f); } catch (e) {}
+  const worker = await Tesseract.createWorker('chi_sim+eng', 1, {
+    langPath: '/tmp/tessdata', cachePath: '/tmp/tessdata', cacheMethod: 'readOnly', gzip: false,
   });
+
+  // 1. OCR all images and parse orders
+  let allParsedOrders = [];
+  let ocrDataMap = {}; // imgPath -> { data, orders[] }
+
+  for (const imgPath of imagePaths) {
+    console.log(`\nOCR: ${path.basename(imgPath)}`);
+    const { data } = await worker.recognize(imgPath);
+    const lines = data.lines;
+    const orders = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const text = lines[i].text.replace(/\s+/g, '');
+      const timeMatch = text.match(/下单时间:(\d{4})年(\d{2})月(\d{2})日(.+)/);
+      if (!timeMatch) continue;
+
+      const date = `${timeMatch[1]}-${timeMatch[2]}-${timeMatch[3]}`;
+      let time = timeMatch[4].trim().replace(/\./g, ':');
+      time = time.replace(/t/gi, '7');
+
+      let amount = 0;
+      for (let j = Math.max(0, i - 5); j < i; j++) {
+        const amtMatch = lines[j].text.match(/[¥%](\d+\.?\d*)/);
+        if (amtMatch) { amount = parseFloat(amtMatch[1]); break; }
+      }
+      if (amount === 0) {
+        for (let j = Math.max(0, i - 5); j < i; j++) {
+          const st = lines[j].text.replace(/\s+/g, '');
+          if (st.match(/起点[：:]/)) {
+            const bareMatch = st.match(/(\d+\.\d{1,2})\s*$/);
+            if (bareMatch) { amount = parseFloat(bareMatch[1]); }
+            break;
+          }
+        }
+      }
+      if (amount > 500) {
+        const str = String(amount);
+        if (str.length === 4) {
+          amount = parseFloat(str.slice(0, 2) + '.' + str.slice(2));
+        } else if (str.length === 3) {
+          amount = parseFloat(str.slice(0, 1) + '.' + str.slice(1));
+        }
+      }
+
+      let start = '';
+      for (let j = Math.max(0, i - 5); j < i; j++) {
+        const st = lines[j].text.replace(/\s+/g, '');
+        const stMatch = st.match(/起点[：:](.+)/);
+        if (stMatch) {
+          start = stMatch[1].replace(/[¥%]\d+\.?\d*/g, '').replace(/\d+\.\d{1,2}\s*$/, '').trim();
+          break;
+        }
+      }
+
+      let end = '';
+      for (let j = Math.max(0, i - 5); j < i; j++) {
+        const en = lines[j].text.replace(/\s+/g, '');
+        const enMatch = en.match(/终[点炭][：:](.+)/);
+        if (enMatch) { end = enMatch[1].trim(); break; }
+      }
+
+      orders.push({ date, time, start, end, amount, imgPath });
+    }
+
+    ocrDataMap[imgPath] = { data, orders };
+    allParsedOrders.push(...orders);
+  }
+  await worker.terminate();
+
+  console.log('\nParsed orders:');
+  allParsedOrders.forEach((o, i) => console.log(`  ${i+1}. ${o.date} ${o.time} ¥${o.amount} ${o.start} → ${o.end}`));
+
+  // 2. Dedup
+  const existing = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  const existingKeys = new Set(existing.map(o => `${o.date}_${o.amount}`));
+  const newOrders = allParsedOrders.filter(o => !existingKeys.has(`${o.date}_${o.amount}`));
+
+  console.log(`\nNew orders (after dedup): ${newOrders.length}`);
+  newOrders.forEach((o, i) => console.log(`  ${i+1}. ${o.date} ${o.time} ¥${o.amount} ${o.start} → ${o.end}`));
+
+  // 3. Process screenshots with mosaic (using correct source image per order)
+  for (const order of newOrders) {
+    const srcImg = order.imgPath;
+    const ocrData = ocrDataMap[srcImg]?.data;
+    if (!ocrData) continue;
+
+    const cardLines = ocrData.lines.filter(l => {
+      const t = l.text.replace(/\s+/g, '');
+      return t.includes(order.date.replace(/-/g, '年').replace(/(\d{4})年(\d{2})年(\d{2})/, '$1年$2月$3日'));
+    });
+    if (cardLines.length === 0) { console.log('  [skip] no cardLines for', order.date); continue; }
+
+    const timeLine = cardLines[0];
+    const cardTop = timeLine.bbox.y0 - 160;
+    const cardBottom = timeLine.bbox.y0 + 200;
+
+    const destLine = ocrData.lines.find(l => {
+      const t = l.text.replace(/\s+/g, '');
+      return (t.match(/终[点炭]/)) && l.bbox.y0 > cardTop && l.bbox.y0 < timeLine.bbox.y0;
+    });
+
+    let mosaicRegions = [];
+    if (destLine) {
+      const destWords = ocrData.words.filter(w =>
+        w.bbox.y0 >= destLine.bbox.y0 - 5 && w.bbox.y1 <= destLine.bbox.y1 + 5 &&
+        !['终', '点', '炭', ':', '：'].includes(w.text)
+      );
+      if (destWords.length >= 2) {
+        const first = destWords[0];
+        const last = destWords[destWords.length - 1];
+        mosaicRegions.push({
+          left: first.bbox.x1 + 3,
+          top: destLine.bbox.y0 - 2,
+          width: Math.max(0, last.bbox.x0 - first.bbox.x1 - 6),
+          height: destLine.bbox.y1 - destLine.bbox.y0 + 4,
+        });
+      }
+    }
+
+    const imgMeta = await sharp(srcImg).metadata();
+    const cropTop = Math.max(0, cardTop);
+    const cropHeight = Math.min(imgMeta.height - cropTop, cardBottom - cardTop);
+
+    // Build composite overlay list for single pipeline
+    let overlays = [];
+    for (const reg of mosaicRegions) {
+      const relTop = reg.top - cropTop;
+      if (reg.width > 0 && reg.height > 0) {
+        try {
+          const block = await sharp({
+            create: {
+              width: reg.width,
+              height: reg.height,
+              channels: 3,
+              background: { r: 255, g: 255, b: 255 }
+            }
+          }).png().toBuffer();
+          overlays.push({ input: block, left: reg.left, top: relTop });
+          console.log(`  [mosaic] block: ${reg.left},${relTop} ${reg.width}x${reg.height}`);
+        } catch (e) {
+          console.warn('  Mosaic failed for', order.date, e.message);
+        }
+      }
+    }
+
+    // Single pipeline: crop + composite + save
+    let pipeline = sharp(srcImg).extract({ left: 0, top: cropTop, width: imgMeta.width, height: cropHeight });
+    if (overlays.length > 0) {
+      pipeline = pipeline.composite(overlays);
+    }
+
+    // Unique filename: date + amount to avoid collisions
+    const safeAmt = String(order.amount).replace('.', 'p');
+    const outFile = path.join(SCREENSHOT_DIR, `order_${order.date}_${safeAmt}.png`);
+    await pipeline.png().toFile(outFile);
+    console.log(`  Screenshot: ${outFile} (mosaic: ${mosaicRegions.length > 0 ? 'YES' : 'NO'}, destLine: ${destLine ? 'found' : 'miss'})`);
+    order.file = path.basename(outFile);
+  }
+
+  // 4. Update data
+  const allOrders = [...existing, ...newOrders].sort((a, b) => a.date.localeCompare(b.date));
+  fs.writeFileSync(DATA_FILE, JSON.stringify(allOrders, null, 2));
+
+  // 5. Filter reimbursable (weekday 21:00+, amount > 0)
+  const isReimbursable = (o) => {
+    const h = parseInt(o.time.split(':')[0]);
+    const d = new Date(o.date + 'T00:00:00');
+    const day = d.getDay();
+    return h >= 21 && day !== 0 && day !== 6;
+  };
+  const reimbursableAll = allOrders.filter(o => isReimbursable(o) && o.amount > 0);
+
+  // 6. Generate Excel (reimbursable only)
+  await generateExcel(reimbursableAll);
+
+  // 7. Summary
+  const reimbursable = newOrders.filter(o => isReimbursable(o) && o.amount > 0);
+  console.log(`\n=== Summary ===`);
+  console.log(`New orders: ${newOrders.length}`);
+  console.log(`Reimbursable (weekday 21:00+): ${reimbursable.length}`);
+  console.log(`Reimbursable total: ¥${reimbursable.reduce((s, o) => s + o.amount, 0).toFixed(2)}`);
+}
+
+async function generateExcel(orders) {
+  // Group by month
+  const byMonth = {};
+  orders.forEach(o => {
+    const m = o.date.substring(0, 7);
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push(o);
+  });
+
+  for (const [month, monthOrders] of Object.entries(byMonth)) {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('报销明细');
+
+    const dayNames = ['周日','周一','周二','周三','周四','周五','周六'];
+
+    ws.columns = [
+      { header: '序号', key: 'idx', width: 6 },
+      { header: '日期', key: 'date', width: 12 },
+      { header: '星期', key: 'weekday', width: 6 },
+      { header: '时间', key: 'time', width: 8 },
+      { header: '起点', key: 'start', width: 28 },
+      { header: '终点', key: 'end', width: 20 },
+      { header: '金额', key: 'amount', width: 10 },
+      { header: '备注', key: 'note', width: 12 },
+    ];
+
+    // Desensitize destination: keep first and last char, mask middle
+    const maskEnd = (end) => {
+      if (!end) return '古*****门';
+      const clean = end.replace(/\s+/g, '');
+      if (clean.length <= 2) return clean;
+      return clean[0] + '*'.repeat(Math.min(clean.length - 2, 5)) + clean[clean.length - 1];
+    };
+
+    monthOrders.sort((a, b) => a.date.localeCompare(b.date));
+    monthOrders.forEach((o, i) => {
+      const d = new Date(o.date + 'T00:00:00');
+      ws.addRow({
+        idx: i + 1,
+        date: o.date,
+        weekday: dayNames[d.getDay()],
+        time: o.time,
+        start: o.start,
+        end: maskEnd(o.end),
+        amount: o.amount,
+        note: '加班打车',
+      });
+    });
+
+    // Total row
+    const total = monthOrders.reduce((s, o) => s + o.amount, 0);
+    ws.addRow({ idx: '', date: '', weekday: '', time: '', start: '', end: '合计', amount: total, note: '' });
+
+    // Sheet 2: screenshots
+    const ws2 = wb.addWorksheet('订单截图');
+    let rowNum = 1;
+    for (const o of monthOrders) {
+      if (!o.file) continue;
+      const imgPath = path.join(SCREENSHOT_DIR, o.file);
+      if (!fs.existsSync(imgPath)) continue;
+
+      ws2.getRow(rowNum).height = 18;
+      ws2.getCell(`A${rowNum}`).value = `${o.date}  ¥${o.amount}`;
+
+      const imgId = wb.addImage({ filename: imgPath, extension: 'png' });
+      ws2.addImage(imgId, {
+        tl: { col: 0, row: rowNum },
+        ext: { width: 400, height: 180 },
+      });
+      rowNum += 12;
+    }
+
+    const outFile = path.join(BASE, `${month}-taxi_expense.xlsx`);
+    await wb.xlsx.writeFile(outFile);
+    console.log(`Excel: ${outFile}`);
+  }
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

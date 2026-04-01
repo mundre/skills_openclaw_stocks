@@ -17,29 +17,37 @@ node ~/.openclaw/workspace/skills/taxi_expense/scripts/process.js <image1> [imag
 
 The script will:
 1. OCR each image with Tesseract.js v4 (uses coordinates to detect text positions)
-2. Filter: only weekday evening rides (after 18:00) qualify for reimbursement
-3. Mosaic the destination address (keeps first and last character visible)
-4. Save screenshots to `~/.openclaw/workspace/taxi_expense/screenshots/`
-5. Update `~/.openclaw/workspace/taxi_expense/taxi_data.json` (auto-dedup)
-6. Generate monthly Excel: `~/.openclaw/workspace/taxi_expense/YYYY-MM-taxi_expense.xlsx`
+2. Parse orders: date, time, start/end point, amount
+3. Smart amount extraction: handles OCR misreads (¥→%, missing ¥, missing decimal)
+4. Filter: only **weekday evening rides (after 21:00)** qualify for reimbursement
+5. Auto-exclude closed/cancelled orders (amount = ¥0)
+6. White block desensitization on destination address in screenshots (keeps first/last char visible)
+7. Desensitize destination text in Excel (e.g. 古*****门)
+8. Save screenshots to `~/.openclaw/workspace/taxi_expense/screenshots/`
+9. Update `~/.openclaw/workspace/taxi_expense/taxi_data.json` (auto-dedup by date+amount)
+10. Generate monthly Excel: `~/.openclaw/workspace/taxi_expense/YYYY-MM-taxi_expense.xlsx`
+
+## Excel Columns
+序号 | 日期 | 星期 | 时间 | 起点 | 终点(脱敏) | 金额 | 备注
+
+Sheet 2 contains mosaiced order screenshots.
 
 ## Output
 Tell user:
 - How many new orders were added
-- Monthly totals
-- Any skipped orders and why
+- Monthly totals (reimbursable orders only)
+- Any skipped orders and why (weekend, before 21:00, closed, ¥0)
 
 ## Send Preview (only if user asks)
-The script saves mosaiced screenshots to the `screenshots/` directory. Send them manually when requested.
-
-## Configuration
-Edit `scripts/process.js` to change:
-- `PIXEL_SIZE`: mosaic pixel block size (default: 8)
-- `CARD_TOP_OFFSET` / `CARD_BOT_OFFSET`: crop area around destination text
-- `MOSAIC_PADDING`: padding around first/last visible character
+The script saves desensitized screenshots to the `screenshots/` directory. Send via:
+```bash
+openclaw message send --channel telegram --target <chat_id> --message "msg" --media <file.xlsx>
+```
 
 ## Known Issues
 - Tesseract Chinese quality is imperfect ("点"→"炭", "轻享"→"轻亭")
 - Uses regex `/终[点炭]/` for tolerant matching
-- Amount recognition: ¥ may be misread as other characters
-- Source images must be the ORIGINAL screenshots (not previously processed/cropped)
+- Amount recognition: ¥ may be misread as % or lost entirely
+- Amount > 500 is auto-corrected (missing decimal: 1970→19.70)
+- Source images must be ORIGINAL screenshots (not previously processed/cropped)
+- Multiple images supported: `node process.js img1 img2 img3`
