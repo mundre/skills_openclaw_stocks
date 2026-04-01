@@ -1,0 +1,11 @@
+{
+  "owner": "seergs",
+  "slug": "vikunja-api",
+  "displayName": "Vikunja",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1774979237157,
+    "commit": null
+  },
+  "history": []
+}
