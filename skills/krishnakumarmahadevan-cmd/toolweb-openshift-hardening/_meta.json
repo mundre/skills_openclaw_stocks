@@ -1,0 +1,11 @@
+{
+  "owner": "krishnakumarmahadevan-cmd",
+  "slug": "toolweb-openshift-hardening",
+  "displayName": "OpenShift Hardening",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774986273815,
+    "commit": null
+  },
+  "history": []
+}
