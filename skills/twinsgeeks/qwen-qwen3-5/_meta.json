@@ -1,0 +1,11 @@
+{
+  "owner": "twinsgeeks",
+  "slug": "qwen-qwen3-5",
+  "displayName": "Qwen 3.5 — Alibaba's Latest LLM Rivaling GPT-4o on Your Local Fleet",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774970380003,
+    "commit": null
+  },
+  "history": []
+}
