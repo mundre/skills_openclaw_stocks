@@ -1,0 +1,11 @@
+{
+  "owner": "gandli",
+  "slug": "ctf-pwn",
+  "displayName": "Ctf Pwn",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774866241012,
+    "commit": null
+  },
+  "history": []
+}
