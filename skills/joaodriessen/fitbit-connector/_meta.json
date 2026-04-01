@@ -1,0 +1,11 @@
+{
+  "owner": "joaodriessen",
+  "slug": "fitbit-connector",
+  "displayName": "Fitbit Connector",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774775081859,
+    "commit": null
+  },
+  "history": []
+}
