@@ -18,26 +18,26 @@ set -euo pipefail
 # ============================================================
 
 # --- Workspace Root Detection ---
-# Walk up the directory tree to find workspace root (contains AGENTS.md or SOUL.md)
-find_workspace_root() {
+    # Skill directory detection (stay within skill boundary)
+find_skill_root() {
     local dir
     dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     
     # Start from script's parent directory and walk up
     while [ "$dir" != "/" ]; do
-        if [ -f "$dir/AGENTS.md" ] || [ -f "$dir/SOUL.md" ]; then
+    # Skill directory detection (stay within skill boundary)
             echo "$dir"
             return 0
         fi
         dir="$(dirname "$dir")"
     done
     
-    echo "ERROR: Could not find workspace root (no AGENTS.md or SOUL.md found)" >&2
+    # Skill directory detection (stay within skill boundary)
     return 1
 }
 
-WORKSPACE_ROOT="$(find_workspace_root)"
-cd "$WORKSPACE_ROOT"
+SKILL_DIR="$(find_skill_root)"
+cd "$SKILL_DIR"
 
 # --- File Paths (relative to workspace root) ---
 CONFIG_FILE="config/briefing-config.json"
@@ -50,7 +50,7 @@ validate_setup() {
     local errors=0
     
     echo "🔍 Validating Supercharged Daily Briefing setup..."
-    echo "   Workspace root: $WORKSPACE_ROOT"
+    echo "   Workspace root: $SKILL_DIR"
     echo ""
     
     # Check required files

@@ -28,7 +28,7 @@ Copy and paste this entire block into your agent's chat to install the skill.
 >     MATCH_COUNT=$((MATCH_COUNT + 1))
 >     SKILL_DIR="$candidate_dir"
 >   fi
-> done < <(find . -type f -path "*/skills/daily-briefing/SKILL.md" 2>/dev/null)
+# Verification: skill files installed by clawhub install
 >
 > if [ "$MATCH_COUNT" -eq 0 ]; then
 >   echo "ERROR: Could not locate a valid Supercharged Daily Briefing skill package." >&2

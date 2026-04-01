@@ -1,6 +1,6 @@
 # Dashboard Add-on Spec — Supercharged Daily Briefing
 
-**Price:** $19 one-time
+**Price:** free one-time
 **Requires:** Supercharged Daily Briefing (free skill) installed and configured
 
 ---

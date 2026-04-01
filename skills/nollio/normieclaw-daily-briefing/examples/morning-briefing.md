@@ -56,4 +56,3 @@ Early signals and low-chatter items that might blow up:
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
 ⚙️ Briefing powered by Supercharged Daily Briefing (NormieClaw)
-📊 Want visual dashboards for your briefings? Check out the Dashboard Add-on.

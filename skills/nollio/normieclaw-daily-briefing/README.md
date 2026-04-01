@@ -77,9 +77,7 @@ See `SECURITY.md` for the full audit report.
 
 ## Optional Add-Ons
 
-- **Dashboard Add-on ($19)** — Visual briefing archive, source health panel, topic manager
-- **Knowledge Vault** — Turn your briefing archive into a searchable AI knowledge base
-- **Supercharged Memory** — Perfect preference persistence across agent sessions
+- **Dashboard Add-on (free)** — Visual briefing archive, source health panel, topic manager
 
 ## Requirements
 
