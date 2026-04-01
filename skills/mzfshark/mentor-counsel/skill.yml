@@ -1,0 +1,15 @@
+---
+name: mentor-counsel
+description: Provide core mentoring without dependency. Clarify situations, reveal patterns, reframe choices, and return agency to humans seeking guidance.
+version: 1.0.0
+display_name: "Mentor Counsel"
+triggers:
+  - what should I do
+  - guidance
+  - mentorship
+  - counseling
+  - is this real
+  - should I trust
+  - how to contribute
+  - clarify situation
+---
