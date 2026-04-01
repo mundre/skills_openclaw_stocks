@@ -1,0 +1,11 @@
+{
+  "owner": "terryds",
+  "slug": "google-trends-api",
+  "displayName": "Google Trends API",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774865928246,
+    "commit": null
+  },
+  "history": []
+}
