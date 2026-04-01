@@ -1,4 +1,4 @@
-------WebKitFormBoundary41fc13c3b15e7499
+------WebKitFormBoundary0ac62f99a1c6f4fe
 Content-Disposition: form-data; name="file"; filename="SKILL.md"
 Content-Type: application/octet-stream
 
@@ -141,4 +141,4 @@ flyai search-flight \
 | [references/fallbacks.md](references/fallbacks.md) | 5 种异常的恢复路径 | 结果异常时 |
 | [references/runbook.md](references/runbook.md) | 执行日志契约 | 全程后台记录 |
 
-------WebKitFormBoundary41fc13c3b15e7499--
+------WebKitFormBoundary0ac62f99a1c6f4fe--

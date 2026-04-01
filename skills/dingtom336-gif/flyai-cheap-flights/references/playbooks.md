@@ -1,4 +1,4 @@
-------WebKitFormBoundary314b3bbf9fb80329
+------WebKitFormBoundaryb8b389ccb75ba58f
 Content-Disposition: form-data; name="file"; filename="playbooks.md"
 Content-Type: application/octet-stream
 
@@ -93,4 +93,4 @@ flyai search-flight --origin "东京" --destination "上海" \
 
 **输出要点**：展示 "打包往返价 ¥XXX" vs "分开买总计 ¥XXX"，标注哪种更划算。
 
-------WebKitFormBoundary314b3bbf9fb80329--
+------WebKitFormBoundaryb8b389ccb75ba58f--
