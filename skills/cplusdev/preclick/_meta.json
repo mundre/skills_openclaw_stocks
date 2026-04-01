@@ -1,0 +1,11 @@
+{
+  "owner": "cplusdev",
+  "slug": "preclick",
+  "displayName": "PreClick : URL Security Scanner",
+  "latest": {
+    "version": "1.2.2",
+    "publishedAt": 1775049451501,
+    "commit": null
+  },
+  "history": []
+}
