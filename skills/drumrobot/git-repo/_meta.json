@@ -1,0 +1,11 @@
+{
+  "owner": "drumrobot",
+  "slug": "git-repo",
+  "displayName": "Git Repo Manager",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1774932196769,
+    "commit": null
+  },
+  "history": []
+}
