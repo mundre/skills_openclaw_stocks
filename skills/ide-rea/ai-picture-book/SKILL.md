@@ -1,10 +1,10 @@
 ---
-name: ai-picture-book
-description: Generate static or dynamic picture book videos using Baidu AI
+name: Baidu Wenku AIPictureBook
+description: Generate static or dynamic picture book videos using Baidu Wenku AI
 metadata: { "openclaw": { "emoji": "📔", "requires": { "bins": ["python3"], "env":["BAIDU_API_KEY"]},"primaryEnv":"BAIDU_API_KEY" } }
 ---
 
-# AI Picture Book
+# Baidu Wenku AI Picture Book
 
 Generate picture book videos from stories or descriptions.
 

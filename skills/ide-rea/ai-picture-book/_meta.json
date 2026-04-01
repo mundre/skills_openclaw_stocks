@@ -1,13 +1,18 @@
 {
   "owner": "ide-rea",
   "slug": "ai-picture-book",
-  "displayName": "AI picture book generate",
+  "displayName": "Baidu Wenku AIPictureBook",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1770956044284,
-    "commit": "https://github.com/openclaw/skills/commit/e351d7fe13dae7fe7f7dd14db6271658b280284a"
+    "version": "1.1.1",
+    "publishedAt": 1775031924634,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1770956044284,
+      "commit": "https://github.com/openclaw/skills/commit/e351d7fe13dae7fe7f7dd14db6271658b280284a"
+    },
     {
       "version": "1.0.8",
       "publishedAt": 1770782037460,
