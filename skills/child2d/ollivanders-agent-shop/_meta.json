@@ -1,0 +1,11 @@
+{
+  "owner": "child2d",
+  "slug": "ollivanders-agent-shop",
+  "displayName": "Ollivanders Agent Shop",
+  "latest": {
+    "version": "0.1.4",
+    "publishedAt": 1774788573479,
+    "commit": null
+  },
+  "history": []
+}
