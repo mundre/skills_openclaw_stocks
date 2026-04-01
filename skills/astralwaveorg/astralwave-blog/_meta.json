@@ -1,0 +1,11 @@
+{
+  "owner": "astralwaveorg",
+  "slug": "astralwave-blog",
+  "displayName": "Blog Writer",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774847278675,
+    "commit": null
+  },
+  "history": []
+}
