@@ -1,0 +1,11 @@
+{
+  "owner": "sunweb3sec",
+  "slug": "llm-sast-scanner",
+  "displayName": "llm-sast-scanner",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774788816794,
+    "commit": null
+  },
+  "history": []
+}
