@@ -1,0 +1,11 @@
+{
+  "owner": "hybrid1labs",
+  "slug": "crm-in-a-box-hybrid",
+  "displayName": "CRM in a Box (Hybrid Labs)",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1774973787467,
+    "commit": null
+  },
+  "history": []
+}
