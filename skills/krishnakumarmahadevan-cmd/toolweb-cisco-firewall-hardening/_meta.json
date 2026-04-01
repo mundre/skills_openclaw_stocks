@@ -1,0 +1,11 @@
+{
+  "owner": "krishnakumarmahadevan-cmd",
+  "slug": "toolweb-cisco-firewall-hardening",
+  "displayName": "Cisco Firewall Hardening",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774897529861,
+    "commit": null
+  },
+  "history": []
+}
