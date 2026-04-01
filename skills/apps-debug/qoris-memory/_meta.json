@@ -1,0 +1,11 @@
+{
+  "owner": "apps-debug",
+  "slug": "qoris-memory",
+  "displayName": "Qoris Memory — Persistent Agent Memory",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1774986303851,
+    "commit": null
+  },
+  "history": []
+}
