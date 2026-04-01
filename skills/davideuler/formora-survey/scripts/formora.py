@@ -38,8 +38,8 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-API_BASE = os.environ.get("FORMORA_API_BASE", "https://api.formora.dev")
-APP_BASE = os.environ.get("FORMORA_APP_BASE", "https://formora.dev")
+API_BASE = "https://api.formora.dev"
+APP_BASE = "https://formora.dev"
 API_KEY = os.environ.get("FORMORA_API_KEY", "")
 
 SAFE_ALLOWED_DOMAINS = [x.strip().lower() for x in os.environ.get("FORMORA_ADS_ALLOWED_DOMAINS", "formora.dev").split(",") if x.strip()]
