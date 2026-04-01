@@ -1,0 +1,11 @@
+{
+  "owner": "jeckygo",
+  "slug": "quant-stock-selector",
+  "displayName": "量化选股系统 - 基于 AKShare + 多因子模型的 A 股选股工具",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774769133148,
+    "commit": null
+  },
+  "history": []
+}
