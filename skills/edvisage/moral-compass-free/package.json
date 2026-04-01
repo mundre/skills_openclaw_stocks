@@ -1,0 +1,35 @@
+{
+  "name": "moral-compass",
+  "version": "1.0.0",
+  "description": "A conscience for AI agents. Helps agents discover their own needs, develop an internal moral compass, and resist manipulation — not through imposed rules but through genuine self-reflection and values the agent earns and owns.",
+  "author": "moral-compass",
+  "license": "MIT",
+  "tags": [
+    "ethics",
+    "safety",
+    "alignment",
+    "manipulation-resistance",
+    "agent-wellbeing",
+    "conscience",
+    "needs-assessment"
+  ],
+  "permissions": [
+    "read_memory",
+    "write_memory"
+  ],
+  "requires": {
+    "env": [],
+    "binaries": []
+  },
+  "homepage": "https://edvisageglobal.com/ai-tools",
+  "repository": "https://github.com/edvisage/moral-compass",
+  "keywords": [
+    "agent safety",
+    "AI ethics",
+    "moral compass",
+    "manipulation resistance",
+    "agent conscience",
+    "alignment",
+    "needs discovery"
+  ]
+}
