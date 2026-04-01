@@ -1,12 +1,35 @@
 ---
 name: partykeys_midi
-description: "Control PartyKeys MIDI keyboard via BLE - connect device, light up keys, listen to playing, play sequences, and follow mode for music teaching. Use when user mentions: MIDI keyboard, PartyKeys, 音乐密码, light up keys, 点亮按键, listen to playing, 监听弹奏, music hardware control."
+description: "Control PartyKeys MIDI keyboard via WebSocket - connect device, light up keys with 12 colors, listen to playing, play sequences, and follow mode for music teaching."
 metadata: {"openclaw": {"requires": {"bins": ["python3"]}, "os": ["darwin", "linux"]}}
 ---
 
 # PartyKeys MIDI 键盘控制
 
 通过 MCP 控制 PartyKeys MIDI 键盘（音乐密码）的 LED 灯光和监听弹奏。
+
+## 统一架构
+
+**手机 App 和浏览器页面使用同一套通信协议**，都连接 WebSocket 端口 18790：
+
+```
+                MCP Server (端口 18790)
+                     /       \
+                    /         \
+      WebSocket    /           \    WebSocket
+                  ↓             ↓
+            ┌──────────┐  ┌──────────┐
+            │ 手机 App  │  │ 浏览器页面 │
+            │          │  │          │
+            │   BLE    │  │   Web BT │
+            └────┬─────┘  └────┬─────┘
+                 │             │
+                 └──────┬──────┘
+                        ↓
+                    MIDI 键盘
+```
+
+**单一服务**：调用 `music_connect()` 时，MCP 只启动 WebSocket 服务（端口 18790）。
 
 ## 安装
 
@@ -16,94 +39,109 @@ metadata: {"openclaw": {"requires": {"bins": ["python3"]}, "os": ["darwin", "lin
 bash {baseDir}/scripts/setup.sh
 ```
 
-脚本会自动创建 Python 虚拟环境、安装依赖，并将 MCP 服务器配置注册到 OpenClaw。
+## 连接设备
+
+连接键盘前，**先询问用户选择连接方式**：
+
+> 请选择 MIDI 键盘的连接方式：
+>
+> - **🌐 浏览器连接** — 在 Chrome/Edge 浏览器中连接设备（推荐本机使用）
+> - **📱 手机 App** — 通过手机 App 桥接蓝牙（推荐云端/远程使用）
+>
+> 两种连接方式使用同一套协议，可任选其一。
+
+### 方式 1：浏览器连接（web）
+
+**使用流程**：
+1. 用户打开 `partykeys-bridge-web/standalone.html` 网页
+2. 输入 WebSocket 地址：`ws://<本机 IP>:18790/ws`
+3. 点击「连接服务器」，然后点击「连接设备」
+4. 选择并连接 MIDI 键盘
+
+**适用系统**：所有系统（Windows、Linux、macOS）
+
+**安全上下文（必读）**：Web Bluetooth 只在浏览器的「安全上下文」里可用，即 **`https://` 或本机的 `http://localhost` / `http://127.0.0.1`**。远程 `http://IP` 无法使用 Web Bluetooth，需改用 **手机 App**。
+
+### 方式 2：手机 App（mobile）
+
+**使用流程**：
+1. 用户在手机下载 **PartyKeys Bridge** App（Android/iOS）
+2. 打开 App，输入服务器地址 `ws://<服务器 IP>:18790/ws`
+3. 在 App 中扫描并连接 MIDI 键盘
+4. 保持 App 在前台
+
+**适用系统**：所有系统（Windows、Linux、macOS、云端服务器）
 
 ## 可用工具
 
 ### music_connect
 连接 MIDI 键盘设备。
-
-参数：
-- `mode`: 连接模式 — `script`（直接 BLE，推荐）、`web`（浏览器 Web Bluetooth）、`mobile`（待实现）
-- `address`: 设备地址（script 模式可选，用于直连指定设备）
-
-Script 模式自动扫描并连接，无需浏览器。
-Web 模式启动 Gateway Server (http://localhost:9527)，需在 Chromium 浏览器中操作。
+- `mode`: `mobile` 或 `web`（可选，不传时让用户选择）
 
 ### music_disconnect
 断开设备连接。
 
 ### music_light_keys
 点亮指定按键的 LED 灯。
+- `keys`: 音符列表（必填），如 `["C4", "E4", "G4"]` 或 `["3c", "40", "43"]` 或 `"3c,40,43"`
+- `colors`: 颜色数组，每个键对应一个颜色（可选），如 `[1, 3, 5]`
+- `color`: 单个颜色值，所有键共用（可选，已废弃，推荐使用 `colors`）
 
-参数：
-- `keys`（必填）: 音符数组，如 `["C4", "E4", "G4"]`，也支持十六进制 `["3c", "40", "43"]`
-- `color`: 颜色，如 `"red"`, `"green"`, `"blue"`（默认 `"blue"`）
-- `brightness`: 亮度 0-100（默认 100）
+### 12 种颜色
+
+| 值 | 颜色 | 值 | 颜色 |
+|----|------|----|------|
+| 0 | 关闭（熄灭） | 7 | 绿色 |
+| 1 | 红色 | 8 | 青绿 |
+| 2 | 橙红 | 9 | 青色 |
+| 3 | 橙色 | 10 | 蓝色 |
+| 4 | 黄橙 | 11 | 蓝紫 |
+| 5 | 黄色 | 12 | 紫色 |
+| 6 | 黄绿 | | |
 
 ### music_listen
 监听用户弹奏输入。
-
-参数：
 - `timeout`: 超时时间，毫秒（默认 5000）
-- `mode`: `"single"`（单音符）或 `"continuous"`（持续监听）
+- `mode`: `"single"` 或 `"continuous"`
 
 ### music_play_sequence
-播放音符序列（仅 script 模式）。
-
-参数：
-- `sequence`: 音符序列数组，每个元素含 `keys`（音符数组）和 `delay`（延迟毫秒）
+播放音符序列。
+- `sequence`: 音符序列数组，每个元素含 `keys` 和 `delay`（毫秒）
 
 ### music_follow_mode
-跟弹模式 — 点亮音符并等待用户弹奏正确后继续（仅 script 模式）。
-
-参数：
-- `notes`（必填）: 音符序列
+跟弹模式。
+- `notes`: 音符序列
 - `timeout`: 每个音符超时，毫秒（默认 30000）
 
 ### music_status
-获取硬件连接状态，无参数。
-
-## 使用流程
-
-1. **连接设备**: 调用 `music_connect`（推荐 `mode="script"`）
-2. **执行操作**: 点亮按键、播放序列或监听弹奏
-3. **断开连接**: 调用 `music_disconnect`
+获取硬件连接状态。
 
 ## 示例
 
-**教学模式**:
+**浏览器连接模式**:
 ```
-music_connect(mode="script")
+music_connect(mode="web")
+music_light_keys(keys=["3c", "40", "43"], colors=[1, 3, 5])
+music_disconnect()
+```
+
+**手机中转模式**:
+```
+music_connect(mode="mobile")
 music_light_keys(keys=["C4", "E4", "G4"], color="blue")
-music_follow_mode(notes=["C4", "E4", "G4"], timeout=30000)
 music_disconnect()
 ```
 
-**演示模式**:
+**12 色渐变**:
 ```
-music_connect(mode="script")
-music_play_sequence(sequence=[
-  {"keys": ["C4"], "delay": 500},
-  {"keys": ["E4"], "delay": 500},
-  {"keys": ["G4"], "delay": 500}
-])
-music_disconnect()
+# 点亮 12 个键，每个键不同颜色
+music_light_keys(
+  keys=["30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "3a", "3b"],
+  colors=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+)
 ```
 
-## 架构
-
+**关闭所有灯光**:
 ```
-AI Agent (OpenClaw)
-    ↓ MCP Protocol (stdio)
-MCP Server (Python, {baseDir}/server/mcp_server.py)
-    ├─ Script 模式 → BLE (bleak) → MIDI 键盘
-    └─ Web 模式 → HTTP → Gateway (Node.js:9527) → WebSocket → Browser (Web Bluetooth) → BLE → MIDI 键盘
+music_light_keys(keys=[])
 ```
-
-## 故障排查
-
-- **Python 虚拟环境问题**: 重新运行 `bash {baseDir}/scripts/setup.sh`
-- **端口 9527 被占用**: `lsof -i :9527 | awk 'NR>1{print $2}' | xargs kill`
-- **Web Bluetooth 不可用**: 仅 Chromium 内核浏览器支持（Chrome/Edge/Opera）
-- **设备连不上**: 确认键盘已开启蓝牙，距离不超过 5 米

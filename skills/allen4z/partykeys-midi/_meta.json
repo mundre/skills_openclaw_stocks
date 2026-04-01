@@ -1,11 +1,17 @@
 {
   "owner": "allen4z",
   "slug": "partykeys-midi",
-  "displayName": "PartyKeys MIDI",
+  "displayName": "Partykeys Midi",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774883197081,
-    "commit": "https://github.com/openclaw/skills/commit/f1c58ad3c3fe5cfbdd9ed73104960628e8f75498"
+    "version": "1.0.10",
+    "publishedAt": 1774971626549,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774883197081,
+      "commit": "https://github.com/openclaw/skills/commit/f1c58ad3c3fe5cfbdd9ed73104960628e8f75498"
+    }
+  ]
 }

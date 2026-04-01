@@ -18,14 +18,11 @@ check_bin() {
 }
 
 check_bin python3
-check_bin node
-check_bin npm
 
-echo "[✓] Prerequisites: python3, node, npm"
+echo "[✓] Prerequisites: python3"
 
 # ── 2. Copy MCP server source if not present ────────────────────────
 SERVER_DIR="$SKILL_DIR/server"
-GATEWAY_DIR="$SKILL_DIR/web-gateway"
 
 if [ ! -f "$SERVER_DIR/mcp_server.py" ]; then
   REPO_SERVER="$(cd "$SKILL_DIR/../../partykeys-mcp/server" 2>/dev/null && pwd || true)"
@@ -34,26 +31,11 @@ if [ ! -f "$SERVER_DIR/mcp_server.py" ]; then
     mkdir -p "$SERVER_DIR"
     cp "$REPO_SERVER/mcp_server.py" "$SERVER_DIR/"
     cp "$REPO_SERVER/script_ble_client.py" "$SERVER_DIR/"
-    cp "$REPO_SERVER/web_gateway_server.py" "$SERVER_DIR/"
     [ -f "$REPO_SERVER/requirements.txt" ] && cp "$REPO_SERVER/requirements.txt" "$SERVER_DIR/"
   else
     echo "ERROR: server/mcp_server.py not found."
     echo "Please copy partykeys-mcp/server/ contents into $SERVER_DIR/"
     exit 1
-  fi
-fi
-
-if [ ! -f "$GATEWAY_DIR/package.json" ]; then
-  REPO_GATEWAY="$(cd "$SKILL_DIR/../../partykeys-mcp/web-gateway" 2>/dev/null && pwd || true)"
-  if [ -n "$REPO_GATEWAY" ] && [ -f "$REPO_GATEWAY/package.json" ]; then
-    echo "Copying web-gateway source from repo..."
-    mkdir -p "$GATEWAY_DIR"
-    cp "$REPO_GATEWAY/package.json" "$GATEWAY_DIR/"
-    for f in "$REPO_GATEWAY"/*.js "$REPO_GATEWAY"/*.html; do
-      [ -f "$f" ] && cp "$f" "$GATEWAY_DIR/"
-    done
-  else
-    echo "WARN: web-gateway not found — Web mode will not work (Script mode is fine)."
   fi
 fi
 
@@ -68,32 +50,37 @@ fi
 
 echo "Installing Python dependencies..."
 "$VENV_DIR/bin/pip" install --quiet --upgrade pip
-"$VENV_DIR/bin/pip" install --quiet mcp aiohttp bleak
+"$VENV_DIR/bin/pip" install --quiet mcp aiohttp
 
 echo "[✓] Python dependencies installed"
-
-# ── 4. Install Node.js deps for web-gateway ─────────────────────────
-if [ -f "$GATEWAY_DIR/package.json" ]; then
-  echo "Installing Node.js dependencies for web-gateway..."
-  (cd "$GATEWAY_DIR" && npm install --silent 2>/dev/null)
-  echo "[✓] Node.js dependencies installed"
-fi
 
 # ── 5. Register MCP server in OpenClaw ───────────────────────────────
 PYTHON_BIN="$VENV_DIR/bin/python"
 MCP_ENTRY="$SERVER_DIR/mcp_server.py"
 MCP_JSON="$HOME/.openclaw/mcp.json"
+OPENCLAW_JSON="$HOME/.openclaw/openclaw.json"
+
+cleanup_openclaw_json() {
+  if [ -f "$OPENCLAW_JSON" ] && command -v jq &>/dev/null; then
+    if jq -e '.mcp' "$OPENCLAW_JSON" &>/dev/null; then
+      echo "Cleaning up stale 'mcp' key from openclaw.json..."
+      local tmp
+      tmp=$(mktemp)
+      jq 'del(.mcp)' "$OPENCLAW_JSON" > "$tmp" && mv "$tmp" "$OPENCLAW_JSON"
+      echo "[✓] Removed invalid 'mcp' key from openclaw.json"
+    fi
+  fi
+}
 
 register_mcp() {
   mkdir -p "$HOME/.openclaw"
+  cleanup_openclaw_json
 
-  if command -v openclaw &>/dev/null; then
-    openclaw mcp set "$MCP_NAME" "{\"command\":\"$PYTHON_BIN\",\"args\":[\"$MCP_ENTRY\"]}"
-    echo "[✓] MCP server registered via 'openclaw mcp set'"
-  elif command -v jq &>/dev/null; then
-    if [ ! -f "$MCP_JSON" ]; then
-      echo "{}" > "$MCP_JSON"
-    fi
+  if [ ! -f "$MCP_JSON" ]; then
+    echo "{}" > "$MCP_JSON"
+  fi
+
+  if command -v jq &>/dev/null; then
     local tmp
     tmp=$(mktemp)
     jq --arg name "$MCP_NAME" \
@@ -103,21 +90,18 @@ register_mcp() {
        "$MCP_JSON" > "$tmp" && mv "$tmp" "$MCP_JSON"
     echo "[✓] MCP server registered in $MCP_JSON"
   else
-    echo ""
-    echo "──────────────────────────────────────────"
-    echo "Add this to $MCP_JSON:"
-    echo ""
-    echo "  {"
-    echo "    \"mcpServers\": {"
-    echo "      \"$MCP_NAME\": {"
-    echo "        \"command\": \"$PYTHON_BIN\","
-    echo "        \"args\": [\"$MCP_ENTRY\"]"
-    echo "      }"
-    echo "    }"
-    echo "  }"
-    echo "──────────────────────────────────────────"
-    echo ""
-    echo "Or run: openclaw mcp set $MCP_NAME '{\"command\":\"$PYTHON_BIN\",\"args\":[\"$MCP_ENTRY\"]}'"
+    cat > "$MCP_JSON" << MCPEOF
+{
+  "mcpServers": {
+    "$MCP_NAME": {
+      "command": "$PYTHON_BIN",
+      "args": ["$MCP_ENTRY"]
+    }
+  }
+}
+MCPEOF
+    echo "[✓] MCP server written to $MCP_JSON"
+    echo "    (⚠ jq not found — existing entries in mcp.json may have been overwritten)"
   fi
 }
 

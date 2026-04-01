@@ -1,6 +1,6 @@
 """
 PartyKeys MCP Server
-支持多种 Gateway 模式的音乐硬件控制服务
+通过 WebSocket（端口 18790）控制音乐硬件 - 支持手机 App 和浏览器页面连接
 """
 import asyncio
 import json
@@ -13,51 +13,147 @@ import aiohttp
 from aiohttp import web
 from script_ble_client import ScriptBLEClient
 
-# Gateway 管理器
-class GatewayManager:
+WS_PORT = 18790
+
+class MobileBridge:
+    """
+    WebSocket server that accepts connections from mobile app and web browser.
+    统一架构：手机 App 和 浏览器页面都连接同一个 WebSocket 端口
+    """
+
     def __init__(self):
-        self.gateway_url: Optional[str] = None
-        self.connected = False
-        self.web_server_process: Optional[subprocess.Popen] = None
-        self.script_client: Optional[ScriptBLEClient] = None
-        self.mode: Optional[str] = None
+        self._clients: set = set()  # 所有 WebSocket 客户端
+        self._app: Optional[web.Application] = None
+        self._runner: Optional[web.AppRunner] = None
+        self._pending: dict[str, web.WebSocketResponse] = {}  # cmd_id -> requester_ws
+        self._cmd_id = 0
 
-    def start_web_server(self) -> dict:
-        """启动 Web Gateway Server"""
+    async def start(self, port: int = WS_PORT) -> dict:
+        self._app = web.Application()
+        self._app.router.add_get('/ws', self._handle_ws)
+        self._runner = web.AppRunner(self._app)
+        await self._runner.setup()
+        site = web.TCPSite(self._runner, '0.0.0.0', port)
+        await site.start()
+        return {"success": True, "port": port}
+
+    async def stop(self):
+        for client in self._clients:
+            if not client.closed:
+                await client.close()
+        if self._runner:
+            await self._runner.cleanup()
+        self._clients.clear()
+
+    @property
+    def is_connected(self) -> bool:
+        return len(self._clients) > 0
+
+    @property
+    def client_count(self) -> int:
+        return len(self._clients)
+
+    async def _handle_ws(self, request):
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        self._clients.add(ws)
+
+        client_info = f"新客户端 (现有 {len(self._clients)} 个客户端)"
+        print(f"[WS] {client_info}")
+
         try:
-            web_dir = os.path.join(os.path.dirname(__file__), "..", "web-gateway")
-            self.web_server_process = subprocess.Popen(
-                ["node", "server.js"],
-                cwd=web_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            self.gateway_url = "http://localhost:9527"
-            return {"success": True, "url": "http://localhost:9527", "message": "请在浏览器中打开 http://localhost:9527 进行连接"}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    data = json.loads(msg.data)
+                    msg_type = data.get('type', '')
 
-    def stop_web_server(self):
-        """停止 Web Gateway Server"""
-        if self.web_server_process:
-            self.web_server_process.terminate()
-            self.web_server_process = None
+                    if msg_type == 'status':
+                        # 客户端发送状态更新
+                        ble = data.get('data', {}).get('bleConnected', False)
+                        bridge = data.get('data', {}).get('bridge', 'unknown')
+                        print(f"[WS] 状态更新：BLE={ble}, bridge={bridge}")
+                        # 更新 BLE 连接状态
+                        gateway.ble_connected = ble
+                        if ble:
+                            gateway.mode = gateway.mode or "web"  # 自动设置为 web 模式
+
+                    elif msg_type == 'command':
+                        # 转发命令给所有其他客户端（广播）
+                        cmd_id = data.get('id', '')
+                        self._pending[cmd_id] = ws  # 记录请求者
+                        print(f"[WS] 收到命令：{data.get('command', {})}")
+
+                        # 广播给所有其他客户端
+                        for client in self._clients:
+                            if client != ws and not client.closed:
+                                await client.send_json(data)
+                                print(f"[WS] 转发命令到客户端")
+
+                    elif msg_type == 'result':
+                        # 转发结果给请求者
+                        fid = data.get('id', '')
+                        requester_ws = self._pending.pop(fid, None)
+                        if requester_ws and not requester_ws.closed:
+                            await requester_ws.send_json(data)
+                            print(f"[WS] 转发结果给请求者")
+
+                    elif msg_type == 'ping':
+                        await ws.send_json({'type': 'pong'})
+
+                elif msg.type == aiohttp.WSMsgType.ERROR:
+                    break
+
+        except Exception as e:
+            print(f"[WS] 异常：{e}")
+        finally:
+            self._clients.discard(ws)
+            self._pending = {k: v for k, v in self._pending.items() if v != ws}
+            print(f"[WS] 客户端断开 (剩余 {len(self._clients)} 个客户端)")
+
+        return ws
+
+    async def send_command(self, command: str, params: dict, timeout: float = 30) -> dict:
+        """从 MCP 发送命令到所有客户端"""
+        if not self.is_connected:
+            return {"success": False, "error": "没有客户端连接"}
+
+        self._cmd_id += 1
+        cmd_id = str(self._cmd_id)
+
+        msg = {
+            'type': 'command',
+            'id': cmd_id,
+            'command': {'command': command, 'params': params},
+        }
+
+        # 广播给所有客户端
+        sent_count = 0
+        for client in self._clients:
+            if not client.closed:
+                await client.send_json(msg)
+                sent_count += 1
+
+        print(f"[WS] 发送命令到 {sent_count} 个客户端：{command}")
+        return {"success": True, "note": f"命令已发送到 {sent_count} 个客户端"}
+
+
+class GatewayManager:
+    """
+    统一网关管理器 - 只支持 WebSocket 模式（端口 18790）
+    手机 App 和浏览器页面都通过 WebSocket 连接
+    """
+    def __init__(self):
+        self.connected = False
+        self.script_client: Optional[ScriptBLEClient] = None
+        self.mobile_bridge: Optional[MobileBridge] = None
+        self.mode: Optional[str] = None
+        self.ble_connected: bool = False  # 跟踪 BLE 连接状态
 
     async def send_command(self, command: str, params: dict) -> dict:
-        """发送命令到 Gateway"""
-        if not self.gateway_url:
-            return {"error": "Gateway not connected"}
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.gateway_url}/command",
-                    json={"command": command, "params": params},
-                    timeout=aiohttp.ClientTimeout(total=10)
-                ) as resp:
-                    return await resp.json()
-        except Exception as e:
-            return {"error": str(e)}
+        """通过 mobile_bridge 发送命令到 WebSocket 客户端"""
+        if self.mobile_bridge:
+            return await self.mobile_bridge.send_command(command, params)
+        return {"error": "WebSocket service not started"}
 
 # 全局实例
 gateway = GatewayManager()
@@ -76,12 +172,12 @@ async def list_tools() -> list[Tool]:
                     "mode": {
                         "type": "string",
                         "enum": ["script", "mobile", "web"],
-                        "description": "连接模式：script(脚本连接), mobile(手机中转-待实现), web(Web浏览器连接)",
-                        "default": "web"
+                        "description": "连接模式：script(脚本直接 BLE，需蓝牙硬件), mobile(手机 App 中转，推荐云端/远程使用), web(浏览器 Web Bluetooth)。注意：Web Bluetooth 仅在浏览器安全上下文中可用（https 或本机 localhost/127.0.0.1）；MCP 部署在云端或用 http://局域网 IP 打开控制页时无法调起蓝牙，请改用 mobile 或在前端自行配置 HTTPS 反向代理。",
+                        "default": "mobile"
                     },
                     "address": {
                         "type": "string",
-                        "description": "设备地址（script模式下可选，用于直接连接指定设备）"
+                        "description": "设备地址（script 模式下可选，用于直接连接指定设备）"
                     }
                 },
             }
@@ -101,13 +197,24 @@ async def list_tools() -> list[Tool]:
                 "type": "object",
                 "properties": {
                     "keys": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "音符列表，如 ['C4', 'E4', 'G4']"
+                        "oneOf": [
+                            {"type": "array", "items": {"type": "string"}},
+                            {"type": "string"}
+                        ],
+                        "description": "音符列表，如 ['C4', 'E4', 'G4'] 或 'C4,E4,G4' 或 '31'"
+                    },
+                    "colors": {
+                        "oneOf": [
+                            {"type": "array", "items": {"type": ["string", "number"]}},
+                            {"type": "string"},
+                            {"type": "number"}
+                        ],
+                        "description": "颜色数组（每个键不同颜色）或单个颜色值，如 ['red', 'green', 'blue'] 或 'red' 或 1",
+                        "default": "blue"
                     },
                     "color": {
                         "type": "string",
-                        "description": "颜色，如 'red', 'green', 'blue'",
+                        "description": "颜色（已废弃，使用 colors 代替），如 'red', 'green', 'blue'",
                         "default": "blue"
                     },
                     "brightness": {
@@ -193,7 +300,23 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     """处理工具调用"""
 
     if name == "music_connect":
-        mode = arguments.get("mode", "web")
+        mode = arguments.get("mode")
+
+        # 启动 WebSocket 服务
+        gateway.mobile_bridge = MobileBridge()
+        bridge_result = await gateway.mobile_bridge.start(WS_PORT)
+
+        if not bridge_result.get("success"):
+            return [TextContent(
+                type="text",
+                text=json.dumps(bridge_result, ensure_ascii=False)
+            )]
+
+        gateway.connected = True
+
+        # 如果用户指定了模式，直接设置；否则等待用户选择
+        if mode:
+            gateway.mode = mode
 
         if mode == "script":
             gateway.script_client = ScriptBLEClient()
@@ -202,22 +325,38 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             if result.get("success"):
                 gateway.mode = "script"
                 gateway.connected = True
-                result["message"] = f"已通过脚本连接设备: {result['address']}"
-        elif mode == "mobile":
-            result = {"success": False, "error": "手机中转模式尚未实现，敬请期待"}
-        elif mode == "web":
-            server_result = gateway.start_web_server()
-            if not server_result["success"]:
-                result = server_result
-            else:
-                gateway.mode = "web"
-                result = {
-                    "success": True,
-                    "mode": "web",
-                    "message": f"Web Server 已启动！\n请在浏览器中打开: {server_result['url']}\n然后点击页面上的'连接设备'按钮完成蓝牙配对"
-                }
+                result["message"] = f"已通过脚本连接设备：{result['address']}"
         else:
-            result = {"success": False, "error": f"未知的连接模式: {mode}"}
+            # 未指定模式或指定 mobile/web 时，返回统一的连接提示
+            local_ip = subprocess.run(
+                "ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | head -1",
+                shell=True, capture_output=True, text=True
+            ).stdout.strip() or "<本机 IP>"
+
+            result = {
+                "success": True,
+                "services_started": True,
+                "ws_port": WS_PORT,
+                "local_ip": local_ip,
+                "message": f"""✅ WebSocket 服务已启动！
+
+【连接方式 1】📱 手机 App 中转
+  1. 在手机打开 PartyKeys Bridge App
+  2. 输入服务器地址：ws://{local_ip}:18790/ws
+  3. 在 App 中扫描并连接 MIDI 键盘
+
+【连接方式 2】🌐 独立网页版
+  1. 打开网页文件：partykeys-bridge-web/standalone.html
+  2. 输入 WebSocket 地址：ws://{local_ip}:18790/ws
+  3. 点击「连接服务器」，然后点击「连接设备」
+
+【连接方式 3】🌐 部署网页到 GitHub Pages / Vercel
+  1. 将 standalone.html 部署到任意 HTTPS 服务
+  2. 打开网页，输入 WebSocket 地址：ws://{local_ip}:9528/ws
+  3. 连接服务器并连接设备
+
+注意：所有连接方式都使用同一个 WebSocket 端口 18790，可任选其一。"""
+            }
 
         return [TextContent(
             type="text",
@@ -228,9 +367,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         if gateway.mode == "script":
             result = await gateway.script_client.disconnect()
             gateway.script_client = None
-        else:
+        elif gateway.mode == "mobile" or gateway.mode == "web":
             result = await gateway.send_command("disconnect", {})
-            gateway.stop_web_server()
+            await gateway.mobile_bridge.stop()
+            gateway.mobile_bridge = None
 
         gateway.connected = False
         gateway.mode = None
@@ -241,10 +381,41 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         )]
 
     elif name == "music_light_keys":
-        if gateway.mode == "script":
-            result = await gateway.script_client.light_keys(arguments["keys"], arguments.get("color", 1), arguments.get("brightness", 100))
+        # 支持多种 keys 格式：数组 ["31"] 或 字符串 "31" 或 "31,32,33"
+        keys_arg = arguments.get("keys", [])
+        if isinstance(keys_arg, str):
+            keys = [k.strip() for k in keys_arg.split(",")]
+        elif isinstance(keys_arg, list):
+            keys = keys_arg
         else:
-            result = await gateway.send_command("light_keys", arguments)
+            keys = [str(keys_arg)]
+
+        # 特殊处理：空数组表示关闭所有灯光，直接发送简化的参数
+        if len(keys) == 0:
+            light_args = {"keys": [], "brightness": 100}
+            result = await gateway.send_command("light_keys", light_args)
+            return [TextContent(
+                type="text",
+                text=json.dumps(result, ensure_ascii=False)
+            )]
+
+        # 支持 colors 数组或单个 color 值
+        colors_arg = arguments.get("colors", arguments.get("color", 1))
+        if isinstance(colors_arg, list):
+            colors = colors_arg
+        else:
+            colors = [colors_arg] * len(keys)  # 单个颜色应用到所有键
+
+        if gateway.mode == "script":
+            result = await gateway.script_client.light_keys(keys, colors[0], arguments.get("brightness", 100))
+        else:
+            # 构建参数：支持每个键不同颜色
+            light_args = {
+                "keys": keys,
+                "colors": colors,  # 新增 colors 数组
+                "brightness": arguments.get("brightness", 100)
+            }
+            result = await gateway.send_command("light_keys", light_args)
 
         return [TextContent(
             type="text",
@@ -254,8 +425,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     elif name == "music_play_sequence":
         if gateway.mode == "script":
             result = await gateway.script_client.play_sequence(arguments["sequence"])
+        elif gateway.mode == "mobile":
+            result = await gateway.send_command("play_sequence", arguments)
         else:
-            result = {"success": False, "error": "仅 script 模式支持序列播放"}
+            result = {"success": False, "error": "Web 模式暂不支持序列播放"}
 
         return [TextContent(
             type="text",
@@ -265,8 +438,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     elif name == "music_follow_mode":
         if gateway.mode == "script":
             result = await gateway.script_client.follow_mode(arguments["notes"], arguments.get("timeout", 30000))
+        elif gateway.mode == "mobile":
+            result = await gateway.send_command("follow_mode", arguments)
         else:
-            result = {"success": False, "error": "仅 script 模式支持跟弹模式"}
+            result = {"success": False, "error": "Web 模式暂不支持跟弹模式"}
 
         return [TextContent(
             type="text",
@@ -284,9 +459,16 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     elif name == "music_status":
         status = {
             "connected": gateway.connected,
+            "mode": gateway.mode,
             "gateway_url": gateway.gateway_url,
-            "gateway_type": "web-bluetooth"
+            "ble_connected": gateway.ble_connected,  # 新增：BLE 连接状态
         }
+        if gateway.mode == "mobile" and gateway.mobile_bridge:
+            status["mobile_bridge_connected"] = gateway.mobile_bridge.is_connected
+            status["ws_port"] = WS_PORT
+        if gateway.mode == "web" and gateway.mobile_bridge:
+            status["mobile_bridge_connected"] = gateway.mobile_bridge.is_connected
+            status["ws_port"] = WS_PORT
 
         return [TextContent(
             type="text",
