@@ -1,0 +1,11 @@
+{
+  "owner": "sakenw",
+  "slug": "memory-governor",
+  "displayName": "Memory Governor",
+  "latest": {
+    "version": "0.2.4-beta",
+    "publishedAt": 1774932805009,
+    "commit": null
+  },
+  "history": []
+}
