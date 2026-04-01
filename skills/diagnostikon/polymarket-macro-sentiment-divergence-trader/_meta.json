@@ -1,0 +1,11 @@
+{
+  "owner": "diagnostikon",
+  "slug": "polymarket-macro-sentiment-divergence-trader",
+  "displayName": "Macro Sentiment Divergence Trader",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774952842055,
+    "commit": null
+  },
+  "history": []
+}
