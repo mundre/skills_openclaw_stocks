@@ -1,0 +1,11 @@
+{
+  "owner": "zhangligong0826",
+  "slug": "bilibili-summarizer",
+  "displayName": "视频字幕提取与总结（B站+抖音+YouTube+小红书）",
+  "latest": {
+    "version": "3.2.0",
+    "publishedAt": 1775086481805,
+    "commit": null
+  },
+  "history": []
+}
