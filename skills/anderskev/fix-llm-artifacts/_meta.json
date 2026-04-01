@@ -1,0 +1,11 @@
+{
+  "owner": "anderskev",
+  "slug": "fix-llm-artifacts",
+  "displayName": "Fix Llm Artifacts",
+  "latest": {
+    "version": "1.1.4",
+    "publishedAt": 1774911238157,
+    "commit": null
+  },
+  "history": []
+}
