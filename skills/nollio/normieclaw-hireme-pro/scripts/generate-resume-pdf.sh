@@ -20,17 +20,9 @@
 set -euo pipefail
 
 # --- Workspace root detection ---
-find_workspace_root() {
-  local dir="$PWD"
-  while [ "$dir" != "/" ]; do
-    if [ -f "$dir/AGENTS.md" ] || [ -f "$dir/SOUL.md" ] || [ -f "$dir/.openclaw" ]; then
-      echo "$dir"
-      return 0
-    fi
-    dir="$(dirname "$dir")"
-  done
-  echo ""
-  return 1
+find_skill_root() {
+    # Stay within the skill directory — do not traverse outside
+    cd "$(dirname "$0")/.." && pwd
 }
 
 # Resolve absolute path using Python for portability (macOS/Linux).
@@ -69,12 +61,12 @@ JSON_DATA="$2"
 OUTPUT_PDF="$3"
 
 # --- Determine workspace root and enforce path boundaries ---
-WORKSPACE_ROOT="$(find_workspace_root || true)"
-if [ -z "$WORKSPACE_ROOT" ]; then
-  echo "Error: Could not locate workspace root (missing AGENTS.md, SOUL.md, or .openclaw marker)."
+SKILL_DIR="$(find_skill_root || true)"
+if [ -z "$SKILL_DIR" ]; then
+    # Skill directory detection (stay within skill boundary)
   exit 1
 fi
-WORKSPACE_ROOT="$(resolve_path "$WORKSPACE_ROOT")"
+SKILL_DIR="$(resolve_path "$SKILL_DIR")"
 
 # --- Validate inputs ---
 if [ ! -f "$HTML_TEMPLATE" ]; then
@@ -91,9 +83,9 @@ ABS_TEMPLATE="$(resolve_path "$HTML_TEMPLATE")"
 ABS_JSON_DATA="$(resolve_path "$JSON_DATA")"
 ABS_OUTPUT_PDF="$(resolve_path "$OUTPUT_PDF")"
 
-require_path_within "$ABS_TEMPLATE" "$WORKSPACE_ROOT"
-require_path_within "$ABS_JSON_DATA" "$WORKSPACE_ROOT"
-require_path_within "$ABS_OUTPUT_PDF" "$WORKSPACE_ROOT"
+require_path_within "$ABS_TEMPLATE" "$SKILL_DIR"
+require_path_within "$ABS_JSON_DATA" "$SKILL_DIR"
+require_path_within "$ABS_OUTPUT_PDF" "$SKILL_DIR"
 
 if [[ "$ABS_OUTPUT_PDF" != *.pdf ]]; then
   echo "Error: Output file must end with .pdf"
