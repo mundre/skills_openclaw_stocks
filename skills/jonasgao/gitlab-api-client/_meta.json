@@ -1,0 +1,11 @@
+{
+  "owner": "jonasgao",
+  "slug": "gitlab-api-client",
+  "displayName": "GitLab API Client",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774932452110,
+    "commit": null
+  },
+  "history": []
+}
