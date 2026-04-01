@@ -1,0 +1,11 @@
+{
+  "owner": "panthrocorp",
+  "slug": "panthrocorp-google-workspace",
+  "displayName": "Google Workspace",
+  "latest": {
+    "version": "0.2.0",
+    "publishedAt": 1774824532470,
+    "commit": null
+  },
+  "history": []
+}
