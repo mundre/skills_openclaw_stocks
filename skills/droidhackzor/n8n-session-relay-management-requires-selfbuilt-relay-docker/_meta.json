@@ -1,0 +1,11 @@
+{
+  "owner": "droidhackzor",
+  "slug": "n8n-session-relay-management-requires-selfbuilt-relay-docker",
+  "displayName": "n8n Workflow Management",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1774918417386,
+    "commit": null
+  },
+  "history": []
+}
