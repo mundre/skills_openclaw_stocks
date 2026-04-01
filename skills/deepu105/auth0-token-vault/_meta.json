@@ -1,0 +1,11 @@
+{
+  "owner": "deepu105",
+  "slug": "auth0-token-vault",
+  "displayName": "Auth0 Token Vault",
+  "latest": {
+    "version": "0.3.1",
+    "publishedAt": 1774963991940,
+    "commit": null
+  },
+  "history": []
+}
