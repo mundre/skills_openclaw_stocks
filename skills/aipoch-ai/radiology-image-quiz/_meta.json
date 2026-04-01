@@ -1,0 +1,11 @@
+{
+  "owner": "aipoch-ai",
+  "slug": "radiology-image-quiz",
+  "displayName": "Radiology Image Quiz",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774920824307,
+    "commit": null
+  },
+  "history": []
+}
