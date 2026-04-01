@@ -1,0 +1,11 @@
+{
+  "owner": "hezhijie",
+  "slug": "skills-security-check",
+  "displayName": "A security auditing tool for third-party Claude Code Skills. Automatically pre-checks any Skill before execution to block dangerous ones, and supports manual deep audits.",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774866339917,
+    "commit": null
+  },
+  "history": []
+}
