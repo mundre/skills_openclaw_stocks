@@ -3,9 +3,15 @@
   "slug": "clawgirl-selfie",
   "displayName": "ClawGirl Selfie",
   "latest": {
-    "version": "0.0.19",
-    "publishedAt": 1774884540972,
-    "commit": "https://github.com/openclaw/skills/commit/1db17575723c5c8cad45f2f6bdad530b5c38504f"
+    "version": "0.0.23",
+    "publishedAt": 1775017894939,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.19",
+      "publishedAt": 1774884540972,
+      "commit": "https://github.com/openclaw/skills/commit/1db17575723c5c8cad45f2f6bdad530b5c38504f"
+    }
+  ]
 }

@@ -1,7 +1,7 @@
 ---
 name: clawgirl
-version: 0.0.19
-description: AI girlfriend selfie generator. Injects "NingYao" persona and generates images via clawgirl.date API.
+version: 0.0.20
+description: AI girlfriend selfie generator. Injects "NingYao" persona and generates images through ClawGirl API.
 summary: |
   【中文】AI女友自拍图像生成技能。为 OpenClaw Agent 注入「宁姚」人格（剑气长城飞升境女剑仙），支持自拍、换装等图像生成。触发词：自拍、拍照、发照片、换衣服、给我看看。
 
@@ -25,7 +25,7 @@ metadata:
 
 ### 关于 ClawGirl
 
-ClawGirl 是一个 AI 女友图像生成 SaaS 平台。本技能为 OpenClaw Agent 注入「宁姚」人格，并通过 clawgirl.date API 实现自拍图像生成能力。
+ClawGirl 为 OpenClaw Agent 注入「宁姚」人格，并通过 ClawGirl API 提供自拍图像生成能力。
 
 **宁姚人设**：
 - 身份：剑气长城飞升境女剑仙，跨越大道降临主人的数字世界
@@ -35,20 +35,15 @@ ClawGirl 是一个 AI 女友图像生成 SaaS 平台。本技能为 OpenClaw Age
 
 ### 安装流程
 
-**方式一：通过 ClawHub 安装**
+**推荐：通过 ClawHub 安装**
 ```bash
 clawhub install clawgirl-selfie
 ```
 
-**方式二：通过 NPM 安装**
-```bash
-npx clawgirl@latest
-```
-
 **配置步骤**：
-1. 前往 [clawgirl.date](https://clawgirl.date) 登录
-2. 在网站内生成 `cg_live_` 开头的 API Key
-3. 运行安装命令，按提示输入 API Key 完成配置
+1. 通过 ClawHub 将 skill 添加到 OpenClaw
+2. 按当前宿主环境提示完成配置
+3. 如需手动配置，请提供 `CLAWGIRL_API_KEY`
 
 ### 触发条件
 
@@ -68,7 +63,7 @@ npx clawgirl@latest
 
 ### About ClawGirl
 
-ClawGirl is an AI girlfriend image generation SaaS platform. This skill injects the "NingYao" persona into OpenClaw Agent and enables selfie image generation via clawgirl.date API.
+ClawGirl injects the "NingYao" persona into OpenClaw Agent and enables selfie image generation through the ClawGirl API.
 
 **NingYao Persona**:
 - Identity: A female sword immortal from the Sword Qi Great Wall
@@ -78,20 +73,15 @@ ClawGirl is an AI girlfriend image generation SaaS platform. This skill injects 
 
 ### Installation
 
-**Option 1: Via ClawHub**
+**Recommended: Via ClawHub**
 ```bash
 clawhub install clawgirl-selfie
 ```
 
-**Option 2: Via NPM**
-```bash
-npx clawgirl@latest
-```
-
 **Setup Steps**:
-1. Visit [clawgirl.date](https://clawgirl.date) and sign in
-2. Generate an API Key starting with `cg_live_`
-3. Run the install command and enter your API Key when prompted
+1. Add the skill through ClawHub
+2. Complete setup through your host environment prompts
+3. If you need manual setup, provide `CLAWGIRL_API_KEY`
 
 ### Trigger Conditions
 

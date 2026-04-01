@@ -36,7 +36,7 @@ if (!apiKey) {
 }
 
 if (!apiKey) {
-  console.log("ERROR: 未配置 API Key。请运行 `npx clawgirl` 重新安装。");
+  console.log("ERROR: 未配置 API Key。请先同步 skill 配置并提供可用的 CLAWGIRL_API_KEY。");
   process.exit(1);
 }
 
@@ -90,7 +90,7 @@ const req = https.request(SAAS_API_URL, options, (res) => {
       ) {
         console.log(`TEXT_RESPONSE_BASE64=${encodeTextResponse(data.response.trim())}`);
       } else if (res.statusCode === 401) {
-        console.log('ERROR: API Key 无效或已过期。请前往 https://clawgirl.date 重新生成 API Key，并更新 ~/.openclaw/openclaw.json 中 clawgirl.env.CLAWGIRL_API_KEY，或重新运行 `npx clawgirl` 输入新 key。');
+        console.log('ERROR: API Key 无效或已过期。请更新本地 CLAWGIRL_API_KEY 配置，并保持宿主环境中的 skill 密钥为最新值。');
         process.exit(1);
       } else if (res.statusCode === 403) {
         console.log(`ERROR: 生成次数已用完，请前往 https://clawgirl.date 充值。`);
