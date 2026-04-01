@@ -1,0 +1,11 @@
+{
+  "owner": "yingjie-zhang-dev",
+  "slug": "nbs-data-collection",
+  "displayName": "国家统计局数据采集",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774857278904,
+    "commit": null
+  },
+  "history": []
+}
