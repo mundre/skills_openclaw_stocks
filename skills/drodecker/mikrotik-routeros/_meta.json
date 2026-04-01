@@ -1,0 +1,11 @@
+{
+  "owner": "drodecker",
+  "slug": "mikrotik-routeros",
+  "displayName": "Mikrotik RouterOS",
+  "latest": {
+    "version": "2026.3.30",
+    "publishedAt": 1774904863944,
+    "commit": null
+  },
+  "history": []
+}
