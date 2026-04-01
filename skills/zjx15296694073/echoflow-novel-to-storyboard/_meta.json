@@ -1,0 +1,11 @@
+{
+  "owner": "zjx15296694073",
+  "slug": "echoflow-novel-to-storyboard",
+  "displayName": "This skill transforms novel chapters into professional film storyboard scripts. 这个skill是将小说章节 →（变成） 专业电影分镜剧本。  Powered by **清云 EchoFlow API** (https://api.echoflow.cn/) — 一站式国内外580+大模型，一键开发票，企业级稳定，价格是官方的1.5折。",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1774811448162,
+    "commit": null
+  },
+  "history": []
+}
