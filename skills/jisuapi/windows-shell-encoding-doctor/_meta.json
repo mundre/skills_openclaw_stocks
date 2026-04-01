@@ -1,0 +1,11 @@
+{
+  "owner": "jisuapi",
+  "slug": "windows-shell-encoding-doctor",
+  "displayName": "Windows Shell Encoding Doctor - Windows Shell编码修复工具",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774861278499,
+    "commit": null
+  },
+  "history": []
+}
