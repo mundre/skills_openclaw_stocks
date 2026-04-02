@@ -1,0 +1,11 @@
+{
+  "name": "bocha-search-advanced",
+  "version": "0.1.3",
+  "description": "博查搜索 (Bocha Search) 的技能",
+  "env": {
+    "BOCHA_API_KEY": {
+      "description": "博查搜索 API 密钥",
+      "required": true
+    }
+  }
+}
