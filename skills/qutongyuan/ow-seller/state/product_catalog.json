@@ -1,0 +1,49 @@
+{
+  "seller_id": "seller-demo",
+  "seller_name": "演示卖家",
+  "products": [
+    {
+      "product_id": "PROD-001",
+      "name": "幽灵庄园红酒",
+      "category": "红酒",
+      "brand": "幽灵庄园",
+      "keywords": ["红酒", "葡萄酒", "酒", "洋酒", "幽灵庄园"],
+      "specs": {
+        "capacity": "750ml",
+        "years": ["2018", "2019", "2020"],
+        "origin": "法国"
+      },
+      "price_range": [1500, 5000],
+      "cost": 1500,
+      "stock": 100,
+      "auth_docs": ["business_license", "agency_cert"],
+      "shop_links": [
+        {
+          "platform": "淘宝",
+          "url": "https://shop123456.taobao.com",
+          "shop_name": "幽灵庄园旗舰店",
+          "rating": 4.9
+        }
+      ],
+      "images": [],
+      "video": null,
+      "active": true
+    }
+  ],
+  "auto_match": {
+    "enabled": true,
+    "scan_interval_minutes": 30,
+    "price_match_tolerance": 0.3,
+    "keywords_weight": 0.6,
+    "category_weight": 0.4,
+    "min_match_score": 0.5,
+    "notify_on_match": true,
+    "auto_bid_enabled": false,
+    "auto_bid_min_score": 0.8
+  },
+  "notifications": {
+    "email": "",
+    "wechat": "",
+    "webhook": ""
+  }
+}
