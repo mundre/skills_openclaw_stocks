@@ -1,0 +1,11 @@
+{
+  "owner": "callxor",
+  "slug": "postgresql-db",
+  "displayName": "PostgreSQL Database",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1775141961917,
+    "commit": null
+  },
+  "history": []
+}
