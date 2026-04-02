@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-data-agent-skill",
+  "displayName": "Alibabacloud Data Agent Skill",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1775048423192,
+    "commit": null
+  },
+  "history": []
+}
