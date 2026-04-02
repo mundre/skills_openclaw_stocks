@@ -1,0 +1,11 @@
+{
+  "owner": "ranbin",
+  "slug": "ai-daily-news-rb",
+  "displayName": "AI日报测试版",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775093683375,
+    "commit": null
+  },
+  "history": []
+}
