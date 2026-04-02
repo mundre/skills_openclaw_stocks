@@ -1,0 +1,178 @@
+{
+  "scenes": {
+    "default": {
+      "description": "日常默认模式 - 最小核心技能集",
+      "skills": []
+    },
+    "trading": {
+      "description": "交易/投资模式 - 量化回测、财报追踪、宏观监控、股票分析",
+      "skills": ["quant-backtest", "earnings-tracker", "macro-monitor"],
+      "recommended_clawhub": ["stock-analysis", "polymarket"]
+    },
+    "dev": {
+      "description": "开发模式 - MCP开发、Web测试、工具创建、GitHub集成",
+      "skills": ["mcp-builder", "webapp-testing", "mcporter", "qclaw-skill-creator"],
+      "recommended_clawhub": ["github", "api-gateway"]
+    },
+    "content": {
+      "description": "内容创作模式 - 文档编写、笔记整理、内容生产",
+      "skills": ["content-factory", "note-organizer", "tencent-docs", "docx", "xlsx", "pdf", "pptx", "video-script"],
+      "recommended_clawhub": ["word-docx", "excel-xlsx", "nano-pdf", "humanizer", "markdown-converter"]
+    },
+    "growth": {
+      "description": "个人成长模式 - 习惯养成、目标追踪",
+      "skills": ["habit-coach", "goal-tracker"],
+      "recommended_clawhub": []
+    },
+    "news": {
+      "description": "资讯模式 - 新闻摘要、趋势追踪、多引擎搜索",
+      "skills": ["news-summary", "tech-news-digest", "github-ai-trends", "multi-search-engine", "weather-advisor"],
+      "recommended_clawhub": ["summarize", "brave-search", "youtube-watcher"]
+    },
+    "research": {
+      "description": "学术研究模式 - 论文阅读、引用管理",
+      "skills": ["arxiv-reader", "citation-manager"],
+      "recommended_clawhub": []
+    },
+    "life": {
+      "description": "生活娱乐模式 - 旅行规划、音乐电影推荐",
+      "skills": ["travel-planner", "movie-advisor", "music-recommender", "nutritionist"],
+      "recommended_clawhub": []
+    },
+    "work": {
+      "description": "工作模式 - 邮件、日程、数据看板",
+      "skills": ["email-skill", "niuamaxia-scheduler", "analytics-dashboard", "log-analyzer"],
+      "recommended_clawhub": ["gog", "notion", "slack", "trello", "himalaya"]
+    },
+    "creative": {
+      "description": "创意设计模式 - 前端设计、算法艺术",
+      "skills": ["frontend-design", "canvas-design", "algorithmic-art", "theme-factory", "web-artifacts-builder"],
+      "recommended_clawhub": ["nano-banana-pro"]
+    },
+    "market": {
+      "description": "市场研究模式 - 竞品分析、创意验证",
+      "skills": ["market-researcher", "idea-validator"],
+      "recommended_clawhub": ["admapix"]
+    },
+    "automation": {
+      "description": "自动化模式 - 工作流自动化、桌面控制",
+      "skills": [],
+      "recommended_clawhub": ["automation-workflows", "desktop-control", "browser-use", "auto-updater"]
+    },
+    "media": {
+      "description": "多媒体模式 - 视频、音频、图像处理",
+      "skills": [],
+      "recommended_clawhub": ["openai-whisper", "video-frames", "nano-banana-pro", "youtube-watcher"]
+    },
+    "full": {
+      "description": "完整模式 - 所有技能",
+      "skills": "all"
+    }
+  },
+  "categories": {
+    "system": {
+      "name": "系统核心",
+      "description": "不可禁用的核心技能",
+      "skills": ["proactive-agent", "online-search", "find-skills", "skill-vetter", "skill-atlas"]
+    },
+    "files": {
+      "name": "文件处理",
+      "description": "文档、表格、PDF处理",
+      "skills": ["docx", "xlsx", "pdf", "pptx", "tencent-docs"],
+      "clawhub_popular": ["nano-pdf", "word-docx", "excel-xlsx", "markdown-converter"]
+    },
+    "trading": {
+      "name": "投资交易",
+      "description": "量化、财报、宏观经济",
+      "skills": ["quant-backtest", "earnings-tracker", "macro-monitor"],
+      "clawhub_popular": ["stock-analysis", "polymarket"]
+    },
+    "development": {
+      "name": "开发工具",
+      "description": "MCP开发、Web测试",
+      "skills": ["mcp-builder", "webapp-testing", "mcporter", "qclaw-skill-creator"],
+      "clawhub_popular": ["github", "api-gateway"]
+    },
+    "content": {
+      "name": "内容创作",
+      "description": "写作、笔记、视频脚本",
+      "skills": ["content-factory", "content-repurposer", "note-organizer", "video-script", "doc-coauthoring"],
+      "clawhub_popular": ["humanizer", "humanize-ai-text"]
+    },
+    "growth": {
+      "name": "个人成长",
+      "description": "习惯、目标、学习",
+      "skills": ["habit-coach", "habit-tracker", "goal-tracker", "study-habits"]
+    },
+    "news": {
+      "name": "资讯搜索",
+      "description": "新闻、趋势、搜索",
+      "skills": ["news-summary", "tech-news-digest", "github-ai-trends", "multi-search-engine", "weather-advisor"],
+      "clawhub_popular": ["summarize", "brave-search", "tavily-search", "baidu-search"]
+    },
+    "research": {
+      "name": "学术研究",
+      "description": "论文、引用",
+      "skills": ["arxiv-reader", "arxiv-watcher", "citation-manager"]
+    },
+    "life": {
+      "name": "生活娱乐",
+      "description": "旅行、音乐、电影、塔罗",
+      "skills": ["travel-planner", "movie-advisor", "music-recommender", "nutritionist", "tarot", "night-owl-shrimp", "cantian-bazi"]
+    },
+    "work": {
+      "name": "工作办公",
+      "description": "邮件、日程、看板",
+      "skills": ["email-skill", "imap-smtp-email", "niuamaxia-scheduler", "analytics-dashboard", "log-analyzer", "tencent-meeting-mcp", "internal-comms"],
+      "clawhub_popular": ["gog", "notion", "slack", "trello", "himalaya", "obsidian"]
+    },
+    "creative": {
+      "name": "创意设计",
+      "description": "前端、艺术、主题",
+      "skills": ["frontend-design", "canvas-design", "algorithmic-art", "theme-factory", "web-artifacts-builder", "brand-guidelines"],
+      "clawhub_popular": ["nano-banana-pro"]
+    },
+    "market": {
+      "name": "市场研究",
+      "description": "调研、创意验证",
+      "skills": ["market-researcher", "idea-validator"],
+      "clawhub_popular": ["admapix"]
+    },
+    "automation": {
+      "name": "自动化",
+      "description": "工作流、桌面控制、浏览器",
+      "skills": ["kc-gui"],
+      "clawhub_popular": ["automation-workflows", "desktop-control", "browser-use", "agent-browser", "auto-updater"]
+    },
+    "media": {
+      "name": "多媒体",
+      "description": "视频、音频、图像",
+      "skills": [],
+      "clawhub_popular": ["openai-whisper", "video-frames", "nano-banana-pro", "youtube-watcher"]
+    },
+    "tools": {
+      "name": "实用工具",
+      "description": "杂项工具",
+      "skills": ["cloud-upload-backup", "humanize-ai-text", "agent-mbti", "session-logs", "slack-gif-creator", "kc-gui"]
+    }
+  },
+  "core_skills": [
+    "proactive-agent",
+    "online-search",
+    "find-skills",
+    "skill-vetter",
+    "skill-atlas",
+    "self-improving"
+  ],
+  "resident_skills": [
+    "agent-browser",
+    "tavily-search",
+    "summarize"
+  ],
+  "resident_auto_rules": {
+    "enabled": true,
+    "min_usage_count": 3,
+    "cooldown_days": 7
+  },
+  "skills_dir": "D:\\QClaw\\resources\\openclaw\\config\\skills"
+}
