@@ -1,0 +1,11 @@
+{
+  "owner": "lbs-bmap",
+  "slug": "baidu-ai-map",
+  "displayName": "Baidu AI Map",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775010599558,
+    "commit": null
+  },
+  "history": []
+}
