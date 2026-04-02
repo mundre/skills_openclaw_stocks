@@ -3,9 +3,15 @@
   "slug": "may-vomit",
   "displayName": "May Vomit",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775127277550,
-    "commit": "https://github.com/openclaw/skills/commit/542dff8ddb6b19d1772093aa5a49d4c3bb62bfda"
+    "version": "1.0.0",
+    "publishedAt": 1775139448219,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775127277550,
+      "commit": "https://github.com/openclaw/skills/commit/542dff8ddb6b19d1772093aa5a49d4c3bb62bfda"
+    }
+  ]
 }
