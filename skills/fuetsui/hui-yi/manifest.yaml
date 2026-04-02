@@ -1,0 +1,21 @@
+name: hui-yi
+description: Manage a file-based cold-memory archive under memory/cold/.
+required_paths:
+  - path: memory/cold/
+    access: read_write
+    description: Cold memory archive — notes, index, metadata, retrieval log
+  - path: memory/heartbeat-state.json
+    access: read_write
+    description: Heartbeat state with coldMemory maintenance metadata
+creates_files: true
+modifies_files: true
+has_scripts: true
+scripts:
+  - path: scripts/search.py
+    description: Search cold memory index and tags metadata
+  - path: scripts/rebuild.py
+    description: Rebuild index.md and tags.json from note files
+  - path: scripts/decay.py
+    description: Decay confidence levels based on last_verified age
+  - path: scripts/cool.py
+    description: Scan daily notes and update coldMemory heartbeat state

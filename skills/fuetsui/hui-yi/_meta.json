@@ -1,11 +1,17 @@
 {
   "owner": "fuetsui",
   "slug": "hui-yi",
-  "displayName": "hui-yi",
+  "displayName": "Hui Yi",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1775041983989,
-    "commit": "https://github.com/openclaw/skills/commit/0ffaf2e4359513ab15cd079709e23d54c7036f12"
+    "version": "1.0.4",
+    "publishedAt": 1775165221017,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1775041983989,
+      "commit": "https://github.com/openclaw/skills/commit/0ffaf2e4359513ab15cd079709e23d54c7036f12"
+    }
+  ]
 }

@@ -1,70 +1,46 @@
-# Cold Memory Schema
+# Cold Memory Schema Reference
 
-Use this reference when you need a compact but retrieval-friendly structure for archived memory.
+Read this file when creating or modifying notes, index entries, tags.json structure, or retrieval-log format.
 
-The goal is not to save everything. The goal is to save the right things in a form that is easy to recall later.
+## Note template
 
-## Recommended layout
+Use this as `memory/cold/_template.md`:
 
-```text
-memory/
-  cold/
-    index.md
-    tags.json
-    _template.md
-    topic-a.md
-    topic-b.md
-```
-
-## Design principles
-
-- Prefer one topic per note.
-- Prefer merged notes over many near-duplicates.
-- Put the shortest useful summary near the top.
-- Store reusable facts, lessons, and rationale instead of chat noise.
-- Keep human-readable and machine-readable indexes in sync.
-
-## What a good cold-memory note contains
-
-Each note should answer these questions quickly:
-- What is this?
-- When should it be used?
-- What is the key conclusion?
-- How reliable is it?
-- Where did it come from?
-
-## Recommended note structure
-
-```md
-# Topic title
+```markdown
+# [Topic title]
 
 ## TL;DR
-- This note is about:
-- Use it when:
-- Key conclusion:
+- What this note is
+- When it matters
+- Key conclusion or takeaway
 
 ## Why this matters
-1-3 lines.
+1–3 lines explaining the value of preserving this knowledge.
 
 ## Memory type
 - fact | experience | background
 
+## Semantic context
+A 1–2 sentence natural language description of what this note is about and when it
+would be useful. Write this as if answering: "If someone were working on ___, this
+note would help because ___." This field enables fuzzy matching when exact keyword
+triggers miss.
+
 ## Triggers
-- phrase 1
-- phrase 2
+- word or phrase that should make this note worth checking
+- another trigger phrase
 
 ## Use this when
-- scenario 1
-- scenario 2
+- scenario where this note materially helps
+- another scenario
 
 ## Key facts
-- fact 1
-- fact 2
+- stable fact 1
+- stable fact 2
 
 ## Decisions / lessons
-- What to do:
-- What to avoid:
-- Why:
+- DO: recommended action and why
+- AVOID: anti-pattern and why
 
 ## Confidence
 - high | medium | low
@@ -77,123 +53,116 @@ Each note should answer these questions quickly:
 - tag2
 
 ## Details
-Longer supporting context.
+Longer context, history, or explanation if needed.
+Keep this section optional — omit it for fact-type notes.
 
 ## Source context
-- file, conversation, or date
+- file, conversation, date, or origin note
 ```
 
-## `index.md` schema
+### Field definitions
 
-Use `index.md` as the short human-readable map.
+| Field | Required | Purpose |
+|---|---|---|
+| Topic title | yes | Clear, searchable title |
+| TL;DR | yes | 2–4 bullet summary for cheap retrieval |
+| Why this matters | no | Brief justification; useful for background notes |
+| Memory type | yes | One of: fact, experience, background |
+| Semantic context | yes | 1–2 sentence natural language description for fuzzy matching when triggers miss |
+| Triggers | yes | Keywords/phrases that should surface this note during recall |
+| Use this when | yes | Concrete scenarios where the note helps |
+| Key facts | if applicable | Stable, reusable facts |
+| Decisions / lessons | if applicable | DO/AVOID pairs with rationale |
+| Confidence | yes | high = reliable; medium = use with caveat; low = needs re-verification |
+| Last verified | yes | Date of last accuracy check |
+| Related tags | yes | Tags matching tags.json for cross-referencing |
+| Details | no | Extended context; keep only if genuinely needed |
+| Source context | no | Origin trail for future verification |
 
-### Recommended entry format
+### Writing guidelines
 
-```md
-- `topic-a.md` — one-line summary
+- Put the shortest useful summary at the top (TL;DR).
+- Write for retrieval, not narrative beauty.
+- Preserve lessons and rationale, not raw transcript noise.
+- One note per topic. Merge when topics overlap.
+- Update existing notes instead of creating near-duplicates.
+- Write Semantic context as natural prose, not a keyword list — its purpose is to catch queries that exact triggers would miss.
+
+## index.md format
+
+Use a single consistent Markdown list with one block per note.
+
+```markdown
+# Cold Memory Index
+
+- `note-file.md` — one-line summary
   - type: fact | experience | background
-  - tags: tag1, tag2
-  - triggers: phrase 1, phrase 2
-  - read when: scenario description
+  - tags: comma-separated tags
+  - triggers: words or phrases that should prompt recall
+  - read when: scenarios where this note materially helps
   - confidence: high | medium | low
   - updated: YYYY-MM-DD
 ```
 
-### Example
+Guidelines:
+- Keep entries sorted by most-recently-updated first.
+- Use one block per note.
+- If the archive gets large, add simple section headings like `## Experience`, `## Fact`, `## Background`, but keep the same per-note block shape.
 
-```md
-- `openclaw-lessons.md` — Reusable OpenClaw mistakes, fixes, and workflow decisions.
-  - type: experience
-  - tags: openclaw, workflow, troubleshooting
-  - triggers: setup issue, pairing problem, repeated mistake
-  - read when: debugging repeated setup trouble or designing recurring workflows
-  - confidence: high
-  - updated: 2026-03-18
-```
+## tags.json format
 
-## `tags.json` schema
-
-Use `tags.json` as the structured retrieval layer.
-
-### Recommended shape
+Use an object with metadata plus a `notes` array.
 
 ```json
 {
   "_meta": {
     "description": "Structured metadata for cold-memory retrieval",
-    "version": 2,
+    "version": 3,
     "updated": "YYYY-MM-DD"
   },
   "notes": [
     {
-      "title": "Topic title",
-      "path": "memory/cold/topic-a.md",
-      "type": "fact",
-      "summary": "One-line summary",
-      "tags": ["tag1", "tag2"],
-      "triggers": ["phrase 1", "phrase 2"],
-      "scenarios": ["scenario 1", "scenario 2"],
-      "confidence": "medium",
-      "last_verified": "YYYY-MM-DD",
-      "updated": "YYYY-MM-DD"
+      "title": "string — note title",
+      "path": "string — relative path, e.g. memory/cold/postgres-migration.md",
+      "type": "string — fact | experience | background",
+      "summary": "string — one-sentence summary",
+      "semantic_context": "string — 1-2 sentence natural language description for fuzzy matching",
+      "tags": ["string array — searchable tags"],
+      "triggers": ["string array — recall trigger phrases"],
+      "scenarios": ["string array — when-to-use descriptions"],
+      "confidence": "string — high | medium | low",
+      "last_verified": "string — YYYY-MM-DD",
+      "updated": "string — YYYY-MM-DD"
     }
   ]
 }
 ```
 
-## Field guidance
+### Keeping index.md and tags.json in sync
 
-### `type`
-Use one of:
-- `fact` — stable information that can be directly reused
-- `experience` — lessons, decisions, or troubleshooting knowledge
-- `background` — broader context used mainly for synthesis
+Every archive or update operation must update both files. If they drift out of sync:
 
-### `triggers`
-Short words or phrases that should make the note worth checking.
+1. Treat the note files as the source of truth.
+2. Rebuild `index.md` and `tags.json` from the note files.
+3. Verify all paths in `tags.json` point to existing files.
+4. Keep `_meta.updated` current after rebuilds.
 
-Good triggers are:
-- likely user wording
-- problem labels
-- topic aliases
-- common shorthand
+## retrieval-log.md format
 
-### `scenarios`
-Describe the situations where reading the note materially improves the answer.
+`memory/cold/retrieval-log.md` tracks which notes were recalled and whether they helped.
 
-### `confidence`
-Use:
-- `high` — reliable and safe to reuse directly
-- `medium` — probably right, but may be stale
-- `low` — useful lead, but should be verified before relying on it
+```markdown
+# Retrieval Log
 
-### `last_verified`
-Use when the information itself was last confirmed.
+| Date | Query | Matched | Useful | Action |
+|---|---|---|---|---|
+| 2025-03-20 | postgres migration rollback | postgres-migration.md | yes | — |
+| 2025-03-22 | rate limit batch job | api-rate-limits.md | yes | updated Key facts |
+| 2025-04-01 | redis cache eviction | (no match) | n/a | created new note |
+```
 
-### `updated`
-Use when the note or metadata was last edited.
-
-## Cooling guidance
-
-When transforming recent notes into cold memory:
-- compress raw notes into reusable knowledge
-- preserve conclusions, not transcript clutter
-- merge into an existing topic note when possible
-- strengthen triggers and scenarios while updating the indexes
-
-## Retrieval guidance
-
-When recalling:
-1. inspect `index.md` for likely candidates
-2. use `tags.json` to sharpen matching by trigger and scenario
-3. read the top summary before details
-4. synthesize for the current task instead of dumping raw note text
-
-## Maintenance guidance
-
-Periodically:
-- merge overlapping notes
-- remove stale entries
-- tighten weak summaries
-- update confidence and verification dates
-- keep `index.md` and `tags.json` aligned
+Guidelines:
+- Log only cold memory retrievals, not warm or `MEMORY.md` lookups.
+- `Useful` = the recalled note materially improved the answer.
+- `Action` = any update made to the note, index, or tags after retrieval.
+- Review the log during maintenance to identify stale, missing, or weak notes.

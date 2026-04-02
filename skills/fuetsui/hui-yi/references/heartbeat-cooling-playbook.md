@@ -1,120 +1,86 @@
 # Heartbeat Cooling Playbook
 
-Use this reference when heartbeat is maintaining cold memory.
+Read this file when executing a scheduled cooling pass or heartbeat maintenance.
 
-The job is not to scan everything. The job is to do a light pass over recent notes and turn only the durable parts into reusable archived memory.
+## When to run cooling
 
-## Objective
+- **Default cadence:** once per week, or when 5+ daily notes have accumulated since the last pass.
+- **Check:** read `memory/heartbeat-state.json` and inspect the `coldMemory` section for the last scan / archive timestamps.
+- **Ad hoc:** the user explicitly asks to archive, cool, or clean up notes.
 
-During heartbeat, perform **cooling**:
-- inspect recent daily notes
-- find low-frequency, high-value items
-- compress them into reusable cold-memory notes
-- update the indexes
-- stay quiet unless the result is actually worth surfacing
+## Pre-flight
 
-## Lightweight workflow
+1. Run `python scripts/cool.py scan` if the helper is available.
+2. The helper uses `coldMemory.lastArchive` to show only daily notes newer than the last archive pass.
+3. If no helper is available, manually inspect recent `memory/YYYY-MM-DD.md` files.
+4. If no new daily notes exist, stop.
 
-1. Read `memory/heartbeat-state.json`.
-2. Check whether a cold-memory pass happened recently.
-3. Read only the most recent 1-3 daily notes.
-4. Identify candidate items worth cooling.
-5. Decide whether each item should be ignored, merged, or archived as a new note.
-6. Update the target cold note.
-7. Update `memory/cold/index.md` and `memory/cold/tags.json`.
-8. Update `memory/heartbeat-state.json`.
-9. Notify the user only if something clearly valuable was archived or newly relevant.
+## Step-by-step cooling process
 
-## Decision rule: ignore, merge, or create
+### Pass 1 — Scan and triage
 
-### Ignore
-Do nothing if the item is:
-- one-off chatter
-- temporary status
-- emotionally noisy but not reusable
-- obvious enough that it does not need preserving
-- sensitive material that should never be archived
+For each daily note since the last cooling:
 
-### Merge into an existing note
-Merge when:
-- the topic already exists in `memory/cold/`
-- the new item strengthens or updates an existing lesson
-- the note can become sharper without becoming bloated
+1. Read the note.
+2. For each piece of content, ask: is this low-frequency and high-value?
+   - NO → skip (one-off status, transient chatter, speculative notes)
+   - YES → proceed to routing ↓
 
-### Create a new cold-memory note
-Create one only if:
-- the topic is distinct
-- the content is likely useful after 30 days
-- it carries a reusable fact, lesson, or background summary
+### Pass 2 — Route to the correct destination
 
-## What to extract from a daily note
+For each high-value item, determine where it belongs:
 
-Do not copy daily notes verbatim. Extract:
-- stable facts
-- decision rationale
-- lessons learned
-- reusable workflow steps
-- warnings and pitfalls
-- triggers that future-you is likely to search by
+| If the content is… | Route to |
+|---|---|
+| A high-frequency personal/project fact | `MEMORY.md` |
+| A machine path, tool quirk, device name | `TOOLS.md` |
+| A fresh mistake or correction still being validated | `.learnings/` |
+| A workflow rule or agent behavior spec | `AGENTS.md` / `SOUL.md` |
+| Low-frequency archival knowledge that stays useful | `memory/cold/` ← proceed to Pass 3 |
 
-## Compression rule
+Write routed content to the correct file immediately. Do not batch.
 
-A good cooled note should be:
-- shorter than the source notes
-- more reusable than the source notes
-- easier to scan than the source notes
-- clearer about when to recall it
+### Pass 3 — Archive into cold memory
 
-If the cold note is not better than the raw daily note, the cooling failed.
+For each item routed to cold memory:
 
-## Good candidate examples
+1. **Check for existing notes.** Search `memory/cold/index.md` for a note on the same topic.
+   - EXISTS → open the note, merge the new content in. Update TL;DR, Decisions / lessons, Last verified, and Confidence as needed.
+   - DOES NOT EXIST → create a new note from `memory/cold/_template.md`.
 
-### Example: troubleshooting lesson
-Daily note says:
-- spent 20 minutes because a skill path was guessed from memory and was wrong
+2. **Write the note.** Follow the note structure from `references/cold-memory-schema.md`.
+   - Strip noise: remove one-off context, transient references, conversation fragments.
+   - Compress: the cold note should be shorter and more reusable than the original.
+   - Preserve: lessons, rationale, stable facts, and decision context.
 
-Cooled note should say:
-- do not guess installed skill paths; verify the actual directory before using a workspace skill
+3. **Update index.md.** Add or update the entry. Keep entries sorted by most-recently-updated first.
 
-### Example: stable reference
-Daily note says:
-- found the correct Hong Kong Chow Tai Fook gold price page
+4. **Update tags.json.** Add or update the corresponding object. Ensure path, tags, triggers, scenarios, and confidence are current.
 
-Cooled note should say:
-- remembered stable link for Hong Kong Chow Tai Fook gold price lookup
-- include trigger phrases and confidence
+### Pass 4 — Light maintenance (optional)
 
-## Index update rules
+If you have time or the index is getting large:
 
-After creating or updating a cold note:
-- ensure `index.md` has a concise human-readable entry
-- ensure `tags.json` contains matching structured metadata
-- align summary, type, tags, triggers, scenarios, confidence, and dates
+- Scan for duplicate or overlapping notes → merge them.
+- Check for stale entries (last_verified > 90 days) → flag for review or lower confidence.
+- Remove dangling index entries where the note file no longer exists.
+- Tighten summaries and triggers based on actual retrieval patterns.
+- Review `memory/cold/retrieval-log.md`:
+  - Notes never recalled → candidate for removal or better triggers.
+  - Queries with no match → candidate for a new note.
+  - Notes recalled but marked unhelpful → candidate for rewrite.
 
-## When heartbeat should notify the user
+## Post-cooling
 
-Notify only if at least one is true:
-- a clearly valuable memory was successfully archived
-- the archived item is strongly relevant to the current active topic
-- the archived lesson will likely save repeated future work
+1. If using automation, run `python scripts/cool.py done <notes_reviewed> <notes_archived> <notes_merged>`.
+2. Update the `coldMemory` section of `memory/heartbeat-state.json` with latest timestamps and a short summary.
+3. For monthly maintenance, optionally run `python scripts/decay.py --dry-run` first, then `python scripts/decay.py`, then `python scripts/rebuild.py`.
+4. Do NOT announce cooling results to the user unless asked.
 
-Otherwise reply with the quiet heartbeat acknowledgment.
+## What NOT to do during cooling
 
-## Anti-patterns
-
-Avoid these mistakes:
-- scanning the whole cold archive every heartbeat
-- dumping raw archive contents into chat
-- archiving everything that looks mildly useful
-- creating duplicate notes for the same topic
-- storing secrets or sensitive vulnerability details
-- confusing recent warm memory with durable cold memory
-
-## Suggested state tracking
-
-In `memory/heartbeat-state.json`, track lightweight timestamps such as:
-- `coldMemoryScan`
-- `coldMemoryArchive`
-- `coldMemoryIndexRefresh`
-
-Use these to avoid repeated work inside short time windows.
+- Do not read the entire cold archive. Only open notes you are actively merging into.
+- Do not surface old notes to the user without a clear trigger.
+- Do not archive content that fails the 30-day test.
+- Do not create near-duplicate notes. Always check index first.
+- Do not store secrets, tokens, or auth material.
