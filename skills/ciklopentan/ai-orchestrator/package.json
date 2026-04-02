@@ -1,0 +1,24 @@
+{
+  "name": "ai-orchestrator",
+  "version": "3.3.3",
+  "description": "AI Orchestrator — один браузер, две вкладки (DeepSeek + Perplexity)",
+  "main": "ask-puppeteer.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node ask-puppeteer.js 'Привет' --visible --wait",
+    "start": "node ask-puppeteer.js"
+  },
+  "dependencies": {
+    "async-mutex": "^0.4.1",
+    "js-sha3": "^0.9.3",
+    "playwright": "^1.58.2",
+    "puppeteer": "^24.40.0",
+    "puppeteer-core": "^24.40.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
