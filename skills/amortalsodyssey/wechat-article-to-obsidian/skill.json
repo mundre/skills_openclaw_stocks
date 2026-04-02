@@ -1,0 +1,60 @@
+{
+  "name": "wechat-article-to-obsidian",
+  "displayName": "WeChat Article to Obsidian",
+  "description": "Save WeChat public account articles (微信公众号文章) as clean Markdown notes in Obsidian. Just give it a mp.weixin.qq.com link. Supports single and batch saves, natural language path override, and auto-config on first use.",
+  "version": "1.0.0",
+  "author": {
+    "name": "AMortalsOdyssey",
+    "url": "https://github.com/AMortalsOdyssey"
+  },
+  "license": "MIT",
+  "keywords": [
+    "wechat",
+    "微信",
+    "公众号",
+    "obsidian",
+    "markdown",
+    "clip",
+    "read-later"
+  ],
+  "main": "./SKILL.md",
+  "scripts": {
+    "fetch": "./scripts/fetch.sh",
+    "parse": "./scripts/parse.mjs"
+  },
+  "config": {
+    "obsidian_vault": {
+      "type": "string",
+      "description": "Obsidian vault name for obsidian-cli",
+      "required": true,
+      "default": "",
+      "placeholder": "MyVault"
+    },
+    "default_path": {
+      "type": "string",
+      "description": "Default save path inside the vault",
+      "required": true,
+      "default": "",
+      "placeholder": "notes/wechat"
+    }
+  },
+  "triggers": [
+    "微信文章",
+    "公众号文章",
+    "保存微信",
+    "导入微信",
+    "mp.weixin.qq.com",
+    "save wechat",
+    "clip wechat",
+    "wechat article"
+  ],
+  "capabilities": [
+    "wechat-article-fetch",
+    "html-to-markdown",
+    "obsidian-save"
+  ],
+  "requirements": {
+    "node": ">=18.0.0",
+    "commands": ["curl"]
+  }
+}
