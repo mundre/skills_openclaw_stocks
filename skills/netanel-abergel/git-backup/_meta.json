@@ -1,0 +1,11 @@
+{
+  "owner": "netanel-abergel",
+  "slug": "git-backup",
+  "displayName": "Git Backup",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775042348218,
+    "commit": null
+  },
+  "history": []
+}
