@@ -194,6 +194,45 @@ Omit `--dark` for light mode (reports, emails, light UIs):
 
 ---
 
+## Font Families
+
+Use `--font-family` with any CSS font-family stack Vega can resolve.
+
+**Safest generic families:**
+- `sans-serif`
+- `serif`
+- `monospace`
+- `system-ui`
+
+**Recommended stacks:**
+
+```bash
+# Brand / product sans
+--font-family "Inter, Helvetica, Arial, sans-serif"
+
+# Editorial / report serif
+--font-family "Georgia, Times New Roman, serif"
+
+# Terminal / dashboard monospace
+--font-family "JetBrains Mono, SFMono-Regular, Consolas, monospace"
+```
+
+**Example:**
+```bash
+node scripts/chart.mjs --type bar \
+  --data '[{"month":"Jan","value":12},{"month":"Feb","value":18},{"month":"Mar","value":15},{"month":"Apr","value":22}]' \
+  --x-field month --y-field value --x-sort none \
+  --title "Georgia / serif example" \
+  --subtitle "--font-family \"Georgia, serif\"" \
+  --font-family "Georgia, serif" --dark --show-values
+```
+
+![Font family example](readme-assets/framed-font-family.png)
+
+**Note:** specific fonts like `Inter`, `Arial`, `Georgia`, or `JetBrains Mono` only work if they exist on the host. If not, Vega falls back to the next font in the stack.
+
+---
+
 ## Alert-Style Charts
 
 Built-in options for monitoring and alerting use cases:
