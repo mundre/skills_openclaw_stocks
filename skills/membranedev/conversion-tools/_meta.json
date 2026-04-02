@@ -3,9 +3,15 @@
   "slug": "conversion-tools",
   "displayName": "Conversion Tools",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774227780831,
-    "commit": "https://github.com/openclaw/skills/commit/16b3c33da7efdb8b5ad7784a4002826a8fb5d67f"
+    "version": "1.0.1",
+    "publishedAt": 1775166499967,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774227780831,
+      "commit": "https://github.com/openclaw/skills/commit/16b3c33da7efdb8b5ad7784a4002826a8fb5d67f"
+    }
+  ]
 }
