@@ -3,9 +3,15 @@
   "slug": "worldline-choice",
   "displayName": "Worldline Choice",
   "latest": {
-    "version": "3.3.2",
-    "publishedAt": 1775015440048,
-    "commit": "https://github.com/openclaw/skills/commit/05941c8b3dc458cda444981256270cae2e065591"
+    "version": "3.3.3",
+    "publishedAt": 1775094391720,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "3.3.2",
+      "publishedAt": 1775015440048,
+      "commit": "https://github.com/openclaw/skills/commit/05941c8b3dc458cda444981256270cae2e065591"
+    }
+  ]
 }
