@@ -1,0 +1,11 @@
+{
+  "owner": "yao23",
+  "slug": "redteam",
+  "displayName": "Red Team",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775025739643,
+    "commit": null
+  },
+  "history": []
+}
