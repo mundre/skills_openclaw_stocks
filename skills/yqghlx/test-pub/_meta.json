@@ -1,0 +1,11 @@
+{
+  "owner": "yqghlx",
+  "slug": "test-pub",
+  "displayName": "Test",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774999478744,
+    "commit": null
+  },
+  "history": []
+}
