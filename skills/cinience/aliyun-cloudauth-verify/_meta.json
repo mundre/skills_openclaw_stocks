@@ -1,0 +1,11 @@
+{
+  "owner": "cinience",
+  "slug": "aliyun-cloudauth-verify",
+  "displayName": "Aliyun Cloudauth Verify",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775104016202,
+    "commit": null
+  },
+  "history": []
+}
