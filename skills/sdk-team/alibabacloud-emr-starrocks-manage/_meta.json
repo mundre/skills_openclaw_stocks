@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-emr-starrocks-manage",
+  "displayName": "Alibabacloud Emr Starrocks Manage",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1775023194183,
+    "commit": null
+  },
+  "history": []
+}
