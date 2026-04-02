@@ -52,7 +52,15 @@ curl -X POST "https://app.nextbrowser.com/api/v1/browser/profiles" \
   -H "Authorization: x-api-key $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "<profile-name>", "browser_settings": {"os_type": "<os-type>", "browser_type": "chrome"},
-   "proxy_settings":{"protocol":"<http|https|socks5>","country":"<iso-2-country-code>","mode":"built-in"},
+   "proxy_settings":{"protocol":"<http|socks5>","country":"<iso-2-country-code>","mode":"built-in"},
+   "credentials": ["<credential-id>"]}'
+
+# Create browser profile with custom proxy
+curl -X POST "https://app.nextbrowser.com/api/v1/browser/profiles" \
+  -H "Authorization: x-api-key $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "<profile-name>", "browser_settings": {"os_type": "<os-type>", "browser_type": "chrome"},
+   "proxy_settings":{"mode":"custom","protocol":"<http|https|socks5>","host":"<proxy-host>","port":<proxy-port>,"username":"<proxy-username>","password":"<proxy-password>"},
    "credentials": ["<credential-id>"]}'
 
 # Delete profile
@@ -73,6 +81,10 @@ curl -X PUT "https://app.nextbrowser.com/api/v1/browser/profiles/<profile-id>/st
 ```
 
 **OS type:** `browser_settings.os_type` defines the operating system fingerprint used by the browser. Supported values are `windows`, `linux`, `macos`, and `android`. If not provided, it defaults to `linux`.
+
+**Proxy modes:** The `proxy_settings.mode` field controls which proxy is used:
+- **`built-in`** (default): Uses Nextbrowser's residential proxies. Specify `country` (ISO-2 code), and optionally `region`, `city`, `isp`, and `proxy_type` to narrow the location. Use the Locations endpoints (section 3) to discover available values.
+- **`custom`**: Uses your own proxy server. All five fields are **required**: `protocol` (`http`, `https`, or `socks5`), `host`, `port`, `username`, and `password`. The `country`/`region`/`city`/`isp` fields are ignored in custom mode.
 
 **Important:** After creating a new profile (or recreating one, e.g. to change country), you **must** call the start endpoint to create a browser instance for it. Tasks will fail if the profile has no running browser.
 
@@ -158,7 +170,8 @@ viewed, 8 upvotes, and 3 comments."\
     "mode": "fast",
     "profile_id": "<profile-id>",
     "skip_plan_approval": true,
-    "send_email_notification": false
+    "send_email_notification": false,
+    "attached_files": ["<file-name-1>", "<file-name-2>"]
   }'
 ```
 
@@ -228,5 +241,6 @@ curl "https://app.nextbrowser.com/api/v1/chat/tasks/<task-id>?from_step=3" \
 | `profile_id` | Use a profile for auth |
 | `skip_plan_approval` | Always use `true` |
 | `send_email_notification` | If `true`, a completion email will be sent for the task. |
+| `attached_files` | List of uploaded file names for this task (e.g. `["report.pdf", "data.csv"]`). Optional. |
 
 ---
