@@ -1,0 +1,11 @@
+{
+  "owner": "liveneon",
+  "slug": "gpt-tamagotchi",
+  "displayName": "Gpt Tamagotchi",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775024945532,
+    "commit": null
+  },
+  "history": []
+}
