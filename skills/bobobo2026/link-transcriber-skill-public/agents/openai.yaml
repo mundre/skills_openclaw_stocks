@@ -1,0 +1,7 @@
+interface:
+  display_name: "Link Transcriber"
+  short_description: "转写后只返回总结结果"
+  default_prompt: "Use $link-transcriber to transcribe a Douyin or Xiaohongshu link, optionally include cookie when available, and return only the final summary result."
+
+policy:
+  allow_implicit_invocation: true
