@@ -1,0 +1,11 @@
+{
+  "owner": "drumrobot",
+  "slug": "mcp-config",
+  "displayName": "MCP Config",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775016837968,
+    "commit": null
+  },
+  "history": []
+}
