@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dribbble + Pinterest Search"
+  short_description: "Public design search for Dribbble and Pinterest"
+  default_prompt: "Use $dribbble-pinterest-search to choose public search tags and extract result fields from Dribbble or Pinterest."
