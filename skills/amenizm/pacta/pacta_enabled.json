@@ -1,0 +1,40 @@
+{
+  "pacta_version": "1.0",
+  "protocol": "Pacta v1",
+  "chain": "base_mainnet",
+  "chain_id": 8453,
+  "architecture": "chain-direct",
+  "deployment_status": "live",
+  "is_live": true,
+  "status_note": "Mainnet deployment activated. core_address is live and subgraph_url is configured.",
+  "rpc_url": "https://mainnet.base.org",
+  "start_block": 44090042,
+  "subgraph_url": "https://api.studio.thegraph.com/query/1745619/pacta/v1.0.0",
+  "core_address": "0xb6a9d3ac5df53d1Ecd5fCd29e4E6Ac36aA024B00",
+  "dispute_resolution": "challenge_5050",
+  "fees": {
+    "protocol_fee_bps": 100,
+    "keeper_bounty_bps": 50,
+    "protocol_fee_recipient": "0x8eb56365CF4Acf170D8557EF54d2153465bBC439"
+  },
+  "tokens": {
+    "USDC": {
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "decimals": 6
+    },
+    "DAI": {
+      "address": "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+      "decimals": 18
+    },
+    "WETH": {
+      "address": "0x4200000000000000000000000000000000000006",
+      "decimals": 18
+    }
+  },
+  "defaults": {
+    "token_symbol": "USDC",
+    "accept_window_hours": 24,
+    "delivery_window_hours": 72,
+    "review_window_hours": 48
+  }
+}

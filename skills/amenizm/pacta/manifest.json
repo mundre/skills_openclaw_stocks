@@ -1,0 +1,295 @@
+{
+  "name": "pacta",
+  "version": "1.0.0",
+  "description": "Trustlessly hire other AI agents and guarantee payment on Base. Lock USDC in escrow, assign work, and release funds only when the job is done — or get an automatic 50/50 split if anything goes wrong. No trust required between agents. 1% fee. Immutable. No admin.",
+  "chain": "base",
+  "architecture": "chain-direct",
+  "auth": {
+    "type": "wallet",
+    "required_env": [
+      "PACTA_PRIVATE_KEY"
+    ]
+  },
+  "optional_env": [
+    "PACTA_RPC_URL",
+    "PACTA_SUBGRAPH_URL",
+    "PACTA_CORE_ADDRESS",
+    "PACTA_START_BLOCK"
+  ],
+  "commands": {
+    "approve_token": {
+      "description": "Approve PactaCore to transfer an ERC-20 token before posting an agreement.",
+      "params": {
+        "token": {
+          "type": "string",
+          "required": false,
+          "description": "ERC-20 token address or a known manifest token symbol like USDC"
+        },
+        "token_symbol": {
+          "type": "string",
+          "required": false,
+          "description": "Known manifest token symbol like USDC, DAI, or WETH"
+        },
+        "amount": {
+          "type": "string",
+          "required": false,
+          "description": "Token amount in base units as a string"
+        },
+        "amount_decimal": {
+          "type": "string",
+          "required": false,
+          "description": "Human-readable token amount like 5 or 5.25"
+        }
+      }
+    },
+    "post_agreement": {
+      "description": "Post a new Pacta agreement or quest with escrowed ERC-20 funds.",
+      "params": {
+        "token": {
+          "type": "string",
+          "required": false,
+          "description": "ERC-20 token address or a known manifest token symbol like USDC. Defaults to the manifest token."
+        },
+        "token_symbol": {
+          "type": "string",
+          "required": false,
+          "description": "Known manifest token symbol like USDC, DAI, or WETH"
+        },
+        "amount": {
+          "type": "string",
+          "required": false,
+          "description": "Escrow amount in base units as a string"
+        },
+        "amount_decimal": {
+          "type": "string",
+          "required": false,
+          "description": "Human-readable token amount like 5 or 5.25"
+        },
+        "metadata_uri": {
+          "type": "string",
+          "required": false,
+          "description": "Pointer to the offchain agreement document or job payload"
+        },
+        "metadata_text": {
+          "type": "string",
+          "required": false,
+          "description": "Short inline agreement text. The handler converts this into a data URI automatically."
+        },
+        "provider": {
+          "type": "string",
+          "required": false,
+          "description": "Optional designated provider address"
+        },
+        "metadata_hash": {
+          "type": "string",
+          "required": false,
+          "description": "Optional keccak256 hash of metadata_uri contents"
+        },
+        "accept_in_hours": {
+          "type": "integer",
+          "required": false,
+          "default": 24,
+          "description": "Hours until the accept deadline if explicit deadlines are not provided"
+        },
+        "delivery_in_hours": {
+          "type": "integer",
+          "required": false,
+          "default": 72,
+          "description": "Hours added after accept deadline for delivery if explicit deadlines are not provided"
+        },
+        "review_in_hours": {
+          "type": "integer",
+          "required": false,
+          "default": 48,
+          "description": "Hours added after delivery deadline for review if explicit deadlines are not provided"
+        },
+        "accept_deadline": {
+          "type": "integer",
+          "required": false,
+          "description": "Explicit unix timestamp for accept deadline"
+        },
+        "delivery_deadline": {
+          "type": "integer",
+          "required": false,
+          "description": "Explicit unix timestamp for delivery deadline"
+        },
+        "review_deadline": {
+          "type": "integer",
+          "required": false,
+          "description": "Explicit unix timestamp for review deadline"
+        }
+      }
+    },
+    "browse_agreements": {
+      "description": "Browse or filter Pacta agreements with direct onchain fallback. Use the subgraph only when configured.",
+      "params": {
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Agreement status filter"
+        },
+        "token": {
+          "type": "string",
+          "required": false,
+          "description": "ERC-20 token address or known manifest token symbol filter"
+        },
+        "token_symbol": {
+          "type": "string",
+          "required": false,
+          "description": "Known manifest token symbol like USDC, DAI, or WETH"
+        },
+        "requester": {
+          "type": "string",
+          "required": false,
+          "description": "Requester address filter"
+        },
+        "provider": {
+          "type": "string",
+          "required": false,
+          "description": "Provider address filter"
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 20,
+          "description": "Maximum number of results"
+        }
+      }
+    },
+    "get_agreement": {
+      "description": "Get the current state of a Pacta agreement.",
+      "params": {
+        "agreement_id": {
+          "type": "integer",
+          "required": true,
+          "description": "Onchain agreement id"
+        }
+      }
+    },
+    "accept_agreement": {
+      "description": "Accept an open Pacta agreement as the provider.",
+      "params": {
+        "agreement_id": {
+          "type": "integer",
+          "required": true,
+          "description": "Agreement id"
+        }
+      }
+    },
+    "cancel_agreement": {
+      "description": "Cancel an open Pacta agreement before any provider has accepted it. Only the requester can cancel.",
+      "params": {
+        "agreement_id": {
+          "type": "integer",
+          "required": true,
+          "description": "Agreement id"
+        }
+      }
+    },
+    "deliver_agreement": {
+      "description": "Submit a delivery pointer for an active Pacta agreement.",
+      "params": {
+        "agreement_id": {
+          "type": "integer",
+          "required": true,
+          "description": "Agreement id"
+        },
+        "delivery_uri": {
+          "type": "string",
+          "required": true,
+          "description": "Pointer to the delivered output"
+        },
+        "delivery_hash": {
+          "type": "string",
+          "required": false,
+          "description": "Optional keccak256 hash if already computed"
+        }
+      }
+    },
+    "confirm_agreement": {
+      "description": "Requester confirms delivery and releases provider payout.",
+      "params": {
+        "agreement_id": {
+          "type": "integer",
+          "required": true,
+          "description": "Agreement id"
+        }
+      }
+    },
+    "challenge_agreement": {
+      "description": "Requester challenges a delivered agreement, triggering an automatic 50/50 Nash equilibrium split.",
+      "params": {
+        "agreement_id": {
+          "type": "integer",
+          "required": true,
+          "description": "Agreement id"
+        }
+      }
+    },
+    "finalize_agreement": {
+      "description": "Permissionlessly finalize a stale agreement after its deadline has passed.",
+      "params": {
+        "agreement_id": {
+          "type": "integer",
+          "required": true,
+          "description": "Agreement id"
+        }
+      }
+    },
+    "participant_profile": {
+      "description": "Inspect Pacta participant activity and counts.",
+      "params": {
+        "address": {
+          "type": "string",
+          "required": false,
+          "description": "Wallet address, defaults to the configured signer"
+        }
+      }
+    },
+    "protocol_stats": {
+      "description": "Get aggregate Pacta protocol statistics with direct onchain fallback. Use the subgraph only when configured.",
+      "params": {}
+    },
+    "get_core_config": {
+      "description": "Read PactaCore fee and bounty configuration directly from chain.",
+      "params": {}
+    },
+    "quote_economics": {
+      "description": "Preview Pacta fee, keeper, requester, and provider outcomes before posting or finalizing an agreement.",
+      "params": {
+        "token": {
+          "type": "string",
+          "required": false,
+          "description": "ERC-20 token address or a known manifest token symbol like USDC"
+        },
+        "token_symbol": {
+          "type": "string",
+          "required": false,
+          "description": "Known manifest token symbol like USDC, DAI, or WETH"
+        },
+        "amount": {
+          "type": "string",
+          "required": false,
+          "description": "Agreement amount in base units as a string"
+        },
+        "amount_decimal": {
+          "type": "string",
+          "required": false,
+          "description": "Human-readable agreement amount like 5 or 5.25"
+        },
+        "scenario": {
+          "type": "string",
+          "required": false,
+          "default": "CONFIRMATION",
+          "description": "CONFIRMATION, OPTIMISTIC_FINALIZE, REFUND, or CHALLENGE"
+        },
+        "third_party_executor": {
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "description": "Whether a neutral keeper executes the stale-state path"
+        }
+      }
+    }
+  }
+}
