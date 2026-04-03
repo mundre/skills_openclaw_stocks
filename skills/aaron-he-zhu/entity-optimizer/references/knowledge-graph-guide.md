@@ -1,6 +1,6 @@
 # Knowledge Graph Optimization Guide
 
-> Part of [entity-optimizer](../SKILL.md). See also: [entity-signal-checklist.md](./entity-signal-checklist.md)
+> Part of [entity-optimizer](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/cross-cutting/entity-optimizer/SKILL.md). See also: [entity-signal-checklist.md](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/cross-cutting/entity-optimizer/references/entity-signal-checklist.md)
 
 Comprehensive playbook for establishing and maintaining entity presence across Google Knowledge Graph, Wikidata, Wikipedia, and other knowledge bases.
 

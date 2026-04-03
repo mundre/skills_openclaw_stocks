@@ -1,6 +1,6 @@
 # Entity Signal Checklist
 
-> Part of [entity-optimizer](../SKILL.md). See also: [knowledge-graph-guide.md](./knowledge-graph-guide.md)
+> Part of [entity-optimizer](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/cross-cutting/entity-optimizer/SKILL.md). See also: [knowledge-graph-guide.md](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/cross-cutting/entity-optimizer/references/knowledge-graph-guide.md)
 
 Complete checklist of entity signals organized by priority and verification method. Use this as a systematic audit guide — work through each signal, verify its status, and note actions needed.
 
