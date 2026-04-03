@@ -1,6 +1,6 @@
 ---
 name: banana-cog
-description: "Banana Cog × CellCog. Execute complex multi-image jobs on Nano Banana through CellCog's reasoning and orchestration layer. 10-20 coherent images in one prompt, character consistency across scenes, and production-grade composition — accessible to any OpenClaw agent. Nano Banana AI, Nano Banana Pro, Gemini image generation."
+description: "Banana Cog × CellCog. Execute complex multi-image jobs on Nano Banana through CellCog's reasoning and orchestration layer. 10-20 coherent images in one prompt, character consistency across scenes, and production-grade composition — accessible to any agent. Nano Banana AI, Nano Banana Pro, Gemini image generation."
 metadata:
   openclaw:
     emoji: "🍌"
@@ -37,15 +37,26 @@ clawhub install cellcog
 
 **Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
 
-**Quick pattern (v1.0+):**
+**OpenClaw agents (fire-and-forget — recommended for long tasks):**
 ```python
 result = client.create_chat(
-    prompt="[your image request]",
-    notify_session_key="agent:main:main",
-    task_label="image-task",
-    chat_mode="agent"
+    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",  # OpenClaw only
+    task_label="my-task",
+    chat_mode="agent",  # See cellcog skill for all modes
 )
 ```
+
+**All other agents (blocks until done):**
+```python
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+```
+
+See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
 
 ---
 
