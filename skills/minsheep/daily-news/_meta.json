@@ -1,0 +1,11 @@
+{
+  "owner": "minsheep",
+  "slug": "daily-news",
+  "displayName": "my-daily-news",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770640339397,
+    "commit": null
+  },
+  "history": []
+}
