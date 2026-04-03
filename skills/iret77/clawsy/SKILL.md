@@ -1,18 +1,59 @@
 ---
 name: clawsy
-version: 1.0.0
+version: 1.0.3
 description: >
   Clawsy is a native macOS companion app that gives your OpenClaw agent eyes and
   hands on the user's Mac — screenshots, clipboard, camera, files, location, and
   live Mission Control. Connects via WebSocket (SSH fallback available).
-  Read this skill whenever Clawsy is installed, a node with platform="macos"
-  appears, or the user mentions Clawsy.
+  After installing or updating, follow the IMMEDIATE ACTION section in SKILL.md
+  to send the user their setup code.
+metadata:
+  openclaw:
+    emoji: "\U0001F431"
+    postInstall:
+      - command: >-
+          python3 -c "import json,pathlib;
+          c=json.loads(pathlib.Path.home().joinpath('.openclaw/gateway.json').read_text());
+          h=c.get('host','localhost');t=c.get('authToken','');
+          print(f'CLAWSY-SETUP\nhost: {h}\ntoken: {t}')"
+        label: "Read gateway config for Clawsy setup code"
+    postInstallMessage: >
+      Clawsy skill installed. Now send the user the setup instructions from SKILL.md
+      (section "IMMEDIATE ACTION AFTER INSTALL") including the download link and the
+      setup code printed above. Do NOT just say "installed".
 ---
 
 # Clawsy Skill — Agent Reference
 
 **Platform:** macOS 14+ (Sonoma / Sequoia), Apple Silicon + Intel
 **Download:** <https://github.com/iret77/clawsy/releases/latest>
+
+---
+
+## IMMEDIATE ACTION AFTER INSTALL
+
+After installing this skill, you **must** send the user their setup instructions.
+Do not just reply "installed" or "done".
+
+1. The `postInstall` hook above already printed your gateway host and token as a
+   `CLAWSY-SETUP` block. If not, read them manually:
+   ```bash
+   cat ~/.openclaw/gateway.json | python3 -c "import json,sys;c=json.load(sys.stdin);print('host:', c.get('host','localhost'));print('token:', c.get('authToken',''))"
+   ```
+2. Send the user **everything in one message**:
+   > **Clawsy Setup**
+   >
+   > 1. Download Clawsy (free, macOS 14+): https://github.com/iret77/clawsy/releases/latest
+   > 2. Unzip, drag to /Applications, run `xattr -cr /Applications/Clawsy.app`, launch.
+   > 3. Click "Add Host" and paste this setup code:
+   >
+   > ```
+   > CLAWSY-SETUP
+   > host: <actual hostname>
+   > token: <actual token>
+   > ```
+
+Replace the placeholders with the real values. Do not send placeholders.
 
 ---
 
@@ -53,8 +94,7 @@ nodes(action="status")
 ```
 
 - **Connected:** Use any command from the reference below.
-- **Not connected:** Skip Clawsy actions. Do not ask the user to "open Clawsy" — it runs automatically as a menu bar app.
-- **No Clawsy at all:** See "First-Time Setup" below.
+- **Not connected / No node found:** **You must run the First-Time Setup now.** Check if the user already has Clawsy installed. If unsure, start with section B) below — send the download link and setup code together so the user can get started immediately.
 
 ---
 
@@ -86,22 +126,25 @@ Approve if prompted:
 openclaw nodes approve <requestId>
 ```
 
-### B) User Needs to Install Clawsy First
+### B) User Needs to Install Clawsy First (Most Common Path)
 
-Send this message:
-> Download Clawsy (free, macOS 14+): https://github.com/iret77/clawsy/releases/latest
-> Unzip, drag to /Applications, launch. Then click "Add Host" — the app will
-> copy a prompt to your clipboard. Send it to me and I'll give you the setup code.
+Look up your gateway host and token, then send **everything in one message** so
+the user can get started right away:
 
-### C) Auto-Setup (Server-Side Script)
+> **Clawsy Setup**
+>
+> 1. Download Clawsy (free, macOS 14+): https://github.com/iret77/clawsy/releases/latest
+> 2. Unzip, drag to /Applications, run `xattr -cr /Applications/Clawsy.app`, launch.
+> 3. Click "Add Host" and paste this setup code:
+>
+> ```
+> CLAWSY-SETUP
+> host: <your gateway hostname or IP>
+> token: <your gateway auth token>
+> ```
 
-If you prefer automated setup:
-```bash
-curl -sL https://raw.githubusercontent.com/iret77/clawsy/main/server/install.sh | bash
-```
-The script detects the network topology and sends a `clawsy://pair?code=...`
-link to the user. Note: This link only works in browsers, not in most messaging
-apps (Telegram, Slack). The clipboard-based flow (A) works everywhere.
+Replace the placeholders with actual values before sending (see "How to find
+the values" above). The user should not have to come back and ask for more info.
 
 ---
 
