@@ -37,13 +37,13 @@ python scripts/toupiaoya_cli.py search \
 - `--sortBy`：排序，默认 `common_total|desc`
 - `--color`：颜色筛选（可选，例：紫色/蓝色/粉色）
 
-### 输出示例（stdout JSON）
+### 输出示例
 
 ```json
 {
   "total": 123,
   "end": false,
-  "resultList": [
+  "results": [
     {
       "templateId": 1234,
       "title": "模板标题",
