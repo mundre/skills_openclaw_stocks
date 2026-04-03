@@ -152,8 +152,9 @@ def print_config():
 # =============================================================================
 
 def get_positions() -> dict:
-    """Get current SDK positions as raw dict (preserves original format for show_positions)."""
-    return get_client()._request("GET", "/api/sdk/positions")
+    """Get current SDK positions as raw dict, filtered by venue."""
+    client = get_client()
+    return client._request("GET", f"/api/sdk/positions?venue={client.venue}")
 
 
 def set_risk_monitor(market_id: str, side: str,
@@ -254,7 +255,7 @@ def execute_copytrading(wallets: list, top_n: int = None, max_usd: float = 50.0,
     if venue is not None:
         data["venue"] = venue
 
-    result = get_client()._request("POST", "/api/sdk/copytrading/execute", json=data)
+    result = get_client()._request("POST", "/api/sdk/copytrading/execute", json=data, timeout=60)
 
     # If caller wants dry_run, return the plan as-is
     if dry_run:
@@ -347,6 +348,15 @@ def run_copytrading(wallets: list, top_n: int = None, max_usd: float = 50.0, dry
 
     if dry_run:
         print("\n  [DRY RUN] Trades will be simulated server-side. Use --live for real trades.")
+
+    # Redeem any winning positions before starting the cycle
+    try:
+        redeemed = get_client().auto_redeem()
+        for r in redeemed:
+            if r.get("success"):
+                print(f"  💰 Redeemed {r['market_id'][:8]}... ({r.get('side', '?')})")
+    except Exception:
+        pass  # Non-critical — don't block trading
 
     # Execute copytrading via SDK
     print("\n📡 Calling Simmer API...")
