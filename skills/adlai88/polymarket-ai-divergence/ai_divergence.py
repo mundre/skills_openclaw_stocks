@@ -141,9 +141,10 @@ def execute_trade(market_id, side, amount, signal_data=None):
 
 
 def get_positions():
-    """Get current positions as list of dicts."""
+    """Get current positions as list of dicts, filtered by venue."""
     try:
-        positions = get_client().get_positions()
+        client = get_client()
+        positions = client.get_positions(venue=client.venue)
         from dataclasses import asdict
         return [asdict(p) for p in positions]
     except Exception:
@@ -497,7 +498,16 @@ def main():
 
     # Validate API key by initializing client
     dry_run = not args.live
-    get_client(live=not dry_run)
+    client = get_client(live=not dry_run)
+
+    # Redeem any winning positions before starting the cycle
+    try:
+        redeemed = client.auto_redeem()
+        for r in redeemed:
+            if r.get("success"):
+                print(f"  💰 Redeemed {r['market_id'][:8]}... ({r.get('side', '?')})")
+    except Exception:
+        pass  # Non-critical — don't block trading
 
     direction = DEFAULT_DIRECTION or None
     if args.bullish:
