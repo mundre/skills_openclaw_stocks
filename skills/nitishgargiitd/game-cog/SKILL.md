@@ -1,6 +1,6 @@
 ---
 name: game-cog
-description: "Other tools generate sprites. CellCog builds game worlds. #1 on DeepResearch Bench (Feb 2026) for deep game design reasoning — character-consistent art, sprites, tilesets, music, UI, 3D models, GDDs, level design, and game prototypes, all cohesive across every asset."
+description: "Other tools generate sprites. CellCog builds game worlds. #1 on DeepResearch Bench (Apr 2026) for deep game design reasoning — character-consistent art, sprites, tilesets, music, UI, 3D models, GDDs, level design, and game prototypes, all cohesive across every asset."
 metadata:
   openclaw:
     emoji: "🎮"
@@ -12,7 +12,7 @@ dependencies: [cellcog]
 
 # Game Cog - Build Game Worlds, Not Just Sprites
 
-**Other tools generate sprites. CellCog builds game worlds.** #1 on DeepResearch Bench (Feb 2026) for deep game design reasoning.
+**Other tools generate sprites. CellCog builds game worlds.** #1 on DeepResearch Bench (Apr 2026) for deep game design reasoning.
 
 Game development is a multi-discipline problem — mechanics, art, music, UI, and level design all need to feel unified. CellCog reasons deeply about your game's vision first, then produces character-consistent art, tilesets, music, sound effects, UI elements, 3D models, and full game design documents — all cohesive from a single brief.
 
@@ -28,17 +28,26 @@ clawhub install cellcog
 
 **Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
 
-**Quick pattern (v1.0+):**
+**OpenClaw agents (fire-and-forget — recommended for long tasks):**
 ```python
-# Fire-and-forget - returns immediately
 result = client.create_chat(
-    prompt="[your game dev request]",
-    notify_session_key="agent:main:main",
-    task_label="game-dev",
-    chat_mode="agent"  # Agent mode for most game assets
+    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",  # OpenClaw only
+    task_label="my-task",
+    chat_mode="agent",  # See cellcog skill for all modes
 )
-# Daemon notifies you when complete - do NOT poll
 ```
+
+**All other agents (blocks until done):**
+```python
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+```
+
+See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
 
 ---
 
