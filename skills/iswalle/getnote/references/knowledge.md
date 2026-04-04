@@ -33,6 +33,16 @@ GET https://openapi.biji.com/open/api/v1/resource/knowledge/list?page=1
 
 获取当前用户订阅（但非自己创建）的知识库列表。
 
+**CLI 命令（推荐）**：
+```bash
+getnote kbs-sub
+getnote kbs-sub --page 2
+getnote kbs-sub -o json
+```
+
+返回字段与 `getnote kbs` 相同：`topic_id`、`name`、`description`、`created_at`。
+
+**直接调 API**：
 ```
 GET https://openapi.biji.com/open/api/v1/resource/knowledge/subscribe/list?page=1
 ```
@@ -140,10 +150,29 @@ Content-Type: application/json
 
 ---
 
+## API 配额查询
+
+```bash
+getnote quota
+getnote quota -o json
+```
+
+返回 read / write / write_note 各维度的日配额和月配额（used / limit / remaining / reset_at）。
+
+---
+
 ## 博主订阅
 
 ### 博主列表
 
+**CLI 命令（推荐）**：
+```bash
+getnote kb bloggers <topic_id>
+getnote kb bloggers <topic_id> --page 2
+getnote kb bloggers <topic_id> -o json
+```
+
+**直接调 API**：
 ```
 GET https://openapi.biji.com/open/api/v1/resource/knowledge/bloggers?topic_id={topic_id}&page=1
 ```
@@ -167,6 +196,13 @@ GET https://openapi.biji.com/open/api/v1/resource/knowledge/bloggers?topic_id={t
 
 ### 博主内容列表
 
+**CLI 命令（推荐）**：
+```bash
+getnote kb blogger-contents <topic_id> <follow_id>
+getnote kb blogger-contents <topic_id> <follow_id> --page 2
+```
+
+**直接调 API**：
 ```
 GET https://openapi.biji.com/open/api/v1/resource/knowledge/blogger/contents?topic_id={topic_id}&follow_id={follow_id}&page=1
 ```
@@ -179,6 +215,13 @@ GET https://openapi.biji.com/open/api/v1/resource/knowledge/blogger/contents?top
 
 ### 博主内容详情（含原文）
 
+**CLI 命令（推荐）**：
+```bash
+getnote kb blogger-content <topic_id> <post_id_alias>
+getnote kb blogger-content <topic_id> <post_id_alias> -o json
+```
+
+**直接调 API**：
 ```
 GET https://openapi.biji.com/open/api/v1/resource/knowledge/blogger/content/detail?topic_id={topic_id}&post_id={post_id_alias}
 ```
@@ -193,6 +236,13 @@ GET https://openapi.biji.com/open/api/v1/resource/knowledge/blogger/content/deta
 
 ### 已完成直播列表
 
+**CLI 命令（推荐）**：
+```bash
+getnote kb lives <topic_id>
+getnote kb lives <topic_id> --page 2
+```
+
+**直接调 API**：
 ```
 GET https://openapi.biji.com/open/api/v1/resource/knowledge/lives?topic_id={topic_id}&page=1
 ```
@@ -207,6 +257,13 @@ GET https://openapi.biji.com/open/api/v1/resource/knowledge/lives?topic_id={topi
 
 ### 直播详情（总结 + 原文）
 
+**CLI 命令（推荐）**：
+```bash
+getnote kb live <topic_id> <live_id>
+getnote kb live <topic_id> <live_id> -o json
+```
+
+**直接调 API**：
 ```
 GET https://openapi.biji.com/open/api/v1/resource/knowledge/live/detail?topic_id={topic_id}&live_id={live_id}
 ```
