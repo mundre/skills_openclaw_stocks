@@ -26,7 +26,7 @@ eqxiu-store-skills/
 ### 2. 直接调用脚本
 
 ```bash
-python scripts/eqxiu_store.py --keywords "婚礼邀请函" --pageNo=1 --pageSize=10
+python scripts/eqxiu_store.py --keywords "游戏" --priceRange "0a0" --color "紫色" --pageNo=1 --sortBy "common_total|desc" --pageSize=30
 ```
 
 **参数：**
@@ -34,7 +34,10 @@ python scripts/eqxiu_store.py --keywords "婚礼邀请函" --pageNo=1 --pageSize
 | 参数        | 必填 | 说明 |
 |-------------|------|------|
 | `keywords`  | 是   | 搜索关键词，如「邀请函」「婚礼」「双11大促」 |
+| `priceRange`| 否   | 价格范围，如 `0a0` 代表免费（按接口透传） |
+| `color`     | 否   | 颜色筛选，如「紫色」（按接口透传） |
 | `pageNo`    | 否   | 页码，从 1 开始，默认 1 |
+| `sortBy`    | 否   | 排序字段，默认 `common_total|desc` |
 | `pageSize`  | 否   | 每页数量，默认 10 |
 
 **输出示例（JSON）：**
@@ -42,8 +45,8 @@ python scripts/eqxiu_store.py --keywords "婚礼邀请函" --pageNo=1 --pageSize
 ```json
 [
   {
-    "title": "时尚婚礼邀请函结婚婚宴请柬户外婚礼请帖",
-    "link": "http://h5.eqxiu.com/s/KO0A5cXY",
+    "title": "创意象棋风格开业庆典商务会议招商加盟论坛会邀请函",
+    "link": "https://www.eqxiu.com/mall/detail-h5/2958065",
     "description": "婚礼邀请函 婚礼请柬 户外婚礼邀请函 结婚邀请函",
     "pv": 1269
   }
@@ -63,7 +66,4 @@ python scripts/eqxiu_store.py --keywords "婚礼邀请函" --pageNo=1 --pageSize
 - 若搜索结果为空或不匹配，回复：「没有找到完全匹配的模板，建议换个关键词试试，比如 xxx。」
 - 编辑和导出依赖浏览器自动化，可能因网站 UI 变更而失效；遇问题可优先使用本搜索能力。
 
-## 编辑与扩展
 
-- **SKILL.md**：维护「做什么、何时用」、制作流程与输出规范；细节可放在本 README 或单独 reference。
-- 脚本逻辑与参数以 `scripts/eqxiu_store.py` 为准，修改后请同步更新 README 与 SKILL.md。

@@ -1,11 +1,17 @@
 {
   "owner": "jijun",
   "slug": "eqxiu-store-skill",
-  "displayName": "Eqxiu Store Skill",
+  "displayName": "易企秀素材商城检索",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773391709195,
-    "commit": "https://github.com/openclaw/skills/commit/7186f636476c8949d8283aec5ae3b1ad10dd2e88"
+    "version": "1.0.1",
+    "publishedAt": 1774925491148,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773391709195,
+      "commit": "https://github.com/openclaw/skills/commit/7186f636476c8949d8283aec5ae3b1ad10dd2e88"
+    }
+  ]
 }
