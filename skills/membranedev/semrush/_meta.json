@@ -3,9 +3,15 @@
   "slug": "semrush",
   "displayName": "Semrush",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773370950374,
-    "commit": "https://github.com/openclaw/skills/commit/6f13845d05f9c750ae4837588348e247ab9328f3"
+    "version": "1.0.2",
+    "publishedAt": 1775163672931,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773370950374,
+      "commit": "https://github.com/openclaw/skills/commit/6f13845d05f9c750ae4837588348e247ab9328f3"
+    }
+  ]
 }
