@@ -84,6 +84,54 @@ After finding documents with `search`, use `grep` to locate specific content wit
 - Use **grep** when you know what specific text to look for (names, dates, terms, identifiers, keywords).
 - They are complementary: outline tells you _where_ things are structurally, grep tells you _where_ things are textually.
 
+### From overview to targeted search
+
+When the user's request is broad or exploratory ("what do I have about AI?", "summarize my knowledge base"), start with `explore` to understand the landscape, then drill down with `search`:
+
+```bash
+linkly explore                                           # see themes, dirs, keywords, recent activity
+linkly search "machine learning" --limit 10              # follow up on a keyword
+linkly search "report" --path-glob "*2024*" --limit 5    # follow up on a directory
+linkly search "design" --path-glob "*linkly-ai-v3*"      # follow up on a recently active directory
+```
+
+The explore output includes a **Recent Activity** section showing directories with changes in the last 7 days. Use this to answer questions like "what have I been working on?" or to focus searches on actively maintained content.
+
+This two-step pattern avoids blind searches and produces more relevant results.
+
+### Scoped search with libraries
+
+Libraries let users curate folders into named collections. Use `--library` to restrict search scope:
+
+```bash
+linkly list-libraries                                    # see what's available
+linkly search "transformer architecture" --library my-research --limit 10
+```
+
+**When to use:**
+
+- The user explicitly names a library: "search in my-research for..."
+- The user has been working within a library context in the current session
+
+**When NOT to use:**
+
+- General searches like "find my PDF about X" → global search is better
+- You're unsure which library → search globally, or ask the user
+
+Libraries are optional. **Default to global search** unless the user specifies otherwise.
+
+### Filtering by file path
+
+Use `--path-glob` to filter results by file path patterns (SQLite GLOB syntax):
+
+```bash
+linkly search "meeting notes" --path-glob "*2024*"       # files with "2024" in path
+linkly search "report" --path-glob "*.pdf"               # only PDFs
+linkly search "design" --path-glob "*projects/frontend*" # specific directory
+```
+
+`--path-glob` and `--library` can be combined for precise scoping.
+
 ### Handling large result sets
 
 - Start with `--limit 5` to check relevance quickly.

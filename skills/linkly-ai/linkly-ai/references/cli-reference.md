@@ -14,18 +14,52 @@ See the [CLI installation guide](https://linkly.ai/docs/en/use-cli) for platform
 
 ## Commands
 
+### list-libraries — List knowledge libraries
+
+```bash
+linkly list-libraries
+```
+
+Lists all knowledge libraries configured in the desktop app with document counts.
+
+| Option   | Description                            |
+| -------- | -------------------------------------- |
+| `--json` | Output structured JSON (global option) |
+
+### explore — Overview of indexed documents
+
+```bash
+linkly explore [OPTIONS]
+```
+
+Get a bird's-eye overview of all indexed documents or a specific library. Returns document type distribution, directory structure with file counts and median word counts, and top keywords with source attribution.
+
+| Option             | Description                                     |
+| ------------------ | ----------------------------------------------- |
+| `--library <name>` | Restrict overview to a specific library by name |
+| `--json`           | Output structured JSON (global option)          |
+
+Examples:
+
+```bash
+linkly explore
+linkly explore --library my-research
+```
+
 ### search — Search indexed documents
 
 ```bash
 linkly search <QUERY> [OPTIONS]
 ```
 
-| Option           | Description                                               |
-| ---------------- | --------------------------------------------------------- |
-| `<QUERY>`        | Search keywords or phrases (required)                     |
-| `--limit <N>`    | Maximum results, 1–50 (default: 20)                       |
-| `--type <types>` | Filter by document types, comma-separated (e.g. `pdf,md`) |
-| `--json`         | Output structured JSON (global option)                    |
+| Option              | Description                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| `<QUERY>`           | Search keywords or phrases (required)                                                                 |
+| `--limit <N>`       | Maximum results, 1–50 (default: 20)                                                                   |
+| `--type <types>`    | Filter by document types, comma-separated (e.g. `pdf,md`)                                             |
+| `--library <name>`  | Restrict search to a specific library by name                                                         |
+| `--path-glob <pat>` | SQLite GLOB pattern to filter by file path. `*` matches any chars including `/`, `?` matches one char |
+| `--json`            | Output structured JSON (global option)                                                                |
 
 Examples:
 
@@ -33,6 +67,8 @@ Examples:
 linkly search "machine learning"
 linkly search "API design" --limit 5
 linkly search "notes" --type pdf,md,docx
+linkly search "deep learning" --library my-research
+linkly search "report" --path-glob "*2024*"
 linkly search "budget" --json
 ```
 
@@ -114,6 +150,23 @@ linkly status --json
 
 Shows CLI version, app version, MCP endpoint, indexed document count, and index status.
 
+### doctor — Diagnose connection issues
+
+```bash
+linkly doctor
+linkly doctor --remote
+linkly doctor --endpoint http://192.168.1.100:60606/mcp --token <token>
+linkly doctor --json
+```
+
+Runs a series of diagnostic checks based on the connection mode:
+
+- **Local**: Port file readability → HTTP connectivity → App status
+- **LAN**: HTTP connectivity → Auth token → App status
+- **Remote**: Credentials → Server reachability → Auth → Tunnel status → MCP round-trip
+
+Each check reports pass/fail with actionable advice on failures. Use this as the first step when troubleshooting any connection problem.
+
 ### mcp — Run as MCP stdio bridge
 
 ```bash
@@ -141,9 +194,9 @@ Claude Desktop configuration (`claude_desktop_config.json`):
 linkly auth set-key <API_KEY>
 ```
 
-| Option      | Description                      |
-| ----------- | -------------------------------- |
-| `<API_KEY>` | API key from linkly.ai dashboard |
+| Option      | Description                                                                     |
+| ----------- | ------------------------------------------------------------------------------- |
+| `<API_KEY>` | API key from linkly.ai dashboard (format: `lkai_<32-char hex>`, 37 chars total) |
 
 Saves the key to `~/.linkly/credentials.json` for use with `--remote`.
 
@@ -155,13 +208,13 @@ linkly self-update
 
 ## Connection Options
 
-These options are available on `search`, `grep`, `outline`, `read`, and `status` commands (not on `mcp`, `auth`, or `self-update`):
+`--endpoint` and `--token` are available on `search`, `grep`, `outline`, `read`, `status`, `doctor`, and `list-libraries` commands. `--remote` is available on the same commands (not on `mcp`, `auth`, or `self-update`).
 
-| Flag               | Scope  | Description                                                                               |
-| ------------------ | ------ | ----------------------------------------------------------------------------------------- |
-| `--endpoint <url>` | LAN    | Connect to a specific MCP endpoint (e.g. `http://192.168.1.100:60606/mcp`)                |
-| `--token <token>`  | LAN    | Bearer token for LAN authentication (use with `--endpoint`, conflicts with `--remote`)    |
-| `--remote`         | Remote | Connect via `mcp.linkly.ai` tunnel (conflicts with `--endpoint`, requires `auth set-key`) |
+| Flag               | Scope  | Description                                                                                       |
+| ------------------ | ------ | ------------------------------------------------------------------------------------------------- |
+| `--endpoint <url>` | LAN    | Connect to a specific MCP endpoint (e.g. `http://192.168.1.100:60606/mcp`), requires `--token`    |
+| `--token <token>`  | LAN    | Bearer token for LAN authentication (required with `--endpoint`, conflicts with `--remote`)       |
+| `--remote`         | Remote | Connect via `https://mcp.linkly.ai` tunnel (conflicts with `--endpoint`, requires `auth set-key`) |
 
 ## Global Options
 
@@ -229,3 +282,45 @@ These options are available on `search`, `grep`, `outline`, `read`, and `status`
   "message": "error description"
 }
 ```
+
+## Shell Composition Tips
+
+The CLI outputs plain text or structured JSON, making it composable with standard Unix tools for more precise text processing.
+
+**Extract doc IDs and batch outline:**
+
+```bash
+linkly search "architecture" --json | jq -r '.results[].doc_id' | xargs linkly outline
+```
+
+**Chain search → grep for two-stage filtering:**
+
+```bash
+# First narrow by semantics, then filter by exact keyword
+linkly search "deployment" --json \
+  | jq -r '.results[].doc_id' \
+  | xargs -I{} linkly grep "docker\|kubernetes" {}
+```
+
+**Aggregate outline output into a single file:**
+
+```bash
+linkly search "API design" --json \
+  | jq -r '.results[].doc_id' \
+  | while read id; do linkly outline "$id"; done \
+  > combined-outlines.txt
+```
+
+**Count document types in search results:**
+
+```bash
+linkly search "" --json | jq '.results[].type' | sort | uniq -c | sort -rn
+```
+
+**Use `grep` on CLI output for further filtering:**
+
+```bash
+linkly search "security" | grep -i "auth\|token\|jwt"
+```
+
+When using `--json`, pipe through `jq` to extract specific fields before passing to the next command. This keeps token usage low and gives you precise control over what the Agent reads.
