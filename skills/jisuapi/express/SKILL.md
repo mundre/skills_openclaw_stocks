@@ -1,6 +1,6 @@
 ---
-name: jisu-express
-description: 使用极速数据快递查询 API 查询快递物流轨迹、签收状态，支持自动识别快递公司及顺丰/中通/跨越手机号后四位校验。
+name: "Express Logistics Track - 快递物流查询"
+description: 查快递物流轨迹与签收状态，支持自动识别公司与顺丰等校验。当用户说：这个单号到哪了？帮我查一下中通物流，或类似快递查询时，使用本技能。
 metadata: { "openclaw": { "emoji": "📦", "requires": { "bins": ["python3"], "env": ["JISU_API_KEY"] }, "primaryEnv": "JISU_API_KEY" } }
 ---
 
@@ -11,7 +11,7 @@ metadata: { "openclaw": { "emoji": "📦", "requires": { "bins": ["python3"], "e
 ## 前置配置：获取 API Key
 
 1. 前往 [极速数据官网](https://www.jisuapi.com/) 注册账号
-2. 进入 [对应接口页面](https://www.jisuapi.com/api/express) 页面，点击「申请数据」
+2. 进入 [快递查询接口](https://www.jisuapi.com/api/express) 页面，点击「申请数据」
 3. 在会员中心获取 **AppKey**
 4. 配置 Key：
 
@@ -145,7 +145,7 @@ python3 skills/express/express.py type
 
 ## 推荐用法
 
-1. 用户例如：「帮我查一下单号 `4303200322000` 的快递，应该是韵达。」  
+1. 用户例如：「帮我查一下单号 `4303200322000` 的快递，看下这个快递单号`4303200322000`到哪了。」  
 2. 代理在调用脚本时，应将用户提供的 `number` / `type` / `mobile` **放入结构化 JSON 参数中，而不是直接拼接到 shell 字符串里**，例如在内部构造形如：  
    `{"number": "<快递单号>", "type": "<快递公司代号>"}` 并作为第二个参数传给 `express.py`。  
 3. 若必须通过 shell 执行，请务必对 JSON 与命令参数做严格转义/引用，禁止直接把原始用户输入插入到命令行中，以避免 shell 注入风险。  
