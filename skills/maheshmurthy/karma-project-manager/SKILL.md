@@ -1,16 +1,16 @@
 ---
 name: project-manager
-description: Manage projects, grants, milestones, and updates on the Karma protocol. Use when user says "create a project", "new project", "add a grant", "record funding", "add milestone", "complete milestone", "post an update", "project progress", "grant update", "update project", "edit project", "edit grant", "complete grant", "add roadmap milestone", "report impact", "endorse project", "add team member", "set up agent", "configure API key", or any on-chain project management action.
+description: Manage projects, grants, milestones, and updates on the Karma protocol. Use when user says "create a project", "new project", "add a grant", "record funding", "add milestone", "complete milestone", "post an update", "project progress", "grant update", "update project", "edit project", "edit grant", "complete grant", "add roadmap milestone", "report impact", "endorse project", "add team member", "set up agent", "configure API key", "check payouts", "payout status", "payout history", "total disbursed", "view invoices", "download invoice", or any project management action.
 version: 2.0.0
-tags: [agent, project, grant, milestone, update, create, manage, impact, endorsement, members]
+tags: [agent, project, grant, milestone, update, create, manage, impact, endorsement, members, payout, invoice]
 metadata:
   author: Karma
-  category: on-chain
+  category: project-management
 ---
 
 # Project Manager
 
-Manage projects, grants, milestones, and updates on the Karma protocol. All actions create on-chain attestations via a single API.
+Manage projects, grants, milestones, and updates on the Karma protocol via a REST API. All operations are gasless — the API handles everything server-side.
 
 Full API docs: `https://gapapi.karmahq.xyz/v2/docs/static/index.html`
 
@@ -32,70 +32,7 @@ INVOCATION_ID=$(uuidgen)
 
 ## Setup
 
-If `KARMA_API_KEY` is already set, skip to [Verify](#verify).
-
-Otherwise use the `AskUserQuestion` tool with these options:
-
-- Question: "You need a Karma API key to continue. How would you like to set it up?"
-- Options: ["Quick start — Generate instantly (no account needed)", "Email login — Link to existing Karma account", "I already have a key"]
-
-### Quick Start (No Account Needed)
-
-```bash
-curl -s -X POST "${BASE_URL}/v2/agent/register" \
-  -H "Content-Type: application/json" \
-  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0" \
-  -d '{}'
-```
-
-Returns `{ "apiKey": "karma_..." }` — shown only once.
-
-**Important**: Always send `-d '{}'` — an empty body causes a 400 error.
-
-### Email Login
-
-1. Ask for email
-2. `POST ${BASE_URL}/v2/api-keys/auth/init` with `{ "email": "..." }`
-3. Ask for code → `POST ${BASE_URL}/v2/api-keys/auth/verify` with `{ "email": "...", "code": "...", "name": "claude-agent" }`
-4. Returns `{ "key": "karma_..." }`
-
-| Error | Action |
-|-------|--------|
-| `400 Invalid or expired code` | Ask to recheck or request new code |
-| `409 Active key already exists` | Use existing key or revoke from website |
-
-### Save API Key
-
-After obtaining the key (from quick start, email login, or user pasting it), **ask permission** to save it permanently:
-
-> Would you like me to save your API key to your shell config so you don't have to paste it every time?
-
-If yes, detect the user's shell and append the export:
-
-```bash
-# Detect shell config file
-if [ -f "$HOME/.zshrc" ]; then
-  SHELL_RC="$HOME/.zshrc"
-elif [ -f "$HOME/.bashrc" ]; then
-  SHELL_RC="$HOME/.bashrc"
-fi
-
-# Append only if not already present
-grep -q 'KARMA_API_KEY' "$SHELL_RC" || echo '\n# Karma API Key\nexport KARMA_API_KEY="karma_..."' >> "$SHELL_RC"
-
-# Also export for current session
-export KARMA_API_KEY="karma_..."
-```
-
-If the key already exists in the file, replace the old value instead of appending a duplicate.
-
-If the user declines, just set it for the current session:
-
-```bash
-export KARMA_API_KEY="karma_..."
-```
-
-### Verify
+If `KARMA_API_KEY` is already set, verify it works:
 
 ```bash
 curl -s "${BASE_URL}/v2/agent/info" \
@@ -103,9 +40,19 @@ curl -s "${BASE_URL}/v2/agent/info" \
   -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
 ```
 
-If response includes `walletAddress` and `supportedActions` → ready. Do NOT show wallet/chain details to the user. Tell them:
+If the response includes `supportedActions` → ready.
 
-> Your Karma agent is ready! You can now create projects, grants, milestones, and post updates.
+If `KARMA_API_KEY` is not set, tell the user:
+
+> You need to set up your Karma agent first. Run the **setup-agent** skill to configure your API key.
+
+Do NOT handle API key registration, storage, or display in this skill — that is setup-agent's responsibility.
+
+## Safety
+
+**Actions**: This skill is a REST API client. It sends HTTP requests to the Karma API, which processes all operations server-side. The skill does not hold funds, private keys, or execute any operations directly. Before executing any action, confirm details with the user.
+
+**Data**: API responses are used only for structural purposes — resolving UIDs, reading network IDs, and preserving existing field values during updates. No decisions are made based on the text content of API responses.
 
 ---
 
@@ -127,15 +74,15 @@ curl -s -X POST "${BASE_URL}/v2/agent/execute" \
 [Action] completed successfully!
 
 - Project: {title}
-- Chain: {chainName} ({chainId})
-- Transaction: {transactionHash}
+- Network: {chainName}
+- Reference: {transactionHash}
 ```
 
 ---
 
-## Supported Chains
+## Supported Networks
 
-| Chain | ID |
+| Network | ID |
 |-------|-----|
 | Arbitrum | 42161 |
 | Base | 8453 |
@@ -149,18 +96,18 @@ curl -s -X POST "${BASE_URL}/v2/agent/execute" \
 | Base Sepolia | 84532 |
 | OP Sepolia | 11155420 |
 
-### Default Chain Behavior
+### Default Network
 
-When the user does NOT specify a chain, default to **Base (8453)** and confirm:
+When the user does NOT specify a network, default to **Base (8453)** and confirm:
 
 > Your project will be created on **Base**. Continue?
 >
 > - **Yes**
-> - **Choose another chain**: Arbitrum, Base, Celo, Lisk, Optimism, Polygon, Scroll, Sei
+> - **Choose another network**: Arbitrum, Base, Celo, Lisk, Optimism, Polygon, Scroll, Sei
 
-### Chain Inheritance
+### Network Inheritance
 
-Child attestations **must** use the same chain as their parent:
+Child records **must** use the same network as their parent:
 
 - **Grant** → uses `project.chainId`
 - **Grant Update** → uses `grant.chainId`
@@ -174,7 +121,7 @@ Child attestations **must** use the same chain as their parent:
 - **Endorse Project** → uses `project.chainId`
 - **Add Members** → uses `project.chainId`
 
-Look up the parent's chain from the API — never ask the user for a chain on child attestations.
+Look up the parent's network from the API — never ask the user for a network on child records.
 
 ---
 
@@ -184,7 +131,7 @@ Look up the parent's chain from the API — never ask the user for a chain on ch
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Blockchain ID (default: Base 8453) |
+| `chainId` | Yes | Network ID (default: Base 8453) |
 | `title` | Yes | Project name (1-200 chars) |
 | `description` | Yes | Project description (1-5000 chars) |
 
@@ -233,8 +180,8 @@ After a successful project creation, display:
 > Your project has been created on {chainName}!
 >
 > - **Project**: {title}
-> - **Chain**: {chainName} ({chainId})
-> - **Transaction**: {transactionHash}
+> - **Network**: {chainName}
+> - **Reference**: {transactionHash}
 >
 > Want to post your first update? Share something you just built, a milestone you hit, or what's coming next.
 
@@ -242,11 +189,11 @@ After a successful project creation, display:
 
 ### updateProjectDetails
 
-Update an existing project. **Replaces all fields** — fetch current details first for partial updates.
+Update an existing project. **Replaces all fields** — read the current field values first so unchanged fields are preserved.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Chain where the project lives |
+| `chainId` | Yes | Network where the project lives |
 | `projectUID` | Yes | Project attestation UID |
 | `title` | Yes | Project name (1-200 chars) |
 | `description` | Yes | Project description (1-5000 chars) |
@@ -263,7 +210,7 @@ Post a progress update on a project.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match project's chain |
+| `chainId` | Yes | Must match project's network |
 | `projectUID` | Yes | Project attestation UID |
 | `title` | Yes | Update title (1-200 chars) |
 | `text` | Yes | Update content (1-10000 chars) |
@@ -276,12 +223,12 @@ Add a grant (funding) to a project.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match project's chain |
+| `chainId` | Yes | Must match project's network |
 | `projectUID` | Yes | Project attestation UID |
 | `communityUID` | Yes | Community attestation UID |
 | `title` | Yes | Grant title (1-200 chars) |
 | `description` | No | Grant description (1-5000 chars) |
-| `amount` | No | Funding amount (e.g. "50000 USDC") |
+| `amount` | No | Funding amount as text (e.g. "50000 USDC") |
 | `proposalURL` | No | Link to grant proposal |
 | `programId` | No | Program ID (look up via programs API) |
 
@@ -293,7 +240,7 @@ Post a progress update on a grant.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match grant's chain |
+| `chainId` | Yes | Must match grant's network |
 | `grantUID` | Yes | Grant attestation UID |
 | `title` | Yes | Update title (1-200 chars) |
 | `text` | Yes | Update content (1-10000 chars) |
@@ -306,7 +253,7 @@ Add a milestone to a grant.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match grant's chain |
+| `chainId` | Yes | Must match grant's network |
 | `grantUID` | Yes | Grant attestation UID |
 | `title` | Yes | Milestone title (1-200 chars) |
 | `description` | Yes | What will be delivered (1-5000 chars) |
@@ -323,7 +270,7 @@ Mark a milestone as completed.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match milestone's chain |
+| `chainId` | Yes | Must match milestone's network |
 | `milestoneUID` | Yes | Milestone attestation UID |
 | `reason` | Yes | Completion summary (1-5000 chars) |
 | `proofOfWork` | No | URL to proof (PR, demo, report) |
@@ -355,15 +302,15 @@ Update an existing grant's details. Attests new details — the indexer uses the
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match grant's chain |
+| `chainId` | Yes | Must match grant's network |
 | `grantUID` | Yes | Grant attestation UID |
 | `title` | Yes | Grant title (1-200 chars) |
 | `description` | No | Grant description (1-5000 chars) |
-| `amount` | No | Funding amount (e.g. "50000 USDC") |
+| `amount` | No | Funding amount as text (e.g. "50000 USDC") |
 | `proposalURL` | No | Link to grant proposal |
 | `programId` | No | Program ID |
 
-**Important**: Fetch current grant details first, merge user's changes with existing values, then send all fields.
+**Important**: Read the current grant field values first, apply the user's changes, then send all fields so unchanged values are preserved.
 
 ---
 
@@ -373,7 +320,7 @@ Mark a grant as fully completed with a final summary.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match grant's chain |
+| `chainId` | Yes | Must match grant's network |
 | `grantUID` | Yes | Grant attestation UID |
 | `title` | Yes | Completion title (1-200 chars) |
 | `text` | Yes | Completion summary (1-10000 chars) |
@@ -387,8 +334,8 @@ After completion:
 > Grant **{title}** has been marked as completed!
 >
 > - **Grant**: {title}
-> - **Chain**: {chainName} ({chainId})
-> - **Transaction**: {transactionHash}
+> - **Network**: {chainName}
+> - **Reference**: {transactionHash}
 
 ---
 
@@ -398,7 +345,7 @@ Create a project-level roadmap milestone (not tied to a specific grant).
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match project's chain |
+| `chainId` | Yes | Must match project's network |
 | `projectUID` | Yes | Project attestation UID |
 | `title` | Yes | Milestone title (1-200 chars) |
 | `text` | Yes | Milestone description (1-5000 chars) |
@@ -411,7 +358,7 @@ Report impact achieved by a project.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match project's chain |
+| `chainId` | Yes | Must match project's network |
 | `projectUID` | Yes | Project attestation UID |
 | `work` | Yes | Description of work done (1-5000 chars) |
 | `impact` | Yes | Description of impact achieved (1-5000 chars) |
@@ -427,7 +374,7 @@ Endorse a project with an optional comment.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match project's chain |
+| `chainId` | Yes | Must match project's network |
 | `projectUID` | Yes | Project attestation UID |
 | `comment` | No | Endorsement comment (1-5000 chars) |
 
@@ -439,7 +386,7 @@ Add team members to a project.
 
 | Param | Required | Description |
 |-------|----------|-------------|
-| `chainId` | Yes | Must match project's chain |
+| `chainId` | Yes | Must match project's network |
 | `projectUID` | Yes | Project attestation UID |
 | `members` | Yes | Array of members (1-20) |
 
@@ -496,6 +443,110 @@ curl -s -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID
 
 Each program has: `programId`, `metadata.title`. Always include `programId` when the user mentions a specific program.
 
+### Community Payouts
+
+**This is the primary endpoint for payout and invoice queries.** Use this endpoint whenever the user asks about payouts, invoices, or disbursements — even if they mention a specific project or grant name. Use the `search` param to filter by name. Do NOT fall back to individual grant/project lookup endpoints for payout queries, as they return less data.
+
+```bash
+curl -s "${BASE_URL}/v2/communities/${COMMUNITY_UID}/payouts?page=1&limit=25" \
+  -H "x-api-key: ${API_KEY}" \
+  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
+```
+
+**Display rules (MANDATORY):**
+- Each item in `payload[]` represents a different project+grant combination
+- The first column in every table MUST be **Project** (from `item.project.title`)
+- The second column MUST be **Grant** (from `item.grant.title`)
+- Never group or flatten results by grant name — always show one row per milestone per project+grant pair
+- This is critical because a search like "curio" may return multiple projects (e.g., "Curio Storage" and "Curio Dashboard") and the user needs to tell them apart
+
+Optional query params:
+
+| Param | Description |
+|-------|-------------|
+| `page` | Page number (default: 1) |
+| `limit` | Items per page (default: 10, max: 1000) |
+| `programId` | Filter by program ID |
+| `status` | Filter by payout status |
+| `agreementStatus` | `signed` or `not_signed` |
+| `invoiceStatus` | `all_received`, `needs_invoices`, or `has_invoices` |
+| `search` | Search by project or grant name (max 200 chars) |
+| `sortBy` | `project_title`, `grant_title`, `payout_amount`, `disbursed_amount`, or `status` |
+| `sortOrder` | `asc` or `desc` (default: `asc`) |
+
+Requires COMMUNITY_VIEW permission. If 403, try the public endpoint:
+
+```bash
+curl -s "${BASE_URL}/v2/communities/${COMMUNITY_UID}/payouts/public?page=1&limit=25" \
+  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
+```
+
+The public endpoint requires no auth but returns fewer fields (sensitive data stripped).
+
+### Grant Payout History
+
+Get disbursement history for a specific grant.
+
+```bash
+curl -s "${BASE_URL}/v2/payouts/grant/${GRANT_UID}/history?page=1&limit=20" \
+  -H "x-api-key: ${API_KEY}" \
+  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
+```
+
+### Grant Total Disbursed
+
+Get the total amount already paid out for a grant.
+
+```bash
+curl -s "${BASE_URL}/v2/payouts/grant/${GRANT_UID}/total-disbursed" \
+  -H "x-api-key: ${API_KEY}" \
+  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
+```
+
+### Pending Disbursements
+
+List disbursements awaiting processing for a community.
+
+```bash
+curl -s "${BASE_URL}/v2/payouts/community/${COMMUNITY_UID}/pending?page=1&limit=20" \
+  -H "x-api-key: ${API_KEY}" \
+  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
+```
+
+### Payout Config for a Grant
+
+Get the payout configuration (payment address, token, schedule) for a grant.
+
+```bash
+curl -s "${BASE_URL}/v2/payout-config/grant/${GRANT_UID}" \
+  -H "x-api-key: ${API_KEY}" \
+  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
+```
+
+### Grant Invoices
+
+List all milestone invoices for a grant.
+
+```bash
+curl -s "${BASE_URL}/v2/milestone-invoices/grant/${GRANT_UID}" \
+  -H "x-api-key: ${API_KEY}" \
+  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
+```
+
+Each invoice has: `id`, `grantUID`, `milestoneUID`, `milestoneLabel`, `invoiceStatus` (`not_submitted`, `submitted`, `received`, `paid`), `invoiceReceivedAt`, `invoiceFileKey`
+
+### Invoice Download
+
+Get a temporary download URL for an invoice file (15 min TTL). Requires the `invoiceFileKey` from the grant invoices response.
+
+```bash
+curl -s "${BASE_URL}/v2/milestone-invoices/download?key=${INVOICE_FILE_KEY}" \
+  -H "x-api-key: ${API_KEY}" \
+  -H "X-Source: skill:project-manager" -H "X-Invocation-Id: $INVOCATION_ID" -H "X-Skill-Version: 2.0.0"
+```
+
+Returns: `{ "downloadUrl": "..." }`
+
 ---
 
 ## Natural Language Mapping
@@ -504,11 +555,11 @@ Each program has: `programId`, `metadata.title`. Always include `programId` when
 |-----------|--------|
 | "create a project", "new project" | `createProject` — present all fields, default Base |
 | "create a DeFi project on Optimism" | `createProject` with tags: ["defi"], chainId: 10 |
-| "update project details", "rename project", "enrich my project" | `updateProjectDetails` — fetch current details first |
+| "update project details", "rename project", "enrich my project" | `updateProjectDetails` — read current values, apply changes |
 | "post an update", "project progress" | `createProjectUpdate` — look up projectUID, inherit chain |
 | "add a grant", "record funding" | `createGrant` — look up projectUID + communityUID, inherit chain |
 | "grant update", "grant progress" | `createGrantUpdate` — look up grantUID, inherit chain |
-| "edit grant", "update grant details", "change grant amount" | `updateGrantDetails` — fetch current grant, merge changes |
+| "edit grant", "update grant details", "change grant amount" | `updateGrantDetails` — read current values, apply changes |
 | "complete grant", "finish grant", "close grant" | `completeGrant` — look up grantUID, inherit chain |
 | "add milestone", "set deliverable" | `createMilestone` — look up grantUID, inherit chain |
 | "complete milestone", "mark done" | `completeMilestone` — look up milestoneUID, inherit chain |
@@ -517,6 +568,13 @@ Each program has: `programId`, `metadata.title`. Always include `programId` when
 | "endorse project", "support project" | `endorseProject` — look up projectUID, inherit chain |
 | "add team member", "add member", "invite to project" | `addProjectMembers` — look up projectUID, inherit chain |
 | "create project with grant" | `createProjectWithGrant` |
+| "check payouts", "payout status", "show payouts", "invoices", "check invoices" | **Always** use Community Payouts endpoint (`/v2/communities/:id/payouts`) with `search` param — this is the primary endpoint for all payout/invoice queries |
+| "payout history", "disbursement history" | Grant Payout History — look up grantUID first |
+| "total disbursed", "how much was paid" | Grant Total Disbursed — look up grantUID first |
+| "pending payouts", "pending disbursements" | Pending Disbursements — look up communityUID |
+| "payout config", "payment setup" | Payout Config — look up grantUID first |
+| "view invoices", "check invoices", "invoice status" | Grant Invoices — look up grantUID first |
+| "download invoice" | Invoice Download — get `invoiceFileKey` from Grant Invoices first |
 
 ---
 
@@ -525,7 +583,8 @@ Each program has: `programId`, `metadata.title`. Always include `programId` when
 | Status | Meaning | Action |
 |--------|---------|--------|
 | 400 | Bad params | Show error, help fix |
-| 401 | Invalid API key | Tell user to check `KARMA_API_KEY` or run setup |
+| 403 | Forbidden | Check if a `/public` variant of the endpoint exists. If not, tell user they need higher API key permissions |
+| 401 | Invalid API key | Tell user to run the **setup-agent** skill to reconfigure their API key |
 | 429 | Rate limited (60/min) | Wait and retry |
 | 500 | Server error | Retry once, then report |
 
@@ -534,11 +593,11 @@ Each program has: `programId`, `metadata.title`. Always include `programId` when
 | Scenario | Response |
 |----------|----------|
 | Missing required field | Ask user for it |
-| Chain not specified (root action) | Default to Base, confirm with user |
-| Chain not specified (child action) | Inherit from parent — never ask |
+| Network not specified (root action) | Default to Base, confirm with user |
+| Network not specified (child action) | Inherit from parent — never ask |
 | API key not set | Run setup flow |
 | Title too long (>200) | Truncate and confirm |
 | Need UID but user gave name | Search API to find the UID |
-| Partial project update | Fetch current details, merge changes, then update |
+| Partial project update | Read current field values, apply user's changes, then update |
 | Multiple grants on project | Show list, ask which one |
 | Date given as string | Convert to Unix timestamp in seconds |

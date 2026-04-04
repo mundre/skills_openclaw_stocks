@@ -1,13 +1,18 @@
 {
   "owner": "maheshmurthy",
   "slug": "karma-project-manager",
-  "displayName": "Project Manager",
+  "displayName": "Karma Project Manager",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1773932303505,
-    "commit": "https://github.com/openclaw/skills/commit/44fc486a45481f9de47ec914cac425d6800afbfb"
+    "version": "2.0.1",
+    "publishedAt": 1775076403914,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1773932303505,
+      "commit": "https://github.com/openclaw/skills/commit/44fc486a45481f9de47ec914cac425d6800afbfb"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773345519139,
