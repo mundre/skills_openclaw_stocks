@@ -3,9 +3,15 @@
   "slug": "wechat-article-fetcher-safe",
   "displayName": "微信文章抓取器 - 安全版",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1774419627362,
-    "commit": "https://github.com/openclaw/skills/commit/96245aa8e792b7b4bbfa18753491c7337d283c43"
+    "version": "2.0.0",
+    "publishedAt": 1775272846007,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1774419627362,
+      "commit": "https://github.com/openclaw/skills/commit/96245aa8e792b7b4bbfa18753491c7337d283c43"
+    }
+  ]
 }

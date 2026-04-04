@@ -20,7 +20,8 @@
   "author": "潜助",
   "license": "MIT",
   "dependencies": {
-    "puppeteer-core": "^24.37.5"
+    "puppeteer-core": "^24.37.5",
+    "tesseract.js": "^7.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
