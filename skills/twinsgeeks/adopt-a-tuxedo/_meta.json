@@ -1,11 +1,17 @@
 {
   "owner": "twinsgeeks",
   "slug": "adopt-a-tuxedo",
-  "displayName": "Adopt a Tuxedo — Virtual Cat Pet for AI Agents",
+  "displayName": "Tuxedo — Adopt a Tuxedo. Cat. 燕尾服猫。Gato Esmoquin.",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773303442064,
-    "commit": "https://github.com/openclaw/skills/commit/3cd951fee63bbc5aa062c6caf03de15719a0c400"
+    "version": "1.0.3",
+    "publishedAt": 1775008740049,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773303442064,
+      "commit": "https://github.com/openclaw/skills/commit/3cd951fee63bbc5aa062c6caf03de15719a0c400"
+    }
+  ]
 }
