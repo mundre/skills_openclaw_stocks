@@ -1,17 +1,67 @@
 ---
 name: gate-info-addresstracker
-version: "2026.3.12-1"
-updated: "2026-03-12"
+version: "2026.4.1-1"
+updated: "2026-04-01"
 description: "Address tracker and analysis. Use this skill whenever the user provides an on-chain address or asks to track or query an address. Trigger phrases include: track this address, who owns this address, fund flow, check address. MCP tools: info_onchain_get_address_info, info_onchain_get_address_transactions, info_onchain_trace_fund_flow."
+required_credentials: []
+required_env_vars: []
+required_permissions: []
 ---
 
 # gate-info-addresstracker
+
+## General Rules
+
+⚠️ STOP — You MUST read and strictly follow the shared runtime rules before proceeding.
+Do NOT select or call any tool until all rules are read. These rules have the highest priority.
+→ Read [gate-runtime-rules.md](https://github.com/gate/gate-skills/blob/master/skills/gate-runtime-rules.md)
+→ Also read [info-news-runtime-rules.md](https://github.com/gate/gate-skills/blob/master/skills/info-news-runtime-rules.md) for **gate-info** / **gate-news**-specific rules (tool degradation, report standards, security, routing degradation, and per-skill version checks when `scripts/` is present).
+- **Only call MCP tools explicitly listed in this skill.** Tools not documented here must NOT be called, even if they
+  exist in the MCP server.
 
 > The on-chain detective Skill. The user inputs an on-chain address; the system first calls the address info Tool to get the profile, then based on user intent depth (simple query vs. fund tracing) decides whether to additionally call transaction history and fund flow tracing Tools.
 
 **Trigger Scenarios**: User provides an on-chain address (0x... / bc1... / T... format) or explicitly expresses intent to track/query an address.
 
+**Per-skill updates:** This skill may include `scripts/update-skill.sh` and, in full source trees, `scripts/update-skill.ps1` for optional maintenance checks against the official Gate Skills repository. The shared policy is defined in [info-news-runtime-rules.md](https://github.com/gate/gate-skills/blob/master/skills/info-news-runtime-rules.md).
+
+**Maintenance flow:**
+- Use `check` only when you need to compare the installed skill with the official repo.
+- In interactive sessions, `check` never rewrites files.
+- If `update_available`, ask the user before `apply`.
+- If update scripts are unavailable or the version check cannot run, continue with the current installed version.
+- `apply` rewrites only this skill's local directory under the active skills root.
+- Do not download replacement updater scripts during the session; use the official repo for manual repair when needed.
+
 ---
+
+## MCP Dependencies
+
+### Required MCP Servers
+| MCP Server | Status |
+|------------|--------|
+| Gate-Info | ✅ Required |
+
+### MCP Tools Used
+
+**Query Operations (Read-only)**
+
+- info_onchain_get_address_info
+- info_onchain_get_address_transactions
+- info_onchain_get_transaction
+- info_onchain_trace_fund_flow
+
+### Authentication
+- API Key Required: No
+- Credentials Source: None; this skill uses read-only Gate Info / Gate News MCP access only.
+
+### Installation Check
+- Required: Gate-Info
+- Install: Run installer skill for your IDE
+  - Cursor: `gate-mcp-cursor-installer`
+  - Codex: `gate-mcp-codex-installer`
+  - Claude: `gate-mcp-claude-installer`
+  - OpenClaw: `gate-mcp-openclaw-installer`
 
 ## Routing Rules
 
