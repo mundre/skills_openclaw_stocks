@@ -1,11 +1,17 @@
 {
   "owner": "gate-exchange",
   "slug": "gate-info-coin-compare",
-  "displayName": "Gate Info Coin Compare",
+  "displayName": "gate-info-coincompare",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773388308222,
-    "commit": "https://github.com/openclaw/skills/commit/7a562ce7dea42c26a576528cb41105371ebecbfe"
+    "version": "1.0.2",
+    "publishedAt": 1775184672832,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773388308222,
+      "commit": "https://github.com/openclaw/skills/commit/7a562ce7dea42c26a576528cb41105371ebecbfe"
+    }
+  ]
 }
