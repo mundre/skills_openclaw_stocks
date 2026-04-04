@@ -3,9 +3,15 @@
   "slug": "bitly",
   "displayName": "Bitly",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773281005698,
-    "commit": "https://github.com/openclaw/skills/commit/c71fe1f1538aeb284f30da0045485b36efd00ab7"
+    "version": "1.0.2",
+    "publishedAt": 1775163443145,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773281005698,
+      "commit": "https://github.com/openclaw/skills/commit/c71fe1f1538aeb284f30da0045485b36efd00ab7"
+    }
+  ]
 }
