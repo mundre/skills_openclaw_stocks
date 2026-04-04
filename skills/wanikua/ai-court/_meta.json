@@ -1,13 +1,18 @@
 {
   "owner": "wanikua",
   "slug": "ai-court",
-  "displayName": "Ai Court Skill",
+  "displayName": "AI 朝廷 · 多 Agent 协作系统",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1774616290067,
-    "commit": "https://github.com/openclaw/skills/commit/91783169b52706523a31e171ba043d2e99e2261a"
+    "version": "2.3.0",
+    "publishedAt": 1774869361418,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1774616290067,
+      "commit": "https://github.com/openclaw/skills/commit/91783169b52706523a31e171ba043d2e99e2261a"
+    },
     {
       "version": "1.5.0",
       "publishedAt": 1772375113525,
