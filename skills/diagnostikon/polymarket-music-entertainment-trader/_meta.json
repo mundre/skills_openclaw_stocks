@@ -1,13 +1,18 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-music-entertainment-trader",
-  "displayName": "Music & Entertainment Trader",
+  "displayName": "Polymarket Music Entertainment Trader",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773779902707,
-    "commit": "https://github.com/openclaw/skills/commit/a7189044ecd4e0f2cff1c4827a2c2d5ed500032a"
+    "version": "1.0.3",
+    "publishedAt": 1775333571186,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773779902707,
+      "commit": "https://github.com/openclaw/skills/commit/a7189044ecd4e0f2cff1c4827a2c2d5ed500032a"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773429104157,
