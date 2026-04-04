@@ -3,9 +3,15 @@
   "slug": "readme-com",
   "displayName": "Readme Com",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773083382412,
-    "commit": "https://github.com/openclaw/skills/commit/0ad0124c430708f2d8e6ab9903b1ef945993313d"
+    "version": "1.0.3",
+    "publishedAt": 1775162960439,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773083382412,
+      "commit": "https://github.com/openclaw/skills/commit/0ad0124c430708f2d8e6ab9903b1ef945993313d"
+    }
+  ]
 }
