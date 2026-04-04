@@ -1,11 +1,17 @@
 {
   "owner": "ahaaiclub",
   "slug": "knowyourself",
-  "displayName": "Know Yourself",
+  "displayName": "Knowyourself",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772874786509,
-    "commit": "https://github.com/openclaw/skills/commit/e764328e6ce1b7a2c9b54eef584c70bd4f463c73"
+    "version": "1.1.2",
+    "publishedAt": 1775189035332,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772874786509,
+      "commit": "https://github.com/openclaw/skills/commit/e764328e6ce1b7a2c9b54eef584c70bd4f463c73"
+    }
+  ]
 }
