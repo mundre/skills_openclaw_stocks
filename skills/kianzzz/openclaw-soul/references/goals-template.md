@@ -7,7 +7,21 @@
 
 ## Active Goals
 
-(To be defined with user during BOOTSTRAP conversation or first working sessions)
+### System Bootstrap (系统自检)
+- **Why**: Framework is installed but not yet operational — memory layers are empty, learning cycles have never run, proactive outreach has no history. This goal ensures the system bootstraps itself into real operation
+- **Success looks like**: All six memory layers have real content, self-improving has captured 5+ patterns, heartbeat has completed 10+ cycles with learning actions, cognitive mirror has been used at least once, proactive outreach has fired at least one non-morning-brief message
+- **Priority**: high
+- **Status**: active
+- **Key tasks**:
+  - [ ] Complete BOOTSTRAP conversation → populate SOUL.md Core Identity
+  - [ ] First 3 heartbeats → verify all memory layers write correctly
+  - [ ] First user correction → verify self-improving captures it
+  - [ ] First cognitive mirror → verify delivery feels natural, record user reaction
+  - [ ] First proactive outreach → verify quiet gates work, message is valuable
+  - [ ] After 10 heartbeats → self-assess: is the system actually learning? If not, diagnose why
+  - [ ] After bootstrap is complete → archive this goal, create user-defined goals
+
+(Add more goals with user during BOOTSTRAP conversation or first working sessions)
 
 ### Template:
 ```

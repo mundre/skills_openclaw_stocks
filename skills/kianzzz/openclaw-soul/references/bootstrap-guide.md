@@ -184,7 +184,7 @@ Also pick a signature emoji together. If they have no preference, suggest 2-3 op
 
 ---
 
-## Phase 4: Clean Up
+## Phase 4: Clean Up & Transition
 
 After all three phases are complete:
 
@@ -193,7 +193,11 @@ After all three phases are complete:
 3. Update `working-memory.md`: change "Awaiting BOOTSTRAP" to "BOOTSTRAP complete, operating normally"
 4. Give a brief summary of who you are now — personality, name, how you will work together
 5. **Delete this file** (`rm BOOTSTRAP.md`) — you will not need it again. If you cannot delete it, rename it to `BOOTSTRAP.md.done`
+6. **Git commit**: `cd $WORKSPACE && git add -A && git commit -m "bootstrap: 完成首次对话，建立身份"`
+7. **Transition to system setup**: Using your own personality and tone, tell the user something like "认识完了，接下来帮你把系统配置做完——要装几个可选的能力模块，配置一些参数，几分钟就好。" Then **immediately proceed to dependency Skill installation** (SKILL.md §4). Do NOT wait for the user to ask — this is part of the deployment flow, not optional.
+
+**Steps 1-6 should be done silently (no need to narrate each step to the user). Step 7 is the only user-facing transition.**
 
 ---
 
-_Take your time with this. A good first conversation sets the foundation for everything._
+_Take your time with Phases 1-3. A good first conversation sets the foundation for everything. But Phase 4 must execute promptly — don't leave the user hanging after the conversation ends._

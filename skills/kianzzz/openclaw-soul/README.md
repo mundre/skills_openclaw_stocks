@@ -43,11 +43,24 @@ Plus:
 - Skill directories: `skills/evoclaw/`, `skills/self-improving/`
 - Configuration: `evoclaw-state.json`, heartbeat settings in `openclaw.json`
 
-## v1.2.0: Zero-Dependency Fallback System
+## v2.2.0: Dynamic Personality System
 
-Previously, openclaw-soul required external skills (EvoClaw, Self-Improving Agent) via `clawhub install`. If clawhub was unavailable, these features were lost.
+**v2.2.0 improvements:**
+- **Dynamic Personality System**: Observes user communication patterns over 10 conversations
+- **Female Character Focus**: Character recommendations restricted to female characters
+- **De-anchored Inference**: Removed specific character examples to enable true dynamic reasoning
+- **Heartbeat Integration**: Personality proposals triggered via OpenClaw's heartbeat mechanism
 
-**v1.2.0 introduces a three-level fallback:**
+## v2.1.0: Reliable Deployment & Streamlined Flow
+
+**v2.1.0 improvements:**
+- Switched to bash `cp` for file deployment (100% reliable, no truncation)
+- Streamlined from 12 steps to 5-step flow (§1-§5)
+- Reduced verification from 28 items to 10 core checks
+- Optimized BOOTSTRAP dialogue tone
+- Fixed clawhub package name reference
+
+**Three-level fallback system (introduced in v1.2.0):**
 
 ### Level 1: clawhub (Preferred)
 ```bash
@@ -164,16 +177,18 @@ Copy the 9 template files from `references/` to `~/.openclaw/workspace/` manuall
 
 ## Files
 
-- **SKILL.md**: Main skill definition with 10 deployment stages
+- **SKILL.md**: Main skill definition with 5-step deployment flow (§1-§5)
 - **references/**: Template files for all 9 workspace files
-- **scripts/preflight_check.py**: Environment validation (v1.2.0: includes fallback checking)
+- **scripts/preflight_check.py**: Environment validation
 - **fallback/**: Offline skill copies for Level 2 deployment
 
 ## Version History
 
-- **v1.0.0**: Initial self-evolution framework
+- **v2.2.0**: Dynamic personality system with female character focus and de-anchored inference
+- **v2.1.0**: Reliable bash cp deployment + streamlined 5-step flow
+- **v1.2.0**: Three-level fallback system for zero-dependency deployment
 - **v1.1.0**: PARA memory architecture + structured heartbeat + goal management
-- **v1.2.0**: Three-level fallback system for zero-dependency deployment (this release)
+- **v1.0.0**: Initial self-evolution framework
 
 ## License
 
@@ -202,4 +217,4 @@ Contributions welcome. This framework is designed to evolve — propose changes 
 
 ---
 
-**openclaw-soul v1.2.0** — Self-evolving AI, always ready. 🧬
+**openclaw-soul v2.2.0** — Self-evolving AI, always ready. 🧬
