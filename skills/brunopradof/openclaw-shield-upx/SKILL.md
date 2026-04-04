@@ -5,6 +5,11 @@ homepage: https://www.upx.com/en/lp/openclaw-shield-upx
 source: https://www.npmjs.com/package/@upx-us/shield
 license: "Proprietary — UPX Technologies, Inc. All rights reserved."
 metadata: {"openclaw": {"requires": {"bins": ["openclaw"]}, "homepage": "https://clawhub.ai/brunopradof/openclaw-shield-upx", "emoji": "🛡️"}}
+skill_version: 1.4.2
+# NOTE: skill_version is independent of the npm package version (@upx-us/shield).
+# npm package: 0.x.x — plugin/bridge versioning
+# skill_version: 1.x.x — Clawhub skill versioning
+# Always bump skill_version here AND use it when running `clawhub publish`.
 ---
 
 # OpenClaw Shield
@@ -35,6 +40,10 @@ Shield requires the `@upx-us/shield` plugin and an active subscription.
 | `openclaw shield cases show <ID>` | Full case detail with events, rule, playbook |
 | `openclaw shield cases resolve <ID>` | Resolve a case (--resolution, --root-cause, --comment) |
 | `openclaw shield monitor` | Case notification cron — status, --on, --off, --interval |
+| `openclaw shield investigate <case-id>` | Guided investigation prompt with step-by-step instructions |
+| `openclaw shield help` | Full command reference (INVESTIGATION, RESOLUTION, DISCOVERY sections) |
+| `openclaw shield close <case-id> --reason <reason>` | Close a case with reason (e.g. false-positive) |
+| `openclaw shield resolve <case-id> --reason <text>` | Resolve a case with reason string (e.g. authorized-maintenance) |
 
 ## Plugin State Check
 
@@ -107,7 +116,7 @@ When a Shield case fires, correlate three data sources to determine true positiv
 
 **Step 4 — Correlate and assess**: Case detail = *what* fired the rule; Logs = *context*; Vault = *what was actually accessed*. Present findings and ask whether to resolve, investigate further, or add to the allowlist.
 
-Note: a future `openclaw shield investigate <CASE_ID>` helper command will automate this workflow.
+Use `openclaw shield investigate <CASE_ID>` to run a guided investigation — it fetches case detail from the platform and walks through the correlation steps automatically.
 
 ## Threat & Protection Questions
 
