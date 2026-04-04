@@ -1,11 +1,17 @@
 {
   "owner": "twinsgeeks",
   "slug": "adopt-a-owl",
-  "displayName": "Adopt an Owl — Virtual Exotic Pet for AI Agents",
+  "displayName": "Owl — Adopt an Owl. Exotic Animal. 猫头鹰。Búho.",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773202524185,
-    "commit": "https://github.com/openclaw/skills/commit/2df16c0a7428cff0d13b863028736c63e3f5c724"
+    "version": "1.0.3",
+    "publishedAt": 1775008447403,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773202524185,
+      "commit": "https://github.com/openclaw/skills/commit/2df16c0a7428cff0d13b863028736c63e3f5c724"
+    }
+  ]
 }
