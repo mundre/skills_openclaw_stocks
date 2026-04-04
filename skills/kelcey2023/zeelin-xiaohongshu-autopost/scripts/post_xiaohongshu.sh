@@ -4,7 +4,7 @@ set -u -o pipefail
 TITLE="${1:-}"
 CONTENT="${2:-}"
 IMAGE_PATH="${3:-/Users/youke/.openclaw/workspace/skills/zeelin-xiaohongshu-autopost/assets/default_cover.jpg}"
-CLI="${OPENCLAW_CLI:-openclaw browser}"
+CLI="${OPENCLAW_CLI:-agent-browser}"
 BASE_URL="https://creator.xiaohongshu.com/new/home"
 
 if [ -z "$TITLE" ] || [ -z "$CONTENT" ]; then
@@ -96,7 +96,7 @@ $CLI status >/dev/null 2>&1 || { echo "Error: OpenClaw browser relay unavailable
 
 echo "Opening Xiaohongshu creator page..."
 $CLI open "$BASE_URL" >/dev/null 2>&1 || true
-$CLI wait --time 2200 >/dev/null 2>&1 || sleep 2
+sleep 2 >/dev/null 2>&1 || sleep 2
 
 SNAPSHOT="$(get_snapshot)"
 is_login_required "$SNAPSHOT" && { echo "Error: Login required."; exit 1; }
@@ -106,7 +106,7 @@ PUBLISH_ENTRY_REF="$(find_publish_entry_ref "$SNAPSHOT")"
 
 echo "Clicking 发布笔记: $PUBLISH_ENTRY_REF"
 $CLI click "$PUBLISH_ENTRY_REF" >/dev/null 2>&1 || true
-$CLI wait --time 1200 >/dev/null 2>&1 || sleep 1
+sleep 1 >/dev/null 2>&1 || sleep 1
 
 SNAPSHOT="$(get_snapshot)"
 LONG_REF="$(find_long_form_ref "$SNAPSHOT")"
@@ -114,14 +114,14 @@ LONG_REF="$(find_long_form_ref "$SNAPSHOT")"
 
 echo "Clicking 写长文: $LONG_REF"
 $CLI click "$LONG_REF" >/dev/null 2>&1 || true
-$CLI wait --time 2200 >/dev/null 2>&1 || sleep 2
+sleep 2 >/dev/null 2>&1 || sleep 2
 
 SNAPSHOT="$(get_snapshot)"
 CANCEL_REF="$(find_cancel_ref "$SNAPSHOT")"
 if [ -n "$CANCEL_REF" ]; then
   echo "Closing popup via 取消: $CANCEL_REF"
   $CLI click "$CANCEL_REF" >/dev/null 2>&1 || true
-  $CLI wait --time 900 >/dev/null 2>&1 || sleep 1
+  sleep 1 >/dev/null 2>&1 || sleep 1
   SNAPSHOT="$(get_snapshot)"
 fi
 
@@ -130,7 +130,7 @@ NEW_REF="$(find_new_creation_ref "$SNAPSHOT")"
 
 echo "Clicking 新的创作: $NEW_REF"
 $CLI click "$NEW_REF" >/dev/null 2>&1 || true
-$CLI wait --time 3200 >/dev/null 2>&1 || sleep 3
+sleep 3 >/dev/null 2>&1 || sleep 3
 
 TITLE_REF=""
 CONTENT_REF=""
@@ -141,7 +141,7 @@ for _ in 1 2 3 4 5; do
   if [ -n "$TITLE_REF" ] && [ -n "$CONTENT_REF" ]; then
     break
   fi
-  $CLI wait --time 900 >/dev/null 2>&1 || sleep 1
+  sleep 1 >/dev/null 2>&1 || sleep 1
 done
 
 [ -z "$TITLE_REF" ] && { echo "Error: title input not found."; exit 1; }
@@ -152,21 +152,21 @@ $CLI click "$TITLE_REF" >/dev/null 2>&1 || true
 $CLI press "Meta+A" >/dev/null 2>&1 || true
 $CLI press "Control+A" >/dev/null 2>&1 || true
 $CLI type "$TITLE_REF" "$TITLE_SAFE" >/dev/null 2>&1 || true
-$CLI wait --time 600 >/dev/null 2>&1 || sleep 1
+sleep 1 >/dev/null 2>&1 || sleep 1
 
 echo "Typing content into $CONTENT_REF"
 $CLI click "$CONTENT_REF" >/dev/null 2>&1 || true
 $CLI press "Meta+A" >/dev/null 2>&1 || true
 $CLI press "Control+A" >/dev/null 2>&1 || true
 $CLI type "$CONTENT_REF" "$CONTENT" >/dev/null 2>&1 || true
-$CLI wait --time 1200 >/dev/null 2>&1 || sleep 1
+sleep 1 >/dev/null 2>&1 || sleep 1
 
 SNAPSHOT="$(get_snapshot)"
 LAYOUT_REF="$(find_layout_ref "$SNAPSHOT")"
 if [ -n "$LAYOUT_REF" ]; then
   echo "Clicking 一键排版: $LAYOUT_REF"
   $CLI click "$LAYOUT_REF" >/dev/null 2>&1 || true
-  $CLI wait --time 4500 >/dev/null 2>&1 || sleep 4
+  sleep 4 >/dev/null 2>&1 || sleep 4
 fi
 
 SNAPSHOT="$(get_snapshot)"
@@ -174,7 +174,7 @@ TEMPLATE_REF="$(find_basic_template_ref "$SNAPSHOT")"
 if [ -n "$TEMPLATE_REF" ]; then
   echo "Selecting template: $TEMPLATE_REF"
   $CLI click "$TEMPLATE_REF" >/dev/null 2>&1 || true
-  $CLI wait --time 900 >/dev/null 2>&1 || sleep 1
+  sleep 1 >/dev/null 2>&1 || sleep 1
 fi
 
 NEXT_REF=""
@@ -183,14 +183,14 @@ for _ in 1 2 3 4 5; do
   NEXT_REF="$(find_next_ref "$SNAPSHOT")"
   [ -n "$NEXT_REF" ] && break
   $CLI press "PageDown" >/dev/null 2>&1 || true
-  $CLI wait --time 700 >/dev/null 2>&1 || sleep 1
+  sleep 1 >/dev/null 2>&1 || sleep 1
 done
 
 [ -z "$NEXT_REF" ] && { echo "Error: 下一步 button not found."; exit 1; }
 
 echo "Clicking 下一步: $NEXT_REF"
 $CLI click "$NEXT_REF" >/dev/null 2>&1 || true
-$CLI wait --time 2800 >/dev/null 2>&1 || sleep 3
+sleep 3 >/dev/null 2>&1 || sleep 3
 
 PUBLISH_REF=""
 for _ in 1 2 3 4 5; do
@@ -198,14 +198,14 @@ for _ in 1 2 3 4 5; do
   PUBLISH_REF="$(find_publish_ref "$SNAPSHOT")"
   [ -n "$PUBLISH_REF" ] && break
   $CLI press "PageDown" >/dev/null 2>&1 || true
-  $CLI wait --time 700 >/dev/null 2>&1 || sleep 1
+  sleep 1 >/dev/null 2>&1 || sleep 1
 done
 
 [ -z "$PUBLISH_REF" ] && { echo "Error: 发布 button not found."; exit 1; }
 
 echo "Clicking 发布: $PUBLISH_REF"
 $CLI click "$PUBLISH_REF" >/dev/null 2>&1 || true
-$CLI wait --time 2200 >/dev/null 2>&1 || sleep 2
+sleep 2 >/dev/null 2>&1 || sleep 2
 
 SUCCESS=0
 for _ in 1 2 3 4 5 6 7 8; do
@@ -214,7 +214,7 @@ for _ in 1 2 3 4 5 6 7 8; do
     SUCCESS=1
     break
   fi
-  $CLI wait --time 900 >/dev/null 2>&1 || sleep 1
+  sleep 1 >/dev/null 2>&1 || sleep 1
 done
 
 if [ "$SUCCESS" -eq 1 ]; then
