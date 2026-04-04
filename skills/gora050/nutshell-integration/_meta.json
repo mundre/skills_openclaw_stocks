@@ -3,9 +3,15 @@
   "slug": "nutshell-integration",
   "displayName": "Nutshell",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772715785142,
-    "commit": "https://github.com/openclaw/skills/commit/1538ba0315011f3a7b0723d99cc169246583133c"
+    "version": "1.0.2",
+    "publishedAt": 1775162425575,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772715785142,
+      "commit": "https://github.com/openclaw/skills/commit/1538ba0315011f3a7b0723d99cc169246583133c"
+    }
+  ]
 }
