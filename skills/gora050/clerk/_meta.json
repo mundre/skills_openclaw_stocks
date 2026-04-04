@@ -3,11 +3,16 @@
   "slug": "clerk",
   "displayName": "Clerk",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775162997664,
-    "commit": "https://github.com/openclaw/skills/commit/b7086b58b5d4bc738085ad2ee93fd966dbfd0e8b"
+    "version": "1.0.2",
+    "publishedAt": 1775162999792,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775162997664,
+      "commit": "https://github.com/openclaw/skills/commit/b7086b58b5d4bc738085ad2ee93fd966dbfd0e8b"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773088973210,
