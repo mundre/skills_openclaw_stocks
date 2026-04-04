@@ -3,11 +3,16 @@
   "slug": "barcode2",
   "displayName": "Barcode Generation And Recognition - 条码生成识别",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773721701366,
-    "commit": "https://github.com/openclaw/skills/commit/d839abb9a839b1a02eabbc6e134b55e1efdc6627"
+    "version": "1.0.3",
+    "publishedAt": 1775207966465,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773721701366,
+      "commit": "https://github.com/openclaw/skills/commit/d839abb9a839b1a02eabbc6e134b55e1efdc6627"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773632097707,
