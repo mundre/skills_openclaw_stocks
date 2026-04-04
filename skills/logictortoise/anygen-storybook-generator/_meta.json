@@ -3,11 +3,16 @@
   "slug": "anygen-storybook-generator",
   "displayName": "Storybook Generator",
   "latest": {
-    "version": "1.1.4",
-    "publishedAt": 1773249974254,
-    "commit": "https://github.com/openclaw/skills/commit/204ed59bbaf6185a1c8d810f4a3a8cfefea9393c"
+    "version": "3.0.0",
+    "publishedAt": 1774865690572,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.4",
+      "publishedAt": 1773249974254,
+      "commit": "https://github.com/openclaw/skills/commit/204ed59bbaf6185a1c8d810f4a3a8cfefea9393c"
+    },
     {
       "version": "1.1.2",
       "publishedAt": 1773168065200,
