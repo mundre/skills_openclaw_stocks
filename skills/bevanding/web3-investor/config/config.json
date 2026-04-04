@@ -1,12 +1,12 @@
 {
-  "_comment": "Web3 Investor Skill Configuration - v0.5.0",
+  "_comment": "Web3 Investor Skill Configuration - v1.0.0",
   
   "chain": {
     "default": "base",
     "supported": ["base", "ethereum"],
     "rpc": {
-      "base": ["https://base.llamarpc.com", "https://base.drpc.org"],
-      "ethereum": ["https://eth.llamarpc.com", "https://rpc.flashbots.net/fast", "https://eth.drpc.org"]
+      "base": "https://base.llamarpc.com",
+      "ethereum": "https://eth.llamarpc.com"
     }
   },
   
@@ -41,18 +41,11 @@
   },
   
   "rpc": {
-    "timeout_seconds": 10,
-    "fallback_enabled": true,
-    "session_sticky": true
+    "timeout_seconds": 10
   },
   
   "discovery": {
-    "data_sources": ["mcp", "dune", "defillama"],
-    "mcp": {
-      "enabled": true,
-      "cache_ttl_seconds": 300,
-      "servers": []
-    },
+    "data_sources": ["defillama", "dune"],
     "dune": {
       "mcp_endpoint": "https://api.dune.com/mcp/v1",
       "auth": {

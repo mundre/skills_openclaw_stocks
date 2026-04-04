@@ -20,13 +20,30 @@ DEFILLAMA_PROTOCOL = "https://api.llama.fi/protocol/{slug}"
 
 
 def fetch_protocol(slug: str) -> Optional[dict]:
-    """Fetch protocol data from DefiLlama."""
+    """Fetch protocol data from DefiLlama with retry and validation."""
     url = DEFILLAMA_PROTOCOL.format(slug=slug.lower())
     try:
         with urllib.request.urlopen(url, timeout=30) as response:
-            return json.loads(response.read().decode())
+            data = json.loads(response.read().decode())
+            # Validate response structure
+            if not isinstance(data, dict):
+                print(f"Error: Invalid response format for {slug}", file=sys.stderr)
+                return None
+            return data
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            print(f"Error: Protocol '{slug}' not found on DefiLlama", file=sys.stderr)
+        else:
+            print(f"Error fetching protocol (HTTP {e.code}): {e.reason}", file=sys.stderr)
+        return None
     except urllib.error.URLError as e:
-        print(f"Error fetching protocol: {e}", file=sys.stderr)
+        print(f"Error fetching protocol: {e.reason}", file=sys.stderr)
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON response for {slug}: {e}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"Unexpected error fetching protocol: {e}", file=sys.stderr)
         return None
 
 
@@ -41,29 +58,74 @@ def fetch_all_protocols() -> list:
 
 
 def find_protocol_slug(name: str) -> Optional[str]:
-    """Find protocol slug by name."""
+    """Find protocol slug by name with smart matching."""
     protocols = fetch_all_protocols()
     name_lower = name.lower()
     
+    # First try exact match
+    for p in protocols:
+        slug = p.get("slug", "")
+        if slug.lower() == name_lower:
+            return slug
+    
+    # Then try name match
     for p in protocols:
         if name_lower in p.get("name", "").lower():
             return p.get("slug") or p.get("name", "").lower().replace(" ", "-")
         if name_lower in p.get("slug", "").lower():
             return p.get("slug")
     
+    # For common protocols, suggest correct slug
+    common_mappings = {
+        "aave": "aave-v3",
+        "uniswap": "uniswap-v3",
+        "compound": "compound-v3",
+    }
+    if name_lower in common_mappings:
+        print(f"Note: Using '{common_mappings[name_lower]}' instead of '{name}'", file=sys.stderr)
+        return common_mappings[name_lower]
+    
     return None
 
 
-def calculate_risk_score(protocol: dict) -> dict:
-    """Calculate detailed risk score."""
+def calculate_risk_score(protocol: dict, total_tvl: float = 0) -> dict:
+    """Calculate detailed risk score with robust data handling."""
     scores = {}
     total = 0
     
+    # Helper to safely get numeric value
+    def safe_numeric(value, default=0):
+        if isinstance(value, (int, float)):
+            return value
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        return default
+    
+    # Helper to safely get list length
+    def safe_list_len(value):
+        if isinstance(value, list):
+            return len(value)
+        return 0
+    
     # Maturity (0-3)
-    audits = protocol.get("audits", [])
-    if len(audits) >= 2:
+    audits_raw = protocol.get("audits", [])
+    if isinstance(audits_raw, list):
+        audit_count = len(audits_raw)
+    elif isinstance(audits_raw, str):
+        # Handle case where audits is a number string like "2"
+        try:
+            audit_count = int(audits_raw)
+        except ValueError:
+            audit_count = 0
+    else:
+        audit_count = 0
+        
+    if audit_count >= 2:
         scores["maturity"] = {"score": 0, "note": "Multiple audits, well established"}
-    elif len(audits) == 1:
+    elif audit_count == 1:
         scores["maturity"] = {"score": 1, "note": "Single audit"}
     elif protocol.get("audit_note"):
         scores["maturity"] = {"score": 2, "note": "Audit in progress or partial"}
@@ -71,12 +133,8 @@ def calculate_risk_score(protocol: dict) -> dict:
         scores["maturity"] = {"score": 3, "note": "No audit"}
     total += scores["maturity"]["score"]
     
-    # TVL (0-2)
-    tvl = protocol.get("tvl", 0)
-    # Handle case where tvl might be a list or other type
-    if isinstance(tvl, (list, dict)):
-        tvl = 0
-    tvl = tvl or 0
+    # TVL (0-2) - use passed total_tvl
+    tvl = safe_numeric(total_tvl, 0)
     if tvl > 1_000_000_000:
         scores["tvl"] = {"score": 0, "note": f"TVL > $1B (${tvl:,.0f})"}
     elif tvl > 100_000_000:
@@ -95,11 +153,6 @@ def calculate_risk_score(protocol: dict) -> dict:
     total += scores["decentralization"]["score"]
     
     # Audit status (0-3) - separate from maturity
-    if isinstance(audits, list):
-        audit_count = len(audits)
-    else:
-        audit_count = 0
-    
     if audit_count >= 2:
         scores["audit"] = {"score": 0, "note": f"{audit_count} audits"}
     elif audit_count == 1:
@@ -139,64 +192,99 @@ def analyze_protocol(name_or_slug: str) -> Optional[dict]:
     if not protocol:
         return None
     
-    # Calculate risk
-    risk = calculate_risk_score(protocol)
-    
-    # Get chains
+    # Get chains - handle various formats
     chains = protocol.get("chains", [])
     if isinstance(chains, dict):
         chains = list(chains.keys())
+    elif not isinstance(chains, list):
+        chains = []
     
-    # Get TVL by chain
+    # Get TVL by chain - handle various formats
     chain_tvl = {}
-    if protocol.get("chainTvl"):
-        ctvl = protocol.get("chainTvl")
-        if isinstance(ctvl, dict):
-            chain_tvl = ctvl
+    raw_chain_tvl = protocol.get("chainTvls") or protocol.get("chainTvl") or {}
+    if isinstance(raw_chain_tvl, dict):
+        for chain, tvl_data in raw_chain_tvl.items():
+            if isinstance(tvl_data, (int, float)):
+                chain_tvl[chain] = tvl_data
+            elif isinstance(tvl_data, list) and len(tvl_data) > 0:
+                # Historical data - get latest
+                latest = tvl_data[-1]
+                if isinstance(latest, dict):
+                    # Try different field names
+                    val = latest.get("totalLiquidityUSD") or latest.get("tvl") or 0
+                    if isinstance(val, (int, float)):
+                        chain_tvl[chain] = val
+            elif isinstance(tvl_data, dict):
+                # Some protocols nest TVL data
+                val = tvl_data.get("tvl", 0)
+                if isinstance(val, (int, float)):
+                    chain_tvl[chain] = val
     
-    # Get total TVL (handle various data types)
+    # Calculate total TVL from chain TVLs if main tvl is 0 or invalid
     raw_tvl = protocol.get("tvl", 0)
     if isinstance(raw_tvl, (int, float)):
         total_tvl = raw_tvl
+    elif isinstance(raw_tvl, list) and len(raw_tvl) > 0:
+        # If tvl is a list of historical data, get the latest
+        latest = raw_tvl[-1]
+        if isinstance(latest, dict):
+            total_tvl = latest.get("totalLiquidityUSD") or latest.get("tvl", 0)
+        else:
+            total_tvl = 0
+    elif isinstance(raw_tvl, dict):
+        total_tvl = raw_tvl.get("tvl", 0)
     else:
         total_tvl = 0
     
-    # Build analysis
+    # Fallback: sum chain TVLs if total is 0
+    if total_tvl == 0 and chain_tvl:
+        total_tvl = sum(v for v in chain_tvl.values() if isinstance(v, (int, float)))
+    
+    # Calculate risk with total_tvl (must be after total_tvl is computed)
+    risk = calculate_risk_score(protocol, total_tvl)
+    def safe_change(key):
+        val = protocol.get(key, 0)
+        if isinstance(val, (int, float)):
+            return val
+        return 0
+    
+    # Build analysis with safe defaults
     analysis = {
-        "name": protocol.get("name", ""),
-        "slug": protocol.get("slug", ""),
+        "name": protocol.get("name", name_or_slug),
+        "slug": protocol.get("slug", name_or_slug.lower().replace(" ", "-")),
         "logo": protocol.get("logo", ""),
         "url": protocol.get("url", ""),
         "description": protocol.get("description", ""),
-        "category": protocol.get("category", ""),
+        "category": protocol.get("category", "Unknown"),
         "chains": chains,
         "tvl": {
             "total": total_tvl,
             "by_chain": chain_tvl,
-            "change_24h": protocol.get("change_1d", 0) or 0,
-            "change_7d": protocol.get("change_7d", 0) or 0
+            "change_24h": safe_change("change_1d"),
+            "change_7d": safe_change("change_7d")
         },
         "risk": risk,
         "audits": [
             {
-                "name": a.get("name", ""),
-                "link": a.get("link", ""),
-                "time": a.get("time", "")
+                "name": a.get("name", "Unknown") if isinstance(a, dict) else str(a),
+                "link": a.get("link", "") if isinstance(a, dict) else "",
+                "time": a.get("time", "") if isinstance(a, dict) else ""
             }
-            for a in protocol.get("audits", [])
+            for a in (protocol.get("audits", []) if isinstance(protocol.get("audits"), list) else [protocol.get("audits")] if protocol.get("audits") else [])
+            if isinstance(a, (dict, str))
         ],
-        "exploits": protocol.get("exploits", []),
+        "exploits": protocol.get("exploits", []) if isinstance(protocol.get("exploits"), list) else [],
         "governance": {
             "has_token": bool(protocol.get("gecko_id")),
-            "token_name": "",
-            "token_symbol": ""
+            "token_name": protocol.get("token_name", ""),
+            "token_symbol": protocol.get("token_symbol", "")
         },
         "social": {
             "twitter": protocol.get("twitter", ""),
             "discord": protocol.get("discord", ""),
             "telegram": protocol.get("telegram", "")
         },
-        "defillama_url": f"https://defillama.com/protocol/{protocol.get('slug', '')}"
+        "defillama_url": f"https://defillama.com/protocol/{protocol.get('slug', name_or_slug)}"
     }
     
     return analysis
@@ -277,7 +365,12 @@ def format_report(analysis: dict, output_format: str = "markdown") -> str:
     
     if analysis['audits']:
         for audit in analysis['audits']:
-            lines.append(f"- [{audit['name']}]({audit['link']}) ({audit['time'] or 'N/A'})")
+            if audit['link']:
+                lines.append(f"- [{audit['name']}]({audit['link']}) ({audit['time'] or 'N/A'})")
+            elif audit['name'].isdigit():
+                lines.append(f"- {audit['name']} audits")
+            else:
+                lines.append(f"- {audit['name']}")
     else:
         lines.append("No audits found.")
     

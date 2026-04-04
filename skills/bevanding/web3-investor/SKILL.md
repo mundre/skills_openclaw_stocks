@@ -1,6 +1,31 @@
 ---
 name: web3-investor
+version: 0.5.11
 description: AI-friendly Web3 investment infrastructure for autonomous agents. Use when (1) discovering and analyzing DeFi/NFT investment opportunities, (2) executing secure transactions via local keystore signer REST API with preview-approve-execute state machine, (3) managing portfolio with dashboards and expiry alerts. Supports base and ethereum chains, configurable security constraints including whitelist protection, transaction limits, and mandatory simulation before execution.
+author: Antalpha AI Team
+metadata:
+  openclaw:
+    requires:
+      env:
+        - name: DUNE_API_KEY
+          description: Dune Analytics API key for on-chain analytics
+          required: false
+          sensitive: true
+        - name: ALCHEMY_API_KEY
+          description: Alchemy API key for enhanced RPC access
+          required: false
+          sensitive: true
+        - name: WEB3_INVESTOR_DEBANK_API_KEY
+          description: Debank API key for portfolio tracking
+          required: false
+          sensitive: true
+        - name: WEB3_INVESTOR_API_URL
+          description: Signer REST API endpoint (default: http://localhost:3000/api)
+          required: false
+    security_notes:
+      - WEB3_INVESTOR_API_URL defaults to localhost - only set to endpoints you trust
+      - Transaction requests will be sent to the configured signer endpoint
+      - API keys should be stored in environment variables, never in config files
 ---
 
 # Web3 Investor Skill
@@ -184,12 +209,11 @@ web3-investor/
 
 ## 🔍 Discovery Data Sources
 
-### Primary Data Sources
+### Data Sources
 
 | Source | Type | Use Case |
 |--------|------|----------|
-| **MCP (AntAlpha)** | Real-time yields | Primary source for DeFi opportunities |
-| **DefiLlama** | Protocol TVL/Yields | Fallback and cross-validation |
+| **DefiLlama** | Protocol TVL/Yields | Primary source for DeFi opportunities |
 | **Dune** | On-chain analytics | Custom queries, advanced analysis |
 
 ### Dune MCP Integration
@@ -204,7 +228,7 @@ Dune provides powerful on-chain analytics through MCP (Model Context Protocol). 
 ```json
 {
   "discovery": {
-    "data_sources": ["mcp", "dune", "defillama"],
+    "data_sources": ["defillama", "dune"],
     "dune": {
       "mcp_endpoint": "https://api.dune.com/mcp/v1",
       "auth": {
@@ -323,6 +347,27 @@ If transaction parameters cannot be determined, return clarification, do not gue
   }
 }
 ```
+
+---
+
+## ⚠️ Security Notes
+
+### Signer API Endpoint
+- **Default**: `http://localhost:3000/api` (local only)
+- **Warning**: Only set `WEB3_INVESTOR_API_URL` to endpoints you fully trust
+- **Risk**: Transaction intents, wallet addresses, and portfolio data will be sent to this endpoint
+- **Recommendation**: Never point to public or untrusted remote servers
+
+### API Keys
+- `DUNE_API_KEY` - For Dune Analytics (optional)
+- `WEB3_INVESTOR_DEBANK_API_KEY` - For Debank portfolio tracking (optional)
+- `ALCHEMY_API_KEY` - For enhanced RPC access (optional)
+- **Best Practice**: Store in environment variables, never in config files
+
+### Data Privacy
+- Discovery queries go to DefiLlama, Dune, and MCP servers
+- Portfolio queries go to Debank (if configured) or public RPC
+- Transaction signing happens locally (Phase 1: simulation mode)
 
 ---
 
