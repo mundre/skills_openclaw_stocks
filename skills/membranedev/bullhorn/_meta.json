@@ -3,9 +3,15 @@
   "slug": "bullhorn",
   "displayName": "Bullhorn",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772845333108,
-    "commit": "https://github.com/openclaw/skills/commit/a7dec54f74bed7fb5cf307dcac9ca3dd2cf21dd7"
+    "version": "1.0.2",
+    "publishedAt": 1775162569711,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772845333108,
+      "commit": "https://github.com/openclaw/skills/commit/a7dec54f74bed7fb5cf307dcac9ca3dd2cf21dd7"
+    }
+  ]
 }
