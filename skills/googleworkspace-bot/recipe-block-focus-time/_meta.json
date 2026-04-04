@@ -3,11 +3,16 @@
   "slug": "recipe-block-focus-time",
   "displayName": "Recipe Block Focus Time",
   "latest": {
-    "version": "1.0.10",
-    "publishedAt": 1774551104309,
-    "commit": "https://github.com/openclaw/skills/commit/f0bbe94d133e559a434eb631dcf23e7d3b2f381a"
+    "version": "1.0.12",
+    "publishedAt": 1774982143953,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.10",
+      "publishedAt": 1774551104309,
+      "commit": "https://github.com/openclaw/skills/commit/f0bbe94d133e559a434eb631dcf23e7d3b2f381a"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774300559186,
