@@ -3,9 +3,15 @@
   "slug": "zoho-desk",
   "displayName": "Zoho Desk",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772848930744,
-    "commit": "https://github.com/openclaw/skills/commit/e7551a6e00ec90970760e9617c9d28eb4e03b8a7"
+    "version": "1.0.2",
+    "publishedAt": 1775162585148,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772848930744,
+      "commit": "https://github.com/openclaw/skills/commit/e7551a6e00ec90970760e9617c9d28eb4e03b8a7"
+    }
+  ]
 }
