@@ -3,9 +3,15 @@
   "slug": "activecampaign-integration",
   "displayName": "Activecampaign",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773349340881,
-    "commit": "https://github.com/openclaw/skills/commit/05ce23358581ed6854ccb27f0c4ede2c2364f76b"
+    "version": "1.0.2",
+    "publishedAt": 1775163562798,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773349340881,
+      "commit": "https://github.com/openclaw/skills/commit/05ce23358581ed6854ccb27f0c4ede2c2364f76b"
+    }
+  ]
 }
