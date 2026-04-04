@@ -3,11 +3,16 @@
   "slug": "viral-app",
   "displayName": "Viral App",
   "latest": {
-    "version": "0.1.5",
-    "publishedAt": 1773931715891,
-    "commit": "https://github.com/openclaw/skills/commit/64ccb8190b2cdb7813ff868c4646749ebf4aa31f"
+    "version": "0.1.6",
+    "publishedAt": 1774972218943,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.5",
+      "publishedAt": 1773931715891,
+      "commit": "https://github.com/openclaw/skills/commit/64ccb8190b2cdb7813ff868c4646749ebf4aa31f"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1773413911546,

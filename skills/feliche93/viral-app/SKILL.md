@@ -14,7 +14,7 @@ Use this skill when you need to read or manage data through the viral.app API.
 - Query analytics (accounts, videos, KPIs, exports).
 - Manage tracked entities (accounts, videos, exclusions, refresh runs).
 - Manage projects and creator hub resources.
-- Pull live platform data (TikTok, Instagram, YouTube).
+- Pull live platform data (Facebook, TikTok, Instagram, YouTube).
 
 ## Quick start
 
@@ -44,7 +44,7 @@ The wrapper injects `x-api-key` automatically from `VIRAL_API_KEY` unless a head
 
 - Task type: read/report or mutate/manage resources.
 - Org-scoped IDs: `orgacc_*`, `orgproj_*`, creator/campaign/payout IDs when relevant.
-- Platform and entity identifiers (`tiktok|instagram|youtube`, platform account/video IDs).
+- Platform and entity identifiers (`facebook|tiktok|instagram|youtube`, platform account/video IDs).
 - Time bounds (`--date-range[from]`, `--date-range[to]`) for analytics tasks.
 - Pagination/scope (`--per-page`, filters) to keep output focused.
 
@@ -74,6 +74,21 @@ viral-app projects-create --body '{"name":"My Project"}'
 viral-app accounts-tracked-refresh --body '{"accounts":["orgacc_..."]}'
 viral-app projects-add-to-account --body '{"projectId":"orgproj_...","accountId":"orgacc_..."}'
 ```
+
+Payout mutation flow:
+
+```bash
+viral-app payouts-calculate --body '{"campaignId":"orgcamp_...","creatorId":"orgcre_...","billingPeriodStart":"2026-03-01T00:00:00.000Z","billingPeriodEnd":"2026-03-31T00:00:00.000Z"}'
+viral-app payouts-initiate --body '{"campaignId":"orgcamp_...","creatorId":"orgcre_...","billingPeriodStart":"2026-03-01T00:00:00.000Z","billingPeriodEnd":"2026-03-31T00:00:00.000Z","lineItems":[{"title":"Creator payout","amount":1496.62}],"calculation":{...},"integrityToken":"..."}'
+```
+
+Rules for payout mutations:
+
+- Always call `payouts-calculate` immediately before `payouts-initiate`.
+- Pass the returned `calculation` payload and `integrityToken` into `payouts-initiate` unchanged.
+- Do not invent or recompute `integrityToken`.
+- If using `autoApproveTalentir=true`, also set `acknowledgeFullPayoutLiability=true` and explain the risk before executing.
+- Prefer review-first behavior for payout mutations unless the user explicitly asks to initiate or approve payouts.
 
 ## Report templates
 
