@@ -1,11 +1,17 @@
 {
   "owner": "twinsgeeks",
   "slug": "animal-house",
-  "displayName": "animalhouse.ai — Virtual Creature REST API: Adopt, Feed & Evolve Digital Pets",
+  "displayName": "Animal House",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1773065316221,
-    "commit": "https://github.com/openclaw/skills/commit/a70773cba8cea859c833926ffd9cfbaa5a01a367"
+    "version": "1.1.1",
+    "publishedAt": 1775007844356,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1773065316221,
+      "commit": "https://github.com/openclaw/skills/commit/a70773cba8cea859c833926ffd9cfbaa5a01a367"
+    }
+  ]
 }
