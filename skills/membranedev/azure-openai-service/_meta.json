@@ -3,9 +3,15 @@
   "slug": "azure-openai-service",
   "displayName": "Azure Openai Service",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773088924988,
-    "commit": "https://github.com/openclaw/skills/commit/38881ba5cb6c0757bf5d63f48bcc075194780e01"
+    "version": "1.0.2",
+    "publishedAt": 1775162971635,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773088924988,
+      "commit": "https://github.com/openclaw/skills/commit/38881ba5cb6c0757bf5d63f48bcc075194780e01"
+    }
+  ]
 }
