@@ -1,6 +1,6 @@
 {
   "name": "time-analyzer",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Time tracking and analysis skill for OpenClaw",
   "main": "scripts/time-analyzer.js",
   "bin": {

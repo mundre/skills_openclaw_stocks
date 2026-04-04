@@ -5,119 +5,119 @@ description: Time tracking and analysis skill for automatic activity monitoring 
 
 # Time Analyzer
 
-Time Analyzer 是一个时间追踪和分析工具，帮助用户记录活动、分析时间使用模式，并提供优化建议。
+Time Analyzer is a time tracking and analysis tool that helps users record activities, analyze time usage patterns, and generate practical suggestions for improvement.
 
-## 功能特性
+## Features
 
-- **时间记录**: 自动追踪活动开始/结束，支持手动添加记录
-- **活动分类**: 8种预设分类（工作、学习、会议、休息、运动、娱乐、睡眠、其他）
-- **时间分析**: 分类统计、活跃时段分析、高频活动识别
-- **优化建议**: 基于数据生成个性化的时间管理建议
-- **报告生成**: 生成完整的时间使用报告
+- **Time Tracking**: Automatic activity start/end tracking, support for manual entries
+- **Activity Categorization**: 8 preset categories (work, study, meeting, break, exercise, entertainment, sleep, other)
+- **Time Analysis**: Category statistics, active period analysis, high-frequency activity identification
+- **Optimization Suggestions**: Personalized time management suggestions based on data
+- **Report Generation**: Generate comprehensive time usage reports
 
-## 使用方法
+## Usage
 
-### CLI 命令
+### CLI Commands
 
 ```bash
-# 开始记录活动
+# Start tracking an activity
 time-analyzer start <category> [description] [tags]
 
-# 停止当前活动
+# Stop current activity
 time-analyzer stop
 
-# 查看当前状态
+# View current status
 time-analyzer status
 
-# 分析时间数据（默认过去7天）
+# Analyze time data (default: past 7 days)
 time-analyzer analyze [days]
 
-# 生成优化建议
+# Generate optimization suggestions
 time-analyzer suggest
 
-# 生成完整报告
+# Generate full report
 time-analyzer report [days]
 
-# 手动添加记录
+# Manually add a record
 time-analyzer add <category> <description> <minutes>
 
-# 列出所有分类
+# List all categories
 time-analyzer categories
 
-# 显示帮助
+# Show help
 time-analyzer help
 ```
 
-### 活动分类
+### Activity Categories
 
-| 分类 | 说明 | 图标 |
-|------|------|------|
-| work | 工作 | 💼 |
-| study | 学习 | 📚 |
-| meeting | 会议 | 👥 |
-| break | 休息 | ☕ |
-| exercise | 运动 | 🏃 |
-| entertainment | 娱乐 | 🎮 |
-| sleep | 睡眠 | 😴 |
-| other | 其他 | 📌 |
+| Category | Description | Icon |
+|----------|-------------|------|
+| work | Work | 💼 |
+| study | Study | 📚 |
+| meeting | Meeting | 👥 |
+| break | Break | ☕ |
+| exercise | Exercise | 🏃 |
+| entertainment | Entertainment | 🎮 |
+| sleep | Sleep | 😴 |
+| other | Other | 📌 |
 
-### 使用示例
+### Usage Examples
 
 ```bash
-# 开始记录工作
-time-analyzer start work "开发新功能"
+# Start tracking work
+time-analyzer start work "Developing new feature"
 
-# 开始记录学习
-time-analyzer start study "阅读技术文档"
+# Start tracking study
+time-analyzer start study "Reading technical documentation"
 
-# 结束当前活动
+# End current activity
 time-analyzer stop
 
-# 分析过去30天
+# Analyze past 30 days
 time-analyzer analyze 30
 
-# 获取优化建议
+# Get optimization suggestions
 time-analyzer suggest
 
-# 手动添加1小时的会议记录
-time-analyzer add meeting "周会" 60
+# Manually add 1 hour meeting record
+time-analyzer add meeting "Weekly sync" 60
 ```
 
-## 数据存储
+## Data Storage
 
-数据存储在用户主目录下的 `.time-analyzer/` 文件夹：
-- `records.json`: 所有活动记录
-- `config.json`: 配置和当前会话状态
+Data is stored in the `.time-analyzer/` folder in the user's home directory:
+- `records.json`: All activity records
+- `config.json`: Configuration and current session state
 
-## 报告内容
+## Report Content
 
-分析报告包含：
-1. **概览**: 总活动数、总时长、日均统计
-2. **分类详情**: 各类别时间占比和频次
-3. **活跃时段**: 一天中最活跃的时间段
-4. **高频活动**: 最常进行的活动TOP 5
-5. **优化建议**: 基于数据的时间管理建议
+Analysis reports include:
+1. **Overview**: Total activities, total duration, daily average statistics
+2. **Category Details**: Time percentage and frequency for each category
+3. **Active Periods**: Most active time periods during the day
+4. **High-Frequency Activities**: Top 5 most common activities
+5. **Optimization Suggestions**: Time management suggestions based on data
 
-## 自动追踪
+## Automatic Tracking
 
-当前版本支持手动启动/停止追踪。可以通过定时任务实现自动报告：
+The current version supports manual start/stop tracking. Automatic reports can be enabled via cron jobs:
 
 ```bash
-# 添加到 crontab，每天22:00生成报告
+# Add to crontab to generate daily report at 22:00
 echo "0 22 * * * /usr/local/bin/time-analyzer report" | crontab -
 ```
 
-## 依赖
+## Dependencies
 
 - Node.js >= 18.0.0
-- 无需外部依赖（纯Node.js实现）
+- No external dependencies (pure Node.js implementation)
 
-## 安装
+## Installation
 
 ```bash
-# 全局安装
+# Global installation
 npm install -g time-analyzer
 
-# 或使用 npx
+# Or use npx
 npx time-analyzer
 ```
