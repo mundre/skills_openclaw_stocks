@@ -1,0 +1,11 @@
+{
+  "owner": "goog",
+  "slug": "more-news",
+  "displayName": "AI news hub, powerful",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775272472346,
+    "commit": null
+  },
+  "history": []
+}
