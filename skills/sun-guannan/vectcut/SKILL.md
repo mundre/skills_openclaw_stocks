@@ -24,18 +24,22 @@ dependency:
   - `asr_llm`：速度最慢，在 nlp 基础上增加 AI 关键词提取，优先用于竖屏与短视频字幕。
   - 三个 ASR 接口均支持传入 `content`（正确文案）以显著提升匹配准确率与处理速度。
   - 三种回包结构不同，必须按端点解析：`asr_basic -> result.raw.result.utterances`；`asr_nlp -> segments`；`asr_llm -> segments(含 keywords/en)`。
+* **字幕模版能力**：支持通过 `generate_smart_subtitle`（无正确文案，纯 ASR）或 `sta_subtitle`（有正确文案）自动生成更美观的字幕模版；两者均为异步任务，需通过 `smart_subtitle_task_status` 轮询结果，并支持 `add_media` 控制是否把原始素材加入草稿。
+* **口播模版能力**：支持通过 `agent/submit_agent_task` 发起口播模版任务，使用模板化参数快速完成固定范围的口播剪辑；任务异步执行并通过 `agent/task_status` 轮询，成功后输出草稿（可继续编辑），也可在草稿基础上调用 `generate_video` 直出视频做中间核验。
+* **爬虫解析能力**：支持解析抖音、快手、小红书、B 站、TikTok、YouTube 分享链接，提取可复用视频直链与元数据（作者、标题、描述、时长、统计信息），用于后续分镜拆解、文案提取与二次创作分析。
+* **素材管理能力**：支持本地文件上传闭环（`sts/upload/init -> OSS PUT -> sts/upload/complete`），可返回 `public_signed_url` 供后续 `add_video`、`add_image`、`add_audio` 等素材编排接口直接复用。
 * **脚本规划**：根据主题（如“成语故事”、“产品评测”）自动拆解分镜，确定各片段时长。
 * **草稿生命周期管理**：先创建并维护草稿，再进入编排流程；优先调用 `create_draft` 初始化草稿，按需使用 `modify_draft` 修改草稿名/封面，任务异常或清理阶段使用 `remove_draft` 删除草稿。
-* **反思自查**：在关键步骤后调用 `query_script` 回看当前草稿结构，核对轨道、素材与时间段是否符合预期；若不一致，先定位问题再执行修正操作。
+* **反思自查**：在关键步骤后调用 `query_script` 回看当前草稿结构；当执行 `add_text`、`add_image`、`add_video` 等新增编排后，优先补一次 `generate_video + task_status` 中间渲染核验画面与节奏是否符合预期；若不一致，先定位问题再执行修正操作。
 * **视觉编排**：基于已创建草稿自主选择并添加转场（Transitions）、特效（Effects）、滤镜（Filters）和文本（Text）。
-* **AI 资源补全**：当素材不足时，主动调用 `generate_image`、`generate_speech` 或 `generate_ai_video` 生成 B-roll 填充；其中 `generate_image` 支持 `nano_banana_2`、`nano_banana_pro`、`jimeng-4.5` 等聚合模型，`generate_speech` 通过 `text + provider + model + voice_id` 合成配音，可配合 `volume`、`target_start`、`effect_type/effect_params` 控制入轨位置与音色效果。
+* **AI 资源补全**：当素材不足时，主动调用 `generate_image`、`tts_generate` 或 `generate_ai_video` 生成 B-roll 填充；其中 `generate_image` 通过 `prompt + model + size + reference_image` 生成图片并返回可复用图片 URL，`tts_generate` 通过 `provider + text + voice_id + model` 合成配音并返回可复用音频 URL。
 * **文本编排生命周期**：通过 `add_text` 创建文本素材，使用 `modify_text` 调整文案与样式，使用 `remove_text` 清理无效文本；文本动画、字体与局部样式优先从枚举中选取，保证可用性与一致性。
 * **图片编排生命周期**：通过 `add_image` 添加图片素材，使用 `modify_image` 调整图片源、时间段、位置与动画，使用 `remove_image` 清理无效图片；动画与蒙版类型优先从枚举中选取，保证编排稳定性。
 * **视频编排生命周期**：通过 `add_video` 添加视频素材，使用 `modify_video` 调整素材源、裁切区间、位置与速度，使用 `remove_video` 清理无效视频；转场在片段首尾紧邻时生效，且需加在前一个元素上。
-* **AI 视频生成能力**：通过 `generate_ai_video` 调用聚合视频模型生成异步任务，再通过 `aivideo/task_status` 查询进度与视频结果；支持文生视频、图生视频与部分模型的首尾帧模式。
+* **AI 视频生成能力**：通过 `generate_ai_video` 调用聚合视频模型生成异步任务，再通过 `aivideo/task_status` 查询进度与视频结果；支持文生视频、图生视频与首尾帧模式，图像输入统一通过 `images` 传入。
 * **数字人能力**：通过 `digital_human/create` 发起音频驱动数字人任务，再通过 `digital_human/task_status` 查询生成状态与结果。
 * **关键帧编排能力**：通过 `add_video_keyframe` 为文字、图片、视频设置位置、大小、透明度、旋转等关键帧，支持单点与批量关键帧写入。
-* **云渲染与结果核验**：通过 `generate_video` 发起云渲染，再用 `task_status` 轮询任务状态。云渲染用于两类目标：创作中渲染中间结果核对预期；流程结束渲染最终成片并输出可直接播放的视频链接。
+* **云渲染与结果核验**：通过 `generate_video` 发起云渲染，再用 `task_status` 轮询任务状态。云渲染用于两类目标：创作中在字幕/图片/视频新增后优先渲染中间结果做反思核对；流程结束渲染最终成片并输出可直接播放的视频链接。
 * **音画同步**：如果需要，可以利用 `get_duration` 计算素材时长，精确对齐视频轨道与音频轨道。
 * **音视频预处理工具**：在编排前可优先使用基础处理端点清洗素材。`extract_audio` 可从视频中提取音频（`POST /process/extract_audio`，入参 `video_url`）；`split_video` 可按时间段切分视频或音频（`POST /process/split_video`，入参 `video_url`、`start`、`end`）。适用于替换现有视频 B-roll、素材混剪、先切段再入草稿等场景。
 
@@ -110,33 +114,33 @@ export VECTCUT_API_KEY="<your_token>"
 - 参数：`references/endpoints/generate_video.md`
 - 提示：`prompts/generate_video_ops.md`
 
-### 当前已落地能力域：generate_speech
+### 当前已落地能力域：tts_generate
 - 规则：`rules/generate_speech_rules.md`
 - 参数：`references/endpoints/generate_speech.md`
 - 提示：`prompts/generate_speech_ops.md`
-- 端点：`POST /cut_jianying/generate_speech`
-- 关键入参：`text`、`provider`、`model`、`voice_id`、`volume`、`target_start`、`effect_type`、`effect_params`
-- 关键出参：`audio_url`、`draft_id`、`draft_url`、`material_id`
+- 端点：`POST /llm/tts/generate`
+- 关键入参：`provider`、`text`、`voice_id`、`model`
+- 关键出参：`success`、`provider`、`url`
 
 ### 当前已落地能力域：generate_ai_image
 - 规则：`rules/generate_ai_image_rules.md`
 - 参数：`references/endpoints/generate_ai_image.md`
 - 提示：`prompts/generate_ai_image_ops.md`
-- 端点：`POST /cut_jianying/generate_image`
-- 关键入参：`prompt`、`model`、`reference_image`、`size`、`draft_id`
-- 关键出参：`output.image_url`、`output.draft_id`、`output.draft_url`
+- 端点：`POST /llm/image/generate`
+- 关键入参：`prompt`、`model`、`size`、`reference_image`
+- 关键出参：`image`、`error`
 
 ### 当前已落地能力域：generate_ai_video
 - 规则：`rules/generate_ai_video_rules.md`
 - 参数：`references/endpoints/generate_ai_video.md`
 - 提示：`prompts/generate_ai_video_ops.md`
-- 端点：`POST /cut_jianying/generate_ai_video`、`GET /cut_jianying/aivideo/task_status`
+- 端点：`POST /llm/generate_ai_video`、`GET /cut_jianying/aivideo/task_status`
 - 关键入参：
-  - generate：`prompt`、`model`、`resolution`
+  - generate：`prompt`、`resolution`、`model(默认 veo3.1)`、`images`、`gen_duration`、`generate_audio`
   - status：`task_id`
 - 关键出参：
-  - generate：`task_id`
-  - status：`status`、`progress`、`video_url`、`draft_id`、`draft_url`
+  - generate：`status`、`task_id`
+  - status：`status`、`progress`、`video_url`
 
 ### 当前已落地能力域：digital_human
 - 规则：`rules/digital_human_rules.md`
@@ -182,6 +186,57 @@ export VECTCUT_API_KEY="<your_token>"
 - 关键出参：
   - add：`output.material_id`
   - modify/remove：`output.draft_id`、`output.draft_url`
+
+### 当前已落地能力域：subtitle_template
+- 规则：`rules/subtitle_template_rules.md`
+- 参数：`references/endpoints/subtitle_template.md`
+- 提示：`prompts/subtitle_template_ops.md`
+- 端点：`POST /cut_jianying/generate_smart_subtitle`、`POST /cut_jianying/sta_subtitle`、`GET /cut_jianying/smart_subtitle_task_status`
+- 关键入参：
+  - generate_smart_subtitle：`agent_id(asr_前缀)`、`url`、`draft_id(可选)`、`add_media(可选)`
+  - sta_subtitle：`agent_id(sta_前缀)`、`url`、`text`、`draft_id(可选)`、`add_media(可选)`
+  - smart_subtitle_task_status：`task_id`
+- 关键出参：
+  - 创建任务：`task_id`（或 `id` / `output.task_id`）
+  - 查询任务：`output.draft_id`、`output.draft_url`、`output.video_url`
+
+### 当前已落地能力域：koubo
+- 规则：`rules/koubo_rules.md`
+- 参数：`references/endpoints/koubo.md`
+- 提示：`prompts/koubo_ops.md`
+- 端点：`POST /cut_jianying/agent/submit_agent_task`、`GET /cut_jianying/agent/task_status`
+- 关键入参：
+  - submit_agent_task：`agent_id`、`params.video_url(仅1个)`、`params.title`、`params.text_content(可选)`、`params.cover(可选)`、`params.name(可选)`
+  - agent_task_status：`task_id`
+- 关键出参：
+  - submit：`task_id`（或 `id` / `output.task_id`）
+  - status：`status`、`output.draft_id`、`output.draft_url`、`output.video_url`
+
+### 当前已落地能力域：scrapt
+- 规则：`rules/scrapt_rules.md`
+- 参数：`references/endpoints/scrapt.md`
+- 提示：`prompts/scrapt_ops.md`
+- 端点：`POST /scrapt/parse_xiaohongshu`、`POST /scrapt/parse_douyin`、`POST /scrapt/parse_kuaishou`、`POST /scrapt/parse_bilibili`、`POST /scrapt/parse_tiktok`、`POST /scrapt/parse_youtube`
+- 关键入参：
+  - parse_xiaohongshu / parse_douyin / parse_kuaishou / parse_bilibili / parse_tiktok / parse_youtube：`url`
+- 关键出参：
+  - `success`
+  - `data.platform`、`data.original_url`、`data.video.url`
+  - `data.title`、`data.desc`、`data.author`、`data.stats`
+
+### 当前已落地能力域：file_manager
+- 规则：`rules/file_manager_rules.md`
+- 参数：`references/endpoints/file_manager.md`
+- 提示：`prompts/file_manager_ops.md`
+- 端点：`POST /sts/upload/init`、`POST /sts/upload/complete`
+- 关键入参：
+  - upload_init：`file_name`、`file_size_bytes`
+  - upload_complete：`object_key`
+  - upload_file：`file_path`（组合流程）
+- 关键出参：
+  - init：`credentials`、`bucket_name`、`object_key`
+  - complete：`public_signed_url`
+  - upload_file：`object_key`、`public_signed_url`
 
 ### 当前已落地能力域：keyframe
 - 规则：`rules/keyframe_rules.md`
@@ -243,16 +298,29 @@ curl -X POST http://open.vectcut.com/cut_jianying/create_draft \
 
 ### 3) 高级能力（AI 与搜索）
 
-- `/generate_image`：AI 图片生成并添加到草稿（支持文生图/图生图，聚合模型：nano_banana_2、nano_banana_pro、jimeng-4.5）
+- `/llm/image/generate`：AI 图片生成（支持文生图/图生图，聚合模型：nano_banana_2、nano_banana_pro、jimeng-4.5）
 - `/generate_ai_video`：AI 视频生成（支持文生视频/图生视频/部分模型首尾帧，异步任务）
 - `/aivideo/task_status`：查询 AI 视频生成任务状态与视频结果
 - `/digital_human/create`：创建数字人口播任务（音频 + 视频输入）
 - `/digital_human/task_status`：查询数字人任务状态与结果
-- `/generate_speech`：TTS 语音合成并添加到草稿
-- `/llm/tts/fish/clone_voice`：克隆音色并返回 `voice_id`（可用于后续 `generate_speech`）
+- `/llm/tts/generate`：TTS 语音合成，返回可复用音频 URL
+- `/llm/tts/fish/clone_voice`：克隆音色并返回 `voice_id`（可用于后续 `tts_generate`）
 - `/llm/tts/voice_assets`：查询已克隆音色资产（支持 `provider=minimax|fish|NULL`）
 - `/remove_bg`：智能抠像（移除背景）并生成合成预设
 - `/search_sticker`：搜索在线贴纸素材
+- `/generate_smart_subtitle`：字幕模版生成（无正确文案输入，纯 ASR，异步）
+- `/sta_subtitle`：字幕模版生成（有正确文案输入，异步）
+- `/smart_subtitle_task_status`：查询字幕模版任务状态与草稿结果
+- `/agent/submit_agent_task`：提交口播模版任务（异步）
+- `/agent/task_status`：查询口播模版任务状态（成功通常返回草稿）
+- `/scrapt/parse_xiaohongshu`：解析小红书分享链接并提取直链与元数据
+- `/scrapt/parse_douyin`：解析抖音分享链接并提取直链与元数据
+- `/scrapt/parse_kuaishou`：解析快手分享链接并提取直链与元数据
+- `/scrapt/parse_bilibili`：解析 B 站分享链接并提取直链与元数据
+- `/scrapt/parse_tiktok`：解析 TikTok 分享链接并提取直链与元数据
+- `/scrapt/parse_youtube`：解析 YouTube 分享链接并提取直链与元数据
+- `/sts/upload/init`：上传前申请临时凭证与对象路径
+- `/sts/upload/complete`：上传后回收素材可访问地址（`public_signed_url`）
 
 ### 4) 获取可用枚举（动画/转场/特效/滤镜/字体）
 
@@ -278,7 +346,7 @@ curl -X GET "http://open.vectcut.com/cut_jianying/get_transition_types" \
 
 - `POST /generate_video`：对草稿 `draft_id` 发起云渲染（返回 `task_id`）。
 - `POST /task_status`：轮询 `task_id` 获取渲染进度与结果。
-- 创作过程中：可按关键里程碑发起渲染，核对当前画面、节奏、字幕与预期是否一致。
+- 创作过程中：应高频发起中间渲染做反思核验，频率基本与 `query_script` 自查一致；每次关键编排后都优先 `generate_video + task_status` 回看画面、节奏、字幕是否满足预期。
 - 任务结束时：必须轮询到完成态，并把结果中的可播放视频链接作为最终输出返回。
 
 ### 5. 典型场景示例
@@ -289,11 +357,11 @@ curl -X GET "http://open.vectcut.com/cut_jianying/get_transition_types" \
 
 1.  **分镜拆解**：将故事拆分为 N 个片段（图片 Prompt + 旁白文本）。
 2.  **生成循环**（对每个片段）：
-    *   调用 `generate_image` 生成插图，获得 `image_url`。
-    *   调用 `generate_speech` 生成配音，获得 `audio_url`。
-    *   **关键点**：调用 `get_duration(url=audio_url)` 获取配音时长 `duration`。
-    *   调用 `add_image`，将 `image_url` 加入草稿，并设置 `duration` 等于配音时长，确保音画同步。
-    *   （如果 `generate_speech` 未自动添加）调用 `add_audio` 添加配音。
+    *   调用 `generate_image` 生成插图，获得 `image`（图片地址）。
+    *   调用 `tts_generate` 生成配音，获得 `url`（音频地址）。
+    *   **关键点**：调用 `get_duration(url=url)` 获取配音时长 `duration`。
+    *   调用 `add_image`，将 `image` 加入草稿，并设置 `duration` 等于配音时长，确保音画同步。
+    *   调用 `add_audio` 将 `url` 加入草稿音轨。
 
 参考 Prompt 模板：`assets/prompts/story_creation_zh.md`
 

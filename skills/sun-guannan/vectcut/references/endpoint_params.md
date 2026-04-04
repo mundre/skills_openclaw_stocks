@@ -9,13 +9,17 @@
 - `endpoints/draft.md`：草稿管理端点（create_draft/modify_draft/remove_draft/query_script）
 - `endpoints/asr.md`：语音识别端点（asr_basic/asr_nlp/asr_llm）
 - `endpoints/generate_video.md`：云渲染端点（generate_video/task_status）
-- `endpoints/generate_speech.md`：语音合成端点（generate_speech/fish_clone/voice_assets）
-- `endpoints/generate_ai_image.md`：AI 图片生成端点（generate_image）
+- `endpoints/generate_speech.md`：语音合成端点（tts_generate/fish_clone/voice_assets）
+- `endpoints/generate_ai_image.md`：AI 图片生成端点（llm_image_generate）
 - `endpoints/generate_ai_video.md`：AI 视频生成端点（generate_ai_video/ai_video_task_status）
 - `endpoints/digital_human.md`：数字人端点（create_digital_human/digital_human_task_status）
 - `endpoints/video.md`：视频端点（add_video/modify_video/remove_video）
 - `endpoints/image.md`：图片端点（add_image/modify_image/remove_image）
 - `endpoints/text.md`：文本端点（add_text/modify_text/remove_text）
+- `endpoints/subtitle_template.md`：字幕模版端点（generate_smart_subtitle/sta_subtitle/smart_subtitle_task_status）
+- `endpoints/koubo.md`：口播模版端点（submit_agent_task/agent_task_status）
+- `endpoints/scrapt.md`：爬虫解析端点（parse_xiaohongshu/parse_douyin/parse_kuaishou/parse_bilibili/parse_tiktok/parse_youtube）
+- `endpoints/file_manager.md`：素材管理端点（upload_init/upload_complete/upload_file）
 - `endpoints/keyframe.md`：关键帧端点（add_video_keyframe）
 - `endpoints/process.md`：预处理端点（extract_audio/split_video）
 
@@ -31,6 +35,8 @@
 - `enums/text_intro_anims.json`：`add_text.intro_animation` 可选值
 - `enums/text_outro_anims.json`：`add_text.outro_animation` 可选值
 - `enums/text_loop_anims.json`：`add_text.loop_animation` 可选值
+- `enums/subtitle_template_typs.json`：字幕模版枚举（`id/title/detail`）
+- `enums/koubo_template_types.json`：口播模版枚举（`id/title/descriptions/params_example`）
 
 ## Query Script 输出解析
 - `query_script` 的 `output` 为草稿结构体解析入口。
