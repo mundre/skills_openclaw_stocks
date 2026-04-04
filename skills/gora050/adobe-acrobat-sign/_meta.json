@@ -3,9 +3,15 @@
   "slug": "adobe-acrobat-sign",
   "displayName": "Adobe Acrobat Sign",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773088977331,
-    "commit": "https://github.com/openclaw/skills/commit/41ac1b5792e2cd3e4b318439ba7818bca2dfec85"
+    "version": "1.0.2",
+    "publishedAt": 1775163004034,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773088977331,
+      "commit": "https://github.com/openclaw/skills/commit/41ac1b5792e2cd3e4b318439ba7818bca2dfec85"
+    }
+  ]
 }
