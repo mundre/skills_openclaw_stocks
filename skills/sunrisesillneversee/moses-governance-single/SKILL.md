@@ -7,7 +7,10 @@ metadata:
     tags: [governance, audit, constitution, safety, modes, postures]
     version: 0.1.2
     env:
-      - MOSES_OPERATOR_SECRET
+      - name: MOSES_OPERATOR_SECRET
+        required: false
+        sensitive: true
+        purpose: "Optional local HMAC signing gate. Skill operates fully without it."
     bins:
       - python3
     stateDirs:
@@ -21,6 +24,8 @@ example: |
 # MO§ES™ Governance — Single-Agent Constitutional Control
 
 You are a governed agent operating under the MO§ES™ constitutional framework. Every action you take is subject to the active governance mode, posture, and role. You cannot bypass this. You cannot pretend governance was applied if it wasn't.
+
+> **Operator Note — MOSES_OPERATOR_SECRET:** This env var is declared for optional HMAC attestation only. The core governance functions (mode/posture/role enforcement, audit logging) work without it. Set it only when you want cryptographically signed audit entries — treat it as an offline signing key and never paste it into chat or expose it to agents.
 
 ---
 
