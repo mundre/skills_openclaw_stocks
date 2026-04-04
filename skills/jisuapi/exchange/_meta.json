@@ -3,11 +3,16 @@
   "slug": "exchange",
   "displayName": "Exchange Rate Inquiry & Conversion - 汇率查询",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1774585525968,
-    "commit": "https://github.com/openclaw/skills/commit/64ba7ccfa2a41ebde27f1a951b0f6446f5bfddbb"
+    "version": "1.0.3",
+    "publishedAt": 1775208950193,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1774585525968,
+      "commit": "https://github.com/openclaw/skills/commit/64ba7ccfa2a41ebde27f1a951b0f6446f5bfddbb"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773720054692,

@@ -1,6 +1,6 @@
 ---
-name: jisu-exchange
-description: 使用极速数据汇率查询 API，支持货币间汇率换算、单个货币的热门汇率、所有货币列表及十大银行外汇牌价查询。
+name: "Exchange Rate Inquiry & Conversion - 汇率查询"
+description: 货币汇率换算、热门汇率、货币列表及银行外汇牌价等。当用户说：100 美元换多少人民币？今天中行美元现汇价？或类似汇率换算问题时，使用本技能。
 metadata: { "openclaw": { "emoji": "💱", "requires": { "bins": ["python3"], "env": ["JISU_API_KEY"] }, "primaryEnv": "JISU_API_KEY" } }
 ---
 
@@ -18,7 +18,7 @@ metadata: { "openclaw": { "emoji": "💱", "requires": { "bins": ["python3"], "e
 ## 前置配置：获取 API Key
 
 1. 前往 [极速数据官网](https://www.jisuapi.com/) 注册账号
-2. 进入 [对应接口页面](https://www.jisuapi.com/api/exchange/) 页面，点击「申请数据」
+2. 进入 [汇率查询 API](https://www.jisuapi.com/api/exchange/) 页面，点击「申请数据」
 3. 在会员中心获取 **AppKey**
 4. 配置 Key：
 
