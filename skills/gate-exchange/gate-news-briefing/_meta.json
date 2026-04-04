@@ -1,11 +1,17 @@
 {
   "owner": "gate-exchange",
   "slug": "gate-news-briefing",
-  "displayName": "Gate News Briefing",
+  "displayName": "gate-news-briefing",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773364445588,
-    "commit": "https://github.com/openclaw/skills/commit/2a3d8d7caa1d5159132765543de2fd60af05a887"
+    "version": "1.0.2",
+    "publishedAt": 1775184875149,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773364445588,
+      "commit": "https://github.com/openclaw/skills/commit/2a3d8d7caa1d5159132765543de2fd60af05a887"
+    }
+  ]
 }
