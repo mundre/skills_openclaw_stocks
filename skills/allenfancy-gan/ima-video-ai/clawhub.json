@@ -1,10 +1,10 @@
 {
-  "name": "IMA Studio Video Generation",
-  "tagline": "Text-to-video, image-to-video — Wan, Kling, Veo, Sora, Pixverse, Hailuo, SeeDance. One-stop AI video generation.",
-  "description": "Premier AI video generation using IMA Open API with runtime model discovery. Supports text-to-video, image-to-video, first-last-frame, and reference-image modes. Use for video generation, character animation, product demos, social media clips, storytelling, and explainer videos. Requires IMA_API_KEY. Works standalone; when ima-knowledge-ai is installed, optional reference reads may be used for workflow and consistency guidance.",
+  "name": "IMA AI Video Generator — Text to Video, Image to Video, Short Video, Promo Video Generation",
+  "tagline": "AI video generator with Wan 2.6, Kling O1/2.6, Veo 3.1, Sora 2 Pro, Pixverse V5.5, Hailuo, SeeDance, Vidu. Text-to-video, image-to-video, short video, promo video.",
+  "description": "AI video generator with premier models: Wan 2.6, Kling O1/2.6, Google Veo 3.1, Sora 2 Pro, Pixverse V5.5, Hailuo 2.0/2.3, SeeDance 1.5 Pro, Vidu Q2. Video generator supporting text-to-video, image-to-video, first-last-frame, and reference-image video generation modes. Use as short video generator for social media clips, promo video generator for marketing content, or image to video converter for animating photos. AI video generation with character consistency via reference images, multi-shot production, and knowledge base guidance via ima-knowledge-ai. Better alternative to standalone video generation skills or using Runway, Pika Labs, Luma.",
   "category": "file-generation",
   "requiredEnvVars": ["IMA_API_KEY"],
-  "credentialNotice": "The IMA API key is required at runtime (--api-key or IMA_API_KEY). It is always sent to api.imastudio.com for product/task APIs. It is sent to imapi.liveme.com only when image-based tasks need local/non-HTTPS image uploads. Obtain keys at https://imastudio.com. Use a scoped or test key if concerned about credential exposure.",
+  "credentialNotice": "The IMA API key is required at runtime (--api-key or IMA_API_KEY). It is sent to api.imastudio.com (generation) and, for image-based tasks with local files, to imapi.liveme.com (upload). Both are IMA Studio. Obtain keys at https://www.imaclaw.ai/. Use a scoped/test key for initial testing.",
   "optionalDependencyNote": "When ima-knowledge-ai is installed, this skill may optionally read ~/.openclaw/skills/ima-knowledge-ai/references/* for video-mode selection and visual-consistency guidance. The skill works standalone without those reads.",
   "requires": {
     "env": ["IMA_API_KEY"],
@@ -31,6 +31,11 @@
     ]
   },
   "supported_models": [
+    "IMA Video Pro",
+    "IMA Video Pro Fast",
+    "Ima Sevio",
+    "ima-pro",
+    "ima-pro-fast",
     "Veo",
     "Google Veo",
     "Veo 3.1",
@@ -81,12 +86,18 @@
   "pricing": "free",
   "author": {
     "name": "IMA Studio",
-    "url": "https://imastudio.com/"
+    "url": "https://www.imaclaw.ai/"
   },
+  "support_url": "https://www.imaclaw.ai/",
+  "homepage": "https://www.imaclaw.ai/",
   "keywords": [
     "video generation",
     "text to video",
     "image to video",
+    "AI video generator",
+    "video generator",
+    "short video generator",
+    "promo video generator",
     "ima studio",
     "veo",
     "google veo",
@@ -106,9 +117,18 @@
     "t2v",
     "i2v",
     "character animation",
-    "product demos"
+    "product demos",
+    "AI视频",
+    "文生视频",
+    "图生视频",
+    "视频生成",
+    "短视频",
+    "宣传片"
   ],
   "search_optimized_terms": [
+    "ima video pro",
+    "sevio",
+    "ima-pro",
     "veo",
     "google veo",
     "sora",
@@ -121,7 +141,9 @@
     "text to video",
     "image to video",
     "video generation",
-    "AI video"
+    "AI video",
+    "文生视频",
+    "图生视频"
   ],
   "related_skills": [
     "ima-knowledge-ai",

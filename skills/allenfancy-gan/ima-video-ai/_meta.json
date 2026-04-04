@@ -1,13 +1,18 @@
 {
   "owner": "allenfancy-gan",
   "slug": "ima-video-ai",
-  "displayName": "IMA Studio Video — Veo, Sora, Kling, Wan, Vidu, Hailuo, SeeDance,  Pixverse",
+  "displayName": "IMA AI Video Generator — Short & Promo Video, Text to Video, Image to Video Generation",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1773771680299,
-    "commit": "https://github.com/openclaw/skills/commit/2e88805d4931b38441b9eae8e8ddb232f3ae975d"
+    "version": "1.0.11",
+    "publishedAt": 1774857349145,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1773771680299,
+      "commit": "https://github.com/openclaw/skills/commit/2e88805d4931b38441b9eae8e8ddb232f3ae975d"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1773331860972,
