@@ -3,9 +3,15 @@
   "slug": "workable",
   "displayName": "Workable",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772758932660,
-    "commit": "https://github.com/openclaw/skills/commit/34759839941588a25863e69184d1102cb6fd2346"
+    "version": "1.0.2",
+    "publishedAt": 1775161746777,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772758932660,
+      "commit": "https://github.com/openclaw/skills/commit/34759839941588a25863e69184d1102cb6fd2346"
+    }
+  ]
 }
