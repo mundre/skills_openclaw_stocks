@@ -3,11 +3,16 @@
   "slug": "shopify-toolkit",
   "displayName": "Shopify Toolkit",
   "latest": {
-    "version": "2.0.1",
-    "publishedAt": 1773831013655,
-    "commit": "https://github.com/openclaw/skills/commit/f8d6c1909dbea97c4781cf217c71f842edef0974"
+    "version": "7.0.0",
+    "publishedAt": 1774225503990,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.1",
+      "publishedAt": 1773831013655,
+      "commit": "https://github.com/openclaw/skills/commit/f8d6c1909dbea97c4781cf217c71f842edef0974"
+    },
     {
       "version": "2.3.1",
       "publishedAt": 1773575248987,
