@@ -1,11 +1,17 @@
 {
   "owner": "twinsgeeks",
   "slug": "adopt-a-phoenix",
-  "displayName": "Adopt a Phoenix — Virtual Exotic Pet for AI Agents",
+  "displayName": "Phoenix — Adopt a Phoenix. AI-Native Pet. 凤凰。Fénix.",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773203469299,
-    "commit": "https://github.com/openclaw/skills/commit/ce9e5d9540eb63147bb3192daf5b6d8743025c96"
+    "version": "1.0.3",
+    "publishedAt": 1775008494270,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773203469299,
+      "commit": "https://github.com/openclaw/skills/commit/ce9e5d9540eb63147bb3192daf5b6d8743025c96"
+    }
+  ]
 }
