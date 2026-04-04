@@ -1,6 +1,6 @@
 ---
-name: jisu-recipe
-description: 使用极速数据菜谱大全 API 按关键词或分类检索菜谱，并支持查询菜谱分类和菜谱详情。
+name: "Recipe - 菜谱大全"
+description: 按关键词或分类检索菜谱，可查分类与菜谱详情。当用户说：糖醋排骨怎么做？来个家常豆腐菜谱，或类似做菜问题时，使用本技能。
 metadata: { "openclaw": { "emoji": "🍳", "requires": { "bins": ["python3"], "env": ["JISU_API_KEY"] }, "primaryEnv": "JISU_API_KEY" } }
 ---
 
@@ -11,7 +11,7 @@ metadata: { "openclaw": { "emoji": "🍳", "requires": { "bins": ["python3"], "e
 ## 前置配置：获取 API Key
 
 1. 前往 [极速数据官网](https://www.jisuapi.com/) 注册账号
-2. 进入 [对应接口页面](https://www.jisuapi.com/api/recipe/) 页面，点击「申请数据」
+2. 进入 [菜谱大全 API](https://www.jisuapi.com/api/recipe/) 页面，点击「申请数据」
 3. 在会员中心获取 **AppKey**
 4. 配置 Key：
 
