@@ -172,60 +172,136 @@ def extract_with_requests(url):
         return None, "", "无法提取内容"
 
 
+def get_existing_fields(token):
+    """获取表格已有的字段列表"""
+    api_url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/fields"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = requests.get(api_url, headers=headers)
+    result = response.json()
+
+    if result.get("code") == 0:
+        items = result.get("data", {}).get("items", [])
+        return {item["field_name"]: item for item in items}
+    else:
+        print(f"   ⚠️  获取字段列表失败: {result}")
+        return {}
+
+
+def ensure_fields_exist(token):
+    """检查并自动创建缺失的字段"""
+    print("\n🔧 检查表格字段...")
+
+    # 期望的字段定义：field_name -> (type, 说明)
+    # 飞书字段类型: 1=文本, 2=数字, 3=单选, 5=日期, 7=复选框, 11=人员, 15=超链接, 13=电话, 17=附件, 18=关联, 20=公式, 22=地理位置
+    required_fields = {
+        "文本": {"field_name": "文本", "type": 1},          # 文本
+        "链接": {"field_name": "链接", "type": 15},         # 超链接
+        "来源": {"field_name": "来源", "type": 3},          # 单选
+        "保存时间": {"field_name": "保存时间", "type": 5},   # 日期
+        "摘要": {"field_name": "摘要", "type": 1},          # 文本
+        "正文": {"field_name": "正文", "type": 1},          # 文本
+    }
+
+    existing = get_existing_fields(token)
+
+    api_url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/fields"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+    created_count = 0
+    for field_name, field_def in required_fields.items():
+        if field_name not in existing:
+            response = requests.post(api_url, headers=headers, json=field_def)
+            result = response.json()
+            if result.get("code") == 0:
+                created_count += 1
+                print(f"   ✅ 创建字段: {field_name}")
+            else:
+                print(f"   ❌ 创建字段失败 [{field_name}]: {result.get('msg', '')}")
+        else:
+            print(f"   ✔️  字段已存在: {field_name}")
+
+    if created_count > 0:
+        print(f"   📋 共创建了 {created_count} 个新字段")
+    else:
+        print(f"   📋 所有字段已就绪")
+
+
 def clean_empty_rows(token):
     """清理表格中的空白行"""
     print("\n🧹 检查并清理空白行...")
-    
-    # 获取所有记录
+
     api_url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/records"
     headers = {"Authorization": f"Bearer {token}"}
-    
+
     try:
-        response = requests.get(api_url, headers=headers)
-        result = response.json()
-        
-        if result.get("code") != 0:
-            print(f"   ⚠️  获取记录失败，跳过清理")
-            return
-        
-        records = result.get("data", {}).get("items", [])
-        empty_count = 0
-        
-        for record in records:
-            record_id = record.get("record_id")
-            fields = record.get("fields", {})
-            
-            # 检查是否为空白行（标题和链接都为空）
-            title_field = fields.get("文本", "")
-            link_field = fields.get("链接", {})
-            
-            # 提取链接内容
-            if isinstance(link_field, dict):
-                link_text = link_field.get("link", "")
-            else:
-                link_text = str(link_field)
-            
-            # 判断是否为空白行
-            is_empty = (
-                (not title_field or len(str(title_field).strip()) < 2) and
-                (not link_text or len(link_text.strip()) < 5)
-            )
-            
-            if is_empty:
-                # 删除空白行
-                delete_url = f"{api_url}/{record_id}"
-                delete_response = requests.delete(delete_url, headers=headers)
-                delete_result = delete_response.json()
-                
+        # 分页获取所有记录
+        empty_ids = []
+        page_token = None
+
+        while True:
+            params = {"page_size": 100}
+            if page_token:
+                params["page_token"] = page_token
+
+            response = requests.get(api_url, headers=headers, params=params)
+            result = response.json()
+
+            if result.get("code") != 0:
+                print(f"   ⚠️  获取记录失败，跳过清理")
+                return
+
+            records = result.get("data", {}).get("items", [])
+
+            for record in records:
+                record_id = record.get("record_id")
+                fields = record.get("fields", {})
+
+                # 检查是否为空白行（标题和链接都为空）
+                title_field = fields.get("文本", "")
+                link_field = fields.get("链接", {})
+
+                if isinstance(link_field, dict):
+                    link_text = link_field.get("link", "")
+                else:
+                    link_text = str(link_field)
+
+                is_empty = (
+                    (not title_field or len(str(title_field).strip()) < 2) and
+                    (not link_text or len(link_text.strip()) < 5)
+                )
+
+                if is_empty:
+                    empty_ids.append(record_id)
+
+            # 检查是否有下一页
+            if not result.get("data", {}).get("has_more", False):
+                break
+            page_token = result.get("data", {}).get("page_token")
+
+        # 批量删除空白行
+        if empty_ids:
+            delete_url = f"{api_url}/batch_delete"
+            delete_headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            # 飞书批量删除最多500条
+            for i in range(0, len(empty_ids), 500):
+                batch = empty_ids[i:i+500]
+                response = requests.post(delete_url, headers=delete_headers, json={"records": batch})
+                delete_result = response.json()
                 if delete_result.get("code") == 0:
-                    empty_count += 1
-                    print(f"   🗑️  删除空白行: {record_id}")
-        
-        if empty_count > 0:
-            print(f"   ✅ 清理完成，删除了 {empty_count} 个空白行")
+                    print(f"   🗑️  批量删除 {len(batch)} 个空白行")
+                else:
+                    print(f"   ⚠️  批量删除失败: {delete_result.get('msg', '')}")
+            print(f"   ✅ 清理完成，共删除 {len(empty_ids)} 个空白行")
         else:
             print(f"   ✅ 没有空白行，表格整洁")
-    
+
     except Exception as e:
         print(f"   ⚠️  清理过程出错: {e}")
 
@@ -252,8 +328,11 @@ def save_article_to_feishu(url, title=None, content=None, summary=None):
     
     # 获取访问令牌
     token = get_tenant_access_token()
-    
-    # 先清理空白行
+
+    # 自动检查并创建缺失字段
+    ensure_fields_exist(token)
+
+    # 清理空白行
     clean_empty_rows(token)
     
     # 自动识别来源
@@ -270,12 +349,12 @@ def save_article_to_feishu(url, title=None, content=None, summary=None):
         "来源": source,
         "保存时间": current_time
     }
-    
-    # 保存摘要（前300字）+ 完整正文
+
+    # 摘要和正文分开保存
     if summary:
-        # 将摘要和正文都保存到"摘要"字段
-        full_text = f"【摘要】\n{summary}\n\n【正文】\n{content[:2000]}"
-        fields["摘要"] = full_text
+        fields["摘要"] = summary
+    if content:
+        fields["正文"] = content
     
     # 发送请求
     api_url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/records"
@@ -294,8 +373,8 @@ def save_article_to_feishu(url, title=None, content=None, summary=None):
         print(f"\n✅ 保存成功！")
         print(f"   📝 标题: {title}")
         print(f"   🏷️  来源: {source}")
-        print(f"   📊 摘要长度: {len(summary)} 字符")
-        print(f"   📄 正文长度: {len(content)} 字符")
+        print(f"   📊 摘要: {len(summary) if summary else 0} 字符")
+        print(f"   📄 正文: {len(content) if content else 0} 字符")
         return True
     else:
         print(f"\n❌ 保存失败: {result}")
