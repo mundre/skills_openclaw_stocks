@@ -1,75 +1,89 @@
-# Knowledge Connector - 知识连接器
+# Knowledge Connector
 
-智能知识管理工具，从文档和对话中提取概念，构建知识图谱，支持智能查询和推荐。
+Knowledge Connector 的价值，不是“帮你建一个图”，而是把散落在不同文档里的知识变成可搜索、可解释、可行动的知识图谱结果。
 
-## 快速开始
+这次升级重点收敛到 5 件事：
+- 更像向导的导入入口
+- 更顺手的导入体验
+- 真正的跨文档搜索
+- 更容易检查关系的可视化
+- 带下一步建议的图谱结果
 
-### 安装
+## 它适合什么问题
+
+- “把这个目录里的笔记都导进来”
+- “这个概念到底在哪些文档里出现过”
+- “哪些文档之间其实在讲同一件事”
+- “围绕这个概念画一个能看懂的关系图”
+- “图谱出来以后，我下一步该补什么、查什么、连什么”
+
+## 现在的核心体验
+
+### 1. 导入文档
 
 ```bash
-# 通过 ClawHub 安装
-clawhub install knowledge-connector
-
-# 或全局安装
-npm install -g ~/.openclaw/workspace/skills/knowledge-connector
+kc import-wizard --dir notes/
+kc import-docs --dir notes/
+kc import-docs --files intro.md roadmap.md ideas.txt
 ```
 
-### 使用
+导入后会告诉你：
+- 预计会导入多少文件
+- 支持哪些文件类型
+- 导入了多少文档
+- 抽出了多少概念
+- 自动补了多少关系
+
+### 2. 跨文档搜索
 
 ```bash
-# 提取概念
-kc extract -t "人工智能是机器学习的基础"
+kc search "强化学习"
+kc answer "哪些文档把规划和强化学习连起来了？"
+kc query "transformer" --sources
+kc query --ask "哪些文档同时提到了规划和强化学习？"
+```
 
-# 建立关联
-kc connect --from "人工智能" --to "机器学习" --relation "包含"
+搜索结果不只给概念，还会给：
+- 命中的来源文档
+- 相关关系
+- 下一步建议
 
-# 查询知识
-kc query "人工智能"
+`kc answer` 会把这些结果整理成更像答案页的输出，也可以保存成 HTML。
 
-# 可视化图谱
+### 3. 概念子图
+
+```bash
+kc map --concept "人工智能" --depth 2
+```
+
+这个命令适合做“围绕一个主题看局部图谱”，比直接扔一整张大图更可操作。
+
+### 4. 图谱可视化
+
+```bash
 kc visualize --format html --output graph.html
-
-# 查看统计
-kc stats
+kc visualize --concept "机器学习" --depth 2 --output ml-graph.html
 ```
 
-## 功能
+生成的 HTML 图现在会同时显示：
+- 图谱本身
+- 下一步建议
+- 常用后续命令提示
 
-- ✅ 知识提取：从文本/文件中自动提取概念
-- ✅ 关系建立：自动/手动建立概念关联
-- ✅ 知识图谱：可视化展示知识结构
-- ✅ 智能查询：支持关键词和自然语言查询
-- ✅ 知识推荐：基于关联性推荐相关知识
+## 为什么这条产品线值得继续做
 
-## CLI 命令
+因为用户装它，不是为了“又一个知识技能”，而是为了更快回答这些问题：
+- 我的知识散在哪里
+- 哪些概念其实互相关联
+- 哪些文档值得一起看
+- 下一步该补什么，而不是只把图存下来
 
-| 命令 | 说明 |
-|------|------|
-| `extract` | 从文本或文件提取概念 |
-| `connect` | 建立概念间的关联 |
-| `query` | 查询知识库 |
-| `visualize` | 生成知识图谱可视化 |
-| `stats` | 显示统计信息 |
-| `export` | 导出知识库 |
-| `import` | 导入知识库 |
-| `recommend` | 推荐相关知识 |
-
-## 示例
+## 安装
 
 ```bash
-# 1. 从文件提取
-kc extract -f document.txt --save
-
-# 2. 自动建立关联
-kc connect --auto
-
-# 3. 查询相关概念
-kc query --concept "深度学习" --related
-
-# 4. 生成可视化
-kc visualize --format html --output knowledge.html
+clawhub install knowledge-connector
 ```
 
-## 许可证
+## 一句话卖点
 
-MIT License
+把分散文档变成可导入、可回答、可视化、可行动的知识图谱结果。

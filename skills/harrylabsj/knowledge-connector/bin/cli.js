@@ -10,13 +10,13 @@ const kc = new KnowledgeConnector();
 
 program
   .name('knowledge-connector')
-  .description('知识连接器 - 智能知识管理工具')
-  .version('1.0.0');
+  .description('Knowledge Connector - 导入向导、跨文档答案页、可视化关系、输出可操作知识图谱结果')
+  .version('1.2.0');
 
 // 提取命令
 program
   .command('extract')
-  .description('从文本或文件中提取概念')
+  .description('从文本或单个文件中提取概念')
   .option('-f, --file <path>', '从文件提取')
   .option('-t, --text <text>', '从文本提取')
   .option('-s, --save', '保存到知识库')
@@ -65,6 +65,80 @@ program
     }
   });
 
+program
+  .command('import-docs')
+  .description('批量导入文档或目录，并自动建立跨文档关系')
+  .option('-f, --files <paths...>', '导入多个文件')
+  .option('-d, --dir <path>', '导入整个目录')
+  .option('--no-auto-connect', '导入后不自动关联')
+  .action(async (options) => {
+    const spinner = ora('正在导入文档...').start();
+    try {
+      const inputs = options.files && options.files.length > 0 ? options.files : (options.dir ? [options.dir] : []);
+      if (inputs.length === 0) {
+        spinner.fail('请提供 --files 或 --dir 参数');
+        process.exit(1);
+      }
+
+      const summary = await kc.importDocuments(inputs, { autoConnect: options.autoConnect });
+      spinner.succeed(`成功导入 ${summary.fileCount} 个来源文档`);
+      console.log(chalk.blue('\n导入结果:'));
+      console.log(`  文档数量: ${chalk.bold(summary.fileCount)}`);
+      console.log(`  概念数量: ${chalk.bold(summary.conceptCount)}`);
+      console.log(`  新关系数量: ${chalk.bold(summary.relationCount)}`);
+      if (summary.files.length > 0) {
+        console.log(chalk.blue('\n已导入来源:'));
+        summary.files.slice(0, 10).forEach((file, index) => {
+          console.log(`  ${index + 1}. ${chalk.bold(file.title)} ${chalk.gray(`(${file.conceptCount} concepts)`)}`);
+        });
+      }
+    } catch (error) {
+      spinner.fail(`导入失败: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('import-wizard')
+  .description('预览导入范围，再一步执行导入')
+  .option('-f, --files <paths...>', '预览多个文件')
+  .option('-d, --dir <path>', '预览整个目录')
+  .option('--run', '预览后立即执行导入')
+  .option('--no-auto-connect', '导入后不自动关联')
+  .action(async (options) => {
+    const spinner = ora('正在分析导入范围...').start();
+    try {
+      const inputs = options.files && options.files.length > 0 ? options.files : (options.dir ? [options.dir] : []);
+      if (inputs.length === 0) {
+        spinner.fail('请提供 --files 或 --dir 参数');
+        process.exit(1);
+      }
+
+      const plan = kc.planImport(inputs);
+      spinner.succeed(`预计可导入 ${plan.fileCount} 个文件`);
+      console.log(chalk.blue('\n导入预览:'));
+      console.log(`  文件数量: ${chalk.bold(plan.fileCount)}`);
+      console.log(`  支持类型: ${chalk.bold(plan.supportedTypes.join(', ') || '无')}`);
+      plan.files.slice(0, 12).forEach((file, index) => {
+        console.log(`  ${index + 1}. ${chalk.bold(file.title)} ${chalk.gray(file.path)}`);
+      });
+
+      if (!options.run) {
+        console.log(chalk.yellow('\n这是预览模式。加上 --run 会直接执行导入。'));
+        return;
+      }
+
+      const summary = await kc.importDocuments(inputs, { autoConnect: options.autoConnect });
+      console.log(chalk.green('\n✓ 导入完成'));
+      console.log(`  文档数量: ${chalk.bold(summary.fileCount)}`);
+      console.log(`  概念数量: ${chalk.bold(summary.conceptCount)}`);
+      console.log(`  新关系数量: ${chalk.bold(summary.relationCount)}`);
+    } catch (error) {
+      spinner.fail(`导入向导失败: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
 // 关联命令
 program
   .command('connect')
@@ -106,13 +180,14 @@ program
 // 查询命令
 program
   .command('query')
-  .description('查询知识库')
+  .description('查询知识库并返回跨文档结果')
   .argument('[keyword]', '搜索关键词')
   .option('-c, --concept <name>', '查询特定概念')
   .option('-d, --detail', '显示详细信息')
   .option('-r, --related', '显示关联概念')
   .option('-t, --type <type>', '按类型筛选')
   .option('-a, --ask <question>', '自然语言查询')
+  .option('-s, --sources', '显示命中的来源文档')
   .action(async (keyword, options) => {
     const spinner = ora('正在查询...').start();
     
@@ -124,6 +199,10 @@ program
         spinner.succeed('查询完成');
         console.log(chalk.blue('\n答案:'));
         console.log(results.answer || '未找到答案');
+        if (results.nextSteps && results.nextSteps.length > 0) {
+          console.log(chalk.blue('\n下一步建议:'));
+          results.nextSteps.forEach((step) => console.log(`  • ${step}`));
+        }
         return;
       }
       
@@ -151,21 +230,129 @@ program
         }
       } else if (keyword) {
         results = await kc.search(keyword);
-        spinner.succeed(`找到 ${results.length} 个结果`);
+        spinner.succeed(`找到 ${results.concepts.length} 个概念结果`);
         
         console.log(chalk.blue('\n搜索结果:'));
-        results.forEach((r, i) => {
+        results.concepts.forEach((r, i) => {
           console.log(`  ${i + 1}. ${chalk.bold(r.name)} ${chalk.gray(`(${r.type})`)}`);
           if (options.detail && r.description) {
             console.log(`     ${r.description}`);
           }
         });
+
+        if (options.sources && results.sources.length > 0) {
+          console.log(chalk.blue('\n命中的来源文档:'));
+          results.sources.slice(0, 10).forEach((source, i) => {
+            console.log(`  ${i + 1}. ${chalk.bold(source.title)} ${chalk.gray(source.path)}`);
+          });
+        }
+
+        if (results.nextSteps.length > 0) {
+          console.log(chalk.blue('\n下一步建议:'));
+          results.nextSteps.forEach((step) => console.log(`  • ${step}`));
+        }
       } else {
         spinner.fail('请提供搜索关键词或 --concept 参数');
         process.exit(1);
       }
     } catch (error) {
       spinner.fail(`查询失败: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('search')
+  .description('做跨文档搜索，返回概念、来源文档和下一步动作')
+  .argument('<keyword>', '搜索关键词')
+  .action(async (keyword) => {
+    const spinner = ora('正在跨文档搜索...').start();
+    try {
+      const result = await kc.search(keyword);
+      spinner.succeed(`搜索完成，命中 ${result.concepts.length} 个概念和 ${result.sources.length} 个来源`);
+      console.log(chalk.blue('\n概念结果:'));
+      result.concepts.slice(0, 10).forEach((concept, index) => {
+        console.log(`  ${index + 1}. ${chalk.bold(concept.name)} ${chalk.gray(`(${concept.type})`)}`);
+      });
+      if (result.sources.length > 0) {
+        console.log(chalk.blue('\n来源文档:'));
+        result.sources.slice(0, 10).forEach((source, index) => {
+          console.log(`  ${index + 1}. ${chalk.bold(source.title)} ${chalk.gray(source.path)}`);
+        });
+      }
+      if (result.nextSteps.length > 0) {
+        console.log(chalk.blue('\n下一步建议:'));
+        result.nextSteps.forEach((step) => console.log(`  • ${step}`));
+      }
+    } catch (error) {
+      spinner.fail(`搜索失败: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('answer')
+  .description('把跨文档搜索整理成更像答案页的结果')
+  .argument('<query>', '问题或查询')
+  .option('-f, --format <format>', '输出格式 (json/html)', 'json')
+  .option('-o, --output <path>', '输出文件路径')
+  .action(async (query, options) => {
+    const spinner = ora('正在生成答案页...').start();
+    try {
+      const result = await kc.answer(query, { format: options.format });
+      spinner.succeed('答案生成完成');
+
+      if (options.output) {
+        const fs = require('fs');
+        const payload = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+        fs.writeFileSync(options.output, payload);
+        console.log(chalk.green(`✓ 结果已保存到 ${options.output}`));
+        return;
+      }
+
+      if (typeof result === 'string') {
+        console.log(result);
+        return;
+      }
+
+      console.log(chalk.blue('\n答案摘要:'));
+      console.log(result.summary);
+      if (result.nextSteps.length > 0) {
+        console.log(chalk.blue('\n下一步建议:'));
+        result.nextSteps.forEach((step) => console.log(`  • ${step}`));
+      }
+    } catch (error) {
+      spinner.fail(`答案生成失败: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('map')
+  .description('围绕一个概念生成可操作的子图结果')
+  .requiredOption('-c, --concept <name>', '中心概念')
+  .option('-d, --depth <n>', '关联深度', '2')
+  .option('-o, --output <path>', '输出 JSON 文件')
+  .action(async (options) => {
+    const spinner = ora('正在生成子图...').start();
+    try {
+      const result = await kc.map(options.concept, parseInt(options.depth, 10));
+      if (!result) {
+        spinner.fail(`未找到概念: ${options.concept}`);
+        process.exit(1);
+      }
+      spinner.succeed(`已生成 ${result.nodes.length} 个概念、${result.edges.length} 条关系的子图`);
+      if (options.output) {
+        const fs = require('fs');
+        fs.writeFileSync(options.output, JSON.stringify(result, null, 2));
+        console.log(chalk.green(`✓ 子图已保存到 ${options.output}`));
+      }
+      console.log(chalk.blue('\n中心概念:'));
+      console.log(`  ${chalk.bold(result.center.name)}`);
+      console.log(chalk.blue('\n下一步建议:'));
+      result.nextSteps.forEach((step) => console.log(`  • ${step}`));
+    } catch (error) {
+      spinner.fail(`生成子图失败: ${error.message}`);
       process.exit(1);
     }
   });
@@ -216,6 +403,7 @@ program
       console.log(chalk.blue('\n知识库统计:'));
       console.log(`  概念数量: ${chalk.bold(stats.conceptCount)}`);
       console.log(`  关系数量: ${chalk.bold(stats.relationCount)}`);
+      console.log(`  来源文档: ${chalk.bold(stats.sourceCount)}`);
       console.log(`  概念类型: ${chalk.bold(stats.typeCount)} 种`);
       console.log(`  数据大小: ${chalk.bold(stats.dataSize)}`);
     } catch (error) {

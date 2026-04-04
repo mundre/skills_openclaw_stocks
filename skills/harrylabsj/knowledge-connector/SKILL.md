@@ -1,155 +1,127 @@
 ---
-name: knowledge-connector
-description: Extract concepts from documents, notes, and conversations; connect them into a knowledge graph; support relationship-aware queries, recommendations, and graph export. Use when the user wants to build structured knowledge from source material, connect concepts, inspect related ideas, or visualize a knowledge map.
+name: Knowledge Connector
+description: Turn scattered notes and documents into an actionable knowledge graph. Use when the user wants an import wizard, cross-document answers, relationship maps, and concrete next-step suggestions instead of a passive graph dump.
 ---
 
 # Knowledge Connector
 
-Build a lightweight knowledge graph from documents and conversations.
+Knowledge Connector should feel like a product line, not another graph utility.
 
-## Core capabilities
+Its job is not just to extract concepts. Its job is to help the user:
+- import notes and documents with low friction
+- search across multiple documents from one query
+- visualize concept relationships in a way that is easy to inspect
+- get actionable graph results such as what to connect, review, or expand next
 
-- Extract concepts and entities from text
-- Create relationships between concepts
-- Store and query a knowledge graph
-- Recommend related concepts
-- Export graph views for inspection
+## What This Skill Optimizes For
 
-## Commands
+Default toward five high-value outcomes:
+- fast document import
+- guided import onboarding
+- cross-document knowledge retrieval
+- relationship-aware graph views
+- actionable next steps
 
-### Extract knowledge
+Avoid drifting into “yet another adjacent knowledge skill”.
+
+## Primary Workflows
+
+### 1. Import Experience
+
+Use `kc import-docs` when the user wants to build a graph from multiple files or a notes directory.
+Use `kc import-wizard` when the user wants a preview-first onboarding flow.
+
+Good import behavior means:
+- accept files or a directory
+- preserve source titles and paths
+- show how many documents, concepts, and relations were created
+- keep the user oriented after import
+
+### 2. Cross-Document Search
+
+Use `kc search` or `kc query` when the user asks:
+- where an idea appears across notes
+- which documents mention a concept
+- what concepts connect several documents
+
+Results should show:
+- matching concepts
+- matching source documents
+- useful next actions
+
+### 3. Relationship Visualization
+
+Use `kc visualize` for full graph export and `kc map` for a concept-centered actionable subgraph.
+
+Visualization should help the user answer:
+- what is central
+- what is weakly connected
+- what deserves review
+
+### 4. Actionable Results
+
+Do not stop at “here is the graph”.
+
+The output should usually recommend one or more actions such as:
+- import more source material
+- auto-connect newly imported concepts
+- inspect a concept-centered subgraph
+- verify weak relationships from source documents
+- export a graph view for sharing or review
+
+## Core Commands
+
+### Import
 
 ```bash
-kc extract -f document.txt
-kc extract -t "Artificial intelligence is a branch of computer science"
-kc extract -f document.txt --save
+kc import-wizard --dir notes/
+kc import-docs --dir notes/
+kc import-docs --files a.md b.md c.txt
 ```
 
-### Create or import connections
+### Search
 
 ```bash
-kc connect --auto
-kc connect --from "Artificial Intelligence" --to "Machine Learning" --relation "includes"
-kc connect --file relations.json
+kc search "machine learning"
+kc answer "哪些文档把强化学习和规划连在一起？"
+kc query "transformer" --sources
+kc query --ask "哪些文档同时提到了强化学习和规划？"
 ```
 
-### Query knowledge
+### Map And Visualize
 
 ```bash
-kc query "Artificial Intelligence"
-kc query --concept "Deep Learning" --detail
-kc query --concept "Neural Network" --related
-kc query --ask "What is Machine Learning?"
-```
-
-### Visualize the graph
-
-```bash
-kc visualize
+kc map --concept "人工智能" --depth 2
 kc visualize --format html --output graph.html
-kc visualize --format json --output graph.json
-kc visualize --concept "Artificial Intelligence" --depth 2
+kc visualize --concept "机器学习" --depth 2 --output ml-graph.html
 ```
 
-### Manage the knowledge base
+### Manage
 
 ```bash
 kc stats
 kc export --output backup.json
 kc import --file backup.json
-kc clear --confirm
 ```
 
-## Core data structures
+## Output Standard
 
-### Concept
+When the skill returns results, prefer this structure:
 
-```json
-{
-  "id": "uuid",
-  "name": "Artificial Intelligence",
-  "type": "domain",
-  "aliases": ["AI"],
-  "description": "A branch of computer science",
-  "source": "document.txt",
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:00:00Z",
-  "metadata": {}
-}
-```
+### What Matched
+Show concepts and source coverage.
 
-### Relation
+### Why It Matters
+Explain the meaningful relationship or pattern.
 
-```json
-{
-  "id": "uuid",
-  "from": "concept-id-1",
-  "to": "concept-id-2",
-  "type": "includes",
-  "weight": 0.85,
-  "source": "auto-extract",
-  "createdAt": "2024-01-01T00:00:00Z"
-}
-```
+### Next Step
+Tell the user what to do next with the graph.
 
-## Common relation types
+## Product Positioning
 
-- `includes`
-- `is-a`
-- `related-to`
-- `causes`
-- `follows`
-- `opposite`
-- `similar`
+Knowledge Connector is strongest when the user has:
+- a growing notes corpus
+- repeated concepts spread across files
+- a need to move from storage to understanding
 
-## Configuration
-
-Default config file:
-
-```json
-{
-  "dataDir": "~/.local/share/knowledge-connector",
-  "autoExtract": true,
-  "autoConnect": true,
-  "defaultDepth": 2,
-  "maxResults": 20,
-  "language": "en"
-}
-```
-
-## Example workflow
-
-```bash
-# Extract and save
-echo "Python is an interpreted programming language. Java is an object-oriented programming language." | kc extract --save
-
-# Add relations
-kc connect --from "Python" --to "Programming Language" --relation "is-a"
-kc connect --from "Java" --to "Programming Language" --relation "is-a"
-
-# Inspect graph
-kc visualize --format html --output languages.html
-kc query --concept "Python" --related
-```
-
-## Programmatic usage
-
-```javascript
-const KnowledgeConnector = require('knowledge-connector');
-const kc = new KnowledgeConnector();
-
-const concepts = await kc.extract('JavaScript is a dynamically typed language');
-await kc.connect({ from: 'JavaScript', to: 'Dynamically Typed Language', type: 'is-a' });
-const results = await kc.query('JavaScript');
-const recommendations = await kc.recommend('JavaScript');
-```
-
-## Notes
-
-- Create regular backups when the graph becomes important.
-- Query performance may slow down as the graph grows.
-- Concept names may be case-sensitive depending on implementation.
-
-## License
-
-MIT
+It is weaker if it only acts like a raw extractor with no import flow, no source-aware search, and no next-step guidance.

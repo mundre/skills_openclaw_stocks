@@ -1,10 +1,14 @@
 const KnowledgeConnector = require('../src/index.js');
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 async function runTests() {
   console.log('🧪 开始运行测试...\n');
   
-  const kc = new KnowledgeConnector();
+  const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'knowledge-connector-test-'));
+  const kc = new KnowledgeConnector({ dataDir: testDir });
   let passed = 0;
   let failed = 0;
   
@@ -54,6 +58,7 @@ async function runTests() {
   // 测试 4: 搜索
   try {
     const results = await kc.search('测试');
+    assert(Array.isArray(results.concepts), '应该返回概念列表');
     console.log('✅ 测试 4: 搜索功能 - 通过');
     passed++;
   } catch (e) {
@@ -107,6 +112,59 @@ async function runTests() {
     }
   } catch (e) {
     console.log('❌ 测试 8: 推荐功能 - 失败:', e.message);
+    failed++;
+  }
+
+  // 测试 9: 批量导入文档
+  try {
+    const docsDir = path.join(testDir, 'docs');
+    fs.mkdirSync(docsDir, { recursive: true });
+    fs.writeFileSync(path.join(docsDir, 'a.md'), '人工智能 连接 机器学习');
+    fs.writeFileSync(path.join(docsDir, 'b.md'), '机器学习 连接 深度学习');
+    const summary = await kc.importDocuments([docsDir]);
+    assert(summary.fileCount === 2, '应该导入 2 个文档');
+    assert(summary.conceptCount > 0, '应该导入概念');
+    console.log('✅ 测试 9: 批量导入文档 - 通过');
+    passed++;
+  } catch (e) {
+    console.log('❌ 测试 9: 批量导入文档 - 失败:', e.message);
+    failed++;
+  }
+
+  // 测试 10: 概念子图
+  try {
+    const map = await kc.map('机器学习', 1);
+    assert(map && Array.isArray(map.nodes), '应该生成子图');
+    console.log('✅ 测试 10: 概念子图 - 通过');
+    passed++;
+  } catch (e) {
+    console.log('❌ 测试 10: 概念子图 - 失败:', e.message);
+    failed++;
+  }
+
+  // 测试 11: 导入预览
+  try {
+    const docsDir = path.join(testDir, 'docs');
+    const plan = kc.planImport([docsDir]);
+    assert(plan.fileCount >= 2, '应该预览到导入文件');
+    assert(Array.isArray(plan.supportedTypes), '应该返回支持类型');
+    console.log('✅ 测试 11: 导入预览 - 通过');
+    passed++;
+  } catch (e) {
+    console.log('❌ 测试 11: 导入预览 - 失败:', e.message);
+    failed++;
+  }
+
+  // 测试 12: 答案页结果
+  try {
+    const answer = await kc.answer('机器学习');
+    assert(answer.summary && answer.summary.includes('问题'), '应该生成答案摘要');
+    const html = await kc.answer('机器学习', { format: 'html' });
+    assert(typeof html === 'string' && html.includes('<html>'), '应该生成 HTML 答案页');
+    console.log('✅ 测试 12: 答案页结果 - 通过');
+    passed++;
+  } catch (e) {
+    console.log('❌ 测试 12: 答案页结果 - 失败:', e.message);
     failed++;
   }
   

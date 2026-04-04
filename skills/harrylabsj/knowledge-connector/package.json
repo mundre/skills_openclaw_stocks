@@ -1,7 +1,7 @@
 {
   "name": "knowledge-connector",
-  "version": "1.0.1",
-  "description": "知识连接器 - 从文档和对话中提取概念，构建知识图谱，支持查询和推荐",
+  "version": "1.2.0",
+  "description": "Knowledge Connector - 导入向导、跨文档答案页、关系可视化，并输出可操作的知识图谱结果",
   "main": "index.js",
   "bin": {
     "knowledge-connector": "./bin/cli.js",
@@ -14,6 +14,10 @@
   "keywords": [
     "knowledge",
     "graph",
+    "knowledge-graph",
+    "cross-document-search",
+    "import-wizard",
+    "visualization",
     "nlp",
     "concept",
     "extraction",
