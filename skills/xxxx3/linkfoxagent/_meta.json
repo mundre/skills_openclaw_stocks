@@ -3,11 +3,16 @@
   "slug": "linkfoxagent",
   "displayName": "LinkFoxAgent",
   "latest": {
-    "version": "1.0.9",
-    "publishedAt": 1773929049885,
-    "commit": "https://github.com/openclaw/skills/commit/33f8e5721f2b06af8677ffd1444b384ae94d8407"
+    "version": "1.0.10",
+    "publishedAt": 1775134723184,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.9",
+      "publishedAt": 1773929049885,
+      "commit": "https://github.com/openclaw/skills/commit/33f8e5721f2b06af8677ffd1444b384ae94d8407"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1772890975118,

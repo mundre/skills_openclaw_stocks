@@ -1,12 +1,12 @@
 ---
 name: linkfoxagent
-description: "Cross-border e-commerce AI Agent with 41 specialized tools for Amazon/TikTok/eBay/Walmart product research, competitor analysis, keyword tracking, review insights, patent detection, trend analysis, 1688 sourcing, and AI image generation. Use when: (1) product selection and market analysis, (2) competitor research and ASIN lookup, (3) keyword and traffic analysis, (4) review mining and consumer insights, (5) patent/trademark/copyright detection, (6) Google/TikTok trend research, (7) 1688 supplier sourcing, (8) data aggregation and report generation, (9) cross-platform product search (Amazon/Walmart/eBay/TikTok), (10) product image analysis and similarity grouping, (11) AI product image generation."
+description: "Cross-border e-commerce AI Agent with 60 specialized tools for Amazon/TikTok/eBay/Walmart product research, competitor analysis, keyword tracking, review insights, patent detection, patent deep-dive (claims, legal status, family, citations, figures, translations), trend analysis, 1688 sourcing, AI image generation, image recognition, PDF analysis, and web content extraction. Use when: (1) product selection and market analysis, (2) competitor research and ASIN lookup, (3) keyword and traffic analysis, (4) review mining and consumer insights, (5) patent/trademark/copyright detection and deep patent research, (6) Google/TikTok trend research, (7) 1688 supplier sourcing, (8) data aggregation and report generation, (9) cross-platform product search (Amazon/Walmart/eBay/TikTok), (10) product image analysis, similarity grouping, and image recognition, (11) AI product image generation, (12) PDF file analysis, (13) web page content extraction."
 metadata: {"LinkFoxAgent":{"emoji":"🦊","homepage":"https://agent.linkfox.com/","requires":{"env":["LINKFOXAGENT_API_KEY"]}}}
 ---
 
 # LinkFoxAgent - Cross-border E-commerce AI Agent
 
-LinkFoxAgent is a specialized AI agent for cross-border e-commerce with 42 built-in tools covering product research, competitor analysis, keyword tracking, review insights, patent detection, AI image generation, and more.
+LinkFoxAgent is a specialized AI agent for cross-border e-commerce with 60 built-in tools covering product research, competitor analysis, keyword tracking, review insights, patent detection, patent deep-dive research, AI image generation, image recognition, PDF analysis, web content extraction, and more.
 
 ## Setup
 
@@ -182,7 +182,7 @@ Example: `@卖家精灵-选产品 筛选亚马逊美国站的 "usb charger cable
 
 ### Parameter Constraints
 
-Tool parameters may have `maximum`, `minimum`, and `pattern` constraints. Prompts must respect these or the call will fail. See the reference files below for details.
+Tool parameters may have `maximum`, `minimum`, and `pattern` constraints. Prompts must respect these or the call will fail. Image URLs must be publicly accessible; local images need to be uploaded via `linkfoxagent-fileupload` skill to obtain a public URL first. See the reference files below for details.
 
 ### Multi-step Tasks
 
@@ -208,7 +208,7 @@ When the user does not specify a tool, follow these rules:
 2. **@Python沙箱** — fallback when custom logic is needed; also the go-to tool for any sandbox-execution need (has built-in LLM)
 
 
-## Available Tools (41)
+## Available Tools (60)
 
 | Classification | Tool Name | Use For |
 |----------------|-----------|---------|
@@ -220,6 +220,7 @@ When the user does not specify a tool, follow these rules:
 | **亚马逊前台** | @亚马逊-商品评论 | Reviews by star rating |
 | **亚马逊前台** | @亚马逊前端-以图搜图 | Image-based product search |
 | **亚马逊前台** | @ABA-数据挖掘 | Amazon Brand Analytics data mining |
+| **亚马逊前台** | @亚马逊-商品评论(美国站) | US-only product reviews with higher volume (single ASIN, up to 10 pages) |
 | **Sif数据分析工具** | @SIF-ASIN的关键词 | Reverse keyword lookup for ASIN |
 | **Sif数据分析工具** | @SIF-关键词流量来源 | Keyword traffic source analysis |
 | **Sif数据分析工具** | @SIF-ASIN流量来源 | ASIN traffic structure breakdown |
@@ -229,6 +230,8 @@ When the user does not specify a tool, follow these rules:
 | **极目系列** | @极目-亚马逊-细分市场评论 | Niche market review mining |
 | **极目系列** | @极目-亚马逊-细分市场信息 | Niche market overview |
 | **极目系列** | @极目-亚马逊-产品挖掘 | Product discovery with fine filters |
+| **极目系列** | @极目-亚马逊-产品挖掘（根据ASIN） | ASIN-based potential product discovery |
+| **极目系列** | @极目-亚马逊-细分市场洞察信息 | Niche market insights by market ID |
 | **谷歌趋势** | @谷歌趋势-时下流行 | Real-time trending topics |
 | **谷歌趋势** | @谷歌趋势-关键词趋势信息 | Keyword trend over time |
 | **店雷达(1688)** | @店雷达-1688商品榜单 | 1688 product rankings |
@@ -245,33 +248,49 @@ When the user does not specify a tool, follow these rules:
 | **专利检索** | @睿观-文本商标检测 | Text trademark detection |
 | **专利检索** | @睿观-发明专利检测 | Utility patent detection |
 | **专利检索** | @睿观-政策合规检测（纯图检测） | Policy compliance (image check) |
+| **专利检索** | @智慧芽-简单著录项 | Simple bibliographic info by patent ID/number |
+| **专利检索** | @智慧芽-著录项目 | Full bibliographic data by patent ID/number |
+| **专利检索** | @智慧芽-权利要求 | Patent claims lookup |
+| **专利检索** | @智慧芽-权利要求翻译 | Patent claims translation (CN/EN/JP) |
+| **专利检索** | @智慧芽-摘要翻译 | Patent abstract translation (CN/EN/JP) |
+| **专利检索** | @智慧芽-说明书 | Patent description/specification |
+| **专利检索** | @智慧芽-说明书翻译 | Patent description translation (CN/EN/JP) |
+| **专利检索** | @智慧芽-法律状态 | Patent legal status and events |
+| **专利检索** | @智慧芽-PDF全文 | Patent PDF full text |
+| **专利检索** | @智慧芽-专利引用 | Forward citations (patents/literature cited) |
+| **专利检索** | @智慧芽-专利被引用 | Backward citations (cited by other patents) |
+| **专利检索** | @智慧芽-专利家族 | Patent family information |
+| **专利检索** | @智慧芽-全文附图 | Full-text figures and drawings |
+| **专利检索** | @智慧芽-摘要附图 | Abstract figures |
 | **AI工具** | @按商品主图相似度分组 | Group products by image similarity |
 | **AI工具** | @分析商品主图 | Extract image prompts from product photos |
 | **AI工具** | @对商品标题进行分词 | Title word segmentation |
 | **AI工具** | @AI绘图 | Generate any image — products, characters, scenes, backgrounds, and more — from reference images + prompt (powered by top-tier Google Gemini model; ALL image generation tasks must use this tool) |
+| **AI工具** | @图片识别 | Image recognition and analysis by URL + user intent |
 | **沙箱** | @智能数据查询 | Dynamic data query and aggregation |
 | **沙箱** | @excel内容提取并分析 | Excel file extraction and analysis |
 | **沙箱** | @Python沙箱 | Process structured JSON data from prior steps: data calculation/filtering/sorting, generate Markdown tables, export to CSV/Excel, LLM-based image recognition (e.g. A+ image color/composition). Built-in LLM — use for ALL sandbox-execution needs. **Restrictions:** no nested calls; structured JSON only (no plain text/files); no chart generation or analysis reports. |
 | **沙箱** | @智能Excel处理 | Smart Excel processing |
+| **沙箱** | @分析PDF文件 | PDF file analysis with download link and user requirements |
 
 ### Tool Reference Files (by classification)
 
 Read the relevant reference file when you need prompt templates and parameter constraints:
 
 - **Keepa** (3 tools: 商品搜索、商品详情、价格历史): See `references/keepa.md`
-- **亚马逊前台** (5 tools: 搜索模拟、商品详情、评论、ABA、以图搜图): See `references/amazon-frontend.md`
+- **亚马逊前台** (6 tools: 搜索模拟、商品详情、评论、评论(美国站)、ABA、以图搜图): See `references/amazon-frontend.md`
 - **Sif数据分析工具** (4 tools: ASIN关键词、流量来源、竞品数量): See `references/sif.md`
 - **卖家精灵** (2 tools: 选产品、查竞品): See `references/seller-sprite.md`
-- **极目系列** (3 tools: 细分市场评论、市场信息、产品挖掘): See `references/jimu.md`
+- **极目系列** (5 tools: 细分市场评论、市场信息、产品挖掘、产品挖掘(ASIN)、细分市场洞察): See `references/jimu.md`
 - **谷歌趋势** (2 tools: 时下流行、关键词趋势): See `references/google-trends.md`
 - **实时与全网检索** (1 tool: 网页检索): See `references/web-search.md`
 - **TikTok电商数据助手** (2 tools: 新品榜、商品搜索): See `references/tiktok.md`
 - **Walmart前台** (1 tool: 商品列表): See `references/walmart.md`
 - **eBay前台** (1 tool: 商品列表): See `references/ebay.md`
 - **店雷达/1688** (2 tools: 商品榜单、选品库): See `references/1688.md`
-- **专利检索** (7 tools: 外观专利、版权、商标、发明专利、政策合规): See `references/patent.md`
-- **AI工具** (4 tools: 主图相似度分组、主图分析、标题分词、AI绘图): See `references/ai-tools.md`
-- **沙箱** (4 tools: 智能数据查询、Excel分析、Python沙箱、Excel处理): See `references/sandbox.md`
+- **专利检索** (21 tools: 专利图像检索、外观专利检测、版权、图形商标、文本商标、发明专利、政策合规、简单著录项、著录项目、权利要求、权利要求翻译、摘要翻译、说明书、说明书翻译、法律状态、PDF全文、专利引用、专利被引用、专利家族、全文附图、摘要附图): See `references/patent.md`
+- **AI工具** (5 tools: 主图相似度分组、主图分析、标题分词、AI绘图、图片识别): See `references/ai-tools.md`
+- **沙箱** (5 tools: 智能数据查询、Excel分析、Python沙箱、Excel处理、分析PDF文件): See `references/sandbox.md`
 
 ## Examples
 
