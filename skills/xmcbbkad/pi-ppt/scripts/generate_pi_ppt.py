@@ -1,38 +1,37 @@
 import argparse
 import os
 import time
-import uuid
 from typing import Any, Dict, Tuple, List
 import hashlib
 import json
 import requests
 
 
-#GENERATION_URL = "https://alpha-pi.deepvinci.tech/api/v1/integration/document/generation"
-#GET_STATUS_URL = "https://alpha-pi.deepvinci.tech/api/v1/integration/document/status"
-#UPLOAD_FILE_URL = "https://alpha-pi.deepvinci.tech/api/v1/integration/file/upload"
-GENERATION_URL = "https://co-pi.deepvinci.tech/api/v1/integration/document/generation"
-GET_STATUS_URL = "https://co-pi.deepvinci.tech/api/v1/integration/document/status"
-UPLOAD_FILE_URL = "https://co-pi.deepvinci.tech/api/v1/integration/file/upload"
+PI_PPT_BASE_URL = os.getenv("PIPPT_BASE_URL", "")
+if not PI_PPT_BASE_URL:
+    raise ValueError("PIPPT_BASE_URL must be set in the environment.")
+GENERATION_URL = f"{PI_PPT_BASE_URL}/api/v1/integration/document/generation"
+GET_STATUS_URL = f"{PI_PPT_BASE_URL}/api/v1/integration/document/status"
+UPLOAD_FILE_URL = f"{PI_PPT_BASE_URL}/api/v1/integration/file/upload"
 
 def generate_signature_payload(app_id: str, app_secret: str, **payload: dict) -> Tuple[str, dict]:
     """
-    生成请求签名，基于时间戳和提供的参数
+    Generate a signed request payload based on timestamp and input parameters.
 
     Args:
-        timestamp: 请求的时间戳
-        parameters: 需要包含在签名中的键值对参数
+        timestamp: Request timestamp.
+        parameters: Key-value parameters that should be included in the signature.
 
     Returns:
-        携带签名的请求参数
+        Request payload with signature fields.
     """
 
     timestamp = int(time.time())
 
-    # 按字母顺序排序请求参数key
+    # Sort request parameter keys alphabetically.
     keys: List[str] = sorted(payload.keys())
 
-    # 将非空参数格式化为"key=value"格式并按排序后的顺序组合
+    # Convert non-empty parameters into "key=value" format in sorted order.
     formatted_params: List[str] = []
     for key in keys:
         value = payload[key]
@@ -43,13 +42,13 @@ def generate_signature_payload(app_id: str, app_secret: str, **payload: dict) ->
         elif value is not None:
             formatted_params.append(f"{key}={str(value)}")
 
-    # 用冒号连接所有参数
+    # Join all parameters with colons.
     params_string: str = ":".join(formatted_params)
 
-    # 构建签名字符串：app_secret:timestamp:params:app_secret
+    # Build signature base string: app_secret:timestamp:params:app_secret
     signature_base = f"{app_secret}:{timestamp}:{params_string}:{app_secret}"
 
-    # 计算SHA1哈希
+    # Compute SHA1 hash.
     hash_result = hashlib.sha1(signature_base.encode("utf-8")).hexdigest()
 
     return {"app_id": app_id, "timestamp": timestamp, "sign": hash_result, **payload}
@@ -57,8 +56,10 @@ def generate_signature_payload(app_id: str, app_secret: str, **payload: dict) ->
 
 def upload_file(app_id: str, app_secret: str, file_path: str) -> Dict[str, Any]:
     """
-    上传本地文件。接口要求 file 为 multipart 中的文件字段（FILE），不能放在 JSON body 里。
-    签名字段（app_id、timestamp、sign、name 等）放在 form data，与 files['file'] 一起提交。
+    Upload a local file.
+    The API requires "file" to be sent as a multipart file field (FILE), not in JSON body.
+    Signature fields (app_id, timestamp, sign, name, etc.) are sent in form data
+    together with files["file"].
     """
     if not os.path.isfile(file_path):
         raise FileNotFoundError(file_path)
@@ -67,7 +68,8 @@ def upload_file(app_id: str, app_secret: str, file_path: str) -> Dict[str, Any]:
     payload = {"name": file_name}
     payload_with_sign = generate_signature_payload(app_id, app_secret, **payload)
 
-    # multipart/form-data：所有可序列化字段走 data，二进制走 files（字段名一般为 file）
+    # In multipart/form-data, serializable fields go to data,
+    # while binary content goes to files (field name is usually "file").
     data: Dict[str, str] = {}
     for k, v in payload_with_sign.items():
         if isinstance(v, bool):
@@ -95,10 +97,10 @@ def create_document(app_id: str, app_secret: str, content: str, cards: int = 8, 
         raise ValueError("content must be a non-empty string.")
     if not isinstance(cards, int) or cards <= 0:
         raise ValueError("cards must be a positive integer.")
-    if language not in {"cn", "zh", "en"}:
-        raise ValueError("language must be one of 'zh', 'cn', or 'en'.")
+    if language not in {"zh", "en"}:
+        raise ValueError("language must be one of 'zh', 'en'.")
 
-    resource_id = f"draft-{uuid.uuid4().hex[:12]}"
+    resource_id = f"draft-{time.time()}"
 
     payload = {
         "resource_id": resource_id,
@@ -106,7 +108,9 @@ def create_document(app_id: str, app_secret: str, content: str, cards: int = 8, 
         "content": content.strip(),
         "cards": cards,
         "language": language,
-        "outline_type": "aippt"
+        "outline_type": "aippt",
+        "export":False,
+        "inputs_type": "skill"
     }
     if attachment_id:
         payload["attachment_id"] = attachment_id
@@ -146,19 +150,20 @@ def get_status(app_id: str, app_secret: str, resource_id: str) -> Dict[str, Any]
     response.raise_for_status()
     response_json = response.json()
 
-    data = response_json.get("data")
-    if not isinstance(data, dict):
-        raise ValueError(f"Status API returned unexpected format: {response_json}")
+    return response_json
+    #data = response_json.get("data")
+    #if not isinstance(data, dict):
+    #    raise ValueError(f"Status API returned unexpected format: {response_json}")
 
-    status = data.get("status")
-    if status not in {"running", "fail", "done"}:
-        raise ValueError(f"Unknown status value: {status}, raw response: {response_json}")
+    #status = data.get("status")
+    #if status not in {"running", "fail", "done"}:
+    #    raise ValueError(f"Unknown status value: {status}, raw response: {response_json}")
 
-    return {
-        "resource_id": data.get("resource_id"),
-        "status": status,
-        "url": data.get("url"),
-    }
+    #return {
+    #    "resource_id": data.get("resource_id"),
+    #    "status": status,
+    #    "url": data.get("url"),
+    #}
 
 def generate_pi_ppt(
     app_id: str,
@@ -171,10 +176,10 @@ def generate_pi_ppt(
     poll_interval_s: int = 15,
 ) -> Dict[str, Any]:
     """
-    完整流程：
-    1) 若提供 file_path，调用 upload_file 上传文件
-    2) 调用 create_document 触发任务（上传文档时不传 cards）
-    3) 调用 get_status 轮询，直到 done 返回 url
+    Full flow:
+    1) If file_path is provided, call upload_file to upload the file.
+    2) Call create_document to start generation (do not pass cards for uploaded documents).
+    3) Poll with get_status until status is done and URL is returned.
     """
 
     attachment_id = None
@@ -200,44 +205,43 @@ def generate_pi_ppt(
         raise ValueError(f"Creation API did not return a usable resource_id: {create_result}")
 
     deadline = time.time() + timeout_s
-    last_status: Dict[str, Any] = {}
     while time.time() < deadline:
         status_result = get_status(app_id, app_secret, resource_id)
-        last_status = status_result
-        status = status_result.get("status")
-
+        #print(status_result)
+        status = status_result.get("data", {}).get("status", "")
         if status == "done":
-            url = status_result.get("url")
+            url = ""
+            if status_result.get("data", {}).get("document_id", ""):
+                url = "{}/docs/{}".format(PI_PPT_BASE_URL, status_result.get("data", {}).get("document_id", ""))
+            else:
+                url = status_result.get("data", {}).get("url", "")
+            
             if not url:
                 raise ValueError(f"status is 'done' but no url was returned: {status_result}")
             return {
-                "name": "generate_pi_ppt_2",
                 "resource_id": resource_id,
-                "status": "done",
+                "status": "ppt generation success",
                 "url": url,
                 "create_result": create_result,
             }
         elif status == "running":
             print(f"PPT generation is running, please wait... resource_id={resource_id}")
-
         elif status == "fail":
             raise RuntimeError(f"PPT generation failed: {status_result}")
 
         time.sleep(poll_interval_s)
 
     raise TimeoutError(
-        f"Polling timed out after {timeout_s}s, resource_id={resource_id}, last_status={last_status}"
+        f"Polling timed out after {timeout_s}s, resource_id={resource_id}, status={status}"
     )
 
 def parse_args():
     SUPPORTED_EXTS = {".doc", ".docx", ".txt", ".md", ".pdf", ".pptx", ".ppt"}
-    parser = argparse.ArgumentParser(description="使用 PI 服务生成 PPT")
-    parser.add_argument("--pippt_app_id", required=True, help="PI 平台分配的 app_id；不传则读取环境变量 PIPPT_APP_ID")
-    parser.add_argument("--pippt_app_secret", required=True, help="PI 平台分配的 app_secret；不传则读取环境变量 PIPPT_APP_SECRET")
-    parser.add_argument("--content", required=True, help="主题和描述，例如：'生成一个关于中国GPU厂商介绍的PPT，商务严肃风格'")
-    parser.add_argument("--language", default="zh", choices=["zh", "cn", "en"], help="PPT语言，'zh'/'cn'为中文，'en'为英文，默认为'zh'")
-    parser.add_argument("--cards", type=int, default=8, help="期望的PPT页数，默认为8。上传文档时此参数被忽略")
-    parser.add_argument("--file", default=None, help="要上传的文档路径，支持 .doc/.docx/.txt/.md/.pdf/.pptx/.ppt")
+    parser = argparse.ArgumentParser(description="Generate PPT using the PI service.")
+    parser.add_argument("--content", required=True, help="Topic and description, for example: 'Create a business-style PPT introducing Chinese GPU vendors'.")
+    parser.add_argument("--language", default="zh", choices=["zh", "en"], help="PPT language. 'zh' for Chinese, 'en' for English. Default is 'zh'.")
+    parser.add_argument("--cards", type=int, default=8, help="Expected number of PPT slides. Default is 8. This argument is ignored when uploading a document.")
+    parser.add_argument("--file", default=None, help="Path to the document to upload. Supported formats: .doc/.docx/.txt/.md/.pdf/.pptx/.ppt")
     args = parser.parse_args()
 
     if args.file:
@@ -252,10 +256,14 @@ def parse_args():
 
 def main():
     args = parse_args()
-    print("Starting PPT generation; this usually takes about 2–3 minutes, please wait...")
+    pippt_app_id = os.getenv("PIPPT_APP_ID", "").strip()
+    pippt_app_secret = os.getenv("PIPPT_APP_SECRET", "").strip()
+    if not pippt_app_id or not pippt_app_secret:
+        raise ValueError("PIPPT_APP_ID and PIPPT_APP_SECRET must be set in the environment.")
+    print("Starting PPT generation; this usually takes about 3-6 minutes, please wait...")
     result = generate_pi_ppt(
-        app_id=args.pippt_app_id,
-        app_secret=args.pippt_app_secret,
+        app_id=pippt_app_id,
+        app_secret=pippt_app_secret,
         content=args.content,
         cards=args.cards,
         language=args.language,
@@ -264,7 +272,7 @@ def main():
     url = result.get("url")
     if not url:
         raise ValueError(f"Generation failed: {result}")
-    print(f"PPT generated successfully. Download URL: {url}")
+    print(f"PPT generated successfully. Click the following link to view/edit/download the ppt: \n{url}")
 
 
 if __name__ == "__main__":
