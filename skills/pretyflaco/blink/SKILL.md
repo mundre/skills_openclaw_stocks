@@ -1,7 +1,7 @@
 ---
 name: blink
 description: Bitcoin Lightning wallet for agents — balances, invoices, payments, BTC/USD swaps, QR codes, price conversion, transaction history, and L402 auto-pay client via the Blink API. All output is JSON.
-version: 1.4.6
+version: 1.7.0
 repository: https://github.com/blinkbitcoin/blink-skill
 metadata:
   oa:
@@ -17,14 +17,15 @@ metadata:
     requires:
       env: [BLINK_API_KEY]
       bins: [node]
+    optionalEnv: [BLINK_API_URL, BLINK_WS_URL, BLINK_L402_ROOT_KEY, BLINK_BUDGET_HOURLY_SATS, BLINK_BUDGET_DAILY_SATS, BLINK_L402_ALLOWED_DOMAINS]
     primaryEnv: BLINK_API_KEY
     emoji: '⚡'
     homepage: 'https://github.com/blinkbitcoin/blink-skill'
     security:
       secrets: ['BLINK_API_KEY']
       network: 'outbound HTTPS to api.blink.sv (or BLINK_API_URL override); outbound WSS to ws.blink.sv for subscriptions'
-      filesystem: 'reads ~/.profile, ~/.bashrc, ~/.bash_profile, ~/.zshrc to locate BLINK_API_KEY export (env var checked first); writes temporary QR PNGs to /tmp; writes L402 token cache to ~/.blink/l402-tokens.json'
-      persistence: 'L402 token cache stored at ~/.blink/l402-tokens.json; all other operations are stateless'
+      filesystem: 'reads ~/.profile, ~/.bashrc, ~/.bash_profile, ~/.zshrc to locate BLINK_API_KEY export (env var checked first); writes temporary QR PNGs to /tmp; writes L402 token cache to ~/.blink/l402-tokens.json; writes budget config to ~/.blink/budget.json and spending log to ~/.blink/spending-log.json'
+      persistence: 'L402 token cache at ~/.blink/l402-tokens.json; budget config at ~/.blink/budget.json; spending log at ~/.blink/spending-log.json (auto-pruned, 25h retention)'
       notes: 'Zero npm runtime dependencies. Only Node.js built-in modules used. No global installs required — scripts run standalone via node.'
 ---
 
@@ -864,6 +865,11 @@ Probes a URL for L402 payment requirements without paying. Returns the detected 
 
 **No API key required for discovery.**
 
+Known public L402 endpoints for testing (use specific paths, not root URLs):
+
+- `https://l402.services/geoip/8.8.8.8` — GeoIP lookup, 1 sat, Lightning Labs format
+- `https://www.l402apps.com/api/apis` — L402 API directory, 10 sats, Lightning Labs format
+
 ### Pay for an L402-Gated Resource
 
 ```bash
@@ -972,6 +978,237 @@ Token cache location: `~/.blink/l402-tokens.json`
 }
 ```
 
+## L402 Producer Commands
+
+L402 producer tools let you **protect your own API resources** behind a Lightning paywall. Issue challenges to clients, then verify their payment proofs before granting access.
+
+Two-step workflow:
+
+1. When a client requests a resource, call `blink l402-challenge` to create a signed payment challenge and return it with HTTP 402.
+2. When the client submits a payment token, call `blink l402-verify` to verify the preimage and macaroon signature.
+
+> **Note:** End-to-end round-trip testing (challenge → pay → verify) requires **two separate Blink accounts**. Blink does not allow paying your own invoice (CANT_PAY_SELF). Use a second account or wallet to pay the challenge invoice during testing.
+
+### Create an L402 Challenge
+
+```bash
+blink l402-challenge --amount <sats> [options]
+```
+
+Creates a Lightning invoice via Blink and issues a signed macaroon bound to its payment hash. Returns a ready-to-send `WWW-Authenticate` header.
+
+- `--amount <sats>` — invoice amount in satoshis (required)
+- `--wallet <id>` — Blink BTC wallet ID (auto-resolved if omitted)
+- `--memo <text>` — invoice memo / description
+- `--expiry <seconds>` — macaroon caveat expiry (e.g. `3600` = 1 hour); controls how long the challenge is valid, not the invoice expiry
+- `--resource <id>` — resource identifier caveat (e.g. `/api/v1/data`); returned tokens will only be valid for this exact path
+
+**Requires Write scope on the API key.**
+
+Root key for HMAC signing resolves in this order:
+
+1. `BLINK_L402_ROOT_KEY` env var (64-char hex, 32 bytes)
+2. `~/.blink/l402-root-key` (auto-created on first run)
+
+> **AGENT:** Keep `BLINK_L402_ROOT_KEY` or `~/.blink/l402-root-key` stable across server restarts. A different root key will invalidate all previously issued macaroons.
+
+### Verify an L402 Payment Token
+
+```bash
+blink l402-verify --token <macaroon>:<preimage> [options]
+blink l402-verify --macaroon <b64> --preimage <hex> [options]
+```
+
+Verifies a client-submitted L402 `Authorization` token. Performs three layers of verification:
+
+1. **Preimage check:** `SHA-256(preimage) === payment_hash` — cryptographic proof the invoice was paid
+2. **Signature check:** HMAC-SHA256 of macaroon body — proves the macaroon was issued by this server
+3. **Caveat check:** expiry not exceeded, resource matches if constrained
+
+- `--token <macaroon>:<preimage>` — L402 authorization token (colon-separated, from `Authorization: L402 <token>` header)
+- `--macaroon <b64>` — base64url-encoded macaroon (alternative to `--token`)
+- `--preimage <hex>` — 64-char hex preimage (alternative to `--token`)
+- `--resource <id>` — expected resource identifier to check against the macaroon's resource caveat
+- `--check-api` — additionally query the Blink API to confirm PAID status (belt-and-suspenders)
+
+Exit code `0` when `valid: true`, exit code `1` when `valid: false` or on error.
+
+> **Note:** The `--preimage` value must be a 64-character hex string (32 bytes). Passing a plain string like `fake_preimage` will produce an error explaining the format requirement. For testing rejection, use a valid-format but wrong preimage: 64 zeros (`0000...0000`).
+
+### L402 Producer Output Examples
+
+**l402-challenge:**
+
+```json
+{
+  "header": "L402 macaroon=\"AgEL...\", invoice=\"lnbc100n1...\"",
+  "macaroon": "AgEL...",
+  "invoice": "lnbc100n1...",
+  "paymentHash": "abc123...64hex",
+  "satoshis": 100,
+  "expiresAt": 1735689600,
+  "resource": "/api/v1/data"
+}
+```
+
+Return this to clients as:
+
+```
+HTTP/1.1 402 Payment Required
+WWW-Authenticate: L402 macaroon="AgEL...", invoice="lnbc100n1..."
+```
+
+**l402-verify (valid payment):**
+
+```json
+{
+  "valid": true,
+  "preimageValid": true,
+  "signatureValid": true,
+  "caveatsValid": true,
+  "paymentHash": "abc123...64hex",
+  "resource": "/api/v1/data",
+  "expiresAt": 1735689600,
+  "expired": false,
+  "apiStatus": "NOT_CHECKED"
+}
+```
+
+**l402-verify (invalid — wrong preimage):**
+
+```json
+{
+  "valid": false,
+  "preimageValid": false,
+  "signatureValid": true,
+  "caveatsValid": true,
+  "paymentHash": "abc123...64hex",
+  "resource": null,
+  "expiresAt": null,
+  "expired": false,
+  "apiStatus": "NOT_CHECKED"
+}
+```
+
+## L402 Service Discovery
+
+Find L402-gated APIs that agents can pay for and access. Two directory sources:
+
+- **l402.directory** (default) — curated registry with rich endpoint schemas, pricing, and consumption instructions
+- **402index.io** — broader coverage (50+ services), simpler flat schema
+
+### Search Services
+
+```bash
+blink l402-search                              # all live services from l402.directory
+blink l402-search video                        # keyword search
+blink l402-search --category data              # filter by category
+blink l402-search --status all                 # include offline/new services
+blink l402-search --format minimal             # compact output
+blink l402-search ai --source 402index         # search 402index.io instead
+```
+
+**No API key required** — both directories have free browse APIs.
+
+> **AGENT:** Use `l402-search` to find services before using `l402-pay`. Check pricing in the results before paying.
+
+### Get Service Details
+
+```bash
+blink l402-info <service_id>                   # full details (free, l402.directory)
+blink l402-info <service_id> --report          # paid health report (10 sats via L402)
+blink l402-info <service_id> --report --force  # bypass budget/domain checks
+```
+
+- Without `--report`: free, returns endpoints, pricing, consumption instructions
+- With `--report`: 10 sats, returns uptime percentages, probe history, response times
+- `--report` is subject to budget controls and domain allowlist (domain: `l402.directory`)
+
+### Discovery Output Example
+
+```json
+{
+  "source": "l402.directory",
+  "query": "video",
+  "count": 1,
+  "services": [
+    {
+      "service_id": "71adb942293c89f6",
+      "name": "Hyperdope Video",
+      "description": "Lightning-gated video streaming...",
+      "status": "live",
+      "categories": ["video", "streaming"],
+      "endpoints": [
+        {
+          "url": "https://hyperdope.com/api/l402/videos/{hash}/master.m3u8",
+          "method": "GET",
+          "pricing": { "amount": 10, "currency": "sats", "model": "per-request" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Budget Controls
+
+Prevent runaway spending in autonomous agent workflows with rolling spend limits and domain allowlist.
+
+### Configuration
+
+Env vars take precedence over the config file (`~/.blink/budget.json`):
+
+| Env var | Config file key | Default | Description |
+|---------|----------------|---------|-------------|
+| `BLINK_BUDGET_HOURLY_SATS` | `hourlyLimitSats` | none (unlimited) | Max sats in rolling 1-hour window |
+| `BLINK_BUDGET_DAILY_SATS` | `dailyLimitSats` | none (unlimited) | Max sats in rolling 24-hour window |
+| `BLINK_L402_ALLOWED_DOMAINS` | `allowlist` | none (all allowed) | Comma-separated domains for L402 auto-pay |
+
+If no env vars and no config file exist, no limits are enforced (fully backward compatible).
+
+### Budget Commands
+
+```bash
+blink budget status                              # Show current spend vs limits
+blink budget set --hourly 1000 --daily 5000      # Set spending limits
+blink budget set --off                           # Remove all limits
+blink budget log [--last 10]                     # Show recent spending entries
+blink budget reset                               # Clear spending history
+blink budget allowlist list                      # Show allowed L402 domains
+blink budget allowlist add satring.com           # Add domain to allowlist
+blink budget allowlist remove satring.com        # Remove domain from allowlist
+```
+
+### Budget Status Output Example
+
+```json
+{
+  "enabled": true,
+  "hourlyLimit": 1000,
+  "dailyLimit": 5000,
+  "hourlySpent": 350,
+  "dailySpent": 1200,
+  "hourlyRemaining": 650,
+  "dailyRemaining": 3800,
+  "effectiveRemaining": 650,
+  "allowlist": ["satring.com", "l402.services"],
+  "logEntries": 8
+}
+```
+
+`effectiveRemaining` = min(hourlyRemaining, dailyRemaining) — the actual amount the agent can spend right now.
+
+### How Budget Enforcement Works
+
+- **Checked before every outbound payment:** `pay-invoice`, `pay-lnaddress`, `pay-lnurl`, `l402-pay`
+- **Domain allowlist:** checked for `l402-pay` only — blocks auto-pay to unlisted domains
+- **`--force` bypasses budget:** existing `--force` flag on payment commands skips budget check
+- **`--dry-run` shows budget impact:** dry-run output includes a `budget` field showing remaining budget
+- **Spending recorded after success:** only successful/pending payments are logged
+- **Auto-pruning:** log entries older than 25 hours are removed automatically
+
+> **AGENT:** Before making a payment, check budget status with `blink budget status` to see remaining budget. If budget is exceeded, inform the user and suggest increasing limits with `blink budget set`.
+
 ## Security
 
 ### API Key Handling
@@ -993,10 +1230,13 @@ Token cache location: `~/.blink/l402-tokens.json`
 - **RC file reading:** If `BLINK_API_KEY` is not found in `process.env`, the client scans `~/.profile`, `~/.bashrc`, `~/.bash_profile`, and `~/.zshrc` for a line matching `export BLINK_API_KEY=...`. Only the value of that specific export is extracted — no other data is read from these files. The environment variable is always checked first.
 - **QR PNG generation:** The `qr` command writes temporary PNG files to `/tmp/blink_qr_*.png`. These are standard image files with no embedded metadata beyond the QR content.
 - **L402 token cache:** The `l402-pay` command writes paid tokens to `~/.blink/l402-tokens.json`. This file contains macaroons and preimages for previously-paid L402 services. Use `blink l402-store clear` to remove all cached tokens. Pass `--no-store` to disable caching entirely.
+- **Budget files:** Budget config at `~/.blink/budget.json` and spending log at `~/.blink/spending-log.json`. The spending log is auto-pruned (entries older than 25h removed). Use `blink budget reset` to clear the log.
 
 ### Stateless Design
 
-Most scripts are stateless. The exception is `l402-pay`, which maintains a token cache at `~/.blink/l402-tokens.json` to avoid re-paying for previously-accessed L402 services. Use `--no-store` to run without any persistence.
+Most scripts are stateless. Exceptions:
+- `l402-pay` maintains a token cache at `~/.blink/l402-tokens.json` to avoid re-paying for previously-accessed L402 services. Use `--no-store` to run without any persistence.
+- All payment commands (`pay-invoice`, `pay-lnaddress`, `pay-lnurl`, `l402-pay`) log spending to `~/.blink/spending-log.json` for budget enforcement. This log is auto-pruned and can be cleared with `blink budget reset`.
 
 ### Payment Safety
 
@@ -1012,6 +1252,8 @@ Most scripts are stateless. The exception is `l402-pay`, which maintains a token
 - [payment-operations](references/payment-operations.md): send workflows, BTC vs USD wallet selection, fee probing, and safety guardrails.
 - [invoice-lifecycle](references/invoice-lifecycle.md): invoice creation, two-phase output parsing, monitoring strategies, QR generation, and expiration handling.
 - [swap-operations](references/swap-operations.md): BTC <-> USD internal conversion, quote/execute workflow, rounding behavior, and effective cost formulas.
+- [Blink Agent Playbook](https://dev.blink.sv/api/agent-playbook): Canonical AI agent API reference — order of operations, safety constraints, and verification checklist.
+- [llms.txt](https://dev.blink.sv/llms.txt): Machine-readable discovery metadata for AI agents (endpoints, source URLs, hard rules).
 
 ## Files
 
@@ -1035,3 +1277,10 @@ Most scripts are stateless. The exception is `l402-pay`, which maintains a token
 - `{baseDir}/scripts/l402_discover.js` — Probe a URL for L402 payment requirements (no payment)
 - `{baseDir}/scripts/l402_pay.js` — Auto-pay L402-gated resources via Blink + token caching
 - `{baseDir}/scripts/l402_store.js` — Manage the L402 token cache (~/.blink/l402-tokens.json)
+- `{baseDir}/scripts/_l402_macaroon.js` — Shared macaroon module: encode/decode/sign/verify + root key management
+- `{baseDir}/scripts/l402_challenge_create.js` — Create L402 payment challenges (invoice + signed macaroon)
+- `{baseDir}/scripts/l402_payment_verify.js` — Verify L402 client payment tokens (preimage + HMAC + caveats)
+- `{baseDir}/scripts/l402_search.js` — Search L402 service directories (l402.directory, 402index.io)
+- `{baseDir}/scripts/l402_info.js` — Get full L402 service details + paid health reports
+- `{baseDir}/scripts/_budget.js` — Shared budget module: config resolution, spend log, rolling limits, domain allowlist
+- `{baseDir}/scripts/budget.js` — Budget controls CLI (status, set, log, reset, allowlist)

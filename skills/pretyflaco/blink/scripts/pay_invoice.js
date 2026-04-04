@@ -32,6 +32,9 @@ const {
   MUTATION_TIMEOUT_MS,
 } = require('./_blink_client');
 
+const { checkBudget, recordSpend } = require('./_budget');
+const { decodeBolt11AmountSats } = require('./l402_discover');
+
 const PAY_INVOICE_MUTATION = `
   mutation LnInvoicePaymentSend($input: LnInvoicePaymentInput!) {
     lnInvoicePaymentSend(input: $input) {
@@ -87,9 +90,18 @@ async function main() {
   // if the wallet is completely empty (0 sats). The API will reject if
   // insufficient, but this catches the obvious case early.
   if (!force && walletCurrency === 'BTC' && wallet.balance === 0) {
-    throw new Error(
-      `Insufficient balance: BTC wallet has 0 sats. Use --force to attempt anyway.`,
-    );
+    throw new Error(`Insufficient balance: BTC wallet has 0 sats. Use --force to attempt anyway.`);
+  }
+
+  // ── Budget check ──
+  const invoiceSats = decodeBolt11AmountSats(paymentRequest);
+  if (invoiceSats !== null && !force) {
+    const budgetResult = checkBudget(invoiceSats);
+    if (!budgetResult.allowed) {
+      throw new Error(
+        `Budget exceeded: ${budgetResult.reason} Use --force to override.`,
+      );
+    }
   }
 
   const input = {
@@ -107,6 +119,17 @@ async function main() {
   const result = data.lnInvoicePaymentSend;
 
   if (result.errors && result.errors.length > 0) {
+    const isSelfPay = result.errors.some(
+      (e) =>
+        (e.code && e.code.toString().toUpperCase().includes('CANT_PAY_SELF')) ||
+        (e.message && e.message.toLowerCase().includes('self')),
+    );
+    if (isSelfPay) {
+      throw new Error(
+        'Cannot pay your own invoice (CANT_PAY_SELF). ' +
+          'L402 round-trip testing requires a second Blink account or a separate wallet.',
+      );
+    }
     const errMsg = result.errors.map((e) => `${e.message}${e.code ? ` [${e.code}]` : ''}`).join(', ');
     throw new Error(`Payment failed: ${errMsg}`);
   }
@@ -124,8 +147,14 @@ async function main() {
 
   if (result.status === 'SUCCESS') {
     console.error('Payment successful!');
+    if (invoiceSats !== null) {
+      try { recordSpend({ sats: invoiceSats, command: 'pay-invoice', domain: null }); } catch { /* non-fatal */ }
+    }
   } else if (result.status === 'PENDING') {
     console.error('Payment is pending...');
+    if (invoiceSats !== null) {
+      try { recordSpend({ sats: invoiceSats, command: 'pay-invoice', domain: null }); } catch { /* non-fatal */ }
+    }
   } else if (result.status === 'ALREADY_PAID') {
     console.error('Invoice was already paid.');
   } else {
