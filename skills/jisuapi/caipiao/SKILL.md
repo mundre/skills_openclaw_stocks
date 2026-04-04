@@ -1,6 +1,6 @@
 ---
-name: jisu-caipiao
-description: 使用极速数据彩票开奖 API 查询彩票分类、最新开奖结果、历史开奖信息以及给定号码是否中奖。
+name: "Lottery Drawing Inquiry - 彩票开奖查询"
+description: 查彩票分类、最新与历史开奖、号码是否中奖等。当用户说：双色球最新开奖号码？大乐透上期结果？或类似彩票开奖问题时，使用本技能。
 metadata: { "openclaw": { "emoji": "🎟️", "requires": { "bins": ["python3"], "env": ["JISU_API_KEY"] }, "primaryEnv": "JISU_API_KEY" } }
 ---
 
@@ -18,7 +18,7 @@ metadata: { "openclaw": { "emoji": "🎟️", "requires": { "bins": ["python3"],
 ## 前置配置：获取 API Key
 
 1. 前往 [极速数据官网](https://www.jisuapi.com/) 注册账号
-2. 进入 [对应接口页面](https://www.jisuapi.com/api/caipiao/) 页面，点击「申请数据」
+2. 进入 [彩票开奖 API](https://www.jisuapi.com/api/caipiao/) 页面，点击「申请数据」
 3. 在会员中心获取 **AppKey**
 4. 配置 Key：
 

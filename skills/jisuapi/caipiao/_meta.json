@@ -3,11 +3,16 @@
   "slug": "caipiao",
   "displayName": "Lottery Drawing Inquiry - 彩票开奖查询",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1774585609775,
-    "commit": "https://github.com/openclaw/skills/commit/f37366b81bef5de1e5df0f562c96609947ccb2af"
+    "version": "1.0.5",
+    "publishedAt": 1775209440896,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1774585609775,
+      "commit": "https://github.com/openclaw/skills/commit/f37366b81bef5de1e5df0f562c96609947ccb2af"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1773728820722,
