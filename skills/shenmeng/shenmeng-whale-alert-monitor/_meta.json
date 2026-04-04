@@ -1,13 +1,18 @@
 {
   "owner": "shenmeng",
   "slug": "shenmeng-whale-alert-monitor",
-  "displayName": "Whale Alert Monitor 鲸鱼钱包监控",
+  "displayName": "Whale Alert Monitor 大户监控",
   "latest": {
-    "version": "2.1.0",
-    "publishedAt": 1774976980779,
-    "commit": "https://github.com/openclaw/skills/commit/30668f5ac736ec4e90c43eb170aba3617009d0c4"
+    "version": "1.0.0-beta.2",
+    "publishedAt": 1775325963557,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.1.0",
+      "publishedAt": 1774976980779,
+      "commit": "https://github.com/openclaw/skills/commit/30668f5ac736ec4e90c43eb170aba3617009d0c4"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1774948153791,
