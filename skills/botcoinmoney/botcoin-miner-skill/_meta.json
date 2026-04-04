@@ -3,11 +3,16 @@
   "slug": "botcoin-miner-skill",
   "displayName": "Botcoin Miner",
   "latest": {
-    "version": "0.1.4",
-    "publishedAt": 1774424775096,
-    "commit": "https://github.com/openclaw/skills/commit/0dd346a43f508c05d02ccffa472c219be89cfe7a"
+    "version": "0.1.5",
+    "publishedAt": 1774921315926,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.4",
+      "publishedAt": 1774424775096,
+      "commit": "https://github.com/openclaw/skills/commit/0dd346a43f508c05d02ccffa472c219be89cfe7a"
+    },
     {
       "version": "0.1.3",
       "publishedAt": 1773970304823,
