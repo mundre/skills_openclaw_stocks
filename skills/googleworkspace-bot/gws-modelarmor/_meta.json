@@ -3,11 +3,16 @@
   "slug": "gws-modelarmor",
   "displayName": "Gws Modelarmor",
   "latest": {
-    "version": "1.0.10",
-    "publishedAt": 1774551018595,
-    "commit": "https://github.com/openclaw/skills/commit/5dbbc66318c181b07970a134683510f50852ac58"
+    "version": "1.0.12",
+    "publishedAt": 1774982064687,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.10",
+      "publishedAt": 1774551018595,
+      "commit": "https://github.com/openclaw/skills/commit/5dbbc66318c181b07970a134683510f50852ac58"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1774389809592,
