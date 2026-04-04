@@ -11,10 +11,14 @@
  * Value for createToken uses API output creationFeeWei; override with --value=wei.
  */
 
+import { spawnSync } from 'node:child_process';
 import { createWalletClient, http, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { bsc } from 'viem/chains';
-import { runCreateTokenApi } from './create-token-api.ts';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TOKEN_MANAGER2_BSC = '0x5c952063c7fc8610FFDB798152D69F0B9550762b' as const;
 const ABI = parseAbi([
@@ -44,7 +48,31 @@ async function main() {
     process.exit(1);
   }
 
-  const data = await runCreateTokenApi();
+  const apiScript = path.join(__dirname, 'create-token-api.ts');
+  const args = process.argv.slice(2);
+  const child = spawnSync('npx', ['tsx', apiScript, ...args], {
+    env: process.env,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'inherit'],
+  });
+
+  if (child.status !== 0) {
+    process.exit(child.status ?? 1);
+  }
+
+  const out = child.stdout?.trim();
+  if (!out) {
+    console.error('create-token-api produced no output');
+    process.exit(1);
+  }
+
+  let data: { createArg: string; signature: string; creationFeeWei?: string };
+  try {
+    data = JSON.parse(out) as typeof data;
+  } catch {
+    console.error('create-token-api output is not valid JSON');
+    process.exit(1);
+  }
 
   const createArgHex = toHex(data.createArg);
   const signatureHex = toHex(data.signature);
