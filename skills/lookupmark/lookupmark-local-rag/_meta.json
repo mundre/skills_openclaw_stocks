@@ -1,0 +1,11 @@
+{
+  "owner": "lookupmark",
+  "slug": "lookupmark-local-rag",
+  "displayName": "LookupMark Local RAG",
+  "latest": {
+    "version": "1.5.0",
+    "publishedAt": 1775316407846,
+    "commit": null
+  },
+  "history": []
+}
