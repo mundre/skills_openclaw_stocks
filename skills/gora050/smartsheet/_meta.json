@@ -3,9 +3,15 @@
   "slug": "smartsheet",
   "displayName": "Smartsheet",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772895741061,
-    "commit": "https://github.com/openclaw/skills/commit/d750c05b4a5918185634ad20b2b1f58e08c044e9"
+    "version": "1.0.2",
+    "publishedAt": 1775162676760,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772895741061,
+      "commit": "https://github.com/openclaw/skills/commit/d750c05b4a5918185634ad20b2b1f58e08c044e9"
+    }
+  ]
 }
