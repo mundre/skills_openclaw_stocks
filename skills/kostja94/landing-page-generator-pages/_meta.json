@@ -3,9 +3,15 @@
   "slug": "landing-page-generator-pages",
   "displayName": "landing-page-generator",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1774241446304,
-    "commit": "https://github.com/openclaw/skills/commit/e80639e884e293db88a1cd06bc220268c1490ab0"
+    "version": "1.4.0",
+    "publishedAt": 1774971297772,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1774241446304,
+      "commit": "https://github.com/openclaw/skills/commit/e80639e884e293db88a1cd06bc220268c1490ab0"
+    }
+  ]
 }
