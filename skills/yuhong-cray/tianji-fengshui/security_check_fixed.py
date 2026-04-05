@@ -162,19 +162,19 @@ def verify_global_config_usage():
         # 动态导入，避免循环依赖
         import importlib.util
         spec = importlib.util.spec_from_file_location(
-            "doubao_vision_global", 
-            Path(__file__).parent / "doubao_vision_global.py"
+            "doubao_vision_public_fixed", 
+            Path(__file__).parent / "doubao_vision_public_fixed.py"
         )
         if spec is None:
-            print("❌ 无法导入 doubao_vision_global 模块")
+            print("❌ 无法导入 doubao_vision_public_fixed 模块")
             return False
             
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        DoubaoVisionGlobalAnalyzer = module.DoubaoVisionGlobalAnalyzer
+        DoubaoVisionPublicAnalyzer = module.DoubaoVisionPublicAnalyzer
         
-        print("1. 初始化全局配置分析器...")
-        analyzer = DoubaoVisionGlobalAnalyzer()
+        print("1. 初始化公共API配置分析器...")
+        analyzer = DoubaoVisionPublicAnalyzer()
         
         print("2. 检查API配置...")
         api_config = analyzer.api_config

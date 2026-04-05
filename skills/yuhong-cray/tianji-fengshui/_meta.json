@@ -1,13 +1,18 @@
 {
   "owner": "yuhong-cray",
   "slug": "tianji-fengshui",
-  "displayName": "Tianji Fengshui",
+  "displayName": "风水大师助手2.7.0",
   "latest": {
-    "version": "2.5.0",
-    "publishedAt": 1774681567969,
-    "commit": "https://github.com/openclaw/skills/commit/6d42183261e907e5c9687ea561a511f11fa9e2c6"
+    "version": "2.7.0",
+    "publishedAt": 1775179002812,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.5.0",
+      "publishedAt": 1774681567969,
+      "commit": "https://github.com/openclaw/skills/commit/6d42183261e907e5c9687ea561a511f11fa9e2c6"
+    },
     {
       "version": "1.8.0",
       "publishedAt": 1774439988138,
