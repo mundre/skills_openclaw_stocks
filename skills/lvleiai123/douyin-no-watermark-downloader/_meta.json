@@ -3,11 +3,16 @@
   "slug": "douyin-no-watermark-downloader",
   "displayName": "无水印抖音视频下载器",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773829532468,
-    "commit": "https://github.com/openclaw/skills/commit/8f008d732d3eb4e242b30d3a26fba8bcc6c7b8c9"
+    "version": "1.0.6",
+    "publishedAt": 1775013702599,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773829532468,
+      "commit": "https://github.com/openclaw/skills/commit/8f008d732d3eb4e242b30d3a26fba8bcc6c7b8c9"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1773758669485,

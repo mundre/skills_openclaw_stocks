@@ -4,6 +4,7 @@ import time
 import logging
 import os
 from datetime import datetime
+import re
 
 # 配置日志
 logging.basicConfig(level=logging.WARNING)
@@ -104,7 +105,7 @@ def download_video_from_url(video_url: str, save_dir: str = None) -> str:
         raise
 
 
-import re
+
 
 
 def url_info_extra(url_info: str) -> str:
@@ -134,11 +135,11 @@ if __name__ == "__main__":
 ====================
 
 用法:
-  python douyin_nowm.py "抖音链接/分享文本/modal_id"
+  python douyin-no-watermark-downloader.py "抖音分享链接/分享文本"
 
 示例:
-  python douyin_nowm.py "https://v.douyin.com/XIkH2hGDHnw/"
-  python douyin_nowm.py "复制打开抖音，看看【xxx】https://v.douyin.com/1A4yExNduOU/"
+  python douyin-no-watermark-downloader.py "https://v.douyin.com/XIkH2hGDHnw/"
+  python douyin-no-watermark-downloader.py "复制打开抖音，看看【xxx】https://v.douyin.com/1A4yExNduOU/"
 """)
         sys.exit(1)
 
