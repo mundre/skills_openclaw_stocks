@@ -1,11 +1,28 @@
 ---
 name: volcengine-ai-mediakit
-description: "火山引擎 AI MediaKit 音视频处理 Skill。当用户需要对音视频进行加工处理时触发。处理完成后自动查询任务状态并返回产物播放链接。核心能力分为三类：1. 视频处理：多片段拼接、片段裁剪、画面翻转、视频播放调速、音频播放调速、图片合成视频、音画合成、提取音轨、音频混音; 2. 音频处理：人声/伴奏分离、音频降噪; 3. 视频增强：综合画质修复、AI 超分、智能插帧。触发关键词：视频拼接、视频裁剪、视频剪辑、视频变速、视频翻转、图片转视频、音视频合成、提取音频、混音、人声分离、背景音分离、音频降噪、去噪、AI超分、超分辨率、画质修复、画质增强、智能补帧、视频插帧、提高帧率。不适用场景：纯文本生成、实时流媒体处理、视频内容理解/分析、AI 生成式视频创作（无源素材输入）。"
-version: 1.0.1
+description: "火山引擎 AI MediaKit 音视频处理 Skill。当用户需要对音视频进行加工处理时触发。处理完成后自动查询任务状态并返回产物播放链接。核心能力分为七类：1. 视频处理：多片段拼接、片段裁剪、画面翻转、视频播放调速、音频播放调速、图片合成视频、音画合成、提取音轨、音频混音; 2. 音频处理：人声/伴奏分离、音频降噪; 3. 视频增强：综合画质修复、AI 超分、智能插帧; 4. 字幕处理：语音转字幕(ASR)、画面文字提取(OCR)、硬字幕擦除、添加内嵌字幕; 5. 智能分析：智能场景切分、人像抠图、绿幕抠图; 6. AI 创作：AI 视频翻译(声影智译)、短剧高光剪辑、AI 剧本还原、AI 解说视频生成、AI 漫剧转绘。 7. 媒资查询：获取媒资信息及播放地址（支持批量）。触发关键词：视频拼接、视频裁剪、视频剪辑、视频变速、视频翻转、图片转视频、音视频合成、提取音频、混音、人声分离、背景音分离、音频降噪、去噪、AI超分、超分辨率、画质修复、画质增强、智能补帧、视频插帧、提高帧率、语音转字幕、语音识别、ASR、OCR、文字提取、字幕擦除、去字幕、添加字幕、内嵌字幕、SRT字幕、智能切片、场景切分、镜头分割、人像抠图、抠人像、绿幕抠图、抠绿幕、视频抠图、视频翻译、AI翻译、声影智译、字幕翻译、语音翻译、面容翻译、多语言翻译、视频本地化、高光剪辑、高光提取、短剧剪辑、集锦、宣传片、剧本还原、AI剧本、视频转剧本、剧情提取、解说视频、AI解说、二创解说、短剧解说、漫剧转绘、漫画风格、3D卡通、视频转绘、风格转换、获取媒资信息、查询视频信息、获取播放地址、批量查询Vid。不适用场景：纯文本生成、实时流媒体处理、AI 生成式视频创作（无源素材输入）。"
+version: 1.0.2
 env:
-  - VOLCENGINE_ACCESS_KEY
-  - VOLCENGINE_SECRET_KEY
-  - VOD_SPACE_NAME
+  - name: VOLCENGINE_ACCESS_KEY
+    description: 火山引擎 AccessKey
+    required: true
+    secret: true
+    default: ''
+  - name: VOLCENGINE_SECRET_KEY
+    description: 火山引擎 SecretKey
+    required: true
+    secret: true
+    default: ''
+  - name: VOD_SPACE_NAME
+    description: 点播空间名称
+    required: true
+    secret: false
+    default: ''
+  - name: REQUEST_HOST
+    description: 请求域名
+    required: false
+    secret: false
+    default: ''
 ---
 
 # Volcengine AI MediaKit
@@ -19,7 +36,7 @@ env:
   - `VOLCENGINE_ACCESS_KEY` — 火山引擎 Access Key
   - `VOLCENGINE_SECRET_KEY` — 火山引擎 Secret Key
   - `VOD_SPACE_NAME` — VOD 空间名称
-- **依赖**：首次运行脚本会自动检测并安装 `volcengine`、`python-dotenv`（无需手动操作）
+- **依赖**：脚本依赖 `python-dotenv` `requests` `urllib`
 
 ---
 
@@ -32,6 +49,16 @@ env:
 
 `@` 前缀表示从文件读取 JSON 内容，文件路径相对于当前工作目录。
 
+---
+
+## 结果交付规则
+- 提交异步任务成功后会返回异步任务id，字段为 `VCCreativeId` 或 `TaskId`，在给用户交付最终产物时，**必须**包含异步任务id
+- 在展示最终产物链接时，**禁止**随意修改链接内容
+- **优先**将产物链接提供给用户
+---
+
+## 注意
+当用户询问当前 Skill 有什么能力时，直接返回 `references/00-detail.md` 的内容，并停止后续流程，等待用户输入。
 ---
 
 ## 工作流程
@@ -62,23 +89,36 @@ python <SKILL_DIR>/scripts/upload_media.py "<local_file_path_or_http_url>" [spac
 
 根据用户需求，按以下决策树选择脚本：
 
-```
-用户意图                                    → 脚本
-─────────────────────────────────────────────────────
-多个视频/音频合成一个（顺序拼接）               → stitching
-截取视频/音频的某个时间片段                    → clipping
-加速/慢放/变速                               → speedup
-镜像/上下翻转/左右翻转                        → flip
-多张图片串联生成视频                          → image_to_video
-替换/叠加视频的背景音乐                       → compile
-只要视频里的音频轨                            → extract_audio
-多条音频同时叠加播放（混音）                   → mix_audios
-分离人声和伴奏/背景音                          → voice_separation
-去除环境噪音/电流杂音/风噪                     → noise_reduction
-模糊/低画质视频修复（压缩伪影/噪点/划痕）       → quality_enhance
-低分辨率视频提升（如 720P→1080P）               → super_resolution
-低帧率视频插帧提升流畅度（如 30fps→60fps）      → interlacing
-```
+| 用户意图 | 脚本 |
+|---|---|
+| 多个视频/音频合成一个（顺序拼接） | `stitching` |
+| 截取视频/音频的某个时间片段 | `clipping` |
+| 加速/慢放/变速 | `speedup` |
+| 镜像/上下翻转/左右翻转 | `flip` |
+| 多张图片串联生成视频 | `image_to_video` |
+| 替换/叠加视频的背景音乐 | `compile` |
+| 只要视频里的音频轨 | `extract_audio` |
+| 多条音频同时叠加播放（混音） | `mix_audios` |
+| 分离人声和伴奏/背景音 | `voice_separation` |
+| 去除环境噪音/电流杂音/风噪 | `noise_reduction` |
+| 模糊/低画质视频修复（压缩伪影/噪点/划痕） | `quality_enhance` |
+| 低分辨率视频提升（如 720P→1080P） | `super_resolution` |
+| 低帧率视频插帧提升流畅度（如 30fps→60fps） | `interlacing` |
+| 语音识别/ASR/提取视频中的文字对白 | `asr_speech_to_text` |
+| OCR 文字提取/识别视频中的屏幕文字 | `ocr_text_extract` |
+| 擦除视频硬字幕 | `subtitle_removal` |
+| 给视频添加/嵌入字幕（烧录字幕） | `add_subtitle` |
+| 视频场景分割/智能切片 | `intelligent_slicing` |
+| 人像抠图/人像分割 | `portrait_matting` |
+| 绿幕抠像/绿屏抠像 | `green_screen` |
+| AI 漫剧转绘（漫画风/3D卡通风格） | `comic_style` |
+| 短剧高光剪辑/精彩片段提取 | `highlight` |
+| AI 视频翻译（字幕/语音/面容翻译） | `video_translation` |
+| 查询翻译项目状态/重启翻译轮询 | `poll_translation` |
+| 查询翻译项目列表 | `list_translation` |
+| AI 解说视频生成（短剧解说/二创） | `drama_recap` |
+| AI 剧本还原（视频转结构化剧本） | `drama_script` |
+| 查询媒资信息（Vid 详情+播放地址） | `get_media_info` |
 
 ### 3) 构造参数并执行
 
@@ -106,12 +146,36 @@ python <SKILL_DIR>/scripts/upload_media.py "<local_file_path_or_http_url>" [spac
 | `super_resolution.py '<json>'` | AI 超分辨率 | [references/13-super-resolution.md](references/13-super-resolution.md) |
 | `interlacing.py '<json>'` | 智能补帧 | [references/14-interlacing.md](references/14-interlacing.md) |
 
+#### AI 内容分析类
+
+| 脚本 | 用途 | 详细参数 |
+|------|------|---------|
+| `asr_speech_to_text.py '<json>'` | 语音识别 ASR | [references/15-asr-speech-to-text.md](references/15-asr-speech-to-text.md) |
+| `ocr_text_extract.py '<json>'` | OCR 文字提取 | [references/16-ocr-text-extract.md](references/16-ocr-text-extract.md) |
+| `subtitle_removal.py '<json>'` | 硬字幕擦除 | [references/17-subtitle-removal.md](references/17-subtitle-removal.md) |
+| `add_subtitle.py '<json>'` | 添加嵌入字幕 | [references/18-add-subtitle.md](references/18-add-subtitle.md) |
+| `intelligent_slicing.py '<json>'` | 智能场景分割 | [references/19-intelligent-slicing.md](references/19-intelligent-slicing.md) |
+| `portrait_matting.py '<json>'` | 人像抠图 | [references/20-portrait-matting.md](references/20-portrait-matting.md) |
+| `green_screen.py '<json>'` | 绿幕抠像 | [references/21-green-screen.md](references/21-green-screen.md) |
+| `highlight.py '<json>'` | 短剧高光剪辑 | [references/23-highlight.md](references/23-highlight.md) |
+| `get_media_info.py '<json>'` | 媒资信息查询 | [references/27-get-media-info.md](references/27-get-media-info.md) |
+
+#### AI 内容生成类
+
+| 脚本 | 用途 | 详细参数 |
+|------|------|---------|
+| `comic_style.py '<json>'` | AI 漫剧转绘 | [references/22-comic-style.md](references/22-comic-style.md) |
+| `video_translation.py '<json>'` | AI 视频翻译 | [references/24-video-translation.md](references/24-video-translation.md) |
+| `drama_recap.py '<json>'` | AI 解说视频生成 | [references/25-drama-recap.md](references/25-drama-recap.md) |
+| `drama_script.py '<json>'` | AI 剧本还原 | [references/26-drama-script.md](references/26-drama-script.md) |
+
 #### 重启轮询
 
 | 脚本 | 用途 |
 |------|------|
-| `poll_vcreative.py <VCreativeId>` | 重启编辑类任务轮询 |
+| `poll_vcreative.py <task_id>` | 重启编辑类任务轮询 |
 | `poll_media.py <task_type> <RunId>` | 重启媒体处理类任务轮询 |
+| `poll_translation.py <ProjectId>` | 重启翻译任务轮询 |
 
 超时响应中的 `resume_hint.command` 字段包含可直接复制执行的重启命令。
 
@@ -136,11 +200,35 @@ python <SKILL_DIR>/scripts/voice_separation.py '{"type":"Vid","video":"v0310abc"
 # 超分到 1080P
 python <SKILL_DIR>/scripts/super_resolution.py '{"type":"Vid","video":"v0310xyz","Res":"1080p"}'
 
+# ASR 语音识别
+python <SKILL_DIR>/scripts/asr_speech_to_text.py '{"type":"Vid","video":"v0310abc"}'
+
+# 短剧高光剪辑
+python <SKILL_DIR>/scripts/highlight.py '{"Vids":["v023xxx","v024xxx"]}'
+
+# AI 视频翻译（中文→英文）
+python <SKILL_DIR>/scripts/video_translation.py '{"Vid":"v0d225gxxx","SourceLanguage":"zh","TargetLanguage":"en"}'
+
+# AI 漫剧转绘（漫画风 720p）
+python <SKILL_DIR>/scripts/comic_style.py '{"Vid":"v0d012xxxx","Style":"漫画风","Resolution":"720p"}'
+
+# AI 解说视频（自动生成解说词）
+python <SKILL_DIR>/scripts/drama_recap.py '{"Vids":["v023xxx"],"AutoGenerateRecapText":true}'
+
+# AI 剧本还原
+python <SKILL_DIR>/scripts/drama_script.py '{"Vids":["v023xxx","v024xxx"]}'
+
+# 查询媒资信息
+python <SKILL_DIR>/scripts/get_media_info.py '{"vids":"v001,v002"}'
+
 # 超时后重启编辑类轮询
-python <SKILL_DIR>/scripts/poll_vcreative.py vcreative_xxx my_space
+python <SKILL_DIR>/scripts/poll_vcreative.py <异步智剪任务ID> my_space
 
 # 超时后重启媒体类轮询
 python <SKILL_DIR>/scripts/poll_media.py videSuperResolution run_yyy my_space
+
+# 超时后重启翻译轮询
+python <SKILL_DIR>/scripts/poll_translation.py <ProjectId> my_space
 ```
 
 ---
@@ -168,4 +256,3 @@ python <SKILL_DIR>/scripts/poll_media.py videSuperResolution run_yyy my_space
 ## 计费说明
 
 仅当用户主动咨询费用或计费规则时，再参考 `references/00-billing-instructions.md` 中的计费说明，向用户简要说明 volcengine-ai-mediakit 所依赖的 VOD 资源的计费构成，避免在普通剪辑/处理对话中主动展开计费细节。
-

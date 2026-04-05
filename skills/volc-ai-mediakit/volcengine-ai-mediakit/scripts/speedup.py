@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 speedup.py — 视频/音频变速
 
@@ -11,7 +12,7 @@ json_args 字段见 references/04-speedup.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vod_common import init_and_parse, fmt_src, submit_vcreative, out, bail
+from vod_common import init_and_parse, fmt_src, out, bail
 
 WORKFLOW = {
     "video": "loki://165223469",
@@ -41,7 +42,7 @@ def main():
         "source": fmt_src(t, source),
         "speed":  speed,
     }
-    out(submit_vcreative(client, WORKFLOW[media_type], param_obj, sp))
+    out(client.submit_vcreative(WORKFLOW[media_type], param_obj, sp))
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 compile.py — 音视频合成（替换/叠加背景音）
 
@@ -10,7 +11,7 @@ json_args 字段见 references/06-compile.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vod_common import init_and_parse, fmt_src, submit_vcreative, out, bail
+from vod_common import init_and_parse, fmt_src, out, bail
 
 def main():
     client, sp, args = init_and_parse()
@@ -35,7 +36,7 @@ def main():
         param_obj["sync_mode"]   = args.get("sync_mode", "video")
         param_obj["sync_method"] = args.get("sync_method", "trim")
 
-    out(submit_vcreative(client, "loki://167984726", param_obj, sp))
+    out(client.submit_vcreative("loki://167984726", param_obj, sp))
 
 if __name__ == "__main__":
     main()

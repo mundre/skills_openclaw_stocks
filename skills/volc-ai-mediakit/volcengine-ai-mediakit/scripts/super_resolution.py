@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 super_resolution.py — AI 超分辨率
 
@@ -10,7 +11,7 @@ json_args 字段见 references/13-super-resolution.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vod_common import init_and_parse, build_media_input, submit_media, out, bail
+from vod_common import init_and_parse, build_media_input, out, bail
 
 VALID_RES = {"240p","360p","480p","540p","720p","1080p","2k","4k"}
 
@@ -51,7 +52,7 @@ def main():
             },
         },
     }
-    out(submit_media(client, params, "videSuperResolution", sp))
+    out(client.submit_media(params, "videSuperResolution", sp))
 
 if __name__ == "__main__":
     main()

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 """
-voice_separation.py — 人声分离
+subtitle_removal.py — 硬字幕擦除
 
 用法:
-  python <SKILL_DIR>/scripts/voice_separation.py '<json_args>'
-  python <SKILL_DIR>/scripts/voice_separation.py @params.json
+  python <SKILL_DIR>/scripts/subtitle_removal.py '<json_args>'
+  python <SKILL_DIR>/scripts/subtitle_removal.py @params.json
 
-json_args 字段见 references/10-voice-separation.md
+json_args 字段见 references/17-subtitle-removal.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -19,19 +19,23 @@ def main():
     t     = args.get("type", "Vid")
     video = args.get("video")
     if not video:
-        bail("voice_separation: video 不能为空")
+        bail("subtitle_removal: video 不能为空")
 
     params = {
         "Input": build_media_input(t, video, sp),
         "Operation": {
             "Type": "Task",
             "Task": {
-                "Type":         "AudioExtract",
-                "AudioExtract": {"Voice": True},
+                "Type": "Erase",
+                "Erase": {
+                    "Mode":   "Auto",
+                    "NewVid": True,
+                    "Auto":   {"Type": "Subtitle"},
+                },
             },
         },
     }
-    out(client.submit_media(params, "voiceSeparation", sp))
+    out(client.submit_media(params, "subtitlesRemoval", sp))
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 quality_enhance.py — 综合画质修复
 
@@ -10,7 +11,7 @@ json_args 字段见 references/12-quality-enhance.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vod_common import init_and_parse, build_media_input, submit_media, out, bail
+from vod_common import init_and_parse, build_media_input, out, bail
 
 def main():
     client, sp, args = init_and_parse()
@@ -36,7 +37,7 @@ def main():
             },
         },
     }
-    out(submit_media(client, params, "enhanceVideo", sp))
+    out(client.submit_media(params, "enhanceVideo", sp))
 
 if __name__ == "__main__":
     main()

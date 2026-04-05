@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 image_to_video.py — 图片转视频
 
@@ -10,7 +11,7 @@ json_args 字段见 references/05-image-to-video.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vod_common import init_and_parse, fmt_src, submit_vcreative, out, bail
+from vod_common import init_and_parse, fmt_src, out, bail
 
 def main():
     client, sp, args = init_and_parse()
@@ -33,7 +34,7 @@ def main():
         "images":      formatted,
         "transitions": args.get("transitions") or [],
     }
-    out(submit_vcreative(client, "loki://167979998", param_obj, sp))
+    out(client.submit_vcreative("loki://167979998", param_obj, sp))
 
 if __name__ == "__main__":
     main()

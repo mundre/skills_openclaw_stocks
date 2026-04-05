@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 extract_audio.py — 从视频中提取音轨
 
@@ -10,7 +11,7 @@ json_args 字段见 references/07-extract-audio.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vod_common import init_and_parse, fmt_src, submit_vcreative, out, bail
+from vod_common import init_and_parse, fmt_src, out, bail
 
 def main():
     client, sp, args = init_and_parse()
@@ -28,7 +29,7 @@ def main():
         "source": fmt_src(t, source),
         "format": fmt,
     }
-    out(submit_vcreative(client, "loki://167986559", param_obj, sp))
+    out(client.submit_vcreative("loki://167986559", param_obj, sp))
 
 if __name__ == "__main__":
     main()

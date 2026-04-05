@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 clipping.py — 视频/音频裁剪
 
@@ -10,7 +11,7 @@ json_args 字段见 references/02-clipping.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vod_common import init_and_parse, fmt_src, submit_vcreative, out, bail
+from vod_common import init_and_parse, fmt_src, out, bail
 
 def main():
     client, sp, args = init_and_parse()
@@ -31,7 +32,7 @@ def main():
         "end_time":   end,
     }
     wf = "loki://158666752" if t == "audio" else "loki://154419276"
-    out(submit_vcreative(client, wf, param_obj, sp))
+    out(client.submit_vcreative(wf, param_obj, sp))
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 flip.py — 视频翻转（上下/左右）
 
@@ -10,7 +11,7 @@ json_args 字段见 references/03-flip.md
 """
 import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vod_common import init_and_parse, fmt_src, submit_vcreative, out, bail
+from vod_common import init_and_parse, fmt_src, out, bail
 
 def main():
     client, sp, args = init_and_parse()
@@ -25,7 +26,7 @@ def main():
         "flip_x": bool(args.get("flip_x", False)),
         "flip_y": bool(args.get("flip_y", False)),
     }
-    out(submit_vcreative(client, "loki://165221855", param_obj, sp))
+    out(client.submit_vcreative("loki://165221855", param_obj, sp))
 
 if __name__ == "__main__":
     main()
