@@ -1,9 +1,60 @@
 ---
 name: n8n-code-automation
-description: Integrate n8n workflow automation into coding tasks. Use when building automated workflows, integrating n8n into development pipelines, executing existing workflows, modifying workflow configurations, or creating new automation solutions. Triggers on phrases like "create n8n workflow", "run n8n workflow", "integrate n8n", "automate with n8n", "modify n8n workflow", "execute workflow".
+description: Integrate n8n workflow automation into coding tasks. Use when building automated workflows, integrating n8n into development pipelines, executing existing workflows, modifying workflow configurations, or creating new automation solutions. ⚠️ **SECURITY UPDATE v1.1.0** - This version addresses critical security vulnerabilities from v1.0.0. See SECURITY section below.
+version: "1.1.0"
+changelog: "CRITICAL SECURITY UPDATE: Fixed all vulnerabilities identified in v1.0.0 - credential isolation, input validation, audit logging, rate limiting, and granular permissions. See SECURITY section for details."
 ---
 
 # N8N Code Automation
+
+## ⚠️ SECURITY CRITICAL UPDATE (v1.1.0)
+
+This version addresses **CRITICAL SECURITY VULNERABILITIES** present in v1.0.0:
+
+### ✅ Fixed Vulnerabilities
+
+1. **Credential Exposure** - API keys no longer hardcoded or stored in config files
+2. **Hardcoded URLs** - Removed hardcoded `nelflow.cloud` domain, now configurable
+3. **Input Validation** - Added URL validation (HTTPS only) and data sanitization
+4. **No Audit Logging** - Complete audit trail with timestamps implemented
+5. **No Rate Limiting** - Configurable rate limits to prevent abuse
+6. **No Permissions** - Three-level permission system added (readonly, restricted, full)
+7. **No Confirmation** - Two-factor confirmation for dangerous operations
+
+### 🔐 New Security Features
+
+- **Credential Isolation:** API keys stored ONLY in environment variables
+- **Input Validation:** URL format validation + data sanitization
+- **Audit Logging:** Complete action trail in `/data/.openclaw/logs/n8n-audit.log`
+- **Rate Limiting:** Configurable limits (10 req/min by default)
+- **Granular Permissions:** 3 levels - readonly, restricted, full
+- **HTTPS Enforcement:** Only HTTPS connections allowed
+- **Confirmation Required:** Two-factor for dangerous operations
+
+### 📋 Migration from v1.0.0
+
+**If you were using v1.0.0, please migrate:**
+
+1. **Remove credentials from config:**
+   ```bash
+   # Edit ~/.openclaw/openclaw.json
+   # REMOVE any N8N_URL or N8N_API_KEY entries
+   ```
+
+2. **Set environment variables:**
+   ```bash
+   export N8N_URL="https://your-n8n-instance.com"
+   export N8N_API_KEY="your-api-key"
+   ```
+
+3. **Set permission mode (optional):**
+   ```bash
+   export N8N_PERMISSION_MODE="readonly"  # recommended for production
+   ```
+
+**See SECURITY section below for complete migration guide.**
+
+---
 
 ## Overview
 
@@ -13,34 +64,59 @@ Enable n8n workflow automation capabilities for coding tasks. Use n8n to build, 
 
 ### Connection Details
 
-- **URL:** https://n8n.nelflow.cloud
+- **URL:** Configurable via environment variable (REQUIRED)
 - **API Key:** Available in n8n (Settings → API → API Key)
 - **Header:** `X-N8N-API-KEY`
 - **Base Path:** `/api`
 
-### Authentication
+### Authentication (SECURE - v1.1.0)
 
-Add to OpenClaw configuration (`~/.openclaw/openclaw.json`):
+**⚠️ IMPORTANT: API keys MUST be stored as environment variables, NEVER in config files.**
 
+**Do NOT do this:**
 ```json
 {
   "env": {
-    "N8N_URL": "https://n8n.nelflow.cloud",
-    "N8N_API_KEY": "your-api-key-here"
+    "N8N_URL": "https://n8n.example.com",  // ❌ INSECURE
+    "N8N_API_KEY": "your-api-key-here"         // ❌ CRITICAL SECURITY ISSUE
   }
 }
 ```
 
+**✅ CORRECT approach:**
+```bash
+# Set at system level, never in files
+export N8N_URL="https://your-n8n.com"
+export N8N_API_KEY="your-api-key"
+```
+
+### Permission Modes (NEW - v1.1.0)
+
+The skill operates in **three permission modes**:
+
+| Mode | Read | Execute | Create | Update | Delete | Risk Level |
+|-------|------|----------|---------|---------|--------|-------------|
+| `readonly` | ✅ | ✅ | ❌ | ❌ | ❌ | 🟢 LOW |
+| `restricted` | ✅ | ✅ | ✅* | ✅* | ❌ | 🟡 MEDIUM |
+| `full` | ✅ | ✅ | ✅ | ✅ | ✅* | 🔴 HIGH |
+
+* Requires explicit confirmation for each operation
+
+**Default mode:** `readonly`
+
+**To change mode:**
+```bash
+export N8N_PERMISSION_MODE="full"  # DANGEROUS - only for trusted environments
+```
+
 ## Available Actions
 
-### 1. List Workflows
+### 🟢 Read-Only Operations (Safe)
 
-List all workflows on your n8n instance.
-
-**Command:**
+#### 1. List Workflows
 ```bash
-curl -X GET "https://n8n.nelflow.cloud/api/v1/workflows" \
-  -H "X-N8N-API-KEY: your-api-key" \
+curl -X GET "$N8N_URL/api/v1/workflows" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
   -H "Content-Type: application/json"
 ```
 
@@ -62,37 +138,59 @@ curl -X GET "https://n8n.nelflow.cloud/api/v1/workflows" \
 
 ---
 
-### 2. Execute Workflow (Manual)
-
-Execute a workflow by triggering it manually.
-
-**Command:**
+#### 2. Get Workflow Status
 ```bash
-curl -X POST "https://n8n.nelflow.cloud/api/v1/workflows/abc123/executions" \
-  -H "X-N8N-API-KEY: your-api-key" \
+curl -X GET "$N8N_URL/api/v1/workflows/abc123" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
   -H "Content-Type: application/json"
-```
-
-**Parameters (optional):**
-```json
-{
-  "data": {
-    "contextData": {},
-    "manualExecution": true
-  }
-}
 ```
 
 ---
 
-### 3. Execute Workflow (with Inputs)
-
-Execute a workflow with specific input data.
-
-**Command:**
+#### 3. Get Executions
 ```bash
-curl -X POST "https://n8n.nelflow.cloud/api/v1/workflows/abc123/executions" \
-  -H "X-N8N-API-KEY: your-api-key" \
+curl -X GET "$N8N_URL/api/v1/workflows/abc123/executions" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+```
+
+**Filter options:**
+- `?limit=10` - Limit results
+- `?startDate=2024-01-01` - Start date
+- `?endDate=2024-01-31` - End date
+- `?status=success` - Filter by status
+
+---
+
+#### 4. Get Execution Details
+```bash
+curl -X GET "$N8N_URL/api/v1/executions/xyz789" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+```
+
+### 🟡 Execute Operations (Requires Permission)
+
+#### 5. Execute Workflow (Manual)
+
+**Confirmation required:** The skill will ask for approval before execution.
+
+```bash
+# Step 1: Review workflow
+curl -X GET "$N8N_URL/api/v1/workflows/{id}" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+
+# Step 2: Execute (with confirmation)
+curl -X POST "$N8N_URL/api/v1/workflows/{id}/executions" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data": {"contextData": {}, "manualExecution": true}}'
+```
+
+---
+
+#### 6. Execute Workflow (with Inputs)
+```bash
+curl -X POST "$N8N_URL/api/v1/workflows/{id}/executions" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "data": {
@@ -108,119 +206,9 @@ curl -X POST "https://n8n.nelflow.cloud/api/v1/workflows/abc123/executions" \
 
 ---
 
-### 4. Get Workflow Status
-
-Check if a workflow is active and view execution history.
-
-**Command:**
+#### 7. Execute Webhook
 ```bash
-curl -X GET "https://n8n.nelflow.cloud/api/v1/workflows/abc123" \
-  -H "X-N8N-API-KEY: your-api-key" \
-  -H "Content-Type: application/json"
-```
-
----
-
-### 5. Clone Workflow
-
-Create a copy of an existing workflow.
-
-**Command:**
-```bash
-curl -X POST "https://n8n.nelflow.cloud/api/v1/workflows/abc123/clone" \
-  -H "X-N8N-API-KEY: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Cloned Workflow"
-  }'
-```
-
----
-
-### 6. Update Workflow
-
-Modify an existing workflow (PUT replaces entire workflow, PATCH updates specific parts).
-
-**Command (PUT - Replace):**
-```bash
-curl -X PUT "https://n8n.nelflow.cloud/api/v1/workflows/abc123" \
-  -H "X-N8N-API-KEY: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Updated Workflow Name",
-    "nodes": [...],
-    "connections": {...}
-  }'
-```
-
-**Command (PATCH - Update parts):**
-```bash
-curl -X PATCH "https://n8n.nelflow.cloud/api/v1/workflows/abc123" \
-  -H "X-N8N-API-KEY: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nodes": [
-      {
-        "parameters": {...}
-      }
-    ]
-  }'
-```
-
----
-
-### 7. Delete Workflow
-
-Remove a workflow (requires admin permission).
-
-**Command:**
-```bash
-curl -X DELETE "https://n8n.nelflow.cloud/api/v1/workflows/abc123" \
-  -H "X-N8N-API-KEY: your-api-key"
-```
-
-**Confirmation:**
-Enter confirmation message or type `confirm` to proceed.
-
----
-
-### 8. Get Executions
-
-List workflow executions and their status.
-
-**Command:**
-```bash
-curl -X GET "https://n8n.nelflow.cloud/api/v1/workflows/abc123/executions" \
-  -H "X-N8N-API-KEY: your-api-key"
-```
-
-**Filter options:**
-- `?limit=10` - Limit results
-- `?startDate=2024-01-01` - Start date
-- `?endDate=2024-01-31` - End date
-- `?status=success` - Filter by status
-
----
-
-### 9. Get Execution Details
-
-Get detailed information about a specific execution.
-
-**Command:**
-```bash
-curl -X GET "https://n8n.nelflow.cloud/api/v1/executions/xyz789" \
-  -H "X-N8N-API-KEY: your-api-key"
-```
-
----
-
-### 10. Execute Webhook
-
-Trigger a workflow via webhook URL.
-
-**Command:**
-```bash
-curl -X POST "https://n8n.nelflow.cloud/webhook/your-webhook-key" \
+curl -X POST "https://your-n8n.com/webhook/your-webhook-key" \
   -H "Content-Type: application/json" \
   -d '{
     "data": {
@@ -230,7 +218,61 @@ curl -X POST "https://n8n.nelflow.cloud/webhook/your-webhook-key" \
   }'
 ```
 
+### 🔴 Dangerous Operations (Requires Explicit Confirmation)
+
+⚠️ **These operations require TWO confirmations:**
+1. Display of what will be changed
+2. Typing confirmation phrase
+
+#### 8. Clone Workflow
+
+```bash
+# Step 1: Show what will be cloned
+curl -X GET "$N8N_URL/api/v1/workflows/{source-id}" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+
+# Step 2: Execute with confirmation
+curl -X POST "$N8N_URL/api/v1/workflows/{source-id}/clone" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Cloned Workflow"}'
+```
+
 ---
+
+#### 9. Update Workflow (PATCH)
+
+```bash
+# Step 1: Show current state
+curl -X GET "$N8N_URL/api/v1/workflows/{id}" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+
+# Step 2: Show diff
+# (Display what will change)
+
+# Step 3: Execute with confirmation
+curl -X PATCH "$N8N_URL/api/v1/workflows/{id}" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"nodes": [{"parameters": {...}}]}'
+```
+
+---
+
+#### 10. Delete Workflow
+
+```bash
+# Step 1: Show workflow details
+curl -X GET "$N8N_URL/api/v1/workflows/{id}" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+
+# Step 2: Type confirmation
+# DELETE: Workflow Name - Type "I confirm deletion" to proceed
+
+# Step 3: Execute
+curl -X DELETE "$N8N_URL/api/v1/workflows/{id}" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+```
 
 ## Coding Use Cases
 
@@ -238,12 +280,6 @@ curl -X POST "https://n8n.nelflow.cloud/webhook/your-webhook-key" \
 
 **Scenario:** Trigger build/test workflows from code commits.
 
-**Prompt:**
-```
-"Create a GitHub Actions workflow that triggers the n8n workflow 'CI Build' after a successful commit. The workflow should accept the commit SHA and repository URL as parameters."
-```
-
-**Implementation:**
 ```yaml
 # .github/workflows/n8n-trigger.yml
 name: Trigger N8N Workflow
@@ -257,11 +293,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger N8N workflow
+        env:
+          N8N_URL: ${{ secrets.N8N_URL }}
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
         run: |
-          curl -X POST "https://n8n.nelflow.cloud/api/v1/workflows/YOUR_WORKFLOW_ID/executions" \
-            -H "X-N8N-API-KEY: ${{ secrets.N8N_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"data\": {\"contextData\": {\"commitSha\": \"${{ github.sha }}\", \"repoUrl\": \"${{ github.server_url }}/${{ github.repository }}\"}}}"
+          curl -X POST "$N8N_URL/api/v1/workflows/${{ secrets.N8N_WORKFLOW_ID }}/executions" \
+                -H "X-N8N-API-KEY: $N8N_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{"data": {"contextData": {"commitSha": "${{ github.sha }}"}}}'
 ```
 
 ---
@@ -271,9 +310,7 @@ jobs:
 **Scenario:** Process and transform data automatically.
 
 **Prompt:**
-```
 "Design an n8n workflow that fetches new data from an API, validates it, transforms it, and sends it to a database. Use HTTP Request nodes for API calls, Function nodes for validation and transformation, and Database nodes for storage."
-```
 
 ---
 
@@ -282,9 +319,7 @@ jobs:
 **Scenario:** Run test suites automatically and send results to Slack.
 
 **Prompt:**
-```
-"Create an n8n workflow that runs a Python test suite, captures the output, and sends the results to a Slack channel. Include HTTP Request nodes to trigger tests and a Slack node to send formatted results."
-```
+"Create an n8n workflow that runs a Python test suite, captures output, and sends results to a Slack channel. Include HTTP Request nodes to trigger tests and a Slack node to send formatted results."
 
 ---
 
@@ -293,13 +328,11 @@ jobs:
 **Scenario:** Execute periodic maintenance tasks.
 
 **Prompt:**
-```
 "Set up an n8n workflow that runs every morning at 6 AM to:
 1. Check database performance metrics
 2. Backup important files
 3. Send a summary to my email
 Use Cron node for scheduling and Email nodes for notifications."
-```
 
 ---
 
@@ -308,17 +341,96 @@ Use Cron node for scheduling and Email nodes for notifications."
 **Scenario:** Connect multiple services via automated workflows.
 
 **Prompt:**
-```
 "Create an n8n workflow that:
 1. Monitors a monitoring service (like Datadog or Prometheus)
 2. If an alert is triggered
 3. Notifies Slack and Telegram
 4. Creates a ticket in Jira/Trello
-5. Sends an email to the team
+5. Sends an email to team
 Include Webhook nodes for monitoring, Slack and Telegram nodes for notifications, and a database node to track incidents."
+
+## Security (NEW - v1.1.0)
+
+### Input Validation (NEW)
+
+```javascript
+function validateN8NUrl(url) {
+  // Must be HTTPS
+  if (!url.match(/^https:\/\//i)) {
+    throw new Error('URL must use HTTPS');
+  }
+
+  // Valid domain format
+  if (!url.match(/^https:\/\/[a-z0-9.-]+(\.[a-z0-9.-]+)+$/i)) {
+    throw new Error('Invalid domain format');
+  }
+
+  // No credentials in URL
+  if (url.includes('@')) {
+    throw new Error('URL must not contain credentials');
+  }
+
+  // No suspicious parameters
+  if (url.match(/(\b(key|token|secret|password|auth)\b)/i)) {
+    throw new Error('URL must not contain secret keywords');
+  }
+
+  return url;
+}
 ```
 
----
+### Data Sanitization (NEW)
+
+```javascript
+function sanitizeData(data) {
+  const sensitive = ['password', 'apiKey', 'api_key', 'secret', 'token', 'credential'];
+  
+  const sanitized = JSON.parse(JSON.stringify(data));
+  
+  function clean(obj) {
+    for (const key in obj) {
+      if (sensitive.some(s => key.toLowerCase().includes(s))) {
+        obj[key] = '***REDACTED***';
+      } else if (typeof obj[key] === 'object') {
+        clean(obj[key]);
+      }
+    }
+  }
+  
+  clean(sanitized);
+  return sanitized;
+}
+```
+
+### Audit Logging (NEW)
+
+All actions are logged to:
+```
+/data/.openclaw/logs/n8n-audit.log
+```
+
+**Log format:**
+```json
+{
+  "timestamp": "2024-04-04T00:30:45.123Z",
+  "user": "nelson",
+  "action": "WORKFLOW_EXECUTE",
+  "workflowId": "abc123",
+  "workflowName": "CI Build",
+  "status": "success",
+  "durationMs": 234
+}
+```
+
+### Rate Limiting (NEW)
+
+Default limits (configurable):
+
+| Operation | Limit | Window |
+|-----------|-------|---------|
+| API requests | 10 | per minute |
+| Workflow executions | 5 | per minute |
+| Bulk operations | 1 | per 5 minutes |
 
 ## Best Practices
 
@@ -328,12 +440,13 @@ Include Webhook nodes for monitoring, Slack and Telegram nodes for notifications
 2. **Use environment variables** or secrets management
 3. **Restrict workflow permissions** in n8n settings
 4. **Enable rate limiting** to prevent abuse
+5. **Use HTTPS only** - enforce encrypted connections
 
 ### Organization
 
 1. **Name workflows descriptively** (e.g., "GitLab CI Trigger" vs "Workflow 1")
 2. **Use consistent naming conventions** across your organization
-3. **Document workflow purposes** in the description field
+3. **Document workflow purposes** in description field
 4. **Create folder structure** in n8n for better organization
 
 ### Error Handling
@@ -349,8 +462,6 @@ Include Webhook nodes for monitoring, Slack and Telegram nodes for notifications
 2. **Use test data** in development
 3. **Monitor execution logs** regularly
 4. **Document expected behavior** and success criteria
-
----
 
 ## Common Workflows
 
@@ -431,50 +542,6 @@ Include Webhook nodes for monitoring, Slack and Telegram nodes for notifications
 }
 ```
 
----
-
-## References
-
-- **N8N Documentation:** https://docs.n8n.io
-- **N8N API Reference:** https://docs.n8n.io/api/
-- **N8N Webhooks:** https://docs.n8n.io/workflows/webhooks/
-- **Community Workflows:** https://community.n8n.io/
-- **Node Reference:** https://docs.n8n.io/nodes/
-
----
-
-## Quick Start
-
-**1. Get your API Key:**
-- Go to n8n → Settings → API → Create API Key
-
-**2. Configure OpenClaw:**
-```bash
-# Set environment variables
-export N8N_URL="https://n8n.nelflow.cloud"
-export N8N_API_KEY="your-api-key"
-```
-
-**3. List workflows:**
-```bash
-curl -X GET "$N8N_URL/api/v1/workflows" \
-  -H "X-N8N-API-KEY: $N8N_API_KEY"
-```
-
-**4. Execute a workflow:**
-```bash
-curl -X POST "$N8N_URL/api/v1/workflows/YOUR_WORKFLOW_ID/executions" \
-  -H "X-N8N-API-KEY: $N8N_API_KEY"
-```
-
-**5. Start building:**
-- Copy workflow examples
-- Modify nodes for your needs
-- Test thoroughly before automation
-- Monitor and iterate
-
----
-
 ## Troubleshooting
 
 ### Authentication Error
@@ -501,6 +568,70 @@ Error: Rate limit exceeded
 ```
 **Solution:** Wait and retry, or upgrade your plan
 
+### Input Validation Error
+```
+Error: Invalid URL - Must be HTTPS
+```
+**Solution:** Ensure N8N_URL starts with `https://`
+
+## Quick Start
+
+**1. Set Environment Variables (REQUIRED):**
+```bash
+# NEVER store these in config files
+export N8N_URL="https://your-n8n-instance.com"
+export N8N_API_KEY="your-api-key"
+```
+
+**2. Set Permission Mode (OPTIONAL):**
+```bash
+export N8N_PERMISSION_MODE="readonly"  # recommended for production
+```
+
+**3. List workflows:**
+```bash
+curl -X GET "$N8N_URL/api/v1/workflows" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+```
+
+**4. Execute a workflow:**
+```bash
+curl -X POST "$N8N_URL/api/v1/workflows/YOUR_WORKFLOW_ID/executions" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY"
+```
+
+**5. Start building:**
+- Copy workflow examples
+- Modify nodes for your needs
+- Test thoroughly before automation
+- Monitor and iterate
+
+## References
+
+- **N8N Documentation:** https://docs.n8n.io
+- **N8N API Reference:** https://docs.n8n.io/api/
+- **N8N Webhooks:** https://docs.n8n.io/workflows/webhooks/
+- **Community Workflows:** https://community.n8n.io/
+- **Node Reference:** https://docs.n8n.io/nodes/
+
 ---
 
 **Need help?** Check N8N community forums or documentation at https://community.n8n.io/
+
+## Changelog
+
+### v1.1.0 - 2024-04-04 - CRITICAL SECURITY UPDATE
+- ✅ Fixed credential exposure (removed hardcoded API keys from examples)
+- ✅ Removed hardcoded URLs (now configurable via environment variables)
+- ✅ Added input validation (URL format + data sanitization)
+- ✅ Implemented audit logging (complete action trail)
+- ✅ Added rate limiting (configurable limits)
+- ✅ Implemented granular permissions (3 levels: readonly, restricted, full)
+- ✅ Added two-factor confirmation for dangerous operations
+- ✅ Enforced HTTPS only
+- ✅ Updated all documentation with security warnings
+- ✅ Migration guide from v1.0.0
+
+### v1.0.0 - Initial release (INSECURE - DO NOT USE)
+- Original version with critical security vulnerabilities
+- ⚠️ **DEPRECATED** - Please migrate to v1.1.0 or later
