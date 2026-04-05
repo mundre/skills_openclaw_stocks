@@ -3,11 +3,16 @@
   "slug": "recipe-review-overdue-tasks",
   "displayName": "Recipe Review Overdue Tasks",
   "latest": {
-    "version": "1.0.10",
-    "publishedAt": 1774551178988,
-    "commit": "https://github.com/openclaw/skills/commit/3ccb9fc38961d2dcb3573c38c120f53cd91d8e33"
+    "version": "1.0.12",
+    "publishedAt": 1774982214159,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.10",
+      "publishedAt": 1774551178988,
+      "commit": "https://github.com/openclaw/skills/commit/3ccb9fc38961d2dcb3573c38c120f53cd91d8e33"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774300637148,
