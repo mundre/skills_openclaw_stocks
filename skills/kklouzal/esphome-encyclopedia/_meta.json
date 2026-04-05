@@ -3,9 +3,15 @@
   "slug": "esphome-encyclopedia",
   "displayName": "ESPHome Encyclopedia",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1774191780066,
-    "commit": "https://github.com/openclaw/skills/commit/026f54950d4d8f221ecfcc4d9fa46225717ce345"
+    "version": "0.1.4",
+    "publishedAt": 1774653720787,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1774191780066,
+      "commit": "https://github.com/openclaw/skills/commit/026f54950d4d8f221ecfcc4d9fa46225717ce345"
+    }
+  ]
 }
