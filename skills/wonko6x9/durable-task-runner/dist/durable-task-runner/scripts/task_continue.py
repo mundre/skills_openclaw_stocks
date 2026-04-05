@@ -3,11 +3,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
-
-from task_resume_apply import apply_task
-from task_resume_bootstrap import inspect_task, iter_tasks
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = ROOT / 'state' / 'tasks'
@@ -62,6 +60,12 @@ def select_task(explicit_task_id: str | None) -> dict[str, Any]:
     return candidates[0]
 
 
+def run_json(*args: str, input_text: str | None = None) -> dict[str, Any]:
+    proc = subprocess.run(list(args), text=True, input=input_text, capture_output=True, check=True)
+    raw = (proc.stdout or '').strip()
+    return json.loads(raw) if raw else {}
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description='Resume the most relevant durable task after reset/interruption.')
     p.add_argument('--task-id')
@@ -76,26 +80,21 @@ def main() -> int:
     promoted = False
     previous_state = task.get('desired_state')
     if args.promote_paused and not args.dry_run and previous_state in {'paused', 'stopped'}:
-        import subprocess
-        subprocess.run([
+        run_json(
             'python3', str(SCRIPTS / 'task_ctl.py'), 'control', task_id, 'running',
             '--note', 'explicit continue-this recovery after reset/interruption',
             '--report-kind', 'internal',
-        ], check=True, capture_output=True, text=True)
+        )
         task = load_task(STATE_DIR / f'{task_id}.json') or task
         promoted = True
 
-    matches = [(path, row) for path, row in iter_tasks() if row.get('task_id') == task_id]
-    if not matches:
-        raise SystemExit(f'task not found: {task_id}')
-    path, current_task = matches[0]
-    item = inspect_task(path, current_task, run_reconcile_checks=True, include_plan=True)
-    bootstrap = {'tasks': [item]}
+    bootstrap = run_json('python3', str(SCRIPTS / 'task_resume_bootstrap.py'), '--task-id', task_id, '--plan')
+    item = bootstrap['tasks'][0]
     action = item.get('recommendation', {}).get('action')
 
     applied: dict[str, Any] | None = None
     if not args.dry_run and action in {'resume_active_line', 'resume_main_flow', 'controller_decision_needed', 'user_control_pending'}:
-        applied = {'applied': [apply_task(item)]}
+        applied = run_json('python3', str(SCRIPTS / 'task_resume_apply.py'), input_text=json.dumps(bootstrap))
         task = load_task(STATE_DIR / f'{task_id}.json') or task
 
     print(json.dumps({

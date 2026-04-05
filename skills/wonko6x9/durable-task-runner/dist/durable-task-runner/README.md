@@ -1,6 +1,6 @@
 # durable-task-runner
 
-Run long-running, multi-step work in OpenClaw without losing it to resets: durable state, progress updates, smart "continue this" recovery, and optional worker-lane coordination for larger jobs.
+Run long-running, multi-step work in OpenClaw without losing it to resets: durable state, progress updates, smart "continue this" recovery, and optional subagent orchestration.
 
 This skill is for long work that should survive interruption instead of vanishing with chat context.
 
@@ -11,7 +11,7 @@ This skill is for long work that should survive interruption instead of vanishin
 - survives resets with smart resume/bootstrap helpers
 - supports an explicit **"continue this"** recovery model after interruption
 - supports pause / stop / steer controls
-- supports optional worker-lane coordination for bounded parallel work
+- supports thin controller/worker subagent orchestration
 - renders compact status output for longer-running work
 
 ## Process model
@@ -55,7 +55,7 @@ This skill is intentionally stateful.
 What it does locally:
 - writes task snapshots, event logs, and progress logs under `state/tasks/`
 - can emit live updates through OpenClaw when a task uses delivery method `openclaw`
-- can coordinate optional worker lanes through the `task_subagent_*` helpers
+- can coordinate subagent worker lanes through the `task_subagent_*` helpers
 - supports explicit post-reset recovery via `scripts/task_continue.py`
 
 What it does **not** do by itself:
@@ -63,25 +63,10 @@ What it does **not** do by itself:
 - it does not require external Python packages
 - it does not need network access for local-only reporting modes like `stdout`, `noop`, or `log-only`
 
-What it does **not** implement:
-- no privilege-escalation logic (`sudo`, setuid/capability manipulation, service-install tricks)
-- no process injection, ptrace, `LD_PRELOAD`, remote-thread, or `/proc/<pid>/mem` behavior
-- no payload obfuscation / deobfuscation, self-unpacking, or eval-style code execution
-- no raw socket / custom protocol command-and-control layer; live delivery goes through normal OpenClaw messaging paths
-- no covert persistence; recurring ticks are optional user-visible cron helpers that install a plain current-user crontab entry
-
 Practical caution:
 - do not use plaintext task state for secrets unless you control and secure the underlying storage appropriately
-- review worker-lane flows if you plan to use them in higher-trust environments
+- review subagent flows if you plan to use worker lanes in higher-trust environments
 - recurring ticks are optional; the primary recovery model is explicit smart resume after reset/interruption
-
-Why heuristic scanners may still flag it:
-- heavy use of Python helper scripts and `subprocess` for local script composition
-- optional worker-lane coordination vocabulary and helper scripts
-- optional recurring cron installation helper for timed status ticks
-- status delivery through OpenClaw when a task is bound to a live chat/session
-
-Those behaviors increase operational surface area, but they are workflow features, not stealth or host-compromise features.
 
 ## Recovery-first operation
 
@@ -136,8 +121,8 @@ But that is now an optional layer, not the center of the product promise.
 ## Product stance
 
 The core promise is **reset-safe durable state + explicit smart recovery**.
-This skill should be presented as a practical recovery-first workflow, not as an unattended control plane.
-Recurring timed ticks and worker lanes are optional extras, not the primary value proposition.
+This skill should be presented as a practical recovery-first workflow, not as an always-on unattended scheduler.
+Recurring timed ticks are optional extras, not the primary value proposition.
 
 ## Provenance
 

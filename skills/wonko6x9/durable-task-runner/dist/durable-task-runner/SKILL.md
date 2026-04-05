@@ -1,13 +1,13 @@
 ---
 name: durable-task-runner
-description: "Run long-running, multi-step work in OpenClaw without losing it to resets: durable state, progress updates, smart 'continue this' recovery, verification before completion, and optional worker-lane coordination for larger jobs. Use when work spans multiple phases, must survive agent or gateway resets, or should not depend on ad-hoc chat memory. Best fit for users who want explicit recovery after interruption rather than fragile background scheduler setup."
+description: "Run long-running, multi-step work in OpenClaw without losing it to resets: durable state, progress updates, smart 'continue this' recovery, verification before completion, and optional subagent orchestration. Use when work spans multiple phases, must survive agent or gateway resets, or should not depend on ad-hoc chat memory. Best fit for users who want explicit recovery after interruption rather than fragile background scheduler setup."
 ---
 
-Use this skill to run long work with durable state and deliberate recovery, not like a goldfish.
+Use this skill to run long work like an orchestrator, not like a goldfish.
 
 ## Core stance
 
-Act as the **planner and verifier**.
+Act as the **planner/controller**.
 Do not rely on conversational memory for active long-running work.
 Persist the working state to disk early and keep it updated.
 
@@ -95,15 +95,15 @@ Before marking a task complete:
 - record a verification event
 - then update `desired_state=completed`
 
-## Worker-lane model
+## Subagent model
 
-Use worker lanes only when parallelism is worth the added control surface.
+Use subagents only when parallelism is worth the added control surface.
 
 Default roles:
-- **main agent** = planner/verifier
-- **worker lanes** = bounded workers
+- **main agent** = planner/controller/verifier
+- **subagents** = bounded workers
 
-When using worker lanes:
+When using subagents:
 - keep each worker scope narrow
 - avoid overlapping write targets unless coordination is explicit
 - require structured worker returns
@@ -127,11 +127,11 @@ Use these directly:
 - `scripts/task_resume_bootstrap.py` — analyze resumability after interruption
 - `scripts/task_resume_apply.py` — apply low-risk resume follow-through
 - `scripts/task_reconcile.py` — reconcile pending/idempotent action state
-- `scripts/task_subagent_ctl.py` — manage worker-line state and structured returns
+- `scripts/task_subagent_ctl.py` — manage controller-side worker lines
 - `scripts/task_subagent_run.py` — prepare a ready-to-use worker payload
 - `scripts/task_report.py` / `scripts/task_ticker.py` — render compact status
-- `scripts/task_tick_all.py` — run optional due status delivery across eligible running tasks
-- `scripts/task_install_tick_cron.sh` — optional helper to print/install a current-user cron entry for recurring ticks
+- `scripts/task_tick_all.py` — run due status delivery across all eligible running tasks
+- `scripts/task_install_tick_cron.sh` — print/install a cron entry for recurring ticks
 
 ## Attribution discipline
 

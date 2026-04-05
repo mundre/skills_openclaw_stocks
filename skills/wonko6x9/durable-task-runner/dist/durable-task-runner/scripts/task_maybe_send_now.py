@@ -10,10 +10,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
-
-from task_send_status import main as send_status_main
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = ROOT / "state" / "tasks"
@@ -106,18 +105,12 @@ def main() -> int:
         print(json.dumps({"sent": False, "reason": f"disabled_for_{args.event_type}"}, indent=2))
         return 0
 
-    import io
-    import contextlib
-    import sys
-    buf = io.StringIO()
-    saved = sys.argv[:]
-    try:
-        sys.argv = ["task_send_status.py", args.task_id, "--kind", "immediate", "--reason", args.event_type]
-        with contextlib.redirect_stdout(buf):
-            send_status_main()
-    finally:
-        sys.argv = saved
-    payload = extract_json_object(buf.getvalue())
+    out = subprocess.check_output([
+        "python3", str(SCRIPT_DIR / "task_send_status.py"), args.task_id,
+        "--kind", "immediate",
+        "--reason", args.event_type,
+    ], text=True)
+    payload = extract_json_object(out)
     print(json.dumps({"sent": True, "reason": args.event_type, "delivery": payload}, indent=2))
     return 0
 

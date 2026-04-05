@@ -20,12 +20,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-from task_resume_apply import apply_task
-from task_resume_bootstrap import inspect_task, iter_tasks
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = ROOT / "state" / "tasks"
@@ -118,12 +116,12 @@ def attention_lines(task: dict[str, Any]) -> list[str]:
     return out
 
 
-def bootstrap_item(task_id: str) -> dict[str, Any]:
-    matches = [(path, row) for path, row in iter_tasks() if row.get("task_id") == task_id]
-    if not matches:
-        raise SystemExit(f"task not found: {task_id}")
-    path, task = matches[0]
-    return inspect_task(path, task, run_reconcile_checks=True, include_plan=True)
+def run_json(*args: str, input_text: str | None = None) -> dict[str, Any]:
+    proc = subprocess.run(list(args), text=True, input=input_text, capture_output=True, check=True)
+    raw = (proc.stdout or "").strip()
+    if not raw:
+        return {}
+    return json.loads(raw)
 
 
 def pause_task(task: dict[str, Any], reason: str, note: str) -> dict[str, Any]:
@@ -175,7 +173,8 @@ def continue_task(task_id: str) -> dict[str, Any]:
 
     pending_user = pending_user_controls(task)
     if pending_user:
-        apply = {"applied": [apply_task(bootstrap_item(task_id))]}
+        bootstrap = run_json("python3", str(SCRIPT_DIR / "task_resume_bootstrap.py"), "--task-id", task_id, "--plan")
+        apply = run_json("python3", str(SCRIPT_DIR / "task_resume_apply.py"), input_text=json.dumps(bootstrap))
         return {
             "task_id": task_id,
             "status": "applied_user_control",
@@ -211,7 +210,8 @@ def continue_task(task_id: str) -> dict[str, Any]:
 
     attention = attention_lines(task)
     if attention:
-        apply = {"applied": [apply_task(bootstrap_item(task_id))]}
+        bootstrap = run_json("python3", str(SCRIPT_DIR / "task_resume_bootstrap.py"), "--task-id", task_id, "--plan")
+        apply = run_json("python3", str(SCRIPT_DIR / "task_resume_apply.py"), input_text=json.dumps(bootstrap))
         return {
             "task_id": task_id,
             "status": "controller_followthrough",

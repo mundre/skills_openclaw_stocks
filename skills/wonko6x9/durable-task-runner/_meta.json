@@ -1,13 +1,18 @@
 {
   "owner": "wonko6x9",
   "slug": "durable-task-runner",
-  "displayName": "Durable Task Runner",
+  "displayName": "durable-task-runner",
   "latest": {
-    "version": "0.1.4",
-    "publishedAt": 1774302841759,
-    "commit": "https://github.com/openclaw/skills/commit/2ba6f4d42208697e44a7a58488ff075b981c5407"
+    "version": "0.1.6",
+    "publishedAt": 1775020115599,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.4",
+      "publishedAt": 1774302841759,
+      "commit": "https://github.com/openclaw/skills/commit/2ba6f4d42208697e44a7a58488ff075b981c5407"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1774069783715,

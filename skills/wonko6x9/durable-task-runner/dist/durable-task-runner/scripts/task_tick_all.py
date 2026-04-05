@@ -15,12 +15,9 @@ Purpose:
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
-
-from task_auto_continue import continue_task
-from task_send_status import main as send_status_main
-from task_should_report import status_due
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = ROOT / "state" / "tasks"
@@ -49,20 +46,49 @@ def iter_tasks() -> list[dict[str, Any]]:
     return rows
 
 
-def run_send_status(task_id: str) -> dict[str, Any]:
-    import contextlib
-    import io
-    import sys
-    buf = io.StringIO()
-    saved = sys.argv[:]
-    try:
-        sys.argv = ["task_send_status.py", task_id]
-        with contextlib.redirect_stdout(buf):
-            send_status_main()
-    finally:
-        sys.argv = saved
-    raw = buf.getvalue().strip()
-    return json.loads(raw) if raw else {}
+def extract_json_object(raw: str) -> dict[str, Any]:
+    raw = raw.strip()
+    starts = [i for i, ch in enumerate(raw) if ch == "{"]
+    best: dict[str, Any] | None = None
+    for start in starts:
+        depth = 0
+        in_string = False
+        escape = False
+        for idx in range(start, len(raw)):
+            ch = raw[idx]
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == "\\":
+                    escape = True
+                elif ch == '"':
+                    in_string = False
+                continue
+            if ch == '"':
+                in_string = True
+                continue
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    candidate = raw[start:idx + 1]
+                    try:
+                        value = json.loads(candidate)
+                    except json.JSONDecodeError:
+                        break
+                    if isinstance(value, dict):
+                        best = value
+                    break
+    if best is not None:
+        return best
+    raise ValueError(f"could not parse JSON payload from output: {raw}")
+
+
+def run_json(*args: str) -> dict[str, Any]:
+    proc = subprocess.run(list(args), text=True, capture_output=True, check=True)
+    combined = "\n".join(part for part in [proc.stdout.strip(), proc.stderr.strip()] if part).strip()
+    return extract_json_object(combined)
 
 
 def main() -> int:
@@ -81,8 +107,20 @@ def main() -> int:
             continue
 
         try:
-            cont = continue_task(task_id)
+            cont = run_json("python3", str(SCRIPT_DIR / "task_auto_continue.py"), task_id)
             continued += 1
+        except subprocess.CalledProcessError as exc:
+            errors += 1
+            results.append({
+                "task_id": task_id,
+                "status": "error",
+                "reason": "auto_continue_failed",
+                "command": exc.cmd,
+                "returncode": exc.returncode,
+                "stdout": (exc.stdout or "").strip(),
+                "stderr": (exc.stderr or "").strip(),
+            })
+            continue
         except Exception as exc:
             errors += 1
             results.append({
@@ -113,18 +151,29 @@ def main() -> int:
 
         eligible += 1
         try:
-            due = status_due(task_id)
+            due = run_json("python3", str(SCRIPT_DIR / "task_should_report.py"), task_id)
             if not due.get("due"):
                 result.update({"status": "skipped", "reason": due.get("reason", "not_due")})
                 results.append(result)
                 continue
-            delivery = run_send_status(task_id)
+            delivery = run_json("python3", str(SCRIPT_DIR / "task_send_status.py"), task_id)
             sent += 1
             result.update({
                 "status": "sent",
                 "reason": due.get("reason", "due"),
                 "line": delivery.get("line", ""),
                 "method": (delivery.get("delivery") or {}).get("method", "unknown"),
+            })
+            results.append(result)
+        except subprocess.CalledProcessError as exc:
+            errors += 1
+            result.update({
+                "status": "error",
+                "reason": "command_failed",
+                "command": exc.cmd,
+                "returncode": exc.returncode,
+                "stdout": (exc.stdout or "").strip(),
+                "stderr": (exc.stderr or "").strip(),
             })
             results.append(result)
         except Exception as exc:

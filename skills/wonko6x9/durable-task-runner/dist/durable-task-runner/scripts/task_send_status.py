@@ -21,10 +21,6 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from task_ctl import append_event, append_progress, load_snapshot, write_snapshot, now_iso
-from task_status_snapshot import build_snapshot
-from task_ticker import render
-
 ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = ROOT / "state" / "tasks"
 SCRIPT_DIR = ROOT / "scripts"
@@ -42,6 +38,10 @@ def delivery_binding(task: dict[str, Any]) -> dict[str, Any]:
         if isinstance(item, dict) and item.get("kind") == "delivery_binding":
             return item
     raise SystemExit("no delivery_binding artifact found")
+
+
+def run(*args: str) -> str:
+    return subprocess.check_output(args, text=True).strip()
 
 
 def extract_json_object(raw: str) -> dict[str, Any]:
@@ -84,8 +84,9 @@ def extract_json_object(raw: str) -> dict[str, Any]:
 
 
 def build_line(task_id: str, kind: str, reason: str | None) -> tuple[str, dict[str, Any]]:
-    snapshot = build_snapshot(task_id)
-    ticker = render(snapshot)
+    snapshot_raw = run("python3", str(SCRIPT_DIR / "task_status_snapshot.py"), task_id)
+    snapshot = json.loads(snapshot_raw)
+    ticker = run("python3", str(SCRIPT_DIR / "task_ticker.py"), task_id)
     if kind == "immediate":
         prefix = f"update:{reason}" if reason else "update"
         return f"{prefix} | {ticker}", snapshot
@@ -138,24 +139,10 @@ def main() -> int:
     delivery = perform_delivery(binding, line)
 
     log_line = f"status sent ({args.kind}{':' + args.reason if args.reason else ''}, method={delivery['method']}): {line}"
-    ts = now_iso()
-    snapshot_task = load_snapshot(task_id)
-    snapshot_task["last_status_update_at"] = ts
-    snapshot_task["updated_at"] = ts
-    write_snapshot(snapshot_task)
-    append_progress(task_id, log_line)
-    append_event(task_id, {
-        "ts": ts,
-        "type": "status_reported",
-        "task_id": task_id,
-        "phase": snapshot_task.get("phase", ""),
-        "status": snapshot_task.get("health", "healthy"),
-        "details": {
-            "message": log_line,
-            "next_step": snapshot_task.get("next_step", ""),
-            "report_kind": "internal",
-        },
-    })
+    subprocess.run([
+        "python3", str(SCRIPT_DIR / "task_ctl.py"), "progress", task_id, log_line,
+        "--report-kind", "internal",
+    ], check=True, stdout=subprocess.DEVNULL)
     print(json.dumps({
         "sent": True,
         "kind": args.kind,
