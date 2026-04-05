@@ -1,13 +1,18 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-food-agriculture-trader",
-  "displayName": "Food & Agriculture Trader",
+  "displayName": "Polymarket Food Agriculture Trader",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773782983985,
-    "commit": "https://github.com/openclaw/skills/commit/10fb2fc95f74be7a11fc934c4d1c8da6dc2ae33e"
+    "version": "1.0.2",
+    "publishedAt": 1775317151165,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773782983985,
+      "commit": "https://github.com/openclaw/skills/commit/10fb2fc95f74be7a11fc934c4d1c8da6dc2ae33e"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773469190237,
