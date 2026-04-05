@@ -3,9 +3,15 @@
   "slug": "simvoly",
   "displayName": "Simvoly",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773806575238,
-    "commit": "https://github.com/openclaw/skills/commit/2eacfdcdeaed126e1d6457ee35e3280c418a0498"
+    "version": "1.0.2",
+    "publishedAt": 1775164633215,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773806575238,
+      "commit": "https://github.com/openclaw/skills/commit/2eacfdcdeaed126e1d6457ee35e3280c418a0498"
+    }
+  ]
 }
