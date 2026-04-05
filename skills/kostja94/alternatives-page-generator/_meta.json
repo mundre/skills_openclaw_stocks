@@ -3,9 +3,15 @@
   "slug": "alternatives-page-generator",
   "displayName": "alternatives-page-generator",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1774233376507,
-    "commit": "https://github.com/openclaw/skills/commit/3e861a11a0ec20982d4dcae4e1c122c605f6d624"
+    "version": "1.2.1",
+    "publishedAt": 1774969428171,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1774233376507,
+      "commit": "https://github.com/openclaw/skills/commit/3e861a11a0ec20982d4dcae4e1c122c605f6d624"
+    }
+  ]
 }
