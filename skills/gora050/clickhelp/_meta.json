@@ -3,9 +3,15 @@
   "slug": "clickhelp",
   "displayName": "Clickhelp",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773954199828,
-    "commit": "https://github.com/openclaw/skills/commit/b116af9ba2839b0dfa1964fb5809e89692249296"
+    "version": "1.0.2",
+    "publishedAt": 1775165076784,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773954199828,
+      "commit": "https://github.com/openclaw/skills/commit/b116af9ba2839b0dfa1964fb5809e89692249296"
+    }
+  ]
 }
