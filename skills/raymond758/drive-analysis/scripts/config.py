@@ -8,17 +8,11 @@ from enum import Enum
 from skills.smyx_common.scripts.config import ConstantEnum as ConstantEnumBase
 
 from skills.face_analysis.scripts.config import ApiEnum as ApiEnumParent, ConstantEnum as ConstantEnumParent, \
-    SceneCodeEnum
+    SceneCodeEnum, ApiEnumCommonAiMixin
 
 
-class ApiEnum(ApiEnumParent):
-
-    @classmethod
-    def init(cls, config=None):
-        super().init(config)
-        ApiEnumParent.ANALYSIS_URL = "/web/ai-analysis/v2/start-common-ai-analysis"
-        ApiEnumParent.ANALYSIS_RESULT_URL = "/web/ai-analysis/get-common-ai-analysis-result"
-        ApiEnumParent.PAGE_URL = "/web/ai-analysis/page-common-ai-analysis-result"
+class ApiEnum(ApiEnumCommonAiMixin, ApiEnumParent):
+    pass
 
 
 class ConstantEnum(ConstantEnumParent):

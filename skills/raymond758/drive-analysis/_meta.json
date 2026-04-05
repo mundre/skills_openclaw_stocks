@@ -1,11 +1,17 @@
 {
   "owner": "raymond758",
   "slug": "drive-analysis",
-  "displayName": "安全驾驶行为分析技能",
+  "displayName": "Safe Driving Behavior Analyzer | 安全驾驶行为分析工具",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774111288365,
-    "commit": "https://github.com/openclaw/skills/commit/122ac7337c193133f89111287c2785ec55259249"
+    "version": "1.0.2",
+    "publishedAt": 1775031008590,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774111288365,
+      "commit": "https://github.com/openclaw/skills/commit/122ac7337c193133f89111287c2785ec55259249"
+    }
+  ]
 }
