@@ -3,11 +3,16 @@
   "slug": "parsioio",
   "displayName": "Parsioio",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775165535229,
-    "commit": "https://github.com/openclaw/skills/commit/f6d7f6eecf8235569e0ec2d4a9e24acfbd0a513e"
+    "version": "1.0.2",
+    "publishedAt": 1775165536960,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775165535229,
+      "commit": "https://github.com/openclaw/skills/commit/f6d7f6eecf8235569e0ec2d4a9e24acfbd0a513e"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774044293593,
