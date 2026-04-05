@@ -1,13 +1,18 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-fintech-law",
-  "displayName": "九章金融科技法专家 V1.4.0",
+  "displayName": "九章-金融科技法律专家",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1774502297648,
-    "commit": "https://github.com/openclaw/skills/commit/0e89cbc7759ecbab66fa8517bca44960f9757291"
+    "version": "1.5.0",
+    "publishedAt": 1775098804213,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1774502297648,
+      "commit": "https://github.com/openclaw/skills/commit/0e89cbc7759ecbab66fa8517bca44960f9757291"
+    },
     {
       "version": "1.3.0",
       "publishedAt": 1774416778267,
