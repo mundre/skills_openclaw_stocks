@@ -1,6 +1,6 @@
 ---
 name: openclaw-self-improvement
-description: This skill should be used when the user asks to capture learnings, log recurring errors, record feature gaps, improve agent workflows over time, operationalize corrections, build a self-improving OpenClaw or ClawLite operating loop, or test whether a new guardrail/SOP/checklist/skill change actually reduces repeated failures using binary evals and keep-or-discard decisions.
+description: "OpenClaw Self-Improvement: EN=learn/log/repeat-failures, capture feature gaps, improve workflows, and run eval loops; 中文=记录学习/重复错误/功能缺口并持续改进流程，执行验证闭环。 日本語=学習・繰返しエラー・機能不足を記録し、ワークフロー改善と検証ループを回す。 한국어=학습·반복 오류·기능 누락을 기록하고 워크플로우 개선 및 검증 루프를 운영한다. ES=Registra aprendizajes, errores repetidos, brechas y ejecuta bucles de evaluación"
 ---
 
 # OpenClaw / ClawLite Self-Improvement

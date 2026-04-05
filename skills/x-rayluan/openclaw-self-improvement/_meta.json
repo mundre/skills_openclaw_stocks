@@ -1,13 +1,18 @@
 {
   "owner": "x-rayluan",
   "slug": "openclaw-self-improvement",
-  "displayName": "OpenClaw Self-Improvement",
+  "displayName": "Openclaw Self Improvement",
   "latest": {
-    "version": "0.2.1",
-    "publishedAt": 1774793528945,
-    "commit": "https://github.com/openclaw/skills/commit/3cdf8ed8eb336a2b56fc41effdbc3a3d82977e53"
+    "version": "0.2.6",
+    "publishedAt": 1774852050428,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.2.1",
+      "publishedAt": 1774793528945,
+      "commit": "https://github.com/openclaw/skills/commit/3cdf8ed8eb336a2b56fc41effdbc3a3d82977e53"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1773514132348,
