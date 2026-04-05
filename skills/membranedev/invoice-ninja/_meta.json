@@ -3,9 +3,15 @@
   "slug": "invoice-ninja",
   "displayName": "Invoice Ninja",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773716558892,
-    "commit": "https://github.com/openclaw/skills/commit/001c225a942fe02bb48735c5ea40fb6a75e8fb0b"
+    "version": "1.0.2",
+    "publishedAt": 1775164416841,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773716558892,
+      "commit": "https://github.com/openclaw/skills/commit/001c225a942fe02bb48735c5ea40fb6a75e8fb0b"
+    }
+  ]
 }
