@@ -1,11 +1,17 @@
 {
   "owner": "zeron-g",
   "slug": "course-ta",
-  "displayName": "Course Ta",
+  "displayName": "Course TA",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774226406700,
-    "commit": "https://github.com/openclaw/skills/commit/8b1f263bd1b461ae70191c6dd19ac12a3a1594e5"
+    "version": "2.0.0",
+    "publishedAt": 1775094192997,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774226406700,
+      "commit": "https://github.com/openclaw/skills/commit/8b1f263bd1b461ae70191c6dd19ac12a3a1594e5"
+    }
+  ]
 }
