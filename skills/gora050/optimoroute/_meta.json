@@ -3,9 +3,15 @@
   "slug": "optimoroute",
   "displayName": "Optimoroute",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774058626668,
-    "commit": "https://github.com/openclaw/skills/commit/6d1c6257b04942336d15d3796dd2dfa3f862e413"
+    "version": "1.0.2",
+    "publishedAt": 1775165644782,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774058626668,
+      "commit": "https://github.com/openclaw/skills/commit/6d1c6257b04942336d15d3796dd2dfa3f862e413"
+    }
+  ]
 }
