@@ -3,9 +3,15 @@
   "slug": "cloudlayer",
   "displayName": "Cloudlayer",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773964969084,
-    "commit": "https://github.com/openclaw/skills/commit/f97f7ae68ab5e2aae6f4f991e6106c1e78f534f2"
+    "version": "1.0.2",
+    "publishedAt": 1775165166230,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773964969084,
+      "commit": "https://github.com/openclaw/skills/commit/f97f7ae68ab5e2aae6f4f991e6106c1e78f534f2"
+    }
+  ]
 }
