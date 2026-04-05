@@ -3,9 +3,15 @@
   "slug": "quaderno",
   "displayName": "Quaderno",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773947061149,
-    "commit": "https://github.com/openclaw/skills/commit/8c6a84b7c4c04d9c695f1c792eaa857aabe86f91"
+    "version": "1.0.2",
+    "publishedAt": 1775165050235,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773947061149,
+      "commit": "https://github.com/openclaw/skills/commit/8c6a84b7c4c04d9c695f1c792eaa857aabe86f91"
+    }
+  ]
 }
