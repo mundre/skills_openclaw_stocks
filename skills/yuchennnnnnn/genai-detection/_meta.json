@@ -1,11 +1,17 @@
 {
   "owner": "yuchennnnnnn",
   "slug": "genai-detection",
-  "displayName": "GenAI Detection",
+  "displayName": "AI Image Check",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773948020971,
-    "commit": "https://github.com/openclaw/skills/commit/53c55ae4c8d05056dbbbc50641e1f86b90f0c8b4"
+    "version": "1.0.3",
+    "publishedAt": 1774988833011,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773948020971,
+      "commit": "https://github.com/openclaw/skills/commit/53c55ae4c8d05056dbbbc50641e1f86b90f0c8b4"
+    }
+  ]
 }
