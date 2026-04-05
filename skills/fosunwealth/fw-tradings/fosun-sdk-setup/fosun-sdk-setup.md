@@ -1,7 +1,7 @@
 ---
 name: fosun-sdk-setup
 
-description: Install, verify, and configure the Fosun Wealth OpenAPI SDK in a dedicated workspace virtual environment tracked via `MEMORY.md`, and guide end-to-end onboarding through `fosun.env`, automatic credential state handling, and QR-based open-url delivery. Use when setting up or repairing `fsopenapi`, fixing missing SDK/import/authentication issues, initializing or refreshing API keys, Ticket, device ID, or client keys, generating the onboarding QR/link, or when other `fosun-*` skills need a ready-to-use Fosun client/session for HK, US, `sh`, or `sz` markets.
+description: 复星集团旗下复星财富（Fosun Wealth，星财富 APP）OpenAPI SDK 初始化与凭证管理工具，支持在专用虚拟环境安装、校验与修复 `fsopenapi`，并通过 `fosun.env`、自动凭证状态管理和开通二维码/链接完成端到端接入；适用于初始化或修复 SDK、导入与鉴权问题，以及刷新 API Key、Ticket、设备 ID 与客户端密钥。
 requires:
   bins:
     - python3

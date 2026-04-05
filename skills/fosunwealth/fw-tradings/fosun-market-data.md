@@ -1,6 +1,6 @@
 ---
 name: fosun-market-data
-description: 复星行情查询工具集。支持股票行情拉取（报价/盘口/K线/分时/逐笔/经纪队列）、期权行情查询和行情推送订阅，覆盖港股(L2)、美股(L1)、A股(L1)及美股期权。
+description: 复星集团旗下复星财富（Fosun Wealth，星财富 APP）行情查询工具集，支持股票行情拉取（报价/盘口/K 线/分时/逐笔/经纪队列）、期权行情查询和行情推送订阅，覆盖港股 (L2)、美股 (L1)、A 股 (L1) 及美股期权。
 requires:
   env:
     - FSOPENAPI_API_KEY

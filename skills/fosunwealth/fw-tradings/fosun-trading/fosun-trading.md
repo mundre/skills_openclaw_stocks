@@ -1,6 +1,6 @@
 ---
 name: fosun-trading
-description: 复星证券交易工具集的通用基础配置。定义环境约束、市场规则、订单类型、交易限制和推荐工作流。行情查询见 fosun-market-data，账户查询见 fosun-account，订单管理见 fosun-orders。
+description: 复星集团旗下复星财富（Fosun Wealth，星财富 APP）证券交易工具集的通用基础配置，定义环境约束、市场规则、订单类型、交易限制与推荐工作流；行情查询见 fosun-market-data，账户查询见 fosun-account，订单管理见 fosun-orders。
 requires:
   env:
     - FSOPENAPI_API_KEY

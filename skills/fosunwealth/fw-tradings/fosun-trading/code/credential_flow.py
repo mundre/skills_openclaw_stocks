@@ -12,10 +12,7 @@ import tempfile
 import uuid
 
 import requests
-import urllib3
 from cryptography.hazmat.primitives import serialization
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def _resolve_workspace_root():
@@ -265,7 +262,6 @@ def _post_auth_json(base_url, path, payload):
         json=payload,
         headers=_ticket_headers(),
         timeout=15,
-        verify=False,
     )
     response.raise_for_status()
     return _extract_response_data(response.json())

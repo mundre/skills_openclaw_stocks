@@ -1,6 +1,6 @@
 ---
 name: fosun-order-modify
-description: 复星撤单与改单工具集。支持撤销未成交订单和修改已有订单的委托参数（价格/数量/触发价等），覆盖港/美/A股市场。包含严格的改单决策规则和自动降级禁止约束。
+description: 复星集团旗下复星财富（Fosun Wealth，星财富 APP）撤单与改单工具集，支持撤销未成交订单和修改已有订单的委托参数（价格/数量/触发价等），覆盖港/美/A 股市场，并包含严格的改单决策规则与自动降级禁止约束。
 requires:
   env:
     - FSOPENAPI_API_KEY

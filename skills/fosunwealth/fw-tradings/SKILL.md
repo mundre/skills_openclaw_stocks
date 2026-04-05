@@ -1,6 +1,6 @@
 ---
 name: fw-tradings
-description: Fosun Wealth OpenAPI 技能集合，包含 SDK 环境初始化与证券交易四大模块。涵盖 SDK 安装配置、凭证管理、行情查询、账户/资金/持仓查询、资金流水查询、下单/撤单/改单及订单管理，支持港股(L2)、美股(L1)、A股港股通(L1)市场。
+description: 复星集团旗下复星财富（Fosun Wealth）官方 OpenAPI 技能集合，包含 SDK 环境初始化与证券交易四大核心模块。涵盖 SDK 安装配置、凭证管理、行情查询、账户 / 资金 / 持仓查询、资金流水查询、下单 / 撤单 / 改单及订单管理等功能，支持港股 (L2)、美股 (L1)、A 股港股通 (L1) 市场。需通过星财富 APP 完成证券账户开户后方可体验。
 requires:
   env:
     - FSOPENAPI_API_KEY

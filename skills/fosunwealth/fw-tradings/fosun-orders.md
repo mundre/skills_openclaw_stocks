@@ -1,6 +1,6 @@
 ---
 name: fosun-orders
-description: 复星下单与订单查询工具集。支持下单（普通单/条件单/跟踪止损/止盈止损/期权单）和订单查询，覆盖港/美/A股市场。撤单和改单见 fosun-order-modify skill。
+description: 复星集团旗下复星财富（Fosun Wealth，星财富 APP）下单与订单查询工具集，支持下单（普通单/条件单/跟踪止损/止盈止损/期权单）和订单查询，覆盖港/美/A 股市场；撤单和改单见 fosun-order-modify skill。
 requires:
   env:
     - FSOPENAPI_API_KEY

@@ -3,11 +3,16 @@
   "slug": "fw-tradings",
   "displayName": "FW-trading",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1774526666092,
-    "commit": "https://github.com/openclaw/skills/commit/eb7a304f92e6a6f341648a79bc45008474367a51"
+    "version": "1.0.6",
+    "publishedAt": 1775143572792,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1774526666092,
+      "commit": "https://github.com/openclaw/skills/commit/eb7a304f92e6a6f341648a79bc45008474367a51"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1774108299082,
