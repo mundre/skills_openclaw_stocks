@@ -3,11 +3,16 @@
   "slug": "skywork-search",
   "displayName": "Skywork Search",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773927024180,
-    "commit": "https://github.com/openclaw/skills/commit/0e8025766ad72d886c8367482d197d7e2b84dff7"
+    "version": "1.0.6",
+    "publishedAt": 1775098785748,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773927024180,
+      "commit": "https://github.com/openclaw/skills/commit/0e8025766ad72d886c8367482d197d7e2b84dff7"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773744730965,

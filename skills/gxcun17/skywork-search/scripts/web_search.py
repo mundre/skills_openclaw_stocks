@@ -12,31 +12,35 @@ in a temporary directory and paths are printed to stdout.
 import argparse
 import json
 import os
+import re
 import sys
 import tempfile
 import urllib.request
 
 # Add scripts directory to path for skywork_auth import
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from skywork_auth import get_skywork_token
-
-SKYWORK_GATEWAY_URL = os.environ.get("SKYWORK_GATEWAY_URL", "https://api-tools.skywork.ai/theme-gateway").rstrip("/")
+from constant import POD_TYPE, SKYWORK_GATEWAY_URL
+from skywork_auth import get_skywork_api_key
 
 
 def search(query: str) -> str:
     """Call web_search API and return formatted text of results."""
     url = f"{SKYWORK_GATEWAY_URL}/web_search"
-    token = get_skywork_token()
-    payload = {"query": query, "source_platform": "skyclaw" if os.environ.get("POD_TYPE", "") == "skyclaw" else ""}
+    api_key = get_skywork_api_key()
+    if not api_key:
+        print("[error] SKYWORK_API_KEY is required", file=sys.stderr)
+        sys.exit(1)
+    payload = {"query": query, "source_platform": "skyclaw" if POD_TYPE == "skyclaw" else ""}
     body = json.dumps(payload).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
     req = urllib.request.Request(
         url,
         data=body,
         method="POST",
-        headers={
-            "Content-Type": "application/json",
-            "token": token,
-        },
+        headers=headers,
     )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -62,6 +66,13 @@ def search(query: str) -> str:
     return "\n\n".join(lines)
 
 
+def safe_filename(value: str) -> str:
+    cleaned = re.sub(r"[^\w.-]+", "_", value, flags=re.UNICODE).strip("._-")
+    if not cleaned:
+        return "query"
+    return cleaned[:80]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Search the web via Skywork API")
     parser.add_argument("queries", nargs="+", help="One or more search queries (max 3)")
@@ -73,7 +84,7 @@ def main():
     for q in queries:
         print(f"[query] {q} ...", file=sys.stderr, flush=True)
         raw = search(q)
-        out_path = os.path.join(out_dir, f"{q}_result.txt")
+        out_path = os.path.join(out_dir, f"{safe_filename(q)}_result.txt")
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(f"query: {q}\n\n{raw}")
         print(f"Saved: {out_path}", flush=True)
