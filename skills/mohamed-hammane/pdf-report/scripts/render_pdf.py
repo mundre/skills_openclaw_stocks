@@ -5,12 +5,24 @@ import argparse
 from datetime import datetime
 import json
 import math
+import os
 import re
 import sys
 from pathlib import Path
 
 
 def get_workspace_root() -> Path:
+    # Prefer explicit env var, fall back to walking up to find .openclaw marker,
+    # then fall back to parents[3] for backward compatibility.
+    env_root = os.environ.get("OPENCLAW_WORKSPACE")
+    if env_root:
+        return Path(env_root).resolve()
+
+    current = Path(__file__).resolve().parent
+    for ancestor in [current] + list(current.parents):
+        if (ancestor / ".openclaw").is_dir() or (ancestor / "AGENTS.md").is_file():
+            return ancestor
+
     return Path(__file__).resolve().parents[3]
 
 
@@ -116,20 +128,35 @@ def normalize_table(table: dict | None) -> dict | None:
     }
 
 
-def normalize_charts(charts: list[dict] | None) -> list[dict]:
+def normalize_charts(charts: list[dict] | None, workspace: Path) -> list[dict]:
     normalized = []
     for chart in charts or []:
+        src = normalize_scalar(chart.get("src", ""))
+        if src:
+            # Validate chart path stays inside workspace
+            src_path = Path(src).expanduser()
+            if not src_path.is_absolute():
+                src_path = workspace / src_path
+            src_resolved = src_path.resolve()
+            try:
+                src_resolved.relative_to(workspace)
+            except ValueError:
+                print(f"Warning: chart path outside workspace, skipped: {src}", file=sys.stderr)
+                continue
+            if not src_resolved.is_file():
+                print(f"Warning: chart image not found: {src_resolved}", file=sys.stderr)
+            src = str(src_resolved)
         normalized.append(
             {
                 "title": normalize_scalar(chart.get("title", "")),
-                "src": normalize_scalar(chart.get("src", "")),
+                "src": src,
                 "caption": normalize_scalar(chart.get("caption", "")),
             }
         )
     return normalized
 
 
-def normalize_sections(sections: list[dict] | None) -> list[dict]:
+def normalize_sections(sections: list[dict] | None, workspace: Path) -> list[dict]:
     normalized = []
     for section in sections or []:
         normalized.append(
@@ -138,14 +165,14 @@ def normalize_sections(sections: list[dict] | None) -> list[dict]:
                 "lead": normalize_scalar(section.get("lead", "")),
                 "items": [normalize_scalar(item) for item in section.get("items", [])],
                 "table": normalize_table(section.get("table")),
-                "charts": normalize_charts(section.get("charts")),
+                "charts": normalize_charts(section.get("charts"), workspace),
                 "note": normalize_scalar(section.get("note", "")),
             }
         )
     return normalized
 
 
-def normalize_payload(payload: dict) -> dict:
+def normalize_payload(payload: dict, workspace: Path) -> dict:
     title = normalize_scalar(payload.get("title", ""))
     if not title:
         raise SystemExit("Input JSON must contain a non-empty 'title'.")
@@ -155,7 +182,7 @@ def normalize_payload(payload: dict) -> dict:
         "subtitle": normalize_scalar(payload.get("subtitle", "")),
         "generated_at": normalize_scalar(payload.get("generated_at", "")),
         "summary": [normalize_scalar(item) for item in payload.get("summary", [])],
-        "sections": normalize_sections(payload.get("sections")),
+        "sections": normalize_sections(payload.get("sections"), workspace),
         "footer": normalize_scalar(payload.get("footer", "")),
     }
 
@@ -224,7 +251,7 @@ def main() -> int:
         else None
     )
 
-    payload = normalize_payload(load_payload(input_path))
+    payload = normalize_payload(load_payload(input_path), workspace)
     html = render_html(payload, template_path)
 
     if html_out_path:

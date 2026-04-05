@@ -3,9 +3,15 @@
   "slug": "pdf-report",
   "displayName": "PDF Report",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774256085930,
-    "commit": "https://github.com/openclaw/skills/commit/e0bee6902874ab0f629a3ed493ed3ea57bbd4e1f"
+    "version": "1.0.1",
+    "publishedAt": 1775326081178,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774256085930,
+      "commit": "https://github.com/openclaw/skills/commit/e0bee6902874ab0f629a3ed493ed3ea57bbd4e1f"
+    }
+  ]
 }
