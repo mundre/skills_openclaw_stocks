@@ -3,9 +3,15 @@
   "slug": "proabono",
   "displayName": "Proabono",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773947125905,
-    "commit": "https://github.com/openclaw/skills/commit/8a5ef69655a4c25233f403dc2aa353321edeadef"
+    "version": "1.0.2",
+    "publishedAt": 1775165063937,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773947125905,
+      "commit": "https://github.com/openclaw/skills/commit/8a5ef69655a4c25233f403dc2aa353321edeadef"
+    }
+  ]
 }
