@@ -1,11 +1,17 @@
 {
   "owner": "roamer-remote",
   "slug": "stocks-query-base-skill",
-  "displayName": "股市小灵通-信息查询基础版本",
+  "displayName": "A股-股市分析和投资顾问（安西军项目）",
   "latest": {
-    "version": "0.0.5",
-    "publishedAt": 1773949455978,
-    "commit": "https://github.com/openclaw/skills/commit/c625b2297393f212e14a10006fc57660b7ba8f4d"
+    "version": "0.1.1",
+    "publishedAt": 1775235690187,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.5",
+      "publishedAt": 1773949455978,
+      "commit": "https://github.com/openclaw/skills/commit/c625b2297393f212e14a10006fc57660b7ba8f4d"
+    }
+  ]
 }
