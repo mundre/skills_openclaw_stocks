@@ -32,5 +32,5 @@ metadata:
 3. **调用命令**：使用以下兼容性命令启动脚本（优先使用 python3，失败则回退 python）。脚本会自动检测是否安装 Whisper 依赖，并在必要时提示安装。
 
    ```bash
-   (python3 scripts/melo_metadata_gen.py --wav_dir "<音频目录>" --txt_dir "<文本目录>" [--speaker <姓名>] [--lang {ZH,EN}] [--output <路径>] [--recursive] [--use_whisper]) || (python scripts/melo_metadata_gen.py --wav_dir "<音频目录>" --txt_dir "<文本目录>" [--speaker <姓名>] [--lang {ZH,EN}] [--output <路径>] [--recursive] [--use_whisper])
+   (python3 scripts/generate_metadata_list.py --wav_dir "<音频目录>" --txt_dir "<文本目录>" [--speaker <姓名>] [--lang {ZH,EN}] [--output <路径>] [--recursive] [--use_whisper]) || (python scripts/generate_metadata_list.py --wav_dir "<音频目录>" --txt_dir "<文本目录>" [--speaker <姓名>] [--lang {ZH,EN}] [--output <路径>] [--recursive] [--use_whisper])
 
