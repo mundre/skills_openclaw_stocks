@@ -1,8 +1,10 @@
 /**
  * Reporter Module - Report generation and formatting
+ * 
+ * 已修复：处理旧数据格式，兼容缺失 startTime/endTime 的记录
  */
 
-const { loadConfig } = require('../lib/storage');
+const { loadConfig, getEventDate } = require('../lib/storage');
 const { getTimeSlotName } = require('../lib/analyzer');
 
 /**
@@ -14,6 +16,7 @@ function getCategoryName(category) {
     study: 'Study',
     exercise: 'Exercise',
     social: 'Social',
+    family: 'Family',
     rest: 'Rest',
     entertainment: 'Entertainment',
     chores: 'Chores',
@@ -31,6 +34,7 @@ function getCategoryEmoji(category) {
     study: '[S]',
     exercise: '[E]',
     social: '[O]',
+    family: '[F]',
     rest: '[R]',
     entertainment: '[G]',
     chores: '[C]',
@@ -175,7 +179,27 @@ function formatMonthlyReport(report) {
 }
 
 /**
+ * 从时间字符串中提取时间部分 (HH:MM)
+ * 支持多种格式: "2026-03-25T09:00:00", "09:00", null/undefined
+ */
+function extractTime(timeStr) {
+  if (!timeStr) return '--:--';
+  if (timeStr.includes('T')) {
+    const parts = timeStr.split('T');
+    if (parts[1]) {
+      return parts[1].slice(0, 5);
+    }
+  }
+  // 纯时间格式 "09:00:00" 或 "09:00"
+  if (timeStr.includes(':')) {
+    return timeStr.slice(0, 5);
+  }
+  return '--:--';
+}
+
+/**
  * Format event list
+ * 已修复：处理旧数据格式，兼容缺失 startTime/endTime 的记录
  */
 function formatEventList(events) {
   if (!events || events.length === 0) {
@@ -183,13 +207,14 @@ function formatEventList(events) {
   }
   
   return events.map(e => {
-    const name = getCategoryName(e.category);
-    const date = e.startTime.split('T')[0];
-    const start = e.startTime.split('T')[1] ? e.startTime.split('T')[1].slice(0, 5) : e.startTime.slice(11, 16);
-    const end = e.endTime.split('T')[1] ? e.endTime.split('T')[1].slice(0, 5) : e.endTime.slice(11, 16);
+    const name = getCategoryName(e.category) || 'Unknown';
+    const date = getEventDate(e) || 'Unknown';
+    const start = extractTime(e.startTime);
+    const end = extractTime(e.endTime);
     const status = e.status === 'completed' ? '[OK]' : e.status === 'interrupted' ? '[~]' : '[X]';
+    const desc = e.description || e.title || 'Untitled';
     
-    return `${date} ${start}-${end} ${name} ${status} ${e.description}`;
+    return `${date} ${start}-${end} ${name} ${status} ${desc}`;
   }).join('\n');
 }
 

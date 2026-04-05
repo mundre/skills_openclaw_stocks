@@ -1,5 +1,11 @@
 /**
  * Storage Module - Local data persistence
+ * 
+ * 已修复：旧数据兼容性处理
+ * - 处理缺失 startTime/endTime 的旧记录
+ * - 处理使用 from/to/date 代替 startTime/endTime 的记录
+ * - 处理使用 title 代替 description 的记录
+ * - 处理使用中文 category 的记录
  */
 
 const fs = require('fs');
@@ -25,10 +31,38 @@ const DEFAULT_CATEGORIES = {
   study: { name: '学习', bestDuration: 1.0 },
   exercise: { name: '运动', bestDuration: 0.75 },
   social: { name: '社交', bestDuration: 1.5 },
+  family: { name: '家庭', bestDuration: 1.5 },
   rest: { name: '休息', bestDuration: 0.5 },
   entertainment: { name: '娱乐', bestDuration: 1.2 },
   chores: { name: '家务', bestDuration: 1.0 },
   other: { name: '其他', bestDuration: 1.0 }
+};
+
+// 中文分类映射到标准分类
+const CATEGORY_MAPPING = {
+  '工作': 'work',
+  '学习': 'study',
+  '阅读': 'study',
+  '运动': 'exercise',
+  '健身': 'exercise',
+  '社交': 'social',
+  '朋友': 'social',
+  '休息': 'rest',
+  '睡觉': 'rest',
+  '娱乐': 'entertainment',
+  '游戏': 'entertainment',
+  '家务': 'chores',
+  '打扫': 'chores',
+  '其他': 'other',
+  '生活': 'other',
+  '生活/采购': 'chores',
+  '生活/清洁': 'chores',
+  '休息/生活': 'rest',
+  '资讯': 'entertainment',
+  '资讯/休息': 'entertainment',
+  '出行': 'other',
+  '社交/生活': 'social',
+  '家庭': 'family'
 };
 
 const DEFAULT_CONFIG = {
@@ -58,6 +92,103 @@ function initStorage() {
 }
 
 /**
+ * 标准化事件数据，处理旧数据格式
+ * @param {Object} event - 原始事件数据
+ * @returns {Object} 标准化后的事件数据
+ */
+function normalizeEvent(event) {
+  if (!event || typeof event !== 'object') {
+    return null;
+  }
+
+  const normalized = { ...event };
+
+  // 处理 title -> description
+  if (!normalized.description && normalized.title) {
+    normalized.description = normalized.title;
+  }
+
+  // 处理中文分类 -> 标准分类
+  if (normalized.category && CATEGORY_MAPPING[normalized.category]) {
+    normalized.category = CATEGORY_MAPPING[normalized.category];
+  }
+
+  // 处理 from/to/date -> startTime/endTime
+  if (!normalized.startTime && normalized.from && normalized.date) {
+    // 处理 from 格式: "09:00" 或 "9:00"
+    const time = normalized.from.padStart(5, '0');
+    normalized.startTime = `${normalized.date}T${time}:00`;
+  }
+
+  if (!normalized.endTime && normalized.to && normalized.date) {
+    const time = normalized.to.padStart(5, '0');
+    normalized.endTime = `${normalized.date}T${time}:00`;
+  }
+
+  // 处理 durationMin -> duration
+  if (normalized.durationMin && !normalized.duration) {
+    normalized.duration = normalized.durationMin / 60;
+  }
+
+  // 处理 "2026-03-25 08:15" 格式（空格代替 T）
+  if (normalized.startTime && normalized.startTime.includes(' ') && !normalized.startTime.includes('T')) {
+    normalized.startTime = normalized.startTime.replace(' ', 'T');
+  }
+  if (normalized.endTime && normalized.endTime.includes(' ') && !normalized.endTime.includes('T')) {
+    normalized.endTime = normalized.endTime.replace(' ', 'T');
+  }
+
+  // 确保有 id
+  if (!normalized.id) {
+    normalized.id = uuidv4();
+  }
+
+  // 确保有 status
+  if (!normalized.status) {
+    normalized.status = 'completed';
+  }
+
+  // 确保有 createdAt
+  if (!normalized.createdAt) {
+    normalized.createdAt = new Date().toISOString();
+  }
+
+  return normalized;
+}
+
+/**
+ * 从事件中提取日期（处理各种格式）
+ * @param {Object} event - 事件对象
+ * @returns {string|null} 日期字符串 YYYY-MM-DD 或 null
+ */
+function getEventDate(event) {
+  if (!event) return null;
+
+  // 优先使用 startTime
+  if (event.startTime) {
+    const date = event.startTime.split('T')[0];
+    if (date && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return date;
+    }
+  }
+
+  // 使用 date 字段
+  if (event.date && event.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return event.date;
+  }
+
+  // 使用 createdAt
+  if (event.createdAt) {
+    const date = event.createdAt.split('T')[0];
+    if (date && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return date;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Load all events with optional query filters
  * @param {Object} query - Query filters
  * @param {string} query.category - Filter by category
@@ -72,26 +203,35 @@ function loadEvents(query = {}) {
     const data = fs.readFileSync(EVENTS_FILE, 'utf8');
     let events = JSON.parse(data);
 
+    // 标准化所有事件（处理旧数据格式）
+    events = events.map(normalizeEvent).filter(e => e !== null);
+
     if (query.category) {
-      events = events.filter(e => e.category === query.category);
+      // 同时匹配标准分类和中文分类
+      const targetCategory = CATEGORY_MAPPING[query.category] || query.category;
+      events = events.filter(e => e.category === targetCategory || e.category === query.category);
     }
 
     if (query.date) {
       const targetDate = query.date;
       events = events.filter(e => {
-        const eventDate = e.startTime.split('T')[0];
+        const eventDate = getEventDate(e);
         return eventDate === targetDate;
       });
     }
 
     if (query.startDate && query.endDate) {
       events = events.filter(e => {
-        const eventDate = e.startTime.split('T')[0];
-        return eventDate >= query.startDate && eventDate <= query.endDate;
+        const eventDate = getEventDate(e);
+        return eventDate && eventDate >= query.startDate && eventDate <= query.endDate;
       });
     }
 
-    return events.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    return events.sort((a, b) => {
+      const dateA = a.startTime || a.createdAt || '';
+      const dateB = b.startTime || b.createdAt || '';
+      return new Date(dateB) - new Date(dateA);
+    });
   } catch (e) {
     console.error('Failed to load events:', e.message);
     return [];
@@ -166,7 +306,16 @@ function loadConfig() {
   initStorage();
   try {
     const data = fs.readFileSync(CONFIG_FILE, 'utf8');
-    return { ...DEFAULT_CONFIG, ...JSON.parse(data) };
+    const parsed = JSON.parse(data);
+
+    return {
+      ...DEFAULT_CONFIG,
+      ...parsed,
+      categories: {
+        ...DEFAULT_CATEGORIES,
+        ...(parsed.categories || {})
+      }
+    };
   } catch (e) {
     return DEFAULT_CONFIG;
   }
@@ -213,7 +362,7 @@ function getEventDates(year, month) {
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
   const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
   const events = getEventsByDateRange(startDate, endDate);
-  const dates = [...new Set(events.map(e => e.startTime.split('T')[0]))];
+  const dates = [...new Set(events.map(e => getEventDate(e)).filter(d => d))];
   return dates.sort();
 }
 
@@ -228,6 +377,8 @@ module.exports = {
   getEventById,
   getEventsByDateRange,
   getEventDates,
+  normalizeEvent,
+  getEventDate,
   DEFAULT_CATEGORIES,
   DEFAULT_CONFIG
 };

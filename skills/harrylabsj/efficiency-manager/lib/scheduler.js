@@ -39,6 +39,7 @@ function estimateCategory(description) {
     study: ['学习', '读书', '看书', '课程', '学习', 'study', 'read'],
     exercise: ['运动', '跑步', '健身', '锻炼', '瑜伽', 'exercise', 'run', 'gym'],
     social: ['社交', '聚会', '聊天', '会友', 'social', 'meet'],
+    family: ['家庭', '家人', '亲子', '陪娃', 'family'],
     entertainment: ['娱乐', '游戏', '电影', '视频', '看剧', 'game', 'movie'],
     chores: ['家务', '做饭', '购物', '清洁', 'chores', 'cook', 'shop'],
     rest: ['休息', '睡觉', '午休', 'break', 'sleep']
@@ -96,6 +97,7 @@ function getPreferredSlots(category) {
     study: ['morning', 'afternoon'],
     exercise: ['morning', 'evening'],
     social: ['evening', 'afternoon'],
+    family: ['evening', 'afternoon'],
     entertainment: ['evening', 'night'],
     chores: ['morning', 'afternoon'],
     rest: ['night', 'afternoon'],
@@ -224,6 +226,7 @@ function getScheduleReason(category, preferredSlots) {
     study: `学习任务在${slotName}时段更容易保持专注`,
     exercise: `运动安排在${slotName}有助于保持体能`,
     social: `社交活动适合安排在${slotName}`,
+    family: `家庭相关事项安排在${slotName}通常更稳妥`,
     entertainment: `娱乐时间建议安排在${slotName}作为放松`,
     chores: `家务事建议在${slotName}集中处理`,
     rest: `休息安排在${slotName}最为合适`

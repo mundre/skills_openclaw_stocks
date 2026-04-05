@@ -20,6 +20,11 @@
       "expertAvg": 1.5,
       "description": "社交/聚会平均时长"
     },
+    "family": {
+      "globalAvg": 1.8,
+      "expertAvg": 1.5,
+      "description": "家庭相关事务平均时长"
+    },
     "rest": {
       "globalAvg": 0.5,
       "expertAvg": 0.3,
@@ -47,6 +52,7 @@
       "study": 1.2,
       "exercise": 0.8,
       "social": 1.5,
+      "family": 1.5,
       "rest": 0.3,
       "entertainment": 1.0,
       "chores": 1.0
@@ -56,6 +62,7 @@
       "study": 1.5,
       "exercise": 1.0,
       "social": 2.0,
+      "family": 1.8,
       "rest": 0.5,
       "entertainment": 1.2,
       "chores": 1.2
@@ -65,6 +72,7 @@
       "study": 1.8,
       "exercise": 1.2,
       "social": 2.5,
+      "family": 2.0,
       "rest": 0.5,
       "entertainment": 1.5,
       "chores": 1.0
@@ -74,6 +82,7 @@
       "study": 2.0,
       "exercise": 1.5,
       "social": 3.0,
+      "family": 2.2,
       "rest": 0.8,
       "entertainment": 2.0,
       "chores": 1.5

@@ -12,8 +12,6 @@
  *   efficiency config
  */
 
-const fs = require('fs');
-const path = require('path');
 const readline = require('readline');
 
 const {
@@ -223,7 +221,7 @@ function handleReport(args, options) {
 function handleAnalyze(args, options) {
   initStorage();
   
-  const category = args[0] || options.all ? null : 'work';
+  const category = options.all ? null : (args[0] || 'work');
   
   if (category) {
     const analysis = analyzeCategory(category);
@@ -402,22 +400,11 @@ function handleEnd(args, options) {
   
   // End the event
   const now = new Date().toISOString();
-  event.endTime = now;
-  event.status = 'completed';
-  event.updatedAt = now;
-  
-  // Update in storage
-  const allEvents = loadEvents();
-  const index = allEvents.findIndex(e => e.id === event.id);
-  if (index >= 0) {
-    allEvents[index] = event;
-    const { initStorage, loadEvents, saveEvent } = require('../lib/storage');
-    initStorage();
-    const fs = require('fs');
-    const path = require('path');
-    const EVENTS_FILE = path.join(process.env.HOME, '.openclaw', 'efficiency-manager', 'data', 'events.json');
-    fs.writeFileSync(EVENTS_FILE, JSON.stringify(allEvents, null, 2));
-  }
+  event = saveEvent({
+    ...event,
+    endTime: now,
+    status: 'completed'
+  });
   
   const duration = (new Date(event.endTime) - new Date(event.startTime)) / (1000 * 60);
   const startTime = event.startTime.replace('T', ' ').slice(0, 16);

@@ -1,163 +1,159 @@
 ---
 name: efficiency-manager
-description: Track events, analyze efficiency, generate daily/weekly/monthly reports with suggestions. All data stored locally.
-triggers:
-  - 效率
-  - 效率日报
-  - 效率周报
-  - 效率月报
-  - 效率分析
-  - 效率报告
-  - 时间管理
-  - 事情安排
-  - 时间规划
-  - 做什么效率高
-  - efficiency
-  - efficiency report
-  - time analysis
+description: Local execution coach that captures activities, reviews time use, suggests the best next move, and helps build realistic day plans from task inputs, deadlines, and personal energy patterns. Use when the user wants efficiency analysis, daily or weekly reviews, time planning, next-task suggestions, focus scheduling, or help deciding what to do now versus defer.
 ---
 
 # Efficiency Manager
 
-Track your daily activities, analyze efficiency, and get actionable insights.
+Efficiency Manager is not just a time tracker.
 
-## Overview
+It is a local execution coach.
 
-Efficiency Manager helps you:
-- Track events with description, category, and time
-- Analyze your efficiency per category (vs. your best & global average)
-- Generate daily, weekly, and monthly efficiency reports
-- Get suggestions to improve your productivity
-- Optimize your schedule based on your best time slots
+Its job is to turn activity history, task inputs, and time constraints into better execution decisions:
+- what to do now
+- what to do later
+- what to stop doing
+- when a task should happen
+- which pattern is hurting progress
 
-## Features
+Use this skill when the user wants help with:
+- logging what they did
+- reviewing where time went
+- deciding the next best task
+- planning a realistic day
+- spotting recurring execution problems
 
-- **Event Tracking**: Record what you did, when, and for how long
-- **Efficiency Analysis**: Compare your performance vs. best & average
-- **Time Insights**: Learn when you're most productive for each category
-- **Reports**: Daily, weekly, and monthly efficiency reports
-- **Smart Scheduling**: Get suggestions on what to do when
+## Core Job
 
-## Installation
+Work in this order:
 
-```bash
-clawhub install efficiency-manager
-```
+1. Capture the work clearly.
+2. Diagnose what the data suggests.
+3. Recommend the next move.
 
-## Usage
+This skill should feel like a calm operator:
+- practical
+- concise
+- willing to make tradeoffs
+- willing to say "do less"
 
-### Record Events
+Avoid drifting into:
+- generic motivation
+- passive charts with no decision
+- fake precision when the data is weak
 
-```bash
-# Quick add
-efficiency add "写代码" --category work --from 09:00 --to 11:00
+## Primary Modes
 
-# With notes
-efficiency add "看书" --category study --from 14:00 --to 15:30 --notes "阅读《深度工作》"
+### 1. Log
 
-# Interactive mode
-efficiency add
-```
+Use when the user is recording completed or ongoing work.
 
-### View Reports
+Goal:
+- save a clean event with the right category, timing, and status
 
-```bash
-# Daily report (default: today)
-efficiency report today
-efficiency report 2026-03-21
+### 2. Review
 
-# Weekly report
-efficiency report week
-efficiency report week 2026-03-15
+Use when the user wants a day, week, or month summary.
 
-# Monthly report
-efficiency report month
-efficiency report month 2026-03
-```
+Goal:
+- show where time went
+- identify strong and weak patterns
+- end with one concrete behavior change
 
-### Analyze Efficiency
+### 3. Suggest Next
 
-```bash
-# Analyze specific category
-efficiency analyze work
-efficiency analyze study
+Use when the user has several possible tasks and needs a direct recommendation.
 
-# Analyze all
-efficiency analyze --all
-```
+Goal:
+- recommend the best next task
+- explain why now
+- name one thing to defer
 
-### Smart Planning
+### 4. Plan Day
 
-```bash
-# Get schedule suggestions
-efficiency plan "写代码2h" "开会1h" "健身1h"
-```
+Use when the user wants a realistic schedule.
 
-### Configuration
+Goal:
+- fit tasks into available time
+- protect focus blocks when possible
+- surface overflow honestly
 
-```bash
-# Show config
-efficiency config
+### 5. Weekly Review
 
-# Set preferences
-efficiency config set dayStart 06:00
-efficiency config set reportTime 22:00
-```
+Use when the user wants behavior change, not only stats.
 
-### List Events
+Goal:
+- identify what created real progress
+- identify what looked busy but was low-value
+- recommend one adjustment for next week
 
-```bash
-# List recent events
-efficiency list
+## Current Command Surface
 
-# List events by date
-efficiency list --date 2026-03-21
+The current implementation already supports local logging and review well.
 
-# List by category
-efficiency list --category work
-```
+Available command paths today:
+- `efficiency-api add`, `report`, `list`
+- `efficiency start`, `end`, `report`, `analyze`, `plan`, `list`, `config`
 
-### Delete Events
+Important:
+- `suggest-next` and `weekly-review` are product modes this skill should support in conversation, even though they do not yet exist as dedicated wrapper commands.
+- when needed, derive those outputs from existing history, task input, and the heuristics in `references/`
 
-```bash
-# Delete by ID
-efficiency delete <event-id>
+For direct command usage, see:
+- `references/api.md`
 
-# Delete all (with confirmation)
-efficiency delete --all
-```
+## Decision Rules
 
-## Categories
+- Prefer realistic plans over full plans.
+- Prefer stable quality over shortest duration.
+- Treat interrupted work as a signal, not only as time spent.
+- Use historical strong time slots when confidence is high.
+- If confidence is low, say so and make a lightweight recommendation.
+- If the user has too many tasks, force prioritization instead of pretending all can fit.
+- If the user mainly needs action, do not stop at raw metrics.
 
-| Category | Chinese | Best Duration |
-|----------|---------|---------------|
-| work | 工作 | 1.8h |
-| study | 学习 | 1.0h |
-| exercise | 运动 | 0.75h |
-| social | 社交 | 1.5h |
-| rest | 休息 | 0.5h |
-| entertainment | 娱乐 | 1.2h |
-| chores | 家务 | 1.0h |
-| other | 其他 | 1.0h |
+## Output Style
 
-## Time Slots
+Default to action-oriented output.
 
-- **Morning**: 06:00 - 12:00
-- **Afternoon**: 12:00 - 18:00
-- **Evening**: 18:00 - 22:00
-- **Night**: 22:00 - 06:00
+Good outputs usually end with:
+- what to do now
+- what to do later
+- what to stop doing
 
-## Data Storage
+For review-style answers, prefer this shape:
+- summary of time use
+- strongest pattern
+- weakest pattern
+- one recommendation for the next block, day, or week
 
-All data is stored locally:
-- Events: `~/.openclaw/efficiency-manager/data/events.json`
-- Config: `~/.openclaw/efficiency-manager/config.json`
+For next-task decisions, prefer this shape:
+- best next task
+- why it wins now
+- backup option
+- one task to defer
 
-## Requirements
+For day plans, prefer this shape:
+- scheduled blocks
+- overflow or deferred tasks
+- one warning or bottleneck
 
-- Node.js 18+
-- OpenClaw installed
+## Data Rules
 
-## Version
+All data is stored locally in one shared store:
+- `~/.openclaw/efficiency-manager/data/events.json`
+- `~/.openclaw/efficiency-manager/config.json`
 
-1.0.0
+When updating records:
+- keep one shared data store across agents
+- prefer normalized events over alternate logs
+- preserve the existing store instead of creating per-session copies
+
+## References
+
+Read these as needed:
+- `references/api.md` for command usage and mode-to-command mapping
+- `references/scoring.md` for how to reason about efficiency quality
+- `references/scheduling.md` for planning heuristics
+- `references/data-model.md` for event fields and compatibility notes
+- `references/benchmarks.json` for lightweight baseline durations

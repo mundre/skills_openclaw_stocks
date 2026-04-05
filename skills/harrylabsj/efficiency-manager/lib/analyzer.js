@@ -4,6 +4,23 @@
 
 const { loadEvents, loadConfig } = require('../lib/storage');
 
+function hasValidDurationEvent(event) {
+  if (!event || !event.startTime || !event.endTime) {
+    return false;
+  }
+
+  const duration = getDurationHours(event.startTime, event.endTime);
+  return Number.isFinite(duration) && duration > 0;
+}
+
+function getPeriodDayCount(startDate, endDate) {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  const diffMs = end - start;
+
+  return Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
+}
+
 /**
  * Parse time string to hours
  * @param {string} timeStr - Time string (HH:MM or ISO)
@@ -71,7 +88,9 @@ function getTimeSlotName(slot) {
  * @returns {Object} Category analysis
  */
 function analyzeCategory(category, events = null) {
-  const targetEvents = events || loadEvents({ category });
+  const targetEvents = events
+    ? events.filter(event => event.category === category)
+    : loadEvents({ category });
   
   if (targetEvents.length === 0) {
     return {
@@ -87,8 +106,23 @@ function analyzeCategory(category, events = null) {
     };
   }
 
-  const durations = targetEvents.map(e => getDurationHours(e.startTime, e.endTime)).filter(d => d > 0);
+  const durationEvents = targetEvents.filter(hasValidDurationEvent);
+  const durations = durationEvents.map(e => getDurationHours(e.startTime, e.endTime));
   const completed = targetEvents.filter(e => e.status === 'completed').length;
+
+  if (durations.length === 0) {
+    return {
+      category,
+      totalCount: targetEvents.length,
+      totalDuration: 0,
+      avgDuration: 0,
+      bestDuration: 0,
+      worstDuration: 0,
+      completionRate: Math.round((completed / targetEvents.length) * 100),
+      efficiency: 0,
+      trend: 'stable'
+    };
+  }
   
   const totalDuration = durations.reduce((sum, d) => sum + d, 0);
   const avgDuration = totalDuration / durations.length;
@@ -121,7 +155,7 @@ function analyzeCategory(category, events = null) {
 function analyzeTimeSlots(events) {
   const slotData = {};
   
-  events.forEach(event => {
+  events.filter(hasValidDurationEvent).forEach(event => {
     const slot = getTimeSlot(event.startTime);
     const duration = getDurationHours(event.startTime, event.endTime);
     const key = `${slot}_${event.category}`;
@@ -158,6 +192,10 @@ function analyzeTimeSlots(events) {
  */
 function findBestTimeSlots(events) {
   const slotAnalysis = analyzeTimeSlots(events);
+
+  if (slotAnalysis.length === 0) {
+    return [];
+  }
   
   // Group by category
   const byCategory = {};
@@ -293,9 +331,11 @@ function generateReport(period, date) {
   }
   
   const events = loadEvents({ startDate, endDate });
+  const validDurationEvents = events.filter(hasValidDurationEvent);
+  const periodDayCount = getPeriodDayCount(startDate, endDate);
   
   // Calculate summary
-  const durations = events.map(e => getDurationHours(e.startTime, e.endTime));
+  const durations = validDurationEvents.map(e => getDurationHours(e.startTime, e.endTime));
   const totalHours = durations.reduce((sum, d) => sum + d, 0);
   const completed = events.filter(e => e.status === 'completed').length;
   const completionRate = events.length > 0 ? (completed / events.length) * 100 : 0;
@@ -314,7 +354,7 @@ function generateReport(period, date) {
     summary: {
       totalEvents: events.length,
       totalHours: Math.round(totalHours * 100) / 100,
-      avgDailyHours: period === 'daily' ? totalHours : totalHours / 7,
+      avgDailyHours: totalHours / periodDayCount,
       completionRate
     },
     categoryBreakdown,
@@ -327,7 +367,7 @@ function generateReport(period, date) {
     summary: {
       totalEvents: events.length,
       totalHours: Math.round(totalHours * 100) / 100,
-      avgDailyHours: period === 'daily' ? Math.round(totalHours * 100) / 100 : Math.round((totalHours / 7) * 100) / 100,
+      avgDailyHours: Math.round((totalHours / periodDayCount) * 100) / 100,
       completionRate: Math.round(completionRate)
     },
     categoryBreakdown,
