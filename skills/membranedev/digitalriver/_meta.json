@@ -3,9 +3,15 @@
   "slug": "digitalriver",
   "displayName": "Digitalriver",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774051368414,
-    "commit": "https://github.com/openclaw/skills/commit/d1d98bf818aea729a5bf3284eb3a7c336b04f642"
+    "version": "1.0.2",
+    "publishedAt": 1775165568912,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774051368414,
+      "commit": "https://github.com/openclaw/skills/commit/d1d98bf818aea729a5bf3284eb3a7c336b04f642"
+    }
+  ]
 }
