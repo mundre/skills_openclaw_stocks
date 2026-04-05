@@ -3,9 +3,15 @@
   "slug": "clearout",
   "displayName": "Clearout",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774130674963,
-    "commit": "https://github.com/openclaw/skills/commit/467baf593a2072c2dac33f22e4a5fe9609645f3e"
+    "version": "1.0.2",
+    "publishedAt": 1775165969412,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774130674963,
+      "commit": "https://github.com/openclaw/skills/commit/467baf593a2072c2dac33f22e4a5fe9609645f3e"
+    }
+  ]
 }
