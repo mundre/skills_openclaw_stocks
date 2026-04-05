@@ -3,9 +3,15 @@
   "slug": "salesmsg",
   "displayName": "Salesmsg",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773727417898,
-    "commit": "https://github.com/openclaw/skills/commit/9bad33c6830be6164fc0b952bf12ce535fe242fd"
+    "version": "1.0.2",
+    "publishedAt": 1775164496213,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773727417898,
+      "commit": "https://github.com/openclaw/skills/commit/9bad33c6830be6164fc0b952bf12ce535fe242fd"
+    }
+  ]
 }
