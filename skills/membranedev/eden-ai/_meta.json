@@ -3,9 +3,15 @@
   "slug": "eden-ai",
   "displayName": "Eden Ai",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773525741624,
-    "commit": "https://github.com/openclaw/skills/commit/b323900897d1aa6688c45748cdbdcc722524a10f"
+    "version": "1.0.2",
+    "publishedAt": 1775163919344,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773525741624,
+      "commit": "https://github.com/openclaw/skills/commit/b323900897d1aa6688c45748cdbdcc722524a10f"
+    }
+  ]
 }
