@@ -3,9 +3,15 @@
   "slug": "findymail",
   "displayName": "Findymail",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773464552851,
-    "commit": "https://github.com/openclaw/skills/commit/86ab52870235a66e48088af7c73fc2441aed343a"
+    "version": "1.0.2",
+    "publishedAt": 1775163882180,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773464552851,
+      "commit": "https://github.com/openclaw/skills/commit/86ab52870235a66e48088af7c73fc2441aed343a"
+    }
+  ]
 }
