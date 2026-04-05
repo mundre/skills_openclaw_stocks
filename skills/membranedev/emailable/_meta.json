@@ -3,9 +3,15 @@
   "slug": "emailable",
   "displayName": "Emailable",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774058555059,
-    "commit": "https://github.com/openclaw/skills/commit/41dcd39a26405c129280902d31e543769f68a10e"
+    "version": "1.0.2",
+    "publishedAt": 1775165625449,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774058555059,
+      "commit": "https://github.com/openclaw/skills/commit/41dcd39a26405c129280902d31e543769f68a10e"
+    }
+  ]
 }
