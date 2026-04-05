@@ -3,9 +3,15 @@
   "slug": "melissa-data",
   "displayName": "Melissa Data",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774112595688,
-    "commit": "https://github.com/openclaw/skills/commit/640659861dd412780b7946e7c0828d99e95c7366"
+    "version": "1.0.2",
+    "publishedAt": 1775165863197,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774112595688,
+      "commit": "https://github.com/openclaw/skills/commit/640659861dd412780b7946e7c0828d99e95c7366"
+    }
+  ]
 }
