@@ -3,11 +3,16 @@
   "slug": "daily-weather-pollen",
   "displayName": "花粉过敏指数权威发布",
   "latest": {
-    "version": "3.2.0",
-    "publishedAt": 1774416324224,
-    "commit": "https://github.com/openclaw/skills/commit/8f20e8ac346028803bdd2de7e7485d8b1ee960f9"
+    "version": "4.0.0",
+    "publishedAt": 1775179270980,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.2.0",
+      "publishedAt": 1774416324224,
+      "commit": "https://github.com/openclaw/skills/commit/8f20e8ac346028803bdd2de7e7485d8b1ee960f9"
+    },
     {
       "version": "3.0.0",
       "publishedAt": 1773736552371,

@@ -2,6 +2,10 @@
 # 北京天气花粉每日推送 - 企业微信群机器人 Webhook 版
 # 使用方式: ./push_to_wecom.sh
 
+# 设置 cron 环境变量
+export PATH="/root/.nvm/versions/node/v22.22.1/bin:/root/.local/share/pnpm:/root/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export HOME="/root"
+
 # 加载配置文件
 CONFIG_FILE="$HOME/.openclaw/config/wecom.env"
 if [ -f "$CONFIG_FILE" ]; then
