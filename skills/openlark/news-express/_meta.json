@@ -3,11 +3,16 @@
   "slug": "news-express",
   "displayName": "News Express",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1774230167796,
-    "commit": "https://github.com/openclaw/skills/commit/d4fb288d261dc2cdb6c379b42e8566be9d504fae"
+    "version": "1.0.4",
+    "publishedAt": 1775354054258,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1774230167796,
+      "commit": "https://github.com/openclaw/skills/commit/d4fb288d261dc2cdb6c379b42e8566be9d504fae"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1774063947619,
