@@ -1,13 +1,18 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-legal-polish",
-  "displayName": "九章法律文书润色 V1.4.0",
+  "displayName": "九章-法律文书润色",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1774502126370,
-    "commit": "https://github.com/openclaw/skills/commit/8f1880f7651a5ca0e6ab8c7c967fab401f949fb6"
+    "version": "1.5.0",
+    "publishedAt": 1775099037439,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1774502126370,
+      "commit": "https://github.com/openclaw/skills/commit/8f1880f7651a5ca0e6ab8c7c967fab401f949fb6"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773714573765,
