@@ -3,11 +3,16 @@
   "slug": "myreels-api",
   "displayName": "MyReels API",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1773886093642,
-    "commit": "https://github.com/openclaw/skills/commit/51deb8330d344d5f1b5b0247211a23ec6804d53f"
+    "version": "1.0.9",
+    "publishedAt": 1775007834661,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1773886093642,
+      "commit": "https://github.com/openclaw/skills/commit/51deb8330d344d5f1b5b0247211a23ec6804d53f"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1773755329102,
