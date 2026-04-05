@@ -3,9 +3,15 @@
   "slug": "startups-page-generator",
   "displayName": "startups-page-generator",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774255430563,
-    "commit": "https://github.com/openclaw/skills/commit/9e32662083948197e57522e8b5e3b00721f15093"
+    "version": "1.0.1",
+    "publishedAt": 1775036121866,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774255430563,
+      "commit": "https://github.com/openclaw/skills/commit/9e32662083948197e57522e8b5e3b00721f15093"
+    }
+  ]
 }
