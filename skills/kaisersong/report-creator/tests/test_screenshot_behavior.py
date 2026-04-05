@@ -137,6 +137,51 @@ class TestAnimationsVisible:
         )
 
 
+# ── Background color passed to html2canvas ────────────────────────────────────
+
+class TestBackgroundColor:
+    """
+    Regression: mobile/IM exports capture .report-wrapper, not body.
+    html2canvas defaults to white when no backgroundColor is given, producing
+    a white background on dark-theme reports.
+    Passing body.backgroundColor is still insufficient when the page uses
+    gradients or image backgrounds and body.backgroundColor resolves to transparent.
+    """
+
+    def test_mobile_capture_passes_background_color(self, report_page):
+        """html2canvas must receive a non-null backgroundColor for mobile export."""
+        reset_log(report_page)
+        trigger_export(report_page, "export-png-mobile")
+        entry = last_capture(report_page)
+
+        assert entry["backgroundColor"] is not None, (
+            "backgroundColor was not passed to html2canvas for mobile export — "
+            "dark-theme reports will render with a white background."
+        )
+
+    def test_im_capture_passes_background_color(self, report_page):
+        """html2canvas must receive a non-null backgroundColor for IM export."""
+        reset_log(report_page)
+        trigger_export(report_page, "export-im-share")
+        entry = last_capture(report_page)
+
+        assert entry["backgroundColor"] is not None, (
+            "backgroundColor was not passed to html2canvas for IM export — "
+            "dark-theme reports will render with a white background."
+        )
+
+    def test_mobile_capture_uses_non_transparent_export_background(self, report_page):
+        """Mobile export must resolve to a concrete report background, not transparent."""
+        reset_log(report_page)
+        trigger_export(report_page, "export-png-mobile")
+        entry = last_capture(report_page)
+
+        assert entry["backgroundColor"] not in ("transparent", "rgba(0, 0, 0, 0)", "rgba(0,0,0,0)"), (
+            "mobile export passed a transparent backgroundColor to html2canvas — "
+            "gradient/background-image reports lose their page background in the exported image."
+        )
+
+
 # ── Resolution regression ─────────────────────────────────────────────────────
 
 class TestExportResolution:
