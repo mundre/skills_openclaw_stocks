@@ -3,9 +3,15 @@
   "slug": "loopsso",
   "displayName": "Loopsso",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774040626814,
-    "commit": "https://github.com/openclaw/skills/commit/129b2b2ac97dbe5b14199ad8c412aaf1d7322708"
+    "version": "1.0.2",
+    "publishedAt": 1775165506728,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774040626814,
+      "commit": "https://github.com/openclaw/skills/commit/129b2b2ac97dbe5b14199ad8c412aaf1d7322708"
+    }
+  ]
 }
