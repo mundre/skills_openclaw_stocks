@@ -1,13 +1,18 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-foreign-investment",
-  "displayName": "Zhang Foreign Investment",
+  "displayName": "九章-外商投资专家",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774666494952,
-    "commit": "https://github.com/openclaw/skills/commit/a9eaecb33ecb71a458c5acd11bbdf88f5a2a85e0"
+    "version": "1.5.0",
+    "publishedAt": 1775098823899,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774666494952,
+      "commit": "https://github.com/openclaw/skills/commit/a9eaecb33ecb71a458c5acd11bbdf88f5a2a85e0"
+    },
     {
       "version": "1.3.0",
       "publishedAt": 1774416645576,
