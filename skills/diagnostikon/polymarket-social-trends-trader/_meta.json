@@ -1,13 +1,18 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-social-trends-trader",
-  "displayName": "Social Trends & Wellbeing Trader",
+  "displayName": "Polymarket Social Trends Trader",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773857047657,
-    "commit": "https://github.com/openclaw/skills/commit/27423feca64da6de6914b7b78fc47cc46e5c18b6"
+    "version": "1.0.2",
+    "publishedAt": 1775317337550,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773857047657,
+      "commit": "https://github.com/openclaw/skills/commit/27423feca64da6de6914b7b78fc47cc46e5c18b6"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773563985774,
