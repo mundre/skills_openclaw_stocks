@@ -3,9 +3,15 @@
   "slug": "simplekpi",
   "displayName": "Simplekpi",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773702144083,
-    "commit": "https://github.com/openclaw/skills/commit/9b557d38d992a6d3b237fcd2ac2aae43b89f5931"
+    "version": "1.0.2",
+    "publishedAt": 1775164319578,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773702144083,
+      "commit": "https://github.com/openclaw/skills/commit/9b557d38d992a6d3b237fcd2ac2aae43b89f5931"
+    }
+  ]
 }
