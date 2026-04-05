@@ -3,9 +3,15 @@
   "slug": "totango",
   "displayName": "Totango",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774260240844,
-    "commit": "https://github.com/openclaw/skills/commit/2c94a6242cbac2823f39c3c2e6a7baf5e54821f7"
+    "version": "1.0.2",
+    "publishedAt": 1775166624626,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774260240844,
+      "commit": "https://github.com/openclaw/skills/commit/2c94a6242cbac2823f39c3c2e6a7baf5e54821f7"
+    }
+  ]
 }
