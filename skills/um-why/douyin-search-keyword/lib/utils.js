@@ -11,30 +11,22 @@ function printBanner() {
   console.log("");
 }
 
-/**
- * 打印普通消息
- */
-function printInfo(msg) {
-  console.log(`ℹ️  ${msg}`);
-}
-
-/**
- * 打印成功消息
- */
-function printSuccess(msg) {
-  console.log(`✅  ${msg}`);
-}
-
-/**
- * 打印错误消息
- */
-function printError(msg) {
-  console.log(`❌  错误: ${msg}`);
+function printLog(level, message) {
+  const colorMap = {
+    INFO: "\x1b[34m",
+    SUCCESS: "\x1b[32m",
+    WARN: "\x1b[33m",
+    ERROR: "\x1b[31m",
+  };
+  console.log(
+    `${colorMap[level] || ""}[${new Date().toLocaleString()}] [${level}] ${message}\x1b[0m`,
+  );
 }
 
 module.exports = {
   printBanner,
-  printInfo,
-  printSuccess,
-  printError,
+  printInfo: (msg) => printLog("INFO", msg),
+  printSuccess: (msg) => printLog("SUCCESS", msg),
+  printError: (msg) => printLog("ERROR", msg),
+  printWarn: (msg) => printLog("WARN", msg),
 };
