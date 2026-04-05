@@ -1,13 +1,18 @@
 {
   "owner": "gate-exchange",
   "slug": "gate-exchange-tradfi",
-  "displayName": "Gate Exchange TradFi",
+  "displayName": "Gate Exchange TradFi Query Skill",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774617002018,
-    "commit": "https://github.com/openclaw/skills/commit/d84a0bd15261b3a4fd3ccc7773bebda4bd9ef93c"
+    "version": "1.0.2",
+    "publishedAt": 1775115373882,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774617002018,
+      "commit": "https://github.com/openclaw/skills/commit/d84a0bd15261b3a4fd3ccc7773bebda4bd9ef93c"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773490388754,
