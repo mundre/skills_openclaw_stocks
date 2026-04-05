@@ -51,12 +51,28 @@ Prompt caching cuts costs 50-90% on repeated context. Cache writes cost ~25% mor
 
 For cron jobs, scheduled analysis, or anything that doesn't need an immediate response — use the Batch API (Anthropic/OpenAI both offer it). **50% discount** in exchange for async delivery (results within 24h). Never use real-time API for background work that can wait.
 
+## Sub-Agent Model Rule (Critical)
+
+**Always explicitly set the model when spawning sub-agents.** Never rely on defaults — the default inherits the parent session model (expensive mid-tier). One month of sub-agents defaulting to Sonnet = 96% of costs going to Sonnet when it should be split ~80/20 Haiku/Sonnet.
+
+```
+sessions_spawn → always include model: "claude-haiku-4-5-20251001" (or equivalent fast-cheap)
+```
+
+Every sub-agent task that can be done by Haiku must use Haiku. No exceptions.
+
+## New Session / Machine Cold Start Cost
+
+When starting a fresh session (new machine, new session after `/new`), the cache is empty. The first few messages will write the entire context (skills, workspace files, memory) to cache at 1.25x the normal input rate. This is unavoidable but temporary — it pays off within 2-3 messages once the cache warms up.
+
+**Don't panic at the first few messages being expensive on a new machine.** The cache write cost is a one-time investment that makes every subsequent message ~90% cheaper.
+
 ## Signs You're Over-Spending
 
 - Running powerful models on tasks Fast/Cheap can handle
 - No caching on repeated system prompts
 - Heartbeat/cron jobs using the default (expensive) model
-- Spawning sub-agents without specifying a model tier
+- **Sub-agents spawned without explicit model = biggest cost leak**
 
 ## Session & Cache Management
 
