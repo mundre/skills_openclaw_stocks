@@ -3,9 +3,15 @@
   "slug": "talentlms",
   "displayName": "Talentlms",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773550948532,
-    "commit": "https://github.com/openclaw/skills/commit/af84484b407f23bbbc540df5cf2e60c8359ed7aa"
+    "version": "1.0.2",
+    "publishedAt": 1775164070760,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773550948532,
+      "commit": "https://github.com/openclaw/skills/commit/af84484b407f23bbbc540df5cf2e60c8359ed7aa"
+    }
+  ]
 }
