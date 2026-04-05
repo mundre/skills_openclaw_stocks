@@ -3,11 +3,16 @@
   "slug": "gate-exchange-trading-copilot",
   "displayName": "Gate Exchange Trading Copilot",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774616871014,
-    "commit": "https://github.com/openclaw/skills/commit/9aa4706d094ccb190df84b664fcf277169568846"
+    "version": "1.0.2",
+    "publishedAt": 1775115387389,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774616871014,
+      "commit": "https://github.com/openclaw/skills/commit/9aa4706d094ccb190df84b664fcf277169568846"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773492270083,

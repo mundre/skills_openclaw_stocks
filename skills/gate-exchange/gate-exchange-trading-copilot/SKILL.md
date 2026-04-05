@@ -2,7 +2,7 @@
 name: gate-exchange-trading-copilot
 version: "2026.3.23-1"
 updated: "2026-03-23"
-description: 'End-to-end cryptocurrency trading copilot for Gate Exchange. Use this skill whenever the user wants one skill to complete market judgment, risk control, and execution for a cryptocurrency trade on Gate Exchange. Trigger phrases include "analyze before placing an order", "analyze before buying", "check risk before trading", or any request involving cryptocurrency trade judgment, order drafting, spot or futures execution, or post-trade management on Gate Exchange.'
+description: "Gate Trading Copilot L2. Use when the user wants to execute complex trades, margin borrowing, or query positions and open orders. Triggers on 'market buy', 'margin borrow', 'TradFi', 'Alpha', or spot-plus-futures combos. Requires Action Draft."
 ---
 
 # Gate Exchange Trading Copilot
@@ -34,6 +34,13 @@ For portability across Gate MCP runtimes, treat the documented surfaces as the b
 
 Do not make `news_events_*` a required dependency in scenario design, because it is not part of the documented baseline news surface.
 
+## MCP Mode
+
+**Read and strictly follow** [`references/mcp.md`](./references/mcp.md), then execute this skill's copilot workflow.
+
+- `SKILL.md` keeps composite routing, trade lifecycle policy, and guardrails.
+- `references/mcp.md` is the authoritative MCP orchestration layer for cross-domain tool sequencing, execution gates, and degradation.
+
 ---
 
 Read `references/scenarios.md` for:
@@ -41,6 +48,13 @@ Read `references/scenarios.md` for:
 - representative user scenarios
 - representative prompt examples
 - expected tool-routing patterns
+
+## Authentication
+
+- API Key Required: Not always
+- Read-only analysis: public `info_*`, `news_feed_*`, and some public `cex_spot_*` / `cex_fx_*` market-data calls may work without authentication, depending on runtime
+- Execution and private account actions: Yes, authenticated Exchange MCP tools with the required API key permissions are mandatory
+- Note: Do not block analysis-only use just because private execution tools are unavailable; only block when the requested action needs private trading/account access.
 
 ## Positioning
 
