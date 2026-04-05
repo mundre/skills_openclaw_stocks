@@ -1,13 +1,18 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-energy-transition-trader",
-  "displayName": "Energy Transition Trader",
+  "displayName": "Polymarket Energy Transition Trader",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773855088172,
-    "commit": "https://github.com/openclaw/skills/commit/a4066415611fc7951be467eb97632f86898a0679"
+    "version": "1.0.2",
+    "publishedAt": 1775317132007,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773855088172,
+      "commit": "https://github.com/openclaw/skills/commit/a4066415611fc7951be467eb97632f86898a0679"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773473582420,
