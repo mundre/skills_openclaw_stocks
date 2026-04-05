@@ -3,11 +3,16 @@
   "slug": "awareness-memory",
   "displayName": "Awareness Memory",
   "latest": {
-    "version": "0.4.0",
-    "publishedAt": 1774713913726,
-    "commit": "https://github.com/openclaw/skills/commit/c800ec53d3b54cc1eefe534b2888351494df462a"
+    "version": "0.6.2",
+    "publishedAt": 1775368731152,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.4.0",
+      "publishedAt": 1774713913726,
+      "commit": "https://github.com/openclaw/skills/commit/c800ec53d3b54cc1eefe534b2888351494df462a"
+    },
     {
       "version": "1.5.0",
       "publishedAt": 1774441796953,
