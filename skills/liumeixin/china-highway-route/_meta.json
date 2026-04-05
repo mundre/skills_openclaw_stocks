@@ -3,11 +3,16 @@
   "slug": "china-highway-route",
   "displayName": "China Highway Route",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1774181269706,
-    "commit": "https://github.com/openclaw/skills/commit/ce7ec9fbbeff91a5c63ceef3b24753264dec076c"
+    "version": "1.0.6",
+    "publishedAt": 1775143587987,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1774181269706,
+      "commit": "https://github.com/openclaw/skills/commit/ce7ec9fbbeff91a5c63ceef3b24753264dec076c"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1774028765788,
