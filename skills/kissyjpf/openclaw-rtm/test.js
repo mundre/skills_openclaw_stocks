@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Manual test runner for RTM Skill
 const skill = require('./index.js');
 const fs = require('fs');

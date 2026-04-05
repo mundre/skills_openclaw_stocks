@@ -3,11 +3,16 @@
   "slug": "openclaw-rtm",
   "displayName": "Openclaw with Remember The Milk",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1774330681736,
-    "commit": "https://github.com/openclaw/skills/commit/1387c1b696ac1fe15f91388deb0dfa33e4143a60"
+    "version": "1.0.9",
+    "publishedAt": 1774941054329,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1774330681736,
+      "commit": "https://github.com/openclaw/skills/commit/1387c1b696ac1fe15f91388deb0dfa33e4143a60"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773462489749,

@@ -111,6 +111,7 @@ class RTMClient {
                         taskseries_id: series.id,
                         task_id: task.id,
                         name: series.name,
+                        source: series.source,
                         priority: task.priority,
                         due: task.due,
                         completed: task.completed,

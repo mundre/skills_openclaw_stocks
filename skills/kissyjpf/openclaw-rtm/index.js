@@ -1,9 +1,28 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+
+// Load .env manually to avoid third-party dependencies
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+    const envFile = fs.readFileSync(envPath, 'utf8');
+    envFile.split(/\r?\n/).forEach(line => {
+        const match = line.match(/^\s*([^#\s][^=\s]+)\s*=\s*(.*)?\s*$/);
+        if (match) {
+            const key = match[1];
+            let val = match[2] || '';
+            if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+            else if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+            if (!process.env[key]) process.env[key] = val;
+        }
+    });
+}
+
 const RTMClient = require('./rtm-client');
 
 const TOKEN_FILE = path.join(os.homedir(), '.rtm-token.json');
+const CREDENTIALS_FILE = path.join(os.homedir(), '.rtm-credentials.json');
+const ID_CACHE_FILE = path.join(os.homedir(), '.rtm-id-cache.json');
 
 module.exports = {
     name: 'rtm-skill',
@@ -12,11 +31,21 @@ module.exports = {
         const logger = context.logger || console;
         logger.info('[rtm-skill] registering skill');
 
-        const API_KEY = process.env.RTM_API_KEY || '';
-        const SHARED_SECRET = process.env.RTM_SHARED_SECRET || '';
+        let API_KEY = process.env.RTM_API_KEY || '';
+        let SHARED_SECRET = process.env.RTM_SHARED_SECRET || '';
+
+        if ((!API_KEY || !SHARED_SECRET) && fs.existsSync(CREDENTIALS_FILE)) {
+            try {
+                const creds = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
+                if (creds.API_KEY) API_KEY = creds.API_KEY;
+                if (creds.SHARED_SECRET) SHARED_SECRET = creds.SHARED_SECRET;
+            } catch (err) {
+                logger.error('[rtm-skill] failed to parse credentials file:', err.message);
+            }
+        }
 
         if (!API_KEY || !SHARED_SECRET) {
-            logger.warn('[rtm-skill] RTM_API_KEY or RTM_SHARED_SECRET environment variables are missing.');
+            logger.warn('[rtm-skill] RTM_API_KEY or RTM_SHARED_SECRET are missing. Set env vars or run `rtm config <api_key> <shared_secret>`.');
         }
 
         const client = new RTMClient(API_KEY, SHARED_SECRET);
@@ -35,16 +64,49 @@ module.exports = {
             logger.error('[rtm-skill] failed to load token:', err.message);
         }
 
-        // In-memory mappings to allow short IDs for user commands
-        let taskCache = [];
+        // Cache is managed via ID_CACHE_FILE now.
 
         context.registerCommand && context.registerCommand({
             name: 'rtm',
-            description: 'Manage Remember The Milk tasks (rtm auth, list, add, note, due, start, postpone, priority, complete, delete)',
+            description: 'Manage Remember The Milk tasks (rtm config, auth, list, add, note, due, start, postpone, priority, complete, delete)',
             async handler({ argv, reply }) {
                 const subcmd = argv[0] || 'list';
 
+                const resolveTask = async (targetId) => {
+                    let idMap = {};
+                    if (fs.existsSync(ID_CACHE_FILE)) {
+                        try { idMap = JSON.parse(fs.readFileSync(ID_CACHE_FILE, 'utf8')); } catch(e){}
+                    }
+                    let task = idMap[targetId];
+                    if (!task) {
+                        const all = await client.getTasks('');
+                        const found = all.find(t => t.task_id === targetId);
+                        if (found) {
+                            task = { list_id: found.list_id, taskseries_id: found.taskseries_id, task_id: found.task_id, name: found.name };
+                            idMap[targetId] = task;
+                            fs.writeFileSync(ID_CACHE_FILE, JSON.stringify(idMap), { mode: 0o600 });
+                        }
+                    }
+                    if (!task) throw new Error(`Task ID ${targetId} not found. Please verify valid task_id via 'rtm list'.`);
+                    return task;
+                };
+
                 try {
+                    if (subcmd === 'config') {
+                        const newApiKey = argv[1];
+                        const newSecret = argv[2];
+                        if (!newApiKey || !newSecret) {
+                            throw new Error('Provide both API Key and Shared Secret: rtm config <api_key> <shared_secret>');
+                        }
+                        fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify({ API_KEY: newApiKey, SHARED_SECRET: newSecret }, null, 2), { mode: 0o600 });
+                        // Update in-memory variables to immediately allow auth if needed
+                        client.apiKey = newApiKey;
+                        client.sharedSecret = newSecret;
+                        const msg = `✅ Credentials saved securely to ${CREDENTIALS_FILE}.`;
+                        if (reply) await reply(msg);
+                        return msg;
+                    }
+
                     if (subcmd === 'auth') {
                         const frob = await client.getFrob();
                         // In a real scenario we might save frob to disk temporarily, but here we'll just ask the user to pass it
@@ -71,7 +133,32 @@ module.exports = {
                     }
 
                     if (subcmd === 'list') {
-                        const tasks = await client.getTasks();
+                        const listArg = argv[1] || 'incomplete';
+                        let filterStr = '';
+                        let limit = null;
+
+                        if (listArg === 'incomplete') {
+                            filterStr = 'status:incomplete';
+                        } else if (listArg === 'completed') {
+                            filterStr = 'status:completed';
+                            limit = 100; // 変更: 100件
+                        } else if (listArg === 'all') {
+                            filterStr = '';
+                        } else {
+                            // Defaults to incomplete if unknown arg is passed, or we could threat it as a custom filter.
+                            filterStr = 'status:incomplete';
+                        }
+
+                        let tasks = await client.getTasks(filterStr);
+                        
+                        if (listArg === 'completed') {
+                            // 最新の完了を上位に持ってくるため、完了日時で降順ソート
+                            tasks.sort((a, b) => new Date(b.completed || 0) - new Date(a.completed || 0));
+                            if (limit && tasks.length > limit) {
+                                tasks = tasks.slice(0, limit);
+                            }
+                        }
+
                         const listsObj = await client.getLists();
 
                         // map list ids to names
@@ -83,7 +170,10 @@ module.exports = {
                             }
                         }
 
-                        taskCache = tasks; // Save for short ID mapping
+                        let idMap = {};
+                        if (fs.existsSync(ID_CACHE_FILE)) {
+                            try { idMap = JSON.parse(fs.readFileSync(ID_CACHE_FILE, 'utf8')); } catch (e) {}
+                        }
 
                         if (tasks.length === 0) {
                             const msg = "No tasks found!";
@@ -91,16 +181,26 @@ module.exports = {
                             return msg;
                         }
 
-                        let output = "📝 Your Tasks:\n";
-                        tasks.forEach((t, i) => {
-                            const shortId = i + 1;
+                        let output = `📝 Your Tasks (${listArg === 'completed' ? 'Recent Completed' : listArg === 'all' ? 'All' : 'Incomplete'}):\n`;
+                        tasks.forEach((t) => {
+                            const tId = t.task_id;
+                            idMap[tId] = { list_id: t.list_id, taskseries_id: t.taskseries_id, task_id: t.task_id, name: t.name };
+
                             const cat = listMap[t.list_id] || 'Inbox';
                             const statusIcon = t.completed ? '✅' : '⬜️';
-                            let line = `[${shortId}] ${statusIcon} [${cat}] ${t.name}`;
+                            let line = `[${tId}] ${statusIcon} [${cat}] ${t.name}`;
+
+                            const formatTime = (ts) => {
+                                if (!ts) return '';
+                                const d = new Date(ts);
+                                return isNaN(d.getTime()) ? ts : d.toLocaleString();
+                            };
 
                             const extras = [];
                             if (t.priority && t.priority !== 'N') extras.push(`Priority: ${t.priority}`);
-                            if (t.due) extras.push(`Due: ${t.due}`);
+                            if (t.due) extras.push(`Due: ${formatTime(t.due)}`);
+                            if (t.completed) extras.push(`Completed: ${formatTime(t.completed)}`);
+                            if (t.source) extras.push(`Source: ${t.source}`);
                             if (t.tags && t.tags.length > 0) extras.push(`Tags: ${t.tags.join(', ')}`);
 
                             const validNotes = (t.notes || []).filter(n => n && n.$t).map(n => n.$t).join('; ');
@@ -111,6 +211,8 @@ module.exports = {
                             }
                             output += line + '\n';
                         });
+
+                        fs.writeFileSync(ID_CACHE_FILE, JSON.stringify(idMap), { mode: 0o600 });
 
                         if (reply) await reply(output);
                         return output;
@@ -127,19 +229,11 @@ module.exports = {
                     }
 
                     if (subcmd === 'note') {
-                        const shortIdStr = argv[1];
+                        const targetId = argv[1];
                         const noteText = argv.slice(2).join(' ');
-                        if (!shortIdStr || !noteText) throw new Error('Provide a task ID and note text: rtm note <id> <text>');
-                        const idx = parseInt(shortIdStr, 10) - 1;
-
-                        if (taskCache.length === 0) {
-                            throw new Error('Please run `rtm list` first so I can find the task IDs.');
-                        }
-                        if (idx < 0 || idx >= taskCache.length) {
-                            throw new Error(`Invalid task ID. Must be between 1 and ${taskCache.length}.`);
-                        }
-
-                        const task = taskCache[idx];
+                        if (!targetId || !noteText) throw new Error('Provide a task ID and note text: rtm note <id> <text>');
+                        
+                        const task = await resolveTask(targetId);
                         const tl = await client.createTimeline();
 
                         await client.addNote(tl, task.list_id, task.taskseries_id, task.task_id, 'Note', noteText);
@@ -149,14 +243,10 @@ module.exports = {
                     }
 
                     if (['due', 'start', 'priority', 'postpone'].includes(subcmd)) {
-                        const shortIdStr = argv[1];
-                        if (!shortIdStr) throw new Error(`Provide a task ID: rtm ${subcmd} <id> [value]`);
-                        const idx = parseInt(shortIdStr, 10) - 1;
-
-                        if (taskCache.length === 0) throw new Error('Please run `rtm list` first so I can find the task IDs.');
-                        if (idx < 0 || idx >= taskCache.length) throw new Error(`Invalid task ID. Must be between 1 and ${taskCache.length}.`);
-
-                        const task = taskCache[idx];
+                        const targetId = argv[1];
+                        if (!targetId) throw new Error(`Provide a task ID: rtm ${subcmd} <id> [value]`);
+                        
+                        const task = await resolveTask(targetId);
                         const tl = await client.createTimeline();
                         let msg = "";
 
@@ -183,18 +273,10 @@ module.exports = {
                     }
 
                     if (subcmd === 'complete' || subcmd === 'delete') {
-                        const shortIdStr = argv[1];
-                        if (!shortIdStr) throw new Error(`Provide a task ID: rtm ${subcmd} <id> (you can get the ID from 'rtm list')`);
-                        const idx = parseInt(shortIdStr, 10) - 1;
-
-                        if (taskCache.length === 0) {
-                            throw new Error('Please run `rtm list` first so I can find the task IDs.');
-                        }
-                        if (idx < 0 || idx >= taskCache.length) {
-                            throw new Error(`Invalid task ID. Must be between 1 and ${taskCache.length}.`);
-                        }
-
-                        const task = taskCache[idx];
+                        const targetId = argv[1];
+                        if (!targetId) throw new Error(`Provide a task ID: rtm ${subcmd} <id>`);
+                        
+                        const task = await resolveTask(targetId);
                         const tl = await client.createTimeline();
 
                         if (subcmd === 'complete') {
