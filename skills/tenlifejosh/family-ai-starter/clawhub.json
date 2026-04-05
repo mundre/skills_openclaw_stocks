@@ -1,0 +1,16 @@
+{
+  "name": "Family AI Starter",
+  "slug": "family-ai-starter",
+  "description": "The complete family AI starter kit. Homework helper, meal planner, chore tracker, and family vault — set up in 30 minutes. Built from FamliClaw.",
+  "tags": ["family", "kids", "homework", "meal-planning", "parenting", "household", "chores", "starter-kit"],
+  "version": "1.0.0",
+  "author": "tenlifejosh",
+  "license": "MIT",
+  "homepage": "https://tenlifecreatives.com",
+  "repository": "https://github.com/tenlifejosh",
+  "keywords": ["family", "parenting", "homework", "meal-planner", "chores", "household-management", "kids"],
+  "openclaw": {
+    "skill_file": "SKILL.md",
+    "min_version": "1.0.0"
+  }
+}
