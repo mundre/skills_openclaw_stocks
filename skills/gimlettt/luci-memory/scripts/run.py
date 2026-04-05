@@ -10,6 +10,7 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
 import urllib.request
 from datetime import UTC, datetime
@@ -17,8 +18,47 @@ from datetime import UTC, datetime
 API_HOST = "http://34.45.179.165/luci-memory"
 API_PERSONAL = API_HOST + "/personal"
 API_PORTRAIT = API_HOST + "/portrait"
-USER_ID = "" # Your ID here
+USERINFO_API = "https://mavi-backend.memories.ai/serve/api/userinfo"
+ENV_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
 
+
+
+
+def _load_env():
+    """Load MEMORIES_AI_KEY from .env file next to the skill root."""
+    if not os.path.exists(ENV_FILE):
+        return None
+    with open(ENV_FILE) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("MEMORIES_AI_KEY="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    return None
+
+
+def resolve_user_id():
+    """Resolve USER_ID from MEMORIES_AI_KEY"""
+    api_key = os.environ.get("MEMORIES_AI_KEY", "").strip() or _load_env()
+    if not api_key:
+        print("Error: MEMORIES_AI_KEY not found.", file=sys.stderr)
+        print(f"Please create {ENV_FILE} with:", file=sys.stderr)
+        print('  MEMORIES_AI_KEY=sk-your-key-here', file=sys.stderr)
+        sys.exit(1)
+    req = urllib.request.Request(USERINFO_API, headers={"authorization": api_key})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        print(f"Error: Failed to resolve user from API key: {e}", file=sys.stderr)
+        sys.exit(1)
+    infra_user_id = data.get("data", {}).get("infraUserId")
+    if not infra_user_id:
+        print("Error: Could not resolve infraUserId from API key. Is your key valid?", file=sys.stderr)
+        sys.exit(1)
+    return infra_user_id
+
+
+USER_ID = resolve_user_id()
 # ---------------------------------------------------------------------------
 # Type definitions
 # ---------------------------------------------------------------------------

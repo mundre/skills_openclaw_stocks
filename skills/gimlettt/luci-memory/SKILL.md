@@ -1,9 +1,22 @@
 ---
 name: luci-memory
 description: "Search personal video memory — media content (videos, images, keyframes, transcripts) and portrait data (traits, events, relationships, speeches). Use when the user asks about their videos, what happened, what was said, who they know, or their personality."
+metadata: {"clawdbot":{"emoji":"🧠","requires":{"bins":["python3"],"env":["MEMORIES_AI_KEY"]},"primaryEnv":"MEMORIES_AI_KEY"}}
 ---
 
 # luci-memory
+
+## Setup
+
+Requires an `MEMORIES_AI_KEY`. On first use, if no key is found, the script will error and ask for one.
+
+When the user provides their key, save it to `{baseDir}/.env`:
+
+```
+MEMORIES_AI_KEY=sk-their-key-here
+```
+
+After that, everything just works — the key is loaded automatically from `.env` on every run.
 
 Unified search across personal media and portrait data from the Luci-memory API.
 
