@@ -3,9 +3,15 @@
   "slug": "scale-ai",
   "displayName": "Scale Ai",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773817372503,
-    "commit": "https://github.com/openclaw/skills/commit/4faa40db72cfe389800b9e62f4b9813efe742a52"
+    "version": "1.0.2",
+    "publishedAt": 1775164669526,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773817372503,
+      "commit": "https://github.com/openclaw/skills/commit/4faa40db72cfe389800b9e62f4b9813efe742a52"
+    }
+  ]
 }
