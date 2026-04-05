@@ -5,10 +5,12 @@ allowed-tools:
 disable: true
 runtime: windows-powershell
 credentials:
-  - name: WOLAI_TOKEN
+  WOLAI_TOKEN:
     description: "wolai App Token（永久有效，expire_time: -1），通过 POST /token 用 appId+appSecret 换取"
     required: true
-    sensitive: true
+source:
+  type: github
+  url: https://github.com/cizixiu/wolai-api-skill
 ---
 
 # wolai API Skill
