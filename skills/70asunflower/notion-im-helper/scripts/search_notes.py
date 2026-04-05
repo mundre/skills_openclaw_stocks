@@ -1,84 +1,133 @@
-# -*- coding: utf-8 -*-
-"""
-搜索笔记
-从 Notion 搜索包含关键词的页面，返回格式化的 JSON 结果。
-
-用法：
-    python search_notes.py "关键词"
-"""
-
-import sys
+"""Search Notion pages/blocks by keyword using the Notion Search API."""
 import os
+import sys
 import json
+import urllib.request
+import urllib.error
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.stdout.reconfigure(encoding='utf-8')
 
-from notion_helper import (
-    check_required_config,
-    search_pages,
-    output_ok,
-    output_error,
-    log_debug,
-)
+API_KEY = os.environ.get("NOTION_API_KEY", "")
+BASE_URL = "https://api.notion.com/v1"
 
 
-def extract_page_info(page: dict) -> dict:
-    """从 Notion 页面对象中提取关键信息"""
-    # 提取标题
-    title = ""
-    properties = page.get("properties", {})
-    for prop_name, prop_value in properties.items():
-        if prop_value.get("type") == "title":
-            title_items = prop_value.get("title", [])
-            title = "".join(item.get("plain_text", "") for item in title_items)
-            break
-
-    # 如果 properties 中没有 title，尝试从其他字段获取
-    if not title:
-        # 对于 child_page 类型的结果
-        if page.get("type") == "child_page":
-            title = page.get("child_page", {}).get("title", "无标题")
-
-    # 构建 URL
-    page_id = page.get("id", "").replace("-", "")
-    url = f"https://www.notion.so/{page_id}" if page_id else ""
-
-    # 提取最后编辑时间
-    last_edited = page.get("last_edited_time", "")
-
+def get_headers():
     return {
-        "title": title or "无标题",
-        "url": url,
-        "last_edited": last_edited,
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-06-28",
     }
 
 
-def main():
-    if not check_required_config():
-        return
+def search(query, page_size=10):
+    """Search using Notion Search API with retry on rate limit."""
+    body = {
+        "query": query,
+        "page_size": page_size,
+        "sort": {
+            "direction": "descending",
+            "timestamp": "last_edited_time",
+        },
+    }
+    for attempt in range(3):
+        data = json.dumps(body).encode()
+        req = urllib.request.Request(
+            f"{BASE_URL}/search",
+            data=data,
+            headers=get_headers(),
+            method="POST",
+        )
+        try:
+            resp = urllib.request.urlopen(req)
+            return json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            error_body = e.read().decode()
+            try:
+                err_data = json.loads(error_body)
+                message = err_data.get("message", str(e))
+            except Exception:
+                message = str(e)
+            return {"error": True, "code": e.code, "message": message}
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(1)
+                continue
+            return {"error": True, "message": str(e)}
 
-    args = sys.argv[1:]
-    if not args:
-        output_error("ARGS", "缺少搜索关键词")
-        return
+    return {"error": True, "message": "Rate limited after retries"}
 
-    query = " ".join(args)
-    log_debug(f"搜索: {query}")
 
-    results = search_pages(query, page_size=10)
+def extract_snippet(result):
+    """Extract a readable snippet from a search result."""
+    obj_type = result.get("object", "")
+    title = ""
 
+    if obj_type == "page":
+        props = result.get("properties", {})
+        for key, val in props.items():
+            if val.get("type") == "title":
+                rich = val.get("title", [])
+                if rich:
+                    title = rich[0].get("plain_text", "")
+                break
+
+        # Try to get a hint of the last edited time
+        last_edited = result.get("last_edited_time", "")
+        if last_edited and len(last_edited) > 10:
+            last_edited = last_edited[:10]  # YYYY-MM-DD
+
+        return title, last_edited
+
+    return "", ""
+
+
+def format_results(results):
+    """Format search results into a user-friendly string."""
     if not results:
-        output_ok(f"未找到与「{query}」相关的内容")
+        return "🔍 没有找到相关记录~"
+
+    lines = ["🔍 搜索结果："]
+    for i, result in enumerate(results, 1):
+        title, date = extract_snippet(result)
+        if title:
+            date_str = f" ({date})" if date else ""
+            lines.append(f"{i}. {title}{date_str}")
+        else:
+            # Fallback: show URL if available
+            url = result.get("url", "")
+            if url:
+                lines.append(f"{i}. {url[-40:]}")
+
+    return "\n".join(lines)
+
+
+def main():
+    if not API_KEY:
+        print("ERROR|CONFIG")
         return
 
-    # 格式化结果
-    formatted = []
-    for page in results:
-        info = extract_page_info(page)
-        formatted.append(info)
+    keyword = sys.argv[1] if len(sys.argv) > 1 else ""
+    if not keyword:
+        print("ERROR| 请提供搜索关键词，例如：搜: 缓存")
+        return
 
-    # 输出 JSON 数组
-    print(f"OK|{json.dumps(formatted, ensure_ascii=False)}", flush=True)
+    result = search(keyword)
+    if result.get("error"):
+        code = result.get("code", 0)
+        if code == 401 or "Unauthorized" in result.get("message", ""):
+            print("ERROR|AUTH")
+        elif code == 429:
+            print("ERROR|RATE_LIMIT")
+        else:
+            print("ERROR|NETWORK")
+        return
+
+    results = result.get("results", [])
+    formatted = format_results(results)
+    print(f"OK|{formatted}")
 
 
 if __name__ == "__main__":
