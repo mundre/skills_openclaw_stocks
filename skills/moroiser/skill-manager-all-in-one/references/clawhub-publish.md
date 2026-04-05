@@ -1,23 +1,79 @@
 # ClawHub Publish Guide | ClawHub 发布指南
 
-## Publish checklist | 发布前检查清单
+## Two-step publishing workflow | 两步发布工作流
 
-0. **Check currently published version | 先查 ClawHub 已发布版本**
-   - Run `clawhub inspect <slug>` to get the version currently published on ClawHub
-   - 向用户汇报：ClawHub 已发布版本 → 本次拟发布新版本
+### Step 1: Pre-publish checks | 第一步：发布前检查
 
-1. Confirm the user explicitly approved publish or update.
-   确认用户已明确同意发布或更新。
-2. Confirm display name uses `English | 中文`.
-   确认显示名采用 `English | 中文`。
-3. Confirm description is concise and attractive.
-   确认 description 简洁、具体、抓眼。
-4. Confirm changelog is bilingual and formal.
-   确认 changelog 为双语且正式。
-5. Confirm version number is correct.
-   确认版本号正确。
+**A. Run full checklist | 完整清单核对**
+Verify all items in the "Skill creation/modification checklist" section of SKILL.md:
+逐项核对 SKILL.md 中"技能制作/修改清单"的全部项目。
 
-## CLI commands worth knowing | 关键 CLI 命令
+**B. File size check | 文件大小检查**
+```bash
+du -sh <skill-dir>
+```
+If the directory **exceeds 50MB**, the upload will fail.
+- Report to user immediately.
+- Move oversized files (e.g., model files) to a workspace backup location. Wait for explicit user confirmation.
+- After upload succeeds, move files back. Wait for user confirmation again.
+如果目录**超过 50MB**，上传会失败。立即报告用户，等待明确指示后再操作。
+
+**C. Draft changelog | 拟定 changelog**
+- English first, Chinese after.
+  英文在前,中文在后。
+- Formal release-note tone only.
+  仅使用正式发布说明语气。
+
+**Changelog format | changelog 格式：**
+Use plain numbered list (1. 2. 3.) with English first, Chinese after for each point.
+使用纯数字序号分点，每点英文在前、中文在后。
+
+**Changelog template | 模板：**
+```
+1. [English update]. [中文更新]。
+2. [English update]. [中文更新]。
+3. [English update]. [中文更新]。
+```
+
+**Recommended examples | 推荐示例：**
+```
+1. Initial release. 首次发布。
+```
+```
+1. Add comprehensive pre-publish checklist and two-step publishing workflow. 新增发布前检查清单和两步发布流程。
+2. Consolidate naming/writing standards and changelog rules into SKILL.md body. 整合命名写作规范与changelog规则至SKILL.md正文。
+```
+
+**Strictly avoid | 严格禁止：**
+- personal corrections / 个人纠错
+- format-only adjustments / 格式调整
+- private debugging notes / 私人调试记录
+- jokes, self-deprecation, apology-style wording / 玩笑、自嘲、道歉式表述
+
+### Step 2: Detailed report → Wait for second confirmation | 第二步：详细汇报 → 等待用户再次确认
+
+Report the following to user. **Do NOT upload until user explicitly confirms.**
+
+| Item | 内容 |
+|---|---|
+| Skill name + slug | 准确拼写 |
+| ClawHub current published version | 来自 `clawhub inspect <slug>` |
+| New version number | 在已发布版本上递增 |
+| Changelog | 完整英中文双语内容 |
+| Primary update summary | 一句话概括 |
+| File size | 是否超 50MB |
+| De-identification | 确认通过/需调整 |
+| Scientificity | 确认通过/需调整 |
+| AI readability | 确认通过/需调整 |
+| Contextual coherence | 确认通过/需调整 |
+| Stability | 确认通过/需调整 |
+| Full publish command | `clawhub publish ...` |
+
+**Restart rule | 重启规则：**
+Each user modification request → restart from Step 1.
+每次用户提出修改，都必须从第一步重新开始。
+
+## CLI commands | CLI 命令
 
 ```bash
 clawhub publish <path> --slug <slug> --name "<name>" --version <version> --changelog "<text>"
@@ -28,45 +84,7 @@ clawhub undelete <slug> --yes
 clawhub sync
 ```
 
-## Publish command | 发布命令
-
-```bash
-clawhub publish <path-to-skill> \
-  --slug <slug> \
-  --name "<Display Name>" \
-  --version <version> \
-  --changelog "<changelog>"
-```
-
-## Changelog rules | 发布说明规则
-
-- English first, Chinese after.
-  英文在前,中文在后。
-- Use release-note tone, not chat tone.
-  使用发布说明语气,不要写成聊天口吻。
-- Emphasize visible improvements.
-  强调用户可感知的改进。
-- Avoid exposing small mistakes or awkward implementation history.
-  避免暴露小失误或尴尬实现过程。
-- Avoid slang, jokes, and apology-style wording.
-  避免俚语、玩笑和道歉式表述。
-- Write something suitable for a public release page, not an internal work log.
-  要写成适合公开发布页的文案,不要像内部工作记录。
-
-## Good changelog examples | 推荐示例
-
-- `Initial release. 首次发布。`
-- `Improve cross-platform behavior with automatic Windows/macOS detection. 优化跨平台行为,新增 Windows/macOS 自动识别。`
-- `Add complete working examples for both messaging flows. 新增两套可直接使用的完整示例。`
-
-## Avoid these styles | 避免这些写法
-
-- `Fixed a silly bug`
-- `Tried a few things and this one finally works`
-- `The old method was bad`
-- `Sorry about the previous broken version`
-
 ## Version conflict | 版本冲突
 
 If publish fails with `Version already exists`, bump the version and republish only after confirming with the user.
-如果发布失败并提示 `Version already exists`,应先与用户确认,再升版本号重新发布。
+如果发布失败并提示 `Version already exists`，应先与用户确认，再升版本号重新发布。

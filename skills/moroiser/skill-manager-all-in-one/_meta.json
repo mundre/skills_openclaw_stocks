@@ -1,13 +1,18 @@
 {
   "owner": "moroiser",
   "slug": "skill-manager-all-in-one",
-  "displayName": "Skill Manager All-in-One | 一站式技能管理",
+  "displayName": "Skill Manager All In One | 一站式技能管理器",
   "latest": {
-    "version": "3.0.7",
-    "publishedAt": 1775241669487,
-    "commit": "https://github.com/openclaw/skills/commit/30ef29a897940e8523314d31b6899ed16c94c00a"
+    "version": "4.0.0",
+    "publishedAt": 1775386586256,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.7",
+      "publishedAt": 1775241669487,
+      "commit": "https://github.com/openclaw/skills/commit/30ef29a897940e8523314d31b6899ed16c94c00a"
+    },
     {
       "version": "3.0.6",
       "publishedAt": 1774345937232,
