@@ -3,11 +3,16 @@
   "slug": "skywork-excel",
   "displayName": "Skywork Excel",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773927118493,
-    "commit": "https://github.com/openclaw/skills/commit/56ef38087f631c26e9730b63acb559c25d42d023"
+    "version": "1.0.6",
+    "publishedAt": 1775099584802,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773927118493,
+      "commit": "https://github.com/openclaw/skills/commit/56ef38087f631c26e9730b63acb559c25d42d023"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773744855177,
