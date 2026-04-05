@@ -3,11 +3,16 @@
   "slug": "wininsales-crm",
   "displayName": "Wininsales crm",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1774340285206,
-    "commit": "https://github.com/openclaw/skills/commit/0aa53ddf27fe2d7553ed1cacd428b1329f4429cb"
+    "version": "1.0.5",
+    "publishedAt": 1774939197544,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1774340285206,
+      "commit": "https://github.com/openclaw/skills/commit/0aa53ddf27fe2d7553ed1cacd428b1329f4429cb"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774059968620,
