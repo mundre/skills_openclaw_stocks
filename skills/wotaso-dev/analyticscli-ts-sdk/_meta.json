@@ -3,11 +3,16 @@
   "slug": "analyticscli-ts-sdk",
   "displayName": "Analyticscli Ts Sdk",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1774469665078,
-    "commit": "https://github.com/openclaw/skills/commit/8cd603fa02c11ab3b6ececda6c8bfbd3c4382952"
+    "version": "1.0.8",
+    "publishedAt": 1774483384664,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1774469665078,
+      "commit": "https://github.com/openclaw/skills/commit/8cd603fa02c11ab3b6ececda6c8bfbd3c4382952"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1774453504242,

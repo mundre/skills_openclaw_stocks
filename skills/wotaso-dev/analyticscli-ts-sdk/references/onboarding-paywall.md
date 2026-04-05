@@ -73,15 +73,16 @@ add `onboarding:step_complete` only when there is a real completion boundary (ex
 | --- | --- | --- |
 | `paywall:shown` | Paywall is visible | `source`, `paywallId`, `fromScreen` |
 | `paywall:skip` | User dismisses or skips paywall | `source`, `paywallId` |
-| `purchase:started` | Purchase flow started | `source`, `paywallId`, `packageId` |
-| `purchase:success` | Purchase succeeded | `source`, `paywallId`, `packageId` |
-| `purchase:failed` | Purchase failed | `source`, `paywallId`, `packageId` |
-| `purchase:cancel` | In-app purchase cancel intent detected | `source`, `paywallId`, `packageId` |
+| `purchase:started` | Purchase flow started | `source`, `paywallId` |
+| `purchase:success` | Purchase succeeded | `source`, `paywallId` |
+| `purchase:failed` | Purchase failed | `source`, `paywallId` |
+| `purchase:cancel` | In-app purchase cancel intent detected | `source`, `paywallId` |
 
-If exposed by your paywall provider, include `offering` in tracker defaults:
+If exposed by your paywall provider, include `offeringId` in tracker defaults:
 - RevenueCat: offering identifier
 - Adapty: paywall/placement identifier
 - Superwall: placement/paywall identifier
+This is strongly recommended for reliable paywall funnel segmentation and provider correlation.
 
 ## Duplicate Tracking Prevention
 
@@ -100,7 +101,7 @@ If exposed by your paywall provider, include `offering` in tracker defaults:
   - `purchase:success`
 - Use `createPaywallTracker(...)` so events share one `paywallEntryId`; this improves correlation and duplicate detection in analysis, but it does not dedupe automatically.
 - Reuse a single `createPaywallTracker(...)` instance for one stable paywall flow context. Do not recreate a tracker for every event callback.
-- Include provider offering/paywall identifier as `offering` in tracker defaults when available.
+- Include provider offering/paywall identifier as `offeringId` in tracker defaults when available (strongly recommended).
 - If multiple callbacks can fire during re-render/re-mount, gate emissions with a session-local idempotency key.
 
 ## Hosted Paywall Screens (Mandatory Mapping)
@@ -108,7 +109,7 @@ If exposed by your paywall provider, include `offering` in tracker defaults:
 For hosted paywall providers (RevenueCat UI, Adapty UI, Superwall UI) and custom host wrappers:
 
 - Do not rely on `screen(...)`/`trackScreenView(...)` as replacement for paywall milestones.
-- Create one `createPaywallTracker(...)` instance per stable screen/context (`source`, `paywallId`, optional `offering`).
+- Create one `createPaywallTracker(...)` instance per stable screen/context (`source`, `paywallId`, optional `offeringId`).
 - Route lifecycle callbacks to canonical tracker calls:
   - shown/visible callback -> `paywallTracker.shown(...)`
   - purchase started callback -> `paywallTracker.purchaseStarted(...)`
@@ -121,7 +122,7 @@ For hosted paywall providers (RevenueCat UI, Adapty UI, Superwall UI) and custom
 - In RevenueCat callbacks, prefer provider-native identifiers for correlation:
   - `packageId` from `packageBeingPurchased.identifier`
   - `productId` from `packageBeingPurchased.product.identifier`
-  - `offering` from RevenueCat offering identifier in tracker defaults
+  - `offeringId` from RevenueCat offering identifier in tracker defaults
 
 ## Screen View Coverage
 
@@ -183,7 +184,7 @@ For RevenueCat-powered apps, split analytics into two complementary layers:
 Identity and correlation rules:
 
 - Use one stable user id across both systems (`RevenueCat appUserID` == AnalyticsCLI `setUser(...)` id).
-- Keep `offering`, `paywallId`, `packageId`, and `entitlementKey` on paywall/purchase events.
+- Keep `offeringId`, `paywallId`, `packageId`, and `entitlementKey` on paywall/purchase events.
 - For webhook-derived events, include RevenueCat payload identifiers (event id/type + transaction/subscription identifiers) so retries can be deduped and timelines can be joined.
 
 Suggested webhook-derived event names:
@@ -227,7 +228,7 @@ const onboarding = analytics.createOnboardingTracker({
 const paywall = analytics.createPaywallTracker({
   source: 'onboarding',
   paywallId: 'default_paywall',
-  offering: 'rc_main', // RevenueCat example
+  offeringId: 'rc_main', // RevenueCat example
 });
 const welcomeStep = onboarding.step('welcome', 0);
 
@@ -255,7 +256,7 @@ paywall.purchaseSuccess({
 - onboarding step/survey milestones emitted via generic `track(...)` / `trackEvent(...)` while dedicated onboarding APIs are available
 - missing `onboardingFlowId` or `onboardingFlowVersion`
 - missing `paywallId` or `source`
-- omitting `offering` although the paywall provider exposes an offering/paywall id
+- omitting `offeringId` although the paywall provider exposes an offering/paywall id
 - creating a new `createPaywallTracker(...)` instance for every paywall event call
 - mixing screen-view semantics with funnel milestones
 - instrumenting only onboarding/paywall while skipping core product value events

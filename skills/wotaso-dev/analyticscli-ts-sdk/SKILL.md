@@ -57,12 +57,12 @@ See [Versioning Notes](references/versioning.md).
 - Use neutral file names like `analytics.ts` (not provider-specific names such as `aptabase.ts`).
 - Avoid re-exporting `PAYWALL_EVENTS` / `PURCHASE_EVENTS` from host app utility files. Import SDK constants directly when needed, or use `createPaywallTracker(...)`.
 - When using `createPaywallTracker(...)`, create one tracker per stable paywall context and reuse it across `shown`/`skip`/purchase calls. Recreate only when defaults change.
-- If your paywall provider exposes an offering/paywall identifier, pass it as `offering` in tracker defaults.
+- If your paywall provider exposes an offering/paywall identifier, pass it as `offeringId` in tracker defaults.
   RevenueCat: offering identifier; Adapty: paywall/placement identifier; Superwall: placement/paywall identifier.
 - In hosted paywall screens (RevenueCat UI / Adapty / Superwall or custom wrappers around them), do not use generic `track(...)` / `trackEvent(...)` for paywall or purchase milestones.
   Use one memoized `createPaywallTracker(...)` per screen/context and route lifecycle callbacks to tracker methods:
   `shown` (visible), `purchaseStarted`, one terminal event (`purchaseSuccess`/`purchaseFailed`/`purchaseCancel`), and `skip` (dismiss/close/back).
-- If multiple paywall screens exist, each screen/context must have its own stable tracker defaults (`source`, `paywallId`, optional `offering`) so events are not mixed across screens.
+- If multiple paywall screens exist, each screen/context must have its own stable tracker defaults (`source`, `paywallId`, optional `offeringId`) so events are not mixed across screens.
 - Prefer SDK identity helpers (`setUser`, `identify`, `clearUser`) directly instead of wrapping identify logic in host-app boilerplate.
 - Do not keep legacy analytics providers or event aliases active in generated host-app code.
 - For touched paywall/purchase/onboarding flows, use canonical AnalyticsCLI event names only.
@@ -127,7 +127,7 @@ Before finishing, verify the generated integration code meets all checks:
 7. generated bootstrap sets `identityTrackingMode` explicitly (default `'consent_gated'`)
 8. paywall flow reuses a tracker instance per stable paywall context (no per-event tracker re-creation)
 9. host-app snippets only use publishable API key env names (no `*WRITE_KEY*` fallback)
-10. if provider exposes offering/paywall id, `createPaywallTracker(...)` defaults include `offering`
+10. if provider exposes offering/paywall id, `createPaywallTracker(...)` defaults include `offeringId`
 11. exactly one screen-tracking owner exists per route transition
 12. touched onboarding/paywall/purchase call sites emit canonical AnalyticsCLI events only (no legacy aliases, no dual-write)
 13. every touched hosted paywall screen emits `paywall:shown` via tracker when shown becomes visible (not only screen-view events)
@@ -245,7 +245,7 @@ Use this pattern for near-lossless correlation:
    - Client stream (SDK): paywall and purchase journey intent (`paywall:shown`, `purchase:started`, `purchase:success`/`failed`/`cancel`).
    - Server stream (RevenueCat webhook): authoritative billing lifecycle changes (trial started, trial cancelled, renewal, subscription cancelled/expired, billing issue).
 3. **Correlation keys on every relevant event**
-   - Always include stable keys when available: `userId`, `offering`, `paywallId`, `packageId`, `entitlementKey`.
+   - Always include stable keys when available: `userId`, `offeringId`, `paywallId`, `packageId`, `entitlementKey`.
    - For webhook-derived events, also include RevenueCat identifiers from payload (`rcEventId`, `rcEventType`, original transaction/subscription ids, environment/store).
 4. **Webhook idempotency is mandatory**
    - Deduplicate webhook ingestion by RevenueCat event id before emitting analytics events.
@@ -278,7 +278,7 @@ This split lets funnels answer both questions:
 - For React Native / Expo non-onboarding screens, use `useFocusEffect(...)` to call `analytics.screen(...)` on focus.
 - Use `createPaywallTracker(...)` when paywall context is stable in a flow (`source`, `paywallId`, experiment variant).
 - Keep `createPaywallTracker(...)` instance lifetime aligned to one stable paywall context (for example one screen flow); do not create a new tracker for every paywall event.
-- Include `offering` in paywall tracker defaults when available from provider metadata (RevenueCat/Adapty/Superwall).
+- Include `offeringId` in paywall tracker defaults when available from provider metadata (RevenueCat/Adapty/Superwall). This is strongly recommended for reliable paywall funnel segmentation.
 - Use `trackPaywallEvent(...)` for one-off paywall and purchase milestones.
 - Hosted paywall callback mapping is mandatory for touched flows:
   - paywall visible callback -> `paywallTracker.shown(...)`

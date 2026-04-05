@@ -101,7 +101,7 @@ import { analytics } from '@/utils/analytics';
 const paywall = analytics.createPaywallTracker({
   source: 'onboarding',
   paywallId: 'default_paywall',
-  offering: 'rc_main',
+  offeringId: 'rc_main',
 });
 
 analytics.screen('onboarding_region');
@@ -150,7 +150,7 @@ analytics.clearUser(); // on sign-out
 
 Create one paywall tracker per stable paywall flow context. Do not recreate a new
 `createPaywallTracker(...)` instance for every callback/event.
-If your provider exposes it, always pass an `offering` identifier in tracker defaults
+If your provider exposes it, strongly prefer passing an `offeringId` identifier in tracker defaults
 (RevenueCat offering, Adapty paywall/placement, Superwall placement/paywall id).
 
 ## Hosted Paywall Screen Template
@@ -161,7 +161,7 @@ When the paywall UI is hosted by a provider SDK, wire lifecycle callbacks to one
 const paywall = analytics.createPaywallTracker({
   source: screenOrigin,
   paywallId: routeName,
-  offering: providerOfferingId,
+  offeringId: providerOfferingId,
 });
 
 paywall.shown({ fromScreen: routeName, packageId: selectedPackageId });
