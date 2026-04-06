@@ -1,6 +1,6 @@
 ---
 name: Verilog Design Flow
-description: Design, implement, and verify Verilog modules with spec-driven development, self-checking testbenches, and automated simulation workflows. Use when the user needs to write Verilog modules, design digital circuits, create counters/FSMs/interfaces, simulate and verify designs, or analyze VCD waveforms.
+description: Design, implement, and verify Verilog/SystemVerilog modules with spec-driven development, self-checking testbenches, and automated simulation workflows. Supports Synopsys VCS, Cadence Xrun, Icarus Verilog simulators, and slang static syntax checker. Use when the user needs to write Verilog modules, design digital circuits, create counters/FSMs/interfaces, simulate and verify designs, or analyze VCD waveforms.
 ---
 
 ## Core Rules
@@ -32,8 +32,32 @@ description: Design, implement, and verify Verilog modules with spec-driven deve
 3. Include header comments with author, date, and revision (see Version Tracking below)
 4. Use descriptive signal names, avoid single-letter variables
 
-### Phase 3b: Design Review Checklist
+### Phase 3b: Static Syntax Check with Slang
+Before simulation, run static syntax checking using slang:
+
+```bash
+# Check Verilog/SystemVerilog syntax
+slang <module_name>.v
+
+# Or for SystemVerilog files
+slang <module_name>.sv
+```
+
+**What slang checks:**
+- Syntax errors and parsing issues
+- Type mismatches
+- Undefined references
+- Port connection errors
+- SystemVerilog compliance
+
+**If slang reports errors:**
+1. Fix all syntax errors before proceeding to simulation
+2. Pay attention to warnings about potential issues
+3. Re-run slang until "Build succeeded: 0 errors"
+
+### Phase 3c: Design Review Checklist
 Before simulation, verify:
+- [ ] Slang syntax check passes (0 errors)
 - [ ] All sequential signals have explicit reset values
 - [ ] No combinational logic loops (synthesis will error)
 - [ ] No unintentional latches (all `if`/`case` branches assign in combinational blocks)
@@ -55,11 +79,58 @@ Before simulation, verify:
    - `$finish()` after all tests complete
 2. Save as `<module_name>_tb.v`
 
-### Phase 5: Simulate with Icarus Verilog
-1. Run: `iverilog -o <module_name>.vvp <module_name>.v <module_name>_tb.v`
-2. Execute: `vvp <module_name>.vvp`
-3. If VCD dump needed, ensure `$dumpfile()` and `$dumpvars()` in testbench
-4. Capture output and check for errors
+### Phase 5: Simulate with EDA Tools
+
+The skill automatically detects and uses available simulators in priority order:
+1. **Synopsys VCS** (if `vcs` command available)
+2. **Cadence Xrun** (if `xrun` command available)
+3. **Icarus Verilog** (fallback)
+
+#### Simulator Detection Logic
+```bash
+# Priority order: VCS → Xrun → Icarus
+which vcs && use_vcs
+which xrun && use_xrun
+fallback to iverilog
+```
+
+#### Synopsys VCS (Verilog)
+```bash
+vcs -full64 -debug_acc+all -l sim.log -R <module_name>.v <module_name>_tb.v
+```
+
+#### Synopsys VCS (SystemVerilog)
+```bash
+vcs -full64 -debug_acc+all -sverilog -l sim.log -R <module_name>.sv <module_name>_tb.sv
+```
+
+#### Cadence Xrun (Verilog)
+```bash
+xrun -64bit -access rwc -l sim.log <module_name>.v <module_name>_tb.v
+```
+
+#### Cadence Xrun (SystemVerilog)
+```bash
+xrun -64bit -access rwc -sv -l sim.log -R <module_name>.sv <module_name>_tb.sv
+```
+
+#### Icarus Verilog (Fallback)
+```bash
+iverilog -o <module_name>.vvp <module_name>.v <module_name>_tb.v
+vvp <module_name>.vvp
+```
+
+#### VCD Waveform Output
+⚠️ **Important**: Always use VCD format for waveform dumping to ensure compatibility:
+```verilog
+initial begin
+    $dumpfile("<module_name>.vcd");
+    $dumpvars(0, <module_name>_tb);
+end
+```
+- VCS and Xrun support VCD via `$dumpfile()`/`$dumpvars()`
+- FSDB format (for Verdi) is NOT supported by the VCD analysis scripts
+- Keep testbench VCD-compatible for cross-simulator portability
 
 ### Phase 6: Debug & Iterate
 1. If assertions fail or outputs incorrect:
@@ -140,13 +211,38 @@ Reference: [references/vcd-analysis.md](references/vcd-analysis.md)
 - Design specs: Store in `memory/verilog_specs/<module_name>_spec.md`
 - Verilog files: Create in workspace as `<module_name>.v`
 - Testbenches: Create as `<module_name>_tb.v`
-- Simulation outputs: Generate `.vvp` and `.vcd` files
+- Simulation outputs: Generate `.vvp` (Icarus), `sim.log`, and `.vcd` files
+
+## Simulator Auto-Detection Script
+
+Use the provided helper script to automatically select and run the best available simulator:
+
+```bash
+# The script checks for VCS → Xrun → Icarus in order
+bash <skill_dir>/scripts/simulate.sh <module_name>
+```
+
+Example workflow:
+```bash
+# 1. Detect simulator and run
+bash scripts/simulate.sh counter
+
+# 2. Check simulation log
+cat sim.log
+
+# 3. Analyze VCD waveforms
+python3 scripts/check_vcd.py counter.vcd
+```
 
 ## External Tools
 
 | Tool | Command | Purpose |
 |------|---------|---------|
-| Icarus Verilog | `iverilog -o out.vvp file.v` | Compile Verilog |
+| Synopsys VCS | `vcs -full64 -debug_acc+all -l sim.log -R file.v` | Compile & Simulate Verilog |
+| Synopsys VCS (SV) | `vcs -full64 -debug_acc+all -sverilog -l sim.log -R file.sv` | Compile & Simulate SystemVerilog |
+| Cadence Xrun | `xrun -64bit -access rwc -l sim.log file.v` | Compile & Simulate Verilog |
+| Cadence Xrun (SV) | `xrun -64bit -access rwc -sv -l sim.log -R file.sv` | Compile & Simulate SystemVerilog |
+| Icarus Verilog | `iverilog -o out.vvp file.v` | Compile Verilog (fallback) |
 | VVP | `vvp out.vvp` | Run simulation |
 | GTKWave | `gtkwave dump.vcd` | View waveforms (optional) |
 
