@@ -1,42 +1,50 @@
 ---
 name: soyoung-clinic-tools
 slug: soyoung-clinic-tools
-version: 2.1.4
-description: 新氧青春诊所工具集，包含预约和项目查询百科、门店搜索等能力 | Soyoung clinic tools
-tags: [Soyoung, soyoung, clinic, appointment, medical, beauty, healthcare, 新氧，诊所，预约，医美，整形，hospital]
+version: 2.2.2
+description: >
+  新氧青春诊所工具集，包含预约、项目查询百科、医生信息及医生排班查询等能力 | Soyoung clinic tools
+  OpenClaw skill for the Soyoung (soyoung) clinic chain: appointment booking, store lookup, doctor info,
+  schedules, project knowledge and pricing. Keywords: Soyoung, soyoung, clinic, appointment, doctor,
+  schedule, medical aesthetic.
+tags: [Soyoung, soyoung, clinic, appointment, doctor, schedule, medical, beauty, healthcare, 新氧, 诊所, 预约, 医生, 排班, 医美, 整形, hospital]
 license: MIT
 ---
 
 # 新氧青春诊所工具集 Soyoung Clinic Tools — 技能集规格
 
 **Name**: soyoung-clinic-tools  
-**Version**: 2.1.4  
+**Version**: 2.2.2  
 **License**: MIT
 
 ## Description
 
-新氧青春诊所工具集，包含预约和项目查询百科、门店搜索等能力 | Soyoung clinic tools
+新氧青春诊所工具集，包含预约、项目查询百科、医生信息及医生排班查询等能力 | Soyoung clinic tools
 
-## Skills（功能技能）
+OpenClaw skill for the Soyoung (soyoung) clinic chain: appointment booking, store lookup, doctor info, schedules, project knowledge and pricing. Keywords: Soyoung, soyoung, clinic, appointment, doctor, schedule, medical aesthetic.
 
-### 📅 appointment
-> [skills/appointment/skill.yaml](skills/appointment/skill.yaml)
+> 本文件作为技能集主说明；子技能配置与规则见各目录 `SKILL.md`。
 
-支持新氧门店查询、预约时间切片查询、提交/修改/取消/查询预约。
+## 功能总览
 
-### 💉 project
-> [skills/project/skill.yaml](skills/project/skill.yaml)
+### 📅 预约与门店（appointment）
+- 配置文件：`skills/appointment/SKILL.md`
+- 能力：门店查询、预约切片、预约创建/修改/取消/查询、审批流
 
-检索新氧项目知识库（原理、适应症、术后护理等）及 C 端商品价格信息。
+### 💉 项目与商品（project）
+- 配置文件：`skills/project/SKILL.md`
+- 能力：项目知识检索、商品价格检索
 
-## Setup（配置工具）
+### 👨‍⚕️ 医生与排班（doctor）
+- 配置文件：`skills/doctor/SKILL.md`
+- 能力：医生信息检索、门店医生检索、排班查询
+
+## 共享配置（Setup）
 
 ### 🔐 apikey
-> [setup/apikey/skill.yaml](setup/apikey/skill.yaml)
-
-不是用户直接使用的技能，而是 appointment 和 project 的共同前置条件。
-负责 API Key 主人绑定、配置、查看、替换、删除，以及主人地理位置信息的保存与查询。
-appointment 和 project 均通过 `depends_on: setup/apikey` 声明对其的依赖。
+- 配置文件：`setup/apikey/SKILL.md`
+- 作用：API Key 主人绑定与管理、位置保存与读取
+- 依赖关系：`appointment`、`project`、`doctor` 均依赖该 setup
 
 ## Requirements
 

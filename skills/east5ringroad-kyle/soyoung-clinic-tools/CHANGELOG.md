@@ -1,8 +1,23 @@
 # Changelog — soyoung-clinic-tools
 
-## [2.1.4] — 2026-03-30
+## [2.2.2] — 2026-04-03
 
 ### Changed
+- 修复了一些已知问题 
+
+## [2.2.1] — 2026-04-03
+
+### Changed
+- 优化搜索和医生相关
+- 修复了一些已知问题 
+
+## [2.2.0] — 2026-03-30
+
+### Changed
+- 新增医生信息及医生排班查询
+- 技能配置文档格式迁移：`setup/apikey`、`skills/appointment`、`skills/project`、`skills/doctor` 从 `skill.yaml` 迁移为 `SKILL.md`
+- 删除根目录 `skill.yaml`，技能集说明统一由根 `SKILL.md` 维护
+- 文档引用统一：`README.md`、`SKILL.md`、`使用说明.md` 全部改为 `SKILL.md` 路径
 - 修复了一些已知问题 
 
 ## [2.1.3] — 2026-03-27

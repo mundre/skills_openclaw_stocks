@@ -3,11 +3,16 @@
   "slug": "soyoung-clinic-tools",
   "displayName": "soyoung-clinic-tools",
   "latest": {
-    "version": "2.1.4",
-    "publishedAt": 1774842451941,
-    "commit": "https://github.com/openclaw/skills/commit/fa96f7dc8974d59a48bb8f1d83e2e458dfb08c9f"
+    "version": "2.2.2",
+    "publishedAt": 1775183885236,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.1.4",
+      "publishedAt": 1774842451941,
+      "commit": "https://github.com/openclaw/skills/commit/fa96f7dc8974d59a48bb8f1d83e2e458dfb08c9f"
+    },
     {
       "version": "2.1.0",
       "publishedAt": 1774443453685,

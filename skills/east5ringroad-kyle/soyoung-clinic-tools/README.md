@@ -1,6 +1,8 @@
 # 新氧青春诊所工具集 Soyoung Clinic Tools 🏥
 
-新氧青春诊所工具集，包含预约和项目查询百科、门店搜索等能力
+新氧青春诊所工具集，包含预约、项目查询百科、医生信息及医生排班查询等能力 | Soyoung clinic tools
+
+OpenClaw skill for the Soyoung (soyoung) clinic chain: appointment booking, store lookup, doctor info, schedules, project knowledge and pricing. Keywords: Soyoung, soyoung, clinic, appointment, doctor, schedule, medical aesthetic.
 
 ## 关键安全模型
 
@@ -18,6 +20,7 @@
 | Setup | `setup/apikey` | 绑定主人、配置/替换/删除 API Key、管理主人位置 |
 | Skill | `skills/appointment` | 门店查询、预约切片、预约审批与执行 |
 | Skill | `skills/project` | 项目知识与商品价格查询 |
+| Skill | `skills/doctor` | 医生信息与排班查询 |
 
 ## 常见说法
 
@@ -50,6 +53,15 @@
 痤疮怎么办
 玻尿酸多少钱
 超声炮价格
+```
+
+### 医生 / 排班
+
+```text
+北京保利店有哪些医生
+唐碧莹医生这周哪天坐诊
+新氧今天谁在班
+新氧医生排班
 ```
 
 ## 对接要求
@@ -87,19 +99,21 @@ Hook 会在 `agent:bootstrap` 时注入触发规则，让 agent 优先调用本 
 
 OpenClaw 是否能稳定识别这个 skill，主要看这几处：
 
-- `skill.yaml`：技能集元数据和总入口
-- `skills/appointment/skill.yaml`
-- `skills/project/skill.yaml`
-- `setup/apikey/skill.yaml`
+- `SKILL.md`：技能集说明与入口信息
+- `skills/appointment/SKILL.md`
+- `skills/project/SKILL.md`
+- `skills/doctor/SKILL.md`
+- `setup/apikey/SKILL.md`
 - `hooks/openclaw/handler.ts`：bootstrap 时注入最高优先级规则
 
 `README.md` 和 `使用说明.md` 主要服务人类阅读，不是 OpenClaw 路由命中的核心依据。只要上述规则文件还完整、触发词和执行规则还在，识别精度不会因为 README 变短而明显下降。
 
 为了让 OpenClaw 更稳地命中，我已经把真正的识别增强放在了规则文件里：
 
-- `setup/apikey/skill.yaml`：补了更多 API Key、主人、位置类说法
-- `skills/appointment/skill.yaml`：补了更多门店、预约、审批口令和自然语言说法
-- `skills/project/skill.yaml`：补了更多项目、价格、适应症词
+- `setup/apikey/SKILL.md`：补了更多 API Key、主人、位置类说法
+- `skills/appointment/SKILL.md`：补了更多门店、预约、审批口令和自然语言说法
+- `skills/project/SKILL.md`：补了更多项目、价格、适应症词
+- `skills/doctor/SKILL.md`：补了医生、排班、门店医生查询说法
 - `hooks/openclaw/handler.ts`：补了路由优先级和说法示例，bootstrap 时直接注入
 
 ## 目录结构
@@ -111,10 +125,11 @@ soyoung-clinic-tools/
 ├── setup/apikey/
 └── skills/
     ├── appointment/
+    ├── doctor/
     └── project/
 ```
 
 详细用法见 `使用说明.md`，版本变更见 `CHANGELOG.md`。
 
-**版本**: 2.1.4
-**最后更新**: 2026-03-30
+**版本**: 2.2.2
+**最后更新**: 2026-04-03
