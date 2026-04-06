@@ -1,11 +1,17 @@
 {
   "owner": "justinbao19",
   "slug": "seo-blog-writer",
-  "displayName": "SEO Blog Writer",
+  "displayName": "Seo Blog Writer",
   "latest": {
-    "version": "3.1.0",
-    "publishedAt": 1775033495823,
-    "commit": "https://github.com/openclaw/skills/commit/f32e9ccba07412e86bfa1d2b6dbf6e8f1635e600"
+    "version": "3.1.1",
+    "publishedAt": 1775196302447,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "3.1.0",
+      "publishedAt": 1775033495823,
+      "commit": "https://github.com/openclaw/skills/commit/f32e9ccba07412e86bfa1d2b6dbf6e8f1635e600"
+    }
+  ]
 }

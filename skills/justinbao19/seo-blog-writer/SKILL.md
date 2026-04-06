@@ -2,12 +2,12 @@
 name: seo-blog-writer
 version: 3.1.0
 description: |
-  Zero-friction SEO article writer. Provide a topic + domain - the skill
-  auto-discovers product context, researches keywords, analyzes competitors,
-  writes the article, verifies all links, and delivers publication-ready content.
+  Fully automated SEO article writer. Give it a topic and domain — it handles
+  everything: auto-discovers product context, researches keywords, analyzes
+  competitors, writes the article, verifies links, and delivers a complete
+  publication package (article + QA report + schema markup + promotion checklist).
+  One confirmation gate before writing starts, then hands-off execution.
   Works for any site, any industry, any CMS. No hardcoded dependencies.
-  MANDATORY: activate `skills/heavy-task-protocol/SKILL.md` before Phase 0
-  for checkpointing, resume safety, and failure recovery.
 triggers:
   - "write a blog post"
   - "SEO article"
