@@ -1,11 +1,17 @@
 {
   "owner": "wangqianqianjun",
   "slug": "eps",
-  "displayName": "EPS Tool",
+  "displayName": "Eps",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774435164305,
-    "commit": "https://github.com/openclaw/skills/commit/3c4355be99b8aa326f21008489f8b7c642a13d54"
+    "version": "2.1.0",
+    "publishedAt": 1775375272001,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774435164305,
+      "commit": "https://github.com/openclaw/skills/commit/3c4355be99b8aa326f21008489f8b7c642a13d54"
+    }
+  ]
 }
