@@ -1,3 +1,21 @@
+# INSTRUCTIONS
+
+## Input Data
+Papers are saved in `data/weekly_papers.json` (aggregated from Mon–Fri daily logs).
+
+## Analysis Requirements
+- Group papers by research theme or technical approach.
+- Identify complementary, contrasting, and extending relationships across papers.
+- Extract shared themes or trends from all papers' motivation + core_innovation.
+- Do NOT fabricate details. Only use content from the papers.
+
+## Output Steps
+1. Create Feishu wiki doc at feishu_root using `feishu-create-doc` skill.
+   Title: `📊 Research Weekly {{year}}-W{{week_num}}`
+2. Fill the document using the template below.
+
+---
+
 # 科研周报 | {{year}}-W{{week_num}}
 
 <callout emoji="📊" background-color="light-blue">
@@ -54,15 +72,11 @@
 ## 跨论文横向比较
 
 ### 研究方向关联
-
 > 本周期论文中，哪些在解决相似问题？哪些采用了相似的技术路线？
 
 {{ cross_paper_analysis }}
 
----
-
 ### 共同主题
-
 > 从所有论文的摘要和核心创新中，提炼出的共同主题或趋势。
 
 {{ shared_themes }}

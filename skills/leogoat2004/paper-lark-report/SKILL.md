@@ -1,137 +1,43 @@
----
-name: paper-lark-report
-description: "全自动科研论文日报/周报生成。通过 arXiv RSS 抓取最新论文，arXiv API 获取完整摘要，LLM 语义评分筛选，生成基于原文的学术报告，推送飞书 Wiki。"
-license: MIT
-tags:
-  - research
-  - arxiv
-  - paper
-  - daily-report
-  - weekly-report
-  - feishu
-  - lark
-config:
-  - name: research_direction
-    type: string
-    required: true
-    description: 研究方向描述，LLM 据此筛选论文和评分
-  - name: feishu_root
-    type: string
-    required: true
-    description: 飞书 Wiki 目录链接，报告将创建在此目录下
-  - name: max_daily_papers
-    type: number
-    required: false
-    default: 5
-    description: 日报精选论文数量上限
-author: OpenClaw
----
-
 # paper-lark-report
 
-全自动科研论文日报/周报生成 Skill。抓取 arXiv 论文，arXiv API 精读全文，LLM 语义评分筛选，生成学术化报告，推送飞书 Wiki。
+全自动科研论文日报/周报生成 Skill。基于 arXiv API 精准检索 + LLM 语义评分 + 飞书 Wiki 推送。
 
-**Perfect for:**
-- 科研人员持续追踪特定研究方向
-- AI/ML 研究者跟踪最新预印本
-- 需要结构化文献报告的团队
+---
 
-## 核心设计
-
-### 先筛选，后精读，再生成
-
-```
-1. 抓取 arXiv RSS（候选论文）
-2. arXiv API 批量获取完整摘要
-3. LLM 语义相关性评分（基于完整摘要）
-4. 筛选 Top N
-5. LLM 基于原文生成报告（无幻觉）
-6. 推送飞书 Wiki
-7. 注册去重
-```
-
-### 设计原则
-
-- **避免幻觉**：基于 arXiv API 完整摘要（300-800字）生成，各字段有据可查。
-- **纯语义评分**：无需 CCF、无需引用数，LLM 读标题+摘要后与研究方向语义匹配。
-- **周六生成周报**：日报周一至周五产出，周六汇总生成周报，横向比较跨论文规律
-
-## 评分机制
-
-| 评分 | 含义 |
-|------|------|
-| 9-10 | 直接解决研究方向核心问题 |
-| 7-8 | 高度相关，涉及核心问题关键方面 |
-| 5-6 | 相关，非核心 |
-| <5 | 不相关 |
-
-筛选 Top N（默认 5），需有 1-2 篇达 8 分以上。
-
-## 使用示例
-
-### 触发指令
-
-```
-"生成今日研究日报"
-"生成本周研究周报"
-"帮我追踪最新的 multi-agent 系统论文"
-```
-
-### 执行流程
-
-**日报**：
-1. `python3 scripts/paper_lark_report.py`
-2. 检查 `skip`：
-   - `no_paper_reason` 有值 → 推送"今日无合适论文"提示
-   - `existing_doc` 有值 → 报告现有文档链接
-3. 读取 `data/daily_papers.json` + 模板
-4. LLM 筛选论文（最多 5 篇）
-5. 创建飞书文档
-6. 调用 `python3 scripts/paper_lark_report.py --save-daily "{date}" "data/daily_papers.json"` 保存精选论文
-7. 调用 `--register-daily-doc` 注册文档
-
-**周报**：
-1. `python3 scripts/paper_lark_report.py --weekly`
-2. 读取周一至周五的日报归档
-3. 检查 `skip`：
-   - `no_paper_reason` 有值 → 推送"本周无日报数据，跳过周报"提示
-   - 否则正常生成
-4. 读取 `data/weekly_papers.json` + 模板
-5. 创建飞书文档
-5. 创建文档
-
-## 配置
-
-```yaml
-# config.yaml
-research_direction: "Security-constrained governance for enterprise multi-agent..."
-feishu_root: "https://my.feishu.cn/wiki/G0UnwO95BiCWVxkXF7pc4gtJnv0"
-max_daily_papers: 5
-
-venue_rss:
-  - name: "arXiv cs.AI"
-    url: "http://export.arxiv.org/rss/cs.AI"
-  - name: "arXiv cs.LG"
-    url: "http://export.arxiv.org/rss/cs.LG"
-  - name: "arXiv cs.MA"
-    url: "http://export.arxiv.org/rss/cs.MA"
-  - name: "arXiv cs.CL"
-    url: "http://export.arxiv.org/rss/cs.CL"
-```
-
-## Cron 配置
+## 安装
 
 ```bash
-# 日报：周一至周五 12:00
-openclaw cron add --name "paper-daily" --cron "0 12 * * 1-5" \
-  --tz "Asia/Shanghai" --session isolated --timeout 900 \
-  --message "使用 paper-lark-report skill，生成今日研究日报并推送到飞书"
+# 方式一：通过 ClawHub 安装
+npx clawhub@latest install leogoat2004/paper-lark-report
 
-# 周报：每周六 12:00
-openclaw cron add --name "paper-weekly" --cron "0 12 * * 6" \
-  --tz "Asia/Shanghai" --session isolated --timeout 600 \
-  --message "使用 paper-lark-report skill，生成本周研究周报并推送到飞书"
+# 方式二：通过 OpenClaw CLI 安装
+openclaw skills install leogoat2004/paper-lark-report
 ```
+
+---
+
+## 核心流程
+
+```
+cron --(isolated session)--> run_daily()
+    ├─ build_arxiv_query(research_direction)
+    ├─ fetch_arxiv_papers(query, max_search_results=20)
+    ├─ 去重（processed_ids.json）
+    ├─ fetch_arxiv_details(filtered[:20])
+    └─ 保存 data/daily_papers.json
+            │
+            ▼
+       LLM isolated session
+            ├─ 评分（0-10）
+            ├─ 精选 Top max_daily_papers
+            ├─ 从 full_abstract 提取 motivation + core_innovation（中文）
+            ├─ 写入 data/selected_papers.json
+            ├─ --save-selected
+            ├─ feishu-create-doc skill 创建 Wiki 文档（子节点）
+            └─ --register-doc
+```
+
+---
 
 ## 目录结构
 
@@ -139,22 +45,90 @@ openclaw cron add --name "paper-weekly" --cron "0 12 * * 6" \
 paper-lark-report/
 ├── SKILL.md
 ├── config.yaml
+├── data/
+│   ├── doc_registry.json
+│   ├── processed_ids.json
+│   ├── daily_papers.json      # 候选论文（LLM 输入）
+│   ├── selected_papers.json    # 精选结果（含中文分析）
+│   └── doc_result.json         # 最近创建文档的 token/url
+├── processed_log/
+│   └── YYYY-MM-DD.json         # 每日归档（供周报聚合）
 ├── scripts/
-│   └── paper_lark_report.py  # 抓取脚本（RSS + arXiv API）
-├── templates/
-│   ├── daily_report.md
-│   ├── daily_report_prompt.md
-│   ├── weekly_report.md
-│   └── weekly_report_prompt.md
-└── data/
-    ├── daily_papers.json    # 当日候选论文
-    ├── doc_registry.json    # 文档注册表（去重）
-    ├── processed_ids.json   # 已处理 paper ID
-    └── processed_log/      # 日报归档
+│   ├── arxiv_search.py         # arXiv API
+│   ├── paper_lark_report.py     # 主入口
+│   └── create_feishu_doc.py    # 飞书 Wiki 创建（直接 API）
+└── templates/
+    ├── daily_report.md         # 日报模板（含 Instructions）
+    └── weekly_report.md        # 周报模板（含 Instructions）
 ```
 
-## 依赖
+---
 
-- Python 3.12+
-- pyyaml
-- 飞书 Bot（需文档创建权限）
+## 配置（config.yaml）
+
+| 字段 | 说明 |
+|------|------|
+| `feishu_space_id` | Wiki 空间 ID（整数，URL 中提取） |
+| `feishu_parent_node` | 父节点 token，创建在 paper-lark-report 节点下 |
+| `research_direction` | 自由文本研究方向描述 |
+| `max_search_results` | 每日 arXiv 最多获取篇数（默认 20） |
+| `max_daily_papers` | 日报最多精选篇数（默认 3） |
+| `arxiv_paper_max_days` | 论文最大天数（默认 7） |
+| `daily_cron` / `weekly_cron` | cron 表达式（UTC+8） |
+
+---
+
+## arXiv 查询策略
+
+Query 构建规则：`abs:core_term AND (abs:term1 OR abs:term2 OR ...)`
+
+- 第一个词作为 AND 核心，其余 OR 扩展
+- 识别复合词（multi-agent 等）作为原子单元
+- 过滤泛化词（towards/safe/efficient 等）
+- 最多 8 个词
+
+---
+
+## 飞书 Wiki API 验证过的要点
+
+### 节点创建
+```
+POST /wiki/v2/spaces/{space_id}/nodes
+body: { obj_type: "docx", parent_node_token, node_type: "origin", title }
+返回: { node_token, obj_token }
+```
+**注意**：Wiki API 忽略传入的 obj_token，始终创建自己的空文档，必须用返回的 obj_token 写入。
+
+### 写入可用 block type
+| block_type | 类型 | 可用 |
+|-----------|------|------|
+| 2 | text/paragraph | ✅ |
+| 3 | heading1 | ✅ |
+| 4 | heading2 | ✅ |
+| 5 | heading3 | ✅ |
+| 25 | divider | ❌ 1770029 |
+| 27 | callout | ❌ 字段校验严 |
+| 31 | table | ❌ 参数结构不对 |
+
+### 关键参数
+- `space_id`：必须是**整数**，不是字符串
+- `parent_node`：父节点 token，文档创建在其下级
+- Token 获取：从 `openclaw.json` 的 `channels.feishu.appId/appSecret` 换取 tenant_access_token
+
+---
+
+## CLI
+
+```bash
+# 日报（cron 触发）
+python3 scripts/paper_lark_report.py
+
+# 周报
+python3 scripts/paper_lark_report.py --weekly
+
+# LLM 选完论文后
+python3 scripts/paper_lark_report.py --save-selected "YYYY-MM-DD" "data/selected_papers.json"
+python3 scripts/paper_lark_report.py --register-doc "<node_token>" "<obj_token>" "<doc_url>"
+```
+
+
