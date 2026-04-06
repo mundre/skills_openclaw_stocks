@@ -1,11 +1,17 @@
 {
   "owner": "dr-xiaoming",
   "slug": "blueai-models",
-  "displayName": "BlueAI Models",
+  "displayName": "Blueai Models",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774421387106,
-    "commit": "https://github.com/openclaw/skills/commit/849dd71d2bcf1b839f4a454bbb5bf47b9b9bb579"
+    "version": "1.1.0",
+    "publishedAt": 1775119799965,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774421387106,
+      "commit": "https://github.com/openclaw/skills/commit/849dd71d2bcf1b839f4a454bbb5bf47b9b9bb579"
+    }
+  ]
 }

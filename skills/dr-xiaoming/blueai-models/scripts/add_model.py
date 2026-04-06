@@ -33,6 +33,10 @@ MODEL_DB = {
     "gemini-2.5-pro": {"name": "Gemini 2.5 Pro", "api": "openai-completions", "reasoning": True, "input": ["text","image"], "cost": {"input":0.00125,"output":0.01}, "contextWindow": 1048576, "maxTokens": 65535, "provider_type": "openai"},
     "gemini-3.1-pro-preview": {"name": "Gemini 3.1 Pro", "api": "openai-completions", "reasoning": True, "input": ["text","image"], "cost": {"input":0.00125,"output":0.01}, "contextWindow": 1048576, "maxTokens": 65536, "provider_type": "openai"},
     "gemini-3-flash-preview": {"name": "Gemini 3 Flash", "api": "openai-completions", "reasoning": True, "input": ["text","image"], "cost": {"input":0.00015,"output":0.0035}, "contextWindow": 1048576, "maxTokens": 65536, "provider_type": "openai"},
+    # Gemini Image Generation (openai-completions, chat-based image output)
+    "gemini-3.1-flash-image-preview": {"name": "Gemini 3.1 Flash Image", "api": "openai-completions", "reasoning": False, "input": ["text", "image"], "cost": {"input": 0.00015, "output": 0.0035}, "contextWindow": 131072, "maxTokens": 32768, "provider_type": "openai"},
+    "gemini-3-pro-image-preview": {"name": "Gemini 3 Pro Image", "api": "openai-completions", "reasoning": False, "input": ["text", "image"], "cost": {"input": 0.00125, "output": 0.01}, "contextWindow": 65536, "maxTokens": 32768, "provider_type": "openai"},
+    "gemini-2.5-flash-image": {"name": "Gemini 2.5 Flash Image", "api": "openai-completions", "reasoning": False, "input": ["text", "image"], "cost": {"input": 0.00015, "output": 0.0035}, "contextWindow": 32768, "maxTokens": 32768, "provider_type": "openai"},
     # DeepSeek (openai-completions, text only)
     "DeepSeek-R1": {"name": "DeepSeek R1", "api": "openai-completions", "reasoning": True, "input": ["text"], "cost": {"input":0.00055,"output":0.0022}, "contextWindow": 128000, "maxTokens": 32000, "provider_type": "openai"},
     "DeepSeek-V3.2": {"name": "DeepSeek V3.2", "api": "openai-completions", "reasoning": False, "input": ["text"], "cost": {"input":0.00027,"output":0.0011}, "contextWindow": 128000, "maxTokens": 32000, "provider_type": "openai"},

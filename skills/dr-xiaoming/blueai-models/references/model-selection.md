@@ -30,10 +30,13 @@
 - 262K token → `kimi-k2.5` 或 `qwen3-vl-plus`
 
 ### 图像生成
-- 最佳质量 → `gpt-image-1.5`
-- 标准 → `gpt-image-1` 或 `dall-e-3`
-- 图像编辑 → `gemini-2.5-flash-image`
+- 最佳质量（OpenAI） → `gpt-image-1.5`（Images API）
+- 标准（OpenAI） → `gpt-image-1` 或 `dall-e-3`（Images API）
+- **快速生图（Gemini）** → `gemini-3.1-flash-image-preview`（Chat Completions，速度快成本低）
+- **高质量生图（Gemini）** → `gemini-3-pro-image-preview`（Chat Completions，Pro级品质）
+- **图像编辑** → `gemini-2.5-flash-image` 或 `gemini-3-pro-image-preview`（发送图片+指令）
 - 中文理解 → `Doubao-Seedream-5.0-lite`
+- ⚡ Gemini 图像模型走 `/v1/chat/completions`，不走 Images API，详见 image-generation.md
 
 ### RAG / 语义搜索
 - Embedding → `text-embedding-3-large`（英文）或 `text-embedding-v4`（中英）

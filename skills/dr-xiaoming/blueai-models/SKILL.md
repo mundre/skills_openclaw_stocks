@@ -4,8 +4,11 @@ description: |
   Configure and manage AI models from BlueAI unified proxy service for OpenClaw.
   Use when: (1) adding new models to openclaw.json, (2) choosing the right model for a task,
   (3) setting up multi-model strategy, (4) switching or comparing models,
-  (5) troubleshooting model connectivity, (6) user asks about available models or pricing.
+  (5) troubleshooting model connectivity, (6) user asks about available models or pricing,
+  (7) generating images via Gemini image models or GPT image models.
   Covers: Claude, GPT, Gemini, DeepSeek, Qwen, Doubao, Kimi, Grok, MiniMax via BlueAI relay.
+  Image generation: Gemini 3.1 Flash Image, Gemini 3 Pro Image, Gemini 2.5 Flash Image (chat-based),
+  GPT Image 1/1.5, DALL-E 3 (images API).
 ---
 
 # BlueAI Models for OpenClaw
@@ -30,6 +33,29 @@ List available models:
 python3 scripts/add_model.py --list
 ```
 
+## Image Generation
+
+Gemini image models generate images via **Chat Completions** (`/v1/chat/completions`), not the Images API. Send a prompt as a normal message; the model returns base64-encoded images in Markdown.
+
+```bash
+# Add image models
+python3 scripts/add_model.py gemini-3.1-flash-image-preview
+python3 scripts/add_model.py gemini-3-pro-image-preview
+openclaw gateway restart
+
+# Test image generation
+python3 scripts/test_model.py gemini-3.1-flash-image-preview --image-gen
+python3 scripts/test_model.py gemini-3-pro-image-preview --image-gen --save ./test-output
+```
+
+| Model | Speed | Quality | Edit Support | Best For |
+|-------|-------|---------|-------------|----------|
+| `gemini-3.1-flash-image-preview` | ⚡ Fast | Good | ❌ | Quick prototypes, batch |
+| `gemini-3-pro-image-preview` | Medium | ⭐ Best | ✅ | High-quality creative |
+| `gemini-2.5-flash-image` | ⚡ Fast | Good | ✅ | Image editing |
+
+For detailed usage, prompt tips, Python examples, and edit workflows: read `references/image-generation.md`.
+
 ## Endpoints
 
 | Type | Base URL | Note |
@@ -51,12 +77,16 @@ Same API key works for all models.
 | Balanced | `claude-sonnet-4-6` | 1/5 Opus price, most tasks |
 | Code specialist | `gpt-5.2-codex` | 128K output, code focused |
 | Ultra-long context | `xai.grok-4-fast-non-reasoning` | 2M tokens |
+| **Image gen (fast)** | `gemini-3.1-flash-image-preview` | Chat-based, cheap |
+| **Image gen (quality)** | `gemini-3-pro-image-preview` | Best Gemini quality |
+| **Image edit** | `gemini-2.5-flash-image` | Send image + edit instruction |
 
 ## References
 
 - **Full model catalog**: Read `references/model-catalog.md` for all 100+ models with specs
 - **OpenClaw config guide**: Read `references/openclaw-config.md` for JSON structure and examples
 - **Model selection decision tree**: Read `references/model-selection.md` for task-based recommendations
+- **Image generation guide**: Read `references/image-generation.md` for Gemini image gen usage, prompts, and code examples
 
 ## Key Rules
 
@@ -65,4 +95,5 @@ Same API key works for all models.
 3. DeepSeek/Qwen text models: set `input: ["text"]` only (no image)
 4. MiniMax: must use OpenAI endpoint, does not support Claude endpoint
 5. `gemini-3-pro-preview` deprecated 2026-03-26 → use `gemini-3.1-pro-preview`
-6. After config changes: `openclaw gateway restart`
+6. Gemini image models use chat completions, not images API — output is base64 in Markdown
+7. After config changes: `openclaw gateway restart`
