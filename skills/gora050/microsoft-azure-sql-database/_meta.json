@@ -3,9 +3,15 @@
   "slug": "microsoft-azure-sql-database",
   "displayName": "Microsoft Azure Sql Database",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774904713115,
-    "commit": "https://github.com/openclaw/skills/commit/c3c24bb847f7cf50e2692a8702989be61550ec9b"
+    "version": "1.0.2",
+    "publishedAt": 1775169778937,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774904713115,
+      "commit": "https://github.com/openclaw/skills/commit/c3c24bb847f7cf50e2692a8702989be61550ec9b"
+    }
+  ]
 }
