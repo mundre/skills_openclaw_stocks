@@ -3,9 +3,15 @@
   "slug": "built-accounting",
   "displayName": "Built Accounting",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775030665336,
-    "commit": "https://github.com/openclaw/skills/commit/735fe1622718e26496ab0d12d3cb74f61f5cd5cc"
+    "version": "1.0.2",
+    "publishedAt": 1775170470860,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775030665336,
+      "commit": "https://github.com/openclaw/skills/commit/735fe1622718e26496ab0d12d3cb74f61f5cd5cc"
+    }
+  ]
 }
