@@ -1,11 +1,17 @@
 {
   "owner": "mzlzyca",
   "slug": "extract-tables-from-pdf",
-  "displayName": "extract-tables-from-pdf",
+  "displayName": "Extract Tables From Pdf",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774605245884,
-    "commit": "https://github.com/openclaw/skills/commit/f236262b08dde39cfa61225a2d01adcd10951d2c"
+    "version": "0.4.0",
+    "publishedAt": 1775210295786,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774605245884,
+      "commit": "https://github.com/openclaw/skills/commit/f236262b08dde39cfa61225a2d01adcd10951d2c"
+    }
+  ]
 }
