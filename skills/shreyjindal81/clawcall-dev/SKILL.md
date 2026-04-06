@@ -1,11 +1,21 @@
 ---
 name: clawcall
-description: Make real AI-powered phone calls. Use when the user wants to call someone, phone a business, follow up by phone, confirm or reschedule or cancel an appointment, make a reservation, check on an order, navigate a phone menu, get through to a real person, reach a doctor or dentist or office, leave a message, schedule a callback, or handle anything that requires dialing a phone number. NOT for international calls, SMS, or email. US and Canada only. No setup needed — works on the first call.
+description: Make real AI-powered phone calls. Use when the user wants to call someone, phone a business, follow up by phone, confirm or reschedule or cancel an appointment, make a reservation, check on an order, navigate a phone menu, get through to a real person, reach a doctor or dentist or office, leave a message, schedule a callback, or handle anything that requires dialing a phone number. NOT for international calls, SMS, or email. US and Canada only. Works on the first call — API key is auto-provisioned.
+homepage: https://clawcall.dev
+publisher: ClawCall
+permissions:
+  network:
+    - "https://api.clawcall.dev"
+  files:
+    read:
+      - "~/.config/clawcall/key.json"
+    write:
+      - "~/.config/clawcall/key.json"
 ---
 
 # ClawCall
 
-You can make real phone calls on behalf of the user. An AI agent dials the number, has the conversation, and brings back a full transcript. No setup or API keys needed — the first call just works.
+You can make real phone calls on behalf of the user. An AI agent dials the number, has the conversation, and brings back a full transcript. An API key is provisioned automatically on the first call — no manual setup required.
 
 **Base URL:** `https://api.clawcall.dev`
 
@@ -19,6 +29,7 @@ You can make real phone calls on behalf of the user. An AI agent dials the numbe
 - **The user's full name** — The AI agent will introduce itself on their behalf. If you don't have it, ask.
 - **Context** — The more relevant detail you give the phone agent, the better it handles follow-up questions. Dates, times, reference numbers, provider names — whatever applies to this call.
 - **Bridge?** — Consider whether this is something the user might want to handle personally — negotiation, sensitive discussion, identity verification, complex decisions. If so, ask if they'd like to be connected into the call live. See [Live Handoff](#live-handoff).
+- **Recording notice** — Calls are recorded for transcript generation. The recording URL is returned with the call result. Let the user know their call will be recorded if they ask. Recording has a 10min life and then it dissapears. 
 
 If calling a business outside likely hours (before 8 AM, after 6 PM, weekends), mention it: "It's 9 PM — the office is probably closed. Want me to try anyway, or call tomorrow morning?"
 
@@ -44,7 +55,7 @@ Optional, but make calls noticeably better:
 
 - **Personality** — Who the AI is. "Alex, a friendly and professional assistant calling on behalf of Jordan Lee." Without this, the agent sounds generic.
 - **Greeting** — Opening line. "Hi, this is Alex calling on behalf of Jordan Lee regarding an upcoming appointment." Gets to the point fast.
-- **Voice** — `rachel` (default, female), `adam` (male), `bella` (female), `josh` (male).
+- **Voice** — `jessica` (default, female), `sarah` (female), `chris` (male), `eric` (male).
 
 ---
 
@@ -62,7 +73,7 @@ X-Api-Key: clawcall_sk_...
   "task": "Call Dr. Rivera's office. Confirm Jordan Lee's appointment for Tuesday March 30 at 2:30 PM. If they need to reschedule, Wednesday or Thursday afternoon works. If no one answers, hang up.",
   "personality": "Alex, a friendly and professional assistant calling on behalf of Jordan Lee",
   "greeting": "Hi, this is Alex calling on behalf of Jordan Lee regarding an upcoming appointment.",
-  "voice": "rachel",
+  "voice": "jessica",
   "bridge_number": "+15559876543"
 }
 ```
@@ -81,7 +92,17 @@ Only `to` and `task` are required. Add `personality` and `greeting` for better c
 
 ### API key handling
 
-Every response includes an `api_key` field. Send it back as `X-Api-Key` on every subsequent request. Never show the API key to the user — it's an internal detail.
+Every response includes an `api_key` field. Send it back as `X-Api-Key` on every subsequent request. The API key is managed automatically. You don't need to surface it in normal conversation, but it belongs to the user — share it if they ask.
+
+**Persist the key across conversations.** The API key is a low-privilege session identifier (not a password or secret) — it tracks usage quota and cannot access other users' data. On first receipt, save it to `~/.config/clawcall/key.json`:
+
+```json
+{ "api_key": "clawcall_sk_..." }
+```
+
+If your host environment provides a secure secret store, prefer that over the file. Otherwise, the file path above is acceptable given the key's limited scope.
+
+At the start of any new conversation involving phone calls, check for this file (or your secure store) first. If the key exists, use it — don't wait for a new one to be issued.
 
 ---
 
@@ -265,11 +286,21 @@ Don't check balance before every call. Just call. Handle errors if they come.
 
 ---
 
+## Data & Recordings
+
+- **Recordings** are generated by the telephony provider (Telnyx) during the call and expire automatically after approximately 10 minutes. The temporary URL is returned in the completed call response. Recordings are **not** downloaded, archived, or stored by ClawCall servers.
+- **Transcripts** are generated in real time during the call and returned in the API response. They are held in server memory only for the duration of the call session (up to 1 hour) and are not persisted to a database or shared with any third party.
+- **Phone numbers and call context** are used only to place and manage the call. They are not shared with third parties beyond the telephony provider (Telnyx) required to connect the call.
+- **Bridge calls**: When using live handoff, the user's callback number is used solely to connect them into the active call and is not stored or reused afterward.
+- **API keys** are low-privilege session identifiers used for rate limiting and balance tracking. They do not grant access to other users' data. Keys can be linked to a ClawCall account for persistent balance tracking. A compromised key can be revoked by contacting support or creating a new account.
+
+---
+
 ## Rules
 
 1. **If you have the phone number and are confident, use it.** If not, ask.
 2. **Everything goes in the task.** The phone agent only knows what you write there.
-3. **Send the API key on every request.** Every response includes one — send it back as `X-Api-Key`. Never show it to the user.
+3. **Send the API key on every request.** Every response includes one — send it back as `X-Api-Key`. Save it to `~/.config/clawcall/key.json` (or your host's secure store) on first receipt and load it at the start of new conversations. Share it if the user asks.
 4. **Poll every 3 seconds.** Not faster.
 5. **Lead with outcomes, not transcripts.** Summarize what happened. Include which number was called. Offer the transcript for detail.
 6. **If a call didn't get the job done, figure out why and call back.** Identify what was missing from the transcript, get that information, and retry with a restructured task that frames it as a callback.
