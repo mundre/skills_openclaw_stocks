@@ -3,9 +3,15 @@
   "slug": "alibabacloud-dataworks-workspace-manage",
   "displayName": "Alibabacloud Dataworks Workspace Manage",
   "latest": {
-    "version": "0.0.1",
-    "publishedAt": 1775037063170,
-    "commit": "https://github.com/openclaw/skills/commit/f33f88621e0b3f7ae51ddefe351516035c1b2a51"
+    "version": "0.0.2",
+    "publishedAt": 1775118895058,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.1",
+      "publishedAt": 1775037063170,
+      "commit": "https://github.com/openclaw/skills/commit/f33f88621e0b3f7ae51ddefe351516035c1b2a51"
+    }
+  ]
 }
