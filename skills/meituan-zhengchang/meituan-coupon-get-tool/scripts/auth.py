@@ -28,7 +28,7 @@ from pathlib import Path
 # 内嵌于 meituan-coupon-get-tool，Token 存储 key 与外部 meituan-c-user-auth 共享，
 # 实现"一次登录、两个 Skill 共用 Token"，用户安装任一 Skill 登录后均可复用。
 AUTH_KEY       = "meituan-c-user-auth"
-LOCAL_VERSION  = "1.0.6"   # 内嵌版本号，与 SKILL.md 中 version 字段保持一致
+LOCAL_VERSION  = "1.0.12"   # 内嵌版本号，与 SKILL.md 中 version 字段保持一致
 
 # 用户协议接受状态字段名
 TERMS_ACCEPTED_KEY = "terms_accepted"
@@ -641,6 +641,78 @@ def cmd_clear_device_token():
     print(json.dumps(result, ensure_ascii=False))
 
 
+# ── 命令：定时任务管理 ─────────────────────────────────────────────────────────────
+
+# 定时任务状态字段名
+CRON_ENABLED_KEY = "cron_enabled"
+CRON_TIME_KEY = "cron_time"
+
+
+def cmd_cron_status():
+    """查询定时任务状态"""
+    token_data = get_token_data()
+    cron_enabled = token_data.get(CRON_ENABLED_KEY, False)
+    cron_time = token_data.get(CRON_TIME_KEY, "")
+
+    result = {
+        "success": True,
+        "cron_enabled": cron_enabled,
+        "cron_time": cron_time if cron_enabled else None,
+        "message": f"当前已设置每天 {cron_time} 自动领券" if cron_enabled else "暂未设置自动领券"
+    }
+    print(json.dumps(result, ensure_ascii=False))
+
+
+def cmd_cron_set(time_str: str):
+    """设置定时任务
+
+    Args:
+        time_str: 时间字符串，格式 HH:MM（如 "10:00"）
+    """
+    import re
+
+    # 验证时间格式
+    if not re.match(r"^([0-1]?\d|2[0-3]):([0-5]\d)$", time_str):
+        print(json.dumps({
+            "success": False,
+            "error": "INVALID_TIME_FORMAT",
+            "message": "时间格式错误，请使用 HH:MM 格式（如 10:00、14:30）"
+        }, ensure_ascii=False))
+        sys.exit(1)
+
+    # 标准化时间格式（补零）
+    parts = time_str.split(":")
+    normalized_time = f"{int(parts[0]):02d}:{int(parts[1]):02d}"
+
+    token_data = get_token_data()
+    token_data[CRON_ENABLED_KEY] = True
+    token_data[CRON_TIME_KEY] = normalized_time
+    save_token_data(token_data)
+
+    print(json.dumps({
+        "success": True,
+        "cron_enabled": True,
+        "cron_time": normalized_time,
+        "message": f"✅ 已设置每天 {normalized_time} 自动领券"
+    }, ensure_ascii=False))
+
+
+def cmd_cron_disable():
+    """取消定时任务"""
+    token_data = get_token_data()
+    had_cron = token_data.get(CRON_ENABLED_KEY, False)
+
+    token_data[CRON_ENABLED_KEY] = False
+    # 保留 cron_time 字段作为历史记录，方便用户重新开启
+    save_token_data(token_data)
+
+    print(json.dumps({
+        "success": True,
+        "cron_enabled": False,
+        "message": "已关闭自动领券，需要时随时找我领券就行"
+    }, ensure_ascii=False))
+
+
 # ── 入口 ──────────────────────────────────────────────────────────────
 
 def main():
@@ -681,6 +753,16 @@ def main():
     # clear-device-token
     subparsers.add_parser("clear-device-token", help="清除设备标识（device_token），仅在用户明确要求时调用")
 
+    # cron-status - 查询定时任务状态
+    subparsers.add_parser("cron-status", help="查询定时自动领券状态")
+
+    # cron-set - 设置定时任务
+    p_cron_set = subparsers.add_parser("cron-set", help="设置每天定时自动领券时间")
+    p_cron_set.add_argument("--time", required=True, help="时间，格式 HH:MM（如 10:00、21:30）")
+
+    # cron-disable - 取消定时任务
+    subparsers.add_parser("cron-disable", help="取消定时自动领券")
+
     args = parser.parse_args()
 
     if args.command == "version-check":
@@ -703,6 +785,12 @@ def main():
         cmd_terms_decline()
     elif args.command == "clear-device-token":
         cmd_clear_device_token()
+    elif args.command == "cron-status":
+        cmd_cron_status()
+    elif args.command == "cron-set":
+        cmd_cron_set(args.time)
+    elif args.command == "cron-disable":
+        cmd_cron_disable()
 
 
 if __name__ == "__main__":
