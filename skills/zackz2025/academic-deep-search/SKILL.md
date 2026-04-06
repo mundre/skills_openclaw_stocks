@@ -1,141 +1,149 @@
 ---
 name: academic-deep-search
-description: Search academic literature and return structured, immediately useful results. Triggers: (1) "what molecules/markers do studies in [topic] detect?", "一般检测哪些分子", "results里一般报道什么"; (2) "show me a typical figure of [topic]", "找个XX的典型figure", "看看XX相关的figure". Two modes: Body Mode organizes results by experiment type; Figure Mode organizes by individual figures with original captions. For biomedical topics, PubMed/PMC is the preferred source.
+description: |
+  Search academic literature and return structured, source-grounded results for questions about methods, markers, findings, or representative figures.
+
+  Use this skill when the user wants to know what studies in a field usually detect, what results sections commonly report, which methods are typical, or what a representative figure in a topic looks like. For biomedical topics, prefer PubMed and PMC.
 ---
 
 # Academic Deep Search
 
-## Two Modes
+Use this skill for requests such as:
 
-| Mode | What It Answers |
-|------|---------------|
-| **Body Mode** | "What molecules/markers do studies typically detect?" / "What do results sections usually report?" / "What experimental methods are used in field X?" — organized by experiment type |
-| **Figure Mode** | "Show me a typical figure of X" / "How are figures of X typically presented?" — organized by Figure, with original captions |
+- "What markers do studies on topic X usually measure?"
+- "What do results sections in this field usually report?"
+- "Show me a typical figure for this disease model or pathway."
+- "What experimental methods are commonly used in this literature?"
 
-Both modes share the same search workflow; only the organizing and presentation differ.
+The goal is not just to find papers. The goal is to read enough of the right papers to give the user a structured, directly useful answer.
+
+## Two Output Modes
+
+Choose the mode that best matches the user request.
+
+### Body Mode
+
+Use when the user asks about:
+
+- molecules or markers commonly measured
+- methods commonly used
+- what findings usually appear in Results sections
+
+Organize the answer by experiment type or finding category, not by paper.
+
+### Figure Mode
+
+Use when the user asks for:
+
+- a typical figure in a topic
+- how findings are visually presented
+- figure captions or representative panels
+
+Organize the answer by figure, with source attribution and caption context.
 
 ## Workflow
 
-### Step 1 — Understand the question and translate to search terms
+### 1. Clarify The Research Question
 
-1. Understand what the user is asking
-2. Translate to English search terms — all API calls must use English; Chinese is only for comprehension
-3. For biomedical topics: use standardized vocabulary (MeSH terms when available), NOT free-text translations
-4. Generate 2-3 alternative search phrases (synonyms, broader/narrower terms)
+Identify:
 
-### Step 2 — Construct the search query for the target platform
+- the topic or disease area
+- whether the user wants methods, markers, findings, or figures
+- whether the user named a specific journal, database, or URL
+- whether the topic is biomedical or from another field
 
-Different platforms have different syntax. Know the platform before searching.
+If the topic is biomedical, translate the idea into standard English search terms and prefer controlled vocabulary when possible.
 
-**PubMed / PMC:**
-- MeSH terms: `TERM[MeSH]`
-- Field tag: `TERM[Field]` (e.g., `TERM[Title]`)
-- Phrase search: `"exact phrase"`
-- Boolean: `AND`, `OR`, `NOT` (uppercase)
-- Journal field: `TERM[Journal]`
-- Date field: `TERM[dp]`
+### 2. Respect Source Scope First
 
-**Example template:**
-```
-("concept A"[MeSH] OR "concept B"[MeSH])
-AND "disease or condition"[MeSH]
-AND "intervention"[MeSH]
-AND "journal name"[Journal]
-```
+If the user specifies a source, that scope is binding.
 
-**For non-PubMed platforms:** adapt the syntax to the target platform's conventions. General principles:
-- Use quotes for phrases
-- Use AND/OR/NOT for combining terms
-- Use field tags if available
-- Filter by source type, date, or other faceted search options if supported
+Examples:
 
-**Journal name:** When a user provides a journal name, verify its exact indexed form in the target database before searching. Display names often differ from indexed names (e.g., with or without punctuation, abbreviation variants). Always confirm against the database's journal field.
+- if the user says PubMed, do not mix in Google Scholar
+- if the user names specific journals, search only those journals
+- if the user gives a URL, read that source directly before searching elsewhere
 
-### Step 3 — Search (respect user-specified scope first)
+Do not silently broaden the source list.
 
-**Priority rules (highest to lowest):**
+### 3. Build Search Terms Carefully
 
-1. **User specified journals or sources** — strictly limit to those sources; do not expand to other sources
-   - User specifies journal A, B, C → search only A, B, C
-   - User specifies PubMed only → do not mix with Google Scholar or other sources
-   - User provides a specific URL → read that URL only; do not search for alternatives
+Use English search terms for database queries, even if the conversation is in Chinese.
 
-2. **User did not specify** — use the best default source for the topic
-   - Biomedical: PubMed / PMC (highest quality free full text)
-   - Other fields: Google Scholar, arXiv, or field-appropriate databases
-   - General discovery: web search (Tavily)
+For biomedical topics:
 
-**Tool selection:**
-1. `web_fetch` — fetch full text directly when URL is known
-2. `web_search` — broad discovery, cross-platform
-3. Platform-native search (PubMed, arXiv, etc.) — most reliable for verifying source attribution
-4. `medical-research-toolkit` MCP — for PubMed/PMC/ChEMBL and other biomedical databases
+- prefer MeSH or other standardized vocabulary when available
+- generate a few close variants or synonyms
+- keep journal names exact when filtering by journal
 
-Goal: find 5-10 candidate papers, prefer open-access full text.
+Detailed query construction tips are in [references/query-guide.md](./references/query-guide.md).
 
-### Step 4 — Verify source membership before citing
+### 4. Search For Candidate Papers
 
-**Critical: before citing any paper, confirm it is actually published in the user-specified source.**
+Prefer the best database for the topic:
 
-Verification method:
-- Check the Journal field in search results
-- Read the PubMed (or equivalent) abstract page — it shows the journal name
-- For uncertain results: re-search using the exact journal field filter to confirm
+- biomedical: PubMed or PMC first
+- quantitative or engineering topics: field-appropriate databases
+- broad discovery: web search only when a better native source is unavailable
 
-**Prohibited:**
-- Treating a paper as if it came from a target journal when it did not
-- Concluding that findings from one journal apply to another journal without explicit justification
+Aim to identify a small set of relevant papers with accessible full text. A few well-read papers are better than many shallow hits.
 
-### Step 5 — Read full text (not just abstract)
+### 5. Verify Source Membership Before Citing
 
-- **Body Mode:** Methods + Results + Discussion sections
-- **Figure Mode:** figure captions and the body text that cites each figure
+Before you cite a paper as belonging to a target journal or source, verify it.
 
-Abstracts alone are insufficient. Full text is required to answer method or marker questions.
+Check:
 
-### Step 6 — Select papers (2-5, diverse)
+- journal field on the abstract page or database result
+- exact source metadata in the database
+- whether the paper truly matches the user-specified scope
 
-- Source compliance: only include papers from user-specified journals or sources
-- Diversity: different first authors, different institutions
-- Relevance: match the keywords and research context
-- Quality: complete Methods descriptions and clear figure captions
+Do not attribute a paper to a journal or database unless you confirmed it.
 
-### Step 7 — Present
+### 6. Read Full Text Strategically
 
-Output directly in Chat unless the user explicitly asks for a file.
+Abstract-only answers are usually not enough.
 
-**Body Mode — organize by experiment type, not by paper:**
-```
-### 1. [Experiment Type, e.g. Western Blot]
+Read:
 
-| Molecule | Change | Loading Control | Reference |
-|---------|--------|----------------|-----------|
-| X       | ↑/↓   | β-actin        | PMCID Fig.X |
+- Methods, Results, and Discussion for Body Mode
+- figure captions plus the relevant Results text for Figure Mode
 
-Source: [PMCID1] · [PMCID2] · [PMCID3]
-```
+If full text is not available, say that clearly and lower confidence.
 
-**Figure Mode — organize by Figure, include original caption:**
-```
-📍 [Paper Title] · [Journal] · [Year] · [PMCID/DOI]
-**Fig. X[panel]** — [Figure name]
-Caption: [full original caption]
-Location in text: [which Results paragraph cites this figure]
-```
+### 7. Select And Synthesize
 
-## Principles
+Choose 2 to 5 papers that are:
 
-1. **User-specified scope is binding** — never expand beyond it without explicit permission
-2. **Use standardized vocabulary for biomedical topics** — MeSH or equivalent, not free-text translations
-3. **All API calls use English search terms**
-4. **Read full text** — abstracts alone cannot answer method or marker questions
-5. **Output directly in Chat** — no file generation unless requested
-6. **Inline citations** (PMID, PMCID, or DOI) for traceability
-7. **Verify source membership before citing** — no false positives
-8. **For biomedical topics, prioritize PubMed / PMC** as the highest-quality free full-text source
+- relevant to the question
+- compliant with the requested source scope
+- diverse enough to avoid overgeneralizing from one paper
+- rich enough in methods, results, or figures to support the answer
 
-## When Nothing Is Found
+Then synthesize across papers instead of writing a paper-by-paper summary unless the user asked for that.
 
-1. Try different search terms (synonyms, broader terms, MeSH expansion)
-2. Try different platforms or databases
-3. Report honestly: what was searched, how many papers were read, what was found, why it may be limited, and what alternative approach is suggested
+## Output Rules
+
+- Answer directly in chat unless the user asks for a file.
+- Use inline citations such as PMID, PMCID, DOI, or direct links.
+- Be explicit about what was actually read.
+- If evidence is limited, say so plainly.
+
+Use [references/query-guide.md](./references/query-guide.md) for output templates.
+
+## Non-Negotiable Rules
+
+- User-specified source scope overrides your defaults.
+- Do not answer methods or marker questions from abstracts alone if full text is available.
+- Do not fabricate source membership or figure details.
+- Prefer PubMed and PMC for biomedical literature.
+- Translate search intent into English for querying, but answer in the user's language when appropriate.
+
+## If Results Are Sparse
+
+When little is found:
+
+- broaden or narrow terms thoughtfully
+- try synonyms or controlled vocabulary
+- explain what was searched and why the yield was limited
+- suggest the next best search strategy
