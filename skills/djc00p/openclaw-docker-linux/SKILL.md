@@ -1,10 +1,20 @@
 ---
 name: openclaw-docker-setup
 description: "Run OpenClaw inside Docker on Linux with Tailscale remote access. Complete setup guide covering installation, configuration, and critical gotchas. Trigger phrases: docker openclaw, openclaw in docker, setup openclaw docker, tailscale openclaw, docker-compose openclaw."
-metadata: {"clawdbot":{"emoji":"🐋","requires":{"bins":["docker","docker-compose"]},"env":["ANTHROPIC_API_KEY","OPENCLAW_GATEWAY_TOKEN"],"os":["linux"],"homepage":"https://clawhub.com/djc00p/openclaw-docker-linux"}}
+metadata: {"clawdbot":{"emoji":"🐋","requires":{"bins":["docker","docker-compose"]},"env":["ANTHROPIC_API_KEY","OPENCLAW_GATEWAY_TOKEN"],"os":["linux"],"homepage":"https://clawhub.com/djc00p/openclaw-docker-linux"},"version":"1.0.4"}
 ---
 
 # OpenClaw Docker Setup
+
+## ⚠️ Security Considerations
+
+This skill involves elevated privileges and credential management. Review before running:
+
+- **sudo operations** — All Docker setup commands require elevated trust. Review `references/docker-setup.sh` before executing.
+- **Tailscale remote access** — Enables network access to your OpenClaw instance. Ensure your Tailscale network policy allows this and review your firewall rules.
+- **Credential mounting** — Mounting `~/.config/gh` or other credential directories into containers exposes them to the container image. Only do this if you fully trust the image source.
+- **Host file exposure** — Volume mounts give containers access to host files. Be careful which directories you mount and which containers you run.
+
 
 Run OpenClaw inside Docker on Linux (Ubuntu 24.04+) with Tailscale for remote access.
 

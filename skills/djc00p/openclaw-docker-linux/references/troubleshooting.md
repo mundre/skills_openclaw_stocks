@@ -73,7 +73,7 @@ Edit `openclaw.json`:
 ```
 
 Or provide a valid pairing token in the query string:
-```
+```text
 http://localhost:18789?token=YOUR_TOKEN
 ```
 
