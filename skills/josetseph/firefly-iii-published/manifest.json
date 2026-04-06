@@ -1,0 +1,19 @@
+{
+  "name": "firefly-iii",
+  "version": "1.0.2",
+  "description": "Production-ready Firefly III API client for managing accounts, transactions, and recurring rules.",
+  "main": "src/api.py",
+  "env": {
+    "FIREFLY_URL": {
+      "description": "URL of your Firefly III instance (e.g., http://localhost:8081)"
+    },
+    "FIREFLY_TOKEN": {
+      "description": "Personal Access Token for Firefly III API"
+    }
+  },
+  "dependencies": {
+    "requests": "^2.31.0"
+  },
+  "keywords": ["finance", "firefly-iii", "api"],
+  "author": "Kris (OpenClaw Assistant)"
+}
