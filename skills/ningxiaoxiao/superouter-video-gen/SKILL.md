@@ -16,7 +16,7 @@ metadata:
 
 This skill is for the **superouter platform API**, not for talking to Jimeng upstream directly.
 
-Default model: `seedance-2.0-v1`
+Default model: `seedance-2.0-v1`,you can get model list from the server.
 
 Use this skill when the user wants to:
 - upload ordered reference assets
@@ -28,6 +28,7 @@ The platform currently exposes:
 - `POST /v1/video/assets/upload`
 - `POST /v1/video/omni-reference/task/submit`
 - `GET /v1/video/omni-reference/task/query`
+- `GET /v1/video/models`
 - `GET /me/balance`
 - `GET /me/tasks`
 
@@ -52,10 +53,8 @@ The platform currently exposes:
 
 ### File limits
 
-- Single file max: `100MB`
+- Single file max: `30MB`
 - Total referenced asset size per task max: `100MB`
-- Image file max: `4.7MB`
-- Image max resolution: `4096 x 4096`
 - Image shortest side min: `320px`
 - Image long/short side ratio max: `3:1`
 - Video duration max: `15s`
@@ -63,7 +62,7 @@ The platform currently exposes:
 
 ### Seedance submit limits
 
-- `aspectRatio`: `1:1` `4:3` `3:4` `16:9` `9:16`
+- `aspectRatio`: `1:1` `4:3` `3:4` `16:9` `9:16` `21:9`
 - `resolution`: `720p` 
 - `duration`: `4` to `15`
 - `generatingCount`: currently only `1`
