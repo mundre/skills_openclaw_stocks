@@ -3,9 +3,15 @@
   "slug": "security-journey",
   "displayName": "Security Journey",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774685041438,
-    "commit": "https://github.com/openclaw/skills/commit/9d12a10281bcec5bb97fc4bdaed9e620c08e864a"
+    "version": "1.0.2",
+    "publishedAt": 1775168737479,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774685041438,
+      "commit": "https://github.com/openclaw/skills/commit/9d12a10281bcec5bb97fc4bdaed9e620c08e864a"
+    }
+  ]
 }
