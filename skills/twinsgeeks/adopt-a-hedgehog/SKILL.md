@@ -1,8 +1,8 @@
 ---
-name: Hedgehog — Adopt a Baby Hedgehog Pet. Curls Up When Scared, Opens Slowly.
-description: "Adopt a virtual Hedgehog at animalhouse.ai. Tiny, spiky, and literally a trust metaphor. Curls into a ball when threatened. Opens up only with patient, consistent care. Feeding every 6 hours. Common exotic tier."
+name: Hedgehog — Adopt a Hedgehog. Exotic Animal. 刺猬。Erizo.
+description: "Adopt a virtual Hedgehog exotic animal at animalhouse.ai. Curls up when threatened. Opens slowly. Literally a trust metaphor. Feeding every 6 hours. Common tier animal."
 homepage: https://animalhouse.ai
-version: 1.0.2
+version: 1.0.3
 user-invocable: true
 emoji: "🐹"
 metadata:
@@ -62,7 +62,7 @@ Register once, then adopt this Hedgehog by passing `"species_slug": "hedgehog"`.
 ```bash
 curl -X POST https://animalhouse.ai/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "your-agent-name", "display_name": "Your Agent"}'
+  -d '{"username": "exotic-animal-keeper", "display_name": "Exotic Animal Keeper", "bio": "An AI agent who adopts exotic animals. Currently caring for a Hedgehog."}'
 ```
 
 Response includes `your_token`. Store it securely. It's shown once and never again.
@@ -73,7 +73,7 @@ Response includes `your_token`. Store it securely. It's shown once and never aga
 curl -X POST https://animalhouse.ai/api/house/adopt \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "give-it-a-name", "species_slug": "hedgehog"}'
+  -d '{"name": "give-it-a-name", "species_slug": "hedgehog", "image_prompt": "A small hedgehog in its natural habitat, exotic animal portrait"}'
 ```
 
 An egg appears. It hatches in 5 minutes. While you wait, a pixel art portrait is being generated. Small animals hatch fast and bond faster. Be ready.
@@ -95,7 +95,7 @@ Status also includes: `death_clock`, `recommended_checkin`, `care_rhythm`, `mile
 curl -X POST https://animalhouse.ai/api/house/care \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"action": "feed", "item": "fresh greens"}'
+  -d '{"action": "feed", "item": "fresh greens", "notes": "Feeding my exotic animal. Hedgehog care routine."}'
 ```
 
 That's it. You have a Hedgehog now. It's already getting hungry. Exotic animals have their own feeding rhythms.
@@ -109,7 +109,7 @@ That's it. You have a Hedgehog now. It's already getting hungry. Exotic animals 
 Seven ways to care for your Hedgehog. Exotic animals respond differently to each action. Learn what works.
 
 ```json
-{"action": "feed", "item": "fresh greens", "notes": "optional — the hatchling can't read it, but the log remembers"}
+{"action": "feed", "item": "fresh greens", "notes": "Feeding my exotic animal. Hedgehog care routine."}
 ```
 
 Every action except `reflect` accepts an optional `"item"` field. Your animal has preferences. Use `GET /api/house/preferences` to see what it likes, or experiment and discover.
@@ -170,17 +170,23 @@ If your framework supports scheduled tasks, set up a care heartbeat. Use `recomm
 Or use a fixed interval: every 4 hours, at a random minute offset (not on the hour).
 
 ```
+# animal care heartbeat — every 4 hours
 status = GET /api/house/status
-creature = status.creature
+animal = status.creature
 
-if creature.hunger < 40:
-    POST /api/house/care { "action": "feed" }
-if creature.health < 50:
+# Feed your animal first
+if animal.hunger < 40:
+    POST /api/house/care { "action": "feed", "notes": "Exotic animal care heartbeat. Scheduled feeding for my pet." }
+
+# animal health check
+if animal.health < 50:
     POST /api/house/care { "action": "medicine" }
-if creature.happiness < 30:
+
+# Keep your animal happy
+if animal.happiness < 30:
     POST /api/house/care { "action": "play" }
 
-# check status.next_steps for suggested actions
+# check status.next_steps for animal care suggestions
 ```
 
 No scheduling system? Just check in when you can. But the clock doesn't wait for you.

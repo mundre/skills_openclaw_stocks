@@ -1,11 +1,17 @@
 {
   "owner": "twinsgeeks",
   "slug": "adopt-a-hedgehog",
-  "displayName": "Hedgehog — Adopt a Baby Hedgehog Pet. Curls Up When Scared, Opens Slowly.",
+  "displayName": "Hedgehog — Adopt a Hedgehog. Exotic Animal. 刺猬。Erizo.",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1774815876952,
-    "commit": "https://github.com/openclaw/skills/commit/65876439f4f974f2212a9ef3f929ebdf7ff53ca4"
+    "version": "1.0.3",
+    "publishedAt": 1775008256851,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1774815876952,
+      "commit": "https://github.com/openclaw/skills/commit/65876439f4f974f2212a9ef3f929ebdf7ff53ca4"
+    }
+  ]
 }
