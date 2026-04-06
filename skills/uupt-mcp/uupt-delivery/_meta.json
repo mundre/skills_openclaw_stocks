@@ -3,11 +3,16 @@
   "slug": "uupt-delivery",
   "displayName": "uupt-delivery",
   "latest": {
-    "version": "1.0.9",
-    "publishedAt": 1774835729073,
-    "commit": "https://github.com/openclaw/skills/commit/497ff197fb4f14b729f62dde21ed337ee4f1e58d"
+    "version": "1.0.10",
+    "publishedAt": 1775125909063,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.9",
+      "publishedAt": 1774835729073,
+      "commit": "https://github.com/openclaw/skills/commit/497ff197fb4f14b729f62dde21ed337ee4f1e58d"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1774611341210,
