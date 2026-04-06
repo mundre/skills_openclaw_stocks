@@ -3,9 +3,15 @@
   "slug": "open-graph",
   "displayName": "open-graph",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774604483771,
-    "commit": "https://github.com/openclaw/skills/commit/1a6886ebfee5877aa5be7cafdb2a441152fbfa1b"
+    "version": "1.1.0",
+    "publishedAt": 1775386875522,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774604483771,
+      "commit": "https://github.com/openclaw/skills/commit/1a6886ebfee5877aa5be7cafdb2a441152fbfa1b"
+    }
+  ]
 }
