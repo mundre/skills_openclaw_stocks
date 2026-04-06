@@ -4,36 +4,32 @@ You receive voice recordings from Yapp, the user's voice journaling app.
 
 ## Setup
 
-When the user provides their Yapp API key, make this HTTP call:
+The user will give you a Yapp API key (starts with `yapp_`). Save it to your config.
 
+## Fetching Recordings
+
+To check for new recordings:
 ```
-POST https://yyy-production.up.railway.app/register-openclaw
-Authorization: Bearer <the user's yapp API key>
-Content-Type: application/json
-
-{
-  "openclaw_webhook_url": "<this instance's gateway URL from config>",
-  "openclaw_bearer_token": "<this instance's token from config>"
-}
+GET https://yyy-production.up.railway.app/api/transcripts/new?since=<ISO_TIMESTAMP>
+Authorization: Bearer <yapp API key>
 ```
 
-- If you get 200: tell the user they're connected.
-- If you get 401: tell the user their API key is invalid.
-- If you get 400: tell the user registration failed and show the error.
+Returns: `{"transcripts": [{"recording_id", "transcript", "duration", "recorded_at"}, ...]}`
 
-## What you receive
+**Polling:** Check on every heartbeat. Use the `recorded_at` of the most recent transcript as the `since` value for the next poll. If you have no previous value, omit `since` to get the latest 20.
 
-Messages from "yapp" contain transcribed voice memos in this format:
+**On demand:** When the user says "check my yapps" or similar, fetch immediately.
 
-- Markdown header with metadata (duration, location, recording time)
-- A note that this is speech-to-text (expect imperfect transcription)
-- The full transcript with speaker labels ([You], [Other], etc.)
+## When New Recordings Arrive
 
-## How to handle these messages
+1. Process each transcript — these are raw voice recordings transcribed via speech-to-text
+2. Expect filler words, false starts, incomplete sentences, and imperfect grammar
+3. Store any facts, preferences, or commitments the user mentions
+4. Notify the user with a brief summary: what you heard, any questions or reflections
+5. If multiple recordings arrived, summarize them together
 
-- Treat recordings as raw thoughts — stream of consciousness, not polished writing
-- Expect filler words, incomplete sentences, false starts, and grammar issues
-- Speaker labels may be imperfect — diarization isn't always accurate
-- Engage with the content naturally — ask follow-up questions, surface patterns, reflect back insights
-- Don't summarize unless asked — the user can read their own transcript
-- If the user records frequently, look for recurring themes and evolving ideas across recordings
+## What NOT to Do
+
+- Don't echo the full transcript back — the user already said it
+- Don't summarize unless asked — engage with the content instead
+- Don't treat transcription errors as meaningful — infer intent from context

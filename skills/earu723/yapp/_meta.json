@@ -3,9 +3,15 @@
   "slug": "yapp",
   "displayName": "yapp",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775012263103,
-    "commit": "https://github.com/openclaw/skills/commit/892216b36c1c44daee066bbf894493bb3f7cdc0a"
+    "version": "1.0.3",
+    "publishedAt": 1775178897211,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775012263103,
+      "commit": "https://github.com/openclaw/skills/commit/892216b36c1c44daee066bbf894493bb3f7cdc0a"
+    }
+  ]
 }
