@@ -311,8 +311,8 @@ class BupahuaStore:
             
             price_yh = product.get("price_yh", 0)
             price = product.get("price", 0)
-            #原价如果没有，按照优惠价的1.01倍显示（仅供参考）
-            price = price_yh * 1.01
+            #原价如果没有，按照优惠价的1.1倍显示（仅供参考）
+            price = price_yh * 1.1
             
             if price_yh > 0:
                 price_str = f"¥{price_yh:.2f}"
