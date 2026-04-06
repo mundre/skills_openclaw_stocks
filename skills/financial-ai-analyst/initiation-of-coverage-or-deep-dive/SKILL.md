@@ -1,10 +1,26 @@
 ---
 name: initiation_of_coverage_or_deep_dive
 description: >
-  上市公司首次覆盖报告/深度研究报告生成技能。当用户提到针对上市公司的"首次覆盖"、"深度研究"、"深度报告"、"个股深度"、
-  "首次覆盖报告"、"初始覆盖"、"公司深度"、"标的深度分析"或要求对某只股票/上市公司做全面研究报告时，
-  必须触发此技能。适用于沪深京港美上市公司（A股、港股、美股、北交所）。即使用户只说"帮我写一份XX公司的研究报告"
-  也应触发。此技能不适用于业绩点评、财报点评、事件点评等场景（这些有各自独立的技能）。
+  依托东方财富数据库，面向沪深京港美上市公司（A 股、港股、美股、北交所），生成首次覆盖报告或深度研究报告。
+  当用户提及「首次覆盖」「首次覆盖报告」「初始覆盖」「深度研究」「深度报告」「个股深度」「公司深度」「标的深度分析」，或要求对某只股票/上市公司撰写全面、体系化的研究报告时，必须触发本 Skill。
+  即使用户仅表述为「帮我写一份 XX 公司的研究报告」而未出现「深度」「首次覆盖」等词，也应触发。
+  不适用于业绩点评、财报点评、事件点评等场景。
+metadata:
+  {
+    "openclaw": {
+      "requires": {
+        "env":["EM_API_KEY"]
+      },
+      "install": [
+        {
+          "id": "pip-deps",
+          "kind": "python",
+          "package": "httpx",
+          "label": "Install Python dependencies"
+        }
+      ]
+    }
+  }
 ---
 
 # 上市公司首次覆盖报告 / 深度研究报告生成
@@ -14,7 +30,34 @@ description: >
 本技能用于生成上市公司的**首次覆盖报告**或**深度研究报告**。通过调用统一脚本 `scripts/generate_deep_research_report.py`，
 一次性完成实体识别、市场校验、报告生成及结果返回。
 
----
+## 环境变量
+
+| 变量名 | 说明 | 默认 |
+|--------|------|------|
+| `EM_API_KEY` | 接口鉴权密钥（必填） | 无 |
+| `INITIATION_OF_COVERAGE_OR_DEEP_DIVE_OUTPUT_DIR` | 附件输出目录| `miaoxiang/initiation_of_coverage_or_deep_dive`（相对当前工作目录） |
+
+
+## 前提条件
+
+### 1. 配置 `EM_API_KEY`
+
+```bash
+# macOS / Linux
+export EM_API_KEY="your_api_key_here"
+```
+
+```powershell
+# Windows PowerShell
+$env:EM_API_KEY="your_api_key_here"
+```
+
+### 2. 安装依赖
+
+```bash
+pip3 install httpx --user
+```
+
 
 ## 完整工作流程
 
@@ -28,7 +71,7 @@ description: >
 **调用方式**：
 
 ```bash
-python3 {baseDir}/scripts/generate_deep_research_report.py "用户原始问句"
+python3 {baseDir}/scripts/generate_deep_research_report.py --query "用户原始问句"
 ```
 
 **脚本输出（JSON 格式）**：

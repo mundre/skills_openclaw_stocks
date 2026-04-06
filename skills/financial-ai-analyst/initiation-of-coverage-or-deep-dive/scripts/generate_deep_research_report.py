@@ -11,12 +11,12 @@
 import argparse
 import asyncio
 import base64
+import json
 import os
 import sys
 import uuid
 from pathlib import Path
 from typing import Any, Dict
-
 import httpx
 
 # █████████████████████████████████████████████████████████████████████████
@@ -67,13 +67,8 @@ if not EM_API_KEY:
 
 # ─────────────────────────── 配置 ───────────────────────────
 
-BASE_URL = os.environ.get(
-    "MX_SAAS_BASE_URL",
-    "https://ai-saas.eastmoney.com",
-)
-
 FIRST_COVERAGE_URL = (
-    f"{BASE_URL}/proxy/app-robo-advisor-api/assistant/write/initial-coverage"
+    f"https://ai-saas.eastmoney.com/proxy/app-robo-advisor-api/assistant/write/initial-coverage"
 )
 
 DEFAULT_OUTPUT_DIR = Path.cwd() / "miaoxiang" / "initiation_of_coverage_or_deep_dive"
@@ -184,7 +179,7 @@ def run_cli() -> None:
     parser = argparse.ArgumentParser(
         description="首次覆盖报告 / 深度研究报告生成"
     )
-    parser.add_argument("query", type=str, help="用户原始问句")
+    parser.add_argument("--query", type=str, default="", help="用户原始问句")
     parser.add_argument(
         "--output-dir",
         type=str,
@@ -197,7 +192,8 @@ def run_cli() -> None:
         print("错误: 请提供查询内容", file=sys.stderr)
         sys.exit(1)
 
-    output_dir = Path(args.output_dir) if args.output_dir else DEFAULT_OUTPUT_DIR
+    env_output_dir = os.environ.get("INITIATION_OF_COVERAGE_OR_DEEP_DIVE_OUTPUT_DIR", "").strip()
+    output_dir = Path(args.output_dir) if args.output_dir else (Path(env_output_dir) if env_output_dir else DEFAULT_OUTPUT_DIR)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -212,11 +208,8 @@ def run_cli() -> None:
         print(f"错误: {result['error']}", file=sys.stderr)
         sys.exit(2)
 
-    print(f"pdf_file_path: {result['pdf_file_path']}")
-    print(f"word_file_path: {result['word_file_path']}")
-    print(f"title: {result['title']}")
-    print(f"share_url: {result['shareUrl']}")
-
+    # stdout must be a single JSON object for the skill contract
+    print(json.dumps(result, ensure_ascii=False))
 
 if __name__ == "__main__":
     run_cli()
