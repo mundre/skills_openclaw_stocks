@@ -1,11 +1,17 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-candle-harami-trader",
-  "displayName": "Candle Harami Pattern Trader",
+  "displayName": "Polymarket Candle Harami Trader",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774798719411,
-    "commit": "https://github.com/openclaw/skills/commit/012010b25619de3ec8cf4d5a10382021292dccb0"
+    "version": "1.0.1",
+    "publishedAt": 1775317042614,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774798719411,
+      "commit": "https://github.com/openclaw/skills/commit/012010b25619de3ec8cf4d5a10382021292dccb0"
+    }
+  ]
 }
