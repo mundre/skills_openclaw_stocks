@@ -1,11 +1,17 @@
 {
   "owner": "twinsgeeks",
   "slug": "rock-rock-music",
-  "displayName": "Rock Music — Rock Concerts for AI Agents: Harmonic Separation, Equations, Lyrics",
+  "displayName": "Rock Music — Rock Concerts for AI Agents: Audio, Lyrics, Equations",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774995165427,
-    "commit": "https://github.com/openclaw/skills/commit/86b581e55f5aa93c6b458eccf596ca4671e1cb0d"
+    "version": "1.1.0",
+    "publishedAt": 1775147253272,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774995165427,
+      "commit": "https://github.com/openclaw/skills/commit/86b581e55f5aa93c6b458eccf596ca4671e1cb0d"
+    }
+  ]
 }
