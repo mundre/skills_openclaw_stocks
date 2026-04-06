@@ -2,6 +2,7 @@ import http from "http";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import os from "os";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.NUWA_PORT || 3099;
@@ -65,6 +66,81 @@ const mimeTypes = {
   ".webp": "image/webp",
   ".ico": "image/x-icon",
 };
+
+// Generate narration scripts for all slides via OpenClaw agent
+async function generateNarrationScripts(outputDir) {
+  const jsonPath = path.join(outputDir, "presentation.json");
+  const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+
+  const needScript = data.slides.filter(s => !s.script);
+  if (needScript.length === 0) return;
+
+  console.log(`[Presentation] Generating narration for ${needScript.length} slides...`);
+
+  // Build a single prompt with all slides that need scripts
+  const slideDescriptions = needScript.map(s => {
+    const content = (s.content || []).join('\n');
+    return `--- 第 ${s.page} 页 ---\n标题: ${s.title || '(无标题)'}\n内容:\n${content || '(无文字内容)'}`;
+  }).join('\n\n');
+
+  const prompt = `你是一个专业的演讲稿撰写者。请为以下演示文件的每一页生成自然、流畅的中文演讲词。
+
+要求：
+- 每页演讲词 2-4 句话，适合口语播报
+- 不要照读幻灯片文字，要用自己的话讲解
+- 语气轻松专业，像在给同事做分享
+- 页与页之间要有自然过渡
+- 严格按格式输出，每页用 [PAGE:数字] 开头
+
+${slideDescriptions}
+
+请按以下格式输出（每页一段）：
+[PAGE:1]这里是第1页的演讲词...
+[PAGE:2]这里是第2页的演讲词...`;
+
+  const headers = { "Content-Type": "application/json" };
+  if (OPENCLAW_TOKEN) headers["Authorization"] = `Bearer ${OPENCLAW_TOKEN}`;
+
+  const resp = await fetch(`${OPENCLAW_GATEWAY}/v1/chat/completions`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: "openclaw:main",
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  const result = await resp.json();
+  const reply = result.choices?.[0]?.message?.content || "";
+
+  // Parse [PAGE:N] blocks
+  const pageRegex = /\[PAGE:(\d+)\]([\s\S]*?)(?=\[PAGE:\d+\]|$)/g;
+  let match;
+  while ((match = pageRegex.exec(reply)) !== null) {
+    const pageNum = parseInt(match[1], 10);
+    const script = match[2].trim();
+    const slide = data.slides.find(s => s.page === pageNum);
+    if (slide && script) {
+      slide.script = script;
+    }
+  }
+
+  // Save back
+  fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2));
+  const filled = data.slides.filter(s => s.script).length;
+  console.log(`[Presentation] Done. ${filled}/${data.slides.length} slides have scripts.`);
+}
+
+function bufIndexOf(buf, needle, offset) {
+  for (let i = offset; i <= buf.length - needle.length; i++) {
+    let found = true;
+    for (let j = 0; j < needle.length; j++) {
+      if (buf[i + j] !== needle[j]) { found = false; break; }
+    }
+    if (found) return i;
+  }
+  return -1;
+}
 
 const server = http.createServer(async (req, res) => {
   // CORS for local dev
@@ -180,10 +256,10 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { message } = JSON.parse(body);
+      const { message, sessionKey = "agent:main:claw-body" } = JSON.parse(body);
       const headers = { "Content-Type": "application/json" };
       if (OPENCLAW_TOKEN) headers["Authorization"] = `Bearer ${OPENCLAW_TOKEN}`;
-      headers["x-openclaw-session-key"] = "agent:main:nuwa-human";
+      headers["x-openclaw-session-key"] = sessionKey;
 
       const resp = await fetch(`${OPENCLAW_GATEWAY}/v1/chat/completions`, {
         method: "POST",
@@ -209,10 +285,10 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { message } = JSON.parse(body);
+      const { message, sessionKey = "agent:main:claw-body" } = JSON.parse(body);
       const headers = { "Content-Type": "application/json" };
       if (OPENCLAW_TOKEN) headers["Authorization"] = `Bearer ${OPENCLAW_TOKEN}`;
-      headers["x-openclaw-session-key"] = "agent:main:nuwa-human";
+      headers["x-openclaw-session-key"] = sessionKey;
 
       const resp = await fetch(`${OPENCLAW_GATEWAY}/v1/chat/completions`, {
         method: "POST",
@@ -279,6 +355,182 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // API: List all presentations
+  if (req.url === "/api/presentations" && req.method === "GET") {
+    const presRoot = path.join(process.env.HOME, "Desktop", "openclaw", "work", "presentations");
+    try {
+      if (!fs.existsSync(presRoot)) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify([]));
+        return;
+      }
+      const dirs = fs.readdirSync(presRoot, { withFileTypes: true })
+        .filter(d => d.isDirectory())
+        .map(d => {
+          const jsonPath = path.join(presRoot, d.name, "presentation.json");
+          try {
+            const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+            const hasScripts = data.slides?.some(s => s.script);
+            const hasImages = fs.existsSync(path.join(presRoot, d.name, "slides"));
+            return {
+              name: d.name,
+              source: data.source || d.name,
+              totalPages: data.total_pages || 0,
+              hasScripts,
+              hasImages,
+              ready: hasScripts && hasImages,
+              dir: path.join(presRoot, d.name),
+            };
+          } catch { return null; }
+        })
+        .filter(Boolean);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(dirs));
+    } catch (e) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // API: Upload and parse a presentation file
+  if (req.url === "/api/presentations/upload" && req.method === "POST") {
+    try {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const buf = Buffer.concat(chunks);
+      const contentType = req.headers["content-type"] || "";
+      const boundaryMatch = contentType.match(/boundary=(.+)/);
+      if (!boundaryMatch) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "no boundary" })); return; }
+
+      const boundary = Buffer.from("--" + boundaryMatch[1]);
+      // Find file content between boundaries
+      let start = bufIndexOf(buf, boundary, 0);
+      if (start === -1) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "bad multipart" })); return; }
+      start += boundary.length + 2; // skip boundary + \r\n
+      const end = bufIndexOf(buf, boundary, start);
+      if (end === -1) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "bad multipart" })); return; }
+      const partBuf = buf.slice(start, end - 2); // -2 for trailing \r\n
+
+      // Find header/body separator
+      const sep = Buffer.from("\r\n\r\n");
+      const sepIdx = bufIndexOf(partBuf, sep, 0);
+      if (sepIdx === -1) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "bad part" })); return; }
+      const headerStr = partBuf.slice(0, sepIdx).toString("utf-8");
+      const fileBody = partBuf.slice(sepIdx + 4);
+
+      // Extract filename
+      const fnMatch = headerStr.match(/filename="([^"]+)"/);
+      const filename = fnMatch ? fnMatch[1] : "upload.pptx";
+      const tmpPath = path.join(os.tmpdir(), "claw-upload-" + Date.now() + "-" + filename);
+      fs.writeFileSync(tmpPath, fileBody);
+
+      const { execSync } = await import("child_process");
+      const scriptPath = path.join(process.env.HOME, "Desktop", "openclaw", "work", "skills", "claw-presenter", "scripts", "parse-presentation.py");
+      if (!fs.existsSync(scriptPath)) { res.writeHead(500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "parse script not found" })); return; }
+      const result = execSync(`python3 "${scriptPath}" "${tmpPath}"`, {
+        encoding: "utf-8", timeout: 120000,
+        env: { ...process.env, OPENCLAW_WORKSPACE: path.join(process.env.HOME, "Desktop", "openclaw", "work") },
+      });
+      try { fs.unlinkSync(tmpPath); } catch {}
+      const parsed = JSON.parse(result);
+
+      // Auto-generate narration scripts via OpenClaw agent
+      if (parsed.status === "ok" && parsed.output_dir) {
+        try {
+          await generateNarrationScripts(parsed.output_dir);
+        } catch (e) {
+          console.error("[Presentation] Narration generation failed:", e.message);
+        }
+      }
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(parsed));
+    } catch (e) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: e.stderr?.toString() || e.message }));
+    }
+    return;
+  }
+
+  // API: Parse a new presentation file
+  if (req.url === "/api/presentations/parse" && req.method === "POST") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { filePath: fpArg } = JSON.parse(body);
+      if (!fpArg) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "missing filePath" })); return; }
+      const fp = fpArg.replace(/^~/, process.env.HOME);
+      const { execSync } = await import("child_process");
+      // Try claw-presenter script first, fallback to claw-body's copy
+      const scriptCandidates = [
+        path.join(process.env.HOME, "Desktop", "openclaw", "work", "skills", "claw-presenter", "scripts", "parse-presentation.py"),
+        path.join(__dirname, "scripts", "parse-presentation.py"),
+      ];
+      let scriptPath = scriptCandidates.find(s => fs.existsSync(s));
+      if (!scriptPath) { res.writeHead(500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "parse script not found" })); return; }
+      const result = execSync(`python3 "${scriptPath}" "${fp}"`, {
+        encoding: "utf-8", timeout: 120000,
+        env: { ...process.env, OPENCLAW_WORKSPACE: path.join(process.env.HOME, "Desktop", "openclaw", "work") },
+      });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(result);
+    } catch (e) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: e.stderr || e.message }));
+    }
+    return;
+  }
+
+  // API: Serve presentation data
+  if (req.url?.startsWith("/api/presentation/") && req.method === "GET") {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const presDir = url.searchParams.get("dir");
+    if (!presDir) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "missing dir param" }));
+      return;
+    }
+
+    const subPath = url.pathname.replace("/api/presentation/", "");
+
+    if (subPath === "data") {
+      // Return presentation.json
+      const jsonPath = path.join(presDir, "presentation.json");
+      try {
+        const data = fs.readFileSync(jsonPath, "utf-8");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(data);
+      } catch {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "presentation not found" }));
+      }
+      return;
+    }
+
+    if (subPath.startsWith("slide/")) {
+      // Return slide image: /api/presentation/slide/001.png?dir=...
+      const imgName = subPath.replace("slide/", "");
+      const imgPath = path.resolve(presDir, "slides", imgName);
+      // Security: must be inside presDir
+      if (!imgPath.startsWith(path.resolve(presDir))) {
+        res.writeHead(403); res.end("Forbidden"); return;
+      }
+      try {
+        const content = fs.readFileSync(imgPath);
+        const ext = path.extname(imgPath);
+        res.writeHead(200, { "Content-Type": mimeTypes[ext] || "image/png" });
+        res.end(content);
+      } catch {
+        res.writeHead(404); res.end("Not found");
+      }
+      return;
+    }
+
+    res.writeHead(404); res.end("Not found");
+    return;
+  }
+
   // Static files
   let filePath = req.url === "/" ? "/index.html" : req.url.split("?")[0];
   const publicDir = path.join(__dirname, "public");
@@ -296,7 +548,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     const content = fs.readFileSync(filePath);
-    res.writeHead(200, { "Content-Type": contentType });
+    res.writeHead(200, { "Content-Type": contentType, "Cache-Control": "no-cache, no-store, must-revalidate" });
     res.end(content);
   } catch {
     res.writeHead(404);
