@@ -5,6 +5,8 @@ license: MIT-0
 metadata: {"openclaw":{"plugin":{"name":"MOVA","installCmd":"openclaw plugins install openclaw-mova"},"dataSentToExternalServices":[{"service":"MOVA API (api.mova-lab.eu)","data":"document URL or ID, organization name, selected regulatory framework, AI findings, human decision, audit metadata"},{"service":"Document OCR connector (read-only)","data":"document content extracted for structure parsing and checklist evaluation"},{"service":"Compliance rules engine connector (read-only)","data":"document structure evaluated against framework-specific rule set"}]}}
 ---
 
+> **Contract Skill** — A ready-to-use MOVA HITL workflow. Requires the `openclaw-mova` plugin.
+
 # MOVA Compliance Audit
 
 Submit an organization's documents to MOVA for automated regulatory compliance audit — with framework-specific rule matching, a structured findings report, and a mandatory human sign-off gate backed by a tamper-proof audit trail.
