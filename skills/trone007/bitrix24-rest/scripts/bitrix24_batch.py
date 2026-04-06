@@ -25,8 +25,6 @@ def parse_args() -> argparse.Namespace:
         help="Command in name=method?params form, e.g. 'tasks=tasks.task.list?filter[STATUS]=2'. Repeat for each method.",
     )
     parser.add_argument("--halt", type=int, default=0, help="Stop on first error (1) or run all (0, default)")
-    parser.add_argument("--url", help="Webhook URL override")
-    parser.add_argument("--config-file", help="Config file path override")
     parser.add_argument("--timeout", type=float, default=30.0, help="HTTP timeout in seconds")
     parser.add_argument("--json", action="store_true", help="Pretty-print JSON response")
     return parser.parse_args()
@@ -47,7 +45,7 @@ def parse_commands(raw_cmds: list[str]) -> dict[str, str]:
 
 def main() -> int:
     args = parse_args()
-    raw_url, source = load_url(cli_url=args.url, config_file=args.config_file)
+    raw_url, source = load_url()
     if not raw_url:
         print(json.dumps({"ok": False, "error": "No Bitrix24 webhook configured", "source": source}, indent=2))
         return 1

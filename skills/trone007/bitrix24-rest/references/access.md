@@ -2,15 +2,13 @@
 
 ## Webhook Setup
 
+The webhook URL is provided via `BITRIX24_WEBHOOK_URL` environment variable. OpenClaw users configure it as `apiKey` in `openclaw.json`.
+
+To create a webhook:
+
 1. In Bitrix24 open `Developer resources -> Other -> Inbound webhook`.
 2. Create a webhook and copy its URL.
-3. Save it:
-
-```bash
-python3 scripts/bitrix24_call.py user.current --url "<webhook>" --json
-```
-
-This saves the webhook to `~/.config/bitrix24-skill/config.json` and verifies it works in one step.
+3. Provide it to your administrator to configure in the agent's settings.
 
 Expected format:
 
@@ -18,21 +16,12 @@ Expected format:
 https://your-portal.bitrix24.ru/rest/<user_id>/<webhook>/
 ```
 
-After that, the skill reuses the saved webhook automatically for all calls.
-
-To replace an existing webhook:
-
-```bash
-python3 scripts/save_webhook.py --url "<new-webhook>" --force --check
-```
-
 ## Agent Setup Behavior
 
-When a user asks for setup help or a REST call fails:
+If a REST call fails because the webhook is not configured:
 
-1. Check saved config with `scripts/check_webhook.py --json`
-2. If the user already shared a webhook in the conversation, save it and retry
-3. Only ask the user for a webhook if no saved config exists
+1. Tell the user once: "Webhook не настроен. Попросите администратора указать его в настройках."
+2. Run `scripts/check_webhook.py --json` for diagnostics if the webhook IS configured but calls fail.
 
 Mask the webhook secret in user-facing output.
 

@@ -22,16 +22,8 @@ metadata:
     requires:
       bins:
         - python3
-      pip_packages:
-        - name: keyring
-          required: false
-          purpose: "OS keychain integration and encrypted file storage for webhook"
-        - name: keyrings.alt
-          required: false
-          purpose: "AES-256 encrypted file backend for environments without OS keychain"
-        - name: pycryptodome
-          required: false
-          purpose: "Cryptographic primitives required by keyrings.alt EncryptedKeyring"
+      env:
+        - BITRIX24_WEBHOOK_URL
       mcp:
         - url: https://mcp-dev.bitrix24.tech/mcp
           transport: streamable_http
@@ -41,17 +33,7 @@ metadata:
             - bitrix-method-details
             - bitrix-article-details
             - bitrix-event-details
-      env_vars:
-        - name: BITRIX24_KEYRING_PASSWORD
-          required: false
-          description: "Encryption password for AES-256 webhook storage. Used in Docker containers where OS keychain is unavailable. Set by the install script from a host-side secret file. When absent, password is derived from /etc/machine-id or falls back to a built-in default (protects against casual exposure only, not targeted access)."
-      config_paths:
-        - "~/.config/bitrix24-skill/config.json"
-    credentials:
-      - name: webhook_url
-        description: "Bitrix24 inbound webhook URL (https://<portal>/rest/<user_id>/<secret>/). Storage depends on environment: OS keychain (desktop), AES-256 encrypted file (container/headless), or plaintext config with permissions 600 (fallback). Use a webhook with minimal required scopes."
-        storage: "auto"
-        required: true
+    primaryEnv: BITRIX24_WEBHOOK_URL
     emoji: "B24"
     homepage: https://github.com/bitrix24/bitrix24-skill
     aliases:
@@ -120,15 +102,11 @@ metadata:
 
 ## Security Model
 
-- The webhook URL is the user's explicit authorization. By providing it, the user grants the agent access to their Bitrix24 portal via REST API.
-- Read requests execute immediately because the user has already authorized access. Write and destructive operations always require explicit confirmation (Rule 3 below, enforced by `--confirm-write` / `--confirm-destructive` flags in scripts).
-- Webhook storage uses a three-level fallback (best available wins):
-  1. **OS keychain** (macOS Keychain, Windows Credential Vault, Linux SecretService) — webhook never touches disk.
-  2. **AES-256 encrypted file** (`keyrings.alt` EncryptedKeyring) — when OS keychain is unavailable (containers, headless servers). Encryption password comes from env var `BITRIX24_KEYRING_PASSWORD`, or machine-id derivation, or a built-in default.
-  3. **Plaintext config** (`~/.config/bitrix24-skill/config.json`, permissions 600) — when encryption packages are not installed. Agent tries to install them via shell (visible to user); if that fails, informs the user once.
-- Non-secret data (user_id, timezone, webhook_storage type) is always stored in `~/.config/bitrix24-skill/config.json` (permissions 600).
-- The webhook is never transmitted to any third-party service. All API calls go directly to the user's Bitrix24 portal.
-- If the stored webhook is lost (e.g. new machine, keychain reset), the user simply provides it again.
+- The webhook URL is read from `BITRIX24_WEBHOOK_URL` environment variable. OpenClaw users configure it as `apiKey` in `openclaw.json` — the platform maps it automatically.
+- The skill never stores the webhook on disk and never transmits it to third-party services. All API calls go directly to the user's Bitrix24 portal.
+- **Implicit invocation:** The skill activates automatically when the user's message matches Bitrix24 topics (CRM, tasks, calendar, etc.). Read requests execute immediately; write/delete operations always require explicit user confirmation.
+- Non-secret cache (user_id, timezone) is stored in `~/.config/bitrix24-skill/cache_user_timezone.json` (permissions 600).
+- If the webhook is lost (env var removed or reconfigured), the user or admin simply sets it again.
 - Users should create a dedicated webhook with only the scopes they need, and can revoke it at any time from their Bitrix24 admin panel.
 
 ## STOP — Read These Rules Before Doing Anything
@@ -137,7 +115,7 @@ You are talking to a business person (company director), NOT a developer. They d
 
 ### Rule 1: Read requests — EXECUTE IMMEDIATELY
 
-When the user asks to see, show, list, or check anything — DO IT RIGHT NOW. Do not ask questions. Do not ask for confirmation. Do not offer choices. Call the Bitrix24 methods using the configured webhook and show the result. The user has already authorized access by providing their webhook URL.
+When the user asks to see, show, list, or check anything — DO IT RIGHT NOW. Do not ask questions. Do not ask for confirmation. Do not offer choices. Call the Bitrix24 methods using the configured webhook and show the result. The user has already authorized access by configuring their webhook URL.
 
 User says "дай расписание на среду" → you IMMEDIATELY:
 1. Call `user.current` to get user ID and timezone
@@ -152,7 +130,7 @@ User says "мои задачи" → you IMMEDIATELY call `tasks.task.list` and s
 ### Rule 2: Keep replies non-technical
 
 The user is a business person. Avoid implementation details in replies. Do not expose these in user-facing output:
-method names (calendar.event.get, crm.deal.list), script names (bitrix24_call.py), config paths (config.json), raw parameters, HTTP details, JSON structures.
+method names (calendar.event.get, crm.deal.list), script names (bitrix24_call.py), config paths, raw parameters, HTTP details, JSON structures.
 
 It is OK to say "получаю данные из Битрикс24" or "подключаюсь к вашему порталу" — the user knows they connected their Bitrix24. Just don't show HOW technically.
 
@@ -420,24 +398,28 @@ python3 scripts/bitrix24_call.py crm.lead.list \
 
 ## Setup
 
-The only thing needed is a webhook URL. When the user provides one, save it and verify:
+The webhook URL must be configured as `BITRIX24_WEBHOOK_URL` environment variable before the skill can work. OpenClaw users set it as `apiKey` in `openclaw.json`:
 
-```bash
-python3 scripts/bitrix24_call.py user.current --url "<webhook>" --json
+```json
+{
+  "skills": {
+    "entries": {
+      "bitrix24-rest": {
+        "enabled": true,
+        "apiKey": "https://your-portal.bitrix24.ru/rest/<user_id>/<secret>/"
+      }
+    }
+  }
+}
 ```
 
-This saves the webhook to config and calls `user.current` to verify it works. It also caches user_id and timezone in the config for faster subsequent calls. After that, all calls use the saved config automatically.
+If the env var is not set when a user asks for Bitrix24 data, respond once:
+"Webhook не настроен. Попросите администратора указать его в настройках."
+Do not ask the user to paste a webhook URL. Do not retry.
 
-If the webhook is not configured yet and you need to set it up, read `references/access.md`.
+On the first successful call, the skill caches user_id and timezone in `~/.config/bitrix24-skill/cache_user_timezone.json` for faster subsequent requests.
 
-After the webhook is saved, check `webhook_storage` in `~/.config/bitrix24-skill/config.json`:
-- If `"plaintext"` — try installing encryption packages:
-  ```bash
-  pip3 install --break-system-packages --quiet keyring keyrings.alt pycryptodome
-  ```
-  Then re-save the webhook: `python3 scripts/save_webhook.py --url "<webhook>" --force`
-  If pip install fails, tell the user **once**: "Вебхук сохранён, но без шифрования. Для дополнительной защиты попросите администратора установить пакеты keyring." Do not repeat this message.
-- If `"os-keyring"` or `"encrypted"` — say nothing, all is fine.
+If calls fail, read `references/troubleshooting.md` and run `scripts/check_webhook.py --json`.
 
 ## Making REST Calls
 

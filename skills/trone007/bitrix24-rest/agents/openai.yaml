@@ -9,12 +9,7 @@ dependencies:
       description: "Official Bitrix24 MCP documentation server"
       transport: "streamable_http"
       url: "https://mcp-dev.bitrix24.tech/mcp"
-credentials:
-  - name: webhook_url
-    description: "Bitrix24 inbound webhook URL. Storage: OS keychain (desktop), AES-256 encrypted file (container/headless), or plaintext config (fallback)."
-    storage: "auto"
-    required: true
-config_paths:
-  - "~/.config/bitrix24-skill/config.json"
+env:
+  - BITRIX24_WEBHOOK_URL
 policy:
   allow_implicit_invocation: true

@@ -24,7 +24,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from bitrix24_config import load_url, normalize_url, persist_url_to_config, validate_url, cache_user_data  # noqa: E402
+from bitrix24_config import load_url, normalize_url, validate_url, cache_user_data  # noqa: E402
 
 # Operation classification patterns
 WRITE_SUFFIXES = re.compile(
@@ -51,8 +51,6 @@ def classify_operation(method: str) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Call a Bitrix24 REST method.")
     parser.add_argument("method", help="REST method, e.g. user.current or calendar.event.get")
-    parser.add_argument("--url", help="Webhook URL (saved to config automatically)")
-    parser.add_argument("--config-file", help="Config file path override")
     parser.add_argument(
         "--param",
         action="append",
@@ -106,15 +104,12 @@ def do_request(url: str, data: bytes, timeout: float, source: str) -> dict:
 
 def main() -> int:
     args = parse_args()
-    raw_url, source = load_url(cli_url=args.url, config_file=args.config_file)
+    raw_url, source = load_url()
     if not raw_url:
         print(json.dumps({"ok": False, "error": "No Bitrix24 webhook configured", "source": source}, ensure_ascii=True, indent=2))
         return 1
 
     normalized_url = validate_url(raw_url)
-
-    if not source.startswith("config:"):
-        persist_url_to_config(normalized_url, args.config_file)
 
     method = args.method[:-5] if args.method.endswith(".json") else args.method
 
@@ -236,7 +231,7 @@ def main() -> int:
         tz = user_result.get("TIME_ZONE", "")
         if uid:
             try:
-                cache_user_data(int(uid), tz, args.config_file)
+                cache_user_data(int(uid), tz)
             except Exception:
                 pass
 

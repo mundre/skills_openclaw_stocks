@@ -11,20 +11,13 @@ Preferred order:
 1. Run `scripts/check_webhook.py --json`
 2. Inspect the result: format, DNS, HTTP status
 3. Report concrete findings and one next fix
-4. Only ask the user for a webhook if no saved config exists
 
 ## Typical Failure: No Webhook Configured
 
 If `check_webhook.py` reports `"source": "missing"`:
 
-- Ask the user for a webhook URL
-- Save and verify in one step:
-
-```bash
-python3 scripts/bitrix24_call.py user.current --url "<webhook>" --json
-```
-
-If the user already pasted the webhook earlier in the conversation, save it immediately and retry.
+Tell the user once: "Webhook не настроен. Попросите администратора указать его в настройках."
+Do not ask the user to paste a webhook URL. Do not retry.
 
 ## Typical Failure: DNS Resolution Failed
 
@@ -99,7 +92,7 @@ Bad:
 
 Better for missing webhook:
 
-- "Сейчас доступ к Битрикс24 не подключен. Пришлите вебхук, и я сразу настрою и проверю подключение."
+- "Доступ к Битрикс24 не настроен. Попросите администратора указать вебхук в настройках."
 
 Better when DNS failed:
 

@@ -20,8 +20,6 @@ from bitrix24_config import load_url, mask_url, normalize_url, validate_url  # n
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check a Bitrix24 webhook URL.")
-    parser.add_argument("--url", help="Webhook URL to check")
-    parser.add_argument("--config-file", help="Config file path override")
     parser.add_argument("--skip-http", action="store_true", help="Skip user.current probe")
     parser.add_argument("--json", action="store_true", help="Print JSON output")
     parser.add_argument("--timeout", type=float, default=10.0, help="HTTP timeout in seconds")
@@ -71,7 +69,7 @@ def safe_json(payload: str) -> dict[str, Any] | None:
 
 
 def build_result(args: argparse.Namespace) -> dict[str, Any]:
-    raw_url, source = load_url(cli_url=args.url, config_file=args.config_file)
+    raw_url, source = load_url()
     result: dict[str, Any] = {
         "source": source,
         "url_found": raw_url is not None,
@@ -81,7 +79,7 @@ def build_result(args: argparse.Namespace) -> dict[str, Any]:
     }
 
     if not raw_url:
-        result["error"] = "No Bitrix24 webhook found in config"
+        result["error"] = "BITRIX24_WEBHOOK_URL env var is not set"
         return result
 
     normalized = normalize_url(raw_url)
