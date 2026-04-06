@@ -1,11 +1,17 @@
 {
   "owner": "twinsgeeks",
   "slug": "local-coding",
-  "displayName": "Local Coding Assistant — DeepSeek-Coder, Codestral, StarCoder on Your Fleet",
+  "displayName": "Local Coding",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774928634597,
-    "commit": "https://github.com/openclaw/skills/commit/8e8b0dc91c40667ce176a4be28c146a26415b06b"
+    "version": "1.0.1",
+    "publishedAt": 1775254700151,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774928634597,
+      "commit": "https://github.com/openclaw/skills/commit/8e8b0dc91c40667ce176a4be28c146a26415b06b"
+    }
+  ]
 }
