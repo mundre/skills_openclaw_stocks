@@ -3,9 +3,15 @@
   "slug": "asure-software",
   "displayName": "Asure Software",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774936970776,
-    "commit": "https://github.com/openclaw/skills/commit/79f6b8ab645ce8c16bf04c891195dc30f45eb499"
+    "version": "1.0.2",
+    "publishedAt": 1775170001743,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774936970776,
+      "commit": "https://github.com/openclaw/skills/commit/79f6b8ab645ce8c16bf04c891195dc30f45eb499"
+    }
+  ]
 }
