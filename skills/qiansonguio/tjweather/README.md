@@ -5,6 +5,10 @@
 ## 🌐 官方资源
 - **气象官网**: [https://www.tjweather.com/](https://www.tjweather.com/)
 - **API Key 申请**: [https://www.tjweather.com/Apply](https://www.tjweather.com/Apply)
+- **试用 Key**: 我们提供了 3 个试用 Key，欢迎大家使用和反馈意见：
+  - `aok356vvxetuz8ijnudw76gb`
+  - `aok32r59lwskymrt80yvcv46`
+  - `AOK202508111438522A2949E198FB80E6D3ACAC2003A65C`
 
 ## 🛠️ 环境配置要求
 - **运行环境**: Python 3.8+ 
@@ -14,7 +18,7 @@
   - **方案三 (离线模式)**: 内置中国行政区划数据库，可在无国际网络时作为大陆地区的兜底方案。
 
 ## 🔑 Key 的配置
-本 Skill 依赖 `TJWEATHER_API_KEY` 进行身份验证。该 Key 必须配置在 Skill 根目录下的 **`.env`** 文件中。**该 Key 可在上方官方资源链接中申请。**
+本 Skill 依赖 `TJWEATHER_API_KEY` 进行身份验证。安装后，请从上方**试用 Key** 中任选一个，或前往官方资源链接申请您自己的 Key，然后按以下步骤配置。
 
 ### 如何找回 API Key
 请按以下步骤在天机官方网站找回 API 密钥（API Key）：
@@ -23,12 +27,19 @@
 3. 在个人中心页面中选择**【API管理】**即可查看或重置您的 API Key。
 
 ### 配置步骤
-1. 在 `~/.openclaw/skills/tjweather/` 目录下找到或创建 `.env` 文件。
-2. 写入以下内容：
-   ```env
-   TJWEATHER_API_KEY=您的_TJWEATHER_API_KEY
-   ```
-*注：Agent 会自动读取该配置，无需向用户直接索要 API Key。*
+在 `~/.openclaw/openclaw.json` 中添加以下配置：
+```json
+{
+  "skills": {
+    "entries": {
+      "tjweather": {
+        "apiKey": "您的_TJWEATHER_API_KEY"
+      }
+    }
+  }
+}
+```
+*注：OpenClaw 会通过 `primaryEnv` 机制自动将 `apiKey` 注入为环境变量 `TJWEATHER_API_KEY`，Agent 运行时可直接读取。*
 
 ## 📍 地理编码查询 (3种回退方案)
 为了保证全球范围内搜索的准确性与稳定性，本工具按优先级依次尝试以下三种方法：

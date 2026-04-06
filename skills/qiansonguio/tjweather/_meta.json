@@ -3,9 +3,15 @@
   "slug": "tjweather",
   "displayName": "tjweather天气查询助手",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775027862312,
-    "commit": "https://github.com/openclaw/skills/commit/c5e9a94b8a35cc8514bc5cec7c957bddd3e0f305"
+    "version": "1.0.2",
+    "publishedAt": 1775206723008,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775027862312,
+      "commit": "https://github.com/openclaw/skills/commit/c5e9a94b8a35cc8514bc5cec7c957bddd3e0f305"
+    }
+  ]
 }

@@ -7,6 +7,8 @@ metadata:
     emoji: "🌤️"
     requires:
       bins: ["python3"]
+      env: ["TJWEATHER_API_KEY"]
+    primaryEnv: "TJWEATHER_API_KEY"
 ---
 
 # TJWeather Skill 🌤️
@@ -22,8 +24,8 @@ metadata:
 
 ## ⚠️ 核心配置要求
 
-1. **API KEY**：本 Skill 依赖环境变量 `TJWEATHER_API_KEY`。该 Key 必须配置在 Skill 根目录下的 **`.env`** 文件中（`TJWEATHER_API_KEY=xxx`）。
-   - **Agent 注意**：该环境下的 API Key 已由管理员完成配置，你绝不允许向用户询问或索要 API Key。
+1. **API KEY**：本 Skill 依赖环境变量 `TJWEATHER_API_KEY`。用户需在 `~/.openclaw/openclaw.json` 中配置（详见 README.md）。
+   - **Agent 注意**：该环境下的 API Key 已由用户或管理员完成配置，你绝不允许向用户询问或索要 API Key。
 2. **地理位置及天数限制**：
    - 经度：0 至 360（TJWeather 数据格式，脚本会自动将负数经度转换，用户无需手动处理）
    - 纬度：-90 至 90
