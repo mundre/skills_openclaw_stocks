@@ -1,5 +1,33 @@
 # DolphinDB 流式计算技能 v1.1.3
 
+## 🚨 强制流程：使用前必须加载环境
+
+**无论在何种场景下调用此技能（单独运行或被引用），必须先执行环境检测：**
+
+```bash
+# 方法 1: 在技能目录内运行（推荐）
+cd ~/.jvs/.openclaw/workspace/skills/<skill-name>
+source ../dolphindb-skills/scripts/dolphin_wrapper.sh
+
+# 方法 2: 在任何位置运行（推荐）
+source ~/.jvs/.openclaw/workspace/skills/dolphindb-skills/scripts/dolphin_global.sh
+
+# 方法 3: 手动检测
+python3 ~/.jvs/.openclaw/workspace/skills/dolphindb-skills/scripts/init_dolphindb_env.py
+```
+
+**验证环境：**
+```bash
+$DOLPHINDB_PYTHON_BIN -c "import dolphindb; print(dolphindb.__version__)"
+
+# 或使用包装器命令
+dolphin_python -c "import dolphindb; print(dolphindb.__version__)"
+```
+
+**重要**: 详见 [dolphindb-skills/USAGE_GUIDE.md](../dolphindb-skills/USAGE_GUIDE.md)
+
+---
+
 ## ⚠️ 前置依赖
 
 **本技能依赖 `dolphindb-basic` 技能，请先安装：**
