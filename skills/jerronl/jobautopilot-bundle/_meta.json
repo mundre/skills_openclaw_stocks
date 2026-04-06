@@ -3,11 +3,16 @@
   "slug": "jobautopilot-bundle",
   "displayName": "Jobautopilot Bundle",
   "latest": {
-    "version": "1.2.6",
-    "publishedAt": 1775079920498,
-    "commit": "https://github.com/openclaw/skills/commit/0becfb98a23878b1cf6d2ded7bf9cdba92b86d84"
+    "version": "1.3.2",
+    "publishedAt": 1775248569877,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.6",
+      "publishedAt": 1775079920498,
+      "commit": "https://github.com/openclaw/skills/commit/0becfb98a23878b1cf6d2ded7bf9cdba92b86d84"
+    },
     {
       "version": "1.2.1",
       "publishedAt": 1775053384572,

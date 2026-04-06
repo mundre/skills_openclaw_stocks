@@ -2,7 +2,7 @@
 name: jobautopilot-bundle
 description: Installs the full Job Autopilot pipeline — search jobs, tailor resumes, and submit applications. Convenience bundle that installs jobautopilot-search, jobautopilot-tailor, and jobautopilot-submitter in one step.
 author: jerronl
-version: "1.2.6"
+version: "1.3.3"
 homepage: https://github.com/jerronl/jobautopilot
 tags:
   - job-search
@@ -14,10 +14,7 @@ metadata:
     emoji: "🤖"
     requires:
       bins:
-        - clawhub
-        - openclaw
         - python3
-        - pip3
     files:
       - install.sh
       - setup.sh
@@ -32,33 +29,25 @@ Install all three Job Autopilot skills and run the full end-to-end pipeline:
 
 This is a **bundle installer only**. It contains two scripts:
 
-- `install.sh` — runs `clawhub install` for each of the three sub-skills
+- `install.sh` — runs `openclaw skills install` for each of the three sub-skills
 - `setup.sh` — prompts for your personal info and writes a local config file
 
-Neither script makes outbound network requests beyond `clawhub install`. No data is collected or sent to any server by these scripts. Note: the sub-skills (especially the submitter) use browser automation to navigate job sites — that browser activity does involve network traffic to those sites, initiated only when you explicitly request it.
+Neither script makes outbound network requests beyond `openclaw skills install`. No data is collected or sent to any server by these scripts. Note: the sub-skills (especially the submitter) use browser automation to navigate job sites — that browser activity does involve network traffic to those sites, initiated only when you explicitly request it.
 
 ## Install all three skills
 
 ```bash
-clawhub install jobautopilot-bundle
-bash ~/.openclaw/workspace/skills/jobautopilot-bundle/install.sh
+openclaw skills install jobautopilot-bundle
+openclaw skills install jobautopilot-search
+openclaw skills install jobautopilot-tailor
+openclaw skills install jobautopilot-submitter
 ```
 
-Or install individually:
+Verify all four are loaded:
 
 ```bash
-clawhub install jobautopilot-search
-clawhub install jobautopilot-tailor
-clawhub install jobautopilot-submitter
+openclaw skills check | grep jobautopilot
 ```
-
-## Then run setup
-
-```bash
-bash ~/.openclaw/workspace/skills/jobautopilot-bundle/setup.sh
-```
-
-Setup takes about 2 minutes — it asks for your name, email, resume folder location, and job search preferences, then writes your config and copies scripts. Nothing is sent to any network.
 
 ## How it works
 
@@ -91,7 +80,7 @@ No data is sent to any third party. Browser automation uses two isolated profile
 
 ## Security
 
-- **No outbound network calls from scripts**: `install.sh` and `setup.sh` operate locally only. The only network operations are `clawhub install` (downloading these skills) and browser navigation you explicitly request.
+- **No outbound network calls from scripts**: `install.sh` and `setup.sh` operate locally only. The only network operations are `openclaw skills install` (downloading these skills) and browser navigation you explicitly request.
 - **No password handling**: This skill does not read, store, or transmit any passwords. Login flows rely on your browser's own credential store.
 - **Browser profiles**: Setup instructs you to manually create two isolated profiles (`search`, `apply`) using `openclaw browser profile create`. No browser profiles are created automatically by any script. You can inspect or delete them at any time.
 - **Personal data**: Written only to `~/.openclaw/users/<you>/config.sh`. Setup automatically restricts this file to owner-only access (`chmod 600`). Read `setup.sh` in full before running to verify this.

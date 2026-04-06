@@ -30,7 +30,10 @@ echo ""
 
 # ── 0. Check that all three skills are installed ───────────────────────────────
 
-SKILLS_ROOT="$(dirname "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")")"
+# This script lives at .../skills/jobautopilot-bundle/setup.sh
+# Other skills are siblings: .../skills/jobautopilot-search, etc.
+BUNDLE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILLS_ROOT="$(dirname "$BUNDLE_DIR")"
 SEARCH_DIR="${SKILLS_ROOT}/jobautopilot-search"
 TAILOR_DIR="${SKILLS_ROOT}/jobautopilot-tailor"
 SUBMITTER_DIR="${SKILLS_ROOT}/jobautopilot-submitter"
@@ -51,7 +54,7 @@ fi
 
 # ── 1. Collect user info ───────────────────────────────────────────────────────
 
-read -rp "OpenClaw username (same as 'openclaw whoami'): " OPENCLAW_USER
+read -rp "Choose a username (used for local config path, e.g. your system username): " OPENCLAW_USER
 read -rp "First name: " USER_FIRST_NAME
 read -rp "Last name:  " USER_LAST_NAME
 read -rp "Email:      " USER_EMAIL
@@ -86,6 +89,41 @@ read -rp "Veteran status (e.g. 'I have no military service'): " USER_VETERAN
 read -rp "Disability status (e.g. No / Yes / Prefer not to say): " USER_DISABILITY
 read -rp "Work authorized in US? (Yes / No): " USER_WORK_AUTH
 read -rp "Require visa sponsorship? (Yes / No): " USER_NEED_SPONSOR
+
+# ── 1.5. Validate inputs ─────────────────────────────────────────────────────
+# OPENCLAW_USER is used in file paths — restrict to safe characters only.
+if ! echo "$OPENCLAW_USER" | grep -qE '^[a-zA-Z0-9_.-]+$'; then
+  echo "❌  Invalid username: only letters, numbers, underscores, hyphens, and dots are allowed."
+  exit 1
+fi
+if [ -z "$OPENCLAW_USER" ]; then
+  echo "❌  Username cannot be empty."
+  exit 1
+fi
+# Sanitize all text inputs: remove shell metacharacters that could cause
+# injection when the config file is sourced. Only allow printable ASCII
+# minus backticks, $, and backslashes.
+sanitize() {
+  printf '%s' "$1" | tr -d '`$\\";'
+}
+USER_FIRST_NAME="$(sanitize "$USER_FIRST_NAME")"
+USER_LAST_NAME="$(sanitize "$USER_LAST_NAME")"
+USER_EMAIL="$(sanitize "$USER_EMAIL")"
+USER_PHONE="$(sanitize "$USER_PHONE")"
+USER_LINKEDIN="$(sanitize "$USER_LINKEDIN")"
+RESUME_DIR="$(sanitize "$RESUME_DIR")"
+RESUME_OUTPUT_DIR="$(sanitize "$RESUME_OUTPUT_DIR")"
+JOB_SEARCH_LOCATION="$(sanitize "$JOB_SEARCH_LOCATION")"
+JOB_SEARCH_KEYWORDS="$(sanitize "$JOB_SEARCH_KEYWORDS")"
+JOB_SEARCH_MIN_SALARY="$(sanitize "$JOB_SEARCH_MIN_SALARY")"
+JOB_SEARCH_MAX_AGE_DAYS="$(sanitize "$JOB_SEARCH_MAX_AGE_DAYS")"
+USER_GENDER="$(sanitize "$USER_GENDER")"
+USER_RACE="$(sanitize "$USER_RACE")"
+USER_HISPANIC="$(sanitize "$USER_HISPANIC")"
+USER_VETERAN="$(sanitize "$USER_VETERAN")"
+USER_DISABILITY="$(sanitize "$USER_DISABILITY")"
+USER_WORK_AUTH="$(sanitize "$USER_WORK_AUTH")"
+USER_NEED_SPONSOR="$(sanitize "$USER_NEED_SPONSOR")"
 
 # ── 2. Create directories ──────────────────────────────────────────────────────
 
