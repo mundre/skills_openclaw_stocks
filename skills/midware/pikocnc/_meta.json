@@ -1,0 +1,11 @@
+{
+  "owner": "midware",
+  "slug": "pikocnc",
+  "displayName": "pikoCNC G-CODE",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1774716609998,
+    "commit": null
+  },
+  "history": []
+}
