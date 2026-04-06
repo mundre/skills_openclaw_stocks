@@ -6,7 +6,7 @@ description: >
   Trigger: init/run/process workflows, search documents, generate reports from content.
 description_en: "All-in-one document management: batch convert to Markdown, auto-categorize, full-text search, and intelligent output"
 description_zh: "全能文档管理技能：批量转 Markdown、自动分类、全文检索、智能输出"
-version: 1.2.0
+version: 1.3.0
 ---
 
 # DocHub - Document Workbench / 文档工作台
@@ -14,6 +14,38 @@ version: 1.2.0
 > **Document Lifecycle Manager** — Convert, categorize, index, search, and output documents in one place.
 >
 > **文档生命周期管理中枢** —— 从文档"入库"到"检索"再到"输出"，全链路覆盖。
+
+## What's New in v1.3.0
+
+### Naming Convention Enforcement / 命名规范强制执行
+
+**Problem / 问题**: Directory and file names containing spaces or special characters (e.g., `[]` `（）` `——` spaces) cause `read_file` tool to fail on Windows.
+
+**Solution / 解决方案**: A unified naming convention is enforced at ALL stages:
+
+#### Naming Rule / 命名规则
+Only the following characters are allowed in directory and file names:
+- **Chinese characters** (中文)
+- **English letters** (a-z, A-Z)
+- **Digits** (0-9)
+- **Underscore** `_`
+- **Hyphen** `-`
+
+All other characters (spaces, `（）` `【】` `——` `·` etc.) are **replaced by underscore `_`**.
+
+#### Where Applied / 应用范围
+| Stage | Action | Example |
+|-------|--------|---------|
+| **init** | RAW dirs/files renamed first | `2026-1-10 进港全流程招标文书/` → `2026-1-10_进港全流程招标文书/` |
+| **init** | Old `_docs_md/` deleted and rebuilt | Clean slate every init |
+| **init** | Output MD names normalized | Same rule applied |
+| **run** | RAW names re-checked | Catches any manually-added un-normalized names |
+| **process** | New files from `update/` renamed | Before category matching and conversion |
+
+#### Bug Fixes / Bug 修复
+- Fixed init timeout: added try/except error handling and progress output
+- Fixed stale `_docs_md/` accumulation: init now deletes old output before rebuild
+- Fixed `run_incremental` source matching for normalized paths
 
 ```
 Ingest → Categorize → Convert to Markdown → Search → Output

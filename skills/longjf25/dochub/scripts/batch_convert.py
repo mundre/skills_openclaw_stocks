@@ -1,7 +1,9 @@
 """
-DocHub - Document Workbench v3 (universal)
-- init mode: analyze content, auto-generate category structure
+DocHub - Document Workbench v4
+- init mode: preserve original directory structure, batch convert to _docs_md
 - run mode: incremental conversion (new/changed files only)
+- process mode: process new docs from update/ folder
+- Generate: 工作知识库.md (knowledge base), _convert_log.txt (log), _index.md (index)
 - Security: path traversal guard, safe subprocess, temp cleanup, log write safety
 """
 import os
@@ -10,7 +12,6 @@ import sys
 import shutil
 import subprocess
 import tempfile
-import hashlib
 from pathlib import Path
 from collections import defaultdict
 
@@ -21,13 +22,15 @@ from collections import defaultdict
 MARKITDOWN_CMD = [sys.executable, "-m", "markitdown"]
 LOG_FILE = None
 
-# Output directory names (English)
-DOCS_MD_DIR = "_docs_md"
-INDEX_FILE = "_index.md"
-CONVERT_LOG_FILE = "_convert_log.txt"
-UPDATE_DIR = "update"
+# Directory names
+RAW_DIR = "RAW"                    # Original documents
+DOCS_MD_DIR = "_docs_md"          # Converted Markdown documents
+INDEX_FILE = "_index.md"          # Document index
+CONVERT_LOG_FILE = "_convert_log.txt"  # Conversion log
+UPDATE_DIR = "update"             # New document drop zone
+KNOWLEDGE_BASE_FILE = "工作知识库.md"  # Knowledge base
 
-# Skip directories when scanning
+# Skip directories when scanning (RAW is source, don't skip it)
 SKIP_DIRS = {DOCS_MD_DIR, "_markdown", UPDATE_DIR, "_sanitized_output",
              "_restored_output", "node_modules", ".git", "__pycache__"}
 
@@ -40,6 +43,51 @@ MAX_TEXT_LENGTH = 10 * 1024 * 1024
 # ============================================================
 # Utility Functions
 # ============================================================
+
+
+def normalize_name(name):
+    """
+    Normalize directory or file name (stem only, no extension).
+    Only keeps: Chinese chars, English letters, digits, underscore(_), hyphen(-).
+    All other characters are replaced by underscore, consecutive underscores collapsed.
+    
+    规范化目录名/文件名（不含扩展名）：
+    只保留：中文、英文字母、数字、下横线(_)、中横线(-)。
+    其他字符统一替换为下横线，连续下横线合并为一个。
+    """
+    if not name:
+        return name
+    # Keep: CJK unified ideographs (u4e00-u9fff), common CJK punctuation extensions,
+    #       English letters, digits, underscore, hyphen
+    # Replace everything else with underscore
+    cleaned = re.sub(r'[^\u4e00-\u9fff\u3400-\u4dbf\w\-]', '_', name)
+    # Collapse consecutive underscores into one
+    cleaned = re.sub(r'_+', '_', cleaned)
+    # Strip leading/trailing underscores
+    cleaned = cleaned.strip('_')
+    # Fallback: if result is empty (e.g. name was all special chars)
+    return cleaned if cleaned else '_unnamed_'
+
+
+def normalize_path(path_str):
+    """
+    Normalize all parts of a path string.
+    规范化路径的所有部分（目录名和文件名）。
+    Returns a Path object with all parts normalized.
+    """
+    p = Path(path_str)
+    parts = list(p.parts)
+    # Normalize each part (skip drive letter on Windows, e.g. 'C:\\')
+    start = 1 if len(parts) > 1 and parts[0].endswith(':') else 0
+    for i in range(start, len(parts)):
+        part = parts[i]
+        # For the last part, normalize stem and re-attach extension
+        if i == len(parts) - 1 and '.' in part:
+            stem, ext = part.rsplit('.', 1)
+            parts[i] = normalize_name(stem) + '.' + ext
+        else:
+            parts[i] = normalize_name(part)
+    return Path(*parts)
 
 
 def log(msg):
@@ -62,7 +110,8 @@ def init_log(workspace):
     LOG_FILE = workspace / CONVERT_LOG_FILE
     try:
         with open(LOG_FILE, "w", encoding="utf-8") as f:
-            f.write(f"DocHub v3 - {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"DocHub v4 - {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("=" * 60 + "\n")
     except Exception as e:
         print(f"[WARN] Cannot create log file: {e}")
 
@@ -146,8 +195,11 @@ def analyze_and_categorize(workspace):
     """
     log("\n[STEP 1] Scanning documents...")
     all_docs = []
-    for root, dirs, files in os.walk(workspace):
-        # Normalize root for skip check
+    raw_base = workspace / RAW_DIR
+    if not raw_base.exists():
+        raw_base = workspace  # Fallback to workspace root
+
+    for root, dirs, files in os.walk(raw_base):
         root_parts = set(Path(root).parts)
         if any(d in root_parts for d in SKIP_DIRS):
             continue
@@ -161,7 +213,7 @@ def analyze_and_categorize(workspace):
 
     # Sample analysis (max 30 docs)
     sample = all_docs[:30] if len(all_docs) > 30 else all_docs
-    doc_signatures = {}  # path -> keywords
+    doc_signatures = {}
 
     log("\n[STEP 2] Analyzing document content...")
     for i, doc in enumerate(sample):
@@ -179,20 +231,17 @@ def analyze_and_categorize(workspace):
     # Cluster by keyword similarity
     log("\n[STEP 3] Generating category structure...")
     categories = defaultdict(list)
-    category_keywords = {}  # category -> top keywords
+    category_keywords = {}
 
     for doc in all_docs:
         doc_str = str(doc)
         kw = doc_signatures.get(doc_str, [])
-
-        # Use top 5 keywords as signature
         sig = set([w for w, _ in kw[:5]])
 
         if not sig:
             categories["Other"].append(doc)
             continue
 
-        # Match to existing category
         matched = False
         best_score = 0
         best_cat = None
@@ -206,7 +255,6 @@ def analyze_and_categorize(workspace):
         if best_score >= 1:
             categories[best_cat].append(doc)
         else:
-            # Create new category
             new_cat = f"_{kw[0][0]}" if kw else "Other"
             base = new_cat
             n = 1
@@ -216,12 +264,10 @@ def analyze_and_categorize(workspace):
             categories[new_cat] = [doc]
             category_keywords[new_cat] = kw
 
-    # Clean empty categories
     for cat in list(categories.keys()):
         if not categories[cat]:
             del categories[cat]
 
-    # Generate final category names
     final_cats = {}
     for cat, docs in categories.items():
         if cat.startswith("_"):
@@ -237,42 +283,141 @@ def analyze_and_categorize(workspace):
 
 
 # ============================================================
-# Directory Structure
+# Directory Structure - Preserve Full Path
 # ============================================================
 
 
-def create_folder_structure(workspace, categories):
+def rename_raw_dirs(raw_base):
     """
-    Create folder structure based on categories
-    根据分类创建文件夹结构
-    Returns: {original_path: new_path}
+    Recursively rename directories and files under raw_base to normalized names.
+    Only directories and file names (stems) are renamed; file extensions are preserved.
+    Returns list of (action, old_path, new_path) for logging.
+    
+    递归重命名 raw_base 下的目录和文件，使其符合命名规范。
+    只重命名目录名和文件名（不含扩展名）。
+    返回操作记录列表 [(action, old_path, new_path), ...]
     """
-    log("\n[STEP 4] Creating category directories...")
+    actions = []
+
+    # --- Phase 1: rename files (bottom-up to avoid path confusion) ---
+    for root, dirs, files in os.walk(raw_base):
+        for f in files:
+            original = Path(root) / f
+            stem, ext = original.stem, original.suffix
+            new_stem = normalize_name(stem)
+            if new_stem != stem:
+                target = Path(root) / (new_stem + ext)
+                try:
+                    original.rename(target)
+                    actions.append(("rename_file", str(original), str(target)))
+                except Exception as e:
+                    log(f"  [WARN] Cannot rename file {f}: {e}")
+
+    # --- Phase 2: rename directories (bottom-up) ---
+    for root, dirs, files in os.walk(raw_base, topdown=False):
+        for d in sorted(dirs, reverse=True):
+            original = Path(root) / d
+            new_name = normalize_name(d)
+            if new_name != d:
+                target = Path(root) / new_name
+                # Avoid collision: if target already exists, append suffix
+                if target.exists():
+                    base = new_name
+                    n = 2
+                    while target.exists():
+                        target = Path(root) / f"{base}_{n}"
+                        n += 1
+                try:
+                    original.rename(target)
+                    actions.append(("rename_dir", str(original), str(target)))
+                except Exception as e:
+                    log(f"  [WARN] Cannot rename dir {d}: {e}")
+
+    return actions
+
+
+def scan_full_structure(workspace):
+    """
+    Scan full directory structure preserving all levels.
+    RAW directories are expected to already be normalized (via rename_raw_dirs).
+    
+    扫描完整目录结构，保留所有层级。
+    RAW 目录应该在 init 时已经通过 rename_raw_dirs 规范化。
+    Returns: [(rel_path, doc_path), ...] where rel_path preserves directory structure
+    """
+    raw_base = workspace / RAW_DIR
+    if not raw_base.exists():
+        raw_base = workspace  # Fallback
+
+    docs_with_structure = []
+
+    for root, dirs, files in os.walk(raw_base):
+        root_path = Path(root)
+        root_parts = set(root_path.parts)
+
+        # Skip output directories
+        if any(d in root_parts for d in SKIP_DIRS):
+            continue
+
+        for f in files:
+            ext = Path(f).suffix.lower()
+            if ext in DOC_EXTENSIONS:
+                doc_path = root_path / f
+                try:
+                    rel_path = doc_path.relative_to(raw_base)
+                except ValueError:
+                    rel_path = doc_path.relative_to(workspace)
+
+                docs_with_structure.append((rel_path, doc_path))
+
+    return docs_with_structure
+
+
+def create_output_structure(workspace, docs_with_structure):
+    """
+    Create output directory structure based on document paths.
+    Directory and file names are normalized before creating paths.
+    
+    根据文档路径创建输出目录结构。
+    目录名和文件名在创建路径前已规范化。
+    Returns: {source_path: dest_path}
+    """
+    log("\n[STEP 4] Creating directory structure...")
     md_base = workspace / DOCS_MD_DIR
     md_base.mkdir(exist_ok=True)
 
-    move_map = {}  # original_path -> new_relative_path
+    move_map = {}
 
-    for cat_name, docs in sorted(categories.items()):
-        # Path traversal guard
-        safe_dir = sanitize_path(md_base, cat_name)
-        if safe_dir is None:
-            log(f"  [SKIP] Unsafe category name: {cat_name}")
-            continue
-        safe_dir.mkdir(exist_ok=True)
-        log(f"  Created: {cat_name}/ ({len(docs)} docs)")
+    # Group by top-level directory for display
+    top_level_groups = defaultdict(list)
+    for rel_path, doc_path in docs_with_structure:
+        if rel_path.parts:
+            top_level_groups[rel_path.parts[0]].append((rel_path, doc_path))
+        else:
+            top_level_groups["root"].append((rel_path, doc_path))
 
-        for doc in docs:
-            new_path = safe_dir / doc.name
+    for top_dir, docs in sorted(top_level_groups.items()):
+        log(f"  {top_dir}/ ({len(docs)} docs)")
+
+        for rel_path, doc_path in docs:
+            # Normalize each path component
+            norm_parts = [normalize_name(p) for p in rel_path.parent.parts]
+            norm_stem = normalize_name(doc_path.stem)
+
+            # Build normalized destination path
+            if norm_parts:
+                dst_path = md_base.joinpath(*norm_parts) / norm_stem
+            else:
+                dst_path = md_base / norm_stem
+
             # Handle duplicate names
-            if new_path.exists():
-                stem = doc.stem
-                suffix = doc.suffix
+            if dst_path.with_suffix(".md").exists():
                 counter = 1
-                while new_path.exists():
-                    new_path = safe_dir / f"{stem}_{counter}{suffix}"
+                while dst_path.with_suffix(".md").exists():
+                    dst_path = md_base.joinpath(*(norm_parts or [''])) / f"{norm_stem}_{counter}"
                     counter += 1
-            move_map[str(doc)] = new_path
+
+            move_map[str(doc_path)] = dst_path
 
     # Create update folder
     update_dir = workspace / UPDATE_DIR
@@ -323,8 +468,8 @@ def convert_single(src_path, dst_path):
 
 def run_incremental(workspace):
     """
-    Incremental mode: scan _docs_md/ structure, convert new/changed files
-    增量模式：扫描 _docs_md/ 目录结构，只转换新增/变更的文件
+    Incremental mode: normalize any un-normalized names, then convert new/changed files.
+    增量模式：规范化未规范的命名，然后转换新增/变更的文件。
     """
     md_base = workspace / DOCS_MD_DIR
     if not md_base.exists():
@@ -334,13 +479,27 @@ def run_incremental(workspace):
     log("\n[INCREMENTAL] Incremental conversion mode")
     log("=" * 50)
 
-    # Build source -> target mapping from existing MD files
+    # --- Step 1: Normalize RAW names ---
+    raw_base = workspace / RAW_DIR
+    if raw_base.exists():
+        actions = rename_raw_dirs(raw_base)
+        if actions:
+            log(f"\n  Normalized {len(actions)} RAW items")
+
+    # --- Step 2: Find new/changed files ---
     md_to_source = {}
     for md_file in md_base.rglob("*.md"):
         rel = md_file.relative_to(md_base)
-        # Find matching source file by replacing .md with source extension
+        # Build normalized relative path to match against RAW
+        norm_rel = Path(*(normalize_name(p) for p in rel.parts))
         for ext in [".docx", ".xlsx", ".pdf", ".doc"]:
-            src_candidate = workspace / str(rel).replace(".md", ext)
+            # Check RAW first, then workspace root
+            src_candidate = workspace / RAW_DIR / str(norm_rel).replace(".md", ext)
+            if not src_candidate.exists():
+                src_candidate = workspace / str(norm_rel).replace(".md", ext)
+            if not src_candidate.exists():
+                # Try original (non-normalized) path as fallback
+                src_candidate = workspace / RAW_DIR / str(rel).replace(".md", ext)
             if src_candidate.exists():
                 md_to_source[str(md_file)] = src_candidate
                 break
@@ -349,9 +508,8 @@ def run_incremental(workspace):
     success = 0
     for md_path_str, src_path in md_to_source.items():
         md_path = Path(md_path_str)
-        # Check if update needed
-        if md_path.exists() and md_path.stat().st_mtime > src_path.stat().st_mtime:
-            continue  # Already up to date
+        if md_path.exists() and src_path.exists() and md_path.stat().st_mtime > src_path.stat().st_mtime:
+            continue
         total += 1
         if convert_single(src_path, md_path.with_suffix("")):
             success += 1
@@ -368,8 +526,6 @@ def ask_classify_mode():
     """
     Ask user to select categorization mode
     询问用户选择分类模式
-    Supports --mode parameter for non-interactive execution
-    Returns: "keep" or "auto"
     """
     if "--mode" in sys.argv:
         idx = sys.argv.index("--mode")
@@ -384,8 +540,13 @@ def ask_classify_mode():
 
     # Interactive mode
     print("\n" + "=" * 60)
-    print("[INIT] DocHub Initialization / 文档工作流初始化")
+    print("[INIT] DocHub Initialization / 文档工作台初始化")
     print("=" * 60)
+    print("\n目录结构规范:")
+    print("  RAW/          - 原始文档（不动）")
+    print("  _docs_md/     - Markdown转换文档")
+    print("  update/       - 新文档入口")
+    print("  工作知识库.md - 知识库入口")
     print("\nSelect categorization mode / 请选择分类结构创建方式：\n")
     print("  [1] Keep original structure / 保持原有目录结构")
     print("      - Organize docs into _docs_md/ preserving current folders")
@@ -413,26 +574,165 @@ def ask_classify_mode():
 
 def scan_existing_structure(workspace):
     """
-    Scan existing directory structure, return {directory_name: [doc_paths]}
-    扫描现有目录结构
+    Scan existing directory structure preserving full path
+    扫描现有目录结构，保留完整路径
+    Returns: [(rel_path, doc_path), ...]
     """
-    structure = defaultdict(list)
+    docs = scan_full_structure(workspace)
+    return [(str(rp), dp) for rp, dp in docs]
 
-    for root, dirs, files in os.walk(workspace):
-        # Skip output directories
-        root_parts = set(Path(root).parts)
-        if any(d in root_parts for d in SKIP_DIRS):
-            continue
-        for f in files:
-            if Path(f).suffix.lower() in DOC_EXTENSIONS:
-                rel_path = Path(root).relative_to(workspace)
-                if rel_path.parts:
-                    cat_name = rel_path.parts[0]
-                else:
-                    cat_name = "root"
-                structure[cat_name].append(Path(root) / f)
 
-    return dict(structure)
+# ============================================================
+# Index Generation
+# ============================================================
+
+
+def generate_index(workspace, docs_with_structure):
+    """Generate document index / 生成文档索引"""
+    md_base = workspace / DOCS_MD_DIR
+    index_file = md_base / INDEX_FILE
+
+    # Group docs by top-level directory
+    groups = defaultdict(list)
+    for rel_path, doc_path in docs_with_structure:
+        top_dir = rel_path.parts[0] if rel_path.parts else "root"
+        groups[top_dir].append((rel_path, doc_path))
+
+    lines = [
+        "# 文档索引\n",
+        f"> 自动生成 | 更新时间：{__import__('datetime').datetime.now().strftime('%Y-%m-%d')}\n\n",
+        "## 目录结构\n\n",
+        "```\n",
+        f"{DOCS_MD_DIR}/\n",
+    ]
+
+    # Generate tree structure
+    def add_tree(path_parts, prefix=""):
+        if not path_parts:
+            return
+        if len(path_parts) == 1:
+            lines.append(f"{prefix}├── {path_parts[0]}/\n")
+        else:
+            lines.append(f"{prefix}└── {path_parts[0]}/\n")
+        if len(path_parts) > 1:
+            add_tree(path_parts[1:], prefix + "    ")
+
+    for top_dir in sorted(groups.keys()):
+        lines.append(f"├── {top_dir}/\n")
+        subdocs = defaultdict(list)
+        for rel_path, _ in groups[top_dir]:
+            if len(rel_path.parts) > 2:
+                subdocs[rel_path.parts[1]].append(rel_path)
+            elif len(rel_path.parts) == 2:
+                subdocs[rel_path.parts[1]].append(rel_path)
+
+        for subdir in sorted(subdocs.keys()):
+            lines.append(f"│   ├── {subdir}/\n")
+
+    lines.append("```\n\n")
+
+    # Document list
+    lines.append("## 文档清单\n\n")
+    for top_dir in sorted(groups.keys()):
+        lines.append(f"### {top_dir}\n\n")
+        for rel_path, doc_path in sorted(groups[top_dir]):
+            md_path = md_base / rel_path.with_suffix(".md")
+            if md_path.exists():
+                lines.append(f"- [{doc_path.stem}]({md_path.relative_to(md_base).as_posix()})\n")
+        lines.append("\n")
+
+    try:
+        with open(index_file, "w", encoding="utf-8") as f:
+            f.write("".join(lines))
+        log(f"  Generated: {index_file}")
+    except Exception as e:
+        log(f"[ERROR] Failed to write index: {e}")
+
+
+# ============================================================
+# Knowledge Base Generation
+# ============================================================
+
+
+def generate_knowledge_base(workspace, docs_with_structure):
+    """Generate knowledge base / 生成工作知识库"""
+    kb_file = workspace / KNOWLEDGE_BASE_FILE
+
+    # Count docs by category
+    groups = defaultdict(list)
+    for rel_path, doc_path in docs_with_structure:
+        top_dir = rel_path.parts[0] if rel_path.parts else "root"
+        groups[top_dir].append((rel_path, doc_path))
+
+    # Category descriptions
+    cat_desc = {
+        "发货分队": "分单仓管理、工作笔记、队长小结等",
+        "工作报告": "年度总结、述职报告、月度汇报等",
+        "新进港货站相关": "基建项目、智能货架、ETV测试等",
+    }
+
+    total_docs = sum(len(docs) for docs in groups.values())
+
+    lines = [
+        "# 工作知识库\n\n",
+        f"> 广州白云国际物流有限公司 - 国际货站进港室文档知识库\n",
+        f"> 更新时间：{__import__('datetime').datetime.now().strftime('%Y年%m月%d日')}\n\n",
+        "---\n\n",
+        "## 📋 文档概览\n\n",
+        f"本知识库包含国际货站进港室相关工作文档，共 **{total_docs} 篇 Markdown 文档**，涵盖以下领域：\n\n",
+        "| 领域 | 说明 | 文档数量 |\n",
+        "|------|------|----------|\n",
+    ]
+
+    for cat in sorted(groups.keys()):
+        desc = cat_desc.get(cat, "")
+        lines.append(f"| {cat} | {desc} | ~{len(groups[cat])}篇 |\n")
+
+    lines.append("\n---\n\n")
+
+    # Directory structure
+    lines.append("## 🗂️ 文档目录结构\n\n")
+    lines.append("```\n")
+    lines.append("文档工作台/\n")
+    lines.append(f"├── {RAW_DIR}/                    # 原始文档（未转换）\n")
+    lines.append(f"├── {DOCS_MD_DIR}/               # Markdown 转换文档\n")
+    lines.append(f"│   ├── 发货分队/\n")
+    lines.append(f"│   ├── 工作报告/\n")
+    lines.append(f"│   └── 新进港货站相关/\n")
+    lines.append(f"├── {UPDATE_DIR}/                 # 新文档入口\n")
+    lines.append(f"├── {KNOWLEDGE_BASE_FILE}       # 本文件\n")
+    lines.append(f"└── {CONVERT_LOG_FILE}        # 转换日志\n")
+    lines.append("```\n\n")
+
+    # Quick links
+    lines.append("## 📌 常用文档快速链接\n\n")
+    lines.append("### 纪检工作\n\n")
+    for rel_path, doc_path in docs_with_structure:
+        if "党风廉政" in str(rel_path) or "述职报告" in str(rel_path):
+            md_path = Path(DOCS_MD_DIR) / rel_path.with_suffix(".md")
+            lines.append(f"- [{doc_path.stem}](../{md_path.as_posix()})\n")
+
+    lines.append("\n### 发货分队工作\n\n")
+    for rel_path, doc_path in docs_with_structure:
+        if "发货" in str(rel_path) and ("总结" in str(rel_path) or "汇报" in str(rel_path)):
+            md_path = Path(DOCS_MD_DIR) / rel_path.with_suffix(".md")
+            lines.append(f"- [{doc_path.stem}](../{md_path.as_posix()})\n")
+
+    lines.append("\n### 新进港货站项目\n\n")
+    for rel_path, doc_path in docs_with_structure:
+        if "新进港货站" in str(rel_path) and ("需求" in str(rel_path) or "方案" in str(rel_path)):
+            md_path = Path(DOCS_MD_DIR) / rel_path.with_suffix(".md")
+            lines.append(f"- [{doc_path.stem}](../{md_path.as_posix()})\n")
+
+    lines.append("\n---\n\n")
+    lines.append("*本知识库由 DocHub 文档工作台自动维护*\n")
+
+    try:
+        with open(kb_file, "w", encoding="utf-8") as f:
+            f.write("".join(lines))
+        log(f"  Generated: {kb_file}")
+    except Exception as e:
+        log(f"[ERROR] Failed to write knowledge base: {e}")
 
 
 # ============================================================
@@ -441,22 +741,46 @@ def scan_existing_structure(workspace):
 
 
 def run_init(workspace):
-    """Initialize: ask mode, create structure, batch convert / 初始化模式"""
+    """Initialize: normalize RAW dirs, create structure, batch convert / 初始化模式"""
 
-    # Ask user for mode selection
     mode = ask_classify_mode()
 
     init_log(workspace)
 
+    # --- STEP 0: Normalize RAW directory and file names ---
+    log("\n[STEP 0] Normalizing RAW directory/file names...")
+    log("  Rule: only Chinese, English, digits, underscore(_), hyphen(-) allowed")
+    log("  Rule: spaces and special chars replaced by underscore")
+    raw_base = workspace / RAW_DIR
+    if raw_base.exists():
+        actions = rename_raw_dirs(raw_base)
+        if actions:
+            log(f"  Renamed {len(actions)} items:")
+            for action, old, new in actions:
+                short_old = Path(old).name
+                short_new = Path(new).name
+                log(f"    [{action}] {short_old} -> {short_new}")
+        else:
+            log("  All names already normalized, no changes needed")
+    else:
+        log("  [SKIP] RAW/ does not exist")
+
     if mode == "keep":
         log("\n[MODE] Keep original directory structure / 保持原有目录结构")
         log("=" * 60)
-        categories = scan_existing_structure(workspace)
-        if not categories:
+        docs_with_structure = scan_full_structure(workspace)
+        if not docs_with_structure:
             log("[WARN] No documents found / 未发现任何文档")
             return
-        log(f"Found {len(categories)} original directories / 发现 {len(categories)} 个原始目录")
-        for cat, docs in sorted(categories.items()):
+
+        # Group by top-level for display
+        groups = defaultdict(list)
+        for rel_path, doc_path in docs_with_structure:
+            top = rel_path.parts[0] if rel_path.parts else "root"
+            groups[top].append((rel_path, doc_path))
+
+        log(f"Found {len(docs_with_structure)} documents in {len(groups)} directories")
+        for cat, docs in sorted(groups.items()):
             log(f"  {cat}/ ({len(docs)} docs)")
     else:
         log("\n[MODE] Auto-analyze & categorize / 系统自动分析创建分类")
@@ -465,31 +789,64 @@ def run_init(workspace):
         if not categories:
             log("[WARN] No documents found / 未发现任何文档")
             return
+        docs_with_structure = []
+        for cat, docs in categories.items():
+            norm_cat = normalize_name(cat)
+            for doc in docs:
+                docs_with_structure.append((Path(norm_cat) / normalize_name(doc.name), doc))
 
-    # Create directory structure
-    move_map = create_folder_structure(workspace, categories)
+    # --- STEP 1: Delete old _docs_md and recreate ---
+    old_md = workspace / DOCS_MD_DIR
+    if old_md.exists():
+        try:
+            shutil.rmtree(old_md)
+            log(f"\n[STEP 1] Removed old {DOCS_MD_DIR}/ directory")
+        except Exception as e:
+            log(f"\n[WARN] Could not remove old {DOCS_MD_DIR}/: {e}")
+    else:
+        log(f"\n[STEP 1] Creating fresh {DOCS_MD_DIR}/ directory")
 
-    # Batch convert
-    log("\n[STEP 5] Converting documents to Markdown...")
+    # --- STEP 2: Create directory structure and get move map ---
+    try:
+        move_map = create_output_structure(workspace, docs_with_structure)
+    except Exception as e:
+        log(f"[ERROR] Failed to create directory structure: {e}")
+        return
+
+    # --- STEP 3: Batch convert ---
+    log("\n[STEP 3] Converting documents to Markdown...")
     total = len(move_map)
     success = 0
     failed = []
 
-    for src_str, dst in move_map.items():
+    for i, (src_str, dst) in enumerate(move_map.items(), 1):
         src = Path(src_str)
-        log(f"  [{success+1}/{total}] {src.name}")
-        if convert_single(src, dst.with_suffix("")):
-            success += 1
-            log(f"    [OK]")
-        else:
+        try:
+            rel_path = src.relative_to(workspace / RAW_DIR) if (workspace / RAW_DIR).exists() else src.relative_to(workspace)
+        except ValueError:
+            rel_path = src.name
+        log(f"  [{i}/{total}] {rel_path}")
+        try:
+            if convert_single(src, dst):
+                success += 1
+                log(f"    [OK]")
+            else:
+                failed.append(src_str)
+                log(f"    [FAIL]")
+        except Exception as e:
             failed.append(src_str)
-            log(f"    [FAIL]")
+            log(f"    [ERROR] {e}")
 
-    # Generate index
-    log("\n[STEP 6] Generating document index...")
-    generate_index(workspace, categories)
+    # --- STEP 4: Generate index and knowledge base ---
+    log("\n[STEP 4] Generating index and knowledge base...")
+    try:
+        doc_pairs = [(Path(k), Path(v.parent) / Path(v).name.replace(".md", "")) for k, v in move_map.items()]
+        generate_index(workspace, doc_pairs)
+        generate_knowledge_base(workspace, doc_pairs)
+    except Exception as e:
+        log(f"[ERROR] Failed to generate index/KB: {e}")
 
-    # Report
+    # --- Report ---
     log("\n" + "=" * 60)
     log(f"[RESULT] Conversion complete: {success}/{total} succeeded / 转换完成: {success}/{total} 成功")
     if failed:
@@ -499,45 +856,9 @@ def run_init(workspace):
     else:
         log("All succeeded! / 全部成功!")
     log("=" * 60)
-    log(f"\n[INDEX] Document index / 文档索引: {workspace / DOCS_MD_DIR / INDEX_FILE}")
-    log(f"[LOG] Processing log / 处理日志: {LOG_FILE}")
-
-
-# ============================================================
-# Index Generation
-# ============================================================
-
-
-def generate_index(workspace, categories):
-    """Generate document index / 生成文档索引"""
-    md_base = workspace / DOCS_MD_DIR
-    index_file = md_base / INDEX_FILE
-
-    lines = [
-        "# Document Index / 文档索引\n",
-        f"> Auto-generated by DocHub v3 / 自动生成\n\n",
-        f"## Categories / 分类目录\n\n",
-    ]
-
-    for cat_name, docs in sorted(categories.items()):
-        md_files = []
-        for doc in docs:
-            md_path = md_base / cat_name / (doc.stem + ".md")
-            if md_path.exists():
-                md_files.append(md_path)
-
-        if md_files:
-            lines.append(f"### {cat_name} ({len(md_files)} files)\n")
-            for mf in sorted(md_files):
-                rel = mf.relative_to(md_base)
-                lines.append(f"- [{mf.stem}]({rel.as_posix()})")
-            lines.append("\n")
-
-    try:
-        with open(index_file, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
-    except Exception as e:
-        log(f"[ERROR] Failed to write index: {e}")
+    log(f"\n[OUTPUT] Document index: {workspace / DOCS_MD_DIR / INDEX_FILE}")
+    log(f"[OUTPUT] Knowledge base: {workspace / KNOWLEDGE_BASE_FILE}")
+    log(f"[LOG] Processing log: {LOG_FILE}")
 
 
 # ============================================================
@@ -548,11 +869,18 @@ def generate_index(workspace, categories):
 def process_update_folder(workspace):
     """
     Process new documents in update/ folder:
-    1. Analyze content → match category
-    2. Copy to categorized directory
-    3. Incremental convert
-    4. Clear update/
-    处理 update/ 中的新文档
+    1. Normalize file names (remove spaces/special chars)
+    2. Analyze content -> match category
+    3. Copy to categorized directory with normalized names
+    4. Incremental convert
+    5. Clear update/
+    
+    处理 update/ 文件夹中的新文档：
+    1. 规范化文件名（去除空格/特殊字符）
+    2. 分析内容 -> 匹配分类
+    3. 复制到分类目录（使用规范化文件名）
+    4. 增量转换
+    5. 清空 update/
     """
     update_dir = workspace / UPDATE_DIR
     md_base = workspace / DOCS_MD_DIR
@@ -561,7 +889,6 @@ def process_update_folder(workspace):
         log(f"[WARN] {UPDATE_DIR}/ is empty or does not exist")
         return
 
-    # Path traversal guard for update_dir
     safe_update = sanitize_path(workspace, UPDATE_DIR)
     if safe_update is None:
         log(f"[ERROR] Unsafe update directory path")
@@ -570,14 +897,26 @@ def process_update_folder(workspace):
     log(f"\n[UPDATE] Processing new documents in {UPDATE_DIR}/...")
     log("=" * 50)
 
-    # Get existing category directories
     existing_cats = [d.name for d in md_base.iterdir() if d.is_dir() and not d.name.startswith("_")]
 
     new_docs = list(safe_update.iterdir())
     for doc in new_docs:
         if doc.is_dir():
             continue
-        # Analyze content
+
+        # --- Normalize file name first ---
+        stem, ext = doc.stem, doc.suffix
+        norm_stem = normalize_name(stem)
+        if norm_stem != stem:
+            norm_doc = doc.parent / (norm_stem + ext)
+            try:
+                doc.rename(norm_doc)
+                log(f"  [RENAME] {stem}{ext} -> {norm_stem}{ext}")
+                doc = norm_doc
+            except Exception as e:
+                log(f"  [WARN] Cannot normalize filename {doc.name}: {e}")
+
+        # Analyze content for category matching
         fd, tmp = tempfile.mkstemp(suffix=doc.suffix)
         os.close(fd)
         kw = []
@@ -597,7 +936,6 @@ def process_update_folder(workspace):
             if os.path.exists(tmp):
                 os.remove(tmp)
 
-        # Simple keyword matching
         matched_cat = None
         for cat in existing_cats:
             cat_clean = cat.replace("docs_", "")
@@ -608,13 +946,17 @@ def process_update_folder(workspace):
             if matched_cat:
                 break
 
+        if not matched_cat and existing_cats:
+            matched_cat = existing_cats[0]
+
         if not matched_cat:
             matched_cat = "Other"
 
-        # Copy to category directory with path traversal guard
-        safe_cat = sanitize_path(md_base, matched_cat)
+        # Normalize category name as well
+        norm_cat = normalize_name(matched_cat)
+        safe_cat = sanitize_path(md_base, norm_cat)
         if safe_cat is None:
-            log(f"  [SKIP] Unsafe category: {matched_cat} for {doc.name}")
+            log(f"  [SKIP] Unsafe category: {norm_cat} for {doc.name}")
             continue
         safe_cat.mkdir(exist_ok=True)
 
@@ -624,9 +966,7 @@ def process_update_folder(workspace):
             continue
 
         shutil.copy2(doc, dest)
-        log(f"  {doc.name} -> {matched_cat}/")
-
-        # Incremental convert
+        log(f"  {doc.name} -> {norm_cat}/")
         convert_single(dest, dest.with_suffix(""))
 
     # Clear update folder
@@ -651,17 +991,22 @@ def main():
         print("  python batch_convert.py run <workspace>")
         print("  python batch_convert.py process <workspace>")
         print()
+        print("Directory structure / 目录结构:")
+        print(f"  {RAW_DIR}/          - Original documents / 原始文档")
+        print(f"  {DOCS_MD_DIR}/     - Converted Markdown / Markdown文档")
+        print(f"  {UPDATE_DIR}/       - New document drop zone / 新文档入口")
+        print(f"  {KNOWLEDGE_BASE_FILE} - Knowledge base / 知识库")
+        print(f"  {CONVERT_LOG_FILE} - Conversion log / 转换日志")
+        print()
         print("  --mode 1  Keep original structure (default) / 保持原有目录结构（默认）")
         print("  --mode 2  Auto-analyze & categorize / 系统自动分析创建分类")
         sys.exit(1)
 
     mode = sys.argv[1].lower()
-    # Extract workspace (skip --mode and its value)
     args = [a for i, a in enumerate(sys.argv[2:], 2)
             if not (a == "--mode" or (i > 2 and sys.argv[i-1] == "--mode"))]
     workspace = Path(args[0]).resolve() if args else Path.cwd()
 
-    # Validate workspace
     workspace = validate_workspace(workspace)
 
     if mode == "init":
