@@ -3,9 +3,15 @@
   "slug": "agentic-wallet",
   "displayName": "Agentic Wallet",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775028714146,
-    "commit": "https://github.com/openclaw/skills/commit/b6e5121e28a4ae8a3c332cf06fd8ba602646fcde"
+    "version": "1.0.2",
+    "publishedAt": 1775107302549,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775028714146,
+      "commit": "https://github.com/openclaw/skills/commit/b6e5121e28a4ae8a3c332cf06fd8ba602646fcde"
+    }
+  ]
 }
