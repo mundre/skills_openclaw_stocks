@@ -111,10 +111,20 @@ v0 list [options]
 
 ## Automation / Agent Workflow
 
+> **IMPORTANT — `v0 create` timeout handling:**
+> `v0 create` can take a long time to complete and **may time out** before returning output.
+> If the command times out or the output is lost:
+> - **Do NOT rerun `v0 create`** — the project may already have been created.
+> - Run `v0 list` to check if the chat was created, then use its `chatId` to continue.
+
 ```bash
 # 1. Create a site, capture chatId
 output=$(v0 create "A portfolio site with dark theme" --no-open 2>&1)
 chatId=$(echo "$output" | grep "Chat ID:" | awk '{print $NF}')
+
+# If chatId is empty (timeout / lost output), check if it was already created:
+# v0 list --limit 5
+# Then extract the chatId manually from the list output.
 
 # 2. Send refinement messages
 v0 chat "$chatId" "Add a contact form section"
