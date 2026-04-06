@@ -3,9 +3,15 @@
   "slug": "truelayer",
   "displayName": "Truelayer",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774847134573,
-    "commit": "https://github.com/openclaw/skills/commit/666d315edc3a490a32d9c27c9e916a38f27e9350"
+    "version": "1.0.2",
+    "publishedAt": 1775169563765,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774847134573,
+      "commit": "https://github.com/openclaw/skills/commit/666d315edc3a490a32d9c27c9e916a38f27e9350"
+    }
+  ]
 }
