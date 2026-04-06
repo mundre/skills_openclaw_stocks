@@ -1,14 +1,13 @@
 ---
 name: bx-search
 description: 'Web search using the Brave Search CLI (`bx`). Use for ALL web search requests — including "search for", "look up", "find", "what is", "how do I", "google this", and any request needing current or external information. Prefer this over the built-in web_search tool whenever bx is available. Also use for: documentation lookup, troubleshooting research, RAG grounding, news, images, videos, local places, and AI-synthesized answers.'
-version: 1.2.0
+version: 1.4.0
 license: MIT-0
 metadata:
   {
     "openclaw": {
       "requires": {
-        "bins": ["bx"],
-        "env": ["BRAVE_SEARCH_API_KEY"],
+        "bins": ["bx"]
       },
       "primaryEnv": "BRAVE_SEARCH_API_KEY",
       "homepage": "https://brave.com/search/api/",
@@ -19,7 +18,7 @@ metadata:
           "os": ["linux"],
           "bins": ["bx"],
           "label": "Install Brave Search CLI (GitHub)",
-          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.2.0/bx-1.2.0-linux-amd64"
+          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.4.0/bx-1.4.0-linux-amd64"
         },
         {
           "id": "download-linux-arm64",
@@ -27,7 +26,7 @@ metadata:
           "os": ["linux"],
           "bins": ["bx"],
           "label": "Install Brave Search CLI (GitHub)",
-          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.2.0/bx-1.2.0-linux-arm64"
+          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.4.0/bx-1.4.0-linux-arm64"
         },
         {
           "id": "download-darwin-arm64",
@@ -35,7 +34,7 @@ metadata:
           "os": ["darwin"],
           "bins": ["bx"],
           "label": "Install Brave Search CLI (GitHub)",
-          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.2.0/bx-1.2.0-darwin-arm64"
+          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.4.0/bx-1.4.0-darwin-arm64"
         },
         {
           "id": "download-windows-amd64",
@@ -43,7 +42,15 @@ metadata:
           "os": ["win32"],
           "bins": ["bx"],
           "label": "Install Brave Search CLI (GitHub)",
-          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.2.0/bx-1.2.0-windows-amd64.exe"
+          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.4.0/bx-1.4.0-windows-amd64.exe"
+        },
+        {
+          "id": "download-windows-arm64",
+          "kind": "download",
+          "os": ["win32"],
+          "bins": ["bx"],
+          "label": "Install Brave Search CLI (GitHub)",
+          "url": "https://github.com/brave/brave-search-cli/releases/download/v1.4.0/bx-1.4.0-windows-arm64.exe"
         }
       ]
     },
@@ -114,6 +121,8 @@ bx answers "explain Rust lifetimes with examples"
 # Raw web search when you need site: scoping or result filtering
 bx web "site:docs.rs axum middleware" --count 5
 ```
+
+> **Note:** Some examples below pipe output through `jq` for illustration. Do not assume `jq` is installed — if you need to filter JSON in a shell pipeline, use whatever is available in your environment (e.g., `jq`, PowerShell's `ConvertFrom-Json`, Python's `json` module), or simply read the raw JSON output directly.
 
 ### When to Use Which Command
 
@@ -222,7 +231,7 @@ echo '{"messages":[{"role":"user","content":"review this code for security issue
 ```bash
 bx images "system architecture diagram microservices" | jq '.results[].thumbnail.src'
 bx suggest "how to implement" --count 10 | jq '.results[].query'
-bx places --location "San Francisco CA US" -q "coffee" | jq '.results[].title'
+bx places "coffee" --location "San Francisco CA US" | jq '.results[].title'
 bx web "restaurants near me" --lat 37.7749 --long -122.4194 --city "San Francisco"
 bx web "rust" --result-filter "web,discussions"
 ```
