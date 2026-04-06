@@ -1,90 +1,90 @@
 ---
-name: coding-workflow
+name: code-workflow
 depends-on: [skill-toolkit, tdd]
 description: |
-  코드 변경 작업의 리서치→계획→사용자 리뷰→구현(TDD) 4단계 워크플로우. 이슈 구현, fix_plan 항목, 신규 기능 추가 등 코드 변경이 필요한 모든 작업에 적용. 구현 단계에서 TDD(Red→Green→Refactor)가 기본 적용되며, 사용자가 --no-tdd로 opt-out 가능.
-  "코딩 워크플로우", "research plan implement", "리서치 먼저", "계획 작성", "plan md", "사용자 리뷰", "구현 전 리뷰", "코드 계획", "구현 절차", "research md", "coding workflow" 시 사용.
+  4-stage workflow for code changes: research → plan → user review → implement (TDD). Applies to all tasks requiring code changes: issue implementation, fix_plan items, new feature additions. TDD (Red→Green→Refactor) is applied by default in the implementation stage; users can opt out with --no-tdd.
+  Use when: "coding workflow", "research plan implement", "research first", "write plan", "plan md", "user review", "review before implement", "code plan", "implementation process", "research md", "code changes".
 ---
 
 # Coding Workflow
 
-코드 변경 작업에 적용하는 **리서치 → 계획 → 사용자 리뷰 → 구현** 4단계 절차.
+A **Research → Plan → User Review → Implement** 4-stage procedure for code change tasks.
 
-단순 설정 변경, 1~2줄 수정 등 trivial한 작업은 생략 가능.
+Trivial tasks such as simple configuration changes or 1~2 line edits may skip this workflow.
 
-## 단계별 절차
+## Step-by-Step Procedure
 
-### 1단계: 리서치 (코드베이스 읽기)
+### Step 1: Research (Read the Codebase)
 
-관련 코드를 **깊이** 읽고 이해한 뒤, 발견한 내용을 `.ralph/docs/generated/research-<task>.md`에 작성.
+Read and understand the relevant code **deeply**, then write findings to `.ralph/docs/generated/research-<task>.md`.
 
-- 파일 하나 읽고 시그니처 수준에서 넘기지 말 것
-- 기존 레이어, ORM 관계, 중복 API 여부까지 파악
-- **기존 테스트 파일 탐색 필수**: 관련 `*.test.*`, `*.spec.*` 파일을 찾아 어떤 케이스가 이미 커버되는지 파악
-- 채팅 응답으로 요약하지 말고 **반드시 파일로 작성**
+- Do not skim a file and move on at the signature level
+- Understand existing layers, ORM relationships, and duplicate API presence
+- **Mandatory exploration of existing test files**: Find related `*.test.*`, `*.spec.*` files and understand what cases are already covered
+- Do not summarize in chat — **always write to a file**
 
-### 2단계: 계획 (Plan MD 작성)
+### Step 2: Plan (Write Plan MD)
 
-`.ralph/docs/generated/plan-<task>.md`에 상세 구현 계획 작성.
+Write a detailed implementation plan in `.ralph/docs/generated/plan-<task>.md`.
 
-포함 사항:
-- 접근 방식 상세 설명
-- 실제 변경사항을 보여주는 코드 스니펫
-- 수정될 파일 경로 목록
-- 고려 사항 / 트레이드오프
+Include:
+- Detailed description of the approach
+- Code snippets showing actual changes
+- List of file paths to be modified
+- Considerations / trade-offs
 
-### 3단계: 사용자 리뷰 (User Review)
+### Step 3: User Review
 
-계획 MD 작성 후 **STATUS: BLOCKED** 보고하고 사용자 리뷰를 기다린다.
+After writing the plan MD, report **STATUS: BLOCKED** and wait for user review.
 
-보고 내용:
-- 계획 파일 경로: `.ralph/docs/generated/plan-<task>.md`
-- 변경 파일 수, 수정 범위 요약
+Report content:
+- Plan file path: `.ralph/docs/generated/plan-<task>.md`
+- Number of changed files, summary of modification scope
 
-사용자가 확인할 항목:
-- 접근 방식이 적절한가?
-- 수정 범위가 이슈/PR 범위 안에 있는가?
-- 기존 패턴/컨벤션과 맞는가?
+Items for the user to verify:
+- Is the approach appropriate?
+- Is the modification scope within the issue/PR scope?
+- Does it match existing patterns/conventions?
 
-사용자 피드백 시 → 계획 수정 후 재리뷰. 승인 시 → 4단계 진행.
+On user feedback → revise plan and re-review. On approval → proceed to step 4.
 
-### 4단계: 구현 (TDD 기본 적용)
+### Step 4: Implement (TDD applied by default)
 
-계획이 승인되면 **tdd 스킬의 cycle 토픽** (Red→Green→Refactor) 방식으로 구현한다.
-구현 완료 후 **tdd 스킬의 run 토픽**으로 테스트를 실행하고 결과를 보고한다.
+Once the plan is approved, implement using the **tdd skill's cycle topic** (Red→Green→Refactor).
+After implementation, run tests using the **tdd skill's run topic** and report results.
 
-**TDD opt-out:** 사용자가 `--no-tdd`를 명시하면 테스트 없이 구현만 진행.
+**TDD opt-out:** If the user specifies `--no-tdd`, implement without tests.
 
-**구현 완료 후 커밋**: 빌드 + 테스트 통과하면 커밋까지 진행. 커밋 여부를 사용자에게 묻지 않음. 기존 관련 커밋이 있으면 amend 여부를 `AskUserQuestion`으로 확인.
+**Commit after implementation**: If build + tests pass, proceed to commit. Do not ask the user whether to commit. If a related existing commit exists, confirm whether to amend via `AskUserQuestion`.
 
-기타:
-- 작업/단계 완료 시 fix_plan.md에서 `[x]`로 표시
-- 모든 단계 완료될 때까지 멈추지 말 것
-- unknown 타입 사용 금지
-- 구현 중 타입 체크 지속 실행 (`pnpm typecheck` 또는 `tsc --noEmit`)
-- 새로운 타입 에러를 만들지 말 것
+Other:
+- Mark completed tasks/steps as `[x]` in fix_plan.md
+- Do not stop until all steps are complete
+- Do not use `unknown` types
+- Continuously run type checks during implementation (`pnpm typecheck` or `tsc --noEmit`)
+- Do not introduce new type errors
 
-## 잘못된 방향일 때
+## When Going in the Wrong Direction
 
-패치로 누더기 만들지 말고 되돌린 뒤 범위를 좁혀서 재시작.
+Do not patch over a bad approach — revert and restart with a narrower scope.
 
 ```bash
-cmd /c git checkout -- <files>   # 변경사항 되돌리기
+cmd /c git checkout -- <files>   # revert changes
 ```
 
-계획을 수정하고 3단계(사용자 리뷰)부터 재시작.
+Revise the plan and restart from step 3 (user review).
 
-## 작업 복잡도별 적용 기준
+## Applicability by Task Complexity
 
-| 작업 복잡도 | 적용 범위 |
-|------------|----------|
-| trivial (1~2줄 수정, 설정값 변경) | 생략 가능 — 바로 구현 |
-| moderate (3~10 파일, 로직 변경) | 2단계(계획)부터 시작 |
-| complex (10+ 파일, 새 기능, 아키텍처 변경) | 1단계(리서치)부터 전체 수행 |
+| Task Complexity | Scope |
+|----------------|-------|
+| trivial (1~2 line edits, config value changes) | Can be skipped — implement directly |
+| moderate (3~10 files, logic changes) | Start from step 2 (plan) |
+| complex (10+ files, new features, architecture changes) | Perform all steps from step 1 (research) |
 
-## 자가개선
+## Self-Improvement
 
-이 스킬 호출 완료 후, **대화를 기반으로 자가개선**:
+After this skill invocation completes, **self-improve based on the conversation**:
 
-1. 대화에서 이 스킬의 한계·실패·우회 패턴 탐지
-2. 개선 후보 발견 시 `/skill-toolkit upgrade coding-workflow` 실행
+1. Detect limitations, failures, and workaround patterns for this skill in the conversation
+2. If improvement candidates are found, run `/skill-toolkit upgrade coding-workflow`
