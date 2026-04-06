@@ -3,9 +3,15 @@
   "slug": "keep-accounts",
   "displayName": "Family Account Book 家庭财务记账",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1775097844665,
-    "commit": "https://github.com/openclaw/skills/commit/1e4a344d269eb05a3e9b2466dadff3dbee220c01"
+    "version": "2.1.0",
+    "publishedAt": 1775408029812,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1775097844665,
+      "commit": "https://github.com/openclaw/skills/commit/1e4a344d269eb05a3e9b2466dadff3dbee220c01"
+    }
+  ]
 }
