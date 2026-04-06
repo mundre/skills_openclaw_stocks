@@ -3,11 +3,16 @@
   "slug": "jian-ziji",
   "displayName": "见自己",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1774928181645,
-    "commit": "https://github.com/openclaw/skills/commit/4abfd57de19eb54f7f289925e5faa4b495a54ca8"
+    "version": "1.0.3",
+    "publishedAt": 1775360157128,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1774928181645,
+      "commit": "https://github.com/openclaw/skills/commit/4abfd57de19eb54f7f289925e5faa4b495a54ca8"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774496127995,
