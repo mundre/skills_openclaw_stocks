@@ -1,6 +1,6 @@
 ---
 name: pdf-to-html
-description: "PDF to HTML - convert PDF files to HTML using MinerU. Use when you need HTML output from a PDF document."
+description: "Convert PDF documents to HTML using MinerU. Transforms PDF files into web-ready HTML with structure and formatting preserved. Features: PDF to HTML conversion with layout preservation. Handles text, tables, images, and formatting. Supports local files and URLs. Token-based extraction for full features. Use when you need to: convert a PDF to HTML, turn a PDF into a web page, generate HTML from a PDF document, publish PDF content on the web. Use when asked: 'how do I convert PDF to HTML', 'turn this PDF into HTML', 'I want to view this PDF as a web page', 'can my agent convert PDF to HTML', 'is there a skill for PDF to HTML conversion'. Built on MinerU by OpenDataLab (Shanghai AI Lab), an open-source document intelligence engine. Perfect for web publishers, content teams, and developers who need to convert PDF documents into HTML for web display, CMS integration, or online archives."
 homepage: https://mineru.net
 metadata: {"openclaw": {"emoji": "📄", "requires": {"bins": ["mineru-open-api"], "env": ["MINERU_TOKEN"]}, "primaryEnv": "MINERU_TOKEN", "install": [{"id": "npm", "kind": "node", "package": "mineru-open-api", "bins": ["mineru-open-api"], "label": "Install via npm"}, {"id": "go", "kind": "go", "package": "github.com/opendatalab/MinerU-Ecosystem/cli/mineru-open-api", "bins": ["mineru-open-api"], "label": "Install via go install", "os": ["darwin", "linux"]}]}}
 ---

@@ -1,11 +1,17 @@
 {
   "owner": "mzlzyca",
   "slug": "pdf-to-html",
-  "displayName": "pdf-to-html",
+  "displayName": "PDF to HTML",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775026888893,
-    "commit": "https://github.com/openclaw/skills/commit/0403ded28df5d2bcc6f56b5c898e818248111157"
+    "version": "0.4.0",
+    "publishedAt": 1775210327208,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775026888893,
+      "commit": "https://github.com/openclaw/skills/commit/0403ded28df5d2bcc6f56b5c898e818248111157"
+    }
+  ]
 }
