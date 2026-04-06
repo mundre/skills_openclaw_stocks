@@ -3,11 +3,16 @@
   "slug": "ccdb",
   "displayName": "ccdb",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1774928441138,
-    "commit": "https://github.com/openclaw/skills/commit/ceb22af7c45d800100c21c1a97000ee8d14ce685"
+    "version": "0.1.2",
+    "publishedAt": 1774958602863,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1774928441138,
+      "commit": "https://github.com/openclaw/skills/commit/ceb22af7c45d800100c21c1a97000ee8d14ce685"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1774443666238,
