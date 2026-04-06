@@ -3,9 +3,15 @@
   "slug": "tinfoil-security",
   "displayName": "Tinfoil Security",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774847149889,
-    "commit": "https://github.com/openclaw/skills/commit/47169f83f0bd4ed15765c1aff294636275322677"
+    "version": "1.0.2",
+    "publishedAt": 1775169567714,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774847149889,
+      "commit": "https://github.com/openclaw/skills/commit/47169f83f0bd4ed15765c1aff294636275322677"
+    }
+  ]
 }
