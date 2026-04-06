@@ -23,6 +23,33 @@ uv run --project . daily-strava-roast roast --tone playful --spice 3
 uv run --project . daily-strava-roast summary --json --pretty
 ```
 
+## Strava auth behaviour
+
+This CLI is designed to be hands-off after initial setup.
+
+Canonical config locations:
+- app credentials: `~/.openclaw/secure/strava_app.json`
+- tokens: `~/.openclaw/workspace/agents/tars-fit/strava_tokens.json`
+
+Expected behaviour:
+- if the token file exists and includes a valid `refresh_token`, expired access tokens are refreshed automatically
+- if the activity fetch still returns `401`, the CLI forces one refresh and retries once
+- if there is no token file, invalid token JSON, or required token fields are missing, the CLI returns `status: initial_setup_required`
+- if the token file exists but app credentials are missing/incomplete, the CLI returns `status: config_incomplete`
+- if refresh still fails after setup exists, the CLI returns `status: reauth_required`
+
+Operational guidance:
+- prefer the secure JSON config over shell startup files or ad hoc sourced env vars
+- treat `~/.openclaw/secure/strava_app.json` as the one canonical place for Strava app credentials
+- both the packaged CLI and the legacy script should read from that secure config by default
+- do not commit secrets or token files
+
+That gives an agent a reliable machine-readable split between:
+- **first-time setup needed**
+- **app config incomplete**
+- **manual reauthorisation needed**
+- **temporary Strava/network failure**
+
 ## Why it exists
 
 There are already serious Strava integration and coaching skills.
@@ -40,6 +67,10 @@ That keeps the implementation, local use, and eventual publication aligned in on
 ## Features
 
 - fetch recent Strava activity from a token file
+- automatically refresh expired Strava access tokens using the stored refresh token
+- retry once after a Strava 401 before giving up
+- return a clear `initial_setup_required` status when first-time Strava setup is missing or incomplete
+- return a clear `reauth_required` status when manual reauthorisation is needed
 - target the local calendar day for daily roasts so no-activity days behave correctly
 - summarize the day instead of dumping raw activity lines
 - generate compact narrative roasts
@@ -53,7 +84,6 @@ That keeps the implementation, local use, and eventual publication aligned in on
 ## Repo structure
 
 - `SKILL.md` — agent instructions
-- `scripts/strava_roast.py` — bundled script used by the skill
 - `src/daily_strava_roast/cli.py` — packaged CLI entrypoint
 - `references/design.md` — design notes and roast heuristics
 - `tests/smoke_test.py` — fixture-based smoke test
@@ -78,15 +108,6 @@ V2 staging note:
 - `roast` remains deterministic in the packaged CLI
 - connected/default-model generation belongs to the OpenClaw runtime skill layer, not the standalone package CLI
 - the intended runtime flow is: `context` -> `prompt` -> connected model paragraph -> fallback to deterministic `roast` when needed
-
-## Script usage
-
-```bash
-python scripts/strava_roast.py roast
-python scripts/strava_roast.py roast --tone playful --spice 3
-python scripts/strava_roast.py roast --tone dry --spice 1
-python scripts/strava_roast.py summary --json --pretty
-```
 
 ## Example output
 
