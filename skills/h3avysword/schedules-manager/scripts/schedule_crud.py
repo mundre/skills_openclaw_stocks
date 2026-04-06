@@ -2,14 +2,15 @@
 
 import argparse
 import csv
-import re
+import os
 import sys
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
 SCHEDULES_DIR = Path("schedules")
+CSV_PATH = SCHEDULES_DIR / "schedule.csv"
 FIELDS = ["id", "task", "deadline", "priority", "reminder", "note"]
-CHAT_ID_PATTERN = re.compile(r'^[A-Za-z0-9._-]+$')
 VALID_PRIORITIES = {"P0", "P1", "P2", "P3"}
 PRIORITY_LABELS = {
     "P0": "P0 — 重要且紧急",
@@ -20,42 +21,32 @@ PRIORITY_LABELS = {
 WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
 
-def validate_chat_id(chat_id):
-    if not chat_id or not CHAT_ID_PATTERN.match(chat_id):
-        print(f"错误: chat_id 包含非法字符，仅允许字母、数字、点、下划线和连字符: {chat_id}")
-        sys.exit(1)
-
-
-def get_csv_path(chat_id):
-    validate_chat_id(chat_id)
-    csv_path = (SCHEDULES_DIR / f"{chat_id}.csv").resolve()
-    schedules_root = SCHEDULES_DIR.resolve()
-    if not csv_path.is_relative_to(schedules_root):
-        print(f"错误: 非法路径: {chat_id}")
-        sys.exit(1)
-    return csv_path
-
-
-def ensure_csv(csv_path):
-    csv_path.parent.mkdir(parents=True, exist_ok=True)
-    if not csv_path.exists():
-        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+def ensure_csv():
+    CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not CSV_PATH.exists():
+        with open(CSV_PATH, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=FIELDS)
             writer.writeheader()
 
 
-def read_all(csv_path):
-    ensure_csv(csv_path)
-    with open(csv_path, "r", encoding="utf-8") as f:
+def read_all():
+    ensure_csv()
+    with open(CSV_PATH, "r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
-def write_all(csv_path, rows):
-    ensure_csv(csv_path)
-    with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDS)
-        writer.writeheader()
-        writer.writerows(rows)
+def write_all(rows):
+    ensure_csv()
+    fd, tmp_path = tempfile.mkstemp(dir=SCHEDULES_DIR, suffix=".csv.tmp")
+    try:
+        with os.fdopen(fd, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
+        os.replace(tmp_path, CSV_PATH)
+    except BaseException:
+        os.unlink(tmp_path)
+        raise
 
 
 def next_id(rows):
@@ -63,11 +54,6 @@ def next_id(rows):
         return 1
     return max(int(r["id"]) for r in rows) + 1
 
-
-def reindex(rows):
-    for i, r in enumerate(rows, 1):
-        r["id"] = str(i)
-    return rows
 
 
 def format_deadline_short(deadline_str):
@@ -161,10 +147,10 @@ def format_list(rows, title="日程表"):
         if not p_rows:
             lines.append("  (暂无)")
         else:
-            for i, r in enumerate(p_rows, 1):
+            for r in p_rows:
                 ddl = format_deadline_short(r["deadline"])
                 reminder_mark = " [已设提醒]" if r.get("reminder") == "Y" else ""
-                lines.append(f"  {i}. {r['task']}{reminder_mark}")
+                lines.append(f"  #{r['id']}. {r['task']}{reminder_mark}")
                 lines.append(f"     DDL: {ddl}")
                 if r.get("note"):
                     lines.append(f"     备注: {r['note']}")
@@ -184,8 +170,7 @@ def cmd_add(args):
         print(f"错误: 优先级必须是 P0/P1/P2/P3，收到: {args.priority}")
         sys.exit(1)
 
-    csv_path = get_csv_path(args.chat_id)
-    rows = read_all(csv_path)
+    rows = read_all()
     new_row = {
         "id": str(next_id(rows)),
         "task": args.task,
@@ -195,13 +180,12 @@ def cmd_add(args):
         "note": args.note or "",
     }
     rows.append(new_row)
-    write_all(csv_path, rows)
+    write_all(rows)
     print(f"已添加任务 #{new_row['id']} 到 {args.priority}: {args.task}")
 
 
 def cmd_list(args):
-    csv_path = get_csv_path(args.chat_id)
-    rows = read_all(csv_path)
+    rows = read_all()
 
     if args.today:
         rows = filter_rows(rows, today=True)
@@ -231,8 +215,7 @@ def cmd_list(args):
 
 
 def cmd_update(args):
-    csv_path = get_csv_path(args.chat_id)
-    rows = read_all(csv_path)
+    rows = read_all()
     target = None
     for r in rows:
         if r["id"] == str(args.id):
@@ -267,14 +250,13 @@ def cmd_update(args):
         print("错误: 未指定要更新的字段")
         sys.exit(1)
 
-    write_all(csv_path, rows)
+    write_all(rows)
     fields = "、".join(updated)
     print(f"已更新任务 #{args.id}「{target['task']}」的{fields}")
 
 
 def cmd_delete(args):
-    csv_path = get_csv_path(args.chat_id)
-    rows = read_all(csv_path)
+    rows = read_all()
     target = None
     for r in rows:
         if r["id"] == str(args.id):
@@ -287,8 +269,7 @@ def cmd_delete(args):
 
     task_name = target["task"]
     rows = [r for r in rows if r["id"] != str(args.id)]
-    rows = reindex(rows)
-    write_all(csv_path, rows)
+    write_all(rows)
     print(f"已删除任务「{task_name}」，剩余 {len(rows)} 项")
 
 
@@ -298,7 +279,6 @@ def main():
 
     # add
     p_add = sub.add_parser("add")
-    p_add.add_argument("--chat-id", required=True)
     p_add.add_argument("--task", required=True)
     p_add.add_argument("--deadline", default="")
     p_add.add_argument("--priority", required=True)
@@ -306,7 +286,6 @@ def main():
 
     # list
     p_list = sub.add_parser("list")
-    p_list.add_argument("--chat-id", required=True)
     p_list.add_argument("--today", action="store_true")
     p_list.add_argument("--tomorrow", action="store_true")
     p_list.add_argument("--week", action="store_true")
@@ -317,7 +296,6 @@ def main():
 
     # update
     p_update = sub.add_parser("update")
-    p_update.add_argument("--chat-id", required=True)
     p_update.add_argument("--id", type=int, required=True)
     p_update.add_argument("--task", default=None)
     p_update.add_argument("--deadline", default=None)
@@ -327,7 +305,6 @@ def main():
 
     # delete
     p_delete = sub.add_parser("delete")
-    p_delete.add_argument("--chat-id", required=True)
     p_delete.add_argument("--id", type=int, required=True)
 
     args = parser.parse_args()

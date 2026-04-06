@@ -5,9 +5,7 @@ description: 管理用户日程与任务安排。用于以下场景：(1) 用户
 
 # 日程管理
 
-通过脚本管理用户日程。每个会话的日程数据存储在 `schedules/{chat_id}.csv`，通过 `--chat-id` 参数隔离不同会话的日程。
-
-后续所有 `$SCRIPT` 均指 `skills/schedule-manager/scripts/schedule_crud.py`，所有命令必须携带 `--chat-id`。
+通过脚本管理用户日程。日程数据存储在工作目录下的 `schedules/schedule.csv`。
 
 ## 优先级分类
 
@@ -24,42 +22,36 @@ description: 管理用户日程与任务安排。用于以下场景：(1) 用户
 
 所有日程操作通过 Bash 执行。
 
+### 添加日程
+
+```bash
+python {baseDir}/scripts/schedule_crud.py add --task "任务名" --deadline "YYYY-MM-DD HH:mm" --priority P0 [--note "备注"]
 ```
-SCRIPT=skills/schedule-manager/scripts/schedule_crud.py
 
-# 添加日程
-python $SCRIPT add --chat-id "会话ID" --task "任务名" --deadline "YYYY-MM-DD HH:mm" --priority P0 [--note "备注"]
-  --chat-id   必填，当前会话ID
-  --task      必填，任务描述
-  --deadline  可选，截止时间，格式 "YYYY-MM-DD HH:mm" 或 "YYYY-MM-DD"
-  --priority  必填，P0/P1/P2/P3
-  --note      可选，备注信息
+- `--task` 必填，任务描述
+- `--deadline` 可选，格式 `YYYY-MM-DD HH:mm` 或 `YYYY-MM-DD`
+- `--priority` 必填，P0/P1/P2/P3
+- `--note` 可选，备注信息
 
-# 查看日程
-python $SCRIPT list --chat-id "会话ID" [--today] [--tomorrow] [--week] [--next-week] [--month] [--next-month] [--priority P0]
-  --chat-id    必填，当前会话ID
-  --today      可选，只显示今日任务
-  --tomorrow   可选，只显示明日任务
-  --week       可选，只显示本周任务
-  --next-week  可选，只显示下周任务
-  --month      可选，只显示本月任务
-  --next-month 可选，只显示下月任务
-  --priority   可选，按优先级筛选，P0/P1/P2/P3
+### 查看日程
 
-# 更新日程
-python $SCRIPT update --chat-id "会话ID" --id 1 [--task "..."] [--deadline "..."] [--priority P0] [--reminder Y] [--note "..."]
-  --chat-id   必填，当前会话ID
-  --id        必填，任务ID
-  --task      可选，新任务名
-  --deadline  可选，新截止时间
-  --priority  可选，新优先级
-  --reminder  可选，Y/N，标记是否已设置cron提醒
-  --note      可选，新备注
+```bash
+python {baseDir}/scripts/schedule_crud.py list [--today] [--tomorrow] [--week] [--next-week] [--month] [--next-month] [--priority P0]
+```
 
-# 删除日程（完成即删除）
-python $SCRIPT delete --chat-id "会话ID" --id 1
-  --chat-id   必填，当前会话ID
-  --id        必填，任务ID
+### 更新日程
+
+```bash
+python {baseDir}/scripts/schedule_crud.py update --id 1 [--task "..."] [--deadline "..."] [--priority P0] [--reminder Y] [--note "..."]
+```
+
+- `--id` 必填，任务ID
+- 其余字段可选，按需传入
+
+### 删除日程
+
+```bash
+python {baseDir}/scripts/schedule_crud.py delete --id 1
 ```
 
 ## 任务路由
@@ -80,36 +72,36 @@ python $SCRIPT delete --chat-id "会话ID" --id 1
 
 1. 收集任务信息（名称、DDL、备注）；若用户提供多条任务，一并收集
 2. 按优先级分类，向用户确认
-3. 逐条执行 `python $SCRIPT add --chat-id {chat_id} --task "..." --priority P0 [--deadline "..."] [--note "..."]`
-4. 执行 `python $SCRIPT list --chat-id {chat_id}` 获取完整日程
+3. 逐条执行 `python {baseDir}/scripts/schedule_crud.py add --task "..." --priority P0 [--deadline "..."] [--note "..."]`
+4. 执行 `python {baseDir}/scripts/schedule_crud.py list` 获取完整日程
 5. 将脚本输出直接作为回复内容发送给用户
 6. → 进入「设置提醒」
 
 ### 查看日程
 
 1. 根据用户要求执行对应命令：
-   - 全部：`python $SCRIPT list --chat-id {chat_id}`
-   - 今日：`python $SCRIPT list --chat-id {chat_id} --today`
-   - 明日：`python $SCRIPT list --chat-id {chat_id} --tomorrow`
-   - 本周：`python $SCRIPT list --chat-id {chat_id} --week`
-   - 下周：`python $SCRIPT list --chat-id {chat_id} --next-week`
-   - 本月：`python $SCRIPT list --chat-id {chat_id} --month`
-   - 下月：`python $SCRIPT list --chat-id {chat_id} --next-month`
+   - 全部：`python {baseDir}/scripts/schedule_crud.py list`
+   - 今日：`python {baseDir}/scripts/schedule_crud.py list --today`
+   - 明日：`python {baseDir}/scripts/schedule_crud.py list --tomorrow`
+   - 本周：`python {baseDir}/scripts/schedule_crud.py list --week`
+   - 下周：`python {baseDir}/scripts/schedule_crud.py list --next-week`
+   - 本月：`python {baseDir}/scripts/schedule_crud.py list --month`
+   - 下月：`python {baseDir}/scripts/schedule_crud.py list --next-month`
 2. 将脚本输出直接作为回复内容发送给用户
 
 ### 修改日程
 
-1. 先执行 `python $SCRIPT list --chat-id {chat_id}` 展示当前日程
+1. 先执行 `python {baseDir}/scripts/schedule_crud.py list` 展示当前日程
 2. 确认用户要修改的任务 ID 和修改内容（任务名、DDL、优先级、备注）
-3. 执行 `python $SCRIPT update --chat-id {chat_id} --id X [--task "..."] [--deadline "..."] [--priority P0] [--note "..."]`
+3. 执行 `python {baseDir}/scripts/schedule_crud.py update --id X [--task "..."] [--deadline "..."] [--priority P0] [--note "..."]`
 4. 将脚本输出作为回复
 5. → 进入「设置提醒」
 
 ### 删除日程
 
-1. 先执行 `python $SCRIPT list --chat-id {chat_id}` 展示当前日程
+1. 先执行 `python {baseDir}/scripts/schedule_crud.py list` 展示当前日程
 2. 确认用户要删除的任务 ID
-3. 执行 `python $SCRIPT delete --chat-id {chat_id} --id X`
+3. 执行 `python {baseDir}/scripts/schedule_crud.py delete --id X`
 4. 将脚本输出作为回复
 
 ## 设置提醒（子流程）
@@ -121,11 +113,11 @@ python $SCRIPT delete --chat-id "会话ID" --id 1
 3. 用户确认 → 确认提醒时间（默认DDL前30分钟）
 4. 加载 `cron-mastery` skill，用 agentTurn + announce + isolated 模式创建提醒：
    - 消息格式：`DELIVER THIS EXACT MESSAGE TO THE USER WITHOUT MODIFICATION OR COMMENTARY:\n\n日程提醒: [任务名] 将在 [剩余时间] 后截止！`
-5. 执行 `python $SCRIPT update --chat-id {chat_id} --id X --reminder Y` 更新提醒状态
+5. 执行 `python {baseDir}/scripts/schedule_crud.py update --id X --reminder Y` 更新提醒状态
 6. 回复：「已为「任务名」设置 [时间] 的定时提醒。」
 
 ## 回复纪律
 
 - 脚本输出即回复内容，直接发送，不重新格式化
 - 安排/新增/修改后，只追加一句：「是否需要为任务设置定时提醒？」
-- 回复格式模板严格遵循 `skills/schedule-manager/references/templates.md`
+- 回复格式模板严格遵循 `{baseDir}/references/templates.md`
