@@ -34,7 +34,7 @@ def load_login_tokens() -> Optional[Dict[str, Any]]:
             return data
         return None
     except Exception as e:
-        print(f"加载登录态失败: {e}")
+        sys.stderr.write(f"加载登录态失败: {e}\n")
         return None
 
 
@@ -77,12 +77,14 @@ def make_request(url: str, cookies: Optional[Dict[str, str]] = None) -> Dict[str
         return {"error": str(e)}
 
 
-def search_products(keyword: str, page_offset: int = 0, price_min: Optional[int] = None, price_max: Optional[int] = None) -> Dict[str, Any]:
+def search_products(keyword: str, cookies: Dict[str, str], mars_cid: str, page_offset: int = 0, price_min: Optional[int] = None, price_max: Optional[int] = None) -> Dict[str, Any]:
     """
     搜索商品 - 获取商品ID列表
 
     Args:
         keyword: 搜索关键词
+        cookies: 登录态 cookies
+        mars_cid: 设备ID
         page_offset: 分页偏移量，默认为0
         price_min: 价格区间最小值，可选
         price_max: 价格区间最大值，可选
@@ -92,20 +94,8 @@ def search_products(keyword: str, page_offset: int = 0, price_min: Optional[int]
     """
     base_url = "https://mapi-pc.vip.com/vips-mobile/rest/shopping/skill/search/product/rank"
 
-    # 加载登录态
-    login_data = load_login_tokens()
-    cookies = {}
-    mars_cid = '1774322058326_d46d9ac188ea1b67c2092ccb067b1b54'  # 默认值
-
-    if login_data:
-        login_cookies = login_data.get('cookies', {})
-        if 'PASSPORT_ACCESS_TOKEN' in login_cookies:
-            cookies['PASSPORT_ACCESS_TOKEN'] = login_cookies['PASSPORT_ACCESS_TOKEN']
-        if 'mars_cid' in login_cookies:
-            mars_cid = login_cookies['mars_cid']
-
     params = {
-        'keyword': url_encode(keyword),
+        'keyword': keyword,
         'app_name': 'shop_pc',
         'app_version': '4.0',
         'warehouse': 'VIP_NH',
@@ -113,7 +103,7 @@ def search_products(keyword: str, page_offset: int = 0, price_min: Optional[int]
         'client': 'pc',
         'mobile_platform': '1',
         'province_id': '104104',
-        'api_key': '70f71280d5d547b2a7bb370a529aeea1',
+        'api_key': 'dafe77e7486f46eca2e17a256d3ce6b5',
         'mars_cid': mars_cid,
         'wap_consumer': 'c',
         'is_default_area': '0',
@@ -129,7 +119,7 @@ def search_products(keyword: str, page_offset: int = 0, price_min: Optional[int]
     if price_max is not None:
         params['priceMax'] = str(price_max)
 
-    url = f"{base_url}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
+    url = f"{base_url}?{urllib.parse.urlencode(params)}"
     response = make_request(url, cookies if cookies else None)
 
     if "error" in response:
@@ -155,33 +145,23 @@ def search_products(keyword: str, page_offset: int = 0, price_min: Optional[int]
     }
 
 
-def get_product_details(product_ids: List[str]) -> Dict[str, Any]:
+def get_product_details(product_ids: List[str], cookies: Dict[str, str], mars_cid: str) -> Dict[str, Any]:
     """
     获取商品详细信息
-    
+
     Args:
         product_ids: 商品ID列表
-        
+        cookies: 登录态 cookies
+        mars_cid: 设备ID
+
     Returns:
         商品详细信息
     """
     if not product_ids:
         return {"error": "没有商品ID"}
-    
+
     base_url = "https://mapi-pc.vip.com/vips-mobile/rest/shopping/skill/product/module/list/v2"
-    
-    # 加载登录态
-    login_data = load_login_tokens()
-    cookies = {}
-    mars_cid = '1774322058326_d46d9ac188ea1b67c2092ccb067b1b54'  # 默认值
-    
-    if login_data:
-        login_cookies = login_data.get('cookies', {})
-        if 'PASSPORT_ACCESS_TOKEN' in login_cookies:
-            cookies['PASSPORT_ACCESS_TOKEN'] = login_cookies['PASSPORT_ACCESS_TOKEN']
-        if 'mars_cid' in login_cookies:
-            mars_cid = login_cookies['mars_cid']
-    
+
     params = {
         'app_name': 'shop_pc',
         'app_version': '4.0',
@@ -190,16 +170,16 @@ def get_product_details(product_ids: List[str]) -> Dict[str, Any]:
         'client': 'pc',
         'mobile_platform': '1',
         'province_id': '104104',
-        'api_key': '70f71280d5d547b2a7bb370a529aeea1',
+        'api_key': 'dafe77e7486f46eca2e17a256d3ce6b5',
         'mars_cid': mars_cid,
         'is_default_area': '0',
         'productIds': ','.join(product_ids),
         'scene': 'search',
         'standby_id': 'nature',
-        'extParams': '%7B%22stdSizeVids%22%3A%22%22%2C%22preheatTipsVer%22%3A%223%22%2C%22couponVer%22%3A%22v2%22%2C%22exclusivePrice%22%3A%221%22%2C%22iconSpec%22%3A%222x%22%2C%22ic2label%22%3A1%2C%22superHot%22%3A1%2C%22bigBrand%22%3A%221%22%7D'
+        'extParams': '{"stdSizeVids":"","preheatTipsVer":"3","couponVer":"v2","exclusivePrice":"1","iconSpec":"2x","ic2label":1,"superHot":1,"bigBrand":"1"}'
     }
-    
-    url = f"{base_url}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
+
+    url = f"{base_url}?{urllib.parse.urlencode(params)}"
     response = make_request(url, cookies if cookies else None)
     
     if "error" in response:
@@ -217,11 +197,11 @@ def get_product_details(product_ids: List[str]) -> Dict[str, Any]:
 def format_product_detail(product: Dict[str, Any], index: int) -> Dict[str, Any]:
     """
     格式化单个商品详情为字典结构
-    
+
     Args:
         product: 商品数据
         index: 商品序号
-        
+
     Returns:
         商品信息字典
     """
@@ -229,10 +209,10 @@ def format_product_detail(product: Dict[str, Any], index: int) -> Dict[str, Any]
     brand_id = product.get("brandId", "")
     title = product.get("title", "")
     price = product.get("price", {})
-    
+
     # 构建商品链接
-    product_link = f"https://detail.vip.com/detail-{brand_id}-{product_id}.html"
-    
+    product_link = f"https://detail.vip.com/detail-{brand_id}-{product_id}.html?f=AIClaw"
+
     # 提取价格信息
     sale_price = price.get("salePrice", "")
     price_label = price.get("priceLabel", "价格")
@@ -240,13 +220,18 @@ def format_product_detail(product: Dict[str, Any], index: int) -> Dict[str, Any]
     sale_discount = price.get("saleDiscount", "")
     sell_tips = price.get("sellTips", "")
     brand = product.get("brandShowName", "")
-    
+
+    # 提取图片信息
+    small_image = product.get("smallImage", "")
+    square_image = product.get("squareImage", "")
+
     # 返回结构化数据
     return {
         "序号": index,
         "商品ID": product_id,
         "商品链接": product_link,
         "商品名": title,
+        "商品图片": small_image or square_image,
         "价格": sale_price,
         "原价": market_price,
         "折扣": sale_discount,
@@ -274,10 +259,23 @@ def search_vipshop(keyword: str, page_offset: int = 0, price_min: Optional[int] 
     # 检查登录态
     login_data = load_login_tokens()
     if login_data is None:
-        return {"error": "login_required", "message": "需要登录唯品会账户"}
+        return {
+            "error": "login_required",
+            "message": "需要登录唯品会账户",
+            "action": "请先登录唯品会账户后再搜索商品"
+        }
+
+    # 提取登录态信息
+    cookies = {}
+    mars_cid = ''
+    login_cookies = login_data.get('cookies', {})
+    if 'PASSPORT_ACCESS_TOKEN' in login_cookies:
+        cookies['PASSPORT_ACCESS_TOKEN'] = login_cookies['PASSPORT_ACCESS_TOKEN']
+    if 'mars_cid' in login_cookies:
+        mars_cid = login_cookies['mars_cid']
 
     # 步骤1: 搜索商品
-    search_result = search_products(keyword, page_offset, price_min, price_max)
+    search_result = search_products(keyword, cookies, mars_cid, page_offset, price_min, price_max)
 
     if "error" in search_result:
         # 检查是否是token过期
@@ -292,7 +290,7 @@ def search_vipshop(keyword: str, page_offset: int = 0, price_min: Optional[int] 
         return {"error": "未找到相关商品"}
 
     # 步骤2: 获取商品详情
-    detail_result = get_product_details(product_ids)
+    detail_result = get_product_details(product_ids, cookies, mars_cid)
 
     if "error" in detail_result:
         # 检查是否是token过期
@@ -353,12 +351,12 @@ def search_vipshop(keyword: str, page_offset: int = 0, price_min: Optional[int] 
 def main():
     """命令行入口 - 输出JSON格式数据"""
     if len(sys.argv) < 2:
-        print("用法: python search.py <搜索关键词> [--page-offset <偏移量>] [--price-min <最小价>] [--price-max <最大价>]")
-        print("示例: python search.py 连衣裙")
-        print("示例: python search.py 连衣裙 --page-offset 20")
-        print("示例: python search.py 连衣裙 -p 40")
-        print("示例: python search.py 连衣裙 --price-min 100 --price-max 300")
-        print("示例: python search.py 连衣裙 -p 20 --price-min 50 --price-max 200")
+        sys.stderr.write("用法: python search.py <搜索关键词> [--page-offset <偏移量>] [--price-min <最小价>] [--price-max <最大价>]\n")
+        sys.stderr.write("示例: python search.py 连衣裙\n")
+        sys.stderr.write("示例: python search.py 连衣裙 --page-offset 20\n")
+        sys.stderr.write("示例: python search.py 连衣裙 -p 40\n")
+        sys.stderr.write("示例: python search.py 连衣裙 --price-min 100 --price-max 300\n")
+        sys.stderr.write("示例: python search.py 连衣裙 -p 20 --price-min 50 --price-max 200\n")
         sys.exit(1)
 
     # 解析参数
@@ -375,21 +373,21 @@ def main():
                 page_offset = int(args[i + 1])
                 i += 2
             else:
-                print("错误: --page-offset 需要一个数值参数")
+                sys.stderr.write("错误: --page-offset 需要一个数值参数\n")
                 sys.exit(1)
         elif args[i] == '--price-min':
             if i + 1 < len(args):
                 price_min = int(args[i + 1])
                 i += 2
             else:
-                print("错误: --price-min 需要一个数值参数")
+                sys.stderr.write("错误: --price-min 需要一个数值参数\n")
                 sys.exit(1)
         elif args[i] == '--price-max':
             if i + 1 < len(args):
                 price_max = int(args[i + 1])
                 i += 2
             else:
-                print("错误: --price-max 需要一个数值参数")
+                sys.stderr.write("错误: --price-max 需要一个数值参数\n")
                 sys.exit(1)
         else:
             if keyword:
