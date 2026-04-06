@@ -1,10 +1,9 @@
 name: claw-wallet
 display_name: "Claw Wallet"
-version: 0.1.2
+version: 0.1.6
 required_env_vars:
   - CLAY_SANDBOX_URL
   - CLAY_AGENT_TOKEN
-  - AGENT_TOKEN
 primary_credential: CLAY_AGENT_TOKEN
 required_config_paths:
   - "skills/claw-wallet/.env.clay"
@@ -51,14 +50,14 @@ metadata:
     env:
       - name: CLAY_SANDBOX_URL
         description: "Base URL for the local Claw Wallet sandbox HTTP server."
-        required: false
+        required: true
         sensitive: false
       - name: CLAY_AGENT_TOKEN
         description: "Primary bearer token used for authenticated sandbox API calls."
-        required: false
+        required: true
         sensitive: true
       - name: AGENT_TOKEN
-        description: "Legacy alias for the same sandbox bearer token."
+        description: "Legacy alias for the same sandbox bearer token; accepted for backward compatibility."
         required: false
         sensitive: true
 
@@ -112,5 +111,5 @@ persistence:
 
 security_notes:
   - "Most /api/v1 routes require Authorization: Bearer <token>."
-  - "The skill reads local identity/config files to obtain sandbox connection details."
+  - "After install, the skill reads CLAY_SANDBOX_URL and the sandbox bearer token from .env.clay and may also read identity.json for the same token."
   - "The skill may direct the user to https://www.clawwallet.cc/claim/<uid> during wallet binding."
