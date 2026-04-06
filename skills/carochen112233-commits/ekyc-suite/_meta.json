@@ -1,11 +1,17 @@
 {
   "owner": "carochen112233-commits",
   "slug": "ekyc-suite",
-  "displayName": "eKYC Suite",
+  "displayName": "Ekyc Suite",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774944398858,
-    "commit": "https://github.com/openclaw/skills/commit/e44f84405acc02f37a1a48c005a8367a1b466168"
+    "version": "1.0.2",
+    "publishedAt": 1775115015924,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774944398858,
+      "commit": "https://github.com/openclaw/skills/commit/e44f84405acc02f37a1a48c005a8367a1b466168"
+    }
+  ]
 }
