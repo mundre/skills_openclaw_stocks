@@ -3,11 +3,16 @@
   "slug": "stockbuddy",
   "displayName": "StockBuddy",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1775064382511,
-    "commit": "https://github.com/openclaw/skills/commit/6253cad7a1abeb176efb63e3c993d9a8a3dc116d"
+    "version": "1.0.8",
+    "publishedAt": 1775440597986,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1775064382511,
+      "commit": "https://github.com/openclaw/skills/commit/6253cad7a1abeb176efb63e3c993d9a8a3dc116d"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1775021067361,
