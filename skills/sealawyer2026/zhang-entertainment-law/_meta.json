@@ -1,11 +1,17 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-entertainment-law",
-  "displayName": "Zhang Entertainment Law",
+  "displayName": "九章-娱乐传媒法律专家",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774666383143,
-    "commit": "https://github.com/openclaw/skills/commit/cb0fec63952b508bd8323934beaa8f3c33b07e9c"
+    "version": "1.5.0",
+    "publishedAt": 1775098747597,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774666383143,
+      "commit": "https://github.com/openclaw/skills/commit/cb0fec63952b508bd8323934beaa8f3c33b07e9c"
+    }
+  ]
 }
