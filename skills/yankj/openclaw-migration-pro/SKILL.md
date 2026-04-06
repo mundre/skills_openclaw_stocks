@@ -64,8 +64,8 @@ openclaw-migration-pro analyze ~/migration/
 ### 步骤 2: 打包（源电脑）
 
 ```bash
-# 打包所有数据
-openclaw-migration-pro pack --output ~/openclaw-pack/
+# 打包所有数据（默认 ZIP 格式 + 自动发送）
+openclaw-migration-pro pack --output ~/openclaw-pack.zip
 
 # 输出：
 # 📦 开始打包 OpenClaw...
@@ -73,9 +73,17 @@ openclaw-migration-pro pack --output ~/openclaw-pack/
 # 📦 打包 Memory... ✅ 1090 个文件
 # 📦 打包配置... ✅ 已打包
 # 📦 打包 Cron... ✅ 1 个
-# ✅ 打包完成：~/openclaw-pack/
+# 🗜️  正在压缩为 zip 格式...
+# ✅ 打包完成：~/openclaw-pack.zip
+# 📤 正在发送文件到当前频道...
 # 备份大小：61MB
 ```
+
+**打包选项：**
+- `--compress zip`（默认）：Mac/Windows 兼容格式
+- `--compress tar.gz`：Linux 推荐格式
+- `--no-send`：禁用自动发送
+- `--versioned`：带时间戳的版本化打包
 
 ### 步骤 3: 运输（用户手动）
 

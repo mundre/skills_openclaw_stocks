@@ -1,11 +1,17 @@
 {
   "owner": "yankj",
   "slug": "openclaw-migration-pro",
-  "displayName": "OpenClaw Migration Pro",
+  "displayName": "Openclaw Migration Pro",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1774604056813,
-    "commit": "https://github.com/openclaw/skills/commit/9fb1f850c11cafff39977c9a4d62dc47166e87f4"
+    "version": "1.1.1",
+    "publishedAt": 1774629051587,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1774604056813,
+      "commit": "https://github.com/openclaw/skills/commit/9fb1f850c11cafff39977c9a4d62dc47166e87f4"
+    }
+  ]
 }
