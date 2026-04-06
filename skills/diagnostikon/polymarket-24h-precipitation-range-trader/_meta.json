@@ -1,11 +1,17 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-24h-precipitation-range-trader",
-  "displayName": "24h Precipitation Range Trader",
+  "displayName": "Polymarket 24h Precipitation Range Trader",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774629492631,
-    "commit": "https://github.com/openclaw/skills/commit/1e46e9c006f5d0ebe675d276e0d2fa850348bd6b"
+    "version": "1.0.1",
+    "publishedAt": 1775316860057,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774629492631,
+      "commit": "https://github.com/openclaw/skills/commit/1e46e9c006f5d0ebe675d276e0d2fa850348bd6b"
+    }
+  ]
 }
