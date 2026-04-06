@@ -1,478 +1,485 @@
 ---
 name: project-analyzer
-version: 1.0.0
+version: 5.0.0
 description: |
-  项目文档生成器 - 自动分析项目并生成完整文档。
-  使用场景：(1) 新项目接入时生成架构文档 (2) 生成开发规范 (3) 分析数据库结构 (4) 对接 Apifox 自动测试 (5) 生成快速启动文档。
+  SDD 软件设计文档生成器 - 基于 Harness Engineering 模式构建受控环境。
+  核心理念：通过架构约束、上下文工程、反馈循环、熵管理，让 AI 在约束下高效可靠地生成文档。
+  使用场景：(1) 新项目接入时生成 SDD 文档 (2) 生成开发规范 (3) 分析数据库结构 (4) 对接 Apifox 自动测试。
   支持技术栈：Java/Spring Boot、Node.js、Python、Go、React/Vue 前端项目。
 metadata:
   openclaw:
     emoji: "📊"
+    requires:
+      bins:
+        - python3
 ---
 
-# Project Analyzer - 项目文档生成器
+# Project Analyzer - SDD 软件设计文档生成器
 
-自动分析项目结构，生成完整的项目文档体系。
+> **Harness Engineering 核心理念**：AI 是一匹拥有神力的独角兽，力量强大但难以预测。我们不是去拔掉它的角，而是为它打造"黄金缰绳"和"水晶马车"。
 
-## 🎯 核心功能
-
-### 1. 项目结构分析
-- 自动识别技术栈
-- 扫描目录结构
-- 分析模块依赖
-- 识别核心业务域
-
-### 2. 架构文档生成
-- 系统架构图
-- 模块依赖关系
-- 技术选型说明
-- 部署架构
-
-### 3. 配置项文档
-- 配置文件分析
-- 环境变量说明
-- 配置项清单
-- 敏感配置处理
-
-### 4. 数据库文档
-- 表结构分析
-- ER 图生成
-- 索引分析
-- 数据库规范
-
-### 5. 开发规范文档 ⭐
-- 代码规范
-- 命名约定
-- 目录结构规范
-- Git 提交规范
-- ⭐ **规范检查与自动创建**：生成前扫描项目是否有规范文档，无则自动创建
-
-### 6. 快速启动文档
-- 环境要求
-- 安装步骤
-- 启动命令
-- 常见问题
-
-### 7. 测试规范文档
-- 测试框架
-- 测试覆盖率
-- 测试用例规范
-- Mock 规范
-
-### 8. Apifox 自动对接
-- API 文档同步
-- 测试用例生成
-- 接口自测执行
-- 测试报告生成
-
----
-
-## 📋 使用流程
-
-### Phase 1: 项目扫描
+## ⚠️ 关键原则：先读取，后生成（所有文档类型）
 
 ```
-1. 识别项目类型
-   - 检查 package.json / pom.xml / build.gradle / go.mod / requirements.txt
-   - 识别主要技术栈
-
-2. 扫描目录结构
-   - 列出所有目录
-   - 识别核心模块
-   - 标记配置目录
-
-3. 分析代码结构
-   - 扫描源码目录
-   - 识别分层结构
-   - 分析模块关系
-```
-
-### Phase 2: 深度分析
-
-```
-1. 数据库分析
-   - 扫描 Entity/Model 类
-   - 分析 SQL migration 文件
-   - 提取表结构信息
-   - 分析索引和约束
-
-2. 配置分析
-   - 读取配置文件
-   - 提取配置项
-   - 标记敏感配置
-
-3. API 分析
-   - 扫描 Controller/Router
-   - 提取 API 端点
-   - 分析请求/响应结构
-
-4. 规范检查 ⭐ NEW
-   - 扫描项目中的规范文档
-   - 检查 docs/、.github/、根目录下的规范文件
-   - 识别已有规范：编码规范、命名规范、Git规范、测试规范等
-   - 标记缺失的规范文档
-```
-
-### Phase 3: 文档生成
-
-```
-1. 生成架构文档
-   - 系统架构图
-   - 模块说明
-   - 技术栈说明
-
-2. 生成数据库文档
-   - 表结构说明
-   - ER 图
-   - 索引说明
-
-3. 生成开发规范 ⭐ 自动补全
-   - 代码规范
-   - 命名约定
-   - Git 规范
-   - ⭐ 检查缺失 → 自动创建
-
-4. 生成快速启动文档
-   - 环境要求
-   - 安装步骤
-   - 启动命令
-
-5. 生成测试规范
-   - 测试框架
-   - 测试规范
-   - 覆盖率要求
-
-6. 规范补全逻辑 ⭐ NEW
-   检查项目是否缺少以下规范文档，如缺失则自动创建：
-   
-   **通用规范：**
-   - coding-standards.md (代码规范)
-   - naming-conventions.md (命名约定)
-   - git-workflow.md (Git 工作流)
-   - code-review.md (代码审查)
-   - test-standards.md (测试规范)
-   - api-design.md (API 设计规范)
-   - security-policy.md (安全规范)
-   
-   **数据库规范 ⭐：**
-   - database-standards.md (数据库设计规范)
-   - sql-coding-standards.md (SQL 编码规范)
-   - data-migration.md (数据迁移规范)
-   - index-design.md (索引设计规范)
-```
-
-### Phase 4: Apifox 对接
-
-```
-1. 导出 OpenAPI 文档
-2. 同步到 Apifox
-3. 生成测试用例
-4. 执行接口测试
-5. 生成测试报告
+┌────────────────────────────────────────────────────────────────────┐
+│                        文档生成流程（强制）                             │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  第1步: 扫描相关文件                                                │
+│      ↓                                                           │
+│  第2步: 【必须】逐个读取文件完整内容  ← 禁止跳过任何文件            │
+│      ↓                                                           │
+│  第3步: 整理提取的关键信息                                         │
+│      ↓                                                           │
+│  第4步: 生成文档（基于实际内容）                                     │
+│      ↓                                                           │
+│  第5步: 自检：对照原始文件验证文档准确性                             │
+│      ↓                                                           │
+│  第6步: 输出文档                                                   │
+│                                                                    │
+│  ⚠️ 禁止在未读取文件内容的情况下生成文档                            │
+│  ⚠️ 禁止假设任何技术细节                                           │
+│  ⚠️ 生成后必须对照原始文件进行自检                                 │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔧 技术栈支持
-
-### Java / Spring Boot
-
-```
-识别文件：
-- pom.xml / build.gradle
-- application.yml / application.properties
-
-分析内容：
-- Maven/Gradle 依赖
-- Spring Boot 配置
-- JPA/MyBatis Entity
-- Controller/Service/Repository
-```
-
-### Node.js
-
-```
-识别文件：
-- package.json
-- tsconfig.json
-
-分析内容：
-- npm/yarn/pnpm 依赖
-- Express/Koa/NestJS 路由
-- Sequelize/TypeORM/Prisma Model
-```
-
-### Python
-
-```
-识别文件：
-- requirements.txt
-- pyproject.toml
-- setup.py
-
-分析内容：
-- Django/Flask/FastAPI
-- SQLAlchemy Model
-- API Router
-```
-
-### Go
-
-```
-识别文件：
-- go.mod
-
-分析内容：
-- Go modules
-- Gin/Echo 路由
-- GORM Model
-```
-
-### 前端项目
-
-```
-识别文件：
-- package.json
-- vite.config / webpack.config
-
-分析内容：
-- React/Vue/Angular
-- 组件结构
-- API 调用
-```
-
----
-
-## 📂 输出目录结构
+## 📋 SDD 文档体系
 
 ```
 docs/
-├── architecture/
-│   ├── overview.md           # 架构总览
-│   ├── modules.md            # 模块说明
-│   └── diagrams/             # 架构图
-│       ├── system.png
-│       └── modules.png
-├── database/
-│   ├── schema.md             # 表结构文档
-│   ├── er-diagram.png        # ER 图
-│   └── migrations/           # 变更记录
-├── development/
-│   ├── coding-standards.md   # 代码规范
-│   ├── naming-conventions.md # 命名约定
-│   ├── git-workflow.md       # Git 规范
-│   └── code-review.md        # 代码审查规范
-├── quick-start/
-│   ├── installation.md       # 安装指南
-│   ├── configuration.md      # 配置说明
-│   └── troubleshooting.md    # 常见问题
-├── testing/
-│   ├── test-standards.md     # 测试规范
-│   ├── coverage.md           # 覆盖率要求
-│   └── test-cases/           # 测试用例
-└── api/
-    ├── openapi.yaml          # OpenAPI 文档
-    ├── apifox-sync.md        # Apifox 同步说明
-    └── test-reports/         # 测试报告
+├── sdd/
+│   ├── 01-srs.md      # 软件需求规格说明书
+│   ├── 02-sad.md      # 软件架构文档
+│   ├── 03-sdd.md      # 详细设计文档
+│   ├── 04-dbd.md      # 数据库设计文档
+│   ├── 05-apid.md     # API 接口文档
+│   └── 06-tsd.md      # 测试设计文档
+└── standards/         # 开发规范
 ```
 
 ---
 
-## 🚀 使用方法
+## 🔍 各文档类型的扫描规范
 
-### 基本用法
+### 📋 SRS - 软件需求规格说明书
 
-```
-分析项目并生成所有文档：
-"分析项目 D:\my-project 并生成完整文档"
+**必须读取的文件**：
 
-只生成特定文档：
-"分析项目 D:\my-project 并生成架构文档"
-"分析项目 D:\my-project 并生成数据库文档"
-"分析项目 D:\my-project 并生成快速启动文档"
-```
+| 文件类型 | 扫描目标 |
+|----------|----------|
+| README.md | 项目简介、功能概述 |
+| 需求文档 | 业务需求、功能列表 |
+| 接口文档 | API 列表、功能模块 |
+| 用户故事 | User Story、验收标准 |
 
-### Apifox 对接
-
-```
-"分析项目 D:\my-project 并对接到 Apifox 项目 ID: 12345"
-
-步骤：
-1. 生成 OpenAPI 文档
-2. 使用 Apifox CLI 同步
-3. 生成测试用例
-4. 执行测试
-```
-
-### 自定义配置
-
-```
-创建配置文件：project-analyzer.yaml
-
-# 项目分析器配置
-project:
-  name: my-project
-  type: spring-boot  # 可选：auto-detect
-
-output:
-  base_dir: docs
-  
-database:
-  analyze_entities: true
-  analyze_migrations: true
-  
-apifox:
-  project_id: 12345
-  api_token: ${APIFOX_TOKEN}
-```
-
----
-
-## 📊 分析报告示例
-
-### 架构分析报告
-
-```markdown
-# 系统架构
-
-## 技术栈
-- 语言: Java 17
-- 框架: Spring Boot 3.2
-- 数据库: MySQL 8.0
-- 缓存: Redis 7.0
-
-## 模块结构
-- modo-core: 核心业务模块
-- modo-boot: 启动模块
-- modo-api: API 模块
-
-## 依赖关系
-[模块依赖图]
-```
-
-### 数据库分析报告
-
-```markdown
-# 数据库结构
-
-## 表清单
-- users (用户表)
-- orders (订单表)
-- products (产品表)
-
-## ER 图
-[ER 图]
-
-## 索引分析
-- users.idx_email: 唯一索引
-- orders.idx_user_id: 普通索引
-```
-
----
-
-## 🔌 Apifox 集成
-
-### 前置要求
+**扫描命令**：
 
 ```bash
-# 安装 Apifox CLI
-npm install -g apifox-cli
+# 1. 读取 README
+cat /path/to/project/README.md
 
-# 配置 API Token
-export APIFOX_TOKEN=your_token_here
+# 2. 查找需求文档
+find /path/to/project -name "*.md" -path "*/docs/*" -o -name "*需求*" -o -name "*requirement*"
+
+# 3. 查找接口定义（用于识别功能模块）
+find /path/to/project -path "*/controller/*.java" -name "*Controller.java"
 ```
 
-### 同步 OpenAPI 文档
+---
+
+### 🏗️ SAD - 软件架构文档
+
+**必须读取的文件**：
+
+| 文件类型 | 扫描目标 |
+|----------|----------|
+| pom.xml / go.mod | 技术栈、依赖版本 |
+| application.yml | 数据库、缓存、消息队列配置 |
+| Dockerfile | 部署方式、基础镜像 |
+| k8s/*.yaml | Kubernetes 部署配置 |
+| README.md | 架构说明 |
+| 模块目录结构 | 层级架构 |
+
+**扫描命令**：
 
 ```bash
-# 导出 OpenAPI 文档
-apifox sync --project-id 12345 --file docs/api/openapi.yaml
+# 1. 读取构建配置
+cat /path/to/project/pom.xml
+cat /path/to/project/Dockerfile
 
-# 或使用在线同步
-apifox sync --project-id 12345 --from-url http://localhost:8080/v3/api-docs
+# 2. 读取应用配置
+cat /path/to/project/*/src/main/resources/application.yml
+cat /path/to/project/application.yml
+
+# 3. 读取 K8s 配置
+ls -la /path/to/project/k8s/
+cat /path/to/project/k8s/*.yaml
+
+# 4. 扫描模块结构
+find /path/to/project -maxdepth 3 -type d | head -50
 ```
 
-### 执行测试
+**技术栈判断依据**：
+
+| 判断依据 | 技术栈结论 |
+|----------|------------|
+| `<parent><artifactId>spring-boot-starter-parent</artifactId>` | Spring Boot |
+| `<artifactId>spring-boot-starter-parent</artifactId><version>3.x</version>` | Spring Boot 3.x + Java 17+ |
+| `<artifactId>spring-boot-starter-parent</artifactId><version>2.x</version>` | Spring Boot 2.x + Java 8/11 |
+| 基础镜像 `openjdk:` | Java |
+| `FROM node:` | Node.js |
+| `FROM python:` | Python |
+| `<artifactId>mybatis-spring-boot-starter</artifactId>` | MyBatis |
+| `<artifactId>spring-boot-starter-data-jpa</artifactId>` | JPA/Hibernate |
+
+---
+
+### 📝 SDD - 详细设计文档
+
+**必须读取的文件**：
+
+| 文件类型 | 扫描目标 |
+|----------|----------|
+| 所有 Controller.java | 接口列表、请求参数 |
+| 所有 Service.java | 业务逻辑、方法签名 |
+| 所有 VO/DTO/BO.java | 数据结构 |
+| 所有 Entity.java / DO.java | 数据库实体 |
+| Mapper XML | SQL 语句 |
+| 枚举类 | 状态码、业务常量 |
+
+**扫描命令**：
 
 ```bash
-# 运行所有测试用例
-apifox run --project-id 12345 --all
+# 1. 扫描所有 Java 源文件
+find /path/to/project -name "*.java" -path "*/src/main/java/*" | wc -l
 
-# 运行特定测试套件
-apifox run --project-id 12345 --suite smoke-test
+# 2. 按层级扫描
+find /path/to/project -path "*/controller/*.java" -name "*.java"
+find /path/to/project -path "*/service/*.java" -name "*.java"
+find /path/to/project -path "*/dao/*.java" -o -path "*/mapper/*.java" | grep -i java
 
-# 生成测试报告
-apifox report --project-id 12345 --output docs/api/test-reports/
+# 3. 读取核心类（不能只读类名，要读完整内容）
+cat /path/to/project/*/service/impl/*ServiceImpl.java
+
+# 4. 扫描枚举和常量
+find /path/to/project -name "*Enum*.java" -o -name "*Constant*.java" -o -name "*Status*.java"
+```
+
+**SDD 自检清单**：
+
+```
+□ 所有 Controller 接口已读取
+□ 所有 Service 实现类已读取
+□ 类图中的方法签名与实际代码一致
+□ 时序图中的调用关系与实际代码一致
+□ 枚举值与实际代码一致
+□ 没有臆造的方法或类
 ```
 
 ---
 
-## ⚙️ 配置项说明
+### 🗄️ DBD - 数据库设计文档
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `project.type` | string | auto | 项目类型：spring-boot/node/python/go/react/vue |
-| `output.base_dir` | string | docs | 文档输出目录 |
-| `database.analyze_entities` | bool | true | 是否分析 Entity 类 |
-| `database.analyze_migrations` | bool | true | 是否分析 migration 文件 |
-| `standards.auto_create` | bool | true ⭐ | 是否自动创建缺失的规范文档 |
-| `standards.confirm_before_create` | bool | true | 创建前是否确认 |
-| `standards.force_overwrite` | bool | false | 是否覆盖已存在的规范 |
-| `apifox.project_id` | number | - | Apifox 项目 ID |
-| `apifox.auto_sync` | bool | false | 是否自动同步到 Apifox |
-| `apifox.auto_test` | bool | false | 是否自动执行测试 |
+**必须读取的文件**：
+
+| 文件类型 | 扫描目标 |
+|----------|----------|
+| 所有 *.sql 文件 | CREATE TABLE、索引、约束 |
+| 所有 Entity.java / DO.java | 实体映射、字段类型 |
+| 所有 Mapper.xml | SQL 语句 |
+| 迁移记录 | 版本历史 |
+
+**扫描命令**：
+
+```bash
+# 1. 查找所有 SQL 文件
+find /path/to/project -name "*.sql" -type f
+
+# 2. 查找迁移脚本目录（常见名称）
+ls -la /path/to/project/db-migration/
+ls -la /path/to/project/migrations/
+ls -la /path/to/project/sql/
+ls -la /path/to/project/scripts/
+
+# 3. 【必须】逐个读取 SQL 文件
+cat /path/to/project/db-migration/*.sql
+
+# 4. 查找 DO/Entity 类
+find /path/to/project -name "*DO.java" -o -name "*Entity.java" -o -name "*PO.java"
+```
+
+**【必须】对照验证**：
+
+```
+SQL 文件 CREATE TABLE  ←→  DO/Entity 类注解
+
+| SQL 字段 | SQL 类型 | DO 字段 | DO 类型 |
+|----------|----------|----------|---------|
+| id | bigint | @TableId | Long |
+| name | varchar(255) | @TableField | String |
+| status | smallint | @TableField | Short |
+| create_time | timestamp | @TableField | LocalDateTime |
+```
+
+**数据库类型判断**：
+
+| 判断依据 | 数据库类型 |
+|----------|----------|
+| `AUTO_INCREMENT`, `ENGINE=InnoDB`, `CHARSET=` | MySQL |
+| `SERIAL`, `GENERATED ALWAYS AS IDENTITY`, `::regclass` | PostgreSQL |
+| `NUMBER GENERATED BY DEFAULT AS IDENTITY`, `CLOB` | Oracle |
+| `IDENTITY(1,1)`, `nvarchar`, `GETDATE()` | SQL Server |
 
 ---
 
-## 🎯 最佳实践
+### 📡 APID - API 接口文档
 
-### 1. 新项目接入
+**必须读取的文件**：
+
+| 文件类型 | 扫描目标 |
+|----------|----------|
+| 所有 @RestController / @Controller | 接口定义 |
+| 所有 @RequestMapping / @GetMapping / @PostMapping 等 | HTTP 方法、路径 |
+| 所有 @RequestBody DTO | 请求参数 |
+| 所有返回值类型 | 响应结构 |
+| @Valid / @NotNull 等注解 | 参数校验规则 |
+| Swagger/OpenAPI 注解 | 接口描述 |
+
+**扫描命令**：
+
+```bash
+# 1. 扫描所有 Controller
+find /path/to/project -path "*/controller/*.java" -name "*.java"
+
+# 2. 读取所有 Controller 内容（不能只读类名）
+for f in $(find /path/to/project -path "*/controller/*.java"); do
+    echo "=== $f ==="
+    cat "$f"
+done
+
+# 3. 扫描 DTO/请求/响应类
+find /path/to/project -name "*DTO.java" -o -name "*Request.java" -o -name "*Response.java"
+
+# 4. 扫描 Feign Client（如果有）
+find /path/to/project -name "*Feign*.java" -o -name "*Client.java" | grep -i feign
+```
+
+**APID 自检清单**：
 
 ```
-1. 运行项目分析器
-2. 生成完整文档
-3. 人工审核并补充
-4. 纳入版本控制
-```
-
-### 2. 定期更新
-
-```
-1. 代码变更后重新分析
-2. 对比文档差异
-3. 更新文档版本
-```
-
-### 3. CI/CD 集成
-
-```yaml
-# .github/workflows/docs.yml
-name: Generate Docs
-on: [push]
-jobs:
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Analyze Project
-        run: |
-          # 项目分析命令
-      - name: Sync to Apifox
-        run: apifox sync --project-id ${{ secrets.APIFOX_PROJECT_ID }}
+□ 所有 Controller 方法已读取
+□ 请求参数类型与实际代码一致
+□ 响应类型与实际代码一致
+□ HTTP 方法（GET/POST/PUT/DELETE）与实际一致
+□ 接口路径与实际代码一致
+□ 参数校验注解与描述一致
+□ 没有遗漏的接口
 ```
 
 ---
 
-## 📝 模板定制
+### 🧪 TSD - 测试设计文档
 
-可在 `references/templates/` 目录下自定义文档模板：
+**必须读取的文件**：
 
-- `architecture.md.template`
-- `database.md.template`
-- `coding-standards.md.template`
-- `quick-start.md.template`
-- `test-standards.md.template`
+| 文件类型 | 扫描目标 |
+|----------|----------|
+| pom.xml | 测试框架（JUnit 4/5/TestNG） |
+| src/test/**/*.java | 现有测试用例 |
+| 测试配置文件 | 测试环境配置 |
+| coverage 配置 | 覆盖率要求 |
+
+**扫描命令**：
+
+```bash
+# 1. 检查测试框架
+grep -A5 "junit" /path/to/project/pom.xml
+grep -A5 "testng" /path/to/project/pom.xml
+
+# 2. 扫描测试类
+find /path/to/project -path "*/test/*.java" -name "*Test.java"
+find /path/to/project -path "*/test/*.java" -name "*IT.java"
+
+# 3. 读取测试类内容
+cat /path/to/project/*/src/test/java/*/*Test.java
+
+# 4. 检查覆盖率配置
+find /path/to/project -name "jacoco.xml" -o -name "coverage.xml"
+```
 
 ---
 
-*让项目文档自动化 📊✨*
+## 📄 文档生成流程
+
+### 完整流程（强制执行）
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          文档生成完整流程                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  步骤1: 接收任务                                                    │
+│         "生成 xxx 项目的 SDD 文档"                                  │
+│              ↓                                                       │
+│  步骤2: 确定需要生成的文档类型                                       │
+│         □ SRS  □ SAD  □ SDD  □ DBD  □ APID  □ TSD                │
+│              ↓                                                       │
+│  步骤3: 根据文档类型确定必须扫描的文件清单                            │
+│              ↓                                                       │
+│  步骤4: 执行扫描（必须逐个文件读取内容）                             │
+│         □ 文件1 已读取                                              │
+│         □ 文件2 已读取                                              │
+│         □ 文件3 已读取                                              │
+│              ↓                                                       │
+│  步骤5: 整理提取的信息                                               │
+│              ↓                                                       │
+│  步骤6: 生成文档                                                    │
+│              ↓                                                       │
+│  步骤7: 自检（对照原始文件）                                         │
+│         □ 数据准确性验证                                            │
+│         □ 没有遗漏的关键信息                                         │
+│         □ 没有假设或推测的内容                                       │
+│              ↓                                                       │
+│  步骤8: 输出文档                                                    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 自检验证
+
+**每生成一个文档后，必须执行以下验证**：
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                           自检验证清单                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  □ 文档中引用的所有类名、方法名、字段名与源代码一致                  │
+│  □ 文档中引用的所有配置值与配置文件一致                            │
+│  □ 文档中引用的所有 SQL 语句与实际 SQL 文件一致                      │
+│  □ 文档中引用的所有接口路径与 Controller 一致                        │
+│  □ 文档中引用的所有枚举值与枚举类一致                                │
+│  □ 没有"根据经验"、"通常"、"一般"等推测性表述                       │
+│  □ 所有技术版本号与实际依赖一致                                      │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ⚙️ 扫描工具参考
+
+### 通用扫描命令
+
+```bash
+# 统计项目规模
+find /path -name "*.java" | wc -l  # Java 文件数
+find /path -name "*.js" | wc -l    # JS 文件数
+find /path -name "*.py" | wc -l    # Python 文件数
+
+# 查看项目结构（深度限制）
+find /path -maxdepth 4 -type d | head -100
+
+# 查找关键配置文件
+find /path -name "pom.xml" -o -name "package.json" -o -name "go.mod" -o -name "requirements.txt"
+```
+
+### Java 项目扫描
+
+```bash
+# 扫描包结构
+find /path -path "*/src/main/java/*" -name "*.java" | sed 's|/[^/]*$||' | sort -u
+
+# 统计各层文件数
+echo "Controller: $(find /path -path '*/controller/*.java' | wc -l)"
+echo "Service: $(find /path -path '*/service/*.java' | wc -l)"
+echo "DAO/Mapper: $(find /path -path '*/dao/*.java' -o -path '*/mapper/*.java' | wc -l)"
+echo "Entity/DO: $(find /path -name '*DO.java' -o -name '*Entity.java' | wc -l)"
+```
+
+### 数据库扫描
+
+```bash
+# 查找 SQL 文件
+find /path -name "*.sql" -type f
+
+# 读取 SQL 文件（批量）
+for f in $(find /path -name "*.sql"); do
+    echo "=== $f ==="
+    cat "$f"
+done
+```
+
+---
+
+## 🎯 核心优势
+
+| 传统方式 | 本 Skill |
+|---------|---------|
+| 可能跳过文件读取 | ✅ 强制读取所有文件 |
+| 可能假设技术栈 | ✅ 基于文件内容判断 |
+| 可能遗漏关键信息 | ✅ 完整扫描清单 |
+| 无校验机制 | ✅ 自检验证 |
+| 各文档标准不一 | ✅ 统一规范 |
+
+---
+
+## ⚠️ 错误案例及纠正
+
+### ❌ 错误做法
+
+```
+1. 扫描到 pom.xml 就假设是 Spring Boot + MySQL
+2. 看到 SQL 文件名是 init.sql 就假设是 MySQL 语法
+3. 只读类名不读内容就生成类图
+4. 假设某个字段是 varchar 类型
+5. 根据"常见做法"推测技术选型
+```
+
+### ✅ 正确做法
+
+```
+1. 读取 pom.xml parent 标签确认 Spring Boot 版本
+2. 读取 SQL 文件的 CREATE TABLE 语法确认数据库类型
+3. 读取每个 Java 类的完整内容生成类图
+4. 读取 DO/Entity 类的 @TableField 注解确认字段类型
+5. 读取 application.yml 的 spring.datasource.url 确认数据库
+```
+
+---
+
+## 📊 使用示例
+
+### 完整 SDD 文档生成
+
+```
+用户: "为 D:\projects\myapp 项目生成完整 SDD 文档"
+
+AI 执行:
+1. 扫描项目结构
+2. 确定需要生成：SRS + SAD + SDD + DBD + APID + TSD
+3. 按类型执行扫描（见上方各文档扫描规范）
+4. 对每个文档执行自检
+5. 输出文档
+```
+
+### 单文档生成
+
+```
+用户: "生成数据库设计文档 DBD"
+
+AI 执行:
+1. 扫描 SQL 文件（必须逐个读取）
+2. 扫描 DO/Entity 类（必须逐个读取）
+3. SQL 与 DO 对照验证
+4. 生成 DBD 文档
+5. 自检验证
+6. 输出文档
+```
+
+---
+
+*让文档生成更可靠，每一个细节都基于实际代码 📊✨*
