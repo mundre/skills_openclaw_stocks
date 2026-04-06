@@ -112,17 +112,9 @@ Authorization: Bearer {API_KEY}
   "projectsUsed": 5,
   "projectsLimit": 50,
   "projectsRemaining": 45,
+  "pptGeneratePageLimit": 32,
   "features": {
-    "chartProject": { "key": "chartProject", "cost": 10, "unit": "次", "label": "图表项目创建", "billingModel": "per-request" },
-    "pptGenerate": { "key": "pptGenerate", "cost": 10, "unit": "页", "label": "PPT/图文生成", "billingModel": "per-page" },
-    "bigScreen": { "key": "bigScreen", "cost": 30, "unit": "次", "label": "大屏生成", "billingModel": "per-request" },
-    "longPage": { "key": "longPage", "cost": 30, "unit": "次", "label": "长页信息图", "billingModel": "per-request" },
-    "xiaohongshu": { "key": "xiaohongshu", "cost": 10, "unit": "页", "label": "小红书生成", "billingModel": "per-page" },
-    "chartConfig": { "key": "chartConfig", "cost": 2, "unit": "次", "label": "图表配置生成", "billingModel": "per-request" },
-    "chartGenerate": { "key": "chartGenerate", "cost": 1, "unit": "次", "label": "图表生成", "billingModel": "per-request" },
-    "chartTrend": { "key": "chartTrend", "cost": 1, "unit": "次", "label": "趋势分析", "billingModel": "per-request" },
-    "imageGenerate": { "key": "imageGenerate", "cost": 2, "unit": "张", "label": "图片生成", "billingModel": "per-quantity" },
-    "..."
+    "chartProject": { "key": "chartProject", "cost": 10, "unit": "次", "label": "图表项目创建", "billingModel": "per-request" }
   }
 }
 ```
@@ -135,6 +127,7 @@ Authorization: Bearer {API_KEY}
 | projectsUsed | number | 已创建项目数 |
 | projectsLimit | number | 项目数上限（由会员等级决定） |
 | projectsRemaining | number | 剩余可创建项目数 |
+| pptGeneratePageLimit | number | 单次 PPT 生成的最大页数（由会员等级决定） |
 | features | Record | 各 AI 功能的 AI贝消耗（cost 为 0 表示免费或未配置，billingModel 表示计费模型：per-request=按次/per-quantity=按数量/per-page=按页） |
 
 ## Supported Chart Types (40 types)

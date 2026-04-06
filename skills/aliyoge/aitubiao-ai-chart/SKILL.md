@@ -1,6 +1,6 @@
 ---
 name: aitubiao-chart
-version: 0.0.2
+version: 1.0.1
 description: AI智能图表生成。根据用户数据生成图表配置并创建可视化项目。当用户想要创建图表、可视化数据时使用，触发词包括"创建图表"、"做个图表"、"可视化数据"、"用表格生成图表"、"create chart"、"make a chart"、"visualize data"等。
 ---
 
@@ -40,7 +40,8 @@ cat ~/.aitubiao/credentials 2>/dev/null
 - **文件不存在或为空** → 执行下方"配置凭证"流程
 - **`API_KEY` 为空** → 执行下方"配置凭证"流程
 - **`API_KEY` 不以 `sk_v1_` 开头** → 告知用户"当前 API Key 已失效，请前往 [API Key 管理页面](https://app.aitubiao.com/setting/api-keys) 重新创建一个 API Key"
-- **`API_KEY` 格式正确** → 认证通过
+- **`BASE_URL` 为空或不等于 `https://api.aitubiao.com`** → 执行下方"配置凭证"流程（保留现有 API_KEY，仅修正 BASE_URL）
+- **`API_KEY` 格式正确且 `BASE_URL` 正确** → 认证通过
 
 认证通过后，加载环境变量：
 ```bash
@@ -124,10 +125,9 @@ curl -s --max-time 10 -X GET "${BASE_URL}/api/v1/agent/quota" \
     "projectsUsed": 5,
     "projectsLimit": 50,
     "projectsRemaining": 45,
+    "pptGeneratePageLimit": 32,
     "features": {
-      "chartProject": { "key": "chartProject", "cost": 10, "unit": "次", "label": "图表项目创建", "billingModel": "per-request" },
-      "pptGenerate": { "key": "pptGenerate", "cost": 10, "unit": "页", "label": "PPT/图文生成", "billingModel": "per-page" },
-      "imageGenerate": { "key": "imageGenerate", "cost": 2, "unit": "张", "label": "图片生成", "billingModel": "per-quantity" }
+      "chartProject": { "key": "chartProject", "cost": 10, "unit": "次", "label": "图表项目创建", "billingModel": "per-request" }
     }
   }
 }

@@ -3,9 +3,15 @@
   "slug": "aitubiao-ai-chart",
   "displayName": "爱图表ai图表",
   "latest": {
-    "version": "0.0.2",
-    "publishedAt": 1774937681644,
-    "commit": "https://github.com/openclaw/skills/commit/e3d94bb0fbd080dfbb535309b78afed54288bc9c"
+    "version": "1.0.1",
+    "publishedAt": 1775136424418,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.2",
+      "publishedAt": 1774937681644,
+      "commit": "https://github.com/openclaw/skills/commit/e3d94bb0fbd080dfbb535309b78afed54288bc9c"
+    }
+  ]
 }
