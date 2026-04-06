@@ -3,9 +3,15 @@
   "slug": "reward-gateway",
   "displayName": "Reward Gateway",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774857820933,
-    "commit": "https://github.com/openclaw/skills/commit/9b7fb31ee2d2589540f0b13fa1bf5a1e9600249f"
+    "version": "1.0.2",
+    "publishedAt": 1775169606807,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774857820933,
+      "commit": "https://github.com/openclaw/skills/commit/9b7fb31ee2d2589540f0b13fa1bf5a1e9600249f"
+    }
+  ]
 }
