@@ -3,9 +3,15 @@
   "slug": "ryver",
   "displayName": "Ryver",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774314333704,
-    "commit": "https://github.com/openclaw/skills/commit/e29272b2b8c40c06adbdb8f181971876bb1d568d"
+    "version": "1.0.2",
+    "publishedAt": 1775166844868,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774314333704,
+      "commit": "https://github.com/openclaw/skills/commit/e29272b2b8c40c06adbdb8f181971876bb1d568d"
+    }
+  ]
 }
