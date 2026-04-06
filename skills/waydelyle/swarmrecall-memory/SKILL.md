@@ -7,9 +7,9 @@ metadata:
     requires:
       env: [SWARMRECALL_API_KEY]
     primaryEnv: SWARMRECALL_API_KEY
-    privacyPolicy: Memory content is stored on SwarmRecall servers (api.swarmrecall.ai). Data is scoped per agent and owner. The agent must have user consent before storing personal or sensitive information.
+    privacyPolicy: Memory content is stored on SwarmRecall servers (swarmrecall-api.onrender.com). Data is scoped per agent and owner. The agent must have user consent before storing personal or sensitive information.
     dataHandling: All data is transmitted over HTTPS. Memories are stored in PostgreSQL with pgvector embeddings. Data is tenant-isolated by owner ID and agent ID.
-version: 1.0.3
+version: 1.1.0
 author: swarmclawai
 homepage: https://www.swarmrecall.ai
 tags: [memory, ai-agents, semantic-search, persistence, recall]
@@ -26,7 +26,7 @@ Before making any API calls, check for a `SWARMRECALL_API_KEY` environment varia
 1. If `SWARMRECALL_API_KEY` is set, use it for all requests as a Bearer token.
 2. If `SWARMRECALL_API_KEY` is not set, self-register by calling:
    ```
-   POST https://api.swarmrecall.ai/api/v1/register
+   POST https://swarmrecall-api.onrender.com/api/v1/register
    Content-Type: application/json
 
    { "name": "<your-agent-name>" }
@@ -43,13 +43,13 @@ Authorization: Bearer <SWARMRECALL_API_KEY>
 
 ## API Base URL
 
-`https://api.swarmrecall.ai` (override with `SWARMRECALL_API_URL` if set)
+`https://swarmrecall-api.onrender.com` (override with `SWARMRECALL_API_URL` if set)
 
 All endpoints below are prefixed with `/api/v1`.
 
 ## Privacy & Data Handling
 
-- All data is sent to `api.swarmrecall.ai` over HTTPS
+- All data is sent to `swarmrecall-api.onrender.com` over HTTPS
 - Memory content is stored server-side with vector embeddings for semantic search
 - Data is isolated per agent and owner — no cross-tenant access
 - Before storing user-provided content, ensure the user has consented to external storage
@@ -135,3 +135,18 @@ GET /api/v1/memory/sessions?limit=20&offset=0
 - The agent must have readwrite access to the pool's memory module to write shared memories.
 - Search (`GET /api/v1/memory/search`) and list (`GET /api/v1/memory`) results automatically include data from pools the agent belongs to.
 - Pool data in responses includes `poolId` and `poolName` fields to distinguish shared data from the agent's own data.
+
+## Dreaming Integration
+
+Memory is the primary target of dream operations. During a dream cycle:
+
+- **Duplicate clusters**: Groups of similar memories are identified by the dream service. The agent reads the cluster, merges content into the anchor memory, and archives the rest. Use `PATCH /api/v1/memory/:id` to update the anchor and `DELETE /api/v1/memory/:id` to archive duplicates.
+- **Session summaries**: Unsummarized sessions are flagged. The agent reads session memories via `GET /api/v1/memory?sessionId=X`, then writes a summary via `POST /api/v1/memory` with `category: "session_summary"`.
+- **Decay and pruning**: The server automatically reduces importance of old memories and archives those below the prune threshold. Memories with `category: "session_summary"` or tag `"pinned"` are protected.
+- **Contradictions**: Memory pairs with high similarity but divergent content are flagged. The agent reviews both, archives the stale one, and optionally updates the current one.
+
+To protect a memory from pruning, add the `"pinned"` tag:
+```
+PATCH /api/v1/memory/:id
+{ "tags": ["pinned", ...existing_tags] }
+```
