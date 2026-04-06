@@ -3,9 +3,15 @@
   "slug": "section",
   "displayName": "Section",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774926297405,
-    "commit": "https://github.com/openclaw/skills/commit/1afe0445087ec9d3bef4f47c3c477561b2d11fe5"
+    "version": "1.0.2",
+    "publishedAt": 1775169939053,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774926297405,
+      "commit": "https://github.com/openclaw/skills/commit/1afe0445087ec9d3bef4f47c3c477561b2d11fe5"
+    }
+  ]
 }
