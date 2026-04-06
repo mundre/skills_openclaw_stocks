@@ -44,17 +44,17 @@ BODY=$(jq -n \
   --arg notes "$NOTES" \
   '{"values": [[($tid), ($dt), ($amt), ($name), ($acc), ($src), ($notes)]]}')
 
-ROW="$(find_next_income_append_row)"
-RESULT=$(curl -sf -X PUT \
+RESULT=$(curl -sf -X POST \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
-  "https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Income%21D${ROW}%3AJ${ROW}?valueInputOption=USER_ENTERED" \
+  "https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Income%21D5%3AJ:append?valueInputOption=USER_ENTERED&insertDataOption=OVERWRITE" \
   -d "$BODY")
 
 UPDATED_RANGE=$(echo "$RESULT" | jq -r '.updates.updatedRange // "unknown"')
 
 update_master_timestamp
 
-echo "transaction_id=${TRANSACTION_ID}"
-echo "range=${UPDATED_RANGE}"
-echo "date=${FORMATTED_DATE}"
+TRACKER_SYMBOL_VAL="$(echo "$AMOUNT_JSON" | jq -r '.trackerCurrencySymbol')"
+DISPLAY_AMOUNT="${TRACKER_SYMBOL_VAL}${AMOUNT}"
+DISPLAY_DATE="$(iso_to_income_display "$DATE_INPUT")"
+echo "CONFIRM: Logged income ${NAME} — ${DISPLAY_AMOUNT} on ${DISPLAY_DATE} (${ACCOUNT})"

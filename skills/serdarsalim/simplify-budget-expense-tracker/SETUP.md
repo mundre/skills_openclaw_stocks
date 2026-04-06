@@ -31,13 +31,48 @@ Put this skill at:
 
 ## 3. Install The Workspace Wrappers
 
-For the best OpenClaw and Telegram behavior, also install the matching workspace wrappers at:
+For Telegram and OpenClaw command routing to work, install the workspace wrappers at:
 
 ```bash
 ~/.openclaw/workspace
 ```
 
-Without the wrappers, the skill can still exist, but Telegram/OpenClaw command routing will be much less reliable.
+The workspace layer has two parts:
+
+**`exec`** — the central dispatcher all wrappers call. It handles:
+- argument normalisation (`--date`, `--amount`, `--account`, etc.)
+- date parsing: converts natural language like `"yesterday"`, `"2 days ago"`, `"March 31"` into `YYYY-MM-DD` automatically
+- category resolution: fuzzy-matches a description to the hardcoded category list
+- category cache: reads `~/.openclaw/cache/simplify-budget/categories.tsv` so inactive categories work without hitting the sheet
+
+**`log.sh`** — natural language expense entry, the recommended command for Telegram. Pass the user's full expense message as one raw string. Optional account/date should only be passed when they are independently clear:
+```bash
+./log.sh "i bought the pencil for 10 euro and i want you to log it to business category"
+./log.sh "Shell 12.50" "Revolut" "yesterday"
+./log.sh "dentist 80 euro" "Revolut" "March 31"
+```
+Do not ask the user to rephrase into CLI-shaped chunks like `"pencil 10 euro"`. The date phrase (`"yesterday"`, `"2 days ago"`, `"March 31"`, `"last week"`) is parsed by `exec` — the bot never needs to compute or pass an ISO date itself.
+
+**Thin shell wrappers** — one per script, each forwards to `exec`. You need these in `~/.openclaw/workspace`:
+```
+write_expense.sh    update_expense.sh    delete_expense.sh    find_expenses.sh
+write_income.sh     update_income.sh     delete_income.sh     find_income.sh
+write_recurring.sh  update_recurring.sh  delete_recurring.sh  find_recurring.sh
+find_summary.sh     get_categories.sh    monthly_totals.sh
+income_this_month.sh  spending_this_month.sh  savings_this_month.sh
+add_subscription.sh   update_subscription.sh  delete_subscription.sh
+list_subscriptions.sh  check_subscriptions.sh  log_subscription.sh
+```
+
+Each thin wrapper looks like this (adjust the script name):
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "${SCRIPT_DIR}/exec" write_expense.sh "$@"
+```
+
+Without the workspace wrappers the skill files still exist, but the bot will have no reliable way to route commands, resolve dates, or match categories.
 
 ## 4. Create Or Reuse A Google Service Account
 
@@ -96,14 +131,20 @@ If Telegram is already connected, restart after config changes so it picks up th
 
 ## 9. Smoke Test
 
-Expense:
+Expense via natural language (recommended):
 
 ```bash
-OPENCLAW_HOME="$HOME/.openclaw" bash "$HOME/.openclaw/workspace/write_expense.sh" \
+bash "$HOME/.openclaw/workspace/log.sh" "setup test 10 euro" "Cash"
+```
+
+Expense via explicit flags:
+
+```bash
+bash "$HOME/.openclaw/workspace/write_expense.sh" \
   --amount 10 \
   --category 4 \
   --description "setup test" \
-  --date 2026-03-28 \
+  --date "$(date +%Y-%m-%d)" \
   --account Cash
 ```
 

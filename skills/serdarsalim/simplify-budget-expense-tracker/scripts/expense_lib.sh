@@ -179,6 +179,109 @@ update_recurring_timestamp() {
     -d "$ts_body" > /dev/null
 }
 
+resolve_category_name() {
+  local input="$1"
+  python3 - "$input" <<'PY'
+import json, re, sys
+
+CATEGORIES = {
+    "housing": (1, "Housing 🏡"),
+    "transport": (2, "Transport 🚙"),
+    "groceries": (3, "Groceries 🍎"),
+    "grocery": (3, "Groceries 🍎"),
+    "supermarket": (3, "Groceries 🍎"),
+    "dining out": (4, "Dining Out 🍕"),
+    "dining": (4, "Dining Out 🍕"),
+    "food": (4, "Dining Out 🍕"),
+    "restaurant": (4, "Dining Out 🍕"),
+    "personal care": (5, "Personal Care ❤️"),
+    "shopping": (6, "Shopping 🛍️"),
+    "utilities": (7, "Utilities 💡"),
+    "fun": (8, "Fun 🎬"),
+    "entertainment": (8, "Fun 🎬"),
+    "business": (9, "Business 💻️"),
+    "other": (10, "Other ❓"),
+    "donation": (11, "Donation 🕌"),
+    "childcare": (12, "Childcare 🐣"),
+    "travel": (13, "Travel ✈️"),
+    "zakat": (14, "Zakat 🌟"),
+    "debt payment": (15, "Debt Payment 💸"),
+    "debt": (15, "Debt Payment 💸"),
+    "fitness": (16, "Fitness 💪"),
+    "gym": (16, "Fitness 💪"),
+    "family support": (17, "Family Support 🏘️"),
+    "family": (17, "Family Support 🏘️"),
+    "taxes": (18, "Taxes 💵"),
+    "tax": (18, "Taxes 💵"),
+    "maintenance": (19, "Maintenance 🧰"),
+    "repair": (19, "Maintenance 🧰"),
+    "painting": (20, "Painting 🎨"),
+    "testground": (21, "TestGround 🤖"),
+    "test": (21, "TestGround 🤖"),
+    "learning": (22, "Learning 📚"),
+    "education": (22, "Learning 📚"),
+    "sports": (23, "Sports 🏀"),
+    "sport": (23, "Sports 🏀"),
+    "pet": (24, "Pet 🐶"),
+    "pets": (24, "Pet 🐶"),
+    "gifts": (25, "Gifts 🎁"),
+    "gift": (25, "Gifts 🎁"),
+    "special occasions": (26, "Special Occasions 🥰"),
+    "special occasion": (26, "Special Occasions 🥰"),
+    "dress": (27, "Dress 👚"),
+    "clothing": (27, "Dress 👚"),
+    "clothes": (27, "Dress 👚"),
+    "fashion": (27, "Dress 👚"),
+    "hobby": (28, "Hobby 🪂"),
+    "hobbies": (28, "Hobby 🪂"),
+    "insurance": (29, "Insurance 🛡️"),
+    "medical": (30, "Medical 🩺"),
+    "health": (30, "Medical 🩺"),
+    "doctor": (30, "Medical 🩺"),
+    "pharmacy": (30, "Medical 🩺"),
+}
+
+raw = sys.argv[1].strip().lower()
+
+# Already a =zategoryN formula — reverse-lookup display name
+m = re.match(r'^=zategory(\d+)$', raw)
+if m:
+    sid = int(m.group(1))
+    for key, (s, display) in CATEGORIES.items():
+        if s == sid:
+            print(json.dumps({"formula": f"=zategory{sid}", "display": display}))
+            raise SystemExit(0)
+    print(json.dumps({"formula": f"=zategory{sid}", "display": f"Category {sid}"}))
+    raise SystemExit(0)
+
+# Exact match
+if raw in CATEGORIES:
+    sid, display = CATEGORIES[raw]
+    print(json.dumps({"formula": f"=zategory{sid}", "display": display}))
+    raise SystemExit(0)
+
+# Substring match
+for key, (sid, display) in CATEGORIES.items():
+    if raw in key or key in raw:
+        print(json.dumps({"formula": f"=zategory{sid}", "display": display}))
+        raise SystemExit(0)
+
+# Token match
+raw_tokens = set(raw.split())
+best_score, best = 0, None
+for key, (sid, display) in CATEGORIES.items():
+    score = len(raw_tokens & set(key.split()))
+    if score > best_score:
+        best_score, best = score, (sid, display)
+if best:
+    print(json.dumps({"formula": f"=zategory{best[0]}", "display": best[1]}))
+    raise SystemExit(0)
+
+# Fallback
+print(json.dumps({"formula": "=zategory10", "display": "Other ❓", "fallback": True}))
+PY
+}
+
 normalize_category_formula() {
   local category="$1"
   if [[ "$category" =~ ^[0-9]+$ ]]; then

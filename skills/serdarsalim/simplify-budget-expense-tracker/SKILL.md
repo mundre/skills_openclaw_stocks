@@ -1,6 +1,6 @@
 ---
 name: simplify-budget
-description: "Log, find, update, and delete expenses and income in the Simplify Budget Google Sheet, and answer read-only recurring schedule questions. NEVER use sessions_spawn or ACP — ONLY use the exec tool to run bash scripts. Expenses use live categories. Income uses name, account, source, and notes. For edits/deletes, find rows first, then mutate by transaction id. Amounts are always stored in the configured tracker currency. Just do it."
+description: "Log, find, update, and delete expenses and income in the Simplify Budget Google Sheet, and answer read-only recurring schedule questions. NEVER use sessions_spawn or ACP — ONLY use the exec tool to run bash scripts. Categories are hardcoded in this skill — NEVER invent category names, ALWAYS pick from the exact list provided. Income uses name, account, source, and notes. For edits/deletes, find rows first, then mutate by transaction id. Amounts are always stored in the configured tracker currency. Just do it."
 version: 1.1.0
 user-invocable: true
 metadata:
@@ -23,6 +23,74 @@ metadata:
 
 > **CRITICAL EXECUTION RULE**: You MUST use the `exec` tool to run the bash scripts below. Do NOT call `sessions_spawn`. Do NOT create ACP sessions. These are standalone shell scripts. Resolve script paths relative to this skill directory and run the resulting absolute path with `exec`.
 
+## 🔴 SCRIPT-FIRST RULE — NON-NEGOTIABLE
+
+**You are not allowed to answer any question about expenses, income, recurring items, or budget data from memory or conversation history. Ever. Not once.**
+
+Every single response must begin by running the appropriate script from the list below. The script output is your only source of truth. Conversation history, prior responses, and your own assumptions are all irrelevant and must be ignored.
+
+| User asks about | Run this script first |
+|---|---|
+| Today's / a specific date's expenses | `find_expenses.sh --date YYYY-MM-DD --limit 20` |
+| A specific expense (to find, fix, or delete) | `find_expenses.sh "<query>" 10` |
+| Monthly spending totals | `find_summary.sh --month YYYY-MM` |
+| Today's / a specific date's income | `find_income.sh --date YYYY-MM-DD --limit 20` |
+| A specific income entry | `find_income.sh "<query>" 10` |
+| Recurring items | `find_recurring.sh --month YYYY-MM` or `find_recurring.sh --query "<name>"` |
+| Logging a new expense | `find_expenses.sh --date YYYY-MM-DD --limit 20` (duplicate check), then `write_expense.sh` |
+| Logging new income | `write_income.sh` |
+
+If you have not run the script yet, you have not started your response yet. Run the script. Then respond conversationally based on what it returns.
+
+## ⛔ CATEGORY RULES — READ BEFORE ANYTHING ELSE
+
+**WRONG** (never do this):
+> "Here are suggested categories: Fuel/Transport, Food & Drink, Medical/Pharmacy. Please confirm."
+
+**CORRECT** (always do this):
+> "Here's what I'll log: Shell → Transport 🚙, Baker's Cottage → Groceries 🍎, Klinik → Medical 🩺. Shall I go ahead?"
+
+Rules that must never be broken:
+1. Category names MUST come from the exact list below — never invent names like "Fuel/Transport" or "Food & Drink"
+2. NEVER ask the user to pick or confirm a category — always pick it yourself using the list below
+3. NEVER say "your choice" or "please confirm the category"
+4. DO NOT call `get_categories.sh` — the full category list is hardcoded right here:
+
+| Formula | Name |
+|---|---|
+| `=zategory1` | Housing 🏡 |
+| `=zategory2` | Transport 🚙 |
+| `=zategory3` | Groceries 🍎 |
+| `=zategory4` | Dining Out 🍕 |
+| `=zategory5` | Personal Care ❤️ |
+| `=zategory6` | Shopping 🛍️ |
+| `=zategory7` | Utilities 💡 |
+| `=zategory8` | Fun 🎬 |
+| `=zategory9` | Business 💻️ |
+| `=zategory10` | Other ❓ |
+| `=zategory11` | Donation 🕌 |
+| `=zategory12` | Childcare 🐣 |
+| `=zategory13` | Travel ✈️ |
+| `=zategory14` | Zakat 🌟 |
+| `=zategory15` | Debt Payment 💸 |
+| `=zategory16` | Fitness 💪 |
+| `=zategory17` | Family Support 🏘️ |
+| `=zategory18` | Taxes 💵 |
+| `=zategory19` | Maintenance 🧰 |
+| `=zategory20` | Painting 🎨 |
+| `=zategory21` | TestGround 🤖 |
+| `=zategory22` | Learning 📚 |
+| `=zategory23` | Sports 🏀 |
+| `=zategory24` | Pet 🐶 |
+| `=zategory25` | Gifts 🎁 |
+| `=zategory26` | Special Occasions 🥰 |
+| `=zategory27` | Dress 👚 |
+| `=zategory28` | Hobby 🪂 |
+| `=zategory29` | Insurance 🛡️ |
+| `=zategory30` | Medical 🩺 |
+
+These are the ONLY valid categories. Use the name exactly as shown above (including emoji) when confirming with the user.
+
 ## When to use
 - The user mentions spending money, making a purchase, paying for something
 - The user says things like "I spent X on Y", "X euros for coffee", "paid X for Y", "log X"
@@ -42,63 +110,122 @@ Required environment variables:
 Optional environment variables:
 - `TRACKER_CURRENCY_SYMBOL` — display symbol for the base currency (for example `€`)
 
+## ⛔ NEVER ASK THE USER TO REFORMAT
+
+If the user says "log a pencil for 10 euro under business" — log it. Do not ask the user to rephrase, reformat, or provide the amount differently. Extract what you need from their message and run the script. This applies to every possible phrasing. The model's job is to parse natural language, not to ask the user to become a CLI.
+
+If a script returns an error, report the actual error message. Never invent an error or silently fail.
+
 ## Currency Rules
 - The configured `TRACKER_CURRENCY` is the system of record for stored amounts.
 - If the user gives an amount without a currency, assume it is already in `TRACKER_CURRENCY`.
 - If the user gives an explicit foreign currency, keep that currency in the amount argument you pass to the script, for example `"50 MYR"` or `"12 USD"`.
+- The scripts handle natural language amounts directly. Pass these as-is:
+  - `"10 euro"` → `--amount "10 euro"` ✅
+  - `"€10"` → `--amount "€10"` ✅
+  - `"10 euros"` → `--amount "10 euros"` ✅
+  - `"50 ringgit"` → `--amount "50 ringgit"` ✅
+  - `"12 dollars"` → `--amount "12 dollars"` ✅
+  - `"10"` → `--amount "10"` ✅
 - The scripts fetch a live ECB FX rate, convert into `TRACKER_CURRENCY`, and store the converted amount in the sheet.
 - When conversion happens, the scripts append an `[auto-fx]` audit line to `notes` with the original amount, converted amount, rate, and rate date.
 - Never read the sheet to discover the base currency during normal operation. Use the configured environment instead.
 
+## Categories
+
+All available categories with their stableIds. Fixed here for accuracy — do NOT call `get_categories.sh` at runtime.
+
+| Formula | Full Name | Match when the user mentions… |
+|---|---|---|
+| `=zategory1` | Housing 🏡 | rent, mortgage, apartment, flat, condo, room, landlord, lease, property tax, HOA, building fee, accommodation |
+| `=zategory2` | Transport 🚙 | uber, grab, lyft, taxi, bus, metro, subway, train, tram, petrol, fuel, gas station, parking, toll, car wash, ride, commute, vehicle |
+| `=zategory3` | Groceries 🍎 | supermarket, grocery, market, vegetables, fruit, food shopping, produce, bakery, butcher, Tesco, Lidl, Aldi, Carrefour, hypermarket, minimarket |
+| `=zategory4` | Dining Out 🍕 | restaurant, café, coffee shop, pizza, takeaway, food delivery, lunch, dinner, breakfast, brunch, fast food, burger, sushi, noodles, meal, eat out, Wolt, Glovo, Deliveroo, Starbucks, McDonald's, KFC, snack bar |
+| `=zategory5` | Personal Care ❤️ | haircut, salon, barber, spa, skincare, cosmetics, hygiene, toothbrush, shampoo, beauty, nails, waxing, massage, personal grooming |
+| `=zategory6` | Shopping 🛍️ | electronics, phone, laptop, Amazon, online shopping, retail, mall, IKEA, furniture, appliance, gadget, general purchase |
+| `=zategory7` | Utilities 💡 | electricity, water bill, internet, broadband, phone bill, mobile plan, gas bill, Netflix, Spotify, Disney+, Apple subscription, streaming service, SaaS subscription, recurring software bill |
+| `=zategory8` | Fun 🎬 | movie, cinema, concert, live event, bowling, bar, pub, club, night out, show, ticket, amusement park, escape room, karaoke, entertainment |
+| `=zategory9` | Business 💻️ | software tool, domain, hosting, cloud service, AWS, work expense, office supply, coworking, professional service, freelance, client meeting, business travel |
+| `=zategory10` | Other ❓ | anything that clearly doesn't fit any other category |
+| `=zategory11` | Donation 🕌 | donation, charity, sadaqah, general giving, mosque, food bank |
+| `=zategory12` | Childcare 🐣 | daycare, nursery, school fees, tuition, kindergarten, preschool, nanny, babysitter, kids activity, children's class, school supplies |
+| `=zategory13` | Travel ✈️ | flight, hotel, Airbnb, vacation, holiday, travel booking, trip, visa fee, travel insurance, luggage |
+| `=zategory14` | Zakat 🌟 | zakat, zakat al-mal, zakat al-fitr, obligatory religious giving |
+| `=zategory15` | Debt Payment 💸 | loan repayment, debt, installment, credit card payment, EMI, owe, pay back |
+| `=zategory16` | Fitness 💪 | gym, gym membership, fitness class, yoga, pilates, CrossFit, personal trainer, workout, exercise, sports class |
+| `=zategory17` | Family Support 🏘️ | sending money home, supporting family, remittance to family, parent support, sibling support |
+| `=zategory18` | Taxes 💵 | income tax, tax payment, tax return, VAT, council tax, tax filing |
+| `=zategory19` | Maintenance 🧰 | repair, fix, plumber, electrician, handyman, service fee, appliance repair, car repair, maintenance |
+| `=zategory20` | Painting 🎨 | painting, paint, wall paint, decorating, interior work, renovating |
+| `=zategory21` | TestGround 🤖 | test, dummy, sample — only use if the user explicitly says this is a test entry |
+| `=zategory22` | Learning 📚 | book, ebook, course, online learning, Udemy, Coursera, class, training, tutorial, educational material |
+| `=zategory23` | Sports 🏀 | sports gear, football, basketball, tennis, swimming, cycling, running gear, sports club membership, match ticket |
+| `=zategory24` | Pet 🐶 | pet food, vet, veterinary, pet supplies, grooming (for pets), pet toy, animal |
+| `=zategory25` | Gifts 🎁 | gift, present, birthday gift, anniversary gift, wedding gift, buying for someone else |
+| `=zategory26` | Special Occasions 🥰 | birthday party, wedding, celebration, anniversary event, graduation, ceremony, event planning |
+| `=zategory27` | Dress 👚 | clothes, clothing, shirt, dress, shoes, bag, handbag, jacket, outfit, fashion, Zara, H&M, Uniqlo, apparel |
+| `=zategory28` | Hobby 🪂 | hobby, craft, photography gear, gaming purchase, musical instrument, DIY materials, art supply, workshop, collection |
+| `=zategory29` | Insurance 🛡️ | insurance premium, health insurance, car insurance, life insurance, travel insurance, policy payment |
+| `=zategory30` | Medical 🩺 | doctor, hospital, clinic, pharmacy, medicine, prescription, dental, dentist, medical test, health checkup, surgery |
+
 ## Category Matching Rules
-The Simplify Budget sheet has a fixed list of user-defined categories (e.g. "Dining Out 🍽️", "Groceries 🛒", "Transport 🚗"). You MUST:
-1. Always fetch the live category list before writing — never guess or hardcode categories
-2. Match the user's description to the closest category using common sense:
-   - coffee, restaurants, takeaway, lunch, dinner, pizza, fast food → Dining Out
-   - supermarket, groceries, food shopping → Groceries
-   - uber, taxi, bus, metro, fuel → Transport
-   - etc.
-3. Always make your best guess — never ask the user to pick a category
-4. Construct the category as `=zategory{stableId}` (e.g. `=zategory4`) — never use the fullName string as the write input
-5. Only use categories that exist in the live category list. Never invent new category names like "Electronics" if they are not present.
-6. The confirmation message must mention the actual resolved category from the live list, not the model's guessed label.
+1. Use the Categories table above — never call `get_categories.sh` during normal operation
+2. Always make your best guess — NEVER ask the user to pick or confirm a category.
+3. Pass the plain English category name to the script (e.g. `"Dining Out"`, `"Business"`, `"Transport"`). The script resolves it to the correct formula internally. Never construct `=zategory{N}` yourself.
+4. Disambiguation hints:
+   - Coffee or café → Dining Out
+   - Netflix/Spotify/streaming → Utilities
+   - Concert, bar, night out → Fun
+   - Gym or fitness class → Fitness
+   - Doctor, pharmacy, clinic → Medical
+   - Clothes, shoes, fashion → Dress
+   - Electronics, gadgets, general retail → Shopping
+   - Birthday gift or present → Gifts
+   - Flight, hotel, vacation → Travel
+   - Daily commute, taxi, fuel → Transport
+   - Books, courses, online learning → Learning
+   - Zakat → Zakat
+   - Test entry → TestGround (only if user says it's a test)
 
 ## Workflows
 
 ### Log a new expense
 
-When the user provides an expense (amount + description, with optional date/account/notes):
+**ONE COMMAND. NO EXTRACTION. NO DECISIONS. NO EXCEPTIONS.**
 
-1. Fetch the current active categories:
-   ```
-   bash <skill_dir>/scripts/get_categories.sh
-   ```
-   This returns lines of `stableId<TAB>fullName`. Show the fullNames to yourself for matching — do NOT show this raw output to the user.
+When the user mentions spending money, buying something, paying for something, or asks to log an expense — run this single command with their message passed through verbatim:
 
-2. Extract from the user's message:
-   - `amount` — required. If the user mentions a foreign currency, preserve it in the amount string you pass to the script, for example `"50 MYR"` or `"12 USD"`. If they give no currency, pass a plain number like `10`.
-   - `description` — what they bought/paid for (required)
-   - `category` — match to the fetched category list; construct `=zategory{stableId}` (e.g. `=zategory4` for Dining Out, `=zategory2` for Transport)
-   - `date` — in YYYY-MM-DD format. Default to today if not specified.
-   - `account` — default to "Cash" if not specified
-   - `notes` — optional supporting context. Keep the main purchase title in `description` and extra detail in `notes`
+```
+bash <skill_dir>/scripts/log.sh "<user's message, word-for-word>"
+```
 
-3. Write the expense:
-   ```
-   bash <skill_dir>/scripts/write_expense.sh "<amount_or_amount_with_currency>" "=zategory<stableId>" "<description>" "<YYYY-MM-DD>" "<account>" "<notes>"
-   ```
+That's it. The script parses amount, currency, description, and category itself. You do no extraction. You do no formatting. You do not ask the user to rephrase anything — ever, under any circumstances.
 
-   If the user asks to add multiple expenses in one message, split them into separate `write_expense.sh` calls. Never try to pass multiple amounts into one command.
-   Examples:
-   - `add 3 test expenses with 1 2 and 3 euro`
-   - run three separate writes for `1`, `2`, and `3`
-   - use distinct descriptions like `test expense 1 euro`, `test expense 2 euro`, `test expense 3 euro`
-   - keep the same date/account defaults unless the user says otherwise
+**Examples — always run the command, always relay the CONFIRM line:**
 
-4. Confirm to the user in a friendly, concise way:
-   "✅ Logged [description] — [amount] under [actual resolved category] on [date]"
-   Include notes only when present.
-   Always name the category you actually used.
+- User: `i bought a pencil for 10 euro under business category`
+  → `bash <skill_dir>/scripts/log.sh "i bought a pencil for 10 euro under business category"`
+
+- User: `spent 23 on mcdonalds`
+  → `bash <skill_dir>/scripts/log.sh "spent 23 on mcdonalds"`
+
+- User: `log 50 myr shell petrol`
+  → `bash <skill_dir>/scripts/log.sh "log 50 myr shell petrol"`
+
+- User: `€12 coffee`
+  → `bash <skill_dir>/scripts/log.sh "€12 coffee"`
+
+**Rules:**
+1. Pass the user's message through without editing it. Do not trim, do not reformat, do not "clean it up".
+2. The script outputs a `CONFIRM:` line. Relay it word-for-word. Do not paraphrase.
+3. If the user specifies a date ("yesterday", "on the 3rd"), pass the date with `--date YYYY-MM-DD`. Otherwise the script defaults to today.
+4. If the user specifies an account other than Cash, pass `--account "<name>"`. Otherwise the script defaults to Cash.
+5. **NEVER ask the user to rephrase, reformat, or simplify their message.** The script takes any phrasing. If you feel tempted to say "please say it as X" — stop. Run `log.sh` with whatever they said. That is your only job.
+6. For multiple expenses in one message (e.g. "10 on coffee and 5 on parking"), call `log.sh` once per expense, sequentially.
+7. Duplicate check: before running `log.sh`, run `find_expenses.sh --date <today> --limit 20` once. If the same description + amount already exists for today, ask before logging again. Otherwise just log.
+
+**Step 3 — Relay the CONFIRM line:**
+The script outputs a `CONFIRM:` line. Send it to the user word for word. Do not paraphrase, do not add to it, do not confirm from memory.
 
 ### Log an expense from a receipt image
 
@@ -115,7 +242,7 @@ When the user uploads a receipt image or asks you to log a receipt:
    - Do not use subtotal unless that is the only total shown.
    - Do not sum visible item lines if a final total is already present.
 5. Use the merchant name or a short summary as the `description`.
-6. Best-match the whole receipt into one real category using the live category list.
+6. Best-match the whole receipt into one real category using the **Active Categories** table above.
 7. If the receipt is materially mixed, such as fuel plus snacks:
    - default to one expense using the dominant purpose
    - ask one short clarification only if the split is important or the category is genuinely ambiguous
@@ -171,25 +298,32 @@ When the user wants to inspect, fix, or delete income, resolve it from the sheet
 3. Matching MUST consider `name`, `source`, and `notes`.
 4. If one clear match exists, proceed. If multiple plausible matches exist, ask one short disambiguation question.
 
+### Check today's or a specific day's expenses
+
+Triggers: "check my expenses for today", "what are my expenses today", "what did I spend today", "show me today's expenses", "expenses for [date]", "what did I spend on [date]", or any question about spending on a specific day.
+
+**Always run `find_expenses.sh` with a date filter. This is not optional.**
+```
+bash <skill_dir>/scripts/find_expenses.sh --date <YYYY-MM-DD> --limit 20
+```
+- Use the script output to answer. Never use conversation history or memory.
+- If the script returns entries, list them: `[description] — [amount] under [category] ([account])`
+- Only say "no expenses for today" if the script returns an empty array `[]`.
+
+**`find_summary.sh` is for month-level questions only. Never use it for today/yesterday/specific-date queries.**
+
 ### Read monthly totals
 
-When the user asks summary questions such as:
-- `what's my income this month`
-- `what did I spend this month`
-- `what are this month's totals`
-- `how much did I save this month`
+Triggers: "what did I spend this month", "what's my income this month", "monthly totals", "how much did I save this month". These are month-level questions with no specific date.
 
-Do NOT rebuild these totals from ledger rows unless the user explicitly asks for line-item reconstruction.
-
-Instead, read the monthly summary from `Dontedit`:
 ```
-bash <skill_dir>/scripts/find_summary.sh --month 2026-03
+bash <skill_dir>/scripts/find_summary.sh --month YYYY-MM
 ```
 
 Rules:
 1. This is read-only.
 2. `Dontedit` is the source of truth for monthly totals.
-3. Use `Expenses` / `Income` only when the user asks for detailed entries, not when they ask for top-line monthly totals.
+3. Never use `find_summary.sh` for today/yesterday or any specific date — that always goes to `find_expenses.sh`.
 4. Respond concisely with income, spending, and savings when available.
 
 ### Inspect recurring schedule
@@ -249,7 +383,7 @@ When the user wants to add a recurring expense or recurring income to the `Recur
    ```
 3. This must reuse the first empty row in `Recurring` starting from row 6, matching the SB_LIVE hole-reuse behavior.
 4. Recurring categories follow SB_LIVE rules:
-   - expense recurring items must store a `=zategory<stableId>` formula derived from the live category list
+   - expense recurring items must store a `=zategory<stableId>` formula — use the **Active Categories** table above to resolve it
    - recurring income is the only case that may store the literal `Income 💵`
 5. Never ask the user to pick a category unless they explicitly want to choose. Best-match into an existing category.
 6. Confirm concisely.
@@ -281,44 +415,35 @@ If the user asks to undo or delete an income entry:
 
 ### Fix or correct the last expense
 
-When the user says things like "fix that", "that was wrong", "change the amount", "put that under X instead", "it was 4 not 5":
+When the user says things like "fix that", "that was wrong", "change the amount", "put that under X instead", "it was 4 not 5", "actually that was yesterday", "actually I bought that on [date]", "wrong date":
 
-1. Resolve the target expense from the sheet using `find_expenses.sh`. Do NOT trust chat memory as the source of truth.
-
-2. Ask for or infer the correction from their message (amount, category, description, date, account, or notes). If the new amount is in a foreign currency, preserve that currency in the amount argument you pass to the script.
-
-3. For category corrections, fetch the category list again and match:
+1. Run `find_expenses.sh` to resolve the target from the sheet. Do not use chat memory.
+2. Infer the correction (amount, category, description, date, account, notes).
+3. Run the update. Use `__KEEP__` for unchanged fields, `__CLEAR__` to blank notes. Pass category as plain English name:
    ```
-   bash <skill_dir>/scripts/get_categories.sh
+   bash <skill_dir>/scripts/update_expense.sh --id "<transaction_id>" --amount "<amount_or___KEEP__>" --description "<description_or___KEEP__>" --category "<category_name_or___KEEP__>" --date "<YYYY-MM-DD_or___KEEP__>" --account "<account_or___KEEP__>" --notes "<notes_or___KEEP___or___CLEAR__>"
    ```
-
-4. Run the update with the corrected values. Use `__KEEP__` for unchanged fields and `__CLEAR__` to blank notes:
-   ```
-   bash <skill_dir>/scripts/update_expense.sh "<transaction_id>" "<amount_or_amount_with_currency_or___KEEP__>" "<=zategory<stableId>_or___KEEP__>" "<description_or___KEEP__>" "<YYYY-MM-DD_or___KEEP__>" "<account_or___KEEP__>" "<notes_or___KEEP___or___CLEAR__>"
-   ```
-
-5. Confirm: "✅ Updated — now [description] — [amount] under [actual resolved category]"
-   Include notes only when present.
-   Always name the category you actually used.
+4. Relay the `CONFIRM:` line from the script output word for word.
 
 ### Undo / delete last expense
 If the user asks to undo or delete an entry:
 
-1. Resolve the target expense from the sheet using `find_expenses.sh`.
-2. If there is one clear match, clear the row by transaction id:
+1. Run `find_expenses.sh` to resolve the target from the sheet.
+2. If one clear match, delete it:
    ```
    bash <skill_dir>/scripts/delete_expense.sh "<transaction_id>"
    ```
-3. Confirm that the expense row was cleared.
-4. Never delete sheet rows. Clear the existing row contents instead.
+3. Relay the `CONFIRM:` line from the script output word for word.
+4. Never delete sheet rows — the script clears the row contents.
 
 ## Rules
-- Never hardcode category names — always fetch them live
-- Never claim a category that does not exist in the live category list
-- For new expenses, always best-match into one of the real categories and tell the user which category was used
-- For income, never invent hidden structure. Use the explicit `name`, `account`, `source`, and `notes` columns on the Income tab.
-- Never show raw script output to the user — parse it and respond naturally
-- Always confirm what you logged — the user should never have to guess if it worked
+- Pass category as plain English to scripts — never construct `=zategory{N}` yourself
+- Do NOT call `get_categories.sh` at runtime — the category table is hardcoded in the scripts
+- For income, use the explicit `name`, `account`, `source`, and `notes` fields.
+- Relay `CONFIRM:` lines from scripts verbatim — do not paraphrase or confirm from memory
+- Never include transaction IDs or internal record IDs in any response
+- Never use conversation history as evidence of what is or isn't in the sheet — always check the sheet
+- Always relay what the script confirmed — the user should never have to guess if it worked
 - If a script returns an error, tell the user clearly and do not silently retry
 - Default date is always today in the user's local timezone
 - Default account is always "Cash" unless the user specifies otherwise
@@ -327,6 +452,6 @@ If the user asks to undo or delete an entry:
 - Amounts are always stored as plain numbers in `TRACKER_CURRENCY`
 - If a foreign currency is provided, keep it in the script input and let the script convert it into `TRACKER_CURRENCY`
 - Notes are a first-class field. Search them, preserve them on update unless changed, and clear them on delete.
-- For edits and deletes, the sheet is the source of truth. Resolve the target row from the sheet before mutating anything.
+- The sheet is always the source of truth — for reads, edits, deletes, and duplicate checks.
 - Recurring schedule questions are read-only. Never create expense or income rows just because the user asked what is due.
 - The 🤖 label on written rows identifies bot-added entries in the sheet

@@ -20,6 +20,9 @@ ROW_JSON="$(find_expense_row_json "$TRANSACTION_ID")" || {
 }
 
 SHEET_ROW="$(echo "$ROW_JSON" | jq -r '.rowNumber')"
+DESCRIPTION="$(echo "$ROW_JSON" | jq -r '.description')"
+AMOUNT="$(echo "$ROW_JSON" | jq -r '.amount')"
+DATE_DISPLAY="$(echo "$ROW_JSON" | jq -r '.dateDisplay')"
 
 CLEAR_BODY='{}'
 curl -sf -X POST \
@@ -30,4 +33,4 @@ curl -sf -X POST \
 
 update_master_timestamp
 
-echo "Cleared transaction ${TRANSACTION_ID} at row ${SHEET_ROW}"
+echo "CONFIRM: Deleted ${DESCRIPTION} — ${AMOUNT} on ${DATE_DISPLAY}"
