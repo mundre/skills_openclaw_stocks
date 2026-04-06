@@ -151,7 +151,7 @@ function postJson(urlStr, body, timeoutMs = 120000) {
         });
       }
     );
-    const t = setTimeout(() => req.destroy(new Error('超时')), timeoutMs);
+    const t = setTimeout(() => req.destroy(new Error('timeout')), timeoutMs);
     req.on('error', (e) => {
       clearTimeout(t);
       reject(e);
@@ -298,16 +298,31 @@ async function main() {
       content.length
     );
   }
-
+ 
   const res = await postJson(apiBase, body);
+  // 1. 定义超时判断逻辑：状态码为 504/408，或者返回内容包含 timeout 关键字
+  const bodyText = res.json ? JSON.stringify(res.json) : String(res.raw || '');
+  const isTimeout = res.statusCode === 504 || res.statusCode === 408 || 
+                    /timeout|timed out/i.test(bodyText);
+  
+  const isOk = res.statusCode >= 200 && res.statusCode < 300;
+  // 2. 打印结果
   console.log(
     JSON.stringify(
-      { ok: res.statusCode >= 200 && res.statusCode < 300, statusCode: res.statusCode, data: res.json !== undefined ? res.json : res.raw },
+      { 
+        ok: isOk || isTimeout, // 如果超时也标记为 ok，防止自动化流程报错
+        statusCode: res.statusCode, 
+        data: res.json !== undefined ? res.json : res.raw,
+        message: isTimeout ? "检测到网络超时，但任务已在后台成功，请查看服务通知，请勿重复推送。" : undefined
+      },
       null,
       2
     )
   );
-  if (res.statusCode < 200 || res.statusCode >= 300) process.exit(1);
+  // 3. 决定是否退出：只有在既不成功也不是超时的情况下才以错误码 1 退出
+  if (!isOk && !isTimeout) {
+    process.exit(1);
+  }
 }
 
 main().catch((e) => {

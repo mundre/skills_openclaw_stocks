@@ -3,11 +3,16 @@
   "slug": "weixin-mp-push",
   "displayName": "weixin mp push 微信公众号图文生成与推送技能",
   "latest": {
-    "version": "1.0.16",
-    "publishedAt": 1775039293167,
-    "commit": "https://github.com/openclaw/skills/commit/ff91f4dc4da013a11435abd175398b7f3f5a6b11"
+    "version": "1.0.21",
+    "publishedAt": 1775272844766,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.16",
+      "publishedAt": 1775039293167,
+      "commit": "https://github.com/openclaw/skills/commit/ff91f4dc4da013a11435abd175398b7f3f5a6b11"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1774882779652,
