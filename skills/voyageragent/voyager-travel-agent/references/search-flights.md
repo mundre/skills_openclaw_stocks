@@ -48,7 +48,7 @@ Parameters:
 - arrCity: arrival city, e.g., Urumqi
 - depCity: departure city, e.g., Chengdu
 - currency: currency type, e.g., HKD (default if not specified by user)
-- depDate: departure date, format YYYY-MM-DD
+- depDate: **(Must be future date)** departure date in YYYY-MM-DD format. Convert relative dates (e.g., "tomorrow" → tomorrow's date) or partial dates (e.g., "4.5" → "2026-04-05") to full format based on current date.
 - subQuery: query description extracted from the user's original question for this flight segment.
 
 Important Notes:

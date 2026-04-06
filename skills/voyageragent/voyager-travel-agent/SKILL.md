@@ -1,6 +1,6 @@
 ---
 name: voyager-travel-agent
-description: "Provides comprehensive travel solutions including flight search, hotel recommendations, and multi-day itinerary planning. Use when user mentions 'flight', 'airline', 'hotel', 'accommodation', 'itinerary', 'trip plan', or asks to search or book travel services."
+description: "Alipay+ Voyager Travel Agent. Provides comprehensive travel solutions including flight search, hotel recommendations, and multi-day itinerary planning. Use when user mentions 'flight', 'airline', 'hotel', 'accommodation', 'itinerary', 'trip plan', or asks to search or book travel services."
 license: MIT-0
 ---
 
@@ -26,6 +26,10 @@ This skill coordinates multiple travel sub-skills to solve complex user requests
 
 Load the reference file to get the detailed workflow for each sub-skill.
 
+## Configuration
+
+**API Key**: This skill works without any API key for trial usage. For enhanced results with higher QPS, API key application is required (feature under development).
+
 ## Output Guidelines
 
 Present results in markdown format.
@@ -36,4 +40,6 @@ For hotels:
 3. Present hotels one by one within each group (not in a table)
 4. Provide a comparison table at the end for easy side-by-side review
 
-Each hotel includes: name, price, rating, image (`hotelMainImage`), booking link: `[Click to book]({jumpUrl})` (translate "Click to book" based on user language)
+Each hotel includes: name, price, rating, image: `![{hotelName}]({hotelMainImage})`, booking link: `[Click to book]({jumpUrl})` (translate "Click to book" based on user language)
+
+**CRITICAL**: name, price, rating, image, and booking link MUST be rendered in the output when available in the response data.

@@ -15,7 +15,7 @@ When user asks about hotels with explicit geographic or hotel entity identifiers
 1. **Collect Search Parameters**: Extract key parameters from the user's query:
    - `checkInDate`: Check-in date (YYYY-MM-DD), defaults to today + 7 days (T+7)
    - `checkOutDate`: Check-out date (YYYY-MM-DD), defaults to today + 8 days (T+8)
-   - `city`: City name, defaults to user's current city
+   - `city`: **(Required)** City name, ask user if missing
    - `country`: Country name
    - `nearby`: A single POI for proximity search
    - `hotelNames`: List of specific hotel names
@@ -25,15 +25,14 @@ When user asks about hotels with explicit geographic or hotel entity identifiers
 2. **Handle Silent Defaults**: Apply defaults **silently** without asking user:
    - Missing checkInDate → today + 7 days
    - Missing checkOutDate → today + 8 days
-   - Missing city → user's current city
-   - **Do NOT ask the user for missing information**
+   - **Missing city → ASK the user for city name (do NOT proceed without city)**
 
 3. **Decompose and Structure Queries**:
    - Simple query: "hotels near Disneyland" → single search object
    - Complex query: "hotels near Mong Kok and Yau Ma Tei" → multiple search tasks
    - **Each task needs a separate query object**
 
-4. **Call search-hotels Tool**: Collect all search query objects into a List, serialize to JSON string, call `node scripts/search-hotels.sh '[{查询对象}]'`. ALL recommendations MUST come from this tool's actual response.
+4. **Call search-hotels Tool**: Collect all search query objects into a List, serialize to JSON string, call `bash scripts/search-hotels.sh '[{查询对象}]'`. ALL recommendations MUST come from this tool's actual response.
 
 5. **Data Validation**:
    - Parse JSON response

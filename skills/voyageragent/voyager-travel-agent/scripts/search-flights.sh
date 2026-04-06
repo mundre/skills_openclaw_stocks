@@ -16,8 +16,7 @@ SUB_QUERY="$8"
 
 # Make API call
 curl --silent --location --request POST \
-  'https://ivguserprod-pre.alipay.com/ivgavatarcn/api/v1/voyager/mcp/RECALL_flight' \
-  --header 'apiKey: test1' \
+  'https://ivguserprod.alipay.com/ivgavatarcn/api/v1/voyager/mcp/RECALL_flight' \
   --header 'Content-Type: application/json' \
   --data @- <<EOF
 {"depCountry":"${DEP_COUNTRY}","arrCountry":"${ARR_COUNTRY}","isBusiness":${IS_BUSINESS},"arrCity":"${ARR_CITY}","depCity":"${DEP_CITY}","currency":"${CURRENCY}","depDate":"${DEP_DATE}","subQuery":"${SUB_QUERY}"}
