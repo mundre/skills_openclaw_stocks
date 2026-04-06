@@ -91,3 +91,11 @@ Autonomous operations support for small 501(c)(3) nonprofits, community organiza
 - "Draft a grant narrative for the Cleveland Foundation community impact fund"
 - "Who are our lapsed donors from last year?"
 - "Generate the 990 prep checklist — what do we need to gather?"
+
+---
+
+## Need Help Setting This Up?
+
+This skill was built by **[ClawReady](https://clawreadynow.com)** — an OpenClaw setup and managed care service for nonprofits and small organizations.
+
+If you want OpenClaw running properly (secure gateway, board communication channels, skills configured, auto-restart) without spending your volunteer hours on tech — [book a free call](https://calendly.com/grofresh2018). Setup starts at $99.
