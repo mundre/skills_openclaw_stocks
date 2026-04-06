@@ -1,6 +1,8 @@
 ---
 name: robot-paper-post
 description: 深度拆解机器人/具身智能领域论文并生成技术推文；当用户需要撰写机器人论文推文、技术分析文章、研究团队脉络梳理时使用
+dependencies:
+  - playwright-browser-automation
 ---
 
 # 机器人论文推文撰写 Skill
@@ -12,6 +14,7 @@ description: 深度拆解机器人/具身智能领域论文并生成技术推文
 - 核心拆解：提取 SOTA 指标、创新架构、硬件配置
 - 技术溯源：识别研究团队，梳理技术演进脉络
 - 深度撰写：生成结构化、硬核且易读的推文
+- **自动截图**：自动采集论文/项目主页图片并插入推文
 
 ## 触发条件
 
@@ -31,6 +34,27 @@ description: 深度拆解机器人/具身智能领域论文并生成技术推文
 5. 记录所有有效链接，供后续资源导航使用
 
 **输出**：收集论文、代码、项目主页、视频的完整资源列表
+
+### 步骤 1.5：自动截图采集（新增）
+
+**触发条件**：用户要求自动采集论文图片或推文中需要插入图片
+
+**执行要点**：
+1. 加载 `playwright-browser-automation` skill 获取浏览器自动化能力
+2. 使用 Playwright 访问论文的 arXiv HTML 版本（如 `https://arxiv.org/html/2604.00202`）
+3. 自动采集论文中的 Figure 图片（通过 `figure` 元素定位）
+4. 尝试从论文页面提取并访问项目主页，采集项目主页截图
+5. 将图片保存到 `paper_imgs/` 目录
+
+**自动化脚本**：使用 [scripts/capture_imgs.js](scripts/capture_imgs.js) 脚本：
+```bash
+cd <工作目录>
+npm install playwright
+npx playwright install chromium
+node scripts/capture_imgs.js <arXiv_ID>
+```
+
+**输出**：采集的图片保存在 `paper_imgs/` 目录，可直接在推文中引用
 
 ### 步骤 2：核心拆解
 
@@ -102,13 +126,24 @@ description: 深度拆解机器人/具身智能领域论文并生成技术推文
 - 项目主页：[Project Page URL]
 - 代码仓库：[GitHub Repo URL]（若未公开，注明"Code Coming Soon"）
 
-### 步骤 5：多媒体锚点标注
+### 步骤 5：多媒体锚点标注与自动插入
 
 **执行要点**：
 1. 在推文中标注需要插入图片/视频的位置
 2. 精准描述图片内容（例如："展示机器人在不同光照下抓取透明物体的对比图"）
 3. 标注图片来源（论文 Figure、项目主页截图）
 4. 标注视频片段的时间点（例如："建议截取 0:15-0:30 的抓取演示"）
+5. **自动插入图片**：采集图片后，将图片复制到推文同目录，并更新推文中的图片路径为直接引用
+
+**自动插入图片的工作流**：
+1. 执行截图脚本后，将图片从 `paper_imgs/` 复制到推文所在目录
+2. 在推文中用 Markdown 语法引用图片：
+   ```markdown
+   ![Figure说明](arxiv_fig_1.png)
+   ```
+3. 注意：图片路径使用相对路径，且与推文文件在同一目录
+
+**输出**：带有可显示图片的完整推文
 
 ### 步骤 6：最终校验
 
@@ -150,6 +185,8 @@ description: 深度拆解机器人/具身智能领域论文并生成技术推文
 - **研究团队索引**：见 [references/research-teams.md](references/research-teams.md)
 - **经典论文索引**：见 [references/classic-papers.md](references/classic-papers.md)
 - **推文生成模板**：见 [assets/post-template.md](assets/post-template.md)
+- **截图采集脚本**：见 [scripts/capture_imgs.js](scripts/capture_imgs.js)
+- **Node.js 依赖配置**：见 [package.json](package.json)（包含 playwright 依赖）
 
 ## 注意事项
 

@@ -1,0 +1,20 @@
+{
+  "name": "robot-paper-post-assets",
+  "version": "1.1.0",
+  "description": "Robot paper post assets including screenshot capture script",
+  "main": "index.js",
+  "scripts": {
+    "capture": "node scripts/capture_imgs.js"
+  },
+  "keywords": [
+    "robotics",
+    "paper",
+    "screenshot",
+    "playwright"
+  ],
+  "author": "Jessy Huang",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}

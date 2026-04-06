@@ -1,11 +1,17 @@
 {
   "owner": "jessy-huang",
   "slug": "robot-paper-post",
-  "displayName": "机器人论文推文撰写",
+  "displayName": "Robot Paper Post",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774927852564,
-    "commit": "https://github.com/openclaw/skills/commit/b7abba747a19959e387dbd98ea159fc6c68e8b33"
+    "version": "1.2.0",
+    "publishedAt": 1775360604372,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774927852564,
+      "commit": "https://github.com/openclaw/skills/commit/b7abba747a19959e387dbd98ea159fc6c68e8b33"
+    }
+  ]
 }

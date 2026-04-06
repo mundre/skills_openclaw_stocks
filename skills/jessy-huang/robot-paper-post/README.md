@@ -2,6 +2,16 @@
 
 机器人论文深度推文撰写技能包，为"Mbot具身智能实验室"打造专业级技术内容生产工具。
 
+## 快速安装
+
+```bash
+npx clawhub@latest install robot-paper-post
+```
+
+**ClawHub 地址**: https://clawhub.ai/skills/robot-paper-post
+
+**GitHub 地址**: https://github.com/Jessy-Huang/robot-paper-post
+
 ## 功能概述
 
 本 Skill 能够将机器人/具身智能领域的学术论文转化为结构化、硬核且易读的技术推文，具备以下核心能力：
@@ -12,6 +22,7 @@
 | 核心拆解 | 提取 SOTA 指标、创新架构、硬件配置 |
 | 技术溯源 | 识别研究团队，梳理技术演进脉络 |
 | 深度撰写 | 生成符合公众号风格的专业技术推文 |
+| **自动截图** | 使用 Playwright 自动采集论文/项目主页图片并插入推文 |
 
 ## 使用方法
 
@@ -47,13 +58,58 @@
 robot-paper-post/
 ├── SKILL.md                         # 主入口：工作流程与风格指南
 ├── README.md                        # 项目说明文档
+├── package.json                     # Node.js 依赖配置（含 Playwright）
 ├── references/
 │   ├── paper-structure.md           # 推文结构详解
 │   ├── tech-terms-glossary.md       # 机器人技术术语库
 │   ├── research-teams.md            # 主流研究团队索引
 │   └── classic-papers.md            # 经典论文索引
-└── assets/
-    └── post-template.md             # 推文生成模板
+├── assets/
+│   └── post-template.md             # 推文生成模板
+└── scripts/
+    └── capture_imgs.js              # 论文图片自动采集脚本
+```
+
+## 截图采集功能（新增 v1.2）
+
+### 功能说明
+
+新增的截图功能可以自动从 arXiv 论文页面和项目主页采集图片，无需手动截图。
+
+### 安装依赖
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+### 使用方法
+
+```bash
+# 基本用法（使用默认 arXiv ID）
+node scripts/capture_imgs.js 2604.00202
+
+# 或在 Node.js 代码中调用
+const { capturePaperFigures } = require('./scripts/capture_imgs.js');
+await capturePaperFigures('2604.00202');
+```
+
+### 输出
+
+采集的图片将保存在 `paper_imgs/` 目录：
+- `arxiv_fig_1.png` - Figure 1
+- `arxiv_fig_2.png` - Figure 2
+- ...以此类推
+- `10_arxiv_html.png` - arXiv 论文页面概览
+- `11_project_page.png` - 项目主页截图（如有）
+
+### 在推文中使用
+
+1. 将采集的图片复制到推文同目录
+2. 在推文中使用相对路径引用：
+
+```markdown
+![Figure 1](arxiv_fig_1.png)
 ```
 
 ## 资源说明
@@ -183,9 +239,13 @@ RT-X 构建了百万级跨机构机器人数据集...
 
 ## 更新日志
 
+- **v1.2**：新增自动截图采集功能
+  - 添加 Playwright 截图脚本 `scripts/capture_imgs.js`
+  - 添加 `package.json` 依赖配置
+  - 更新 SKILL.md 工作流程说明
 - **v1.1**：新增经典论文索引（20+ 篇）
 - **v1.0**：初始版本，包含核心工作流程和参考资源
 
 ## 许可证
 
-本项目仅供 Mbot 具身智能实验室内部使用。
+本项目采用 [MIT License](LICENSE) 开源协议。

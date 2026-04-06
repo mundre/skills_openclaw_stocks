@@ -1,0 +1,28 @@
+{
+  "name": "robot-paper-post",
+  "version": "1.2.0",
+  "description": "深度拆解机器人/具身智能领域论文并生成技术推文，支持自动截图采集",
+  "author": "Jessy Huang",
+  "license": "MIT",
+  "homepage": "https://github.com/Jessy-Huang/robot-paper-post",
+  "clawhub": {
+    "url": "https://clawhub.ai/jessy-huang/robot-paper-post",
+    "category": "research"
+  },
+  "dependencies": [
+    {
+      "name": "playwright-browser-automation",
+      "description": "浏览器自动化能力，用于自动采集论文图片",
+      "required": true
+    }
+  ],
+  "keywords": [
+    "robotics",
+    "paper",
+    "wechat",
+    "article",
+    "screenshot",
+    "playwright",
+    "embodied-ai"
+  ]
+}
