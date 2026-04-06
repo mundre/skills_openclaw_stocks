@@ -2,13 +2,24 @@
 {
   "name": 'Coinw Contract Skill',
   "description": 'Coinw Contract REST API skill: covers market data, order placement/cancellation, TP/SL, position and order queries, account assets, position modes, and leverage queries.',
-  "metadata": {"version": "1.3.0","author": "Coinw"}
+  "metadata": {"version": "1.3.0","author": "Coinw","openclaw":{"always": true,"requires":{"env":["COINW_API_KEY","COINW_SECRET_KEY"]}}}
 }
 ---
 
 # Coinw Contract Skill
 
 Coinw Contract REST API skill: covers market data, order placement/cancellation, TP/SL, position and order queries, account assets, position modes, and leverage.
+
+
+### Setup Credentials
+CoinW private endpoints require `api_key` and a request signature (`sign`).
+
+1. Environment variables:
+```bash
+export COINW_API_KEY="your_api_key"
+export COINW_SECRET_KEY="your_secret_key"
+```
+2. In chat: provide `api_key`/`secret_key` (and an account name). The agent will mask secrets when showing them back and store them securely in OpenClaw's credential storage (not inside skill markdown files).
 
 ## Key Features
 - Market data: contract instruments, order book, K-line data, trades, margin requirements
@@ -157,7 +168,7 @@ When showing credentials to users:
 When user provides new credentials:
 
 * Ask for account name, api_key, secret_key
-* Store in `TOOLS.md` with masked display confirmation 
+* Store the provided credentials in OpenClaw's secure credential store with masked display confirmation 
 
 ## Reference
 - Authentication`./references/Authentication.md`
