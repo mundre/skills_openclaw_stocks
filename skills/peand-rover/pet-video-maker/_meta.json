@@ -1,0 +1,11 @@
+{
+  "owner": "peand-rover",
+  "slug": "pet-video-maker",
+  "displayName": "Pet Video Maker",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1774671996427,
+    "commit": null
+  },
+  "history": []
+}
