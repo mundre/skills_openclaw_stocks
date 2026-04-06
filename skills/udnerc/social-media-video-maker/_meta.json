@@ -3,11 +3,16 @@
   "slug": "social-media-video-maker",
   "displayName": "Social Media Video Maker",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1774844194702,
-    "commit": "https://github.com/openclaw/skills/commit/f758651895b43ee357a988696a28cf5d3bc3a750"
+    "version": "1.0.5",
+    "publishedAt": 1775190138122,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1774844194702,
+      "commit": "https://github.com/openclaw/skills/commit/f758651895b43ee357a988696a28cf5d3bc3a750"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774517706383,
