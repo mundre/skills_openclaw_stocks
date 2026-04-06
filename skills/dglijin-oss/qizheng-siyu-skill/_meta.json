@@ -1,11 +1,17 @@
 {
   "owner": "dglijin-oss",
   "slug": "qizheng-siyu-skill",
-  "displayName": "七政四余 - Qi Zheng Si Yu Astrology",
+  "displayName": "七政四余星盘技能",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1774861793303,
-    "commit": "https://github.com/openclaw/skills/commit/e58f62c00d5e486a3a8c863d0c7f282587c6a7c5"
+    "version": "3.0.0",
+    "publishedAt": 1775229106543,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1774861793303,
+      "commit": "https://github.com/openclaw/skills/commit/e58f62c00d5e486a3a8c863d0c7f282587c6a7c5"
+    }
+  ]
 }
