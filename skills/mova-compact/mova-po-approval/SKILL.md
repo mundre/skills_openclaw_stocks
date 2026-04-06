@@ -5,6 +5,8 @@ license: MIT-0
 metadata: {"openclaw":{"plugin":{"name":"MOVA","installCmd":"openclaw plugins install openclaw-mova"},"dataSentToExternalServices":[{"service":"MOVA API (api.mova-lab.eu)","data":"PO ID, approver employee ID, AI analysis results, human decision, audit metadata"},{"service":"ERP connector (server-side, read-only)","data":"PO fields, vendor registry, budget data, authority matrix — accessed by MOVA runtime, not by the agent"}]}}
 ---
 
+> **Contract Skill** — A ready-to-use MOVA HITL workflow. Requires the `openclaw-mova` plugin.
+
 # MOVA Purchase Order Approval
 
 Submit a purchase order to MOVA for automated risk analysis and a human decision gate — with a tamper-proof audit trail of every procurement decision.
