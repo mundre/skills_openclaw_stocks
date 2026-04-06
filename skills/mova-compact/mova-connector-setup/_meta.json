@@ -3,11 +3,16 @@
   "slug": "mova-connector-setup",
   "displayName": "Mova Connector Setup",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1774534479996,
-    "commit": "https://github.com/openclaw/skills/commit/7f8c0c84818e4756a09f2dda1a3b0f4b1b6b2144"
+    "version": "1.0.2",
+    "publishedAt": 1775141476762,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1774534479996,
+      "commit": "https://github.com/openclaw/skills/commit/7f8c0c84818e4756a09f2dda1a3b0f4b1b6b2144"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774364139648,

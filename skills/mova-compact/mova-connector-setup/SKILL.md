@@ -5,6 +5,8 @@ license: MIT-0
 metadata: {"openclaw":{"plugin":{"name":"MOVA","installCmd":"openclaw plugins install openclaw-mova"},"dataSentToExternalServices":[{"service":"MOVA API (api.mova-lab.eu)","data":"connector ID, endpoint URL, auth header — to register connector overrides for your org"}]}}
 ---
 
+> **Ecosystem Skill** — Supports building and managing the MOVA ecosystem. Requires the `openclaw-mova` plugin.
+
 # MOVA Connector Setup
 
 Help the user register their real business system endpoints to replace the MOVA sandbox mock.
