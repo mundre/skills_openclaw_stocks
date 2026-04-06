@@ -1,11 +1,17 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-ecommerce-law",
-  "displayName": "Zhang Ecommerce Law",
+  "displayName": "九章-电商法律专家",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774694667250,
-    "commit": "https://github.com/openclaw/skills/commit/9cb5bc10efefd2a13964aca8dc072111f3c772d1"
+    "version": "1.5.0",
+    "publishedAt": 1775098730580,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774694667250,
+      "commit": "https://github.com/openclaw/skills/commit/9cb5bc10efefd2a13964aca8dc072111f3c772d1"
+    }
+  ]
 }
