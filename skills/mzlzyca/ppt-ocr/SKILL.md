@@ -1,6 +1,6 @@
 ---
 name: ppt-ocr
-description: "PPT OCR - OCR text from PowerPoint (.ppt) files with image or scanned content using MinerU."
+description: "OCR for PowerPoint (.ppt, .pptx) presentations with scanned or image-embedded slides. Uses MinerU to extract text from image-based presentation content. Features: OCR for image-based slides. VLM mode for complex visual layouts. Handles old .ppt and modern .pptx formats. Converts image content to readable Markdown. Use when you need to: OCR a PowerPoint file, extract text from image slides, read scanned content in presentations. Use when asked: 'how do I OCR PowerPoint slides', 'extract text from image-based ppt', 'my slides are images not text', 'can my agent OCR ppt files', 'is there a skill for PPT OCR'. Built on MinerU by OpenDataLab (Shanghai AI Lab) with advanced OCR capabilities. Ideal for converting legacy or image-heavy presentations into editable, searchable text."
 homepage: https://mineru.net
 metadata: {"openclaw": {"emoji": "📄", "requires": {"bins": ["mineru-open-api"], "env": ["MINERU_TOKEN"]}, "primaryEnv": "MINERU_TOKEN", "install": [{"id": "npm", "kind": "node", "package": "mineru-open-api", "bins": ["mineru-open-api"], "label": "Install via npm"}, {"id": "go", "kind": "go", "package": "github.com/opendatalab/MinerU-Ecosystem/cli/mineru-open-api", "bins": ["mineru-open-api"], "label": "Install via go install", "os": ["darwin", "linux"]}]}}
 ---

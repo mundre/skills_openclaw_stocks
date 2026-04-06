@@ -1,11 +1,17 @@
 {
   "owner": "mzlzyca",
   "slug": "ppt-ocr",
-  "displayName": "ppt-ocr",
+  "displayName": "Ppt Ocr",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775027002840,
-    "commit": "https://github.com/openclaw/skills/commit/1ca92bb38f70873c7d75c23098ca167b6130c8f9"
+    "version": "0.4.0",
+    "publishedAt": 1775210336250,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775027002840,
+      "commit": "https://github.com/openclaw/skills/commit/1ca92bb38f70873c7d75c23098ca167b6130c8f9"
+    }
+  ]
 }
