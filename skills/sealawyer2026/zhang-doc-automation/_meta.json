@@ -1,11 +1,17 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-doc-automation",
-  "displayName": "九章文档自动化 V1.4.0",
+  "displayName": "九章-文档自动化",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1774508424952,
-    "commit": "https://github.com/openclaw/skills/commit/01fb1f1de2952872f651e53096599c512ecf9a3e"
+    "version": "1.5.0",
+    "publishedAt": 1775098712812,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1774508424952,
+      "commit": "https://github.com/openclaw/skills/commit/01fb1f1de2952872f651e53096599c512ecf9a3e"
+    }
+  ]
 }
