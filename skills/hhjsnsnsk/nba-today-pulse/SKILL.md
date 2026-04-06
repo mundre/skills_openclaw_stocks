@@ -1,17 +1,17 @@
 ---
 name: nba-today-pulse
-description: Timezone-aware NBA daily intelligence with compact mixed-status day view, same-day stat leaders, dedicated pregame/live/post routes, independent injury reports, and direct tool-output delivery.
+description: Timezone-aware NBA daily intelligence using bundled public ESPN/NBA fetchers plus official NBA injury-report PDFs, with compact day view, same-day stats, phase-specific game routes, play-by-play-driven recaps, and compact key-player cards with direct tool-output delivery.
 user-invocable: true
 metadata: {"openclaw":{"skillKey":"nba-today-pulse","requires":{"bins":["python3"]}}}
 ---
 
-# NBA Today Pulse v7
+# NBA Today Pulse v10
 
-Version: `1.0.7`
+Version: `1.0.10`
 
-Get a compact mixed-status NBA day view, same-day stat leaders, dedicated pregame/live/post reports, and independent injury reports in one skill. This release keeps the public runtime concise through deterministic routing, explicit timezone injection, shared `gameContext`, and direct tool-output delivery.
+Get a compact mixed-status NBA day view, same-day stat leaders, dedicated pregame/live/post reports, and independent injury reports in one skill. This public `1.0.10` bundle keeps the compact day/live cards and carries forward the NBA_TR live boxscore participant tracking, the new `activeParticipants` handoff into live injury rendering, and the postgame auto-render routing updates.
 
-Do not invent scores, injuries, lineups, player stats, or matchup reasons.
+Do not invent scores, injuries, lineups, player stats, matchup reasons, or turning-point narratives that are not supported by the bundled tool output.
 
 ## Single Execution Command
 
@@ -50,13 +50,19 @@ python3 {baseDir}/tools/nba_today_command.py --command "今天比赛谁得分最
 
 Injury requests take priority over preview phrasing. Explicit preview phrasing takes priority over generic analysis wording.
 
+## Follow-up Refresh Handling
+
+- If the previous turn only asked the user for timezone and the next reply is just a city or IANA timezone, continue the same NBA request silently
+- If the user says `更新`, `刷新`, `再看一下`, or `比分不对` while the conversation is already about one NBA matchup, rerun the same request silently and return only the latest tool output
+- Refresh follow-ups must not add commentary, score explanations, or rewritten summaries
+
 ## Fixed Output Shapes
 
 - `stats_day`: Best Performance → Top Scorer → Top Rebounder → Top Assists → Most Threes → Double/Triple Doubles → Largest Margin → Summary
 - `pregame`: Game Info → Lineups & Key Players → Injuries → Team Form → Prediction Analysis → Summary
-- `live`: Game Info → Lineups & Key Players → Injuries → Live Momentum → Team Comparison → Key Player Stats → Play Digest → Summary
+- `live`: Game Info → Lineups & Key Players → Injuries → Live Momentum → Team Comparison → Key Player Stats (3 players per team, compact PTS/REB/AST/STL/BLK + shooting) → Play Digest → Summary
 - `post`: Game Info → Starting Lineups → Result & Flow Summary → Key Performances → Team Comparison → Injuries → Turning Point → Summary
-- `day`: grouped cards ordered by `Live → Final → Upcoming`; compact final-game cards stay compact by default and do not dump full team boxscore lines
+- `day`: grouped cards ordered by `Live → Final → Upcoming`; live cards show at most 3 compact player lines per team, without team-total rows or duplicate play lines; final cards stay compact
 - `injury`: Fact Layer → Analysis Layer
 
 ## Timezone Behavior
@@ -77,18 +83,22 @@ Injury requests take priority over preview phrasing. Explicit preview phrasing t
 
 ## Data Access Behavior
 
-This skill uses bundled providers to fetch public ESPN and NBA data, and it reads official NBA injury-report PDFs for supported injury-report requests. That outbound network access is part of the normal product behavior. It is not generic web search, and it must not be replaced with freeform browsing or unrelated host inspection.
+This skill makes outbound HTTP requests through bundled providers to fetch public ESPN and NBA data. For supported injury-report requests it also downloads and parses official NBA injury-report PDFs, which means the runtime processes remote PDF content as part of normal product behavior. This is declared scope, not generic browsing, and it must not be replaced with freeform web search or unrelated host inspection.
 
 ## Output Rules
 
 - Run only the bundled `nba_today_command.py` entrypoint
 - Do not switch scripts, reconstruct parameters, or retry alternate command formats
 - On success, return the tool output directly
-- Prefer compact cards and concise sections; `day` and `post` should stay readable in Chinese and English without raw stat dumps
+- Prefer compact cards and concise sections; `day` and `live` should stay readable without raw stat dumps or repeated season-average lines
+- For live requests, trust the explicit scoreboard returned by the bundled tool chain; the runtime may refresh it from `nba_live` play-by-play or boxscore before rendering
+- For postgame requests, trust the bundled play-by-play-driven recap and turning-point text instead of rewriting it in the skill layer
 - On user-fixable issues such as missing timezone or no matching game, return the final short tool result directly
 - Keep `AWAY @ HOME` ordering unchanged
 - Match the user's language; Chinese output should prefer Chinese team names and controlled player-name mappings
+- Chinese team-name display may vary by locale-aware mapping inside the tool chain, while English display remains canonical and non-regionalized
 - Keep relative dates such as `today / tomorrow / 今天 / 明天 / 今日 / 明日` grounded in the resolved requestor timezone
+- Do not compute or guess the game score from `FG`, `3PT`, `FT`, player-point subtotals, or team-total snippets
 
 ## Forbidden Behaviors
 

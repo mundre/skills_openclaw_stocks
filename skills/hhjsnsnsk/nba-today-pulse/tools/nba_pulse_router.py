@@ -33,6 +33,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--team")
     parser.add_argument("--opponent")
     parser.add_argument("--lang")
+    parser.add_argument("--zh-locale", choices=("cn", "hk", "tw"))
     parser.add_argument("--intent", choices=("day", "stats_day", "pregame", "live", "post", "injury", "scene"))
     parser.add_argument("--analysis-mode", choices=("auto", "pregame", "live", "post"))
     parser.add_argument("--format", default="markdown", choices=("markdown", "json"))
@@ -54,6 +55,7 @@ def main(argv: list[str] | None = None) -> int:
         team = args.team or (str(detected["team"]) if detected["team"] else None)
         opponent = args.opponent or (str(detected["opponent"]) if detected.get("opponent") else None)
         tz = args.tz or (str(detected["tz"]) if detected["tz"] else None)
+        zh_locale = args.zh_locale or (str(detected["zh_locale"]) if detected.get("zh_locale") else None)
         scope = str(detected.get("scope") or "single")
         matchups = list(detected.get("matchups") or [])
 
@@ -66,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if intent == "stats_day":
-            payload = build_day_stats_view(tz=tz, date_text=date_text, lang=lang)
+            payload = build_day_stats_view(tz=tz, date_text=date_text, lang=lang, zh_locale=zh_locale)
             if args.format == "json":
                 print(json.dumps(payload, ensure_ascii=False, indent=2))
             else:
@@ -75,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if intent == "pregame":
             if scope == "multi_all":
-                payload = build_pregame_collection(tz=tz, date_text=date_text, lang=lang, matchups=None)
+                payload = build_pregame_collection(tz=tz, date_text=date_text, lang=lang, matchups=None, zh_locale=zh_locale)
                 if args.format == "json":
                     print(
                         json.dumps(
@@ -94,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
                     print(render_pregame_collection_markdown(payload))
                 return 0
             if scope == "multi_explicit":
-                payload = build_pregame_collection(tz=tz, date_text=date_text, lang=lang, matchups=matchups)
+                payload = build_pregame_collection(tz=tz, date_text=date_text, lang=lang, matchups=matchups, zh_locale=zh_locale)
                 if args.format == "json":
                     print(
                         json.dumps(
@@ -121,9 +123,9 @@ def main(argv: list[str] | None = None) -> int:
 
         if not team and intent == "day":
             if args.format == "json":
-                print(json.dumps(build_day_view(tz=tz, date_text=date_text, lang=lang), ensure_ascii=False, indent=2))
+                print(json.dumps(build_day_view(tz=tz, date_text=date_text, lang=lang, zh_locale=zh_locale), ensure_ascii=False, indent=2))
             else:
-                print(render_day_scene(tz=tz, date_text=date_text, lang=lang))
+                print(render_day_scene(tz=tz, date_text=date_text, lang=lang, zh_locale=zh_locale))
             return 0
 
         if not team:
@@ -133,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
             resolved = resolve_requested_game(tz=tz, date_text=date_text, team=team, opponent=opponent)
             if resolved.get("requestedDate"):
                 date_text = str(resolved["requestedDate"])
-        scene = build_game_scene(tz=tz, date_text=date_text, team=team, lang=lang, analysis_mode=analysis_mode)
+        scene = build_game_scene(tz=tz, date_text=date_text, team=team, lang=lang, analysis_mode=analysis_mode, zh_locale=zh_locale)
         if intent in {"pregame", "live", "post"}:
             scene["intent"] = intent
         if args.format == "json":

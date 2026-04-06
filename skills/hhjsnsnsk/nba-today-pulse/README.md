@@ -1,25 +1,42 @@
-# NBA Today Pulse v7
+# NBA Today Pulse v10
 
-Version: `1.0.7`
+Version: `1.0.10`
 
-`nba-today-pulse-v7` packages the current `NBA_TR` runtime into a public ClawHub bundle with compact mixed-status day view, same-day stat leaders, dedicated pregame/live/post routes, independent injury reports, and timezone-aware local-date routing. This release also tightens the default `day` and `post` output shapes so long Chinese stat dumps are replaced with cleaner, lower-noise sections.
+`nba-today-pulse-v10` packages the latest `NBA_TR` skill-only runtime into a public ClawHub bundle with compact mixed-status day view, same-day stat leaders, dedicated pregame/live/post routes, independent injury reports, and timezone-aware local-date routing. This `1.0.10` release carries forward the compact output refinements for both the `day` and `live` views, plus the newer NBA_TR live boxscore and postgame rendering updates, without touching the public skill identity.
 
 This release keeps the stable public skill key `nba-today-pulse` rather than registering a new skill identity.
+
+## What Changed in 1.0.10
+
+`1.0.10` is not a layout rewrite. It carries forward the `1.0.9` compact day/live presentation and updates the runtime details underneath it:
+
+- `provider_nba.py` now captures `minutesCalculated` as part of boxscore player stats, which lets the runtime tell who actually saw the floor in live boxscore data
+- `nba_pulse_core.py` now exports `activeParticipants` from live boxscore augmentation and passes that list into live injury rendering instead of relying only on verified roster names
+- `nba_pulse_core.py` also builds postgame player lines directly from the structured player payload, keeping postgame output aligned with the new live boxscore shape
+- `render_game_scene_markdown()` now auto-selects the final scene renderer from the actual game `statusState`, so postgame and live paths are chosen more explicitly than in `1.0.9`
+
+What stayed the same:
+
+- `day` cards remain compact, with at most 3 player lines per team in live cards and no repeated play-line spam
+- `live` cards remain compact, with 3-player key stat cards and no season-average repetition
+- the public skill key is still `nba-today-pulse`
 
 ## Highlights
 
 - Mixed-status `dayView` that can show upcoming, live, and final games in one response
+- Compact live cards: ≤3 player lines per team, no duplicate team-total row, no repeated play line
 - Compact `stats_day` cards for requests such as `today's NBA stats`, `who scored the most today`, and `today's best performance`
 - Dedicated `pregame`, `live`, and `post` routing instead of a single generic game scene
-- Cleaner default `post` recap layout with starting lineups, key performances, compact team comparison, injuries, turning point, and summary
-- More readable Chinese stat lines for key players and tighter final-game day cards
-- Shared `gameContext` foundation used across day, pregame, live, and post outputs
-- Review-clean public bundle behavior: in-memory caching only, no credentials, no private paths, no internal memory-file references
+- Live key-player section: 3 players per team in concise PTS/REB/AST/STL/BLK + shooting format
+- Live score refresh that updates explicit `AWAY @ HOME` scoreboard output from bundled `nba_live` data when ESPN lags
+- More natural `post` recaps that use real play-by-play sequences for flow and turning-point summaries
+- Cleaner Chinese and English default rendering, including locale-aware Chinese team names and compact final-game cards
+- Review-clean public bundle behavior: in-memory caching only, outbound HTTP and remote PDF scope documented, no credentials, no private paths, no internal memory-file references
 
 ## Bundle Layout
 
 ```text
-nba-today-pulse-v7/
+nba-today-pulse-v10/
   README.md
   SKILL.md
   TOOLS.md
@@ -46,12 +63,12 @@ nba-today-pulse-v7/
     nba_teams.py
     nba_today_command.py
     nba_today_report.py
-    verify_nba_tr.py
     provider_espn.py
     provider_nba.py
     provider_nba_injuries.py
     timezone_resolver.py
     vendor_pdf_text.py
+    verify_nba_tr.py
 ```
 
 ## Installation
@@ -76,6 +93,7 @@ python3 {baseDir}/tools/nba_today_command.py --command "<raw request>" --tz "<re
 - outbound network access to ESPN public JSON endpoints
 - outbound network access to NBA.com public endpoints used for live, stats, and injury-report fallbacks
 - outbound access to official NBA injury-report PDFs for supported injury-report requests
+- remote PDF parsing for the downloaded official injury-report documents
 
 No credentials are required. The bundle only uses public data sources.
 
@@ -91,7 +109,7 @@ Notes:
 - these are optional runtime/configuration knobs, not secrets
 - the public bundle keeps cache behavior in memory only
 - the public bundle does not expose cache-specific environment variables
-- outbound requests are limited to public NBA/ESPN data and official NBA injury-report documents required for the supported features
+- outbound HTTP requests are limited to public NBA/ESPN data and official NBA injury-report documents required for the supported features
 
 ## Supported Request Shapes
 
@@ -122,5 +140,7 @@ Notes:
 - This public bundle remains skill-only and does not expose a plugin command surface
 - All runtime scripts are self-contained and resolve imports from the local `tools/` directory
 - `stats_day` is day-level only: it summarizes completed games for the resolved local date and is not a season leaderboard
+- live-score corrections are performed only through bundled ESPN/NBA providers; the public bundle must not estimate scores from boxscore fragments or improvise them in the skill layer
+- postgame turning points are derived from bundled play-by-play or structured fallbacks; the public bundle must not fabricate recap logic outside the tool chain
 - The public bundle contains no private deployment paths, host addresses, SSH commands, or internal memory-file references
 - The public bundle does not request or require credentials, secrets, or host-specific API keys

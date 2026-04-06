@@ -69,6 +69,8 @@ def build_command(raw_command: str, tz_override: str | None = None) -> list[str]
         cmd.extend(["--team", str(options["team"])])
     if options.get("opponent"):
         cmd.extend(["--opponent", str(options["opponent"])])
+    if options.get("zh_locale"):
+        cmd.extend(["--zh-locale", str(options["zh_locale"])])
     cmd.extend(["--tz", str(resolved_timezone.name)])
     return cmd
 

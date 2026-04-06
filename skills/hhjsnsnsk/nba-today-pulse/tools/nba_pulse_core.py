@@ -18,7 +18,7 @@ from nba_common import NBAReportError
 from nba_player_names import display_player_name, localize_player_line, localize_player_list
 from nba_play_digest import build_play_digest
 from nba_team_form_snapshot import build_team_form_context
-from nba_teams import extract_team_from_text, extract_teams_from_text, format_matchup_display, normalize_team_input, provider_team_id, team_display_name
+from nba_teams import canonicalize_team_abbr, extract_team_from_text, extract_teams_from_text, format_matchup_display, infer_zh_locale, normalize_team_input, provider_team_id, team_display_name
 from nba_today_report import I18N, build_report_payload, format_counts_summary, load_candidate_events, render_compact_player_stat_line, render_compact_team_totals_line, render_detail_blocks, render_team_lines
 from nba_today_report import render_full_stats_player_line, render_full_stats_team_line
 from provider_nba_injuries import resolve_team_injury_sources
@@ -26,6 +26,7 @@ from provider_espn import extract_roster_players as extract_espn_roster_players
 from provider_espn import fetch_scoreboard, fetch_team_roster, fetch_team_schedule
 from provider_nba import (
     extract_boxscore_players,
+    extract_live_boxscore_snapshot,
     extract_team_player_averages,
     extract_play_actions,
     extract_roster_players as extract_nba_roster_players,
@@ -201,6 +202,12 @@ def detect_scope(command: str, intent: str, matchups: list[dict[str, str]], team
 
 def _reference_now(tz: str | None) -> datetime:
     resolved_tz = resolve_timezone(tz)
+    env_override = (os.environ.get("NBA_TR_NOW_ISO") or "").strip()
+    if env_override:
+        parsed = datetime.fromisoformat(env_override.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=resolved_tz.tzinfo)
+        return parsed.astimezone(resolved_tz.tzinfo)
     return datetime.now(resolved_tz.tzinfo)
 
 
@@ -239,6 +246,7 @@ def command_options(command: str, tz_hint: str | None = None) -> dict[str, Any]:
         "matchups": matchups,
         "scope": detect_scope(command, intent, matchups, teams),
         "tz": tz_name,
+        "zh_locale": infer_zh_locale(lang=lang, tz_name=tz_name, command_text=command),
     }
 
 
@@ -311,20 +319,21 @@ def _select_pregame_injury_lines(game: dict[str, Any], team_abbr: str, *, limit:
     return lines if limit is None else lines[:limit]
 
 
-def _report_args(*, tz: str | None, date_text: str | None, team: str | None, lang: str) -> argparse.Namespace:
+def _report_args(*, tz: str | None, date_text: str | None, team: str | None, lang: str, zh_locale: str | None = None) -> argparse.Namespace:
     return argparse.Namespace(
         tz=tz,
         date=date_text,
         team=team,
         view="game" if team else "day",
         lang=lang,
+        zh_locale=zh_locale,
         format="json",
         base_url=None,
     )
 
 
-def build_scene_report(*, tz: str | None, date_text: str | None, team: str | None, lang: str) -> dict[str, Any]:
-    return build_report_payload(_report_args(tz=tz, date_text=date_text, team=team, lang=lang))
+def build_scene_report(*, tz: str | None, date_text: str | None, team: str | None, lang: str, zh_locale: str | None = None) -> dict[str, Any]:
+    return build_report_payload(_report_args(tz=tz, date_text=date_text, team=team, lang=lang, zh_locale=zh_locale))
 
 
 def _target_date(date_text: str | None, tz: str | None) -> datetime.date:
@@ -345,7 +354,10 @@ def _event_local_date(event: dict[str, Any], tz: str | None) -> datetime.date | 
 def _event_abbrs(event: dict[str, Any]) -> set[str]:
     competition = (event.get("competitions") or [{}])[0]
     competitors = competition.get("competitors") or []
-    abbrs = {str(((item.get("team") or {}).get("abbreviation")) or "").upper() for item in competitors}
+    abbrs = {
+        canonicalize_team_abbr(str(((item.get("team") or {}).get("abbreviation")) or "").upper())
+        for item in competitors
+    }
     short_name = str(event.get("shortName") or "")
     for abbr in extract_teams_from_text(short_name):
         abbrs.add(abbr)
@@ -438,7 +450,10 @@ def locate_game(*, tz: str | None, date_text: str | None, team: str, base_url: s
             if local_date != target_date:
                 continue
             competitors = competition.get("competitors") or []
-            abbrs = {str(((item.get("team") or {}).get("abbreviation")) or "").upper() for item in competitors}
+            abbrs = {
+                canonicalize_team_abbr(str(((item.get("team") or {}).get("abbreviation")) or "").upper())
+                for item in competitors
+            }
             if team_abbr in abbrs:
                 return {
                     "eventId": str(event.get("id") or ""),
@@ -543,6 +558,20 @@ def apply_roster_guard(game: dict[str, Any], roster_snapshots: dict[str, dict[st
         for abbr, lines in (game.get("keyPlayers") or {}).items()
     }
     game["headlines"] = filter_headlines(game.get("headlines") or [], blocked)
+    if allowed_names:
+        allowed_normalized = {normalize_player_name(name) for name in allowed_names if name}
+        filtered_injury_items: dict[str, list[dict[str, Any]]] = {}
+        filtered_injuries: dict[str, list[str]] = {}
+        for abbr, items in (game.get("injuryItems") or {}).items():
+            kept_items: list[dict[str, Any]] = []
+            for item in items or []:
+                player_name = extract_primary_name(str(item.get("playerName") or ""))
+                if player_name and normalize_player_name(player_name) in allowed_normalized:
+                    kept_items.append(item)
+            filtered_injury_items[abbr] = kept_items
+            filtered_injuries[abbr] = [_format_injury_item(item) for item in kept_items if _format_injury_item(item)]
+        game["injuryItems"] = filtered_injury_items
+        game["injuries"] = filtered_injuries
     game["startersConfirmed"] = bool(game["starters"].get(game["away"]["abbr"])) and bool(game["starters"].get(game["home"]["abbr"]))
     game["verifiedPlayers"] = sorted(allowed_names)
     game["rosters"] = roster_snapshots
@@ -565,41 +594,115 @@ def _player_line_from_boxscore(player: dict[str, Any]) -> str:
     return " | ".join(str(part) for part in parts if part)
 
 
+def _sync_live_scoreboard(
+    game: dict[str, Any],
+    *,
+    away_score: Any = None,
+    home_score: Any = None,
+    period: Any = None,
+    display_clock: Any = None,
+) -> None:
+    if away_score not in (None, ""):
+        game["away"]["score"] = str(away_score)
+    if home_score not in (None, ""):
+        game["home"]["score"] = str(home_score)
+    if period not in (None, ""):
+        game["period"] = period
+    if display_clock not in (None, ""):
+        game["displayClock"] = str(display_clock)
+
+
+def _sync_full_stats_scoreboard(game: dict[str, Any]) -> None:
+    if game.get("statusState") not in {"in", "post"}:
+        return
+    full_stats = game.get("fullStats") or {}
+    teams = full_stats.get("teams") or {}
+    for side in ("away", "home"):
+        team = game.get(side) or {}
+        abbr = team.get("abbr")
+        score = team.get("score")
+        if not abbr or score in (None, ""):
+            continue
+        stats = teams.get(abbr)
+        if isinstance(stats, dict):
+            stats["PTS"] = str(score)
+
+
 def augment_game_with_nba_live(game: dict[str, Any], *, requested_date: str) -> dict[str, Any]:
-    game_id = find_game_id_by_matchup(requested_date, game["away"]["abbr"], game["home"]["abbr"])
+    try:
+        game_id = find_game_id_by_matchup(requested_date, game["away"]["abbr"], game["home"]["abbr"])
+    except NBAReportError:
+        return {"source": None, "dataFreshness": "fresh", "fallbackLevel": "none"}
     if not game_id:
         return {"source": None, "dataFreshness": "fresh", "fallbackLevel": "none"}
     game["nbaGameId"] = str(game_id)
     meta = {"source": None, "dataFreshness": "fresh", "fallbackLevel": "none"}
-    if not game.get("playTimeline"):
+    should_refresh_live_timeline = game.get("statusState") == "in" or not game.get("playTimeline")
+    if should_refresh_live_timeline:
         try:
             payload = fetch_play_by_play(game_id)
             actions = extract_play_actions(payload["data"])
-            game["playTimeline"] = [
-                {
-                    "id": str(item.get("actionNumber") or ""),
-                    "text": item.get("description") or "",
-                    "shortDescription": item.get("description") or "",
-                    "period": item.get("period"),
-                    "clock": item.get("clock"),
-                    "homeScore": item.get("homeScore"),
-                    "awayScore": item.get("awayScore"),
-                    "scoreValue": None,
-                    "scoringPlay": True if item.get("homeScore") or item.get("awayScore") else False,
-                    "teamId": item.get("teamId") or "",
-                    "playerName": item.get("playerName") or "",
-                }
-                for item in actions
-            ]
-            game["recentPlays"] = [item["text"] for item in game["playTimeline"][-4:] if item.get("text")]
-            meta = {"source": "nba_live", "dataFreshness": payload.get("dataFreshness", "fresh"), "fallbackLevel": "nba_live"}
+            if actions:
+                game["playTimeline"] = [
+                    {
+                        "id": str(item.get("actionNumber") or ""),
+                        "text": item.get("description") or "",
+                        "shortDescription": item.get("description") or "",
+                        "period": item.get("period"),
+                        "clock": item.get("clock"),
+                        "homeScore": item.get("homeScore"),
+                        "awayScore": item.get("awayScore"),
+                        "scoreValue": None,
+                        "scoringPlay": True if item.get("homeScore") or item.get("awayScore") else False,
+                        "teamId": item.get("teamId") or "",
+                        "playerName": item.get("playerName") or "",
+                    }
+                    for item in actions
+                ]
+                game["recentPlays"] = [item["text"] for item in game["playTimeline"][-4:] if item.get("text")]
+                latest_with_score = next(
+                    (
+                        item
+                        for item in reversed(actions)
+                        if item.get("homeScore") not in (None, "") or item.get("awayScore") not in (None, "")
+                    ),
+                    actions[-1],
+                )
+                _sync_live_scoreboard(
+                    game,
+                    away_score=latest_with_score.get("awayScore"),
+                    home_score=latest_with_score.get("homeScore"),
+                    period=latest_with_score.get("period"),
+                    display_clock=latest_with_score.get("clock"),
+                )
+                meta = {"source": "nba_live", "dataFreshness": payload.get("dataFreshness", "fresh"), "fallbackLevel": "nba_live"}
         except NBAReportError:
             pass
-    if not any((game.get("keyPlayers") or {}).values()) or not any((game.get("starters") or {}).values()):
+    should_refresh_live_boxscore = (
+        game.get("statusState") == "in"
+        or not any((game.get("keyPlayers") or {}).values())
+        or not any((game.get("starters") or {}).values())
+        or game["away"].get("score") in (None, "")
+        or game["home"].get("score") in (None, "")
+    )
+    if should_refresh_live_boxscore:
         try:
             payload = fetch_live_boxscore(game_id)
             game["nbaLiveBoxscore"] = payload["data"]
+            live_snapshot = extract_live_boxscore_snapshot(payload["data"])
+            away_score = live_snapshot.get("awayScore")
+            home_score = live_snapshot.get("homeScore")
+            away_score_source = live_snapshot.get("awayScoreSource")
+            home_score_source = live_snapshot.get("homeScoreSource")
+            _sync_live_scoreboard(
+                game,
+                away_score=away_score if away_score_source == "explicit" or game["away"].get("score") in (None, "") else None,
+                home_score=home_score if home_score_source == "explicit" or game["home"].get("score") in (None, "") else None,
+                period=live_snapshot.get("period"),
+                display_clock=live_snapshot.get("displayClock"),
+            )
             players_by_team = extract_boxscore_players(payload["data"])
+            active_participants: list[str] = []
             for abbr, players in players_by_team.items():
                 if not game["starters"].get(abbr):
                     starters = [player["displayName"] for player in players if player.get("starter")]
@@ -607,6 +710,22 @@ def augment_game_with_nba_live(game: dict[str, Any], *, requested_date: str) -> 
                 if not game["keyPlayers"].get(abbr):
                     lines = [_player_line_from_boxscore(player) for player in players]
                     game["keyPlayers"][abbr] = [line for line in lines if line][:3]
+                # 收集实际上场球员（有 minutes 记录的）
+                for player in players:
+                    minutes_val = (player.get("stats") or {}).get("minutes")
+                    has_minutes = False
+                    if minutes_val:
+                        # minutesCalculated 格式可能是 "PT12M34.00S" 或数字
+                        if isinstance(minutes_val, str):
+                            has_minutes = minutes_val not in ("", "PT00M00.00S", "PT0M0.00S")
+                        else:
+                            has_minutes = float(minutes_val) > 0
+                    if has_minutes and player.get("displayName"):
+                        active_participants.append(player["displayName"])
+            # live boxscore 补充后重新计算 startersConfirmed
+            if bool(game["starters"].get(game["away"]["abbr"])) and bool(game["starters"].get(game["home"]["abbr"])):
+                game["startersConfirmed"] = True
+            game["activeParticipants"] = active_participants
             meta = {"source": "nba_live", "dataFreshness": payload.get("dataFreshness", "fresh"), "fallbackLevel": "nba_live"}
         except NBAReportError:
             pass
@@ -691,6 +810,7 @@ def build_game_context(game: dict[str, Any]) -> dict[str, Any]:
         "keyPlayers": game.get("keyPlayers") or {},
         "leaders": game.get("leaders") or {},
         "verifiedPlayers": game.get("verifiedPlayers") or [],
+        "activeParticipants": game.get("activeParticipants") or [],
     }
     injuries = {
         "items": game.get("injuryItems") or {},
@@ -901,8 +1021,143 @@ def _stats_day_labels(lang: str) -> dict[str, str]:
     }
 
 
-def _display_team(abbr: str | None, lang: str) -> str:
-    return team_display_name(abbr, lang) or (abbr or "")
+def _display_team(abbr: str | None, lang: str, zh_locale: str | None = None) -> str:
+    return team_display_name(abbr, lang, zh_locale=zh_locale) or (abbr or "")
+
+
+def _matchup_team_abbrs(matchup: dict[str, Any] | None) -> list[str]:
+    if not matchup:
+        return []
+    abbrs: list[str] = []
+    for side in ("away", "home"):
+        abbr = canonicalize_team_abbr((matchup.get(side) or {}).get("abbr"))
+        if abbr and abbr not in abbrs:
+            abbrs.append(abbr)
+    return abbrs
+
+
+def _localize_team_mentions(
+    text: str | None,
+    *,
+    lang: str,
+    zh_locale: str | None = None,
+    team_abbrs: list[str] | None = None,
+) -> str:
+    rendered = str(text or "").strip()
+    if not rendered:
+        return ""
+    for abbr in team_abbrs or []:
+        canonical = canonicalize_team_abbr(abbr)
+        display = _display_team(canonical, lang, zh_locale)
+        if not display:
+            continue
+        rendered = re.sub(rf"(?<![A-Z]){re.escape(canonical)}(?![A-Z])", display, rendered)
+        if canonical == "WAS":
+            rendered = re.sub(r"(?<![A-Z])WSH(?![A-Z])", display, rendered)
+    return rendered
+
+
+def _ordinal_period(period: Any) -> str:
+    try:
+        number = int(period)
+    except (TypeError, ValueError):
+        return str(period or "?")
+    if 10 <= number % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
+    return f"{number}{suffix}"
+
+
+def _append_unique_line(lines: list[str], text: str | None) -> None:
+    normalized = str(text or "").strip()
+    if not normalized:
+        return
+    candidate = f"- {normalized}"
+    if lines and lines[-1] == candidate:
+        return
+    lines.append(candidate)
+
+
+def _narrative_team_form(team_name: str, recent: str, rest_text: str, lang: str) -> str:
+    if lang == "zh":
+        return f"{team_name}近况是最近 {recent}，休息天数 {rest_text}。"
+    rest_phrase = "rest pending" if rest_text == "Pending" else f"{rest_text} day{'s' if str(rest_text) != '1' else ''} of rest"
+    return f"{team_name} come in at {recent} over the last five with {rest_phrase}."
+
+
+def _narrative_team_totals(team_name: str, compact: str, lang: str) -> str:
+    if lang == "zh":
+        return f"数据层面，{team_name}是 {compact}。"
+    return f"On the numbers, {team_name} finished at {compact}."
+
+
+def _narrative_key_lines(team_name: str, lines_text: str, lang: str) -> str:
+    if lang == "zh":
+        return f"{team_name}这边的主要输出来自 {lines_text}。"
+    return f"Most of {team_name}'s production came from {lines_text}."
+
+
+def _narrative_latest_play(play_text: str, lang: str) -> str:
+    if not str(play_text or "").strip():
+        return ""
+    if lang == "zh":
+        return f"最新一次明显波动出现在 {play_text}。"
+    return f"The latest swing came on {play_text}."
+
+
+def _narrative_turning_point(turning_point: str, lang: str) -> str:
+    value = str(turning_point or "").strip()
+    if not value or value in {"无", "None"}:
+        return value or ""
+    if lang == "zh" and ("，" in value or "。" in value):
+        return value if value.endswith("。") else f"{value}。"
+    if lang == "en" and (value.startswith("With ") or value.startswith("In ") or value.startswith("The ") or value.endswith(".")):
+        return value if value.endswith(".") else f"{value}."
+    if lang == "zh":
+        return f"比赛的关键片段出现在 {value}。"
+    return f"The key stretch turned on {value}."
+
+
+def _post_reasons_sentence(reasons: list[str], *, lang: str) -> str:
+    cleaned = [str(reason or "").strip().rstrip(".。") for reason in reasons if str(reason or "").strip()]
+    if not cleaned:
+        return ""
+    if lang == "zh":
+        return f"支撑这场走势的依据包括：{'；'.join(cleaned)}。"
+    return f"The supporting evidence included: {'; '.join(cleaned)}."
+
+
+def _english_reason_fragment(reason: str) -> str:
+    value = str(reason or "").strip().rstrip(".")
+    if not value:
+        return ""
+    won_match = re.match(r"^(?P<team>.+?) won by (?P<margin>\d+)(?: points?)?$", value)
+    if won_match:
+        team = won_match.group("team").strip()
+        margin = won_match.group("margin").strip()
+        return f"a {margin}-point win for {team}"
+    if value.startswith("Decisive stretch:"):
+        detail = value.split(":", 1)[1].strip()
+        return f"the decisive stretch in {detail}"
+    if value.startswith("Lead performer:"):
+        detail = value.split(":", 1)[1].strip().replace(" | ", ", ")
+        return f"{detail} setting the tone"
+    if value.startswith("Rebounding edge:"):
+        detail = value.split(":", 1)[1].strip()
+        return f"a rebounding edge of {detail}"
+    return value[0].lower() + value[1:] if value[:1].isupper() else value
+
+
+def _narrative_reasons(reasons: list[str], *, lang: str) -> str:
+    if not reasons:
+        return ""
+    if lang == "zh":
+        joined = " / ".join(reasons)
+        return f"关键依据主要在于 {joined}。"
+    english_reasons = [_english_reason_fragment(reason) for reason in reasons if str(reason or "").strip()]
+    joined = "; ".join(fragment for fragment in english_reasons if fragment)
+    return f"The edge was backed by {joined}."
 
 
 LEADER_LINE_PATTERN = re.compile(r"^(?P<name>.+?)\s*\((?P<stats>.+)\)$")
@@ -943,11 +1198,12 @@ def _leader_stats_from_line(line: str) -> tuple[str, dict[str, int]]:
     return str(match.group("name") or "").strip(), stats_map
 
 
-def _format_stat_matchup(entry: dict[str, Any], lang: str) -> str:
+def _format_stat_matchup(entry: dict[str, Any], lang: str, zh_locale: str | None = None) -> str:
     return format_matchup_display(
         str(entry.get("awayAbbr") or ""),
         str(entry.get("homeAbbr") or ""),
         lang=lang,
+        zh_locale=zh_locale,
         away_score=entry.get("awayScore"),
         home_score=entry.get("homeScore"),
     )
@@ -964,6 +1220,7 @@ def _build_stat_entry(
     value: int,
     stat_label: str,
     lang: str,
+    zh_locale: str | None,
     source: str,
     extra_stats: dict[str, int] | None = None,
 ) -> dict[str, Any]:
@@ -971,7 +1228,7 @@ def _build_stat_entry(
         "playerName": player_name,
         "displayName": display_player_name(player_name, lang),
         "teamAbbr": team_abbr,
-        "teamName": _display_team(team_abbr, lang),
+        "teamName": _display_team(team_abbr, lang, zh_locale),
         "awayAbbr": away_abbr,
         "homeAbbr": home_abbr,
         "awayScore": away_score,
@@ -984,6 +1241,7 @@ def _build_stat_entry(
                 "homeScore": home_score,
             },
             lang,
+            zh_locale,
         ),
         "value": value,
         "displayValue": f"{value} {stat_label}",
@@ -1042,8 +1300,8 @@ def _stats_block(
     }
 
 
-def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) -> dict[str, Any]:
-    day_payload = build_day_view(tz=tz, date_text=date_text, lang=lang)
+def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str, zh_locale: str | None = None) -> dict[str, Any]:
+    day_payload = build_day_view(tz=tz, date_text=date_text, lang=lang, zh_locale=zh_locale)
     labels = _stats_day_labels(lang)
     completed_games = [game for game in (day_payload.get("games") or []) if game.get("phase") == "post"]
     top_scorer: list[dict[str, Any]] = []
@@ -1075,9 +1333,9 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                 largest_margin_game = {
                     "margin": margin,
                     "winnerAbbr": winner_abbr,
-                    "winnerName": _display_team(winner_abbr, lang),
+                    "winnerName": _display_team(winner_abbr, lang, zh_locale),
                     "loserAbbr": loser_abbr,
-                    "loserName": _display_team(loser_abbr, lang),
+                    "loserName": _display_team(loser_abbr, lang, zh_locale),
                     "awayAbbr": away_abbr,
                     "homeAbbr": home_abbr,
                     "awayScore": away_score,
@@ -1090,8 +1348,9 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                             "homeScore": home_score,
                         },
                         lang,
+                        zh_locale,
                     ),
-                    "summary": f"{_display_team(winner_abbr, lang)} {labels['won_by']} {margin}",
+                    "summary": f"{_display_team(winner_abbr, lang, zh_locale)} {labels['won_by']} {margin}",
                 }
 
         for abbr in (away_abbr, home_abbr):
@@ -1130,6 +1389,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                                 value=points,
                                 stat_label="PTS",
                                 lang=lang,
+                                zh_locale=zh_locale,
                                 source="fullStats",
                                 extra_stats=extra_stats,
                             ),
@@ -1147,6 +1407,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                                 value=rebounds,
                                 stat_label="REB",
                                 lang=lang,
+                                zh_locale=zh_locale,
                                 source="fullStats",
                                 extra_stats=extra_stats,
                             ),
@@ -1164,6 +1425,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                                 value=assists,
                                 stat_label="AST",
                                 lang=lang,
+                                zh_locale=zh_locale,
                                 source="fullStats",
                                 extra_stats=extra_stats,
                             ),
@@ -1181,6 +1443,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                                 value=made_threes,
                                 stat_label="3PM",
                                 lang=lang,
+                                zh_locale=zh_locale,
                                 source="fullStats",
                                 extra_stats=extra_stats,
                             ),
@@ -1198,6 +1461,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                             value=points or 0,
                             stat_label="PTS",
                             lang=lang,
+                            zh_locale=zh_locale,
                             source="fullStats",
                             extra_stats=achieved,
                         )
@@ -1229,6 +1493,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                             value=int(leader_stats["PTS"]),
                             stat_label="PTS",
                             lang=lang,
+                            zh_locale=zh_locale,
                             source="leaders",
                             extra_stats=extra_stats,
                         ),
@@ -1246,6 +1511,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                             value=int(leader_stats["REB"]),
                             stat_label="REB",
                             lang=lang,
+                            zh_locale=zh_locale,
                             source="leaders",
                             extra_stats=extra_stats,
                         ),
@@ -1263,6 +1529,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
                             value=int(leader_stats["AST"]),
                             stat_label="AST",
                             lang=lang,
+                            zh_locale=zh_locale,
                             source="leaders",
                             extra_stats=extra_stats,
                         ),
@@ -1290,6 +1557,7 @@ def build_day_stats_view(*, tz: str | None, date_text: str | None, lang: str) ->
         "requestedDate": day_payload["requestedDate"],
         "timezone": day_payload["timezone"],
         "lang": lang,
+        "zhLocale": day_payload.get("zhLocale"),
         "leaders": {
             "topScorer": top_scorer,
             "topRebounder": top_rebounder,
@@ -1389,16 +1657,28 @@ def render_day_stats_markdown(payload: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip()
 
 
-def _render_info_section(info: dict[str, Any], labels: dict[str, str], phase_labels: dict[str, str]) -> list[str]:
+def _render_info_section(
+    info: dict[str, Any],
+    labels: dict[str, str],
+    phase_labels: dict[str, str],
+    *,
+    zh_locale: str | None = None,
+) -> list[str]:
     lang = "zh" if labels.get("timezone") == "请求方时区" else "en"
     lines = [f"## {phase_labels['info']}"]
     matchup = info.get("matchup") or {}
+    team_abbrs = _matchup_team_abbrs(matchup)
     away_abbr = ((matchup.get("away") or {}).get("abbr"))
     home_abbr = ((matchup.get("home") or {}).get("abbr"))
+    away_score = (matchup.get("away") or {}).get("score")
+    home_score = (matchup.get("home") or {}).get("score")
     if away_abbr and home_abbr:
-        lines.append(f"- matchup: {format_matchup_display(away_abbr, home_abbr, lang=lang)}")
+        if info.get("statusState") in {"in", "post"} and (away_score not in (None, "") or home_score not in (None, "")):
+            lines.append(f"- {format_matchup_display(away_abbr, home_abbr, lang=lang, zh_locale=zh_locale, away_score=away_score, home_score=home_score)}")
+        else:
+            lines.append(f"- {format_matchup_display(away_abbr, home_abbr, lang=lang, zh_locale=zh_locale)}")
     elif matchup.get("text"):
-        lines.append(f"- matchup: {matchup['text']}")
+        lines.append(f"- {_localize_team_mentions(matchup['text'], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)}")
     if info.get("startTimeLocal"):
         lines.append(f"- {labels['start_time']}: {info['startTimeLocal']}")
     status_detail = info.get("statusDetail")
@@ -1423,12 +1703,23 @@ def _render_info_section(info: dict[str, Any], labels: dict[str, str], phase_lab
         if standing.get("streak"):
             rank_bits.append(str(standing["streak"]))
         suffix = f" ({', '.join(rank_bits)})" if rank_bits else ""
-        lines.append(f"- {_display_team(abbr, lang)} {labels['records']}: {record}{suffix}")
+        if lang == "zh":
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)} {labels['records']}: {record}{suffix}")
+        else:
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)} enter at {record}{suffix}.")
     lines.append("")
     return lines
 
 
-def _render_lineups_section(lineups: dict[str, Any], season_averages: dict[str, Any], matchup: dict[str, Any], labels: dict[str, str], phase_labels: dict[str, str]) -> list[str]:
+def _render_lineups_section(
+    lineups: dict[str, Any],
+    season_averages: dict[str, Any],
+    matchup: dict[str, Any],
+    labels: dict[str, str],
+    phase_labels: dict[str, str],
+    *,
+    zh_locale: str | None = None,
+) -> list[str]:
     lang = "zh" if labels.get("timezone") == "请求方时区" else "en"
     lines = [f"## {phase_labels['lineups']}"]
     if lineups.get("startersConfirmed"):
@@ -1439,7 +1730,7 @@ def _render_lineups_section(lineups: dict[str, Any], season_averages: dict[str, 
                 continue
             starters = (lineups.get("starters") or {}).get(abbr) or []
             rendered = ", ".join(localize_player_list(starters, lang)) if starters else phase_labels["none"]
-            lines.append(f"- {_display_team(abbr, lang)} {labels['starters']}: {rendered}")
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)} {labels['starters']}: {rendered}")
     else:
         lines.append(f"- {phase_labels['starters_pending']}")
     for side in ("away", "home"):
@@ -1450,33 +1741,56 @@ def _render_lineups_section(lineups: dict[str, Any], season_averages: dict[str, 
         key_players = (lineups.get("keyPlayers") or {}).get(abbr) or (lineups.get("leaders") or {}).get(abbr) or []
         if not key_players:
             continue
-        lines.append(f"- {_display_team(abbr, lang)}:")
+        lines.append(f"- {_display_team(abbr, lang, zh_locale)}:")
         for line in key_players[:3]:
-            primary = extract_primary_name(line)
-            averages = _format_average_line((season_averages.get(abbr) or {}).get(primary) or {})
-            suffix = f" ({averages})" if averages else ""
-            lines.append(f"  - {localize_player_line(line, lang)}{suffix}")
+            lines.append(f"  - {localize_player_line(line, lang)}")
     lines.append("")
     return lines
 
 
-def _render_injuries_section(injuries: dict[str, Any], matchup: dict[str, Any], labels: dict[str, str], phase_labels: dict[str, str]) -> list[str]:
+def _render_injuries_section(
+    injuries: dict[str, Any],
+    matchup: dict[str, Any],
+    labels: dict[str, str],
+    phase_labels: dict[str, str],
+    *,
+    zh_locale: str | None = None,
+    active_players: list[str] | None = None,
+) -> list[str]:
     lang = "zh" if labels.get("timezone") == "请求方时区" else "en"
     lines = [f"## {phase_labels['injuries']}"]
     by_team = injuries.get("byTeam") or {}
+    # 如果有已确认上场球员名单，则过滤掉其中的人（名字子字符串匹配）
+    active_lower: set[str] = {n.lower() for n in (active_players or []) if n}
     for side in ("away", "home"):
         team = matchup.get(side) or {}
         abbr = team.get("abbr")
         if not abbr:
             continue
         items = by_team.get(abbr) or []
-        localized = [localize_player_line(item, lang) for item in items[:6]]
-        lines.append(f"- {_display_team(abbr, lang)}: {'; '.join(localized) if localized else phase_labels['none']}")
+        filtered: list[str] = []
+        for item in items[:6]:
+            player_name = extract_primary_name(item).lower()
+            if active_lower and any(
+                player_name in active.lower() or active.lower() in player_name
+                for active in active_lower
+            ):
+                continue
+            filtered.append(item)
+        localized = [localize_player_line(item, lang) for item in filtered]
+        lines.append(f"- {_display_team(abbr, lang, zh_locale)}: {'; '.join(localized) if localized else phase_labels['none']}")
     lines.append("")
     return lines
 
 
-def _render_team_totals_section(full_stats: dict[str, Any], matchup: dict[str, Any], labels: dict[str, str], phase_labels: dict[str, str]) -> list[str]:
+def _render_team_totals_section(
+    full_stats: dict[str, Any],
+    matchup: dict[str, Any],
+    labels: dict[str, str],
+    phase_labels: dict[str, str],
+    *,
+    zh_locale: str | None = None,
+) -> list[str]:
     lang = "zh" if labels.get("timezone") == "请求方时区" else "en"
     lines = [f"## {phase_labels['team_totals']}"]
     teams = full_stats.get("teams") or {}
@@ -1489,7 +1803,7 @@ def _render_team_totals_section(full_stats: dict[str, Any], matchup: dict[str, A
         stats = teams.get(abbr) or {}
         compact = render_full_stats_team_line(stats)
         if compact:
-            lines.append(f"- {_display_team(abbr, lang)}: {compact}")
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)}: {compact}")
             emitted = True
     if not emitted:
         lines.append(f"- {phase_labels['none']}")
@@ -1504,6 +1818,7 @@ def _render_key_player_lines_section(
     phase_labels: dict[str, str],
     *,
     limit: int = 3,
+    zh_locale: str | None = None,
 ) -> list[str]:
     lang = "zh" if labels.get("timezone") == "请求方时区" else "en"
     lines = [f"## {phase_labels['key_player_lines']}"]
@@ -1517,8 +1832,8 @@ def _render_key_player_lines_section(
         players = players_by_team.get(abbr) or []
         if not players:
             continue
-        top_lines = [render_full_stats_player_line(player, labels) for player in players[:limit]]
-        lines.append(f"- {_display_team(abbr, lang)}: {'; '.join([line for line in top_lines if line])}")
+        top_lines = [render_compact_player_stat_line(player, lang=lang, include_secondary=True, include_shooting=True) for player in players[:limit]]
+        lines.append(f"- {_display_team(abbr, lang, zh_locale)}: {'; '.join([line for line in top_lines if line])}")
         emitted = True
     if not emitted:
         lines.append(f"- {phase_labels['none']}")
@@ -1526,7 +1841,14 @@ def _render_key_player_lines_section(
     return lines
 
 
-def _render_post_starters_section(lineups: dict[str, Any], matchup: dict[str, Any], phase_labels: dict[str, str], *, lang: str) -> list[str]:
+def _render_post_starters_section(
+    lineups: dict[str, Any],
+    matchup: dict[str, Any],
+    phase_labels: dict[str, str],
+    *,
+    lang: str,
+    zh_locale: str | None = None,
+) -> list[str]:
     lines = [f"## {phase_labels['starters_section']}"]
     if lineups.get("startersConfirmed"):
         for side in ("away", "home"):
@@ -1536,7 +1858,7 @@ def _render_post_starters_section(lineups: dict[str, Any], matchup: dict[str, An
                 continue
             starters = (lineups.get("starters") or {}).get(abbr) or []
             rendered = ", ".join(localize_player_list(starters, lang)) if starters else phase_labels["none"]
-            lines.append(f"- {_display_team(abbr, lang)}: {rendered}")
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)}: {rendered}")
     else:
         lines.append(f"- {phase_labels['starters_pending']}")
     lines.append("")
@@ -1551,6 +1873,7 @@ def _render_post_key_performances_section(
     *,
     lang: str,
     limit: int = 3,
+    zh_locale: str | None = None,
 ) -> list[str]:
     lines = [f"## {phase_labels['post_key_players']}"]
     players_by_team = full_stats.get("players") or {}
@@ -1561,19 +1884,32 @@ def _render_post_key_performances_section(
         if not abbr:
             continue
         players = players_by_team.get(abbr) or []
-        rendered_players = [
-            render_compact_player_stat_line(player, lang=lang, include_secondary=True, include_shooting=True)
-            for player in players[:limit]
-        ]
-        rendered_players = [line for line in rendered_players if line]
+        rendered_players = []
+        for player in players[:limit]:
+            # 从结构体直接构建 Name | PTS | REB | AST
+            display_name = player.get("displayName") or player.get("name") or ""
+            player_stats = player.get("stats") or {}
+            pts = player_stats.get("points")
+            reb = player_stats.get("rebounds")
+            ast = player_stats.get("assists")
+            parts = [localize_player_line(display_name, lang)]
+            if pts is not None:
+                parts.append(f"{pts} PTS")
+            if reb is not None:
+                parts.append(f"{reb} REB")
+            if ast is not None:
+                parts.append(f"{ast} AST")
+            line = " | ".join(parts)
+            if line:
+                rendered_players.append(line)
         if rendered_players:
-            lines.append(f"- {_display_team(abbr, lang)}:")
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)}:")
             lines.extend([f"  - {line}" for line in rendered_players])
             emitted = True
             continue
         fallback_players = (lineups.get("keyPlayers") or {}).get(abbr) or (lineups.get("leaders") or {}).get(abbr) or []
         if fallback_players:
-            lines.append(f"- {_display_team(abbr, lang)}: {', '.join(localize_player_line(item, lang) for item in fallback_players[:limit])}")
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)}: {', '.join(localize_player_line(item, lang) for item in fallback_players[:limit])}")
             emitted = True
     if not emitted:
         lines.append(f"- {phase_labels['none']}")
@@ -1581,7 +1917,14 @@ def _render_post_key_performances_section(
     return lines
 
 
-def _render_post_team_totals_section(full_stats: dict[str, Any], matchup: dict[str, Any], phase_labels: dict[str, str], *, lang: str) -> list[str]:
+def _render_post_team_totals_section(
+    full_stats: dict[str, Any],
+    matchup: dict[str, Any],
+    phase_labels: dict[str, str],
+    *,
+    lang: str,
+    zh_locale: str | None = None,
+) -> list[str]:
     lines = [f"## {phase_labels['post_team_totals']}"]
     teams = full_stats.get("teams") or {}
     emitted = False
@@ -1592,7 +1935,7 @@ def _render_post_team_totals_section(full_stats: dict[str, Any], matchup: dict[s
             continue
         compact = render_compact_team_totals_line(teams.get(abbr) or {}, lang=lang)
         if compact:
-            lines.append(f"- {_display_team(abbr, lang)}: {compact}")
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)}: {compact}")
             emitted = True
     if not emitted:
         lines.append(f"- {phase_labels['none']}")
@@ -1824,8 +2167,8 @@ def _build_day_card(scene: dict[str, Any], phase: str) -> dict[str, Any]:
     return _build_pregame_card(scene)
 
 
-def build_day_view(*, tz: str | None, date_text: str | None, lang: str) -> dict[str, Any]:
-    report = build_scene_report(tz=tz, date_text=date_text, team=None, lang=lang)
+def build_day_view(*, tz: str | None, date_text: str | None, lang: str, zh_locale: str | None = None) -> dict[str, Any]:
+    report = build_scene_report(tz=tz, date_text=date_text, team=None, lang=lang, zh_locale=zh_locale)
     day_labels = _day_labels(lang)
     bucket_defs = [
         ("live", "in", day_labels["live_title"]),
@@ -1879,6 +2222,7 @@ def build_day_view(*, tz: str | None, date_text: str | None, lang: str) -> dict[
         "requestedDate": report["requestedDate"],
         "timezone": report["timezone"],
         "lang": lang,
+        "zhLocale": report.get("zhLocale"),
         "dayView": {
             "counts": report["gameCounts"],
             "statusBuckets": status_buckets,
@@ -1890,6 +2234,7 @@ def build_day_view(*, tz: str | None, date_text: str | None, lang: str) -> dict[
 
 def render_day_view_markdown(payload: dict[str, Any]) -> str:
     lang = str(payload.get("lang") or "zh")
+    zh_locale = payload.get("zhLocale")
     labels = I18N.get(lang, I18N["en"])
     day_labels = _day_labels(lang)
     lines = [
@@ -1919,16 +2264,20 @@ def render_day_view_markdown(payload: dict[str, Any]) -> str:
         for entry in section_games:
             info = (entry.get("gameContext") or {}).get("info") or {}
             matchup = info.get("matchup") or {}
+            team_abbrs = _matchup_team_abbrs(matchup)
             away_abbr = entry["teams"]["away"]["abbr"]
             home_abbr = entry["teams"]["home"]["abbr"]
             away_score = (entry["teams"]["away"] or {}).get("score")
             home_score = (entry["teams"]["home"] or {}).get("score")
-            text = format_matchup_display(away_abbr, home_abbr, lang=lang, away_score=away_score, home_score=home_score)
+            text = format_matchup_display(away_abbr, home_abbr, lang=lang, zh_locale=zh_locale, away_score=away_score, home_score=home_score)
             lines.append(f"### {text}")
+            info_parts: list[str] = []
             if info.get("startTimeLocal"):
-                lines.append(f"- {labels['start_time']}: {info['startTimeLocal']}")
+                info_parts.append(f"{labels['start_time']}: {info['startTimeLocal']}")
             if info.get("venue"):
-                lines.append(f"- {labels['venue']}: {info['venue']}")
+                info_parts.append(f"{labels['venue']}: {info['venue']}")
+            if info_parts:
+                lines.append(f"- {'，'.join(info_parts) if lang == 'zh' else ' | '.join(info_parts)}")
             card = entry.get("card") or {}
             if phase == "pregame":
                 injuries = (card.get("injuries") or {}).get("featuredByTeam") or {}
@@ -1936,7 +2285,8 @@ def render_day_view_markdown(payload: dict[str, Any]) -> str:
                     items = injuries.get(abbr) or []
                     if items:
                         localized = [localize_player_line(item, lang) for item in items[:2]]
-                        lines.append(f"- {_display_team(abbr, lang)} {'伤病' if lang == 'zh' else 'injuries'}: {'; '.join(localized)}")
+                        prefix = "伤病重点" if lang == "zh" else "Injury watch"
+                        lines.append(f"- {_display_team(abbr, lang, zh_locale)} {prefix}: {'; '.join(localized)}")
                 team_form = card.get("teamForm") or {}
                 for abbr in (away_abbr, home_abbr):
                     snapshot = team_form.get(abbr) or {}
@@ -1945,46 +2295,60 @@ def render_day_view_markdown(payload: dict[str, Any]) -> str:
                     recent = (snapshot.get("recentForm") or {}).get("record") or "N/A"
                     rest_days = (snapshot.get("schedule") or {}).get("restDays")
                     rest_text = labels["pending"] if rest_days is None else str(rest_days)
-                    lines.append(f"- {_display_team(abbr, lang)} {day_labels['team_form']}: recent {recent}, rest {rest_text}")
+                    lines.append(f"- {_narrative_team_form(_display_team(abbr, lang, zh_locale), recent, rest_text, lang)}")
                 prediction = card.get("prediction") or {}
                 if prediction.get("summary"):
-                    lines.append(f"- {day_labels['prediction']}: {prediction['summary']}")
+                    _append_unique_line(
+                        lines,
+                        _localize_team_mentions(prediction["summary"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs),
+                    )
                 if card.get("summary"):
-                    lines.append(f"- {labels['analysis_summary']}: {card['summary']}")
+                    _append_unique_line(
+                        lines,
+                        _localize_team_mentions(card["summary"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs),
+                    )
             elif phase == "live":
                 live_state = card.get("liveState") or {}
                 momentum = card.get("momentum") or {}
                 lineups = card.get("lineups") or {}
-                if live_state.get("displayClock"):
-                    lines.append(f"- {labels['clock']}: {live_state['displayClock']}")
-                if live_state.get("period"):
-                    lines.append(f"- period: {live_state['period']}")
+                if live_state.get("displayClock") or live_state.get("period"):
+                    if lang == "zh":
+                        lines.append(f"- 比赛进程：第 {live_state.get('period') or '?'} 节，{labels['clock']} {live_state.get('displayClock') or labels['pending']}")
+                    else:
+                        lines.append(
+                            f"- The game is in the {_ordinal_period(live_state.get('period'))} quarter with {live_state.get('displayClock') or labels['pending']} on the clock."
+                        )
                 if momentum.get("trend"):
-                    lines.append(f"- {labels['analysis_trend']}: {momentum['trend']}")
+                    _append_unique_line(
+                        lines,
+                        _localize_team_mentions(momentum["trend"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs),
+                    )
                 if live_state.get("latestPlay"):
-                    lines.append(f"- {day_labels['latest_play']}: {live_state['latestPlay']}")
+                    lines.append(f"- {_narrative_latest_play(live_state['latestPlay'], lang)}")
                 full_stats = card.get("fullStats") or {}
-                teams = full_stats.get("teams") or {}
+                players, _ = _build_live_player_display(full_stats=full_stats, lineups=lineups, matchup=matchup, limit=3)
                 for abbr in (away_abbr, home_abbr):
-                    compact = render_full_stats_team_line(teams.get(abbr) or {})
-                    if compact:
-                        lines.append(f"- {_display_team(abbr, lang)}: {compact}")
-                players, _ = _build_live_player_display(full_stats=full_stats, lineups=lineups, matchup=matchup, limit=5)
-                for abbr in (away_abbr, home_abbr):
-                    player_lines = [render_full_stats_player_line(player, labels) for player in (players.get(abbr) or [])]
+                    player_lines = [
+                        render_compact_player_stat_line(player, lang=lang, include_secondary=False, include_shooting=False)
+                        for player in (players.get(abbr) or [])
+                    ]
                     player_lines = [line for line in player_lines if line]
                     if player_lines:
-                        lines.append(f"- {_display_team(abbr, lang)} {'球员' if lang == 'zh' else 'players'}: {'; '.join(player_lines)}")
-                digest = (card.get("digest") or {}).get("plays") or []
-                if digest:
-                    lines.append(f"- {'回合摘要' if lang == 'zh' else 'Play digest'}: {digest[0]}")
+                        lines.append(f"- {_narrative_key_lines(_display_team(abbr, lang, zh_locale), '; '.join(player_lines), lang)}")
                 if card.get("summary"):
-                    lines.append(f"- {labels['analysis_summary']}: {card['summary']}")
+                    _append_unique_line(
+                        lines,
+                        _localize_team_mentions(card["summary"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs),
+                    )
             else:
                 if card.get("summary"):
-                    lines.append(f"- {labels['analysis_summary']}: {card['summary']}")
+                    _append_unique_line(
+                        lines,
+                        _localize_team_mentions(card["summary"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs),
+                    )
                 if card.get("turningPoint"):
-                    lines.append(f"- {day_labels['turning_point']}: {card['turningPoint']}")
+                    localized_turning_point = _localize_team_mentions(card["turningPoint"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)
+                    lines.append(f"- {_narrative_turning_point(localized_turning_point, lang)}")
             lines.append("")
     return "\n".join(lines).rstrip()
 
@@ -1993,9 +2357,11 @@ def render_live_scene_markdown(scene: dict[str, Any]) -> str:
     report = scene["report"]
     labels = report["labels"]
     phase_labels = _phase_labels(report["lang"])
+    zh_locale = report.get("zhLocale")
     live = scene.get("live") or {}
     info = live.get("info") or {}
     matchup = info.get("matchup") or {}
+    team_abbrs = _matchup_team_abbrs(matchup)
     lineups = live.get("lineups") or {}
     injuries = live.get("injuries") or {}
     live_state = live.get("liveState") or {}
@@ -2013,45 +2379,53 @@ def render_live_scene_markdown(scene: dict[str, Any]) -> str:
         labels["local_tip"],
         "",
     ]
-    lines.extend(_render_info_section(info, labels, phase_labels))
-    lines.extend(_render_lineups_section(lineups, game_context.get("seasonAverages") or {}, matchup, labels, phase_labels))
-    lines.extend(_render_injuries_section(injuries, matchup, labels, phase_labels))
+    lines.extend(_render_info_section(info, labels, phase_labels, zh_locale=zh_locale))
+    lines.extend(_render_lineups_section(lineups, game_context.get("seasonAverages") or {}, matchup, labels, phase_labels, zh_locale=zh_locale))
+    lines.extend(_render_injuries_section(injuries, matchup, labels, phase_labels, zh_locale=zh_locale, active_players=lineups.get("activeParticipants") or lineups.get("verifiedPlayers")))
     lines.append(f"## {phase_labels['live_flow']}")
     if live.get("summary"):
-        lines.append(f"- {labels['analysis_summary']}: {live['summary']}")
+        _append_unique_line(lines, _localize_team_mentions(live["summary"], lang=report["lang"], zh_locale=zh_locale, team_abbrs=team_abbrs))
     if momentum.get("trend"):
-        lines.append(f"- {labels['analysis_trend']}: {momentum['trend']}")
-    if scene.get("analysis", {}).get("keyMatchup"):
-        lines.append(f"- {labels['analysis_key_matchup']}: {scene['analysis']['keyMatchup']}")
-    if live_state.get("displayClock"):
-        lines.append(f"- {labels['clock']}: {live_state['displayClock']}")
-    if live_state.get("period"):
-        lines.append(f"- period: {live_state['period']}")
+        _append_unique_line(lines, _localize_team_mentions(momentum["trend"], lang=report["lang"], zh_locale=zh_locale, team_abbrs=team_abbrs))
+
+    if live_state.get("displayClock") or live_state.get("period"):
+        if report["lang"] == "zh":
+            lines.append(f"- 比赛已经来到第 {live_state.get('period') or '?'} 节，{labels['clock']} {live_state.get('displayClock') or labels['pending']}")
+        else:
+            lines.append(f"- The game is in the {_ordinal_period(live_state.get('period'))} quarter with {live_state.get('displayClock') or labels['pending']} on the clock.")
     if live_state.get("playTimeline"):
         latest_play = (live_state.get("playTimeline") or [])[-1]
         latest_clock = " ".join(part for part in (f"P{latest_play.get('period')}" if latest_play.get("period") else "", latest_play.get("clock") or "") if part).strip()
         latest_text = latest_play.get("text") or latest_play.get("shortDescription") or ""
         if latest_text:
             prefix = f"{latest_clock} " if latest_clock else ""
-            lines.append(f"- latestPlay: {prefix}{latest_text}".strip())
+            lines.append(f"- {_narrative_latest_play(f'{prefix}{latest_text}'.strip(), report['lang'])}")
     if live_state.get("winProbabilityTimeline"):
         latest_win_probability = (live_state.get("winProbabilityTimeline") or [])[-1]
         home_probability = latest_win_probability.get("homeWinPercentage")
         if home_probability is not None:
-            lines.append(f"- homeWinProbability: {home_probability:.0%}")
+            home_name = _display_team((matchup.get("home") or {}).get("abbr"), report["lang"], zh_locale)
+            if report["lang"] == "zh":
+                lines.append(f"- {home_name}此刻的主场胜率大约在 {home_probability:.0%}。")
+            else:
+                lines.append(f"- {home_name}'s live home win probability sits around {home_probability:.0%}.")
     if scene.get("analysis", {}).get("turningPoint"):
-        lines.append(f"- {labels['analysis_turning_point']}: {scene['analysis']['turningPoint']}")
+        lines.append(f"- {_narrative_turning_point(scene['analysis']['turningPoint'], report['lang'])}")
     if momentum.get("reasons"):
-        lines.append(f"- {labels['analysis_reasons']}: {' / '.join(momentum['reasons'])}")
+        localized_reasons = [
+            _localize_team_mentions(reason, lang=report["lang"], zh_locale=zh_locale, team_abbrs=team_abbrs)
+            for reason in (momentum.get("reasons") or [])
+        ]
+        lines.append(f"- {_narrative_reasons(localized_reasons, lang=report['lang'])}")
     lines.append("")
-    lines.extend(_render_team_totals_section(full_stats, matchup, labels, phase_labels))
-    lines.extend(_render_key_player_lines_section({"players": selected_players}, matchup, labels, phase_labels, limit=5))
+
     if scene["digest"]["plays"]:
         lines.extend([f"## {phase_labels['play_digest']}", ""])
         for item in scene["digest"]["plays"]:
             lines.append(f"- {item}")
         lines.append("")
-    lines.extend([f"## {phase_labels['summary']}", "", f"- {live.get('summary') or phase_labels['none']}", ""])
+    localized_summary = _localize_team_mentions(live.get("summary") or phase_labels["none"], lang=report["lang"], zh_locale=zh_locale, team_abbrs=team_abbrs)
+    lines.extend([f"## {phase_labels['summary']}", "", f"- {localized_summary}", ""])
     lines.extend(
         [
             f"> sources: {', '.join(scene['sources'])}",
@@ -2067,9 +2441,11 @@ def render_postgame_scene_markdown(scene: dict[str, Any]) -> str:
     labels = report["labels"]
     phase_labels = _phase_labels(report["lang"])
     lang = report["lang"]
+    zh_locale = report.get("zhLocale")
     postgame = scene.get("postgame") or {}
     info = postgame.get("info") or {}
     matchup = info.get("matchup") or {}
+    team_abbrs = _matchup_team_abbrs(matchup)
     lineups = postgame.get("lineups") or {}
     injuries = postgame.get("injuries") or {}
     full_stats = postgame.get("fullStats") or {"available": False, "teams": {}, "players": {}}
@@ -2083,22 +2459,27 @@ def render_postgame_scene_markdown(scene: dict[str, Any]) -> str:
         labels["local_tip"],
         "",
     ]
-    lines.extend(_render_info_section(info, labels, phase_labels))
-    lines.extend(_render_post_starters_section(lineups, matchup, phase_labels, lang=lang))
+    lines.extend(_render_info_section(info, labels, phase_labels, zh_locale=zh_locale))
+    lines.extend(_render_post_starters_section(lineups, matchup, phase_labels, lang=lang, zh_locale=zh_locale))
     lines.append(f"## {phase_labels['post_flow']}")
     if postgame.get("summary"):
-        lines.append(f"- {labels['analysis_summary']}: {postgame['summary']}")
+        _append_unique_line(lines, _localize_team_mentions(postgame["summary"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs))
     if scene.get("analysis", {}).get("trend"):
-        lines.append(f"- {labels['analysis_trend']}: {scene['analysis']['trend']}")
+        _append_unique_line(lines, _localize_team_mentions(scene["analysis"]["trend"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs))
     if scene.get("analysis", {}).get("reasons"):
-        localized_reasons = [_localize_analysis_reason(reason, lang) for reason in (scene.get("analysis", {}).get("reasons") or [])]
-        lines.append(f"- {labels['analysis_reasons']}: {' / '.join(localized_reasons)}")
+        localized_reasons = [
+            _localize_team_mentions(_localize_analysis_reason(reason, lang), lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)
+            for reason in (scene.get("analysis", {}).get("reasons") or [])
+        ]
+        lines.append(f"- {_post_reasons_sentence(localized_reasons, lang=lang)}")
     lines.append("")
-    lines.extend(_render_post_key_performances_section(full_stats, lineups, matchup, phase_labels, lang=lang))
-    lines.extend(_render_post_team_totals_section(full_stats, matchup, phase_labels, lang=lang))
-    lines.extend(_render_injuries_section(injuries, matchup, labels, phase_labels))
-    lines.extend([f"## {phase_labels['turning_point']}", "", f"- {postgame.get('turningPoint') or phase_labels['none']}", ""])
-    lines.extend([f"## {phase_labels['summary']}", "", f"- {postgame.get('summary') or phase_labels['none']}", ""])
+    lines.extend(_render_post_key_performances_section(full_stats, lineups, matchup, phase_labels, lang=lang, zh_locale=zh_locale))
+    lines.extend(_render_post_team_totals_section(full_stats, matchup, phase_labels, lang=lang, zh_locale=zh_locale))
+    lines.extend(_render_injuries_section(injuries, matchup, labels, phase_labels, zh_locale=zh_locale))
+    localized_turning_point = _localize_team_mentions(postgame.get("turningPoint") or phase_labels["none"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)
+    lines.extend([f"## {phase_labels['turning_point']}", "", f"- {_narrative_turning_point(localized_turning_point, lang)}", ""])
+    localized_summary = _localize_team_mentions(postgame.get("summary") or phase_labels["none"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)
+    lines.extend([f"## {phase_labels['summary']}", "", f"- {localized_summary}", ""])
     lines.extend(
         [
             f"> sources: {', '.join(scene['sources'])}",
@@ -2165,7 +2546,15 @@ def finalize_scene_game(
     sources = ["espn"]
     freshness = "fresh"
     fallback_level = "none"
-    if analysis_mode in {"live", "post", "auto"} and (not game.get("playTimeline") or not any((game.get("keyPlayers") or {}).values())):
+    should_refresh_nba_live = (
+        analysis_mode in {"live", "post", "auto"}
+        and (
+            game.get("statusState") == "in"
+            or not game.get("playTimeline")
+            or not any((game.get("keyPlayers") or {}).values())
+        )
+    )
+    if should_refresh_nba_live:
         augment_meta = augment_game_with_nba_live(game, requested_date=report["requestedDate"])
         if augment_meta.get("source"):
             sources.append("nba_live")
@@ -2180,6 +2569,7 @@ def finalize_scene_game(
         ),
     }
     game["fullStats"] = build_full_stats(game, allowed_names=set(game.get("verifiedPlayers") or []))
+    _sync_full_stats_scoreboard(game)
     attach_season_averages(game)
     game["meta"] = {
         "sections": {
@@ -2240,8 +2630,9 @@ def build_game_scene(
     team: str,
     lang: str,
     analysis_mode: str,
+    zh_locale: str | None = None,
 ) -> dict[str, Any]:
-    report = build_scene_report(tz=tz, date_text=date_text, team=team, lang=lang)
+    report = build_scene_report(tz=tz, date_text=date_text, team=team, lang=lang, zh_locale=zh_locale)
     game = report["games"][0]
     intent = analysis_mode if analysis_mode in {"pregame", "live", "post"} else "scene"
     return finalize_scene_game(report=report, game=game, lang=lang, analysis_mode=analysis_mode, intent=intent)
@@ -2313,6 +2704,8 @@ def render_pregame_scene_markdown(scene: dict[str, Any]) -> str:
     pregame = scene.get("pregame") or {}
     labels = _pregame_labels(report["lang"])
     lang = report["lang"]
+    zh_locale = report.get("zhLocale")
+    team_abbrs = [game["away"]["abbr"], game["home"]["abbr"]]
     lines = [
         f"# {labels['title_single']} ({report['requestedDate']})",
         f"> {report['labels']['timezone']}: {report['timezone']}",
@@ -2330,7 +2723,7 @@ def render_pregame_scene_markdown(scene: dict[str, Any]) -> str:
         for abbr in (game["away"]["abbr"], game["home"]["abbr"]):
             starters = (lineups.get("starters") or {}).get(abbr) or []
             rendered = ", ".join(localize_player_list(starters, lang)) if starters else labels["none"]
-            lines.append(f"- {_display_team(abbr, lang)} starters: {rendered}")
+            lines.append(f"- {_display_team(abbr, lang, zh_locale)} starters: {rendered}")
     else:
         lines.append(f"- {labels['starters_pending']}")
     season_averages = (game.get("gameContext") or {}).get("seasonAverages") or {}
@@ -2338,7 +2731,7 @@ def render_pregame_scene_markdown(scene: dict[str, Any]) -> str:
         key_players = (lineups.get("keyPlayers") or {}).get(abbr) or []
         if not key_players:
             continue
-        lines.append(f"- {_display_team(abbr, lang)}:")
+        lines.append(f"- {_display_team(abbr, lang, zh_locale)}:")
         for line in key_players[:3]:
             primary = extract_primary_name(line)
             averages = _format_average_line((season_averages.get(abbr) or {}).get(primary) or {})
@@ -2349,7 +2742,7 @@ def render_pregame_scene_markdown(scene: dict[str, Any]) -> str:
     for abbr in (game["away"]["abbr"], game["home"]["abbr"]):
         items = (injuries.get("featuredByTeam") or {}).get(abbr) or (injuries.get("byTeam") or {}).get(abbr) or []
         localized = [localize_player_line(item, lang) for item in items]
-        lines.append(f"- {_display_team(abbr, lang)}: {'; '.join(localized) if localized else labels['none']}")
+        lines.append(f"- {_display_team(abbr, lang, zh_locale)}: {'; '.join(localized) if localized else labels['none']}")
     lines.extend(["", f"## {labels['team_form']}"])
     team_form = pregame.get("teamForm") or {}
     for abbr in (game["away"]["abbr"], game["home"]["abbr"]):
@@ -2360,18 +2753,29 @@ def render_pregame_scene_markdown(scene: dict[str, Any]) -> str:
         rest_days = (snapshot.get("schedule") or {}).get("restDays")
         rest_text = report["labels"]["pending"] if rest_days is None else str(rest_days)
         injury_count = (snapshot.get("injuries") or {}).get("count")
-        lines.append(f"- {_display_team(abbr, lang)}: recent {recent}, rest {rest_text}, injuries {injury_count if injury_count is not None else labels['none']}")
+        base_sentence = _narrative_team_form(_display_team(abbr, lang, zh_locale), recent, rest_text, lang)
+        if lang == "zh":
+            suffix = f" 伤病人数 {injury_count if injury_count is not None else labels['none']}。"
+        else:
+            suffix = f" Injury count: {injury_count if injury_count is not None else labels['none']}."
+        lines.append(f"- {base_sentence[:-1]}，{suffix.lstrip()}" if lang == "zh" else f"- {base_sentence[:-1]}. {suffix.strip()}")
     prediction = pregame.get("prediction") or {}
     lines.extend(["", f"## {labels['prediction']}"])
     if prediction.get("summary"):
-        lines.append(f"- {report['labels']['analysis_summary']}: {prediction['summary']}")
+        _append_unique_line(lines, _localize_team_mentions(prediction["summary"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs))
     if prediction.get("trend"):
-        lines.append(f"- {report['labels']['analysis_trend']}: {prediction['trend']}")
+        _append_unique_line(lines, _localize_team_mentions(prediction["trend"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs))
     if prediction.get("keyMatchup"):
-        lines.append(f"- {report['labels']['analysis_key_matchup']}: {prediction['keyMatchup']}")
+        key_matchup = _localize_team_mentions(prediction["keyMatchup"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)
+        lines.append(f"- {'关键对位会落在' if lang == 'zh' else 'The matchup should turn on '}{key_matchup}{'' if lang == 'zh' else '.'}")
     if prediction.get("reasons"):
-        lines.append(f"- {report['labels']['analysis_reasons']}: {' / '.join(prediction['reasons'])}")
-    lines.extend(["", f"## {labels['summary']}", "", f"- {pregame.get('summary') or labels['none']}", ""])
+        localized_reasons = [
+            _localize_team_mentions(reason, lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)
+            for reason in (prediction.get("reasons") or [])
+        ]
+        lines.append(f"- {_narrative_reasons(localized_reasons, lang=lang)}")
+    localized_summary = _localize_team_mentions(pregame.get("summary") or labels["none"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)
+    lines.extend(["", f"## {labels['summary']}", "", f"- {localized_summary}", ""])
     lines.extend(
         [
             f"> sources: {', '.join(scene['sources'])}",
@@ -2382,8 +2786,15 @@ def render_pregame_scene_markdown(scene: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def build_pregame_collection(*, tz: str | None, date_text: str | None, lang: str, matchups: list[dict[str, str]] | None = None) -> dict[str, Any]:
-    report = build_scene_report(tz=tz, date_text=date_text, team=None, lang=lang)
+def build_pregame_collection(
+    *,
+    tz: str | None,
+    date_text: str | None,
+    lang: str,
+    matchups: list[dict[str, str]] | None = None,
+    zh_locale: str | None = None,
+) -> dict[str, Any]:
+    report = build_scene_report(tz=tz, date_text=date_text, team=None, lang=lang, zh_locale=zh_locale)
     scenes: list[dict[str, Any]] = []
     scope = "multi_all"
     if matchups:
@@ -2391,20 +2802,21 @@ def build_pregame_collection(*, tz: str | None, date_text: str | None, lang: str
         for matchup in matchups:
             resolved = resolve_requested_game(tz=tz, date_text=date_text, team=matchup["team"], opponent=matchup["opponent"])
             resolved_date = str(resolved.get("requestedDate") or report["requestedDate"])
-            scene = build_game_scene(tz=tz, date_text=resolved_date, team=matchup["team"], lang=lang, analysis_mode="pregame")
+            scene = build_game_scene(tz=tz, date_text=resolved_date, team=matchup["team"], lang=lang, analysis_mode="pregame", zh_locale=zh_locale)
             if not any(existing["game"]["eventId"] == scene["game"]["eventId"] for existing in scenes):
                 scenes.append(scene)
     else:
         for game in report["games"]:
             if game.get("statusState") != "pre":
                 continue
-            scenes.append(build_game_scene(tz=tz, date_text=report["requestedDate"], team=game["away"]["abbr"], lang=lang, analysis_mode="pregame"))
+            scenes.append(build_game_scene(tz=tz, date_text=report["requestedDate"], team=game["away"]["abbr"], lang=lang, analysis_mode="pregame", zh_locale=zh_locale))
     return {
         "intent": "pregame",
         "scope": scope,
         "requestedDate": report["requestedDate"],
         "timezone": report["timezone"],
         "lang": lang,
+        "zhLocale": report.get("zhLocale"),
         "games": scenes,
     }
 
@@ -2412,6 +2824,7 @@ def build_pregame_collection(*, tz: str | None, date_text: str | None, lang: str
 def render_pregame_collection_markdown(payload: dict[str, Any]) -> str:
     labels = _pregame_labels(payload["lang"])
     lang = payload["lang"]
+    zh_locale = payload.get("zhLocale")
     lines = [
         f"# {labels['title_multi']} ({payload['requestedDate']})",
         f"> {'请求方时区' if lang == 'zh' else 'Requestor Timezone'}: {payload['timezone']}",
@@ -2425,7 +2838,8 @@ def render_pregame_collection_markdown(payload: dict[str, Any]) -> str:
         game = scene["game"]
         pregame = scene.get("pregame") or {}
         prediction = pregame.get("prediction") or {}
-        lines.append(f"## {format_matchup_display(game['away']['abbr'], game['home']['abbr'], lang=lang)}")
+        team_abbrs = [game["away"]["abbr"], game["home"]["abbr"]]
+        lines.append(f"## {format_matchup_display(game['away']['abbr'], game['home']['abbr'], lang=lang, zh_locale=zh_locale)}")
         lines.append(f"- {'时间' if lang == 'zh' else 'Time'}: {game['startTimeLocal']}")
         if game.get("venue"):
             lines.append(f"- {'球馆' if lang == 'zh' else 'Venue'}: {game['venue']}")
@@ -2434,19 +2848,25 @@ def render_pregame_collection_markdown(payload: dict[str, Any]) -> str:
             if snapshot:
                 recent = (snapshot.get("recentForm") or {}).get("record") or "N/A"
                 injury_count = (snapshot.get("injuries") or {}).get("count")
-                lines.append(f"- {_display_team(abbr, lang)}: recent {recent}, injuries {injury_count if injury_count is not None else labels['none']}")
+                form_sentence = _narrative_team_form(_display_team(abbr, lang, zh_locale), recent, labels["pending"] if lang == "zh" else "Pending", lang)
+                extra = f"伤病人数 {injury_count if injury_count is not None else labels['none']}。" if lang == "zh" else f"Injury count: {injury_count if injury_count is not None else labels['none']}."
+                lines.append(f"- {form_sentence} {extra}" if lang == "en" else f"- {form_sentence[:-1]}，{extra}")
         for abbr in (game["away"]["abbr"], game["home"]["abbr"]):
             injuries = pregame.get("injuries") or {}
             items = (injuries.get("compactByTeam") or {}).get(abbr) or (injuries.get("featuredByTeam") or {}).get(abbr) or (injuries.get("byTeam") or {}).get(abbr) or []
             if items:
                 localized = [localize_player_line(item, lang) for item in items[:2]]
-                lines.append(f"- {_display_team(abbr, lang)} {'伤病' if lang == 'zh' else 'injuries'}: {'; '.join(localized)}")
+                if lang == "zh":
+                    lines.append(f"- {_display_team(abbr, lang, zh_locale)}的伤病关注点是 {'; '.join(localized)}。")
+                else:
+                    lines.append(f"- Injury watch for {_display_team(abbr, lang, zh_locale)} centers on {'; '.join(localized)}.")
         if prediction.get("summary"):
-            lines.append(f"- {'分析' if lang == 'zh' else 'Prediction'}: {prediction['summary']}")
+            _append_unique_line(lines, _localize_team_mentions(prediction["summary"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs))
         if prediction.get("keyMatchup"):
-            lines.append(f"- {'关键对位' if lang == 'zh' else 'Key Matchup'}: {prediction['keyMatchup']}")
+            key_matchup = _localize_team_mentions(prediction["keyMatchup"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs)
+            lines.append(f"- {'关键对位会落在' if lang == 'zh' else 'The matchup should turn on '}{key_matchup}{'' if lang == 'zh' else '.'}")
         if pregame.get("summary"):
-            lines.append(f"- {'总结' if lang == 'zh' else 'Summary'}: {pregame['summary']}")
+            _append_unique_line(lines, _localize_team_mentions(pregame["summary"], lang=lang, zh_locale=zh_locale, team_abbrs=team_abbrs))
         lines.append("")
     return "\n".join(lines).rstrip()
 
@@ -2458,41 +2878,18 @@ def render_game_scene_markdown(scene: dict[str, Any]) -> str:
         return render_live_scene_markdown(scene)
     if scene.get("intent") == "post":
         return render_postgame_scene_markdown(scene)
-    report = scene["report"]
-    game = scene["game"]
-    analysis = scene["analysis"]
-    labels = report["labels"]
-    lines = [
-        f"# {labels['title_game']} ({report['requestedDate']})",
-        f"> {labels['timezone']}: {report['timezone']}",
-        f"> {labels['requested_date']}: {report['requestedDate']}",
-        f"> {labels['view']}: game",
-        f"> {labels['filter_team']}: {report['teamFilter']}",
-        "",
-        labels["local_tip"],
-        "",
-    ]
-    lines.extend(render_team_lines(game, labels))
-    lines.append("")
-    lines.extend(render_detail_blocks(game, labels))
-    lines.extend(render_analysis_block(analysis, labels))
-    if scene["digest"]["plays"]:
-        lines.extend(["", "## 回合摘要" if report["lang"] == "zh" else "## Play Digest", ""])
-        for item in scene["digest"]["plays"]:
-            lines.append(f"- {item}")
-    lines.extend(
-        [
-            "",
-            f"> sources: {', '.join(scene['sources'])}",
-            f"> fallbackLevel: {scene['fallbackLevel']}",
-            f"> dataFreshness: {scene['dataFreshness']}",
-        ]
-    )
-    return "\n".join(lines)
+    # auto 模式：根据实际比赛状态自动选择渲染路径
+    status_state = (scene.get("game") or {}).get("statusState") or ""
+    if status_state == "in":
+        return render_live_scene_markdown(scene)
+    if status_state == "post":
+        return render_postgame_scene_markdown(scene)
+    # 赛前或状态未知，走 pregame
+    return render_pregame_scene_markdown(scene)
 
 
-def render_day_scene(*, tz: str | None, date_text: str | None, lang: str) -> str:
-    return render_day_view_markdown(build_day_view(tz=tz, date_text=date_text, lang=lang))
+def render_day_scene(*, tz: str | None, date_text: str | None, lang: str, zh_locale: str | None = None) -> str:
+    return render_day_view_markdown(build_day_view(tz=tz, date_text=date_text, lang=lang, zh_locale=zh_locale))
 
 
 def scene_payload(scene: dict[str, Any]) -> dict[str, Any]:
@@ -2502,6 +2899,9 @@ def scene_payload(scene: dict[str, Any]) -> dict[str, Any]:
         "scope": scene.get("scope") or "single",
         "eventId": game["eventId"],
         "requestedDate": scene["report"]["requestedDate"],
+        "timezone": scene["report"]["timezone"],
+        "lang": scene["report"]["lang"],
+        "zhLocale": scene["report"].get("zhLocale"),
         "statusState": game["statusState"],
         "teams": {
             "away": game["away"],

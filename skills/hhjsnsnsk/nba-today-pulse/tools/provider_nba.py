@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import socket
 import ssl
 import urllib.error
@@ -29,11 +30,11 @@ DEFAULT_HEADERS = {
 
 
 def resolve_stats_base_url(base_url: str | None = None) -> str:
-    return (base_url or DEFAULT_STATS_BASE_URL).rstrip("/")
+    return (base_url or os.environ.get("NBA_TR_NBA_STATS_BASE_URL") or DEFAULT_STATS_BASE_URL).rstrip("/")
 
 
 def resolve_live_base_url(base_url: str | None = None) -> str:
-    return (base_url or DEFAULT_LIVE_BASE_URL).rstrip("/")
+    return (base_url or os.environ.get("NBA_TR_NBA_BASE_URL") or DEFAULT_LIVE_BASE_URL).rstrip("/")
 
 
 def _request_json(url: str, timeout_seconds: int) -> dict[str, Any]:
@@ -93,7 +94,7 @@ def fetch_team_roster(
     timeout_seconds: int = 20,
 ) -> dict[str, Any]:
     stats_base = resolve_stats_base_url(base_url)
-    target_season = season or "2025-26"
+    target_season = season or os.environ.get("NBA_TR_NBA_SEASON", "2025-26")
     url = _build_url(
         stats_base,
         "commonteamroster",
@@ -126,7 +127,7 @@ def fetch_team_player_averages(
     timeout_seconds: int = 20,
 ) -> dict[str, Any]:
     stats_base = resolve_stats_base_url(base_url)
-    target_season = season or "2025-26"
+    target_season = season or os.environ.get("NBA_TR_NBA_SEASON", "2025-26")
     url = _build_url(
         stats_base,
         "leaguedashplayerstats",
@@ -389,17 +390,54 @@ def extract_boxscore_players(payload: dict[str, Any]) -> dict[str, list[dict[str
             name = player.get("name") or player.get("familyName")
             if not name:
                 continue
+            stats_raw = player.get("statistics") or {}
             team_players.append(
                 {
                     "displayName": str(name),
                     "starter": bool(player.get("starter")),
                     "stats": {
-                        "points": player.get("statistics", {}).get("points") or player.get("points"),
-                        "rebounds": player.get("statistics", {}).get("reboundsTotal") or player.get("rebounds"),
-                        "assists": player.get("statistics", {}).get("assists") or player.get("assists"),
+                        "points": stats_raw.get("points") or player.get("points"),
+                        "rebounds": stats_raw.get("reboundsTotal") or player.get("rebounds"),
+                        "assists": stats_raw.get("assists") or player.get("assists"),
+                        "minutes": stats_raw.get("minutesCalculated") or stats_raw.get("minutes") or player.get("minutes"),
                     },
                 }
             )
         if abbr:
             result[abbr] = team_players
     return result
+
+
+def extract_live_boxscore_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
+    """从 NBA Live boxscore payload 中提取实时比赛快照（比分、节次、时钟）。"""
+    game = payload.get("game") or {}
+
+    away_team = game.get("awayTeam") or {}
+    home_team = game.get("homeTeam") or {}
+
+    away_score = away_team.get("score")
+    home_score = home_team.get("score")
+
+    # 解析比赛时钟：NBA Live 格式通常是 "PT08M47.00S"
+    raw_clock = game.get("gameClock") or game.get("gameTimeQtr") or ""
+    display_clock = ""
+    if raw_clock:
+        # 去掉 PT 前缀和 S 后缀，转成 MM:SS 格式
+        import re as _re
+        m = _re.match(r"PT(?P<min>\d+)M(?P<sec>[\d.]+)S", raw_clock)
+        if m:
+            minutes = int(m.group("min"))
+            seconds = int(float(m.group("sec")))
+            display_clock = f"{minutes}:{seconds:02d}"
+        else:
+            display_clock = raw_clock
+
+    return {
+        "awayScore": away_score,
+        "homeScore": home_score,
+        "awayScoreSource": "explicit" if away_score is not None else "none",
+        "homeScoreSource": "explicit" if home_score is not None else "none",
+        "period": game.get("period"),
+        "displayClock": display_clock,
+    }
+

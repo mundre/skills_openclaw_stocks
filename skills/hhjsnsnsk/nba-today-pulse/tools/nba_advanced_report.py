@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 CURRENT_DIR = Path(__file__).resolve().parent
 if str(CURRENT_DIR) not in sys.path:
@@ -222,10 +222,11 @@ def team_totals_edge_reason(game: dict[str, Any], favored_side: str, labels: dic
     other = full_stats_for_side(game, "away" if favored_side == "home" else "home")
     if not own or not other:
         return None
-    for key, text_zh, text_en, higher_better in (
-        ("REB", "篮板边际", "Rebounding edge", True),
-        ("AST", "分享球边际", "Assist edge", True),
-        ("TOV", "失误控制边际", "Turnover control edge", False),
+    favored_abbr = game[favored_side]["abbr"]
+    for key, higher_better in (
+        ("REB", True),
+        ("AST", True),
+        ("TOV", False),
     ):
         own_value = safe_float(own.get(key))
         other_value = safe_float(other.get(key))
@@ -234,8 +235,16 @@ def team_totals_edge_reason(game: dict[str, Any], favored_side: str, labels: dic
         better = own_value > other_value if higher_better else own_value < other_value
         if better:
             if labels["timezone"] == "请求方时区":
-                return f"{text_zh}: {game[favored_side]['abbr']} {own_value:.0f}-{other_value:.0f}"
-            return f"{text_en}: {game[favored_side]['abbr']} {own_value:.0f}-{other_value:.0f}"
+                if key == "REB":
+                    return f"{favored_abbr} 在篮板上以 {own_value:.0f}-{other_value:.0f} 占优"
+                if key == "AST":
+                    return f"{favored_abbr} 在助攻上以 {own_value:.0f}-{other_value:.0f} 占优"
+                return f"{favored_abbr} 把失误控制在 {own_value:.0f} 次，对手是 {other_value:.0f} 次"
+            if key == "REB":
+                return f"{favored_abbr} won the glass {own_value:.0f}-{other_value:.0f}"
+            if key == "AST":
+                return f"{favored_abbr} finished ahead in assists {own_value:.0f}-{other_value:.0f}"
+            return f"{favored_abbr} was cleaner with the ball, committing {own_value:.0f} turnovers to {other_value:.0f}"
     return None
 
 
@@ -529,10 +538,15 @@ def build_live_analysis(game: dict[str, Any], labels: dict[str, str]) -> dict[st
 
 
 def decisive_period_text(game: dict[str, Any], winner_side: str, labels: dict[str, str]) -> str:
+    info = decisive_period_info(game, winner_side, labels)
+    return str(info.get("text") or "") if info else ""
+
+
+def decisive_period_info(game: dict[str, Any], winner_side: str, labels: dict[str, str]) -> dict[str, Any] | None:
     away_scores = [parse_period_score(value) for value in game["away"].get("linescores") or []]
     home_scores = [parse_period_score(value) for value in game["home"].get("linescores") or []]
     if not away_scores or not home_scores:
-        return ""
+        return None
     best_period = None
     best_margin = -1
     for index, (away_score, home_score) in enumerate(zip(away_scores, home_scores), start=1):
@@ -542,10 +556,782 @@ def decisive_period_text(game: dict[str, Any], winner_side: str, labels: dict[st
             best_margin = winner_margin
             best_period = index
     if best_period is None or best_margin <= 0:
+        return None
+    if labels["timezone"] == "请求方时区":
+        text = f"第 {best_period} 节净胜 {best_margin} 分"
+    else:
+        text = f"Quarter {best_period}: +{best_margin}"
+    return {"period": best_period, "margin": best_margin, "text": text}
+
+
+def _ordinal_period(period: int | None) -> str:
+    if period is None:
+        return "late game"
+    mapping = {1: "first", 2: "second", 3: "third", 4: "fourth"}
+    if period in mapping:
+        return f"the {mapping[period]} quarter"
+    return "overtime"
+
+
+def _clock_text(play: dict[str, Any]) -> str:
+    return str(play.get("clock") or "").strip()
+
+
+def _period_value(play: dict[str, Any]) -> int | None:
+    try:
+        return int(play.get("period"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _period_time_label(play: dict[str, Any], labels: dict[str, str]) -> str:
+    period = _period_value(play)
+    clock = _clock_text(play)
+    if labels["timezone"] == "请求方时区":
+        if period and period > 4:
+            return f"加时还剩 {clock}" if clock else "加时阶段"
+        if period and clock:
+            return f"第 {period} 节还剩 {clock}"
+        if period:
+            return f"第 {period} 节"
+        return "关键阶段"
+    if period and period > 4:
+        return f"with {clock} left in overtime" if clock else "in overtime"
+    if period and clock:
+        return f"with {clock} left in {_ordinal_period(period)}"
+    if period:
+        return f"in {_ordinal_period(period)}"
+    return "in the key stretch"
+
+
+def _stage_label(play: dict[str, Any], labels: dict[str, str]) -> str:
+    period = _period_value(play)
+    clock = _clock_text(play)
+    if not period:
+        return "关键阶段" if labels["timezone"] == "请求方时区" else "the key stretch"
+    if period > 4:
+        return "加时阶段" if labels["timezone"] == "请求方时区" else "overtime"
+    stage = ""
+    if ":" in clock:
+        minutes_text, _, _ = clock.partition(":")
+        try:
+            minutes = int(minutes_text)
+        except ValueError:
+            minutes = None
+        if minutes is not None:
+            if minutes >= 8:
+                stage = "开局" if labels["timezone"] == "请求方时区" else "early"
+            elif minutes >= 4:
+                stage = "中段" if labels["timezone"] == "请求方时区" else "midway through"
+            else:
+                stage = "后段" if labels["timezone"] == "请求方时区" else "late in"
+    if labels["timezone"] == "请求方时区":
+        return f"第 {period} 节{stage}" if stage else f"第 {period} 节"
+    if stage:
+        return f"{stage} {_ordinal_period(period)}"
+    return _ordinal_period(period)
+
+
+def _play_side(game: dict[str, Any], play: dict[str, Any]) -> str | None:
+    team_id = str(play.get("teamId") or "")
+    if not team_id:
+        return None
+    if team_id == str(game["home"].get("id") or ""):
+        return "home"
+    if team_id == str(game["away"].get("id") or ""):
+        return "away"
+    return None
+
+
+def _play_points(play: dict[str, Any], previous_play: dict[str, Any] | None, side: str) -> int:
+    score_value = play.get("scoreValue")
+    try:
+        numeric = int(score_value)
+    except (TypeError, ValueError):
+        numeric = 0
+    if numeric > 0:
+        return numeric
+    current_home = parse_period_score(str(play.get("homeScore") or "0"))
+    current_away = parse_period_score(str(play.get("awayScore") or "0"))
+    previous_home = parse_period_score(str((previous_play or {}).get("homeScore") or "0"))
+    previous_away = parse_period_score(str((previous_play or {}).get("awayScore") or "0"))
+    if side == "home":
+        return max(0, current_home - previous_home)
+    return max(0, current_away - previous_away)
+
+
+def _scoring_plays(game: dict[str, Any]) -> list[dict[str, Any]]:
+    plays = game.get("playTimeline") or []
+    scoring: list[dict[str, Any]] = []
+    previous_play: dict[str, Any] | None = None
+    for play in plays:
+        side = _play_side(game, play)
+        if not side:
+            previous_play = play
+            continue
+        points = _play_points(play, previous_play, side)
+        if bool(play.get("scoringPlay")) or (play.get("scoreValue") in (None, "") and points > 0):
+            if points > 0:
+                scoring.append({"play": play, "side": side, "points": points})
+        previous_play = play
+    return scoring
+
+
+def _best_scoring_streak(game: dict[str, Any], winner_side: str) -> dict[str, Any] | None:
+    best: dict[str, Any] | None = None
+    current: dict[str, Any] | None = None
+    for item in _scoring_plays(game):
+        if item["side"] != winner_side:
+            current = None
+            continue
+        play = item["play"]
+        points = int(item["points"])
+        if current is None:
+            current = {
+                "side": winner_side,
+                "points": points,
+                "startPlay": play,
+                "endPlay": play,
+            }
+        else:
+            current_end = current.get("endPlay") or {}
+            same_period = _period_value(current_end) == _period_value(play)
+            previous_loser_score = current_end.get("awayScore") if winner_side == "home" else current_end.get("homeScore")
+            current_loser_score = play.get("awayScore") if winner_side == "home" else play.get("homeScore")
+            loser_score_held = (
+                previous_loser_score not in (None, "")
+                and current_loser_score not in (None, "")
+                and parse_period_score(str(previous_loser_score)) == parse_period_score(str(current_loser_score))
+            )
+            if same_period and loser_score_held:
+                current["points"] += points
+                current["endPlay"] = play
+            else:
+                current = {
+                    "side": winner_side,
+                    "points": points,
+                    "startPlay": play,
+                    "endPlay": play,
+                }
+        if best is None or int(current["points"]) > int(best["points"]):
+            best = dict(current)
+    if best and int(best.get("points") or 0) >= 6:
+        return best
+    return None
+
+
+def _scoring_sequences(game: dict[str, Any]) -> list[dict[str, Any]]:
+    sequences: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    for item in _scoring_plays(game):
+        play = item["play"]
+        side = item["side"]
+        points = int(item["points"])
+        if current is None:
+            current = {
+                "side": side,
+                "points": points,
+                "startPlay": play,
+                "endPlay": play,
+            }
+            continue
+        current_end = current.get("endPlay") or {}
+        same_side = current.get("side") == side
+        same_period = _period_value(current_end) == _period_value(play)
+        previous_other_score = current_end.get("awayScore") if side == "home" else current_end.get("homeScore")
+        current_other_score = play.get("awayScore") if side == "home" else play.get("homeScore")
+        other_score_held = (
+            previous_other_score not in (None, "")
+            and current_other_score not in (None, "")
+            and parse_period_score(str(previous_other_score)) == parse_period_score(str(current_other_score))
+        )
+        if same_side and same_period and other_score_held:
+            current["points"] += points
+            current["endPlay"] = play
+        else:
+            sequences.append(current)
+            current = {
+                "side": side,
+                "points": points,
+                "startPlay": play,
+                "endPlay": play,
+            }
+    if current is not None:
+        sequences.append(current)
+    return sequences
+
+
+def _margin_after_play(game: dict[str, Any], play: dict[str, Any], winner_side: str) -> int | None:
+    home_score = play.get("homeScore")
+    away_score = play.get("awayScore")
+    if home_score in (None, "") or away_score in (None, ""):
+        return None
+    diff = parse_period_score(str(home_score)) - parse_period_score(str(away_score))
+    winner_margin = diff if winner_side == "home" else -diff
+    if winner_margin <= 0:
+        return None
+    return winner_margin
+
+
+def _min_margin_after_play(game: dict[str, Any], play_id: str, winner_side: str) -> int | None:
+    seen = False
+    margins: list[int] = []
+    for play in game.get("playTimeline") or []:
+        if str(play.get("id") or "") == play_id:
+            seen = True
+        if not seen:
+            continue
+        margin = _margin_after_play(game, play, winner_side)
+        if margin is not None:
+            margins.append(margin)
+    if not margins:
+        return None
+    return min(margins)
+
+
+def _first_nonpositive_margin_after_play(game: dict[str, Any], play_id: str, winner_side: str) -> dict[str, Any] | None:
+    seen = False
+    for play in game.get("playTimeline") or []:
+        if str(play.get("id") or "") == play_id:
+            seen = True
+            continue
+        if not seen:
+            continue
+        home_score = play.get("homeScore")
+        away_score = play.get("awayScore")
+        if home_score in (None, "") or away_score in (None, ""):
+            continue
+        margin = _winner_margin_from_scores(home_score, away_score, winner_side)
+        if margin <= 0:
+            return play
+    return None
+
+
+def _play_sequence(game: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    plays = game.get("playTimeline") or []
+    index_by_id = {
+        str(play.get("id") or ""): index
+        for index, play in enumerate(plays)
+        if str(play.get("id") or "")
+    }
+    return plays, index_by_id
+
+
+def _winner_margin_from_scores(home_score: Any, away_score: Any, winner_side: str) -> int:
+    diff = parse_period_score(str(home_score or "0")) - parse_period_score(str(away_score or "0"))
+    return diff if winner_side == "home" else -diff
+
+
+def _margin_before_play(game: dict[str, Any], play: dict[str, Any], winner_side: str) -> int | None:
+    plays, index_by_id = _play_sequence(game)
+    play_id = str(play.get("id") or "")
+    index = index_by_id.get(play_id)
+    if index is None:
+        return None
+    if index > 0:
+        previous = plays[index - 1]
+        if previous.get("homeScore") in (None, "") or previous.get("awayScore") in (None, ""):
+            return None
+        return _winner_margin_from_scores(previous.get("homeScore"), previous.get("awayScore"), winner_side)
+    side = _play_side(game, play)
+    if not side or play.get("homeScore") in (None, "") or play.get("awayScore") in (None, ""):
+        return None
+    points = _play_points(play, None, side)
+    home_before = parse_period_score(str(play.get("homeScore") or "0")) - (points if side == "home" else 0)
+    away_before = parse_period_score(str(play.get("awayScore") or "0")) - (points if side == "away" else 0)
+    return _winner_margin_from_scores(home_before, away_before, winner_side)
+
+
+def _durable_margin_threshold(play: dict[str, Any]) -> int:
+    period = _period_value(play) or 0
+    return 2 if period >= 4 else 4
+
+
+def _has_overtime(game: dict[str, Any]) -> bool:
+    away_lines = game.get("away", {}).get("linescores") or []
+    home_lines = game.get("home", {}).get("linescores") or []
+    if len(away_lines) > 4 or len(home_lines) > 4:
+        return True
+    status_detail = str(game.get("statusDetail") or game.get("rawStatusDetail") or "")
+    return "OT" in status_detail.upper()
+
+
+def _clock_seconds(play: dict[str, Any]) -> float | None:
+    clock = _clock_text(play)
+    if not clock:
+        return None
+    if ":" in clock:
+        minutes_text, _, seconds_text = clock.partition(":")
+        try:
+            return int(minutes_text) * 60 + float(seconds_text)
+        except ValueError:
+            return None
+    try:
+        return float(clock)
+    except ValueError:
+        return None
+
+
+def _is_late_closeout_window(play: dict[str, Any]) -> bool:
+    period = _period_value(play) or 0
+    if period > 4:
+        return True
+    if period != 4:
+        return False
+    clock_seconds = _clock_seconds(play)
+    return clock_seconds is not None and clock_seconds <= 180
+
+
+def _play_index(game: dict[str, Any], play: dict[str, Any] | None) -> int | None:
+    if not play:
+        return None
+    _, index_by_id = _play_sequence(game)
+    return index_by_id.get(str(play.get("id") or ""))
+
+
+def _play_within_range(game: dict[str, Any], play: dict[str, Any] | None, start_play: dict[str, Any], end_play: dict[str, Any]) -> bool:
+    index = _play_index(game, play)
+    start_index = _play_index(game, start_play)
+    end_index = _play_index(game, end_play)
+    if index is None or start_index is None or end_index is None:
+        return False
+    return start_index <= index <= end_index
+
+
+def _sequence_start_margin(game: dict[str, Any], sequence: dict[str, Any], winner_side: str) -> int | None:
+    return _margin_before_play(game, sequence.get("startPlay") or {}, winner_side)
+
+
+def _sequence_end_margin(game: dict[str, Any], sequence: dict[str, Any], winner_side: str) -> int | None:
+    return _margin_after_play(game, sequence.get("endPlay") or {}, winner_side)
+
+
+def _sequence_margin_gain(game: dict[str, Any], sequence: dict[str, Any], winner_side: str) -> int | None:
+    start_margin = _sequence_start_margin(game, sequence, winner_side)
+    end_margin = _sequence_end_margin(game, sequence, winner_side)
+    if start_margin is None or end_margin is None:
+        return None
+    return end_margin - start_margin
+
+
+def _is_meaningful_separation_sequence(game: dict[str, Any], sequence: dict[str, Any], winner_side: str) -> bool:
+    points = int(sequence.get("points") or 0)
+    start_margin = _sequence_start_margin(game, sequence, winner_side)
+    end_margin = _sequence_end_margin(game, sequence, winner_side)
+    gain = _sequence_margin_gain(game, sequence, winner_side)
+    if start_margin is None or end_margin is None:
+        return False
+    if points >= 6 and start_margin <= 0 and end_margin >= 4:
+        return True
+    if points >= 8 and end_margin >= 6:
+        return True
+    if gain is not None and gain >= 6 and end_margin >= 6:
+        return True
+    return False
+
+
+def _sequence_break_play(game: dict[str, Any], sequence: dict[str, Any], winner_side: str) -> dict[str, Any] | None:
+    return _first_nonpositive_margin_after_play(
+        game,
+        str((sequence.get("endPlay") or {}).get("id") or ""),
+        winner_side,
+    )
+
+
+def _sequence_meta(game: dict[str, Any], sequence: dict[str, Any], winner_side: str) -> dict[str, Any]:
+    start_play = sequence.get("startPlay") or {}
+    end_play = sequence.get("endPlay") or {}
+    break_play = _sequence_break_play(game, sequence, winner_side)
+    return {
+        "period": _period_value(start_play),
+        "points": int(sequence.get("points") or 0),
+        "startMargin": _sequence_start_margin(game, sequence, winner_side),
+        "endMargin": _sequence_end_margin(game, sequence, winner_side),
+        "marginGain": _sequence_margin_gain(game, sequence, winner_side),
+        "leadBroken": break_play is not None,
+        "breakPlayId": str((break_play or {}).get("id") or ""),
+    }
+
+
+def _best_sequence_for_side(
+    game: dict[str, Any],
+    side: str,
+    *,
+    predicate: Callable[[dict[str, Any]], bool] | None = None,
+    winner_side: str | None = None,
+    decisive_period_number: int | None = None,
+    volatile_game: bool = False,
+) -> dict[str, Any] | None:
+    best: dict[str, Any] | None = None
+    best_score: tuple[int, int, int, int, int] | None = None
+    for sequence in _scoring_sequences(game):
+        if sequence.get("side") != side:
+            continue
+        if predicate and not predicate(sequence):
+            continue
+        points = int(sequence.get("points") or 0)
+        start_margin = _sequence_start_margin(game, sequence, winner_side or side)
+        end_margin = _sequence_end_margin(game, sequence, winner_side or side) or 0
+        gain = _sequence_margin_gain(game, sequence, winner_side or side) or 0
+        period = _period_value(sequence.get("startPlay") or {}) or 99
+        lead_broken = _sequence_break_play(game, sequence, winner_side or side) is not None
+        if volatile_game:
+            if points >= 8 and gain >= 8 and end_margin >= 8:
+                category = 0
+            elif start_margin is not None and start_margin <= 0 and points >= 6 and end_margin >= 6:
+                category = 1
+            elif decisive_period_number is not None and period == decisive_period_number and points >= 8:
+                category = 2
+            elif decisive_period_number is not None and period == decisive_period_number:
+                category = 3
+            else:
+                category = 4
+            if lead_broken and period == 1:
+                if points <= 6 and end_margin <= 6:
+                    category += 3
+                else:
+                    category += 1
+            score = (-category, points, gain, end_margin, period)
+        else:
+            if start_margin is not None and start_margin <= 0 and end_margin >= 4:
+                category = 0
+            elif start_margin is not None and start_margin <= 3 and end_margin >= 6:
+                category = 1
+            elif decisive_period_number is not None and period == decisive_period_number:
+                category = 2
+            else:
+                category = 3
+            if lead_broken and period == 1 and points <= 6 and end_margin <= 6:
+                category += 2
+            score = (-category, points, gain, end_margin, -period)
+        if best is None or score > best_score:
+            best = sequence
+            best_score = score
+    return best
+
+
+def _last_late_winner_play(game: dict[str, Any], winner_side: str) -> dict[str, Any] | None:
+    fallback: dict[str, Any] | None = None
+    for play in game.get("playTimeline") or []:
+        if not _is_late_closeout_window(play):
+            continue
+        if _play_side(game, play) != winner_side:
+            continue
+        if _margin_after_play(game, play, winner_side) is None:
+            continue
+        fallback = play
+    return fallback
+
+
+def _play_descriptor(play: dict[str, Any], labels: dict[str, str]) -> str:
+    play_text = str(play.get("text") or "").strip()
+    if not play_text:
         return ""
     if labels["timezone"] == "请求方时区":
-        return f"第 {best_period} 节净胜 {best_margin} 分"
-    return f"Quarter {best_period}: +{best_margin}"
+        return f"（{play_text}）"
+    return f" ({play_text})"
+
+
+def _sequence_or_play_time_label(sequence: dict[str, Any], labels: dict[str, str]) -> str:
+    start_play = sequence.get("startPlay") or {}
+    return _period_time_label(start_play, labels)
+
+
+def _describe_margin_state(margin: int, *, lang: str) -> str:
+    if lang == "zh":
+        if margin < 0:
+            return f"落后{abs(margin)}分"
+        if margin == 0:
+            return "平分"
+        return f"领先{margin}分"
+    if margin < 0:
+        return f"a {abs(margin)}-point deficit"
+    if margin == 0:
+        return "a tie game"
+    return f"a {margin}-point lead"
+
+
+def _describe_break_context(
+    game: dict[str, Any],
+    break_play: dict[str, Any] | None,
+    winner_side: str,
+    loser_side: str,
+    *,
+    lang: str,
+) -> str:
+    if not break_play:
+        return ""
+    loser_abbr = game[loser_side]["abbr"]
+    winner_margin = _winner_margin_from_scores(break_play.get("homeScore"), break_play.get("awayScore"), winner_side)
+    period = _period_value(break_play)
+    time_label = _period_time_label(break_play, {"timezone": "请求方时区" if lang == "zh" else "Requester Timezone"})
+    if lang == "zh":
+        if winner_margin < 0:
+            return f"不过{loser_abbr} 在{time_label}一度完成反超"
+        return f"不过{loser_abbr} 在{time_label}还是追平了比分"
+    if winner_margin < 0:
+        return f"But {loser_abbr} answered in {time_label} and briefly moved in front"
+    return f"But {loser_abbr} answered in {time_label} and pulled level"
+
+
+def _build_sequence_narrative(
+    game: dict[str, Any],
+    sequence: dict[str, Any],
+    winner_side: str,
+    loser_side: str,
+    labels: dict[str, str],
+    *,
+    sequence_type: str,
+    closeout_play: dict[str, Any] | None = None,
+) -> str:
+    lang = "zh" if labels["timezone"] == "请求方时区" else "en"
+    winner_abbr = game[winner_side]["abbr"]
+    loser_abbr = game[loser_side]["abbr"]
+    time_label = _sequence_or_play_time_label(sequence, labels)
+    start_margin = _sequence_start_margin(game, sequence, winner_side)
+    end_margin = _sequence_end_margin(game, sequence, winner_side)
+    points = int(sequence.get("points") or 0)
+    end_play_id = str((sequence.get("endPlay") or {}).get("id") or "")
+    lead_broken_play = _first_nonpositive_margin_after_play(game, end_play_id, winner_side)
+    min_after = _min_margin_after_play(game, end_play_id, winner_side) if end_play_id else None
+    threshold = _durable_margin_threshold(sequence.get("endPlay") or {})
+    forced_overtime = _has_overtime(game)
+    closeout_label = _period_time_label(closeout_play, labels) if closeout_play else ""
+    closeout_descriptor = _play_descriptor(closeout_play or {}, labels)
+
+    if lang == "zh":
+        if start_margin is not None and end_margin is not None:
+            sentence = (
+                f"{time_label}，{winner_abbr} 借这波连得{points}分的攻势把比分从{_describe_margin_state(start_margin, lang='zh')}打到{_describe_margin_state(end_margin, lang='zh')}，"
+                f"比赛从这里开始倾向{winner_abbr}。"
+            )
+        else:
+            sentence = f"{time_label}，{winner_abbr} 借这波连得{points}分的攻势把比赛带向自己这一边。"
+        if lead_broken_play and forced_overtime:
+            if closeout_play:
+                return (
+                    f"{sentence} {_describe_break_context(game, lead_broken_play, winner_side, loser_side, lang='zh')}，"
+                    f"最后还是{winner_abbr} 在{closeout_label}重新收住比赛{closeout_descriptor}。"
+                )
+            return f"{sentence} {_describe_break_context(game, lead_broken_play, winner_side, loser_side, lang='zh')}，最后还是{winner_abbr} 在加时重新收住比赛。"
+        if lead_broken_play:
+            if closeout_play:
+                return (
+                    f"{sentence} {_describe_break_context(game, lead_broken_play, winner_side, loser_side, lang='zh')}，"
+                    f"最后还是{winner_abbr} 在{closeout_label}重新收住比赛{closeout_descriptor}。"
+                )
+            return f"{sentence} {_describe_break_context(game, lead_broken_play, winner_side, loser_side, lang='zh')}，最后还是{winner_abbr} 重新收住比赛。"
+        if min_after is not None and min_after > threshold:
+            return f"{sentence} {loser_abbr} 此后虽有追分，但没再把分差追到{threshold}分以内。"
+        return f"{sentence} {loser_abbr} 此后虽有追分，但没再把比分带回平局或反超。"
+
+    if start_margin is not None and end_margin is not None:
+        sentence = (
+            f"{time_label[0].upper() + time_label[1:]}, {winner_abbr} used a {points}-0 burst to turn "
+            f"{_describe_margin_state(start_margin, lang='en')} into {_describe_margin_state(end_margin, lang='en')}, "
+            f"which is where the game started to tilt."
+        )
+    else:
+        sentence = f"{time_label[0].upper() + time_label[1:]}, {winner_abbr} used that stretch to tilt the game its way."
+    if lead_broken_play and forced_overtime:
+        if closeout_play:
+            return (
+                f"{sentence} {_describe_break_context(game, lead_broken_play, winner_side, loser_side, lang='en')}, "
+                f"but {winner_abbr} regained control {closeout_label}{closeout_descriptor}."
+            )
+        return f"{sentence} {_describe_break_context(game, lead_broken_play, winner_side, loser_side, lang='en')}, but {winner_abbr} regained control in overtime."
+    if lead_broken_play:
+        if closeout_play:
+            return (
+                f"{sentence} {_describe_break_context(game, lead_broken_play, winner_side, loser_side, lang='en')}, "
+                f"but {winner_abbr} regained control {closeout_label}{closeout_descriptor}."
+            )
+        return f"{sentence} {_describe_break_context(game, lead_broken_play, winner_side, loser_side, lang='en')}, but {winner_abbr} regained control late."
+    if min_after is not None and min_after > threshold:
+        return f"{sentence} {loser_abbr} threatened, but never got the margin back within {threshold} after that stretch."
+    return f"{sentence} {loser_abbr} threatened, but never got back to level after that stretch."
+
+
+def _build_closeout_narrative(
+    game: dict[str, Any],
+    play: dict[str, Any],
+    winner_side: str,
+    loser_side: str,
+    decisive_period: dict[str, Any] | None,
+    labels: dict[str, str],
+) -> str:
+    lang = "zh" if labels["timezone"] == "请求方时区" else "en"
+    winner_abbr = game[winner_side]["abbr"]
+    time_label = _period_time_label(play, labels)
+    margin_after = _margin_after_play(game, play, winner_side)
+    descriptor = _play_descriptor(play, labels)
+    decisive_period_number = int(decisive_period["period"]) if decisive_period else None
+
+    if lang == "zh":
+        main = f"{time_label}，{winner_abbr} 用这次回合把比赛真正收住"
+        if margin_after is not None:
+            main += f"，场面也稳在{margin_after}分优势上"
+        main += f"{descriptor}。"
+        if decisive_period_number and _period_value(play) != decisive_period_number:
+            return f"{main} 真正把分差拉开的是第 {decisive_period_number} 节，{winner_abbr} 单节净胜{decisive_period['margin']}分。"
+        return main
+
+    main = f"{time_label[0].upper() + time_label[1:]}, {winner_abbr} effectively shut the game down"
+    if margin_after is not None:
+        main += f" with the margin sitting at {margin_after}"
+    main += f"{descriptor}."
+    if decisive_period_number and _period_value(play) != decisive_period_number:
+        return f"{main} The bigger separation had already come in {_ordinal_period(decisive_period_number)}, when {winner_abbr} won the quarter by {decisive_period['margin']}."
+    return main
+
+
+def _select_turning_point_narrative(
+    game: dict[str, Any],
+    winner_side: str,
+    loser_side: str,
+    labels: dict[str, str],
+) -> dict[str, Any]:
+    decisive_period = decisive_period_info(game, winner_side, labels)
+    meaningful_sequences = [
+        sequence
+        for sequence in _scoring_sequences(game)
+        if sequence.get("side") == winner_side and _is_meaningful_separation_sequence(game, sequence, winner_side)
+    ]
+    stable_meaningful_sequences = [
+        sequence
+        for sequence in meaningful_sequences
+        if _sequence_break_play(game, sequence, winner_side) is None
+    ]
+    volatile_game = _has_overtime(game) or not stable_meaningful_sequences
+    separation_sequence = _best_sequence_for_side(
+        game,
+        winner_side,
+        predicate=lambda seq: _is_meaningful_separation_sequence(game, seq, winner_side),
+        winner_side=winner_side,
+        decisive_period_number=int(decisive_period["period"]) if decisive_period else None,
+        volatile_game=volatile_game,
+    )
+    swing_sequence = _best_sequence_for_side(
+        game,
+        winner_side,
+        predicate=lambda seq: (_sequence_start_margin(game, seq, winner_side) or 1) <= 0,
+        winner_side=winner_side,
+        decisive_period_number=int(decisive_period["period"]) if decisive_period else None,
+        volatile_game=volatile_game,
+    )
+    closeout_play = _last_late_winner_play(game, winner_side)
+    forced_overtime = _has_overtime(game)
+
+    if separation_sequence:
+        sequence_type = "swing_sequence" if (_sequence_start_margin(game, separation_sequence, winner_side) or 1) <= 0 else "separation_sequence"
+        return {
+            "text": _build_sequence_narrative(
+                game,
+                separation_sequence,
+                winner_side,
+                loser_side,
+                labels,
+                sequence_type=sequence_type,
+                closeout_play=closeout_play,
+            ),
+            "type": sequence_type,
+            "leadBroken": _sequence_break_play(game, separation_sequence, winner_side) is not None,
+            "forcedOvertime": forced_overtime,
+            "selectedSequenceWindow": {
+                "startPlayId": str((separation_sequence.get("startPlay") or {}).get("id") or ""),
+                "endPlayId": str((separation_sequence.get("endPlay") or {}).get("id") or ""),
+            },
+            "selectedSequenceMeta": _sequence_meta(game, separation_sequence, winner_side),
+            "usedSequenceReason": True,
+        }
+    if swing_sequence:
+        return {
+            "text": _build_sequence_narrative(
+                game,
+                swing_sequence,
+                winner_side,
+                loser_side,
+                labels,
+                sequence_type="swing_sequence",
+                closeout_play=closeout_play,
+            ),
+            "type": "swing_sequence",
+            "leadBroken": _sequence_break_play(game, swing_sequence, winner_side) is not None,
+            "forcedOvertime": forced_overtime,
+            "selectedSequenceWindow": {
+                "startPlayId": str((swing_sequence.get("startPlay") or {}).get("id") or ""),
+                "endPlayId": str((swing_sequence.get("endPlay") or {}).get("id") or ""),
+            },
+            "selectedSequenceMeta": _sequence_meta(game, swing_sequence, winner_side),
+            "usedSequenceReason": True,
+        }
+    if closeout_play:
+        return {
+            "text": _build_closeout_narrative(game, closeout_play, winner_side, loser_side, decisive_period, labels),
+            "type": "closeout_sequence",
+            "leadBroken": False,
+            "forcedOvertime": forced_overtime,
+            "selectedSequenceWindow": {
+                "startPlayId": str(closeout_play.get("id") or ""),
+                "endPlayId": str(closeout_play.get("id") or ""),
+            },
+            "selectedSequenceMeta": {},
+            "usedSequenceReason": False,
+        }
+    return {
+        "text": "",
+        "type": "",
+        "leadBroken": False,
+        "forcedOvertime": forced_overtime,
+        "selectedSequenceWindow": {},
+        "selectedSequenceMeta": {},
+        "usedSequenceReason": False,
+    }
+
+
+def _biggest_swing_play(game: dict[str, Any], winner_side: str | None = None) -> dict[str, Any] | None:
+    timeline = game.get("winProbabilityTimeline") or []
+    if len(timeline) < 2:
+        return None
+    play_lookup = {play.get("id"): play for play in game.get("playTimeline", []) if play.get("id")}
+    best_entry: tuple[float, dict[str, Any]] | None = None
+    previous = timeline[0]
+    for current in timeline[1:]:
+        previous_value = previous.get("homeWinPercentage")
+        current_value = current.get("homeWinPercentage")
+        if previous_value is None or current_value is None:
+            previous = current
+            continue
+        delta = current_value - previous_value
+        if winner_side == "away":
+            delta *= -1
+        elif winner_side is None:
+            delta = abs(delta)
+        if best_entry is None or delta > best_entry[0]:
+            best_entry = (delta, current)
+        previous = current
+    if not best_entry or best_entry[0] <= 0:
+        return None
+    return play_lookup.get(best_entry[1].get("playId") or "")
+
+
+def _describe_post_turning_point(game: dict[str, Any], winner_side: str, loser_side: str, labels: dict[str, str]) -> str:
+    return (_select_turning_point_narrative(game, winner_side, loser_side, labels).get("text") or "").strip()
+
+
+def _streak_reason_text(game: dict[str, Any], streak: dict[str, Any], winner_side: str, labels: dict[str, str]) -> str:
+    points = int(streak.get("points") or 0)
+    end_play = streak.get("endPlay") or {}
+    stage = _stage_label(streak.get("startPlay") or {}, labels)
+    margin_after = _margin_after_play(game, end_play, winner_side)
+    winner_abbr = game[winner_side]["abbr"]
+    if labels["timezone"] == "请求方时区":
+        if margin_after is not None:
+            return f"{stage}，{winner_abbr} 还打出一波连得{points}分的攻势，把领先抬到{margin_after}分。"
+        return f"{stage}，{winner_abbr} 还打出一波连得{points}分的攻势。"
+    if margin_after is not None:
+        return f"{winner_abbr} also put together a {points}-0 burst {stage}, stretching the lead to {margin_after}."
+    return f"{winner_abbr} also pieced together a {points}-0 burst {stage}."
 
 
 def build_post_analysis(game: dict[str, Any], labels: dict[str, str]) -> dict[str, Any]:
@@ -554,54 +1340,117 @@ def build_post_analysis(game: dict[str, Any], labels: dict[str, str]) -> dict[st
     winner_side = "home" if home_score > away_score else "away"
     loser_side = "away" if winner_side == "home" else "home"
     margin = abs(home_score - away_score)
-    decisive_period = decisive_period_text(game, winner_side, labels)
-    turning_point = biggest_swing_text(game, winner_side=winner_side)
-    reasons = [
-        (
-            f"最终比分差 {margin} 分，{game[winner_side]['abbr']} 收下比赛。"
-            if labels["timezone"] == "请求方时区"
-            else f"{game[winner_side]['abbr']} won by {margin} points."
-        )
-    ]
+    winner_abbr = game[winner_side]["abbr"]
+    loser_abbr = game[loser_side]["abbr"]
+    decisive_period = decisive_period_info(game, winner_side, labels)
+    streak = _best_scoring_streak(game, winner_side)
+    turning_point_info = _select_turning_point_narrative(game, winner_side, loser_side, labels)
+    turning_point = turning_point_info.get("text") or ""
+    selected_sequence_meta = turning_point_info.get("selectedSequenceMeta") or {}
+    sequence_period = selected_sequence_meta.get("period")
+    sequence_points = int(selected_sequence_meta.get("points") or 0)
+    reasons: list[str] = []
     if decisive_period:
         if labels["timezone"] == "请求方时区":
-            reasons.append(f"决定性阶段: {decisive_period}")
+            reasons.append(f"分水岭出现在第 {decisive_period['period']} 节，{winner_abbr} 单节净胜{decisive_period['margin']}分。")
         else:
-            reasons.append(f"Decisive stretch: {decisive_period}")
+            reasons.append(
+                f"The game swung in {_ordinal_period(int(decisive_period['period']))}, when {winner_abbr} won the quarter by {decisive_period['margin']}."
+            )
+    if streak and not turning_point_info.get("usedSequenceReason"):
+        reasons.append(_streak_reason_text(game, streak, winner_side, labels))
     winner_key_player = top_full_stats_player(game, winner_side) or (game.get("keyPlayers", {}).get(game[winner_side]["abbr"]) or [None])[0]
     if winner_key_player:
         if labels["timezone"] == "请求方时区":
-            reasons.append(f"关键球员: {game[winner_side]['abbr']} {winner_key_player}")
+            reasons.append(f"{winner_abbr} 这边最直接的主攻点是 {winner_key_player}。")
         else:
-            reasons.append(f"Lead performer: {game[winner_side]['abbr']} {winner_key_player}")
+            reasons.append(f"The clearest offensive driver for {winner_abbr} was {winner_key_player}.")
     full_stats_reason = team_totals_edge_reason(game, winner_side, labels)
     if full_stats_reason:
-        reasons.append(full_stats_reason)
-    article = game.get("article") or {}
-    if article.get("headline"):
-        reasons.append(str(article["headline"]))
+        reasons.append(f"{full_stats_reason}。")
+    reasons = reasons[:3]
 
-    summary = (
-        f"{game[winner_side]['abbr']} 从整体走向上更稳定地掌控了比赛。"
-        if labels["timezone"] == "请求方时区"
-        else f"{game[winner_side]['abbr']} controlled the broader game flow more consistently."
-    )
-    trend = (
-        f"{game[winner_side]['abbr']} 在关键时段压住了 {game[loser_side]['abbr']}。"
-        if labels["timezone"] == "请求方时区"
-        else f"{game[winner_side]['abbr']} separated during the decisive stretch against {game[loser_side]['abbr']}."
-    )
+    if labels["timezone"] == "请求方时区":
+        if turning_point_info.get("forcedOvertime") and sequence_period and sequence_points:
+            summary = (
+                f"{winner_abbr} 在第 {sequence_period} 节曾借一波连得{sequence_points}分拉开比赛，"
+                f"但{loser_abbr} 末节还是追平并把比赛拖进加时，最后{winner_abbr} 以{margin}分拿下比赛。"
+            )
+        elif turning_point_info.get("leadBroken") and sequence_period and sequence_points:
+            summary = (
+                f"{winner_abbr} 在第 {sequence_period} 节靠一波连得{sequence_points}分把比赛带向自己这一边，"
+                f"但{loser_abbr} 末段又把悬念追了回来，最后还是{winner_abbr} 以{margin}分收下比赛。"
+            )
+        elif decisive_period and streak and _period_value(streak.get("startPlay") or {}) == int(decisive_period["period"]):
+            summary = f"{winner_abbr} 把分水岭打在了第 {decisive_period['period']} 节，期间一波连得{streak['points']}分，最终以{margin}分拿下比赛。"
+        elif decisive_period:
+            summary = f"{winner_abbr} 把分水岭打在了第 {decisive_period['period']} 节，单节净胜{decisive_period['margin']}分，最终以{margin}分拿下比赛。"
+        elif streak:
+            summary = f"{winner_abbr} 靠着{_stage_label(streak.get('startPlay') or {}, labels)}一波连得{streak['points']}分拉开差距，最终以{margin}分赢下比赛。"
+        else:
+            summary = f"{winner_abbr} 最终以{margin}分赢下了这场比赛。"
+        if turning_point:
+            trend = turning_point
+        elif streak:
+            trend = f"真正把比赛带向 {winner_abbr} 的，是{_stage_label(streak.get('startPlay') or {}, labels)}那波连得{streak['points']}分。"
+        elif decisive_period:
+            trend = f"真正拉开差距的是第 {decisive_period['period']} 节，{winner_abbr} 单节净胜{decisive_period['margin']}分。"
+        else:
+            trend = f"{winner_abbr} 在比分上一直保有优势，但比赛过程缺少足够的回合细节支撑更强判断。"
+    else:
+        if turning_point_info.get("forcedOvertime") and sequence_period and sequence_points:
+            summary = (
+                f"{winner_abbr} opened the game up with a {sequence_points}-0 burst in "
+                f"{_ordinal_period(int(sequence_period))}, but {loser_abbr} forced overtime before {winner_abbr} still closed out a {margin}-point win."
+            )
+        elif turning_point_info.get("leadBroken") and sequence_period and sequence_points:
+            summary = (
+                f"{winner_abbr} tilted the game with a {sequence_points}-0 burst in "
+                f"{_ordinal_period(int(sequence_period))}, but {loser_abbr} pulled the game back into doubt before {winner_abbr} still finished a {margin}-point win."
+            )
+        elif decisive_period and streak and _period_value(streak.get("startPlay") or {}) == int(decisive_period["period"]):
+            summary = (
+                f"{winner_abbr} made {_ordinal_period(int(decisive_period['period']))} the turning stretch, "
+                f"including a {streak['points']}-0 burst, and finished off a {margin}-point win."
+            )
+        elif decisive_period:
+            summary = (
+                f"{winner_abbr} made {_ordinal_period(int(decisive_period['period']))} the swing quarter, "
+                f"winning it by {decisive_period['margin']} and closing out a {margin}-point victory."
+            )
+        elif streak:
+            summary = f"{winner_abbr} created the separation with a {streak['points']}-0 burst { _stage_label(streak.get('startPlay') or {}, labels) }, and won by {margin}."
+        else:
+            summary = f"{winner_abbr} closed out a {margin}-point win."
+        if turning_point:
+            trend = turning_point
+        elif streak:
+            trend = f"The game started to tilt for {winner_abbr} once it strung together a {streak['points']}-0 run { _stage_label(streak.get('startPlay') or {}, labels) }."
+        elif decisive_period:
+            trend = f"The separation came in {_ordinal_period(int(decisive_period['period']))}, when {winner_abbr} won the quarter by {decisive_period['margin']}."
+        else:
+            trend = f"{winner_abbr} stayed in front on the scoreboard, but the play-by-play trail is too thin for a stronger game-flow claim."
     return {
         "mode": "post",
         "summary": summary,
-        "reasons": reasons[:4],
+        "reasons": reasons,
         "trend": trend,
         "turningPoint": turning_point,
+        "leadSummary": summary,
+        "flowSummary": trend,
+        "supportingReasons": reasons,
         "keyMatchup": matchup_text(game, labels) or "",
         "signals": {
-            "winner": game[winner_side]["abbr"],
+            "winner": winner_abbr,
             "margin": margin,
-            "decisivePeriod": decisive_period,
+            "decisivePeriod": decisive_period["text"] if decisive_period else "",
+            "decisivePeriodNumber": decisive_period["period"] if decisive_period else None,
+            "turningPointPlay": turning_point,
+            "streakPoints": int(streak["points"]) if streak else 0,
+            "turningPointType": turning_point_info.get("type") or "",
+            "leadBroken": bool(turning_point_info.get("leadBroken")),
+            "forcedOvertime": bool(turning_point_info.get("forcedOvertime")),
+            "selectedSequenceWindow": turning_point_info.get("selectedSequenceWindow") or {},
         },
     }
 

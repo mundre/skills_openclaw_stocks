@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import socket
 import shutil
 import ssl
@@ -21,7 +22,7 @@ USER_AGENT = "nba-tr-openclaw/2.0"
 
 
 def resolve_base_url(base_url: str | None = None) -> str:
-    return (base_url or DEFAULT_BASE_URL).rstrip("/")
+    return (base_url or os.environ.get("NBA_TR_ESPN_BASE_URL") or DEFAULT_BASE_URL).rstrip("/")
 
 
 def _request_json(url: str, timeout_seconds: int) -> dict[str, Any]:

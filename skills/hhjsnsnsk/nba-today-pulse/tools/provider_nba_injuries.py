@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import urllib.error
 import urllib.parse
@@ -35,11 +36,11 @@ TEAM_NOT_SUBMITTED_PATTERN = re.compile(r"^(?P<team>.+?)\s+NOT YET SUBMITTED$", 
 
 
 def resolve_report_base_url(base_url: str | None = None) -> str:
-    return (base_url or DEFAULT_REPORT_BASE_URL).rstrip("/")
+    return (base_url or os.environ.get("NBA_TR_NBA_INJURY_BASE_URL") or DEFAULT_REPORT_BASE_URL).rstrip("/")
 
 
 def resolve_listing_url(listing_url: str | None = None) -> str:
-    return (listing_url or DEFAULT_LISTING_URL).rstrip("/")
+    return (listing_url or os.environ.get("NBA_TR_NBA_INJURY_LISTING_URL") or DEFAULT_LISTING_URL).rstrip("/")
 
 
 def canonical_status(value: str | None) -> str:
