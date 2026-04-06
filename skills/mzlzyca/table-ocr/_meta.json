@@ -1,11 +1,17 @@
 {
   "owner": "mzlzyca",
   "slug": "table-ocr",
-  "displayName": "table-ocr",
+  "displayName": "Table Ocr",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774605143614,
-    "commit": "https://github.com/openclaw/skills/commit/710576acb77eacf21eda439de66456a31d51d340"
+    "version": "0.4.0",
+    "publishedAt": 1775210353333,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774605143614,
+      "commit": "https://github.com/openclaw/skills/commit/710576acb77eacf21eda439de66456a31d51d340"
+    }
+  ]
 }
