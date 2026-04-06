@@ -1,83 +1,153 @@
 ---
 name: voice-clone-bot
-description: Design and build a fully local Telegram voice-clone bot that replies in a chosen speaker voice, including model selection, ASR/LLM/TTS pipeline design, long-form synthesis, and packaging for Telegram voice messages. Use when asked to create, refine, or deploy a local voice cloning bot; choose TTS models; or design a Telegram bot that answers with synthesized speech without remote LLM APIs.
+description: Synthesize speech by cloning a user's voice from a reference audio sample, then reading generated text aloud in that cloned voice. Use this skill whenever the user sends a voice message and expects an audio reply, asks to "speak", "clone my voice", "read this aloud", "reply with audio", or any context where a spoken voice response is appropriate. Also use when the user wants to switch into "voice mode" for conversation. Even if the user doesn't explicitly say "voice clone", use this skill if they send audio input and the natural response would be spoken.
 ---
 
-# Voice Clone Bot
+# Voice Clone Skill
 
-## Overview
+A self-initializing, zero-configuration voice cloning skill. It manages a background TTS daemon that keeps heavy model weights in memory for fast inference. Supports multiple engines and unlimited text length.
 
-Build a local Telegram bot that turns text or voice input into replies spoken in the target speaker's voice. Keep the pipeline fully local unless the user explicitly asks otherwise.
+## Quick reference
 
-## Core pipeline
+| Item | Value |
+| --- | --- |
+| Entry script | `bash scripts/run_tts.sh --text "..." --ref_audio "..." [--speed 1.0] [--output_dir "..."]` |
+| Output | Single line: absolute path to generated `.ogg` file |
+| Attachment format | `MEDIA:<output_path>` |
+| Default engine | F5-TTS (env `TTS_BACKEND=f5`) |
+| Host/Port config | `.env` (`TTS_SERVER_HOST`, `TTS_SERVER_PORT`) |
 
-1. Receive a Telegram message.
-2. If the message is voice, transcribe it locally with ASR.
-3. Generate the reply text with a local LLM.
-4. Synthesize speech with a local voice-clone TTS model.
-5. Return the result as Telegram voice (`.ogg`/Opus) or audio.
+## When to use this skill
 
-## Model selection
+- The user sends a voice memo or audio file and you need to reply with audio.
+- The user says "read this aloud", "speak to me", "use my voice", "voice mode".
+- The conversation context implies a spoken reply is expected.
+- The user provides a reference audio and asks you to mimic their voice.
 
-Use this order unless the hardware or language target changes it:
+## Step-by-step usage
 
-1. **Qwen3-TTS** — default choice for balanced quality, speed, and local deployment.
-2. **MOSS-TTS Local / Realtime** — choose for longer, more stable dialogue generation.
-3. **OpenVoice V2** — use as the lighter fallback when resources are tight.
+### 1. Identify inputs
 
-For English-only low-resource setups, NeuTTS can be a fast fallback, but it is not the default for Chinese-first use.
+You need two things:
 
-## Build workflow
+- **`ref_audio`**: The absolute local path to the user's reference audio file (the voice to clone). This is typically the audio file the user just sent, saved by the ASR system (e.g., openai-whisper).
+- **`text`**: The text content you want to speak. Generate this as you normally would — think of your reply, then voice it.
 
-### 1. Define the target behavior
+### 2. Run the synthesis
 
-- Decide whether the bot answers with text only, voice only, or both.
-- Keep the bot identity explicit; do not imply it is the user's personal account.
-- Decide the reply length policy: short chat, medium chat, or long-form narration.
+Execute this command:
 
-### 2. Prepare voice material
+```bash
+bash scripts/run_tts.sh --text "Your reply text here." --ref_audio "/absolute/path/to/reference.ogg"
+```
 
-- Start with 3–5 minutes of clean reference audio.
-- Prefer 10–20 minutes for better stability.
-- Use the same microphone and a quiet room.
-- Include short, long, formal, and casual sentences.
+Optional parameters:
+- `--speed 1.2` — Speak faster. Range: 0.5 to 2.0. Default: 1.0.
+- `--output_dir "/tmp/"` — Save the generated audio file to a specific absolute folder path. Default: `server/generated_audio/`.
 
-### 3. Implement generation
+**Example with all options:**
+```bash
+bash scripts/run_tts.sh \
+  --text "很高兴认识你，这是我克隆后的声音。" \
+  --ref_audio "/tmp/user_voice_msg.ogg" \
+  --speed 0.9
+```
 
-- Transcribe voice input with `faster-whisper` or a similar local ASR.
-- Use a local LLM for reply text.
-- Split long replies into short segments before TTS.
-- Reuse one reference voice prompt across segments.
-- Insert short pauses between segments for natural cadence.
+### 3. Handle the output
 
-### 4. Deliver to Telegram
+The script prints a single absolute path on stdout (e.g., `/path/to/reply_a1b2c3d4.ogg`).
+Append it to your response using the attachment format:
 
-- Prefer Telegram voice messages for the most natural experience.
-- Convert final audio to OGG/Opus.
-- Fall back to MP3/WAV for debugging or long-form output.
+```
+MEDIA:/path/to/reply_a1b2c3d4.ogg
+```
 
-## Long-form synthesis rules
+### 4. Important constraints
 
-- Do not feed a 2-minute reply as one huge block unless the model explicitly supports it well.
-- Break by sentence or clause.
-- Keep punctuation intact.
-- Reassemble audio after synthesis.
-- Use the same speaker reference for every segment.
+- **Do NOT** manually start `python app.py` or manage the backend. The `run_tts.sh` script auto-detects, auto-installs, and auto-starts everything.
+- **First run is slow** (~30-60 seconds) because it downloads model weights and loads them into memory. Subsequent calls are fast.
+- **Long texts work automatically.** The engine splits text into sentences, synthesizes each chunk, and stitches them seamlessly. No length limit.
 
-## Practical defaults
+## Controlling voice characteristics
 
-- Prefer a small local LLM first; upgrade only if reply quality is weak.
-- Prefer Qwen3-TTS first; switch to MOSS-TTS when long-form stability matters more than simplicity.
-- Use OpenVoice V2 when the machine is underpowered.
+### Speed (all engines)
 
-## Output quality checklist
+The `--speed` parameter adjusts speaking rate:
 
-- Voice sounds like the target speaker.
-- Reply latency is acceptable in chat.
-- Long replies do not drift or become robotic.
-- Telegram playback works as a normal voice note.
-- No remote TTS/LLM API is required unless the user asks for it.
+| Value | Effect |
+| --- | --- |
+| `0.7` | Slow, deliberate, suitable for elderly listeners |
+| `1.0` | Natural conversational speed (default) |
+| `1.3` | Brisk, suitable for news or briefings |
+| `1.5+` | Fast, compressed delivery |
+
+F5-TTS supports speed natively. Other engines use ffmpeg post-processing (atempo filter), which gives good results but may slightly affect quality at extreme values.
+
+### Emotion and tone
+
+These models use **acoustic feature extraction** from the reference audio — they do not accept text-based emotion tags like `[happy]` or `[sad]`.
+
+**The emotion of the output is determined entirely by the reference audio.**
+
+To control emotion, select or prepare reference audio that carries the desired tone:
+
+| Desired tone | Reference audio strategy |
+| --- | --- |
+| Calm, neutral | Use a reference clip where the speaker talks normally |
+| Excited, happy | Use a reference clip where the speaker sounds enthusiastic |
+| Angry, intense | Use a reference clip with raised voice and sharp intonation |
+| Sad, melancholic | Use a reference clip with slow, downcast delivery |
+| Whispering | Use a reference clip where the speaker whispers |
+
+**Practical approach for Agents:** If the user has sent multiple voice messages, choose the one whose emotional tone best matches the context of your reply. If only one reference is available, use it as-is — the model will approximate the speaker's general style.
+
+**ChatTTS Specifics:** This engine supports inline emotion tags in text: `[laugh]`, `[uv_break]` (pause). It also supports voice cloning when a reference audio is provided.
+
+## Available engines
+
+| Engine | ID | Install | Size | Clone | Speed support | Best for |
+| --- | --- | --- | --- | :---: | --- | --- |
+| **F5-TTS** | `f5` | `bash scripts/auto_installer.sh` | ~1.5GB | ✅ | Native | Highest quality cloning |
+| **CosyVoice** | `cosyvoice` | `bash scripts/install_cosyvoice.sh` | ~1.5GB | ✅ | ffmpeg | Natural Chinese prosody |
+| **ChatTTS** | `chattts` | `bash scripts/install_chattts.sh` | ~400MB | ✅ | ffmpeg | Dialogue with emotion tags |
+| **OpenVoice** | `openvoice` | `bash scripts/install_openvoice.sh` | ~300MB | ✅ | ffmpeg | Ultra fast, tiny footprint |
+
+Switch engines by setting the environment variable before the server starts:
+```bash
+export TTS_BACKEND=cosyvoice
+```
+
+## Uninstalling
+
+```bash
+# Remove everything (venv, daemon, registration)
+bash scripts/uninstall.sh
+
+# Remove only one engine's source code
+bash scripts/uninstall.sh --engine cosyvoice
+
+# Remove everything INCLUDING downloaded model weights (several GB)
+bash scripts/uninstall.sh --purge
+```
+
+## File structure
+
+```
+scripts/
+├── run_tts.sh              # Main entry point (auto-heals, auto-starts daemon)
+├── tts_client.py            # HTTP client that talks to the backend
+├── auto_installer.sh        # Install F5-TTS (default) + register skill
+├── install_cosyvoice.sh     # Install CosyVoice engine
+├── install_chattts.sh       # Install ChatTTS engine
+├── install_openvoice.sh     # Install OpenVoice engine
+└── uninstall.sh             # Cleanup script
+server/
+├── app.py                   # FastAPI daemon (auto-managed, do not start manually)
+├── core_tts.py              # Multi-engine factory + long text chunking
+└── requirements.txt         # Base dependencies
+```
+
 
 ## References
 
-Read `references/architecture.md` for the recommended system layout and fallback choices.
+- Read `references/architecture.md` for system architecture and design rationale.
