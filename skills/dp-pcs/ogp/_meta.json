@@ -1,13 +1,18 @@
 {
   "owner": "dp-pcs",
   "slug": "ogp",
-  "displayName": "OGP Federation",
+  "displayName": "OGP",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1774522804362,
-    "commit": "https://github.com/openclaw/skills/commit/9b010c784dc71f329f2c1579098753c639cd843f"
+    "version": "2.2.0",
+    "publishedAt": 1775065136707,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1774522804362,
+      "commit": "https://github.com/openclaw/skills/commit/9b010c784dc71f329f2c1579098753c639cd843f"
+    },
     {
       "version": "0.2.3",
       "publishedAt": 1774411248344,
