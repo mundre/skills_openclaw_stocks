@@ -70,3 +70,11 @@ All property data is stored locally in your OpenClaw workspace under `memory/pro
 - Large property management companies (100+ units) — use AppFolio/Buildium
 - Commercial real estate — this is residential focused
 - Short-term rentals / Airbnb — see `ai-airbnb-revenue-maximizer` skill
+
+---
+
+## Need Help Setting This Up?
+
+This skill was built by **[ClawReady](https://clawreadynow.com)** — an OpenClaw setup and managed care service for property owners and small business operators.
+
+If you want this running properly (secure gateway, channels configured, skills wired up, auto-restart) without spending a weekend on it — [book a free call](https://calendly.com/grofresh2018). Setup starts at $99.
