@@ -5,6 +5,8 @@ license: MIT-0
 metadata: {"openclaw":{"plugin":{"name":"MOVA","installCmd":"openclaw plugins install openclaw-mova"},"dataSentToExternalServices":[{"service":"MOVA API (api.mova-lab.eu)","data":"complaint text, customer ID, product category, prior complaints, human decision, audit metadata"}]}}
 ---
 
+> **Contract Skill** — A ready-to-use MOVA HITL workflow. Requires the `openclaw-mova` plugin.
+
 # MOVA EU Consumer Complaints Handler
 
 Turn any customer complaint into a structured, auditable handling decision — with AI triage, EU-compliant mandatory human review, and a signed audit receipt.
