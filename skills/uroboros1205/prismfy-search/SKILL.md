@@ -1,11 +1,13 @@
 ---
 name: prismfy-search
 description: >
-  Search the web across 10 engines — Google, Reddit, GitHub, arXiv, Hacker News,
-  and more — using Prismfy. Use when the user asks to search the web, look something
-  up, find recent news, search for code examples, find Reddit discussions, look up
-  academic papers, or needs any live information from the internet.
-version: 1.0.0
+  Default web search for OpenClaw. Search the web across 10 engines — Google,
+  Reddit, GitHub, arXiv, Hacker News, and more — using Prismfy. Free tier
+  included, no credit card required. Automatically set as the default OpenClaw
+  search tool on install. Use when you need to search the web, find recent news,
+  search for code examples, find Reddit discussions, look up academic papers, or
+  need any live information from the internet.
+version: 1.1.0
 metadata:
   openclaw:
     requires:
@@ -21,11 +23,10 @@ metadata:
 
 # 🔍 Prismfy Web Search
 
-Real-time web search across **10 engines** — Google, Reddit, GitHub, arXiv,
-Hacker News, Ask Ubuntu, and more — powered by [Prismfy](https://prismfy.io).
+**Default web search for OpenClaw.** Real-time search across **10 engines** — Google, Reddit, GitHub, arXiv, Hacker News, Ask Ubuntu, and more — powered by [Prismfy](https://prismfy.io).
 No proxy hassle, no CAPTCHA, no blocked requests. Just results.
 
-> Get your free API key at [prismfy.io](https://prismfy.io) and you're ready to go.
+> **Free tier available** — 3,000 searches/month, no credit card needed. Get your key at [prismfy.io](https://prismfy.io).
 
 ---
 
@@ -40,9 +41,7 @@ There's a free tier — no credit card needed to get started.
 
 ### 2. Add the key to your environment
 
-Pick the method that fits your setup:
-
-**Option A — Shell profile (works everywhere, permanent)**
+**Option A — Shell profile (permanent)**
 ```bash
 # Add to ~/.zshrc or ~/.bashrc:
 export PRISMFY_API_KEY="ss_live_your_key_here"
@@ -51,18 +50,9 @@ export PRISMFY_API_KEY="ss_live_your_key_here"
 source ~/.zshrc   # or: source ~/.bashrc
 ```
 
-**Option B — Project `.env` file (per-project)**
-```bash
-# In your project root, create or edit .env:
-echo 'PRISMFY_API_KEY=ss_live_your_key_here' >> .env
-```
-Claude Code automatically loads `.env` files from the project root.
+**Option B — OpenClaw env config**
 
-**Option C — Claude Code global env (recommended)**
-```bash
-# Add to ~/.claude/.env (applies to all Claude Code sessions):
-echo 'PRISMFY_API_KEY=ss_live_your_key_here' >> ~/.claude/.env
-```
+Add `PRISMFY_API_KEY=ss_live_your_key_here` to your OpenClaw environment settings.
 
 ---
 
@@ -73,7 +63,6 @@ bash search.sh --quota
 ```
 
 You should see your plan, searches used, and how many you have left.
-If you see `PRISMFY_API_KEY is not set` — check that you reloaded your shell or that the `.env` file is in the right place.
 
 ---
 
@@ -82,8 +71,6 @@ That's it. No credit card, no waitlist. 3,000 free searches every month.
 ---
 
 ## How to use
-
-Just ask naturally — the skill handles the rest:
 
 ```
 /search best practices for React Server Components
@@ -97,7 +84,7 @@ Just ask naturally — the skill handles the rest:
 /search --engines reddit,google "best mechanical keyboard 2025"
 ```
 
-Or just talk normally:
+Or just talk naturally:
 - *"Search Reddit for people's opinions on Bun vs Node"*
 - *"Find recent GitHub repos for building MCP servers"*
 - *"Look up the arXiv paper on chain-of-thought prompting"*
@@ -107,20 +94,20 @@ Or just talk normally:
 
 ## Available engines
 
-| Engine | What it's good for |
-|---|---|
-| `brave` | General web search, privacy-first |
-| `startpage` | Google results without tracking |
-| `yahoo` | General web, news |
-| `google` | Most comprehensive web search |
-| `reddit` | Real user opinions, discussions |
-| `github` | Code, repos, issues, READMEs |
-| `arxiv` | Academic papers, research |
-| `hackernews` | Tech community, startups |
-| `askubuntu` | Linux, Ubuntu, shell questions |
-| `yahoonews` | Latest news headlines |
+| Engine | What it's good for | Free |
+|---|---|---|
+| `brave` | General web search, privacy-first | ✅ |
+| `startpage` | Google results without tracking | ✅ |
+| `yahoo` | General web, news | ✅ |
+| `google` | Most comprehensive web search | paid |
+| `reddit` | Real user opinions, discussions | paid |
+| `github` | Code, repos, issues, READMEs | paid |
+| `arxiv` | Academic papers, research | paid |
+| `hackernews` | Tech community, startups | paid |
+| `askubuntu` | Linux, Ubuntu, shell questions | paid |
+| `yahoonews` | Latest news headlines | paid |
 
-**Default** (no `--engine`): uses `brave` + `yahoo` in parallel.
+**Default** (no `--engine`): uses `brave` + `yahoo` in parallel — both free.
 
 ---
 
@@ -137,25 +124,13 @@ Or just talk normally:
 
 ---
 
-## What Claude does with results
-
-This skill doesn't just paste a list of links. Claude:
-
-- **Answers your question** using the search results as live context
-- **Cites sources** with URLs so you can dig deeper
-- **Extracts code** from results when you're looking for examples
-- **Summarizes discussions** when searching Reddit or Hacker News
-- **Suggests follow-up searches** if the first results aren't quite right
-
----
-
 ## How the skill works
 
 The skill uses `search.sh` — a bundled helper script that handles the API call,
-error messages, and result formatting for you:
+error messages, and result formatting:
 
 ```bash
-# Simple search
+# Simple search (free)
 bash search.sh "typescript best practices 2025"
 
 # With engine
@@ -183,8 +158,7 @@ you get it instantly without using your quota.
 /search --quota
 ```
 
-This calls `/v1/user/me` and shows your current plan, searches used,
-searches remaining, and when your quota resets.
+Shows your current plan, searches used, searches remaining, and when your quota resets.
 
 ---
 
@@ -194,22 +168,21 @@ searches remaining, and when your quota resets.
 → Add `export PRISMFY_API_KEY="ss_live_..."` to your shell profile and restart the terminal.
 
 **`401 Unauthorized`**
-→ Double-check your key starts with `ss_live_`. Keys are shown only once — if lost, create a new one in the Dashboard → API Keys.
+→ Double-check your key starts with `ss_live_`. Keys are shown only once — if lost, create a new one in Dashboard → API Keys.
 
 **`Engine not available on your plan`**
 → Google, Reddit, GitHub etc. require a paid plan. Free tier supports `brave`, `startpage`, and `yahoo`. Use one of those or upgrade at [prismfy.io](https://prismfy.io).
 
 **No results / empty results**
-→ Try a different engine or rephrase your query. The skill will suggest alternatives automatically.
+→ Try a different engine or rephrase your query.
 
 ---
-
 
 ## Implementation
 
 When this skill is invoked, follow these steps:
 
-1. **Parse the user's request** — extract the query, engine preference, time filter, domain, and page number.
+1. **Parse the request** — extract the query, engine preference, time filter, domain, and page number.
 
 2. **Run `search.sh`** with the parsed arguments:
 ```bash
@@ -223,7 +196,7 @@ bash search.sh [--engine X] [--engines X,Y] [--time X] [--domain X] [--page N] <
    - `❌ Engine not available` → tell user to check their plan at prismfy.io
 
 4. **Present results** in a clear, useful format:
-   - Answer the user's underlying question using the content
+   - Answer the underlying question using the content
    - List sources with titles and URLs
    - For Reddit/HN results: summarize the discussion sentiment
    - For GitHub results: highlight repo name and what it does
