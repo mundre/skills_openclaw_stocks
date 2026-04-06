@@ -3,9 +3,15 @@
   "slug": "github-platforms",
   "displayName": "github",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1774513872027,
-    "commit": "https://github.com/openclaw/skills/commit/9a87f2ce5ed692d31b81fe37b29f956223512046"
+    "version": "1.2.0",
+    "publishedAt": 1775142224381,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1774513872027,
+      "commit": "https://github.com/openclaw/skills/commit/9a87f2ce5ed692d31b81fe37b29f956223512046"
+    }
+  ]
 }
