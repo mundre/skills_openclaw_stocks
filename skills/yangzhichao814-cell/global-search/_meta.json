@@ -1,11 +1,17 @@
 {
   "owner": "yangzhichao814-cell",
   "slug": "global-search",
-  "displayName": "全网搜",
+  "displayName": "global-search",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1774521773132,
-    "commit": "https://github.com/openclaw/skills/commit/e8367c1f3bc30c35f02856fb7c8edeb71bb266fc"
+    "version": "1.0.17",
+    "publishedAt": 1775106701372,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1774521773132,
+      "commit": "https://github.com/openclaw/skills/commit/e8367c1f3bc30c35f02856fb7c8edeb71bb266fc"
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 
-# 全面搜索
+# Global Search
 # 注意：此脚本专门用于执行全面搜索（即同时搜索所有可用来源），当用户要求进行全面搜索时必须使用此脚本。
 from aiohttp import FormData
 
@@ -34,10 +34,9 @@ SEARCH_CONFIGS = [
 import aiohttp
 import asyncio
 import json
-API_URL = "http://101.245.108.220:9004/web_search"  # 根据你的文档填写完整 URL
-API_KEY =  # api_key
+API_URL = "https://clb.ciglobal.cn/web_search"  # 根据你的文档填写完整 URL
 headers = {
-        "X-Appbuilder-Authorization": API_KEY,
+        "Content-Type": "application/x-www-form-urlencoded",
     }
 keyword # 关键词
 page  # 页数

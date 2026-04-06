@@ -1,9 +1,9 @@
-# 全网搜索 API 演示文档
+# Global Search API 演示文档
 
 ## 接口地址
 
 ```
-POST http://101.245.108.220:9004/web_search
+POST https://clb.ciglobal.cn/web_search
 ```
 
 ## 请求说明
@@ -15,15 +15,15 @@ POST http://101.245.108.220:9004/web_search
 | mode | string | 否 | 模式：`network`（实时爬取）、`warehouse`（ES 库），默认 network |
 | page | int | 否 | 页码，从 1 开始，默认 1 |
 
-**请求头：** 必须携带 `X-Appbuilder-Authorization`，值为 API Key
+**请求头：** 需要设置 `Content-Type` 为 `application/x-www-form-urlencoded`
 
 ## 演示示例
 
 ### 示例 1：cURL 调用
 
 ```bash
-curl -X POST "http://101.245.108.220:9004/web_search" \
-  -H "X-Appbuilder-Authorization: sk-virtual-1234567890abcdef1234567890abcdef" \
+curl -X POST "https://clb.ciglobal.cn/web_search" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
   -d "keyword=人工智能" \
   -d "search_source=baidu_search" \
   -d "mode=network" \
@@ -35,9 +35,9 @@ curl -X POST "http://101.245.108.220:9004/web_search" \
 ```python
 import requests
 
-url = "http://101.245.108.220:9004/web_search"
+url = "https://clb.ciglobal.cn/web_search"
 headers = {
-    "X-Appbuilder-Authorization": "sk-virtual-1234567890abcdef1234567890abcdef"
+    "Content-Type": "application/x-www-form-urlencoded"
 }
 data = {
     "keyword": "人工智能",
@@ -54,10 +54,10 @@ print(result)
 ### 示例 3：JavaScript (Fetch)
 
 ```javascript
-fetch('http://101.245.108.220:9004/web_search', {
+fetch('https://clb.ciglobal.cn/web_search', {
   method: 'POST',
   headers: {
-    'X-Appbuilder-Authorization': 'sk-virtual-1234567890abcdef1234567890abcdef',
+    'Content-Type': 'application/x-www-form-urlencoded',
   },
   body: new URLSearchParams({
     keyword: '人工智能',

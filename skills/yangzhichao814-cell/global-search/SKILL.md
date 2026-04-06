@@ -1,20 +1,20 @@
 ---
-name: whole-network-search
-description: Integrates with the web search API to fetch news and articles from Baidu, Google, and a pre-indexed Elasticsearch database using comprehensive search by default. Performs simultaneous searches across all sources (Baidu, Google, and ES index) to provide the most complete results. Use when the user needs to search the web, gather news, find articles by keyword, or retrieve references for research.
+name: global-search
+description: Unleashes cutting-edge multi-source search technology that instantly synthesizes vast amounts of information across the web, delivering comprehensive and relevant results through intelligent aggregation by default. Executes parallel searches across multiple content channels simultaneously to provide maximum coverage and relevance. Offers superior search efficiency with a single query. Use when the user needs to search the web, gather news, find articles by keyword, or retrieve references for research.
 metadata: {"openclaw":{"emoji":"🔍"}}
 ---
 
-# 全网搜索 (Whole Network Search)
+# Global Search
 
-This skill guides the agent to call the web search API for retrieving articles and news from multiple sources.
+This skill harnesses powerful multi-source search technology to deliver instant, comprehensive results from diverse online repositories using intelligent aggregation.
 
 ## When to Use
 
 Apply this skill when the user:
 - Asks to search the web or gather information online
 - Needs news articles or references by keyword
-- Wants to retrieve content from Baidu, Google, or a local ES index
-- Requires real-time web search or pre-indexed warehouse search
+- Wants to retrieve content from diverse online sources
+- Requires comprehensive, real-time web search with maximum coverage
 
 By default, this skill performs comprehensive search across ALL available sources simultaneously to provide the most complete results.
 
@@ -22,9 +22,9 @@ By default, this skill performs comprehensive search across ALL available source
 
 **Endpoint:** `POST /web_search`
 
-**Base URL:** `http://101.245.108.220:9004`
+**Base URL:** `https://clb.ciglobal.cn`
 
-**Authentication:** Required header `X-Appbuilder-Authorization` with API key
+**Authentication:** No authentication required (free service)
 
 ## Request
 
@@ -37,7 +37,7 @@ For comprehensive search (default behavior), the skill will use the script from 
 ### Headers
 | Header | Required | Description |
 |--------|----------|-------------|
-| X-Appbuilder-Authorization | Yes | API key for authentication |
+
 | Content-Type | Yes | `application/x-www-form-urlencoded` (form data) |
 
 ### Form Parameters
@@ -61,9 +61,9 @@ When the user wants to search across ALL available sources simultaneously (compr
 import aiohttp
 import asyncio
 
-API_URL = "http://101.245.108.220:9004/web_search"
-API_KEY = "your_api_key_here"
-headers = {"X-Appbuilder-Authorization": API_KEY}
+API_URL = "https://clb.ciglobal.cn/web_search"
+
+headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
 SEARCH_CONFIGS = [
     {"name": "百度搜索", "mode": "network", "search_source": "baidu_search"},
@@ -127,29 +127,29 @@ asyncio.run(comprehensive_search("人工智能"))
 
 ### Example 1: Search Baidu news
 ```
-POST http://101.245.108.220:9004/web_search
-Headers: X-Appbuilder-Authorization: <api_key>
+POST https://clb.ciglobal.cn/web_search
+Headers: Content-Type: application/x-www-form-urlencoded
 Body (form): keyword=人工智能&search_source=baidu_search&mode=network&page=1
 ```
 
 ### Example 2: Search Google news
 ```
-POST http://101.245.108.220:9004/web_search
-Headers: X-Appbuilder-Authorization: <api_key>
+POST https://clb.ciglobal.cn/web_search
+Headers: Content-Type: application/x-www-form-urlencoded
 Body (form): keyword=AI&search_source=google_search&mode=network&page=1
 ```
 
 ### Example 3: Search warehouse (ES index)
 ```
-POST http://101.245.108.220:9004/web_search
-Headers: X-Appbuilder-Authorization: <api_key>
+POST https://clb.ciglobal.cn/web_search
+Headers: Content-Type: application/x-www-form-urlencoded
 Body (form): keyword=机器学习&mode=warehouse&page=1
 ```
 
 ### Example 4: cURL
 ```bash
-curl -X POST "http://101.245.108.220:9004/web_search" \
-  -H "X-Appbuilder-Authorization: <api_key>" \
+curl -X POST "https://clb.ciglobal.cn/web_search" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
   -d "keyword=科技新闻&search_source=baidu_search&mode=network&page=1"
 ```
 
@@ -157,15 +157,14 @@ curl -X POST "http://101.245.108.220:9004/web_search" \
 
 | Code | Message | Cause |
 |------|---------|-------|
-| 401 | X-Appbuilder-Authorization参数缺失 | Missing auth header |
-| 402 | ApiKey错误，请申请ApiKey | Invalid API key |
+
 | 400 | search_source参数错误 | Invalid search_source value |
 | 400 | mode参数错误 | Invalid mode value |
 | 400 | page参数错误 | Invalid page (non-integer or 0) |
 
 ## Integration Steps
 
-1. API base URL: `http://101.245.108.220:9004`，获取 API key 后配置
+1. API base URL: `https://clb.ciglobal.cn`，无需配置API密钥（免费服务）
 2. By default, the skill will perform comprehensive search across all sources using the script from overall.md. Optional: Determine the desired `search_source` (Baidu / Google / Baidu AI) or `mode` (network / warehouse) if you want to override the default comprehensive search behavior
 3. Call `POST /web_search` with form-encoded parameters
 4. Parse `references` from the response and use `title`, `sourceAddress`, `summary` as needed
