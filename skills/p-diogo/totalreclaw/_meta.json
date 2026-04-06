@@ -1,13 +1,18 @@
 {
   "owner": "p-diogo",
   "slug": "totalreclaw",
-  "displayName": "Skill",
+  "displayName": "Plugin",
   "latest": {
-    "version": "1.6.1",
-    "publishedAt": 1774704814174,
-    "commit": "https://github.com/openclaw/skills/commit/d71043ae14df10c80c2dc051ff6c242befb95ed9"
+    "version": "3.4.0",
+    "publishedAt": 1775434922602,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.6.1",
+      "publishedAt": 1774704814174,
+      "commit": "https://github.com/openclaw/skills/commit/d71043ae14df10c80c2dc051ff6c242befb95ed9"
+    },
     {
       "version": "1.5.0",
       "publishedAt": 1774569238278,

@@ -1,60 +1,46 @@
 {
-  "name": "@totalreclaw/skill",
-  "version": "0.1.0",
-  "description": "TotalReclaw Skill for OpenClaw - End-to-end encrypted memory for AI agents",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "lint": "eslint src/**/*.ts"
-  },
+  "name": "@totalreclaw/totalreclaw",
+  "version": "2.0.0",
+  "description": "End-to-end encrypted memory for AI agents — portable, yours forever. Automatic extraction, semantic search, and on-chain storage",
+  "type": "module",
   "keywords": [
     "totalreclaw",
     "openclaw",
-    "skill",
-    "memory",
-    "e2ee",
+    "ai-memory",
+    "ai-agent",
     "e2e-encryption",
-    "ai",
-    "agent"
+    "encryption",
+    "e2ee",
+    "lsh",
+    "semantic-search",
+    "memory"
   ],
+  "homepage": "https://totalreclaw.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/p-diogo/totalreclaw.git",
+    "directory": "skill/plugin"
+  },
   "author": "TotalReclaw Team",
   "license": "MIT",
   "dependencies": {
-    "@totalreclaw/client": "file:../client",
-    "onnxruntime-node": "^1.17.0",
-    "uuid": "^9.0.0"
+    "@totalreclaw/client": "^0.8.0",
+    "@totalreclaw/core": "^1.0.0"
   },
-  "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "@types/node": "^20.0.0",
-    "@types/uuid": "^9.0.0",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.0",
-    "typescript": "^5.3.0"
-  },
-  "peerDependencies": {
-    "openclaw": ">=0.1.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "files": [
+    "*.ts",
+    "import-adapters/",
+    "!**/*.test.ts",
+    "!pocv2-e2e-test.ts",
+    "openclaw.plugin.json",
+    "SKILL.md",
+    "README.md",
+    "CLAWHUB.md",
+    "skill.json"
+  ],
   "openclaw": {
-    "skill": true,
-    "hooks": [
-      "before_agent_start",
-      "agent_end",
-      "pre_compaction"
-    ],
-    "tools": [
-      "totalreclaw_remember",
-      "totalreclaw_recall",
-      "totalreclaw_forget",
-      "totalreclaw_export",
-      "totalreclaw_status"
-    ],
-    "configSchema": "./dist/config.schema.json"
+    "extensions": [
+      "./index.ts"
+    ]
   }
 }

@@ -310,6 +310,8 @@ Memories are scored on a 1-10 scale:
 
 ## Encryption Details
 
+All cryptographic operations are powered by [`@totalreclaw/core`](https://www.npmjs.com/package/@totalreclaw/core) -- a unified Rust/WASM module that ensures byte-for-byte consistency across all TotalReclaw clients.
+
 TotalReclaw uses end-to-end encryption:
 
 1. **Key Derivation**: Recovery phrase is processed through Argon2id to derive encryption keys. The phrase is never sent to the server.
@@ -428,7 +430,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Links
 
-- [TotalReclaw Documentation](https://docs.totalreclaw.ai)
+- [TotalReclaw Documentation](https://github.com/p-diogo/totalreclaw)
 - [Claw Hub Listing](https://clawhub.ai/skills/totalreclaw)
 - [OpenClaw](https://github.com/openclaw/openclaw)
 - [Issue Tracker](https://github.com/p-diogo/totalreclaw/issues)
