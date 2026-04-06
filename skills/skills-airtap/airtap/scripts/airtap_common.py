@@ -16,6 +16,13 @@ TOKEN_ENV_VAR = "AIRTAP_PERSONAL_ACCESS_TOKEN"
 DEFAULT_RECEIVER_ID = "cloud"
 DEFAULT_TIMEOUT_SECS = 60
 DEFAULT_POLL_INTERVAL_SECS = 10.0
+UPDATE_SKILL_HINT = (
+    "Get an updated version of the Airtap skill before retrying."
+)
+PILOT_CLIENT_TYPE_HEADER_NAME = "x-airtap-pilot-client-type"
+PILOT_CLIENT_NAME_HEADER_NAME = "x-airtap-pilot-client-name"
+CLIENT_NAME_ENV_VAR = "AIRTAP_CLIENT_NAME"
+SKILL_CLIENT_TYPE = "pilot-agent"
 POLL_FINAL_TASK_STATES = {
     "COMPLETED",
     "FAILED",
@@ -107,7 +114,23 @@ def get_auth_headers() -> Dict[str, str]:
     return {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
+        PILOT_CLIENT_TYPE_HEADER_NAME: SKILL_CLIENT_TYPE,
+        PILOT_CLIENT_NAME_HEADER_NAME: get_skill_client_name(),
     }
+
+
+def get_skill_client_name() -> str:
+    explicit_client_name = normalize_optional_text(os.environ.get(CLIENT_NAME_ENV_VAR))
+    if explicit_client_name:
+        return explicit_client_name.lower()
+
+    if any(env_name.startswith("CODEX_") for env_name in os.environ):
+        return "codex"
+
+    if any(env_name.startswith("OPENCLAW_") for env_name in os.environ):
+        return "openclaw"
+
+    return "airtap"
 
 
 def read_base64_file(file_path: str) -> str:
@@ -232,17 +255,25 @@ def request_api(
         )
         response.raise_for_status()
         return response.json()
-    except Exception:
+    except requests.HTTPError as exc:
+        logger.exception("Airtap API HTTP failure method=%s path=%s", method, path)
+        status_code = exc.response.status_code if exc.response is not None else "unknown"
+        raise RuntimeError(
+            f"Airtap API request failed with status {status_code} for {path}. {UPDATE_SKILL_HINT}"
+        ) from exc
+    except requests.RequestException as exc:
         logger.exception("Airtap API failure method=%s path=%s", method, path)
-        raise
+        raise RuntimeError(
+            f"Airtap API request failed for {path}. {UPDATE_SKILL_HINT}"
+        ) from exc
 
 
 def api_get_receivers(logger: logging.Logger) -> Dict[str, Any]:
-    return request_api(logger, "GET", "/receiver/v1/rcvrGetList")
+    return request_api(logger, "POST", "/receiver/v1/rcvrGetList", payload={})
 
 
 def api_get_models(logger: logging.Logger) -> Dict[str, Any]:
-    return request_api(logger, "GET", "/mreg/v1/mregGetModels")
+    return request_api(logger, "POST", "/mreg/v1/mregGetModels", payload={})
 
 
 def api_create_task(

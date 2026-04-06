@@ -142,6 +142,8 @@ How to read the task details returned by `task poll` or `task get-details`:
 - On `COMPLETED`, summarize the result using the latest agent updates.
 - On `FAILED` or `CANCELLED`, report the final state and any useful context from the latest agent
   message.
+- If any Airtap API call returns `404` or another request failure, tell the user to get an updated
+  version of the Airtap skill before retrying.
 
 ## Examples
 

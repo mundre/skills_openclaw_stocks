@@ -444,7 +444,7 @@ def build_parser() -> argparse.ArgumentParser:
     receiver_subparsers.add_parser(
         "get-list",
         help="List available receivers",
-        description="GET /receiver/v1/rcvrGetList\n\nReturns the receivers you can target.",
+        description="POST /receiver/v1/rcvrGetList\n\nReturns the receivers you can target.",
         formatter_class=common.AirtapHelpFormatter,
     )
 
@@ -462,7 +462,7 @@ def build_parser() -> argparse.ArgumentParser:
     model_subparsers.add_parser(
         "get-list",
         help="List available models",
-        description="GET /mreg/v1/mregGetModels\n\nReturns the models you can use for task creation.",
+        description="POST /mreg/v1/mregGetModels\n\nReturns the models you can use for task creation.",
         formatter_class=common.AirtapHelpFormatter,
     )
 
