@@ -1,11 +1,17 @@
 {
   "owner": "zhaoguoqiang-hub",
   "slug": "mood-simulator",
-  "displayName": "mood-simulator",
+  "displayName": "Mood Simulator",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774997932013,
-    "commit": "https://github.com/openclaw/skills/commit/c422b9dd1fcae8ff7ddf9a36d8513c31a94f6022"
+    "version": "0.4.0",
+    "publishedAt": 1775109191664,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774997932013,
+      "commit": "https://github.com/openclaw/skills/commit/c422b9dd1fcae8ff7ddf9a36d8513c31a94f6022"
+    }
+  ]
 }
