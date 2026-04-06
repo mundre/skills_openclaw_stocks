@@ -1,65 +1,59 @@
 #!/usr/bin/env python3
-import json, os, requests, subprocess
-from pathlib import Path
+import requests, json, os, subprocess
 
-REPORTS_URL = os.environ.get('ZEELIN_REPORTS_URL', 'https://thu-nmrc.github.io/THU-ZeeLin-Reports/reports_config.json')
-SITE_URL = os.environ.get('ZEELIN_SITE_URL', 'https://thu-nmrc.github.io/THU-ZeeLin-Reports/')
-STATE_PATH = Path(os.environ.get('ZEELIN_STATE_PATH', '/Users/youke/.openclaw/workspace/memory/report-post-state.json'))
-TWEET_SCRIPT = os.environ.get('ZEELIN_TWEET_SCRIPT', '/Users/youke/.openclaw/workspace/skills/zeelin-twitter-web-autopost/scripts/tweet.sh')
-BASE_URL = os.environ.get('ZEELIN_X_BASE_URL', 'https://x.com')
-LANG = os.environ.get('ZEELIN_TWEET_LANG', 'en')
+REPORT_SITE = "https://thu-nmrc.github.io/THU-ZeeLin-Reports/"
+STATE_FILE = os.path.expanduser("~/.openclaw/memory/zeelin_last_report.json")
+TWEET_SCRIPT = os.path.expanduser("~/.openclaw/workspace/skills/zeelin-twitter-web-autopost/scripts/tweet.sh")
 
+os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
 
-def load_state():
-    if STATE_PATH.exists():
-        try:
-            return json.loads(STATE_PATH.read_text())
-        except Exception:
-            pass
-    return {"posted": []}
+# Load state
+posted = set()
+if os.path.exists(STATE_FILE):
+    with open(STATE_FILE) as f:
+        posted = set(json.load(f).get("posted", []))
 
+html = requests.get(REPORT_SITE, timeout=20).text
 
-def save_state(state):
-    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2))
+# crude extraction of report titles
+import re
+titles = re.findall(r'heading "([^"]+)"', html)
 
+if not titles:
+    print("No reports found")
+    exit(0)
 
-def build_tweet(report):
-    title = report['title']
-    abstract = (report.get('abstract') or '').strip().replace('\n', ' ')
-    if LANG == 'zh':
-        prefix = f"今日报告：{title}"
-    else:
-        prefix = f"Today's report: {title}"
-    summary = abstract
-    tweet = f"{prefix}\n\n{summary}\n\n{SITE_URL}"
-    if len(tweet) > 280:
-        keep = max(40, 280 - len(prefix) - len(SITE_URL) - 6)
-        summary = summary[:keep].rstrip() + '...'
-        tweet = f"{prefix}\n\n{summary}\n\n{SITE_URL}"
-    return tweet
+latest = titles[0]
 
+if latest in posted:
+    print("Report already posted")
+    exit(0)
 
-def main():
-    reports = requests.get(REPORTS_URL, timeout=20).json()
-    state = load_state()
-    posted = set(state.get('posted', []))
-    chosen = None
-    for report in reports:
-        if report['id'] not in posted:
-            chosen = report
-            break
-    if not chosen:
-        print('No unposted report found.')
-        return 0
-    tweet = build_tweet(chosen)
-    print(tweet)
-    subprocess.run(['bash', TWEET_SCRIPT, tweet, BASE_URL], check=True)
-    state.setdefault('posted', []).append(chosen['id'])
-    save_state(state)
-    print(f"Posted: {chosen['id']}")
-    return 0
+# Try to extract the first meaningful paragraph as summary
+summary = None
+m = re.search(r'<p[^>]*>([^<]{80,500})</p>', html)
+if m:
+    summary = m.group(1).strip()
 
+# Try to extract a couple of bullet-style insights
+bullets = []
+for p in re.findall(r'<p[^>]*>([^<]{40,200})</p>', html):
+    text = p.strip()
+    if len(text) > 60 and len(bullets) < 2:
+        bullets.append(text)
 
-if __name__ == '__main__':
-    raise SystemExit(main())
+if bullets:
+    summary = "\n".join(["• " + b[:120] for b in bullets])
+
+if not summary:
+    summary = "A new AI research report analyzing recent developments in AI systems and governance."
+
+tweet = f"New AI research report released.\n\n{latest}\n\n{summary}\n\nReport:\n{REPORT_SITE}\n\n#AI #TechTwitter"
+
+subprocess.run(["bash", TWEET_SCRIPT, tweet, "https://x.com"], check=False)
+
+posted.add(latest)
+with open(STATE_FILE, "w") as f:
+    json.dump({"posted": list(posted)}, f)
+
+print("Posted report:", latest)

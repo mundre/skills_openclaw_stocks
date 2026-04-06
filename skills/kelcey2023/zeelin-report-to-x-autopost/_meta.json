@@ -1,13 +1,18 @@
 {
   "owner": "kelcey2023",
   "slug": "zeelin-report-to-x-autopost",
-  "displayName": "ZeeLin Report-to-X AutoPost",
+  "displayName": "📰 ZeeLin Report-to-X AutoPost",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1774857160768,
-    "commit": "https://github.com/openclaw/skills/commit/a24216c5ddb9a1e16853dda58e8203580efdb61b"
+    "version": "1.5.0",
+    "publishedAt": 1775273998349,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1774857160768,
+      "commit": "https://github.com/openclaw/skills/commit/a24216c5ddb9a1e16853dda58e8203580efdb61b"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774338908233,
