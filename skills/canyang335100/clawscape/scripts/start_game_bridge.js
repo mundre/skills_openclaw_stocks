@@ -17,9 +17,18 @@ console.log('========================================\n');
 const bridge = new OpenClawGameBridge(18765);
 
 console.log('\n服务信息:');
-console.log('  端口: 18765');
-console.log('  协议: WebSocket');
-console.log('  地址: ws://localhost:18765');
+console.log('  WebSocket: ws://localhost:18765');
+console.log('  HTTP API:  http://localhost:18766');
+console.log('');
+console.log('HTTP API 端点:');
+console.log('  GET  /health                       - 健康检查');
+console.log('  GET  /clients                      - 已连接游戏客户端列表');
+console.log('  GET  /clients/:playerUid/perception - 查询感知缓存');
+console.log('  GET  /clients/:playerUid/mapInfo   - 查询地图信息');
+console.log('  GET  /mapId/:mapId/transportPoints - 查询传送门缓存');
+console.log('  POST /command                      - 发送控制指令 {playerUid, command}');
+console.log('  POST /perception/request           - 请求感知推送 {playerUid, category}');
+console.log('');
 
 console.log('\n连接流程:');
 console.log('  1. 玩家点击"托管"按钮');
