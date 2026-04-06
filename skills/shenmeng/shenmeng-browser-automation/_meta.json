@@ -3,11 +3,16 @@
   "slug": "shenmeng-browser-automation",
   "displayName": "Browser Automation 浏览器自动化",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1774681212947,
-    "commit": "https://github.com/openclaw/skills/commit/7b6af14fbfae8a7e9b5bde8d70c2c3f6780073d5"
+    "version": "2025.4.6",
+    "publishedAt": 1775467391550,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1774681212947,
+      "commit": "https://github.com/openclaw/skills/commit/7b6af14fbfae8a7e9b5bde8d70c2c3f6780073d5"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774627160463,
