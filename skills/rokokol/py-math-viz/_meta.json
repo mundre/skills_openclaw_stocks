@@ -3,9 +3,15 @@
   "slug": "py-math-viz",
   "displayName": "Py Math Viz",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774741212985,
-    "commit": "https://github.com/openclaw/skills/commit/3d9388a8fd9579d6448cd88c12bc06be2b597580"
+    "version": "0.1.1",
+    "publishedAt": 1775203966907,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774741212985,
+      "commit": "https://github.com/openclaw/skills/commit/3d9388a8fd9579d6448cd88c12bc06be2b597580"
+    }
+  ]
 }
