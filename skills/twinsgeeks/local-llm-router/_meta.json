@@ -1,13 +1,18 @@
 {
   "owner": "twinsgeeks",
   "slug": "local-llm-router",
-  "displayName": "Local LLM Model Router — Self-Hosted AI on Mac Studio, Mac Mini, Linux",
+  "displayName": "Local Llm Router",
   "latest": {
-    "version": "1.3.0",
-    "publishedAt": 1774911384890,
-    "commit": "https://github.com/openclaw/skills/commit/e0833acc8eba335265ce9fb1ad52cfddc2c1a28a"
+    "version": "1.0.4",
+    "publishedAt": 1775254701548,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.3.0",
+      "publishedAt": 1774911384890,
+      "commit": "https://github.com/openclaw/skills/commit/e0833acc8eba335265ce9fb1ad52cfddc2c1a28a"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1774307928629,
