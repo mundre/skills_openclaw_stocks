@@ -1,11 +1,17 @@
 {
   "owner": "mzlzyca",
   "slug": "pdf-analysis",
-  "displayName": "pdf-analysis",
+  "displayName": "PDF Analysis",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775018583812,
-    "commit": "https://github.com/openclaw/skills/commit/56f0f3aa7bea67887e8a12a1aed57c967e933779"
+    "version": "0.4.0",
+    "publishedAt": 1775210322885,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775018583812,
+      "commit": "https://github.com/openclaw/skills/commit/56f0f3aa7bea67887e8a12a1aed57c967e933779"
+    }
+  ]
 }
