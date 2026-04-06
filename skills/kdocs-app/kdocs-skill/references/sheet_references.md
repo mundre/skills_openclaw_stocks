@@ -1,12 +1,10 @@
-# 表格操作参考文档（Excel & 智能表格）
+# 表格文档/智能表格（xlsx & ksheet）工具完整参考文档
 
 本文件包含金山文档 Skill 中表格相关工具的完整 API 说明、详细调用示例、参数说明和返回值说明。
 
 **适用范围**：本文档中的所有 `sheet.*` 工具同时适用于 Excel（.xlsx）和智能表格（.ksheet）。
 
 ---
-
-## 通用说明
 
 ### 表格工具概述
 
@@ -49,7 +47,7 @@
 | 视图 | 单一表格视图 | 多视图（表格/看板/日历/甘特图等） |
 | 字段类型 | 通用单元格 | 丰富字段类型（单选/多选/日期/附件/关联等） |
 | 适用场景 | 数据计算、报表、财务报表 | 项目管理、CRM、任务跟踪、库存管理 |
-| 工作表/数据接口 | 使用本文档的 `sheet.*` 工具 | **同样使用本文档的 `sheet.*` 工具** |
+| 工作表/数据接口 | 使用 `sheet.*` 工具 | **同样使用 `sheet.*` 工具** |
 
 ### 使用场景
 
@@ -90,15 +88,17 @@
 
 获取指定表格文件的所有工作表信息，包含每个工作表的名称、索引、数据区域范围等。
 
-**适用于**：Excel（.xlsx）和智能表格（.ksheet）
 
 #### 调用示例
+
+获取工作表信息：
 
 ```json
 {
   "file_id": "string"
 }
 ```
+
 
 #### 参数说明
 
@@ -125,6 +125,7 @@
     }
   ]
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -154,6 +155,7 @@
 | `etDashBoard` | 普通表格的仪表盘 |
 | `workbench` | 工作台 |
 
+> rowTo/colTo 比 maxRow/maxCol 更有参考价值，表示实际数据区域
 ---
 
 ### 2. sheet.add_sheet
@@ -162,11 +164,10 @@
 
 在指定表格文件中新增工作表。可指定名称、数量、插入位置和默认列宽。
 
-**适用于**：Excel（.xlsx）和智能表格（.ksheet）
 
 #### 调用示例
 
-在末尾新增：
+在末尾新增工作表：
 
 ```json
 {
@@ -176,23 +177,26 @@
 }
 ```
 
-在指定工作表之前插入：
+在指定工作表前插入：
 
 ```json
 {
   "file_id": "string",
   "name": "新工作表",
-  "before": {"sheetId": 3},
+  "before": {
+    "sheetId": 3
+  },
   "count": 1,
   "defColWidth": 1335
 }
 ```
 
+
 #### 参数说明
 
 - `file_id` (string, 必填): Excel 或 ksheet 文件 ID
 - `name` (string, 可选): 工作表名称
-- `count` (integer, 可选): 新增数量，默认 `1`
+- `count` (integer, 可选): 新增数量；默认值：`1`
 - `before` (object, 可选): 在指定工作表之前插入，格式 `{"sheetId": <id>}`。与 `after`、`end` 三选一
 - `after` (object, 可选): 在指定工作表之后插入，格式 `{"sheetId": <id>}`。与 `before`、`end` 三选一
 - `end` (boolean, 可选): 在末尾插入。与 `before`、`after` 三选一
@@ -204,6 +208,7 @@
 {
   "sheetId": 4
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -218,11 +223,12 @@
 
 #### 功能说明
 
-获取指定工作表中某个矩形选区内的单元格数据。行列索引均为 0-based。
+获取指定工作表中某个矩形区域内的单元格数据。行列索引均为 0-based。
 
-**适用于**：Excel（.xlsx）和智能表格（.ksheet）
 
 #### 调用示例
+
+读取 A1:F11 区域：
 
 ```json
 {
@@ -236,6 +242,7 @@
   }
 }
 ```
+
 
 #### 参数说明
 
@@ -265,6 +272,7 @@
     }
   ]
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -277,7 +285,7 @@
 | `rangeData[].colTo` | integer | 结束列 |
 | `rangeData[].numFormat` | string | 数字格式 |
 | `rangeData[].isCellPic` | boolean | 是否为图片 |
-| `rangeData[].fmlaText` | string | 公式文本（如有） |
+| `rangeData[].fmlaText` | string | 公式文本 |
 
 ---
 
@@ -287,7 +295,6 @@
 
 批量更新单元格选区数据，支持写值/公式、设置格式、合并单元格、写入图片。每项操作必须包含 `rowFrom`、`rowTo`、`colFrom`、`colTo`。
 
-**适用于**：Excel（.xlsx）和智能表格（.ksheet）
 
 #### 调用示例
 
@@ -328,7 +335,10 @@
           "name": "微软雅黑",
           "dyHeight": 220,
           "bls": true,
-          "color": {"type": 2, "value": 16777215}
+          "color": {
+            "type": 2,
+            "value": 16777215
+          }
         },
         "alcH": 2,
         "alcV": 1,
@@ -378,11 +388,12 @@
 }
 ```
 
+
 #### 参数说明
 
 - `file_id` (string, 必填): Excel 或 ksheet 文件 ID
 - `sheetId` (integer, 必填): 工作表 ID
-- `rangeData` (array[object], 必填): 操作列表，每项结构如下：
+- `rangeData` (array[object], 必填): 操作列表，每项必须包含 `opType` 和坐标字段，详见下方 rangeData 字段表
 
 **rangeData 每项字段：**
 
@@ -470,24 +481,25 @@
 | `254` | 无颜色（用于背景） |
 | `255` | 自动颜色（用于前景，如字体和边框） |
 
+
 #### 返回值说明
 
 ```json
 {}
+
 ```
 
 ---
 
+
 ## 工具速查表
 
-| # | 工具名 | 分类 | 功能 | 必填参数 | 适用类型 |
-|---|--------|------|------|----------|----------|
-| 1 | `sheet.get_sheets_info` | 工作表管理 | 获取工作表列表 | `file_id` | Excel & ksheet |
-| 2 | `sheet.add_sheet` | 工作表管理 | 新增工作表 | `file_id` | Excel & ksheet |
-| 3 | `sheet.get_range_data` | 数据操作 | 获取选区数据 | `file_id`, `sheetId`, `range` | Excel & ksheet |
-| 4 | `sheet.update_range_data` | 数据操作 | 批量更新选区数据 | `file_id`, `sheetId`, `rangeData` | Excel & ksheet |
-
----
+| # | 工具名 | 分类 | 功能 | 必填参数 |
+|---|--------|------|------|----------|
+| 1 | `sheet.get_sheets_info` | 工作表管理 | 获取工作表列表 | `file_id` |
+| 2 | `sheet.add_sheet` | 工作表管理 | 新增工作表 | `file_id` |
+| 3 | `sheet.get_range_data` | 数据操作 | 获取选区数据 | `file_id`, `sheetId`, `range` |
+| 4 | `sheet.update_range_data` | 数据操作 | 批量更新选区数据 | `file_id`, `sheetId`, `rangeData` |
 
 ## 工具组合速查
 
@@ -499,6 +511,7 @@
 ---
 
 ## 错误速查表
+
 | 错误特征 | 原因 | 处理方式 |
 |----------|------|----------|
 | 表格读不到或结构不明 | 未先取工作表列表 / 区域错误 | 先 `sheet.get_sheets_info`，再 `sheet.get_range_data` |

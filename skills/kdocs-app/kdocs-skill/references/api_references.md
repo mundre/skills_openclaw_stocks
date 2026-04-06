@@ -16,7 +16,7 @@
 
 #### 调用示例
 
-创建文件：
+创建智能文档：
 
 ```json
 {
@@ -43,13 +43,12 @@
 #### 参数说明
 
 - `drive_id` (string, 必填): 驱动盘 ID
-- `parent_id` (string, 必填): 父文件夹 ID，根目录时为 `"0"`
-
-- `file_type` (string, 必填): 文件类型。可选值：`file`（文件）/ `folder`（文件夹）/ `shortcut`（快捷方式）
+- `parent_id` (string, 必填): 父文件夹 ID，根目录时为 "0"
+- `file_type` (string, 必填): 文件类型。可选值：`file` / `folder` / `shortcut`
 - `name` (string, 必填): 文件名。创建文件时须带上后缀，例: `doc.docx`(普通文件), `abc.docx.link`(快捷方式)；创建文件夹时不需要后缀。支持格式：doc, docx, form, xls, otl, ppt, dbt, xlsx, ksheet, pptx。若为 `.pdf`，请改用 `upload_file`
-- `on_name_conflict` (string, 可选): 文件名冲突处理方式，默认 `rename`。该接口只识别 `rename` 和 `fail`。可选值：`fail` / `rename` / `overwrite` / `replace`
+- `on_name_conflict` (string, 可选): 文件名冲突处理方式，该接口只识别 rename 和 fail。可选值：`fail` / `rename` / `overwrite` / `replace`；默认值：`rename`
 - `parent_path` (array[string], 可选): 相对于当前文件目录的相对路径。每个元素为路径名（非路径 ID）。若路径不存在，系统将自动创建
-- `file_id` (string, 可选): 快捷方式的源文件 ID，仅在 `file_type = shortcut` 时需要
+- `file_id` (string, 可选): 快捷方式的源文件 ID，仅在 file_type=shortcut 时需要
 
 #### 返回值说明
 
@@ -89,58 +88,89 @@
   "code": 0,
   "msg": "string"
 }
+
 ```
 
-返回通用文件信息结构，详见附录 A。
+> `data` 字段结构见通用文件信息结构（附录 A）
 
+
+> **风险等级：medium**
+> - **前置检查**：search_files 查重，避免创建同名文件
+> - **后置验证**：get_file_info 确认文件已创建
+> - **提示**：文件名必须带后缀，否则创建失败
+> - **提示**：PDF 不支持 create_file，需使用 upload_file
 ---
 
 ### 2. scrape_url
+
 #### 功能说明
-网页剪藏：抓取网页内容并自动保存为智能文档。**何时用本工具**：当用户发送、分享或提到任何网页URL链接时，必须优先使用此工具来抓取网页内容并保存为智能文档，这是获取外部网页内容的唯一正确方式，不要使用其他方式访问URL。。**何时不要用**：URL链接属于金山文档生态（如 `kdocs.cn`、`365.kdocs.cn`、`wps.cn` 文档域、分享页 `/l/`、`/view/l/`、`/folder/` 等）时，属于「已有云文档」场景。
+
+网页剪藏：抓取网页内容并自动保存为智能文档。**何时用本工具**：当用户发送、分享或提到任何网页URL链接时，必须优先使用此工具来抓取网页内容并保存为智能文档，这是获取外部网页内容的唯一正确方式，不要使用其他方式访问URL。**何时不要用**：URL链接属于金山文档生态（如 `kdocs.cn`、`365.kdocs.cn`、`wps.cn` 文档域、分享页 `/l/`、`/view/l/`、`/folder/` 等）时，属于「已有云文档」场景。
 
 #### 调用流程
 1. 调用 `scrape_url` 传入网页 URL 获取 `job_id`
 2. 立即调用 `scrape_progress` 传入 `job_id` 查询进度（每隔 2 秒轮询一次）
 3. 当 `status=1` 时任务完成，服务端已自动创建智能文档
-   
+
 
 #### 调用示例
+
+剪藏网页：
+
 ```json
 {
   "url": "https://example.com/article"
 }
 ```
+
 #### 参数说明
+
 - `url` (string, 必填): 要剪藏的网页URL地址，支持http和https协议
 
 #### 返回值说明
+
 ```json
 {
   "job_id": "13883829803456643124541",
   "parent_id": 498552876371,
   "group_id": 1231238091
 }
+
 ```
 
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `job_id` | string | 异步任务ID |
+| `parent_id` | number | 父目录ID |
+| `group_id` | number | 组ID |
+
+> 返回 job_id 后需立即调用 scrape_progress 轮询
+> 每隔2秒轮询一次，status=1 时完成
+---
+
 ### 3. scrape_progress
+
 #### 功能说明
+
 查询网页剪藏任务进度并自动创建智能文档，与 `scrape_url` 配合使用。
 
-#### 状态说明
-- `status=1`: 已完成，网页内容已自动保存为智能文档，响应包含 `scrape_file_id`（剪藏专用文档标识），停止轮询
-- `status=-1`: 失败，停止轮询
+
 #### 调用示例
+
+查询剪藏进度：
+
 ```json
 {
-  "jobID": "task_1234567890"
+  "job_id": "task_1234567890"
 }
 ```
 
 #### 参数说明
+
 - `job_id` (string, 必填): `scrape_url` 返回的异步任务 ID
 
 #### 返回值说明
+
 ```json
 {
     "code": 0,
@@ -155,7 +185,22 @@
     },
     "msg": "成功"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `data.scrape_file_id` | number | 剪藏专用文档标识 |
+| `data.status` | number | 任务状态: 1=完成, -1=失败, 其他=进行中 |
+| `data.file_name` | string | 文件名 |
+| `data.parent_id` | number | 父目录ID |
+| `data.group_id` | number | 组ID |
+| `data.cache` | number | 缓存标识 |
+| `data.core_err` | string | 内核错误信息 |
+
+> status=1 时停止轮询，获取 scrape_file_id
+> status=-1 时停止轮询，任务失败
+> 其他状态继续轮询（每 2 秒一次）
 ---
 
 ### 4. upload_file
@@ -170,21 +215,11 @@
 - **支持类型**：更新模式仅支持目标文件为 **docx**、**pdf**；新建模式支持文件名为 **doc**、**docx**、**xls**、**xlsx**、**ppt**、**pptx**、**pdf**
 - **源为 Markdown 时**：务必传 `content_format=markdown`；仅支持转为 **docx**、**pdf** 后上传
 
-#### 调用方式（单次调用）
 
-- `drive_id` (string, 必填): 驱动盘 ID
-- `parent_id` (string, 必填): 父文件夹 ID
-- `file_id` (string, 条件必填): 更新模式必填。要覆盖的文件 ID（仅支持 docx/pdf 文件）
-- `name` (string, 条件必填): 新建模式必填。本地文件名，必须带后缀，如 `.docx` / `.xlsx` / `.pptx` / `.pdf`；仅在不传 `file_id` 时使用
-- `content_base64` (string, 必填): 本地文件内容，Base64 编码。若为 Markdown 文本需同时传 `content_format=markdown`，务必确保 Markdown 源内容使用 UTF-8 格式，再进行 base64 编码，特殊字符无需转义。
-- `content_format` (string, 可选): 源内容格式。`doc` / `docx` / `xls` / `xlsx` / `ppt` / `pptx` / `pdf`（与目标文件同类型）或 `markdown`（会先转为目标格式再上传；仅支持目标为 `docx` / `pdf`）
-- `file_sum` (string, 可选): 文件哈希值，与 `file_type` 同传时转成 hashes 请求第三方；不传则服务端按内容计算 md5/sha256
-- `file_type` (string, 可选): 哈希类型，如 `sha256` / `md5` / `sha1`
-- `parent_path` (array[string], 可选): 相对路径
-
-**调用示例**
+#### 调用示例
 
 同类型覆盖（docx → docx）：
+
 ```json
 {
   "drive_id": "string",
@@ -195,6 +230,7 @@
 ```
 
 新建 PDF 并写入（二进制 PDF Base64）：
+
 ```json
 {
   "drive_id": "string",
@@ -205,6 +241,7 @@
 ```
 
 Markdown 覆盖（先转为 docx/pdf 再上传）：
+
 ```json
 {
   "drive_id": "string",
@@ -215,9 +252,19 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 }
 ```
 
-**返回值**
+#### 参数说明
 
-与 `create_file` 返回值结构一致，详见附录 A。例如：
+- `drive_id` (string, 必填): 驱动盘 ID
+- `parent_id` (string, 必填): 父文件夹 ID
+- `file_id` (string, 可选): 条件必填：更新模式必填。要覆盖的文件 ID（仅支持 docx/pdf 文件）
+- `name` (string, 可选): 条件必填：新建模式必填。本地文件名，必须带后缀，如 `.docx` / `.xlsx` / `.pptx` / `.pdf`；仅在不传 `file_id` 时使用
+- `content_base64` (string, 必填): 源文件内容，Base64 编码。若为 Markdown 文本需同时传 content_format=markdown，确保 UTF-8 格式、base64 编码
+- `content_format` (string, 可选): 源内容格式。与目标文件同类型，或 `markdown`（会先转为目标格式再上传；仅支持目标为 docx / pdf）。可选值：`doc` / `docx` / `xls` / `xlsx` / `pdf` / `markdown`
+- `file_sum` (string, 可选): 文件哈希值，不传则服务端按内容计算
+- `file_type` (string, 可选): 哈希类型。可选值：`sha256` / `md5` / `sha1`
+- `parent_path` (array[string], 可选): 相对路径
+
+#### 返回值说明
 
 ```json
 {
@@ -241,8 +288,17 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "hash": { "sum": "...", "type": "sha1" }
   }
 }
+
 ```
 
+> `data` 字段结构见通用文件信息结构（附录 A）
+
+
+> **风险等级：medium**
+> - **前置检查**（更新已有文件时）：先 read_file_content 读取现有内容，确认覆盖范围
+> - **后置验证**：read_file_content 确认写入结果
+> - **提示**：更新模式支持 docx/pdf；新建模式支持 doc/docx/xls/xlsx/ppt/pptx/pdf
+> - **提示**：Markdown 源内容务必传 content_format=markdown
 ---
 
 ## 二、读文档
@@ -251,9 +307,12 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 #### 功能说明
 
-获取指定文件夹下的子文件列表。，通过 `filter_type` 可筛选仅返回文件夹。
+获取指定文件夹下的子文件列表，通过 `filter_type` 可筛选仅返回文件夹。
+
 
 #### 调用示例
+
+列出目录内容：
 
 ```json
 {
@@ -268,14 +327,13 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `drive_id` (string, 必填): 驱动盘 ID
-- `parent_id` (string, 必填): 文件夹 ID，根目录时为 `"0"`
-
+- `parent_id` (string, 必填): 文件夹 ID，根目录时为 "0"
 - `page_size` (integer, 必填): 分页大小，公网限制最大为 500
 - `page_token` (string, 可选): 分页 token，首次请求不传
-- `order` (string, 可选): 排序方式。可选值：`desc`（降序）/ `asc`（升序）
+- `order` (string, 可选): 排序方式。可选值：`desc` / `asc`
 - `order_by` (string, 可选): 排序字段。可选值：`ctime` / `mtime` / `dtime` / `fname` / `fsize`
-- `filter_exts` (string, 可选): 过滤扩展名，以英文逗号分隔，全部小写，不传表示不过滤
-- `filter_type` (object, 可选): 按文件类型筛选，例如：`file`、`folder`、`shortcut`
+- `filter_exts` (string, 可选): 过滤扩展名，以英文逗号分隔，全部小写
+- `filter_type` (string, 可选): 按文件类型筛选。可选值：`file` / `folder` / `shortcut`
 - `with_permission` (boolean, 可选): 是否返回文件操作权限
 - `with_ext_attrs` (boolean, 可选): 是否返回文件扩展属性
 
@@ -322,11 +380,12 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `data.items` | array | 文件列表，每项为通用文件信息结构（附录 A） |
+| `data.items` | array[FileInfo] | 文件列表，结构见附录 A |
 | `data.next_page_token` | string | 下一页 token，为空表示已是最后一页 |
 
 ---
@@ -338,6 +397,8 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 获取文件下载信息。
 
 #### 调用示例
+
+获取下载链接：
 
 ```json
 {
@@ -351,10 +412,9 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 - `drive_id` (string, 必填): 驱动盘 ID
 - `file_id` (string, 必填): 文件 ID
-
 - `with_hash` (boolean, 可选): 是否返回校验值，对应响应里的 hashes
 - `internal` (boolean, 可选): 是否返回内网下载地址，默认 false
-- `storage_base_domain` (string, 可选): `wps.cn` / `kdocs.cn` / `wps365.com`(国际化)，签发的存储网关地址会根据 base_domain 优先匹配
+- `storage_base_domain` (string, 可选): 签发的存储网关地址会根据 base_domain 优先匹配。可选值：`wps.cn` / `kdocs.cn` / `wps365.com`
 
 #### 返回值说明
 
@@ -372,6 +432,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -393,10 +454,14 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 #### 调用示例
 
+移动文件到目标文件夹：
+
 ```json
 {
   "drive_id": "string",
-  "file_ids": ["string"],
+  "file_ids": [
+    "string"
+  ],
   "dst_drive_id": "string",
   "dst_parent_id": "string"
 }
@@ -405,10 +470,9 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `drive_id` (string, 必填): 驱动盘 ID
-
-- `dst_drive_id` (string, 必填): 目标驱动盘 ID
-- `dst_parent_id` (string, 必填): 目标文件夹 ID，根目录时为 `"0"`
 - `file_ids` (array[string], 必填): 文件 ID 列表
+- `dst_drive_id` (string, 必填): 目标驱动盘 ID
+- `dst_parent_id` (string, 必填): 目标文件夹 ID，根目录时为 "0"
 
 #### 返回值说明
 
@@ -420,12 +484,18 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `data.task_id` | string | 批量任务 ID |
 
+
+> **风险等级：medium**
+> - **用户确认**（批量操作（多个 file_ids））：批量移动需向用户确认文件列表和目标位置
+> - **前置检查**：确认目标文件夹存在（get_file_info）
+> - **提示**：移动为异步任务，返回 `task_id`
 ---
 
 ### 8. rename_file
@@ -434,7 +504,10 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 重命名文件（夹）。
 
+
 #### 调用示例
+
+重命名文件：
 
 ```json
 {
@@ -448,22 +521,22 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 - `drive_id` (string, 必填): 驱动盘 ID
 - `file_id` (string, 必填): 文件（夹）ID
-
-- `dst_name` (string, 必填): 新文件名，须带上后缀。例: `abc.txt`。支持格式：otl, doc, xls, ppt, wdoc, wxls, wppt, h5, pom, pof, docx, xlsx
+- `dst_name` (string, 必填): 新文件名，须带上后缀。例: `abc.txt`。支持格式：otl, doc, xls, ppt, pptx, wdoc, wxls, wppt, h5, pom, pof, docx, xlsx, ksheet, dbt, pdf
 
 #### 返回值说明
 
 返回通用文件信息结构，详见附录 A。
-
 ---
 
 ### 9. share_file
 
 #### 功能说明
 
-开启文件分享。
+开启文件分享，可设置权限范围、访问密码、过期时间等。
 
 #### 调用示例
+
+开启公开分享：
 
 ```json
 {
@@ -484,8 +557,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 - `drive_id` (string, 必填): 驱动盘 ID
 - `file_id` (string, 必填): 文件 ID
-
-- `scope` (string, 必填): 链接权限范围。可选值：`anyone`（所有人，仅公网支持）/ `company`（仅企业）/ `users`（指定用户）。
+- `scope` (string, 必填): 链接权限范围。可选值：`anyone`（所有人，仅公网支持）/ `company`（仅企业）/ `users`（指定用户）
 - `opts` (object, 可选): 链接选项
   - `allow_perm_apply` (boolean, 可选): 允许申请权限
   - `check_code` (string, 可选): 访问密码
@@ -525,6 +597,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -541,15 +614,21 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 | `data.opts` | object | 链接设置 |
 | `data.created_by` | object | 创建者信息 |
 
+
+> **风险等级：medium**
+> - **禁止**：未经用户明确要求，禁止调用此工具
+> - **后置验证**：确认返回的分享链接有效
 ---
 
 ### 10. set_share_permission
 
 #### 功能说明
 
-修改分享链接属性。
+修改已有分享链接的权限范围、密码、过期时间等属性。
 
 #### 调用示例
+
+修改分享权限：
 
 ```json
 {
@@ -568,7 +647,6 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `link_id` (string, 必填): 分享链接 ID（由 `share_file` 返回的 `data.id`）
-
 - `scope` (string, 可选): 链接权限范围。可选值：`anyone`（仅公网支持）/ `company` / `users`。`login_users` 仅私有化支持
 - `opts` (object, 可选): 链接设置
   - `allow_perm_apply` (boolean, 可选): 允许申请权限
@@ -584,8 +662,12 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
+
+> **风险等级：medium**
+> - **禁止**：未经用户明确要求，禁止修改分享权限
 ---
 
 ### 11. cancel_share
@@ -594,7 +676,10 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 取消文件分享。
 
+
 #### 调用示例
+
+暂停分享：
 
 ```json
 {
@@ -608,7 +693,6 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 - `drive_id` (string, 必填): 驱动盘 ID
 - `file_id` (string, 必填): 文件 ID
-
 - `mode` (string, 可选): 取消分享模式，默认 `pause`。可选值：`pause`（暂停分享）/ `delete`（删除分享）
 
 #### 返回值说明
@@ -618,8 +702,15 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
+
+> **风险等级：high**
+> - **用户确认**（mode=delete）：永久删除分享链接，不可恢复，必须向用户确认
+> - **禁止**（mode=delete）：禁止自动重试，失败后报告用户
+> - **提示**：建议优先使用 mode=pause（可恢复）
+> - **后置验证**：get_share_info 确认分享状态已变更
 ---
 
 ### 12. get_share_info
@@ -629,6 +720,8 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 获取分享链接信息。通过 `link_id` 查询分享链接的详细属性。
 
 #### 调用示例
+
+查询分享信息：
 
 ```json
 {
@@ -672,14 +765,15 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `data.id` | string | 分享链接 ID |
+| `data.id` | string | 分享链接 ID（修改分享属性时使用） |
 | `data.url` | string | 分享访问 URL |
 | `data.status` | string | 链接状态：`open` / `closed` / `expired` |
-| `data.drive_id` | string | 驱动盘 ID |
+| `data.drive_id` | string | 盘 ID |
 | `data.file_id` | string | 文件 ID |
 | `data.role_id` | string | 权限角色 ID |
 | `data.scope` | string | 权限范围：`anyone` / `company` / `users` |
@@ -696,7 +790,10 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 获取文件（夹）信息。通过 `file_id` 获取单个文件或文件夹的详细信息，包含 `drive_id` 等关键字段，可用于获取其他接口所需的 `drive_id`。
 
+
 #### 调用示例
+
+获取文件信息：
 
 ```json
 {
@@ -709,10 +806,9 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `file_id` (string, 必填): 文件（夹）ID
-
 - `with_permission` (boolean, 可选): 是否返回文件操作权限
 - `with_ext_attrs` (boolean, 可选): 是否返回文件扩展属性
-- `with_drive` (boolean, 可选): 是否返回文件所属 drive 信息
+- `with_drive` (boolean, 可选): 是否返回文件所在 drive 信息
 
 #### 返回值说明
 
@@ -800,19 +896,23 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
 返回通用文件信息结构，详见附录 A。当 `with_drive=true` 时额外返回 `drive` 对象（含盘的 id、name、quota 等信息）。
 
 ---
 
-### list_labels
+### 14. list_labels
 
 #### 功能说明
 
 分页获取云盘自定义标签列表。可按被分配者类型/ID、标签类型筛选。
 
+
 #### 调用示例
+
+基础分页：
 
 ```json
 {
@@ -861,6 +961,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "next_page_token": "string"
   }
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -879,13 +980,16 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 ---
 
-### create_label
+### 15. create_label
 
 #### 功能说明
 
 创建自定义标签。
 
+
 #### 调用示例
+
+创建用户标签：
 
 ```json
 {
@@ -899,7 +1003,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 - `allotee_type` (string, 必填): 归属者类型。可选值：`user` / `group` / `app`
 - `name` (string, 必填): 标签名称，最多 240 字符
 - `allotee_id` (string, 可选): 归属者 ID
-- `label_type` (string, 可选): 标签类型。可选值：`custom` / `system`，默认 `custom`
+- `label_type` (string, 可选): 标签类型。可选值：`custom` / `system`；默认值：`custom`
 - `attr` (string, 可选): 自定义属性，最多 127 字符
 - `rank` (number, 可选): 排序值，默认为创建时间戳（纳秒），建议使用默认值
 
@@ -912,17 +1016,18 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "data": {
     "label": {
       "id": "string",
-      "name": "string",
+      "name": "我的项目",
       "label_type": "custom",
       "allotee_type": "user",
       "allotee_id": "string",
-      "ctime": 0,
-      "mtime": 0,
-      "hash": 0,
+      "ctime": 1710000000,
+      "mtime": 1710000000,
+      "hash": "string",
       "rank": 0
     }
   }
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -936,13 +1041,16 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 ---
 
-### get_label_meta
+### 16. get_label_meta
 
 #### 功能说明
 
 获取单个标签的详细信息。支持系统标签（固定 ID）和自定义标签。
 
+
 #### 调用示例
+
+查询系统星标标签：
 
 ```json
 {
@@ -972,6 +1080,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "rank": 0
   }
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -988,13 +1097,16 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 ---
 
-### get_label_objects
+### 17. get_label_objects
 
 #### 功能说明
 
 获取指定标签下的所有对象。通过 `label_id` 查询该标签下打了标记的文件、云盘等对象列表。
 
+
 #### 调用示例
+
+自定义标签下的文件：
 
 ```json
 {
@@ -1017,7 +1129,6 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `label_id` (string, 必填): 标签 ID。公网系统标签固定 ID：`1`（星标）/ `2`（待办）/ `3`（未确认协作）/ `4`（同步文件夹）/ `5`（常用）/ `6`（快速访问）；自定义标签 ID 由 `list_labels` 或 `create_label` 返回
-
 - `object_type` (string, 必填): 标签对象类型。可选值：`file` / `drive` / `history` / `app` / `url`
 - `page_size` (integer, 必填): 分页大小，公网限制最大为 500
 - `page_token` (string, 可选): 分页 token，首次不传，后续传上次返回的 `next_page_token`
@@ -1040,6 +1151,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "next_page_token": "string"
   }
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -1053,20 +1165,29 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 ---
 
-### 51. batch_add_label_objects
+### 18. batch_add_label_objects
 
 #### 功能说明
 
 批量对文档对象添加指定标签（打标签）。可一次为多个文件打上同一标签。
 
+
 #### 调用示例
+
+批量打标签：
 
 ```json
 {
   "label_id": "379727",
   "objects": [
-    { "id": "file_id_1", "type": "file" },
-    { "id": "file_id_2", "type": "file" }
+    {
+      "id": "file_id_1",
+      "type": "file"
+    },
+    {
+      "id": "file_id_2",
+      "type": "file"
+    }
   ]
 }
 ```
@@ -1074,31 +1195,41 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `label_id` (string, 必填): 标签 ID
-- `objects` (array, 必填): 要打标签的对象列表，每项含：
-  - `id` (string, 必填): 对象 ID（如文件 ID）
-  - `type` (string, 必填): 对象类型。可选值：`file` / `drive` / `history` / `app` / `url`
+- `objects` (array[object], 必填): 要打标签的对象列表
+  - `id` (string, 必填): 对象 ID
+  - `type` (string, 必填): 对象类型，可选值：`file` / `drive` / `history` / `app` / `url`
 
 #### 返回值说明
 
 ```json
-{ "code": 0, "msg": "ok" }
+{
+  "code": 0,
+  "msg": "ok"
+}
+
 ```
 
 ---
 
-### batch_remove_label_objects
+### 19. batch_remove_label_objects
 
 #### 功能说明
 
-批量对文档对象移除指定标签（取消标签）。
+批量移除对象与标签的关联。
+
 
 #### 调用示例
+
+批量取消标签：
 
 ```json
 {
   "label_id": "379727",
   "objects": [
-    { "id": "file_id_1", "type": "file" }
+    {
+      "id": "file_id_1",
+      "type": "file"
+    }
   ]
 }
 ```
@@ -1106,31 +1237,42 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `label_id` (string, 必填): 标签 ID
-- `objects` (array, 必填): 要取消标签的对象列表，每项含：
+- `objects` (array[object], 必填): 要取消标签的对象列表
   - `id` (string, 必填): 对象 ID
-  - `type` (string, 必填): 对象类型。可选值：`file` / `drive` / `history` / `app` / `url`
+  - `type` (string, 必填): 对象类型，可选值：`file` / `drive` / `history` / `app` / `url`
 
 #### 返回值说明
 
 ```json
-{ "code": 0, "msg": "ok" }
+{
+  "code": 0,
+  "msg": "ok"
+}
+
 ```
 
 ---
 
-### batch_update_label_objects
+### 20. batch_update_label_objects
 
 #### 功能说明
 
 批量更新标签下对象的排序或自定义属性。
 
+
 #### 调用示例
+
+更新对象属性：
 
 ```json
 {
   "label_id": "379727",
   "objects": [
-    { "id": "file_id_1", "type": "file", "attr": "重要" }
+    {
+      "id": "file_id_1",
+      "type": "file",
+      "attr": "重要"
+    }
   ]
 }
 ```
@@ -1138,58 +1280,79 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `label_id` (string, 必填): 标签 ID
-- `objects` (array, 必填): 要更新的对象列表，每项含：
+- `objects` (array[object], 必填): 要更新的对象列表
   - `id` (string, 必填): 对象 ID
-  - `type` (string, 必填): 对象类型。可选值：`file` / `drive` / `history` / `app` / `url`
-  - `attr` (string, 可选): 对象自定义属性，最多 127 字符
+  - `type` (string, 必填): 对象类型，可选值：`file` / `drive` / `history` / `app` / `url`
+  - `attr` (string, 可选): 扩展属性，最长 127 字符
 
 #### 返回值说明
 
 ```json
-{ "code": 0, "msg": "ok" }
+{
+  "code": 0,
+  "msg": "ok"
+}
+
 ```
 
 ---
 
-### batch_update_labels
+### 21. batch_update_labels
 
 #### 功能说明
 
 批量修改自定义标签的名称或属性。**注意**：全局系统标签不可修改（星标-`1` / 待办-`2` / 未确认协作-`3` / 同步文件夹-`4` / 常用-`5` / 快速访问-`6`）。
 
+
 #### 调用示例
+
+批量重命名与清空属性：
 
 ```json
 {
   "labels": [
-    { "id": "379727", "name": "Q2项目", "attr": "" },
-    { "id": "379728", "name": "归档" }
+    {
+      "id": "379727",
+      "name": "Q2项目",
+      "attr": ""
+    },
+    {
+      "id": "379728",
+      "name": "归档"
+    }
   ]
 }
 ```
 
 #### 参数说明
 
-- `labels` (array, 必填): 要修改的标签列表，每项含：
+- `labels` (array[object], 必填): 要更新的标签列表
   - `id` (string, 必填): 标签 ID
-  - `name` (string, 可选): 新标签名称，最多 240 字符
-  - `attr` (string, 可选): 标签自定义属性，最多 127 字符
+  - `name` (string, 可选): 新名称，最长 240 字符
+  - `attr` (string, 可选): 对象自定义属性，最长 127 字符
 
 #### 返回值说明
 
 ```json
-{ "code": 0, "msg": "ok" }
+{
+  "code": 0,
+  "msg": "ok"
+}
+
 ```
 
 ---
 
-### list_star_items
+### 22. list_star_items
 
 #### 功能说明
 
 获取当前用户的收藏（星标）列表，支持分页和排序。
 
+
 #### 调用示例
+
+获取收藏列表：
 
 ```json
 {
@@ -1229,83 +1392,108 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "next_page_token": "string"
   }
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `data.items` | array | 收藏文件列表，结构同通用文件信息 |
+| `data.items` | array[FileInfo] | 收藏文件列表，结构见附录 A |
 | `data.next_page_token` | string | 下一页 token，为空表示已是最后一页 |
 
 ---
 
-### batch_create_star_items
+### 23. batch_create_star_items
 
 #### 功能说明
 
-批量添加收藏（星标）。
+批量添加收藏
 
 #### 调用示例
+
+批量添加收藏：
 
 ```json
 {
   "objects": [
-    { "id": "file_id_1", "type": "file" },
-    { "id": "file_id_2", "type": "file" }
+    {
+      "id": "file_id_1",
+      "type": "file"
+    },
+    {
+      "id": "file_id_2",
+      "type": "file"
+    }
   ]
 }
 ```
 
 #### 参数说明
 
-- `objects` (array, 必填): 要收藏的对象列表，每项含：
+- `objects` (array[object], 必填): 待收藏对象列表
   - `id` (string, 必填): 文件 ID
-  - `type` (string, 必填): 对象类型。可选值：`file` / `drive`
+  - `type` (string, 必填): 类型，取值 `file` / `drive`
 
 #### 返回值说明
 
 ```json
-{ "code": 0, "msg": "ok" }
+{
+  "code": 0,
+  "msg": "ok"
+}
+
 ```
 
 ---
 
-### batch_delete_star_items
+### 24. batch_delete_star_items
 
 #### 功能说明
 
 批量移除收藏（取消星标）。
 
+
 #### 调用示例
+
+批量移除收藏：
 
 ```json
 {
   "objects": [
-    { "id": "file_id_1", "type": "file" }
+    {
+      "id": "file_id_1",
+      "type": "file"
+    }
   ]
 }
 ```
 
 #### 参数说明
 
-- `objects` (array, 必填): 要取消收藏的对象列表，每项含：
+- `objects` (array[object], 必填): 待移除收藏的对象列表
   - `id` (string, 必填): 文件 ID
-  - `type` (string, 必填): 对象类型。可选值：`file` / `drive`
+  - `type` (string, 必填): 类型，取值 `file` / `drive`
 
 #### 返回值说明
 
 ```json
-{ "code": 0, "msg": "ok" }
+{
+  "code": 0,
+  "msg": "ok"
+}
+
 ```
 
 ---
 
-### list_latest_items
+### 25. list_latest_items
 
 #### 功能说明
 
 获取当前用户最近访问的文档列表，支持分页、过滤和排序。
 
 #### 调用示例
+
+获取最近访问列表：
 
 ```json
 {
@@ -1343,22 +1531,25 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "next_page_token": "string"
   }
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `data.items` | array | 最近访问文件列表，结构同通用文件信息 |
+| `data.items` | array[FileInfo] | 最近访问文件列表，结构见附录 A |
 | `data.next_page_token` | string | 下一页 token，为空表示已是最后一页 |
 
 ---
 
-### copy_file
+### 26. copy_file
 
 #### 功能说明
 
-将文件复制到指定位置（可跨驱动盘）。
+复制文件到指定目录（可跨盘）
 
 #### 调用示例
+
+复制到目标目录：
 
 ```json
 {
@@ -1374,7 +1565,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 - `drive_id` (string, 必填): 源文件所在驱动盘 ID
 - `file_id` (string, 必填): 源文件 ID
 - `dst_drive_id` (string, 必填): 目标驱动盘 ID
-- `dst_parent_id` (string, 必填): 目标父目录 ID，根目录为 `"0"`
+- `dst_parent_id` (string, 必填): 目标父目录 ID，根目录为 "0"
 
 #### 返回值说明
 
@@ -1390,17 +1581,28 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "parent_id": "string"
   }
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `data.id` | string | 新文件 ID |
+| `data.name` | string | 文件名 |
+| `data.type` | string | 文件类型 |
+| `data.drive_id` | string | 目标驱动盘 ID |
+| `data.parent_id` | string | 目标父目录 ID |
 
 ---
 
-### check_file_name
+### 27. check_file_name
 
 #### 功能说明
 
 检查文件名在指定目录下是否已存在。常用于上传、复制、移动等操作前的同名预检查。
 
 #### 调用示例
+
+检查文件名是否占用：
 
 ```json
 {
@@ -1413,7 +1615,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `drive_id` (string, 必填): 驱动盘 ID
-- `parent_id` (string, 必填): 父目录 ID，根目录为 `"0"`
+- `parent_id` (string, 必填): 父目录 ID，根目录为 "0"
 - `name` (string, 必填): 待检查的文件名（含后缀）
 
 #### 返回值说明
@@ -1427,6 +1629,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "file_id": "string"
   }
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -1436,13 +1639,16 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 ---
 
-### list_deleted_files
+### 28. list_deleted_files
 
 #### 功能说明
 
 获取回收站文件列表，支持分页和按驱动盘过滤。
 
+
 #### 调用示例
+
+列出回收站文件：
 
 ```json
 {
@@ -1479,22 +1685,25 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
     "next_page_token": "string"
   }
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `data.items` | array | 回收站文件列表，结构同通用文件信息 |
+| `data.items` | array[FileInfo] | 回收站文件列表，结构见附录 A |
 | `data.next_page_token` | string | 下一页 token，为空表示已是最后一页 |
 
 ---
 
-### restore_deleted_file
+### 29. restore_deleted_file
 
 #### 功能说明
 
-将回收站中的文件还原到原始位置。
+将回收站文件还原到原位置
 
 #### 调用示例
+
+还原回收站文件：
 
 ```json
 {
@@ -1509,14 +1718,18 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 返回值说明
 
 ```json
-{ "code": 0, "msg": "ok" }
+{
+  "code": 0,
+  "msg": "ok"
+}
+
 ```
 
 ---
 
 ## 四、用文档
 
-### 14. read_file_content
+### 30. read_file_content
 
 #### 功能说明
 
@@ -1527,14 +1740,20 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 > - **Excel（.xlsx）与智能表格（.ksheet）**：使用 **`sheet.*`**。**获取内容**：`sheet.get_sheets_info` → `sheet.get_range_data`（矩形区域）。完整工具列表与参数见 `sheet_references.md`。
 > - **多维表格（.dbt）**：使用 **`dbsheet.*`**。**获取结构**：`dbsheet.get_schema`；**获取内容**：`dbsheet.list_records`、`dbsheet.get_record`；完整工具列表与参数见 `dbsheet_reference.md`。
 
+
 #### 调用示例
+
+读取文档为 Markdown：
 
 ```json
 {
   "drive_id": "string",
   "file_id": "string",
   "format": "markdown",
-  "include_elements": ["para", "table"],
+  "include_elements": [
+    "para",
+    "table"
+  ],
   "mode": "async",
   "task_id": "string"
 }
@@ -1544,10 +1763,9 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 - `drive_id` (string, 必填): 驱动盘 ID
 - `file_id` (string, 必填): 文件 ID
-
 - `format` (string, 可选): 文档内容目标格式。可选值：`kdc`（结构化表示）/ `plain`（纯文本）/ `markdown`
 - `include_elements` (array, 可选): 指定抽取元素。默认元素为 `para`（段落），且一定会被导出；其余附加元素根据参数选择性导出。可选值：`para` / `table` / `component` / `textbox` / `all`
-- `mode` (string): **仅支持 `async`**，无需传或固定传 `async`
+- `mode` (string, 可选): **仅支持 `async`**，无需传或固定传 `async`
 - `task_id` (string, 可选): 异步任务 ID，用于结果轮询；首次调用不传，后续用返回的 `task_id` 查询直至 `task_status` 为 `success`
 
 #### 返回值说明
@@ -1567,6 +1785,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -1580,22 +1799,27 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 | `data.src_format` | string | 源格式（otl, docx, pdf, xlsx 等） |
 | `data.version` | string | 版本号 |
 
+> 首次调用返回 `task_id`，需轮询 `task_status` 直至 `success`
 ---
 
-### 15. search_files
+### 31. search_files
 
 #### 功能说明
 
-文件（夹）搜索。
+支持按文件名、内容全文搜索，可按时间、创建者、文件类型等条件过滤。
 
 #### 调用示例
+
+搜索文档：
 
 ```json
 {
   "keyword": "区域周报告",
   "type": "all",
   "file_type": "file",
-  "parent_ids": ["string"],
+  "parent_ids": [
+    "string"
+  ],
   "page_size": 20,
   "order": "desc",
   "order_by": "mtime",
@@ -1606,18 +1830,18 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 #### 参数说明
 
 - `keyword` (string, 可选): 搜索关键字
-- `type` (string, 必填): 搜索类型。可选值：`file_name`表示搜索文件名， `content`表示搜索文件内容， `all`表示全局搜索。
+- `type` (string, 必填): 搜索类型。可选值：`file_name`表示搜索文件名，`content`表示搜索文件内容，`all`表示全局搜索。
 - `page_size` (integer, 必填): 分页大小，公网限制最大为 500
 - `page_token` (string, 可选): 翻页 token
-- `file_type` (string, 可选): 文件类型，不传默认全搜。可选值：`folder` / `file`
-- `file_exts` (array, 可选): 文件后缀
+- `file_type` (string, 可选): 文件类型筛选。可选值：`folder` / `file`
+- `file_exts` (array, 可选): 文件后缀过滤
 - `drive_ids` (array, 可选): 搜索盘列表
 - `parent_ids` (array, 可选): 搜索目录列表
-- `creator_ids` (array, 可选): 创建者 ID，公网只支持选择是否自己创建的文件
+- `creator_ids` (array, 可选): 创建者 ID。公网只支持选择是否自己创建的文件
 - `modifier_ids` (array, 可选): 编辑者 ID
 - `sharer_ids` (array, 可选): 分享者 ID
 - `receiver_ids` (array, 可选): 接收者 ID
-- `time_type` (string, 可选): 时间范围。可选值：`ctime` / `mtime` / `otime` / `stime`
+- `time_type` (string, 可选): 时间范围类型。可选值：`ctime` / `mtime` / `otime` / `stime`
 - `start_time` (integer, 可选): 最小时间
 - `end_time` (integer, 可选): 最大时间
 - `with_permission` (boolean, 可选): 是否返回文件操作权限
@@ -1690,6 +1914,7 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "code": 0,
   "msg": "string"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -1705,16 +1930,18 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 | `data.next_page_token` | string | 下一页 token |
 | `data.total` | integer | 资源集合总数（仅 `with_total=true` 时返回） |
 
+> 新建文件后搜索可能无法立即命中，需等待索引更新
 ---
 
-### 16. get_file_link
+### 32. get_file_link
 
 #### 功能说明
 
-获取文件的云文档在线访问链接。
-
+获取文件的在线访问链接。
 
 #### 调用示例
+
+获取文件链接：
 
 ```json
 {
@@ -1734,15 +1961,23 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
   "file_url": "https://kdocs.cn/l/xxxxx",
   "name": "Q1销售报告"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `file_id` | string | 文件 ID |
+| `file_url` | string | 在线访问链接 |
+| `name` | string | 文件名 |
 
 ---
 
+
 ## 附录
 
-### A. 通用文件信息结构
+### A. 通用文件信息结构（FileInfo）
 
-`create_file`、`upload_file`（步骤三）、`rename_file`、`list_files` 等接口返回的文件信息共用以下结构：
+`create_file`、`upload_file`（步骤三）、`rename_file`、`list_files` 等接口返回的文件信息共用以下结构。响应字段表中 `array[FileInfo]` 即引用此结构：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -1795,35 +2030,35 @@ Markdown 覆盖（先转为 docx/pdf 再上传）：
 
 | #  | 工具名 | 分类 | 功能 | 必填参数 |
 |----|--------|------|------|----------|
-| 1  | `create_file` | 写文档 | 新建文件/文件夹（`file_type` 区分，PDF 请改用 `upload_file`） | `drive_id`, `parent_id`, `name`, `file_type` |
-| 2  | `scrape_url` | 写文档 | 网页剪藏 | `url` |
-| 3  | `scrape_progress` | 写文档 | 剪藏进度查询 | `job_id` |
-| 4  | `upload_file` | 写文档 | 上传/更新文件（三步流程；传 `file_id` 为更新 docx/pdf，不传 `file_id` 且传 `name` 为新建本地办公文件上传） | `drive_id`, `parent_id`, `content_base64` |
-| 5  | `list_files` | 读文档 | 获取子文件列表（含原 list_folder 功能） | `drive_id`, `parent_id`, `page_size` |
+| 1  | `create_file` | 写文档 | 在云盘下新建文件或文件夹 | `drive_id`, `parent_id`, `file_type`, `name` |
+| 2  | `scrape_url` | 写文档 | 网页剪藏，抓取网页内容并自动保存为智能文档 | `url` |
+| 3  | `scrape_progress` | 写文档 | 查询网页剪藏任务进度 | `job_id` |
+| 4  | `upload_file` | 写文档 | 全量上传写入文件（更新已有 docx/pdf 或新建并上传本地文件） | `drive_id`, `parent_id`, `content_base64` |
+| 5  | `list_files` | 读文档 | 获取指定文件夹下的子文件列表 | `drive_id`, `parent_id`, `page_size` |
 | 6  | `download_file` | 读文档 | 获取文件下载信息 | `drive_id`, `file_id` |
 | 7  | `move_file` | 管文档 | 批量移动文件(夹) | `drive_id`, `file_ids`, `dst_drive_id`, `dst_parent_id` |
-| 8  | `rename_file` | 管文档 | 重命名文件(夹) | `drive_id`, `file_id`, `dst_name` |
-| 9  | `share_file` | 管文档 | 开启文件分享 | `drive_id`, `file_id`, `role_id`, `scope` |
-| 10 | `set_share_permission` | 管文档 | 修改分享链接属性 | `link_id` |
-| 11 | `cancel_share` | 管文档 | 取消文件分享 | `drive_id`, `file_id` |
-| 12 | `get_share_info` | 管文档 | 获取分享链接信息 | `link_id` |
-| 13 | `get_file_info` | 读文档 | 获取文件（夹）信息 | `file_id` |
-| 14 | `read_file_content` | 用文档 | 文档内容抽取 | `drive_id`, `file_id` |
-| 15 | `search_files` | 用文档 | 文件(夹)搜索 | `type`, `page_size` |
-| 16 | `get_file_link` | 用文档 | 获取文档链接 | `file_id` |
-| 17 | `list_labels` | 管文档 | 获取自定义标签列表 | `page_size` |
-| 19 | `get_label_objects` | 管文档 | 获取指定标签下的对象列表 | `label_id`, `object_type`, `page_size` |
-| 20 | `get_label_meta` | 管文档 | 获取单个标签详情 | `label_id` |
-| 21 | `create_label` | 管文档 | 创建自定义标签 | `allotee_type`, `name` |
-| 22 | `batch_add_label_objects` | 标签管理 | 批量打标签 | `label_id`, `objects` |
-| 23 | `batch_remove_label_objects` | 标签管理 | 批量取消标签 | `label_id`, `objects` |
-| 24 | `batch_update_label_objects` | 标签管理 | 批量更新标签下对象排序/属性 | `label_id`, `objects` |
-| 25 | `batch_update_labels` | 标签管理 | 批量修改标签名称/属性 | `labels` |
-| 26 | `list_star_items` | 收藏与最近 | 获取收藏（星标）列表 | `page_size` |
-| 27 | `batch_create_star_items` | 收藏与最近 | 批量添加收藏 | `objects` |
-| 28 | `batch_delete_star_items` | 收藏与最近 | 批量移除收藏 | `objects` |
-| 29 | `copy_file` | 文件操作扩展 | 复制文件到指定位置 | `drive_id`, `file_id`, `dst_drive_id`, `dst_parent_id` |
-| 30 | `check_file_name` | 文件操作扩展 | 检查文件名是否已存在 | `drive_id`, `parent_id`, `name` |
-| 31 | `list_deleted_files` | 回收站 | 获取回收站文件列表 | `page_size` |
-| 32 | `restore_deleted_file` | 回收站 | 还原回收站文件 | `file_id` |
-| 33 | `list_latest_items` | 收藏与最近 | 获取最近访问的文档列表 | `page_size` |
+| 8  | `rename_file` | 管文档 | 重命名文件（夹） | `drive_id`, `file_id`, `dst_name` |
+| 9  | `share_file` | 管文档 | 开启文件分享 | `drive_id`, `file_id`, `scope` |
+| 10  | `set_share_permission` | 管文档 | 修改分享链接属性 | `link_id` |
+| 11  | `cancel_share` | 管文档 | 取消文件分享 | `drive_id`, `file_id` |
+| 12  | `get_share_info` | 管文档 | 获取分享链接信息 | `link_id` |
+| 13  | `get_file_info` | 管文档 | 获取文件（夹）详细信息 | `file_id` |
+| 14  | `list_labels` | 管文档 | 分页获取云盘自定义标签列表（可按归属者、标签类型筛选） | `page_size` |
+| 15  | `create_label` | 管文档 | 创建自定义标签 | `allotee_type`, `name` |
+| 16  | `get_label_meta` | 管文档 | 获取单个标签详情（含系统标签固定 ID） | `label_id` |
+| 17  | `get_label_objects` | 管文档 | 获取某标签下的对象列表（文件/云盘等） | `label_id`, `object_type`, `page_size` |
+| 18  | `batch_add_label_objects` | 管文档 | 批量为多个文档对象添加同一标签（打标签） | `label_id`, `objects` |
+| 19  | `batch_remove_label_objects` | 管文档 | 批量取消标签 | `label_id`, `objects` |
+| 20  | `batch_update_label_objects` | 管文档 | 批量更新标签下对象排序或属性 | `label_id`, `objects` |
+| 21  | `batch_update_labels` | 管文档 | 批量修改自定义标签名称或属性 | `labels` |
+| 22  | `list_star_items` | 管文档 | 获取收藏（星标）列表 | `page_size` |
+| 23  | `batch_create_star_items` | 管文档 | 批量添加收藏 | `objects` |
+| 24  | `batch_delete_star_items` | 管文档 | 批量移除收藏 | `objects` |
+| 25  | `list_latest_items` | 管文档 | 获取最近访问文档列表 | `page_size` |
+| 26  | `copy_file` | 管文档 | 复制文件到指定目录（可跨盘） | `drive_id`, `file_id`, `dst_drive_id`, `dst_parent_id` |
+| 27  | `check_file_name` | 管文档 | 检查目录下文件名是否已存在 | `drive_id`, `parent_id`, `name` |
+| 28  | `list_deleted_files` | 管文档 | 获取回收站文件列表 | `page_size` |
+| 29  | `restore_deleted_file` | 管文档 | 将回收站文件还原到原位置 | `file_id` |
+| 30  | `read_file_content` | 用文档 | 文档内容抽取为 Markdown/纯文本 | `drive_id`, `file_id` |
+| 31  | `search_files` | 用文档 | 文件（夹）搜索 | `type`, `page_size` |
+| 32  | `get_file_link` | 用文档 | 获取文件的云文档在线访问链接 | `file_id` |

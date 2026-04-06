@@ -1,8 +1,9 @@
-# 多维表格（dbsheet）工具完整参考文档
+# 多维表格（dbt）工具完整参考文档
 
 本文件包含金山文档 Skill 多维表格的操作说明。
 
 ---
+
 ## 一、数据表管理
 
 ### 1. dbsheet.get_schema
@@ -11,9 +12,18 @@
 
 获取多维表格文档的 Schema 信息，包括所有数据表、字段和视图的结构。可指定单个数据表 ID，不填则返回全部。
 
-**适用于**：多维表格（.dbsheet）
 
 #### 调用示例
+
+获取全部数据表结构：
+
+```json
+{
+  "file_id": "string"
+}
+```
+
+获取指定数据表结构：
 
 ```json
 {
@@ -22,13 +32,14 @@
 }
 ```
 
+
 #### 参数说明
 
 - `file_id` (string, 必填): 多维表格文件 ID
 - `sheet_id` (integer, 可选): 指定数据表 ID，不填则返回所有表
-- `reserve_no_permission_sheet` (boolean, 可选): 是否保留无权限的表，默认 `false`
-- `show_very_hidden` (boolean, 可选): 是否显示深度隐藏的表，默认 `true`
-- `include_all_record_ids` (boolean, 可选): 是否返回所有记录 ID，默认 `false`
+- `reserve_no_permission_sheet` (boolean, 可选): 是否保留无权限的表；默认值：`false`
+- `show_very_hidden` (boolean, 可选): 是否显示深度隐藏的表；默认值：`true`
+- `include_all_record_ids` (boolean, 可选): 是否返回所有记录 ID；默认值：`false`
 
 #### 返回值说明
 
@@ -55,6 +66,7 @@
   },
   "result": "ok"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -66,6 +78,8 @@
 | `detail.sheets[].record_ids` | array | 所有记录 ID（需开启 `include_all_record_ids`） |
 | `detail.sheets[].fields` | array | 字段列表 |
 | `detail.sheets[].views` | array | 视图列表 |
+| `detail.book_type` | string | 文档类型标识，固定为 db |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -75,29 +89,48 @@
 
 在多维表格文档中创建新的数据表，支持同时指定初始视图和字段。
 
-**适用于**：多维表格（.dbsheet）
 
 #### 调用示例
+
+创建带初始字段的数据表：
 
 ```json
 {
   "file_id": "string",
   "name": "新数据表",
   "views": [
-    { "name": "默认视图", "type": "Grid" }
+    {
+      "name": "默认视图",
+      "type": "Grid"
+    }
   ],
   "fields": [
-    { "name": "名称", "type": "SingleLineText" },
-    { "name": "状态", "type": "SingleSelect", "items": [{ "value": "待处理" }, { "value": "已完成" }] }
+    {
+      "name": "名称",
+      "type": "SingleLineText"
+    },
+    {
+      "name": "状态",
+      "type": "SingleSelect",
+      "items": [
+        {
+          "value": "待处理"
+        },
+        {
+          "value": "已完成"
+        }
+      ]
+    }
   ]
 }
 ```
+
 
 #### 参数说明
 
 - `file_id` (string, 必填): 多维表格文件 ID
 - `name` (string, 必填): 数据表名称
-- `sync_type` (string, 可选): 同步类型，默认 `"None"`
+- `sync_type` (string, 可选): 同步类型；默认值：`None`
 - `after_sheet_id` (integer, 可选): 插入到指定数据表之后
 - `before_sheet_id` (integer, 可选): 插入到指定数据表之前
 - `views` (array, 可选): 初始视图列表，每项包含 `name` 和 `type`
@@ -122,6 +155,7 @@
   },
   "result": "ok"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -131,6 +165,7 @@
 | `detail.sheet.primary_field_id` | string | 主字段 ID |
 | `detail.sheet.fields` | array | 字段列表 |
 | `detail.sheet.views` | array | 视图列表 |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -140,9 +175,9 @@
 
 修改数据表的名称或主字段设置。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+重命名数据表：
 
 ```json
 {
@@ -151,6 +186,7 @@
   "name": "新名称"
 }
 ```
+
 
 #### 参数说明
 
@@ -175,7 +211,14 @@
   },
   "result": "ok"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `detail.sheet.id` | integer | 数据表 ID |
+| `detail.sheet.name` | string | 数据表名称 |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -185,9 +228,9 @@
 
 删除多维表格中的指定数据表。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+删除数据表：
 
 ```json
 {
@@ -195,6 +238,7 @@
   "sheet_id": 6
 }
 ```
+
 
 #### 参数说明
 
@@ -210,7 +254,13 @@
   },
   "result": "ok"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `detail.sheet.id` | integer | 已删除的数据表 ID |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -222,9 +272,10 @@
 
 在指定数据表中创建新视图，支持表格、看板、画册、表单、甘特、日历等视图类型。
 
-**适用于**：多维表格（.dbsheet）
 
 #### 调用示例
+
+创建看板视图：
 
 ```json
 {
@@ -235,6 +286,7 @@
   "group_field": "状态"
 }
 ```
+
 
 #### 参数说明
 
@@ -254,6 +306,7 @@
   },
   "result": "ok"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -261,6 +314,7 @@
 | `detail.view.id` | string | 新建视图 ID |
 | `detail.view.name` | string | 视图名称 |
 | `detail.view.type` | string | 视图类型 |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -270,9 +324,9 @@
 
 更新视图的名称、字段顺序、字段显隐状态及列宽等展示配置。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+重命名并调整视图配置：
 
 ```json
 {
@@ -280,15 +334,28 @@
   "sheet_id": 1,
   "view_id": "I",
   "name": "重命名视图",
-  "order_fields": ["B", "D", "F", "E", "C"],
+  "order_fields": [
+    "B",
+    "D",
+    "F",
+    "E",
+    "C"
+  ],
   "fields_attribute": [
-    { "field": "D", "hidden": true }
+    {
+      "field": "D",
+      "hidden": true
+    }
   ],
   "widths": [
-    { "field": "B", "width": 1600 }
+    {
+      "field": "B",
+      "width": 1600
+    }
   ]
 }
 ```
+
 
 #### 参数说明
 
@@ -311,7 +378,15 @@
   },
   "result": "ok"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `detail.view.id` | string | 视图 ID |
+| `detail.view.name` | string | 视图名称 |
+| `detail.view.type` | string | 视图类型 |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -321,9 +396,9 @@
 
 删除指定数据表中的视图。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+删除视图：
 
 ```json
 {
@@ -332,6 +407,7 @@
   "view_id": "I"
 }
 ```
+
 
 #### 参数说明
 
@@ -348,7 +424,13 @@
   },
   "result": "ok"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `detail.view.id` | string | 已删除的视图 ID |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -360,21 +442,43 @@
 
 在指定数据表中批量创建字段，支持文本、数值、单选、多选、日期、附件等多种类型。
 
-**适用于**：多维表格（.dbsheet）
 
 #### 调用示例
+
+创建多种类型字段：
 
 ```json
 {
   "file_id": "string",
   "sheet_id": 3,
   "fields": [
-    { "name": "状态", "type": "SingleSelect", "items": [{ "value": "待处理" }, { "value": "进行中" }, { "value": "已完成" }] },
-    { "name": "截止日期", "type": "Date" },
-    { "name": "备注", "type": "MultiLineText" }
+    {
+      "name": "状态",
+      "type": "SingleSelect",
+      "items": [
+        {
+          "value": "待处理"
+        },
+        {
+          "value": "进行中"
+        },
+        {
+          "value": "已完成"
+        }
+      ]
+    },
+    {
+      "name": "截止日期",
+      "type": "Date"
+    },
+    {
+      "name": "备注",
+      "type": "MultiLineText"
+    }
   ]
 }
 ```
+
 
 #### 参数说明
 
@@ -409,6 +513,7 @@
   },
   "result": "ok"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -417,6 +522,7 @@
 | `detail.fields[].name` | string | 字段名称 |
 | `detail.fields[].type` | string | 字段类型 |
 | `detail.fields[].items` | array | 选项列表（选项类型字段） |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -426,9 +532,9 @@
 
 批量更新数据表中已有字段的名称、选项等属性。每项更新必须包含字段 ID。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+更新字段名称和选项：
 
 ```json
 {
@@ -439,15 +545,27 @@
       "id": "E",
       "name": "优先级",
       "items": [
-        { "id": "B", "value": "低" },
-        { "value": "中" },
-        { "id": "D", "value": "高" }
+        {
+          "id": "B",
+          "value": "低"
+        },
+        {
+          "value": "中"
+        },
+        {
+          "id": "D",
+          "value": "高"
+        }
       ]
     },
-    { "id": "C", "max": 4 }
+    {
+      "id": "C",
+      "max": 4
+    }
   ]
 }
 ```
+
 
 #### 参数说明
 
@@ -455,7 +573,7 @@
 - `sheet_id` (integer, 必填): 目标数据表 ID
 - `fields` (array, 必填): 要更新的字段列表，每项必须包含 `id` 字段
 - `prefer_id` (boolean, 可选): 是否使用字段 ID 作为 key
-- `omit_failure` (boolean, 可选): 部分字段更新失败时是否继续执行，默认 `false`
+- `omit_failure` (boolean, 可选): 部分字段更新失败时是否继续执行；默认值：`false`
 
 #### 返回值说明
 
@@ -477,7 +595,13 @@
   },
   "result": "ok"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `detail.fields` | array | 更新后的字段列表 |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -487,20 +611,25 @@
 
 批量删除数据表中的指定字段。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+删除多个字段：
 
 ```json
 {
   "file_id": "string",
   "sheet_id": 3,
   "fields": [
-    { "id": "C" },
-    { "id": "D" }
+    {
+      "id": "C"
+    },
+    {
+      "id": "D"
+    }
   ]
 }
 ```
+
 
 #### 参数说明
 
@@ -520,7 +649,13 @@
   },
   "result": "ok"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `detail.fields` | array | 删除结果列表，每项包含 `id` 和 `deleted` |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -532,20 +667,33 @@
 
 在指定数据表中批量创建记录，通过字段名称或字段 ID 指定各字段的值。
 
-**适用于**：多维表格（.dbsheet）
 
 #### 调用示例
+
+批量创建记录：
 
 ```json
 {
   "file_id": "string",
   "sheet_id": 3,
   "records": [
-    { "fields": { "名称": "任务A", "数量": 10, "状态": "待处理" } },
-    { "fields": { "名称": "任务B", "数量": 20 } }
+    {
+      "fields": {
+        "名称": "任务A",
+        "数量": 10,
+        "状态": "待处理"
+      }
+    },
+    {
+      "fields": {
+        "名称": "任务B",
+        "数量": 20
+      }
+    }
   ]
 }
 ```
+
 
 #### 参数说明
 
@@ -554,10 +702,10 @@
 - `records` (array, 必填): 要创建的记录列表，每项包含 `fields` 对象（字段名→值映射）
 - `prefer_id` (boolean, 可选): 是否使用字段 ID 作为 key，默认 `false`（使用字段名）
 - `value_prefer_id` (boolean, 可选): 字段值是否使用 ID 表示
-- `omit_failure` (boolean, 可选): 部分记录创建失败时是否继续，默认 `false`
+- `omit_failure` (boolean, 可选): 部分记录创建失败时是否继续；默认值：`false`
 - `text_value` (string, 可选): 文本值格式：`"original"`（原始值）或 `"display"`（显示值）
 - `link_value` (string, 可选): 关联字段值格式：`"id"` 或 `"value"`
-- `add_select_item` (boolean, 可选): 是否自动新增不存在的选项，默认 `true`
+- `add_select_item` (boolean, 可选): 是否自动新增不存在的选项；默认值：`true`
 
 #### 返回值说明
 
@@ -571,12 +719,14 @@
   },
   "result": "ok"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `detail.records[].id` | string | 新建记录 ID |
 | `detail.records[].fields` | object | 各字段的值 |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -586,20 +736,32 @@
 
 批量更新数据表中已有记录的字段值，每条记录必须提供记录 ID。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+批量更新记录：
 
 ```json
 {
   "file_id": "string",
   "sheet_id": 3,
   "records": [
-    { "id": "B", "fields": { "名称": "更新后的名称", "状态": "已完成" } },
-    { "id": "C", "fields": { "数量": 999 } }
+    {
+      "id": "B",
+      "fields": {
+        "名称": "更新后的名称",
+        "状态": "已完成"
+      }
+    },
+    {
+      "id": "C",
+      "fields": {
+        "数量": 999
+      }
+    }
   ]
 }
 ```
+
 
 #### 参数说明
 
@@ -608,8 +770,8 @@
 - `records` (array, 必填): 要更新的记录列表，每项必须包含 `id`（记录 ID）和 `fields`（字段值映射）
 - `prefer_id` (boolean, 可选): 是否使用字段 ID 作为 key
 - `value_prefer_id` (boolean, 可选): 字段值是否使用 ID 表示
-- `omit_failure` (boolean, 可选): 部分记录更新失败时是否继续，默认 `false`
-- `text_value` (string, 可选): 文本值格式：`"original"` 或 `"display"`
+- `omit_failure` (boolean, 可选): 部分记录更新失败时是否继续；默认值：`false`
+- `text_value` (string, 可选): 文本值格式：`"original"`（原始值）或 `"display"`（显示值）
 - `link_value` (string, 可选): 关联字段值格式：`"id"` 或 `"value"`
 - `add_select_item` (boolean, 可选): 是否自动新增不存在的选项
 
@@ -625,7 +787,13 @@
   },
   "result": "ok"
 }
+
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `detail.records` | array | 更新后的记录列表，每项包含 `id` 和 `fields` |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -635,7 +803,6 @@
 
 分页遍历数据表中的记录，支持按视图过滤、指定返回字段，以及通过 `filter` 参数实现复杂查询条件（多字段 AND/OR 组合筛选）。
 
-**适用于**：多维表格（.dbsheet）
 
 #### 调用示例
 
@@ -647,11 +814,15 @@
   "sheet_id": 1,
   "page_size": 100,
   "offset": "",
-  "fields": ["名称", "状态", "截止日期"]
+  "fields": [
+    "名称",
+    "状态",
+    "截止日期"
+  ]
 }
 ```
 
-带筛选条件：
+带筛选条件查询：
 
 ```json
 {
@@ -662,13 +833,32 @@
   "filter": {
     "mode": "AND",
     "criteria": [
-      { "field": "状态", "op": "Intersected", "values": ["进行中"] },
-      { "field": "数量", "op": "Greater", "values": ["10"] },
-      { "field": "名称", "op": "Contains", "values": ["关键词"] }
+      {
+        "field": "状态",
+        "op": "Intersected",
+        "values": [
+          "进行中"
+        ]
+      },
+      {
+        "field": "数量",
+        "op": "Greater",
+        "values": [
+          "10"
+        ]
+      },
+      {
+        "field": "名称",
+        "op": "Contains",
+        "values": [
+          "关键词"
+        ]
+      }
     ]
   }
 }
 ```
+
 
 #### 参数说明
 
@@ -686,12 +876,13 @@
     - `op` (string, 必填): 筛选操作符（见附录：筛选规则）
     - `values` (array, 可选): 筛选值，`Empty`/`NotEmpty` 时可省略
 - `prefer_id` (boolean, 可选): 是否使用字段 ID 作为 key
-- `text_value` (string, 可选): 文本值格式：`"original"` 或 `"display"`
+- `text_value` (string, 可选): 文本值格式：`"original"`（原始值）或 `"display"`（显示值）
 - `link_value` (string, 可选): 关联字段值格式：`"id"` 或 `"value"`
 - `show_record_extra_info` (boolean, 可选): 是否返回记录额外信息
 - `show_fields_info` (boolean, 可选): 是否在响应中返回字段定义信息
 
 > **分页说明**：响应中的 `offset` 指向下一页第一条记录，下次请求将该值传入 `offset` 即可翻页。最后一页不再返回 `offset`。
+
 
 #### 返回值说明
 
@@ -700,18 +891,13 @@
   "detail": {
     "offset": "D",
     "records": [
-      {
-        "id": "E",
-        "fields": { "名称": "任务A", "状态": "进行中", "数量": 15 }
-      },
-      {
-        "id": "F",
-        "fields": { "名称": "任务B", "状态": "进行中", "数量": 20 }
-      }
+      { "id": "E", "fields": { "名称": "任务A", "状态": "进行中", "数量": 15 } },
+      { "id": "F", "fields": { "名称": "任务B", "状态": "进行中", "数量": 20 } }
     ]
   },
   "result": "ok"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
@@ -719,6 +905,7 @@
 | `detail.offset` | string | 下一页游标，无更多数据时不返回此字段 |
 | `detail.records[].id` | string | 记录 ID |
 | `detail.records[].fields` | object | 各字段的值 |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -728,9 +915,9 @@
 
 获取数据表中某条指定记录的完整字段内容。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+获取单条记录：
 
 ```json
 {
@@ -740,13 +927,14 @@
 }
 ```
 
+
 #### 参数说明
 
 - `file_id` (string, 必填): 多维表格文件 ID
 - `sheet_id` (integer, 必填): 目标数据表 ID
 - `record_id` (string, 必填): 记录 ID
 - `prefer_id` (boolean, 可选): 是否使用字段 ID 作为 key
-- `text_value` (string, 可选): 文本值格式：`"original"` 或 `"display"`
+- `text_value` (string, 可选): 文本值格式：`"original"`（原始值）或 `"display"`（显示值）
 - `link_value` (string, 可选): 关联字段值格式：`"id"` 或 `"value"`
 - `show_record_extra_info` (boolean, 可选): 是否返回记录额外信息
 - `show_fields_info` (boolean, 可选): 是否返回字段定义信息
@@ -766,12 +954,14 @@
   },
   "result": "ok"
 }
+
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `detail.id` | string | 记录 ID |
 | `detail.fields` | object | 各字段的值 |
+| `result` | string | ok 表示成功 |
 
 ---
 
@@ -781,20 +971,25 @@
 
 批量删除数据表中的指定记录。
 
-**适用于**：多维表格（.dbsheet）
-
 #### 调用示例
+
+批量删除记录：
 
 ```json
 {
   "file_id": "string",
   "sheet_id": 3,
   "records": [
-    { "id": "B" },
-    { "id": "C" }
+    {
+      "id": "B"
+    },
+    {
+      "id": "C"
+    }
   ]
 }
 ```
+
 
 #### 参数说明
 
@@ -816,31 +1011,36 @@
   },
   "result": "ok"
 }
+
 ```
 
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `detail.records` | array | 删除结果列表，每项包含 `id` 和 `deleted` |
+| `result` | string | ok 表示成功 |
+
 ---
+
 
 ## 工具速查表
 
-| #   | 工具名　　　　　　　　　 | 分类　　　 | 功能　　　　　　　　　　　　 | 必填参数　　　　　　　　　　　　　　　|
-| -----| --------------------------| ------------| ------------------------------| ---------------------------------------|
-| 1   | `dbsheet.get_schema`　　 | 数据表管理 | 获取文档结构（表/字段/视图） | `file_id`　　　　　　　　　　　　　　 |
-| 2   | `dbsheet.create_sheet`　 | 数据表管理 | 创建数据表　　　　　　　　　 | `file_id`, `name`　　　　　　　　　　 |
-| 3   | `dbsheet.update_sheet`　 | 数据表管理 | 修改数据表名称　　　　　　　 | `file_id`, `sheet_id`　　　　　　　　 |
-| 4   | `dbsheet.delete_sheet`　 | 数据表管理 | 删除数据表　　　　　　　　　 | `file_id`, `sheet_id`　　　　　　　　 |
-| 5   | `dbsheet.create_view`　　| 视图管理　 | 创建视图　　　　　　　　　　 | `file_id`, `sheet_id`, `name`, `type` |
-| 6   | `dbsheet.update_view`　　| 视图管理　 | 更新视图配置　　　　　　　　 | `file_id`, `sheet_id`, `view_id`　　　|
-| 7   | `dbsheet.delete_view`　　| 视图管理　 | 删除视图　　　　　　　　　　 | `file_id`, `sheet_id`, `view_id`　　　|
-| 8   | `dbsheet.create_fields`　| 字段管理　 | 批量创建字段　　　　　　　　 | `file_id`, `sheet_id`, `fields`　　　 |
-| 9   | `dbsheet.update_fields`　| 字段管理　 | 批量更新字段　　　　　　　　 | `file_id`, `sheet_id`, `fields`　　　 |
-| 10  | `dbsheet.delete_fields`　| 字段管理　 | 批量删除字段　　　　　　　　 | `file_id`, `sheet_id`, `fields`　　　 |
-| 11  | `dbsheet.create_records` | 记录操作　 | 批量创建记录　　　　　　　　 | `file_id`, `sheet_id`, `records`　　　|
-| 12  | `dbsheet.update_records` | 记录操作　 | 批量更新记录　　　　　　　　 | `file_id`, `sheet_id`, `records`　　　|
-| 13  | `dbsheet.list_records`　 | 记录操作　 | 分页遍历记录（支持筛选）　　 | `file_id`, `sheet_id`　　　　　　　　 |
-| 14  | `dbsheet.get_record`　　 | 记录操作　 | 获取单条记录　　　　　　　　 | `file_id`, `sheet_id`, `record_id`　　|
-| 15  | `dbsheet.delete_records` | 记录操作　 | 批量删除记录　　　　　　　　 | `file_id`, `sheet_id`, `records`　　　|
-
----
+| # | 工具名 | 分类 | 功能 | 必填参数 |
+|---|--------|------|------|----------|
+| 1 | `dbsheet.get_schema` | 数据表管理 | 获取文档结构（表/字段/视图） | `file_id` |
+| 2 | `dbsheet.create_sheet` | 数据表管理 | 创建数据表 | `file_id`, `name` |
+| 3 | `dbsheet.update_sheet` | 数据表管理 | 修改数据表名称 | `file_id`, `sheet_id` |
+| 4 | `dbsheet.delete_sheet` | 数据表管理 | 删除数据表 | `file_id`, `sheet_id` |
+| 5 | `dbsheet.create_view` | 视图管理 | 创建视图 | `file_id`, `sheet_id`, `name`, `type` |
+| 6 | `dbsheet.update_view` | 视图管理 | 更新视图配置 | `file_id`, `sheet_id`, `view_id` |
+| 7 | `dbsheet.delete_view` | 视图管理 | 删除视图 | `file_id`, `sheet_id`, `view_id` |
+| 8 | `dbsheet.create_fields` | 字段管理 | 批量创建字段 | `file_id`, `sheet_id`, `fields` |
+| 9 | `dbsheet.update_fields` | 字段管理 | 批量更新字段 | `file_id`, `sheet_id`, `fields` |
+| 10 | `dbsheet.delete_fields` | 字段管理 | 批量删除字段 | `file_id`, `sheet_id`, `fields` |
+| 11 | `dbsheet.create_records` | 记录操作 | 批量创建记录 | `file_id`, `sheet_id`, `records` |
+| 12 | `dbsheet.update_records` | 记录操作 | 批量更新记录 | `file_id`, `sheet_id`, `records` |
+| 13 | `dbsheet.list_records` | 记录操作 | 分页遍历记录（支持筛选） | `file_id`, `sheet_id` |
+| 14 | `dbsheet.get_record` | 记录操作 | 获取单条记录 | `file_id`, `sheet_id`, `record_id` |
+| 15 | `dbsheet.delete_records` | 记录操作 | 批量删除记录 | `file_id`, `sheet_id`, `records` |
 
 ## 工具组合速查
 

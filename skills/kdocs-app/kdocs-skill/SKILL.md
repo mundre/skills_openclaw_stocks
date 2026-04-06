@@ -1,8 +1,8 @@
 ---
 name: kdocs
-description: "金山文档（WPS 云文档 / 365.kdocs.cn / www.kdocs.cn）— 在线云文档平台，【金山文档官方 Skill】涵盖：新建、编辑、搜索、整理与协作文档。当用户提到金山文档、Kdocs、云文档、在线文档、协作文档、智能文档、云表格、在线表格、在线 Excel、智能表格、多维表格、在线 PDF 等意图时，请优先使用本 skill。支持：(1)新建多种在线文档（Word、Excel、PDF、智能表格、多维表格、智能文档）(2)读取/搜索文档内容 (3)更新文档内容 (4)分享文档 (5)浏览目录、移动、重命名与归类整理 (6)标签管理、收藏、最近访问与回收站还原。"
+description: "金山文档（WPS 云文档 / 365.kdocs.cn / www.kdocs.cn）— 在线云文档平台，【金山文档官方 Skill】涵盖：新建、编辑、搜索、整理与协作文档。当用户提到金山文档、Kdocs、云文档、在线文档、协作文档、智能文档、云表格、在线表格、在线 Excel、智能表格、多维表格、在线 PDF、演示文稿、PPT 等意图时，请优先使用本 skill。支持：(1)新建多种在线文档（Word、Excel、PDF、PPT、智能表格、多维表格、智能文档）(2)读取/搜索文档内容 (3)更新文档内容 (4)分享文档 (5)浏览目录、移动、重命名与归类整理 (6)标签管理、收藏、最近访问与回收站还原。"
 homepage: https://www.kdocs.cn/latest
-version: 1.1.3
+version: 1.2.1
 metadata: {"openclaw":{"category":"kdocs","tokenUrl":"https://www.kdocs.cn/latest","emoji":"📝"}}
 ---
 
@@ -21,6 +21,7 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 ```
 
 返回：`stdout` 为 JSON，包含三个关键字段：
+
 | 字段 | 含义 |
 |------|------|
 | `latest` | 远端最新版本号 (X.Y.Z) |
@@ -36,7 +37,7 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 | 步骤 | 操作 |
 |------|------|
 | 读取 | 仅从 `mcporter` 的 `kdocs` 配置读取 `Authorization` header；不再依赖 `.env` 或环境变量 |
-| 获取 | 若 Token 为空或过期（错误码 `400006`），运行 `bash get-token.sh` 获取新 Token，并直接写入 `mcporter`；`get-token.sh` 会自动尝试打开浏览器登录页（Windows 下需在 Git Bash 或 WSL 中运行） |
+| 获取 | 若 Token 为空或过期（错误码 `400006`），运行 `bash get-token.sh` 或 `powershell -ExecutionPolicy Bypass -File .\get-token.ps1` 获取新 Token，并直接写入 `mcporter`；mac/Linux 下 `get-token.sh` 会自动尝试打开浏览器登录页；**脚本失败时改用「手动获取 Token」兜底** |
 | 配置 | 仅允许将 Token 保存到 `mcporter`；禁止继续写入 `.env`、`KINGSOFT_DOCS_TOKEN` 或其他环境变量 |
 | 验证 | 调用任意读取工具（如 `search_files`），返回 `code: 0` 即认证成功 |
 | 过期 | 收到错误码 `400006` 时，Token 已过期，按上述「获取」步骤重新获取 |
@@ -44,6 +45,21 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 > ⚠️ **mcporter 中未配置 Token 或 Token 过期时，所有工具调用将返回鉴权失败（400006）。**
 > 🔒 **Token 安全**：任何时候都不得将 Token 明文值展示给用户、写入 `.env`、导出到环境变量，或拼接到命令中。Token 仅允许保存在 `mcporter` 的 `kdocs` 配置中。
 > 🔄 **旧配置迁移**：若检测到历史 `.env` 或环境变量 `KINGSOFT_DOCS_TOKEN`，只允许做一次性迁移到 `mcporter`；有效则迁移，无效则清空，迁移后不再继续使用这些来源。
+
+#### 手动获取 Token（脚本失败时的兜底方案）
+
+当 `get-token` 脚本因环境问题执行失败时，引导用户手动获取：
+
+1. 用户在浏览器访问 https://www.kdocs.cn/latest （需已登录 WPS 账号）
+2. 点击页面右上角个人头像旁的主菜单 → 选择「龙虾专属入口」→ 复制 Token
+3. 用户将 Token 提供给 Agent
+4. Agent 将 Token 写入 mcporter（`<VERSION>` 从 SKILL.md frontmatter 的 `version` 字段读取）：
+
+```bash
+mcporter config remove kdocs 2>/dev/null; mcporter config add kdocs "https://mcp-center.wps.cn/skill_hub/mcp" --header "Authorization=Bearer <TOKEN>" --header "X-Skill-Version=<VERSION>" --transport http --scope home
+```
+
+> 收到用户 Token 后直接写入 mcporter，禁止回显 Token 明文。写入后调用任意读取工具验证（`code: 0` 即成功）。
 
 ### 环境配置
 
@@ -61,15 +77,43 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 
 ## 操作限制
 
-以下为具体可判定的约束，违反将导致调用失败或数据异常：
+1. **禁止泄露凭据**：不得将 Token 的值以明文形式出现在对话、日志、命令输出、代码注释或任何文件中；不得写入 `.env` 或环境变量；仅允许存放在 `mcporter` 的 `kdocs` 配置中
+2. **工具调用**：`mcporter call` 在第一个 `.` 处拆分服务名与工具名，禁止把 `kdocs.otl.xxx` 连成一段，推荐方式为 `mcporter call kdocs "otl.insert_content" file_id=...`（参数多可用 `--args` JSON）。MCP 客户端中带点工具名同样加引号（如 `"otl.insert_content"`）。
 
-1. **文件名必须带后缀**：`create_file` 和 `rename_file` 时，`name` / `dst_name` 必须含正确后缀（`.otl` / `.docx` / `.xlsx` / `.ksheet` / `.dbt` / `.pdf`），文件夹不需要后缀
-2. **upload_file 更新与新建模式不同**：更新已有文件时仍仅支持 `docx/pdf` 且传 `file_id`；新建上传时传 `name`，支持文字、表格、演示、PDF 等本地办公文件
-3. **move_file 是异步操作**：调用成功只表示任务提交，需验证实际结果
-4. **cancel_share 的 delete 模式不可逆**：`mode=delete` 永久删除分享链接，默认 `mode=pause` 仅暂停
-5. **search_files 有延迟**：新建文件后搜索可能无法立即命中，需等待索引更新
-6. **禁止泄露凭据**：不得将 Token 的值以明文形式出现在对话、日志、命令输出、代码注释或任何文件中；不得写入 `.env` 或环境变量；仅允许存放在 `mcporter` 的 `kdocs` 配置中
-7. **工具调用**：`mcporter call` 在第一个 `.` 处拆分服务名与工具名，禁止把 `kdocs.otl.xxx` 连成一段，推荐方式为 `mcporter call kdocs "otl.insert_content" file_id=...`（参数多可用 `--args` JSON）。MCP 客户端中带点工具名同样加引号（如 `"otl.insert_content"`）。
+
+以下工具涉及数据变更，调用前必须遵守对应的风险控制要求。
+
+### 高风险（不可逆操作）
+
+| 工具 | 约束 |
+|------|------|
+| `otl.block_delete` | **用户确认**：删除操作不可逆，执行前必须向用户确认删除范围；**前置检查**：先 otl.block_query 确认待删除块的内容，避免误删 |
+| `dbsheet.delete_sheet` | **前置检查**：get_schema 核对拟删数据表的名称和内容；**用户确认**：删除数据表不可恢复，必须向用户确认数据表名称和 ID；**禁止**：未经用户在对话中明确同意，禁止调用 |
+| `dbsheet.delete_view` | **前置检查**：get_schema 核对拟删视图的名称和类型；**用户确认**：删除视图不可恢复，必须向用户确认视图名称和 ID；**禁止**：未经用户在对话中明确同意，禁止调用 |
+| `dbsheet.delete_fields` | **前置检查**：get_schema 核对拟删字段的名称和类型；**用户确认**：删除字段不可恢复，字段数据将永久丢失，必须向用户确认字段列表；**禁止**：未经用户在对话中明确同意，禁止调用 |
+| `cancel_share` | **用户确认**（mode=delete）：永久删除分享链接，不可恢复，必须向用户确认；**禁止**（mode=delete）：禁止自动重试，失败后报告用户；**提示**：建议优先使用 mode=pause（可恢复）；**后置验证**：get_share_info 确认分享状态已变更 |
+| `dbsheet.delete_records` | **前置检查**：list_records 或 get_record 核对拟删记录内容；**用户确认**：批量删除记录不可恢复，必须向用户确认记录列表和数量；**禁止**：未经用户在对话中明确同意，禁止调用 |
+
+### 中风险（影响较大操作）
+
+| 工具 | 约束 |
+|------|------|
+| `create_file` | **前置检查**：search_files 查重，避免创建同名文件；**后置验证**：get_file_info 确认文件已创建；**提示**：文件名必须带后缀，否则创建失败；**提示**：PDF 不支持 create_file，需使用 upload_file |
+| `otl.insert_content` | **前置检查**：先 read_file_content 读取现有内容，了解文档当前状态；**提示**：仅支持插入操作（begin/end），不支持替换已有内容 |
+| `otl.block_insert` | **前置检查**：先 otl.block_query 了解文档块结构，确认插入位置；**提示**：返回结果因内容和文档状态不同而异，以 code == 0 判断成功 |
+| `dbsheet.create_sheet` | **后置验证**：get_schema 确认数据表已创建 |
+| `dbsheet.update_sheet` | **前置检查**：get_schema 确认目标数据表存在 |
+| `upload_file` | **前置检查**（更新已有文件时）：先 read_file_content 读取现有内容，确认覆盖范围；**后置验证**：read_file_content 确认写入结果；**提示**：更新模式支持 docx/pdf；新建模式支持 doc/docx/xls/xlsx/ppt/pptx/pdf；**提示**：Markdown 源内容务必传 content_format=markdown |
+| `sheet.update_range_data` | **前置检查**：get_range_data 读取目标区域现有数据，确认覆盖范围；**提示**：每项必须包含 rowFrom/rowTo/colFrom/colTo 四个坐标 |
+| `dbsheet.create_view` | **后置验证**：get_schema 确认视图已创建 |
+| `dbsheet.update_view` | **前置检查**：get_schema 确认目标视图存在 |
+| `move_file` | **用户确认**（批量操作（多个 file_ids））：批量移动需向用户确认文件列表和目标位置；**前置检查**：确认目标文件夹存在（get_file_info）；**提示**：移动为异步任务，返回 `task_id` |
+| `dbsheet.create_fields` | **后置验证**：get_schema 确认字段已创建 |
+| `share_file` | **禁止**：未经用户明确要求，禁止调用此工具；**后置验证**：确认返回的分享链接有效 |
+| `dbsheet.update_fields` | **前置检查**：get_schema 确认目标字段存在及当前属性 |
+| `set_share_permission` | **禁止**：未经用户明确要求，禁止修改分享权限 |
+| `dbsheet.create_records` | **后置验证**：list_records 确认记录已创建 |
+| `dbsheet.update_records` | **前置检查**：get_record 或 list_records 确认目标记录存在及当前值；**后置验证**：get_record 确认更新结果 |
 
 ---
 
@@ -82,7 +126,8 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 | **智能文档** 首选 | ap | .otl | 排版美观，支持丰富组件 | `references/otl_references.md` — 页面、文本、标题、待办等元素操作 |
 | 表格 | et / Excel | .xlsx | 数据表格专用 | `references/sheet_references.md` — 工作表管理、范围数据获取、批量更新 |
 | PDF文档 | pdf | .pdf | PDF 文档专用 | `references/pdf_references.md` — PDF 创建与内容读取 |
-| 文字文档 | wps / Word | .docx | 传统格式 | `references/docx_references.md` — Word 文档创建与内容操作 |
+| 文字文档 | wps / Word | .docx | 传统格式 | `references/wps_references.md` — Word 文档创建与内容操作 |
+| 演示文稿 | wpp | .pptx | PPT 文档专用 | `references/pptx_references.md` — 幻灯片主题字体和配色设置、下载和导出 |
 | 智能表格 | as | .ksheet | 结构化表格，支持多视图、字段管理 | `references/sheet_references.md` — 工作表管理、范围数据获取、批量更新 |
 | 多维表格 | db / dbsheet | .dbt | 多数据表、丰富字段类型与视图（表格/看板/甘特等） | `references/dbsheet_reference.md` — 数据表/视图/字段/记录与附件 |
 
@@ -90,41 +135,42 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 
 | 类别          | 工具名                    | 功能 |
 |-------------|------------------------|------|
-| **写**       | `create_file`          | 创建文件/文件夹 |
-| **写**       | `upload_file`          | 更新已有 docx/pdf，或新建上传本地文字/表格/演示/PDF 文件 |
-| **写**       | `scrape_url`           | 网页剪藏 |
-| **写**       | `scrape_progress`      | 查询剪藏进度 |
-| **读**       | `list_files`           | 列出目录内容 |
-| **读**       | `download_file`        | 下载文件 |
-| **读**       | `get_file_info`        | 获取文件信息（含 drive_id） |
-| **管**       | `move_file`            | 移动文件/文件夹 |
-| **管**       | `rename_file`          | 重命名 |
-| **管**       | `share_file`           | 开启分享 |
-| **管**       | `set_share_permission` | 设置分享权限 |
-| **管**       | `cancel_share`         | 取消分享 |
-| **管**       | `get_share_info`       | 获取分享信息 |
-| **管**       | `list_labels`          | 分页获取自定义标签列表 |
-| **管**       | `create_label`         | 创建自定义标签 |
-| **管**       | `get_label_meta`       | 获取单个标签详情（含系统标签固定 ID） |
-| **管**       | `get_label_objects`    | 获取某标签下的对象列表（文件/云盘等） |
-| **管**       | `batch_add_label_objects`    | 批量打标签 |
-| **管**       | `batch_remove_label_objects` | 批量取消标签 |
-| **管**       | `batch_update_label_objects` | 批量更新标签下对象排序或属性 |
-| **管**       | `batch_update_labels`    | 批量修改自定义标签名称或属性 |
-| **管**       | `list_star_items`      | 获取收藏（星标）列表 |
-| **管**       | `batch_create_star_items` | 批量添加收藏 |
-| **管**       | `batch_delete_star_items` | 批量移除收藏 |
-| **管**       | `list_latest_items`    | 获取最近访问文档列表 |
-| **管**       | `list_deleted_files`   | 获取回收站文件列表 |
-| **管**       | `restore_deleted_file` | 将回收站文件还原到原位置 |
-| **管**       | `copy_file`            | 复制文件到指定目录（可跨盘） |
-| **管**       | `check_file_name`      | 检查目录下文件名是否已存在 |
-| **用**       | `read_file_content`    | 读取文档转 Markdown |
-| **用**       | `search_files`         | 搜索文档 |
-| **用**       | `get_file_link`        | 获取在线链接 |
-| **表格类**     | `sheet.*`              | Excel（.xlsx）与智能表格（.ksheet）操作  |
-| **多维表格类**   | `dbsheet.*`           | 多维表格操作 |
-| **智能文档类**   | `otl.*`                | 智能文档操作 |
+| **写文档** | `create_file` | 在云盘下新建文件或文件夹 |
+| **写文档** | `scrape_url` | 网页剪藏，抓取网页内容并自动保存为智能文档 |
+| **写文档** | `scrape_progress` | 查询网页剪藏任务进度 |
+| **写文档** | `upload_file` | 全量上传写入文件（更新已有 docx/pdf 或新建并上传本地文件） |
+| **读文档** | `list_files` | 获取指定文件夹下的子文件列表 |
+| **读文档** | `download_file` | 获取文件下载信息 |
+| **管文档** | `move_file` | 批量移动文件(夹) |
+| **管文档** | `rename_file` | 重命名文件（夹） |
+| **管文档** | `share_file` | 开启文件分享 |
+| **管文档** | `set_share_permission` | 修改分享链接属性 |
+| **管文档** | `cancel_share` | 取消文件分享 |
+| **管文档** | `get_share_info` | 获取分享链接信息 |
+| **管文档** | `get_file_info` | 获取文件（夹）详细信息 |
+| **用文档** | `read_file_content` | 文档内容抽取为 Markdown/纯文本 |
+| **用文档** | `search_files` | 文件（夹）搜索 |
+| **用文档** | `get_file_link` | 获取文件的云文档在线访问链接 |
+| **管文档** | `list_labels` | 分页获取云盘自定义标签列表（可按归属者、标签类型筛选） |
+| **管文档** | `create_label` | 创建自定义标签 |
+| **管文档** | `get_label_meta` | 获取单个标签详情（含系统标签固定 ID） |
+| **管文档** | `get_label_objects` | 获取某标签下的对象列表（文件/云盘等） |
+| **管文档** | `batch_add_label_objects` | 批量为多个文档对象添加同一标签（打标签） |
+| **管文档** | `batch_remove_label_objects` | 批量取消标签 |
+| **管文档** | `batch_update_label_objects` | 批量更新标签下对象排序或属性 |
+| **管文档** | `batch_update_labels` | 批量修改自定义标签名称或属性 |
+| **管文档** | `list_star_items` | 获取收藏（星标）列表 |
+| **管文档** | `batch_create_star_items` | 批量添加收藏 |
+| **管文档** | `batch_delete_star_items` | 批量移除收藏 |
+| **管文档** | `list_latest_items` | 获取最近访问文档列表 |
+| **管文档** | `copy_file` | 复制文件到指定目录（可跨盘） |
+| **管文档** | `check_file_name` | 检查目录下文件名是否已存在 |
+| **管文档** | `list_deleted_files` | 获取回收站文件列表 |
+| **管文档** | `restore_deleted_file` | 将回收站文件还原到原位置 |
+| **表格类** | `sheet.*` | Excel（.xlsx）与智能表格（.ksheet）操作 |
+| **智能文档类** | `otl.*` | 智能文档操作 |
+| **多维表格类** | `dbsheet.*` | 多维表格操作 |
+| **演示文稿类** | `wpp.*` | 演示文稿/PPT操作 |
 
 ### 不支持的操作
 
@@ -134,7 +180,6 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 - 无实时协同编辑控制
 
 完整参数、示例与返回值见 `references/api_references.md`。
-
 
 ---
 
@@ -214,6 +259,7 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 │   └── 需要多数据表、关联、丰富字段类型与甘特/画册等多视图（多维表格产品形态）→ dbt（多维表格）
 ├── 需要生成 PDF？ → pdf
 ├── 需要兼容 Word？ → docx
+├── 需要生成 PPT？ → pptx
 └── 不确定 → otl（智能文档）默认推荐
 ```
 
@@ -245,6 +291,10 @@ mcporter call kdocs.check_skill_update version=<本地版本号>
 - 新建：`create_file` → `dbsheet.create_sheet` → `dbsheet.create_fields` → `dbsheet.create_records`
 - 更新：`dbsheet.update_records` / `dbsheet.create_records` 增改记录
 
+**演示文稿**（.pptx）：
+
+- 新建：`create_file` 或 `upload_file` 上传本地 pptx
+
 
 ---
 
@@ -273,8 +323,6 @@ search_files(keyword="关键词", type="all", page_size=20)
 
 `type` 可选值：`all`（全部）、`file_name`（仅文件名）、`content`（全文）
 
-
-
 ### 网页剪藏
 
 > 🎯 **当用户要求保存网页/URL 到金山文档时，直接调用 `scrape_url`。禁止先用 `web_fetch`、`web_search` 或浏览器抓取内容。**
@@ -286,88 +334,19 @@ search_files(keyword="关键词", type="all", page_size=20)
         → 返回 job_id
 
 步骤 2: scrape_progress(job_id=xxx)
-        → 轮询（每 2-5 秒），直到 status=1（完成）
-        → 获得 scrape_file_id（剪藏专用标识）
+        → 轮询（每 2-5 秒），status 判定：
+          1  = 完成 → 获得 scrape_file_id（剪藏专用标识）
+          -1 = 失败 → 检查 URL 或重试
+          其他 = 进行中 → 继续轮询
+
+步骤 3: get_file_link(file_id=scrape_file_id)
+        → 返回文档在线链接
 ```
-
-| status | 含义 | 操作 |
-|--------|------|------|
-| 1 | 完成 | 获得 `scrape_file_id`，结束轮询 |
-| -1 | 失败 | 检查 URL 或重试 |
-| 其他 | 进行中 | 继续轮询 |
-
----
-
-## 操作守护规则
-
-### 操作前检查
-
-| 操作类型 | 执行前必须确认 |
-|----------|---------------|
-| 创建文件 | `search_files` 检查同名文件是否已存在 |
-| 写入/更新 | `read_file_content` 读取现有内容，确认不会误覆盖；表格类用 `sheet.get_range_data` 或 `sheet.retrieve_record` 对照；多维表格（.dbt）用 `dbsheet.list_records` / `dbsheet.get_record` 等确认 |
-| 移动文件 | `get_file_info` 确认目标文件夹存在且 ID 正确；批量移动或目的地非用户原文指定时 **列出清单请用户确认** |
-| 重命名 | `get_file_info` 确认文件存在；多候选时 **用户确认 `file_id`** |
-| 开启或扩大分享 | 用户是否在对话中**明确**要求分享及权限范围；**禁止**仅为验证、浏览器自动化或工具链方便而调用 |
-| 取消/删除分享 | 用户是否**明确**要求；`get_share_info` 核对现状；**禁止**擅自 `cancel_share`；`mode=delete` **须再次确认** |
-| 多维表格删除（.dbt） | 涉及 `dbsheet.delete_sheet`（删数据表）、`dbsheet.delete_view`（删视图）时：先用 `dbsheet.get_schema` 等核对拟删对象与范围；**未经用户在对话中明确同意，禁止调用**；批量删除须列出拟删清单（对象类型、`sheet_id` / `view_id` / 字段或记录 `id`、数量）**请用户确认后再执行**（详见 `references/dbsheet_reference.md` 各删除接口） |
-
-### 交付验证
-
-> **原则：不信任操作返回的 `code: 0`。用独立的读取请求验证实际结果。**
-
-| 操作 | 验证方式 | 通过条件 |
-|------|----------|----------|
-| `create_file` | `get_file_info(file_id=返回的id)` | 能读到且名称正确 |
-| `upload_file` | `read_file_content(file_id=xxx)` | 内容与写入一致 |
-| `move_file` | `get_file_info(file_id=xxx)` | `parent_id` 为目标文件夹 |
-| `rename_file` | `get_file_info(file_id=xxx)` | `name` 为新名称 |
-| `share_file` | `get_share_info(link_id=返回的link_id)` | 权限与设置一致 |
-| `cancel_share` | `get_share_info(link_id=xxx)` | 状态已变更 |
-| `scrape_url` | `scrape_progress` 轮询至 `status=1` | 获得 `scrape_file_id` |
-
-> **交付展示**：凡涉及创建新文档的操作，验证通过后必须调用 `get_file_link` 获取分享链接 URL 并展示给用户。
-
-### 不可逆操作保护
-
-| 操作 | 风险 | 安全措施 |
-|------|------|----------|
-| `move_file` | 文件移出原目录 | 执行前记录原 `parent_id`，告知用户可移回 |
-| `cancel_share(mode=delete)` | 分享链接永久删除 | **必须**向用户确认；建议优先用 `mode=pause` |
-| `upload_file` | 覆盖已有内容 | 先 `read_file_content` 备份原内容摘要 |
-
-### 幂等性与重试
-
-| 操作 | 幂等 | 重试策略 |
-|------|------|----------|
-| 所有读取操作 | ✅ | 可安全重试 |
-| `create_file` | ❌ | 重试前 `search_files` 检查是否已创建 |
-| `upload_file` | ✅ | 可重试，以最后一次为准 |
-| `move_file` / `rename_file` / `share_file` | ✅ | 可重试 |
-| `cancel_share(pause)` | ✅ | 可重试 |
-| `cancel_share(delete)` | ❌ | **禁止重试** |
-| `scrape_url` | ❌ | 重试前查 `scrape_progress` 确认上次状态 |
-
-### 错误速查表
-
-| 错误特征 | 原因 | 处理方式 |
-|----------|------|----------|
-| `400006` / 鉴权失败 | Token 过期或未配置 | 提示用户重新获取 Token |
-| 工具找不到 | 未注册 MCP 服务 | OpenClaw: `bash setup.sh`；其他客户端: 检查 MCP 配置 |
-| 搜索无结果 | 关键词过精确 / 索引延迟 | 缩短关键词 / 等待 3-5 秒重试 |
-| 读取内容为空 | 文件无内容或格式不支持 | 确认文件非空且后缀正确 |
-| 创建文件失败 | 文件名后缀不正确 | 检查后缀：`.otl` / `.docx` / `.xlsx` / `.ksheet` / `.dbt` / `.pdf` |
-| 移动文件失败 | 目标文件夹不存在 | 先搜索确认或创建文件夹 |
-| HTTP 5xx / 超时 | 服务端故障 | 等 3 秒重试 1 次 |
-| 验证不通过（回读值与预期不符） | 写入未生效或延迟 | 等 2 秒重新验证，仍不通过则报告用户 |
-
----
-
-## 常见工作流
 
 ### 搜索-读取-汇报撰写
 
 `search_files` → `read_file_content`（多次）→ AI 分析 → `create_file` → `upload_file` → `get_file_link`
+
 
 > 场景：搜索多份文档、提取信息、汇总撰写新报告
 
@@ -375,23 +354,20 @@ search_files(keyword="关键词", type="all", page_size=20)
 
 `search_files` → `read_file_content` → AI 摘要 → `get_file_link`
 
+
 > 场景：定期读取指定文档，提取关键信息生成摘要
 
 ### 智能分类整理
 
 `search_files` → `list_files` → `read_file_content`（批量）→ AI 分类 → `create_file(folder)` → `move_file`
 
+
 > 场景：列出目录，按内容分类创建文件夹并归档。⚠️ `move_file` 前需向用户确认分类方案
-
-### 网页剪藏收藏
-
-`scrape_url` → `scrape_progress`（轮询至完成）→ `get_file_link`
-
-> 场景：将网页内容保存为金山文档
 
 ### 精准搜索与风险排查
 
 `search_files`（定位目录）→ `search_files`（精确搜索）→ `read_file_content`（批量）→ AI 分析 → `create_file` + `upload_file`
+
 
 > 场景：在特定目录批量搜索文档，逐一读取分析，汇总到新文档
 
@@ -399,12 +375,13 @@ search_files(keyword="关键词", type="all", page_size=20)
 
 `list_labels`（或已知系统标签 ID）→ `search_files` / `list_files` 收集 `file_id` → `batch_add_label_objects`；查看某标签下文件：`get_label_objects(label_id, object_type="file")`；需确认标签定义时 `get_label_meta`。
 
-> 场景：自定义分类标签、批量给文档打星标/项目标签，或列出「星标」「待办」等系统标签下的文件
 
+> 场景：自定义分类标签、批量给文档打星标/项目标签，或列出「星标」「待办」等系统标签下的文件
 
 ### 标签归类与检索
 
 `list_labels` → `create_label`（如需新标签）→ `batch_add_label_objects`；按标签浏览 → `get_label_objects`
+
 
 > 场景：自定义标签整理文件。系统标签 ID（星标、待办等）见 `references/api_references.md` 中 `get_label_meta` / `get_label_objects` 说明。
 
@@ -428,21 +405,66 @@ search_files(keyword="关键词", type="all", page_size=20)
 
 ---
 
+## 操作守护规则
+
+### 交付验证
+
+> **原则：不信任操作返回的 `code: 0`。用独立的读取请求验证实际结果。**
+
+| 操作 | 验证方式 | 通过条件 |
+|------|----------|----------|
+| `create_file` | `get_file_info(file_id=返回的id)` | 能读到且名称正确 |
+| `upload_file` | `read_file_content(file_id=xxx)` | 内容与写入一致 |
+| `move_file` | `get_file_info(file_id=xxx)` | `parent_id` 为目标文件夹 |
+| `rename_file` | `get_file_info(file_id=xxx)` | `name` 为新名称 |
+| `share_file` | `get_share_info(link_id=返回的link_id)` | 权限与设置一致 |
+| `cancel_share` | `get_share_info(link_id=xxx)` | 状态已变更 |
+| `scrape_url` | `scrape_progress` 轮询至 `status=1` | 获得 `scrape_file_id` |
+
+> **交付展示**：凡涉及创建新文档的操作，验证通过后必须调用 `get_file_link` 获取分享链接 URL 并展示给用户。
+
+### 幂等性与重试
+
+| 操作 | 幂等 | 重试策略 |
+|------|------|----------|
+| 所有读取操作 | ✅ | 可安全重试 |
+| `create_file` | ❌ | 重试前 `search_files` 检查是否已创建 |
+| `upload_file` | ✅ | 可重试，以最后一次为准 |
+| `move_file` / `rename_file` / `share_file` | ✅ | 可重试 |
+| `cancel_share(pause)` | ✅ | 可重试 |
+| `cancel_share(delete)` | ❌ | **禁止重试** |
+| `scrape_url` | ❌ | 重试前查 `scrape_progress` 确认上次状态 |
+
+### 错误速查表
+
+| 错误特征 | 原因 | 处理方式 |
+|----------|------|----------|
+| `400006` / 鉴权失败 | Token 过期或未配置 | 先运行 get-token 脚本重新获取；脚本失败则引导用户手动获取（见「认证配置」章节） |
+| 工具找不到 | 未注册 MCP 服务 | OpenClaw: `bash setup.sh`；其他客户端: 检查 MCP 配置 |
+| 搜索无结果 | 关键词过精确 / 索引延迟 | 缩短关键词 / 等待 3-5 秒重试 |
+| 读取内容为空 | 文件无内容或格式不支持 | 确认文件非空且后缀正确 |
+| 创建文件失败 | 文件名后缀不正确 | 检查后缀：`.otl` / `.docx` / `.xlsx` / `.ksheet` / `.dbt` / `.pdf` / `.pptx` |
+| 移动文件失败 | 目标文件夹不存在 | 先搜索确认或创建文件夹 |
+| HTTP 5xx / 超时 | 服务端故障 | 等 3 秒重试 1 次 |
+| 验证不通过（回读值与预期不符） | 写入未生效或延迟 | 等 2 秒重新验证，仍不通过则报告用户 |
+
+---
+
 ## 工具组合速查
 
-| 用户需求　　　 | 推荐工具组合　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
-| ----------------| --------------------------------------------------------------------------|
-| 找文档　　　　 | `search_files`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
-| 找 + 读　　　　| `search_files` → `read_file_content`　　　　　　　　　　　　　　　　　　 |
-| 找 + 读 + 写新 | `search_files` → `read_file_content` → `create_file` → `upload_file`　　 |
-| 找 + 读 + 更新 | `search_files` → `read_file_content` → `upload_file`（传 file_id）　　　 |
-| 浏览目录　　　 | `list_files`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
-| 整理归类　　　 | `list_files` → `read_file_content` → `create_file(folder)` → `move_file` |
-| 网页保存　　　 | `scrape_url` → `scrape_progress`　　　　　　　　　　　　　　　　　　　　 |
-| 分享文档　　　 | `share_file` → `set_share_permission`　　　　　　　　　　　　　　　　　　|
-| 获取链接　　　 | `get_file_link`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
-| 新建标签并打标 | `create_label` → `batch_add_label_objects`　　　　　　　　　　　　　　　 |
-| 回收站恢复　　 | `list_deleted_files` → `restore_deleted_file`　　　　　　　　　　　　　　|
+| 用户需求 | 推荐工具组合 |
+|----------|-------------|
+| 找文档 | `search_files` |
+| 找 + 读 | `search_files` → `read_file_content` |
+| 找 + 读 + 写新 | `search_files` → `read_file_content` → `create_file` → `upload_file` |
+| 找 + 读 + 更新 | `search_files` → `read_file_content` → `upload_file`（传 file_id） |
+| 浏览目录 | `list_files` |
+| 整理归类 | `list_files` → `read_file_content` → `create_file(folder)` → `move_file` |
+| 网页保存 | `scrape_url` → `scrape_progress` |
+| 分享文档 | `share_file` → `set_share_permission` |
+| 获取链接 | `get_file_link` |
+| 新建标签并打标 | `create_label` → `batch_add_label_objects` |
+| 回收站恢复 | `list_deleted_files` → `restore_deleted_file` |
 
 ## 安全约束
 

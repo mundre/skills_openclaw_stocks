@@ -27,30 +27,70 @@
 
 创建完成后用下文 **`otl.insert_content`** 写入 Markdown/文本。**勿**对 `.otl` 使用 `upload_file`：该工具面向本地文字/表格/演示/PDF 文件上传，不支持 `.otl` 智能文档。
 
-### 内容格式
-
-智能文档的内容使用 **Markdown** 格式写入和读取。写入时系统自动将 Markdown 转换为智能文档的富文本格式。
-
-
 ### 读取智能文档
 
-通过 `read_file_content` 读取，返回 Markdown 格式内容：
+通过 `read_file_content` 读取，返回 Markdown 格式内容。
+
+#### 步骤 1：提交读取任务
+
+调用参数：
 
 ```json
 {
-  "file_id": "file_otl_001"
+  "drive_id": "drive_abc123",
+  "file_id": "file_otl_001",
+  "format": "markdown",
+  "include_elements": ["all"]
 }
 ```
 
-返回内容已自动转换为 Markdown，可直接用于 AI 分析。
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `drive_id` | string | 是 | 文件所在云盘 ID |
+| `file_id` | string | 是 | 文件 ID |
+| `format` | string | 是 | 固定传 `"markdown"`。|
+| `include_elements` | array | 是 | 固定传 `["all"]`。|
 
-## 智能文档专属接口
+> **⚠️ mcporter CLI 调用注意**：`include_elements` 是**数组**，`key=value` 语法无法可靠传递数组。请用 `--args` 传递数组参数，其余参数可用 `key=value`。**`--args` 的 JSON 必须用单引号 `'...'` 包裹，内部双引号用 `\"` 转义**：
+>
+> ```shell
+> mcporter call kdocs read_file_content drive_id=<DRIVE_ID> file_id=<FILE_ID> format=markdown --args '{\"include_elements\":[\"all\"]}'
+> ```
+>
+> **禁止**省略外层单引号——不加单引号会导致 shell 解析错误。
+
+#### 步骤 2：轮询获取内容
+
+将步骤 1 返回的 `task_id` 加入参数再次调用：
+
+```json
+{
+  "drive_id": "drive_abc123",
+  "file_id": "file_otl_001",
+  "format": "markdown",
+  "include_elements": ["all"],
+  "task_id": "步骤1返回的task_id"
+}
+```
+
+> **mcporter CLI 轮询命令**（替换 `<TASK_ID>` 为步骤 1 返回值；**单引号必须保留**）：
+>
+> ```shell
+> mcporter call kdocs read_file_content drive_id=<DRIVE_ID> file_id=<FILE_ID> format=markdown --args '{\"include_elements\":[\"all\"]}' task_id=<TASK_ID>
+> ```
+
+> ⚠️ **`include_elements` 必须是数组** `["all"]`，不是字符串 `"all"`。传错类型会导致服务端仅返回段落文本。
+
+---
+
+## 智能文档（otl）专属接口
 
 ### 1. otl.insert_content
 
 #### 功能说明
 
 向智能文档写入 Markdown/纯文本内容。支持从文档开头或末尾插入，写入时系统自动转换为智能文档富文本格式。
+
 
 #### 调用示例
 
@@ -76,12 +116,13 @@
 }
 ```
 
+
 #### 参数说明
 
 - `file_id` (string, 必填): 智能文档文件 ID
 - `title` (string, 可选): 文档标题
 - `content` (string, 必填): 写入内容，支持 Markdown 或纯文本
-- `pos` (string, 可选): 插入位置，默认 `begin`。可选值：`begin` / `end`
+- `pos` (string, 可选): 插入位置，begin=从文档开头插入，end=在文档末尾追加。可选值：`begin` / `end`；默认值：`begin`
 
 #### Unicode 制表图（架构图、数据流等）
 
@@ -108,6 +149,7 @@
 
 > **说明**：Mermaid、PlantUML 等需单独渲染引擎的制表图不在此列；此处仅针对**纯文本 Unicode/ASCII 制表图**。
 
+
 #### 返回值说明
 
 ```json
@@ -118,9 +160,14 @@
     "result": "ok"
   }
 }
+
 ```
 
-> 常见成功判断方式：`code == 0`，且 `data.result == "ok"`。
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `data.result` | string | ok 表示成功 |
+
+---
 
 ### 2. otl.block_insert
 
@@ -128,7 +175,10 @@
 
 向智能文档插入一个或多个块，适合在指定父块下按位置追加段落、列表、表格等结构化内容。
 
+
 #### 调用示例
+
+在文档开头插入段落：
 
 ```json
 {
@@ -141,7 +191,10 @@
         {
           "type": "paragraph",
           "content": [
-            { "type": "text", "text": "hello" }
+            {
+              "type": "text",
+              "text": "hello"
+            }
           ]
         }
       ]
@@ -150,13 +203,14 @@
 }
 ```
 
+
 #### 参数说明
 
 - `file_id` (string, 必填): 智能文档文件 ID
 - `params` (array, 必填): 插入操作列表，每项为一个插入块对象
-- `params[].blockId` (string, 常用): 目标父块 ID，例如 `doc`
-- `params[].index` (integer, 常用): 插入位置索引
-- `params[].content` (array, 常用): 待插入的块内容数组
+  - `blockId` (string, 常用): 目标父块 ID，例如 `doc`
+  - `index` (integer, 常用): 插入位置索引
+  - `content` (array, 常用): 待插入的块内容数组
 
 #### 返回值说明
 
@@ -168,9 +222,10 @@
     "...": "..."
   }
 }
+
 ```
 
-> 返回结果会根据插入内容和文档状态有所不同，调用方通常以 `code == 0` 作为成功判断。
+---
 
 ### 3. otl.block_delete
 
@@ -178,7 +233,10 @@
 
 删除一个或多个块区间，适合按父块和索引范围删除内容。
 
+
 #### 调用示例
+
+删除指定块区间：
 
 ```json
 {
@@ -193,13 +251,14 @@
 }
 ```
 
+
 #### 参数说明
 
 - `file_id` (string, 必填): 智能文档文件 ID
 - `params` (array, 必填): 删除操作列表，每项为一个删除区间对象
-- `params[].blockId` (string, 常用): 目标父块 ID
-- `params[].startIndex` (integer, 常用): 删除起始索引
-- `params[].endIndex` (integer, 常用): 删除结束索引
+  - `blockId` (string, 常用): 目标父块 ID
+  - `startIndex` (integer, 常用): 删除起始索引
+  - `endIndex` (integer, 常用): 删除结束索引
 
 #### 返回值说明
 
@@ -211,7 +270,10 @@
     "...": "..."
   }
 }
+
 ```
+
+---
 
 ### 4. otl.block_query
 
@@ -219,22 +281,28 @@
 
 查询指定块的结构与内容，适合在更新前先读取目标块信息。
 
+
 #### 调用示例
+
+查询指定块：
 
 ```json
 {
   "file_id": "string",
   "params": {
-    "blockIds": ["目标blockId"]
+    "blockIds": [
+      "目标blockId"
+    ]
   }
 }
 ```
+
 
 #### 参数说明
 
 - `file_id` (string, 必填): 智能文档文件 ID
 - `params` (object, 必填): 查询参数对象
-- `params.blockIds` (array, 常用): 要查询的块 ID 列表
+  - `blockIds` (array, 常用): 要查询的块 ID 列表
 
 #### 返回值说明
 
@@ -246,7 +314,10 @@
     "...": "..."
   }
 }
+
 ```
+
+---
 
 ### 5. otl.convert
 
@@ -254,7 +325,10 @@
 
 将 HTML、Markdown 等内容转换为智能文档块结构，适合在正式插入前先生成可复用的块内容。
 
+
 #### 调用示例
+
+转换内容：
 
 ```json
 {
@@ -264,6 +338,7 @@
   }
 }
 ```
+
 
 #### 参数说明
 
@@ -280,16 +355,27 @@
     "...": "..."
   }
 }
+
 ```
 
-### 典型用途
-
-| 场景 | 推荐工具 |
-|------|------|
-| 快速写报告、周报、纪要 | `otl.insert_content` |
-| 在现有文档头部/中间精确插块 | `otl.block_insert` |
-| 删除指定块或块区间 | `otl.block_delete` |
-| 读取指定块结构 | `otl.block_query` |
-| 将 HTML / Markdown 先转为块结构再复用 | `otl.convert` |
-
 ---
+
+
+## 工具速查表
+
+| # | 工具名 | 功能 | 必填参数 |
+|---|--------|------|----------|
+| 1 | `otl.insert_content` | 向智能文档插入 Markdown/文本内容 | `file_id`, `content` |
+| 2 | `otl.block_insert` | 向智能文档插入一个或多个块 | `file_id`, `params` |
+| 3 | `otl.block_delete` | 删除智能文档中一个或多个块区间 | `file_id`, `params` |
+| 4 | `otl.block_query` | 查询智能文档指定块的结构与内容 | `file_id`, `params` |
+| 5 | `otl.convert` | 将 HTML/Markdown 转换为智能文档块结构 | `file_id`, `params` |
+
+## 工具组合速查
+
+| 用户需求 | 推荐工具组合 |
+|----------|-------------|
+| 新建文档并写入内容 | `create_file` → `otl.insert_content` |
+| 读取现有文档内容 | `read_file_content` |
+| 精确修改文档块 | `otl.block_query` → `otl.block_delete` / `otl.block_insert` |
+| 外部内容转块后插入 | `otl.convert` → `otl.block_insert` |
