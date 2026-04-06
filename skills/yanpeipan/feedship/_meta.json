@@ -3,9 +3,15 @@
   "slug": "feedship",
   "displayName": "Feedship",
   "latest": {
-    "version": "1.2.2",
-    "publishedAt": 1775042545082,
-    "commit": "https://github.com/openclaw/skills/commit/ceb8be4d61d1e94e0edd89d55e3dfdd6df2710d6"
+    "version": "1.5.0",
+    "publishedAt": 1775489216432,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.2",
+      "publishedAt": 1775042545082,
+      "commit": "https://github.com/openclaw/skills/commit/ceb8be4d61d1e94e0edd89d55e3dfdd6df2710d6"
+    }
+  ]
 }
