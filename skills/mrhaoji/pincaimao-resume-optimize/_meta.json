@@ -3,9 +3,15 @@
   "slug": "pincaimao-resume-optimize",
   "displayName": "聘才猫（Pincaimao）简历优化",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774539292799,
-    "commit": "https://github.com/openclaw/skills/commit/d29e5c68d4826479926de6617869730f6e91a4c8"
+    "version": "1.0.1",
+    "publishedAt": 1775114461057,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774539292799,
+      "commit": "https://github.com/openclaw/skills/commit/d29e5c68d4826479926de6617869730f6e91a4c8"
+    }
+  ]
 }
