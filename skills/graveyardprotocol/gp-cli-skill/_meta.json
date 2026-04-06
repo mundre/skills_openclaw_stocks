@@ -3,9 +3,15 @@
   "slug": "gp-cli-skill",
   "displayName": "Graveyard Protocol CLI",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1774961104991,
-    "commit": "https://github.com/openclaw/skills/commit/2c3b804e5605e22799a456dccc140c6c897c8fbd"
+    "version": "1.2.2",
+    "publishedAt": 1775333072209,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1774961104991,
+      "commit": "https://github.com/openclaw/skills/commit/2c3b804e5605e22799a456dccc140c6c897c8fbd"
+    }
+  ]
 }
