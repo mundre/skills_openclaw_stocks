@@ -1,0 +1,11 @@
+{
+  "owner": "cinience",
+  "slug": "aliyun-qwen-tts-realtime",
+  "displayName": "Aliyun Qwen Tts Realtime",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775046546182,
+    "commit": null
+  },
+  "history": []
+}
