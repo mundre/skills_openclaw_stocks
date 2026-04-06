@@ -3,11 +3,16 @@
   "slug": "yuyonghao-multi-agent",
   "displayName": "Multi Agent",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774925748533,
-    "commit": "https://github.com/openclaw/skills/commit/c478de59ff61ed52f70b1b0ee10ec441cf9a9ec6"
+    "version": "0.1.2",
+    "publishedAt": 1775022728052,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774925748533,
+      "commit": "https://github.com/openclaw/skills/commit/c478de59ff61ed52f70b1b0ee10ec441cf9a9ec6"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1774584226873,
