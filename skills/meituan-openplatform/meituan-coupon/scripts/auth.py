@@ -28,10 +28,13 @@ from pathlib import Path
 # 内嵌于 meituan-coupon-get-tool，Token 存储 key 与外部 meituan-c-user-auth 共享，
 # 实现"一次登录、两个 Skill 共用 Token"，用户安装任一 Skill 登录后均可复用。
 AUTH_KEY       = "meituan-c-user-auth"
-LOCAL_VERSION  = "1.0.4"   # 内嵌版本号，与 SKILL.md 中 version 字段保持一致
+LOCAL_VERSION  = "1.0.6"   # 内嵌版本号，与 SKILL.md 中 version 字段保持一致
+
+# 用户协议接受状态字段名
+TERMS_ACCEPTED_KEY = "terms_accepted"
 
 # Skill 公开主页（clawhub.ai，外网可访问）
-SKILL_PAGE_URL = "https://clawhub.ai/meituan-zhengchang/meituan-coupon"
+SKILL_PAGE_URL = "https://clawhub.ai/meituan-zhengchang/meituan-coupon-get-tool"
 
 
 def _resolve_auth_file() -> Path:
@@ -175,6 +178,25 @@ def logout_token_data():
     entry["user_token"] = ""          # 置空，表示已退出登录
     auth[AUTH_KEY] = entry
     save_auth(auth)
+
+
+def get_terms_accepted() -> bool:
+    """
+    获取用户是否接受服务协议的状态。
+    返回 True 表示已接受，False 表示未接受或状态不存在。
+    """
+    token_data = get_token_data()
+    return token_data.get(TERMS_ACCEPTED_KEY, False)
+
+
+def set_terms_accepted(accepted: bool):
+    """
+    设置用户服务协议接受状态。
+    accepted: True 表示接受，False 表示不接受。
+    """
+    token_data = get_token_data()
+    token_data[TERMS_ACCEPTED_KEY] = accepted
+    save_token_data(token_data)
 
 
 # ── 命令：status（本地检查，不调用接口）────────────────────────────────
@@ -551,6 +573,40 @@ def cmd_logout():
     print(json.dumps(result, ensure_ascii=False))
 
 
+# ── 命令：terms-check / terms-accept / terms-decline ──────────────────
+
+def cmd_terms_check():
+    """检查用户是否已接受服务协议"""
+    accepted = get_terms_accepted()
+    print(json.dumps({
+        "success": True,
+        "terms_accepted": accepted,
+        "message": "用户已接受服务协议" if accepted else "用户尚未接受服务协议"
+    }, ensure_ascii=False))
+
+
+def cmd_terms_accept():
+    """用户接受服务协议"""
+    set_terms_accepted(True)
+    print(json.dumps({
+        "success": True,
+        "terms_accepted": True,
+        "message": "已接受服务协议，可以继续使用"
+    }, ensure_ascii=False))
+
+
+def cmd_terms_decline():
+    """用户拒绝服务协议"""
+    set_terms_accepted(False)
+    # 同时清除登录状态
+    logout_token_data()
+    print(json.dumps({
+        "success": True,
+        "terms_accepted": False,
+        "message": "已拒绝服务协议，无法继续使用相关功能"
+    }, ensure_ascii=False))
+
+
 # ── 命令：clear-device-token ──────────────────────────────────────────
 
 def cmd_clear_device_token():
@@ -613,6 +669,15 @@ def main():
     # logout
     subparsers.add_parser("logout", help="退出登录，清除 user_token（保留 device_token）")
 
+    # terms-check - 检查协议状态
+    subparsers.add_parser("terms-check", help="检查用户是否已接受服务协议")
+
+    # terms-accept - 接受协议
+    subparsers.add_parser("terms-accept", help="接受服务协议")
+
+    # terms-decline - 拒绝协议
+    subparsers.add_parser("terms-decline", help="拒绝服务协议")
+
     # clear-device-token
     subparsers.add_parser("clear-device-token", help="清除设备标识（device_token），仅在用户明确要求时调用")
 
@@ -630,6 +695,12 @@ def main():
         cmd_verify(args.phone, args.code)
     elif args.command == "logout":
         cmd_logout()
+    elif args.command == "terms-check":
+        cmd_terms_check()
+    elif args.command == "terms-accept":
+        cmd_terms_accept()
+    elif args.command == "terms-decline":
+        cmd_terms_decline()
     elif args.command == "clear-device-token":
         cmd_clear_device_token()
 

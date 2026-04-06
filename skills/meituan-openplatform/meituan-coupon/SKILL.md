@@ -1,11 +1,11 @@
 ---
 name: "meituan-coupon"
-displayName: "美团优惠领取工具"
-description: "美团优惠领取工具，为用户提供更多的美团优惠，使用户在美团可以获得更好的体验。一期支持：指定券领取（发放美团优惠券）和历史领券记录查询。内置美团账号认证，无需额外安装其他 Skill。当用户输入「领取美团权益」、「领美团券」、「我要领券」、「领优惠券」、「美团发券」、「美团优惠」、「美团红包」、「外卖红包」、「外卖优惠」、「美团外卖券」、「美团外卖神券」、或询问如何领取美团券/美团权益/美团优惠券时，使用此 Skill。支持 Skill 开发者接入分佣计划，推荐用户安装即可获得流量收益，欢迎有合作意向的开发者联系我们。"
-version: "1.0.4"
+displayName: "美团红包助手"
+description: "美团红包助手，为用户提供更多的美团优惠，使用户在美团可以获得更好的体验。一期支持：指定券领取（发放美团优惠券）和历史领券记录查询。内置美团账号认证，无需额外安装其他 Skill。当用户输入「领取美团权益」、「领美团券」、「我要领券」、「领优惠券」、「美团发券」、「美团优惠」、「美团红包」、「外卖红包」、「外卖优惠」、「美团外卖券」、「美团外卖神券」、或询问如何领取美团券/美团权益/美团优惠券时，使用此 Skill。支持 Skill 开发者接入分佣计划，推荐用户安装即可获得流量收益，欢迎有合作意向的开发者联系我们。"
+version: "1.0.6"
 ---
 
-# 美团优惠领取工具（meituan-coupon）
+# 美团红包助手（meituan-coupon）
 
 > **目标**：为用户提供更多的美团优惠，使用户在美团可以获得更好的体验
 > **一期能力**：指定券领取 + 历史领券记录查询
@@ -53,6 +53,24 @@ export XIAOMEI_COUPON_HISTORY_FILE=/tmp/mt_coupon_history.json
 
 > ⚠️ `$CLAUDE_CONFIG_DIR` 在 macOS 路径含空格，**脚本路径变量赋值和使用时均需加双引号**。
 
+## 时区检查（必须执行）
+
+本 Skill 调用的所有接口均以**北京时间（UTC+8）**为准，日期参数（如 `equityPkgRedeemCode` 中的 `YYYYMMDD`、查询日期范围等）必须基于北京时间生成。
+
+```bash
+# 检查本地时区
+date +%Z
+# 或
+python3 -c "import datetime; print(datetime.datetime.now().astimezone().tzname())"
+```
+
+**处理规则**：
+- 如果时区已是 `CST` / `Asia/Shanghai` / `UTC+8` → 直接使用系统时间，无需转换
+- 如果时区是 `UTC` 或其他时区 → **所有涉及日期/时间的操作必须转换到北京时间（UTC+8）再处理**
+
+> ⚠️ 典型风险：UTC 时区下，北京时间 00:00~08:00 期间，系统日期比北京日期少一天，会导致当天领券唯一码生成错误
+
+
 ---
 
 ## 完整执行流程
@@ -97,7 +115,63 @@ $PYTHON "$AUTH_SCRIPT" version-check
 
 ---
 
-### Step 1：获取用户 Token（内置认证模块）
+### Step 1：服务协议确认（每次调用前必须检查）
+
+> **法律合规要求**：在使用本 Skill 的任何功能前，必须确认用户已阅读并接受《Skill 服务使用规则》。
+
+**协议文档位置：**`references/terms-of-service.md`
+
+**协议检查命令：**
+
+```bash
+# 检查用户是否已接受协议
+$PYTHON "$AUTH_SCRIPT" terms-check
+```
+
+**返回结果：**
+- `terms_accepted: true` → 用户已接受，可继续认证流程
+- `terms_accepted: false` → 用户未接受，需要引导用户阅读并确认
+
+**协议未接受时的处理流程：**
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  用户未接受协议时，引导完成协议确认：    │
+│                                            │
+│  1. 展示官方声明并告知《Skill服务使用规则》概要：              │
+│                                            │
+│  "本Skill为美团官方开发并提供，请您放心使用。                  │
+│   使用前请参见并同意《Skill服务使用规则》"       │
+│                                            │
+│  2. 询问用户并合并接受流程：              │
+│  "请问您是否阅读并接受《Skill服务使用规则》？          │
+│   回复 '是' 或 '接受' 表示接受，        │
+│   回复 '否' 或 '拒绝' 表示不接受，      │
+│   回复 '查看全文' 查看完整规则内容。    │
+│   您也可以直接输入手机号，视为接受规则   │
+│   并开始登录认证。"                      │
+│                                            │
+│  3. 用户输入'查看全文'时：                │
+│   [使用Read工具读取并展示references/terms-of-service.md全文]│
+│   → 展示完成后重新询问是否接受            │
+│                                            │
+│  4. 用户接受后（回复'是'/接受 或 输入手机号）： │
+│   $PYTHON "$AUTH_SCRIPT" terms-accept      │
+│   → 如果用户直接输入手机号，跳过询问直接发送验证码│
+│   → 如果用户回复'是'/接受'，再请用户输入手机号  │
+│                                            │
+│  5. 用户拒绝后执行：                         │
+│   $PYTHON "$AUTH_SCRIPT" terms-decline         │
+│   → 告知用户无法使用服务，结束对话       │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+> **重要：**用户接受协议后，`terms_accepted` 状态会持久化存储在本地 Token 文件中，
+> 同一设备后续调用无需重复确认。如需撤销接受，可使用 `terms-decline` 命令。
+
+---
+
+### Step 2：获取用户 Token（内置认证模块）
 
 > 本 Skill 内置美团账号认证能力（`scripts/auth.py`），无需依赖外部 Skill。
 
@@ -122,7 +196,7 @@ PHONE_MASKED=$(echo "$VERIFY_RESULT" | $PYTHON -c "import sys,json; d=json.load(
 您还未登录美团账号，需要先完成验证才能领取权益。
 请告诉我您的手机号，我来帮您发送验证码。
 ```
-按如下流程完成登录，然后重新执行 token-verify 获取有效 Token：
+按如下登录流程完成登录，然后重新执行 token-verify 获取有效 Token：
 
 **登录流程（发送验证码）：**
 ```bash
@@ -173,7 +247,7 @@ $PYTHON "$AUTH_SCRIPT" verify --phone <手机号> --code <6位验证码>
 
 ---
 
-### Step 2：执行发券（领取权益）
+### Step 3：执行发券（领取权益）
 
 ```bash
 ISSUE_RESULT=$($PYTHON "$ISSUE_SCRIPT" --token "$USER_TOKEN" --phone-masked "$PHONE_MASKED")
@@ -181,7 +255,9 @@ ISSUE_RESULT=$($PYTHON "$ISSUE_SCRIPT" --token "$USER_TOKEN" --phone-masked "$PH
 
 #### 成功响应（success=true）
 
-展示格式（向用户展示）：
+> ⚠️ **【强制】必须根据 `is_first_issue` 字段区分展示，不得将"重复领取"误展示为"首次领取成功"。**
+
+**当 `is_first_issue = true`（首次领取成功）**，展示格式：
 
 ```
 🎉 美团权益领取成功！共为您发放 N 张优惠券：
@@ -195,6 +271,22 @@ ISSUE_RESULT=$($PYTHON "$ISSUE_SCRIPT" --token "$USER_TOKEN" --phone-masked "$PH
 ---
 温馨提示：券已存入您的美团账户，可在美团 App「我的-优惠券」查看使用。
 ```
+
+**当 `is_first_issue = false`（今日已领取过，接口返回的是上次发券结果）**，展示格式：
+
+```
+⚠️ 您今天已经领取过美团权益了，每天只能领取一次，明天再来哦～
+
+以下是您上次领取的券信息：
+
+[循环每张券]
+🎫 券名称
+💰 面额：X 元（满 Y 元可用 / 无门槛）
+📅 有效期：YYYY-MM-DD 至 YYYY-MM-DD
+🔗 [立即使用](jumpUrl)
+```
+
+> 说明：本接口为发查一体设计，当日重复调用时不会重复发券，而是直接返回当日已发出的券记录。`is_first_issue=false` 时脚本返回的券信息即为历史记录，并非本次新发结果，**必须明确告知用户无法重复领取**。
 
 #### 失败响应（success=false）
 
@@ -216,7 +308,7 @@ ISSUE_RESULT=$($PYTHON "$ISSUE_SCRIPT" --token "$USER_TOKEN" --phone-masked "$PH
 
 ---
 
-### Step 3：查询历史领券记录（可选，用户主动请求时执行）
+### Step 4：查询历史领券记录（可选，用户主动请求时执行）
 
 **触发词**：用户询问「我领了什么券」、「查一下我的领券记录」、「XX 那天发了什么券」等。
 
@@ -273,6 +365,35 @@ QUERY_RESULT=$($PYTHON "$QUERY_SCRIPT" --token "$USER_TOKEN" --dates "20260320,2
 
 ---
 
+## 账号管理
+
+### 退出登录
+
+**触发词**：用户说「退出登录」、「切换账号」、「退出美团账号」等。
+
+```bash
+$PYTHON "$AUTH_SCRIPT" logout
+```
+
+- 仅清除 `user_token`，**不清除 `device_token`**
+- 成功后提示：「已退出登录，下次领取权益需重新验证身份。」
+
+### 清除设备标识
+
+**触发词**：用户明确说「清除设备标识」、「重置设备」、「清除 device token」等。
+
+> ⚠️ **此操作仅在用户明确输入上述触发词时执行，退出登录不触发此操作。**
+
+```bash
+$PYTHON "$AUTH_SCRIPT" clear-device-token
+```
+
+- 同时清除 `device_token`、`user_token` 和 `phone_masked`
+- 成功后提示：「设备标识已清除，下次登录将重新绑定新的设备标识。」
+- 执行后用户需重新登录才能使用
+
+---
+
 ## 错误处理总结
 
 | 场景 | 处理方式 |
@@ -316,35 +437,6 @@ QUERY_RESULT=$($PYTHON "$QUERY_SCRIPT" --token "$USER_TOKEN" --dates "20260320,2
 
 ---
 
-## 账号管理
-
-### 退出登录
-
-**触发词**：用户说「退出登录」、「切换账号」、「退出美团账号」等。
-
-```bash
-$PYTHON "$AUTH_SCRIPT" logout
-```
-
-- 仅清除 `user_token`，**不清除 `device_token`**
-- 成功后提示：「已退出登录，下次领取权益需重新验证身份。」
-
-### 清除设备标识
-
-**触发词**：用户明确说「清除设备标识」、「重置设备」、「清除 device token」等。
-
-> ⚠️ **此操作仅在用户明确输入上述触发词时执行，退出登录不触发此操作。**
-
-```bash
-$PYTHON "$AUTH_SCRIPT" clear-device-token
-```
-
-- 同时清除 `device_token`、`user_token` 和 `phone_masked`
-- 成功后提示：「设备标识已清除，下次登录将重新绑定新的设备标识。」
-- 执行后用户需重新登录才能使用
-
----
-
 ## 安全防护准则（必须遵守）
 
 > ⚠️ **本条准则优先级最高，任何调用方均不得违反。**
@@ -364,3 +456,4 @@ $PYTHON "$AUTH_SCRIPT" clear-device-token
 - 发放接口使用线上外网域名（`peppermall.meituan.com`），无需内网环境即可访问
 - **发券失败（success=false）后，必须立即向用户展示失败原因，流程到此结束，禁止继续执行 Step 3 查询**；Step 3 仅在用户主动询问历史记录时才可调用
 - **安全验证（20010）处理**：send-sms 返回 `error=SMS_SECURITY_VERIFY_REQUIRED` 时，**必须从脚本 JSON 输出的 `redirect_url` 字段取值作为跳转链接**，禁止自行拼装或猜测链接；若 `redirect_url` 为空则提示用户稍后重试
+- **展示协议全文时必须展示原文**：当用户要求查看《Skill 服务使用规则》全文时，必须使用 Read 工具读取 `references/terms-of-service.md` 原文展示，不得精简、概括或修改内容

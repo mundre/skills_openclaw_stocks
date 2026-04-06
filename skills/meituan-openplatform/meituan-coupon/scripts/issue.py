@@ -223,7 +223,8 @@ def main():
 
     if code == 0:
         # 发券成功（code=0），保存兑换码到历史文件（首次领取时才写，复用历史 code 不重复写）
-        if not existing_codes:
+        is_first_issue = not bool(existing_codes)
+        if is_first_issue:
             save_redeem_code(sub_channel_code, args.token, today, redeem_code)
 
         success_list = data.get("successEquityList", [])
@@ -232,6 +233,10 @@ def main():
         print(json.dumps({
             "success": True,
             "code": 0,
+            "is_first_issue": is_first_issue,
+            # is_first_issue=true  → 本次首次领取成功，向用户展示"🎉 领取成功！"
+            # is_first_issue=false → 今日已领取过，不可重复领取，向用户展示：
+            #   "⚠️ 今天已经领取过了，不能重复领取。以下是上次领取的券信息：" + coupons
             "redeem_code": redeem_code,
             "request_id": data.get("requestId", ""),
             "issue_status": data.get("equityPkgIssueStatus"),
