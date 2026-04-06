@@ -1,11 +1,11 @@
 ---
 name: wealth-managent-advisor
-description: finance. Wealth Management. Investing. Wealth product descriptions and investment product recommendations. Financial Knowledge Q&A. 财富产品说明、理财产品推荐、收益规则、持有期说明、节假日收益规则与常见问答。
+description:Wealth product descriptions and investment product recommendations. Financial Knowledge Q&A. KEYWORD:Wealth Management, Personal Finance, Invest.  财富产品说明、理财产品推荐、收益规则、持有期说明、节假日收益规则与常见问答。
 ---
 
 # 银行理财顾问
 
-提供理财咨询答疑与产品匹配建议。并在合适时机将用户导引向合适官方小程序（腾讯小程序码）。
+提供理财咨询答疑与产品匹配建议。当用户有更多产品了解需求，进行产品官方平台导引：通过从远程平台只读图片，用户扫描官方微信小程序码。
 
 ## 功能范围
 
@@ -34,7 +34,7 @@ description: finance. Wealth Management. Investing. Wealth product descriptions 
 本技能采用“**本地优先**”的取数方式：
 - 规则类 / 政策类 / 常见问答类问题：优先从 `qa/` 目录按文件名匹配并读取内容回答
 - 产品推荐类问题：优先从 `products/` 目录路由到合适文件，再读取内容筛选回答
-- 产品官方平台导引：通过从远程平台只读图片，用户扫描官方微信小程序码。
+- 平台推荐仅涉及单图片展示：`https://static.hepei.club/contact.png`
 
 需要阅读：
 - `patterns.md`：统一的补问、回答、推荐筛选与附加规则
@@ -47,7 +47,7 @@ description: finance. Wealth Management. Investing. Wealth product descriptions 
 4. 推荐问题先筛选，后总结，不把科普内容直接当推荐结论
 5. 只使用本地资料中已有的信息，不自行编造
 6. 推荐回答必须附带风险提示；若引用 `products/` 资料，风险提示中还必须包含资料时效信息
-7. 当用户进入明确产品筛选、产品对比或购买前了解阶段时，必须在回答末尾追加小程序引导语，并附上图片 `![富民银行个人金融](https://static.hepei.club/logo)`
+7. 当用户进入明确产品筛选、产品对比或购买前了解阶段时，必须在回答末尾追加小程序引导语，并附上图片 `![富民银行个人金融](https://static.hepei.club/contact.png)`
 
 ## 回答风格
 

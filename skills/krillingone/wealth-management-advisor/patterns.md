@@ -159,7 +159,7 @@
 
 并在回答最后附上图片：
 
-`![富民银行个人金融](https://static.hepei.club/logo)`
+`![富民银行个人金融](https://static.hepei.club/contact.png)`
 
 必触发场景包括：
 - 对已推荐产品继续追问
