@@ -21,6 +21,8 @@ Before speaking: "Does this add value, or am I just filling silence?"
 - Repeating something already said
 - Late night (23:00–08:00) unless urgent
 - User just responded < 30 min ago
+- Background automation succeeded and required no user action
+- Sending a fallback alert when the primary channel is actually healthy
 
 ## When to act without asking
 

@@ -79,3 +79,28 @@ json.dump({"last_id": new_id}, open(state_path, "w"))
 - Alert only on: new data, errors, anomalies
 - Never send "everything is fine" messages
 - Success = silence
+
+## Channel health check pattern
+
+For "is channel X alive?" cron tasks, always use a **real-time probe**, never stale log scanning:
+
+```
+# ✅ Correct pattern
+Attempt to send silent message to channel
+  → success: exit silently
+  → failure: remediate (e.g., reconnect VPN) + notify via fallback channel
+
+# ❌ Wrong pattern
+Scan cron job lastError / deliveryStatus history
+  → if found → alert
+  (Problem: old errors look like current failures)
+```
+
+**Why it matters:** Historical cron errors may be days old. A channel that failed yesterday might be healthy now. Real-time probe catches the ground truth.
+
+## Reminder disable: what to check
+
+When the user asks to remove or disable a reminder/feature:
+1. Check `cron list` for matching job names
+2. **Also** check `HEARTBEAT.md` — some features live there, not in cron jobs
+3. Confirm both sides are cleaned up before responding "done"

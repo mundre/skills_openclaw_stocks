@@ -1,12 +1,12 @@
 ---
 name: lx-agent-optimizer
 slug: lx-agent-optimizer
-version: 1.1.1
+version: 1.3.0
 description: |
-  A battle-tested agent self-improvement and optimization system built from real-world usage.
-  Combines behavior learning, proactive patterns, cron discipline, and cost control into one unified skill.
-  Use when: you want your agent to get smarter over time, stay proactive without being annoying,
-  run lean cron tasks, and control token costs.
+  A battle-tested agent self-improvement system built by a non-coder from weeks of real-world usage with OpenClaw.
+  No fluff, no theory — every rule here was learned from something that actually broke.
+  Covers: behavior learning, proactive patterns, cron discipline, cost control, and false-positive prevention.
+  Use when: you want your agent to get smarter over time, stay lean, and stop interrupting you with noise.
 author: paoloxiamn
 license: MIT
 tags: [self-improvement, optimization, proactive, cron, cost-control, learning]
@@ -17,6 +17,9 @@ tags: [self-improvement, optimization, proactive, cron, cost-control, learning]
 A unified skill for agents that want to **learn, act proactively, run lean, and cost less** — built from real production experience, not theory.
 
 > Born from weeks of real usage by Paolo + LX (OpenClaw). Every pattern here was tested, broke something, got fixed, and survived.
+>
+> **Notably: this skill was created by a non-coder author.**
+> That is exactly why it is practical — it focuses on observable failures, reusable workflows, and user experience, instead of abstract agent philosophy.
 
 ---
 
@@ -87,6 +90,8 @@ These were learned the hard way:
 | **Infer before asking** | Read filenames, context, history — ask only when truly ambiguous |
 | **Script-first cron** | Embed logic in `.py` files, not in cron message prompts |
 | **Silent on success** | Only alert on anomalies, errors, or changes |
+| **Channel health checks → real-time probe, not stale logs** | Historical cron errors may be old; verify current channel state before alerting or auto-remediating |
+| **Reminder source mapping → check both cron and HEARTBEAT.md** | Some reminders live in cron jobs, others live in heartbeat rules; disabling one side is not enough |
 | **Success once ≠ learned** | A task is only truly learned after the verified path is written into external memory (`TOOLS.md`, improvement log, or long-term memory) |
 
 ---
@@ -101,6 +106,8 @@ These were learned the hard way:
 | Send image to user | `message` tool (media/filePath) | Absolute/~ paths |
 | Sports data (no API key) | ESPN public API | sofascore (403), official site (SPA) |
 | Apple Calendar today events | Run `python3 /Users/paolo/.openclaw/workspace/skills/calendar-morning/scripts/today_events.py` on Paolo's Mac mini; under the hood it uses `/usr/bin/osascript` + Calendar.app | Re-guessing the tool, calendar names, or prompting from scratch |
+| Telegram channel health check | Send a **silent real-time probe** via `message` tool and only remediate/alert on actual send failure | Scanning historical cron `lastError` / `deliveryStatus` and assuming the channel is currently down |
+| Reminder disable audit | Check **both** cron jobs and `HEARTBEAT.md` before saying a reminder is removed | Looking only at cron list and missing heartbeat-driven reminders |
 
 ---
 
@@ -193,9 +200,19 @@ Before shipping any cron job:
 
 | Task Type | Recommended Tier | Example |
 |-----------|-----------------|---------|
-| Simple fetch + format | cheapest (qwen-plus) | sports results, reminders, weather |
+| Simple fetch + format | cheapest (qwen-plus / gemini-lite) | sports results, reminders, weather |
+| **固定流程任务**（文章总结、写文件、数据抓取） | qwen-plus | 微信文章总结、Obsidian 写入、cron 推送 |
+| **中文内容处理**（总结/整理/改写） | qwen-plus | 中文语境更准，比 claude 省 token |
+| 周复盘 / cron 状态检查 | gemini-2.5-flash | 够用，比 sonnet 便宜 |
 | Reasoning + writing | mid-tier (sonnet) | self-improvement analysis, strategy |
 | Complex multi-step | high-tier (opus) | only when mid-tier fails repeatedly |
+
+**分工原则：主 session（claude）只做判断+调度+对话；固定流程和中文任务一律 sessions_spawn → qwen-plus。**
+
+**主模型注意事项（2026-03-28）：**
+- 不要把 Gemini 设为主 session 默认模型 → `compaction.mode: safeguard` 与 Gemini preview 模型有 API 兼容性问题，导致 400 报错
+- Gemini 适合做 fallback 或在 isolated cron 中指定使用
+- 主 session 保持 `renlijia/claude-sonnet-4-6`
 
 **Cost rule:** Cache hit rate > 70% = healthy. If < 40%, you're creating too many new sessions.
 
