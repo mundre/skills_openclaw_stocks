@@ -36,6 +36,12 @@ Fix high-frequency UX friction in hot paths (navigation, shortcuts, defaults, wo
 Perform cleanup only when explicitly requested; keep each change independently safe and reviewable.
 4. Review-my-own-PR mode
 Run an explicit maintainer-style critique before final output.
+This is a standalone review mode (no code changes), not a second execution mode alongside Bugfix/Paper-cut flows.
+
+### Non-code repository fallback
+
+This fallback is not a separate mode.
+If no executable code or reproducible runtime bug exists, treat the repository as a specification system and fix exactly one deterministic weakness (ambiguity, missing constraint, contradiction, scope leak, or unenforceable rule) with the smallest reviewable docs patch.
 
 ## Standard Workflow
 
