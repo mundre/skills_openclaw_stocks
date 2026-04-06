@@ -1,7 +1,7 @@
 ---
 name: bee
-version: 1.0.0
-description: 抖音视频自动化工作流 - 下载、上传OSS、记录到飞书多维表格
+version: 1.1.2
+description: 抖音视频自动化工作流 - 下载、上传OSS、按角色批量插入飞书多维表格
 author: openclaw
 metadata:
   openclaw:
@@ -13,15 +13,16 @@ metadata:
       env: [FEISHU_BITABLE_APP_TOKEN, FEISHU_BITABLE_TABLE_ID]
 ---
 
-# 🎬 抖音视频工作流
+# 🎬 抖音视频工作流 (BEE)
 
-自动化完成抖音视频处理全流程：下载无水印视频 → 上传阿里云OSS → 记录到飞书多维表格。
+自动化完成抖音视频处理全流程：下载无水印视频 → 上传阿里云OSS → 按角色批量插入飞书多维表格。
 
 ## ✨ 功能特性
 
-- 🎬 **自动下载** - 获取抖音无水印视频
-- ☁️ **OSS上传** - 自动上传到阿里云对象存储
-- 📝 **表格记录** - 自动插入飞书多维表格
+- 🎬 **自动下载** - 获取抖音无水印视频（支持 v.douyin.com / douyin.com 链接）
+- ☁️ **OSS上传** - 自动上传到阿里云对象存储，生成永久链接
+- 📝 **批量插入** - 自动读取多维表格角色，每个角色插入一条记录
+- 🏷️ **自动提取** - 从视频标题自动提取正文、话题标签（#号）
 - 🔒 **安全设计** - 敏感信息通过环境变量读取
 - ✅ **前置验证** - 运行前检查所有依赖和配置
 
@@ -30,85 +31,64 @@ metadata:
 ### 1. 安装依赖
 
 ```bash
-# 安装阿里云OSS Python SDK
-pip3 install oss2
-
-# 确保已安装 douyin-download skill
+pip3 install oss2 requests
 clawhub install douyin-download
 ```
 
 ### 2. 配置环境变量
 
 ```bash
+# 必需：阿里云OSS
 export ALIYUN_OSS_ACCESS_KEY_ID="your_access_key_id"
 export ALIYUN_OSS_ACCESS_KEY_SECRET="your_access_key_secret"
 export ALIYUN_OSS_ENDPOINT="https://oss-cn-beijing.aliyuncs.com"
 export ALIYUN_OSS_BUCKET="your_bucket_name"
 
-# 可选：飞书多维表格配置
+# 可选：飞书多维表格
 export FEISHU_BITABLE_APP_TOKEN="your_app_token"
 export FEISHU_BITABLE_TABLE_ID="your_table_id"
 ```
 
-### 3. 运行工作流
+### 3. 运行
 
 ```bash
-# 使用完整命令
-python3 ~/.openclaw/workspace/skills/douyin-workflow/scripts/workflow.py "https://v.douyin.com/xxxxx"
-
-# 或使用快捷方式
-openclaw run douyin-workflow --url "https://v.douyin.com/xxxxx"
+python3 ~/.openclaw/workspace/skills/bee/scripts/workflow.py "https://v.douyin.com/xxxxx"
 ```
 
 ## 📋 工作流程
 
-1. **验证阶段**
-   - 检查必要的环境变量
-   - 验证依赖（node, python3, douyin-download）
-   - 验证抖音链接格式
+1. **验证阶段** - 检查环境变量、依赖、链接格式
+2. **下载阶段** - 调用 douyin-download 获取视频信息 + 下载无水印视频
+3. **上传阶段** - 上传到阿里云OSS，路径：`videos/douyin/YYYY/MM/video_id.mp4`
+4. **记录阶段** - 读取多维表格"角色"字段所有选项，为每个角色创建一条记录
 
-2. **下载阶段**
-   - 调用 douyin-download 获取视频信息
-   - 下载无水印视频到本地
+### 插入的字段
 
-3. **上传阶段**
-   - 上传视频到阿里云OSS
-   - 自动生成日期路径：`videos/douyin/YYYY/MM/video_id.mp4`
-   - 生成永久访问链接
+| 字段 | 来源 | 说明 |
+|------|------|------|
+| 热点词 | 视频标题 | 视频完整标题 |
+| 大概描述 | 视频标题 | 视频完整标题 |
+| 正文 | 标题提取 | 标题去掉 #话题标签 后的纯文本 |
+| 话题 | 标题提取 | 从标题中提取的 #标签 |
+| 视频原始地址 | 用户输入 | 原始抖音链接 |
+| 阿里OSS地址 | 上传结果 | OSS永久链接 |
+| 视频url | 上传结果 | 同上 |
+| 状态 | 固定值 | "未制作" |
+| 角色 | 表格字段 | 每个角色一条记录 |
+| 素材审核状态 | 固定值 | "未审核" |
+| 插入时间 | 当前时间 | 自动填充 |
+| 锚点图地址 | 公式计算 | 表格公式按角色自动匹配 |
 
-4. **记录阶段**（可选）
-   - 插入记录到飞书多维表格
-   - 自动填充视频信息
-
-## 🔒 安全配置
-
-### 环境变量清单
+## 🔒 环境变量清单
 
 | 变量名 | 必需 | 说明 |
 |--------|------|------|
 | `ALIYUN_OSS_ACCESS_KEY_ID` | ✅ | 阿里云AccessKey ID |
 | `ALIYUN_OSS_ACCESS_KEY_SECRET` | ✅ | 阿里云AccessKey Secret |
-| `ALIYUN_OSS_ENDPOINT` | ✅ | OSS端点，如 `https://oss-cn-beijing.aliyuncs.com` |
-| `ALIYUN_OSS_BUCKET` | ✅ | OSS存储空间名称 |
-| `FEISHU_BITABLE_APP_TOKEN` | ❌ | 飞书多维表格App Token |
-| `FEISHU_BITABLE_TABLE_ID` | ❌ | 飞书多维表格Table ID |
-
-### 配置方法
-
-**临时配置（当前会话）**:
-```bash
-export ALIYUN_OSS_ACCESS_KEY_ID="xxx"
-export ALIYUN_OSS_ACCESS_KEY_SECRET="xxx"
-# ... 其他变量
-```
-
-**永久配置（推荐）**:
-```bash
-# 添加到 ~/.bashrc
-echo 'export ALIYUN_OSS_ACCESS_KEY_ID="xxx"' >> ~/.bashrc
-# ... 其他变量
-source ~/.bashrc
-```
+| `ALIYUN_OSS_ENDPOINT` | ✅ | OSS端点 |
+| `ALIYUN_OSS_BUCKET` | ✅ | OSS Bucket名称 |
+| `FEISHU_BITABLE_APP_TOKEN` | ❌ | 飞书多维表格 App Token |
+| `FEISHU_BITABLE_TABLE_ID` | ❌ | 飞书多维表格 Table ID |
 
 ## 📊 输出示例
 
@@ -116,101 +96,62 @@ source ~/.bashrc
 ==================================================
 🎬 抖音视频工作流启动
 ==================================================
-视频链接: https://v.douyin.com/S4rTRjyUlN4/
+视频链接: https://v.douyin.com/vE-E11wm18I/
 
 📥 步骤1: 下载视频...
-✅ 下载成功: 7615542096955644998.mp4 (5.2 MB)
+✅ 下载成功: 7617007615838565553.mp4 (2.2 MB)
 
 ☁️ 步骤2: 上传到阿里云OSS...
-✅ 上传成功: videos/douyin/2026/03/7615542096955644998.mp4
+✅ 上传成功: videos/douyin/2026/04/7617007615838565553.mp4
 
 📝 步骤3: 插入多维表格...
-✅ 记录已插入多维表格
+📋 角色列表: 小桃犟, 腿姐, 张伟杰, 张薇因 (共4个)
+  ✅ [小桃犟] 记录已创建
+  ✅ [腿姐] 记录已创建
+  ✅ [张伟杰] 记录已创建
+  ✅ [张薇因] 记录已创建
 
 ==================================================
 ✅ 工作流执行完成！
 ==================================================
-📹 视频ID: 7615542096955644998
-📁 本地文件: /tmp/douyin_workflow/7615542096955644998.mp4
-☁️  OSS地址: https://bucket.oss-cn-beijing.aliyuncs.com/videos/douyin/2026/03/7615542096955644998.mp4
+📹 视频ID: 7617007615838565553
+📁 本地文件: /tmp/douyin_workflow/7617007615838565553.mp4
+☁️  OSS地址: https://openclawark.oss-cn-beijing.aliyuncs.com/videos/douyin/2026/04/7617007615838565553.mp4
 ```
 
 ## 🛠️ 故障排除
 
-### 问题1：缺少环境变量
-```
-❌ 缺少必要的环境变量：
-  - ALIYUN_OSS_ACCESS_KEY_ID
-```
-**解决**: 配置环境变量，参考"安全配置"部分
-
-### 问题2：缺少依赖
-```
-❌ 缺少必要的依赖: node
-```
-**解决**: 安装 Node.js
-
-### 问题3：douyin-download skill 未找到
-```
-❌ 未找到 douyin-download skill
-```
-**解决**: `clawhub install douyin-download`
-
-### 问题4：OSS上传失败
-```
-❌ 上传失败: ...
-```
-**解决**: 
-- 检查 AccessKey 是否正确
-- 检查 Bucket 是否存在
-- 检查网络连接
-
-## 📝 高级配置
-
-### 自定义OSS路径前缀
-
-编辑 `scripts/workflow.py`，修改 `upload_to_oss` 方法：
-```python
-workflow.upload_to_oss(oss_key_prefix="custom/path")
-```
-
-### 跳过飞书表格记录
-
-如果不需要插入飞书表格，可以：
-1. 不设置 `FEISHU_BITABLE_APP_TOKEN` 和 `FEISHU_BITABLE_TABLE_ID`
-2. 工作流会自动跳过表格插入步骤
+| 问题 | 解决 |
+|------|------|
+| 缺少环境变量 | 配置 `~/.bashrc` 中的 OSS 和飞书变量 |
+| 缺少依赖 | `pip3 install oss2 requests` + 安装 Node.js |
+| douyin-download 未找到 | `clawhub install douyin-download` |
+| OSS上传失败 | 检查 AccessKey、Bucket、网络连接 |
+| 下载超时 | 网络慢时大文件可能需要等待，超时300秒 |
 
 ## 📄 文件结构
 
 ```
-~/.openclaw/workspace/skills/douyin-workflow/
-├── SKILL.md                 # 本文档
-├── _meta.json              # 技能元数据
-├── scripts/
-│   ├── workflow.py         # 主工作流脚本
-│   └── setup_env.sh        # 环境配置助手
-└── references/
-    └── config_template.md  # 配置模板
+~/.openclaw/workspace/skills/bee/
+├── SKILL.md
+├── _meta.json
+└── scripts/
+    └── workflow.py         # 主工作流脚本
 ```
 
 ## 🔄 更新日志
 
+### v1.1.1 (2026-04-01)
+- ✅ 补充「正文」和「话题」字段：从视频标题自动提取，正文去掉 #标签，话题单独提取
+- ✅ 视频标题解析：下载时从视频信息中提取标题
+
+### v1.1.0 (2026-04-01)
+- ✅ 批量插入：自动读取多维表格角色字段，每个角色插入一条记录（原来只插1条）
+- ✅ 补充字段：热点词、大概描述、素材审核状态
+- ✅ 飞书凭证：从 openclaw.json 自动读取，无需额外配置
+- ✅ 下载超时：从120秒提升到300秒
+
 ### v1.0.0 (2026-03-26)
-- ✅ 初始版本发布
-- ✅ 完整下载-上传-记录流程
+- ✅ 初始版本：下载视频 → 上传OSS → 插入多维表格
 - ✅ 安全的环境变量配置
 - ✅ 前置验证和错误处理
-
-## 💡 提示
-
-- 视频下载保存在 `/tmp/douyin_workflow/` 目录
-- OSS路径自动生成：`videos/douyin/YYYY/MM/video_id.mp4`
-- 临时文件不会自动清理，可手动删除
-
-## 📞 支持
-
-如有问题，请检查：
-1. 所有环境变量是否正确配置
-2. 依赖是否完整安装
-3. 网络连接是否正常
-4. 阿里云OSS权限是否正确

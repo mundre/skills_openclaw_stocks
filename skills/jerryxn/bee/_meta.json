@@ -1,11 +1,17 @@
 {
   "owner": "jerryxn",
   "slug": "bee",
-  "displayName": "bee",
+  "displayName": "Bee 抖音视频工作流",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774544290099,
-    "commit": "https://github.com/openclaw/skills/commit/f99a33885e4fefd93c8d8697a1efe611d01fc60a"
+    "version": "1.1.2",
+    "publishedAt": 1775057351933,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774544290099,
+      "commit": "https://github.com/openclaw/skills/commit/f99a33885e4fefd93c8d8697a1efe611d01fc60a"
+    }
+  ]
 }

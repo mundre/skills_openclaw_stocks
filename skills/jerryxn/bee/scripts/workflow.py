@@ -2,7 +2,7 @@
 """
 抖音视频工作流 - 安全版
 功能：下载视频 → 上传OSS → 插入多维表格
-版本：v1.0.1
+版本：v1.1.0
 """
 
 import os
@@ -112,6 +112,10 @@ class DouyinWorkflow:
         self.local_path = None
         self.oss_url = None
         self.record_id = None
+        self.source_url = None
+        self.feishu_token = None
+        self.feishu_app_id = None
+        self.feishu_app_secret = None
         
     def download_video(self, url, output_dir="/tmp/douyin_workflow"):
         """下载视频"""
@@ -138,10 +142,14 @@ class DouyinWorkflow:
         else:
             video_id = datetime.now().strftime('%Y%m%d_%H%M%S')
         
+        # 解析标题
+        title_match = re.search(r'标题:\s*(.+)', result.stdout)
+        video_title = title_match.group(1).strip() if title_match else ""
+        
         # 下载视频
         result = subprocess.run(
             ['node', str(skill_path), 'download', url, '-o', output_dir],
-            capture_output=True, text=True, timeout=120
+            capture_output=True, text=True, timeout=300
         )
         
         if result.returncode != 0:
@@ -155,7 +163,8 @@ class DouyinWorkflow:
             self.video_info = {
                 'video_id': video_id,
                 'file_path': str(video_file),
-                'file_size_mb': round(video_file.stat().st_size / (1024*1024), 2)
+                'file_size_mb': round(video_file.stat().st_size / (1024*1024), 2),
+                'title': video_title
             }
             print(f"✅ 下载成功: {video_file.name} ({self.video_info['file_size_mb']} MB)")
             return True
@@ -198,8 +207,117 @@ class DouyinWorkflow:
             print(f"❌ 上传失败: {e}")
             return False
     
+    def _get_feishu_token(self):
+        """获取飞书 tenant_access_token"""
+        import requests
+        
+        # 从 openclaw 配置读取
+        config_path = Path.home() / '.openclaw/openclaw.json'
+        if config_path.exists():
+            with open(config_path) as f:
+                config = json.load(f)
+            feishu = config.get('channels', {}).get('feishu', {})
+            self.feishu_app_id = feishu.get('appId')
+            self.feishu_app_secret = feishu.get('appSecret')
+        
+        if not self.feishu_app_id or not self.feishu_app_secret:
+            print("❌ 未找到飞书应用凭证 (openclaw.json → channels.feishu)")
+            return None
+        
+        resp = requests.post(
+            "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+            json={"app_id": self.feishu_app_id, "app_secret": self.feishu_app_secret},
+            timeout=10
+        )
+        data = resp.json()
+        if data.get("code") == 0:
+            return data["tenant_access_token"]
+        print(f"❌ 获取飞书 token 失败: {data}")
+        return None
+
+    def _get_role_options(self, app_token, table_id):
+        """从多维表格的角色字段获取所有角色选项"""
+        import requests
+        
+        resp = requests.get(
+            f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/fields",
+            headers={"Authorization": f"Bearer {self.feishu_token}"},
+            timeout=10
+        )
+        data = resp.json()
+        if data.get("code") != 0:
+            print(f"❌ 获取字段失败: {data}")
+            return []
+        
+        for field in data.get("data", {}).get("items", []):
+            if field.get("field_name") == "角色":
+                options = field.get("property", {}).get("options", [])
+                return [opt["name"] for opt in options]
+        
+        print("⚠️ 未找到'角色'字段，使用默认角色列表")
+        return ["小桃犟", "腿姐", "张伟杰", "张薇因"]
+
+    def _batch_insert_records(self, app_token, table_id, roles):
+        """为每个角色创建一条记录"""
+        import requests
+        
+        now_ms = int(datetime.now().timestamp() * 1000)
+        records = []
+        
+        # 从视频信息提取标题（如果有）
+        title = ""
+        if self.video_info and self.video_info.get("title"):
+            title = self.video_info["title"]
+        
+        # 从标题提取话题（#号后的内容）
+        topic_tags = re.findall(r'#(\S+)', title)
+        topic_str = " ".join([f"#{t}" for t in topic_tags]) if topic_tags else ""
+        
+        # 正文 = 标题去掉话题标签
+        body_text = re.sub(r'#\S+', '', title).strip() if title else ""
+        
+        for role in roles:
+            record = {
+                "fields": {
+                    "热点词": title or "",
+                    "大概描述": title or "",
+                    "正文": body_text,
+                    "话题": topic_str,
+                    "视频原始地址": self.source_url or "",
+                    "阿里OSS地址": self.oss_url or "",
+                    "视频url": self.oss_url or "",
+                    "状态": "未制作",
+                    "角色": role,
+                    "素材审核状态": "未审核",
+                    "插入时间": now_ms,
+                }
+            }
+            records.append(record)
+        
+        resp = requests.post(
+            f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/batch_create",
+            headers={
+                "Authorization": f"Bearer {self.feishu_token}",
+                "Content-Type": "application/json"
+            },
+            json={"records": records},
+            timeout=15
+        )
+        data = resp.json()
+        if data.get("code") == 0:
+            created = data.get("data", {}).get("records", [])
+            for r in created:
+                role = r.get("fields", {}).get("角色", "?")
+                print(f"  ✅ [{role}] 记录已创建")
+            return True
+        else:
+            print(f"❌ 批量创建失败: {data}")
+            return False
+
     def insert_to_bitable(self):
-        """插入到飞书多维表格"""
+        """插入到飞书多维表格（每个角色一条记录）"""
+        import requests
+        
         print("\n📝 步骤3: 插入多维表格...")
 
         app_token = os.environ.get('FEISHU_BITABLE_APP_TOKEN')
@@ -209,8 +327,20 @@ class DouyinWorkflow:
             print("⏭️  跳过：未配置飞书多维表格环境变量")
             return True
 
-        print("✅ 记录已插入多维表格")
-        return True
+        # 获取飞书 token
+        self.feishu_token = self._get_feishu_token()
+        if not self.feishu_token:
+            return False
+
+        # 获取所有角色
+        roles = self._get_role_options(app_token, table_id)
+        if not roles:
+            print("❌ 没有可用的角色")
+            return False
+        print(f"📋 角色列表: {', '.join(roles)} (共{len(roles)}个)")
+
+        # 为每个角色创建一条记录
+        return self._batch_insert_records(app_token, table_id, roles)
     
     def run(self, url):
         """运行完整工作流"""
@@ -218,6 +348,7 @@ class DouyinWorkflow:
         print("🎬 抖音视频工作流启动")
         print("=" * 50)
         print(f"视频链接: {url}")
+        self.source_url = url
         
         # 步骤1: 下载
         if not self.download_video(url):
