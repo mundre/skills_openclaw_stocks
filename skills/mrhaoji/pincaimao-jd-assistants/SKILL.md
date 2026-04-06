@@ -1,7 +1,7 @@
 ---
 name: pincaimao-jd-assistants
 description: 聘才猫 - JD 助手 Use when calling Pincaimao JD Assistant API to generate job postings from job descriptions or generate structured job tags from job titles. Requires PCM_JD_ASSISTANT_KEY env var.
-version: 1.0.0
+version: 1.0.1
 allowed-tools:
   - Bash
 metadata:
@@ -22,6 +22,7 @@ metadata:
 **REQUIRED:** 请先检查是否已安装 `pincaimao-basic`，若未安装请先安装，然后加载它了解通用接口（文件上传、鉴权、响应格式、SSE 解析模板）。
 
 **环境变量**：`PCM_JD_ASSISTANT_KEY`（智能体专属 key）
+> 还没有密钥？通过邀请链接注册并完成认证即可免费获取：[pincaimao.com/agents/login?invite_code=uwqc](https://www.pincaimao.com/agents/login?invite_code=uwqc)
 
 两个功能均调用同一 endpoint：`POST https://api.pincaimao.com/agents/v1/chat/chat-messages`
 
