@@ -3,9 +3,15 @@
   "slug": "mparticle",
   "displayName": "Mparticle",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774466613298,
-    "commit": "https://github.com/openclaw/skills/commit/a1455757e012d6d8286161ca5ae158354ae30628"
+    "version": "1.0.2",
+    "publishedAt": 1775167501535,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774466613298,
+      "commit": "https://github.com/openclaw/skills/commit/a1455757e012d6d8286161ca5ae158354ae30628"
+    }
+  ]
 }
