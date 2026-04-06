@@ -11,12 +11,12 @@ COMMANDS_FILE="$PROJECT_ROOT/api/commands.json"
 
 AK="${DESIGNKIT_OPENCLAW_AK:-}"
 # 引导用户获取/核对 AK 的页面（Skill 与错误提示中与此一致）
-DESIGNKIT_OPENCLAW_AK_URL="${DESIGNKIT_OPENCLAW_AK_URL:-https://www.designkit.cn/openClaw}"
+DESIGNKIT_OPENCLAW_AK_URL="${DESIGNKIT_OPENCLAW_AK_URL:-https://www.designkit.cn/openclaw}"
 API_BASE="${OPENCLAW_API_BASE:-https://openclaw-designkit-api.meitu.com}"
 DESIGNKIT_WEBAPI_BASE="${DESIGNKIT_WEBAPI_BASE:-}"
 DEBUG="${OPENCLAW_DEBUG:-0}"
-# 测试阶段默认开启：所有对外 HTTP 请求/响应摘要打到 stderr；正式环境可设 OPENCLAW_REQUEST_LOG=0
-REQUEST_LOG="${OPENCLAW_REQUEST_LOG:-1}"
+# 默认关闭请求日志；如需排查问题，可显式设置 OPENCLAW_REQUEST_LOG=1，并使用脱敏后的日志输出。
+REQUEST_LOG="${OPENCLAW_REQUEST_LOG:-0}"
 ASYNC_MAX_WAIT_SEC="${OPENCLAW_ASYNC_MAX_WAIT_SEC:-180}"
 ASYNC_INTERVAL_SEC="${OPENCLAW_ASYNC_INTERVAL_SEC:-2}"
 ASYNC_QUERY_ENDPOINT_DEFAULT="${OPENCLAW_ASYNC_QUERY_ENDPOINT:-/openclaw/mtlab/query}"
@@ -64,14 +64,22 @@ debug_log() {
   fi
 }
 
+run_script_python() {
+  PYTHONPATH="$SCRIPT_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 "$@"
+}
+
+run_security_logging_python() {
+  run_script_python "$@"
+}
+
 request_log() {
   if [ "$REQUEST_LOG" != "0" ]; then
     echo "[REQUEST] $*" >&2
   fi
 }
 
-# 响应以 JSON 格式化输出到 stderr（与 [REQUEST] 同通道）；超长截断后尽量解析
-REQUEST_LOG_BODY_MAX="${OPENCLAW_REQUEST_LOG_BODY_MAX:-20000}"
+# 响应以 JSON 格式化输出到 stderr（与 [REQUEST] 同通道）；默认截断，且对敏感字段做脱敏。
+REQUEST_LOG_BODY_MAX="${OPENCLAW_REQUEST_LOG_BODY_MAX:-4000}"
 request_log_response_json() {
   local label="${1:-response_body}"
   local http_code="${2:-}"
@@ -79,56 +87,47 @@ request_log_response_json() {
     cat >/dev/null 2>&1 || true
     return 0
   fi
-  python3 -c "
-import sys, json
+  run_security_logging_python -c "
+import sys
+from security_logging import format_json_log
+
 label = sys.argv[1]
 max_len = int(sys.argv[2])
-hc_raw = sys.argv[3] if len(sys.argv) > 3 else ''
-try:
-    http_code = int(hc_raw) if str(hc_raw).strip() else None
-except ValueError:
-    http_code = None
-s = sys.stdin.read()
-if len(s) > max_len:
-    s = s[:max_len] + '...(truncated)'
-try:
-    body = json.loads(s)
-    if http_code is not None:
-        env = {'http_code': http_code, 'body': body}
-    else:
-        env = body
-except json.JSONDecodeError:
-    if http_code is not None:
-        env = {'http_code': http_code, '_raw': s}
-    else:
-        env = {'_raw': s}
-pretty = json.dumps(env, ensure_ascii=False, indent=2)
-print('[REQUEST] ' + label + ' (JSON):', file=sys.stderr)
-print(pretty, file=sys.stderr)
+http_code = sys.argv[3] if len(sys.argv) > 3 else None
+text = sys.stdin.read()
+print(format_json_log(label, text, max_len=max_len, http_code=http_code), file=sys.stderr)
 " "$label" "${REQUEST_LOG_BODY_MAX}" "${http_code}"
 }
 
-# 将 OpenClaw 请求以可复制 curl 单行打印（header 含完整 X-Openclaw-AK，注意勿泄露日志）
+# 将 OpenClaw 请求以可复制 curl 单行打印（header 自动脱敏）。
 request_log_openclaw_curl() {
   local url="$1"
   if [ "$REQUEST_LOG" = "0" ]; then
     cat >/dev/null 2>&1 || true
     return 0
   fi
-  python3 -c "
-import os, sys, shlex
+  run_security_logging_python -c "
+import os
+import sys
+from security_logging import format_curl_command
+
 url = sys.argv[1]
 body = sys.stdin.read()
-ak = os.environ.get('DESIGNKIT_OPENCLAW_AK', '') or ''
-parts = [
-    'curl', '-s', '-w', '\\n%{http_code}', '-X', 'POST',
-    '-H', 'Content-Type: application/json',
-    '-H', 'X-Openclaw-AK: ' + ak,
-    '-d', body,
-    '--max-time', '120',
-    url,
-]
-print('[REQUEST] ' + shlex.join(parts), file=sys.stderr)
+headers = {
+    'Content-Type': 'application/json',
+    'X-Openclaw-AK': os.environ.get('DESIGNKIT_OPENCLAW_AK', '') or '',
+}
+print(
+    '[REQUEST] ' + format_curl_command(
+        'POST',
+        url,
+        headers,
+        body,
+        max_time=120,
+        include_http_code=True,
+    ),
+    file=sys.stderr,
+)
 " "$url"
 }
 
@@ -172,18 +171,7 @@ fi
 read_command_field() {
   local action="$1"
   local field="$2"
-  python3 -c "
-import sys, json
-with open('${COMMANDS_FILE}') as f:
-    cmds = json.load(f)
-if '${action}' not in cmds:
-    sys.exit(1)
-val = cmds['${action}'].get('${field}', '')
-if isinstance(val, (dict, list)):
-    print(json.dumps(val))
-else:
-    print(val)
-" 2>/dev/null
+  run_script_python "$SCRIPT_DIR/run_command_helpers.py" command-field "$COMMANDS_FILE" "$action" "$field" 2>/dev/null
 }
 
 CMD_STATUS=$(read_command_field "$ACTION" "status" || echo "")
@@ -221,49 +209,13 @@ if [ -z "$INPUT_JSON" ]; then
   exit 1
 fi
 
-IMAGE_INPUT=$(python3 -c "
-import sys, json
-try:
-    d = json.loads('''${INPUT_JSON}''')
-    print(d.get('image', ''))
-except:
-    print('')
-" 2>/dev/null)
+IMAGE_INPUT=$(run_script_python "$SCRIPT_DIR/run_command_helpers.py" image-input "$INPUT_JSON" 2>/dev/null)
 
 if [ -z "$IMAGE_INPUT" ]; then
-  ASK_MSG=$(python3 -c "
-import json
-with open('${COMMANDS_FILE}') as f:
-    cmds = json.load(f)
-ask = cmds.get('${ACTION}', {}).get('ask_if_missing', {})
-print(ask.get('image', '请提供图片'))
-" 2>/dev/null)
+  ASK_MSG=$(run_script_python "$SCRIPT_DIR/run_command_helpers.py" ask-message "$COMMANDS_FILE" "$ACTION" image 2>/dev/null)
   json_error "PARAM_ERROR" "缺少必填参数: image" "$ASK_MSG"
   exit 1
 fi
-
-# ---------- 推断文件后缀 & MIME ----------
-get_suffix() {
-  local ext
-  ext=$(echo "$1" | sed 's/.*\.//' | tr '[:upper:]' '[:lower:]')
-  case "$ext" in
-    jpg|jpeg) echo "jpeg" ;;
-    png) echo "png" ;;
-    webp) echo "webp" ;;
-    gif) echo "gif" ;;
-    *) echo "jpeg" ;;
-  esac
-}
-
-get_mime() {
-  case "$1" in
-    jpeg) echo "image/jpeg" ;;
-    png) echo "image/png" ;;
-    webp) echo "image/webp" ;;
-    gif) echo "image/gif" ;;
-    *) echo "image/jpeg" ;;
-  esac
-}
 
 # ---------- 上传本地图片 → 返回 CDN URL ----------
 upload_image() {
@@ -274,9 +226,23 @@ upload_image() {
     exit 1
   fi
 
-  local SUFFIX MIME FNAME
-  SUFFIX=$(get_suffix "$FILE_PATH")
-  MIME=$(get_mime "$SUFFIX")
+  local IMAGE_META SUFFIX MIME FNAME
+  if ! IMAGE_META=$(run_script_python -c "
+import sys
+from local_image_guard import describe_local_image
+
+try:
+    suffix, mime = describe_local_image(sys.argv[1])
+except Exception as exc:
+    print(str(exc))
+    raise SystemExit(1)
+
+print(f'{suffix}\t{mime}')
+" "$FILE_PATH"); then
+    json_error "PARAM_ERROR" "${IMAGE_META:-仅支持上传 JPG/JPEG/PNG/WEBP/GIF 图片文件}" "请提供图片格式文件，避免上传其他本地文件"
+    exit 1
+  fi
+  IFS=$'\t' read -r SUFFIX MIME <<< "$IMAGE_META"
   FNAME=$(basename "$FILE_PATH")
 
   debug_log "上传文件: ${FILE_PATH} (suffix=${SUFFIX}, mime=${MIME})"
@@ -287,19 +253,18 @@ upload_image() {
   GETSIGN_URL="${WEBAPI_BASE_MAAT}/maat/getsign?type=openclaw"
 
   if [ "$REQUEST_LOG" != "0" ]; then
-    python3 -c "
-import shlex, sys
+    run_security_logging_python -c "
+import sys
+from security_logging import format_curl_command
+
 url = sys.argv[1]
-ak = sys.argv[2]
-parts = [
-    'curl', '-s', '--max-time', '30', '-X', 'GET',
-    '-H', 'Accept: application/json, text/plain, */*',
-    '-H', 'X-Openclaw-AK: ' + ak,
-    '-H', 'Origin: https://www.designkit.cn',
-    '-H', 'Referer: https://www.designkit.cn/editor/',
-    url,
-]
-print('[REQUEST] ' + shlex.join(parts), file=__import__('sys').stderr)
+headers = {
+    'Accept': 'application/json, text/plain, */*',
+    'X-Openclaw-AK': sys.argv[2],
+    'Origin': 'https://www.designkit.cn',
+    'Referer': 'https://www.designkit.cn/editor/',
+}
+print('[REQUEST] ' + format_curl_command('GET', url, headers, max_time=30), file=sys.stderr)
 " "$GETSIGN_URL" "$AK"
   fi
   GETSIGN_RESP=$(curl -s -w "\n%{http_code}" -X GET "$GETSIGN_URL" \
@@ -329,16 +294,16 @@ print('[REQUEST] ' + shlex.join(parts), file=__import__('sys').stderr)
   fi
 
   if [ "$REQUEST_LOG" != "0" ]; then
-    python3 -c "
-import shlex, sys
+    run_security_logging_python -c "
+import sys
+from security_logging import format_curl_command
+
 url = sys.argv[1]
-parts = [
-    'curl', '-s', '--max-time', '30', '-X', 'GET',
-    '-H', 'Origin: https://www.designkit.cn',
-    '-H', 'Referer: https://www.designkit.cn/editor/',
-    url,
-]
-print('[REQUEST] ' + shlex.join(parts), file=__import__('sys').stderr)
+headers = {
+    'Origin': 'https://www.designkit.cn',
+    'Referer': 'https://www.designkit.cn/editor/',
+}
+print('[REQUEST] ' + format_curl_command('GET', url, headers, max_time=30), file=sys.stderr)
 " "$POLICY_SIGNED_URL"
   fi
   local POLICY_RAW POLICY_HTTP_CODE POLICY_RESP
@@ -357,7 +322,7 @@ print('[REQUEST] ' + shlex.join(parts), file=__import__('sys').stderr)
   fi
 
   local PROVIDER
-  PROVIDER=$(echo "$POLICY_RESP" | python3 -c "import sys,json; arr=json.load(sys.stdin); print(arr[0]['order'][0])" 2>/dev/null)
+  PROVIDER=$(printf '%s' "$POLICY_RESP" | run_script_python "$SCRIPT_DIR/run_command_helpers.py" upload-policy-provider 2>/dev/null)
   if [ -z "$PROVIDER" ]; then
     request_log "policy response: parse failed or empty body"
     json_error "UPLOAD_ERROR" "获取上传策略失败" "请检查网络连接后重试"
@@ -365,27 +330,36 @@ print('[REQUEST] ' + shlex.join(parts), file=__import__('sys').stderr)
   fi
 
   local UP_TOKEN UP_KEY UP_URL UP_DATA
-  UP_TOKEN=$(echo "$POLICY_RESP" | python3 -c "import sys,json; arr=json.load(sys.stdin); print(arr[0]['${PROVIDER}']['token'])")
-  UP_KEY=$(echo "$POLICY_RESP" | python3 -c "import sys,json; arr=json.load(sys.stdin); print(arr[0]['${PROVIDER}']['key'])")
-  UP_URL=$(echo "$POLICY_RESP" | python3 -c "import sys,json; arr=json.load(sys.stdin); print(arr[0]['${PROVIDER}']['url'])")
-  UP_DATA=$(echo "$POLICY_RESP" | python3 -c "import sys,json; arr=json.load(sys.stdin); print(arr[0]['${PROVIDER}']['data'])")
+  UP_TOKEN=$(printf '%s' "$POLICY_RESP" | run_script_python "$SCRIPT_DIR/run_command_helpers.py" upload-policy-value "$PROVIDER" token)
+  UP_KEY=$(printf '%s' "$POLICY_RESP" | run_script_python "$SCRIPT_DIR/run_command_helpers.py" upload-policy-value "$PROVIDER" key)
+  UP_URL=$(printf '%s' "$POLICY_RESP" | run_script_python "$SCRIPT_DIR/run_command_helpers.py" upload-policy-value "$PROVIDER" url)
+  UP_DATA=$(printf '%s' "$POLICY_RESP" | run_script_python "$SCRIPT_DIR/run_command_helpers.py" upload-policy-value "$PROVIDER" data)
 
-  debug_log "上传策略: provider=${PROVIDER}, url=${UP_URL}, key=${UP_KEY}"
+  debug_log "上传策略: provider=${PROVIDER}, url=${UP_URL}, key=<redacted>"
   if [ "$REQUEST_LOG" != "0" ]; then
-    python3 -c "
-import shlex, sys
-up, fp, fn, mi = sys.argv[1:5]
-parts = [
-    'curl', '-s', '--max-time', '120', '-X', 'POST',
-    '-H', 'Origin: https://www.designkit.cn',
-    '-H', 'Referer: https://www.designkit.cn/editor/',
-    '-F', 'token=<redacted>',
-    '-F', 'key=<redacted>',
-    '-F', 'fname=' + fn,
-    '-F', 'file=@' + fp + ';type=' + mi,
-    up,
-]
-print('[REQUEST] ' + shlex.join(parts), file=__import__('sys').stderr)
+    run_security_logging_python -c "
+import sys
+from security_logging import format_multipart_curl
+
+upload_url, file_path, file_name, mime = sys.argv[1:5]
+print(
+    '[REQUEST] ' + format_multipart_curl(
+        upload_url,
+        file_path=file_path,
+        mime=mime,
+        form_fields={
+            'token': '<redacted>',
+            'key': '<redacted>',
+            'fname': file_name,
+        },
+        headers={
+            'Origin': 'https://www.designkit.cn',
+            'Referer': 'https://www.designkit.cn/editor/',
+        },
+        max_time=120,
+    ),
+    file=sys.stderr,
+)
 " "${UP_URL}/" "$FILE_PATH" "$FNAME" "$MIME"
   fi
 
@@ -427,17 +401,7 @@ else
 fi
 
 # ---------- 用模板构造请求体 ----------
-BODY=$(python3 -c "
-import json, sys
-
-with open('${COMMANDS_FILE}') as f:
-    cmds = json.load(f)
-
-template = cmds['${ACTION}']['body_template']
-body_str = json.dumps(template)
-body_str = body_str.replace('{{image}}', '${IMAGE_URL}')
-print(body_str)
-" 2>/dev/null)
+BODY=$(run_script_python "$SCRIPT_DIR/run_command_helpers.py" build-body "$COMMANDS_FILE" "$ACTION" "$IMAGE_URL" 2>/dev/null)
 
 if [ -z "$BODY" ]; then
   json_error "RUNTIME_ERROR" "构造请求体失败" "请检查 api/commands.json 中的 body_template 配置"

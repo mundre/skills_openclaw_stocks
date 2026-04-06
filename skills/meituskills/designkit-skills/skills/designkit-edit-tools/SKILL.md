@@ -1,69 +1,58 @@
 ---
 name: designkit-edit-tools
-description: >-
-  美图设计室通用图片编辑工具集（AI 修图）。支持智能抠图（背景移除/透明底/白底图）
-  和 AI 变清晰（画质修复/模糊修复/图片增强）。
-  当用户提到抠图、去背景、背景移除、matting、SOD、画质修复、变清晰、
-  图片增强、image restoration 时触发。
+description: Use when users want background removal, transparent or white-background output, or image restoration from a single image, while keeping runtime replies in Simplified Chinese.
 version: "1.0.0"
+metadata:
+  openclaw:
+    requires:
+      env:
+        - DESIGNKIT_OPENCLAW_AK
+      bins:
+        - bash
+        - curl
+        - python3
+    primaryEnv: DESIGNKIT_OPENCLAW_AK
+    homepage: https://www.designkit.cn/openclaw
 ---
 
 # DesignKit Edit Tools
 
-## Overview
+Single-image editing skill for background removal and image restoration.
+公开说明可偏英文或双语，但实际用户对话默认使用简体中文。
 
-通用图片编辑能力集，属于 DesignKit 原子能力层。每项能力输入输出明确、路由简单，既可独立使用，也可被上层 workflow 复用。
+## Public Installation Posture
 
-## 能力清单
+- Explain the action in plain product terms such as cutout, transparent background, white background, or image enhancement.
+- Only use image URLs or local file paths that the user explicitly provided.
+- If the user gives a local path, make clear that the file will be uploaded to the remote DesignKit / OpenClaw service.
+- Do not expose credentials, raw JSON payloads, internal headers, or local script paths unless the user explicitly asks for technical details.
 
-| 能力 | 操作标识 | 状态 | 描述 |
-|------|---------|------|------|
-| 智能抠图 | `sod` | ✅ 可用 | 把图片主体从背景里抠出来 |
-| AI 变清晰 | `image_restoration` | ✅ 可用 | 提高图片清晰度 |
+## Intent Mapping
 
-## 意图识别
+| User says | Action |
+| --- | --- |
+| 抠图、去背景、背景移除、透明底、白底图、matting、background removal | `sod` |
+| 变清晰、画质修复、图片增强、超分、image restoration | `image_restoration` |
 
-| 用户说法 | 路由到 |
-|----------|--------|
-| 抠图、去背景、扣图、移除背景、透明底、background removal、matting、cutout | `sod` |
-| 变清晰、画质修复、图片增强、超分、提升画质、修复低清、image restoration | `image_restoration` |
+## Conversation Flow
 
-## 对话追问策略
+- If no image is provided, ask for one image path or URL first.
+- Do not ask for optional settings unless the user explicitly cares about them.
+- Keep the confirmation short, then execute immediately in the same turn.
+- User-facing confirmations and error guidance should default to Simplified Chinese.
 
-### 智能抠图 (`sod`)
+Example confirmations:
 
-| 缺省信息 | 是否追问 | 追问话术 |
-|---------|---------|---------|
-| 没有图片 | 必须追问 | "请提供需要抠图的图片（本地路径或 URL）。" |
-| 没有说背景色 | 不追问 | 默认按系统方案处理 |
-| 没有说比例和尺寸 | 不追问 | 默认按原图尺寸返回 |
+- `好的，我来帮你把这张图抠成透明底。`
+- `好的，我来帮你提升这张图的清晰度。`
 
-典型对话：
-> 用户："帮我把这张图抠一下"
-> Agent："请提供需要抠图的图片（本地路径或 URL）。"
-> 用户：提供图片
-> Agent："好的，我来帮你把这张图的主体抠出来。" → 执行
-
-### AI 变清晰 (`image_restoration`)
-
-| 缺省信息 | 是否追问 | 追问话术 |
-|---------|---------|---------|
-| 没有图片 | 必须追问 | "请提供需要变清晰的图片（本地路径或 URL）。" |
-| 没说清晰度等级 | 不追问 | 默认高清 |
-
-典型对话：
-> 用户："这张图太模糊了，帮我变清晰"
-> Agent：（用户已提供图片）"好的，我来帮你提升这张图的清晰度。" → 执行
-
-## 执行
-
-参数补齐后，调用统一执行器：
+## Execution
 
 ```bash
-bash __SKILL_DIR__/../../scripts/run_command.sh <action> --input-json '<参数JSON>'
+bash __SKILL_DIR__/../../scripts/run_command.sh <action> --input-json '<params_json>'
 ```
 
-示例：
+Examples:
 
 ```bash
 bash __SKILL_DIR__/../../scripts/run_command.sh sod --input-json '{"image":"https://example.com/photo.jpg"}'
@@ -73,27 +62,38 @@ bash __SKILL_DIR__/../../scripts/run_command.sh sod --input-json '{"image":"http
 bash __SKILL_DIR__/../../scripts/run_command.sh image_restoration --input-json '{"image":"/Users/me/photo.jpg"}'
 ```
 
-`__SKILL_DIR__` 替换为本 SKILL.md 所在目录的绝对路径。脚本会自动处理本地图片上传。
+These commands are internal execution guidance for the agent. Do not quote them to end users unless they explicitly ask for implementation details.
 
-## 结果处理
+## Runtime And Safety
 
-解析脚本输出的 JSON：
-- `ok: true` → 从 `media_urls` 提取结果图 URL，用 `![结果图](url)` 展示给用户
-- `ok: false` → 读取 `error_type` 和 `user_hint`，向用户展示可操作的指引
+- Requires `DESIGNKIT_OPENCLAW_AK`.
+- Local uploads are limited to `JPG/JPEG/PNG/WEBP/GIF` image files.
+- Local images may be uploaded to the remote DesignKit / OpenClaw API.
+- Request logging is off by default. If `OPENCLAW_REQUEST_LOG=1` is enabled for debugging, credentials and signed upload fields stay redacted.
 
-| `error_type` | 用户可见提示 |
-|-------------|------------|
-| `CREDENTIALS_MISSING` | 按 `user_hint` 引导用户配置 |
-| `AUTH_ERROR` | 按 `user_hint` 引导用户核对 |
-| `ORDER_REQUIRED` | 前往美图设计室获取美豆 |
-| `PARAM_ERROR` | 按 `user_hint` 补齐参数 |
-| `UPLOAD_ERROR` | 检查网络或换一张图片 |
-| `API_ERROR` | 换一张图片试试 |
+## Privacy Defaults
 
-## Boundaries
+- Request logging is disabled by default.
+- Sensitive fields remain redacted if logging is enabled manually.
+- Local uploads happen only when the user explicitly provides a local image path.
+- Default runtime language is Simplified Chinese.
 
-本 skill 只做原子级图片编辑操作。以下场景应转交到对应 skill：
+## Result Handling
 
-| 不做 | 转交 |
-|------|------|
-| 生成电商套图、电商套图、爆款风格套图等多步套图 | `designkit-ecommerce-product-kit` |
+- `ok: true`: show the returned `media_urls`.
+- `ok: false`: show `user_hint` and do not dump raw JSON.
+
+## Error Guide
+
+| `error_type` | User-facing action |
+| --- | --- |
+| `CREDENTIALS_MISSING` | Ask the user to configure `DESIGNKIT_OPENCLAW_AK` |
+| `AUTH_ERROR` | Ask the user to verify the API key |
+| `ORDER_REQUIRED` | Tell the user to top up credits before retrying |
+| `PARAM_ERROR` | Ask the user to provide the image or correct the input |
+| `UPLOAD_ERROR` | Ask the user to check the image or network |
+| `API_ERROR` | Ask the user to retry or use a different image |
+
+## Out Of Scope
+
+If the user wants a multi-image ecommerce listing workflow, route to `designkit-ecommerce-product-kit`.

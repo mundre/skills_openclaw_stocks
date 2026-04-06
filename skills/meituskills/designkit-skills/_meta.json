@@ -1,11 +1,17 @@
 {
   "owner": "meituskills",
   "slug": "designkit-skills",
-  "displayName": "美图设计室电商设计AI工具集，覆盖商品套图、A+详情页、抠图、画质修复等场景",
+  "displayName": "DesignKit Ecommerce AI Studio",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1774496146601,
-    "commit": "https://github.com/openclaw/skills/commit/e6d37f89755a4109dea55f269f49b80a37857632"
+    "version": "1.0.4",
+    "publishedAt": 1775086411354,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1774496146601,
+      "commit": "https://github.com/openclaw/skills/commit/e6d37f89755a4109dea55f269f49b80a37857632"
+    }
+  ]
 }

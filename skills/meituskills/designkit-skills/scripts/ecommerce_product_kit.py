@@ -4,7 +4,7 @@ DesignKit 电商套图 — webapi 基址默认正式环境，鉴权与 run_comma
 
 环境变量：
 - DESIGNKIT_OPENCLAW_AK：请求头 X-Openclaw-AK（必填）
-- DESIGNKIT_OPENCLAW_AK_URL：获取/核对 AK 的页面地址，默认 https://www.designkit.cn/openClaw（用于错误提示文案）
+- DESIGNKIT_OPENCLAW_AK_URL：获取/核对 AK 的页面地址，默认 https://www.designkit.cn/openclaw（用于错误提示文案）
 - DESIGNKIT_WEBAPI_BASE：仅域名基址（不含版本前缀）；默认 https://openclaw-designkit-api.meitu.com，具体 path 跟随各接口定义
 """
 from __future__ import annotations
@@ -12,14 +12,29 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pathlib
 import re
 import shlex
 import sys
 import time
 import uuid
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
+
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from security_logging import (
+    format_curl_command,
+    format_json_log,
+    format_multipart_curl,
+    request_log_enabled as shared_request_log_enabled,
+    sanitize_json_payload,
+)
+from local_image_guard import describe_local_image
 
 # 可通过 DESIGNKIT_WEBAPI_BASE 覆盖；仅域名，不自动拼版本前缀，具体 path 在各接口调用处定义
 _webapi_base_raw = os.environ.get(
@@ -28,7 +43,7 @@ _webapi_base_raw = os.environ.get(
 ).rstrip("/")
 WEBAPI_BASE = re.sub(r"/v1/?$", "", _webapi_base_raw)
 
-DEFAULT_OPENCLAW_AK_URL = "https://www.designkit.cn/openClaw"
+DEFAULT_OPENCLAW_AK_URL = "https://www.designkit.cn/openclaw"
 
 
 def _openclaw_ak_url() -> str:
@@ -36,7 +51,7 @@ def _openclaw_ak_url() -> str:
 
 
 def _request_log_enabled() -> bool:
-    return os.environ.get("OPENCLAW_REQUEST_LOG", "1") != "0"
+    return shared_request_log_enabled()
 
 
 def _request_log(message: str) -> None:
@@ -52,16 +67,17 @@ def _request_log_as_curl(
 ) -> None:
     if not _request_log_enabled():
         return
-    parts: List[str] = ["curl", "-s", "--max-time", "120"]
-    m = method.upper()
-    if m not in ("GET", "HEAD"):
-        parts.extend(["-X", m])
-    for k, v in headers.items():
-        parts.extend(["-H", f"{k}: {v}"])
-    if data:
-        parts.extend(["-d", data.decode("utf-8", errors="replace")])
-    parts.append(url)
-    print("[REQUEST] " + shlex.join(parts), file=sys.stderr)
+    print(
+        "[REQUEST] "
+        + format_curl_command(
+            method,
+            url,
+            headers,
+            data,
+            max_time=120,
+        ),
+        file=sys.stderr,
+    )
 
 
 def _request_log_as_curl_multipart(
@@ -72,28 +88,25 @@ def _request_log_as_curl_multipart(
 ) -> None:
     if not _request_log_enabled():
         return
-    parts: List[str] = [
-        "curl",
-        "-s",
-        "--max-time",
-        "120",
-        "-X",
-        "POST",
-        "-H",
-        "Origin: https://www.designkit.cn",
-        "-H",
-        "Referer: https://www.designkit.cn/editor/",
-        "-F",
-        "token=<redacted>",
-        "-F",
-        "key=<redacted>",
-        "-F",
-        f"fname={fname}",
-        "-F",
-        f"file=@{file_path};type={mime}",
-        upload_url,
-    ]
-    print("[REQUEST] " + shlex.join(parts), file=sys.stderr)
+    print(
+        "[REQUEST] "
+        + format_multipart_curl(
+            upload_url,
+            file_path=file_path,
+            mime=mime,
+            form_fields={
+                "token": "<redacted>",
+                "key": "<redacted>",
+                "fname": fname,
+            },
+            headers={
+                "Origin": "https://www.designkit.cn",
+                "Referer": "https://www.designkit.cn/editor/",
+            },
+            max_time=120,
+        ),
+        file=sys.stderr,
+    )
 
 
 def _request_log_response_json(
@@ -107,22 +120,10 @@ def _request_log_response_json(
         max_len = int(os.environ.get("OPENCLAW_REQUEST_LOG_BODY_MAX", "20000"))
     except ValueError:
         max_len = 20000
-    if len(text) > max_len:
-        text = text[:max_len] + "...(truncated)"
-    try:
-        body_obj: Any = json.loads(text)
-        if http_code is not None:
-            envelope: Any = {"http_code": http_code, "body": body_obj}
-        else:
-            envelope = body_obj
-    except json.JSONDecodeError:
-        if http_code is not None:
-            envelope = {"http_code": http_code, "_raw": text}
-        else:
-            envelope = {"_raw": text}
-    pretty = json.dumps(envelope, ensure_ascii=False, indent=2)
-    print(f"[REQUEST] {label} (JSON):", file=sys.stderr)
-    print(pretty, file=sys.stderr)
+    print(
+        format_json_log(label, text, max_len=max_len, http_code=http_code),
+        file=sys.stderr,
+    )
 
 # 爆款风格 prompt：仅替换 [输入] 三节；市场审美段默认美国，可用 market_zh 覆盖标题
 STYLE_PROMPT_HEAD = (
@@ -180,6 +181,9 @@ MARKET_ZH = {
     "FR": "法国",
     "AU": "澳大利亚",
 }
+
+PROJECT_ROOT = SCRIPT_DIR.parent
+DEFAULT_OUTPUT_SUBDIR = "designkit-ecommerce-product-kit"
 
 
 def _json_error(
@@ -282,22 +286,110 @@ def _http_request(
             return e.code, {"_raw": raw, "_http_message": str(e)}
 
 
-def _suffix_mime(path: str) -> Tuple[str, str]:
-    ext = path.rsplit(".", 1)[-1].lower() if "." in path else ""
-    if ext in ("jpg", "jpeg"):
-        return "jpeg", "image/jpeg"
-    if ext == "png":
-        return "png", "image/png"
-    if ext == "webp":
-        return "webp", "image/webp"
-    return "jpeg", "image/jpeg"
+def _downloads_dir() -> pathlib.Path:
+    return pathlib.Path.home() / "Downloads"
+
+
+def _default_visual_dir() -> pathlib.Path:
+    openclaw_home = os.environ.get("OPENCLAW_HOME", "").strip()
+    if openclaw_home:
+        return pathlib.Path(openclaw_home).expanduser() / "workspace" / "visual"
+    return pathlib.Path.home() / ".openclaw" / "workspace" / "visual"
+
+
+def _looks_like_skill_internal(path: pathlib.Path) -> bool:
+    try:
+        path.relative_to(PROJECT_ROOT)
+        return True
+    except ValueError:
+        return False
+
+
+def resolve_output_dir(inp: Dict[str, Any]) -> pathlib.Path:
+    explicit = str(inp.get("output_dir", "") or os.environ.get("DESIGNKIT_OUTPUT_DIR", "")).strip()
+    if explicit:
+        output_dir = pathlib.Path(explicit).expanduser().resolve()
+    else:
+        cwd = pathlib.Path.cwd().resolve()
+        if (cwd / "openclaw.yaml").is_file():
+            output_dir = cwd / "output"
+        else:
+            visual_dir = _default_visual_dir()
+            if visual_dir.is_dir():
+                output_dir = visual_dir / "output" / DEFAULT_OUTPUT_SUBDIR
+            else:
+                output_dir = _downloads_dir()
+
+    if _looks_like_skill_internal(output_dir):
+        _json_error(
+            False,
+            "PARAM_ERROR",
+            f"输出目录不能位于 skill 目录内部: {output_dir}",
+            "请改用项目 output 目录、共享 visual output 目录，或传入其他 output_dir",
+        )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return output_dir
+
+
+def _safe_filename_part(value: str, fallback: str) -> str:
+    text = re.sub(r"\s+", "_", (value or "").strip())
+    text = re.sub(r"[^0-9A-Za-z_\-\u4e00-\u9fff]+", "_", text)
+    text = re.sub(r"_+", "_", text).strip("._-")
+    return text or fallback
+
+
+def _guess_extension(url: str, default_ext: str = ".jpg") -> str:
+    path = urllib.parse.urlparse(url).path
+    ext = pathlib.Path(path).suffix.lower()
+    if ext in {".jpg", ".jpeg", ".png", ".webp"}:
+        return ext
+    return default_ext
+
+
+def _local_image_paths_from_items(items: List[Dict[str, Any]], output_dir: pathlib.Path, product_name: str) -> List[str]:
+    saved_paths: List[str] = []
+    product_part = _safe_filename_part(product_name, "product")
+
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            continue
+        image_url = str(item.get("res_img", "")).strip()
+        if not image_url.startswith("http"):
+            continue
+        label = _safe_filename_part(str(item.get("label", "")).strip(), f"image_{index}")
+        ext = _guess_extension(image_url)
+        filename = f"{product_part}_{index:02d}_{label}{ext}"
+        target = output_dir / filename
+
+        req = urllib.request.Request(
+            image_url,
+            headers={
+                "User-Agent": _headers_get().get("User-Agent", "Mozilla/5.0"),
+                "Accept": "image/*,*/*;q=0.8",
+            },
+            method="GET",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = resp.read()
+        except Exception as exc:
+            _json_error(False, "DOWNLOAD_ERROR", str(exc), f"下载生成结果失败: {image_url}")
+
+        target.write_bytes(data)
+        saved_paths.append(str(target))
+
+    return saved_paths
 
 
 def upload_local_image(file_path: str) -> str:
     if not os.path.isfile(file_path):
         _json_error(False, "PARAM_ERROR", f"文件不存在: {file_path}", "请检查图片路径")
 
-    _, mime = _suffix_mime(file_path)
+    try:
+        _, mime = describe_local_image(file_path)
+    except ValueError as exc:
+        _json_error(False, "PARAM_ERROR", str(exc), "请提供 JPG/JPEG/PNG/WEBP/GIF 图片文件")
     fname = os.path.basename(file_path)
 
     getsign_url = f"{WEBAPI_BASE}/maat/getsign?type=openclaw"
@@ -305,12 +397,16 @@ def upload_local_image(file_path: str) -> str:
     if getsign_code < 200 or getsign_code >= 300 or not isinstance(getsign_resp, dict):
         _json_error(False, "UPLOAD_ERROR", "获取上传签名失败", "请检查网络连接或 API Key 后重试")
     if getsign_resp.get("code") != 0:
-        _request_log(f"maat getsign rejected: {json.dumps(getsign_resp, ensure_ascii=False)}")
+        _request_log(
+            f"maat getsign rejected: {json.dumps(sanitize_json_payload(getsign_resp), ensure_ascii=False)}"
+        )
         _json_error(False, "UPLOAD_ERROR", "获取上传签名失败", "请检查网络连接或 API Key 后重试")
 
     policy_url_full = str((getsign_resp.get("data") or {}).get("upload_url") or "").strip()
     if not policy_url_full:
-        _request_log(f"maat getsign missing upload_url: {json.dumps(getsign_resp, ensure_ascii=False)}")
+        _request_log(
+            f"maat getsign missing upload_url: {json.dumps(sanitize_json_payload(getsign_resp), ensure_ascii=False)}"
+        )
         _json_error(False, "UPLOAD_ERROR", "获取上传签名失败", "请检查网络连接或 API Key 后重试")
 
     _request_log_as_curl(
@@ -602,7 +698,10 @@ def cmd_render_submit(inp: Dict[str, Any]) -> None:
 
     style_name = str(inp.get("style_name", (brand_style or {}).get("name", "")))
     product_info = str(inp.get("product_info", "")).strip() or "商品"
-    aspect_ratio = str(inp.get("aspect_ratio", "1:1"))
+    raw_aspect_ratio = inp.get("aspect_ratio")
+    if raw_aspect_ratio in (None, ""):
+        raw_aspect_ratio = inp.get("ratio", "1:1")
+    aspect_ratio = str(raw_aspect_ratio or "1:1").strip() or "1:1"
     language = str(inp.get("language", "English"))
     platform = str(inp.get("platform", "amazon"))
     market = str(inp.get("market", "US"))
@@ -703,6 +802,8 @@ def cmd_render_poll(inp: Dict[str, Any]) -> None:
     if not batch_id:
         _json_error(False, "PARAM_ERROR", "缺少 batch_id", "请先执行 render_submit")
 
+    output_dir = resolve_output_dir(inp)
+    product_name = str(inp.get("product_name", "")).strip() or str(inp.get("product_info", "")).strip() or "product"
     max_wait = float(inp.get("max_wait_sec", 600))
     interval = float(inp.get("interval_sec", 3))
     deadline = time.time() + max_wait
@@ -737,11 +838,14 @@ def cmd_render_poll(inp: Dict[str, Any]) -> None:
             print(f"[PROGRESS] {done_count}/{total}{hint}", file=sys.stderr)
 
         if total > 0 and done_count >= total:
+            local_paths = _local_image_paths_from_items(items_list, output_dir, product_name)
             out = {
                 "ok": True,
                 "command": "ecommerce_render_poll",
                 "done": True,
                 "media_urls": res_urls,
+                "output_dir": str(output_dir),
+                "local_paths": local_paths,
                 "items": items_list,
                 "result": resp,
             }
