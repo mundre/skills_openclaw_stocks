@@ -1,11 +1,17 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-24h-equity-strike-trader",
-  "displayName": "24h Equity Strike Trader",
+  "displayName": "Polymarket 24h Equity Strike Trader",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774621630812,
-    "commit": "https://github.com/openclaw/skills/commit/a5991218b4582aa0b2f7830789998b2607d0b0a0"
+    "version": "1.0.1",
+    "publishedAt": 1775316834643,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774621630812,
+      "commit": "https://github.com/openclaw/skills/commit/a5991218b4582aa0b2f7830789998b2607d0b0a0"
+    }
+  ]
 }
