@@ -1,11 +1,17 @@
 {
   "owner": "devioslang",
   "slug": "videogen",
-  "displayName": "videogen",
+  "displayName": "Videogen",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1774441314921,
-    "commit": "https://github.com/openclaw/skills/commit/210775d441aef484bdad9bcff155011d65db9e10"
+    "version": "3.3.0",
+    "publishedAt": 1775068468421,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1774441314921,
+      "commit": "https://github.com/openclaw/skills/commit/210775d441aef484bdad9bcff155011d65db9e10"
+    }
+  ]
 }

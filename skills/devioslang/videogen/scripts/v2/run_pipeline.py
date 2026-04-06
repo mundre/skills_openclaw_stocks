@@ -35,6 +35,7 @@ from storyboard_generator import (
     ContentSegment,
     StoryboardPanel,
 )
+from tts_harness import run_tts_harness, WHISPER_AVAILABLE
 
 
 # ─── MiniMax API Key ───
@@ -217,8 +218,21 @@ def cmd_gen(args):
     print(f"\n[Step 3/6] 生成配音...")
     narration_text = " ".join(p["narration"] for p in storyboard["panels"] if p["narration"])
     voice_path = MINIMAX_OUTPUT / "voiceover.mp3"
+    subtitle_path = None  # Harness 生成的字幕路径
     if narration_text.strip():
-        generate_tts(narration_text, str(voice_path))
+        if args.harness:
+            # Harness 模式：chunk + 规范化 + 双层评估 + 跨轮记忆 + 字幕对齐
+            print(f"  🏆 Harness 模式（Whisper 语义校验: {'✅' if WHISPER_AVAILABLE else '❌ 未安装'}）")
+            harness_result = run_tts_harness(narration_text, str(MINIMAX_OUTPUT), voice=args.voice)
+            subtitle_path = harness_result.subtitle_path
+            print(f"  → TTS 完成: {harness_result.ok_chunks}/{harness_result.total_chunks} chunks ✅, "
+                  f"{harness_result.human_chunks} 需人工确认")
+            if subtitle_path:
+                print(f"  → 字幕: {subtitle_path}")
+        else:
+            # 旧模式：直接 TTS（无校验）
+            print(f"  ⚡ 快速模式（无评估校验）")
+            generate_tts(narration_text, str(voice_path))
     else:
         print(f"  ⚠️  无配音文本")
 
@@ -280,7 +294,7 @@ def cmd_gen(args):
     else:
         print(f"  ⚠️  无视频片段，跳过混剪")
 
-    # ── Step 6: 添加配音 ──
+    # ── Step 6: 添加配音 + 字幕 ──
     print(f"\n[Step 6/6] 添加配音...")
     final_path = MINIMAX_OUTPUT / "video_final.mp4"
     if composite_path.exists() and voice_path.exists():
@@ -293,6 +307,30 @@ def cmd_gen(args):
         ]
         result = subprocess.run(add_audio_cmd, capture_output=True, text=True, timeout=60)
         if result.returncode == 0:
+            print(f"  ✅ 配音添加完成")
+
+            # 可选：烧录字幕（如果 SRT 存在）
+            if subtitle_path and Path(subtitle_path).exists():
+                burned_path = MINIMAX_OUTPUT / "video_with_subtitles.mp4"
+                print(f"  🎬 烧录字幕...")
+                try:
+                    # ffmpeg 字幕烧录（需要视频流支持，通常需要 softsubs 先提取）
+                    burn_cmd = [
+                        "ffmpeg", "-y",
+                        "-i", str(final_path),
+                        "-vf", f"subtitles={subtitle_path}",
+                        "-c:a", "copy",
+                        str(burned_path),
+                    ]
+                    burn_result = subprocess.run(burn_cmd, capture_output=True, text=True, timeout=120)
+                    if burn_result.returncode == 0:
+                        print(f"  ✅ 字幕烧录完成: {burned_path}")
+                        final_path = burned_path
+                    else:
+                        print(f"  ⚠️  字幕烧录失败（视频编码可能不支持）: {burn_result.stderr[:100]}")
+                except Exception as e:
+                    print(f"  ⚠️  字幕烧录异常: {e}")
+
             print(f"  ✅ 最终视频: {final_path}")
             print(f"\n{'='*55}")
             print(f"🎉 完成！总耗时: {time.time() - start_time:.1f}s")
@@ -333,6 +371,12 @@ def main():
     p_gen.add_argument("--mode", default="auto", choices=["A", "B", "C", "auto"],
                        help="内容模式（auto=自动检测）")
     p_gen.add_argument("--duration", type=int, default=60, help="目标时长(秒)")
+    p_gen.add_argument("--harness", action="store_true", default=True,
+                       help="启用 TTS Harness（chunk + 评估 + 修复循环）")
+    p_gen.add_argument("--no-harness", dest="harness", action="store_false",
+                       help="禁用 TTS Harness，使用旧版快速 TTS")
+    p_gen.add_argument("--voice", default="female-shaonv",
+                       help="TTS 音色（默认 female-shaonv）")
 
     args = parser.parse_args()
 

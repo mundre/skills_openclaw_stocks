@@ -1,6 +1,6 @@
 {
   "skill_name": "videogen",
-  "description": "视频号AI短视频自动化生产流水线：选题→脚本→配音→PPT→AI视频→FFmpeg混剪→素材包",
+  "description": "视频号AI短视频自动化生产流水线：选题→脚本→配音→PPT→AI视频→FFmpeg混剪→素材包（v2 支持 TTS Harness）",
   "evals": [
     {
       "id": 1,
@@ -18,6 +18,12 @@
       "id": 3,
       "prompt": "我有一篇关于程序员面试技巧的文章，帮我做成一个60秒的视频号短视频，从文章分析到视频制作完整做出来",
       "expected_output": "抓取文章→提炼知识点→写分镜脚本→配音→乔布斯风PPT→AI视频片段→混剪输出完整视频",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "做一个关于TTS配音的科普视频，60秒，用harness模式跑",
+      "expected_output": "分镜+配音走TTS Harness流水线：chunk切分→规范化→确定性预检→Whisper语义校验→自动修复→跨轮记忆",
       "files": []
     }
   ]

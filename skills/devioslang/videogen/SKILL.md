@@ -159,13 +159,43 @@ bash skills/videogen/scripts/build_composite.sh [slide_video] [output] [clips...
 - **Phase 2**：运镜+表演（cinematography + acting 并行）
 - **Phase 3**：细节补充 + video_prompt 生成
 
-### Step 3: TTS 配音
+### Step 3: TTS 配音（v2 — Harness 模式）
+
+**Harness 核心思路**：在 TTS 这个不确定节点外面套「校验 → 修复 → 循环」控制环，让输出趋向收敛。
+
+**四个组件**：
+| 组件 | 作用 |
+|------|------|
+| **Chunk 化** | 按句子切分（≤200字/段），改一个词只重做该 chunk |
+| **约束系统（Rules）** | TTS 前规范化文本（英文品牌名隔断、数字转中文、连字符转空格等） |
+| **双层评估** | L1 确定性预检（文件/时长/语速）+ L2 Whisper X 语义校验 |
+| **跨轮记忆** | `normalize_patches.json` — 修复确认后写入，下期自动加载 |
+
+**默认启用 Harness**（`--no-harness` 可关闭）：
 
 ```bash
-python skills/minimax-multimodal/scripts/tts/generate_voice.py tts \
-  "$(cat narration_text)" \
-  -v female-shaonv \
-  -o minimax-output/voiceover.mp3
+# Harness 模式（默认）
+python scripts/v2/run_pipeline.py gen "选题" --mode auto --duration 60
+
+# 关闭 Harness（快速旧版）
+python scripts/v2/run_pipeline.py gen "选题" --no-harness
+
+# 单独测试 TTS Harness
+python scripts/v2/tts_harness.py "配音文本" --output minimax-output
+
+# 指定音色
+python scripts/v2/run_pipeline.py gen "选题" --voice female-yujie
+```
+
+**自动修复机制**：
+- 确定性预检未通过 → 自动修复文本 → 重新生成（最多 3 轮）
+- 超过 3 轮 → 标记 `needs_human=True`，人工处理
+- 语义校验（Whisper）未通过 → 标记人工处理
+
+**Whisper 语义校验**（可选，需安装）：
+```bash
+pip install openai-whisper
+# 重新运行 Harness 时自动启用
 ```
 
 ### Step 4: AI 视频片段（Hailuo）
@@ -255,7 +285,7 @@ ffmpeg -y \
 minimax-output/
 ├── storyboard.json          # ✅ v2 新增：增强版分镜 JSON
 ├── script.md               # 脚本/台词
-├── voiceover.mp3           # TTS 配音
+├── voiceover.mp3           # TTS 配音（Harness 模式为合并后结果）
 ├── presentation.html       # 乔布斯风 HTML 演示稿
 ├── slides/                 # 幻灯片图片序列
 ├── video_pure_slides.mp4   # 纯PPT视频
@@ -263,24 +293,190 @@ minimax-output/
 │   ├── clip_01.mp4
 │   ├── clip_02.mp4
 │   └── ...
+├── chunks/                 # ✅ Harness：TTS chunk 音频
+│   ├── chunk_01.mp3
+│   └── ...
+├── normalize_patches.json  # ✅ Harness：跨轮记忆 patches
 ├── video_complete.mp4       # AI片段嵌入后
 └── video_final.mp4          # 最终版（配音+画面）
 ```
 
 ---
 
-## 视频号平台规范
+## Remotion 动画渲染引擎（v2 新增）
 
-| 参数 | 要求 |
-|------|------|
-| 时长 | 15秒～3分钟（推荐60秒干货型） |
-| 封面 | 3:4 或 16:9，第一帧即封面 |
-| 比例 | 9:16 竖屏 或 16:9 横屏 |
-| 字幕 | 必须有（剪映AI字幕） |
-| BGM | 剪映音乐库 / 无版权音乐 |
-| 标签 | 3-5个：1垂类+1热点+1账号标签 |
+Remotion 适合**精确动画/流程图/字幕同步**类内容，比 Hailuo 更适合科普动画。
+
+### 快速使用
+
+```bash
+# Step 1: 生成 Remotion 项目代码
+python scripts/v2/remotion_generator.py gen \
+  --scene-names "开场|Agent Loop|MCP" \
+  --timings "20|50|35" \
+  --narrations "旁白1||旁白2" \
+  --visuals "terminal|ring|hub" \
+  --output /path/to/video-project
+
+# Step 2: 安装依赖
+cd /path/to/video-project && npm install
+
+# Step 3: 渲染视频（两阶段，解耦 timeout 问题）
+# 阶段1：渲染帧序列
+npx remotion render Video --output=out/frames --sequence Justice
+# 阶段2：ffmpeg 独立编码（不被 timeout 中断）
+ffmpeg -framerate 30 -i out/frames/element-%04d.png \
+       -c:v libx264 -crf 23 -preset fast -pix_fmt yuv420p -r 30 out/video_raw.mp4
+
+# Step 4: 合并配音
+ffmpeg -y -i out/video_raw.mp4 -i voiceover.mp3 \
+       -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k -shortest video_final.mp4
+```
+
+### 竖屏字号规范（9:16 · 1080×1920）
+
+| 元素 | 字号范围 | 备注 |
+|------|---------|------|
+| 标题/金句 | 96-144px | 约 2.5-3.7cm 实际宽度 |
+| 正文/旁白 | 48-72px | 约 1.2-1.8cm |
+| 底部字幕 | 40-48px | |
+| 代码/终端 | 32-40px | |
+| 副标题/注释 | 24-32px | |
+
+> ⚠️ **竖屏字号规范**：竖屏用户近距离看手机，需比横屏大 2-3 倍。所有 `fontSize` 应使用 `Math.round(N * scale)`，基准为 1920 宽设计。
+
+### 竖屏安全布局规范
+
+竖屏视频必须考虑系统 UI 遮挡，所有内容不得超出安全区域：
+
+```tsx
+// 每个场景顶部必须定义安全边距
+const safeTop    = 80;   // 顶部安全区（标题区）
+const safeBottom = 100;  // 底部安全区（系统 UI + 进度条）
+
+// 内容区域可用高度
+const availableH = height - safeTop - safeBottom;
+
+// 列表类内容的总高度
+const ITEM_H = 80;   // 每个卡片固定高度
+const GAP    = 14;   // 间距
+const TOTAL_H = items.length * ITEM_H + (items.length - 1) * GAP;
+
+// 垂直居中于安全区内
+const stackTop = safeTop + Math.max(0, (availableH - TOTAL_H) / 2);
+
+// 统一宽度（不出屏）
+<div style={{ width: 640, height: ITEM_H, /* ... */ }}>
+```
+
+**布局三原则：**
+1. **固定高度**：每张卡片用固定 `height`，不用 padding 撑开，防止内容溢出
+2. **统一宽度**：同一场景所有卡片用同一 `width`，视觉更整洁
+3. **垂直居中**：`stackTop` = `safeTop + (availableH - TOTAL_H) / 2`，内容始终在屏幕中央
+
+### 列表类场景设计模式：全部可见 + 当前高亮
+
+对于「N 层结构」「N 个问题」类内容，推荐：
+
+```tsx
+// 全部 N 项同时渲染，当前项高亮，其余淡化
+const activeIdx = findActiveIndex(progress);
+LAYERS.map((l, i) => {
+  const isActive  = activeIdx === i;
+  const isDormant = activeIdx !== undefined && !isActive;
+  const alpha = isDormant ? 0.25 : 1; // 淡化非当前项
+
+  return (
+    <div style={{
+      opacity: isDormant ? 0.25 : 1,
+      backgroundColor: isActive ? l.color + "28" : l.color + "0e",
+      border: isActive ? `2px solid ${l.color}` : `1px solid ${l.color}33`,
+    }}>
+      {/* 当前层进度条 */}
+      {isActive && <ProgressBar progress={...} color={l.color} />}
+    </div>
+  );
+});
+```
+
+**优势：**
+- 观众始终能看到整体结构，有全局感
+- 当前层高亮 + 进度条提供局部焦点
+- 切换时视觉过渡自然，不会有「突然出现/消失」的感觉
+
+### 场景节奏设计规范
+
+每个场景必须包含**分阶段动画**，避免内容停驻感：
+
+```
+Phase timeline（0.0-1.0 进度）：
+  0.00-0.10: 标题淡入
+  0.10-0.40: 第一组内容
+  0.40-0.70: 第二组内容
+  0.70-0.90: 全家桶叠显/总结
+  0.90-1.00: 收尾
+
+每个卡片底部加进度条：
+  width: ${cardProgress * 100}%
+
+切换节奏：每块内容停留 ≤ 12 秒（30fps ≈ 360帧）
+```
+
+### 标准工作流（Remotion + TTS 同步）
+
+```bash
+# Step 1: 生成 TTS，测时长
+python scripts/v2/tts_harness.py "完整旁白" --output=minimax-output/video
+ffprobe -show_entries format=duration -of csv=p=0 minimax-output/video/voiceover.mp3
+# → e.g. 95 秒
+
+# Step 2: 计算总帧数，分配场景
+# total_frames = duration_sec * 30
+# 分配比例（示例）：
+#   开场 14% / 四层 25% / 天花板 20% / 架构 28% / 结尾 13%
+
+# Step 3: 渲染 + 编码（两阶段）
+# Step 4: 合并配音 → 压缩 → 发送
+```
+
+### 视频号平台规范
+
+| 参数 | 要求 | 当前项目设置 |
+|------|------|------------|
+| 时长 | 15秒～10分钟（推荐60秒干货型，5分钟深度内容） | **5分钟** |
+| 封面 | 3:4 或 16:9，第一帧即封面 | 自动取开场帧 |
+| 比例 | **9:16 竖屏**（1080×1920）或 16:9 横屏 | **1080×1920** |
+| 字幕 | 必须有，底部居中 | Remotion 渲染含字幕 |
+| 文件大小 | ≤ 5MB（视频号）/ ≤ 10MB（B站） | 微信 CDN 上传限制约 5MB，超出会报 500 错误 |
+| 字体大小 | 竖屏最小 36px（正文）/ 72px（标题） | **正文 48-72px / 标题 96-144px** |
+| BGM | 剪映音乐库 / 无版权音乐 | 自行添加 |
+| 标签 | 3-5个：1垂类+1热点+1账号标签 | — |
+
+> ⚠️ **字体规范**：竖屏 9:16 视频中，1080px 宽度下：
+> - 标题/金句：**96-144px**（约 2.5-3.7cm 实际宽度）
+> - 正文/旁白：**48-72px**（约 1.2-1.8cm）
+> - 底部字幕：**40-48px**
+> - 所有组件已按此比例放大（相比原始 Remotion 模板）
 
 ---
+
+## 发送前压缩（微信 CDN 限制）
+
+微信视频号上传有文件大小限制（约 5MB），直接发送过大的 MP4 会报 CDN 500 错误。
+
+```bash
+# 推荐参数（竖屏 1080×1920，目标 ≤ 5MB）
+ffmpeg -y -i input.mp4 \
+       -c:v libx264 -crf 24 -preset fast \
+       -c:a aac -b:a 96k \
+       -movflags +faststart \
+       output_compressed.mp4
+
+# 目标文件大小参考：
+#   视频号/抖音：≤ 5MB（保险）
+#   B站/油管：  ≤ 10MB
+#   微信直接发送：≤ 5MB（实测 3.6MB 正常，7.5MB 报 500）
+```
 
 ## 视频号发布检查清单
 
@@ -298,8 +494,19 @@ minimax-output/
 
 | 功能 | 位置 | 说明 |
 |------|------|------|
+| TTS Harness | `scripts/v2/tts_harness.py` | chunk + 规范化 + 双层评估 + 跨轮记忆 |
+| TTS 语速控制 | `scripts/v2/tts_harness.py` | `--speed 1.5` 支持 MiniMax API 直传倍率参数 |
+| chunk 合并修复 | `scripts/v2/tts_harness.py` | 强制 AAC 128kbps 转码 + concat muxer fallback |
+| Remotion 渲染 | `scripts/v2/remotion_generator.py` | 生成 TypeScript 场景组件（动画/流程图） |
+| Remotion 两阶段渲染 | `scripts/v2/remotion_generator.py` | 帧序列输出 → ffmpeg 独立编码，防 timeout |
+| 竖屏字号规范 | `SKILL.md` | 9:16 1080×1920 正文 48-72px / 标题 96-144px |
+| 场景节奏设计规范 | `SKILL.md` | 分阶段动画 + 进度条，每块 ≤ 12 秒 |
+| TTS + Remotion 同步工作流 | `SKILL.md` | 先生成音频 → 测时长 → 分配场景帧数 |
+| Whisper 语义校验 | `tts_harness.py::evaluate_semantic` | L2 评估：词汇级转写比对 |
 | 选题自动分析 | `scripts/v2/topic_analyzer.py` | 关键词驱动三模式判断 |
-| 增强分镜生成 | `scripts/v2/storyboard_generator.py` | 丰富字段+多阶段架构 |
+| 增强分镜生成 | `scripts/v2/storyboard_generator.py` | 丰富字段 + 多阶段架构 |
 | 统一流水线 | `scripts/v2/run_pipeline.py` | analyze/storyboard/gen 三个入口 |
-| Video Prompt 公式 | `storyboard_generator.py::build_video_prompt` | 镜头控制+主体+氛围+动态+风格 |
+| Video Prompt 公式 | `storyboard_generator.py::build_video_prompt` | 镜头控制 + 主体 + 氛围 + 动态 + 风格 |
 | 多模式结构 | `SKILL.md` Mode A/B/C | 自动切换内容风格 |
+
+---
