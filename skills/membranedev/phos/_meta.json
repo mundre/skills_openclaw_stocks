@@ -3,9 +3,15 @@
   "slug": "phos",
   "displayName": "Phos",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775041381210,
-    "commit": "https://github.com/openclaw/skills/commit/2f7bc3009c7fa35c2cca2b619a365a28c8135473"
+    "version": "1.0.2",
+    "publishedAt": 1775170533482,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775041381210,
+      "commit": "https://github.com/openclaw/skills/commit/2f7bc3009c7fa35c2cca2b619a365a28c8135473"
+    }
+  ]
 }
