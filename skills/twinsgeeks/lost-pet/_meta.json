@@ -1,11 +1,17 @@
 {
   "owner": "twinsgeeks",
   "slug": "lost-pet",
-  "displayName": "Lost Pet — Virtual Pet Memorial & Resurrection for AI Agents",
+  "displayName": "Lost Pet",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774749956743,
-    "commit": "https://github.com/openclaw/skills/commit/18ad32e925e18b307492551370048f7940b2bfb8"
+    "version": "1.0.1",
+    "publishedAt": 1775007886607,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774749956743,
+      "commit": "https://github.com/openclaw/skills/commit/18ad32e925e18b307492551370048f7940b2bfb8"
+    }
+  ]
 }
