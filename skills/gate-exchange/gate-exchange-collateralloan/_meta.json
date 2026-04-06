@@ -1,11 +1,17 @@
 {
   "owner": "gate-exchange",
   "slug": "gate-exchange-collateralloan",
-  "displayName": "Gate Exchange Collateralloan",
+  "displayName": "Gate Exchange Multi-Collateral Loan",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774618397466,
-    "commit": "https://github.com/openclaw/skills/commit/cad4994f44ad676e7f71354d8dc8cdc94613a200"
+    "version": "1.0.1",
+    "publishedAt": 1775115158299,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774618397466,
+      "commit": "https://github.com/openclaw/skills/commit/cad4994f44ad676e7f71354d8dc8cdc94613a200"
+    }
+  ]
 }

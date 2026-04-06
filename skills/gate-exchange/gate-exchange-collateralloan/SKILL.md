@@ -2,7 +2,7 @@
 name: gate-exchange-collateralloan
 version: "2026.3.23-1"
 updated: "2026-03-23"
-description: Query and manage Gate multi-collateral loan. Use this skill whenever the user asks about collateral loan, current loan, fixed loan, repay, add collateral, or redeem collateral. Trigger phrases include "collateral loan", "current loan", "fixed loan", "repay", "add collateral", "redeem collateral", or equivalent in other languages.
+description: "Gate multi-collateral loan management skill. Use when the user asks to borrow crypto against collateral or manage existing loans. Triggers on 'collateral loan', 'current loan', 'fixed loan', 'repay', 'add collateral', 'redeem collateral'."
 ---
 
 # Gate Exchange Multi-Collateral Loan Skill
@@ -42,7 +42,7 @@ Do NOT select or call any tool until all rules are read. These rules have the hi
 **Execution Operations (Write)**
 
 - cex_mcl_create_multi_collateral
-- cex_mcl_repay_multi_collateral_loan
+- cex_mcl_repay_mcl
 
 ### Authentication
 - API Key Required: Yes (see skill doc/runtime MCP deployment)
@@ -56,6 +56,13 @@ Do NOT select or call any tool until all rules are read. These rules have the hi
   - Codex: `gate-mcp-codex-installer`
   - Claude: `gate-mcp-claude-installer`
   - OpenClaw: `gate-mcp-openclaw-installer`
+
+## MCP Mode
+
+**Read and strictly follow** [`references/mcp.md`](./references/mcp.md), then execute this skill's collateral-loan workflow.
+
+- `SKILL.md` keeps routing and product constraints.
+- `references/mcp.md` is the authoritative MCP execution layer for quota/LTV pre-checks, confirmation gates, and post-action verification.
 
 ## Trigger Conditions
 
@@ -110,7 +117,7 @@ If fixed loan:
 
 ### Step 4: Repay
 
-Build draft, ask confirmation, then call `cex_mcl_repay_multi_collateral_loan` with:
+Build draft, ask confirmation, then call `cex_mcl_repay_mcl` with:
 - **`repay_loan`**: JSON string with `order_id` and `repay_items` [{ currency, amount, repaid_all }]
 
 ### Step 5: Add or redeem collateral
@@ -160,7 +167,7 @@ Please confirm to proceed.
 | `cex_mcl_create_multi_collateral` | Yes | Create loan (`order` JSON) | `references/mcl-mcp-tools.md` |
 | `cex_mcl_list_multi_collateral_orders` | Yes | List orders | `references/mcl-mcp-tools.md` |
 | `cex_mcl_get_multi_collateral_order_detail` | Yes | Order detail | `references/mcl-mcp-tools.md` |
-| `cex_mcl_repay_multi_collateral_loan` | Yes | Repay (`repay_loan` JSON) | `references/mcl-mcp-tools.md` |
+| `cex_mcl_repay_mcl` | Yes | Repay (`repay_loan` JSON) | `references/mcl-mcp-tools.md` |
 | `cex_mcl_operate_multi_collateral` | Yes | Add/redeem collateral (`collateral_adjust` JSON) | `references/mcl-mcp-tools.md` |
 | `cex_mcl_list_multi_repay_records` | Yes | Repay history | `references/mcl-mcp-tools.md` |
 | `cex_mcl_list_multi_collateral_records` | Yes | Collateral history | `references/mcl-mcp-tools.md` |
@@ -169,9 +176,9 @@ Please confirm to proceed.
 
 | Case | User Intent | Signal Keywords | Action |
 |------|-------------|-----------------|--------|
-| 1 | Create current loan | "current loan", "pledge … borrow … (current)" | See `references/scenarios.md` Scenario 1 |
-| 2 | Create fixed loan | "fixed loan", "borrow … for 7/30 days" | See `references/scenarios.md` Scenario 2 |
-| 3 | Repay | "repay", "repay order …" | See `references/scenarios.md` Scenario 3 |
+| 1 | Create current loan | "current loan", "pledge ... borrow ... (current)" | See `references/scenarios.md` Scenario 1 |
+| 2 | Create fixed loan | "fixed loan", "borrow ... for 7/30 days" | See `references/scenarios.md` Scenario 2 |
+| 3 | Repay | "repay", "repay order ..." | See `references/scenarios.md` Scenario 3 |
 | 4 | Add collateral | "add collateral", "add margin" | See `references/scenarios.md` Scenario 4 |
 | 5 | Redeem collateral | "redeem collateral", "reduce margin" | See `references/scenarios.md` Scenario 5 |
 | 6 | List orders / order detail | "loan orders", "order detail", "my orders" | `cex_mcl_list_multi_collateral_orders` / `cex_mcl_get_multi_collateral_order_detail` — **never include any time/date fields** in the user-facing reply (see Presentation below) |
@@ -191,7 +198,7 @@ Please confirm to proceed.
 
 - **Current loan**: Flexible loan. Create via `cex_mcl_create_multi_collateral` with `order` JSON: `order_type: current`.
 - **Fixed loan**: 7-day/30-day. `order` JSON must include `order_type: fixed`, **`fixed_type`**: `7d` or `30d` (lowercase), **`fixed_rate`**: **hourly interest rate** from `cex_mcl_get_multi_collateral_fix_rate` (use `rate_7d` or `rate_30d` for that borrow_currency; pass as-is, do not describe as annual or daily rate). Missing fixed fields may yield INVALID_PARAM_VALUE.
-- **Repay**: `cex_mcl_repay_multi_collateral_loan` with `repay_loan` JSON.
+- **Repay**: `cex_mcl_repay_mcl` with `repay_loan` JSON.
 - **Add collateral**: `cex_mcl_operate_multi_collateral`, `collateral_adjust` with `type: append`.
 - **Redeem collateral**: same tool, `type: redeem`.
 - **LTV**: `cex_mcl_get_multi_collateral_ltv` — init_ltv, alert_ltv, liquidate_ltv.
@@ -205,7 +212,7 @@ Please confirm to proceed.
 ### Repay Flow (Case 3)
 
 1. Parse order_id and repay amount (or full).
-2. Show draft; on confirm: `cex_mcl_repay_multi_collateral_loan` with `repay_loan` JSON.
+2. Show draft; on confirm: `cex_mcl_repay_mcl` with `repay_loan` JSON.
 
 ### Add / Redeem Collateral Flow (Case 4 & 5)
 
@@ -222,7 +229,7 @@ When the user asks to view **my collateral loan orders** or order detail:
 
 ## Safety Rules
 
-- **Writes** (`cex_mcl_create_multi_collateral`, `cex_mcl_repay_multi_collateral_loan`, `cex_mcl_operate_multi_collateral`): Always require explicit confirmation and an order draft before execution.
+- **Writes** (`cex_mcl_create_multi_collateral`, `cex_mcl_repay_mcl`, `cex_mcl_operate_multi_collateral`): Always require explicit confirmation and an order draft before execution.
 - **No investment advice**: Present LTV/rates; user decides.
 - **Sensitive data**: Never expose API keys or raw internal errors.
 - **Amounts**: Reject non-positive amounts; validate order_id for repay/collateral ops.
