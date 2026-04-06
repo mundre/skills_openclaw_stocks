@@ -107,7 +107,8 @@ wechat-article-to-obsidian/
 ├── README.md       # This file
 └── scripts/
     ├── fetch.sh    # curl wrapper with browser-like headers
-    └── parse.mjs   # HTML → Markdown parser with cleanup
+    ├── parse.mjs   # HTML → Markdown parser with cleanup
+    └── save.mjs    # Save markdown to Obsidian vault (reads config.json)
 ```
 
 ## How articles are saved to Obsidian

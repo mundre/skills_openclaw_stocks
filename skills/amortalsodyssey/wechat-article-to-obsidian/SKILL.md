@@ -63,17 +63,20 @@ SKILL_PATH="<skill-path>"
 # Step 1: Fetch HTML
 bash "$SKILL_PATH/scripts/fetch.sh" "URL" /tmp/wx_article.html
 
-# Step 2: Get metadata (to determine filename)
-node "$SKILL_PATH/scripts/parse.mjs" /tmp/wx_article.html --json
-
-# Step 3: Parse to Markdown
+# Step 2: Parse to Markdown
 node "$SKILL_PATH/scripts/parse.mjs" /tmp/wx_article.html > /tmp/wx_article.md
 
-# Step 4: Read the parsed output, then save to Obsidian
-obsidian create path="<target_path>/<filename>.md" content="<markdown_content>" vault=<vault_name>
+# Step 3: Save to Obsidian (reads config.json automatically)
+node "$SKILL_PATH/scripts/save.mjs" /tmp/wx_article.md
+
+# Or save to a specific path (overrides default_path):
+node "$SKILL_PATH/scripts/save.mjs" /tmp/wx_article.md --path "reading/tech"
 ```
 
-The filename should be derived from the article title, keeping it readable: strip special characters, keep Chinese characters. Example: `从Claude Code源码看AI Agent工程架构.md`
+The save script automatically:
+- Reads `config.json` for vault name and default path
+- Derives filename from the YAML frontmatter title
+- Tries `obsidian` CLI first, falls back to direct file write if CLI is not available
 
 ### Batch save (multiple URLs)
 

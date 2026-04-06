@@ -20,7 +20,8 @@
   "main": "./SKILL.md",
   "scripts": {
     "fetch": "./scripts/fetch.sh",
-    "parse": "./scripts/parse.mjs"
+    "parse": "./scripts/parse.mjs",
+    "save": "./scripts/save.mjs"
   },
   "config": {
     "obsidian_vault": {
