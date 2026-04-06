@@ -1,11 +1,17 @@
 {
   "owner": "dodge1218",
   "slug": "active-self-improvement",
-  "displayName": "Auto Improve",
+  "displayName": "Active Self-Improvement",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1774981751925,
-    "commit": "https://github.com/openclaw/skills/commit/36bdbbb2b4ac9e3032b4875ac23f40946108e23c"
+    "version": "1.3.0",
+    "publishedAt": 1775111682195,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1774981751925,
+      "commit": "https://github.com/openclaw/skills/commit/36bdbbb2b4ac9e3032b4875ac23f40946108e23c"
+    }
+  ]
 }
