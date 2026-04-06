@@ -5,6 +5,8 @@ license: MIT-0
 metadata: {"openclaw":{"plugin":{"name":"MOVA","installCmd":"openclaw plugins install openclaw-mova"},"dataSentToExternalServices":[{"service":"MOVA API (api.mova-lab.eu)","data":"document type, party names, jurisdiction, key terms, AI-generated section drafts, reviewer edits, human approvals, audit metadata"},{"service":"Legal template repository connector (read-only)","data":"template ID used to fetch the base document structure"},{"service":"Document storage connector","data":"finalized document stored in configured repository after all sections are approved"}]}}
 ---
 
+> **Contract Skill** — A ready-to-use MOVA HITL workflow. Requires the `openclaw-mova` plugin.
+
 # MOVA Contract Generation
 
 Generate legal document drafts from structured templates — with AI-populated sections, section-by-section human review gates, and a complete chain of custody from template selection to final signed document.
