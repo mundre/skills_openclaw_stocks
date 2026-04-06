@@ -23,13 +23,15 @@ metadata:
   }
 ---
 
-# send-md-as (v0.3)
+# send-md-as (v0.3.2)
 
 Render Markdown as a polished image (JPEG / PNG / WebP / PDF) and send it via `openclaw message send --media`.
 将 Markdown 渲染为精美图片，通过 `openclaw message send --media` 发送。
 适用于不原生支持 Markdown 的聊天渠道（如微信/WeChat）。
 
-**完全手动触发** — 用户主动要求渲染时使用，不自动判断。
+**Manual trigger only / 完全手动触发** — Only use when user explicitly asks to render. Do not auto-detect. / 用户主动要求渲染时使用，不自动判断。
+
+**Default behavior / 默认行为** — No cropping, no page split. Output complete single image. Only use `--pages` when user explicitly requests pagination. PDF naturally paginated via Playwright PDF API. / 不裁剪不分页，输出完整单张图片。仅在用户明确要求分页时使用 `--pages`。输出 PDF 时自然分页（Playwright PDF API）。
 
 ---
 
@@ -42,7 +44,7 @@ bash render.sh input.md output.jpg
 # With theme / 指定主题
 bash render.sh --theme dark input.md output.jpg
 
-# With page split / 自动分页
+# With page split / 自动分页（仅当用户明确要求时使用）
 bash render.sh --pages a5 input.md output.jpg
 
 # Output format / 输出格式
@@ -55,6 +57,11 @@ bash render.sh --theme nord --pages a4 --format png input.md output.png
 # Send via channel / 通过渠道发送
 openclaw message send --channel <channel> --target "<id>" --media output.jpg
 ```
+
+### Hard Rules / 硬性规则
+
+- **Never crop or paginate without explicit user request / 禁止自作主张裁剪/分页**。默认输出完整内容，不丢任何部分。只有用户明确要求分页时才用 `--pages`。
+- **Prefer PDF for long content / 内容较长时优先选 PDF**（PDF 自然分页，图片会超长）。
 
 ---
 

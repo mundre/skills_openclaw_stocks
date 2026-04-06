@@ -1,11 +1,17 @@
 {
   "owner": "enc-hanted",
   "slug": "send-md-as",
-  "displayName": "send-md-as",
+  "displayName": "Send Md As",
   "latest": {
-    "version": "0.3.1",
-    "publishedAt": 1774956519132,
-    "commit": "https://github.com/openclaw/skills/commit/0dd81721a77e3198d61ed33fd617c11716a90431"
+    "version": "0.3.2",
+    "publishedAt": 1775400785146,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.3.1",
+      "publishedAt": 1774956519132,
+      "commit": "https://github.com/openclaw/skills/commit/0dd81721a77e3198d61ed33fd617c11716a90431"
+    }
+  ]
 }
