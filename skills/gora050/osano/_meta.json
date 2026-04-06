@@ -3,9 +3,15 @@
   "slug": "osano",
   "displayName": "Osano",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774731865351,
-    "commit": "https://github.com/openclaw/skills/commit/51224b7ec3e7ca13fa6334fab45fb271c686f771"
+    "version": "1.0.2",
+    "publishedAt": 1775168890017,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774731865351,
+      "commit": "https://github.com/openclaw/skills/commit/51224b7ec3e7ca13fa6334fab45fb271c686f771"
+    }
+  ]
 }
