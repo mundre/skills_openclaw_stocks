@@ -313,16 +313,24 @@ HTML 模板结构（AI 生成时参考）：
   <meta charset="UTF-8">
   <title>直播电商日报 · [日期]</title>
   <style>
-    body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-    .header { background: #1a1a2e; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-    .top-story { background: #ff4757; color: white; padding: 16px; border-radius: 10px; margin-bottom: 20px; }
-    .section { background: white; border-radius: 10px; padding: 16px; margin-bottom: 12px; border-left: 4px solid [方向色]; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px 16px; background: #f5f5f5; font-size: 30px; }
+    .header { background: #1a1a2e; color: white; padding: 40px 28px 32px; border-radius: 12px; margin-bottom: 22px; }
+    .header h1 { font-size: 44px; font-weight: 700; }
+    .header .date { font-size: 26px; opacity: 0.7; margin-top: 10px; }
+    .top-story { background: #ff4757; color: white; padding: 32px 28px; border-radius: 10px; margin-bottom: 20px; }
+    .top-story h2 { font-size: 32px; line-height: 1.5; }
+    .top-story .summary { font-size: 28px; line-height: 1.9; }
+    .section { background: white; border-radius: 10px; padding: 30px 26px; margin-bottom: 20px; border-left: 7px solid [方向色]; }
+    .section-title { font-size: 32px; font-weight: 700; margin-bottom: 24px; }
+    .news-title { font-size: 28px; font-weight: 600; margin-bottom: 12px; line-height: 1.6; }
+    .news-summary { font-size: 26px; color: #444; line-height: 1.9; }
+    .badge { display: inline-block; padding: 5px 12px; border-radius: 4px; font-size: 20px; }
     .badge-new { background: #e8f5e9; color: #2e7d32; }
     .badge-ongoing { background: #fff3e0; color: #e65100; }
-    .tip { background: #f0f7ff; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 14px; color: #1565c0; }
+    .tip { background: #f0f7ff; padding: 16px 18px; border-radius: 6px; margin-top: 14px; font-size: 26px; color: #1565c0; line-height: 1.8; }
     .tracking-table { width: 100%; border-collapse: collapse; }
-    .tracking-table td, .tracking-table th { padding: 8px; border: 1px solid #eee; font-size: 13px; }
+    .tracking-table td, .tracking-table th { padding: 16px 14px; border: 1px solid #eee; font-size: 24px; line-height: 1.75; }
+    /* 手机友好字号（2026-03-30 小马哥确认）：正文30px，标题32px，大标题44px，行间距1.9 */
   </style>
 </head>
 <body>
