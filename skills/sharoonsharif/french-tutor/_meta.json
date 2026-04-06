@@ -1,13 +1,18 @@
 {
   "owner": "sharoonsharif",
   "slug": "french-tutor",
-  "displayName": "French Tutor — A1 to B2+",
+  "displayName": "French Tutor",
   "latest": {
-    "version": "2.1.0",
-    "publishedAt": 1774553962142,
-    "commit": "https://github.com/openclaw/skills/commit/600d6bd2f1a86f8db8561b8d2a2e8b27718c6808"
+    "version": "4.0.0",
+    "publishedAt": 1774981720830,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.1.0",
+      "publishedAt": 1774553962142,
+      "commit": "https://github.com/openclaw/skills/commit/600d6bd2f1a86f8db8561b8d2a2e8b27718c6808"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774386922345,
