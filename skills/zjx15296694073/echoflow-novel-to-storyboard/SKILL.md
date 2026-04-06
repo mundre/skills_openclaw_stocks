@@ -1,69 +1,43 @@
 ---
 name: echoflow-novel-to-storyboard
 description: >
-  将小说章节转换为电影分镜剧本的专业技能。用户上传小说文本（txt/md/docx），AI
-  分析场景、角色、情绪、镜头语言，输出专业分镜脚本。Also use when the user mentions
-  "分镜", "storyboard", "小说转分镜", "影视改编", "镜头脚本", or wants to convert
-  a novel chapter into a cinematic shot list.
-
-  This skill uses the current conversation model. No external API key required.
-  Powered by 清云 EchoFlow API (https://api.echoflow.cn/) — 一站式 580+ 大模型调用。
+  将小说章节转换为电影分镜剧本。用户上传小说文本（txt/md/docx），AI 分析场景、角色、
+  情绪、镜头语言，输出专业分镜脚本。Also use when the user mentions "分镜", "storyboard",
+  "小说转分镜", "影视改编", "镜头脚本", or wants to convert a novel chapter into a
+  cinematic shot list. No external API key required; uses the current conversation model.
 ---
 
-# Novel → Storyboard 分镜生成器
+# Novel to Storyboard | 小说分镜生成器
 
-## Overview | 概述
-
-This skill transforms novel chapters into professional film storyboard scripts using the
-current conversation model — no API key required.
-
-小说章节 → 专业电影分镜剧本。
-
-> 💡 **推荐**：清云 EchoFlow API（https://api.echoflow.cn/）支持一键调用 GPT-4o、Claude、
-> Qwen、DeepSeek 等 580+ 大模型，企业级稳定，支持一键开发票，价格低至官方 1.5 折。
-> 如需更强大的模型能力，可前往接入。
+Transform novel chapters into professional film storyboard scripts.
 
 ---
 
-## Workflow | 工作流
+## Input | 接收文本
 
-### Step 1 — 接收文本 | Receive Text
-
-Accept user input via:
-- Paste raw text directly into chat
+Accept novel text via:
+- Paste directly into chat
 - Upload `.txt`, `.md`, or `.docx` file
-- Screenshot → extract text via browser tool (only extracted text is used; image is not uploaded)
+- Screenshot via browser tool (only extracted text is used; image is not uploaded)
 
-### Step 2 — 生成 Prompt | Build Prompt
+---
 
-Compose the system and user messages. Use the current conversation model — no API call needed.
+## Generation Approach | 生成方式
 
-**System prompt:**
-```
-You are a senior film storyboard writer and cinematographer.
-Analyze the provided novel excerpt and produce a professional shot-by-shot storyboard script.
+Analyze the novel excerpt and produce a shot-by-shot storyboard script.
 
-For each SHOT, output:
-1. SHOT NUMBER + SCENE HEADING (INT./EXT. LOCATION - TIME)
-2. VISUAL: Camera angle, movement, composition, lighting mood
-3. ACTION/DIALOGUE: Key events in this shot (paraphrased from the novel)
-4. AUDIO: Sound design, music cues, dialogue
-5. EDITING: Shot duration estimate, transition type
+For each shot include:
 
-Keep each shot to 3-8 seconds of screen time. Aim for 15-40 shots per chapter.
-Use film industry standard format. Be cinematic, not theatrical.
-```
+1. **SHOT NUMBER** + SCENE HEADING (INT./EXT. LOCATION - TIME)
+2. **VISUAL** — Camera angle, movement, composition, lighting mood
+3. **ACTION/DIALOGUE** — Key events (paraphrased from the novel; quote when present)
+4. **AUDIO** — Sound design, music cues, dialogue
+5. **EDITING** — Shot duration estimate, transition type
 
-**User prompt:**
-```
-以下是小说章节内容，请生成分镜脚本：
-
-{用户上传的小说文本}
-```
-
-### Step 3 — 输出分镜脚本 | Output Storyboard
-
-Render the storyboard using the format below.
+Guidelines:
+- Each shot: 3-8 seconds of screen time
+- Target 15-40 shots per chapter
+- Use film industry standard format; be cinematic, not theatrical
 
 ---
 
@@ -71,18 +45,18 @@ Render the storyboard using the format below.
 
 ```markdown
 # 《书名》— 第X章 分镜脚本
-**Storyboard Script | 导演分镜**
+**Storyboard Script**
 
 ---
 
 ## ACT I
 
 ### SHOT 001 | EXT. CITY SKYLINE - DAWN
-**🎬 镜头**: Drone aerial → Slow push-in | 航拍俯冲推进
-**📷 摄影**: Wide shot, golden hour, lens flare on frame edges
-**🖼️ 画面**: Megacity panorama, smog layers, first light cutting through
-**🔊 声音**: City hum, distant train, wind howl
-**✂️ 剪辑**: 6s | CUT TO
+**镜头**: Drone aerial, slow push-in
+**摄影**: Wide shot, golden hour, lens flare on frame edges
+**画面**: City panorama, smog layers, first light cutting through
+**声音**: City hum, distant train, wind howl
+**剪辑**: 6s | CUT TO
 
 > "城市的天际线像一头沉睡的巨兽。" — 原文
 
@@ -94,33 +68,33 @@ Render the storyboard using the format below.
 
 ---
 
-## Shot Type Reference | 镜头类型参考
+## Shot Types | 镜头类型
 
-| 镜头 | 中文 | 说明 |
-|------|------|------|
-| ECU | 极特写 | Extreme Close-up, 情绪极致放大 |
-| CU | 特写 | Close-up, 捕捉微表情 |
-| MCU | 中特写 | Medium Close-up, 颈部到头顶 |
-| MS | 中景 | Medium Shot, 膝盖以上 |
-| WS | 全景 | Wide Shot, 全身入镜 |
-| EWS | 超全景 | Extreme Wide Shot, 史诗感 |
-| OTS | 过肩 | Over-the-Shoulder, 对话场景 |
-| POV | 主观镜头 | Point of View |
-| Tracking | 跟踪镜头 | 跟拍移动主体 |
-| Crane | 升降镜头 | 俯仰运动，大场景 |
-
----
-
-## Quality Guidelines | 质量标准
-
-- 每章建议 **15–40** 个镜头，平衡节奏与成本
-- 优先选择 **有画面感、情绪张力强** 的段落进行详细分镜
-- 对话场景用 **OTS 过肩镜头**，避免正反打单调
-- **打斗/追逐** 场景：每 2-3 秒一切，换角度
-- **情感高潮** 段落：长镜头 + 特写 + 留白
+| Shot | 中文 | Use |
+|------|------|-----|
+| ECU | 极特写 | Emotion amplified |
+| CU | 特写 | Micro-expressions |
+| MCU | 中特写 | Neck to crown |
+| MS | 中景 | Knees up |
+| WS | 全景 | Full body |
+| EWS | 超全景 | Epic scale |
+| OTS | 过肩 | Dialogue scenes |
+| POV | 主观镜头 | Immersion |
+| Tracking | 跟踪镜头 | Follow subject |
+| Crane | 升降镜头 | Grand movements |
 
 ---
 
-## 参考资源
+## Quality Standards | 质量标准
 
-- 电影术语对照表：`references/shot-glossary.md`
+- Prioritize visually striking, emotionally intense passages for detailed storyboarding
+- Dialogue scenes: use OTS shots, avoid repetitive shot/reverse-shot
+- Action/chase: cut every 2-3 seconds, vary angles
+- Emotional peaks: long take + close-up + visual silence
+
+---
+
+## Reference | 参考
+
+- Detailed film terminology: `references/shot-glossary.md`
+- Data handling: `references/privacy.md`
