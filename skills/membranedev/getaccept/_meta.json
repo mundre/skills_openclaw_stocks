@@ -3,9 +3,15 @@
   "slug": "getaccept",
   "displayName": "Getaccept",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774382572967,
-    "commit": "https://github.com/openclaw/skills/commit/ae5c51a7f2ca1701ca87f6cd4f7f59a5a8a88e57"
+    "version": "1.0.2",
+    "publishedAt": 1775167124483,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774382572967,
+      "commit": "https://github.com/openclaw/skills/commit/ae5c51a7f2ca1701ca87f6cd4f7f59a5a8a88e57"
+    }
+  ]
 }
