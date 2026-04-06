@@ -3,9 +3,15 @@
   "slug": "unanet",
   "displayName": "Unanet",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774380174288,
-    "commit": "https://github.com/openclaw/skills/commit/f2f54bca8d249c97a12fa40c0df8eafcdfdf069a"
+    "version": "1.0.2",
+    "publishedAt": 1775167087638,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774380174288,
+      "commit": "https://github.com/openclaw/skills/commit/f2f54bca8d249c97a12fa40c0df8eafcdfdf069a"
+    }
+  ]
 }
