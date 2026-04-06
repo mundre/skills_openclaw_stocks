@@ -1,11 +1,17 @@
 {
   "owner": "halloweb",
   "slug": "processon-diagrams",
-  "displayName": "processon-diagrams",
+  "displayName": "processon-diagrams-deprecated",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774516407613,
-    "commit": "https://github.com/openclaw/skills/commit/7ebd21e84b8e78cd4249cfc2128cedf585aa7072"
+    "version": "1.0.1",
+    "publishedAt": 1775179929219,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774516407613,
+      "commit": "https://github.com/openclaw/skills/commit/7ebd21e84b8e78cd4249cfc2128cedf585aa7072"
+    }
+  ]
 }
