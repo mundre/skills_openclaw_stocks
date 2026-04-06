@@ -4,7 +4,7 @@
 
 - **skill folder / slug**: `openclaw-continuity-pack`
 - **display name**: `OpenClaw全自动新对话续接`
-- **version**: `0.3.0`
+- **version**: `0.5.0`
 
 ## 命名要求
 

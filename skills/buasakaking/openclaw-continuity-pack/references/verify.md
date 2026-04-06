@@ -1,25 +1,5 @@
 # 最小验证步骤
 
-## 额外热修复复验：`totalTokens` 缺失但 session 已超重
-
-如果你怀疑 continuity 已经进入 successor，但某条 active successor 仍然越来越重、最后超时，请额外做这一条复验：
-
-1. 先创建一个 disposable thread
-2. 发送一条 seed 消息，等该 session settled，不要在 `status=running` 时直接改 token
-3. 将 root 或当前 active successor 的 token 状态人为改成类似下面这种形态：
-   - `totalTokens = null`
-   - `totalTokensFresh = false`
-   - `inputTokens` 很大
-   - `outputTokens` 很大
-   - `contextTokens` 保持真实上下文上限
-4. 再发一条复杂消息，要求 continuity 继续接管
-5. 验证：
-   - successor 仍然会被创建
-   - `threadActiveSessionKey` 会指向新的 successor
-   - hidden handoff 仍然只在 successor transcript 中，不会出现在可见历史里
-
-如果这条复验失败，说明运行时仍然只依赖 `totalTokens` 做压力判断，补丁没有真正生效。
-
 ## A. 基础验证
 
 部署后先确认：

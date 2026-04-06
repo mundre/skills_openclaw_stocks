@@ -1,33 +1,34 @@
 # Release Notes
 
-## OpenClaw Continuity Pack v0.3.1
+## OpenClaw Continuity Pack v0.5.0
 
-这是一次只针对 continuity 运行时稳定性的热修复，不新增能力。
+这是一轮面向 ClawHub 的**修复型重新发布**。目标不是换产品方向，而是把当前 workspace 里真正维护的 continuity source pack 整理成一个比线上 `0.4.0` 更完整、结构更一致的可分发版本。
 
-### 本次修复
+### 这次收口重点
 
-1. 修复 `totalTokens` 缺失时的 rollover 误判  
-   现在 `thread-rollover` 在评估上下文压力时，会优先使用 `totalTokens`，但当它缺失时，会回退读取：
-   - `inputTokens`
-   - `outputTokens`
-   - `inputTokens + outputTokens`
+1. **以当前维护中的 source pack 为准重新发布**  
+   不再让 registry 包与 workspace 里的主维护目录长期分叉。当前发布包以本地正在维护的 source 结构为准。
 
-2. 修复的直接症状  
-   某些长线程已经真实进入 successor session，但当前 active successor 的 `totalTokens = null`，旧逻辑会误判为“不需要继续 rollover”，最终把超重会话拖到 provider timeout。
+2. **补回升级维护链路**  
+   重新纳入：
+   - `README.md`
+   - `references/upgrade-maintenance.md`
+   - `scripts/continuity_doctor.py`
 
-3. live 复验结果  
-   已在 disposable live thread 上复验通过：
-   - 前台仍是同一个 thread
-   - backend 真创建 successor 并切换 active session
-   - successor transcript 中存在 hidden handoff
-   - 用户可见历史中没有 hidden handoff
-   - 即使人为制造 `totalTokens = null`、只保留超大的 `inputTokens/outputTokens`，rollover 仍能继续触发
+3. **保留当前 source 中更完整的分发产物**  
+   本轮继续包含并分发：
+   - `assets/patch/thread-continuity.patch`
+   - `LICENSE`
+   - silent continuity / hidden handoff / same-thread rollover 的文档与模板体系
 
-### 对使用者的影响
+4. **发布元数据与包内实际结构重新对齐**  
+   `SKILL.md`、`distribution.md`、资源清单与阅读顺序都已同步到当前目录结构，减少安装后“文档提到但包里没有”或“包里有但入口没写”的不一致。
 
-- 这次 hotfix 与模型供应商无关，属于 continuity / rollover 运行时逻辑修复
-- 如果你的 OpenClaw 也会出现“旧 thread 越聊越重，最后超时，但 successor 不继续切”的情况，这个版本就是针对该问题的
+### 适合谁升级到这一版
 
+- 需要一个**结构自洽**的 continuity pack 分发包
+- 需要 runtime patch 文件本体而不是只看说明文档
+- 需要在 OpenClaw 升级后先跑 doctor / 再看 patch 锚点的人
 
 ## OpenClaw Continuity Pack v0.3.0
 

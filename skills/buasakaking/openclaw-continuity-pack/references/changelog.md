@@ -1,11 +1,11 @@
 # Changelog
 
-## v0.3.1 - 2026-03-31
+## v0.5.0 - 2026-04-03
 
-- 修复 `src/gateway/thread-rollover.ts` 的压力评估逻辑：当 `totalTokens` 缺失时，回退使用 `inputTokens` / `outputTokens` / `inputTokens + outputTokens`
-- 更新 `assets/patch/thread-continuity.patch`，同步这条 continuity hotfix
-- 更新 `src/gateway/thread-rollover.test.ts` 的 source-side 对齐测试，补充 `totalTokens = null` 时仍应进入 `rollover_required` 的用例
-- 更新 `references/release-notes.md` 与 `references/verify.md`，加入“null totalTokens / heavy successor”这类实战复验场景
+- 以当前 workspace 维护中的 continuity source 为准重新整理分发包，并提升版本以覆盖已存在的 `0.4.0` registry release
+- 补回根目录 `README.md`、`references/upgrade-maintenance.md` 与 `scripts/continuity_doctor.py`，让安装、升级巡检与维护路径重新完整
+- 保留并重新分发当前 source 中已包含的 `assets/patch/thread-continuity.patch`、`LICENSE` 与 silent continuity / 80-85-88-90 文档体系
+- 对齐 `SKILL.md`、`distribution.md` 与发布入口说明，使包内资源清单和实际文件结构一致
 
 ## v0.3.0 - 2026-03-30
 

@@ -1,20 +1,5 @@
 # Source Audit
 
-## 2026-03-31 热修复补充
-
-本次 source pack 已同步一个 continuity 运行时 hotfix：
-
-- 修复 `thread-rollover` 在 `totalTokens` 缺失时无法继续 rollover 的问题
-- 该修复已在 live disposable thread 场景复验：即使只保留超大的 `inputTokens/outputTokens`，同一 thread 下的 successor 仍会继续创建并接管
-
-这次补充只进入：
-- `assets/patch/thread-continuity.patch`
-- `references/release-notes.md`
-- `references/changelog.md`
-- `references/verify.md`
-
-没有引入新的现场数据、密钥、临时注入代码或验收脚本。
-
 ## 这个 skill 的发布原则
 
 这不是完整运行现场快照，而是一个**公开可迁移层**：

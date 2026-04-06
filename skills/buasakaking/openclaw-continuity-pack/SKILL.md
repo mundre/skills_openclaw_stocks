@@ -84,6 +84,7 @@ This skill is for three situations:
 - `scripts/install_continuity_pack.py`
 - `scripts/bootstrap_workspace.py`
 - `scripts/apply_runtime_patch.py`
+- `scripts/continuity_doctor.py`
 
 ### assets/
 - `assets/workspace/` for the reusable operating layer and continuity templates
@@ -103,6 +104,7 @@ This skill is for three situations:
 - `references/changelog.md`
 - `references/distribution.md`
 - `references/source-audit.md`
+- `references/upgrade-maintenance.md`
 
 ## Working rules for this skill
 
@@ -127,11 +129,13 @@ When using this skill:
 
 ## Read only what you need
 
-1. `references/overview.md`
-2. `references/install.md`
-3. `references/usage.md`
-4. `references/capability-layers.md`
-5. `references/verify.md`
-6. `references/rollback.md`
-7. `references/distribution.md`
-8. `references/source-audit.md`
+1. `README.md`
+2. `references/overview.md`
+3. `references/install.md`
+4. `references/usage.md`
+5. `references/capability-layers.md`
+6. `references/verify.md`
+7. `references/rollback.md`
+8. `references/upgrade-maintenance.md`
+9. `references/distribution.md`
+10. `references/source-audit.md`
