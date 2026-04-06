@@ -3,11 +3,16 @@
   "slug": "compshare-api",
   "displayName": "优云智算GPU管家",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1774584658697,
-    "commit": "https://github.com/openclaw/skills/commit/1bdac3e2b9a02b7cb467dd3b0139d787305908e5"
+    "version": "1.0.3",
+    "publishedAt": 1775018189199,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1774584658697,
+      "commit": "https://github.com/openclaw/skills/commit/1bdac3e2b9a02b7cb467dd3b0139d787305908e5"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774369133327,

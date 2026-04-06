@@ -31,7 +31,7 @@ GPU_TYPES = ["P40", "2080", "3090", "3080Ti", "4090", "A800", "A100", "H20"]
 DEFAULT_REGION = "cn-wlcb"
 DEFAULT_ZONE = "cn-wlcb-01"
 DEFAULT_BASE_URL = "https://api.compshare.cn"
-DEFAULT_IMAGE_ID = "compshareImage-165jmhx19ik7"
+DEFAULT_IMAGE_ID = "500WHhII1fnz"
 
 
 def get_config_path() -> Path:
@@ -127,7 +127,7 @@ def create_instance(
     image_id: str = DEFAULT_IMAGE_ID,
     name: Optional[str] = None,
     password: Optional[str] = None,
-    charge_type: str = "Dynamic",
+    charge_type: str = "Spot",
     config: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
@@ -142,7 +142,7 @@ def create_instance(
         image_id: 镜像ID
         name: 实例名称
         password: 登录密码
-        charge_type: 计费模式 (Month/Day/Dynamic/Postpay)
+        charge_type: 计费模式 (Month/Day/Dynamic/Postpay/Spot)
         config: 配置字典
     
     Returns:
@@ -516,9 +516,9 @@ def main():
     create_parser.add_argument("--image-id", default=DEFAULT_IMAGE_ID, help="镜像ID")
     create_parser.add_argument("--name", help="实例名称")
     create_parser.add_argument("--password", help="登录密码")
-    create_parser.add_argument("--charge-type", default="Dynamic", 
-                               choices=["Month", "Day", "Dynamic", "Postpay"],
-                               help="计费模式 (默认: Dynamic)")
+    create_parser.add_argument("--charge-type", default="Spot", 
+                               choices=["Month", "Day", "Dynamic", "Postpay","Spot"],
+                               help="计费模式 (默认: Spot抢占式)")
     
     # list 命令
     list_parser = subparsers.add_parser("list", help="查询实例列表")

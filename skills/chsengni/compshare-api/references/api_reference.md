@@ -3,8 +3,8 @@
 ## 目录
 1. [概述](#概述)
 2. [认证方式](#认证方式)
-3. [公共参数](#公共参数)
-4. [API接口详情](#api接口详情)
+3. [Python SDK 快速开始](#python-sdk-快速开始)
+4. [API接口文档](#api-接口文档)
 5. [SSH客户端使用指南](#ssh客户端使用指南)
 6. [错误码说明](#错误码说明)
 7. [最佳实践](#最佳实践)
@@ -46,38 +46,6 @@ compshare:
 
 ---
 
-# CompShare API与Python SDK开发文档
-
-本文档整理了优云智算 CompShare 平台的核心 API 接口说明，以及配套的 Python SDK 开发示例，帮助开发者快速接入平台，实现 GPU 实例的全生命周期管理。
-
----
-
-## 目录
-
-1. [Python SDK 快速开始](#python-sdk快速开始)
-
-2. [API 接口文档](#api接口文档)
-
-    - [创建 GPU 资源 - CreateCompShareInstance](#创建gpu资源-createcompshareinstance)
-
-    - [获取实例资源列表 - DescribeCompShareInstance](#获取实例资源列表-describecompshareinstance)
-
-    - [获取自制镜像列表 - DescribeCustomImages](#获取自制镜像列表-describecustomimages)
-
-    - [重启实例 - RebootCompShareInstance](#重启实例-rebootcompshareinstance)
-
-    - [重装实例 - ReinstallCompShareInstance](#重装实例-reinstallcompshareinstance)
-
-    - [重置实例密码 - ResetCompShareInstancePassword](#重置实例密码-resetcompshareinstancepassword)
-
-    - [启动实例 - StartCompShareInstance](#启动实例-startcompshareinstance)
-
-    - [关闭实例 - StopCompShareInstance](#关闭实例-stopcompshareinstance)
-
-    - [删除实例 - TerminateCompShareInstance](#删除实例-terminatecompshareinstance)
-
----
-
 ## Python SDK 快速开始
 
 ### 环境准备
@@ -97,7 +65,7 @@ pip install --upgrade ucloud-sdk-python3
 
     - 填写您的 `public_key` 和 `private_key` 密钥信息
 
-    - 根据您的需求调整其他参数，例如镜像 ID `CompShareImageId` 等
+    - 根据您的需求调整其他参数，例如镜像 ID `CompShareImageId` 等，
 
 2. **运行示例**
 
@@ -106,15 +74,13 @@ pip install --upgrade ucloud-sdk-python3
 python main.py
 ```
 
-### 示例文件说明
+3. **镜像ID注意事项**
 
-该示例仓库包含以下核心文件：
+- 使用浏览器访问 https://www.compshare.cn/image-community 获取镜像列表信息
+- 使用tag参数进行分类筛选，例如：https://www.compshare.cn/image-community?tag=ComfyUI
+- 进入镜像详情（示例）：https://www.compshare.cn/images/500WHhII1fnz
+- 500WHhII1fnz则为镜像ID，根据用户提到需求安装上述步骤创建镜像实例
 
-|文件|说明|
-|---|---|
-|`.gitignore`|Git 忽略配置|
-|`README.md`|示例说明文档|
-|`main.py`|完整的 Python SDK 调用示例代码|
 ---
 
 ## API 接口文档

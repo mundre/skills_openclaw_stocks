@@ -1,5 +1,5 @@
 # CompShare API 配置文件
-# 请将此文件复制到 ./config/config.yaml 并填入您的实际凭证信息
+# 请将此文件复制到 ./assets/config.yaml 并填入您的实际凭证信息
 
 compshare:
   # API凭证 - 从 https://console.compshare.cn/uaccount/api_manage 获取

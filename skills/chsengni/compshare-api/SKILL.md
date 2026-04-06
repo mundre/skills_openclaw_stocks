@@ -46,7 +46,7 @@ compshare:
 
 ## 操作步骤
 
-### 1. 创建GPU实例
+### 1. 创建GPU实例（默认创建抢占式）
 调用 `scripts/compshare_client.py` 脚本，使用 `create` 命令：
 ```bash
 python scripts/compshare_client.py create \
@@ -55,8 +55,9 @@ python scripts/compshare_client.py create \
   --cpu 16 \
   --memory 64 \
   --disk-size 200 \
-  --image-id compshareImage-165jmhx19ik7 \
-  --name "my-instance"
+  --image-id 500WHhII1fnz \
+  --name "ComfyUI-4090" \
+  --charge-type Spot
 ```
 
 ### 2. 查询实例列表
@@ -226,7 +227,6 @@ python scripts/ssh_client.py shell \
 - API客户端脚本：[scripts/compshare_client.py](scripts/compshare_client.py) - 封装所有API调用逻辑
 - SSH客户端脚本：[scripts/ssh_client.py](scripts/ssh_client.py) - SSH连接和文件传输
 - API详细参考：[references/api_reference.md](references/api_reference.md) - 完整的API参数说明和示例
-- 配置文件模板：[assets/config.yaml.example](assets/config.yaml.example) - 配置文件模板
 
 ## 注意事项
 - 删除实例前必须先停止实例，否则会报错
@@ -237,57 +237,3 @@ python scripts/ssh_client.py shell \
 - 配置文件包含敏感信息，请勿提交到版本控制系统
 - SSH密码可通过查询实例列表获取（Password字段）
 - SSH登录命令可通过查询实例列表获取（SshLoginCommand字段）
-
-## 使用示例
-
-### 示例1：创建一台RTX 4090 GPU实例
-```bash
-python scripts/compshare_client.py create \
-  --gpu-type 4090 \
-  --gpu-count 1 \
-  --cpu 16 \
-  --memory 64 \
-  --disk-size 200 \
-  --image-id compshareImage-165jmhx19ik7 \
-  --name "ml-training"
-```
-
-### 示例2：查询所有实例状态
-```bash
-python scripts/compshare_client.py list
-```
-
-### 示例3：启动指定实例
-```bash
-python scripts/compshare_client.py start --instance-id uhost-xxxxx
-```
-
-### 示例4：SSH连接并执行命令
-```bash
-# 1. 查询实例获取SSH信息
-python scripts/compshare_client.py list
-
-# 2. 连接并执行命令
-python scripts/ssh_client.py exec \
-  --ssh-command "ssh -p 12345 root@192.168.1.1" \
-  --password "instance-password" \
-  --cmd "nvidia-smi"
-```
-
-### 示例5：上传代码到GPU实例
-```bash
-python scripts/ssh_client.py upload-dir \
-  --ssh-command "ssh -p 12345 root@192.168.1.1" \
-  --password "instance-password" \
-  --local ./my_project \
-  --remote /root/my_project
-```
-
-### 示例6：下载训练结果
-```bash
-python scripts/ssh_client.py download-dir \
-  --ssh-command "ssh -p 12345 root@192.168.1.1" \
-  --password "instance-password" \
-  --remote /root/output \
-  --local ./results
-```
