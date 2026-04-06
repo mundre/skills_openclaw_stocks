@@ -33,18 +33,10 @@ class RetryConfig:
 
 
 @dataclass
-class ReportingConfig:
-    """What the verifier must include."""
-    include_commands: bool = True
-    spot_check_count: int = 2
-
-
-@dataclass
 class ProofConfig:
     """Full proof-agent configuration."""
     thresholds: ThresholdConfig = field(default_factory=ThresholdConfig)
     retry: RetryConfig = field(default_factory=RetryConfig)
-    reporting: ReportingConfig = field(default_factory=ReportingConfig)
 
     @classmethod
     def load(cls, path: Optional[str | Path] = None) -> "ProofConfig":
@@ -75,13 +67,6 @@ class ProofConfig:
             config.retry = RetryConfig(
                 max_attempts=r.get("max_attempts", 3),
                 escalate_on_max=r.get("escalate_on_max", True),
-            )
-
-        if "reporting" in data:
-            rp = data["reporting"]
-            config.reporting = ReportingConfig(
-                include_commands=rp.get("include_commands", True),
-                spot_check_count=rp.get("spot_check_count", 2),
             )
 
         return config

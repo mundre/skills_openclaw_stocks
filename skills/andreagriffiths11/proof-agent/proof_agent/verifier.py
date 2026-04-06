@@ -35,7 +35,6 @@ class VerificationResult:
     verdict: Verdict
     summary: str
     issues: list[str] = field(default_factory=list)
-    commands_run: list[dict[str, str]] = field(default_factory=list)
     unverifiable: list[str] = field(default_factory=list)
 
 

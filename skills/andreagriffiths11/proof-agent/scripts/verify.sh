@@ -59,7 +59,7 @@ $DIFF
 $COMMITS
 
 ## Sensitive Files Detected
-$([ -n "$SENSITIVE" ] && echo -e "$SENSITIVE" || echo "None")
+$([ -n "$SENSITIVE" ] && printf '%b\n' "$SENSITIVE" || echo "None")
 
 ## Your Job
 

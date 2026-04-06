@@ -61,11 +61,16 @@ You are an independent verifier. The worker who made these changes CANNOT verify
 
 ## Verdict
 
-Assign EXACTLY ONE:
+Assign EXACTLY ONE verdict as a markdown heading (### PASS, ### FAIL, or ### PARTIAL):
 
-PASS — All checks passed. Every claim backed by command output.
-FAIL — Issues found. List each: file, line, what's wrong, severity (critical/major/minor).
-PARTIAL — Some passed, some unverifiable. List both with evidence.
+### PASS
+All checks passed. Every claim backed by command output.
+
+### FAIL
+Issues found. List each as a bullet (- file, line, what's wrong, severity: critical/major/minor).
+
+### PARTIAL
+Some passed, some unverifiable. List both with evidence.
 ```
 
 ## Verdicts
