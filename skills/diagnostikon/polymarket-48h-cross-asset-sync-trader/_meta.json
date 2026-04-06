@@ -1,11 +1,17 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-48h-cross-asset-sync-trader",
-  "displayName": "48h Cross-Asset Sync Trader",
+  "displayName": "Polymarket 48h Cross Asset Sync Trader",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774609973343,
-    "commit": "https://github.com/openclaw/skills/commit/50fd88eeabc3febf8e6ad1f5183a88f2d4cff0a1"
+    "version": "1.0.1",
+    "publishedAt": 1775316884650,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774609973343,
+      "commit": "https://github.com/openclaw/skills/commit/50fd88eeabc3febf8e6ad1f5183a88f2d4cff0a1"
+    }
+  ]
 }
