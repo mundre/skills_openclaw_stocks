@@ -1,14 +1,15 @@
 {
-  "name": "element-trade",
+  "name": "element-nft-trader",
   "version": "1.0.0",
-  "description": "Element Trade",
-  "main": "entry.ts",
+  "description": "Element NFT Trader",
+  "main": "lib/entry.js",
   "bin": {
-    "element-trade": "./entry.ts"
+    "element-trade": "./lib/entry.js"
   },
   "scripts": {
     "build": "tsc",
-    "start": "npx ts-node entry.ts"
+    "start": "node lib/entry.js",
+    "prune:lib": "find lib -type f \\( -name '*.d.ts' -o -name '*.d.ts.map' -o -name '*.js.map' \\) -delete"
   },
   "dependencies": {
     "ethers": "^5.7.2",

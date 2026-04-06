@@ -3,6 +3,7 @@ import {
   postBatchSignedERC721SellOrder,
   postOrder,
   queryFees,
+  queryAccountOrders,
   queryNonce,
   queryOracleSignature,
   queryOrders,
@@ -42,7 +43,7 @@ import {
   getSucceedList,
 } from "./element/batchSignedOrder/batchSignedOrderManager";
 import { OrderManager } from "./element/order/orderManager";
-import { ApiOption, OrderQuery } from "./api/openApiTypes";
+import { ApiOption, OrderQuery, QueryAccountOrdersParams, QueryAccountOrdersResponseData } from "./api/openApiTypes";
 import { CreateOrderParams } from "./element/order/orderTypes";
 import {
   toOrderInformation,
@@ -403,6 +404,12 @@ export class ElementSDK {
 
   public async queryOrders(query: OrderQuery): Promise<Array<Order>> {
     return await queryOrders(query, this.apiOption);
+  }
+
+  public async queryAccountOrders(
+    query: QueryAccountOrdersParams,
+  ): Promise<QueryAccountOrdersResponseData> {
+    return await queryAccountOrders(query, this.apiOption);
   }
 
   private toOrderIdList(

@@ -75,6 +75,7 @@ Important notes:
 ```json
 {
   "network": "base",
+  "confirmed": true,
   "operationType": "buy",
   "buyOrders": {
     "orders": [
@@ -98,6 +99,7 @@ Important notes:
 ```json
 {
   "network": "base",
+  "confirmed": true,
   "operationType": "buy",
   "buyOrders": {
     "orders": [
@@ -120,4 +122,4 @@ Important notes:
 }
 ```
 
-Run with `npx ts-node scripts/entry.ts "$INPUT"`.
+Run with `node scripts/lib/entry.js "$INPUT"`.

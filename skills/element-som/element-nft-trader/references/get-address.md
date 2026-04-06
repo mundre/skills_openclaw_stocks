@@ -12,7 +12,7 @@ NETWORK="base"
 INPUT=$(jq -n \
   --arg network "$NETWORK" \
   '{network: $network, operationType: "getAddress"}')
-npx ts-node scripts/entry.ts "$INPUT"
+node scripts/lib/entry.js "$INPUT"
 ```
 
 Expected response:

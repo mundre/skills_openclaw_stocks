@@ -14,8 +14,7 @@ import {
   BatchBuyWithETHParams,
 } from "./code/index";
 import { ethers } from "ethers";
-import { queryMyOrders as queryMyOrdersApi } from "./code/src/api/openApi";
-import { QueryMyOrdersParams } from "./code/src/api/openApiTypes";
+import { QueryAccountOrdersParams } from "./code/src/api/openApiTypes";
 
 const EXPLORER_URLS: Record<string, string> = {
   eth: "https://etherscan.io",
@@ -55,20 +54,21 @@ type OperationType =
   | "offer"
   | "acceptOffer"
   | "query"
-  | "queryMyOrders"
+  | "queryAccountOrders"
   | "cancel"
   | "getAddress";
 
 interface InputParams {
   network?: Network;
   operationType: OperationType;
+  confirmed?: boolean;
   sellOrders?: MakeERC721SellOrdersParams;
   erc1155sellOrder?: MakeOrderParams;
   offerOrder?: MakeOrderParams;
   acceptOfferOrder?: FillOrderParams;
   buyOrders?: BatchBuyWithETHParams;
   queryOrders?: OrderQuery;
-  queryMyOrders?: QueryMyOrdersParams;
+  queryAccountOrders?: QueryAccountOrdersParams;
   ordersToCancel?: CancelOrdersParams;
 }
 
@@ -231,16 +231,39 @@ function validateOrderFields(
 
 function validateInput(input: InputParams): void {
   const { operationType } = input;
+  const stateChangingOperations: OperationType[] = [
+    "erc721sell",
+    "erc1155sell",
+    "buy",
+    "offer",
+    "acceptOffer",
+    "cancel",
+  ];
 
   if (isBlank(operationType)) {
     logError("validation", "operationType is required");
   }
 
-  if (operationType !== "queryMyOrders" && isBlank(input.network)) {
+  if (isBlank(input.network)) {
     logError("validation", `network is required for ${operationType}`, null, {
       operation: operationType,
       fields: ["network"],
     });
+  }
+
+  if (
+    stateChangingOperations.includes(operationType) &&
+    input.confirmed !== true
+  ) {
+    logError(
+      "validation",
+      `${operationType} requires confirmed=true after explicit user confirmation`,
+      null,
+      {
+        operation: operationType,
+        fields: ["confirmed"],
+      },
+    );
   }
 
   switch (operationType) {
@@ -403,10 +426,7 @@ function validateInput(input: InputParams): void {
         },
       ]);
       return;
-    case "queryMyOrders":
-      validateRequiredFields(operationType, [
-        { field: "queryMyOrders.chain", value: input.queryMyOrders?.chain },
-      ]);
+    case "queryAccountOrders":
       return;
     case "cancel": {
       validateRequiredFields(operationType, [
@@ -746,23 +766,18 @@ async function handleQuery(sdk: ElementSDK, query: OrderQuery) {
   });
 }
 
-async function handleQueryMyOrders(params: QueryMyOrdersParams) {
-  if (!params?.chain) {
-    throw new Error("queryMyOrders.chain is not set");
-  }
-
-  const credentials = await getCredentials();
-  const payload = await queryMyOrdersApi(params, {
-    chain: params.chain,
-    isTestnet: false,
-    apiKey: credentials.apiKey,
-  });
+async function handleQueryAccountOrders(
+  sdk: ElementSDK,
+  params: QueryAccountOrdersParams = {},
+) {
+  const payload = await sdk.queryAccountOrders(params);
   const assetList = payload?.assetList ?? [];
+  const chain = (sdk.apiOption?.chain || "").toString();
 
   log({
     status: "success",
-    operation: "queryMyOrders",
-    chain: params.chain,
+    operation: "queryAccountOrders",
+    chain,
     usingDefaultAccount: isBlank(params.wallet_address),
     walletAddress: params.wallet_address ?? null,
     contractAddress: params.contract_address ?? null,
@@ -772,11 +787,14 @@ async function handleQueryMyOrders(params: QueryMyOrdersParams) {
     orders: assetList.map((item: any) => ({
       cursor: item?.cursor ?? null,
       name: item?.asset?.name,
+      slug: item?.asset?.collection?.slug,
       tokenId: item?.asset?.tokenId,
       collection: item?.asset?.collection?.name,
       contractAddress: item?.asset?.contractAddress,
       price: item?.orderData?.accountOrder?.price,
       priceUSD: item?.orderData?.accountOrder?.priceUSD,
+      paymentToken: item?.orderData?.accountOrder?.paymentToken,
+      quantity: item?.orderData?.accountOrder?.quantity,
       side: item?.orderData?.accountOrder?.side,
       saleKind: item?.orderData?.accountOrder?.saleKind,
       standard: item?.orderData?.accountOrder?.standard,
@@ -860,7 +878,7 @@ async function main() {
 
   const { network, operationType } = input;
   let sdk: ElementSDK | undefined;
-  const needsSdk = operationType !== "queryMyOrders";
+  const needsSdk = true;
 
   if (needsSdk) {
     try {
@@ -894,8 +912,8 @@ async function main() {
       case "query":
         await handleQuery(sdk!, input.queryOrders!);
         break;
-      case "queryMyOrders":
-        await handleQueryMyOrders(input.queryMyOrders!);
+      case "queryAccountOrders":
+        await handleQueryAccountOrders(sdk!, input.queryAccountOrders);
         break;
       case "cancel":
         await handleCancel(sdk!, input.ordersToCancel!, explorerBase);

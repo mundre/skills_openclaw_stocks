@@ -28,6 +28,14 @@ Use sell for listing NFTs on Element Market.
 5. Unless the user asked for a custom expiry, omit `expirationTime` so the SDK defaults to 7 days
 6. Show preview and wait for confirmation
 
+Price rule:
+
+- For ERC1155 sell flows, the user-provided price is the total listing price by default, not the per-item unit price
+- `erc1155sellOrder.paymentTokenAmount` represents the total order price for the full listed quantity
+- Only treat the price as a unit price if the user explicitly says it is a per-item price
+- In previews, always clearly distinguish `total price` from `unit price`
+- For ERC1155 previews, show both values even when the user only provided one of them
+
 ## Sell Parameters
 
 - `network`: target network
@@ -45,17 +53,20 @@ Important payload rules:
 - Do not put `paymentToken` at the top level for sell flows; the sell executor will ignore it there
 - If the requested ERC20 is not listed as supported for that chain, do not pass it as `paymentToken`
 - If the requested ERC20 is supported for that chain, do not describe it as a collection restriction before a real execution error exists
+- For ERC1155, `paymentTokenAmount` is the full order amount for the listed quantity unless the user explicitly asked for per-item pricing
 
 Result handling rule:
 
 - Use the returned `paymentToken` field to decide whether the completed order is native-token priced or ERC20-priced
 - If the returned `paymentToken` is `0x0000000000000000000000000000000000000000`, do not describe the order as `USDT`, `USDC`, or any other ERC20
+- For ERC1155 results, do not reinterpret the returned price as a platform-fee-adjusted unit price unless the API or chain data explicitly proves that; prefer describing it as the returned order price and keep the originally confirmed total price clear
 
 ## Minimal Payload Shapes
 
 ```json
 {
   "network": "base",
+  "confirmed": true,
   "operationType": "erc721sell",
   "sellOrders": {
     "paymentToken": "0x...",
@@ -74,6 +85,7 @@ Result handling rule:
 ```json
 {
   "network": "base",
+  "confirmed": true,
   "operationType": "erc1155sell",
   "erc1155sellOrder": {
     "assetAddress": "0x...",
@@ -87,4 +99,4 @@ Result handling rule:
 }
 ```
 
-Run with `npx ts-node scripts/entry.ts "$INPUT"`.
+Run with `node scripts/lib/entry.js "$INPUT"`.

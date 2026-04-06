@@ -57,7 +57,7 @@ If the user gives only a single `0x...` value, first ask for the `network`, then
 }
 ```
 
-Run with `npx ts-node scripts/entry.ts "$INPUT"`.
+Run with `node scripts/lib/entry.js "$INPUT"`.
 
 ## Display Rules For Offers
 

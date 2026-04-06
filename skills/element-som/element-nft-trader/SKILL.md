@@ -1,19 +1,29 @@
 ---
-name: element-trade
-description: Use when the user wants to list or buy an NFT, create or accept a bid or offer, query public orders or their own listings/orders, cancel an Element order, specify a payment token such as USDT or USDC, ask for their trading wallet address, or provide a 0x contract address in a trading context on a supported Element EVM network.
+name: element-nft-trader
+description: Use when the user wants to sell or buy an NFT on Element, create or accept a bid or offer, query public collection orders or account orders, cancel an Element order, get the configured trading wallet address, or use a supported custom payment token on a supported Element EVM network. Supported custom payment tokens are BSC USDT/USD1, Base USDC, and Polygon ETH. Other chains should use native or wrapped native token flow.
 envs: ["ELEMENT_API_KEY", "ELEMENT_WALLET_PRIVATE_KEY"]
 requires: ["node", "jq"]
-metadata: {"openclaw":{"emoji":"🌊","homepage":"https://github.com/element-som/element-skills","requires":{"bins":["node","jq"],"envs":["ELEMENT_API_KEY", "ELEMENT_WALLET_PRIVATE_KEY"]}}}
+metadata: {"openclaw":{"requires":{"env":["ELEMENT_API_KEY","ELEMENT_WALLET_PRIVATE_KEY"]},"primaryEnv":"ELEMENT_API_KEY","homepage":"https://github.com/element-som/element-skills"}}
 ---
 
-# Element Trade
+# Element NFT Trader
 
 Use this skill for Element Market order operations: creating sell orders, buying listed NFTs, creating offers, querying orders, canceling orders, and deriving the configured wallet address.
 This skill is for trading actions and order management. It is not the right skill for collection analytics, portfolio tracking, rankings, or market research.
+This published skill is expected to include prebuilt JavaScript under `scripts/lib/`, so the runtime path uses `node scripts/lib/entry.js` instead of compiling on the user's machine.
 
-## Credentials
+## File Layout
 
-This skill reads credentials from environment variables:
+Key folders and files in this skill:
+
+- `scripts/lib/`: prebuilt JavaScript runtime files shipped with the skill; use `scripts/lib/entry.js` as the execution entry
+- `scripts/entry.ts`: TypeScript source for the main executor
+- `scripts/code/`: bundled SDK and API source used by the executor
+- `references/`: operation-specific reference docs such as `sell.md`, `buy.md`, and `payment-tokens.md`
+
+## Required Environment Variables
+
+This skill reads the following runtime configuration from environment variables:
 
 - `ELEMENT_API_KEY`
 - `ELEMENT_WALLET_PRIVATE_KEY`
@@ -24,6 +34,8 @@ Example env setup:
 export ELEMENT_API_KEY="your_openapi_key_here"
 export ELEMENT_WALLET_PRIVATE_KEY="your_wallet_private_key_here"
 ```
+
+This skill signs real blockchain transactions locally. Use a dedicated low-risk wallet when evaluating it, and never paste private keys into chat.
 
 ## When to Use
 
@@ -67,6 +79,8 @@ For any state-changing operation, the agent must:
 3. Wait for explicit positive confirmation
 4. Execute only after confirmation
 
+The runtime executor also requires `confirmed: true` for every state-changing operation.
+
 State-changing operations:
 
 - `erc721sell`
@@ -79,7 +93,7 @@ State-changing operations:
 Read-only operations:
 
 - `query`
-- `queryMyOrders`
+- `queryAccountOrders`
 - `getAddress`
 
 ### Parameter Collection Rules
@@ -115,8 +129,8 @@ Use this routing before doing anything else:
 - User wants to place a bid or collection offer -> go to `Offer`
 - User wants to accept an existing offer on their NFT -> go to `Query Orders` with `side=0`, then `Accept Offer`
 - User wants to browse current public listings -> go to `Query Orders`
-- User wants to view an account's listings/orders -> use `Query My Orders`
-- User wants to cancel their own listing/order -> use `Query My Orders`, then `Query Orders` filtered by maker if needed, then `Cancel`
+- User wants to view an account's listings/orders -> use `Query Account Orders`
+- User wants to cancel their own listing/order -> use `Query Account Orders`, then `Query Orders` filtered by maker if needed, then `Cancel`
 - User wants stats, rankings, activity history, or slug resolution -> hand off to `element-nft-tracker`
 - User provides only `0x...` in a trading context -> first ask for the network, then confirm whether that value is the NFT collection contract address for the intended query or order flow
 
@@ -129,7 +143,7 @@ Ask for the required parameters first for every operation.
 - `Offer`: network, collection address, offer price, asset schema
 - `Accept Offer`: network, order object, and token ID for collection-wide offers
 - `Query`: network, collection address
-- `Query My Orders`: chain, optional `wallet_address`
+- `Query Account Orders`: network, optional `wallet_address`
 - `Cancel`: network, order ID or enough context to find the user's order
 - `GetAddress`: network
 
@@ -139,6 +153,8 @@ Additional guidance:
 - If sell creation fails because the collection is actually ERC1155, query schema and retry as ERC1155 with quantity
 - For offer flows, explicitly confirm `ERC721` or `ERC1155`; do not guess the schema
 - For ERC1155 buy or offer flows, ask for quantity when needed
+- For ERC1155 sell flows, treat the user-provided price as the total listing price by default unless the user explicitly says it is a unit price
+- For ERC1155 sell previews, clearly show both total price and unit price
 - For sell flows, do not hand-calculate `expirationTime` unless the user explicitly asked for a custom expiry; omit it and let the SDK default to 7 days
 - For query flows, ask for the required `network` or `chain` before executing; never scan all chains by default
 
@@ -162,12 +178,12 @@ Before any state-changing action, confirm:
 
 Primary executor:
 
-- `scripts/entry.ts` handles `erc721sell`, `erc1155sell`, `buy`, `offer`, `acceptOffer`, `query`, `queryMyOrders`, `cancel`, and `getAddress`
+- `scripts/entry.ts` handles `erc721sell`, `erc1155sell`, `buy`, `offer`, `acceptOffer`, `query`, `queryAccountOrders`, `cancel`, and `getAddress`
 
 Invocation pattern:
 
 ```bash
-npx ts-node scripts/entry.ts "$INPUT"
+node scripts/lib/entry.js "$INPUT"
 ```
 
 The script accepts JSON either as the first CLI argument or from stdin.
@@ -178,7 +194,7 @@ Assistant workflow:
 2. Ask for all required parameters before execution
 3. Build the JSON payload with `jq`
 4. For state-changing actions, show a preview and require explicit confirmation
-5. Execute through `scripts/entry.ts`
+5. Execute through `scripts/lib/entry.js`
 6. Return the structured result
 
 ## Quick Start Conversation Patterns
@@ -258,9 +274,11 @@ If you need the collection page, first resolve the real Element collection `slug
 
 ### Reference Selection Guide
 
+When an actual operation is about to be constructed or executed, you must open and follow the matching reference file first. Do not rely on the main skill alone for payload construction.
+
 - Create a new listing -> open [sell.md](references/sell.md)
 - Browse public listings or offers -> open [query-orders.md](references/query-orders.md)
-- View the user's own current orders -> open [query-my-orders.md](references/query-my-orders.md)
+- View the user's own current orders -> open [query-account-orders.md](references/query-account-orders.md)
 - Create a bid or collection-wide offer -> open [offer.md](references/offer.md)
 - Accept a buy-side order -> open [accept-offer.md](references/accept-offer.md)
 - Buy a sell-side order -> open [buy.md](references/buy.md)
@@ -271,12 +289,17 @@ Each operation now has its own reference file. Use the main skill for routing an
 
 - `Sell`: open [sell.md](references/sell.md) when creating a new listing, including ERC721, ERC1155, or custom payment token listings
 - `Query Orders`: open [query-orders.md](references/query-orders.md) when browsing public orders, selecting orders to buy, or finding offers to accept
-- `Query My Orders`: open [query-my-orders.md](references/query-my-orders.md) when the user wants the current listings or orders for a specific wallet on a specific chain
+- `Query Account Orders`: open [query-account-orders.md](references/query-account-orders.md) when the user wants the current listings or orders for a specific wallet on a specific chain
 - `Offer`: open [offer.md](references/offer.md) when creating a collection offer or token-specific bid
 - `Accept Offer`: open [accept-offer.md](references/accept-offer.md) when filling a buy-side order, especially collection-wide offers that require `assetId`
 - `Buy`: open [buy.md](references/buy.md) when filling sell-side orders returned by query
 - `Cancel`: open [cancel.md](references/cancel.md) when canceling an order using the exact returned order object
 - `Get Wallet Address`: open [get-address.md](references/get-address.md) when the user wants the configured wallet address for a supported network
+
+Execution rule:
+
+- For any concrete operation request, read the corresponding reference before building the command or JSON payload
+- Do not execute from the main skill alone when a matching reference file exists
 
 ## Failure Recovery Rules
 
@@ -449,7 +472,7 @@ When showing a price label such as `ETH`, `USDT`, or `WETH`, derive it from the 
 | **Listed At** | `[READABLE_LISTING_TIME]` |
 | **Expires At** | `[READABLE_EXPIRATION_TIME]` |
 
-### `queryMyOrders`
+### `queryAccountOrders`
 
 | Field | Value |
 |-------|-------|
@@ -472,6 +495,12 @@ When showing a price label such as `ETH`, `USDT`, or `WETH`, derive it from the 
 | **Price USD** | `[PRICE_USD]` |
 | **Standard** | `[STANDARD]` |
 | **Expires At** | `[READABLE_EXPIRATION_TIME]` |
+
+Display rules:
+
+- If `count > 1`, do not present the result as if there were only one order
+- When multiple orders are returned, list each order or explicitly state that the display is truncated
+- The shown order count must match the actual returned `count`
 
 ### `getAddress`
 

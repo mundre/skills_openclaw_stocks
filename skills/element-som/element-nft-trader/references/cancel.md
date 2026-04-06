@@ -19,7 +19,7 @@ Use cancel to cancel existing orders created by the configured wallet.
 
 Recommended flow:
 
-1. Use `Query My Orders` to find the user's active orders
+1. Use `Query Account Orders` to find the user's active orders
 2. If needed, use `Query Orders` with a `maker` filter to find matching orders
 3. Cancel using the exact returned order object
 
@@ -74,10 +74,11 @@ INPUT=$(jq -n \
   --arg network "$NETWORK" \
   --argjson orders "$ORDERS" \
   '{
+    confirmed: true,
     network: $network,
     operationType: "cancel",
     ordersToCancel: { orders: $orders }
   }')
 
-npx ts-node scripts/entry.ts "$INPUT"
+node scripts/lib/entry.js "$INPUT"
 ```

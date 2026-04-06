@@ -58,6 +58,7 @@ Important notes:
 ```json
 {
   "network": "base",
+  "confirmed": true,
   "operationType": "acceptOffer",
   "acceptOfferOrder": {
     "order": {
@@ -77,4 +78,4 @@ Important notes:
 }
 ```
 
-Run with `npx ts-node scripts/entry.ts "$INPUT"`.
+Run with `node scripts/lib/entry.js "$INPUT"`.
