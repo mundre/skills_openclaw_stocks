@@ -3,9 +3,15 @@
   "slug": "internal-links",
   "displayName": "internal-links",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774604476246,
-    "commit": "https://github.com/openclaw/skills/commit/d2d04004498110a3fbb7646a9411d64d79fd9eb6"
+    "version": "1.0.1",
+    "publishedAt": 1775386871088,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774604476246,
+      "commit": "https://github.com/openclaw/skills/commit/d2d04004498110a3fbb7646a9411d64d79fd9eb6"
+    }
+  ]
 }
