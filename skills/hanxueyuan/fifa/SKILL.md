@@ -1,38 +1,52 @@
 ---
 name: fifa
-description: "Information assistant for FIFA 国际足联. Get mission info, latest reports, member states, and organizational resources."
-metadata:
-  { "openclaw": { "emoji": "🏛️", "version": "0.1.0", "author": "hanxueyuan", "tags": ["organization","institution","info"] } }
+description: 国际足联介绍和世界杯指南
+version: 1.0.0
+tags: [sports, football, fifa, world-cup, soccer]
 ---
 
-# 🏛️ FIFA 国际足联 — Organization Info Assistant
+# FIFA (国际足联)
 
-Get comprehensive information about FIFA 国际足联.
+国际足球联合会，全球足球运动的最高管理机构。
 
-## About
+## 组织介绍
 
-- **Organization**: FIFA 国际足联
-- **Focus**: World football governance
-- **Official Website**: https://www.fifa.com
+**FIFA** 成立于 1904 年，总部位于瑞士苏黎世，是国际足球运动的最高管理机构。
 
-## What This Skill Does
+### 基本信息
 
-1. **Mission & Overview** — What this organization does and why it matters
-2. **Latest Reports** — Recent publications, data releases, policy papers
-3. **News & Events** — Upcoming meetings, conferences, announcements
-4. **Member Info** — Member states/countries, leadership, structure
-5. **Resources** — Key databases, tools, and publications
+| 项目 | 详情 |
+|------|------|
+| **成立时间** | 1904 年 5 月 21 日 |
+| **总部** | 瑞士苏黎世 |
+| **会员协会** | 211 个 |
+| **现任主席** | 詹尼·因凡蒂诺 |
 
-## Example Queries
+### 主要赛事
 
-- "What does FIFA do?"
-- "Latest FIFA report"
-- "Who leads FIFA?"
-- "FIFA member countries"
+| 赛事 | 周期 | 简介 |
+|------|------|------|
+| **世界杯** | 4 年 | 全球最高水平足球赛事 |
+| **女足世界杯** | 4 年 | 女子足球最高赛事 |
+| **世俱杯** | 每年 | 俱乐部层面最高赛事 |
+| **U-20 世界杯** | 2 年 | 青年足球赛事 |
 
-## How It Works
+### 世界杯历史
 
-Uses web search to fetch information from official organizational websites and news sources.
+| 年份 | 举办国 | 冠军 |
+|------|--------|------|
+| 2018 | 俄罗斯 | 法国 |
+| 2022 | 卡塔尔 | 阿根廷 |
+| 2026 | 美国/加拿大/墨西哥 | 待进行 |
 
-## Author
-Created by hanxueyuan | License: MIT
+## 官方网站
+
+- **FIFA 官网**: https://www.fifa.com
+- **中文官网**: https://www.fifa.com/zh
+
+## 参考链接
+
+- [FIFA 官网](https://www.fifa.com)
+
+---
+**版本**: 1.0.0

@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "fifa",
-  "displayName": "fifa",
+  "displayName": "Fifa",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774865267447,
-    "commit": "https://github.com/openclaw/skills/commit/d4e29838ec7dc12953b3e522f852445ea37f83b9"
+    "version": "0.1.1",
+    "publishedAt": 1775433160481,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774865267447,
+      "commit": "https://github.com/openclaw/skills/commit/d4e29838ec7dc12953b3e522f852445ea37f83b9"
+    }
+  ]
 }
