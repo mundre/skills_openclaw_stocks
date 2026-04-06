@@ -21,23 +21,23 @@ function validateConfig(config) {
     });
   }
   
-  // appKey 和 appSecret 检查（作为警告，不阻止运行）
+  // appKey 和 appSecret 检查（必需）
   if (!config.appKey) {
-    warnings.push({
+    errors.push({
       field: 'appKey',
       message: 'appKey 未配置',
       guide: '请在 config.json 中填入数秦开放平台提供的 appKey'
     });
   }
   if (!config.appSecret) {
-    warnings.push({
+    errors.push({
       field: 'appSecret',
       message: 'appSecret 未配置',
       guide: '请在 config.json 中填入数秦开放平台提供的 appSecret'
     });
   }
   
-  // 检查各产品配置
+  // 检查各产品配置（全部可选，按需配置）
   if (!config.products) {
     errors.push({
       field: 'products',
@@ -45,19 +45,17 @@ function validateConfig(config) {
       guide: '请在 config.json 中配置 products 对象'
     });
   } else {
-    // 区块链API服务 - upload 和 queryResult 是必须的
+    // 区块链API服务（可选）
     if (config.products.chain) {
       const chainEndpoints = config.products.chain.endpoints || {};
-      
-      // 必须配置的端点
-      const requiredEndpoints = ['upload', 'queryResult'];
-      for (const endpointKey of requiredEndpoints) {
+      const endpoints = ['upload', 'queryResult'];
+      for (const endpointKey of endpoints) {
         const endpoint = chainEndpoints[endpointKey];
         if (!endpoint || !endpoint.productId) {
-          errors.push({
+          warnings.push({
             field: `products.chain.endpoints.${endpointKey}.productId`,
             message: `区块链API服务「${endpoint?.description || endpointKey}」的产品标识未配置`,
-            guide: `请向数秦开放平台获取「${endpoint?.description || endpointKey}」接口的应用产品标识，并填入 config.json`
+            guide: `如需使用区块链功能，请配置产品标识`
           });
         }
       }
@@ -68,7 +66,7 @@ function validateConfig(config) {
       warnings.push({
         field: 'products.evidence.productId',
         message: '自动化取证的产品标识未配置',
-        guide: '如需使用自动化取证功能，请配置产品标识'
+        guide: '如需使用取证功能，请配置产品标识'
       });
     }
     
@@ -91,7 +89,7 @@ function validateConfig(config) {
     }
   }
   
-  // 生成错误消息
+  // 生成错误消息（只有 errors 会阻止运行）
   if (errors.length > 0) {
     const errorLines = ['\n❌ 配置错误，请按以下指导完成配置：\n'];
     
@@ -103,7 +101,7 @@ function validateConfig(config) {
     });
     
     if (warnings.length > 0) {
-      errorLines.push('\n⚠️  以下配置项未完成：\n');
+      errorLines.push('\n⚠️  以下配置项未完成（可选功能）：\n');
       warnings.forEach((warn) => {
         errorLines.push(`   - ${warn.message}`);
       });
@@ -112,6 +110,15 @@ function validateConfig(config) {
     errorLines.push('\n📖 详细配置说明请参考 SKILL.md 或 references/ 目录下的 API 文档\n');
     
     throw new Error(errorLines.join('\n'));
+  }
+  
+  // 显示警告但不阻止运行
+  if (warnings.length > 0) {
+    console.log('\n⚠️  以下功能未配置，按需启用：');
+    warnings.forEach((warn) => {
+      console.log(`   - ${warn.message}`);
+    });
+    console.log('');
   }
   
   return true;
@@ -127,52 +134,30 @@ function validateConfig(config) {
 function getEndpointConfig(config, product, endpoint) {
   const productConfig = config.products[product];
   if (!productConfig) {
-    throw new Error(`产品 "${product}" 不存在`);
+    throw new Error(`产品 ${product} 未配置`);
   }
   
-  const endpointConfig = productConfig.endpoints[endpoint];
-  if (!endpointConfig) {
-    throw new Error(`端点 "${product}.${endpoint}" 不存在`);
-  }
-  
-  // 端点级 productId（区块链API服务）
-  if (endpointConfig.productId !== undefined) {
-    if (!endpointConfig.productId) {
-      throw new Error(`\n❌ 配置错误：区块链API服务「${endpoint}」的产品标识未配置\n   → 请在 config.json 中配置 products.chain.endpoints.${endpoint}.productId\n`);
+  // 检查是否有 endpoints 配置
+  if (productConfig.endpoints) {
+    const endpointConfig = productConfig.endpoints[endpoint];
+    if (!endpointConfig) {
+      throw new Error(`端点 ${endpoint} 未配置`);
     }
+    // endpoint 配置可能是字符串（路径）或对象 { path, productId }
+    const path = typeof endpointConfig === 'string' ? endpointConfig : endpointConfig.path;
     return {
-      path: endpointConfig.path,
-      productId: endpointConfig.productId
+      path,
+      productId: productConfig.productId
     };
   }
   
-  // 产品级 productId
-  if (!productConfig.productId) {
-    throw new Error(`\n❌ 配置错误：${productConfig.name || product} 的产品标识未配置\n   → 请在 config.json 中配置 products.${product}.productId\n`);
-  }
-  
+  // 其他产品使用 productId
   return {
-    path: typeof endpointConfig === 'string' ? endpointConfig : endpointConfig.path,
     productId: productConfig.productId
   };
 }
 
-/**
- * 获取产品配置
- * @param {object} config - 配置对象
- * @param {string} product - 产品名称
- * @returns {object} 产品配置
- */
-function getProductConfig(config, product) {
-  const productConfig = config.products[product];
-  if (!productConfig) {
-    throw new Error(`产品 "${product}" 不存在`);
-  }
-  return productConfig;
-}
-
 module.exports = {
   validateConfig,
-  getEndpointConfig,
-  getProductConfig
+  getEndpointConfig
 };
