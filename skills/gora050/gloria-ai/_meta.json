@@ -3,9 +3,15 @@
   "slug": "gloria-ai",
   "displayName": "Gloria Ai",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774865036834,
-    "commit": "https://github.com/openclaw/skills/commit/69336d6284dbe8c02d6ff84bac47d102b3ebe5c2"
+    "version": "1.0.2",
+    "publishedAt": 1775169644289,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774865036834,
+      "commit": "https://github.com/openclaw/skills/commit/69336d6284dbe8c02d6ff84bac47d102b3ebe5c2"
+    }
+  ]
 }
