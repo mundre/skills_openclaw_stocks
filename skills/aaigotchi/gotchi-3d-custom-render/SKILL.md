@@ -1,5 +1,6 @@
 ---
 name: gotchi-3d-custom-render
+version: 1.1.1
 description: Render custom Aavegotchi 3D images from arbitrary trait and wearable combinations. Use when the user describes a synthetic or hypothetical gotchi look in plain language, asks for an outfit preview, headshot, or full-body image, and is not asking for an existing onchain token by tokenId or inventory URL.
 ---
 

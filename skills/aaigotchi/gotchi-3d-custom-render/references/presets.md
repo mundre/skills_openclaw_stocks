@@ -26,6 +26,18 @@
 
 ## Background Aliases
 
+### Auto Rarity Detection
+- `auto` - Automatically detect rarity tier based on eye shape, eye color, and equipped wearables, then apply the correct rarity background color
+
+### Rarity Tier Colors
+- `rarity-common` -> `#806AFB`
+- `rarity-uncommon` -> `#20C9C0`
+- `rarity-rare` -> `#59BCFF`
+- `rarity-legendary` -> `#FFC36B`
+- `rarity-mythical` -> `#FF96FF`
+- `rarity-godlike` -> `#51FFA8`
+
+### Theme Colors
 - `arcade-purple` -> `#806AFB`
 - `studio-cream` -> `#F4EDE1`
 - `slime-lime` -> `#D8FF5E`

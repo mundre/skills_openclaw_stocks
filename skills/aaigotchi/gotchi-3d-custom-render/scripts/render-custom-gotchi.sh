@@ -396,8 +396,69 @@ if [[ -z "$normalized_slug" ]]; then
   normalized_slug="custom-gotchi"
 fi
 
+# Auto-detect rarity from wearables if background is "auto" or not set
+if [[ "$background" == "auto" || -z "$background" ]]; then
+  # Calculate wearable bonus from equipped items
+  wearable_bonus=0
+  
+  # Read rarity score from wearables.tsv for each equipped item
+  for item in $body $face $eyes $head $hand_left $hand_right $pet; do
+    if [[ "$item" != "0" && -n "$item" ]]; then
+      bonus=$(awk -F'\t' -v id="$item" '$1 == id {print $4}' "$WEARABLE_INDEX_PATH" 2>/dev/null)
+      if [[ -n "$bonus" ]]; then
+        wearable_bonus=$((wearable_bonus + bonus))
+      fi
+    fi
+  done
+  
+  # Base BRS is higher for mythical eye shapes, lower for common
+  # Eye shape affects base: Mythical=4(50), Rare=3, Uncommon=2, Common=1 (50 BRS each)
+  # Eye color affects: High=+16, Low=0
+  case "$eye_shape" in
+    mythical|Mythical) base_brs=410 ;;
+    legendary|Legendary) base_brs=380 ;;
+    rare|Rare) base_brs=350 ;;
+    uncommon|Uncommon) base_brs=320 ;;
+    common|Common) base_brs=290 ;;
+    *) base_brs=300 ;;
+  esac
+  
+  # Add eye color bonus
+  if [[ "$eye_color" == "high" || "$eye_color" == "High" ]]; then
+    base_brs=$((base_brs + 16))
+  fi
+  
+  total_brs=$((base_brs + wearable_bonus))
+  
+  # Determine rarity tier based on total BRS
+  if [[ $total_brs -ge 600 ]]; then
+    auto_background="#51FFA8"  # Godlike
+  elif [[ $total_brs -ge 580 ]]; then
+    auto_background="#FF96FF"  # Mythical
+  elif [[ $total_brs -ge 550 ]]; then
+    auto_background="#FFC36B"  # Legendary
+  elif [[ $total_brs -ge 525 ]]; then
+    auto_background="#59BCFF"  # Rare
+  elif [[ $total_brs -ge 475 ]]; then
+    auto_background="#20C9C0"  # Uncommon
+  else
+    auto_background="#806AFB"  # Common
+  fi
+  
+  background="$auto_background"
+  echo "Auto-detected rarity: BRS $total_brs (base $base_brs + wearable +$wearable_bonus) -> $auto_background"
+fi
+
 background_key="$(printf '%s' "$background" | tr '[:upper:]' '[:lower:]')"
 case "$background_key" in
+  # Rarity tier colors
+  rarity-common) normalized_background="#806AFB" ;;
+  rarity-uncommon) normalized_background="#20C9C0" ;;
+  rarity-rare) normalized_background="#59BCFF" ;;
+  rarity-legendary) normalized_background="#FFC36B" ;;
+  rarity-mythical) normalized_background="#FF96FF" ;;
+  rarity-godlike) normalized_background="#51FFA8" ;;
+  # Theme colors
   arcade-purple) normalized_background="#806AFB" ;;
   studio-cream) normalized_background="#F4EDE1" ;;
   slime-lime) normalized_background="#D8FF5E" ;;
