@@ -1,11 +1,17 @@
 {
   "owner": "diagnostikon",
   "slug": "polymarket-macro-event-cascade-trader",
-  "displayName": "Macro Event Cascade Trader",
+  "displayName": "Polymarket Macro Event Cascade Trader",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774892773216,
-    "commit": "https://github.com/openclaw/skills/commit/29b893da9023b65efa6d2ccb918015b0eb3aa59e"
+    "version": "1.0.1",
+    "publishedAt": 1775317253013,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774892773216,
+      "commit": "https://github.com/openclaw/skills/commit/29b893da9023b65efa6d2ccb918015b0eb3aa59e"
+    }
+  ]
 }
