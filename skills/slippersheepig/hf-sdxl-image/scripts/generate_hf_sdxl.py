@@ -67,8 +67,9 @@ def request_image(prompt: str, token: str, timeout: int, extra_options: dict | N
 
 def main():
     parser = argparse.ArgumentParser(description="Generate an image with the Hugging Face Inference API.")
+    parser = argparse.ArgumentParser(description="Generate an image with the Hugging Face Inference API.")
     parser.add_argument("prompt", help="Prompt text used to generate the image")
-    parser.add_argument("--output", default="./output", help="Output file path or directory (default: ./output)")
+    parser.add_argument("--output", required=True, help="Temporary or final output file path or directory. The script prints the saved file path to stdout.")
     parser.add_argument("--timeout", type=int, default=180, help="HTTP timeout in seconds (default: 180)")
     parser.add_argument("--wait-for-model", action="store_true", help="Ask the API to wait for model cold start instead of failing fast")
     args = parser.parse_args()
