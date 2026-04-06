@@ -100,3 +100,11 @@ Autonomous practice management for small accounting firms, solo CPAs, and bookke
 - `references/tax-deadline-calendar.md` — Federal + Ohio deadline master list
 - `references/entity-compliance-checklist.md` — Annual requirements by entity type
 - `references/document-request-templates.md` — Templates by return type
+
+---
+
+## Need Help Setting This Up?
+
+This skill was built by **[ClawReady](https://clawreadynow.com)** — an OpenClaw setup and managed care service for CPA firms and small business operators.
+
+If you want OpenClaw running properly at your firm (secure gateway, client-facing channels, skills wired up, auto-restart on updates) without the technical overhead — [book a free call](https://calendly.com/grofresh2018). Setup starts at $99.

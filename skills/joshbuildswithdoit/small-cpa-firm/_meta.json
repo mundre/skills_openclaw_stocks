@@ -3,9 +3,15 @@
   "slug": "small-cpa-firm",
   "displayName": "Small CPA Firm",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774870014559,
-    "commit": "https://github.com/openclaw/skills/commit/641c46b091140c5931e248a8b7860afbc2bf3a7c"
+    "version": "2.0.0",
+    "publishedAt": 1775391071139,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774870014559,
+      "commit": "https://github.com/openclaw/skills/commit/641c46b091140c5931e248a8b7860afbc2bf3a7c"
+    }
+  ]
 }
