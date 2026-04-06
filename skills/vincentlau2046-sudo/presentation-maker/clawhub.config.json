@@ -1,0 +1,37 @@
+{
+  "name": "presentation-maker",
+  "version": "1.0.0",
+  "description": "将文档大纲转换为专业演示幻灯片的自动化技能",
+  "author": "Vincent",
+  "license": "MIT",
+  "keywords": ["presentation", "slides", "markdown", "html", "automation"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openclaw/presentation-maker.git"
+  },
+  "homepage": "https://github.com/openclaw/presentation-maker",
+  "bugs": {
+    "url": "https://github.com/openclaw/presentation-maker/issues"
+  },
+  "main": "scripts/generate.js",
+  "bin": {
+    "presentation-maker": "scripts/generate.js"
+  },
+  "files": [
+    "SKILL.md",
+    "README.md",
+    "LICENSE",
+    "scripts/",
+    "css/",
+    "js/"
+  ],
+  "dependencies": {
+    "marked": "^12.0.0"
+  },
+  "clawhub": {
+    "category": "productivity",
+    "tags": ["presentation", "slides", "markdown", "html"],
+    "icon": "📽️",
+    "preview": "https://github.com/openclaw/presentation-maker/raw/main/preview.png"
+  }
+}

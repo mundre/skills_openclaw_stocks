@@ -1,0 +1,25 @@
+{
+  "name": "presentation-maker",
+  "version": "1.0.0",
+  "description": "将文档大纲转换为专业演示幻灯片的自动化工具",
+  "main": "scripts/generate.js",
+  "bin": {
+    "presentation-maker": "scripts/generate.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "clawdhub": "^0.3.0",
+    "marked": "^12.0.0",
+    "undici": "^7.24.6"
+  },
+  "keywords": [
+    "presentation",
+    "slides",
+    "markdown",
+    "html"
+  ],
+  "author": "OpenClaw",
+  "license": "MIT"
+}
