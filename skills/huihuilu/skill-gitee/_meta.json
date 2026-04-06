@@ -3,9 +3,15 @@
   "slug": "skill-gitee",
   "displayName": "Skill Gitee",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1775035098396,
-    "commit": "https://github.com/openclaw/skills/commit/e1f3f1cfb79d26371450c27c06505f7cbc7efdeb"
+    "version": "1.1.1",
+    "publishedAt": 1775115994068,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1775035098396,
+      "commit": "https://github.com/openclaw/skills/commit/e1f3f1cfb79d26371450c27c06505f7cbc7efdeb"
+    }
+  ]
 }
