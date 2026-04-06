@@ -135,6 +135,27 @@ def check_product_image_guardrails(skill_root: Path) -> list[str]:
     return issues
 
 
+def check_credential_declarations(skill_root: Path) -> list[str]:
+    issues = []
+    skill_text = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+    required_tokens = [
+        "required_credentials:",
+        "OPENCLOW_KEY",
+        "required_permissions:",
+        "network:http",
+        "local_file:read",
+        "GATEWAY_KEY_MISSING",
+    ]
+    missing = [token for token in required_tokens if token not in skill_text]
+    if missing:
+        issues.append(f"SKILL.md: 缺少凭证/权限声明关键项 {', '.join(missing)}")
+
+    examples_text = (skill_root / "examples.md").read_text(encoding="utf-8")
+    if "GATEWAY_KEY_MISSING" not in examples_text:
+        issues.append("examples.md: 缺少网关 key 缺失结构化错误示例 GATEWAY_KEY_MISSING")
+    return issues
+
+
 def main() -> int:
     skill_root = Path(__file__).resolve().parent.parent
     missing = check_required_files(skill_root)
@@ -172,6 +193,13 @@ def main() -> int:
     if guardrail_issues:
         print("商品图门禁校验失败：")
         for i in guardrail_issues:
+            print(f"- {i}")
+        return 1
+
+    declaration_issues = check_credential_declarations(skill_root)
+    if declaration_issues:
+        print("凭证声明校验失败：")
+        for i in declaration_issues:
             print(f"- {i}")
         return 1
 

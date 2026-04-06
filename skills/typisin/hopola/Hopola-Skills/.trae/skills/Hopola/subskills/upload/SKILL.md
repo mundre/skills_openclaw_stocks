@@ -18,6 +18,9 @@ description: "上传图片与结果资源到 MAAT。Invoke when generated assets
 - `auto_upload_session_images`：是否自动处理会话上传图片（默认 `true`）
 - `metadata`：可选附加信息
 - `maat_upload_script_path`：默认 `scripts/maat_upload.py`
+- `MAAT_TOKEN_API`：上传凭证策略端点（默认 `https://strategy.stariidata.com/upload/policy`）
+- `MAAT_TOKEN_API_ALLOWED_HOSTS`：可允许的上传策略主机列表（逗号分隔）
+- 历史兼容：`MEITU_TOKEN_API`、`NEXT_PUBLIC_MAAT_TOKEN_API`、`NEXT_PUBLIC_MEITU_TOKEN_API`
 
 ## 输出
 - `uploaded_urls`
@@ -44,7 +47,10 @@ description: "上传图片与结果资源到 MAAT。Invoke when generated assets
 ## 规则
 - 单文件大小不得超过 20MB。
 - 上传凭证由 MAAT policy 服务发放，密钥仅从环境变量读取，不在输出中回显。
+- 上传策略端点按 `MAAT_TOKEN_API > 历史字段 > 默认端点` 解析，且主机必须命中允许列表。
+- 自定义端点命中后输出结构化审计日志（不含敏感参数）。
 - 请求日志允许输出接口与状态，不允许输出密钥、签名、token 原文。
+- `OPENCLAW_REQUEST_LOG` 默认关闭，仅显式设置为 `1` 时输出调试请求日志。
 - 当 `auto_upload_session_images=true` 且存在会话上传图片时，必须优先处理并返回可复用 URL。
 - 会话图片上传成功后，应将首图作为上游默认 `primary_source_image_url` 候选值。
 - 对商品图链路中的 `product_image_url`，只要输入不是稳定公网 URL（本地路径/会话附件/markdown 图片/非公网 URL），必须先上传并回填后才能进入生图阶段。

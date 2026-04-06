@@ -402,6 +402,26 @@
 - 建议：检查环境变量 OPENCLOW_KEY 是否已注入
 ```
 
+### 场景 B2：网关 key 缺失（预检拦截，禁止生成功能）
+```json
+{
+  "structured_error": {
+    "code": "GATEWAY_KEY_MISSING",
+    "stage": "precheck",
+    "message": "缺少网关鉴权环境变量，已停止执行生成调用。",
+    "details": {
+      "required_env": "OPENCLOW_KEY",
+      "failed_step": "gateway_key_precheck"
+    },
+    "retry_suggestions": [
+      "在运行环境注入 OPENCLOW_KEY",
+      "确认 OpenClaw Key 生效后重新执行",
+      "如为多环境部署，请同步检查容器与任务编排配置"
+    ]
+  }
+}
+```
+
 ### 场景 C：商品图参考图不可访问（结构化错误）
 ```json
 {

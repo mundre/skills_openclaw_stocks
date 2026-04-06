@@ -176,6 +176,16 @@
     "strategy": "maat_only",
     "upload_script_path": "scripts/maat_upload.py",
     "upload_command_template": "python3 scripts/maat_upload.py --file <local_file> --json",
+    "policy_api_env_name": "MAAT_TOKEN_API",
+    "policy_api_legacy_env_names": [
+      "MEITU_TOKEN_API",
+      "NEXT_PUBLIC_MAAT_TOKEN_API",
+      "NEXT_PUBLIC_MEITU_TOKEN_API"
+    ],
+    "policy_api_default": "https://strategy.stariidata.com/upload/policy",
+    "policy_api_allowed_hosts_env_name": "MAAT_TOKEN_API_ALLOWED_HOSTS",
+    "request_log_env_name": "OPENCLAW_REQUEST_LOG",
+    "request_log_default": "0",
     "max_image_size_mb": 20,
     "upload_payload_schema": {
       "files": "files",

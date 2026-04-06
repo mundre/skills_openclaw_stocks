@@ -3,11 +3,16 @@
   "slug": "hopola",
   "displayName": "Design With Hopola",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1774875889023,
-    "commit": "https://github.com/openclaw/skills/commit/6709ded5ef34386efe31422d636661f6995cd6e0"
+    "version": "1.0.9",
+    "publishedAt": 1775321454731,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1774875889023,
+      "commit": "https://github.com/openclaw/skills/commit/6709ded5ef34386efe31422d636661f6995cd6e0"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774538502276,

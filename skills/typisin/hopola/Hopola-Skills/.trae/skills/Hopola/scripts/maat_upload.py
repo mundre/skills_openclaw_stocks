@@ -19,6 +19,14 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 DEFAULT_TOKEN_API = "https://strategy.stariidata.com/upload/policy"
+DEFAULT_ALLOWED_POLICY_HOSTS = ("strategy.stariidata.com",)
+TOKEN_API_ENV_NAME = "MAAT_TOKEN_API"
+TOKEN_API_ALLOWED_HOSTS_ENV_NAME = "MAAT_TOKEN_API_ALLOWED_HOSTS"
+TOKEN_API_LEGACY_ENV_NAMES = (
+    "MEITU_TOKEN_API",
+    "NEXT_PUBLIC_MAAT_TOKEN_API",
+    "NEXT_PUBLIC_MEITU_TOKEN_API",
+)
 DEFAULT_UPLOAD_APP = "mhc"
 DEFAULT_UPLOAD_TYPE = "proj_1005"
 DEFAULT_UPLOAD_VERSION = "2"
@@ -41,7 +49,7 @@ class MaatUploadError(RuntimeError):
 
 
 def _request_log_enabled() -> bool:
-    return os.environ.get("OPENCLAW_REQUEST_LOG", "1") != "0"
+    return os.environ.get("OPENCLAW_REQUEST_LOG", "0") != "0"
 
 
 def _request_log(message: str) -> None:
@@ -65,9 +73,14 @@ def _request_log_response_json(label: str, text: str, http_code: Optional[int] =
     body_text = text[:max_len] + ("...(truncated)" if len(text) > max_len else "")
     try:
         body_obj: Any = json.loads(body_text)
+        body_obj = _redact_sensitive(body_obj)
         payload: Any = {"http_code": http_code, "body": body_obj} if http_code is not None else body_obj
     except json.JSONDecodeError:
-        payload = {"http_code": http_code, "_raw": body_text} if http_code is not None else {"_raw": body_text}
+        payload = (
+            {"http_code": http_code, "_raw": _redact_text(body_text)}
+            if http_code is not None
+            else {"_raw": _redact_text(body_text)}
+        )
     print(f"[REQUEST] {label} (JSON):", file=sys.stderr)
     print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
 
@@ -95,8 +108,82 @@ def _clean_bool(value: Any, default: bool = True) -> bool:
     return default
 
 
+def _audit_log(event: str, payload: Dict[str, Any]) -> None:
+    print(f"[AUDIT] {json.dumps({'event': event, **payload}, ensure_ascii=False)}", file=sys.stderr)
+
+
+def _normalize_host(value: str) -> str:
+    return _clean_str(value).lower().strip(".")
+
+
+def _resolve_allowed_policy_hosts() -> List[str]:
+    configured = _clean_str(os.environ.get(TOKEN_API_ALLOWED_HOSTS_ENV_NAME))
+    default_hosts = [_normalize_host(host) for host in DEFAULT_ALLOWED_POLICY_HOSTS if _normalize_host(host)]
+    if not configured:
+        return default_hosts
+    hosts: List[str] = []
+    for part in configured.split(","):
+        host = _normalize_host(part)
+        if host and host not in hosts:
+            hosts.append(host)
+    for host in default_hosts:
+        if host not in hosts:
+            hosts.append(host)
+    return hosts
+
+
 def _resolve_token_api() -> str:
-    return _clean_str(os.environ.get("MAAT_TOKEN_API")) or DEFAULT_TOKEN_API
+    value = _clean_str(os.environ.get(TOKEN_API_ENV_NAME))
+    source = TOKEN_API_ENV_NAME
+    if not value:
+        for legacy_env in TOKEN_API_LEGACY_ENV_NAMES:
+            legacy_value = _clean_str(os.environ.get(legacy_env))
+            if legacy_value:
+                value = legacy_value
+                source = legacy_env
+                break
+    if not value:
+        value = DEFAULT_TOKEN_API
+        source = "default"
+    parsed = urllib.parse.urlsplit(value)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise MaatUploadError(
+            f"上传策略端点格式非法: {value}",
+            f"请设置有效的 {TOKEN_API_ENV_NAME} 或使用默认端点",
+            MaatUploadError.VALIDATION_ERROR,
+        )
+    host = _normalize_host(parsed.hostname or parsed.netloc)
+    allowed_hosts = _resolve_allowed_policy_hosts()
+    if host not in allowed_hosts:
+        raise MaatUploadError(
+            f"上传策略端点主机不在允许列表: {host}",
+            f"请检查 {TOKEN_API_ENV_NAME} 或在 {TOKEN_API_ALLOWED_HOSTS_ENV_NAME} 中显式允许该主机",
+            MaatUploadError.VALIDATION_ERROR,
+        )
+    normalized = _normalize_http_url(value)
+    _audit_log(
+        "upload_policy_endpoint_resolved",
+        {
+            "source": source,
+            "host": host,
+            "allowed_hosts": allowed_hosts,
+            "endpoint": urllib.parse.urlunsplit(
+                (
+                    parsed.scheme,
+                    parsed.netloc,
+                    _collapse_path_slashes(parsed.path or "/"),
+                    "",
+                    "",
+                )
+            ),
+        },
+    )
+    if source in TOKEN_API_LEGACY_ENV_NAMES:
+        _audit_log(
+            "upload_policy_endpoint_legacy_env_used",
+            {"legacy_env": source, "preferred_env": TOKEN_API_ENV_NAME},
+        )
+    return normalized
 
 
 def _resolve_upload_app() -> str:
@@ -136,6 +223,47 @@ def _normalize_http_url(url: str) -> str:
     parsed = urllib.parse.urlsplit(url)
     path = _collapse_path_slashes(parsed.path or "/")
     return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, path, parsed.query, parsed.fragment))
+
+
+def _redact_text(text: str) -> str:
+    if not text:
+        return text
+    redacted = text
+    redacted = re.sub(
+        r"(?i)\b(token|policy|signature|x-amz-signature|x-amz-security-token|authorization)\b\s*[:=]\s*([^\s\",]+)",
+        r"\1=<redacted>",
+        redacted,
+    )
+    redacted = re.sub(
+        r"(?i)([?&](token|policy|signature|x-amz-signature|x-amz-security-token|access_key|secret_key|session_token)=)[^&\s]+",
+        r"\1<redacted>",
+        redacted,
+    )
+    return redacted
+
+
+def _redact_sensitive(value: Any, key: str = "") -> Any:
+    sensitive_keywords = (
+        "token",
+        "policy",
+        "signature",
+        "secret",
+        "authorization",
+        "credential",
+        "access_key",
+        "secret_key",
+        "session_token",
+    )
+    key_norm = _clean_str(key).lower()
+    if any(keyword in key_norm for keyword in sensitive_keywords):
+        return "<redacted>"
+    if isinstance(value, dict):
+        return {k: _redact_sensitive(v, k) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact_sensitive(item, key) for item in value]
+    if isinstance(value, str):
+        return _redact_text(value)
+    return value
 
 
 def _extract_markdown_image_source(value: str) -> str:

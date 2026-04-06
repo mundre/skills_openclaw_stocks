@@ -18,15 +18,21 @@ python3 scripts/build_release_zip.py
 - `Hopola-Skills/hopola-clawhub-v<version>-<timestamp>.zip`
 
 ## 当前版本
-- 版本号：`1.0.7`
-- 变更摘要：在既有商品图流程约束基础上，执行版本号升级并重新打包发布产物。
-- 新增能力：当 `task_type=product-image` 或 `stage=generate-product-image` 时，主技能显式要求调用 `subskills/product-image/SKILL.md`。
-- 兼容性说明：不改变其他任务类型流程，仅增强商品图路由可预测性。
-- 风险与回滚：如需回滚，可撤销本次商品图调用约束描述并恢复上一版文案。
+- 版本号：`1.0.9`
+- 变更摘要：补充 ClawHub 审核说明模板，并强化“无 key 不执行生成调用”的声明一致性，降低 Suspicious 告警概率。
+- 新增能力：README 增加可直接粘贴的审核说明（凭证、域名、本地文件用途、计费保护、日志策略）。
+- 兼容性说明：不改变搜索→生成→上传→报告调用链路；仅增强声明与发布说明。
+- 风险与回滚：如需回滚，可恢复 `README.zh-CN.md` 审核说明区与本版本文案更新。
 
-## 回归验证记录（1.0.7）
+## ClawHub 审查关注点
+- 凭证字段统一：文档、模板、脚本均以 `MAAT_TOKEN_API` 为主，历史字段仅作兼容。
+- 端点可控：自定义端点必须命中 `MAAT_TOKEN_API_ALLOWED_HOSTS`。
+- 日志最小化：`OPENCLAW_REQUEST_LOG` 默认 `0`，仅在显式开启时输出调试日志。
+- 敏感脱敏：token、policy、签名及凭证参数在日志中强制脱敏。
+
+## 回归验证记录（1.0.9）
 - 发布校验：`check_tools_mapping` 与 `validate_release` 均通过。
-- 打包产物：见项目根目录最新 `hopola-clawhub-v1.0.7-<timestamp>.zip`。
+- 打包产物：见项目根目录最新 `hopola-clawhub-v1.0.9-<timestamp>.zip`。
 
 ## 回归验证记录（1.0.6）
 - 公网 URL 回归：输入可访问的 `https` 商品图 URL，流程可直接通过前置校验并完成生成。

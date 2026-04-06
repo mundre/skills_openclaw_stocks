@@ -25,6 +25,11 @@ Hopola is an end-to-end skill pipeline for:
 ## Secure Key Design
 
 - Users must provide `OPENCLOW_KEY` via environment variable.
+- If `OPENCLOW_KEY` is missing, the workflow must stop at `precheck` with `GATEWAY_KEY_MISSING` before any Gateway generation call.
+- Upload policy endpoint uses `MAAT_TOKEN_API` (default `https://strategy.stariidata.com/upload/policy`).
+- Legacy endpoint envs (`MEITU_TOKEN_API`, `NEXT_PUBLIC_MAAT_TOKEN_API`, `NEXT_PUBLIC_MEITU_TOKEN_API`) remain backward-compatible.
+- `MAAT_TOKEN_API_ALLOWED_HOSTS` constrains trusted upload policy hosts and includes `strategy.stariidata.com` by default.
+- `OPENCLAW_REQUEST_LOG` is disabled by default (`0`) and should be enabled only for temporary debugging.
 - `config.template.json` keeps only `key_env_name` and an empty `key_value`.
 - Release validation blocks packaging if plaintext keys are detected.
 
@@ -53,6 +58,8 @@ python3 scripts/build_release_zip.py
 - Upload stage uses MAAT direct upload only via `scripts/maat_upload.py`.
 - Gateway upload endpoint is not used as primary or fallback in current strategy.
 - Returned URLs are validated for accessibility and only stable reachable links are delivered.
+- Endpoint resolution follows `MAAT_TOKEN_API > legacy envs > default endpoint` with host-level allowlist checks.
+- Audit output records endpoint source and host without leaking token/policy/signature values.
 
 ## Release Deliverables
 

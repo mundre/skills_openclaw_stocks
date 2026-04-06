@@ -1,6 +1,11 @@
 ---
 name: "Hopola"
 description: "Runs web research and orchestrates image/video/3D generation, logo and product visuals, upload, and Markdown reporting. Use when users need an end-to-end multimodal production and delivery workflow."
+required_credentials:
+  - OPENCLOW_KEY
+required_permissions:
+  - network:http
+  - local_file:read
 ---
 
 # Hopola
@@ -18,6 +23,10 @@ Hopola turns "web research → image/video/3D generation → result upload → r
 - `web-access` is available for web search and page reading.
 - OpenClaw Gateway is reachable.
 - `OPENCLOW_KEY` is configured in the runtime environment.
+- Upload policy endpoint uses `MAAT_TOKEN_API` (compatible with `MEITU_TOKEN_API` / `NEXT_PUBLIC_MAAT_TOKEN_API` / `NEXT_PUBLIC_MEITU_TOKEN_API`).
+- `MAAT_TOKEN_API_ALLOWED_HOSTS` controls trusted upload policy hosts (comma-separated, includes `strategy.stariidata.com` by default).
+- `OPENCLAW_REQUEST_LOG` defaults to `0` and should be enabled only for temporary debugging.
+- If `OPENCLOW_KEY` is missing, stop at precheck and return `structured_error.code=GATEWAY_KEY_MISSING`; do not call Gateway tools.
 
 ## ClawHub Release Structure
 - `SKILL.md`: Main orchestration and strategy
@@ -121,6 +130,9 @@ The report must include at least:
 - `PRODUCT_IMAGE_MCP_ARGS_SCHEMA`: Argument mapping schema for product image tools
 - `REQUEST_TIMEOUT_MS`: Request timeout
 - `RETRY_MAX`: Max retries
+- `MAAT_TOKEN_API`: Upload policy endpoint (default `https://strategy.stariidata.com/upload/policy`)
+- `MAAT_TOKEN_API_ALLOWED_HOSTS`: Trusted hosts for upload policy endpoint
+- `OPENCLAW_REQUEST_LOG`: Request log switch (`0` by default)
 
 ## Execution Rules
 - In the search stage, prioritize strategic online retrieval with `web-access`; combine search and page reading when necessary.
@@ -152,6 +164,7 @@ The report must include at least:
 - In the upload stage, invoke `subskills/upload/SKILL.md` and return stable accessible URLs for all local/session images.
 - Session-uploaded local images must follow the same upload stage constraints (format/size/accessibility validation and failed-upload retry guidance).
 - All Gateway requests must include `X-OpenClaw-Key` in headers, and keys must be read only from environment variables.
+- Before any Gateway call, precheck `OPENCLOW_KEY`. If missing, return `structured_error` with `code=GATEWAY_KEY_MISSING`, `stage=precheck`, and actionable retry suggestions.
 - The report stage must output Markdown consistently and explicitly mark missing fields.
 - For product-image tasks, never use local/offline image synthesis fallback (for example PIL scripts or local compositing) to replace Gateway + subskill execution.
 - For product-image generation responses, include execution evidence fields: `tool_name_used`, `source_image_url_used`, `source_image_origin`, `precheck_report`, and non-sensitive call receipt fields from Gateway response.
