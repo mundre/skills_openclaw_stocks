@@ -1,90 +1,176 @@
 #!/usr/bin/env python3
-"""Boundary Checker - 边界检查模块 for relationship-coach"""
-# 超出范围的内容关键词
-OUT_OF_SCOPE = [
-    "挽回", "复合", "前任", "分手挽回", "怎么追", "表白",
-    "相亲", "找对象", "约会", "撩", "出轨", "小三",
-    "婚姻问题", "离婚", "夫妻", "性生活",
-    "心理疾病", "抑郁", "焦虑症", "治疗",
-    "代替我", "帮我聊", "代聊"
-]
+"""Boundary and escalation checks for Relate Coach."""
 
-# 需要引导专业帮助的场景
-PROFESSIONAL_REFER = [
-    "家暴", "虐待", "精神控制", "pua", "跟踪骚扰",
-    "严重心理问题", "心理创伤", "ptsd"
-]
+from __future__ import annotations
 
-def check_boundary(text):
-    """检查是否在服务范围内"""
-    text = text.lower()
-    
-    # 检查是否需要专业转介
-    for keyword in PROFESSIONAL_REFER:
-        if keyword in text:
-            return "professional_refer", keyword
-    
-    # 检查是否超出范围
-    for keyword in OUT_OF_SCOPE:
-        if keyword in text:
-            return "out_of_scope", keyword
-    
-    return "in_scope", None
 
-def get_out_of_scope_response(keyword):
-    """获取超出范围的响应"""
-    response = """抱歉，这类话题超出了我能够帮助的范围。
-    
-我能提供的是：
-- 日常人际沟通技巧
-- 非暴力沟通方法  
-- 冲突处理建议
-- 界限设定指导
+CRISIS_KEYWORDS = {
+    "immediate_danger": [
+        "kill myself",
+        "suicide",
+        "want to die",
+        "hurt myself",
+        "self harm",
+        "unsafe right now",
+        "in immediate danger",
+        "going to hurt someone",
+    ],
+    "abuse_or_violence": [
+        "domestic violence",
+        "my partner hit me",
+        "abuse",
+        "violent at home",
+        "threatened me",
+        "strangled",
+    ],
+}
 
-但以下情况需要寻求专业机构帮助：
-- 婚姻/情感咨询 → 婚姻家庭咨询师
-- 心理问题 → 心理咨询师或心理医生
-- 法律问题 → 律师
+PROFESSIONAL_REFER_KEYWORDS = {
+    "stalking_or_control": [
+        "stalking",
+        "harassment",
+        "coercive control",
+        "controlling me",
+        "pua",
+    ],
+    "trauma_or_severe_distress": [
+        "ptsd",
+        "trauma",
+        "panic attacks",
+        "severe anxiety",
+        "depression treatment",
+        "diagnose me",
+    ],
+}
 
-你有没有其他关于日常沟通的问题想聊聊？"""
+OUT_OF_SCOPE_KEYWORDS = {
+    "dating_or_matchmaking": [
+        "find me a date",
+        "matchmaking",
+        "pick-up lines",
+        "how do i seduce",
+        "how do i make them like me",
+    ],
+    "ex_recovery": [
+        "get my ex back",
+        "win my ex back",
+        "make my ex return",
+    ],
+    "therapy_or_diagnosis": [
+        "am i mentally ill",
+        "do i have a disorder",
+        "therapy session",
+        "treat my anxiety",
+    ],
+    "impersonation": [
+        "pretend to be me",
+        "message them for me",
+        "talk to them as me",
+        "impersonate me",
+    ],
+}
+
+
+def check_boundary(text: str) -> tuple[str, str | None, str | None]:
+    lowered = text.casefold()
+
+    category, keyword = _find_match(lowered, CRISIS_KEYWORDS)
+    if category:
+        return "crisis", category, keyword
+
+    category, keyword = _find_match(lowered, PROFESSIONAL_REFER_KEYWORDS)
+    if category:
+        return "professional_refer", category, keyword
+
+    category, keyword = _find_match(lowered, OUT_OF_SCOPE_KEYWORDS)
+    if category:
+        return "out_of_scope", category, keyword
+
+    return "in_scope", None, None
+
+
+def _find_match(text: str, groups: dict[str, list[str]]) -> tuple[str | None, str | None]:
+    for category, keywords in groups.items():
+        for keyword in keywords:
+            if keyword in text:
+                return category, keyword
+    return None, None
+
+
+def get_out_of_scope_response(category: str | None, keyword: str | None) -> dict:
+    category_map = {
+        "dating_or_matchmaking": "dating, seduction, or matchmaking",
+        "ex_recovery": "getting an ex-partner back",
+        "therapy_or_diagnosis": "therapy or diagnosis",
+        "impersonation": "impersonation or communicating as someone else",
+    }
+    topic = category_map.get(category, "that request")
+
     return {
         "type": "out_of_scope",
-        "message": response,
-        "keyword": keyword
+        "title": "Out of scope for Relate Coach",
+        "summary": f"I cannot help with {topic}. Relate Coach is for low-stakes communication and relationship skills, not specialized or deceptive services.",
+        "next_steps": [
+            "If your need is everyday communication, I can still help with scripts, boundaries, listening, conflict repair, or workplace conversations.",
+            "If you need counseling, diagnosis, or legal advice, please contact a qualified professional in that field.",
+        ],
+        "watch_outs": [
+            f"Matched keyword: {keyword}" if keyword else "Matched an out-of-scope topic.",
+        ],
+        "reflection": "If you want to continue, tell me the low-stakes communication problem underneath the request.",
     }
 
-def get_professional_refer_response(keyword):
-    """获取专业转介响应"""
-    if keyword in ["家暴", "虐待"]:
-        message = """你的情况听起来很严重，我很关心你。
-        
-如果是关于家庭暴力或虐待：
-- **全国妇联妇女维权热线**：12338
-- **反家庭暴力热线**：16803898
-- **紧急情况请拨打**：110
 
-这些机构可以提供专业帮助，保护你的安全。"""
-    elif keyword in ["pua", "精神控制", "跟踪骚扰"]:
-        message = """听起来你可能经历了不健康的关系模式。
-        
-建议你可以：
-- 和信任的朋友或家人聊聊
-- 寻求心理咨询师的帮助
-- 必要时报警（如果是跟踪骚扰）
-
-全国心理援助热线：400-161-9995"""
+def get_professional_refer_response(category: str | None, keyword: str | None) -> dict:
+    if category == "stalking_or_control":
+        summary = "What you described may involve coercion, stalking, or harassment. That is beyond self-help coaching."
+        next_steps = [
+            "Prioritize safety and documentation where possible.",
+            "Reach out to a trusted person, a local support organization, or legal authorities if needed.",
+            "Consider speaking with a licensed therapist or advocate who handles abusive or controlling dynamics.",
+        ]
     else:
-        message = """感谢你分享你的情况。
-        
-这个问题比较复杂，建议你寻求专业人士的帮助：
-- 心理咨询师：处理心理创伤、情绪问题
-- 律师：处理法律相关问题
-- 相关支持机构：根据具体情况进行转介
+        summary = "This sounds serious enough that professional mental-health or trauma support would be more appropriate than normal communication coaching."
+        next_steps = [
+            "Consider a licensed therapist, counselor, or physician for assessment and support.",
+            "If symptoms are escalating quickly, contact urgent local support resources.",
+            "Use Relate Coach only for low-stakes communication planning after immediate support is in place.",
+        ]
 
-你不需要独自面对。"""
-    
     return {
         "type": "professional_refer",
-        "message": message,
-        "keyword": keyword
+        "title": "Professional support recommended",
+        "summary": summary,
+        "next_steps": next_steps,
+        "watch_outs": [
+            f"Matched keyword: {keyword}" if keyword else "Matched a professional-referral topic.",
+        ],
+        "reflection": "What support person or qualified resource can you contact first?",
+    }
+
+
+def get_crisis_response(category: str | None, keyword: str | None) -> dict:
+    if category == "abuse_or_violence":
+        summary = "This may involve immediate safety risk or violence. Normal relationship coaching is not the right next step."
+    else:
+        summary = "This sounds like a potential crisis or immediate safety issue. Normal relationship coaching should stop here."
+
+    return {
+        "type": "crisis",
+        "title": "Safety first",
+        "summary": summary,
+        "next_steps": [
+            "If there is immediate danger, contact local emergency services right now.",
+            "Reach out to a trusted person nearby who can help you stay safe.",
+            "Use a local crisis line, emergency department, or licensed crisis professional as soon as possible.",
+        ],
+        "resources": [
+            "Local emergency services",
+            "Local crisis hotline or emergency department",
+            "A trusted friend, family member, or advocate who can help immediately",
+        ],
+        "watch_outs": [
+            f"Matched keyword: {keyword}" if keyword else "Matched a crisis topic.",
+        ],
+        "reflection": "Who can you contact immediately to reduce danger in the next 10 minutes?",
     }

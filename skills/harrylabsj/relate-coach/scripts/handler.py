@@ -1,179 +1,537 @@
 #!/usr/bin/env python3
-"""Relationship Coach Handler - 人际关系教练核心模块"""
+"""Relate Coach - practical communication guidance for low-stakes relationship situations."""
+
+from __future__ import annotations
+
+import argparse
+import json
 import sys
-sys.path.insert(0, __file__.rsplit('/', 1)[0])
-from boundary_checker import check_boundary, get_out_of_scope_response, get_professional_refer_response
+from pathlib import Path
 
-def detect_intent(text):
-    """检测用户意图"""
-    text = text.lower()
-    if any(k in text for k in ["沟通", "表达", "说话", "说"]):
-        return "communication"
-    elif any(k in text for k in ["倾听", "听", "听不懂"]):
-        return "listening"
-    elif any(k in text for k in ["冲突", "吵架", "矛盾", "分歧", "争执"]):
-        return "conflict"
-    elif any(k in text for k in ["拒绝", "不敢", "不好意思", "开不了口"]):
-        return "boundary"
-    elif any(k in text for k in ["同事", "领导", "职场", "工作"]):
-        return "workplace"
-    elif any(k in text for k in ["朋友", "社交"]):
-        return "social"
-    elif any(k in text for k in ["家人", "父母", "孩子"]):
-        return "family"
-    elif any(k in text for k in ["亲密", "情侣"]):
-        return "intimate"
-    elif any(k in text for k in ["nvc", "非暴力"]):
-        return "nvc"
-    else:
-        return "general"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-# ===== 知识库 =====
+from boundary_checker import (  # noqa: E402
+    check_boundary,
+    get_crisis_response,
+    get_out_of_scope_response,
+    get_professional_refer_response,
+)
 
-NVC_GUIDE = {
-    "name": "非暴力沟通（NVC）四步法",
-    "description": "马歇尔·卢森堡提出的沟通方法，帮助在冲突中保持尊重和理解。",
-    "steps": [
-        "1. 观察（Observation）：不带评判地描述事实",
-        "   ❌ 不要：'你总是迟到！'",
-        "   ✅ 要说：'这周你有三天超过约定时间30分钟'",
-        "",
-        "2. 感受（Feeling）：说出你的感受（不是想法）",
-        "   ❌ 不要：'我觉得你不重视我'（这是想法）",
-        "   ✅ 要说：'等你的时候，我感到焦虑和担心'",
-        "",
-        "3. 需要（Need）：表达你的需求",
-        "   说明：这个行为影响到你什么？",
-        "   ✅ '我需要确定性，这样我才能规划时间'",
-        "",
-        "4. 请求（Request）：提出具体、可行的请求",
-        "   ❌ 不要：'你能不能靠谱点？'（太模糊）",
-        "   ✅ 要说：'下次如果会迟到，能不能提前15分钟发消息告诉我？'"
+
+INTENT_KEYWORDS = {
+    "repair": [
+        "apologize",
+        "apology",
+        "make it right",
+        "repair",
+        "said the wrong thing",
+        "hurt their feelings",
     ],
-    "example": {
-        "situation": "朋友答应还钱但一直拖着",
-        "nvc": "'上次你借我的5,000块，说好上个月还。等待的这一个月，我有点担心你是否遇到困难。我很重视我们之间的信任，你能不能告诉我大概什么时候能还？'" 
+    "boundary": [
+        "boundary",
+        "say no",
+        "need space",
+        "overstep",
+        "too much",
+        "after work",
+        "keeps messaging",
+        "guilty saying no",
+        "people pleasing",
+    ],
+    "conflict": [
+        "conflict",
+        "fight",
+        "argument",
+        "argue",
+        "resentment",
+        "tension",
+        "disagreement",
+        "clash",
+    ],
+    "listening": [
+        "listen",
+        "listening",
+        "heard",
+        "interrupt",
+        "misunderstood",
+        "validate",
+        "not hearing me",
+    ],
+    "nvc": [
+        "nvc",
+        "nonviolent communication",
+    ],
+    "workplace": [
+        "boss",
+        "manager",
+        "coworker",
+        "colleague",
+        "team",
+        "workplace",
+        "office",
+        "feedback",
+        "meeting",
+        "employee",
+    ],
+    "family": [
+        "parent",
+        "mother",
+        "father",
+        "mom",
+        "dad",
+        "family",
+        "sibling",
+        "child",
+        "kids",
+        "relative",
+    ],
+    "intimate": [
+        "partner",
+        "girlfriend",
+        "boyfriend",
+        "wife",
+        "husband",
+        "spouse",
+        "romantic",
+        "relationship",
+    ],
+    "social": [
+        "friend",
+        "friends",
+        "social anxiety",
+        "group chat",
+        "awkward",
+        "party",
+        "invite",
+        "lonely",
+    ],
+    "communication": [
+        "communicate",
+        "communication",
+        "express myself",
+        "bring it up",
+        "start the conversation",
+        "say this",
+        "tell them",
+    ],
+}
+
+INTENT_PRIORITY = [
+    "repair",
+    "boundary",
+    "conflict",
+    "listening",
+    "nvc",
+    "workplace",
+    "family",
+    "intimate",
+    "social",
+    "communication",
+]
+
+PLAYBOOKS = {
+    "communication": {
+        "title": "Clear Conversation Starter",
+        "summary": "Use this when you know you need to talk, but keep rambling, softening the point, or waiting too long.",
+        "best_for": [
+            "bringing up a small but important issue",
+            "saying what you need without sounding harsh",
+            "starting a conversation before resentment builds",
+        ],
+        "quick_reset": [
+            "State the issue in one concrete sentence.",
+            "Name the impact on you instead of judging the other person.",
+            "Ask for one specific next step, not a personality change.",
+        ],
+        "starter_scripts": [
+            "I want to bring up something small now so it does not turn into a bigger issue later.",
+            "When this happened, I felt frustrated and disconnected. I want to talk about a better way forward.",
+            "What I am hoping for is one small adjustment: can we try __ next time?",
+        ],
+        "watch_outs": [
+            "Do not stack five old grievances into one conversation.",
+            "Do not use 'always' or 'never' unless it is literally true.",
+            "Do not ask a vague question when you already know the request you want to make.",
+        ],
+        "reflection": "What is the shortest honest sentence that captures the real issue?",
+    },
+    "listening": {
+        "title": "Active Listening Reset",
+        "summary": "Use this when the other person feels unheard, keeps repeating themselves, or shuts down because they expect advice instead of understanding.",
+        "best_for": [
+            "de-escalating defensiveness",
+            "helping someone feel understood before problem-solving",
+            "repairing conversations where you keep interrupting",
+        ],
+        "quick_reset": [
+            "Reflect back the facts you heard.",
+            "Name the feeling you think might be present.",
+            "Ask if you got it right before offering a view.",
+        ],
+        "starter_scripts": [
+            "What I am hearing is that this felt unfair and exhausting. Did I get that right?",
+            "It sounds like you were hoping for support, not another task to manage.",
+            "Do you want me to listen first, help you think, or help you decide?",
+        ],
+        "watch_outs": [
+            "Do not jump to reassurance too quickly.",
+            "Do not translate their feelings into your own story.",
+            "Do not ask rapid-fire questions that feel like interrogation.",
+        ],
+        "reflection": "What emotion is the other person likely trying to get you to recognize?",
+    },
+    "conflict": {
+        "title": "Conflict Repair Framework",
+        "summary": "Use this when a conversation is getting heated, repetitive, or emotionally expensive and you need structure instead of more force.",
+        "best_for": [
+            "slowing down arguments before they become personal",
+            "separating the issue from the relationship",
+            "finding one next move both people can accept",
+        ],
+        "quick_reset": [
+            "Pause before rebutting and identify the actual topic.",
+            "Say what matters to you without diagnosing the other person.",
+            "Name one shared goal before negotiating solutions.",
+        ],
+        "starter_scripts": [
+            "I do not want this to become a scorekeeping fight. Can we slow down and focus on one issue?",
+            "I think we both want this relationship to feel more steady, even if we disagree on the details.",
+            "Before we solve it, I want to make sure I understand what felt most upsetting to you.",
+        ],
+        "watch_outs": [
+            "Avoid mind-reading: stay with what was said or done.",
+            "Avoid debating tone while ignoring the underlying issue.",
+            "Avoid forcing closure when one person is too activated to think clearly.",
+        ],
+        "reflection": "Is this disagreement about logistics, values, or feeling unseen?",
+    },
+    "boundary": {
+        "title": "Boundary Setting Playbook",
+        "summary": "Use this when you need to protect your time, energy, attention, or comfort without becoming vague, apologetic, or hostile.",
+        "best_for": [
+            "saying no without over-explaining",
+            "responding to repeated overstepping",
+            "setting clearer expectations around time, contact, or emotional labor",
+        ],
+        "quick_reset": [
+            "State the limit clearly.",
+            "Name what you will do, not what you wish they would magically understand.",
+            "Repeat the limit calmly if the person pushes back.",
+        ],
+        "starter_scripts": [
+            "I am not available for that tonight.",
+            "I can help for 15 minutes, but I cannot take this whole task on.",
+            "I do not respond to work requests after hours unless something is urgent and clearly labeled.",
+        ],
+        "watch_outs": [
+            "Do not bury the boundary under a long apology.",
+            "Do not hint repeatedly when what you need is a direct limit.",
+            "Do not threaten consequences you will not actually follow through on.",
+        ],
+        "reflection": "What limit are you trying to enforce, and what behavior will show that the limit is real?",
+    },
+    "workplace": {
+        "title": "Workplace Communication Coach",
+        "summary": "Use this for low-stakes work conversations involving feedback, disagreement, workload, expectations, or tone with managers and colleagues.",
+        "best_for": [
+            "disagreeing professionally",
+            "pushing back on scope without sounding defensive",
+            "clarifying expectations before resentment grows",
+        ],
+        "quick_reset": [
+            "Lead with the shared goal.",
+            "Describe the constraint or concern clearly.",
+            "Offer options instead of a flat wall when possible.",
+        ],
+        "starter_scripts": [
+            "I want to make this land well. Right now I see a timing tradeoff between A and B. Which outcome matters more?",
+            "I have concerns about the current approach, and I want to pressure-test them with you before we commit.",
+            "I can take this on, but only if we move the deadline or reduce scope. Which would you prefer?",
+        ],
+        "watch_outs": [
+            "Do not frame disagreement as a moral failing by the other person.",
+            "Do not say yes too quickly and hope the problem disappears.",
+            "Do not turn a feedback conversation into a hidden argument about respect.",
+        ],
+        "reflection": "What is the cleanest way to describe the tradeoff without sounding oppositional?",
+    },
+    "social": {
+        "title": "Social Confidence Guide",
+        "summary": "Use this for everyday social friction: awkwardness, invitations, follow-up anxiety, drifting friendships, or not knowing how to re-enter a conversation.",
+        "best_for": [
+            "friendship maintenance",
+            "recovering after awkward moments",
+            "reducing overthinking around small social risks",
+        ],
+        "quick_reset": [
+            "Aim for warmth, not performance.",
+            "Keep the next move small and easy to answer.",
+            "Assume normal ambiguity before assuming rejection.",
+        ],
+        "starter_scripts": [
+            "Hey, I realized I went quiet after that conversation. I wanted to say I enjoyed seeing you.",
+            "Want to grab coffee next week? No pressure if your schedule is packed.",
+            "I think I came off a bit awkward earlier, but I did mean what I said.",
+        ],
+        "watch_outs": [
+            "Do not demand certainty from casual interactions.",
+            "Do not over-correct awkwardness with too much intensity.",
+            "Do not interpret delayed replies as proof of dislike.",
+        ],
+        "reflection": "What is the smallest genuine move that would make this interaction easier?",
+    },
+    "family": {
+        "title": "Family Tension Playbook",
+        "summary": "Use this for recurring family patterns like criticism, guilt, pressure, role confusion, or conversations that instantly turn you back into old versions of yourself.",
+        "best_for": [
+            "speaking to parents without exploding or collapsing",
+            "staying clear when guilt is used to steer you",
+            "naming limits while preserving respect",
+        ],
+        "quick_reset": [
+            "Name the topic you are willing to discuss.",
+            "Do not defend every detail of your life choices.",
+            "End the conversation if respect disappears.",
+        ],
+        "starter_scripts": [
+            "I know this matters to you. I am willing to talk about it for ten minutes, but not if the conversation becomes insulting.",
+            "I hear that you disagree. I am not asking for permission; I am letting you know my decision.",
+            "I do want a relationship with you, and I need our conversations to stay respectful for that to work.",
+        ],
+        "watch_outs": [
+            "Do not confuse closeness with unlimited access.",
+            "Do not keep arguing after the real issue becomes respect.",
+            "Do not expect one perfect script to undo a long family pattern overnight.",
+        ],
+        "reflection": "What part of this conversation is about the present, and what part is an old family pattern getting reactivated?",
+    },
+    "intimate": {
+        "title": "Intimate Relationship Check-In",
+        "summary": "Use this for low-stakes partnership issues like feeling distant, misaligned expectations, recurring hurt, or needing a calmer way to ask for closeness.",
+        "best_for": [
+            "asking for more connection without blame",
+            "naming resentment before it hardens",
+            "repairing small ruptures before they become identity-level fights",
+        ],
+        "quick_reset": [
+            "Lead with the experience you want, not the flaw you think the other person has.",
+            "Stay specific about what happened.",
+            "Ask for one visible behavior change.",
+        ],
+        "starter_scripts": [
+            "I miss feeling close to you, and I want us to talk before this turns into distance.",
+            "When that happened, I felt dismissed. I do not think that was your goal, but I want us to handle moments like that differently.",
+            "Could we set aside 20 minutes tonight to reset instead of trying to solve this while we are both distracted?",
+        ],
+        "watch_outs": [
+            "Do not package protest as sarcasm.",
+            "Do not turn one incident into a verdict on the whole relationship.",
+            "Do not demand vulnerability while sounding punitive.",
+        ],
+        "reflection": "If this conversation went well, what would feel different afterward?",
+    },
+    "repair": {
+        "title": "Apology and Repair Script",
+        "summary": "Use this when you made a mistake, got defensive, or caused hurt and want to repair without centering your own guilt.",
+        "best_for": [
+            "clean apologies",
+            "repair after harsh tone or avoidance",
+            "rebuilding trust through specific accountability",
+        ],
+        "quick_reset": [
+            "Name what you did.",
+            "Name the likely impact without arguing intent.",
+            "Offer a concrete repair or changed behavior.",
+        ],
+        "starter_scripts": [
+            "I handled that badly. I interrupted you and got defensive, and I can see how that would feel dismissive.",
+            "You did not deserve that tone from me. I am sorry.",
+            "Next time I am going to pause before replying. If you are open to it, I would like to try this conversation again.",
+        ],
+        "watch_outs": [
+            "Do not add 'but you also...' to the apology.",
+            "Do not ask for immediate forgiveness as proof the apology worked.",
+            "Do not confuse regret with repair; trust usually needs a changed pattern.",
+        ],
+        "reflection": "What would accountability look like beyond the words 'I am sorry'?",
+    },
+    "nvc": {
+        "title": "Nonviolent Communication Guide",
+        "summary": "Use this when you need a clear structure for hard conversations and want to stay grounded in observations, feelings, needs, and requests.",
+        "best_for": [
+            "difficult conversations that keep turning judgmental",
+            "naming needs without sounding accusatory",
+            "asking for change without attacking character",
+        ],
+        "quick_reset": [
+            "Observation: say what happened without labels.",
+            "Feeling: name the emotion, not the accusation.",
+            "Need and request: say what matters and ask for one actionable change.",
+        ],
+        "starter_scripts": [
+            "When our call started 30 minutes late twice this week, I felt stressed because reliability matters to me. Next time, can you text me 15 minutes ahead if you are running behind?",
+            "When feedback comes in group chat, I feel exposed because I care about learning without getting flooded. Could we move this type of feedback to a direct message first?",
+        ],
+        "watch_outs": [
+            "Observation is not a disguised judgment.",
+            "Feelings are emotions, not stories about the other person's motives.",
+            "A request is more useful than a character critique.",
+        ],
+        "reflection": "Which part is hardest for you right now: the observation, the feeling, or the request?",
+    },
+}
+
+GENERAL_RESPONSE = {
+    "title": "Relate Coach",
+    "summary": "I can help you think through a low-stakes relationship conversation and turn it into a clearer next move.",
+    "best_for": [
+        "saying something hard without escalating",
+        "setting a boundary clearly",
+        "repairing after conflict or awkwardness",
+        "handling everyday workplace, friendship, family, or partner conversations",
+    ],
+    "quick_reset": [
+        "Tell me who the person is, what happened, and what outcome you want.",
+        "If you want, ask for a track directly: boundary, conflict, listening, workplace, family, social, intimate, apology, or NVC.",
+    ],
+    "starter_scripts": [
+        "Help me say no without sounding cold.",
+        "My coworker keeps messaging me after work. Give me a script.",
+        "I need to apologize to a friend without making it about me.",
+    ],
+    "watch_outs": [
+        "This tool is for communication and low-stakes relationship support, not therapy or diagnosis.",
+        "If there is abuse, stalking, immediate danger, or self-harm risk, use the safety path instead of normal coaching.",
+    ],
+    "reflection": "What conversation are you avoiding right now?",
+}
+
+
+def detect_intents(text: str) -> list[str]:
+    lowered = text.casefold()
+    scores: dict[str, int] = {}
+    for intent, keywords in INTENT_KEYWORDS.items():
+        score = sum(1 for keyword in keywords if keyword in lowered)
+        if score:
+            scores[intent] = score
+
+    if not scores:
+        return []
+
+    return sorted(scores, key=lambda intent: (-scores[intent], INTENT_PRIORITY.index(intent)))
+
+
+def detect_intent(text: str) -> str:
+    intents = detect_intents(text)
+    return intents[0] if intents else "general"
+
+
+def infer_context(text: str) -> dict[str, bool]:
+    lowered = text.casefold()
+    return {
+        "repeated_pattern": any(token in lowered for token in ["always", "again", "keeps", "every time", "repeatedly"]),
+        "power_gap": any(token in lowered for token in ["boss", "manager", "parent", "father", "mother", "teacher"]),
+        "time_pressure": any(token in lowered for token in ["today", "tonight", "soon", "urgent", "asap", "tomorrow"]),
     }
-}
 
-ACTIVE_LISTENING = {
-    "name": "主动倾听技巧",
-    "description": "帮助对方感到被理解和尊重的倾听方式。",
-    "techniques": [
-        "【回声回应】简单重复对方关键话语：'所以你觉得...'"
-        "【情感标注】说出你听到的情绪：'听起来你很沮丧'、'这事让你很生气'"
-        "【开放式提问】'能多说说吗？''后来怎么样了？''你当时怎么想的？'"
-        "【肢体语言】眼神接触、点头、身体前倾（面对面时）"
-        "【不打断】让对方说完再回应，即使你有话想说"
-        "【复述确认】'我听到的是...，对吗？'"
-    ],
-    "tip": "倾听不是为了给建议，而是为了理解对方"
-}
 
-CONFLICT_FRAMEWORK = {
-    "name": "冲突处理框架",
-    "steps": [
-        "1. **暂停**：感觉要吵起来时，先停下来，深呼吸",
-        "2. **定位**：这是'内容冲突'还是'关系冲突'？",
-        "   - 内容冲突：意见不同，可以协商",
-        "   - 关系冲突：感觉被攻击或不尊重，需要先修复关系",
-        "3. **表达**：用'我'开头，说事实和感受，不指责",
-        "4. **倾听**：对方说完之前不反驳，真正听懂对方",
-        "5. **寻找共同点**：'我们都希望...''我们都同意...'"
-        "6. **协商**：找双方都能接受的方案"
-    ],
-    "tips": [
-        "避免：'你总是''你从来''你就是这种人'",
-        "多用：'当...时，我感到...''我需要...'"
-    ]
-}
+def build_response(user_text: str) -> dict:
+    status, category, keyword = check_boundary(user_text)
+    if status == "crisis":
+        return get_crisis_response(category, keyword)
+    if status == "professional_refer":
+        return get_professional_refer_response(category, keyword)
+    if status == "out_of_scope":
+        return get_out_of_scope_response(category, keyword)
 
-BOUNDARY_GUIDE = {
-    "name": "界限设定指南",
-    "why": "健康的界限是关系的保护伞，不是拒绝，而是让关系更健康。",
-    "steps": [
-        "1. **识别自己的界限**：哪些事让你不舒服？",
-        "2. **明确界限内容**：具体是什么？",
-        "3. **清晰表达**：用温和但坚定的方式说出",
-        "4. **一致执行**：第一次就要坚持，不要时松时紧"
-    ],
-    "templates": [
-        "当...时，我会...（行为描述）",
-        "我需要...（需求），所以请...",
-        "我暂时不能...因为...",
-        "谢谢你的理解，我想...（提议）"
-    ],
-    "examples": [
-        {
-            "场景": "同事频繁在下班后发消息",
-            "模板": "我看到了你的消息。我通常下班后不看工作消息，明天上班我会处理。",
-            "态度": "温和但坚定"
-        },
-        {
-            "场景": "朋友借钱",
-            "模板": "我现在经济也比较紧，恐怕不能借。你可以问问...或者其他办法。",
-            "态度": "坦诚+提供其他建议"
-        }
-    ]
-}
+    relevant = detect_intents(user_text)
+    primary = relevant[0] if relevant else "general"
+    context = infer_context(user_text)
 
-WORKPLACE_COMM = {
-    "name": "职场沟通技巧",
-    "scenarios": [
-        {
-            "场景": "不同意领导的决定",
-            "建议": "可以私下沟通：'我想了解一下这个决定背后的考虑，我也有些想法想分享...'避免公开质疑。"
-        },
-        {
-            "场景": "拒绝额外工作",
-            "建议": "先确认优先级：'我现在手头有A和B任务，您看哪个更优先？'让对方了解你的工作量。"
-        }
-    ]
-}
-
-# ===== 主处理逻辑 =====
-
-def build_response(user_text, intent):
-    # 先检查边界
-    boundary_status, keyword = check_boundary(user_text)
-    if boundary_status == "out_of_scope":
-        return get_out_of_scope_response(keyword)
-    if boundary_status == "professional_refer":
-        return get_professional_refer_response(keyword)
-    
-    # 根据意图提供内容
-    if intent == "nvc" or intent == "communication":
-        return {"type": "nvc", "content": NVC_GUIDE}
-    elif intent == "listening":
-        return {"type": "listening", "content": ACTIVE_LISTENING}
-    elif intent == "conflict":
-        return {"type": "conflict", "content": CONFLICT_FRAMEWORK}
-    elif intent == "boundary":
-        return {"type": "boundary", "content": BOUNDARY_GUIDE}
-    elif intent == "workplace":
-        return {"type": "workplace", "content": WORKPLACE_COMM}
-    elif intent == "social":
-        return {"type": "social", "content": "社交技巧待添加"}
-    elif intent == "family":
-        return {"type": "family", "content": "家庭沟通技巧待添加"}
+    if primary == "general":
+        response = dict(GENERAL_RESPONSE)
     else:
-        return {"type": "general", "content": "请告诉我你想聊什么？沟通、倾听、冲突处理、拒绝他人，还是职场人际？"}
+        response = dict(PLAYBOOKS[primary])
 
-def main():
-    user_input = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else ""
-    if not user_input:
-        print("请输入你想咨询的人际关系话题...")
-        return
-    
-    intent = detect_intent(user_input)
-    result = build_response(user_input, intent)
-    
-    print(f"=== Relationship Coach ===\n")
-    if "content" in result and isinstance(result["content"], dict):
-        for k, v in result["content"].items():
-            print(f"**{k}**: {v}")
+    response["type"] = primary
+    response["also_relevant"] = [intent for intent in relevant[1:3] if intent != primary]
+    response["context_notes"] = build_context_notes(primary, context)
+    return response
+
+
+def build_context_notes(intent: str, context: dict[str, bool]) -> list[str]:
+    notes: list[str] = []
+    if context["repeated_pattern"] and intent in {"boundary", "conflict", "family", "intimate"}:
+        notes.append("Because this sounds repeated, name the pattern directly and avoid restarting from zero.")
+    if context["power_gap"] and intent in {"boundary", "workplace", "family"}:
+        notes.append("Because there may be a power gap, keep the message calm, brief, and behavior-focused.")
+    if context["time_pressure"]:
+        notes.append("Since timing sounds tight, lead with the one sentence that matters most instead of the full backstory.")
+    return notes
+
+
+def format_response(payload: dict) -> str:
+    lines = [f"# {payload['title']}", "", payload["summary"]]
+
+    if payload.get("also_relevant"):
+        also = ", ".join(payload["also_relevant"])
+        lines.extend(["", f"Also relevant tracks: {also}"])
+
+    if payload.get("best_for"):
+        lines.extend(["", "## Best for"])
+        lines.extend(f"- {item}" for item in payload["best_for"])
+
+    if payload.get("quick_reset"):
+        lines.extend(["", "## Quick reset"])
+        lines.extend(f"- {item}" for item in payload["quick_reset"])
+
+    if payload.get("starter_scripts"):
+        lines.extend(["", "## Starter scripts"])
+        lines.extend(f"- {item}" for item in payload["starter_scripts"])
+
+    if payload.get("context_notes"):
+        lines.extend(["", "## Context notes"])
+        lines.extend(f"- {item}" for item in payload["context_notes"])
+
+    if payload.get("watch_outs"):
+        lines.extend(["", "## Watch-outs"])
+        lines.extend(f"- {item}" for item in payload["watch_outs"])
+
+    if payload.get("next_steps"):
+        lines.extend(["", "## Next steps"])
+        lines.extend(f"- {item}" for item in payload["next_steps"])
+
+    if payload.get("resources"):
+        lines.extend(["", "## Resources"])
+        lines.extend(f"- {item}" for item in payload["resources"])
+
+    if payload.get("reflection"):
+        lines.extend(["", "## Reflection question", payload["reflection"]])
+
+    if payload.get("message"):
+        lines.extend(["", payload["message"]])
+
+    return "\n".join(lines).strip()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Relate Coach - practical scripts for low-stakes relationship conversations")
+    parser.add_argument("text", nargs="*", help="User message or relationship scenario")
+    parser.add_argument("--json", action="store_true", dest="as_json", help="Output the response payload as JSON")
+    args = parser.parse_args(argv)
+
+    user_text = " ".join(args.text).strip()
+    if not user_text:
+        print("Describe the relationship situation you want help with.")
+        return 1
+
+    payload = build_response(user_text)
+    if args.as_json:
+        print(json.dumps(payload, indent=2))
     else:
-        print(result.get("content", ""))
+        print(format_response(payload))
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
