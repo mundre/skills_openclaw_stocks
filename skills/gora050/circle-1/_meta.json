@@ -3,9 +3,15 @@
   "slug": "circle-1",
   "displayName": "Circle 1",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775012739620,
-    "commit": "https://github.com/openclaw/skills/commit/84aa1c8142cc7967b9e0096da520678a6bafc2a9"
+    "version": "1.0.2",
+    "publishedAt": 1775170372673,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775012739620,
+      "commit": "https://github.com/openclaw/skills/commit/84aa1c8142cc7967b9e0096da520678a6bafc2a9"
+    }
+  ]
 }
