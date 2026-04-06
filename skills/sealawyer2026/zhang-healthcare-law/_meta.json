@@ -1,11 +1,17 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-healthcare-law",
-  "displayName": "Zhang Healthcare Law",
+  "displayName": "九章-医疗健康法律专家",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774694657564,
-    "commit": "https://github.com/openclaw/skills/commit/094e9fd41ad1d915456acb40129e3d9f7f0027fd"
+    "version": "1.5.0",
+    "publishedAt": 1775098939521,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774694657564,
+      "commit": "https://github.com/openclaw/skills/commit/094e9fd41ad1d915456acb40129e3d9f7f0027fd"
+    }
+  ]
 }
