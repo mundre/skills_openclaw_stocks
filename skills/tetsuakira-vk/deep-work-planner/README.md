@@ -87,3 +87,20 @@ guest, pay contractor invoice, review team PRs, prep for Friday board call
 ### Example 2 — Constrained day with a deadline
 
 **Input
+
+---
+
+## Get Pro Version
+
+The free version covers the core workflow. The **Pro version** unlocks:
+
+- Weekly planning mode: builds a full 5-day deep work schedule from a project backlog
+- Energy mapping: asks about your peak energy windows and schedules cognitively heavy tasks accordingly
+- Project decomposition: breaks large vague goals into concrete daily actions automatically
+- Anti-distraction protocol: generates a custom pre-session ritual and focus rules based on your work style
+- End-of-day review prompt: structured reflection that feeds into next day's plan
+
+**[$19 — Get the Pro version →](https://whop.com/promptclaw-pro/deep-work-planner-pro/)**
+
+One-time payment. Lifetime access. No subscription.
+

@@ -2,7 +2,7 @@
 name: Deep Work Planner
 slug: deep-work-planner
 description: Transforms a messy task list or brain dump into a structured daily deep work schedule using time-blocking and priority scoring.
-version: 1.0.0
+version: 1.0.1
 author: tetsuakira-vk
 license: MIT
 tags: [productivity, deep-work, time-blocking, planning, focus, task-management]
