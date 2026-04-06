@@ -3,9 +3,15 @@
   "slug": "agiloft",
   "displayName": "Agiloft",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774898632272,
-    "commit": "https://github.com/openclaw/skills/commit/f4545a3b3e75ba946265de59b581d170198b840e"
+    "version": "1.0.2",
+    "publishedAt": 1775169745238,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774898632272,
+      "commit": "https://github.com/openclaw/skills/commit/f4545a3b3e75ba946265de59b581d170198b840e"
+    }
+  ]
 }
