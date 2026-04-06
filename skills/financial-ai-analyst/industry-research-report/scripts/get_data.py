@@ -16,6 +16,8 @@ import httpx
 import base64
 import argparse
 import sys
+import zipfile
+import re
 
 # █████████████████████████████████████████████████████████████████████████
 # ██                                                                  ██
@@ -69,9 +71,19 @@ if not EM_API_KEY:
 
 SKILL_NAME = "industry_research_report"
 DEFAULT_OUTPUT_DIR = Path.cwd() / "miaoxiang" / SKILL_NAME
-print('默认输出目录为：',DEFAULT_OUTPUT_DIR.absolute())
 # MCP 服务器地址
 MCP_URL = "https://ai-saas.eastmoney.com/proxy/app-robo-advisor-api/assistant/write/industry/research"
+
+def _safe_filename(name: str, fallback: str) -> str:
+    """
+    Turn an untrusted string into a safe filename.
+    - Remove path components
+    - Replace common invalid characters on Windows
+    """
+    base = Path(str(name or "")).name.strip() or fallback
+    invalid = '<>:"/\\|?*'
+    out = "".join("_" if ch in invalid else ch for ch in base).strip(" .")
+    return out or fallback
 
 
 def _save_base64_file(b64_str: str, file_path: Path) -> bool:
@@ -88,6 +100,24 @@ def _save_base64_file(b64_str: str, file_path: Path) -> bool:
         return False
 
 
+def _extract_docx_text(docx_path: Path) -> str:
+    """
+    Best-effort extract plain text from a DOCX file without extra dependencies.
+    This is only used as a fallback when API content is empty.
+    """
+    try:
+        with zipfile.ZipFile(docx_path, "r") as z:
+            xml = z.read("word/document.xml").decode("utf-8", errors="replace")
+    except Exception:
+        return ""
+    # DOCX text typically appears in <w:t> nodes; keep simple & robust.
+    text = re.sub(r"(?s)<w:t[^>]*>(.*?)</w:t>", r"\1\n", xml)
+    text = re.sub(r"(?s)<[^>]+>", " ", text)
+    text = text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
 def run_cli() -> None:
     """命令行入口：从参数或 stdin 读取查询文本，执行并打印结果路径。"""
 
@@ -98,11 +128,9 @@ def run_cli() -> None:
 
     args = parser.parse_args()
 
-    print(f"行业名称: {args.query}")
-
     if not args.query.strip():
-        print("用法: python3 scripts/get_data.py --query \"行业名称\"")
-        print("示例: 半导体 / 新能源汽车 / AI芯片 / 消费电子与智能家居")
+        print("用法: python3 scripts/get_data.py --query \"行业名称\"", file=sys.stderr)
+        print("示例: 半导体 / 新能源汽车 / AI芯片 / 消费电子与智能家居", file=sys.stderr)
         sys.exit(1)
 
     async def _main() -> None:
@@ -112,7 +140,8 @@ def run_cli() -> None:
             print(f"错误: {r['error']}", file=sys.stderr)
             sys.exit(2)
 
-        print(json.dumps(r, ensure_ascii=False, indent=4))
+        # stdout must be a single JSON object for the skill contract
+        print(json.dumps(r, ensure_ascii=False))
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -147,13 +176,16 @@ async def get_industry_research_report(query: str, output_dir: Path):
             result_data_api = result.json()
             
             title = result_data_api["data"]["title"]
-            content = result_data_api["data"]["content"]
+            content = result_data_api["data"].get("content") if isinstance(result_data_api.get("data"), dict) else ""
+            content = content if isinstance(content, str) else ""
             share_url = result_data_api["data"]["shareUrl"]
 
-            pdf_output_path = output_dir / f"{title}.pdf"
+            safe_base = _safe_filename(title, "industry_research_report")
+            
+            pdf_output_path = output_dir / f"{safe_base}.pdf"
             pdf_saved = _save_base64_file(result_data_api["data"]["pdfBase64"], pdf_output_path)
 
-            word_output_path = output_dir / f"{title}.docx"
+            word_output_path = output_dir / f"{safe_base}.docx"
             word_saved  = _save_base64_file(result_data_api["data"]["wordBase64"], word_output_path)
 
             if not word_saved or not pdf_saved:
@@ -161,7 +193,11 @@ async def get_industry_research_report(query: str, output_dir: Path):
                 return result_data
 
             result_data["title"] = title
-            result_data["truncated_text"] = content
+            truncated_text = content.strip()
+            # Fallback: if API returns empty content, try extracting from DOCX
+            if not truncated_text and word_saved and word_output_path.is_file():
+                truncated_text = _extract_docx_text(word_output_path)
+            result_data["truncated_text"] = truncated_text
             result_data["pdf_output_path"] = str(pdf_output_path)
             result_data["docx_output_path"] = str(word_output_path)
             result_data["share_url"] = share_url
