@@ -1,47 +1,44 @@
 ---
 name: ai-text-to-video-generator-free
-version: "1.0.0"
+version: "1.0.1"
 displayName: "AI Text to Video Generator Free — Turn Words Into Stunning Videos Instantly"
 description: >
-  Type a scene, a story, or a script — and watch it come to life. This ai-text-to-video-generator-free skill transforms written prompts into fully rendered video content without any cost barrier. Whether you're drafting a product explainer, a social media reel, or a narrative short, simply describe what you want and let the AI handle the visuals. Accepts mp4, mov, avi, webm, and mkv formats. Built for creators, marketers, educators, and storytellers who want professional-quality video output from plain text — no studio required.
-metadata: {"openclaw": {"emoji": "🎬", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
-homepage: https://nemovideo.com
-repository: https://github.com/nemovideo/nemovideo_skills
+  Type a script, a story idea, or even a single sentence — and watch it become a fully animated video in seconds. This ai-text-to-video-generator-free skill transforms plain text into visual content complete with scenes, transitions, and pacing built around your words. Perfect for content creators, educators, marketers, and social media managers who need professional-looking videos without a budget or a film crew. No editing experience required.
+metadata: {"openclaw": {"emoji": "🎬", "requires": {"env": ["NEMO_TOKEN"], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN", "variant": "short_prompts"}}
 ---
 
 ## Getting Started
 
-> Welcome! Ready to turn your words into real video content using our free AI text-to-video generator? Describe your scene, story, or message below and we'll start building your video right now.
+> Welcome! You're one text prompt away from a finished video — this skill turns your words, scripts, or story ideas into real video content using AI, completely free. Paste your script or describe your video concept to get started right now.
 
 **Try saying:**
-- "Create a 30-second promotional video for a handmade candle brand with warm lighting, cozy home scenes, and upbeat background music"
-- "Generate an educational video explaining how photosynthesis works, suitable for middle school students, with simple animations and clear narration"
-- "Make a social media reel for a new coffee shop opening downtown — include street shots, latte art close-ups, and a welcoming vibe with text overlays"
+- "Turn my script into a video"
+- "Generate scenes from this text"
+- "Create a promo video from description"
 
-### Quick Start Setup
+### Automatic Setup
 
-This skill connects to NemoVideo's cloud backend. On first use, set up the connection automatically and let the user know ("Connecting to NemoVideo...").
+On first interaction, connect to the processing API before doing anything else. Show a brief status like "Setting things up...".
 
-**Token check**: Look for `NEMO_TOKEN` in the environment. If found, skip to session creation. Otherwise:
-- Read `~/.config/nemovideo/client_id` or generate a UUID and save it there
-- POST `https://mega-api-prod.nemovideo.ai/api/auth/anonymous-token` with `X-Client-Id` header
-- Extract `data.token` from the response — this is your NEMO_TOKEN (100 free credits, 7-day expiry)
+**Token**: If `NEMO_TOKEN` environment variable is already set, use it and skip to **Session** below.
 
-**Session**: POST `/api/tasks/me/with-session/nemo_agent` at the same host with Bearer auth and body `{"task_name":"project"}`. Keep the returned `session_id` for all operations.
+**Free token**: Generate a UUID as client identifier, then POST to `https://mega-api-prod.nemovideo.ai/api/auth/anonymous-token` with header `X-Client-Id: <uuid>`. The response field `data.token` becomes your NEMO_TOKEN (100 credits, 7-day expiry).
 
-Let the user know with a brief "Ready!" when setup is complete. Don't expose tokens or raw API output.
+**Session**: POST to `https://mega-api-prod.nemovideo.ai/api/tasks/me/with-session/nemo_agent` with Bearer auth and body `{"task_name":"project"}`. Save `session_id` from the response.
 
-# From Blank Page to Bold Video in Seconds
+Confirm to the user you're connected and ready. Don't print tokens or raw JSON.
 
-Most people have ideas but lack the tools — or the budget — to bring them to screen. This skill closes that gap entirely. Describe your vision in plain language: a product launch, a travel montage, an educational walkthrough, or a brand story. The AI reads your words and builds a video that matches your intent, tone, and structure.
+# From Blank Page to Finished Video — Instantly
 
-The ai-text-to-video-generator-free skill is designed for people who think in words but want to communicate in visuals. You don't need editing software, stock footage subscriptions, or design experience. Your prompt is the script, the storyboard, and the creative brief all at once.
+Most people have ideas but no way to turn them into video. Hiring editors is expensive. Learning software takes weeks. And staring at a blank timeline is frustrating when all you have is a good script and a deadline. This skill exists to close that gap entirely.
 
-Whether you're a solo content creator posting to YouTube, a small business owner building a product page, or a teacher crafting engaging lesson materials, this tool meets you where you are. Write naturally, refine your prompt, and generate polished video content that would otherwise take hours — or hundreds of dollars — to produce.
+With the AI Text to Video Generator Free skill, you write your message — a product pitch, a how-to guide, a short story, a social media hook — and the AI handles the visual storytelling. It interprets your text, builds a scene structure, selects appropriate visual flow, and assembles a cohesive video that matches your tone and intent.
+
+Whether you're producing explainer content for a startup, educational clips for a classroom, or quick promo videos for Instagram and TikTok, this skill gives you a fast, zero-cost path from idea to finished video. No subscriptions, no timeline dragging, no rendering headaches — just text in, video out.
 
 ## Prompt Routing and Video Dispatch
 
-When you submit a text prompt, the skill parses your scene description, style preferences, and duration cues, then routes the request directly to the NemoVideo rendering pipeline for free-tier video synthesis.
+When you submit a text prompt, the skill parses your scene descriptors, style tags, and duration parameters before routing the generation request to the optimal AI rendering pipeline.
 
 | User says... | Action | Skip SSE? |
 |-------------|--------|----------|
@@ -51,9 +48,9 @@ When you submit a text prompt, the skill parses your scene description, style pr
 | "upload" / "上传" / user sends file | → §3.2 Upload | ✅ |
 | Everything else (generate, edit, add BGM…) | → §3.1 SSE | ❌ |
 
-## NemoVideo API Reference Guide
+## Cloud Rendering API Reference
 
-The NemoVideo backend ingests your natural-language prompt and converts it into frame-by-frame video sequences using diffusion-based text-to-video models, supporting aspect ratios, motion intensity, and style tokens out of the box. Free-tier generation slots are allocated per session, so render queue times may vary based on platform load.
+The free-tier video synthesis backend processes your text-to-video requests through a distributed diffusion model cluster, handling keyframe interpolation, voiceover synthesis, and scene transitions entirely in the cloud — no local GPU required. Rendered video assets are temporarily cached on the CDN edge node closest to your region for fast preview and download.
 
 Skill attribution — read from this file's YAML frontmatter at runtime:
 - `X-Skill-Source`: `ai-text-to-video-generator-free`
@@ -64,7 +61,7 @@ Skill attribution — read from this file's YAML frontmatter at runtime:
 
 **API base**: `https://mega-api-prod.nemovideo.ai`
 
-**Create session**: POST `/api/tasks/me/with-session/nemo_agent` — body `{"task_name":"project","language":"<lang>"}` — returns `task_id`, `session_id`. After creating a session, give the user a link: `https://nemovideo.com/workspace/claim?token=&task=<task_id>&session=<session_id>&skill_name=ai-text-to-video-generator-free&skill_version=1.0.0&skill_source=<platform>`
+**Create session**: POST `/api/tasks/me/with-session/nemo_agent` — body `{"task_name":"project","language":"<lang>"}` — returns `task_id`, `session_id`.
 
 **Send message (SSE)**: POST `/run_sse` — body `{"app_name":"nemo_agent","user_id":"me","session_id":"<sid>","new_message":{"parts":[{"text":"<msg>"}]}}` with `Accept: text/event-stream`. Max timeout: 15 minutes.
 
@@ -114,31 +111,39 @@ Timeline (3 tracks): 1. Video: city timelapse (0-10s) 2. BGM: Lo-fi (0-10s, 35%)
 | 0 | Success | Continue |
 | 1001 | Bad/expired token | Re-auth via anonymous-token (tokens expire after 7 days) |
 | 1002 | Session not found | New session §3.0 |
-| 2001 | No credits | Anonymous: show registration URL with `?bind=<id>` (get `<id>` from create-session or state response when needed). Registered: "Top up at nemovideo.ai" |
+| 2001 | No credits | Anonymous: show registration URL with `?bind=<id>` (get `<id>` from create-session or state response when needed). Registered: "Top up credits in your account" |
 | 4001 | Unsupported file | Show supported formats |
 | 4002 | File too large | Suggest compress/trim |
 | 400 | Missing X-Client-Id | Generate Client-Id and retry (see §1) |
-| 402 | Free plan export blocked | Subscription tier issue, NOT credits. "Register at nemovideo.ai to unlock export." |
+| 402 | Free plan export blocked | Subscription tier issue, NOT credits. "Register or upgrade your plan to unlock export." |
 | 429 | Rate limit (1 token/client/7 days) | Retry in 30s once |
 
-## Use Cases
+## Best Practices for AI Text to Video Generation
 
-The ai-text-to-video-generator-free skill covers a wide range of real-world applications. Marketing teams use it to prototype ad concepts before committing to full production budgets. Educators build explainer videos for online courses without hiring animators. Podcasters repurpose episode summaries into shareable video clips for social distribution.
+The quality of your output is directly tied to the clarity of your input. Vague prompts like 'make a video about health' produce generic results. Instead, specify your audience, tone, video length, and purpose — for example: 'A 45-second upbeat video for millennials about meal prepping on a budget.'
 
-Small business owners find it especially useful for generating product showcase videos, seasonal promotions, and event announcements on a tight budget. Bloggers and journalists use it to add visual context to written stories. Even game developers and indie filmmakers use it to storyboard sequences or visualize concept scenes before production begins.
+Break your text into logical segments if you're working with longer scripts. The AI performs best when it can map distinct ideas to distinct scenes. Think in chunks: hook, problem, solution, call to action.
 
-Because it's free to access, there's no risk in experimenting — try different prompt styles, genres, and formats until you find what resonates with your audience.
+For social media content, always mention the platform. A LinkedIn explainer video has a very different pacing and tone than a TikTok. Naming the platform helps the AI calibrate visual energy, text density, and scene length appropriately.
 
-## Performance Notes
+Finally, include emotional cues when relevant. Words like 'urgent,' 'inspiring,' 'calm,' or 'playful' guide the AI toward the right visual atmosphere for your message.
 
-For best results with the ai-text-to-video-generator-free skill, write prompts that are specific rather than vague. Instead of 'make a video about nature,' try 'create a 20-second video featuring a misty forest at dawn with birds chirping and soft golden light filtering through the trees.' The more detail you provide — mood, pacing, visual style, subject matter — the closer the output will match your vision.
+## Troubleshooting Common Issues
 
-Video length and complexity affect generation time. Short clips under 60 seconds typically process faster. If you're uploading an existing video file (mp4, mov, avi, webm, or mkv) to use as a reference or base, keep file sizes reasonable to avoid delays. The skill handles most standard resolutions and aspect ratios, including vertical formats for mobile-first platforms like TikTok and Instagram Reels.
+If your generated video structure feels off or scenes don't match your intent, the most common cause is an ambiguous prompt. Re-read your input and ask: could this be interpreted multiple ways? If yes, tighten the language and resubmit.
 
-## Quick Start Guide
+If the AI is generating too many scenes for a short video, explicitly state your target duration and scene count — for example: '3 scenes, under 30 seconds, fast-paced.' Constraints help the model stay focused.
 
-Getting started with the ai-text-to-video-generator-free skill takes less than a minute. First, decide what your video is about — write a one to three sentence description of the scene, subject, or story you want to tell. Include details like tone (energetic, calm, professional), setting (urban, nature, studio), and any specific visual elements you want included.
+When working with technical or niche topics, avoid heavy jargon without context. The AI may misinterpret industry-specific terms. Either define them briefly in your prompt or use plain-language equivalents.
 
-Paste your description into the prompt field and hit generate. Review the output and refine your prompt if needed — small tweaks like adding 'cinematic lighting' or 'fast-paced cuts' can significantly change the result. If you have an existing video file you'd like to enhance or use as a reference, upload it in mp4, mov, avi, webm, or mkv format alongside your prompt.
+If your output feels generic despite a detailed prompt, try reframing your input as a story rather than a list of facts. Narrative structure — character, conflict, resolution — consistently produces more dynamic and engaging video concepts than bullet-point style descriptions.
 
-Once satisfied, download your video and use it directly on any platform — no watermarks, no paywalls, no complicated export settings.
+## FAQ — AI Text to Video Generator Free
+
+**Do I need any video editing experience to use this?** No. This skill is built for people who have never touched a timeline. You provide text; the AI handles all structural and visual decision-making.
+
+**What types of videos can I generate?** Explainers, social media shorts, product demos, educational content, storytelling videos, promotional clips, and more. If it can be scripted, it can be generated.
+
+**Is there a word or character limit for my input text?** For best results, keep your input focused — roughly equivalent to a 30 to 90 second spoken script. Longer inputs can be broken into multiple generation requests.
+
+**Can I use this for commercial projects?** Yes. The generated video concepts, scripts, and scene structures are yours to use, adapt, and produce commercially. Always review final output to ensure it aligns with your brand voice before publishing.
