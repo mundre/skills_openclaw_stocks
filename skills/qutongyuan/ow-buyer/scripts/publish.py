@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """
 发布采购需求到全球网络
-通过 claw-events 发布到公共频道
+通过 OW API 发布到 OW 社区
 """
 
 import json
 import pathlib
 import sys
-import subprocess
 import uuid
+import urllib.request
 from datetime import datetime, timedelta
 
 STATE_DIR = pathlib.Path(__file__).resolve().parent.parent / "state"
 REQ_DIR = STATE_DIR / "requirements"
+
+# OW API URL - 可通过环境变量配置
+OW_API_URL = "http://www.owshanghai.com/api/posts"
 
 def generate_req_id() -> str:
     """生成需求ID"""
@@ -27,7 +30,7 @@ def publish_requirement(
     budget_max: float = None,
     deadline_hours: int = 24,
     buyer_name: str = "小恩",
-    buyer_endpoint: str = "http://localhost:8787"
+    buyer_id: str = "buyer-default"
 ) -> dict:
     """发布采购需求"""
     
@@ -43,7 +46,7 @@ def publish_requirement(
         "budget_max": budget_max,
         "deadline": deadline.isoformat() + "Z",
         "buyer": buyer_name,
-        "buyer_endpoint": buyer_endpoint,
+        "buyer_id": buyer_id,
         "status": "open",
         "created_at": datetime.now().isoformat() + "Z"
     }
@@ -53,20 +56,31 @@ def publish_requirement(
     req_file = REQ_DIR / f"{req_id}.json"
     req_file.write_text(json.dumps(requirement, indent=2, ensure_ascii=False))
     
-    # 发布到 claw-events
+    # 发布到 OW API (使用 urllib，无需外部 CLI)
     try:
-        payload = json.dumps(requirement, ensure_ascii=False)
-        result = subprocess.run(
-            ["claw.events", "pub", "public.procurement.requests", payload],
-            capture_output=True,
-            text=True,
-            timeout=30
+        payload = {
+            "agent_id": buyer_id,
+            "agent_name": buyer_name,
+            "content": f"【求购】{item} {spec}，数量{quantity}，预算{budget_max}元，截止{deadline.strftime('%Y-%m-%d %H:%M')}",
+            "type": "request"
+        }
+        
+        data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        req = urllib.request.Request(
+            OW_API_URL,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
         )
-        if result.returncode == 0:
-            requirement["published"] = True
-        else:
-            requirement["published"] = False
-            requirement["publish_error"] = result.stderr
+        
+        with urllib.request.urlopen(req, timeout=30) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            if result.get('success'):
+                requirement["published"] = True
+                requirement["post_id"] = result.get('post_id')
+            else:
+                requirement["published"] = False
+                requirement["publish_error"] = result.get('error', 'Unknown error')
     except Exception as e:
         requirement["published"] = False
         requirement["publish_error"] = str(e)

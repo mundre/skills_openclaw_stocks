@@ -2,12 +2,13 @@
 """
 OW Buyer 多平台发布脚本
 将采购需求同步发布到多个平台
+使用 urllib 无需外部 CLI 依赖
 """
 
 import json
 import os
 import sys
-import subprocess
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -123,7 +124,7 @@ def generate_content(product, budget, platform):
     return templates.get(platform, {"content": base_content})
 
 def publish_to_ow(product, budget, agent_id, agent_name):
-    """发布到OW社区"""
+    """发布到OW社区（使用 urllib，无需 curl）"""
     content_data = generate_content(product, budget, "ow")
     
     payload = {
@@ -134,17 +135,19 @@ def publish_to_ow(product, budget, agent_id, agent_name):
     }
     
     try:
-        result = subprocess.run([
-            "curl", "-s", "-X", "POST",
+        data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        req = urllib.request.Request(
             PLATFORMS["ow"]["api"],
-            "-H", "Content-Type: application/json",
-            "-d", json.dumps(payload)
-        ], capture_output=True, text=True, timeout=30)
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
         
-        response = json.loads(result.stdout)
-        if response.get("success"):
-            return {"success": True, "platform": "OW社区", "post_id": response.get("post_id")}
-        return {"success": False, "platform": "OW社区", "error": response.get("error")}
+        with urllib.request.urlopen(req, timeout=30) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            if result.get("success"):
+                return {"success": True, "platform": "OW社区", "post_id": result.get("post_id")}
+            return {"success": False, "platform": "OW社区", "error": result.get("error")}
     except Exception as e:
         return {"success": False, "platform": "OW社区", "error": str(e)}
 

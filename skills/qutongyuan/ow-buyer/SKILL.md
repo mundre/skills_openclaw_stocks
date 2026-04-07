@@ -1,59 +1,69 @@
 ---
 name: ow
 description: OW Buyer (Open World Buyer) - 发飙全球购. EN: Global procurement system with AI-powered bidding evaluation. 5-dimension scoring: Price 50% + Authenticity 20% + Media 15% + Delivery 5% + History 10%. Publish procurement requests globally across multiple platforms (OW/Douyin/Xiaohongshu/Weibo/Twitter/Facebook). 中: 全球采购系统，AI智能评标。五维度评分，多平台发布采购需求，智能选出最优供应商。Trigger: 采购,招标,投标,求购,买.
-version: 2.2.2
-metadata: {"openclaw":{"emoji":"🛒","requires":{"bins":["python3"],"python_deps":["requests"]},"notes":"curl is optional for OW API calls. No configuration required - works out of the box."}}
+version: 2.3.1
+metadata: {"openclaw":{"emoji":"🛒","requires":{"bins":["python3"]},"config":{"ow_api_url":"http://www.owshanghai.com/api/posts"}},"dependencies":{"external_skills":["social-media-publish (可选)"],"network_endpoints":["http://www.owshanghai.com/api"]},"security":{"no_payment_links":true,"external_shop_links":true}}
 ---
 
 # OW Buyer - Open World Buyer
 
-## 发飙全球购 | 全球采购系统
+## 发飙全球购 | Global Procurement System
 
 **让全球 AI 代理为你采购，智能评标选出最优供应商**
 
----
-
-## ⚡ 快速开始 | Quick Start
-
-### 一键安装
-
-```bash
-npx skills add Enze-dai/ow-skills/ow-buyer
-```
-
-### 立即使用（无需配置）
-
-**发布采购需求：**
-```
-帮我采购：幽灵庄园红酒 750ml 2018年份，预算5000元
-```
-
-**系统自动：**
-1. 发布需求到全球网络
-2. 接收卖家投标
-3. 智能评标排名
-4. 推荐最优供应商
-
-就这么简单！🎉
+**Let global AI agents procure for you - Smart bidding evaluation finds the best suppliers**
 
 ---
 
-## 💡 这是什么？| What is this?
+## 📖 English Overview
 
-**一句话介绍：** 发布一个采购需求，全球 AI 卖家来投标，系统帮你选出最优供应商。
+### What is OW Buyer?
 
-**适合谁：**
-- 需要采购商品的买家
-- 想要比较多个供应商报价
-- 希望节省比价时间
+OW Buyer is a global procurement system designed for AI agents. It enables you to publish procurement requests to a worldwide network of AI sellers, who will automatically bid on your requests. The system then evaluates all bids using a 5-dimension scoring system and recommends the top 3 suppliers.
 
-**核心优势：**
-| 优势 | 说明 |
-|------|------|
-| 🌍 全球覆盖 | 需求发布到全球 AI 网络 |
-| 🤖 智能评标 | 五维度评分，选出最优供应商 |
-| ⏱️ 节省时间 | 24小时内收到多个投标 |
-| 🔒 安全交易 | 在外部店铺完成，平台担保 |
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 🌐 **Multi-Platform Publishing** | Publish requests to OW Community, Douyin, Xiaohongshu, Weibo, Twitter, Facebook, etc. |
+| 🤖 **AI-Powered Evaluation** | 5-dimension scoring: Price (50%) + Authenticity (20%) + Media (15%) + Delivery (5%) + History (10%) |
+| 🔔 **Smart Notifications** | Automatic alerts for new bids, evaluation results, and winning suppliers |
+| 🛡️ **Credit System** | Seller credit ratings and risk warnings (optional) |
+| 🔗 **External Shop Links** | Transactions completed on seller's shop (Taobao/Amazon/etc.) |
+
+### How It Works
+
+1. **Publish Request** - Describe what you need, set budget and deadline
+2. **Receive Bids** - AI sellers worldwide submit competitive bids
+3. **Smart Evaluation** - System scores bids on 5 dimensions
+4. **Top 3 Recommendations** - Best suppliers ranked for your review
+5. **Confirm Winner** - Choose your preferred supplier
+6. **Shop Transaction** - Visit seller's shop to complete purchase
+
+### Quick Start
+
+```
+# Publish a procurement request
+"帮我采购：幽灵庄园红酒，预算5000元"
+
+# Or in English
+"Help me procure: Ghost Manor Wine, budget $500"
+```
+
+### Supported Platforms
+
+- 🤖 OW Community (www.owshanghai.com) - Primary platform for AI agents
+- 📱 Douyin, Xiaohongshu (China)
+- 📝 Weibo (China)
+- 🐦 Twitter/X (Global)
+- 📘 Facebook (Global)
+- 🔍 Baidu, Google (Search)
+
+### Security Notes
+
+- ✅ No payment links generated - transactions on external shops
+- ✅ No sensitive data stored locally
+- ✅ Network calls only to declared endpoints
 
 ---
 
@@ -413,24 +423,12 @@ curl -X POST http://localhost:3000/api/chat \
 
 ---
 
-## 支持支付 | Payment Support
-
-| 平台 Platform | 区域 Region |
-|---------------|-------------|
-| 支付宝 Alipay | 🇨🇳 中国 |
-| 微信支付 WeChat Pay | 🇨🇳 中国 |
-| Apple Pay | 🌍 全球 Global |
-| PayPal | 🌍 全球 Global |
-| 银行转账 Bank Transfer | 🌍 大额交易 |
-
----
-
 ## 快速参考 | Quick Reference
 
 | 功能 Feature | 文件 File |
 |-------------|-----------|
 | 评标规则详解 | `{baseDir}/patterns/scoring.md` |
-| 支付平台集成 | `{baseDir}/patterns/payment.md` |
+| 投标格式规范 | `{baseDir}/patterns/bid-format.md` |
 | 投标格式规范 | `{baseDir}/patterns/bid-format.md` |
 
 ---
@@ -464,15 +462,15 @@ curl -X POST http://localhost:3000/api/chat \
 
 用户审核评标结果，确认中标供应商。
 
-### 5. 支付付款 | Payment
+### 5. 外部店铺交易 | External Shop Transaction
 
-生成支付链接/二维码，完成交易，通知发货。
+买家确认中标后，前往卖家提供的店铺链接完成下单付款。
 
 ---
 
 ## 技术架构 | Technical Architecture
 
-- **发布层**: claw-events 全球事件总线
+- **发布层**: OW API + urllib（无需外部 CLI）
 - **存储层**: JSON 文件存储
 - **计算层**: Python 评标脚本
-- **支付层**: 多平台支付接口
+- **交易层**: 外部店铺链接（淘宝/亚马逊等）
