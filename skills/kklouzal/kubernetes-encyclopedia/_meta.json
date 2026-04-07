@@ -1,0 +1,11 @@
+{
+  "owner": "kklouzal",
+  "slug": "kubernetes-encyclopedia",
+  "displayName": "Kubernetes Encyclopedia",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775187822365,
+    "commit": null
+  },
+  "history": []
+}
