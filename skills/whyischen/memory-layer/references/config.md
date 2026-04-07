@@ -2,7 +2,29 @@
 
 ## 配置文件位置
 
-`~/.openclaw/config/memory-config.json`
+**默认配置**：`config/default.json`（Skill 自带）
+
+**自定义配置**：`~/.openclaw/memory-config.json`（可选，覆盖默认）
+
+---
+
+## 凭据说明
+
+**本 Skill 无需额外环境变量或凭据**。
+
+| 功能 | 凭据来源 | 说明 |
+|------|----------|------|
+| autoDream 触发 | OpenClaw Cron | 使用现有 OpenClaw 凭据 |
+| 飞书通知 | OpenClaw Feishu | 使用现有飞书配置 |
+| 文件读写 | OpenClaw CLI | 使用现有文件系统权限 |
+
+**无需以下配置**：
+- ❌ API Key
+- ❌ 数据库密码
+- ❌ 第三方服务凭据
+- ❌ 额外的环境变量
+
+如需修改通知行为，编辑 `~/.openclaw/memory-config.json` 中的 `autoDream.notifyOnComplete`。
 
 ---
 
@@ -147,11 +169,16 @@
 
 ## 用户自定义配置
 
-创建 `~/.openclaw/config/memory-config.json`：
+如需覆盖默认配置，复制并修改：
+
+```bash
+cp config/default.json ~/.openclaw/memory-config.json
+```
+
+然后编辑 `~/.openclaw/memory-config.json`，例如：
 
 ```json
 {
-  "extends": "default",
   "autoDream": { "schedule": "02:00" }
 }
 ```

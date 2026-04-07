@@ -4,7 +4,26 @@
 
 - **时间**：每日 23:00（可配置）
 - **触发**：OpenClaw Cron
-- **通知**：可选（配置 `notifyOnComplete`）
+- **通知**：默认关闭（`notifyOnComplete: false`）
+
+---
+
+## 首次运行建议
+
+**启用 Cron 前，先手动测试**：
+
+```bash
+# 1. 干跑模式（仅查看，不执行）
+# 检查当日 Transcripts，确认逻辑正确
+
+# 2. 手动执行一次
+# 观察行为，确认无意外修改
+
+# 3. 确认无误后启用 Cron
+openclaw cron add "0 23 * * *" "memory-system auto-dream"
+```
+
+**默认配置已禁用通知**，避免首次运行时消息轰炸。
 
 ---
 

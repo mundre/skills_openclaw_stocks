@@ -3,9 +3,15 @@
   "slug": "memory-layer",
   "displayName": "Memory Layer",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1775148496815,
-    "commit": "https://github.com/openclaw/skills/commit/8a1b2076fb03a8184f707b90bc976a10e393f324"
+    "version": "0.1.1",
+    "publishedAt": 1775149729585,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1775148496815,
+      "commit": "https://github.com/openclaw/skills/commit/8a1b2076fb03a8184f707b90bc976a10e393f324"
+    }
+  ]
 }

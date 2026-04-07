@@ -21,13 +21,14 @@
     "compressFormat": "gzip"
   },
   "autoDream": {
-    "enabled": true,
+    "enabled": false,
     "schedule": "23:00",
     "timezone": "Asia/Shanghai",
     "notifyOnComplete": false,
     "notifyChannel": "feishu",
     "similarityThreshold": 0.8,
-    "minImportance": 0.2
+    "minImportance": 0.2,
+    "dryRun": true
   },
   "domains": {
     "default": {
