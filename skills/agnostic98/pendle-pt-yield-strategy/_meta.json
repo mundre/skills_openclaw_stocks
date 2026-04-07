@@ -1,0 +1,11 @@
+{
+  "owner": "agnostic98",
+  "slug": "pendle-pt-yield-strategy",
+  "displayName": "Pendle PT Fixed-Yield Strategy",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1775335110874,
+    "commit": null
+  },
+  "history": []
+}
