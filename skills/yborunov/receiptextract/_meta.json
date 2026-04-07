@@ -1,0 +1,11 @@
+{
+  "owner": "yborunov",
+  "slug": "receiptextract",
+  "displayName": "ReceiptExtract - OCR, Photo/PDF to CSV",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775163867789,
+    "commit": null
+  },
+  "history": []
+}
