@@ -3,9 +3,15 @@
   "slug": "link-resolver-engine",
   "displayName": "link-resolver-engine",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1775142041753,
-    "commit": "https://github.com/openclaw/skills/commit/ea364c4c7e8447e9c3548ff864c08cbf87a69e5c"
+    "version": "1.0.4",
+    "publishedAt": 1775481207001,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1775142041753,
+      "commit": "https://github.com/openclaw/skills/commit/ea364c4c7e8447e9c3548ff864c08cbf87a69e5c"
+    }
+  ]
 }
