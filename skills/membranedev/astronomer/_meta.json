@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "astronomer",
+  "displayName": "Astronomer",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775405065175,
+    "commit": null
+  },
+  "history": []
+}
