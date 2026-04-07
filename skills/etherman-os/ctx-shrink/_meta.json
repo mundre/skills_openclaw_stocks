@@ -1,0 +1,11 @@
+{
+  "owner": "etherman-os",
+  "slug": "ctx-shrink",
+  "displayName": "ctx-shrink",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775408596932,
+    "commit": null
+  },
+  "history": []
+}
