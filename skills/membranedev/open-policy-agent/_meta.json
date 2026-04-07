@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "open-policy-agent",
+  "displayName": "Open Policy Agent",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775307827597,
+    "commit": null
+  },
+  "history": []
+}
