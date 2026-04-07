@@ -1,0 +1,11 @@
+{
+  "owner": "serdarsalim",
+  "slug": "roborock-conversational-control",
+  "displayName": "Roborock Vacuum Control via Telegram",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775187131585,
+    "commit": null
+  },
+  "history": []
+}
