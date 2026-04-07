@@ -1,6 +1,6 @@
 ---
 name: flyai-travelmapify
-version: 2.1.5
+version: 2.2.0
 description: Copy Xiaohongshu travel planning homework into interactive route maps with real FlyAI hotel search in seconds.
 author: rudy2steiner
 license: MIT
@@ -53,6 +53,8 @@ This skill automatically:
 **For Text Input:**
 - Parse comma-separated location names directly
 - Create POI entries with high confidence (user-provided)
+- **Automatic city detection**: Smart city detection from location names (e.g., "北京军事博物馆" → city="北京")
+- **Fallback to default**: Uses Shanghai as default when no city can be detected
 - No OCR processing required
 
 ### Step 2: Geocoding and Coordinate Resolution
@@ -88,19 +90,22 @@ This skill automatically:
 ```
 flyai-travelmapify/
 ├── SKILL.md
+├── INSTALL.md                          # Installation and setup guide
+├── flyai-travelmapify.py              # **PORTABLE ENTRY POINT**: Main executable script
 ├── scripts/
-│   ├── main_travel_mapify_enhanced.py     # **PRODUCTION MAIN**: Auto-starts servers + dual input + unique ID isolation
-│   ├── extract_pois_from_image_vision.py  # **AI VISION ENHANCED**: Interactive POI extraction with user clarification
-│   ├── geocode_locations.py               # Amap geocoding integration
+│   ├── config.py                      # **DYNAMIC CONFIGURATION**: Path and environment detection
+│   ├── main_travel_mapify_enhanced.py # **PRODUCTION MAIN**: Auto-starts servers + dual input + unique ID isolation
+│   ├── extract_pois_from_image_vision.py # **AI VISION ENHANCED**: Interactive POI extraction with user clarification
+│   ├── geocode_locations.py           # Amap geocoding integration
 │   ├── generate_from_optimized_template.py # Optimized template with unique map ID isolation
-│   └── hotel-search-server.py             # FlyAI hotel search backend server
+│   └── hotel-search-server.py         # FlyAI hotel search backend server
 ├── references/
-│   ├── amap_api_guide.md                 # Amap API usage patterns
-│   ├── poi_validation_rules.md           # POI validation and filtering rules
-│   └── troubleshooting-guide.md          # Common issues and solutions
+│   ├── amap_api_guide.md              # Amap API usage patterns
+│   ├── poi_validation_rules.md        # POI validation and filtering rules
+│   └── troubleshooting-guide.md       # Common issues and solutions
 └── assets/
     └── templates/
-        └── main-generic-template-with-unique-id.html  # **PRODUCTION TEMPLATE**: Unique ID isolation + all features
+        └── main-generic-template-with-unique-id.html # **PRODUCTION TEMPLATE**: Unique ID isolation + all features
 ```
 
 **Main Template**: The skill now uses the **optimized travel_mapify system** with unique map ID isolation as the primary approach, which includes:
@@ -118,6 +123,18 @@ flyai-travelmapify/
 
 ## Usage Examples
 
+### Portable Execution
+```bash
+# From skill directory (recommended)
+python3 flyai-travelmapify.py --locations "上海外滩,迪士尼乐园,豫园" --output-html shanghai-trip.html
+
+# From any directory
+python3 /path/to/flyai-travelmapify/flyai-travelmapify.py --image ~/Downloads/trip-plan.jpg --output-html my-trip.html
+
+# With custom ports
+python3 flyai-travelmapify.py --locations "Tokyo Tower,Shibuya Crossing" --output-html tokyo-trip.html --http-port 8080 --hotel-port 9000
+```
+
 ### Image Input - AI Vision Enhanced
 User: "Here's my travel plan screenshot, can you make it interactive?"
 → Skill analyzes image using AI Vision model
@@ -134,9 +151,16 @@ When AI Vision cannot confidently identify attractions, skill prompts: "Please p
 User: "I have a photo of our Beijing itinerary, please create a shareable map"
 → Skill processes image, validates locations, creates optimized route with professional styling
 
-### Text Input - Direct Locations
-User: "上海外滩,上海迪士尼乐园,豫园"
-→ Skill parses locations directly, geocodes them, and generates interactive map
+### Text Input - Direct Locations with Auto City Detection
+User: "北京军事博物馆,北京科技大学"
+→ Skill auto-detects city="北京" from location names
+→ Parses locations directly, geocodes them, and generates interactive map
+
+### Text Input - Default City Fallback
+User: "外滩,迪士尼乐园,豫园"
+→ Skill cannot detect city from generic names
+→ Uses default city="上海" for geocoding
+→ Generates interactive map
 
 ### Text Input - Simple List
 User: "Create a travel map for: Tokyo Tower, Shibuya Crossing, Meiji Shrine"
@@ -155,10 +179,19 @@ User: "Can you adjust the route order and add missing locations?"
 
 ## Technical Requirements
 
-- **OCR Support**: Chinese and English text extraction from images
+- **Python 3.7+**: Required for all scripts (uses standard library only)
+- **FlyAI CLI**: Must be installed globally (`npm install -g @openclaw/flyai`) 
 - **Amap API Key**: Valid Amap Web API key for geocoding and map tiles
-- **Local Proxy**: Running local proxy server for Amap API requests (port 8769)
+- **Local Proxy**: Running local proxy server for Amap API requests (default port 8769)
 - **Web Browser**: Modern browser with JavaScript support for interactive features
+
+## Portable Design
+
+✅ **No hardcoded paths** - Automatically detects OpenClaw workspace and FlyAI installation
+✅ **Cross-platform** - Works on Windows, macOS, and Linux
+✅ **Self-contained** - All scripts and templates included in skill directory
+✅ **Environment-aware** - Adapts to different system configurations
+✅ **Fallback mechanisms** - Multiple detection methods for required components
 
 ## Output Files
 

@@ -16,8 +16,8 @@ When opening generated HTML files directly (using `file://` protocol), the brows
 
 ##### ✅ Recommended: Use Local HTTP Server
 ```bash
-# Navigate to your workspace directory
-cd /Users/xuandu/.openclaw/workspace
+# Navigate to your OpenClaw workspace directory
+cd /path/to/your/openclaw/workspace
 
 # Start a simple HTTP server (Python 3)
 python3 -m http.server 8081

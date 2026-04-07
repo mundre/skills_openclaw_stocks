@@ -15,6 +15,15 @@ import json
 import argparse
 import re
 
+# Import configuration
+try:
+    from .config import WORKSPACE_DIR
+except ImportError:
+    # Fallback for standalone execution
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, SCRIPT_DIR)
+    from config import WORKSPACE_DIR
+
 def load_generic_template():
     """Load the generic template with unique map ID support"""
     template_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'templates', 'main-generic-template-with-unique-id.html')
@@ -128,7 +137,7 @@ def main():
     
     print(f"Travel map generated using generic template with unique map ID: {args.output_file}")
     print(f"\n💡 IMPORTANT: To view the map properly, start a local HTTP server:")
-    print(f"   cd /Users/xuandu/.openclaw/workspace")
+    print(f"   cd {WORKSPACE_DIR}")
     print(f"   python3 -m http.server 9999")
     print(f"   Then open: http://localhost:9999/{os.path.basename(args.output_file)}")
 

@@ -5,9 +5,19 @@ Simple HTTP server to handle FlyAI hotel search requests
 import json
 import subprocess
 import sys
+import os
 from datetime import datetime, timedelta
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
+
+# Import configuration
+try:
+    from .config import FLYAI_EXECUTABLE
+except ImportError:
+    # Fallback for standalone execution
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, script_dir)
+    from config import FLYAI_EXECUTABLE
 
 class HotelSearchHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -43,8 +53,14 @@ class HotelSearchHandler(BaseHTTPRequestHandler):
                 checkout = checkout_date
             
             # Call FlyAI CLI to search for hotels
+            if not FLYAI_EXECUTABLE or not os.path.exists(FLYAI_EXECUTABLE):
+                # Try to find flyai in PATH as fallback
+                flyai_cmd = 'flyai'
+            else:
+                flyai_cmd = FLYAI_EXECUTABLE
+            
             cmd = [
-                '/Users/xuandu/.nvm/versions/node/v22.22.1/bin/flyai', 'search-hotel',
+                flyai_cmd, 'search-hotel',
                 '--dest-name', destination,
                 '--check-in-date', checkin,
                 '--check-out-date', checkout

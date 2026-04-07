@@ -14,16 +14,26 @@ import socket
 import time
 from typing import List, Dict
 
-# Script directory
+# Import configuration module
+try:
+    from .config import WORKSPACE_DIR, SKILL_DIR, FLYAI_EXECUTABLE, DEFAULT_HTTP_PORT, DEFAULT_HOTEL_PORT, DEFAULT_PROXY_URL
+    from .city_detector import get_default_city_for_locations
+except ImportError:
+    # Fallback if running as standalone script
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, SCRIPT_DIR)
+    from config import WORKSPACE_DIR, SKILL_DIR, FLYAI_EXECUTABLE, DEFAULT_HTTP_PORT, DEFAULT_HOTEL_PORT, DEFAULT_PROXY_URL
+    from city_detector import get_default_city_for_locations
+
+# Script directories (loaded from config module)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-WORKSPACE_DIR = "/Users/xuandu/.openclaw/workspace"
 
 def is_port_in_use(port):
     """Check if a port is already in use"""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
-def start_http_server(port=9000, max_retries=3):
+def start_http_server(port=DEFAULT_HTTP_PORT, max_retries=3):
     """Start HTTP server in background with port conflict resolution"""
     current_port = port
     
@@ -83,7 +93,7 @@ def start_http_server(port=9000, max_retries=3):
     
     return False
 
-def start_hotel_search_server(port=8770, max_retries=3):
+def start_hotel_search_server(port=DEFAULT_HOTEL_PORT, max_retries=3):
     """Start hotel search server in background with port conflict resolution
     Returns the actual port number used, or None if failed"""
     # Use the correct hotel search server script from the skill directory
@@ -168,7 +178,7 @@ def parse_text_locations(text_input: str) -> List[Dict]:
             'source': 'text_input'
         })
     
-    return pois
+    return pois, location_names
 
 def process_image_input(image_path: str, output_json: str) -> bool:
     """
@@ -209,27 +219,28 @@ def process_image_input(image_path: str, output_json: str) -> bool:
         print(f"Error processing image with AI Vision: {e}", file=sys.stderr)
         return False
 
-def process_text_input(text_input: str, output_json: str) -> bool:
+def process_text_input(text_input: str, output_json: str):
     """
     Process direct text input of location names
+    Returns tuple: (success: bool, location_names: List[str])
     """
     try:
-        pois = parse_text_locations(text_input)
+        pois, location_names = parse_text_locations(text_input)
         
         if not pois:
             print("Error: No valid locations found in text input", file=sys.stderr)
-            return False
+            return False, []
         
         # Save to JSON file
         with open(output_json, 'w', encoding='utf-8') as f:
             json.dump(pois, f, ensure_ascii=False, indent=2)
         
         print(f"Processed {len(pois)} locations from text input")
-        return True
+        return True, location_names
         
     except Exception as e:
         print(f"Error processing text input: {e}", file=sys.stderr)
-        return False
+        return False, []
 
 def generate_map_with_optimized_template(input_json, output_html):
     """Generate map using generic template with unique map ID isolation"""
@@ -261,10 +272,10 @@ def main():
     parser.add_argument('--locations', '-l', help='Comma-separated location names (direct text input)')
     parser.add_argument('--output-html', '-o', required=True, help='Output HTML file for the travel map')
     parser.add_argument('--city', default='上海', help='Default city for geocoding (default: 上海)')
-    parser.add_argument('--proxy-url', default='http://localhost:8769/api/search', 
-                       help='Amap API proxy URL')
-    parser.add_argument('--http-port', type=int, default=9000, help='HTTP server port (default: 9000)')
-    parser.add_argument('--hotel-port', type=int, default=8770, help='Hotel search server port (default: 8770)')
+    parser.add_argument('--proxy-url', default=DEFAULT_PROXY_URL, 
+                       help=f'Amap API proxy URL (default: {DEFAULT_PROXY_URL})')
+    parser.add_argument('--http-port', type=int, default=DEFAULT_HTTP_PORT, help=f'HTTP server port (default: {DEFAULT_HTTP_PORT})')
+    parser.add_argument('--hotel-port', type=int, default=DEFAULT_HOTEL_PORT, help=f'Hotel search server port (default: {DEFAULT_HOTEL_PORT})')
     
     args = parser.parse_args()
     
@@ -289,6 +300,7 @@ def main():
     
     # Process input based on type
     temp_poi_file = temp_json + '.raw_pois.json'
+    location_names = []
     
     if args.image:
         print(f"Processing image: {args.image}")
@@ -296,12 +308,24 @@ def main():
             print(f"Error: Image file not found: {args.image}", file=sys.stderr)
             sys.exit(1)
         success = process_image_input(args.image, temp_poi_file)
+        # For images, we'll use the default city or user-provided city
+        final_city = args.city
     else:
         print(f"Processing text locations: {args.locations}")
-        success = process_text_input(args.locations, temp_poi_file)
-    
-    if not success:
-        sys.exit(1)
+        success, location_names = process_text_input(args.locations, temp_poi_file)
+        if not success:
+            sys.exit(1)
+        
+        # Auto-detect city from location names if user didn't specify one
+        if args.city == '上海':  # Only auto-detect if using default
+            detected_city = get_default_city_for_locations(location_names, fallback_city=args.city)
+            if detected_city != args.city:
+                print(f"Auto-detected city: {detected_city} (from locations: {', '.join(location_names)})")
+                final_city = detected_city
+            else:
+                final_city = args.city
+        else:
+            final_city = args.city
     
     # Now geocode the extracted POIs
     print("Geocoding POIs...")
@@ -315,7 +339,7 @@ def main():
     cmd = [
         sys.executable, geocode_script, temp_poi_file,
         '--output', temp_json,
-        '--city', args.city,
+        '--city', final_city,
         '--proxy-url', args.proxy_url
     ]
     
@@ -356,9 +380,21 @@ def main():
             with open(final_output_html, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
-            # Replace hardcoded port 8770 with actual port
-            updated_html = html_content.replace('http://localhost:8770/api/hotel-search', 
+            # Replace hardcoded hotel ports (8770, 8780) with actual port
+            # Also handle the JavaScript variable assignment
+            updated_html = html_content
+            
+            # Replace API endpoint URLs
+            updated_html = updated_html.replace('http://localhost:8770/api/hotel-search', 
                                               f'http://localhost:{actual_hotel_port}/api/hotel-search')
+            updated_html = updated_html.replace('http://localhost:8780/api/hotel-search', 
+                                              f'http://localhost:{actual_hotel_port}/api/hotel-search')
+            
+            # Replace JavaScript port variable
+            updated_html = updated_html.replace('const hotelPort = 8770;', 
+                                              f'const hotelPort = {actual_hotel_port};')
+            updated_html = updated_html.replace('const hotelPort = 8780;', 
+                                              f'const hotelPort = {actual_hotel_port};')
             
             with open(final_output_html, 'w', encoding='utf-8') as f:
                 f.write(updated_html)

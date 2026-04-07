@@ -1,0 +1,60 @@
+{
+  "input_file": "test_pois.json",
+  "proxy_url": "http://localhost:8769/api/search",
+  "city": "北京",
+  "total_input_pois": 2,
+  "geocoded_pois": [
+    {
+      "name": "中国人民革命军事博物馆",
+      "location": [
+        116.323871,
+        39.909108
+      ],
+      "address": "复兴路9号",
+      "rating": "4.2",
+      "id": "B000A7S1GC",
+      "confidence": 0.9,
+      "original_name": "北京军事博物馆"
+    },
+    {
+      "name": "北京科技大学",
+      "location": [
+        116.359265,
+        39.990384
+      ],
+      "address": "学院路30号",
+      "rating": "",
+      "id": "B000A7I3OJ",
+      "confidence": 0.9,
+      "original_name": "北京科技大学"
+    }
+  ],
+  "filtered_geocoded_pois": [
+    {
+      "name": "中国人民革命军事博物馆",
+      "location": [
+        116.323871,
+        39.909108
+      ],
+      "address": "复兴路9号",
+      "rating": "4.2",
+      "id": "B000A7S1GC",
+      "confidence": 0.9,
+      "original_name": "北京军事博物馆"
+    },
+    {
+      "name": "北京科技大学",
+      "location": [
+        116.359265,
+        39.990384
+      ],
+      "address": "学院路30号",
+      "rating": "",
+      "id": "B000A7I3OJ",
+      "confidence": 0.9,
+      "original_name": "北京科技大学"
+    }
+  ],
+  "successful_geocodes": 2,
+  "requires_verification": 0
+}

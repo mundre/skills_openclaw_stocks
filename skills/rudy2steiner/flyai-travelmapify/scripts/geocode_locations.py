@@ -11,8 +11,17 @@ import argparse
 import requests
 from typing import List, Dict, Optional
 
+# Import configuration
+try:
+    from .config import DEFAULT_PROXY_URL
+except ImportError:
+    # Fallback for standalone execution
+    import os
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, SCRIPT_DIR)
+    from config import DEFAULT_PROXY_URL
+
 # Default Amap API configuration
-DEFAULT_PROXY_URL = "http://localhost:8769/api/search"
 DEFAULT_CITY = "重庆"  # Default city for geocoding
 
 class AmapGeocoder:
