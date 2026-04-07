@@ -1,0 +1,11 @@
+{
+  "owner": "jayhenry00",
+  "slug": "gold-price-fetcher",
+  "displayName": "民生黄金价格查询",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775302095361,
+    "commit": null
+  },
+  "history": []
+}
