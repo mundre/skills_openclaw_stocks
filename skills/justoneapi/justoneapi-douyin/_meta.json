@@ -1,0 +1,11 @@
+{
+  "owner": "justoneapi",
+  "slug": "justoneapi-douyin",
+  "displayName": "Douyin (TikTok China) API",
+  "latest": {
+    "version": "1.0.7",
+    "publishedAt": 1775375311160,
+    "commit": null
+  },
+  "history": []
+}
