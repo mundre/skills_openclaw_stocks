@@ -1,11 +1,17 @@
 {
   "owner": "agasding",
   "slug": "wewe-rss-deploy",
-  "displayName": "WeWe RSS 部署",
+  "displayName": "wewe-rss-deploy",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775102173731,
-    "commit": "https://github.com/openclaw/skills/commit/250e86ff640c2c2a4c4fe819ab081045435a709e"
+    "version": "1.0.1",
+    "publishedAt": 1775493338864,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775102173731,
+      "commit": "https://github.com/openclaw/skills/commit/250e86ff640c2c2a4c4fe819ab081045435a709e"
+    }
+  ]
 }

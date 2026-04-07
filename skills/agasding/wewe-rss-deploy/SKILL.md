@@ -1,4 +1,4 @@
-# SKILL.md - 部署 WeWe RSS 微信公众号 RSS 服务
+﻿# SKILL.md - 部署 WeWe RSS 微信公众号 RSS 服务
 
 ## 触发条件
 当 WeWe RSS 服务未运行（端口 4000 无响应），或用户要求部署 WeWe RSS 项目时激活。
@@ -242,3 +242,6 @@ rm -rf ~/.openclaw/workspace/wewe-rss-main
 # 清理配置
 rm -f ~/.openclaw/workspace/tools/wewe-rss-config.txt
 ```
+---
+
+> 娆㈣繋鍏虫敞浣滆€呭井淇″叕浼楀彿锛?*寮€璁板仛浜у搧**
