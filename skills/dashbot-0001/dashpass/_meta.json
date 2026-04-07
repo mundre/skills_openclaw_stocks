@@ -1,0 +1,11 @@
+{
+  "owner": "dashbot-0001",
+  "slug": "dashpass",
+  "displayName": "DashPass",
+  "latest": {
+    "version": "0.5.1",
+    "publishedAt": 1775532661901,
+    "commit": null
+  },
+  "history": []
+}
