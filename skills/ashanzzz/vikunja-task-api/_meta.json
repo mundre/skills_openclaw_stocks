@@ -1,11 +1,17 @@
 {
   "owner": "ashanzzz",
   "slug": "vikunja-task-api",
-  "displayName": "Vikunja API",
+  "displayName": "Vikunja Task Api",
   "latest": {
-    "version": "2.0.1",
-    "publishedAt": 1775087117916,
-    "commit": "https://github.com/openclaw/skills/commit/67bd8d1d54beabac31775287974fcc2ab032537d"
+    "version": "2.5.1",
+    "publishedAt": 1775488606661,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.1",
+      "publishedAt": 1775087117916,
+      "commit": "https://github.com/openclaw/skills/commit/67bd8d1d54beabac31775287974fcc2ab032537d"
+    }
+  ]
 }
