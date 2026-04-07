@@ -6,7 +6,7 @@
 
 [![OpenClaw Skill](https://img.shields.io/badge/OpenClaw-Skill-blue)](https://clawhub.ai/guitu917/ai-screen-vision)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-green)]()
-[![Version](https://img.shields.io/badge/Version-1.0.0-orange)]()
+[![Version](https://img.shields.io/badge/Version-1.0.6-orange)]()
 
 ---
 

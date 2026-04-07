@@ -33,7 +33,7 @@ Detect platform and install dependencies:
 bash scripts/setup/setup-linux.sh --headless   # Linux server (no desktop)
 bash scripts/setup/setup-linux.sh --desktop     # Linux with desktop
 bash scripts/setup/setup-mac.sh                 # macOS
-powershell -File scripts/setup/setup-win.ps1    # Windows
+python scripts/setup/setup-win.py          # Windows
 ```
 
 ### 2. Configure API key

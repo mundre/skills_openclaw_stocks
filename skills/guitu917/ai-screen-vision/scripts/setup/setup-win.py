@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Windows setup script for screen-vision skill.
 Run: python3 setup-win.py
@@ -17,7 +18,7 @@ print()
 # Check Python
 print("[1/3] Checking Python...")
 print(f"  Found: {sys.executable}")
-print("  ✅ Python")
+print("  [OK] Python")
 print()
 
 # Install Python dependencies
@@ -27,15 +28,15 @@ subprocess.run([sys.executable, "-m", "pip", "install", "--quiet",
 
 try:
     import pyautogui
-    print("  ✅ pyautogui")
+    print("  [OK] pyautogui")
 except ImportError:
-    print("  ❌ pyautogui install failed")
+    print("  [FAIL] pyautogui install failed")
 
 try:
     from PIL import Image
-    print("  ✅ Pillow")
+    print("  [OK] Pillow")
 except ImportError:
-    print("  ❌ Pillow install failed")
+    print("  [FAIL] Pillow install failed")
 
 print()
 
@@ -45,14 +46,14 @@ try:
     import pyautogui
     size = pyautogui.size()
     print(f"  Screen: {size.width}x{size.height}")
-    print("  ✅ All ready!")
+    print("  [OK] All ready!")
 except Exception as e:
-    print(f"  ❌ Error: {e}")
+    print(f"  [FAIL] Error: {e}")
 
 print()
 print("=" * 40)
-print("  ✅ Setup Complete!")
+print("  Setup Complete!")
 print("=" * 40)
 print()
 print("No special permissions needed on Windows.")
-print("Ready to use! Tell your AI: '帮我操作电脑'")
+print("Ready to use! Tell your AI to control your computer.")
