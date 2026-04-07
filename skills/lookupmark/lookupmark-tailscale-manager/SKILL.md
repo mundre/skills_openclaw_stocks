@@ -3,10 +3,12 @@ name: tailscale-manager
 description: >
   Manage Tailscale tailnet from chat. Check status, list devices, ping hosts,
   run network diagnostics, check serve/funnel config. All public IPs are
-  automatically masked in output.
+  automatically masked in output (after JSON parsing, not before).
   Triggers on "tailscale status", "tailnet", "connected devices", "network check",
   "ping tailscale", "tailscale devices", "chi è connesso".
   NOT for: modifying serve/funnel config, administrative Tailscale operations.
+dependencies:
+  - tailscale CLI (https://tailscale.com/kb/1080/cli)
 ---
 
 # Tailscale Manager
