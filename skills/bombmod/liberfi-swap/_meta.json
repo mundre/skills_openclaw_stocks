@@ -1,0 +1,11 @@
+{
+  "owner": "bombmod",
+  "slug": "liberfi-swap",
+  "displayName": "Liberfi Swap",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775166274783,
+    "commit": null
+  },
+  "history": []
+}
