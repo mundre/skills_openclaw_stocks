@@ -1,0 +1,11 @@
+{
+  "owner": "followaf",
+  "slug": "fanqie-publisher-skill",
+  "displayName": "番茄小说自动发布",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775489032040,
+    "commit": null
+  },
+  "history": []
+}
