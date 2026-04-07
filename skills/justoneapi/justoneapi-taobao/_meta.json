@@ -1,0 +1,11 @@
+{
+  "owner": "justoneapi",
+  "slug": "justoneapi-taobao",
+  "displayName": "Taobao and Tmall API",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1775375346128,
+    "commit": null
+  },
+  "history": []
+}
