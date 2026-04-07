@@ -1,0 +1,13 @@
+{
+  "name": "linkmind",
+  "version": "1.0.0",
+  "description": "知识连接引擎 - 本地化知识中枢 CLI 工具，支持 storage adapter 抽象层和 OpenAI-compatible embedding provider",
+  "keywords": ["linkmind", "knowledge-management", "embedding", "local-knowledge", "cli", "vector-search"],
+  "author": "harrylabsj",
+  "license": "MIT",
+  "repository": "https://github.com/harrylabsj/linkmind",
+  "language": ["en", "zh"],
+  "tags": ["knowledge-management", "embedding", "local-knowledge", "cli"],
+  "createdAt": "2026-04-04",
+  "updatedAt": "2026-04-05"
+}

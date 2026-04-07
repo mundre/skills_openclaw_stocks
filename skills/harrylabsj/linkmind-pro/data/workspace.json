@@ -1,0 +1,4389 @@
+{
+  "version": 1,
+  "createdAt": "2026-04-05T00:44:49.471Z",
+  "updatedAt": "2026-04-05T00:44:49.514Z",
+  "documents": [
+    {
+      "id": "doc_6bb52r",
+      "type": "document",
+      "title": "Smoke Test",
+      "sourceType": "file",
+      "sourceUri": "/Users/jianghaidong/.openclaw/workspace/agents/coder/skills/linkmind/tests/smoke-test.js",
+      "importedAt": "2026-04-05T00:44:49.503Z",
+      "status": "active",
+      "text": "#!/usr/bin/env node\n/**\n * LinkMind Smoke Test - Phase 2\n * 覆盖: storage adapters + embedding providers + retriever\n */\nimport path from 'path';\nimport { fileURLToPath } from 'url';\nimport { execSync } from 'child_process';\nimport { pathToFileURL } from 'url';\n\nconst __filename = fileURLToPath(import.meta.url);\nconst __dirname = path.dirname(__filename);\nconst SKILL_ROOT = path.resolve(__dirname, '..');\nprocess.chdir(SKILL_ROOT);\n\nfunction run(cmd) {\n  console.log(`\\n$ ${cmd}`);\n  return JSON.parse(execSync(cmd, { encoding: 'utf8' }));\n}\n\nfunction check(label, cond) {\n  if (cond) {\n    console.log(`  ✓ ${label}`);\n  } else {\n    console.error(`  ✗ FAIL: ${label}`);\n    process.exitCode = 1;\n  }\n}\n\n// Import phase-2 modules via dynamic import\nconst srcDir = path.join(SKILL_ROOT, 'src');\n\nasync function runTests() {\n  console.log('=== LinkMind Smoke Test (Phase 2) ===\\n');\n\n  // Phase 1: CLI commands\n  console.log('--- Phase 1: CLI Commands ---');\n  const reset = run('node dist/index.js reset');\n  check('reset returns ok', reset.ok === true);\n\n  const empty = run('node dist/index.js status');\n  check('empty workspace has 0 documents', empty.documents === 0);\n\n  const ingest = run('node dist/index.js ingest --file examples/sample-note.md --title \"Sample Note\"');\n  check('ingest returns documentId', !!ingest.documentId);\n  check('ingest creates fragments', ingest.fragmentsCreated >= 1);\n\n  const after = run('node dist/index.js status');\n  check('has 1 document', after.documents === 1);\n  check('has fragments', after.fragments >= 1);\n\n  const q1 = run('node dist/index.js query --q \"knowledge\"');\n  check('query \"knowledge\" finds evidence', q1.evidence && q1.evidence.length >= 1);\n  check('query \"knowledge\" returns answer', !!q1.answer);\n\n  const q2 = run('node dist/index.js query --q \"xyznonexistentterm12345\"');\n  check('query no-match returns empty evidence', q2.evidence && q2.evidence.length === 0);\n\n  const q3 = run('node dist/index.js query --q \"knowledge\" --limit 1');\n  check('query with limit respects limit', q3.evidence && q3.evidence.length <= 1);\n\n  // Phase 2: Storage Adapters\n  console.log('\\n--- Phase 2: Storage Adapters ---');\n  const JsonStorageAdapterMod = await import(pathToFileURL(path.join(srcDir, 'storage-adapters/JsonStorageAdapter.js')).href);\n  const StorageAdapterMod = await import(pathToFileURL(path.join(srcDir, 'storage-adapters/StorageAdapter.js')).href);\n  const { JsonStorageAdapter } = JsonStorageAdapterMod;\n  const { StorageAdapter } = StorageAdapterMod;\n\n  const jsAdapter = new JsonStorageAdapter();\n  await jsAdapter.init();\n  await jsAdapter.clear();\n  check('JsonStorageAdapter.init() ok', true);\n\n  const testDoc = {\n    id: 'doc_test1',\n    type: 'document',\n    title: 'Test Doc',\n    sourceType: 'note',\n    sourceUri: '/test/path.md',\n    importedAt: new Date().toISOString(),\n    status: 'active',\n    text: 'This is a test document for storage adapter testing.'\n  };\n  await jsAdapter.saveDocument(testDoc);\n  const retrieved = await jsAdapter.getDocument('doc_test1');\n  check('JsonStorageAdapter.saveDocument + getDocument', retrieved && retrieved.title === 'Test Doc');\n\n  const docs = await jsAdapter.listDocuments();\n  check('JsonStorageAdapter.listDocuments', docs && docs.length >= 1);\n\n  const testFrag = {\n    id: 'frag_test1',\n    type: 'fragment',\n    documentId: 'doc_test1',\n    index: 0,\n    text: 'This is a test fragment.',\n    summary: 'This is a test',\n    conceptNames: ['test'],\n    createdAt: new Date().toISOString()\n  };\n  await jsAdapter.saveFragment(testFrag);\n  const frag = await jsAdapter.getFragment('frag_test1');\n  check('JsonStorageAdapter.saveFragment + getFragment', frag && frag.text.includes('test fragment'));\n\n  const frags = await jsAdapter.listFragments('doc_test1');\n  check('JsonStorageAdapter.listFragments', frags && frags.length >= 1);\n\n  const testConcept = {\n    id: 'concept_test1',\n    type: 'concept',\n    name: 'TestConcept',\n    normalizedName: 'testconcept',\n    salience: 0.5,\n    createdAt: new Date().toISOString()\n  };\n  await jsAdapter.saveConcept(testConcept);\n  const concepts = await jsAdapter.listConcepts();\n  check('JsonStorageAdapter.listConcepts', concepts && concepts.some(c => c.normalizedName === 'testconcept'));\n\n  const testLink = {\n    id: 'link_test1',\n    type: 'mentions',\n    fromId: 'frag_test1',\n    fromType: 'fragment',\n    toId: 'concept_test1',\n    toType: 'concept',\n    documentId: 'doc_test1',\n    score: 1,\n    createdAt: new Date().toISOString()\n  };\n  await jsAdapter.saveLink(testLink);\n  const links = await jsAdapter.getLinks('frag_test1', null);\n  check('JsonStorageAdapter.saveLink + getLinks', links && links.some(l => l.id === 'link_test1'));\n\n  // test bulk save\n  await jsAdapter.clear();\n  await jsAdapter.saveDocument(testDoc);\n  await jsAdapter.saveFragments([testFrag]);\n  await jsAdapter.saveConcepts([testConcept]);\n  await jsAdapter.saveLinks([testLink]);\n  const afterBulk = await jsAdapter.listFragments('doc_test1');\n  check('JsonStorageAdapter.saveFragments bulk', afterBulk && afterBulk.length >= 1);\n\n  await jsAdapter.clear();\n  const emptyAfterClear = await jsAdapter.listDocuments();\n  check('JsonStorageAdapter.clear()', emptyAfterClear.length === 0);\n\n  // StorageAdapter interface\n  check('StorageAdapter is a class', typeof StorageAdapter === 'function');\n\n  // Phase 2: Embedding Providers\n  console.log('\\n--- Phase 2: Embedding Providers ---');\n  const MockProviderMod = await import(pathToFileURL(path.join(srcDir, 'embedding-providers/MockProvider.js')).href);\n  const OpenAICompatibleProviderMod = await import(pathToFileURL(path.join(srcDir, 'embedding-providers/OpenAICompatibleProvider.js')).href);\n  const EmbeddingProviderMod = await import(pathToFileURL(path.join(srcDir, 'embedding-providers/EmbeddingProvider.js')).href);\n  const { MockProvider } = MockProviderMod;\n  const { OpenAICompatibleProvider } = OpenAICompatibleProviderMod;\n  const { EmbeddingProvider } = EmbeddingProviderMod;\n\n  const mock = new MockProvider({ dimension: 128 });\n  check('MockProvider.dimension', mock.dimension === 128);\n  check('MockProvider.name', mock.name === 'mock');\n\n  const [vec] = await mock.embed(['hello world']);\n  check('MockProvider.embed returns vector', Array.isArray(vec) && vec.length === 128);\n  check('MockProvider.vector is L2-normalized', Math.abs(vec.reduce((s, v) => s + v * v, 0) - 1) < 0.01);\n\n  const [vec2] = await mock.embed(['hello world']);\n  check('MockProvider caches results', vec2 === vec);\n\n  const differentText = await mock.embed(['different text']);\n  check('MockProvider different text yields different vector', differentText[0] !== vec);\n\n  const openai = new OpenAICompatibleProvider({ baseURL: 'https://api.example.com/v1', apiKey: 'test-key', model: 'test-model', dimension: 256 });\n  check('OpenAICompatibleProvider.dimension', openai.dimension === 256);\n  check('OpenAICompatibleProvider.name includes model', openai.name.includes('test-model'));\n  check('OpenAICompatibleProvider.name includes baseURL hint', openai.name.includes('openai-compatible'));\n\n  check('EmbeddingProvider is a class', typeof EmbeddingProvider === 'function');\n\n  // Phase 2: Retriever\n  console.log('\\n--- Phase 2: Retriever ---');\n  const retrieverMod = await import(pathToFileURL(path.join(srcDir, 'retriever.js')).href);\n  const { keywordSearch, vectorSearch, mergeResults, cosineSimilarity, retrieve } = retrieverMod;\n\n  check('cosineSimilarity identical vectors = 1', Math.abs(cosineSimilarity([0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]) - 1) < 0.0001);\n  check('cosineSimilarity orthogonal = 0', Math.abs(cosineSimilarity([1, 0, 0], [0, 1, 0])) < 0.0001);\n\n  const testFrags = [\n    { id: 'f1', documentId: 'd1', documentTitle: 'Doc 1', index: 0, text: 'knowledge graph is useful', conceptNames: ['knowledge', 'graph'] },\n    { id: 'f2', documentId: 'd1', documentTitle: 'Doc 1', index: 1, text: 'machine learning and AI', conceptNames: ['machine', 'learning'] },\n    { id: 'f3', documentId: 'd2', documentTitle: 'Doc 2', index: 0, text: 'knowledge base systems', conceptNames: ['knowledge', 'base'] }\n  ];\n\n  const kw = keywordSearch(testFrags, 'knowledge');\n  check('keywordSearch finds knowledge fragments', kw.length >= 2);\n  check('keywordSearch assigns score > 0', kw.every(r => r.score > 0));\n  check('keywordSearch source=keyword', kw.every(r => r.source === 'keyword'));\n\n  const vecResults = await vectorSearch(testFrags, 'knowledge graph', mock);\n  check('vectorSearch returns results', Array.isArray(vecResults));\n  check('vectorSearch source=vector', vecResults.every(r => r.source === 'vector'));\n\n  const merged = mergeResults(kw, vecResults, 5);\n  check('mergeResults deduplicates', merged.length <= kw.length + vecResults.length);\n  check('mergeResults returns array', Array.isArray(merged));\n  check('mergeResults items have score', merged.every(r => typeof r.score === 'number'));\n\n  const kwOnly = await retrieve({ fragments: testFrags, query: 'knowledge', limit: 5 });\n  check('retrieve keyword-only works', kwOnly.length >= 1);\n\n  const hybrid = await retrieve({ fragments: testFrags, query: 'knowledge', embeddingProvider: mock, limit: 5 });\n  check('retrieve hybrid works', hybrid.length >= 1);\n  check('retrieve hybrid may include vector source', hybrid.some(r => r.source === 'vector' || r.source === 'hybrid'));\n\n  console.log('\\n=== Smoke Test Complete ===');\n  if (process.exitCode === 1) {\n    console.log('RESULT: FAILED');\n    process.exit(1);\n  } else {\n    console.log('RESULT: PASSED');\n  }\n}\n\nrunTests().catch((err) => {\n  console.error('Test error:', err);\n  process.exit(1);\n});\n"
+    }
+  ],
+  "fragments": [
+    {
+      "id": "frag_d3g9ts",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 0,
+      "text": "#!/usr/bin/env node\n/**\n * LinkMind Smoke Test - Phase 2\n * 覆盖: storage adapters + embedding providers + retriever\n */\nimport path from 'path';\nimport { fileURLToPath } from 'url';\nimport { execSync } from 'child_process';\nimport { pathToFileURL } from 'url';",
+      "summary": "#!/usr/bin/env node\n/**\n * LinkMind Smoke Test - Phase 2\n * 覆盖: storage adapters + embedding provide",
+      "conceptNames": [
+        "import",
+        "path",
+        "url",
+        "adapters",
+        "bin",
+        "child_process"
+      ]
+    },
+    {
+      "id": "frag_pmaij6",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 1,
+      "text": "const __filename = fileURLToPath(import.meta.url);\nconst __dirname = path.dirname(__filename);\nconst SKILL_ROOT = path.resolve(__dirname, '..');\nprocess.chdir(SKILL_ROOT);",
+      "summary": "const __filename = fileURLToPath(import.meta.url);\nconst __dirname = path.dirname(__filename);\nconst",
+      "conceptNames": [
+        "const",
+        "dirname",
+        "filename",
+        "path",
+        "skill_root",
+        "chdir"
+      ]
+    },
+    {
+      "id": "frag_dw2gxf",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 2,
+      "text": "function run(cmd) {\n  console.log(`\\n$ ${cmd}`);\n  return JSON.parse(execSync(cmd, { encoding: 'utf8' }));\n}",
+      "summary": "function run(cmd) {\n  console.log(`\\n$ ${cmd}`);\n  return JSON.parse(execSync(cmd, { encoding: 'utf8",
+      "conceptNames": [
+        "cmd",
+        "console",
+        "encoding",
+        "execsync",
+        "function",
+        "json"
+      ]
+    },
+    {
+      "id": "frag_1qvdbx",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 3,
+      "text": "function check(label, cond) {\n  if (cond) {\n    console.log(`  ✓ ${label}`);\n  } else {\n    console.error(`  ✗ FAIL: ${label}`);\n    process.exitCode = 1;\n  }\n}",
+      "summary": "function check(label, cond) {\n  if (cond) {\n    console.log(`  ✓ ${label}`);\n  } else {\n    console.",
+      "conceptNames": [
+        "label",
+        "cond",
+        "console",
+        "check",
+        "else",
+        "error"
+      ]
+    },
+    {
+      "id": "frag_2pvrfi",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 4,
+      "text": "// Import phase-2 modules via dynamic import\nconst srcDir = path.join(SKILL_ROOT, 'src');",
+      "summary": "// Import phase-2 modules via dynamic import\nconst srcDir = path.join(SKILL_ROOT, 'src');",
+      "conceptNames": [
+        "import",
+        "const",
+        "dynamic",
+        "join",
+        "modules",
+        "path"
+      ]
+    },
+    {
+      "id": "frag_49spg6",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 5,
+      "text": "async function runTests() {\n  console.log('=== LinkMind Smoke Test (Phase 2) ===\\n');",
+      "summary": "async function runTests() {\n  console.log('=== LinkMind Smoke Test (Phase 2) ===\\n');",
+      "conceptNames": [
+        "async",
+        "console",
+        "function",
+        "linkmind",
+        "log",
+        "phase"
+      ]
+    },
+    {
+      "id": "frag_l7f27m",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 6,
+      "text": "// Phase 1: CLI commands\n  console.log('--- Phase 1: CLI Commands ---');\n  const reset = run('node dist/index.js reset');\n  check('reset returns ok', reset.ok === true);",
+      "summary": "// Phase 1: CLI commands\n  console.log('--- Phase 1: CLI Commands ---');\n  const reset = run('node d",
+      "conceptNames": [
+        "reset",
+        "cli",
+        "commands",
+        "phase",
+        "check",
+        "console"
+      ]
+    },
+    {
+      "id": "frag_4yjic",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 7,
+      "text": "const empty = run('node dist/index.js status');\n  check('empty workspace has 0 documents', empty.documents === 0);",
+      "summary": "const empty = run('node dist/index.js status');\n  check('empty workspace has 0 documents', empty.doc",
+      "conceptNames": [
+        "empty",
+        "documents",
+        "check",
+        "const",
+        "dist",
+        "index"
+      ]
+    },
+    {
+      "id": "frag_qhu1w0",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 8,
+      "text": "const ingest = run('node dist/index.js ingest --file examples/sample-note.md --title \"Sample Note\"');\n  check('ingest returns documentId', !!ingest.documentId);\n  check('ingest creates fragments', ingest.fragmentsCreated >= 1);",
+      "summary": "const ingest = run('node dist/index.js ingest --file examples/sample-note.md --title \"Sample Note\"')",
+      "conceptNames": [
+        "ingest",
+        "check",
+        "documentid",
+        "const",
+        "creates",
+        "dist"
+      ]
+    },
+    {
+      "id": "frag_3vvxiw",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 9,
+      "text": "const after = run('node dist/index.js status');\n  check('has 1 document', after.documents === 1);\n  check('has fragments', after.fragments >= 1);",
+      "summary": "const after = run('node dist/index.js status');\n  check('has 1 document', after.documents === 1);\n  ",
+      "conceptNames": [
+        "after",
+        "check",
+        "fragments",
+        "const",
+        "dist",
+        "document"
+      ]
+    },
+    {
+      "id": "frag_o5huex",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 10,
+      "text": "const q1 = run('node dist/index.js query --q \"knowledge\"');\n  check('query \"knowledge\" finds evidence', q1.evidence && q1.evidence.length >= 1);\n  check('query \"knowledge\" returns answer', !!q1.answer);",
+      "summary": "const q1 = run('node dist/index.js query --q \"knowledge\"');\n  check('query \"knowledge\" finds evidenc",
+      "conceptNames": [
+        "evidence",
+        "knowledge",
+        "query",
+        "answer",
+        "check",
+        "const"
+      ]
+    },
+    {
+      "id": "frag_yice37",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 11,
+      "text": "const q2 = run('node dist/index.js query --q \"xyznonexistentterm12345\"');\n  check('query no-match returns empty evidence', q2.evidence && q2.evidence.length === 0);",
+      "summary": "const q2 = run('node dist/index.js query --q \"xyznonexistentterm12345\"');\n  check('query no-match re",
+      "conceptNames": [
+        "evidence",
+        "query",
+        "check",
+        "const",
+        "dist",
+        "empty"
+      ]
+    },
+    {
+      "id": "frag_qso8rl",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 12,
+      "text": "const q3 = run('node dist/index.js query --q \"knowledge\" --limit 1');\n  check('query with limit respects limit', q3.evidence && q3.evidence.length <= 1);",
+      "summary": "const q3 = run('node dist/index.js query --q \"knowledge\" --limit 1');\n  check('query with limit resp",
+      "conceptNames": [
+        "limit",
+        "evidence",
+        "query",
+        "check",
+        "const",
+        "dist"
+      ]
+    },
+    {
+      "id": "frag_83cldn",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 13,
+      "text": "// Phase 2: Storage Adapters\n  console.log('\\n--- Phase 2: Storage Adapters ---');\n  const JsonStorageAdapterMod = await import(pathToFileURL(path.join(srcDir, 'storage-adapters/JsonStorageAdapter.js')).href);\n  const StorageAdapterMod = await import(pathToFileURL(path.join(srcDir, 'storage-adapters/StorageAdapter.js')).href);\n  const { JsonStorageAdapter } = JsonStorageAdapterMod;\n  const { StorageAdapter } = StorageAdapterMod;",
+      "summary": "// Phase 2: Storage Adapters\n  console.log('\\n--- Phase 2: Storage Adapters ---');\n  const JsonStora",
+      "conceptNames": [
+        "const",
+        "adapters",
+        "await",
+        "href",
+        "import",
+        "join"
+      ]
+    },
+    {
+      "id": "frag_ou8eku",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 14,
+      "text": "const jsAdapter = new JsonStorageAdapter();\n  await jsAdapter.init();\n  await jsAdapter.clear();\n  check('JsonStorageAdapter.init() ok', true);",
+      "summary": "const jsAdapter = new JsonStorageAdapter();\n  await jsAdapter.init();\n  await jsAdapter.clear();\n  c",
+      "conceptNames": [
+        "jsadapter",
+        "await",
+        "init",
+        "jsonstorageadapter",
+        "check",
+        "clear"
+      ]
+    },
+    {
+      "id": "frag_mjx4px",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 15,
+      "text": "const testDoc = {\n    id: 'doc_test1',\n    type: 'document',\n    title: 'Test Doc',\n    sourceType: 'note',\n    sourceUri: '/test/path.md',\n    importedAt: new Date().toISOString(),\n    status: 'active',\n    text: 'This is a test document for storage adapter testing.'\n  };\n  await jsAdapter.saveDocument(testDoc);\n  const retrieved = await jsAdapter.getDocument('doc_test1');\n  check('JsonStorageAdapter.saveDocument + getDocument', retrieved && retrieved.title === 'Test Doc');",
+      "summary": "const testDoc = {\n    id: 'doc_test1',\n    type: 'document',\n    title: 'Test Doc',\n    sourceType: ",
+      "conceptNames": [
+        "test",
+        "retrieved",
+        "await",
+        "const",
+        "doc",
+        "doc_test1"
+      ]
+    },
+    {
+      "id": "frag_xgccse",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 16,
+      "text": "const docs = await jsAdapter.listDocuments();\n  check('JsonStorageAdapter.listDocuments', docs && docs.length >= 1);",
+      "summary": "const docs = await jsAdapter.listDocuments();\n  check('JsonStorageAdapter.listDocuments', docs && do",
+      "conceptNames": [
+        "docs",
+        "listdocuments",
+        "await",
+        "check",
+        "const",
+        "jsadapter"
+      ]
+    },
+    {
+      "id": "frag_4t3zpb",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 17,
+      "text": "const testFrag = {\n    id: 'frag_test1',\n    type: 'fragment',\n    documentId: 'doc_test1',\n    index: 0,\n    text: 'This is a test fragment.',\n    summary: 'This is a test',\n    conceptNames: ['test'],\n    createdAt: new Date().toISOString()\n  };\n  await jsAdapter.saveFragment(testFrag);\n  const frag = await jsAdapter.getFragment('frag_test1');\n  check('JsonStorageAdapter.saveFragment + getFragment', frag && frag.text.includes('test fragment'));",
+      "summary": "const testFrag = {\n    id: 'frag_test1',\n    type: 'fragment',\n    documentId: 'doc_test1',\n    inde",
+      "conceptNames": [
+        "test",
+        "frag",
+        "fragment",
+        "await",
+        "const",
+        "frag_test1"
+      ]
+    },
+    {
+      "id": "frag_g3bxss",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 18,
+      "text": "const frags = await jsAdapter.listFragments('doc_test1');\n  check('JsonStorageAdapter.listFragments', frags && frags.length >= 1);",
+      "summary": "const frags = await jsAdapter.listFragments('doc_test1');\n  check('JsonStorageAdapter.listFragments'",
+      "conceptNames": [
+        "frags",
+        "listfragments",
+        "await",
+        "check",
+        "const",
+        "doc_test1"
+      ]
+    },
+    {
+      "id": "frag_g30jd6",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 19,
+      "text": "const testConcept = {\n    id: 'concept_test1',\n    type: 'concept',\n    name: 'TestConcept',\n    normalizedName: 'testconcept',\n    salience: 0.5,\n    createdAt: new Date().toISOString()\n  };\n  await jsAdapter.saveConcept(testConcept);\n  const concepts = await jsAdapter.listConcepts();\n  check('JsonStorageAdapter.listConcepts', concepts && concepts.some(c => c.normalizedName === 'testconcept'));",
+      "summary": "const testConcept = {\n    id: 'concept_test1',\n    type: 'concept',\n    name: 'TestConcept',\n    nor",
+      "conceptNames": [
+        "testconcept",
+        "concepts",
+        "await",
+        "const",
+        "jsadapter",
+        "listconcepts"
+      ]
+    },
+    {
+      "id": "frag_h3k825",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 20,
+      "text": "const testLink = {\n    id: 'link_test1',\n    type: 'mentions',\n    fromId: 'frag_test1',\n    fromType: 'fragment',\n    toId: 'concept_test1',\n    toType: 'concept',\n    documentId: 'doc_test1',\n    score: 1,\n    createdAt: new Date().toISOString()\n  };\n  await jsAdapter.saveLink(testLink);\n  const links = await jsAdapter.getLinks('frag_test1', null);\n  check('JsonStorageAdapter.saveLink + getLinks', links && links.some(l => l.id === 'link_test1'));",
+      "summary": "const testLink = {\n    id: 'link_test1',\n    type: 'mentions',\n    fromId: 'frag_test1',\n    fromTyp",
+      "conceptNames": [
+        "links",
+        "await",
+        "const",
+        "frag_test1",
+        "getlinks",
+        "jsadapter"
+      ]
+    },
+    {
+      "id": "frag_ivfanb",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 21,
+      "text": "// test bulk save\n  await jsAdapter.clear();\n  await jsAdapter.saveDocument(testDoc);\n  await jsAdapter.saveFragments([testFrag]);\n  await jsAdapter.saveConcepts([testConcept]);\n  await jsAdapter.saveLinks([testLink]);\n  const afterBulk = await jsAdapter.listFragments('doc_test1');\n  check('JsonStorageAdapter.saveFragments bulk', afterBulk && afterBulk.length >= 1);",
+      "summary": "// test bulk save\n  await jsAdapter.clear();\n  await jsAdapter.saveDocument(testDoc);\n  await jsAdap",
+      "conceptNames": [
+        "await",
+        "jsadapter",
+        "afterbulk",
+        "bulk",
+        "savefragments",
+        "check"
+      ]
+    },
+    {
+      "id": "frag_g1qshr",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 22,
+      "text": "await jsAdapter.clear();\n  const emptyAfterClear = await jsAdapter.listDocuments();\n  check('JsonStorageAdapter.clear()', emptyAfterClear.length === 0);",
+      "summary": "await jsAdapter.clear();\n  const emptyAfterClear = await jsAdapter.listDocuments();\n  check('JsonSto",
+      "conceptNames": [
+        "await",
+        "clear",
+        "emptyafterclear",
+        "jsadapter",
+        "check",
+        "const"
+      ]
+    },
+    {
+      "id": "frag_m2z8gs",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 23,
+      "text": "// StorageAdapter interface\n  check('StorageAdapter is a class', typeof StorageAdapter === 'function');",
+      "summary": "// StorageAdapter interface\n  check('StorageAdapter is a class', typeof StorageAdapter === 'function",
+      "conceptNames": [
+        "storageadapter",
+        "check",
+        "class",
+        "function",
+        "interface",
+        "typeof"
+      ]
+    },
+    {
+      "id": "frag_la8iqs",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 24,
+      "text": "// Phase 2: Embedding Providers\n  console.log('\\n--- Phase 2: Embedding Providers ---');\n  const MockProviderMod = await import(pathToFileURL(path.join(srcDir, 'embedding-providers/MockProvider.js')).href);\n  const OpenAICompatibleProviderMod = await import(pathToFileURL(path.join(srcDir, 'embedding-providers/OpenAICompatibleProvider.js')).href);\n  const EmbeddingProviderMod = await import(pathToFileURL(path.join(srcDir, 'embedding-providers/EmbeddingProvider.js')).href);\n  const { MockProvider } = MockProviderMod;\n  const { OpenAICompatibleProvider } = OpenAICompatibleProviderMod;\n  const { EmbeddingProvider } = EmbeddingProviderMod;",
+      "summary": "// Phase 2: Embedding Providers\n  console.log('\\n--- Phase 2: Embedding Providers ---');\n  const Moc",
+      "conceptNames": [
+        "const",
+        "await",
+        "embedding-providers",
+        "href",
+        "import",
+        "join"
+      ]
+    },
+    {
+      "id": "frag_k2wcc",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 25,
+      "text": "const mock = new MockProvider({ dimension: 128 });\n  check('MockProvider.dimension', mock.dimension === 128);\n  check('MockProvider.name', mock.name === 'mock');",
+      "summary": "const mock = new MockProvider({ dimension: 128 });\n  check('MockProvider.dimension', mock.dimension ",
+      "conceptNames": [
+        "mock",
+        "dimension",
+        "mockprovider",
+        "check",
+        "name",
+        "const"
+      ]
+    },
+    {
+      "id": "frag_amqxax",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 26,
+      "text": "const [vec] = await mock.embed(['hello world']);\n  check('MockProvider.embed returns vector', Array.isArray(vec) && vec.length === 128);\n  check('MockProvider.vector is L2-normalized', Math.abs(vec.reduce((s, v) => s + v * v, 0) - 1) < 0.01);",
+      "summary": "const [vec] = await mock.embed(['hello world']);\n  check('MockProvider.embed returns vector', Array.",
+      "conceptNames": [
+        "vec",
+        "check",
+        "embed",
+        "mockprovider",
+        "vector",
+        "abs"
+      ]
+    },
+    {
+      "id": "frag_k3j5ot",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 27,
+      "text": "const [vec2] = await mock.embed(['hello world']);\n  check('MockProvider caches results', vec2 === vec);",
+      "summary": "const [vec2] = await mock.embed(['hello world']);\n  check('MockProvider caches results', vec2 === ve",
+      "conceptNames": [
+        "vec2",
+        "await",
+        "caches",
+        "check",
+        "const",
+        "embed"
+      ]
+    },
+    {
+      "id": "frag_oxk0al",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 28,
+      "text": "const differentText = await mock.embed(['different text']);\n  check('MockProvider different text yields different vector', differentText[0] !== vec);",
+      "summary": "const differentText = await mock.embed(['different text']);\n  check('MockProvider different text yie",
+      "conceptNames": [
+        "different",
+        "differenttext",
+        "text",
+        "await",
+        "check",
+        "const"
+      ]
+    },
+    {
+      "id": "frag_w7ug9l",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 29,
+      "text": "const openai = new OpenAICompatibleProvider({ baseURL: 'https://api.example.com/v1', apiKey: 'test-key', model: 'test-model', dimension: 256 });\n  check('OpenAICompatibleProvider.dimension', openai.dimension === 256);\n  check('OpenAICompatibleProvider.name includes model', openai.name.includes('test-model'));\n  check('OpenAICompatibleProvider.name includes baseURL hint', openai.name.includes('openai-compatible'));",
+      "summary": "const openai = new OpenAICompatibleProvider({ baseURL: 'https://api.example.com/v1', apiKey: 'test-k",
+      "conceptNames": [
+        "includes",
+        "name",
+        "openai",
+        "openaicompatibleprovider",
+        "check",
+        "dimension"
+      ]
+    },
+    {
+      "id": "frag_h1uzlu",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 30,
+      "text": "check('EmbeddingProvider is a class', typeof EmbeddingProvider === 'function');",
+      "summary": "check('EmbeddingProvider is a class', typeof EmbeddingProvider === 'function');",
+      "conceptNames": [
+        "embeddingprovider",
+        "check",
+        "class",
+        "function",
+        "typeof"
+      ]
+    },
+    {
+      "id": "frag_rrcn8h",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 31,
+      "text": "// Phase 2: Retriever\n  console.log('\\n--- Phase 2: Retriever ---');\n  const retrieverMod = await import(pathToFileURL(path.join(srcDir, 'retriever.js')).href);\n  const { keywordSearch, vectorSearch, mergeResults, cosineSimilarity, retrieve } = retrieverMod;",
+      "summary": "// Phase 2: Retriever\n  console.log('\\n--- Phase 2: Retriever ---');\n  const retrieverMod = await im",
+      "conceptNames": [
+        "retriever",
+        "const",
+        "phase",
+        "retrievermod",
+        "await",
+        "console"
+      ]
+    },
+    {
+      "id": "frag_z6ich8",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 32,
+      "text": "check('cosineSimilarity identical vectors = 1', Math.abs(cosineSimilarity([0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]) - 1) < 0.0001);\n  check('cosineSimilarity orthogonal = 0', Math.abs(cosineSimilarity([1, 0, 0], [0, 1, 0])) < 0.0001);",
+      "summary": "check('cosineSimilarity identical vectors = 1', Math.abs(cosineSimilarity([0.5, 0.5, 0.5, 0.5], [0.5",
+      "conceptNames": [
+        "cosinesimilarity",
+        "abs",
+        "check",
+        "math",
+        "identical",
+        "orthogonal"
+      ]
+    },
+    {
+      "id": "frag_5i1o5v",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 33,
+      "text": "const testFrags = [\n    { id: 'f1', documentId: 'd1', documentTitle: 'Doc 1', index: 0, text: 'knowledge graph is useful', conceptNames: ['knowledge', 'graph'] },\n    { id: 'f2', documentId: 'd1', documentTitle: 'Doc 1', index: 1, text: 'machine learning and AI', conceptNames: ['machine', 'learning'] },\n    { id: 'f3', documentId: 'd2', documentTitle: 'Doc 2', index: 0, text: 'knowledge base systems', conceptNames: ['knowledge', 'base'] }\n  ];",
+      "summary": "const testFrags = [\n    { id: 'f1', documentId: 'd1', documentTitle: 'Doc 1', index: 0, text: 'knowl",
+      "conceptNames": [
+        "knowledge",
+        "conceptnames",
+        "doc",
+        "documentid",
+        "documenttitle",
+        "index"
+      ]
+    },
+    {
+      "id": "frag_1wv3le",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 34,
+      "text": "const kw = keywordSearch(testFrags, 'knowledge');\n  check('keywordSearch finds knowledge fragments', kw.length >= 2);\n  check('keywordSearch assigns score > 0', kw.every(r => r.score > 0));\n  check('keywordSearch source=keyword', kw.every(r => r.source === 'keyword'));",
+      "summary": "const kw = keywordSearch(testFrags, 'knowledge');\n  check('keywordSearch finds knowledge fragments',",
+      "conceptNames": [
+        "keywordsearch",
+        "check",
+        "every",
+        "keyword",
+        "knowledge",
+        "score"
+      ]
+    },
+    {
+      "id": "frag_jx95go",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 35,
+      "text": "const vecResults = await vectorSearch(testFrags, 'knowledge graph', mock);\n  check('vectorSearch returns results', Array.isArray(vecResults));\n  check('vectorSearch source=vector', vecResults.every(r => r.source === 'vector'));",
+      "summary": "const vecResults = await vectorSearch(testFrags, 'knowledge graph', mock);\n  check('vectorSearch ret",
+      "conceptNames": [
+        "vecresults",
+        "vectorsearch",
+        "check",
+        "source",
+        "vector",
+        "array"
+      ]
+    },
+    {
+      "id": "frag_mb8wqq",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 36,
+      "text": "const merged = mergeResults(kw, vecResults, 5);\n  check('mergeResults deduplicates', merged.length <= kw.length + vecResults.length);\n  check('mergeResults returns array', Array.isArray(merged));\n  check('mergeResults items have score', merged.every(r => typeof r.score === 'number'));",
+      "summary": "const merged = mergeResults(kw, vecResults, 5);\n  check('mergeResults deduplicates', merged.length <",
+      "conceptNames": [
+        "merged",
+        "mergeresults",
+        "check",
+        "length",
+        "array",
+        "score"
+      ]
+    },
+    {
+      "id": "frag_c2gwcq",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 37,
+      "text": "const kwOnly = await retrieve({ fragments: testFrags, query: 'knowledge', limit: 5 });\n  check('retrieve keyword-only works', kwOnly.length >= 1);",
+      "summary": "const kwOnly = await retrieve({ fragments: testFrags, query: 'knowledge', limit: 5 });\n  check('retr",
+      "conceptNames": [
+        "kwonly",
+        "retrieve",
+        "await",
+        "check",
+        "const",
+        "fragments"
+      ]
+    },
+    {
+      "id": "frag_lybfjt",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 38,
+      "text": "const hybrid = await retrieve({ fragments: testFrags, query: 'knowledge', embeddingProvider: mock, limit: 5 });\n  check('retrieve hybrid works', hybrid.length >= 1);\n  check('retrieve hybrid may include vector source', hybrid.some(r => r.source === 'vector' || r.source === 'hybrid'));",
+      "summary": "const hybrid = await retrieve({ fragments: testFrags, query: 'knowledge', embeddingProvider: mock, l",
+      "conceptNames": [
+        "hybrid",
+        "retrieve",
+        "source",
+        "check",
+        "vector",
+        "await"
+      ]
+    },
+    {
+      "id": "frag_4nve2i",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 39,
+      "text": "console.log('\\n=== Smoke Test Complete ===');\n  if (process.exitCode === 1) {\n    console.log('RESULT: FAILED');\n    process.exit(1);\n  } else {\n    console.log('RESULT: PASSED');\n  }\n}",
+      "summary": "console.log('\\n=== Smoke Test Complete ===');\n  if (process.exitCode === 1) {\n    console.log('RESUL",
+      "conceptNames": [
+        "console",
+        "log",
+        "process",
+        "result",
+        "complete",
+        "else"
+      ]
+    },
+    {
+      "id": "frag_h74lv",
+      "type": "fragment",
+      "documentId": "doc_6bb52r",
+      "index": 40,
+      "text": "runTests().catch((err) => {\n  console.error('Test error:', err);\n  process.exit(1);\n});",
+      "summary": "runTests().catch((err) => {\n  console.error('Test error:', err);\n  process.exit(1);\n});",
+      "conceptNames": [
+        "err",
+        "error",
+        "catch",
+        "console",
+        "exit",
+        "process"
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "concept_22cy",
+      "type": "concept",
+      "name": "abs",
+      "normalizedName": "abs",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_llkge4",
+      "type": "concept",
+      "name": "adapters",
+      "normalizedName": "adapters",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1j7mqk",
+      "type": "concept",
+      "name": "after",
+      "normalizedName": "after",
+      "salience": 1
+    },
+    {
+      "id": "concept_gv37qm",
+      "type": "concept",
+      "name": "afterBulk",
+      "normalizedName": "afterbulk",
+      "salience": 1
+    },
+    {
+      "id": "concept_nd5e82",
+      "type": "concept",
+      "name": "answer",
+      "normalizedName": "answer",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1jf909",
+      "type": "concept",
+      "name": "Array",
+      "normalizedName": "array",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1jg1h8",
+      "type": "concept",
+      "name": "async",
+      "normalizedName": "async",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1ji3iu",
+      "type": "concept",
+      "name": "await",
+      "normalizedName": "await",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_239j",
+      "type": "concept",
+      "name": "bin",
+      "normalizedName": "bin",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1t24y",
+      "type": "concept",
+      "name": "bulk",
+      "normalizedName": "bulk",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_mmi027",
+      "type": "concept",
+      "name": "caches",
+      "normalizedName": "caches",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1k80xn",
+      "type": "concept",
+      "name": "catch",
+      "normalizedName": "catch",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1kc64o",
+      "type": "concept",
+      "name": "chdir",
+      "normalizedName": "chdir",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1kc6q0",
+      "type": "concept",
+      "name": "check",
+      "normalizedName": "check",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_86zfzo",
+      "type": "concept",
+      "name": "child_process",
+      "normalizedName": "child_process",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1keo3c",
+      "type": "concept",
+      "name": "class",
+      "normalizedName": "class",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1keqml",
+      "type": "concept",
+      "name": "clear",
+      "normalizedName": "clear",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_242o",
+      "type": "concept",
+      "name": "CLI",
+      "normalizedName": "cli",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_243e",
+      "type": "concept",
+      "name": "cmd",
+      "normalizedName": "cmd",
+      "salience": 1
+    },
+    {
+      "id": "concept_9yqf7c",
+      "type": "concept",
+      "name": "commands",
+      "normalizedName": "commands",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_9ww6vb",
+      "type": "concept",
+      "name": "Complete",
+      "normalizedName": "complete",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_gr1mao",
+      "type": "concept",
+      "name": "conceptNames",
+      "normalizedName": "conceptnames",
+      "salience": 1
+    },
+    {
+      "id": "concept_9n44xh",
+      "type": "concept",
+      "name": "concepts",
+      "normalizedName": "concepts",
+      "salience": 1
+    },
+    {
+      "id": "concept_1tkpu",
+      "type": "concept",
+      "name": "cond",
+      "normalizedName": "cond",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_fqi63b",
+      "type": "concept",
+      "name": "console",
+      "normalizedName": "console",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1kguoz",
+      "type": "concept",
+      "name": "const",
+      "normalizedName": "const",
+      "salience": 1
+    },
+    {
+      "id": "concept_hkekis",
+      "type": "concept",
+      "name": "cosineSimilarity",
+      "normalizedName": "cosinesimilarity",
+      "salience": 1
+    },
+    {
+      "id": "concept_h0dhpz",
+      "type": "concept",
+      "name": "creates",
+      "normalizedName": "creates",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_ljky0p",
+      "type": "concept",
+      "name": "different",
+      "normalizedName": "different",
+      "salience": 1
+    },
+    {
+      "id": "concept_q1bzdy",
+      "type": "concept",
+      "name": "differentText",
+      "normalizedName": "differenttext",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_i3xxga",
+      "type": "concept",
+      "name": "dimension",
+      "normalizedName": "dimension",
+      "salience": 1
+    },
+    {
+      "id": "concept_rmqf14",
+      "type": "concept",
+      "name": "dirname",
+      "normalizedName": "dirname",
+      "salience": 1
+    },
+    {
+      "id": "concept_1u3dy",
+      "type": "concept",
+      "name": "dist",
+      "normalizedName": "dist",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_24vs",
+      "type": "concept",
+      "name": "Doc",
+      "normalizedName": "doc",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_5amdjs",
+      "type": "concept",
+      "name": "doc_test1",
+      "normalizedName": "doc_test1",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1u7gb",
+      "type": "concept",
+      "name": "docs",
+      "normalizedName": "docs",
+      "salience": 1
+    },
+    {
+      "id": "concept_e91o2j",
+      "type": "concept",
+      "name": "document",
+      "normalizedName": "document",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_dh6z62",
+      "type": "concept",
+      "name": "documentId",
+      "normalizedName": "documentid",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_flreew",
+      "type": "concept",
+      "name": "documents",
+      "normalizedName": "documents",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_qjcwf1",
+      "type": "concept",
+      "name": "documentTitle",
+      "normalizedName": "documenttitle",
+      "salience": 1
+    },
+    {
+      "id": "concept_z514xr",
+      "type": "concept",
+      "name": "dynamic",
+      "normalizedName": "dynamic",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1usl5",
+      "type": "concept",
+      "name": "else",
+      "normalizedName": "else",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1liwnt",
+      "type": "concept",
+      "name": "embed",
+      "normalizedName": "embed",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_7liuz8",
+      "type": "concept",
+      "name": "embedding-providers",
+      "normalizedName": "embedding-providers",
+      "salience": 1
+    },
+    {
+      "id": "concept_w9ow8",
+      "type": "concept",
+      "name": "EmbeddingProvider",
+      "normalizedName": "embeddingprovider",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1lj7f1",
+      "type": "concept",
+      "name": "empty",
+      "normalizedName": "empty",
+      "salience": 1
+    },
+    {
+      "id": "concept_dlzsam",
+      "type": "concept",
+      "name": "emptyAfterClear",
+      "normalizedName": "emptyafterclear",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_satff7",
+      "type": "concept",
+      "name": "encoding",
+      "normalizedName": "encoding",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_25ph",
+      "type": "concept",
+      "name": "err",
+      "normalizedName": "err",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1lmfpk",
+      "type": "concept",
+      "name": "error",
+      "normalizedName": "error",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1loq3f",
+      "type": "concept",
+      "name": "every",
+      "normalizedName": "every",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_6c0biv",
+      "type": "concept",
+      "name": "evidence",
+      "normalizedName": "evidence",
+      "salience": 1
+    },
+    {
+      "id": "concept_xsbs18",
+      "type": "concept",
+      "name": "execSync",
+      "normalizedName": "execsync",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1v19a",
+      "type": "concept",
+      "name": "exit",
+      "normalizedName": "exit",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_c5gn3t",
+      "type": "concept",
+      "name": "filename",
+      "normalizedName": "filename",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1vjle",
+      "type": "concept",
+      "name": "frag",
+      "normalizedName": "frag",
+      "salience": 1
+    },
+    {
+      "id": "concept_o1b6i6",
+      "type": "concept",
+      "name": "frag_test1",
+      "normalizedName": "frag_test1",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_raj06o",
+      "type": "concept",
+      "name": "fragment",
+      "normalizedName": "fragment",
+      "salience": 1
+    },
+    {
+      "id": "concept_6azi1v",
+      "type": "concept",
+      "name": "fragments",
+      "normalizedName": "fragments",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1m5vi9",
+      "type": "concept",
+      "name": "frags",
+      "normalizedName": "frags",
+      "salience": 1
+    },
+    {
+      "id": "concept_mu6b4o",
+      "type": "concept",
+      "name": "function",
+      "normalizedName": "function",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_wvtd0j",
+      "type": "concept",
+      "name": "getLinks",
+      "normalizedName": "getlinks",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1wtnv",
+      "type": "concept",
+      "name": "href",
+      "normalizedName": "href",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_jw39c4",
+      "type": "concept",
+      "name": "hybrid",
+      "normalizedName": "hybrid",
+      "salience": 1
+    },
+    {
+      "id": "concept_1fehth",
+      "type": "concept",
+      "name": "identical",
+      "normalizedName": "identical",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_jlea8r",
+      "type": "concept",
+      "name": "import",
+      "normalizedName": "import",
+      "salience": 1
+    },
+    {
+      "id": "concept_1hqksr",
+      "type": "concept",
+      "name": "includes",
+      "normalizedName": "includes",
+      "salience": 1
+    },
+    {
+      "id": "concept_1nqriq",
+      "type": "concept",
+      "name": "index",
+      "normalizedName": "index",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_jl0fx8",
+      "type": "concept",
+      "name": "ingest",
+      "normalizedName": "ingest",
+      "salience": 1
+    },
+    {
+      "id": "concept_1xdsg",
+      "type": "concept",
+      "name": "init",
+      "normalizedName": "init",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_8b8yt5",
+      "type": "concept",
+      "name": "interface",
+      "normalizedName": "interface",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1y1ii",
+      "type": "concept",
+      "name": "join",
+      "normalizedName": "join",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_f09bfe",
+      "type": "concept",
+      "name": "jsAdapter",
+      "normalizedName": "jsadapter",
+      "salience": 1
+    },
+    {
+      "id": "concept_1y4mg",
+      "type": "concept",
+      "name": "JSON",
+      "normalizedName": "json",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_b0w3to",
+      "type": "concept",
+      "name": "JsonStorageAdapter",
+      "normalizedName": "jsonstorageadapter",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_dgvlef",
+      "type": "concept",
+      "name": "keyword",
+      "normalizedName": "keyword",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_ofkd9r",
+      "type": "concept",
+      "name": "keywordSearch",
+      "normalizedName": "keywordsearch",
+      "salience": 1
+    },
+    {
+      "id": "concept_pmrgxq",
+      "type": "concept",
+      "name": "knowledge",
+      "normalizedName": "knowledge",
+      "salience": 1
+    },
+    {
+      "id": "concept_ihtre0",
+      "type": "concept",
+      "name": "kwOnly",
+      "normalizedName": "kwonly",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1p5sz8",
+      "type": "concept",
+      "name": "label",
+      "normalizedName": "label",
+      "salience": 1
+    },
+    {
+      "id": "concept_iap7oa",
+      "type": "concept",
+      "name": "length",
+      "normalizedName": "length",
+      "salience": 1
+    },
+    {
+      "id": "concept_1pb54r",
+      "type": "concept",
+      "name": "limit",
+      "normalizedName": "limit",
+      "salience": 1
+    },
+    {
+      "id": "concept_jrfmmk",
+      "type": "concept",
+      "name": "LinkMind",
+      "normalizedName": "linkmind",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1pb5x5",
+      "type": "concept",
+      "name": "links",
+      "normalizedName": "links",
+      "salience": 1
+    },
+    {
+      "id": "concept_77o2i1",
+      "type": "concept",
+      "name": "listConcepts",
+      "normalizedName": "listconcepts",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_u4un1i",
+      "type": "concept",
+      "name": "listDocuments",
+      "normalizedName": "listdocuments",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_vlhikl",
+      "type": "concept",
+      "name": "listFragments",
+      "normalizedName": "listfragments",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_2atg",
+      "type": "concept",
+      "name": "log",
+      "normalizedName": "log",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_1zoco",
+      "type": "concept",
+      "name": "Math",
+      "normalizedName": "math",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_htl1p0",
+      "type": "concept",
+      "name": "merged",
+      "normalizedName": "merged",
+      "salience": 1
+    },
+    {
+      "id": "concept_ljhtmq",
+      "type": "concept",
+      "name": "mergeResults",
+      "normalizedName": "mergeresults",
+      "salience": 1
+    },
+    {
+      "id": "concept_1zybu",
+      "type": "concept",
+      "name": "mock",
+      "normalizedName": "mock",
+      "salience": 1
+    },
+    {
+      "id": "concept_3bbkvv",
+      "type": "concept",
+      "name": "MockProvider",
+      "normalizedName": "mockprovider",
+      "salience": 1
+    },
+    {
+      "id": "concept_kas613",
+      "type": "concept",
+      "name": "modules",
+      "normalizedName": "modules",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_20b63",
+      "type": "concept",
+      "name": "name",
+      "normalizedName": "name",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_gpo83y",
+      "type": "concept",
+      "name": "openai",
+      "normalizedName": "openai",
+      "salience": 1
+    },
+    {
+      "id": "concept_cpps5l",
+      "type": "concept",
+      "name": "OpenAICompatibleProvider",
+      "normalizedName": "openaicompatibleprovider",
+      "salience": 1
+    },
+    {
+      "id": "concept_j6wxa1",
+      "type": "concept",
+      "name": "orthogonal",
+      "normalizedName": "orthogonal",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_21lb9",
+      "type": "concept",
+      "name": "path",
+      "normalizedName": "path",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1rhfuj",
+      "type": "concept",
+      "name": "Phase",
+      "normalizedName": "phase",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_54a26p",
+      "type": "concept",
+      "name": "process",
+      "normalizedName": "process",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1s9m88",
+      "type": "concept",
+      "name": "query",
+      "normalizedName": "query",
+      "salience": 1
+    },
+    {
+      "id": "concept_1sjh3j",
+      "type": "concept",
+      "name": "reset",
+      "normalizedName": "reset",
+      "salience": 1
+    },
+    {
+      "id": "concept_fgc06b",
+      "type": "concept",
+      "name": "RESULT",
+      "normalizedName": "result",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_54l41w",
+      "type": "concept",
+      "name": "retrieve",
+      "normalizedName": "retrieve",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_gvydlk",
+      "type": "concept",
+      "name": "retrieved",
+      "normalizedName": "retrieved",
+      "salience": 1
+    },
+    {
+      "id": "concept_gvydl6",
+      "type": "concept",
+      "name": "Retriever",
+      "normalizedName": "retriever",
+      "salience": 1
+    },
+    {
+      "id": "concept_cbkjnw",
+      "type": "concept",
+      "name": "retrieverMod",
+      "normalizedName": "retrievermod",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_b6ebeu",
+      "type": "concept",
+      "name": "saveFragments",
+      "normalizedName": "savefragments",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_1t1x1u",
+      "type": "concept",
+      "name": "score",
+      "normalizedName": "score",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_ql1wy8",
+      "type": "concept",
+      "name": "SKILL_ROOT",
+      "normalizedName": "skill_root",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_etr8bp",
+      "type": "concept",
+      "name": "source",
+      "normalizedName": "source",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_7wml4k",
+      "type": "concept",
+      "name": "StorageAdapter",
+      "normalizedName": "storageadapter",
+      "salience": 1
+    },
+    {
+      "id": "concept_2487m",
+      "type": "concept",
+      "name": "Test",
+      "normalizedName": "test",
+      "salience": 1
+    },
+    {
+      "id": "concept_iamaui",
+      "type": "concept",
+      "name": "testConcept",
+      "normalizedName": "testconcept",
+      "salience": 1
+    },
+    {
+      "id": "concept_248bx",
+      "type": "concept",
+      "name": "text",
+      "normalizedName": "text",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_e7b4a7",
+      "type": "concept",
+      "name": "typeof",
+      "normalizedName": "typeof",
+      "salience": 0.3333333333333333
+    },
+    {
+      "id": "concept_2hkf",
+      "type": "concept",
+      "name": "url",
+      "normalizedName": "url",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_2hzo",
+      "type": "concept",
+      "name": "vec",
+      "normalizedName": "vec",
+      "salience": 1
+    },
+    {
+      "id": "concept_25hr2",
+      "type": "concept",
+      "name": "vec2",
+      "normalizedName": "vec2",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_xr4ppa",
+      "type": "concept",
+      "name": "vecResults",
+      "normalizedName": "vecresults",
+      "salience": 1
+    },
+    {
+      "id": "concept_dkfr25",
+      "type": "concept",
+      "name": "vector",
+      "normalizedName": "vector",
+      "salience": 0.6666666666666666
+    },
+    {
+      "id": "concept_nhnbu3",
+      "type": "concept",
+      "name": "vectorSearch",
+      "normalizedName": "vectorsearch",
+      "salience": 1
+    }
+  ],
+  "links": [
+    {
+      "id": "link_gm6aj7",
+      "type": "mentions",
+      "fromId": "frag_d3g9ts",
+      "fromType": "fragment",
+      "toId": "concept_jlea8r",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_sd7hnz",
+      "type": "mentions",
+      "fromId": "frag_d3g9ts",
+      "fromType": "fragment",
+      "toId": "concept_21lb9",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_7sfp9i",
+      "type": "mentions",
+      "fromId": "frag_d3g9ts",
+      "fromType": "fragment",
+      "toId": "concept_2hkf",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_fnz2cg",
+      "type": "mentions",
+      "fromId": "frag_d3g9ts",
+      "fromType": "fragment",
+      "toId": "concept_llkge4",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_7sekrr",
+      "type": "mentions",
+      "fromId": "frag_d3g9ts",
+      "fromType": "fragment",
+      "toId": "concept_239j",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_txdbp0",
+      "type": "mentions",
+      "fromId": "frag_d3g9ts",
+      "fromType": "fragment",
+      "toId": "concept_86zfzo",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_fmd0xz",
+      "type": "mentions",
+      "fromId": "frag_pmaij6",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_f6u12x",
+      "type": "mentions",
+      "fromId": "frag_pmaij6",
+      "fromType": "fragment",
+      "toId": "concept_rmqf14",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_78703k",
+      "type": "mentions",
+      "fromId": "frag_pmaij6",
+      "fromType": "fragment",
+      "toId": "concept_c5gn3t",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_s0gtgi",
+      "type": "mentions",
+      "fromId": "frag_pmaij6",
+      "fromType": "fragment",
+      "toId": "concept_21lb9",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_eo459i",
+      "type": "mentions",
+      "fromId": "frag_pmaij6",
+      "fromType": "fragment",
+      "toId": "concept_ql1wy8",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_fmgx0y",
+      "type": "mentions",
+      "fromId": "frag_pmaij6",
+      "fromType": "fragment",
+      "toId": "concept_1kc64o",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_zgfly7",
+      "type": "mentions",
+      "fromId": "frag_dw2gxf",
+      "fromType": "fragment",
+      "toId": "concept_243e",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_4ffy36",
+      "type": "mentions",
+      "fromId": "frag_dw2gxf",
+      "fromType": "fragment",
+      "toId": "concept_fqi63b",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_acgdcs",
+      "type": "mentions",
+      "fromId": "frag_dw2gxf",
+      "fromType": "fragment",
+      "toId": "concept_satff7",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_cz9im6",
+      "type": "mentions",
+      "fromId": "frag_dw2gxf",
+      "fromType": "fragment",
+      "toId": "concept_xsbs18",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_7s2tju",
+      "type": "mentions",
+      "fromId": "frag_dw2gxf",
+      "fromType": "fragment",
+      "toId": "concept_mu6b4o",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_xpfdbv",
+      "type": "mentions",
+      "fromId": "frag_dw2gxf",
+      "fromType": "fragment",
+      "toId": "concept_1y4mg",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_yt358s",
+      "type": "mentions",
+      "fromId": "frag_1qvdbx",
+      "fromType": "fragment",
+      "toId": "concept_1p5sz8",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_ev8u24",
+      "type": "mentions",
+      "fromId": "frag_1qvdbx",
+      "fromType": "fragment",
+      "toId": "concept_1tkpu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_9o9hc0",
+      "type": "mentions",
+      "fromId": "frag_1qvdbx",
+      "fromType": "fragment",
+      "toId": "concept_fqi63b",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_yv209n",
+      "type": "mentions",
+      "fromId": "frag_1qvdbx",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ev81a9",
+      "type": "mentions",
+      "fromId": "frag_1qvdbx",
+      "fromType": "fragment",
+      "toId": "concept_1usl5",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_yuau6w",
+      "type": "mentions",
+      "fromId": "frag_1qvdbx",
+      "fromType": "fragment",
+      "toId": "concept_1lmfpk",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_2zdydy",
+      "type": "mentions",
+      "fromId": "frag_2pvrfi",
+      "fromType": "fragment",
+      "toId": "concept_jlea8r",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_tzghbv",
+      "type": "mentions",
+      "fromId": "frag_2pvrfi",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_3q584q",
+      "type": "mentions",
+      "fromId": "frag_2pvrfi",
+      "fromType": "fragment",
+      "toId": "concept_z514xr",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_jai59l",
+      "type": "mentions",
+      "fromId": "frag_2pvrfi",
+      "fromType": "fragment",
+      "toId": "concept_1y1ii",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_2o60sz",
+      "type": "mentions",
+      "fromId": "frag_2pvrfi",
+      "fromType": "fragment",
+      "toId": "concept_kas613",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_jb746m",
+      "type": "mentions",
+      "fromId": "frag_2pvrfi",
+      "fromType": "fragment",
+      "toId": "concept_21lb9",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_l8pjy1",
+      "type": "mentions",
+      "fromId": "frag_49spg6",
+      "fromType": "fragment",
+      "toId": "concept_1jg1h8",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ol4mj7",
+      "type": "mentions",
+      "fromId": "frag_49spg6",
+      "fromType": "fragment",
+      "toId": "concept_fqi63b",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_l8hr2j",
+      "type": "mentions",
+      "fromId": "frag_49spg6",
+      "fromType": "fragment",
+      "toId": "concept_mu6b4o",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_mof359",
+      "type": "mentions",
+      "fromId": "frag_49spg6",
+      "fromType": "fragment",
+      "toId": "concept_jrfmmk",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_cl5qmg",
+      "type": "mentions",
+      "fromId": "frag_49spg6",
+      "fromType": "fragment",
+      "toId": "concept_2atg",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ld5nbu",
+      "type": "mentions",
+      "fromId": "frag_49spg6",
+      "fromType": "fragment",
+      "toId": "concept_1rhfuj",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_xcuxjb",
+      "type": "mentions",
+      "fromId": "frag_l7f27m",
+      "fromType": "fragment",
+      "toId": "concept_1sjh3j",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_iygf27",
+      "type": "mentions",
+      "fromId": "frag_l7f27m",
+      "fromType": "fragment",
+      "toId": "concept_242o",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_th2rb1",
+      "type": "mentions",
+      "fromId": "frag_l7f27m",
+      "fromType": "fragment",
+      "toId": "concept_9yqf7c",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_xdg00a",
+      "type": "mentions",
+      "fromId": "frag_l7f27m",
+      "fromType": "fragment",
+      "toId": "concept_1rhfuj",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_xheqtu",
+      "type": "mentions",
+      "fromId": "frag_l7f27m",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_8am7w7",
+      "type": "mentions",
+      "fromId": "frag_l7f27m",
+      "fromType": "fragment",
+      "toId": "concept_fqi63b",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_gz4d4d",
+      "type": "mentions",
+      "fromId": "frag_4yjic",
+      "fromType": "fragment",
+      "toId": "concept_1lj7f1",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_syfnx7",
+      "type": "mentions",
+      "fromId": "frag_4yjic",
+      "fromType": "fragment",
+      "toId": "concept_flreew",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_gyg352",
+      "type": "mentions",
+      "fromId": "frag_4yjic",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_gyjxt9",
+      "type": "mentions",
+      "fromId": "frag_4yjic",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_awlf12",
+      "type": "mentions",
+      "fromId": "frag_4yjic",
+      "fromType": "fragment",
+      "toId": "concept_1u3dy",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_h0dn34",
+      "type": "mentions",
+      "fromId": "frag_4yjic",
+      "fromType": "fragment",
+      "toId": "concept_1nqriq",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_pqdkx3",
+      "type": "mentions",
+      "fromId": "frag_qhu1w0",
+      "fromType": "fragment",
+      "toId": "concept_jl0fx8",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 6
+    },
+    {
+      "id": "link_ibhsjx",
+      "type": "mentions",
+      "fromId": "frag_qhu1w0",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_smqahn",
+      "type": "mentions",
+      "fromId": "frag_qhu1w0",
+      "fromType": "fragment",
+      "toId": "concept_dh6z62",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_ibln84",
+      "type": "mentions",
+      "fromId": "frag_qhu1w0",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_rkj8nd",
+      "type": "mentions",
+      "fromId": "frag_qhu1w0",
+      "fromType": "fragment",
+      "toId": "concept_h0dhpz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_lfahv",
+      "type": "mentions",
+      "fromId": "frag_qhu1w0",
+      "fromType": "fragment",
+      "toId": "concept_1u3dy",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_4qw4lr",
+      "type": "mentions",
+      "fromId": "frag_3vvxiw",
+      "fromType": "fragment",
+      "toId": "concept_1j7mqk",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_4pldf0",
+      "type": "mentions",
+      "fromId": "frag_3vvxiw",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_2hfic9",
+      "type": "mentions",
+      "fromId": "frag_3vvxiw",
+      "fromType": "fragment",
+      "toId": "concept_6azi1v",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_4phiqt",
+      "type": "mentions",
+      "fromId": "frag_3vvxiw",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_6q54os",
+      "type": "mentions",
+      "fromId": "frag_3vvxiw",
+      "fromType": "fragment",
+      "toId": "concept_1u3dy",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_j4egvm",
+      "type": "mentions",
+      "fromId": "frag_3vvxiw",
+      "fromType": "fragment",
+      "toId": "concept_e91o2j",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_wrcf7r",
+      "type": "mentions",
+      "fromId": "frag_o5huex",
+      "fromType": "fragment",
+      "toId": "concept_6c0biv",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_amhcre",
+      "type": "mentions",
+      "fromId": "frag_o5huex",
+      "fromType": "fragment",
+      "toId": "concept_pmrgxq",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_un2yk1",
+      "type": "mentions",
+      "fromId": "frag_o5huex",
+      "fromType": "fragment",
+      "toId": "concept_1s9m88",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_bqls5h",
+      "type": "mentions",
+      "fromId": "frag_o5huex",
+      "fromType": "fragment",
+      "toId": "concept_nd5e82",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_ujebtz",
+      "type": "mentions",
+      "fromId": "frag_o5huex",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_uji6i6",
+      "type": "mentions",
+      "fromId": "frag_o5huex",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_1n7sjb",
+      "type": "mentions",
+      "fromId": "frag_yice37",
+      "fromType": "fragment",
+      "toId": "concept_6c0biv",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_h1o4f",
+      "type": "mentions",
+      "fromId": "frag_yice37",
+      "fromType": "fragment",
+      "toId": "concept_1s9m88",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_kqauh",
+      "type": "mentions",
+      "fromId": "frag_yice37",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_kmg6a",
+      "type": "mentions",
+      "fromId": "frag_yice37",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ydtwdj",
+      "type": "mentions",
+      "fromId": "frag_yice37",
+      "fromType": "fragment",
+      "toId": "concept_1u3dy",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_k20v6",
+      "type": "mentions",
+      "fromId": "frag_yice37",
+      "fromType": "fragment",
+      "toId": "concept_1lj7f1",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_4ct6x6",
+      "type": "mentions",
+      "fromId": "frag_qso8rl",
+      "fromType": "fragment",
+      "toId": "concept_1pb54r",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_6i10h2",
+      "type": "mentions",
+      "fromId": "frag_qso8rl",
+      "fromType": "fragment",
+      "toId": "concept_6c0biv",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_4drjtc",
+      "type": "mentions",
+      "fromId": "frag_qso8rl",
+      "fromType": "fragment",
+      "toId": "concept_1s9m88",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_4a2x3a",
+      "type": "mentions",
+      "fromId": "frag_qso8rl",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_4a6rrh",
+      "type": "mentions",
+      "fromId": "frag_qso8rl",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_dlsxva",
+      "type": "mentions",
+      "fromId": "frag_qso8rl",
+      "fromType": "fragment",
+      "toId": "concept_1u3dy",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_h9ddvu",
+      "type": "mentions",
+      "fromId": "frag_83cldn",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_aowd8u",
+      "type": "mentions",
+      "fromId": "frag_83cldn",
+      "fromType": "fragment",
+      "toId": "concept_llkge4",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_h9x9la",
+      "type": "mentions",
+      "fromId": "frag_83cldn",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_ivq2h9",
+      "type": "mentions",
+      "fromId": "frag_83cldn",
+      "fromType": "fragment",
+      "toId": "concept_1wtnv",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_9qp523",
+      "type": "mentions",
+      "fromId": "frag_83cldn",
+      "fromType": "fragment",
+      "toId": "concept_jlea8r",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_ivq6be",
+      "type": "mentions",
+      "fromId": "frag_83cldn",
+      "fromType": "fragment",
+      "toId": "concept_1y1ii",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_l1qqlg",
+      "type": "mentions",
+      "fromId": "frag_ou8eku",
+      "fromType": "fragment",
+      "toId": "concept_f09bfe",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_34xha7",
+      "type": "mentions",
+      "fromId": "frag_ou8eku",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_rl8v8h",
+      "type": "mentions",
+      "fromId": "frag_ou8eku",
+      "fromType": "fragment",
+      "toId": "concept_1xdsg",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_j6mvp3",
+      "type": "mentions",
+      "fromId": "frag_ou8eku",
+      "fromType": "fragment",
+      "toId": "concept_b0w3to",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_34hg8y",
+      "type": "mentions",
+      "fromId": "frag_ou8eku",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_34eykp",
+      "type": "mentions",
+      "fromId": "frag_ou8eku",
+      "fromType": "fragment",
+      "toId": "concept_1keqml",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_uiayqy",
+      "type": "mentions",
+      "fromId": "frag_mjx4px",
+      "fromType": "fragment",
+      "toId": "concept_2487m",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_3rvm3z",
+      "type": "mentions",
+      "fromId": "frag_mjx4px",
+      "fromType": "fragment",
+      "toId": "concept_gvydlk",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_lzgqhn",
+      "type": "mentions",
+      "fromId": "frag_mjx4px",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_lywus7",
+      "type": "mentions",
+      "fromId": "frag_mjx4px",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_ah0cc5",
+      "type": "mentions",
+      "fromId": "frag_mjx4px",
+      "fromType": "fragment",
+      "toId": "concept_24vs",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_k84ty6",
+      "type": "mentions",
+      "fromId": "frag_mjx4px",
+      "fromType": "fragment",
+      "toId": "concept_5amdjs",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_cty494",
+      "type": "mentions",
+      "fromId": "frag_xgccse",
+      "fromType": "fragment",
+      "toId": "concept_1u7gb",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_bee0fu",
+      "type": "mentions",
+      "fromId": "frag_xgccse",
+      "fromType": "fragment",
+      "toId": "concept_u4un1i",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_s93sit",
+      "type": "mentions",
+      "fromId": "frag_xgccse",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_s9jtk2",
+      "type": "mentions",
+      "fromId": "frag_xgccse",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_s9no89",
+      "type": "mentions",
+      "fromId": "frag_xgccse",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ilc1ko",
+      "type": "mentions",
+      "fromId": "frag_xgccse",
+      "fromType": "fragment",
+      "toId": "concept_f09bfe",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_i3umg2",
+      "type": "mentions",
+      "fromId": "frag_4t3zpb",
+      "fromType": "fragment",
+      "toId": "concept_2487m",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_i377kg",
+      "type": "mentions",
+      "fromId": "frag_4t3zpb",
+      "fromType": "fragment",
+      "toId": "concept_1vjle",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_x32n50",
+      "type": "mentions",
+      "fromId": "frag_4t3zpb",
+      "fromType": "fragment",
+      "toId": "concept_raj06o",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_7b1l0d",
+      "type": "mentions",
+      "fromId": "frag_4t3zpb",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_7blgpt",
+      "type": "mentions",
+      "fromId": "frag_4t3zpb",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_z8ql2n",
+      "type": "mentions",
+      "fromId": "frag_4t3zpb",
+      "fromType": "fragment",
+      "toId": "concept_o1b6i6",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_k51fms",
+      "type": "mentions",
+      "fromId": "frag_g3bxss",
+      "fromType": "fragment",
+      "toId": "concept_1m5vi9",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_i7m6y9",
+      "type": "mentions",
+      "fromId": "frag_g3bxss",
+      "fromType": "fragment",
+      "toId": "concept_vlhikl",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_k49vja",
+      "type": "mentions",
+      "fromId": "frag_g3bxss",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_k4pwkj",
+      "type": "mentions",
+      "fromId": "frag_g3bxss",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_k4tr8q",
+      "type": "mentions",
+      "fromId": "frag_g3bxss",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_lvls2r",
+      "type": "mentions",
+      "fromId": "frag_g3bxss",
+      "fromType": "fragment",
+      "toId": "concept_5amdjs",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_uf3de5",
+      "type": "mentions",
+      "fromId": "frag_g30jd6",
+      "fromType": "fragment",
+      "toId": "concept_iamaui",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 5
+    },
+    {
+      "id": "link_7v1imq",
+      "type": "mentions",
+      "fromId": "frag_g30jd6",
+      "fromType": "fragment",
+      "toId": "concept_9n44xh",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_41f6bg",
+      "type": "mentions",
+      "fromId": "frag_g30jd6",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_41z20w",
+      "type": "mentions",
+      "fromId": "frag_g30jd6",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_s83e73",
+      "type": "mentions",
+      "fromId": "frag_g30jd6",
+      "fromType": "fragment",
+      "toId": "concept_f09bfe",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_63r7js",
+      "type": "mentions",
+      "fromId": "frag_g30jd6",
+      "fromType": "fragment",
+      "toId": "concept_77o2i1",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_6gdclb",
+      "type": "mentions",
+      "fromId": "frag_h3k825",
+      "fromType": "fragment",
+      "toId": "concept_1pb5x5",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_6d705b",
+      "type": "mentions",
+      "fromId": "frag_h3k825",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_6dqvur",
+      "type": "mentions",
+      "fromId": "frag_h3k825",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_yuiw1f",
+      "type": "mentions",
+      "fromId": "frag_h3k825",
+      "fromType": "fragment",
+      "toId": "concept_o1b6i6",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_vbxzaf",
+      "type": "mentions",
+      "fromId": "frag_h3k825",
+      "fromType": "fragment",
+      "toId": "concept_wvtd0j",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_ujv80y",
+      "type": "mentions",
+      "fromId": "frag_h3k825",
+      "fromType": "fragment",
+      "toId": "concept_f09bfe",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_u202ao",
+      "type": "mentions",
+      "fromId": "frag_ivfanb",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 6
+    },
+    {
+      "id": "link_5vbuf1",
+      "type": "mentions",
+      "fromId": "frag_ivfanb",
+      "fromType": "fragment",
+      "toId": "concept_f09bfe",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 6
+    },
+    {
+      "id": "link_4bxc0w",
+      "type": "mentions",
+      "fromId": "frag_ivfanb",
+      "fromType": "fragment",
+      "toId": "concept_gv37qm",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_ly48ir",
+      "type": "mentions",
+      "fromId": "frag_ivfanb",
+      "fromType": "fragment",
+      "toId": "concept_1t24y",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_7nfh0u",
+      "type": "mentions",
+      "fromId": "frag_ivfanb",
+      "fromType": "fragment",
+      "toId": "concept_b6ebeu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_u1k19f",
+      "type": "mentions",
+      "fromId": "frag_ivfanb",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_1ikequ",
+      "type": "mentions",
+      "fromId": "frag_g1qshr",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_1i1w1c",
+      "type": "mentions",
+      "fromId": "frag_g1qshr",
+      "fromType": "fragment",
+      "toId": "concept_1keqml",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_mo62l4",
+      "type": "mentions",
+      "fromId": "frag_g1qshr",
+      "fromType": "fragment",
+      "toId": "concept_dlzsam",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_mo3t4t",
+      "type": "mentions",
+      "fromId": "frag_g1qshr",
+      "fromType": "fragment",
+      "toId": "concept_f09bfe",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_1i4dpl",
+      "type": "mentions",
+      "fromId": "frag_g1qshr",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_1i0j1e",
+      "type": "mentions",
+      "fromId": "frag_g1qshr",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_yh3xba",
+      "type": "mentions",
+      "fromId": "frag_m2z8gs",
+      "fromType": "fragment",
+      "toId": "concept_7wml4k",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_xixeog",
+      "type": "mentions",
+      "fromId": "frag_m2z8gs",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_xizth4",
+      "type": "mentions",
+      "fromId": "frag_m2z8gs",
+      "fromType": "fragment",
+      "toId": "concept_1keo3c",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_8yr8wd",
+      "type": "mentions",
+      "fromId": "frag_m2z8gs",
+      "fromType": "fragment",
+      "toId": "concept_mu6b4o",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ycjik0",
+      "type": "mentions",
+      "fromId": "frag_m2z8gs",
+      "fromType": "fragment",
+      "toId": "concept_8b8yt5",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_dogahu",
+      "type": "mentions",
+      "fromId": "frag_m2z8gs",
+      "fromType": "fragment",
+      "toId": "concept_e7b4a7",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_texq5s",
+      "type": "mentions",
+      "fromId": "frag_la8iqs",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 6
+    },
+    {
+      "id": "link_tfhlv8",
+      "type": "mentions",
+      "fromId": "frag_la8iqs",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_qk2x0k",
+      "type": "mentions",
+      "fromId": "frag_la8iqs",
+      "fromType": "fragment",
+      "toId": "concept_7liuz8",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_uq9yjr",
+      "type": "mentions",
+      "fromId": "frag_la8iqs",
+      "fromType": "fragment",
+      "toId": "concept_1wtnv",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_2ev77v",
+      "type": "mentions",
+      "fromId": "frag_la8iqs",
+      "fromType": "fragment",
+      "toId": "concept_jlea8r",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_uqa2dw",
+      "type": "mentions",
+      "fromId": "frag_la8iqs",
+      "fromType": "fragment",
+      "toId": "concept_1y1ii",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_nyigeg",
+      "type": "mentions",
+      "fromId": "frag_k2wcc",
+      "fromType": "fragment",
+      "toId": "concept_1zybu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_6zabo1",
+      "type": "mentions",
+      "fromId": "frag_k2wcc",
+      "fromType": "fragment",
+      "toId": "concept_i3xxga",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_vu9w1p",
+      "type": "mentions",
+      "fromId": "frag_k2wcc",
+      "fromType": "fragment",
+      "toId": "concept_3bbkvv",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_wnffzd",
+      "type": "mentions",
+      "fromId": "frag_k2wcc",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_nzaezu",
+      "type": "mentions",
+      "fromId": "frag_k2wcc",
+      "fromType": "fragment",
+      "toId": "concept_20b63",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_wnblb6",
+      "type": "mentions",
+      "fromId": "frag_k2wcc",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_x38ek6",
+      "type": "mentions",
+      "fromId": "frag_amqxax",
+      "fromType": "fragment",
+      "toId": "concept_2hzo",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_m39vrf",
+      "type": "mentions",
+      "fromId": "frag_amqxax",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_m3yuge",
+      "type": "mentions",
+      "fromId": "frag_amqxax",
+      "fromType": "fragment",
+      "toId": "concept_1liwnt",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_mwffp3",
+      "type": "mentions",
+      "fromId": "frag_amqxax",
+      "fromType": "fragment",
+      "toId": "concept_3bbkvv",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_osgc5n",
+      "type": "mentions",
+      "fromId": "frag_amqxax",
+      "fromType": "fragment",
+      "toId": "concept_dkfr25",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_x39j57",
+      "type": "mentions",
+      "fromId": "frag_amqxax",
+      "fromType": "fragment",
+      "toId": "concept_22cy",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_rktrqw",
+      "type": "mentions",
+      "fromId": "frag_k3j5ot",
+      "fromType": "fragment",
+      "toId": "concept_25hr2",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_2wd36k",
+      "type": "mentions",
+      "fromId": "frag_k3j5ot",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_vcpp15",
+      "type": "mentions",
+      "fromId": "frag_k3j5ot",
+      "fromType": "fragment",
+      "toId": "concept_mmi027",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_2wt47t",
+      "type": "mentions",
+      "fromId": "frag_k3j5ot",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_2wwyw0",
+      "type": "mentions",
+      "fromId": "frag_k3j5ot",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_2xi2ws",
+      "type": "mentions",
+      "fromId": "frag_k3j5ot",
+      "fromType": "fragment",
+      "toId": "concept_1liwnt",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_w1zyo6",
+      "type": "mentions",
+      "fromId": "frag_oxk0al",
+      "fromType": "fragment",
+      "toId": "concept_ljky0p",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_uk9tet",
+      "type": "mentions",
+      "fromId": "frag_oxk0al",
+      "fromType": "fragment",
+      "toId": "concept_q1bzdy",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_y0xfwi",
+      "type": "mentions",
+      "fromId": "frag_oxk0al",
+      "fromType": "fragment",
+      "toId": "concept_248bx",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_b1dpj1",
+      "type": "mentions",
+      "fromId": "frag_oxk0al",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_b1tqka",
+      "type": "mentions",
+      "fromId": "frag_oxk0al",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_b1xl8h",
+      "type": "mentions",
+      "fromId": "frag_oxk0al",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_mpfcly",
+      "type": "mentions",
+      "fromId": "frag_w7ug9l",
+      "fromType": "fragment",
+      "toId": "concept_1hqksr",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_gs8fg9",
+      "type": "mentions",
+      "fromId": "frag_w7ug9l",
+      "fromType": "fragment",
+      "toId": "concept_20b63",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_2zc842",
+      "type": "mentions",
+      "fromId": "frag_w7ug9l",
+      "fromType": "fragment",
+      "toId": "concept_gpo83y",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_137lb5",
+      "type": "mentions",
+      "fromId": "frag_w7ug9l",
+      "fromType": "fragment",
+      "toId": "concept_cpps5l",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_mo201m",
+      "type": "mentions",
+      "fromId": "frag_w7ug9l",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_30349q",
+      "type": "mentions",
+      "fromId": "frag_w7ug9l",
+      "fromType": "fragment",
+      "toId": "concept_i3xxga",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_e926ua",
+      "type": "mentions",
+      "fromId": "frag_h1uzlu",
+      "fromType": "fragment",
+      "toId": "concept_w9ow8",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_grp8co",
+      "type": "mentions",
+      "fromId": "frag_h1uzlu",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_grmtk0",
+      "type": "mentions",
+      "fromId": "frag_h1uzlu",
+      "fromType": "fragment",
+      "toId": "concept_1keo3c",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_brq61n",
+      "type": "mentions",
+      "fromId": "frag_h1uzlu",
+      "fromType": "fragment",
+      "toId": "concept_mu6b4o",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_7214g6",
+      "type": "mentions",
+      "fromId": "frag_h1uzlu",
+      "fromType": "fragment",
+      "toId": "concept_e7b4a7",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_qezy30",
+      "type": "mentions",
+      "fromId": "frag_rrcn8h",
+      "fromType": "fragment",
+      "toId": "concept_gvydl6",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_ivbn1f",
+      "type": "mentions",
+      "fromId": "frag_rrcn8h",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_iz6j6s",
+      "type": "mentions",
+      "fromId": "frag_rrcn8h",
+      "fromType": "fragment",
+      "toId": "concept_1rhfuj",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_smf4sp",
+      "type": "mentions",
+      "fromId": "frag_rrcn8h",
+      "fromType": "fragment",
+      "toId": "concept_cbkjnw",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_iurrbz",
+      "type": "mentions",
+      "fromId": "frag_rrcn8h",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_qz3qo9",
+      "type": "mentions",
+      "fromId": "frag_rrcn8h",
+      "fromType": "fragment",
+      "toId": "concept_fqi63b",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_er113i",
+      "type": "mentions",
+      "fromId": "frag_z6ich8",
+      "fromType": "fragment",
+      "toId": "concept_hkekis",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_67yaa7",
+      "type": "mentions",
+      "fromId": "frag_z6ich8",
+      "fromType": "fragment",
+      "toId": "concept_22cy",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_baijq1",
+      "type": "mentions",
+      "fromId": "frag_z6ich8",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_k9jq2f",
+      "type": "mentions",
+      "fromId": "frag_z6ich8",
+      "fromType": "fragment",
+      "toId": "concept_1zoco",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_bd77ix",
+      "type": "mentions",
+      "fromId": "frag_z6ich8",
+      "fromType": "fragment",
+      "toId": "concept_1fehth",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ewaxlk",
+      "type": "mentions",
+      "fromId": "frag_z6ich8",
+      "fromType": "fragment",
+      "toId": "concept_j6wxa1",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_9z80vh",
+      "type": "mentions",
+      "fromId": "frag_5i1o5v",
+      "fromType": "fragment",
+      "toId": "concept_pmrgxq",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_e711pf",
+      "type": "mentions",
+      "fromId": "frag_5i1o5v",
+      "fromType": "fragment",
+      "toId": "concept_gr1mao",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_465x9j",
+      "type": "mentions",
+      "fromId": "frag_5i1o5v",
+      "fromType": "fragment",
+      "toId": "concept_24vs",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_frkfbo",
+      "type": "mentions",
+      "fromId": "frag_5i1o5v",
+      "fromType": "fragment",
+      "toId": "concept_dh6z62",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_9k31og",
+      "type": "mentions",
+      "fromId": "frag_5i1o5v",
+      "fromType": "fragment",
+      "toId": "concept_qjcwf1",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_v8l7ny",
+      "type": "mentions",
+      "fromId": "frag_5i1o5v",
+      "fromType": "fragment",
+      "toId": "concept_1nqriq",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_wh3yx2",
+      "type": "mentions",
+      "fromId": "frag_1wv3le",
+      "fromType": "fragment",
+      "toId": "concept_ofkd9r",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_99sgv1",
+      "type": "mentions",
+      "fromId": "frag_1wv3le",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_9al3lt",
+      "type": "mentions",
+      "fromId": "frag_1wv3le",
+      "fromType": "fragment",
+      "toId": "concept_1loq3f",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_xd9957",
+      "type": "mentions",
+      "fromId": "frag_1wv3le",
+      "fromType": "fragment",
+      "toId": "concept_dgvlef",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_vw37qc",
+      "type": "mentions",
+      "fromId": "frag_1wv3le",
+      "fromType": "fragment",
+      "toId": "concept_pmrgxq",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_9dw0bj",
+      "type": "mentions",
+      "fromId": "frag_1wv3le",
+      "fromType": "fragment",
+      "toId": "concept_1t1x1u",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_nj3qtq",
+      "type": "mentions",
+      "fromId": "frag_jx95go",
+      "fromType": "fragment",
+      "toId": "concept_xr4ppa",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_io6bw3",
+      "type": "mentions",
+      "fromId": "frag_jx95go",
+      "fromType": "fragment",
+      "toId": "concept_nhnbu3",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_a655yl",
+      "type": "mentions",
+      "fromId": "frag_jx95go",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_elexuy",
+      "type": "mentions",
+      "fromId": "frag_jx95go",
+      "fromType": "fragment",
+      "toId": "concept_etr8bp",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_dz8o3h",
+      "type": "mentions",
+      "fromId": "frag_jx95go",
+      "fromType": "fragment",
+      "toId": "concept_dkfr25",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_a6n0x0",
+      "type": "mentions",
+      "fromId": "frag_jx95go",
+      "fromType": "fragment",
+      "toId": "concept_1jf909",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ae3a56",
+      "type": "mentions",
+      "fromId": "frag_mb8wqq",
+      "fromType": "fragment",
+      "toId": "concept_htl1p0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_c4qnhz",
+      "type": "mentions",
+      "fromId": "frag_mb8wqq",
+      "fromType": "fragment",
+      "toId": "concept_ljhtmq",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 4
+    },
+    {
+      "id": "link_fshq17",
+      "type": "mentions",
+      "fromId": "frag_mb8wqq",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_akrhoa",
+      "type": "mentions",
+      "fromId": "frag_mb8wqq",
+      "fromType": "fragment",
+      "toId": "concept_iap7oa",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_fszkzm",
+      "type": "mentions",
+      "fromId": "frag_mb8wqq",
+      "fromType": "fragment",
+      "toId": "concept_1jf909",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_foe6kp",
+      "type": "mentions",
+      "fromId": "frag_mb8wqq",
+      "fromType": "fragment",
+      "toId": "concept_1t1x1u",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_m0kasq",
+      "type": "mentions",
+      "fromId": "frag_c2gwcq",
+      "fromType": "fragment",
+      "toId": "concept_ihtre0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_3ejrm9",
+      "type": "mentions",
+      "fromId": "frag_c2gwcq",
+      "fromType": "fragment",
+      "toId": "concept_54l41w",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_4h39in",
+      "type": "mentions",
+      "fromId": "frag_c2gwcq",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_4gn8he",
+      "type": "mentions",
+      "fromId": "frag_c2gwcq",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_4gjdt7",
+      "type": "mentions",
+      "fromId": "frag_c2gwcq",
+      "fromType": "fragment",
+      "toId": "concept_1kguoz",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_28hden",
+      "type": "mentions",
+      "fromId": "frag_c2gwcq",
+      "fromType": "fragment",
+      "toId": "concept_6azi1v",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_mn7g18",
+      "type": "mentions",
+      "fromId": "frag_lybfjt",
+      "fromType": "fragment",
+      "toId": "concept_jw39c4",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 6
+    },
+    {
+      "id": "link_maooot",
+      "type": "mentions",
+      "fromId": "frag_lybfjt",
+      "fromType": "fragment",
+      "toId": "concept_54l41w",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_p0yqbx",
+      "type": "mentions",
+      "fromId": "frag_lybfjt",
+      "fromType": "fragment",
+      "toId": "concept_etr8bp",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_l8l7to",
+      "type": "mentions",
+      "fromId": "frag_lybfjt",
+      "fromType": "fragment",
+      "toId": "concept_1kc6q0",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_pn503e",
+      "type": "mentions",
+      "fromId": "frag_lybfjt",
+      "fromType": "fragment",
+      "toId": "concept_dkfr25",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_l856sf",
+      "type": "mentions",
+      "fromId": "frag_lybfjt",
+      "fromType": "fragment",
+      "toId": "concept_1ji3iu",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ylws04",
+      "type": "mentions",
+      "fromId": "frag_4nve2i",
+      "fromType": "fragment",
+      "toId": "concept_fqi63b",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_ejrf1l",
+      "type": "mentions",
+      "fromId": "frag_4nve2i",
+      "fromType": "fragment",
+      "toId": "concept_2atg",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 3
+    },
+    {
+      "id": "link_cab5of",
+      "type": "mentions",
+      "fromId": "frag_4nve2i",
+      "fromType": "fragment",
+      "toId": "concept_54a26p",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_yrio8h",
+      "type": "mentions",
+      "fromId": "frag_4nve2i",
+      "fromType": "fragment",
+      "toId": "concept_fgc06b",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_f7q17i",
+      "type": "mentions",
+      "fromId": "frag_4nve2i",
+      "fromType": "fragment",
+      "toId": "concept_9ww6vb",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ou4ny5",
+      "type": "mentions",
+      "fromId": "frag_4nve2i",
+      "fromType": "fragment",
+      "toId": "concept_1usl5",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_u09vol",
+      "type": "mentions",
+      "fromId": "frag_h74lv",
+      "fromType": "fragment",
+      "toId": "concept_25ph",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_uuc6f",
+      "type": "mentions",
+      "fromId": "frag_h74lv",
+      "fromType": "fragment",
+      "toId": "concept_1lmfpk",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 2
+    },
+    {
+      "id": "link_wd2xa",
+      "type": "mentions",
+      "fromId": "frag_h74lv",
+      "fromType": "fragment",
+      "toId": "concept_1k80xn",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_ob70oh",
+      "type": "mentions",
+      "fromId": "frag_h74lv",
+      "fromType": "fragment",
+      "toId": "concept_fqi63b",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_6ulya2",
+      "type": "mentions",
+      "fromId": "frag_h74lv",
+      "fromType": "fragment",
+      "toId": "concept_1v19a",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_6awdw",
+      "type": "mentions",
+      "fromId": "frag_h74lv",
+      "fromType": "fragment",
+      "toId": "concept_54a26p",
+      "toType": "concept",
+      "documentId": "doc_6bb52r",
+      "score": 1
+    },
+    {
+      "id": "link_5fyk8w",
+      "type": "adjacent",
+      "fromId": "frag_d3g9ts",
+      "fromType": "fragment",
+      "toId": "frag_pmaij6",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_hn8tmc",
+      "type": "adjacent",
+      "fromId": "frag_pmaij6",
+      "fromType": "fragment",
+      "toId": "frag_dw2gxf",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_ppo0qr",
+      "type": "adjacent",
+      "fromId": "frag_dw2gxf",
+      "fromType": "fragment",
+      "toId": "frag_1qvdbx",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_hnzag",
+      "type": "adjacent",
+      "fromId": "frag_1qvdbx",
+      "fromType": "fragment",
+      "toId": "frag_2pvrfi",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_w05mpp",
+      "type": "adjacent",
+      "fromId": "frag_2pvrfi",
+      "fromType": "fragment",
+      "toId": "frag_49spg6",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_3zquph",
+      "type": "adjacent",
+      "fromId": "frag_49spg6",
+      "fromType": "fragment",
+      "toId": "frag_l7f27m",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_tt6jkz",
+      "type": "adjacent",
+      "fromId": "frag_l7f27m",
+      "fromType": "fragment",
+      "toId": "frag_4yjic",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_lu2bze",
+      "type": "adjacent",
+      "fromId": "frag_4yjic",
+      "fromType": "fragment",
+      "toId": "frag_qhu1w0",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_83dkye",
+      "type": "adjacent",
+      "fromId": "frag_qhu1w0",
+      "fromType": "fragment",
+      "toId": "frag_3vvxiw",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_34uo8y",
+      "type": "adjacent",
+      "fromId": "frag_3vvxiw",
+      "fromType": "fragment",
+      "toId": "frag_o5huex",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_bi2hj5",
+      "type": "adjacent",
+      "fromId": "frag_o5huex",
+      "fromType": "fragment",
+      "toId": "frag_yice37",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_cizpxa",
+      "type": "adjacent",
+      "fromId": "frag_yice37",
+      "fromType": "fragment",
+      "toId": "frag_qso8rl",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_2reo2g",
+      "type": "adjacent",
+      "fromId": "frag_qso8rl",
+      "fromType": "fragment",
+      "toId": "frag_83cldn",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_qggyam",
+      "type": "adjacent",
+      "fromId": "frag_83cldn",
+      "fromType": "fragment",
+      "toId": "frag_ou8eku",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_9rnzir",
+      "type": "adjacent",
+      "fromId": "frag_ou8eku",
+      "fromType": "fragment",
+      "toId": "frag_mjx4px",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_w0ls9d",
+      "type": "adjacent",
+      "fromId": "frag_mjx4px",
+      "fromType": "fragment",
+      "toId": "frag_xgccse",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_k1gx09",
+      "type": "adjacent",
+      "fromId": "frag_xgccse",
+      "fromType": "fragment",
+      "toId": "frag_4t3zpb",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_bi4qq0",
+      "type": "adjacent",
+      "fromId": "frag_4t3zpb",
+      "fromType": "fragment",
+      "toId": "frag_g3bxss",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_303yz",
+      "type": "adjacent",
+      "fromId": "frag_g3bxss",
+      "fromType": "fragment",
+      "toId": "frag_g30jd6",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_c10pda",
+      "type": "adjacent",
+      "fromId": "frag_g30jd6",
+      "fromType": "fragment",
+      "toId": "frag_h3k825",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_havre8",
+      "type": "adjacent",
+      "fromId": "frag_h3k825",
+      "fromType": "fragment",
+      "toId": "frag_ivfanb",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_kqof2h",
+      "type": "adjacent",
+      "fromId": "frag_ivfanb",
+      "fromType": "fragment",
+      "toId": "frag_g1qshr",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_5qkyvc",
+      "type": "adjacent",
+      "fromId": "frag_g1qshr",
+      "fromType": "fragment",
+      "toId": "frag_m2z8gs",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_3pley0",
+      "type": "adjacent",
+      "fromId": "frag_m2z8gs",
+      "fromType": "fragment",
+      "toId": "frag_la8iqs",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_porisp",
+      "type": "adjacent",
+      "fromId": "frag_la8iqs",
+      "fromType": "fragment",
+      "toId": "frag_k2wcc",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_ehpuil",
+      "type": "adjacent",
+      "fromId": "frag_k2wcc",
+      "fromType": "fragment",
+      "toId": "frag_amqxax",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_v7bo83",
+      "type": "adjacent",
+      "fromId": "frag_amqxax",
+      "fromType": "fragment",
+      "toId": "frag_k3j5ot",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_hc4hkg",
+      "type": "adjacent",
+      "fromId": "frag_k3j5ot",
+      "fromType": "fragment",
+      "toId": "frag_oxk0al",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_tj8mbf",
+      "type": "adjacent",
+      "fromId": "frag_oxk0al",
+      "fromType": "fragment",
+      "toId": "frag_w7ug9l",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_sprb4x",
+      "type": "adjacent",
+      "fromId": "frag_w7ug9l",
+      "fromType": "fragment",
+      "toId": "frag_h1uzlu",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_t55ser",
+      "type": "adjacent",
+      "fromId": "frag_h1uzlu",
+      "fromType": "fragment",
+      "toId": "frag_rrcn8h",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_udj8qi",
+      "type": "adjacent",
+      "fromId": "frag_rrcn8h",
+      "fromType": "fragment",
+      "toId": "frag_z6ich8",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_26cgxo",
+      "type": "adjacent",
+      "fromId": "frag_z6ich8",
+      "fromType": "fragment",
+      "toId": "frag_5i1o5v",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_wxy4ag",
+      "type": "adjacent",
+      "fromId": "frag_5i1o5v",
+      "fromType": "fragment",
+      "toId": "frag_1wv3le",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_va27i3",
+      "type": "adjacent",
+      "fromId": "frag_1wv3le",
+      "fromType": "fragment",
+      "toId": "frag_jx95go",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_i40hvz",
+      "type": "adjacent",
+      "fromId": "frag_jx95go",
+      "fromType": "fragment",
+      "toId": "frag_mb8wqq",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_lb7pns",
+      "type": "adjacent",
+      "fromId": "frag_mb8wqq",
+      "fromType": "fragment",
+      "toId": "frag_c2gwcq",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_qzbzwd",
+      "type": "adjacent",
+      "fromId": "frag_c2gwcq",
+      "fromType": "fragment",
+      "toId": "frag_lybfjt",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_lep7w4",
+      "type": "adjacent",
+      "fromId": "frag_lybfjt",
+      "fromType": "fragment",
+      "toId": "frag_4nve2i",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    },
+    {
+      "id": "link_fg0u0w",
+      "type": "adjacent",
+      "fromId": "frag_4nve2i",
+      "fromType": "fragment",
+      "toId": "frag_h74lv",
+      "toType": "fragment",
+      "documentId": "doc_6bb52r",
+      "score": 0.4
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "linkmind",
+  "version": "0.2.0",
+  "description": "LinkMind MVP skeleton - local knowledge connector with ingest/build/query CLI",
+  "main": "dist/index.js",
+  "bin": {
+    "linkmind": "dist/index.js"
+  },
+  "scripts": {
+    "build": "cp -r src/storage-adapters dist/ && cp -r src/embedding-providers dist/ && cp -r src/utils dist/ && cp src/index.js dist/ && cp src/retriever.js dist/ && chmod +x dist/index.js",
+    "test": "node tests/smoke-test.js"
+  },
+  "keywords": ["knowledge", "graph", "rag", "linkmind"],
+  "author": "Golden Bean",
+  "license": "MIT",
+  "optionalDependencies": {
+    "sqlite3": "^5.1.7"
+  }
+}
