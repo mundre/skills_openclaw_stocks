@@ -1,0 +1,11 @@
+{
+  "owner": "justoneapi",
+  "slug": "justoneapi-tiktok",
+  "displayName": "TikTok API",
+  "latest": {
+    "version": "1.0.5",
+    "publishedAt": 1775375349726,
+    "commit": null
+  },
+  "history": []
+}
