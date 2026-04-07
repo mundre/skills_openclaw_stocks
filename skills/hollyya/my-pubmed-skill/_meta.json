@@ -1,0 +1,11 @@
+{
+  "owner": "hollyya",
+  "slug": "my-pubmed-skill",
+  "displayName": "My PubMed Search",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775548212237,
+    "commit": null
+  },
+  "history": []
+}
