@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "autodesk-revit",
+  "displayName": "Autodesk Revit",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775185575853,
+    "commit": null
+  },
+  "history": []
+}
