@@ -1,0 +1,11 @@
+{
+  "owner": "ankechenlab-node",
+  "slug": "aegis-protocol",
+  "displayName": "Aegis Protocol",
+  "latest": {
+    "version": "0.12.9",
+    "publishedAt": 1775479922726,
+    "commit": null
+  },
+  "history": []
+}
