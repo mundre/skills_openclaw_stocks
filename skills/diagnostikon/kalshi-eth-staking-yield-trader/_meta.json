@@ -1,0 +1,11 @@
+{
+  "owner": "diagnostikon",
+  "slug": "kalshi-eth-staking-yield-trader",
+  "displayName": "Kalshi Eth Staking Yield Trader",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1775330186523,
+    "commit": null
+  },
+  "history": []
+}
