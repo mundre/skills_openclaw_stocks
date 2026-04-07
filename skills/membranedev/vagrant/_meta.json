@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "vagrant",
+  "displayName": "Vagrant",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775185389018,
+    "commit": null
+  },
+  "history": []
+}
