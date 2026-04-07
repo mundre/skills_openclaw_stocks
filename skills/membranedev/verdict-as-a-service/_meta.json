@@ -3,9 +3,15 @@
   "slug": "verdict-as-a-service",
   "displayName": "Verdict As A Service",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775120591145,
-    "commit": "https://github.com/openclaw/skills/commit/0446aa63163af0b042258ca22291c9f91db25c82"
+    "version": "1.0.2",
+    "publishedAt": 1775170936644,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775120591145,
+      "commit": "https://github.com/openclaw/skills/commit/0446aa63163af0b042258ca22291c9f91db25c82"
+    }
+  ]
 }
