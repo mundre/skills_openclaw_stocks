@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "ibm-cloud",
+  "displayName": "Ibm Cloud",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775307837999,
+    "commit": null
+  },
+  "history": []
+}
