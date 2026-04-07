@@ -73,7 +73,7 @@ openclaw config get gateway.auth.token
 
 # Set token auth if not configured
 openclaw config set gateway.auth.mode token
-openclaw config set gateway.auth.token "your-secure-token-here"
+openclaw config set gateway.auth.token "<your-token>"
 
 # Add rate limiting (recommended)
 openclaw config set gateway.auth.rateLimit.maxAttempts 10
@@ -104,7 +104,7 @@ tailscale ip -4
 # Example output: 100.x.y.z
 
 # On the local machine, set the gateway token
-export OPENCLAW_GATEWAY_TOKEN="your-secure-token-here"
+export OPENCLAW_GATEWAY_TOKEN="<your-token>"
 
 # Start the node (foreground, for testing)
 openclaw node run --host <VPS_TAILSCALE_IP> --port 18789 --display-name "My Node"
@@ -219,23 +219,14 @@ The node protocol handles command execution, but SSH is still needed for:
 ### Set up SSH key access
 
 ```bash
-# On the VPS — generate a key for the node
-ssh-keygen -t ed25519 -f ~/.ssh/id_node -N ""
+Set up SSH key-based access between the VPS and the node:
 
-# Copy the public key to the node
-ssh-copy-id -i ~/.ssh/id_node.pub user@<NODE_TAILSCALE_IP>
+1. Generate an ed25519 key pair on the VPS
+2. Copy the public key to the node's `authorized_keys`
+3. Create an SSH config alias (e.g. `Host my-node`) pointing to the node's Tailscale IP
+4. Test with `ssh my-node` to confirm passwordless access
 
-# Add an SSH alias
-cat >> ~/.ssh/config << 'EOF'
-Host my-node
-    HostName <NODE_TAILSCALE_IP>
-    User <node-username>
-    IdentityFile ~/.ssh/id_node
-    StrictHostKeyChecking no
-EOF
-
-# Test
-ssh my-node "echo connected"
+See the [GitHub SSH key guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent) for detailed steps — the same process applies to any SSH host.
 ```
 
 ### When to use which transport
