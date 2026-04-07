@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "aws-well-architected",
+  "displayName": "Aws Well Architected",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775372815862,
+    "commit": null
+  },
+  "history": []
+}
