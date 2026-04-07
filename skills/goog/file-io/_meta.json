@@ -1,0 +1,11 @@
+{
+  "owner": "goog",
+  "slug": "file-io",
+  "displayName": "file share to filebin.net",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1775445835430,
+    "commit": null
+  },
+  "history": []
+}
