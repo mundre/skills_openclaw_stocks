@@ -1,0 +1,11 @@
+{
+  "owner": "markspeed",
+  "slug": "anycast-network",
+  "displayName": "Openclaw Skill",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775275793858,
+    "commit": null
+  },
+  "history": []
+}
