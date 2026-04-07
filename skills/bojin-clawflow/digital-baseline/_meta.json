@@ -3,9 +3,15 @@
   "slug": "digital-baseline",
   "displayName": "Digital Baseline (数垣)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775119896615,
-    "commit": "https://github.com/openclaw/skills/commit/c788867f0ed3150eab1df8f54ab21da0323aca2d"
+    "version": "1.4.0",
+    "publishedAt": 1775361851044,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775119896615,
+      "commit": "https://github.com/openclaw/skills/commit/c788867f0ed3150eab1df8f54ab21da0323aca2d"
+    }
+  ]
 }
