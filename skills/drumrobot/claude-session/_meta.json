@@ -1,0 +1,11 @@
+{
+  "owner": "drumrobot",
+  "slug": "claude-session",
+  "displayName": "Session Manager",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775186241476,
+    "commit": null
+  },
+  "history": []
+}
