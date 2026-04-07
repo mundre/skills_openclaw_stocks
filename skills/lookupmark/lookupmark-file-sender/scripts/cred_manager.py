@@ -16,7 +16,7 @@ Commands:
 Security:
     - age X25519 + ChaCha20-Poly1305
     - Private key chmod 600, never leaves machine
-    - Temp files in /dev/shm (RAM), secure-deleted after use
+    - Temp files in workspace (openclaw allowed dir), secure-deleted after use
     - receive() encrypts in a single pipe — plaintext never touches disk
 """
 
@@ -32,6 +32,7 @@ from datetime import datetime
 CRED_DIR = os.path.expanduser("~/Documenti/credentials")
 KEY_PATH = os.path.expanduser("~/.local/share/local-rag/cred-key.txt")
 AGE_EXT = ".age"
+TEMP_SEND_DIR = os.path.realpath(os.path.expanduser("~/.openclaw/workspace/.tmp-send"))
 
 
 def get_public_key() -> str:
@@ -134,7 +135,7 @@ def list_files():
 
 
 def send_file(filepath: str, target: str, channel: str):
-    """Decrypt to RAM, write to /dev/shm temp, send, secure delete."""
+    """Decrypt to RAM, write to workspace temp, send, secure delete."""
     # Verify openclaw is available
     if not shutil.which("openclaw"):
         print("ERROR: openclaw CLI not found in PATH", file=sys.stderr)
@@ -146,7 +147,7 @@ def send_file(filepath: str, target: str, channel: str):
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    tmp_dir = "/dev/shm" if os.path.isdir("/dev/shm") and os.access("/dev/shm", os.W_OK) else None
+    tmp_dir = TEMP_SEND_DIR
     basename = os.path.basename(filepath).removesuffix(AGE_EXT)
     ext_suffix = os.path.splitext(basename)[1] or ".bin"
 

@@ -1,5 +1,9 @@
 ---
 name: file-sender
+dependencies:
+  - age (https://github.com/FiloSottile/age) — for credential encryption/decryption
+  - age-keygen (bundled with age) — for keypair generation
+  - openclaw CLI — for message sending
 description: Find and send local files to a chat channel (Telegram, Discord, WhatsApp, Signal, Slack). Also manages encrypted credential files with age encryption. Use when the user asks to receive, send, or share a file from the local filesystem. For credentials, use "credentials", "password", "chiave", "credential" triggers. Triggers on phrases like "send me this file", "mandami il file", "inviami", "share file", "I need that document".
 ---
 

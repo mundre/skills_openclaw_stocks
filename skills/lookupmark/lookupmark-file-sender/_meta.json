@@ -1,11 +1,17 @@
 {
   "owner": "lookupmark",
   "slug": "lookupmark-file-sender",
-  "displayName": "LookupMark File Sender",
+  "displayName": "File Sender",
   "latest": {
-    "version": "1.9.0",
-    "publishedAt": 1775325787423,
-    "commit": "https://github.com/openclaw/skills/commit/1ac0318ea96ac61ecfd6eecad5a714ffc4bc7cb5"
+    "version": "2.1.0",
+    "publishedAt": 1775397218375,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.9.0",
+      "publishedAt": 1775325787423,
+      "commit": "https://github.com/openclaw/skills/commit/1ac0318ea96ac61ecfd6eecad5a714ffc4bc7cb5"
+    }
+  ]
 }

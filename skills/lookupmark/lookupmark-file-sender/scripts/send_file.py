@@ -17,6 +17,7 @@ import tempfile
 import time
 
 WORKSPACE = os.path.realpath(os.path.expanduser("~/.openclaw/workspace"))
+TEMP_SEND_DIR = os.path.join(WORKSPACE, ".tmp-send")
 MAX_RETRIES = 3
 RETRY_BACKOFF = [2, 5, 10]  # seconds
 
@@ -26,16 +27,15 @@ def resolve_path(path: str) -> str:
 
 
 def stage_file(resolved: str) -> tuple[str, str | None]:
-    """Stage file into /dev/shm (RAM) if outside workspace.
+    """Stage file into workspace .tmp-send if outside it.
+    openclaw only allows media paths under the workspace directory.
     Returns (staged_path, staged_dir or None)."""
     if os.path.commonpath([resolved, WORKSPACE]) == WORKSPACE:
         return resolved, None
-    staging_base = "/dev/shm" if os.path.isdir("/dev/shm") and os.access("/dev/shm", os.W_OK) else tempfile.gettempdir()
-    staged_dir = tempfile.mkdtemp(prefix="ocs-send-", dir=staging_base)
-    os.chmod(staged_dir, 0o700)
-    staged = os.path.join(staged_dir, os.path.basename(resolved))
+    os.makedirs(TEMP_SEND_DIR, exist_ok=True)
+    staged = os.path.join(TEMP_SEND_DIR, os.path.basename(resolved))
     shutil.copy2(resolved, staged)
-    return staged, staged_dir
+    return staged, TEMP_SEND_DIR
 
 
 def cleanup(send_path: str, original: str, staged_dir: str | None):
