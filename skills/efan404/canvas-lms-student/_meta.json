@@ -1,0 +1,11 @@
+{
+  "owner": "efan404",
+  "slug": "canvas-lms-student",
+  "displayName": "Canvas LMS Student Skill",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1775331803627,
+    "commit": null
+  },
+  "history": []
+}
