@@ -1,0 +1,11 @@
+{
+  "owner": "cloudcompile",
+  "slug": "site-summarizer",
+  "displayName": "Site Summarizer",
+  "latest": {
+    "version": "4.1.0",
+    "publishedAt": 1775322733692,
+    "commit": null
+  },
+  "history": []
+}
