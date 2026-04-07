@@ -1,6 +1,37 @@
 ---
 name: weather-pulse
-description: "Weather + Air Quality query tool. QWeather API (50k/mo) + WAQI AQI (1k/hr). Real-time weather, forecasts (3-30d daily, 24-168h hourly), weather life indices, AQI + PM2.5/PM10 forecasts. Configure free API credentials for desired endpoints."
+description: "Get current weather and air quality forecasts — real-time temperature, 3-30 day forecasts, hourly forecasts, AQI/PM2.5, wind, humidity, UV, weather indices, and life tips. Powered by free QWeather (50k/mo) and WAQI (1k/hr) APIs. Supports Chinese/English city names, coordinates, and CityId. — 城市天气实时 + 3-30 天预报 + 24-168 小时逐小时 + 空气质量 AQI + 天气生活指数。",
+summary: "Get current weather and air quality forecasts — real-time temperature, 3-30 day forecasts, hourly forecasts, AQI/PM2.5, wind, humidity, UV, weather indices, and life tips. Powered by free QWeather (50k/mo) and WAQI (1k/hr) APIs. Supports Chinese/English city names, coordinates, and CityId. — 城市天气实时 + 3-30 天预报 + 24-168 小时逐小时 + 空气质量 AQI + 天气生活指数。"
+tags:
+  weather: "1.3.1"
+  forecast: "1.3.1"
+  air-quality: "1.3.1"
+  aqi: "1.3.1"
+  qweather: "1.3.1"
+  temperature: "1.3.1"
+  chinese: "1.3.1"
+trigger_patterns:
+  - "天气"
+  - "查天气"
+  - "哪里天气"
+  - "天气预报"
+  - "详细天气"
+  - "气温"
+  - "温度"
+  - "下雨"
+  - "下雨吗"
+  - "会下雨"
+  - "下雨了"
+  - "湿度"
+  - "风力"
+  - "AQI"
+  - "空气质量"
+  - "空气质量指数"
+  - "PM25"
+  - "天气怎么样"
+  - "什么天气"
+  - "weather"
+  - "forecast"
 homepage: "https://dev.qweather.com/docs"
 requiredEnvs:
   - name: QWEATHER_API_HOST
