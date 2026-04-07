@@ -3,9 +3,15 @@
   "slug": "ezlynx",
   "displayName": "Ezlynx",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775106255463,
-    "commit": "https://github.com/openclaw/skills/commit/6c4ac88b41ff87db5189a8fee0c2f51874c3bd17"
+    "version": "1.0.2",
+    "publishedAt": 1775170821849,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775106255463,
+      "commit": "https://github.com/openclaw/skills/commit/6c4ac88b41ff87db5189a8fee0c2f51874c3bd17"
+    }
+  ]
 }
