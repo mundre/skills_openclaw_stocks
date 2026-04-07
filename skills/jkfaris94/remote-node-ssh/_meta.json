@@ -1,0 +1,11 @@
+{
+  "owner": "jkfaris94",
+  "slug": "remote-node-ssh",
+  "displayName": "Remote Node SSH",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775166541905,
+    "commit": null
+  },
+  "history": []
+}
