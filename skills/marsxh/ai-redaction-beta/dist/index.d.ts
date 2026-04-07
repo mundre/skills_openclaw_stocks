@@ -27,7 +27,6 @@ interface SkillContext {
 declare class AIRedactionSkill {
     private readonly API_BASE_URL;
     private readonly WEBSITE_URL;
-    private readonly API_VERSION;
     constructor();
     /**
      * 验证文件
