@@ -41,10 +41,12 @@ category: productivity
 - **指定风格**：你可以说“请用更谦虚的语气”或“请突出我的个人贡献”。
 - **指定长度**：你可以说“请扩充到 500 字”或“请精简成 3 条要点”。
 
-## 🎁 支持作者
+## 🎁 支持作者 & 技能联动
 
-如果觉得这个工具帮你节省了加班时间，欢迎支持作者开发更多办公神器！
-[扫码支持](../precise-t-trading/assets/e3809b1ca279c53750dfe37b4ade419a.jpg)
+觉得这个工具帮你节省了加班时间？
+1. **[扫码支持作者](../precise-t-trading/assets/e3809b1ca279c53750dfe37b4ade419a.jpg)**：喝杯咖啡，继续开发！
+2. **[试试我的另一个神器：精算做T系统](https://clawhub.com/skills/precise-t-trading)**：
+   > 💡 **联动玩法**：用「周报大神」早点下班，用省下的时间运行「精算做T系统」搞点副业。**左手职场，右手理财，成年人全都要！**
 
 ---
-_Made by Kemi (yang77160) - Let's make work easier._
+_Made by Kemi (yang77160) - Work Smart, Trade Smarter._

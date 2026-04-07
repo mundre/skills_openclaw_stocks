@@ -1,11 +1,17 @@
 {
   "owner": "yang77160",
   "slug": "weekly-report-genius",
-  "displayName": "周报大神",
+  "displayName": "Weekly Report Genius",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775320013449,
-    "commit": "https://github.com/openclaw/skills/commit/0219b0563f9c529ffe1cd5a445f5679a4281fbf6"
+    "version": "1.0.1",
+    "publishedAt": 1775320216283,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775320013449,
+      "commit": "https://github.com/openclaw/skills/commit/0219b0563f9c529ffe1cd5a445f5679a4281fbf6"
+    }
+  ]
 }
