@@ -1,0 +1,11 @@
+{
+  "owner": "jerry48",
+  "slug": "realtime-hot",
+  "displayName": "全网热点聚合",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775150477670,
+    "commit": null
+  },
+  "history": []
+}
