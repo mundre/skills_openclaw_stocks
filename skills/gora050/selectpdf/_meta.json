@@ -3,9 +3,15 @@
   "slug": "selectpdf",
   "displayName": "Selectpdf",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775117113294,
-    "commit": "https://github.com/openclaw/skills/commit/cc697157729146c21707f7561c6ef07e0f39329c"
+    "version": "1.0.2",
+    "publishedAt": 1775170921593,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775117113294,
+      "commit": "https://github.com/openclaw/skills/commit/cc697157729146c21707f7561c6ef07e0f39329c"
+    }
+  ]
 }
