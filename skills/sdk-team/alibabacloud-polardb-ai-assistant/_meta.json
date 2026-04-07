@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-polardb-ai-assistant",
+  "displayName": "Alibabacloud Polardb Ai Assistant",
+  "latest": {
+    "version": "0.0.1-beta.1",
+    "publishedAt": 1775200462458,
+    "commit": null
+  },
+  "history": []
+}
