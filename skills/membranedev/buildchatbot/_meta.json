@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "buildchatbot",
+  "displayName": "Buildchatbot",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775217907623,
+    "commit": null
+  },
+  "history": []
+}
