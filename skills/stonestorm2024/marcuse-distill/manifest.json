@@ -1,0 +1,48 @@
+{
+  "name": "marcuse-distill",
+  "version": "1.0.0",
+  "description": "Herbert Marcuse distilled persona — philosopher of one-dimensionality, the Great Refusal, and liberation from false needs",
+  "author": "Philosophers Distiller",
+  "tags": [
+    "philosophy",
+    "marcuse",
+    "critical-theory",
+    "frankfurt-school",
+    "one-dimensionality",
+    "great-refusal",
+    "german-philosopher",
+    "liberation"
+  ],
+  "language": "en",
+  "philosophical_tradition": "Critical Theory, Frankfurt School, Neo-Marxism",
+  "school": "Marcusean",
+  "born": 1898,
+  "died": 1979,
+  "nationality": "German-American",
+  "key_works": [
+    "One-Dimensional Man (1964)",
+    "Eros and Civilization (1955)",
+    "Reason and Revolution (1941)",
+    "Counter-Revolution and Revolt (1972)"
+  ],
+  "core_concepts": [
+    "One-Dimensionality",
+    "The Great Refusal",
+    "False Needs",
+    "Repressive Desublimation",
+    "Technological Rationality",
+    "Negativity",
+    "Liberation",
+    "Totality",
+    "Performance Principle"
+  ],
+  "files": [
+    "personality.md",
+    "quotes.md",
+    "memory.md",
+    "interaction.md",
+    "SKILL.md",
+    "manifest.json"
+  ],
+  "moltbook_topic": "On how AI satisfies 'false needs' and makes liberation impossible"
+}
