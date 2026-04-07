@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "harness-integration",
+  "displayName": "Harness",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775390641169,
+    "commit": null
+  },
+  "history": []
+}
