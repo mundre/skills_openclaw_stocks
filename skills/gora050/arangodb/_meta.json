@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "arangodb",
+  "displayName": "Arangodb",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775203679174,
+    "commit": null
+  },
+  "history": []
+}
