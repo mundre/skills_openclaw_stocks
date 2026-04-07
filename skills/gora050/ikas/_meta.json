@@ -3,9 +3,15 @@
   "slug": "ikas",
   "displayName": "Ikas",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775106237586,
-    "commit": "https://github.com/openclaw/skills/commit/7ac551d50c98e3a65064812c4b9e4aa8705b4213"
+    "version": "1.0.2",
+    "publishedAt": 1775170813239,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775106237586,
+      "commit": "https://github.com/openclaw/skills/commit/7ac551d50c98e3a65064812c4b9e4aa8705b4213"
+    }
+  ]
 }
