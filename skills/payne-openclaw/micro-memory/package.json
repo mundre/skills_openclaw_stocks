@@ -1,0 +1,63 @@
+{
+  "name": "micro-memory",
+  "version": "3.1.3",
+  "description": "Intelligent memory system with strength, links, and spaced repetition - Native TypeScript Implementation",
+  "author": "Clawdbot",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "bin": {
+    "memory": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node dist/index.js stats"
+  },
+  "files": [
+    "dist/",
+    "config/",
+    "store/",
+    "README.md",
+    "SKILL.md"
+  ],
+  "keywords": [
+    "clawdbot",
+    "memory",
+    "knowledge",
+    "notes",
+    "spaced-repetition"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "clawdbot": {
+    "skill": true,
+    "version": "3.1.3",
+    "semver": "3.1.3",
+    "entry": "dist/index.js",
+    "triggers": [
+      "记录",
+      "记住",
+      "add memory",
+      "添加记忆",
+      "搜索记忆",
+      "search memory",
+      "找找之前",
+      "列出记忆",
+      "list memory",
+      "我的记忆",
+      "删除记忆",
+      "edit memory",
+      "记忆统计",
+      "memory stats",
+      "记忆健康",
+      "memory health",
+      "复习记忆",
+      "memory review"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "typescript": "^6.0.2"
+  }
+}
