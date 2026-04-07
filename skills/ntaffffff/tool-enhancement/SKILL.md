@@ -22,7 +22,7 @@ metadata:
 **为 OpenClaw 打造的 55+ 增强工具集**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](./SKILL.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-green.svg)](./SKILL.md)
 [![Tools](https://img.shields.io/badge/tools-55+-orange.svg)](#工具总览)
 
 *参考 Claude Code 架构设计 | 支持自然语言调用*

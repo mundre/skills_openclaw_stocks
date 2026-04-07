@@ -3,7 +3,8 @@
 
 set -e
 
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
 echo "📦 开始发布..."
 
@@ -26,16 +27,16 @@ echo "  新版本: $NEW_VERSION"
 # Git 提交并推送
 echo "  📤 推送到 GitHub..."
 git add -A
-git commit -m "release: v$NEW_VERSION"
+git commit -m "release: v$NEW_VERSION" 2>/dev/null || echo "  (无新变更)"
 git push
 
-# ClawHub 发布 (必须用 DEBUG=* 才能识别 SKILL.md)
+# ClawHub 发布 (必须用完整路径 + DEBUG=*)
 echo "  ☁️  发布到 ClawHub..."
-DEBUG=* clawhub publish . \
+DEBUG=* clawhub publish "$SCRIPT_DIR" \
     --slug tool-enhancement \
     --name "Tool Enhancement" \
     --version "$NEW_VERSION" \
-    --changelog "版本更新" 2>&1 | tail -5
+    --changelog "版本更新" 2>&1 | tail -3
 
 echo ""
 echo "✅ 发布完成!"

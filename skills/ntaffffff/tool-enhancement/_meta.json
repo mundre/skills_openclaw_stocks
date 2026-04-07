@@ -3,9 +3,15 @@
   "slug": "tool-enhancement",
   "displayName": "Tool Enhancement",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775146832442,
-    "commit": "https://github.com/openclaw/skills/commit/84fa49a2878b1f7930d73d59d3fde8fc3168eee8"
+    "version": "1.0.5",
+    "publishedAt": 1775193092395,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775146832442,
+      "commit": "https://github.com/openclaw/skills/commit/84fa49a2878b1f7930d73d59d3fde8fc3168eee8"
+    }
+  ]
 }

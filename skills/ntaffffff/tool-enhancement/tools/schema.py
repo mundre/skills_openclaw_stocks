@@ -209,16 +209,16 @@ class ToolRegistry:
         if event in self._hooks:
             self._hooks[event].append(callback)
     
-    async def execute(self, name: str, **kwargs) -> ToolResult:
+    async def execute(self, tool_name: str, **kwargs) -> ToolResult:
         """执行工具"""
         import time
         start_time = time.time()
         
-        tool = self.get(name)
+        tool = self.get(tool_name)
         if not tool:
             return ToolResult(
                 success=False,
-                error=f"工具不存在: {name}"
+                error=f"工具不存在: {tool_name}"
             )
         
         # 检查废弃

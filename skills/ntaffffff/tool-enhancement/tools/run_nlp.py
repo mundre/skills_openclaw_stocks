@@ -19,7 +19,15 @@ from schema import ToolRegistry
 
 # 意图映射规则
 INTENT_PATTERNS = [
-    # Shell 执行（必须放在前面，优先匹配）
+    # ===== Agent Teams =====
+    (r"创建\s*团队\s*(.+)", "team_create", "team_name"),
+    (r"团队\s*列表", "team_list", None),
+    (r"添加\s*(.+?)\s*到\s*团队", "team_add_agent", "team_agent"),
+    (r"团队\s*执行\s*(.+)", "team_run_task", "team_task"),
+    (r"让\s*(.+?)\s*团队\s*(.+)", "team_run_task", "team_task2"),
+    (r"(?:创建|添加)\s*(.+?)\s*Agent", "team_add_agent", "add_agent"),
+    
+    # ===== Shell 执行 =====
     (r"^(ls|cd|pwd|cat|rm|mkdir|touch|echo)\s*(.*)$", "shell_exec", "shell_command"),
     (r"执行\s+(.+)$", "shell_exec", "shell_command"),
     (r"运行\s+(.+)$", "shell_exec", "shell_command"),
@@ -122,6 +130,32 @@ async def process_intent(text: str) -> dict:
                 params["message"] = match.group(1).strip()
             elif default_param == "pattern":
                 params["pattern"] = match.group(1).strip()
+            
+            # ===== Agent Teams 参数处理 =====
+            elif default_param == "team_name":
+                # "创建团队 我的团队" → team_id, name
+                params["team_id"] = match.group(1).strip().replace(" ", "_").lower()
+                params["name"] = match.group(1).strip()
+            elif default_param == "team_agent":
+                # "添加 coder 到团队" → team_id, agent_id, name
+                agent_name = match.group(1).strip()
+                params["team_id"] = "myteam"  # 默认
+                params["agent_id"] = agent_name.replace(" ", "_").lower()
+                params["name"] = agent_name
+            elif default_param == "team_task":
+                # "团队执行 任务"
+                params["team_id"] = "myteam"  # 默认
+                params["task"] = match.group(1).strip()
+            elif default_param == "team_task2":
+                # "让 coder 团队 任务"
+                params["team_id"] = match.group(1).strip().replace(" ", "_").lower()
+                params["task"] = match.group(2).strip()
+            elif default_param == "add_agent":
+                # "添加 coder Agent"
+                agent_name = match.group(1).strip()
+                params["team_id"] = "myteam"
+                params["agent_id"] = agent_name.replace(" ", "_").lower()
+                params["name"] = agent_name
             
             # 执行工具
             try:

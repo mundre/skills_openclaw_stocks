@@ -50,6 +50,7 @@ def load_all_tools() -> int:
         ("agent_tools", "AGENT_TOOLS"),
         ("memory_tools", "MEMORY_TOOLS"),
         ("ui_tools", "UI_TOOLS"),
+        ("session_tools", "SESSION_TOOLS"),  # 新增：会话协作工具
     ]
     
     for module_name, var_name in tool_modules:
