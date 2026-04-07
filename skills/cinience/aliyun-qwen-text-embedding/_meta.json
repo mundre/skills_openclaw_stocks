@@ -1,0 +1,11 @@
+{
+  "owner": "cinience",
+  "slug": "aliyun-qwen-text-embedding",
+  "displayName": "Aliyun Qwen Text Embedding",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775066204671,
+    "commit": null
+  },
+  "history": []
+}
