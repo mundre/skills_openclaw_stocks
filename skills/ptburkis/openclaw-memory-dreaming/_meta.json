@@ -3,9 +3,15 @@
   "slug": "openclaw-memory-dreaming",
   "displayName": "Memory Dreaming",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1775129631086,
-    "commit": "https://github.com/openclaw/skills/commit/191f654f8faee757d1499981cf0a5b1f2452d6f1"
+    "version": "0.1.2",
+    "publishedAt": 1775152974186,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1775129631086,
+      "commit": "https://github.com/openclaw/skills/commit/191f654f8faee757d1499981cf0a5b1f2452d6f1"
+    }
+  ]
 }

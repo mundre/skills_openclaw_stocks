@@ -177,6 +177,29 @@ Each entry in `memory-meta.json`:
 
 Full data model documentation: `references/architecture.md`
 
+## Security & Privacy
+
+**Core memory scripts** (bootstrap, decay, recall, supersede) are fully local.
+They read and write files in your workspace. No network calls, no credentials
+needed.
+
+**Conversation archiver** is fully local. It reads OpenClaw session transcripts
+and writes Markdown files. No network calls.
+
+**Conversation summariser** sends conversation text to an external LLM API
+(OpenRouter or OpenAI) for summarisation. This means:
+
+- Your chat transcripts are sent to a third-party API
+- **Built-in redaction** automatically strips common secret patterns (API keys,
+  tokens, passwords, AWS credentials, Bearer headers) before sending
+- Configure `excludePatterns` in `archive-config.json` to filter additional
+  sensitive content
+- You can run summarisation with a self-hosted model to keep everything local
+
+**Required credentials:**
+- `OPENROUTER_API_KEY` or `OPENAI_API_KEY` — only needed for the summariser
+- Set in `.env.openrouter`, `.env.openai`, or environment variables
+
 ## Status
 
 **Work in progress.** We're actively using this in production and iterating. The approach is deliberately simple — we add complexity only when the simple thing breaks.

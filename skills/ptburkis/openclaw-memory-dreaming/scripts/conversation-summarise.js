@@ -108,6 +108,36 @@ function writeState(groupDir, state) {
   fs.writeFileSync(path.join(groupDir, '.summary-state.json'), JSON.stringify(state, null, 2));
 }
 
+// ─── Redaction ──────────────────────────────────────────────────────────────
+
+/**
+ * Redact likely secrets, tokens, and credentials from text before sending
+ * to an external LLM. Patterns are intentionally broad — false positives
+ * (redacting non-secrets) are preferable to leaking real secrets.
+ */
+function redactSecrets(text) {
+  return text
+    // API keys / tokens (common prefixes)
+    .replace(/\b(sk-[a-zA-Z0-9_-]{20,})\b/g, '[REDACTED_API_KEY]')
+    .replace(/\b(sk-or-[a-zA-Z0-9_-]{20,})\b/g, '[REDACTED_API_KEY]')
+    .replace(/\b(ghp_[a-zA-Z0-9]{30,})\b/g, '[REDACTED_GITHUB_TOKEN]')
+    .replace(/\b(ghu_[a-zA-Z0-9]{30,})\b/g, '[REDACTED_GITHUB_TOKEN]')
+    .replace(/\b(clh_[a-zA-Z0-9_-]{20,})\b/g, '[REDACTED_CLAWHUB_TOKEN]')
+    .replace(/\b(xoxb-[a-zA-Z0-9-]+)\b/g, '[REDACTED_SLACK_TOKEN]')
+    .replace(/\b(xoxp-[a-zA-Z0-9-]+)\b/g, '[REDACTED_SLACK_TOKEN]')
+    // Bearer tokens in headers
+    .replace(/(Bearer\s+)[a-zA-Z0-9_.-]{20,}/gi, '$1[REDACTED_TOKEN]')
+    .replace(/(Authorization:\s*)[^\s\n]{20,}/gi, '$1[REDACTED_AUTH]')
+    // Passwords in common formats
+    .replace(/(password|passwd|pwd|secret)[\s:=]+\S{6,}/gi, '$1 [REDACTED]')
+    // AWS keys
+    .replace(/\b(AKIA[A-Z0-9]{16})\b/g, '[REDACTED_AWS_KEY]')
+    // Generic long hex/base64 strings that look like secrets (40+ chars)
+    .replace(/\b[a-f0-9]{40,}\b/g, '[REDACTED_HEX]')
+    // .env variable assignments with values
+    .replace(/^(\w*(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)\w*\s*=\s*).+$/gim, '$1[REDACTED]');
+}
+
 // ─── Summarisation ──────────────────────────────────────────────────────────
 
 const SUMMARY_SYSTEM_PROMPT = `You are summarising a group chat conversation for a personal knowledge base.
@@ -143,11 +173,14 @@ async function summariseTopic(rawFile, summaryFile, existingSummary, force = fal
     return { skipped: true, reason: 'too few messages' };
   }
   
+  // Redact secrets before sending to external LLM
+  const safeContent = redactSecrets(rawContent);
+  
   let prompt;
   if (existingSummary && !force) {
-    prompt = `Here is the EXISTING summary of this topic:\n\n${existingSummary}\n\n---\n\nHere is the FULL conversation (which may include new messages since the last summary):\n\n${rawContent}\n\nUpdate the summary to incorporate any new information. Keep the same structure. Don't lose existing insights.`;
+    prompt = `Here is the EXISTING summary of this topic:\n\n${existingSummary}\n\n---\n\nHere is the FULL conversation (which may include new messages since the last summary):\n\n${safeContent}\n\nUpdate the summary to incorporate any new information. Keep the same structure. Don't lose existing insights.`;
   } else {
-    prompt = `Summarise this conversation:\n\n${rawContent}`;
+    prompt = `Summarise this conversation:\n\n${safeContent}`;
   }
   
   // Truncate if too long

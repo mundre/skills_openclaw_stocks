@@ -9,6 +9,8 @@ description: >
   Use when you need: agent memory that persists across sessions, conversation
   context across channels/groups/topics, fact lifecycle tracking (supersession),
   or automated memory maintenance via dream cycles.
+source: https://github.com/ptburkis/openclaw-memory-dreaming
+homepage: https://github.com/ptburkis/openclaw-memory-dreaming
 ---
 
 # Memory Dreaming
@@ -215,3 +217,44 @@ long-running group conversations.
 
 This is a work in progress. Start simple, observe what works, add complexity
 when the simple thing breaks.
+
+---
+
+## Credentials & Privacy
+
+### Required credentials
+
+**Core memory scripts (4):** No credentials needed. These are pure local
+file operations — read/write Markdown and JSON in your workspace.
+
+**Conversation summariser:** Requires an LLM API key. Set one of:
+- `OPENROUTER_API_KEY` in `.env.openrouter` or environment
+- `OPENAI_API_KEY` in `.env.openai` or environment
+
+The summariser sends conversation transcripts to the configured LLM provider
+for summarisation. **This means your chat content is sent to a third-party
+API.** Use a self-hosted model or review transcripts before summarising if
+this is a concern.
+
+**Conversation archiver:** No credentials. Reads local OpenClaw session
+transcripts and writes local Markdown files.
+
+### What gets read
+
+- `MEMORY.md` and `memory/` files (your workspace)
+- OpenClaw session transcripts (`sessions.json` + `.jsonl` files)
+- `.env.openrouter` or `.env.openai` (for API keys, summariser only)
+- `archives/archive-config.json` (optional config you create)
+
+### What gets written
+
+- `memory/memory-meta.json`, `memory/dream-log.md`, `memory/archive/`
+- `archives/<channel>/<group>/` (raw transcripts, summaries, digests)
+
+### What gets sent externally
+
+- **Only `conversation-summarise.js`** sends data externally (to your
+  configured LLM API for summarisation). All other scripts are fully local.
+- Raw conversation text is sent to the LLM. If your transcripts contain
+  sensitive information, credentials, or private messages, those will be
+  included unless you filter them first.
