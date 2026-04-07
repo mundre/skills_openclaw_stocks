@@ -1,0 +1,11 @@
+{
+  "owner": "pablomartinezcrespo",
+  "slug": "aemet",
+  "displayName": "Aemet",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1775334479488,
+    "commit": null
+  },
+  "history": []
+}
