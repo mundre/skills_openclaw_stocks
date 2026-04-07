@@ -3,9 +3,15 @@
   "slug": "proactive-pa",
   "displayName": "Proactive Pa",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775110221108,
-    "commit": "https://github.com/openclaw/skills/commit/82f51152164b33eda6bc202fec8ecd243c06b56c"
+    "version": "1.0.1",
+    "publishedAt": 1775165796334,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775110221108,
+      "commit": "https://github.com/openclaw/skills/commit/82f51152164b33eda6bc202fec8ecd243c06b56c"
+    }
+  ]
 }
