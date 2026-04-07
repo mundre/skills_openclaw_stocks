@@ -3,11 +3,16 @@
   "slug": "dream-rem",
   "displayName": "Dream Rem",
   "latest": {
-    "version": "3.0.6",
-    "publishedAt": 1775553533027,
-    "commit": "https://github.com/openclaw/skills/commit/626729975e2769c185bda65627fa534e6b9a6e26"
+    "version": "3.0.9",
+    "publishedAt": 1775555463481,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.6",
+      "publishedAt": 1775553533027,
+      "commit": "https://github.com/openclaw/skills/commit/626729975e2769c185bda65627fa534e6b9a6e26"
+    },
     {
       "version": "3.0.5",
       "publishedAt": 1775542525725,
