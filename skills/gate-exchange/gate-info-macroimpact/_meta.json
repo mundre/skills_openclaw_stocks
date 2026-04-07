@@ -1,11 +1,17 @@
 {
   "owner": "gate-exchange",
   "slug": "gate-info-macroimpact",
-  "displayName": "Gate Info Macro Impact",
+  "displayName": "gate-info-macroimpact",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775050148639,
-    "commit": "https://github.com/openclaw/skills/commit/8686a9ea6271c9eb64f00f4bfc5f3807c6837409"
+    "version": "1.0.1",
+    "publishedAt": 1775184694318,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775050148639,
+      "commit": "https://github.com/openclaw/skills/commit/8686a9ea6271c9eb64f00f4bfc5f3807c6837409"
+    }
+  ]
 }
