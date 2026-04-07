@@ -1,0 +1,11 @@
+{
+  "owner": "linkbag",
+  "slug": "claude-swarm",
+  "displayName": "Claude Swarm",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775317486116,
+    "commit": null
+  },
+  "history": []
+}
