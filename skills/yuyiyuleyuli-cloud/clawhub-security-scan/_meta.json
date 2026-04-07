@@ -1,0 +1,11 @@
+{
+  "owner": "yuyiyuleyuli-cloud",
+  "slug": "clawhub-security-scan",
+  "displayName": "ClawHub Security Scan",
+  "latest": {
+    "version": "1.1.2",
+    "publishedAt": 1775209691896,
+    "commit": null
+  },
+  "history": []
+}
