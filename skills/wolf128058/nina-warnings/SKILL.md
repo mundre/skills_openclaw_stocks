@@ -2,7 +2,7 @@
 name: NINA Warnings
 slug: nina-warnings
 description: Read-only access to current German public warnings via the official NINA / warnung.bund.de API. Use when asked about NINA alerts, Bevölkerungswarnungen, civil protection alerts, weather warnings, flood warnings, Katwarn-style warning checks, or whether there are active warnings for a German city, district, or ARS region code.
-changelog: ClawHub-oriented cleanup with bilingual agent guidance, explicit read-only scope, public API usage, no credential requirements, and consistent location-or-ARS lookup behavior.
+changelog: v1.1.0 adds district-level ARS normalization, optional warning detail and GeoJSON enrichment, and nationwide source-feed access for mowas, dwd, katwarn, biwapp, lhp, and police.
 metadata: {"clawdbot":{"emoji":"W","requires":{"bins":["bash","curl","jq"]},"os":["linux","darwin"]}}
 ---
 
@@ -33,6 +33,8 @@ Repository: [openclaw-skill-nina-warnings](https://github.com/wolf128058/opencla
 
 - Accept either a German place/district name or a 12-digit ARS code.
 - Akzeptiere entweder einen deutschen Orts-/Kreisnamen oder einen 12-stelligen ARS-Code.
+- Normalize ARS values to district level before dashboard requests.
+- Normalisiere ARS-Werte vor Dashboard-Abrufen auf Kreisebene.
 - Prefer the helper script instead of handcrafted `curl`.
 - Bevorzuge das Helper-Skript statt manuellem `curl`.
 - If a place name resolves to multiple matches, use the best local cache match and mention ambiguity briefly if needed.
@@ -43,6 +45,9 @@ Repository: [openclaw-skill-nina-warnings](https://github.com/wolf128058/opencla
 ```bash
 ~/.openclaw/workspace/skills/nina-warnings/scripts/nina-status.sh "110000000000"
 ~/.openclaw/workspace/skills/nina-warnings/scripts/nina-status.sh "Berlin" --json
+~/.openclaw/workspace/skills/nina-warnings/scripts/nina-status.sh "110000000000" --details
+~/.openclaw/workspace/skills/nina-warnings/scripts/nina-status.sh "110000000000" --geojson --json
+~/.openclaw/workspace/skills/nina-warnings/scripts/nina-status.sh --source dwd
 ~/.openclaw/workspace/skills/nina-warnings/scripts/nina-lookup-ars.sh "Berlin"
 ```
 
@@ -59,14 +64,19 @@ Um ARS-Codes fuer weitere Staedte oder Landkreise zu finden, nutze:
 
 1. Resolve the user location to an ARS code with `scripts/nina-lookup-ars.sh` unless the user already provided a 12-digit ARS.
 2. Fetch current warnings with `scripts/nina-status.sh`.
-3. Summarize the result clearly:
+3. Add `--details` when the user needs description or instructions.
+4. Add `--geojson` when geometry or machine-readable area data is needed.
+5. Use `--source <name>` for nationwide feeds like `mowas`, `dwd`, `katwarn`, `biwapp`, `lhp`, or `police`.
+6. Summarize the result clearly:
    active warnings, sender, severity, effective time, expiry if present.
-4. If there are no warnings, say so plainly.
+7. If there are no warnings, say so plainly.
 
 ## Output Guidance / Ausgabehinweise
 
 - Prefer concise summaries over raw JSON unless machine-readable output was requested.
 - Bevorzuge knappe Zusammenfassungen statt rohem JSON, ausser explizit angefordert.
+- Mention when an ARS was normalized to district level.
+- Erwaehne, wenn ein ARS auf Kreisebene normalisiert wurde.
 - Mention the resolved region when the user asked for a city or district.
 - Nenne die aufgeloeste Region, wenn der User nach einer Stadt oder einem Landkreis gefragt hat.
 - If lookup is ambiguous, say which match was used.
@@ -87,7 +97,7 @@ Um ARS-Codes fuer weitere Staedte oder Landkreise zu finden, nutze:
 
 - ARS = `Amtlicher Regionalschluessel`, 12 digits.
 - The dashboard endpoint returns an array of current warning objects or `[]`.
-- `references/ars-codes.json` contains the 16 German state capitals.
+- `references/ars-codes.json` contains the 16 German state capitals as bundled starter entries.
 - Add more cities or districts to `references/ars-codes.json` if you want local lookup beyond the bundled defaults.
 - Ergaenze `references/ars-codes.json` um weitere Staedte oder Landkreise, wenn du mehr als die mitgelieferten Standard-Eintraege lokal aufloesen willst.
 - This skill is suitable for a conservative ClawHub release because it is public, read-only, and has no credential handling.

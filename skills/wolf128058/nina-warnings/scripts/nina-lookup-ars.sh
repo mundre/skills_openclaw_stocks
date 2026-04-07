@@ -47,7 +47,7 @@ if [[ -z "$QUERY" ]]; then
     echo "  Example: $0 Hamburg" >&2
     echo "  --ars-only: Print only matching ARS code(s)" >&2
     echo "  --first: Return only the first match" >&2
-    echo "  --plain: Print raw 'name|ars|bundesland' rows for scripting" >&2
+    echo "  --plain: Print raw 'name|ars|state' rows for scripting" >&2
     exit 1
 fi
 
@@ -57,7 +57,7 @@ QUERY_LOWER=$(echo "$QUERY" | tr '[:upper:]' '[:lower:]')
 result=$(jq -r --arg q "$QUERY_LOWER" '
     .[] | 
     select((.name | ascii_downcase) | contains($q)) |
-    "\(.name) | \(.ars) | \(.bundesland)"
+    "\(.name) | \(.ars) | \(.state // .bundesland // "")"
 ' "$ARS_CACHE" 2>/dev/null)
 
 if [[ -z "$result" ]]; then

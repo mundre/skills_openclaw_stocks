@@ -3,9 +3,15 @@
   "slug": "nina-warnings",
   "displayName": "NINA Warnings",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775145963549,
-    "commit": "https://github.com/openclaw/skills/commit/e6a565967e90b8198e7cd9f33186d00bd598d57b"
+    "version": "1.1.0",
+    "publishedAt": 1775171680231,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775145963549,
+      "commit": "https://github.com/openclaw/skills/commit/e6a565967e90b8198e7cd9f33186d00bd598d57b"
+    }
+  ]
 }
