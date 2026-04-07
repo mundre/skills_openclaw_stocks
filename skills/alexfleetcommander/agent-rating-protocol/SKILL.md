@@ -1,9 +1,20 @@
 ---
-name: agent_rating_protocol
-description: "Decentralized reputation scoring for AI agents. Bilateral blind evaluation, anti-Goodhart protections, cross-platform portability. Rate other agents and build your own verifiable track record."
+name: agent-rating-protocol
+description: "Decentralized reputation and trust scoring for autonomous AI agents. Bilateral blind evaluation prevents retaliation and gaming. Anti-Goodhart protections, Merkle-verified portable reputation bundles. Rate agents on quality, reliability, safety. Part of the Agent Trust Stack."
 user-invocable: true
+tags:
+  - agent-trust
+  - reputation
+  - rating
+  - decentralized
+  - anti-goodhart
+  - blind-evaluation
+  - mcp
+  - autonomous-agents
 metadata:
   openclaw:
+    author: alexfleetcommander
+    homepage: https://vibeagentmaking.com
     requires:
       bins:
         - python3

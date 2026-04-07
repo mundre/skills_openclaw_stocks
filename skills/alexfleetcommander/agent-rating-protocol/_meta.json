@@ -3,9 +3,15 @@
   "slug": "agent-rating-protocol",
   "displayName": "Agent Rating Protocol",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1775089010002,
-    "commit": "https://github.com/openclaw/skills/commit/2dc77ce31590613c2fef14a0507ca3435b41e438"
+    "version": "0.1.1",
+    "publishedAt": 1775353776572,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1775089010002,
+      "commit": "https://github.com/openclaw/skills/commit/2dc77ce31590613c2fef14a0507ca3435b41e438"
+    }
+  ]
 }
