@@ -1,0 +1,11 @@
+{
+  "owner": "gaixianggeng",
+  "slug": "gate-exchange-spot-v2-staging",
+  "displayName": "Gate Spot Exchange Skill",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775222211236,
+    "commit": null
+  },
+  "history": []
+}
