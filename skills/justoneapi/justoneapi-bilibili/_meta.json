@@ -1,0 +1,11 @@
+{
+  "owner": "justoneapi",
+  "slug": "justoneapi-bilibili",
+  "displayName": "Bilibili API",
+  "latest": {
+    "version": "1.0.7",
+    "publishedAt": 1775375303537,
+    "commit": null
+  },
+  "history": []
+}
