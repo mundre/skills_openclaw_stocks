@@ -15,6 +15,16 @@ const { URL } = require('url');
 const SKILL_DIR = path.join(__dirname, '..');
 const FEISHU_BASE = 'https://open.feishu.cn/open-apis';
 
+// 解析 MEDIA 路径为完整路径
+function resolveMediaPath(mediaPath) {
+    // 如果是绝对路径，直接返回
+    if (path.isAbsolute(mediaPath)) {
+        return mediaPath;
+    }
+    // 相对于当前工作目录
+    return path.resolve(mediaPath);
+}
+
 // 从 openclaw.json 读取飞书凭证
 function loadFeishuConfig() {
     const homeDir = os.homedir();
@@ -72,15 +82,32 @@ function fetchJson(url, options = {}) {
     });
 }
 
-// 获取 token
+// Token 缓存（飞书 token 有效期约 2 小时）
+let tokenCache = {
+    token: null,
+    expiresAt: 0
+};
+
+// 获取 token（带缓存）
 async function getToken() {
+    const now = Date.now();
+    // 缓存 1.5 小时，避免接近过期时失效
+    if (tokenCache.token && now < tokenCache.expiresAt) {
+        return tokenCache.token;
+    }
+    
     const resp = await fetchJson(`${FEISHU_BASE}/auth/v3/tenant_access_token/internal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: { app_id: APP_ID, app_secret: APP_SECRET }
     });
     if (!resp.tenant_access_token) throw new Error(`获取token失败: ${resp.msg}`);
-    return resp.tenant_access_token;
+    
+    tokenCache = {
+        token: resp.tenant_access_token,
+        expiresAt: now + 90 * 60 * 1000  // 90 分钟
+    };
+    return tokenCache.token;
 }
 
 // 发送 HTTP 请求
@@ -93,15 +120,16 @@ function sendRequest(url, method, headers, body) {
 function extractMentions(text) {
     const mentions = [];
     const patterns = [
-        /『AT:([^:]+):([^』]+)』/g,
-        /\{\{AT:([^:]+):([^}]+)\}\}/g,
-        /<at user_id="([^"]+)">([^<]+)<\/at>/g
+        /『AT:([^:]+)』/g,                     // 『AT:user_id』简化格式
+        /<at user_id="([^"]+)">([^<]+)<\/at>/g  // <at user_id="...">name</at>
     ];
     
     for (const regex of patterns) {
         let match;
         while ((match = regex.exec(text)) !== null) {
-            mentions.push({ userId: match[1], name: match[2] });
+            // 如果是简化格式『AT:user_id』，name 为空
+            const name = match[2] || match[1];
+            mentions.push({ userId: match[1], name: name });
         }
     }
     return mentions;
@@ -109,8 +137,9 @@ function extractMentions(text) {
 
 // 将 mention 格式替换为纯名字
 function stripAtTags(text) {
-    text = text.replace(/『AT:[^:]+:([^』]+)』/g, '$1');
-    text = text.replace(/\{\{AT:[^:]+:([^}]+)\}\}/g, '$1');
+    // 移除『AT:user_id』或『AT:user_id:name』格式，保留 name 部分（如果有）
+    text = text.replace(/『AT:([^:]+):([^』]+)』/g, '$2');
+    text = text.replace(/『AT:([^』]+)』/g, '');
     text = text.replace(/<at user_id="[^"]+">([^<]+)<\/at>/g, '$1');
     return text;
 }
@@ -124,18 +153,27 @@ async function uploadImage(token, imagePath) {
     const fileContent = fs.readFileSync(imagePath);
     const fileName = path.basename(imagePath);
     
-    const postData = `
---${boundary}
-Content-Disposition: form-data; name="image"; filename="${fileName}"
-Content-Type: image/jpeg
-
-${fileContent.toString('binary')}
---${boundary}
-Content-Disposition: form-data; name="image_type"
-
-message
---${boundary}--
-`;
+    // 构建 multipart body
+    const headerPart = Buffer.from(
+        `--${boundary}\r
+Content-Disposition: form-data; name="image"; filename="${fileName}"\r
+Content-Type: image/jpeg\r
+\r
+`,
+        'utf8'
+    );
+    const footerPart = Buffer.from(
+        `\r
+--${boundary}\r
+Content-Disposition: form-data; name="image_type"\r
+\r
+message\r
+--${boundary}--\r
+`,
+        'utf8'
+    );
+    
+    const postData = Buffer.concat([headerPart, fileContent, footerPart]);
     
     return new Promise((resolve, reject) => {
         const opts = {
@@ -145,7 +183,7 @@ message
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                'Content-Length': Buffer.byteLength(postData)
+                'Content-Length': postData.length
             }
         };
         
@@ -177,30 +215,14 @@ async function sendTextMessage(token, receiveId, receiveIdType, text, mentions) 
     if (mentions && mentions.length > 0) {
         for (const m of mentions) {
             processedText = processedText.replace(
-                `『AT:${m.userId}:${m.name}』`,
+                `『AT:${m.userId}』`,
                 `<at user_id="${m.userId}">${m.name}</at>`
             );
         }
     } else {
-        // 如果没有 mentions（可能文本中直接是 <at> 标签而不是占位符）
-        // 提取 <at user_id="...">...</at> 格式的标签并确保它们被正确发送
-        const atPattern = /<at user_id="([^"]+)">([^<]*)<\/at>/g;
-        let match;
-        const foundMentions = [];
-        while ((match = atPattern.exec(processedText)) !== null) {
-            foundMentions.push({ userId: match[1], name: match[2] || match[1] });
-        }
-        // 不需要额外处理，因为飞书 API 原生支持 <at> 标签格式
-        // 确保 at 标签的 name 部分不为空
-        processedText = processedText.replace(
-            /<at user_id="([^"]+)">([^<]*)<\/at>/g,
-            (fullMatch, userId, name) => {
-                if (name && name.trim()) {
-                    return fullMatch;
-                }
-                return `<at user_id="${userId}">${userId}</at>`;
-            }
-        );
+        // 没有 mentions 时，清理残留的『AT:...』格式（可能来自 stripAtTags 遗漏）
+        // 保留 <at> 标签因为飞书 API 原生支持
+        processedText = processedText.replace(/『AT:[^』]+』/g, '');
     }
     
     const payload = {
@@ -288,12 +310,29 @@ async function main() {
         console.log('image_key:', imageKey);
         result = await sendImageMessage(token, receiveId, receiveIdType, imageKey);
     } else if (mediaMatch) {
-        // 发送 MEDIA 格式图片
-        const imagePath = mediaMatch[1].trim();
-        console.log('检测到 MEDIA 图片:', imagePath);
-        const imageKey = await uploadImage(token, imagePath);
-        console.log('image_key:', imageKey);
-        result = await sendImageMessage(token, receiveId, receiveIdType, imageKey);
+        // 有图片也有文字：先发送文字，再发送图片
+        // 注意：必须用原始 text，不能用 cleanText，否则『AT:...』会被 stripAtTags 清除
+        const textWithoutMedia = text.replace(/MEDIA:[^\n]*/g, '').trim();
+        
+        // 先发送文字
+        if (textWithoutMedia) {
+            console.log('检测到文字内容，先发送文字');
+            result = await sendTextMessage(token, receiveId, receiveIdType, textWithoutMedia, mentions);
+        }
+        
+        // 提取所有 MEDIA 路径并发送图片
+        const mediaMatches = [...text.matchAll(/MEDIA:([^\n]+)/g)];
+        for (const match of mediaMatches) {
+            const imagePath = resolveMediaPath(match[1].trim());
+            console.log('检测到 MEDIA 图片:', imagePath);
+            try {
+                const imageKey = await uploadImage(token, imagePath);
+                console.log('image_key:', imageKey);
+                result = await sendImageMessage(token, receiveId, receiveIdType, imageKey);
+            } catch (err) {
+                console.log('发送图片失败:', err.message);
+            }
+        }
     } else {
         // 发送文本消息
         result = await sendTextMessage(token, receiveId, receiveIdType, text, mentions);

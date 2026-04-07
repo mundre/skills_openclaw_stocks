@@ -72,8 +72,45 @@ function loadFeishuConfig() {
     return { appId: account.appId, appSecret: account.appSecret };
 }
 
-const WIKI_TOKEN = 'VGRRw7s4BiStank4GnpczxnGn44';
-const SPACE_ID = '7077748012209946625';
+// 多 Wiki 配置
+const WIKI_LIST_PATH = path.join(__dirname, 'wiki_list.json');
+const wikiConfig = JSON.parse(fs.readFileSync(WIKI_LIST_PATH, 'utf8'));
+
+// 解析 Wiki URL，自动提取 token 和 domain
+function parseWikiUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        const parts = urlObj.pathname.split('/');
+        const token = parts[parts.length - 1] || parts[parts.length - 2];
+        const domain = urlObj.hostname;
+        return { domain, token };
+    } catch (e) {
+        return null;
+    }
+}
+
+// 标准化 Wiki 配置
+const WIKIS = wikiConfig.wikis.map(w => {
+    // 如果 url 存在，解析 token 和 domain
+    if (w.url) {
+        const parsed = parseWikiUrl(w.url);
+        if (parsed) {
+            return {
+                name: w.name || w.token,
+                token: parsed.token,
+                domain: parsed.domain,
+                spaceId: w.spaceId || null
+            };
+        }
+    }
+    // 否则使用直接配置
+    return {
+        name: w.name || w.token,
+        token: w.token,
+        domain: w.domain || 'campsnail.feishu.cn',
+        spaceId: w.spaceId || null
+    };
+});
 
 const FEISHU_BASE = 'https://open.feishu.cn/open-apis';
 
@@ -157,6 +194,21 @@ async function getToken() {
     });
     if (!resp.tenant_access_token) throw new Error(`获取token失败`);
     return resp.tenant_access_token;
+}
+
+// 获取 wiki 的最后编辑时间
+async function getWikiEditTime(token, wiki) {
+    try {
+        const resp = await fetchJson(`${FEISHU_BASE}/wiki/v2/spaces/get_node?token=${wiki.token}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (resp.data?.node?.obj_edit_time) {
+            return resp.data.node.obj_edit_time;
+        }
+    } catch (err) {
+        log(`获取wiki编辑时间失败: ${err.message}`);
+    }
+    return null;
 }
 
 // 收集文档中所有 mention_user 的 user_id 和 name（直接从 block 数据取，不调 API）
@@ -296,14 +348,23 @@ function enhanceQAContent(content) {
     return result;
 }
 
-async function getWikiNode(token) {
-    return await fetchJson(`${FEISHU_BASE}/wiki/v2/spaces/get_node?token=${WIKI_TOKEN}`, {
+async function getWikiNode(token, wiki) {
+    const resp = await fetchJson(`${FEISHU_BASE}/wiki/v2/spaces/get_node?token=${wiki.token}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
+    // 如果没有 spaceId，从响应中提取（API 返回的是 space_id）
+    if (!wiki.spaceId && resp.data?.node?.space_id) {
+        wiki.spaceId = String(resp.data.node.space_id);
+    }
+    return resp;
 }
 
-async function listNodes(token, parentToken) {
-    let url = `${FEISHU_BASE}/wiki/v2/spaces/${SPACE_ID}/nodes?page_size=50`;
+async function listNodes(token, wiki, parentToken) {
+    if (!wiki.spaceId) {
+        log(`ERROR: wiki.spaceId is null, cannot list nodes`);
+        return { data: { items: [], has_more: false } };
+    }
+    let url = `${FEISHU_BASE}/wiki/v2/spaces/${wiki.spaceId}/nodes?page_size=50`;
     if (parentToken) url += `&parent_node_token=${parentToken}`;
     return await fetchJson(url, { headers: { 'Authorization': `Bearer ${token}` } });
 }
@@ -461,16 +522,13 @@ async function processImagesInBlocks(blocksData, docToken, token) {
         const block = blocks[i];
         if (block.block_type === 27 && block.image && block.image.token) {
             const imgToken = block.image.token;
-            const context = getImageContext(i, blocks);
 
-            const safeName = (context || `image_${imgToken.substring(0, 8)}`)
-                .replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')
-                .substring(0, 30);
-            const fileName = `${safeName}_${imgToken.substring(0, 8)}.jpg`;
+            // 只使用 token 作为文件名，避免中文命名错误
+            const fileName = `${imgToken}.jpg`;
             const localPath = path.join(IMAGES_DIR, fileName);
 
             if (!fs.existsSync(localPath)) {
-                log(`下载图片: ${context || imgToken}`);
+                log(`下载图片: ${imgToken}`);
 
                 try {
                     const downloadUrl = `${FEISHU_BASE}/drive/v1/medias/${imgToken}/download`;
@@ -494,6 +552,43 @@ async function processImagesInBlocks(blocksData, docToken, token) {
     }
 
     return imageMap;
+}
+
+// 处理文件附件块（block_type 23）
+async function processFileBlocks(blocksData, docToken, token) {
+    const blocks = blocksData.data?.items || [];
+    const fileMap = new Map();
+
+    for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
+        if (block.block_type === 23 && block.file && block.file.token) {
+            const fileToken = block.file.token;
+            const fileName = block.file.name || `file_${fileToken.substring(0, 8)}`;
+            
+            // 获取文件扩展名
+            const ext = fileName.split('.').pop() || 'bin';
+            const safeName = fileName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5.-]/g, '_');
+            const localPath = path.join(FILES_DIR, `${safeName}_${fileToken.substring(0, 8)}.${ext}`);
+
+            if (!fs.existsSync(localPath)) {
+                log(`下载文件: ${fileName}`);
+
+                try {
+                    const downloadUrl = `${FEISHU_BASE}/drive/v1/medias/${fileToken}/download`;
+                    await downloadBinary(downloadUrl, localPath, token);
+                    log(`文件已保存: ${path.basename(localPath)}`);
+                    fileMap.set(fileToken, localPath);
+                } catch (err) {
+                    log(`下载文件失败: ${err.message}`);
+                    fileMap.set(fileToken, null);
+                }
+            } else {
+                fileMap.set(fileToken, localPath);
+            }
+        }
+    }
+
+    return fileMap;
 }
 
 async function processBoardBlocks(blocksData, docToken, token) {
@@ -529,7 +624,7 @@ async function processBoardBlocks(blocksData, docToken, token) {
     return boardMap;
 }
 
-function extractTextFromBlocks(blocksData, imageMap, docToken, docTitle) {
+function extractTextFromBlocks(blocksData, imageMap, fileMap, docToken, docTitle) {
     const blocks = blocksData.data?.items || [];
     const blocksMap = new Map(blocks.map(b => [b.block_id, b]));
     const childrenMap = new Map();
@@ -551,13 +646,23 @@ function extractTextFromBlocks(blocksData, imageMap, docToken, docTitle) {
             const localPath = imageMap.get(imgToken);
             if (localPath && fs.existsSync(localPath)) {
                 const relativePath = path.relative(path.join(SKILL_DIR, 'workspace'), localPath);
-                text += `📷 ${imgToken}：![](${relativePath})\n`;
+                text += `MEDIA:${relativePath}\n`;
             }
             return text;
         }
 
+        // 处理文件附件块（block_type 23）- 输出为飞书云文档链接
+        if (block.block_type === 23 && block.file?.token) {
+            const fileToken = block.file.token;
+            const fileName = block.file.name || fileToken;
+            // 使用 wiki 链接格式，指向该文件所在页面
+            text += `[📎 ${fileName}](https://campsnail.feishu.cn/wiki/${WIKI_TOKEN}#${block.block_id})\n`;
+            return text;
+        }
+
         if (block.block_type === 43 && block.board?.token) {
-            text += `[画板](https://campsnail.feishu.cn/docx/${block.board.token})\n`;
+            // 使用 wiki 链接 + block_id 定位到画板
+            text += `[画板](https://campsnail.feishu.cn/wiki/${WIKI_TOKEN}#${block.block_id})\n`;
             return text;
         }
 
@@ -608,11 +713,12 @@ function extractTextFromBlocks(blocksData, imageMap, docToken, docTitle) {
                         result += extractElement(el);
                     }
                 }
+                result += '\n';
             } else if (child.block_type === 10) {
                 result += '\n---\n';
             } else if (child.block_type === 43) {
                 if (child.board?.token) {
-                    result += `[画板](https://campsnail.feishu.cn/docx/${child.board.token})\n`;
+                    result += `[画板](https://campsnail.feishu.cn/wiki/${WIKI_TOKEN}#${child.block_id})\n`;
                 }
             } else if (child.block_type === 27) {
                 if (child.image?.token) {
@@ -620,7 +726,7 @@ function extractTextFromBlocks(blocksData, imageMap, docToken, docTitle) {
                     const localPath = imageMap.get(imgToken);
                     if (localPath && fs.existsSync(localPath)) {
                         const relativePath = path.relative(path.join(SKILL_DIR, 'workspace'), localPath);
-                        result += `📷 ${imgToken}：![](${relativePath})\n`;
+                        result += `MEDIA:${relativePath}\n`;
                     }
                 }
             } else {
@@ -653,7 +759,7 @@ async function collectDocs(token) {
     const allUserIds = [];
 
     log('获取wiki根节点...');
-    const rootNodeResp = await getWikiNode(token);
+    const rootNodeResp = await getWikiNode(token, wiki);
     const rootNode = rootNodeResp.data?.node;
 
     if (!rootNode) throw new Error(`无法获取wiki根节点`);
@@ -664,12 +770,13 @@ async function collectDocs(token) {
         const blocksResp = await readDocBlocks(token, rootNode.obj_token);
         const imageMap = await processImagesInBlocks(blocksResp, rootNode.obj_token, token);
         await processBoardBlocks(blocksResp, rootNode.obj_token, token);
+        const fileMap = await processFileBlocks(blocksResp, rootNode.obj_token, token);
         const { userIds, userIdToName } = collectUserIdsAndNames(blocksResp);
         allUserIds.push(...userIds);
         for (const [uid, name] of userIdToName) {
             globalUserIdToName.set(uid, name);
         }
-        const text = extractTextFromBlocks(blocksResp, imageMap, rootNode.obj_token, rootNode.title);
+        const text = extractTextFromBlocks(blocksResp, imageMap, fileMap, rootNode.obj_token, rootNode.title);
         if (text) allContent.push(`===== ${rootNode.title} =====\n${text}`);
     }
 
@@ -683,13 +790,14 @@ async function collectDocs(token) {
                 log(`读取文档: ${item.title}`);
                 const blocksResp = await readDocBlocks(token, item.obj_token);
                 const imageMap = await processImagesInBlocks(blocksResp, item.obj_token, token);
+                const fileMap = await processFileBlocks(blocksResp, item.obj_token, token);
                 await processBoardBlocks(blocksResp, item.obj_token, token);
                 const { userIds, userIdToName } = collectUserIdsAndNames(blocksResp);
                 allUserIds.push(...userIds);
                 for (const [uid, name] of userIdToName) {
                     globalUserIdToName.set(uid, name);
                 }
-                const text = extractTextFromBlocks(blocksResp, imageMap, item.obj_token, item.title);
+                const text = extractTextFromBlocks(blocksResp, imageMap, fileMap, item.obj_token, item.title);
                 if (text) allContent.push(`===== ${item.title} =====\n${text}`);
             }
 
@@ -739,12 +847,13 @@ async function syncWikiPageByToken(token, wikiToken, allContent, allUserIds, syn
             log(`[Wiki链接] 读取文档: ${node.title}`);
             const blocksResp = await readDocBlocks(token, node.obj_token);
             const imageMap = await processImagesInBlocks(blocksResp, node.obj_token, token);
+            const fileMap = await processFileBlocks(blocksResp, node.obj_token, token);
             const { userIds, userIdToName } = collectUserIdsAndNames(blocksResp);
             allUserIds.push(...userIds);
             for (const [uid, name] of userIdToName) {
                 globalUserIdToName.set(uid, name);
             }
-            const text = extractTextFromBlocks(blocksResp, imageMap, node.obj_token, node.title);
+            const text = extractTextFromBlocks(blocksResp, imageMap, fileMap, node.obj_token, node.title);
             if (text) {
                 allContent.push(`===== ${node.title} =====\n${text}`);
                 await syncWikiLinksFromText(token, text, allContent, allUserIds, syncedTokens);
@@ -771,13 +880,14 @@ async function collectChildNodes(token, parentToken, allContent, allUserIds) {
             log(`读取文档: ${item.title}`);
             const blocksResp = await readDocBlocks(token, item.obj_token);
             const imageMap = await processImagesInBlocks(blocksResp, item.obj_token, token);
+            const fileMap = await processFileBlocks(blocksResp, item.obj_token, token);
             await processBoardBlocks(blocksResp, item.obj_token, token);
             const { userIds, userIdToName } = collectUserIdsAndNames(blocksResp);
             allUserIds.push(...userIds);
             for (const [uid, name] of userIdToName) {
                 globalUserIdToName.set(uid, name);
             }
-            const text = extractTextFromBlocks(blocksResp, imageMap, item.obj_token, item.title);
+            const text = extractTextFromBlocks(blocksResp, imageMap, fileMap, item.obj_token, item.title);
             if (text) allContent.push(`===== ${item.title} =====\n${text}`);
         }
 
@@ -800,6 +910,30 @@ async function main() {
         fs.mkdirSync(FILES_DIR, { recursive: true });
         fs.mkdirSync(BOARDS_DIR, { recursive: true });
 
+        const metadataFile = path.join(CACHE_DIR, 'metadata.json');
+        const existingMetadata = fs.existsSync(metadataFile) 
+            ? JSON.parse(fs.readFileSync(metadataFile, 'utf8')) 
+            : null;
+
+        // 检查 wiki 编辑时间
+        const currentWikiEditTime = await getWikiEditTime(accessToken);
+        log(`当前wiki编辑时间: ${currentWikiEditTime}`);
+
+        // 如果不是强制同步，且 wiki 时间没变化，跳过内容拉取
+        if (!isForce && existingMetadata?.wiki_edit_time) {
+            if (currentWikiEditTime && currentWikiEditTime === existingMetadata.wiki_edit_time) {
+                log('Wiki内容未变化，跳过同步');
+                const metadata = {
+                    ...existingMetadata,
+                    last_sync: new Date().toISOString(),
+                    status: 'no-change'
+                };
+                fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2));
+                log('同步流程结束');
+                return;
+            }
+        }
+
         const { content: allContent, userIds } = await collectDocs(accessToken);
 
         if (!allContent) {
@@ -821,37 +955,30 @@ async function main() {
         const newHash = crypto.createHash('sha256').update(finalContent, 'utf8').digest('hex');
         log(`新内容hash: ${newHash}`);
 
-        const metadataFile = path.join(CACHE_DIR, 'metadata.json');
+        // 检查内容 hash 是否变化
         let needSync = true;
-
-        if (!isForce && fs.existsSync(metadataFile)) {
-            const metadata = JSON.parse(fs.readFileSync(metadataFile, 'utf8'));
-            if (metadata.content_hash === newHash) {
-                log('内容未变化，跳过更新');
-                needSync = false;
-                metadata.last_sync = new Date().toISOString();
-                metadata.status = 'no-change';
-                fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2));
-            }
+        if (!isForce && existingMetadata?.content_hash === newHash) {
+            log('内容hash未变化，跳过更新');
+            needSync = false;
         }
 
         if (needSync) {
             log('开始更新缓存...');
             fs.writeFileSync(path.join(CACHE_DIR, 'content.json'), finalContent, 'utf8');
-
-            const metadata = {
-                wiki_token: WIKI_TOKEN,
-                space_id: SPACE_ID,
-                wiki_url: `https://campsnail.feishu.cn/wiki/${WIKI_TOKEN}`,
-                last_sync: new Date().toISOString(),
-                content_hash: newHash,
-                status: 'success',
-                version: 'v14'
-            };
-            fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2));
             log('缓存更新完成');
         }
 
+        const metadata = {
+            wiki_token: WIKI_TOKEN,
+            space_id: SPACE_ID,
+            wiki_url: `https://campsnail.feishu.cn/wiki/${WIKI_TOKEN}`,
+            last_sync: new Date().toISOString(),
+            wiki_edit_time: currentWikiEditTime,
+            content_hash: newHash,
+            status: 'success',
+            version: 'v14'
+        };
+        fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2));
         log('同步流程结束');
 
     } catch (error) {

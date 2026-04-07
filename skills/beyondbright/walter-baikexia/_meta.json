@@ -3,11 +3,16 @@
   "slug": "walter-baikexia",
   "displayName": "Walter Baikexia",
   "latest": {
-    "version": "1.4.3",
-    "publishedAt": 1775279108644,
-    "commit": "https://github.com/openclaw/skills/commit/e4211554b3f23d23019f8a65cda124bb1531b23f"
+    "version": "2.5.0",
+    "publishedAt": 1775399142555,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.4.3",
+      "publishedAt": 1775279108644,
+      "commit": "https://github.com/openclaw/skills/commit/e4211554b3f23d23019f8a65cda124bb1531b23f"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1775127436600,
