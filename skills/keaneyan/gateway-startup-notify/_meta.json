@@ -1,0 +1,11 @@
+{
+  "owner": "keaneyan",
+  "slug": "gateway-startup-notify",
+  "displayName": "Gateway Notify",
+  "latest": {
+    "version": "1.2.0",
+    "publishedAt": 1775206265270,
+    "commit": null
+  },
+  "history": []
+}
