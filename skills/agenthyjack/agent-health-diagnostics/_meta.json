@@ -1,0 +1,11 @@
+{
+  "owner": "agenthyjack",
+  "slug": "agent-health-diagnostics",
+  "displayName": "Agent Health Diagnostics",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775324493437,
+    "commit": null
+  },
+  "history": []
+}
