@@ -3,9 +3,15 @@
   "slug": "prediction-market-data-zh",
   "displayName": "预测市场数据",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775135760470,
-    "commit": "https://github.com/openclaw/skills/commit/a861f949f598c5541dc6d7d46f7054a9576e4d29"
+    "version": "1.0.1",
+    "publishedAt": 1775175559753,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775135760470,
+      "commit": "https://github.com/openclaw/skills/commit/a861f949f598c5541dc6d7d46f7054a9576e4d29"
+    }
+  ]
 }

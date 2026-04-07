@@ -1,6 +1,6 @@
 ---
-name: prediction-market-data
-description: "Cross-platform prediction market data via AIsa API. Query Polymarket and Kalshi markets, prices, orderbooks, candlesticks, positions, and trades. Use when user asks about: prediction market odds, election betting, event probabilities, market sentiment, Polymarket prices, Kalshi prices, sports betting odds, wallet PnL, or cross-platform market comparison."
+name: prediction-market-data-zh
+description: "通过 AIsa API 查询跨平台预测市场数据。支持 Polymarket 和 Kalshi 的市场行情、价格、订单簿、K线、持仓和交易记录。适用场景：查询预测市场赔率、选举博彩、事件概率、市场情绪、Polymarket 价格、Kalshi 价格、体育博彩赔率、钱包盈亏、跨平台市场对比。"
 license: MIT
 metadata:
   openclaw:
@@ -11,106 +11,106 @@ metadata:
     primaryEnv: AISA_API_KEY
 ---
 
-# Prediction Market Data
+# 预测市场数据
 
-Query [Polymarket](https://polymarket.com) and [Kalshi](https://kalshi.com) prediction markets via [AIsa API](https://aisa.one).
+通过 [AIsa API](https://aisa.one) 查询 [Polymarket](https://polymarket.com) 和 [Kalshi](https://kalshi.com) 预测市场。
 
-## Setup
+## 配置
 
 ```bash
 export AISA_API_KEY="your-key"
 ```
 
-Get a key at [aisa.one](https://aisa.one) ($0.01/query, pay-as-you-go).
+在 [aisa.one](https://aisa.one) 获取 Key（$0.01/次查询，按量付费）。
 
-## Workflow
+## 工作流程
 
-Querying prediction market data involves these steps:
+查询预测市场数据的步骤：
 
-1. **Search markets** to find IDs (always start here)
-2. **Extract the ID** from the response (`token_id`, `condition_id`, or `market_ticker`)
-3. **Query details** using the extracted ID (price, orderbook, candlesticks, etc.)
+1. **搜索市场**获取 ID（必须从这一步开始）
+2. **从返回结果中提取 ID**（`token_id`、`condition_id` 或 `market_ticker`）
+3. **用 ID 查询详情**（价格、订单簿、K线等）
 
-## Quick Examples
+## 快速示例
 
-### Polymarket: search → get price
+### Polymarket：搜索 → 获取价格
 
 ```bash
-# Step 1: Search — find markets and extract token_id (side_a.id or side_b.id)
+# 第一步：搜索市场，提取 token_id（side_a.id 或 side_b.id）
 python3 {baseDir}/scripts/prediction_market_client.py polymarket markets --search "election" --status open --limit 5
 
-# Step 2: Get price using token_id from Step 1
+# 第二步：用第一步的 token_id 获取价格
 python3 {baseDir}/scripts/prediction_market_client.py polymarket price <token_id>
 ```
 
-### Kalshi: search → get price
+### Kalshi：搜索 → 获取价格
 
 ```bash
-# Step 1: Search — find markets and extract market_ticker
+# 第一步：搜索市场，提取 market_ticker
 python3 {baseDir}/scripts/prediction_market_client.py kalshi markets --search "fed rate" --status open --limit 5
 
-# Step 2: Get price using market_ticker from Step 1
+# 第二步：用第一步的 market_ticker 获取价格
 python3 {baseDir}/scripts/prediction_market_client.py kalshi price <market_ticker>
 ```
 
-### Cross-platform sports
+### 跨平台体育市场
 
 ```bash
 python3 {baseDir}/scripts/prediction_market_client.py sports by-date nba --date 2025-04-01
 ```
 
-## ID Reference
+## ID 参考
 
-Most commands need an ID from the `markets` response. Always search first.
+大多数命令需要从 `markets` 返回中获取 ID，务必先搜索。
 
-| Platform | ID Field | Where to Find |
-|----------|----------|---------------|
-| Polymarket | `token_id` | `side_a.id` or `side_b.id` in markets output |
-| Polymarket | `condition_id` | `condition_id` in markets output |
-| Kalshi | `market_ticker` | `market_ticker` in markets output |
+| 平台 | ID 字段 | 获取位置 |
+|------|---------|----------|
+| Polymarket | `token_id` | markets 输出中的 `side_a.id` 或 `side_b.id` |
+| Polymarket | `condition_id` | markets 输出中的 `condition_id` |
+| Kalshi | `market_ticker` | markets 输出中的 `market_ticker` |
 
-## Commands
+## 命令参考
 
 ### Polymarket
 
 ```bash
-python3 {baseDir}/scripts/prediction_market_client.py polymarket markets [--search <kw>] [--status open|closed] [--min-volume <n>] [--limit <n>]
-python3 {baseDir}/scripts/prediction_market_client.py polymarket price <token_id> [--at-time <unix_ts>]
-python3 {baseDir}/scripts/prediction_market_client.py polymarket activity --user <wallet> [--market-slug <slug>] [--limit <n>]
-python3 {baseDir}/scripts/prediction_market_client.py polymarket orders [--market-slug <slug>] [--token-id <id>] [--user <wallet>] [--limit <n>]
-python3 {baseDir}/scripts/prediction_market_client.py polymarket orderbooks --token-id <id> [--start <ms>] [--end <ms>] [--limit <n>]
-python3 {baseDir}/scripts/prediction_market_client.py polymarket candlesticks <condition_id> --start <unix_ts> --end <unix_ts> [--interval 1|60|1440]
-python3 {baseDir}/scripts/prediction_market_client.py polymarket positions <wallet_address> [--limit <n>]
-python3 {baseDir}/scripts/prediction_market_client.py polymarket wallet (--eoa <addr> | --proxy <addr>) [--with-metrics]
-python3 {baseDir}/scripts/prediction_market_client.py polymarket pnl <wallet_address> --granularity <day|week|month>
+python3 {baseDir}/scripts/prediction_market_client.py polymarket markets [--search <关键词>] [--status open|closed] [--min-volume <数值>] [--limit <数值>]
+python3 {baseDir}/scripts/prediction_market_client.py polymarket price <token_id> [--at-time <unix时间戳>]
+python3 {baseDir}/scripts/prediction_market_client.py polymarket activity --user <钱包地址> [--market-slug <slug>] [--limit <数值>]
+python3 {baseDir}/scripts/prediction_market_client.py polymarket orders [--market-slug <slug>] [--token-id <id>] [--user <钱包地址>] [--limit <数值>]
+python3 {baseDir}/scripts/prediction_market_client.py polymarket orderbooks --token-id <id> [--start <毫秒>] [--end <毫秒>] [--limit <数值>]
+python3 {baseDir}/scripts/prediction_market_client.py polymarket candlesticks <condition_id> --start <unix时间戳> --end <unix时间戳> [--interval 1|60|1440]
+python3 {baseDir}/scripts/prediction_market_client.py polymarket positions <钱包地址> [--limit <数值>]
+python3 {baseDir}/scripts/prediction_market_client.py polymarket wallet (--eoa <地址> | --proxy <地址>) [--with-metrics]
+python3 {baseDir}/scripts/prediction_market_client.py polymarket pnl <钱包地址> --granularity <day|week|month>
 ```
 
 ### Kalshi
 
 ```bash
-python3 {baseDir}/scripts/prediction_market_client.py kalshi markets [--search <kw>] [--status open|closed] [--min-volume <n>] [--limit <n>]
-python3 {baseDir}/scripts/prediction_market_client.py kalshi price <market_ticker> [--at-time <unix_ts>]
-python3 {baseDir}/scripts/prediction_market_client.py kalshi trades [--ticker <ticker>] [--start <unix_ts>] [--end <unix_ts>] [--limit <n>]
-python3 {baseDir}/scripts/prediction_market_client.py kalshi orderbooks --ticker <ticker> [--start <ms>] [--end <ms>] [--limit <n>]
+python3 {baseDir}/scripts/prediction_market_client.py kalshi markets [--search <关键词>] [--status open|closed] [--min-volume <数值>] [--limit <数值>]
+python3 {baseDir}/scripts/prediction_market_client.py kalshi price <market_ticker> [--at-time <unix时间戳>]
+python3 {baseDir}/scripts/prediction_market_client.py kalshi trades [--ticker <ticker>] [--start <unix时间戳>] [--end <unix时间戳>] [--limit <数值>]
+python3 {baseDir}/scripts/prediction_market_client.py kalshi orderbooks --ticker <ticker> [--start <毫秒>] [--end <毫秒>] [--limit <数值>]
 ```
 
-### Cross-Platform Sports
+### 跨平台体育市场
 
 ```bash
 python3 {baseDir}/scripts/prediction_market_client.py sports matching (--polymarket-slug <slug> | --kalshi-ticker <ticker>)
-python3 {baseDir}/scripts/prediction_market_client.py sports by-date <sport> --date <YYYY-MM-DD>
+python3 {baseDir}/scripts/prediction_market_client.py sports by-date <运动类型> --date <YYYY-MM-DD>
 ```
 
-Sports: `nfl`, `mlb`, `cfb`, `nba`, `nhl`, `cbb`, `pga`, `tennis`.
+支持：`nfl`、`mlb`、`cfb`、`nba`、`nhl`、`cbb`、`pga`、`tennis`。
 
-## Understanding Odds
+## 理解赔率
 
-Prices are decimals: `0.65` = 65% implied probability. "Yes" price = probability the event happens. Higher volume = more liquidity.
+价格为小数：`0.65` = 65% 隐含概率。"Yes" 价格 = 事件发生的概率。交易量越高 = 流动性越强。
 
-## Security & Permissions
+## 安全与权限
 
-**Requires:** `AISA_API_KEY` environment variable.
+**需要：** `AISA_API_KEY` 环境变量。
 
-All operations are **read-only** via HTTPS GET to `api.aisa.one`. No trades executed, no wallets connected, no personal data sent beyond the API key. Every response includes `usage.cost` and `usage.credits_remaining`.
+所有操作均为**只读**，通过 HTTPS GET 请求 `api.aisa.one`。不执行交易、不连接钱包、除 API Key 外不发送个人数据。每个响应包含 `usage.cost` 和 `usage.credits_remaining`。
 
-Full docs: [AIsa API Reference](https://docs.aisa.one/reference/).
+完整文档：[AIsa API 参考](https://docs.aisa.one/reference/)。
