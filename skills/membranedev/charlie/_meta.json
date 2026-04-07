@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "charlie",
+  "displayName": "Charlie",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775383540508,
+    "commit": null
+  },
+  "history": []
+}
