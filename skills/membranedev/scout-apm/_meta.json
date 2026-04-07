@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "scout-apm",
+  "displayName": "Scout Apm",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775315030657,
+    "commit": null
+  },
+  "history": []
+}
