@@ -1,0 +1,11 @@
+{
+  "owner": "deaconhan",
+  "slug": "wsl-windows-bridge",
+  "displayName": "WSL Windows Bridge",
+  "latest": {
+    "version": "0.2.0",
+    "publishedAt": 1775398806139,
+    "commit": null
+  },
+  "history": []
+}
