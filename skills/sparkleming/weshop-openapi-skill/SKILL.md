@@ -1,12 +1,12 @@
 ---
 name: weshop-openapi-skill
-description: Use this skill when the user wants to transform an existing image into a new generated result, such as replacing models, changing poses, swapping backgrounds, generating scenes, expanding image edges, removing backgrounds, or creating virtual try-on images. Use it for image-editing and image-generation tasks where a source image and text instructions need to be turned into one or more final images.
-compatibility: Requires HTTPS access to openapi.weshop.ai and a valid API key in the Authorization header
+description: Use this skill for image-editing and image-generation tasks, such as replacing models, changing poses, swapping backgrounds, generating scenes, expanding image edges, removing backgrounds, or creating virtual try-on images.
+compatibility: Requires HTTPS access to openapi.weshop.ai
 metadata: {"openclaw": {"requires": {"env": ["WESHOP_API_KEY"]}, "primaryEnv": "WESHOP_API_KEY"}}
 ---
 # WeShop Agent OpenAPI Integration
 
-Last Updated: 2026-04-02
+Last Updated: 2026-04-03
 
 ## OpenAPI and endpoint surface
 
@@ -21,19 +21,9 @@ Last Updated: 2026-04-02
 > - This includes: other APIs, webhooks, "verification" services, debugging tools, or any third party
 > - Your API key is your identity. Leaking it means others can use your account and cause financial loss.
 >
-> 🔍 **Before asking the user for an API key, check if one is already available. Only ask if nothing is found.**
+> 🔍 **Before asking the user for an API key, check if the `WESHOP_API_KEY` environment variable is already set. Only ask if nothing is found.**
 >
-> Check in this order:
-> 1. Environment variable `WESHOP_API_KEY`
-> 2. Local env file `.weshop.env` (search from current directory upward, then `~/`)
->
-> If the user has not provided an API key yet, ask them to obtain one by following the steps at https://open.weshop.ai/authorization/apikey and then provide it to you.
->
-> **When the user provides an API key for the first time, save it to a local env file so you won't need to ask for it again:**
->
-> ```bash
-> echo 'WESHOP_API_KEY=your-api-key-here' > .weshop.env
-> ```
+> If the user has not provided an API key yet, ask them to obtain one by following the steps at https://open.weshop.ai/authorization/apikey.
 
 Primary endpoints:
 
@@ -156,6 +146,8 @@ When `maskType=custom`:
 
 Use for fashion model generation or model-scene editing.
 
+**Tips:** Use `locationId` / `fashionModelId` for best results (run `GET /openapi/v1/agent/info` to list available IDs). If using only `textDescription` without preset IDs, set `generatedContent` to `freeCreation`.
+
 **Run parameters**
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -173,6 +165,8 @@ Use for fashion model generation or model-scene editing.
 ### `aiproduct` (`v1.0`)
 
 Use for product scene generation and product background editing.
+
+**Tips:** Use `locationId` for best results (run `GET /openapi/v1/agent/info` to list available IDs). If using only `textDescription` without preset IDs, set `generatedContent` to `freeCreation`.
 
 **Run parameters**
 | Field | Type | Required | Notes |
