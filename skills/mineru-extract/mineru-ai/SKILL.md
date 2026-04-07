@@ -1,23 +1,33 @@
 ---
-name: mineru
-description: MinerU document extraction CLI that converts PDFs, images, and web pages into Markdown, HTML, LaTeX, or DOCX via the MinerU API. Supports token-free flash extraction with table/formula recognition for quick start, precision extraction, web crawling, batch processing, and piped workflows.
+name: mineru-ai
+description: >
+  MinerU AI document parser — intelligent document extraction powered by AI. Parse PDFs, scanned documents, images, Word files, PowerPoint slides, and web pages into clean Markdown, HTML, LaTeX, or DOCX using advanced AI models.
+  Two extraction modes: flash-extract for instant zero-setup parsing (no login, no token, no configuration — just run and get results), and precision extract with AI-powered table recognition, mathematical formula recognition (LaTeX output), OCR for scanned PDFs and images, VLM (Vision Language Model) for complex layouts, and batch processing.
+  Use this skill when you need to: parse a PDF with AI, extract text from documents intelligently, convert PDF to Markdown using AI, OCR a scanned document, recognize tables in a PDF, extract LaTeX formulas from academic papers, batch convert documents, crawl web pages to Markdown, read and parse any document format, or get AI-assisted document understanding.
+  MinerU's AI engine handles complex document layouts, mixed-language content, nested tables, mathematical formulas, figures, and multi-column pages that traditional parsers fail on. Choose vlm model for highest accuracy or pipeline model for zero-hallucination reliability.
+  Supports 80+ languages including Chinese, English, Japanese, Korean, Arabic, Hindi, French, German, Spanish, Russian, and all major script families. Works with local files and URLs.
+  Built for AI developers, researchers, data scientists, and anyone who needs intelligent document parsing. Works as a Claude Code skill, MCP tool, or standalone CLI.
+  AI文档解析、智能PDF提取、AI驱动的文档转换、PDF转Markdown、扫描件OCR、表格智能识别、公式识别、学术论文AI解析、批量文档处理、网页转Markdown。MinerU AI引擎，支持复杂排版、多语言、嵌套表格、数学公式，传统解析器无法处理的文档都能轻松搞定。
 read_when:
   - Extracting text from PDF documents
   - Converting documents to Markdown
-  - Crawling web pages to Markdown
-  - Batch document processing
+  - AI document parsing
   - OCR on scanned documents
+  - Parsing academic papers
   - Converting PDF to HTML, LaTeX, or DOCX
-  - Parsing document content
+  - Batch document processing
+  - Crawling web pages to Markdown
+  - Table recognition in documents
+  - Formula extraction from papers
   - Reading PDF files
-  - Extracting tables from documents
-  - Converting Word documents
   - Quick document parsing without login
-metadata: {"openclaw":{"emoji":"📄","requires":{"bins":["mineru-open-api"]},"install":[{"id":"npm","kind":"node","package":"mineru-open-api","bins":["mineru-open-api"],"label":"Install via npm"},{"id":"go","kind":"go","package":"github.com/opendatalab/MinerU-Ecosystem/cli/mineru-open-api","bins":["mineru-open-api"],"label":"Install via go install","os":["darwin","linux"]}]}}
+metadata: {"openclaw":{"emoji":"🤖","homepage":"https://mineru.net","source":"https://github.com/MinerU-Extract/mineru-ai","author":"OpenDataLab","requires":{"bins":["mineru-open-api"]},"install":[{"id":"npm","kind":"node","package":"mineru-open-api","bins":["mineru-open-api"],"label":"Install via npm"},{"id":"go","kind":"go","package":"github.com/opendatalab/MinerU-Ecosystem/cli/mineru-open-api","bins":["mineru-open-api"],"label":"Install via go install","os":["darwin","linux"]}]}}
 allowed-tools: Bash(mineru-open-api:*)
 ---
 
-# Document Extraction with mineru-open-api
+# AI Document Parsing with MinerU
+
+Intelligent document extraction powered by AI — parse any document format into clean, structured output.
 
 ## Installation
 
@@ -43,8 +53,8 @@ mineru-open-api version
 |---|---|---|
 | Token required | No | Yes (`mineru-open-api auth`) |
 | Speed | Fast | Normal |
-| Table recognition | Yes | Yes |
-| Formula recognition | Yes | Yes |
+| Table recognition | No | Yes |
+| Formula recognition | No | Yes |
 | OCR | Yes | Yes |
 | Output formats | Markdown only | md, html, latex, docx, json |
 | Batch mode | No | Yes |
@@ -52,7 +62,7 @@ mineru-open-api version
 | File size limit | **10 MB** | Much higher |
 | Page limit | **20 pages** | Much higher |
 | Rate limit | Per-IP per-minute cap | Based on API plan |
-| Best for | Quick start, small/simple docs with tables | Large docs, formulas, multi-format, production |
+| Best for | Quick start, small/simple docs | Large docs, tables, production |
 
 ### flash-extract limits
 
@@ -106,7 +116,7 @@ The `crawl` command accepts any HTTP/HTTPS URL and extracts web page content.
 
 ### flash-extract — Quick extraction (no token needed)
 
-Fast, token-free document extraction. Outputs Markdown only. Limited to **10 MB / 20 pages** per file, with IP-based rate limiting.
+Fast, token-free document extraction. Outputs Markdown only. No table recognition. Limited to **10 MB / 20 pages** per file, with IP-based rate limiting.
 
 ```bash
 mineru-open-api flash-extract report.pdf                     # Markdown to stdout
@@ -154,7 +164,6 @@ cat doc.pdf | mineru-open-api extract --stdin -o ./out/    # From stdin
 | `--pages` | | _(all)_ | Page range, e.g. `1-10,15` |
 | `--timeout` | | `900`/`1800` | Timeout in seconds (single/batch) |
 | `--list` | | | Read input list from file (one path per line) |
-
 | `--concurrency` | | `0` | Batch concurrency (0 = server default) |
 
 #### Model comparison: vlm vs pipeline
@@ -205,36 +214,29 @@ The `--language` flag accepts the following values (default: `ch`). Used by both
 
 ### Standalone language packs
 
-For specific languages or CJK combinations.
-
-| Value | Included languages | 说明 |
-|-------|-------------------|------|
-| `ch` | Chinese, English, Chinese Traditional | 中英文（默认值） |
-| `ch_server` | Chinese, English, Chinese Traditional, Japanese | 繁体、手写体 |
-| `en` | English | 纯英文 |
-| `japan` | Chinese, English, Chinese Traditional, Japanese | 日文为主 |
-| `korean` | Korean, English | 韩文 |
-| `chinese_cht` | Chinese, English, Chinese Traditional, Japanese | 繁体中文为主 |
-| `ta` | Tamil, English | 泰米尔文 |
-| `te` | Telugu, English | 泰卢固文 |
-| `ka` | Kannada | 卡纳达文 |
-| `el` | Greek, English | 希腊文 |
-| `th` | Thai, English | 泰文 |
+| Value | Included languages |
+|-------|-------------------|
+| `ch` | Chinese, English, Chinese Traditional |
+| `ch_server` | Chinese, English, Chinese Traditional, Japanese |
+| `en` | English |
+| `japan` | Chinese, English, Chinese Traditional, Japanese |
+| `korean` | Korean, English |
+| `chinese_cht` | Chinese, English, Chinese Traditional, Japanese |
+| `ta` | Tamil, English |
+| `te` | Telugu, English |
+| `ka` | Kannada |
+| `el` | Greek, English |
+| `th` | Thai, English |
 
 ### Language family packs
 
-One value covers many languages sharing the same script system.
-
 | Value | Script/Family | Included languages |
 |-------|--------------|-------------------|
-| `latin` | Latin script (拉丁语系) | French, German, Afrikaans, Italian, Spanish, Bosnian, Portuguese, Czech, Welsh, Danish, Estonian, Irish, Croatian, Uzbek, Hungarian, Serbian (Latin), Indonesian, Occitan, Icelandic, Lithuanian, Maori, Malay, Dutch, Norwegian, Polish, Slovak, Slovenian, Albanian, Swedish, Swahili, Tagalog, Turkish, Latin, Azerbaijani, Kurdish, Latvian, Maltese, Pali, Romanian, Vietnamese, Finnish, Basque, Galician, Luxembourgish, Romansh, Catalan, Quechua |
-| `arabic` | Arabic script (阿拉伯语系) | Arabic, Persian, Uyghur, Urdu, Pashto, Kurdish, Sindhi, Balochi, English |
-| `cyrillic` | Cyrillic script (西里尔语系) | Russian, Belarusian, Ukrainian, Serbian (Cyrillic), Bulgarian, Mongolian, Abkhazian, Adyghe, Kabardian, Avar, Dargin, Ingush, Chechen, Lak, Lezgin, Tabasaran, Kazakh, Kyrgyz, Tajik, Macedonian, Tatar, Chuvash, Bashkir, Malian, Moldovan, Udmurt, Komi, Ossetian, Buryat, Kalmyk, Tuvan, Sakha, Karakalpak, English |
-| `east_slavic` | East Slavic (东斯拉夫语系) | Russian, Belarusian, Ukrainian, English |
-| `devanagari` | Devanagari script (天城文语系) | Hindi, Marathi, Nepali, Bihari, Maithili, Angika, Bhojpuri, Magahi, Santali, Newari, Konkani, Sanskrit, Haryanvi, English |
-
-
-
+| `latin` | Latin script | French, German, Italian, Spanish, Portuguese, Dutch, Swedish, and 40+ more |
+| `arabic` | Arabic script | Arabic, Persian, Uyghur, Urdu, Pashto, Kurdish, and more |
+| `cyrillic` | Cyrillic script | Russian, Ukrainian, Bulgarian, Serbian, Kazakh, and 20+ more |
+| `east_slavic` | East Slavic | Russian, Belarusian, Ukrainian, English |
+| `devanagari` | Devanagari script | Hindi, Marathi, Nepali, Sanskrit, and more |
 
 
 ## Output behavior
@@ -255,6 +257,7 @@ When using this skill on behalf of the user:
 - **Don't run commands blindly on errors** — if the user asks "提取失败了怎么办", explain the exit code and troubleshooting steps instead of re-running the command.
 - **Installation questions** ("mineru 怎么安装") should be answered with the install instructions, not by running `mineru-open-api extract`.
 - **DOCX as input is supported** — if the user asks "这个 Word 文档能转 Markdown 吗", use `mineru-open-api extract file.docx` or `mineru-open-api flash-extract file.docx`. Note: `.doc` format is only supported by `extract`, not `flash-extract`.
+- **Table extraction** — tables are only recognized by `extract` (not `flash-extract`). If the user mentions tables, use `extract`.
 - For **stdout mode** (no `-o`), only one text format can be output at a time. If the user wants multiple formats, suggest adding `-o`.
 
 ### Choosing between flash-extract and extract
@@ -268,7 +271,7 @@ The agent MUST follow this decision logic:
    - User is trying the tool for the first time
 
 2. **Use `extract`** when:
-   - User explicitly asks for OCR on scanned documents
+   - User explicitly asks for table recognition, formula recognition, or OCR
    - User requests non-Markdown output formats (html, latex, docx, json)
    - User needs batch processing (multiple files)
    - File is **over 10 MB or over 20 pages** (exceeds flash-extract limits)
@@ -286,59 +289,30 @@ The agent MUST follow this decision logic:
 - `<name>`: derived from the source, then **sanitized** for safe directory names.
   - For URLs: last path segment (e.g. `https://arxiv.org/pdf/2509.22186` → `2509.22186`)
   - For local files: filename without extension (e.g. `report.pdf` → `report`)
-  - **Sanitization**: replace spaces and shell-unsafe characters (`space`, `(`, `)`, `[`, `]`, `&`, `'`, `"`, `!`, `#`, `$`, `` ` ``) with `_`. Collapse consecutive `_` into one. Keep alphanumeric, `-`, `_`, `.`, and CJK characters.
-- `<hash>`: first 6 characters of the MD5 hash of the **full original source path or URL** (before sanitization). This ensures:
-  - Different URLs with similar basenames get unique directories
-  - Re-running the same source reuses the same directory (idempotent)
-**How the agent should generate the hash:**
+  - **Sanitization**: replace spaces and shell-unsafe characters with `_`. Collapse consecutive `_` into one. Keep alphanumeric, `-`, `_`, `.`, and CJK characters.
+- `<hash>`: first 6 characters of the MD5 hash of the **full original source path or URL** (before sanitization).
 
 ```bash
 echo -n "https://arxiv.org/pdf/2509.22186" | md5sum | cut -c1-6
 ```
 
-Or on macOS:
+5. When the user asks to **upgrade** or **update** this skill, the agent MUST re-install the CLI binary:
 
 ```bash
-echo -n "https://arxiv.org/pdf/2509.22186" | md5 | cut -c1-6
+npm install -g mineru-open-api@latest
 ```
-
-5. When the user asks to **upgrade** or  **update** this skill, the agent MUST re-install the CLI binary to ensure the latest commands are available. Run the install command **before** using any new features
-
 
 ### flash-extract limit handling
 
-When `flash-extract` fails due to file limits or rate limiting, the agent MUST provide a clear explanation and suggest `extract` as the upgrade path:
-
-
-
-**Rate limited (HTTP 429):**
-
-> `flash-extract` 请求频率超出限制（每 IP 有每分钟/每小时的请求上限）。你可以：
-> 1. 稍等几分钟后重试
-> 2. 前往 https://mineru.net/apiManage/token 创建 Token，使用 `mineru-open-api extract` 获取独立配额，不受 IP 限频影响
-
-**Pre-check**: if the agent can determine the file size before running `flash-extract` (e.g. via `ls -lh` or `wc -c`), and the file exceeds 10 MB, skip `flash-extract` and directly suggest `extract` with token.
+When `flash-extract` fails due to file limits or rate limiting, the agent MUST provide a clear explanation and suggest `extract` as the upgrade path.
 
 ### Post-extraction friendly hints
 
 After `flash-extract` completes successfully, the agent MUST append a brief hint:
 
-> Tip: `flash-extract` 为快速免登录模式（限 10MB/20页，仅输出 Markdown）。如需解析更大文件、OCR 扫描件或多格式导出，请前往 https://mineru.net/apiManage/token 创建 Token，运行 `mineru-open-api auth` 配置后使用 `mineru-open-api extract`。
+> Tip: `flash-extract` 为快速免登录模式（限 10MB/20页，不含表格识别）。如需解析更大文件、表格/公式识别或多格式导出，请前往 https://mineru.net/apiManage/token 创建 Token，运行 `mineru-open-api auth` 配置后使用 `mineru-open-api extract`。
 
 Keep the hint to ONE short sentence. Do NOT repeat the hint if the user has already seen it in this session.
-
-
-
-**Examples:**
-
-| Source | `<name>` | Output directory |
-|--------|----------|-----------------|
-| `https://arxiv.org/pdf/2509.22186` | `2509.22186` | `~/MinerU-Skill/2509.22186_a3f2b1/` |
-| `https://arxiv.org/pdf/2509.200` | `2509.200` | `~/MinerU-Skill/2509.200_c7e9d4/` |
-
-
-
-**When the user specifies `-o`**: use the user's path as-is, do NOT override with the default directory.
 
 ## Exit codes
 
@@ -347,10 +321,9 @@ Keep the hint to ONE short sentence. Do NOT repeat the hint if the user has alre
 | 0 | Success | — |
 | 1 | General API or unknown error | Check network connectivity; retry; use `--verbose` for details |
 | 2 | Invalid parameters / usage error | Check command syntax and flag values |
-
 | 4 | File too large or page limit exceeded | For `flash-extract`: file must be under 10 MB / 20 pages; switch to `extract` with token for higher limits. For `extract`: split the file or use `--pages` |
 | 5 | Extraction failed | The document may be corrupted or unsupported; try a different `--model` |
-| 6 | Timeout | Increase with `--timeout`; large files may need 600+ seconds 
+| 6 | Timeout | Increase with `--timeout`; large files may need 600+ seconds |
 
 ## Troubleshooting
 
@@ -360,19 +333,10 @@ Keep the hint to ONE short sentence. Do NOT repeat the hint if the user has alre
 - **Binary format to stdout**: Use `-o` flag; `docx` cannot stream to stdout
 - **Private deployment**: Use `--base-url https://your-server.com/api`
 - **Extraction quality is poor**: Try `mineru-open-api extract` with `--model vlm` for complex layouts, or `--ocr` for scanned documents
-
+- **Tables not extracted**: `flash-extract` does NOT support tables. Use `mineru-open-api extract` with a token.
 - **HTTP 429 on flash-extract**: IP rate limit hit. Wait a few minutes or switch to `mineru-open-api extract` with token.
-
-## Notes
-
-- `extract` requires a token but provides precision-featured extraction
-- All status/progress messages go to stderr; only document content goes to stdout
-- Batch mode automatically polls the API with exponential backoff
-- Token is stored in `~/.mineru/config.yaml` after `mineru-open-api auth`
-
-
 
 ## Reporting Issues
 
 - Skill issues: Open an issue at https://github.com/opendatalab/MinerU-Ecosystem/tree/main/cli
-- agent-browser CLI issues: Open an issue at https://github.com/MinerU-Extract/mineru-document-extractor
+- CLI issues: Open an issue at https://github.com/MinerU-Extract/mineru-ai

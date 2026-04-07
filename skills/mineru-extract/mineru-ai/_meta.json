@@ -1,13 +1,18 @@
 {
   "owner": "mineru-extract",
   "slug": "mineru-ai",
-  "displayName": "MinerU Document Extractor",
+  "displayName": "MinerU Doc Parser",
   "latest": {
-    "version": "1.0.9",
-    "publishedAt": 1775030902334,
-    "commit": "https://github.com/openclaw/skills/commit/7a19b7d919da6ad5417686842b6dd6f9b501aead"
+    "version": "0.2.1",
+    "publishedAt": 1775565046743,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.9",
+      "publishedAt": 1775030902334,
+      "commit": "https://github.com/openclaw/skills/commit/7a19b7d919da6ad5417686842b6dd6f9b501aead"
+    },
     {
       "version": "1.0.8",
       "publishedAt": 1774854194466,
