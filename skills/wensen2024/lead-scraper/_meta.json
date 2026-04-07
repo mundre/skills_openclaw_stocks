@@ -1,11 +1,17 @@
 {
   "owner": "wensen2024",
   "slug": "lead-scraper",
-  "displayName": "线索抓取",
+  "displayName": "lead-scraper",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775147012098,
-    "commit": "https://github.com/openclaw/skills/commit/cbb07791d0abc0a12057920bad5b8063f82c5ac0"
+    "version": "1.0.2",
+    "publishedAt": 1775198504013,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775147012098,
+      "commit": "https://github.com/openclaw/skills/commit/cbb07791d0abc0a12057920bad5b8063f82c5ac0"
+    }
+  ]
 }
