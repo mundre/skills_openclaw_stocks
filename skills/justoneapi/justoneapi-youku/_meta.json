@@ -1,0 +1,11 @@
+{
+  "owner": "justoneapi",
+  "slug": "justoneapi-youku",
+  "displayName": "YOUKU API",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775377602564,
+    "commit": null
+  },
+  "history": []
+}
