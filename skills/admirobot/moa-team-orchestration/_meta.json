@@ -1,0 +1,11 @@
+{
+  "owner": "admirobot",
+  "slug": "moa-team-orchestration",
+  "displayName": "多Agent团队编排-运营版",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775188045872,
+    "commit": null
+  },
+  "history": []
+}
