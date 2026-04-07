@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "jetbrains-marketplace",
+  "displayName": "Jetbrains Marketplace",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775412222457,
+    "commit": null
+  },
+  "history": []
+}
