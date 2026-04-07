@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "upcloud",
+  "displayName": "Upcloud",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775372626001,
+    "commit": null
+  },
+  "history": []
+}
