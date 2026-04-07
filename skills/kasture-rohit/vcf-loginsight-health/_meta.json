@@ -1,0 +1,11 @@
+{
+  "owner": "kasture-rohit",
+  "slug": "vcf-loginsight-health",
+  "displayName": "VCF Log Insight Health Check",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775419797755,
+    "commit": null
+  },
+  "history": []
+}
