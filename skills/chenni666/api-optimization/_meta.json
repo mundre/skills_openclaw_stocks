@@ -3,9 +3,15 @@
   "slug": "api-optimization",
   "displayName": "API usage optimization",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775130169132,
-    "commit": "https://github.com/openclaw/skills/commit/a63cd89766cb257b4ff4d66e5ded13f56afe28b1"
+    "version": "1.0.1",
+    "publishedAt": 1775145433715,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775130169132,
+      "commit": "https://github.com/openclaw/skills/commit/a63cd89766cb257b4ff4d66e5ded13f56afe28b1"
+    }
+  ]
 }

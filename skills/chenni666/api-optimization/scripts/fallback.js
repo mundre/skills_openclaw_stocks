@@ -4,11 +4,24 @@
  * 主模型失败时自动切换到备用模型，并支持自动回切
  *
  * Usage:
- *   node fallback.js --test                    # 测试降级链
- *   node fallback.js --monitor                 # 监控模型状态
- *   node fallback.js --generate-config         # 生成降级配置
- *   node fallback.js --check <model-id>        # 检查单个模型状态
+ *   node fallback.js --test                              # 测试降级链
+ *   node fallback.js --monitor                           # 监控模型状态
+ *   node fallback.js --generate-config                   # 生成降级配置
+ *   node fallback.js --generate-config --mode royal      # 富豪模式降级配置
+ *   node fallback.js --generate-full-config              # 生成完整配置
+ *   node fallback.js --generate-full-config --mode savings  # 省钱模式完整配置
+ *   node fallback.js --check <model-id>                  # 检查单个模型状态
+ *   node fallback.js --list-modes                        # 列出所有模式
  */
+
+import {
+  getMode,
+  generateModeFallbackConfig,
+  generateModeFullConfig,
+  printModeNotice,
+  printAllModes,
+  MODES,
+} from './modes.js';
 
 // 平台 API 端点
 const PLATFORM_ENDPOINTS = {
@@ -48,7 +61,7 @@ const DEFAULT_FALLBACK_CHAINS = {
     'openrouter/google/gemini-3.1-flash-lite',
   ],
   coding: [
-    'siliconflow/Qwen/Qwen2.5-Coder-7B-Instruct',
+    'siliconflow/Qwen/Qwen2.5-7B-Instruct',
     'nvidia/qwen/qwen3.5-397b-a17b',
     'siliconflow/Qwen/Qwen3-8B',
     'openrouter/qwen/qwen3.5-flash-02-23',
@@ -244,7 +257,15 @@ async function monitorAllModels() {
 /**
  * 生成 OpenClaw 降级配置
  */
-function generateFallbackConfig() {
+function generateFallbackConfig(modeId) {
+  if (modeId) {
+    const mode = getMode(modeId);
+    if (!mode) return null;
+    printModeNotice(modeId);
+    return generateModeFallbackConfig(modeId);
+  }
+
+  // 默认：向后兼容
   const config = {
     agents: {
       defaults: {
@@ -263,7 +284,15 @@ function generateFallbackConfig() {
 /**
  * 生成带路由的完整配置
  */
-function generateFullConfig() {
+function generateFullConfig(modeId) {
+  if (modeId) {
+    const mode = getMode(modeId);
+    if (!mode) return null;
+    printModeNotice(modeId);
+    return generateModeFullConfig(modeId);
+  }
+
+  // 默认：向后兼容
   const config = {
     agents: {
       defaults: {
@@ -321,18 +350,29 @@ ${'='.repeat(50)}
  */
 async function main() {
   const args = process.argv.slice(2);
+  const modeId = args.includes('--mode') ? args[args.indexOf('--mode') + 1] : null;
+
+  // 列出所有模式
+  if (args.includes('--list-modes')) {
+    printAllModes();
+    return;
+  }
 
   // 生成配置模式
   if (args.includes('--generate-config')) {
-    const config = generateFallbackConfig();
-    console.log(JSON.stringify(config, null, 2));
+    const config = generateFallbackConfig(modeId);
+    if (config) {
+      console.log(JSON.stringify(config, null, 2));
+    }
     return;
   }
 
   // 生成完整配置
   if (args.includes('--generate-full-config')) {
-    const config = generateFullConfig();
-    console.log(JSON.stringify(config, null, 2));
+    const config = generateFullConfig(modeId);
+    if (config) {
+      console.log(JSON.stringify(config, null, 2));
+    }
     return;
   }
 
@@ -366,6 +406,23 @@ async function main() {
   if (args.includes('--test')) {
     const chainName = args.includes('--chain') ? args[args.indexOf('--chain') + 1] : 'primary';
 
+    // 支持 --mode 测试指定模式的免费模型链
+    if (modeId) {
+      const mode = getMode(modeId);
+      if (!mode) return;
+      console.log(`${mode.emoji} 测试 ${mode.name} 降级链\n`);
+      const results = [];
+      for (const modelId of mode.fallbacks) {
+        console.log(`  ⏳ 测试 ${modelId}...`);
+        const result = await testModel(modelId);
+        results.push(result);
+        const statusIcon = result.status === 'healthy' ? '✅' : result.status === 'no-key' ? '⚠️' : '❌';
+        console.log(`  ${statusIcon} ${result.status} (${result.latency}ms)${result.error ? ` - ${result.error}` : ''}`);
+      }
+      console.log(formatTestResults(`${mode.name} 降级链`, results));
+      return;
+    }
+
     if (chainName === 'all') {
       for (const chain of Object.keys(DEFAULT_FALLBACK_CHAINS)) {
         const results = await testFallbackChain(chain);
@@ -396,13 +453,19 @@ async function main() {
   console.log('🔄 无感降级管理器\n');
   console.log('主模型失败时自动切换到备用模型，并支持自动回切\n');
   console.log('用法：');
-  console.log('  node fallback.js --test                    # 测试降级链');
-  console.log('  node fallback.js --test --chain all        # 测试所有降级链');
-  console.log('  node fallback.js --monitor                 # 监控模型状态');
-  console.log('  node fallback.js --check <model-id>        # 检查单个模型');
-  console.log('  node fallback.js --list-chains             # 列出所有降级链');
-  console.log('  node fallback.js --generate-config         # 生成降级配置');
-  console.log('  node fallback.js --generate-full-config    # 生成完整配置');
+  console.log('  node fallback.js --test                           # 测试默认降级链');
+  console.log('  node fallback.js --test --mode royal              # 测试富豪模式降级链');
+  console.log('  node fallback.js --test --chain all               # 测试所有降级链');
+  console.log('  node fallback.js --monitor                        # 监控模型状态');
+  console.log('  node fallback.js --check <model-id>               # 检查单个模型');
+  console.log('  node fallback.js --list-chains                    # 列出所有降级链');
+  console.log('  node fallback.js --list-modes                     # 列出所有模式');
+  console.log('  node fallback.js --generate-config                # 生成默认降级配置');
+  console.log('  node fallback.js --generate-config --mode royal   # 生成富豪模式配置');
+  console.log('  node fallback.js --generate-config --mode balanced # 生成均衡模式配置');
+  console.log('  node fallback.js --generate-config --mode savings # 生成省钱模式配置');
+  console.log('  node fallback.js --generate-full-config           # 生成默认完整配置');
+  console.log('  node fallback.js --generate-full-config --mode savings # 生成省钱模式完整配置');
 }
 
 // ESM 兼容的直接执行检测

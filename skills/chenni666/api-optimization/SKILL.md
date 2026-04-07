@@ -5,7 +5,7 @@ tools: ["Bash", "Read", "Write"]
 metadata:
   openclaw:
     requires:
-      env: ["OPENROUTER_API_KEY", "SILICONFLOW_API_KEY", "NVIDIA_API_KEY"]
+      env: ["OPENROUTER_API_KEY"]
     primaryEnv: OPENROUTER_API_KEY
 ---
 
@@ -19,6 +19,40 @@ metadata:
 - 🔍 **自动发现**：每日刷新 OpenRouter 可用免费模型
 - 🧠 **智能分流**：按任务类型选择最合适模型
 - 🔄 **无感降级**：主模型失败时自动 fallback 并自动回切
+- 🎯 **三种模式**：富豪/均衡/省钱，适配不同使用场景
+
+---
+
+## 使用模式（重要）
+
+根据您的使用习惯选择模式，决定免费模型和付费模型的优先级：
+
+### 🤴 富豪模式 (`--mode royal`)
+> 适合已购买 Coding Plan 或有付费 API 的用户
+
+- 所有任务使用您的**主模型**
+- 免费模型仅作**降级备选**（主模型挂了才用）
+- 不启用按任务路由
+
+### ⚖️ 均衡模式 (`--mode balanced`)（推荐）
+> 大多数用户的选择
+
+- **简单任务**（对话/翻译/写作）→ 优先免费模型
+- **复杂任务**（代码/推理/视觉）→ 优先您的主模型
+- 平衡成本和质量
+
+### 💰 极致省钱模式 (`--mode savings`)
+> 预算敏感用户
+
+- 主模型切换为**免费模型**
+- 所有任务**免费优先**
+- 您的原主模型作为**最后保底**
+
+### 查看可用模式
+
+```bash
+node scripts/fallback.js --list-modes
+```
 
 ---
 
@@ -29,9 +63,17 @@ metadata:
 | 模型 ID | 说明 | 免费额度 | 推荐用途 |
 |---------|------|----------|----------|
 | `Qwen/Qwen3-8B` | 通义千问 3 代 8B | 完全免费 | 日常对话、通用任务 |
+| `Qwen/Qwen3.5-4B` | Qwen 3.5 轻量版 | 完全免费 | 快速响应、轻量任务 |
+| `Qwen/Qwen2.5-7B-Instruct` | Qwen 2.5 7B 指令版 | 完全免费 | 通用指令执行 |
 | `deepseek-ai/DeepSeek-R1-0528-Qwen3-8B` | DeepSeek R1 蒸馏版 | 完全免费 | 推理任务 |
-| `THUDM/glm-4-9b-chat` | 智谱 GLM-4 | 完全免费 | 中文理解 |
-| `Qwen/Qwen2.5-Coder-7B-Instruct` | Qwen 编码专用 | 完全免费 | 代码生成 |
+| `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B` | DeepSeek R1 蒸馏 7B | 完全免费 | 轻量推理 |
+| `deepseek-ai/DeepSeek-OCR` | DeepSeek OCR | 完全免费 | 文档识别 |
+| `THUDM/GLM-4.1V-9B-Thinking` | GLM-4.1V 思维链版 | 完全免费 | 视觉推理 |
+| `THUDM/GLM-Z1-9B-0414` | 智谱 GLM-Z1 9B | 完全免费 | 中文理解 |
+| `THUDM/GLM-4-9B-0414` | 智谱 GLM-4 9B | 完全免费 | 中文对话 |
+| `tencent/Hunyuan-MT-7B` | 腾讯混元翻译 7B | 完全免费 | 中英翻译专用 |
+| `PaddlePaddle/PaddleOCR-VL` | 百度 PaddleOCR | 完全免费 | 文档视觉理解 |
+| `internlm/internlm2_5-7b-chat` | 书生·浦语 2.5 | 完全免费 | 通用对话 |
 
 **注册链接**：https://cloud.siliconflow.cn/i/hoxZec8I
 
@@ -101,17 +143,35 @@ export ZHIPU_API_KEY="xxx.xxx"
 node scripts/discover.js --platform all
 ```
 
-### Step 3: 生成 OpenClaw 配置
+### Step 3: 选择模式生成配置
 
 ```bash
-node scripts/configure.js --output ~/.openclaw/free-models.json
+# 查看所有可用模式
+node scripts/fallback.js --list-modes
+
+# 富豪模式（适合有付费 API 的用户）
+node scripts/fallback.js --generate-full-config --mode royal
+
+# 均衡模式（推荐）
+node scripts/fallback.js --generate-full-config --mode balanced
+
+# 极致省钱模式
+node scripts/fallback.js --generate-full-config --mode savings
 ```
+
+生成配置时会打印模式说明和提醒，请仔细阅读。
 
 ### Step 4: 应用配置
 
 ```bash
 # 备份原配置
 cp ~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.backup
+
+# 生成配置文件
+node scripts/fallback.js --generate-full-config --mode balanced > ~/.openclaw/free-models.json
+
+# 如果配置中有 "${您的主模型}" 占位符，请先替换为实际模型 ID
+# 例如：openclaw models status  查看当前模型
 
 # 合并配置
 openclaw config.patch < ~/.openclaw/free-models.json
@@ -124,7 +184,7 @@ openclaw gateway restart
 
 ## 智能分流配置
 
-按任务类型自动选择最优模型：
+按任务类型自动选择最优模型（以下为均衡模式示例）：
 
 ```json
 {
@@ -132,11 +192,12 @@ openclaw gateway restart
     "defaults": {
       "models": {
         "routing": {
-          "coding": ["siliconflow/Qwen/Qwen2.5-Coder-7B-Instruct", "deepseek/deepseek-coder"],
-          "reasoning": ["siliconflow/deepseek-ai/DeepSeek-R1-0528-Qwen3-8B"],
-          "translation": ["siliconflow/THUDM/glm-4-9b-chat"],
-          "chat": ["siliconflow/Qwen/Qwen3-8B", "deepseek/deepseek-chat"],
-          "vision": ["openrouter/google/gemini-3.1-flash-lite"]
+          "coding": ["${您的主模型}", "siliconflow/Qwen/Qwen2.5-7B-Instruct", "nvidia/qwen/qwen3.5-397b-a17b"],
+          "reasoning": ["${您的主模型}", "siliconflow/deepseek-ai/DeepSeek-R1-0528-Qwen3-8B", "nvidia/z-ai/glm5"],
+          "translation": ["siliconflow/tencent/Hunyuan-MT-7B", "siliconflow/THUDM/GLM-4-9B-0414", "nvidia/z-ai/glm4.7"],
+          "chat": ["siliconflow/Qwen/Qwen3-8B", "nvidia/z-ai/glm5"],
+          "vision": ["${您的主模型}", "nvidia/z-ai/glm5", "nvidia/moonshotai/kimi-k2.5"],
+          "longcontext": ["${您的主模型}", "nvidia/stepfun-ai/step-3.5-flash", "nvidia/moonshotai/kimi-k2.5"]
         }
       }
     }
@@ -144,22 +205,24 @@ openclaw gateway restart
 }
 ```
 
+> 💡 使用 `node scripts/fallback.js --generate-full-config --mode balanced` 自动生成此配置
+
 ---
 
 ## 无感降级配置
 
-主模型失败时自动切换到备用模型：
+主模型失败时自动切换到备用模型（以下为富豪模式示例）：
 
 ```json
 {
   "agents": {
     "defaults": {
       "model": {
-        "primary": "siliconflow/Qwen/Qwen3-8B",
         "fallbacks": [
+          "nvidia/qwen/qwen3.5-397b-a17b",
+          "siliconflow/Qwen/Qwen3-8B",
           "siliconflow/deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
-          "openrouter/google/gemini-3.1-flash-lite",
-          "deepseek/deepseek-chat"
+          "openrouter/google/gemini-3.1-flash-lite"
         ],
         "retryPolicy": {
           "maxRetries": 3,
@@ -172,6 +235,10 @@ openclaw gateway restart
   }
 }
 ```
+
+> 💡 富豪模式不修改您的 primary，只添加免费模型作为 fallback
+> 
+> 💡 省钱模式会将 primary 切换为免费模型，原主模型放入 fallback 最后位置
 
 ---
 
@@ -201,8 +268,16 @@ node scripts/router.js --task coding
 node scripts/router.js --task reasoning
 node scripts/router.js --task translation
 
+# 指定模式查看推荐
+node scripts/router.js --task coding --mode royal
+node scripts/router.js --task coding --mode savings
+
 # 生成分流配置
-node scripts/router.js --generate-config > routing.json
+node scripts/router.js --generate-config
+node scripts/router.js --generate-config --mode royal
+
+# 列出所有模式
+node scripts/router.js --list-modes
 ```
 
 ### fallback.js - 无感降级
@@ -211,11 +286,28 @@ node scripts/router.js --generate-config > routing.json
 # 测试降级链
 node scripts/fallback.js --test
 
+# 测试指定模式的降级链
+node scripts/fallback.js --test --mode royal
+node scripts/fallback.js --test --mode savings
+
 # 监控模型状态
 node scripts/fallback.js --monitor
 
-# 生成降级配置
-node scripts/fallback.js --generate-config > fallback.json
+# 检查单个模型
+node scripts/fallback.js --check siliconflow/Qwen/Qwen3-8B
+
+# 生成降级配置（按模式）
+node scripts/fallback.js --generate-config --mode royal
+node scripts/fallback.js --generate-config --mode balanced
+node scripts/fallback.js --generate-config --mode savings
+
+# 生成完整配置（路由 + 降级，按模式）
+node scripts/fallback.js --generate-full-config --mode royal
+node scripts/fallback.js --generate-full-config --mode balanced
+node scripts/fallback.js --generate-full-config --mode savings
+
+# 列出所有模式
+node scripts/fallback.js --list-modes
 ```
 
 ---

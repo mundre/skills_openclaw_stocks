@@ -8,6 +8,7 @@
 - 🔍 **自动发现**：每日刷新 OpenRouter 可用免费模型
 - 🧠 **智能分流**：按任务类型（代码、推理、翻译等）选择最合适模型
 - 🔄 **无感降级**：主模型失败时自动 fallback 并自动回切
+- 🎯 **三种模式**：富豪/均衡/省钱，适配不同使用场景
 
 ---
 
@@ -84,10 +85,17 @@ curl -s 'https://api.siliconflow.cn/v1/user/info' -H 'Authorization: Bearer <YOU
 | 模型 ID | 说明 | 推荐别名 |
 |---------|------|----------|
 | `Qwen/Qwen3-8B` | 通义千问 3 代 8B，综合能力强 | `sf-qwen3-8b` |
+| `Qwen/Qwen3.5-4B` | Qwen 3.5 轻量版，响应快 | `sf-qwen35-4b` |
+| `Qwen/Qwen2.5-7B-Instruct` | Qwen 2.5 7B 指令版 | `sf-qwen25-7b` |
 | `deepseek-ai/DeepSeek-R1-0528-Qwen3-8B` | DeepSeek R1 推理蒸馏版 | `sf-r1-8b` |
-| `THUDM/glm-4-9b-chat` | 智谱 GLM-4 9B | `sf-glm4` |
-| `Qwen/Qwen2.5-7B-Instruct` | Qwen 2.5 7B | `sf-qwen25-7b` |
-| `Qwen/Qwen2.5-Coder-7B-Instruct` | Qwen 2.5 编码专用 | `sf-qwen-coder-7b` |
+| `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B` | DeepSeek R1 蒸馏 7B | `sf-r1-distill-7b` |
+| `deepseek-ai/DeepSeek-OCR` | DeepSeek OCR 文档识别 | `sf-ocr` |
+| `THUDM/GLM-4.1V-9B-Thinking` | GLM-4.1V 思维链版，支持视觉 | `sf-glm41v` |
+| `THUDM/GLM-Z1-9B-0414` | 智谱 GLM-Z1 9B | `sf-glm-z1` |
+| `THUDM/GLM-4-9B-0414` | 智谱 GLM-4 9B | `sf-glm4` |
+| `tencent/Hunyuan-MT-7B` | 腾讯混元翻译，中英翻译专用 | `sf-hunyuan-mt` |
+| `PaddlePaddle/PaddleOCR-VL` | 百度 PaddleOCR 视觉理解 | `sf-paddleocr` |
+| `internlm/internlm2_5-7b-chat` | 书生·浦语 2.5 | `sf-internlm` |
 
 ### SiliconFlow 性价比模型（便宜好用）
 
@@ -160,7 +168,15 @@ node scripts/router.js --task translation
 node scripts/router.js --detect "帮我写一段代码"
 
 # 生成分流配置
-node scripts/router.js --generate-config > routing.json
+node scripts/router.js --generate-config
+
+# 指定模式生成配置
+node scripts/router.js --generate-config --mode royal
+node scripts/router.js --generate-config --mode balanced
+node scripts/router.js --generate-config --mode savings
+
+# 列出所有模式
+node scripts/router.js --list-modes
 ```
 
 ### fallback.js - 无感降级
@@ -170,17 +186,25 @@ node scripts/router.js --generate-config > routing.json
 node scripts/fallback.js --test
 node scripts/fallback.js --test --chain all
 
+# 按模式测试
+node scripts/fallback.js --test --mode royal
+
 # 监控模型状态
 node scripts/fallback.js --monitor
 
 # 检查单个模型
 node scripts/fallback.js --check siliconflow/Qwen/Qwen3-8B
 
-# 生成降级配置
-node scripts/fallback.js --generate-config > fallback.json
+# 生成配置（按模式）
+node scripts/fallback.js --generate-config --mode royal
+node scripts/fallback.js --generate-config --mode balanced
+node scripts/fallback.js --generate-config --mode savings
 
 # 生成完整配置（路由 + 降级）
-node scripts/fallback.js --generate-full-config > config.json
+node scripts/fallback.js --generate-full-config --mode balanced > config.json
+
+# 列出所有模式
+node scripts/fallback.js --list-modes
 ```
 
 ---
@@ -195,9 +219,9 @@ node scripts/fallback.js --generate-full-config > config.json
     "defaults": {
       "models": {
         "routing": {
-          "coding": ["siliconflow/Qwen/Qwen2.5-Coder-7B-Instruct", "nvidia/qwen/qwen3.5-397b-a17b"],
+          "coding": ["siliconflow/Qwen/Qwen2.5-7B-Instruct", "nvidia/qwen/qwen3.5-397b-a17b"],
           "reasoning": ["siliconflow/deepseek-ai/DeepSeek-R1-0528-Qwen3-8B", "nvidia/z-ai/glm5"],
-          "translation": ["siliconflow/THUDM/glm-4-9b-chat", "nvidia/z-ai/glm4.7"],
+          "translation": ["siliconflow/tencent/Hunyuan-MT-7B", "siliconflow/THUDM/GLM-4-9B-0414"],
           "chat": ["siliconflow/Qwen/Qwen3-8B", "nvidia/z-ai/glm5"],
           "vision": ["nvidia/z-ai/glm5", "nvidia/moonshotai/kimi-k2.5"],
           "longcontext": ["nvidia/stepfun-ai/step-3.5-flash", "nvidia/moonshotai/kimi-k2.5"]
@@ -246,9 +270,11 @@ node scripts/fallback.js --generate-full-config > config.json
 | 任务类型 | 推荐模型 | 原因 |
 |----------|----------|------|
 | 日常对话 | Qwen3-8B (免费) | 完全免费，响应快 |
-| 代码生成 | Qwen2.5-Coder-7B (免费) | 代码专用，效果好 |
+| 代码生成 | Qwen2.5-7B-Instruct (免费) | 指令执行好 |
 | 推理任务 | DeepSeek-R1-Qwen3-8B (免费) | 推理能力强 |
-| 翻译任务 | GLM-4-9B (免费) | 中文理解好 |
+| 翻译任务 | Hunyuan-MT-7B (免费) | 翻译专用 |
+| 文档识别 | DeepSeek-OCR (免费) | OCR 专用 |
+| 视觉推理 | GLM-4.1V-9B-Thinking (免费) | 支持思维链+视觉 |
 | 长文本处理 | NVIDIA Step-3.5-Flash (免费) | 256k 超长上下文 |
 | 图像理解 | NVIDIA GLM5 (免费) | 支持多模态 |
 | 重要任务 | DeepSeek-V3.2 (付费) | 质量最高 |

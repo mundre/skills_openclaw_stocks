@@ -16,15 +16,11 @@
  *   NVIDIA_API_KEY - NVIDIA NIM API Key (可选，用于获取更多模型)
  */
 
-import { writeFileSync } from 'fs';
-
 // 价格阈值配置
 const PRICE_THRESHOLDS = {
   free: 0,           // 完全免费
   ultraLow: 0.0001,  // 超低价（低于 $0.0001/1M tokens）
 };
-
-import { writeFileSync } from 'fs';
 
 // 平台配置
 const PLATFORMS = {
@@ -106,8 +102,135 @@ async function fetchSiliconFlowModels() {
     }));
   } catch (error) {
     console.error(`❌ SiliconFlow 获取失败: ${error.message}`);
-    return [];
+    // API 不可用时返回预定义免费模型列表
+    return getSiliconFlowFreeModels();
   }
+}
+
+/**
+ * SiliconFlow 预定义免费模型列表（API 不可用时的备用方案）
+ * 数据来源：https://siliconflow.cn/pricing
+ */
+function getSiliconFlowFreeModels() {
+  return [
+    {
+      id: 'Qwen/Qwen3.5-4B',
+      name: 'Qwen 3.5 4B',
+      platform: 'siliconflow',
+      contextLength: 131072,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: 'Qwen 3.5 4B，轻量免费模型',
+    },
+    {
+      id: 'Qwen/Qwen3-8B',
+      name: 'Qwen 3 8B',
+      platform: 'siliconflow',
+      contextLength: 131072,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: '通义千问 3 代 8B，综合能力强',
+    },
+    {
+      id: 'Qwen/Qwen2.5-7B-Instruct',
+      name: 'Qwen 2.5 7B Instruct',
+      platform: 'siliconflow',
+      contextLength: 131072,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: 'Qwen 2.5 7B 指令微调版',
+    },
+    {
+      id: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',
+      name: 'DeepSeek R1 Distill Qwen 7B',
+      platform: 'siliconflow',
+      contextLength: 131072,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: 'DeepSeek R1 蒸馏版 7B，推理能力强',
+    },
+    {
+      id: 'deepseek-ai/DeepSeek-R1-0528-Qwen3-8B',
+      name: 'DeepSeek R1 0528 Qwen3 8B',
+      platform: 'siliconflow',
+      contextLength: 131072,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: 'DeepSeek R1 0528 蒸馏版，推理能力强',
+    },
+    {
+      id: 'deepseek-ai/DeepSeek-OCR',
+      name: 'DeepSeek OCR',
+      platform: 'siliconflow',
+      contextLength: 32768,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: 'DeepSeek OCR 文档识别模型',
+    },
+    {
+      id: 'THUDM/GLM-4.1V-9B-Thinking',
+      name: 'GLM-4.1V 9B Thinking',
+      platform: 'siliconflow',
+      contextLength: 131072,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: '智谱 GLM-4.1V 思维链版，支持视觉',
+    },
+    {
+      id: 'THUDM/GLM-Z1-9B-0414',
+      name: 'GLM-Z1 9B',
+      platform: 'siliconflow',
+      contextLength: 131072,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: '智谱 GLM-Z1 9B',
+    },
+    {
+      id: 'THUDM/GLM-4-9B-0414',
+      name: 'GLM-4 9B',
+      platform: 'siliconflow',
+      contextLength: 131072,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: '智谱 GLM-4 9B',
+    },
+    {
+      id: 'tencent/Hunyuan-MT-7B',
+      name: 'Hunyuan MT 7B',
+      platform: 'siliconflow',
+      contextLength: 32768,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: '腾讯混元翻译模型，中英翻译专用',
+    },
+    {
+      id: 'PaddlePaddle/PaddleOCR-VL',
+      name: 'PaddleOCR-VL',
+      platform: 'siliconflow',
+      contextLength: 32768,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: '百度 PaddleOCR 视觉文档理解',
+    },
+    {
+      id: 'PaddlePaddle/PaddleOCR-VL-1.5',
+      name: 'PaddleOCR-VL 1.5',
+      platform: 'siliconflow',
+      contextLength: 32768,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: '百度 PaddleOCR 1.5 增强版',
+    },
+    {
+      id: 'internlm/internlm2_5-7b-chat',
+      name: 'InternLM2.5 7B Chat',
+      platform: 'siliconflow',
+      contextLength: 32768,
+      pricing: { prompt: 0, completion: 0 },
+      isFree: true,
+      description: '书生·浦语 2.5 7B 对话版',
+    },
+  ];
 }
 
 /**
@@ -445,6 +568,7 @@ export {
   fetchSiliconFlowModels,
   fetchNvidiaModels,
   getNvidiaFreeModels,
+  getSiliconFlowFreeModels,
   filterFreeModels,
   filterUltraLowPriceModels,
   filterAllLowPriceModels,

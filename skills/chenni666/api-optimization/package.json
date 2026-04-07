@@ -13,7 +13,14 @@
     "router:reasoning": "node scripts/router.js --task reasoning",
     "fallback:test": "node scripts/fallback.js --test",
     "fallback:monitor": "node scripts/fallback.js --monitor",
-    "config:generate": "node scripts/fallback.js --generate-full-config"
+    "config:generate": "node scripts/fallback.js --generate-full-config",
+    "config:royal": "node scripts/fallback.js --generate-full-config --mode royal",
+    "config:balanced": "node scripts/fallback.js --generate-full-config --mode balanced",
+    "config:savings": "node scripts/fallback.js --generate-full-config --mode savings",
+    "config:royal:json": "node scripts/fallback.js --generate-full-config --mode royal > openclaw-royal.json",
+    "config:balanced:json": "node scripts/fallback.js --generate-full-config --mode balanced > openclaw-balanced.json",
+    "config:savings:json": "node scripts/fallback.js --generate-full-config --mode savings > openclaw-savings.json",
+    "modes": "node scripts/fallback.js --list-modes"
   },
   "keywords": [
     "free-models",
