@@ -1,0 +1,11 @@
+{
+  "owner": "justoneapi",
+  "slug": "justoneapi-toutiao",
+  "displayName": "Toutiao API",
+  "latest": {
+    "version": "1.0.4",
+    "publishedAt": 1775375357258,
+    "commit": null
+  },
+  "history": []
+}
