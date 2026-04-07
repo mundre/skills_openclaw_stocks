@@ -3,9 +3,15 @@
   "slug": "csdn-article-publish-plus",
   "displayName": "csdn文章发布",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775229008839,
-    "commit": "https://github.com/openclaw/skills/commit/cfa7fbd4791fcd78f17a7aedf9c85b866560cbc3"
+    "version": "1.0.3",
+    "publishedAt": 1775575371579,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775229008839,
+      "commit": "https://github.com/openclaw/skills/commit/cfa7fbd4791fcd78f17a7aedf9c85b866560cbc3"
+    }
+  ]
 }
