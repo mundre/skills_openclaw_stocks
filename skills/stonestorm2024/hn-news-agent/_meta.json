@@ -1,0 +1,11 @@
+{
+  "owner": "stonestorm2024",
+  "slug": "hn-news-agent",
+  "displayName": "Hn News Agent",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775290577364,
+    "commit": null
+  },
+  "history": []
+}
