@@ -1,0 +1,11 @@
+{
+  "owner": "john-ver",
+  "slug": "karpathy-llm-wiki",
+  "displayName": "karpathy-llm-wiki",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775407197719,
+    "commit": null
+  },
+  "history": []
+}
