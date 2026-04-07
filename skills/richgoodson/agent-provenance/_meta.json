@@ -1,0 +1,11 @@
+{
+  "owner": "richgoodson",
+  "slug": "agent-provenance",
+  "displayName": "Agent Provenance",
+  "latest": {
+    "version": "2.0.0",
+    "publishedAt": 1775501683344,
+    "commit": null
+  },
+  "history": []
+}
