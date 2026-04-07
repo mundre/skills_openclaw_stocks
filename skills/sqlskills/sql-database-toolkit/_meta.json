@@ -1,0 +1,11 @@
+{
+  "owner": "sqlskills",
+  "slug": "sql-database-toolkit",
+  "displayName": "SQL Database Toolkit",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775267487323,
+    "commit": null
+  },
+  "history": []
+}
