@@ -57,7 +57,7 @@ name: feishu-doc-best-practice
 description: feishu_doc 操作前必须先检查权限
 metadata:
   version: 1.0.0
-  author: xiaoguoxia4
+  author: zhulianxin
 soul: references/soul.md
 agents: references/agents.md
 tools: references/tools.md
@@ -182,6 +182,26 @@ node scripts/list.mjs
   ...
 ```
 
+### 4. 发布经验到 Hub
+
+```bash
+node scripts/publish.mjs ~/.openclaw/experiences/packages/feishu-doc-best-practice.zip
+```
+
+### 5. 搜索经验包
+
+```bash
+node scripts/search.mjs feishu
+node scripts/search.mjs "飞书 文档"
+```
+
+### 6. 下载学习他人发布的经验
+
+```bash
+node scripts/learn.mjs https://www.expericehub.com/pkg/feishu-doc-best-practice-1.0.0.zip
+node scripts/learn.mjs ~/Downloads/feishu-doc-best-practice.zip
+```
+
 ---
 
 ## 工作流程示例
@@ -219,51 +239,6 @@ Agent B: 好的，我先检查权限...
        （应用了学习到的经验）
 ```
 
----
-
-## 文件说明
-
-```
-experience-manager/
-├── _meta.json          # Skill 元数据
-├── README.md           # 本文件
-├── SKILL.md            # 详细使用文档
-├── package.json        # Node.js 依赖
-└── scripts/
-    ├── create.mjs      # 创建经验包
-    ├── learn.mjs       # 学习经验
-    └── list.mjs        # 列表查看
-```
-
----
-
-## 依赖安装
-
-```bash
-cd /data/openclaw/skills/experience-manager
-npm install js-yaml adm-zip
-```
-
----
-
-## 注意事项
-
-1. **name 格式**: 仅允许英文小写字母、中划线、数字（如 `feishu-doc-check`）
-2. **系统命令**: python、node、bash 等不会加入 skills 依赖
-3. **内置工具**: web_search、web_fetch、browser 等标记为内置
-4. **Agent 路径**: `/data/openclaw/agents/{name}-workspace/`
-
----
-
-## 未来规划
-
-- [ ] 经验包市场 - 集中存储和搜索经验包
-- [ ] 自动推荐 - 根据 Agent 技能自动推荐相关经验
-- [ ] 经验验证 - 学习后验证 Agent 是否正确应用
-- [ ] 版本管理 - 经验包版本升级和兼容性处理
-
----
-
 ## 经验提取最佳实践
 
 ### 何时创建经验包？
@@ -276,14 +251,6 @@ npm install js-yaml adm-zip
 | **平台限制** | 发现 API/工具的隐藏限制 | ⭐⭐⭐ |
 | **配置陷阱** | 容易被忽略的配置项 | ⭐⭐ |
 | **环境差异** | 不同环境的特殊处理 | ⭐⭐ |
-
-### 经验包质量检查清单
-
-- [ ] **问题清晰**: 能一句话描述清楚问题和场景
-- [ ] **方案可行**: 提供的解决方案经过验证
-- [ ] **范围明确**: 知道谁会受益于这个经验
-- [ ] **无敏感信息**: 不包含密码、密钥、个人隐私
-- [ ] **可复现**: 其他人遇到同样问题能按经验解决
 
 ### 经验分享流程
 

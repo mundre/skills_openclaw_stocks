@@ -1,14 +1,14 @@
 ---
 name: experience-manager
-description: "经验管理工具：提取经验生成标准格式zip包，学习经验并转化为自身能力"
+description: "经验管理工具：提取经验生成标准格式zip包，学习经验并转化为自身能力。搜索和发布经验包到 Experience Hub 平台。"
 metadata:
-  version: 1.1.1
+  version: 1.3.0
   author: zhulianxin@corp.netease.com
 ---
 
 # Experience Manager Skill
 
-经验管理工具，支持经验的提取、学习和列表查看。
+经验管理工具，支持经验的提取、学习、列表、搜索和发布。
 
 ## 功能
 
@@ -74,14 +74,67 @@ node create.mjs "中文描述" --name=feishu-doc-validation
 3. 检查依赖是否满足
 4. 分析相关性
 5. 生成转化方案
-6. 应用并记录学习状态
+6. 预览待学习的内容，待用户确认是否开始学习
+7. 应用经验并记录学习状态
 
 **冲突处理：**
 - name 相同，version 相同：提示已学习，跳过
 - name 相同，version 不同：提示有新版本，可选更新
 - name 不同：正常学习
 
-### 3. 经验列表 (list)
+### 3. 搜索经验 (search)
+
+从 Experience Hub 搜索已发布的经验包。
+
+**使用方式：**
+```
+搜索经验 <关键词>
+```
+
+**示例：**
+```
+搜索经验 feishu
+搜索经验 飞书文档
+```
+
+**API：**
+```bash
+curl -s "https://www.expericehub.com/api/search?q=<关键词>"
+```
+
+### 4. 发布经验 (publish)
+
+将本地经验包发布到 Experience Hub。
+
+**使用方式：**
+```
+发布经验 <本地zip文件路径>
+```
+
+**示例：**
+```
+发布经验 ~/.openclaw/experiences/packages/feishu-doc-validation.zip
+```
+
+**API：**
+```bash
+curl -X POST "https://www.expericehub.com/api/experiences" \
+  -F "file=@<本地zip文件路径>"
+```
+
+**成功响应：**
+```json
+{"success": true, "id": "my-exp-1.0.0"}
+```
+
+**错误响应：**
+```json
+{"error": "经验包格式错误，请确保包含 exp.yml 文件且格式正确"}
+```
+
+**注意：** 经验包必须为 zip 格式，内部需包含 `exp.yml` 配置文件。
+
+### 5. 经验列表 (list)
 
 显示所有经验包及学习状态。
 
@@ -110,8 +163,6 @@ node create.mjs "中文描述" --name=feishu-doc-validation
 
 版本说明：
 - **v1.0.0**: 初始版本，精简格式
-- 后续破坏性字段修改需升级版本号
-- `create.mjs` 和 `learn.mjs` 根据 `schema` 字段处理不同格式
 
 ### zip 包结构
 
@@ -127,16 +178,16 @@ node create.mjs "中文描述" --name=feishu-doc-validation
 ### exp.yml 格式 (v1)
 
 ```yaml
-schema: openclaw.experience.v1    # Schema 版本标识
-name: feishu-doc-blockcount       # 经验包名称（英文小写+中划线+数字）
-description: 经验描述              # 问题/经验描述
+schema: openclaw.experience.v1    # 必填，Schema 版本标识
+name: feishu-doc-blockcount       # 必填，经验包名称（英文小写+中划线+数字）
+description: 经验描述              # 可选，问题/经验描述
 metadata:
-  version: 1.0.0                  # 经验包版本
-  author: unknown                 # 作者
-soul: references/soul.md          # 指向 SOUL 相关内容（可选）
-agents: references/agents.md      # 指向 AGENTS 相关内容（可选）
-tools: references/tools.md        # 指向 TOOLS 相关内容（可选）
-skills:                           # 依赖的 skills 列表
+  version: 1.0.0                  # 必填，经验包版本
+  author: unknown                 # 必填，作者
+soul: references/soul.md          # 可选，指向 SOUL 相关内容（soul/agents/tools/skills 至少有一个不为空）
+agents: references/agents.md      # 可选，指向 AGENTS 相关内容（soul/agents/tools/skills 至少有一个不为空）
+tools: references/tools.md        # 可选，指向 TOOLS 相关内容（soul/agents/tools/skills 至少有一个不为空）
+skills:                           # 可选，依赖的 skills 列表（soul/agents/tools/skills 至少有一个不为空）
   - feishu_doc
 ```
 
@@ -159,9 +210,6 @@ skills:                           # 依赖的 skills 列表
 ```markdown
 # {标题} - 行为准则
 
-> 来源: 经验包
-> 类型: tool_tip
-
 ## 涉及原则
 - 原则1
 - 原则2
@@ -174,9 +222,6 @@ skills:                           # 依赖的 skills 列表
 
 ```markdown
 # {标题} - 工作流程
-
-> 来源: 经验包
-> 类型: tool_tip
 
 ## 场景
 问题描述
@@ -193,9 +238,6 @@ skills:                           # 依赖的 skills 列表
 
 ```markdown
 # {标题} - 工具使用
-
-> 来源: 经验包
-> 类型: tool_tip
 
 ## 问题
 问题描述
@@ -242,53 +284,6 @@ skills:                           # 依赖的 skills 列表
 }
 ```
 
-## 依赖
-
-- Node.js >= 18
-- js-yaml: YAML 解析和生成
-- adm-zip: zip 文件处理
-
-## 安装
-
-```bash
-# 安装依赖
-cd /data/openclaw/skills/experience-manager
-npm install js-yaml adm-zip
-```
-
-## 使用方法
-
-### 直接运行脚本
-
-```bash
-# 设置环境变量
-export PATH="/usr/local/node/bin:$PATH"
-export OPENCLAW_USER_ID="your-user-id"
-export OPENCLAW_WORKSPACE="/path/to/workspace"
-
-# 创建经验
-node /data/openclaw/skills/experience-manager/scripts/create.mjs "经验描述"
-
-# 创建经验（手动指定 name）
-node /data/openclaw/skills/experience-manager/scripts/create.mjs "中文描述" --name=my-experience
-
-# 学习经验
-node /data/openclaw/skills/experience-manager/scripts/learn.mjs <zip路径或URL>
-
-# 查看列表
-node /data/openclaw/skills/experience-manager/scripts/list.mjs
-```
-
-### 作为 OpenClaw Skill 使用
-
-在 OpenClaw 中，可以通过以下方式调用：
-
-```
-创建经验 <描述>
-学习经验 <zip路径或URL>
-经验列表
-```
-
 ## 使用方法
 
 ### 命令行用法
@@ -300,18 +295,31 @@ node scripts/create.mjs "使用 feishu_doc 读取文档"
 # 2. 创建经验（指定 Agent，会扫描 Agent 特定 skills）
 node scripts/create.mjs "使用 feishu_doc 读取文档" --agent=严哥
 
-# 3. 学习到当前 Agent
+# 3. 搜索经验包
+node scripts/search.mjs feishu
+node scripts/search.mjs "飞书 文档"
+
+# 4. 发布经验包到 Hub
+node scripts/publish.mjs ~/.openclaw/experiences/packages/my-exp.zip
+
+# 5.1 学习经验（支持完整URL或简短ID），默认需要用户确认以后开始学习
 node scripts/learn.mjs ~/.openclaw/experiences/packages/feishudoc.zip
+# 5.2 学习经验（支持完整URL或简短ID），仅预览变更
+node scripts/learn.mjs https://www.expericehub.com/pkg/feishu-doc-writing-1.1.0.zip --dry-run
+# 5.3 学习经验（支持完整URL或简短ID）
+node scripts/learn.mjs feishu-doc-writing-1.1.0 --dry-run  # 简短格式
+# 5.4 明确不需要再次确认，不需要预览变更，直接学习经验的时候
+node scripts/learn.mjs feishu-doc-writing-1.1.0 --yes
 
-# 4. 学习到指定 Agent
-node scripts/learn.mjs ~/.openclaw/experiences/packages/feishudoc.zip --agent=严哥
+# 6. 【重要】学习到指定 Agent，默认需要用户确认以后开始学习并且指定agent的时候
+node scripts/learn.mjs exp.zip --agent=严哥
 
-# 5. 预览变更（不实际应用）
-node scripts/learn.mjs exp.zip --agent=严哥 --dry-run
+# 7. 明确不需要再次确认，不需要预览变更，直接学习经验的时候，指定agent学习的时候
+node scripts/learn.mjs exp.zip --agent=严哥 --yes
 
-# 6. 查看列表
+# 8. 查看列表
 node scripts/list.mjs
 
-# 7. 查看指定 Agent 的学习记录
+# 9. 查看指定 Agent 的学习记录
 node scripts/list.mjs --agent=严哥
 ```

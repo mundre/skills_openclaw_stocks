@@ -250,13 +250,33 @@ function readAgentConfig() {
     };
   }
   
-  // 读取已安装 Skills
-  const skillsDir = path.join(process.env.HOME, '.openclaw', 'skills');
-  if (fs.existsSync(skillsDir)) {
-    config.skills = fs.readdirSync(skillsDir)
-      .filter(d => fs.statSync(path.join(skillsDir, d)).isDirectory())
-      .map(d => ({ name: d, path: path.join(skillsDir, d) }));
+  // 读取已安装 Skills（多个可能的位置）
+  const possibleDirs = [
+    path.join(process.env.HOME || '/root', '.openclaw', 'skills'),
+    '/app/skills',
+    path.join(__dirname, '../../skills')
+  ];
+  
+  let allSkills = [];
+  for (const dir of possibleDirs) {
+    if (fs.existsSync(dir)) {
+      try {
+        const skills = fs.readdirSync(dir)
+          .filter(d => {
+            try {
+              return fs.statSync(path.join(dir, d)).isDirectory() && !d.startsWith('.');
+            } catch {
+              return false;
+            }
+          })
+          .map(d => ({ name: d, path: path.join(dir, d) }));
+        allSkills.push(...skills);
+      } catch (e) {
+        // 忽略无法读取的目录
+      }
+    }
   }
+  config.skills = allSkills;
   
   return config;
 }
