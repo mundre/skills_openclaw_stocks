@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "prisma-integration",
+  "displayName": "Prisma",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775264597208,
+    "commit": null
+  },
+  "history": []
+}
