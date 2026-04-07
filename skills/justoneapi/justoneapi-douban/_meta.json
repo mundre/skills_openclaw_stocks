@@ -1,0 +1,11 @@
+{
+  "owner": "justoneapi",
+  "slug": "justoneapi-douban",
+  "displayName": "Douban Movie API",
+  "latest": {
+    "version": "1.0.7",
+    "publishedAt": 1775375307522,
+    "commit": null
+  },
+  "history": []
+}
