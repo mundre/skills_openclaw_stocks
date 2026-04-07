@@ -1,0 +1,11 @@
+{
+  "owner": "axiom-wallet",
+  "slug": "axiom",
+  "displayName": "Axiom",
+  "latest": {
+    "version": "0.0.2",
+    "publishedAt": 1775139559410,
+    "commit": null
+  },
+  "history": []
+}
