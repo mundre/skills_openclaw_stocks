@@ -91,19 +91,10 @@ opencode run --continue --agent build -- 'Implement approved plan.'
 ## Session Management
 
 ```bash
-# Continue previous session
 opencode run --continue -- '<prompt>'
-
-# Continue specific session
 opencode run --session <id> -- '<prompt>'
-
-# Fork session (keeps original)
 opencode run --continue --fork -- '<prompt>'
-
-# List sessions
 opencode session list
-
-# Delete session
 opencode session delete <id>
 ```
 
@@ -111,23 +102,16 @@ opencode session delete <id>
 
 ## OpenClaw Integration
 
-### Standard Task (≤5 minutes)
-
+### Standard Task
 ```bash
 opencode run -m <model> -- '<task>'
 ```
 
-### Background Task (>5 minutes)
-
+### Background Task
 ```bash
-# Start
 opencode run -m <model> -- '<task>'
-
-# Monitor (every 30-60s)
 process action:poll sessionId:<id> timeout:30000
 process action:log sessionId:<id>
-
-# Terminate
 process action:kill sessionId:<id>
 ```
 
@@ -208,66 +192,40 @@ OpenCode Agent built-in tools: read/write/edit, bash, grep/glob, todowrite, skil
 
 ## Common Patterns
 
-> **Note**: Examples below use `openclaw system event` for task completion notification. This is an **optional** OpenClaw platform command. If running outside OpenClaw context, omit this line or replace with your preferred notification method.
+> **Note**: Examples use `openclaw system event` for optional task notification. This is an OpenClaw platform command. Omit if running outside OpenClaw.
 
 ### Planning Task
 
 ```bash
-opencode run -m <model> -- '
-Analyze task, output plan to CLAWD_PLAN.md including: goal, scope, steps, risks.
-'
+opencode run -m <model> -- 'Analyze task, output plan.'
 ```
 
-**Optional completion notification (OpenClaw only):**
-```bash
-opencode run -m <model> -- '
-Analyze task, output plan to CLAWD_PLAN.md.
-
-When done: openclaw system event --text "Done: Plan complete" --mode now
-'
-```
+For detailed plan format, see project workflow documentation.
 
 ### Implementation Task
 
 ```bash
-opencode run -m <model> -- '
-Execute Phase N from CLAWD_PLAN.md:
-- Modify files: ...
-- Verify: npm run build && npm test
-'
+opencode run -m <model> -- 'Execute approved plan.'
 ```
 
-**Optional completion notification (OpenClaw only):**
-```bash
-opencode run -m <model> -- '
-Execute Phase N from CLAWD_PLAN.md:
-- Modify files: ...
-- Verify: npm run build && npm test
-
-When done: openclaw system event --text "Done: Build complete" --mode now
-'
-```
+Verify with: `npm run build && npm test`
 
 ### Database Operations
 
 ```bash
 cd /path/to/project
-opencode run -m <model> -- '
-Use Supabase MCP for database operations:
-- ...
-'
+opencode run -m <model> -- 'Use Supabase MCP for database operations.'
 ```
+
+See: `references/mcp-config-guide.md` for MCP setup.
 
 ### UI Testing
 
 ```bash
-opencode run -m <model> -- '
-Use Playwright MCP for UI testing:
-- browser snapshot get page state
-- browser act click/input operations
-- browser screenshot comparison
-'
+opencode run -m <model> -- 'Use Playwright MCP for UI testing.'
 ```
+
+See: `references/mcp-config-guide.md` for MCP setup.
 
 ---
 

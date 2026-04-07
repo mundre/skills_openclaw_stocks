@@ -31,71 +31,41 @@
 
 ## Security Considerations
 
-### ⚠️ Critical: Remote Code Execution Risk
+### ⚠️ Remote Code Execution Risk
 
-MCP servers run as separate processes. Configuration methods have different security profiles:
+MCP servers run as separate processes. Different configuration methods have different security profiles:
 
-| Method | Risk | Description |
-|--------|------|-------------|
+| Method | Risk Level | Description |
+|--------|------------|-------------|
 | **Global Install** | Low | Code verified once, runs locally |
-| **npx (no flags)** | Medium | Downloads code, prompts before first run |
-| **npx -y** | High | Downloads and executes without confirmation |
+| **npx** | Medium | Downloads remote code each run |
 
-### ✅ Recommended: Global Install
+### ✅ Recommended: Global Install Only
 
-**Most secure approach** — verify package integrity once, then run locally:
+**Why**: Verifies package integrity once, no repeated downloads, no network dependency at runtime.
 
+**Steps:**
 ```bash
-# 1. Check package details
-npm view @executeautomation/playwright-mcp-server
+# 1. Verify package
+npm view <package-name>
 
 # 2. Install globally
-npm install -g @executeautomation/playwright-mcp-server
+npm install -g <package-name>
 
-# 3. Configure with installed binary
-"command": ["playwright-mcp-server"]
+# 3. Configure with binary name
+"command": ["<binary-name>"]
 ```
-
-**Benefits:**
-- Code verified at install time
-- No repeated downloads
-- No network dependency at runtime
-- Version pinned until explicit update
-
-### ⚠️ Alternative: npx (Use Only in Trusted Environments)
-
-**Convenience trade-off** — `npx` downloads and executes remote code:
-
-```bash
-# Downloads package on each run (or cached for a period)
-"command": ["npx", "@executeautomation/playwright-mcp-server"]
-```
-
-**If using npx:**
-1. Only in trusted, isolated environments
-2. Pin specific version: `@executeautomation/playwright-mcp-server@1.2.3`
-3. Never use `-y` flag (it bypasses confirmation)
-4. Verify package integrity before first use
-
-### Environment Variables
-
-MCP servers may require API keys or credentials. Store them securely:
-
-- **Development**: Use `.env` files (add to `.gitignore`)
-- **Production**: Use system environment variables or secret managers
-- **Never** hardcode secrets in config files that get committed
 
 ---
 
 ## Global MCP Configuration
 
-### Playwright MCP (UI Automation Testing)
+### Playwright MCP (UI Testing)
 
-#### Recommended (Global Install)
+**Package**: `playwright-mcp-server` (search npm for current package name)
 
 ```bash
-# Install
-npm install -g @executeautomation/playwright-mcp-server
+npm install -g playwright-mcp-server
 ```
 
 ```json
@@ -104,21 +74,6 @@ npm install -g @executeautomation/playwright-mcp-server
     "playwright": {
       "type": "local",
       "command": ["playwright-mcp-server"]
-    }
-  }
-}
-```
-
-#### Alternative (npx)
-
-> ⚠️ Only use in trusted environments. Downloads remote code.
-
-```json
-{
-  "mcp": {
-    "playwright": {
-      "type": "local",
-      "command": ["npx", "@executeautomation/playwright-mcp-server@1.0.0"]
     }
   }
 }
@@ -140,11 +95,10 @@ npm install -g @executeautomation/playwright-mcp-server
 
 ### Context7 MCP (Context Management)
 
-#### Recommended (Global Install)
+**Package**: `context7-mcp` (search npm for current package name)
 
 ```bash
-# Install
-npm install -g @upstash/context7-mcp
+npm install -g context7-mcp
 ```
 
 ```json
@@ -153,25 +107,6 @@ npm install -g @upstash/context7-mcp
     "context7": {
       "type": "local",
       "command": ["context7-mcp"],
-      "environment": {
-        "CONTEXT7_API_KEY": "<your-api-key>",
-        "DEFAULT_MINIMUM_TOKENS": "10000"
-      }
-    }
-  }
-}
-```
-
-#### Alternative (npx)
-
-> ⚠️ Only use in trusted environments. Downloads remote code.
-
-```json
-{
-  "mcp": {
-    "context7": {
-      "type": "local",
-      "command": ["npx", "@upstash/context7-mcp"],
       "environment": {
         "CONTEXT7_API_KEY": "<your-api-key>",
         "DEFAULT_MINIMUM_TOKENS": "10000"
@@ -193,11 +128,10 @@ npm install -g @upstash/context7-mcp
 
 ### Supabase MCP (Database)
 
-#### Recommended (Global Install)
+**Package**: `mcp-server-supabase` (search npm for current package name)
 
 ```bash
-# Install
-npm install -g @supabase/mcp-server-supabase
+npm install -g mcp-server-supabase
 ```
 
 **Config file:** `<project>/.opencode/opencode.json`
@@ -217,25 +151,6 @@ npm install -g @supabase/mcp-server-supabase
 }
 ```
 
-#### Alternative (npx)
-
-> ⚠️ Only use in trusted environments. Downloads remote code.
-
-```json
-{
-  "mcp": {
-    "supabase": {
-      "type": "local",
-      "command": ["npx", "@supabase/mcp-server-supabase"],
-      "environment": {
-        "SUPABASE_URL": "<your-project-url>",
-        "SUPABASE_ANON_KEY": "<your-anon-key>"
-      }
-    }
-  }
-}
-```
-
 **Purpose:**
 - Database operations
 - Schema migrations
@@ -244,20 +159,18 @@ npm install -g @supabase/mcp-server-supabase
 **Tool chain:**
 | Tool | Purpose |
 |------|---------|
-| `supabase_apply_migration` | Create/modify tables, functions |
+| `supabase_apply_migration` | Create/modify tables |
 | `supabase_execute_sql` | Execute SQL queries |
 | `supabase_list_tables` | List tables |
 | `supabase_get_advisors` | Security recommendations |
 
-**⚠️ Running constraint:** Must start OpenCode in project root directory to load project-level config
+**⚠️ Running constraint:** Must start OpenCode in project root directory.
 
 ---
 
 ## Complete Configuration Example
 
 ### Global Config (~/.config/opencode/opencode.json)
-
-> Using recommended global install method
 
 ```json
 {
@@ -279,8 +192,6 @@ npm install -g @supabase/mcp-server-supabase
 ```
 
 ### Project Config (<project>/.opencode/opencode.json)
-
-> Using recommended global install method
 
 ```json
 {
@@ -304,27 +215,21 @@ npm install -g @supabase/mcp-server-supabase
 ### ⚠️ Must run in project root directory
 
 ```bash
-# Correct
 cd /path/to/project
 opencode run -m <model> -- "task"
-
-# Wrong (project-level MCP won't load)
-opencode run --dir /path/to/project "task"
 ```
 
-### Reason
-
-OpenCode looks for `.opencode/opencode.json` from **current working directory**. If not in project root, project-level MCP config won't load.
+OpenCode looks for `.opencode/opencode.json` from current working directory.
 
 ---
 
 ## Adding New MCP
 
-1. Find MCP Server package name (e.g., `@modelcontextprotocol/server-filesystem`)
-2. **Verify package integrity**: `npm view <package>` and check for vulnerabilities
-3. **Recommended**: Install globally with `npm install -g <package>`
-4. Add to `mcp` object in config file using installed binary name
-5. Set required environment variables securely
+1. Search npm for MCP server package
+2. Verify package: `npm view <package>`
+3. Install globally: `npm install -g <package>`
+4. Add to config file with binary name
+5. Set required environment variables
 6. Restart OpenCode or start new session
 
 ---
@@ -333,28 +238,21 @@ OpenCode looks for `.opencode/opencode.json` from **current working directory**.
 
 ### MCP not loading
 
-**Symptoms:** OpenCode cannot call MCP tools
-
 **Check:**
-1. Is config file path correct?
-2. Is JSON format valid?
-3. Are environment variables set?
-4. Are you running in project root?
-5. Is the MCP binary installed globally?
+1. Config file path correct?
+2. JSON format valid?
+3. Environment variables set?
+4. Running in project root?
+5. MCP binary installed globally?
 
 ### Debug MCP
 
 ```bash
-# View available MCP
 opencode mcp list
-
-# Test MCP connection
 opencode mcp debug <name>
-
-# Check if binary is installed
 which playwright-mcp-server
 ```
 
 ---
 
-*Configuration Guide v1.2 - 2026-04-05*
+*Configuration Guide v1.4 - 2026-04-05*
