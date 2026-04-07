@@ -1,0 +1,366 @@
+{
+  "events": [
+    {
+      "id": "viper_strike",
+      "day": 1,
+      "time": "0600",
+      "name": "Viper Strike",
+      "name_zh": "毒蛇打击",
+      "type": "assassination",
+      "trigger": "game_start",
+      
+      "location": "neutral_zone",
+      "perpetrator": "phoenix_state",
+      "target": "mountain_republic",
+      
+      "description": "Phoenix State special forces eliminate Mountain Republic general Rashid al-Zahir in a precision strike on a neutral zone safehouse. Western Alliance confirms intelligence support.",
+      
+      "description_zh": "凤凰国特种部队在中立区安全屋精准击杀山岳共和国将军Rashid al-Zahir。西方联盟确认提供情报支持。",
+      
+      "casualties": {
+        "target_killed": "Rashid al-Zahir (MR Highland Corps Commander)",
+        "collateral": 2,
+        "ps_forces": 0
+      },
+      
+      "global_reaction": {
+        "mountain_republic": "declares 'thunder and fire' retaliation",
+        "western_alliance": "defends action as counter-terrorism",
+        "eastern_coalition": "calls for restraint",
+        "un": "emergency security council meeting"
+      },
+      
+      "consequences": {
+        "mr_public_approval": -15,
+        "ps_threat_level": "+high",
+        "wa_diplomatic_cost": -20,
+        "escalation_risk": "+30%"
+      },
+      
+      "player_impact": {
+        "if_ps": "domestic_approval +10, international_criticism -15",
+        "if_mr": "must_retaliate_or_lose_credibility",
+        "if_wa": "increased_target_risk",
+        "if_neutral": "pressure_to_take_sides"
+      }
+    },
+    
+    {
+      "id": "sky_fall",
+      "day": 7,
+      "time": "0300",
+      "name": "Sky Fall",
+      "name_zh": "天陨",
+      "type": "drone_attack",
+      "trigger": "retaliation_for_viper_strike",
+      
+      "location": ["port_azure", "sunspear_base"],
+      "perpetrator": "mountain_republic",
+      "target": ["phoenix_state", "gulf_emirates"],
+      
+      "description": "Mountain Republic launches massive drone swarm attack. 50 Shahed drones target Phoenix State power grid and Gulf Emirates oil refinery. Steel Shield intercepts 3, 12 hit targets. Widespread infrastructure damage.",
+      
+      "casualties": {
+        "civilian": 8,
+        "infrastructure_damage": "critical",
+        "economic_cost": "$500M"
+      },
+      
+      "global_reaction": {
+        "phoenix_state": "vows overwhelming response",
+        "gulf_emirates": "considers joining PS coalition",
+        "western_alliance": "offers additional air defense",
+        "mountain_republic": "celebrates 'glorious victory'"
+      },
+      
+      "consequences": {
+        "ps_economy": -15,
+        "ge_threat_level": "+medium",
+        "mr_domestic_approval": +20,
+        "oil_prices": "+12%"
+      },
+      
+      "decisions": [
+        {
+          "id": "sky_fall_response_ps",
+          "faction": "phoenix_state",
+          "prompt": "Your power grid is crippled. Gulf Emirates oil refinery is burning. How do you respond?",
+          "options": [
+            {
+              "id": "immediate_retaliation",
+              "label": "Immediate massive retaliation strike",
+              "consequences": {
+                "escalation": "+high",
+                "domestic_approval": "+15",
+                "international_support": "-20",
+                "mr_casualties": 200
+              }
+            },
+            {
+              "id": "surgical_response",
+              "label": "Surgical strikes on drone factories only",
+              "consequences": {
+                "escalation": "+medium",
+                "domestic_approval": "+5",
+                "international_support": "-5",
+                "effectiveness": "partial"
+              }
+            },
+            {
+              "id": "diplomatic_pressure",
+              "label": "Rally international sanctions, delay military response",
+              "consequences": {
+                "escalation": "0",
+                "domestic_approval": "-10",
+                "international_support": "+15",
+                "mr_time_to_prepare": "+high"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    
+    {
+      "id": "thunder_response",
+      "day": 14,
+      "time": "0200",
+      "name": "Thunder Response",
+      "name_zh": "雷霆回应",
+      "type": "major_airstrike",
+      "trigger": "retaliation_for_sky_fall",
+      
+      "location": ["highland_fortress", "mountain_city", "damascus_district"],
+      "perpetrator": ["phoenix_state", "western_alliance"],
+      "target": "mountain_republic",
+      
+      "description": "Massive WA-PS joint air campaign. 50+ targets struck: missile factories, drone bases, command centers. B-21 stealth bombers hit Highland Fortress. Collateral damage: Damascus District school and hospital wing.",
+      
+      "casualties": {
+        "military": 350,
+        "civilian": 45,
+        "civilian_injured": 120,
+        "infrastructure": "severe"
+      },
+      
+      "targets_hit": [
+        "Highland Fortress (partial damage)",
+        "3 drone factories (destroyed)",
+        "2 missile storage sites (destroyed)",
+        "Command bunkers (damaged)",
+        "Damascus District school (collateral)",
+        "Hospital wing (collateral)"
+      ],
+      
+      "global_reaction": {
+        "mountain_republic": "emergency war council, calls for 'martyrs revenge'",
+        "eastern_coalition": "strong condemnation, threatens sanctions",
+        "desert_kingdom": "quietly approves but stays neutral publicly",
+        "un": "war crimes investigation announced"
+      },
+      
+      "consequences": {
+        "mr_military_capability": "-30%",
+        "ps_wa_international_reputation": "-40",
+        "civilian_support_for_mr": "+25",
+        "risk_of_wider_war": "+50%"
+      },
+      
+      "decisions": [
+        {
+          "id": "thunder_response_dilemma_ps",
+          "faction": "phoenix_state",
+          "prompt": "Intel shows weapons cache in Damascus District school. Strike it?",
+          "options": [
+            {
+              "id": "strike_anyway",
+              "label": "Strike - military necessity trumps civilian risk",
+              "consequences": {
+                "military_effectiveness": "+high",
+                "civilian_casualties": 45,
+                "international_outrage": "+extreme",
+                "war_crimes_accusation": true
+              }
+            },
+            {
+              "id": "abort_mission",
+              "label": "Abort - unacceptable civilian risk",
+              "consequences": {
+                "military_effectiveness": "-medium",
+                "civilian_casualties": 0,
+                "domestic_criticism": "+high",
+                "mr_retains_weapons": true
+              }
+            },
+            {
+              "id": "warning_strike",
+              "label": "Warning leaflets 1 hour before - give civilians time to flee",
+              "consequences": {
+                "military_effectiveness": "-high",
+                "civilian_casualties": 8,
+                "mr_moves_weapons": true,
+                "international_criticism": "-medium"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    
+    {
+      "id": "shadow_raid",
+      "day": 21,
+      "time": "0330",
+      "name": "Shadow Raid",
+      "name_zh": "影子突袭",
+      "type": "hostage_rescue",
+      "trigger": "hostage_crisis",
+      
+      "location": "border_town",
+      "perpetrator": "phoenix_state",
+      "target": "mr_proxy_militia",
+      
+      "description": "MR-backed militia kidnaps 3 WA contractors in Border Town. PS Falcon Unit launches nighttime rescue operation. Intense firefight in residential area.",
+      
+      "casualties": {
+        "hostages_saved": 2,
+        "hostages_killed": 1,
+        "falcon_unit": 1,
+        "militia": 12,
+        "civilian_collateral": 3
+      },
+      
+      "mission_outcome": "partial_success",
+      
+      "global_reaction": {
+        "western_alliance": "praises PS courage, mourns lost contractor",
+        "phoenix_state": "hero's funeral for fallen Falcon operator",
+        "mountain_republic": "denies militia connection",
+        "border_town_residents": "angry about nighttime raid"
+      },
+      
+      "consequences": {
+        "ps_wa_alliance": "+10",
+        "local_civilian_anger": "+high",
+        "militia_intimidation_effect": "-medium",
+        "future_kidnapping_risk": "-low"
+      },
+      
+      "decisions": [
+        {
+          "id": "shadow_raid_timing",
+          "faction": "phoenix_state",
+          "prompt": "Hostages held in crowded residential building. Rescue now or negotiate?",
+          "options": [
+            {
+              "id": "immediate_raid",
+              "label": "Immediate rescue raid - every hour increases execution risk",
+              "consequences": {
+                "hostages_saved": 2,
+                "hostages_killed": 1,
+                "civilian_casualties": 3,
+                "speed": "fast"
+              }
+            },
+            {
+              "id": "wait_for_clear",
+              "label": "Wait for militia to move to less populated area",
+              "consequences": {
+                "hostages_saved": 3,
+                "hostages_killed": 0,
+                "civilian_casualties": 0,
+                "time_delay": "48_hours",
+                "domestic_criticism": "+high"
+              }
+            },
+            {
+              "id": "negotiate",
+              "label": "Negotiate prisoner exchange",
+              "consequences": {
+                "hostages_saved": 3,
+                "prisoners_released": 20,
+                "encourages_future_kidnappings": true,
+                "time": "7_days"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    
+    {
+      "id": "black_friday",
+      "day": 28,
+      "time": "1400",
+      "name": "Black Friday",
+      "name_zh": "黑色星期五",
+      "type": "shoot_down",
+      "trigger": "azure_strait_tension",
+      
+      "location": "azure_strait",
+      "perpetrator": "mountain_republic",
+      "target": "western_alliance",
+      
+      "description": "MR shoots down WA RQ-4 Global Hawk surveillance drone over Azure Strait. Dispute over international waters vs territorial airspace. Drone wreckage falls into ocean.",
+      
+      "casualties": {
+        "personnel": 0,
+        "equipment_loss": "$120M drone"
+      },
+      
+      "global_reaction": {
+        "western_alliance": "calls it illegal, demands compensation",
+        "mountain_republic": "claims territorial violation",
+        "eastern_coalition": "calls for ceasefire and dialogue",
+        "international_law_experts": "divided on legality"
+      },
+      
+      "consequences": {
+        "wa_mr_tension": "+extreme",
+        "risk_of_direct_confrontation": "+60%",
+        "freedom_of_navigation": "-threatened",
+        "oil_prices": "+8%"
+      },
+      
+      "decisions": [
+        {
+          "id": "black_friday_response_wa",
+          "faction": "western_alliance",
+          "prompt": "Your $120M drone is shot down. Escalate or de-escalate?",
+          "options": [
+            {
+              "id": "strike_sam_sites",
+              "label": "Destroy MR coastal air defense sites",
+              "consequences": {
+                "escalation": "+extreme",
+                "direct_war_risk": "+70%",
+                "domestic_approval": "+10",
+                "international_support": "-30"
+              }
+            },
+            {
+              "id": "economic_retaliation",
+              "label": "Impose severe economic sanctions",
+              "consequences": {
+                "escalation": "+low",
+                "mr_economy": "-20%",
+                "global_oil_prices": "+15%",
+                "ec_displeasure": "+high"
+              }
+            },
+            {
+              "id": "accept_loss",
+              "label": "Accept loss, avoid escalation",
+              "consequences": {
+                "escalation": "0",
+                "domestic_criticism": "+extreme",
+                "perceived_weakness": "+high",
+                "mr_emboldened": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

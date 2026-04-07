@@ -1,0 +1,29 @@
+{
+  "name": "yumfu",
+  "version": "1.4.1",
+  "description": "Multi-World MUD - Wuxia, Harry Potter, LOTR & more | 多世界MUD - 武侠/哈利波特/指环王等",
+  "keywords": [
+    "game",
+    "mud",
+    "rpg",
+    "wuxia",
+    "harry-potter",
+    "warrior-cats",
+    "text-adventure",
+    "multiplayer",
+    "ai-art",
+    "中文",
+    "武侠",
+    "笑傲江湖"
+  ],
+  "author": "Tommy Yan <thriller.yan@gmail.com>",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yumyumtum/yumfu.git"
+  },
+  "homepage": "https://github.com/yumyumtum/yumfu#readme",
+  "bugs": {
+    "url": "https://github.com/yumyumtum/yumfu/issues"
+  }
+}
