@@ -3,6 +3,9 @@
 import json, subprocess, re
 import pandas as pd
 from datetime import datetime, timedelta
+import sys
+sys.path.insert(0, "/workspace/keys")
+from keys_loader import get_webhook_url
 
 NOW = datetime(2026, 4, 4)
 TODAY_STR = "04月04日"
@@ -10,7 +13,7 @@ REPORT_START = "03月28日"
 TS = NOW.strftime("%Y-%m-%d")
 NEXT_WEEK_END = (NOW + timedelta(days=7)).strftime("%m/%d")
 THIS_WEEK_END = (NOW + timedelta(days=3)).strftime("%m/%d")
-_URL = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=c4a1cd60-254e-4612-b365-c701482ae98c"
+_URL = get_webhook_url()
 
 
 def wx(text):

@@ -11,7 +11,7 @@
       "issue": "晨报、晚报、IPO周报、工作区整理的 payload 中 Webhook URL 仍硬编码",
       "affected_jobs": ["晨报-推送(AI版)", "晚报-推送(AI版)", "A股IPO周报", "工作区整理"],
       "fix": "payload Python 代码改为 import keys_loader; get_webhook_url() 读取",
-      "old_pattern": "key=c4a1cd60-254e-4612-b365-c701482ae98c",
+      "old_pattern": "key=<已隐藏>",
       "new_pattern": "sys.path.insert(0, '/workspace/keys'); from keys_loader import get_webhook_url"
     }
   ],
