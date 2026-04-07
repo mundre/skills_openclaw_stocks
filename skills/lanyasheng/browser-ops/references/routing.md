@@ -1,71 +1,86 @@
-# Routing Decision Tree — 路由决策树
+# 路由决策树
 
 ## 核心原则
 
-**拿到 URL 后，先判断是否需要浏览器渲染**：
-- 只要正文 / 静态内容 → 优先 L2，**不开浏览器**
-- 需要登录态 / 交互 / 动态渲染 → 升级到 L3+
+拿到 URL 后，先判断是否需要浏览器渲染：
+- 只要正文/静态内容 → 优先 L2，不开浏览器
+- 需要登录态/交互/动态渲染 → 升级到 L3+
 
 ## 决策树
 
 ```
 收到网页访问任务
 │
+├── 0. 任意网页内容抓取（含内部/SSO 站点）？
+│   └── opencli web read --url <url> (复用 Chrome 登录态，输出 Markdown) ⭐⭐⭐
+│       万能回退：Jina/WebFetch 失败时均可用此命令
+│
 ├── 1. 有官方 API / RSS？
-│   └── 是 → L1: 使用 API（0 Browser，最快）
+│   └── 是 → L1: 使用 API（$0，最快）
 │
-├── 2. 是否只需要正文内容（文章/博客/文档）？
-│   ├── 免维护优先 → L2: Jina AI Reader（$0，已验证）
-│   └── 自托管优先 → L2: web_fetch + 本地提取（$0）
+├── 2. 只需正文（文章/博客/文档）？
+│   ├── Jina AI Reader: curl "https://r.jina.ai/{url}"（$0，首选）
+│   └── 失败(403/空) → web_fetch → 仍失败 → 升级 L3
 │
-├── 3. 是否需要交互（点击/填表/滚动）？
-│   ├── 固定流程/已知 selector → L3: agent-browser（$0，首选）⭐
-│   └── 动态网站/需要 AI 理解 → L4: Stagehand（~$0.001/任务）⭐
+├── 3. 目标平台有 opencli 适配器？(73 站点)
+│   └── 是 → opencli <platform> <command> ($0, 复用 Chrome 登录态) ⭐⭐
 │
-├── 4. 是否需要截图/完整渲染/调试？
-│   └── 是 → L3/L5: Playwright CLI / MCP
+├── 3b. 批量数据拉取（>10次/分钟）？
+│   ├── 金融行情 → AKShare/新浪API（一次批量请求）
+│   ├── 社交媒体 → 平台官方API 或 Zendriver+代理并发
+│   └── 通用网页 → asyncio+aiohttp 并发抓取
 │
-├── 5. 是否大规模并发/免运维需求？
-│   └── 是 → L5: Zyte > Browserless > Hyperbrowser
+├── 4. 需要交互（点击/填表/滚动）？
+│   ├── 固定流程/已知 DOM → L3: agent-browser ($0) ⭐
+│   └── 动态网站/未知 DOM → L4: Stagehand (~$0.001/任务)
 │
-└── 6. 是否强反爬场景（Cloudflare 盾）？
-    └── 是 → L6: Camoufox / Nodriver(py3.12)
+├── 4. 需要截图/完整渲染？
+│   └── agent-browser screenshot [--full] [--annotate]
+│
+├── 5. 大规模并发（>50页）？
+│   └── L5: Zyte > Browserless > Hyperbrowser
+│
+└── 6. 被反爬拦截（403/Cloudflare）？
+    ├── Zendriver（~90% bypass，首选，Nodriver 继任者）
+    └── Camoufox（~80% bypass，备选）
 ```
 
-## 升级/回退规则
+## 升级条件
 
-### 升级条件
-
-| 当前层 | 失败场景 | 升级到 |
+| 当前层 | 失败信号 | 升级到 |
 |--------|---------|--------|
-| L2 | 403 / 内容空 / 提取残缺 | L3 或 L4 |
-| L3 | DOM 变化频繁 / selector 失效 | L4 |
-| L4 | 成本过高 / 任务太简单 | L3 |
-| L3/L4 | 反爬拦截 | L6 |
-| 本地 | 大规模并发需求 | L5 |
+| L2 | 403 / 内容空 / 提取残缺 | L3 agent-browser |
+| L3 | DOM 频繁变化 / selector 失效 | L4 Stagehand |
+| L3/L4 | Cloudflare 拦截 / 403 | L6 Zendriver/Camoufox |
+| 本地 | 需 >50 页并发 | L5 云浏览器 |
 
-### 回退条件
+## 回退条件
 
-| 当前层 | 回退场景 | 回退到 |
+| 当前层 | 回退信号 | 回退到 |
 |--------|---------|--------|
-| L3/L4 | 只需正文，无需交互 | L2 |
-| L4 | 固定流程，已知 selector | L3 |
+| L3/L4 | 只需正文，无需交互 | L2 Jina |
+| L4 | 固定流程，已知 selector | L3 agent-browser |
 | L5 | 本地可处理 | L3/L4 |
 | L6 | 无反爬，普通网站 | L3 |
 
-## 登录态处理
+## 登录态路由
 
 | 场景 | 方案 |
 |------|------|
-| 需要登录的网站 | 直接走 browser-cdp（复用 Session） |
-| 首次配置登录态 | 手动登录一次，后续复用 |
-| 公开内容 | 不需要登录态，用 Isolated Profile |
+| 需要登录的网站 | agent-browser `--profile`（复用已登录的 Cookie） |
+| 首次登录 | agent-browser `--profile` 打开站点 → 手动登录 → Cookie 自动保留 |
+| 公开内容 | 默认 Isolated 模式（不指定 profile） |
+| 导出给 CI/CD | agent-browser `state save` → JSON 文件注入 |
 
-## 成本优先原则
+详见 `state-management.md`
+
+## 成本优先链
 
 ```
-L1 (API) → L2 (轻量) → L3 (命令化) → L4 (AI) → L5 (云) → L6 (反爬)
-  $0         $0         $0       ~$0.001   $10-30/月     $0
+L1($0) → L2($0) → L3($0) → L4(~$0.001) → L5($10-30/月) → L6($0)
+ API     Jina    agent-browser  Stagehand    云浏览器    反爬
 ```
 
-**优先选择成本低、复杂度低的方案**，除非有明确需求升级。
+优先选择成本低、复杂度低的方案。L6 虽然 $0 但复杂度高，只在反爬场景使用。
+
+> See also: `architecture.md`（层级详解）, `setup.md`（工具安装）, `anti-detection.md`（反爬策略）
