@@ -15,6 +15,7 @@ description: "End-to-end Xiaohongshu operations including positioning, topic res
 - 小红书发布前演练与内容交付
 - 发布后快速复盘（互动结构、评论回复、热点追踪）
 - 小红书创作服务平台登录、会话恢复、网页端直发
+- 小红书视频笔记发布与视频上传问题排查
 
 将每类账号的行业细节作为“案例模块（case module）”挂载到通用流程中。
 
@@ -38,6 +39,7 @@ description: "End-to-end Xiaohongshu operations including positioning, topic res
   - `scripts/xhs_login_sms.js`：短信验证码登录；若平台切成强制扫码，会明确报 `QR_REQUIRED`
   - `scripts/xhs_login_qr.js`：创作平台专用二维码登录并保存会话
   - `scripts/xhs_publish_with_saved_session.js`：使用保存会话直接发布图文
+  - `scripts/xhs_publish_video.js`：使用保存会话直接发布视频（已验证可用）
   - `scripts/xhs_make_text_cover.py`：无素材时生成兜底封面
 
 ## 1) 技能默认行为（所有任务都遵循）
@@ -46,6 +48,7 @@ description: "End-to-end Xiaohongshu operations including positioning, topic res
 - 优先输出可执行的 SOP 而非一次性内容稿。
 - 语言优先“能对话”而不是“写报告”：短句、口语、站位明确、可引导评论。
 - 所有输出默认保留“可追问点”，用于评论区继续延展。
+- **默认文案风格要像正常真人发帖。** 除非用户明确要求，不要自动注入 `行行行 / 我不说太多 / 我继续打工了 / 我去躺会儿 / 电子宠物` 这类人设口头禅或自我表演。
 - 用户明确要求“发出去 / 帮我发 / 直接发布”时，可以走直发链路；用户只要求“准备 / 预览 / 演练”时，默认停在发布前。
 
 ## 2) 账号定位（可复用）
@@ -101,6 +104,7 @@ description: "End-to-end Xiaohongshu operations including positioning, topic res
 每次产出至少 2 个备选：
 
 - 标题（争议/立场/反问，≤20字优先）
+- 默认避免强行玩梗、自说自话、莫名嘴硬；先把图/视频里真正值得说的内容写出来。
 - 开头钩子（1-2 句）
 - 正文（3 段：观点→证据→反方）
 - 互动提问（1 句）
@@ -117,7 +121,8 @@ description: "End-to-end Xiaohongshu operations including positioning, topic res
 - 用户只说“演练 / 预览 / 帮我准备一下”时，才停在发布按钮前。
 - 发布前必须满足三要素：**封面、标题、正文**。
 - **没有现成图片时，不要卡住。** 先用 `scripts/xhs_make_text_cover.py` 生成一张简洁兜底封面，再按图文链路发布。
-- 优先发布 **图文笔记**；只有用户明确要求视频/长文时再切对应链路。
+- 优先发布 **图文笔记**；用户明确要求视频时，优先走 `scripts/xhs_publish_video.js`。
+- 视频发布不要误判：只有页面出现 `视频文件 / 重新上传 / 设置封面 / 标题框 / 正文编辑器 / 暂存离开 / 发布` 这一整组信号，才算真正进入视频编辑页。
 
 ### 已验证的稳定链路
 
@@ -133,7 +138,9 @@ description: "End-to-end Xiaohongshu operations including positioning, topic res
 
 - 短信登录：`node scripts/xhs_login_sms.js --phone 13xxxxxxxxx`
 - 二维码登录：`node scripts/xhs_login_qr.js`
-- 发布：`node scripts/xhs_publish_with_saved_session.js --title "标题" --body "正文" --image /path/to/image.png`
+- 图文发布：`node scripts/xhs_publish_with_saved_session.js --title "标题" --body "正文" --image /path/to/image.png`
+- 视频发布：`node scripts/xhs_publish_video.js --video /path/to/video.mp4 --title "标题" --body "正文"`
+- `--body` 若传入字面量 `\n`，脚本会自动转成真实换行，避免把 `\n` 原样发进正文。
 - 可见性：`--visibility public|private|mutual`
 - 定时发布：`--schedule`（启用平台默认时间）或 `--schedule-at "YYYY-MM-DD HH:mm"`（若页面接受则按指定时间）
 - 无图兜底：`python3 scripts/xhs_make_text_cover.py --title "标题" --output /tmp/xhs_cover.png`
@@ -185,7 +192,11 @@ description: "End-to-end Xiaohongshu operations including positioning, topic res
 
 - **发布鉴权以创作服务平台为准，不以社区首页为准。** 社区首页可能“看起来能浏览”，但创作平台仍是未登录状态。
 - **默认关代理再跑发布。** 当前技能配置 `useProxy=false`；若环境里挂着 `HTTP_PROXY/HTTPS_PROXY`，先清掉再访问小红书。
-- 创作服务平台的发布页默认可能落在“上传视频”，所以要**主动切“上传图文”**。
+- 创作服务平台的发布页默认可能落在“上传视频”，所以做图文时要**主动切“上传图文”**。
+- 视频页里真正的可用上传控件是 `input.upload-input`，即使不可见也能直接 `setInputFiles()`。
+- 视频上传成功后，页面不一定马上出现标题框；要先看是否出现 `视频文件 / 重新上传 / 设置封面 / 智能标题 / 暂存离开 / 发布` 这些编辑信号。
+- 视频发布按钮经常会先出现但处于 disabled，通常是因为**标题/正文还没填**，不是上传失败。
+- 文案输入前先做正文归一化：把字面量 `\n` 转成真实换行，避免把转义字符直接写进小红书正文。
 - 发布话题优先用 UI 选题，不建议纯文本粘贴大量 `#话题`。
 - `evaluate` 批量改写富文本时，尽量少改版式，避免丢失 topic entity。
 - **`published=true` 不是最终成功信号**；必须进入“笔记管理”并看到目标标题出现，才算发布成功。

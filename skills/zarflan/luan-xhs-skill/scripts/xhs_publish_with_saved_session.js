@@ -3,6 +3,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { chromium } = require('playwright');
 const disableProxy = require('./disable_proxy');
+const { normalizeTitle, normalizeBody } = require('./normalize_copy');
 
 function parseArgs(argv) {
   const args = { image: [] };
@@ -36,7 +37,7 @@ function sleep(ms) {
 function ensureImages(args, workspace) {
   if (args.image.length > 0) return args.image;
   const out = path.join(workspace, 'xhs_auto_cover.png');
-  const subtitle = String(args.body || '').split('\n').map(s => s.trim()).find(Boolean) || '先发一条，看看今天运气站不站我这边。';
+  const subtitle = normalizeBody(args.body).split('\n').map(s => s.trim()).find(Boolean) || '先发一条，看看今天运气站不站我这边。';
   const footer = '#测试笔记';
   const res = spawnSync('python3', [
     path.join(__dirname, 'xhs_make_text_cover.py'),
@@ -189,6 +190,9 @@ async function configureSchedule(page, scheduleAt) {
     process.exit(2);
   }
 
+  args.title = normalizeTitle(args.title);
+  args.body = normalizeBody(args.body);
+
   const visibility = normalizeVisibility(args.visibility || 'public');
   const scheduleAt = parseScheduleAt(args['schedule-at']);
   const scheduleEnabled = !!args.schedule || !!scheduleAt;
@@ -253,7 +257,7 @@ async function configureSchedule(page, scheduleAt) {
     await sleep(3500);
 
     const titleInput = page.locator('input[placeholder*="填写标题"]').first();
-    await titleInput.fill(String(args.title).slice(0, 20)).catch(() => {});
+    await titleInput.fill(args.title.slice(0, 20)).catch(() => {});
     await sleep(300);
 
     const editor = page.locator('.tiptap.ProseMirror').first();
@@ -261,7 +265,7 @@ async function configureSchedule(page, scheduleAt) {
     await sleep(200);
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A').catch(() => {});
     await page.keyboard.press('Backspace').catch(() => {});
-    await page.keyboard.insertText(String(args.body)).catch(() => {});
+    await page.keyboard.insertText(args.body).catch(() => {});
     await sleep(800);
     await page.mouse.click(1200, 200).catch(() => {});
     await sleep(1000);
@@ -310,12 +314,12 @@ async function configureSchedule(page, scheduleAt) {
     }));
     await page.screenshot({ path: shotPath, fullPage: false }).catch(() => {});
 
-    const foundTitle = after.text.includes(String(args.title).slice(0, 20));
+    const foundTitle = after.text.includes(args.title.slice(0, 20));
     const success = args['dry-run'] ? /图片编辑|笔记预览|内容设置|更多设置/.test(before.text) : foundTitle;
     console.log(JSON.stringify({
       ok: success,
       dryRun: !!args['dry-run'],
-      title: String(args.title).slice(0, 20),
+      title: args.title.slice(0, 20),
       visibility: visibilityResult,
       schedule: scheduleResult,
       images,

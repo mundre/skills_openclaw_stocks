@@ -3,9 +3,15 @@
   "slug": "luan-xhs-skill",
   "displayName": "luan-xhs-skill",
   "latest": {
-    "version": "0.2.2",
-    "publishedAt": 1775126181337,
-    "commit": "https://github.com/openclaw/skills/commit/baa3bae2f7a71fbdbf20a0411756d123884fc445"
+    "version": "0.2.5",
+    "publishedAt": 1775183129704,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.2",
+      "publishedAt": 1775126181337,
+      "commit": "https://github.com/openclaw/skills/commit/baa3bae2f7a71fbdbf20a0411756d123884fc445"
+    }
+  ]
 }
