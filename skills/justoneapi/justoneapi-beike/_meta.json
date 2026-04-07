@@ -1,0 +1,11 @@
+{
+  "owner": "justoneapi",
+  "slug": "justoneapi-beike",
+  "displayName": "Beike API",
+  "latest": {
+    "version": "1.0.7",
+    "publishedAt": 1775375298455,
+    "commit": null
+  },
+  "history": []
+}
