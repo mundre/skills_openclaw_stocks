@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "protel",
+  "displayName": "Protel",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775495043932,
+    "commit": null
+  },
+  "history": []
+}
