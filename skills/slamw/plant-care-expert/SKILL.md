@@ -5,10 +5,10 @@ AIGC:
     Label: AIGC
     ProduceID: "00000000000000000000000000000000"
     PropagateID: "00000000000000000000000000000000"
-    ReservedCode1: 3046022100e66696456f3888eab1c560185c43ec55f57102008fabd0fe89950fb90e8307b9022100dc9204322231c72cee93c4fcfaeefeb3d4b6d26017250e43b1c45c35de7e9a26
-    ReservedCode2: 304402204a22f98fe2e7e9690231fe09e5417323e7a48924575fbb9091c3f3643cea51460220602684c706d31b0a7aa9bfeed624162166eef2c25efafbde673854f30c07f8c7
+    ReservedCode1: 3044022034cadbaf26f4d65c387fa907e8de83aeb60c5cf52175c0a4c92321938257016302202784e00a7ba61b818c1e466efbac648a37eb69e86a7248cae634a23c267e8835
+    ReservedCode2: 3045022100936396d2abe46c36df94a1f33fbc0c1717bb4f86225fbd038adab333b478906c022007f03738a36b53b9ff3f995e3d1c73bcf5bc33c45dbf52dd744d40d05adb7635
 author: MiniMax Agent AI
-description: 植物识别与养护专家技能。当用户发送植物图片或询问植物名称时触发。支持：1) 识别植物种类 2) 评估养护难度 3) 提供详细养护指南 4) 诊断植物问题 5) 给出急救建议。适用于室内绿植、花卉、多肉植物等的养护咨询。
+description: 植物识别与养护专家技能。当用户发送植物图片或询问植物名称时触发。支持：1) 识别植物种类 2) 评估养护难度 3) 提供详细养护指南 4) 诊断植物问题 5) 给出急救建议。适用于室内外绿植、花卉、多肉植物等的养护咨询。
 name: plant-care-expert
 tags:
     - plant-care
@@ -446,5 +446,6 @@ version: 1.0.0
 
 如需更详细的植物信息，请参考以下文档：
 
-- `references/plant_database.md` - 常见植物数据库
+- `references/plant_database.md` - 常见植物数据库（原版，30+种）
+- `references/plant_database_extended.md` - 扩展植物知识库（亚洲100+种，北美50+种）
 - `references/troubleshooting.md` - 问题排查手册
