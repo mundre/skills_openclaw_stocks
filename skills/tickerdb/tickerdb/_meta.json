@@ -1,0 +1,11 @@
+{
+  "owner": "tickerdb",
+  "slug": "tickerdb",
+  "displayName": "TickerDB",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1775578614670,
+    "commit": null
+  },
+  "history": []
+}
