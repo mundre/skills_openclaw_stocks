@@ -1,0 +1,11 @@
+{
+  "owner": "camscanner-ai",
+  "slug": "camscanner-pdf2office-office",
+  "displayName": "CamScanner-Pdf2Office",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775542189828,
+    "commit": null
+  },
+  "history": []
+}
