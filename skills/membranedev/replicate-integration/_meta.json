@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "replicate-integration",
+  "displayName": "Replicate",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775541913222,
+    "commit": null
+  },
+  "history": []
+}
