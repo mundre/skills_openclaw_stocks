@@ -1,0 +1,11 @@
+{
+  "owner": "iliaal",
+  "slug": "compound-eng-nodejs-backend",
+  "displayName": "nodejs-backend",
+  "latest": {
+    "version": "2.53.0",
+    "publishedAt": 1775440564758,
+    "commit": null
+  },
+  "history": []
+}
