@@ -1,0 +1,11 @@
+{
+  "owner": "gaingush",
+  "slug": "tushare-stocks",
+  "displayName": "Tushare A股数据",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775556435503,
+    "commit": null
+  },
+  "history": []
+}
