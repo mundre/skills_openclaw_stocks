@@ -1,0 +1,11 @@
+{
+  "owner": "ricanwarfare",
+  "slug": "ha-control",
+  "displayName": "Home Assistant Control",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775593868070,
+    "commit": null
+  },
+  "history": []
+}
