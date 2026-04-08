@@ -1,0 +1,11 @@
+{
+  "owner": "bin-huang",
+  "slug": "youtube-data-cli",
+  "displayName": "Youtube Data CLI",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775616727813,
+    "commit": null
+  },
+  "history": []
+}
