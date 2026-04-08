@@ -1,0 +1,11 @@
+{
+  "owner": "krishnakumarmahadevan-cmd",
+  "slug": "toolweb-ciso-daily-security-pulse",
+  "displayName": "CISO Daily Security Pulse",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775435174326,
+    "commit": null
+  },
+  "history": []
+}
