@@ -1,0 +1,11 @@
+{
+  "owner": "libertyzero10",
+  "slug": "tdx-ua-patcher",
+  "displayName": "通达信UA修改，TcefWnd.dll修改",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775485252865,
+    "commit": null
+  },
+  "history": []
+}
