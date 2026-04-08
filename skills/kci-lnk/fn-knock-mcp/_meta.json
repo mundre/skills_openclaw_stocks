@@ -1,0 +1,11 @@
+{
+  "owner": "kci-lnk",
+  "slug": "fn-knock-mcp",
+  "displayName": "fn-knock MCP Server",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775560456390,
+    "commit": null
+  },
+  "history": []
+}
