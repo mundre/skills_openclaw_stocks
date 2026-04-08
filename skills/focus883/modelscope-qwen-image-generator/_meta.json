@@ -1,0 +1,11 @@
+{
+  "owner": "focus883",
+  "slug": "modelscope-qwen-image-generator",
+  "displayName": "默认模型改为qwen-image-2512.魔搭(ModelScope)AI 图片生成。支持多种模型、LoRA 微调。触发词：生成图片、AI绘画、文生图、image generation、generate image。当用户要求生成图片、画图、AI 作画，或提到魔搭、ModelScope、通义万象时使用。",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775616500890,
+    "commit": null
+  },
+  "history": []
+}
