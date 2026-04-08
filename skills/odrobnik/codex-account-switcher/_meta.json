@@ -3,11 +3,16 @@
   "slug": "codex-account-switcher",
   "displayName": "Codex Account Switcher",
   "latest": {
-    "version": "1.4.2",
-    "publishedAt": 1774887907346,
-    "commit": "https://github.com/openclaw/skills/commit/04b155cc9aebf75f819874ddba0af08b437300d0"
+    "version": "1.4.3",
+    "publishedAt": 1775548774815,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.4.2",
+      "publishedAt": 1774887907346,
+      "commit": "https://github.com/openclaw/skills/commit/04b155cc9aebf75f819874ddba0af08b437300d0"
+    },
     {
       "version": "1.2.4",
       "publishedAt": 1772570398192,
