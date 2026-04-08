@@ -1,0 +1,11 @@
+{
+  "owner": "rfdiosuao",
+  "slug": "spark-context-monitor",
+  "displayName": "Spark Context Monitor",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775463196911,
+    "commit": null
+  },
+  "history": []
+}
