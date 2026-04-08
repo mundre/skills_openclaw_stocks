@@ -1,0 +1,11 @@
+{
+  "owner": "migo-ovo",
+  "slug": "plc-skill",
+  "displayName": "PLC Skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775468459623,
+    "commit": null
+  },
+  "history": []
+}
