@@ -1,0 +1,11 @@
+{
+  "owner": "gaingush",
+  "slug": "tushare-future-data",
+  "displayName": "Tushare 期货数据",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775556898038,
+    "commit": null
+  },
+  "history": []
+}
