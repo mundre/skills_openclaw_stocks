@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "metabase",
+  "displayName": "Metabase",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775574303275,
+    "commit": null
+  },
+  "history": []
+}
