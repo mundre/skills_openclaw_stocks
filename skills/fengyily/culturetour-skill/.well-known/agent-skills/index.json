@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "culturetour-search",
+      "type": "skill-md",
+      "description": "指导智能体通过 MCP 工具 search_resources 或直连 POST API 检索文旅素材；page_size 固定 5，列表用 Markdown 表格展示；预览链接须为 preview_url（HTML 播放页），勿用 fragment/m3u8 作主链以免下载。API 站点根以 config.json 为准，可被 WENLV_API_ORIGIN 覆盖。",
+      "url": "/SKILL.md",
+      "digest": "sha256:ed4f38db53c227b95dc567234f80c80f977e63e8e35010a8c8852b963696f142"
+    }
+  ]
+}
