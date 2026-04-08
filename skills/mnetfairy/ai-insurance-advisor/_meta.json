@@ -1,0 +1,11 @@
+{
+  "owner": "mnetfairy",
+  "slug": "ai-insurance-advisor",
+  "displayName": "中国大陆保险代理人专用 AI 助手。当用户咨询保险配置、方案设计、产品对比、重疾险/医疗险/寿险/意外险/储蓄险推荐、保费计算、保障缺口分析、核保合规、理赔、朋友圈文案时使用。",
+  "latest": {
+    "version": "1.5.0",
+    "publishedAt": 1775530517208,
+    "commit": null
+  },
+  "history": []
+}
