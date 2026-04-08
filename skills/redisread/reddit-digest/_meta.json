@@ -1,0 +1,11 @@
+{
+  "owner": "redisread",
+  "slug": "reddit-digest",
+  "displayName": "reddit-digest",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775489653013,
+    "commit": null
+  },
+  "history": []
+}
