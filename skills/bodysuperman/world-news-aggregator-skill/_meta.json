@@ -1,0 +1,11 @@
+{
+  "owner": "bodysuperman",
+  "slug": "world-news-aggregator-skill",
+  "displayName": "World News Aggregator Skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775619191367,
+    "commit": null
+  },
+  "history": []
+}
