@@ -1,11 +1,17 @@
 {
   "owner": "dashiming",
   "slug": "pansmodel-manager",
-  "displayName": "Pansmodel Manager",
+  "displayName": "PansModel Manager",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775619414948,
-    "commit": "https://github.com/openclaw/skills/commit/88f34bb2b73bf9abe5de1d8611ce83a8ecc6528b"
+    "version": "1.0.1",
+    "publishedAt": 1775619617620,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775619414948,
+      "commit": "https://github.com/openclaw/skills/commit/88f34bb2b73bf9abe5de1d8611ce83a8ecc6528b"
+    }
+  ]
 }

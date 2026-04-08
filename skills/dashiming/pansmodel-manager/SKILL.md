@@ -1,6 +1,7 @@
 ---
-name: pansmodel-manager
-version: 1.0.0
+name: PansModel-Manager
+displayName: PansModel Manager
+version: 1.0.1
 description: |
   PanSclaw 模型管理器 - 管理自定义模型接入和切换。
   支持添加、删除、切换、列出模型配置。
