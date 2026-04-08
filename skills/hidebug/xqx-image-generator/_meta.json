@@ -1,0 +1,11 @@
+{
+  "owner": "hidebug",
+  "slug": "xqx-image-generator",
+  "displayName": "Use Ark (火山引擎豆包) to generate images(豆包生成图片) from text via OpenAI-compatible API",
+  "latest": {
+    "version": "1.0.4",
+    "publishedAt": 1775670454048,
+    "commit": null
+  },
+  "history": []
+}
