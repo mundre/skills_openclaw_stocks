@@ -3,9 +3,15 @@
   "slug": "dji",
   "displayName": "Dji",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775400440945,
-    "commit": "https://github.com/openclaw/skills/commit/3976ce871e171a03ae8e1a6bb506bf5663024a55"
+    "version": "1.0.9",
+    "publishedAt": 1775634758314,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775400440945,
+      "commit": "https://github.com/openclaw/skills/commit/3976ce871e171a03ae8e1a6bb506bf5663024a55"
+    }
+  ]
 }
