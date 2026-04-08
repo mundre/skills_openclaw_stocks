@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "loggly",
+  "displayName": "Loggly",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775495077681,
+    "commit": null
+  },
+  "history": []
+}
