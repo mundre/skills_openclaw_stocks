@@ -1,0 +1,11 @@
+{
+  "owner": "aggie-security",
+  "slug": "ustack",
+  "displayName": "uStack",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775628169607,
+    "commit": null
+  },
+  "history": []
+}
