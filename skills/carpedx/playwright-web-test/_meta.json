@@ -1,0 +1,11 @@
+{
+  "owner": "carpedx",
+  "slug": "playwright-web-test",
+  "displayName": "Playwright 网页自动化工具",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775620503187,
+    "commit": null
+  },
+  "history": []
+}
