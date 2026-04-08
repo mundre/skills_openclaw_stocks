@@ -1,0 +1,11 @@
+{
+  "owner": "cn-big-cabbage",
+  "slug": "k8s-ops",
+  "displayName": "k8s-ops",
+  "latest": {
+    "version": "2.1.0",
+    "publishedAt": 1775614759018,
+    "commit": null
+  },
+  "history": []
+}
