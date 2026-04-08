@@ -1,0 +1,11 @@
+{
+  "owner": "iliaal",
+  "slug": "compound-eng-postgresql",
+  "displayName": "postgresql",
+  "latest": {
+    "version": "2.53.0",
+    "publishedAt": 1775444254576,
+    "commit": null
+  },
+  "history": []
+}
