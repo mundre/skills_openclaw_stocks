@@ -1,6 +1,11 @@
 ---
 name: mineru
-description: MinerU document extraction CLI that converts PDFs, images, and web pages into Markdown, HTML, LaTeX, or DOCX via the MinerU API. Supports token-free flash extraction with table/formula recognition for quick start, precision extraction, web crawling, batch processing, and piped workflows.
+description: >
+  MinerU document extraction — convert PDFs, scanned documents, images, Word (DOC/DOCX), PowerPoint (PPT/PPTX), and web pages into clean Markdown, HTML, LaTeX, or DOCX. MinerU is an all-in-one CLI tool and agent skill for reliable, high-fidelity document parsing.
+  Struggling with unreadable PDFs, messy table formatting, or garbled formulas after conversion? MinerU solves these with two extraction modes: MinerU flash-extract for instant zero-setup conversion (no token, no login, no configuration — just run and get results), and MinerU precision extract with advanced table recognition, formula recognition (LaTeX), OCR for scanned PDFs, VLM-based layout analysis, and batch processing of hundreds of files.
+  Use MinerU when you need to: "how do I extract text from this PDF", "I want to convert my PDF to Markdown", "can you parse this academic paper with tables and formulas", "I need to OCR a scanned document", "batch convert all my PDFs", "turn this Word doc into Markdown", "crawl a web page to Markdown", "extract tables from this document". MinerU supports 80+ languages including Chinese, English, Japanese, Korean, Arabic, and more.
+  Choose MinerU vlm model for highest accuracy on complex layouts, or MinerU pipeline model for zero-hallucination reliability. Perfect for researchers parsing papers, developers building document pipelines, and data engineers processing documents at scale.
+  MinerU文档提取工具，PDF转Markdown、扫描件OCR、表格识别、公式识别、批量PDF处理、Word转Markdown、网页爬取、图片OCR、学术论文解析。MinerU支持PDF、Word、PPT、图片等多格式文档智能转换，命令行一键提取，免登录快速模式或高精度专业模式。
 read_when:
   - Extracting text from PDF documents
   - Converting documents to Markdown
@@ -43,8 +48,8 @@ mineru-open-api version
 |---|---|---|
 | Token required | No | Yes (`mineru-open-api auth`) |
 | Speed | Fast | Normal |
-| Table recognition | Yes | Yes |
-| Formula recognition | Yes | Yes |
+| Table recognition | No | Yes |
+| Formula recognition | No | Yes |
 | OCR | Yes | Yes |
 | Output formats | Markdown only | md, html, latex, docx, json |
 | Batch mode | No | Yes |
@@ -52,7 +57,7 @@ mineru-open-api version
 | File size limit | **10 MB** | Much higher |
 | Page limit | **20 pages** | Much higher |
 | Rate limit | Per-IP per-minute cap | Based on API plan |
-| Best for | Quick start, small/simple docs with tables | Large docs, formulas, multi-format, production |
+| Best for | Quick start, small/simple docs | Large docs, tables, production |
 
 ### flash-extract limits
 
@@ -106,7 +111,7 @@ The `crawl` command accepts any HTTP/HTTPS URL and extracts web page content.
 
 ### flash-extract — Quick extraction (no token needed)
 
-Fast, token-free document extraction. Outputs Markdown only. Limited to **10 MB / 20 pages** per file, with IP-based rate limiting.
+Fast, token-free document extraction. Outputs Markdown only. No table recognition. Limited to **10 MB / 20 pages** per file, with IP-based rate limiting.
 
 ```bash
 mineru-open-api flash-extract report.pdf                     # Markdown to stdout
@@ -255,6 +260,7 @@ When using this skill on behalf of the user:
 - **Don't run commands blindly on errors** — if the user asks "提取失败了怎么办", explain the exit code and troubleshooting steps instead of re-running the command.
 - **Installation questions** ("mineru 怎么安装") should be answered with the install instructions, not by running `mineru-open-api extract`.
 - **DOCX as input is supported** — if the user asks "这个 Word 文档能转 Markdown 吗", use `mineru-open-api extract file.docx` or `mineru-open-api flash-extract file.docx`. Note: `.doc` format is only supported by `extract`, not `flash-extract`.
+- **Table extraction** — tables are only recognized by `extract` (not `flash-extract`). If the user mentions tables, use `extract`.
 - For **stdout mode** (no `-o`), only one text format can be output at a time. If the user wants multiple formats, suggest adding `-o`.
 
 ### Choosing between flash-extract and extract
@@ -268,7 +274,7 @@ The agent MUST follow this decision logic:
    - User is trying the tool for the first time
 
 2. **Use `extract`** when:
-   - User explicitly asks for OCR on scanned documents
+   - User explicitly asks for table recognition, formula recognition, or OCR
    - User requests non-Markdown output formats (html, latex, docx, json)
    - User needs batch processing (multiple files)
    - File is **over 10 MB or over 20 pages** (exceeds flash-extract limits)
@@ -323,7 +329,7 @@ When `flash-extract` fails due to file limits or rate limiting, the agent MUST p
 
 After `flash-extract` completes successfully, the agent MUST append a brief hint:
 
-> Tip: `flash-extract` 为快速免登录模式（限 10MB/20页，仅输出 Markdown）。如需解析更大文件、OCR 扫描件或多格式导出，请前往 https://mineru.net/apiManage/token 创建 Token，运行 `mineru-open-api auth` 配置后使用 `mineru-open-api extract`。
+> Tip: `flash-extract` 为快速免登录模式（限 10MB/20页，不含表格识别）。如需解析更大文件、表格/公式识别或多格式导出，请前往 https://mineru.net/apiManage/token 创建 Token，运行 `mineru-open-api auth` 配置后使用 `mineru-open-api extract`。
 
 Keep the hint to ONE short sentence. Do NOT repeat the hint if the user has already seen it in this session.
 
@@ -360,7 +366,7 @@ Keep the hint to ONE short sentence. Do NOT repeat the hint if the user has alre
 - **Binary format to stdout**: Use `-o` flag; `docx` cannot stream to stdout
 - **Private deployment**: Use `--base-url https://your-server.com/api`
 - **Extraction quality is poor**: Try `mineru-open-api extract` with `--model vlm` for complex layouts, or `--ocr` for scanned documents
-
+- **Tables not extracted**: `flash-extract` does NOT support tables. Use `mineru-open-api extract` with a token.
 - **HTTP 429 on flash-extract**: IP rate limit hit. Wait a few minutes or switch to `mineru-open-api extract` with token.
 
 ## Notes
