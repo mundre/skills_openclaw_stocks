@@ -1,0 +1,11 @@
+{
+  "owner": "redisread",
+  "slug": "hackernews-digest",
+  "displayName": "hackernews-digest",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1775460430621,
+    "commit": null
+  },
+  "history": []
+}
