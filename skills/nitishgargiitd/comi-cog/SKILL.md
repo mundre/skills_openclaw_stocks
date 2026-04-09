@@ -273,3 +273,4 @@ Request specific layouts:
 5. **Sound effects matter**: "Include SFX for the punch" adds manga authenticity.
 
 6. **Reference real comics**: "Like One Piece style" or "Saga vibes" gives clear direction.
+
