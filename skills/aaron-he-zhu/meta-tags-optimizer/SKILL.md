@@ -1,6 +1,6 @@
 ---
 name: meta-tags-optimizer
-description: 'Optimize title tags, meta descriptions, Open Graph, Twitter cards for maximum CTR with A/B variations. 标题优化/元描述/CTR'
+description: 'SEO meta tags optimizer: craft title tags, meta descriptions, Open Graph, and Twitter cards for maximum CTR with A/B test variations. Part of a 20-skill SEO & GEO suite. 标题优化/元描述/CTR提升/TDK优化/搜索优化'
 version: "6.0.0"
 license: Apache-2.0
 compatibility: "Claude Code ≥1.0, skills.sh marketplace, ClawHub marketplace, Vercel Labs skills ecosystem. No system packages required. Optional: MCP network access for SEO tool integrations."
@@ -83,13 +83,13 @@ metadata:
 
 # Meta Tags Optimizer
 
-> **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
-> **System Mode**: This build skill follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
+**Boost click-through rate with title tags and meta descriptions that actually get clicked** — this skill generates 3 ready-to-test title options (character-counted, keyword-front-loaded), a meta description with a clear CTA, and a full Open Graph + Twitter Card block you can paste straight into your `<head>`.
 
-
-This skill creates compelling, optimized meta tags that improve click-through rates from search results and enhance social media sharing. It covers title tags, meta descriptions, and social meta tags.
+**Quick example**: `Create meta tags for a blog post about "how to start a podcast in 2026"` → get title options at ~55 chars each, 160-char meta description, and A/B test variations with expected CTR lift estimates.
 
 **System role**: Build layer skill. It turns briefs and signals into assets that other skills can review, publish, and monitor.
+
+> **Part of the [SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
 
 ## When This Must Trigger
 
@@ -415,3 +415,15 @@ If any findings should influence ongoing strategy, recommend promoting key concl
 ## Next Best Skill
 
 - **Primary**: [schema-markup-generator](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/build/schema-markup-generator/SKILL.md) — complete the SERP packaging with structured data.
+
+## Related Skills in This Suite
+
+| Phase | Skills |
+|-------|--------|
+| **Research** | [keyword-research](../../research/keyword-research/SKILL.md), [competitor-analysis](../../research/competitor-analysis/SKILL.md), [serp-analysis](../../research/serp-analysis/SKILL.md), [content-gap-analysis](../../research/content-gap-analysis/SKILL.md) |
+| **Build** | [seo-content-writer](../seo-content-writer/SKILL.md), [geo-content-optimizer](../geo-content-optimizer/SKILL.md), [meta-tags-optimizer](../meta-tags-optimizer/SKILL.md), [schema-markup-generator](../schema-markup-generator/SKILL.md) |
+| **Optimize** | [on-page-seo-auditor](../../optimize/on-page-seo-auditor/SKILL.md), [technical-seo-checker](../../optimize/technical-seo-checker/SKILL.md), [internal-linking-optimizer](../../optimize/internal-linking-optimizer/SKILL.md), [content-refresher](../../optimize/content-refresher/SKILL.md) |
+| **Monitor** | [rank-tracker](../../monitor/rank-tracker/SKILL.md), [backlink-analyzer](../../monitor/backlink-analyzer/SKILL.md), [performance-reporter](../../monitor/performance-reporter/SKILL.md), [alert-manager](../../monitor/alert-manager/SKILL.md) |
+| **Cross-cutting** | [content-quality-auditor](../../cross-cutting/content-quality-auditor/SKILL.md), [domain-authority-auditor](../../cross-cutting/domain-authority-auditor/SKILL.md), [entity-optimizer](../../cross-cutting/entity-optimizer/SKILL.md), [memory-management](../../cross-cutting/memory-management/SKILL.md) |
+
+> **Install the full suite**: See [README](https://github.com/aaron-he-zhu/seo-geo-claude-skills) for one-command install of all 20 skills.
