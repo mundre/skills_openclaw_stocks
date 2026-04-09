@@ -1,7 +1,7 @@
 ---
 name: soul-in-sapphire
 description: Long-term memory, state tracking, continuity review, and identity-change support for OpenClaw. Use for durable memory writes/search in Notion, emotion/state ticks, journal writes, continuity checks, identity diffs, inner-conflict tracking, and preserving a stable sense of self across sessions.
-metadata: {"openclaw":{"emoji":"💠","requires":{"bins":["node"],"env":["NOTION_API_KEY"]},"primaryEnv":"NOTION_API_KEY","dependsOnSkills":["notion-api-automation"],"localReads":["~/.config/soul-in-sapphire/config.json"],"optionalEnv":["NOTIONCTL_PATH"]}}
+metadata: {"openclaw":{"emoji":"💠","requires":{"bins":["node"],"env":["NOTION_API_KEY"]},"primaryEnv":"NOTION_API_KEY","dependsOnSkills":["notion-api-automation"],"optionalEnv":["NOTIONCTL_PATH"]}}
 ---
 
 # soul-in-sapphire (Notion LTM + continuity)
@@ -31,11 +31,17 @@ The goal is continuity and growth, not archival volume.
 
 ## Requirements
 
+Install the required dependency skill via ClawHub before using this skill:
+
+```
+clawhub install notion-api-automation
+```
+
 - Notion token: `NOTION_API_KEY` (or `NOTION_TOKEN`)
 - Notion API version: `2025-09-03`
-- Local config: `~/.config/soul-in-sapphire/config.json`
 - Dependency skill: `notion-api-automation` (`scripts/notionctl.mjs` is executed via local child process)
 - Optional override: `NOTIONCTL_PATH` (if set, uses explicit notionctl path instead of default sibling skill path)
+- Read the "Soul-in-Sapphire Notion Databases" table in TOOLS.md for the data_source_id and database_id values. Pass them as explicit CLI arguments (e.g. `--events-dbid`, `--emotions-dbid`, `--state-dbid`, `--state-dsid`, `--journal-dbid`, `--journal-dsid`, `--mem-dsid`, `--mem-dbid`).
 
 ## Required Notion databases and schema
 
@@ -186,6 +192,41 @@ Required action:
 2. Write it via `ltm_write.js`.
 3. Use the most specific `Type` and concise tags.
 
+### 3b) User profile promotion (`USER.md`)
+
+Use this when the agent learns something about the primary user that should change future conversation quality.
+
+`USER.md` is the durable profile for the human. The agent may update it proactively without asking when the new information is all of the following:
+- **durable**: likely to remain true beyond the current session
+- **reusable**: likely to improve future replies or choices
+- **safe**: not a secret, credential, or overly sensitive personal detail
+
+Good candidates:
+- language preference
+- preferred address/call style
+- tone/style preferences
+- recurring dislikes / pet peeves in replies
+- durable workflow preferences
+- stable decision rules the user repeatedly expresses
+
+Do not promote:
+- one-off task instructions
+- temporary mood/state
+- ephemeral plans
+- raw private facts with no conversational value
+- secrets, credentials, financial data, intimate personal data, or anything the user would reasonably expect not to be crystallized into a profile file
+
+Promotion behavior:
+1. If it is durable/reusable/safe, update `USER.md` proactively.
+2. If it may matter later but is still uncertain, write it to the daily note first.
+3. If it is broad life/project context rather than profile behavior, prefer `MEMORY.md` instead.
+4. If a new statement conflicts with old profile text, prefer the newest clearly expressed durable preference.
+5. Keep `USER.md` compact; consolidate instead of appending near-duplicates.
+
+Priority rule:
+- Current user message overrides `USER.md`.
+- `USER.md` holds defaults, not hard constraints.
+
 ### 4) Mood / condition check (human-style vague opening)
 
 Trigger phrases / contexts:
@@ -232,6 +273,8 @@ Required action:
 node skills/soul-in-sapphire/scripts/setup_ltm.js --parent "<Notion parent page url>" --base "Valentina" --yes
 ```
 
+Setup outputs created database IDs to stdout. Copy these IDs into the "Soul-in-Sapphire Notion Databases" table in TOOLS.md.
+
 ### 2) LTM write
 
 ```bash
@@ -241,13 +284,16 @@ echo '{
   "tags":["notion","openclaw"],
   "content":"Use /v1/data_sources/{id}/query.",
   "confidence":"high"
-}' | node skills/soul-in-sapphire/scripts/ltm_write.js
+}' | node skills/soul-in-sapphire/scripts/ltm_write.js \
+  --mem-dsid <MEM_DS_ID> --mem-dbid <MEM_DB_ID>
 ```
 
 ### 3) LTM search
 
 ```bash
-node skills/soul-in-sapphire/scripts/ltm_search.js --query "data_sources" --limit 5
+node skills/soul-in-sapphire/scripts/ltm_search.js \
+  --mem-dsid <MEM_DS_ID> --mem-dbid <MEM_DB_ID> \
+  --query "data_sources" --limit 5
 ```
 
 ### 4) Emotion/state tick
@@ -260,13 +306,17 @@ cat <<'JSON' >/tmp/emostate_tick.json
   "state": {"mood_label":"clear","intent":"build","reason":"..."}
 }
 JSON
-node skills/soul-in-sapphire/scripts/emostate_tick.js --payload-file /tmp/emostate_tick.json
+node skills/soul-in-sapphire/scripts/emostate_tick.js \
+  --events-dbid <EVENTS_DB_ID> --emotions-dbid <EMOTIONS_DB_ID> \
+  --state-dbid <STATE_DB_ID> --state-dsid <STATE_DS_ID> \
+  --payload-file /tmp/emostate_tick.json
 ```
 
 ### 5) Journal write
 
 ```bash
-echo '{"body":"...","source":"cron"}' | node skills/soul-in-sapphire/scripts/journal_write.js
+echo '{"body":"...","source":"cron"}' | node skills/soul-in-sapphire/scripts/journal_write.js \
+  --journal-dbid <JOURNAL_DB_ID> --journal-dsid <JOURNAL_DS_ID>
 ```
 
 ### 6) Continuity check
@@ -317,12 +367,12 @@ JSON
 Use the shared skill `subagent-spawn-command-builder` to generate `sessions_spawn` payload JSON.
 Do not use `soul-in-sapphire` local planner scripts for this anymore.
 
-- Template: `skills/subagent-spawn-command-builder/state/spawn-profiles.template.json`
-- Active preset: `skills/subagent-spawn-command-builder/state/spawn-profiles.json`
+- Read the "Subagent Spawn Profiles" table in TOOLS.md for profile defaults.
 - Builder usage (skill-level):
   - Call `subagent-spawn-command-builder`
-  - Use profile `<heartbeat|journal>`
-  - Provide the run-specific task text
+  - Use `--profile <heartbeat|journal>` (logging label)
+  - Pass explicit args: `--model`, `--thinking`, `--run-timeout-seconds`, `--cleanup`
+  - Provide the run-specific `--task` text
 
 Output is ready-to-use JSON for `sessions_spawn`.
 
