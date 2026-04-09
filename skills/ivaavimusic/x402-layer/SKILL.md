@@ -1,9 +1,10 @@
 ---
 name: x402-layer
-version: 1.9.1
+version: 1.10.6
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
-  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
+  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana. Optional credentialed flows may use private keys, Solana signer keys, endpoint API keys, PATs, AWAL, or OWS depending on the exact runbook; read-only discovery requires no secrets.
+  Only ask for or use privileged credentials after choosing a runbook that actually needs signing or owner-scoped writes.
   Use this skill when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
@@ -16,10 +17,11 @@ description: |
   "submit on-chain reputation feedback", "rate ERC-8004 agent",
   "use World AgentKit", "unlock human-backed agent wallet discount",
   "check if an endpoint has an AgentKit benefit", "open support chat",
-  use "Coinbase Agentic Wallet (AWAL)", or use optional Singularity MCP
+  use "Coinbase Agentic Wallet (AWAL)", "OpenWallet", "OWS",
+  "openwallet.sh", or use optional Singularity MCP
   access with a dashboard PAT to manage x402 Singularity Layer operations
   on Base, Ethereum, Polygon, BSC, Monad, or Solana networks.
-homepage: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
+homepage: https://docs.x402layer.cc/agentic-access/openclaw-skill
 metadata:
   clawdbot:
     emoji: "⚡"
@@ -42,6 +44,7 @@ allowed-tools:
 # x402 Singularity Layer
 
 x402 is a Web3 payment layer where humans and agents can sell and consume APIs, products, and credits.
+This skill can sign wallet messages, submit on-chain transactions, call x402/studio APIs, and manage monetized endpoint infrastructure. Sensitive credentials are only needed for specific capability paths, not for baseline installation or read-only discovery.
 This skill covers the full Singularity Layer lifecycle:
 - pay/consume services
 - create/manage/list endpoints
@@ -54,6 +57,12 @@ Networks: Base, Ethereum, Polygon, BSC, Monad, Solana
 Currency: USDC  
 Protocol: HTTP 402 Payment Required
 
+> **Security-first usage:** No secret environment variable is universally required for installation. Set only the minimum variables needed for the exact runbook you are using. Prefer AWAL, OWS, API keys, or ephemeral wallets over long-lived mainnet private keys whenever possible.
+>
+> **Execution scope:** For discovery, docs, and listing inspection, stay on the no-secret path first. Only use private keys, Solana signer keys, endpoint API keys, PATs, or support tokens when the user explicitly wants signing, webhook management, support auth, or owner-scoped control-plane actions.
+>
+> **Expected network/binary surface:** `api.x402layer.cc`, `studio.x402layer.cc`, `mcp.x402layer.cc`, and local `awal` / `ows` binaries when those wallet modes are explicitly enabled.
+
 ---
 
 ## Intent Router
@@ -63,7 +72,7 @@ Use this routing first, then load the relevant reference doc.
 | User intent | Primary path | Reference |
 |---|---|---|
 | Integrate crypto payments into an app/platform | `create_endpoint.py`, `manage_webhook.py`, `verify_webhook_payment.py`, `consume_product.py`, `recharge_credits.py` | `references/payments-integration.md`, `references/webhooks-verification.md`, `references/agentic-endpoints.md` |
-| Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py` | `references/pay-per-request.md`, `references/credit-based.md`, `references/agentkit-benefits.md` |
+| Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py`, `ows_cli.py` | `references/pay-per-request.md`, `references/credit-based.md`, `references/agentkit-benefits.md`, `references/openwallet-ows.md` |
 | Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md`, `references/agentkit-benefits.md` |
 | Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md`, `references/agentkit-benefits.md` |
 | Manage dashboard/platform control plane with PAT-backed access | `Singularity MCP` tools such as `list_my_endpoints`, `update_endpoint`, `list_my_products`, `update_product`, `set_webhook`, `remove_webhook`, `request_endpoint_creation_payment` | `references/mcp-control-plane.md`, `references/agentic-endpoints.md`, `references/marketplace.md` |
@@ -71,6 +80,7 @@ Use this routing first, then load the relevant reference doc.
 | Register/discover/manage/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `list_agents.py`, `list_my_endpoints.py`, `update_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
 | Human-backed agent wallet benefits (World AgentKit) | `pay_base.py`, `discover_marketplace.py` | `references/agentkit-benefits.md` |
 | Support and buyer/seller messaging | `support_auth.py`, `support_threads.py`, `xmtp_support.mjs` | `references/xmtp-support.md` |
+| Use OpenWallet / OWS as an optional wallet backend | `ows_cli.py` | `references/openwallet-ows.md`, `references/pay-per-request.md`, `references/payment-signing.md` |
 
 ---
 
@@ -98,7 +108,14 @@ npx skills add coinbase/agentic-wallet-skills
 export X402_USE_AWAL=1
 ```
 
-Use private-key mode for ERC-8004 wallet-first registration. AWAL remains useful for x402 payment flows.
+Option C: OpenWallet / OWS
+```bash
+npm install -g @open-wallet-standard/core
+export OWS_WALLET="hackathon-wallet"
+```
+
+Use private-key mode for deep ERC-8004 registration and any on-chain update path that still needs direct transaction signing. AWAL remains useful for x402 payment flows. OWS is optional-first for pay/discover/sign-message flows plus wallet-auth list/support flows through `ows_cli.py` and the shared wallet helpers.
+Do not export every credential shown above at once. Pick one wallet path and only the extra control-plane credentials the selected runbook needs.
 
 ### 3) Optional Dashboard / MCP Mode
 
@@ -117,11 +134,13 @@ Use MCP when the task is about:
 Keep the direct scripts for:
 - actual request payments and local signing
 - AWAL-driven pay/discover flows
+- OWS-driven pay/discover/sign-message flows
 - support and XMTP flows
 - wallet-first ERC-8004 / Solana-8004 registration and updates
 
 Security note: scripts read only explicit process environment variables. `.env` files are not auto-loaded.
-Install note: no secret environment variable is globally required for installation. Set only the subset needed for the runbook you are using.
+Least-privilege note: the skill supports multiple credential types, but no single runbook needs all of them. Read-only discovery needs no secrets. PAT, API-key, AWAL, OWS, EVM, and Solana signing flows should be treated as separate capability paths, and users should set only the smallest subset required for the task in front of them.
+Risk note: this skill can sign messages, submit transactions, and call x402/studio APIs. Prefer AWAL, OWS, PATs, endpoint API keys, or throwaway wallets over long-lived private keys when possible.
 
 ---
 
@@ -141,6 +160,7 @@ Install note: no secret environment variable is globally required for installati
 | `support_threads.py` | Check support eligibility, open/list/show/close/reopen support threads |
 | `xmtp_support.mjs` | Send and read XMTP support messages for a support thread |
 | `awal_cli.py` | Run AWAL auth/pay/discover commands |
+| `ows_cli.py` | Run OpenWallet / OWS wallet, pay, discover, sign-message, and agent-key commands |
 
 ### Provider
 | Script | Purpose |
@@ -206,6 +226,9 @@ python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/weather-data
 python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/weather-data --agentkit auto
 python {baseDir}/scripts/pay_solana.py https://api.x402layer.cc/e/weather-data
 python {baseDir}/scripts/consume_credits.py https://api.x402layer.cc/e/weather-data
+
+# Optional OWS backend
+python {baseDir}/scripts/ows_cli.py pay-url https://api.x402layer.cc/e/weather-data --wallet hackathon-wallet
 ```
 
 ### C) Discover/Search Marketplace
@@ -213,6 +236,9 @@ python {baseDir}/scripts/consume_credits.py https://api.x402layer.cc/e/weather-d
 python {baseDir}/scripts/discover_marketplace.py
 python {baseDir}/scripts/discover_marketplace.py search weather
 python {baseDir}/scripts/discover_marketplace.py details weather-api
+
+# Optional OWS discovery path
+python {baseDir}/scripts/ows_cli.py discover weather
 ```
 
 ### D) Create and Manage Endpoint
@@ -238,6 +264,14 @@ python {baseDir}/scripts/manage_webhook.py set my-api https://my-server.com/webh
 python {baseDir}/scripts/manage_webhook.py info my-api
 python {baseDir}/scripts/manage_webhook.py remove my-api
 ```
+
+Studio seller webhooks are HMAC-signed. Expect:
+- `X-X402-Signature`
+- `X-X402-Timestamp`
+- `X-X402-Event`
+- `X-X402-Event-Id`
+
+Verify `HMAC-SHA256(timestamp + "." + rawBody)` with the webhook `signing_secret`. Keep legacy raw-secret header checks only as backward-compatibility fallback for older receivers.
 
 Webhook verification helper:
 ```bash
@@ -277,6 +311,20 @@ node {baseDir}/scripts/xmtp_support.mjs messages <thread_id>
 node {baseDir}/scripts/xmtp_support.mjs send <thread_id> "Need help with this endpoint"
 ```
 
+### H2) OpenWallet / OWS
+```bash
+# List local OWS wallets
+python {baseDir}/scripts/ows_cli.py wallet-list
+
+# Sign a message without exporting a raw private key
+python {baseDir}/scripts/ows_cli.py sign-message --chain ethereum --wallet hackathon-wallet --message "hello"
+
+# Create an OWS agent API key
+python {baseDir}/scripts/ows_cli.py key-create --name codex-agent --wallet hackathon-wallet
+```
+
+OWS now works well for wallet lookup, challenge signing, marketplace discovery, support auth, and wallet-auth list flows. Deep ERC-8004 registration and on-chain agent update transactions still require direct signing keys.
+
 ### I) MCP Owner-Scoped Control Plane
 ```bash
 # Set a dashboard PAT only for owner-scoped control-plane actions
@@ -301,7 +349,7 @@ python {baseDir}/scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.9.1 \
+  --version 1.10.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -357,6 +405,8 @@ Load only what is needed for the user task:
   how support chat works in Studio, what needs human setup, and how agents should coordinate with users.
 - `references/mcp-control-plane.md`:
   when to use Singularity MCP, what PAT scopes are needed, and which owner-scoped actions should prefer MCP over direct scripts.
+- `references/openwallet-ows.md`:
+  optional OpenWallet / OWS wallet backend guidance, install commands, and current scope.
 - `references/payment-signing.md`:
   exact signing domains/types/header payload details.
 
@@ -365,6 +415,16 @@ Load only what is needed for the user task:
 ## Environment Reference
 
 No single task needs every variable below. Use least privilege and set only what the current script requires.
+
+### Credential Path Rule
+
+Choose the smallest path that fits the task:
+
+1. **No-secret discovery:** marketplace browsing and public listing inspection
+2. **Endpoint API key:** endpoint, listing, and webhook management
+3. **PAT / MCP:** owner-scoped dashboard inventory and control-plane operations
+4. **AWAL / OWS:** delegated wallet auth or pay/discover/sign-message flows
+5. **Direct private keys:** deep wallet-first registration, on-chain updates, or flows that still require local transaction signing
 
 ### Common
 
@@ -377,6 +437,8 @@ No single task needs every variable below. Use least privilege and set only what
 | `X402_PREFER_NETWORK` | network selection | `base`, `solana` |
 | `X402_AGENTKIT_MODE` | optional AgentKit behavior | `off`, `auto`, `required` |
 | `X402_API_BASE` | API override | default `https://api.x402layer.cc` |
+| `OWS_WALLET` | OWS wrapper flows | wallet name or ID for `ows_cli.py` |
+| `OWS_BIN` | OWS wrapper flows | optional explicit path to the `ows` executable |
 
 ### Optional MCP Control Plane
 
@@ -430,7 +492,7 @@ No single task needs every variable below. Use least privilege and set only what
 
 ## Resources
 
-- Docs: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
+- Docs: https://docs.x402layer.cc/agentic-access/openclaw-skill
 - MCP docs: https://studio.x402layer.cc/docs/agentic-access/mcp-server
 - SDK docs: https://studio.x402layer.cc/docs/developer/sdk-receipts
 - GitHub docs repo: https://github.com/ivaavimusic/SGL_DOCS_2025
@@ -441,3 +503,20 @@ No single task needs every variable below. Use least privilege and set only what
 ## Known Issue
 
 Solana exact-payment flows must use the `feePayer` returned by the challenge and keep the transaction compute-unit limit within facilitator requirements. `pay_solana.py` and `solana_signing.py` handle this for the current PayAI-backed flow; prefer Base when you need the simplest production path.
+
+OpenWallet / OWS support is optional-first in this release: use it for pay/discover/sign-message flows and wallet-auth list/support flows, but keep private-key mode for deep wallet-first registration and on-chain update transaction paths. OWS execution now requires a local `ows` binary (or `OWS_BIN`) instead of fetching code on demand via runtime `npx`.
+
+
+---
+
+## Credential safety
+
+This skill supports many optional workflows, so it can work with many credential types. That does **not** mean you should set all of them.
+
+Preferred order of safety when possible:
+1. Read-only discovery with no secrets
+2. Endpoint API keys or PATs for scoped control-plane actions
+3. AWAL or OWS for delegated/local wallet access
+4. Dedicated throwaway private keys for direct signing
+
+Do not export a long-lived high-value custody wallet into the environment just to browse, inspect, or test small flows.
