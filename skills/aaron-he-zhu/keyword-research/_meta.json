@@ -1,13 +1,18 @@
 {
   "owner": "aaron-he-zhu",
   "slug": "keyword-research",
-  "displayName": "Keyword Research",
+  "displayName": "SEO Keyword Research & Topic Discovery",
   "latest": {
-    "version": "6.2.0",
-    "publishedAt": 1775113031595,
-    "commit": "https://github.com/openclaw/skills/commit/f6cfd59040782ebb0906961cf5f8886ef4d77560"
+    "version": "7.2.0",
+    "publishedAt": 1775474983340,
+    "commit": null
   },
   "history": [
+    {
+      "version": "6.2.0",
+      "publishedAt": 1775113031595,
+      "commit": "https://github.com/openclaw/skills/commit/f6cfd59040782ebb0906961cf5f8886ef4d77560"
+    },
     {
       "version": "4.0.0",
       "publishedAt": 1774347675937,

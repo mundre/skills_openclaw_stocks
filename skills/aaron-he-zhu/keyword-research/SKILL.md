@@ -1,6 +1,6 @@
 ---
 name: keyword-research
-description: 'Find high-value SEO keywords: search volume, difficulty, intent classification, topic clusters. 关键词研究/内容选题'
+description: 'SEO keyword research and topic discovery: find high-value keywords with search volume, difficulty scoring, intent classification, and topic clustering for content strategy. Part of a 20-skill SEO & GEO suite. 关键词研究/内容选题/关键词挖掘/长尾关键词/搜索量分析'
 version: "6.0.0"
 license: Apache-2.0
 compatibility: "Claude Code ≥1.0, skills.sh marketplace, ClawHub marketplace, Vercel Labs skills ecosystem. No system packages required. Optional: MCP network access for SEO tool integrations."
@@ -105,14 +105,13 @@ metadata:
 
 # Keyword Research
 
+**Automatically discover high-traffic, low-competition keywords** — give this skill a topic and it returns a prioritized list with search volume, difficulty scores, intent classification, and ready-to-use topic clusters. Stop guessing what to write; start ranking for terms your audience actually searches.
 
-> **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
-> **System Mode**: This research skill follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
-
-
-Discovers, analyzes, and prioritizes keywords for SEO and GEO content strategies. Identifies high-value opportunities based on search volume, competition, intent, and business relevance.
+**Quick example**: `Research keywords for "project management software for nonprofits"` → get 30+ opportunities scored by ROI, grouped into pillar + cluster content, with GEO keywords that trigger AI answers.
 
 **System role**: Research layer skill. It turns market signals into reusable strategic inputs for the rest of the library.
+
+> **Part of the [SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
 
 ## When This Must Trigger
 
@@ -433,3 +432,15 @@ If any findings should influence ongoing strategy, recommend promoting key concl
 ## Next Best Skill
 
 - **Primary**: [competitor-analysis](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/research/competitor-analysis/SKILL.md) — turn keyword opportunities into a competitive benchmark.
+
+## Related Skills in This Suite
+
+| Phase | Skills |
+|-------|--------|
+| **Research** | [keyword-research](../keyword-research/SKILL.md), [competitor-analysis](../competitor-analysis/SKILL.md), [serp-analysis](../serp-analysis/SKILL.md), [content-gap-analysis](../content-gap-analysis/SKILL.md) |
+| **Build** | [seo-content-writer](../../build/seo-content-writer/SKILL.md), [geo-content-optimizer](../../build/geo-content-optimizer/SKILL.md), [meta-tags-optimizer](../../build/meta-tags-optimizer/SKILL.md), [schema-markup-generator](../../build/schema-markup-generator/SKILL.md) |
+| **Optimize** | [on-page-seo-auditor](../../optimize/on-page-seo-auditor/SKILL.md), [technical-seo-checker](../../optimize/technical-seo-checker/SKILL.md), [internal-linking-optimizer](../../optimize/internal-linking-optimizer/SKILL.md), [content-refresher](../../optimize/content-refresher/SKILL.md) |
+| **Monitor** | [rank-tracker](../../monitor/rank-tracker/SKILL.md), [backlink-analyzer](../../monitor/backlink-analyzer/SKILL.md), [performance-reporter](../../monitor/performance-reporter/SKILL.md), [alert-manager](../../monitor/alert-manager/SKILL.md) |
+| **Cross-cutting** | [content-quality-auditor](../../cross-cutting/content-quality-auditor/SKILL.md), [domain-authority-auditor](../../cross-cutting/domain-authority-auditor/SKILL.md), [entity-optimizer](../../cross-cutting/entity-optimizer/SKILL.md), [memory-management](../../cross-cutting/memory-management/SKILL.md) |
+
+> **Install the full suite**: See [README](https://github.com/aaron-he-zhu/seo-geo-claude-skills) for one-command install of all 20 skills.
