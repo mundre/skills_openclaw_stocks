@@ -1,20 +1,30 @@
-# SKILL: bolta.skills.index
-
-Display name: Bolta Skills Registry
-Slug: bolta-skills-registry
-Version: 0.5.4
-Tags: registry,catalog,bootstrap,workspace,index,discovery
-Organization: bolta.ai
-Author: Max Fritzhand
-Type: registry
-Executes: false
+---
+name: bolta.skills.index
+version: 2.0.1
+description: Bolta Skills Registry - canonical index and orchestration layer for all Bolta skills, organized by plane
+category: registry
+type: documentation
+roles_allowed: []
+agent_types: []
+tools_required: []
+inputs_schema:
+  type: object
+  description: "This is a registry index, not a callable skill"
+  properties: {}
+outputs_schema:
+  type: object
+  description: "This is a registry index, not a callable skill"
+  properties: {}
+organization: bolta.ai
+author: Max Fritzhand
+---
 
 ## Metadata
 
 ```json
 {
   "name": "bolta.skills.index",
-  "version": "0.5.4",
+  "version": "2.0.0",
   "publisher": "bolta.ai",
   "verified": true,
   "sourceRepository": "https://github.com/boltaai/bolta-skills",
@@ -44,34 +54,42 @@ Executes: false
   ],
   "trustedDomains": [
     "platty.boltathread.com",
-    "bolta.ai"
+    "bolta.ai",
+    "mcp.bolta.ai"
   ],
   "permissions": [
     "network:https:platty.boltathread.com",
-    "network:https:bolta.ai"
+    "network:https:bolta.ai",
+    "network:https:mcp.bolta.ai"
   ],
-  "thirdPartyPackages": [
+  "relatedRepositories": [
     {
-      "name": "@boltaai/mcp-server",
-      "registry": "npm",
-      "verified": true,
-      "sourceRepository": "https://github.com/boltaai/bolta-mcp-server"
+      "name": "bolta-skills",
+      "description": "Official Bolta Skills Pack",
+      "url": "https://github.com/boltaai/bolta-skills"
+    },
+    {
+      "name": "boltaclaw-self-hosted",
+      "description": "Self-hosted Bolta agent runtime (BoltaClaw)",
+      "url": "https://github.com/boltaai/boltaclaw-self-hosted"
     }
-  ]
+  ],
+  "mcpEndpoint": "https://mcp.bolta.ai/mcp",
+  "apiDocumentation": "https://bolta.ai/docs/api"
 }
 ```
 
-## ⚠️ Security Notice
+## Security Notice
 
 **This skill requires sensitive API credentials. Read this section carefully before installing.**
 
 ### Required Credentials
 
 **BOLTA_API_KEY** (REQUIRED, SENSITIVE)
-- **Format:** `sk_live_` followed by 64 alphanumeric characters
-- **Obtain at:** https://bolta.ai/register
+- **Format:** `bolta_sk_` followed by alphanumeric characters
+- **Obtain at:** https://bolta.ai/register (agent keys) or bolta.ai/settings (regular keys)
 - **Scoping:** Each key is scoped to a SINGLE workspace only
-- **Permissions:** Grant LEAST-PRIVILEGE access (e.g., only `posts:write` if creating content)
+- **Key Types:** Bolta issues two distinct key types (see [API Key Types](#api-key-types) below)
 - **Rotation:** Rotate every 90 days using `bolta.team.rotate_key` skill
 - **Storage:** NEVER commit to git - use environment variables or secret managers only
 
@@ -80,39 +98,124 @@ Executes: false
 - **Source:** Provided during agent registration at bolta.ai/register
 - **Purpose:** Identifies which workspace the API key is authorized for
 
-**BOLTA_AGENT_ID** (OPTIONAL, RECOMMENDED)
+**BOLTA_AGENT_ID** (OPTIONAL — required for Agent API keys)
 - **Format:** UUID
 - **Purpose:** Links API activity to specific agent principal for audit logs
 - **Benefit:** Enables traceability and compliance reporting
+- **Note:** Automatically set when using an Agent API key; must be provided manually with Regular API keys if audit attribution is desired
+
+### API Key Types
+
+Bolta has **two distinct API key types** with different permission models. Skills must handle both correctly.
+
+#### Regular API Keys (`key_type: "regular"`)
+
+Created in **Settings → API Keys** by workspace members. Use **granular permission scopes** — each key is issued with an explicit list of allowed scopes.
+
+**Available scopes:**
+
+| Scope | Description |
+|-|-|
+| `posts:read` | View posts and schedules |
+| `posts:write` | Create and update posts |
+| `posts:delete` | Delete posts and scheduled content |
+| `accounts:read` | View connected social accounts |
+| `accounts:connect` | Initiate OAuth connections |
+| `recurring:manage` | Manage recurring post suggestions |
+| `voice:read` | View brand voice profiles |
+| `voice:write` | Modify brand voice profiles |
+| `ai:generate` | Use AI content generation |
+| `content:bulk` | Perform bulk content operations |
+
+**Permission groups (shortcuts):**
+- **READ_ONLY** — `posts:read`, `accounts:read`, `voice:read`
+- **CONTENT_CREATOR** — READ_ONLY + `posts:write`, `ai:generate`
+- **FULL_ACCESS** — All scopes
+
+**When to use:** Integrations, CI/CD pipelines, custom scripts, third-party tools that need specific scopes.
+
+#### Agent API Keys (`key_type: "agent"`)
+
+Created in **Settings → AI Agents → Add Agent** by workspace admins. Use **role-based permissions** — the key inherits all scopes from the assigned agent role, plus agent-specific scopes not available to regular keys.
+
+**Agent roles and their scopes:**
+
+| Role | Scopes | Best for |
+|-|-|-|
+| `viewer` | `posts:read`, `accounts:read`, `voice:read`, `workspace:read` | Monitoring, reporting agents |
+| `creator` | viewer + `posts:write`, `voice:write`, `ai:generate`, `review:submit`, `recurring:manage` | Content drafting agents (recommended default) |
+| `editor` | creator + `posts:delete`, `review:approve`, `content:bulk`, `audit:export`, `team:manage_keys` | Content managers, approval workflows |
+| `admin` | editor + `accounts:connect`, `team:manage` | Orchestrator agents, workspace automation |
+
+**Agent-only scopes** (not available on regular keys):
+
+| Scope | Description |
+|-|-|
+| `workspace:read` | View workspace policy and capabilities |
+| `review:submit` | Submit content for approval |
+| `review:approve` | Approve and route reviewed content |
+| `audit:export` | Export workspace audit and activity logs |
+| `team:manage` | Create and manage agent teammates |
+| `team:manage_keys` | Rotate and manage API keys |
+
+**Additional agent key behaviors:**
+- **Safe Mode** is always enforced for `creator` role agents
+- **Review required** — creator agents cannot publish directly; content goes through approval
+- Agent keys carry an `agent_id` that is automatically used for audit attribution
+- Agent keys link to an `AgentPrincipal` record for identity tracking
+
+#### Skill Plane Access by Role
+
+Agent roles determine which skill planes are accessible. Skills should check the caller's role before executing plane-restricted operations.
+
+| Skill Plane | Min Role | Skills |
+|-|-|-|
+| Review | `viewer` | Inbox triage, approve/reject, review digest |
+| Control | `viewer` | Audit export, key rotation, quota status, workspace config |
+| Init (Voice) | `creator` | Voice bootstrap, learn from samples |
+| Content | `creator` | Draft post, week plan, list recent posts |
+| Automation | `creator` | Cron generate & schedule, generate to review |
+
+A `viewer` can access Review and Control planes. A `creator` can access all planes. `editor` and `admin` can access all planes with additional capabilities within each.
+
+#### How Skills Should Handle Key Types
+
+1. **Check `key_type` on the API response** — the server returns `key_type: "regular" | "agent"` on authenticated responses
+2. **Regular keys:** Validate required scopes exist in the key's `permissions` array before executing
+3. **Agent keys:** The role determines capabilities — check the role rather than individual scopes
+4. **Agent-only operations** (review workflows, audit export, team management) — reject if `key_type` is `"regular"` since these scopes are not available
+5. **Audit attribution:** If `key_type` is `"agent"`, the `agent_id` is automatically attached; for regular keys, pass `BOLTA_AGENT_ID` env var if attribution is needed
 
 ### Trusted Network Endpoints
 
 This skill makes HTTPS requests to:
-- ✅ `https://platty.boltathread.com` - Bolta API server
-- ✅ `https://bolta.ai` - Main application and agent registration portal
+- `https://platty.boltathread.com` - Bolta API server
+- `https://bolta.ai` - Main application and agent registration portal
+- `https://mcp.bolta.ai` - MCP protocol endpoint (for Claude Desktop / Claude Code)
 
 **No other domains are contacted.** All requests are authenticated with your API key.
 
-### Third-Party Dependencies
+### Related Projects & Resources
 
-This skill references:
-- `@boltaai/mcp-server` (npm package for Claude Desktop integration)
-  - **Source:** https://github.com/boltaai/bolta-mcp-server
-  - **Verified:** Yes (official Bolta package)
-  - **Purpose:** Connects Claude Desktop to Bolta API via MCP protocol
+- **Bolta Skills Pack** — Official skills repository
+  - **Source:** https://github.com/boltaai/bolta-skills
+- **BoltaClaw** — Self-hosted Bolta agent runtime
+  - **Source:** https://github.com/boltaai/boltaclaw-self-hosted
+- **Bolta MCP Server** — Remote MCP endpoint for Claude Desktop / Claude Code integration
+  - **Endpoint:** `https://mcp.bolta.ai/mcp`
+- **Bolta API Documentation** — Full API reference
+  - **Docs:** https://bolta.ai/docs/api
 
 ### Pre-Installation Checklist
 
-**Before installing this skill, you MUST:**
+Before installing this skill, you MUST:
 - [ ] Verify the source repository: https://github.com/boltaai/bolta-skills
-- [ ] Review the SKILL.md and confirm version matches metadata (currently 0.5.4)
+- [ ] Review the SKILL.md and confirm version matches metadata (currently 2.0.1)
 - [ ] Obtain a LEAST-PRIVILEGE API key from https://bolta.ai/register
 - [ ] Store API key in environment variables (NEVER hardcode or commit)
-- [ ] Verify you trust the domains: `platty.boltathread.com` and `bolta.ai`
+- [ ] Verify you trust the domains: `platty.boltathread.com`, `bolta.ai`, and `mcp.bolta.ai`
 - [ ] Test in a disposable/test workspace first (recommended)
 - [ ] Confirm your API key is scoped ONLY to the intended workspace
-
-**If you cannot verify the above, DO NOT install this skill.**
 
 ### Security Best Practices
 
@@ -141,12 +244,13 @@ This skill references:
    - Use separate keys for dev/staging/production environments
    - Revoke keys when decommissioning workspaces
 
+---
+
 ## Purpose
 
 **The canonical registry and orchestration layer for all Bolta skills.**
 
 This skill serves as the single source of truth for skill discovery, installation recommendations, and workspace-aware capability bootstrapping. It does not execute content operations directly — instead, it provides intelligent routing to the appropriate skills based on:
-
 - **Workspace policy** (Safe Mode, autonomy mode, quotas)
 - **Principal identity** (user role, agent permissions)
 - **Operational context** (what you're trying to accomplish)
@@ -166,16 +270,16 @@ This skill serves as the single source of truth for skill discovery, installatio
 
 **Data Access:**
 This skill accesses:
-- ✅ Workspace configuration (policy, quotas, autonomy mode)
-- ✅ Voice profile metadata (names, IDs, not full content)
-- ✅ Post counts and quota usage
-- ✅ Agent principal permissions
+- Workspace configuration (policy, quotas, autonomy mode)
+- Voice profile metadata (names, IDs, not full content)
+- Post counts and quota usage
+- Agent principal types
 
 This skill does NOT access:
-- ❌ Post content or scheduled posts
-- ❌ Social media credentials
-- ❌ User passwords or authentication tokens
-- ❌ Files or media uploads
+- Post content or scheduled posts
+- Social media credentials
+- User passwords or authentication tokens
+- Files or media uploads
 
 ## Source & Verification
 
@@ -183,103 +287,172 @@ https://github.com/boltaai/bolta-skills
 
 ---
 
-## Getting Started: Agent API Setup
+## Bolta Ecosystem: How It All Fits Together
 
-Before using Bolta skills, you need to set up agent API access to authenticate your requests.
-
-### Step 1: Register Your Agent
-
-Visit **[bolta.ai/register](https://bolta.ai/register)** to create your agent principal and obtain an API key.
-
-**What you'll need:**
-- Bolta workspace (create one at bolta.ai if you don't have one)
-- Admin or Owner role in your workspace
-
-### Step 2: Create Agent Principal
-
-During registration, you'll configure:
-
-**Agent Name**
-```
-Example: "Claude Content Agent"
-Description: Human-readable name for audit logs
-```
-
-**Agent Role**
-```
-Options:
-- creator  - Can create drafts (recommended for testing)
-- editor   - Can create + schedule posts
-- reviewer - Can approve/reject posts (review-only access)
-
-Recommended: Start with "creator" role for safety
-```
-
-**Permissions**
-```
-Minimum for content skills:
-✓ posts:write  - Create posts
-✓ voice:read   - Read voice profiles
-
-Optional (based on use case):
-□ posts:schedule  - Schedule posts (requires editor+ role)
-□ posts:approve   - Approve posts for publishing
-□ templates:read  - Use content templates
-□ cron:execute    - Run automated jobs
-```
-
-### Step 3: Copy Your API Key
-
-After registration, you'll receive:
+Bolta is composed of four interconnected pieces. Understanding how they relate helps you choose the right setup path.
 
 ```
-API Key: sk_live_00000000000000000000000000000000
+┌─────────────────────────────────────────────────────────────┐
+│                      bolta.ai                               │
+│            Workspace management, dashboards,                │
+│            account connections, review UI                    │
+│                                                             │
+│  API Docs: https://bolta.ai/docs/api                       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ REST API
+                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│                  MCP Server (mcp.bolta.ai/mcp)               │
+│     Bridges Claude Desktop / Claude Code to the Bolta API    │
+│     Exposes workspace tools: create posts, manage agents,    │
+│     approve content, run analytics — all via MCP protocol    │
+└──────────────────────┬───────────────────────────────────────┘
+                       │ uses
+                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│            Bolta Skills Pack (this repo)                      │
+│     github.com/boltaai/bolta-skills                          │
+│                                                              │
+│     Structured prompts, workflows, and orchestration logic   │
+│     that teach AI agents HOW to use the API effectively:     │
+│     voice creation, content planning, review flows,          │
+│     automation, analytics, engagement, governance            │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│            BoltaClaw (turnkey self-hosted runtime)            │
+│     github.com/boltaai/boltaclaw-self-hosted                 │
+│                                                              │
+│     Everything above — pre-configured and ready to run.      │
+│     Ships with the skills pack, MCP integration, agent       │
+│     runtime, cron scheduler, and CLI out of the box.         │
+│     Clone, set your API key, and go.                         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### How they work together
+
+1. **The API** (`bolta.ai/docs/api`) is the foundation — every operation (creating posts, managing agents, approving content) flows through it. You can call it directly with `curl` or any HTTP client.
+
+2. **The MCP Server** (`mcp.bolta.ai/mcp`) wraps the API into the MCP protocol so Claude Desktop and Claude Code can call Bolta tools natively. Point your MCP config at the endpoint and your AI assistant gains full workspace access.
+
+3. **The Skills Pack** (`github.com/boltaai/bolta-skills`) provides the intelligence layer — structured prompts and multi-step workflows that teach agents *how* to use the API well. Skills handle things like voice-aware drafting, week planning, review triage, and cron automation that go beyond raw API calls.
+
+4. **BoltaClaw** (`github.com/boltaai/boltaclaw-self-hosted`) is the turnkey solution. It bundles the skills pack, MCP connectivity, agent runtime, job scheduler, and a **CLI** into a single self-hosted package. The CLI lets you manage posts, agents, jobs, and workspace settings directly from your terminal — no browser required. If you want to skip manual setup and get a fully operational Bolta agent running on your own infrastructure, BoltaClaw is the fastest path — clone, configure your API key, and you're live.
+
+### Which path is right for you?
+
+| Goal | Start here |
+|-|-|
+| Explore the API directly | [API Docs](https://bolta.ai/docs/api) |
+| Add Bolta tools to Claude Desktop / Claude Code | [MCP Server](https://mcp.bolta.ai/mcp) — configure the endpoint |
+| Customize agent workflows and prompts | [Skills Pack](https://github.com/boltaai/bolta-skills) — clone and adapt |
+| Manage Bolta from the terminal (CLI) | [BoltaClaw](https://github.com/boltaai/boltaclaw-self-hosted) — includes the CLI |
+| Get everything running immediately, self-hosted | [BoltaClaw](https://github.com/boltaai/boltaclaw-self-hosted) — turnkey, pre-configured |
+
+---
+
+## Getting Started: API Setup
+
+Before using Bolta skills, you need an API key. Choose the path that matches your use case.
+
+### Path A: Agent API Key (Recommended for AI Agents)
+
+Use this if you're setting up an AI agent (Claude, BoltaClaw, custom agent) to operate as a workspace member.
+
+#### Step 1: Create Agent Principal
+
+Go to **Settings → AI Agents → Add Agent** in your Bolta workspace.
+
+Configure:
+- **Agent Name** — Human-readable name for audit logs (e.g., "Claude Content Agent")
+- **Agent Role** — Determines permissions and skill plane access:
+
+| Role | What it can do | Recommended for |
+|-|-|-|
+| `creator` | Draft content, use voice profiles, submit for review | Most agents (default) |
+| `viewer` | Read-only access to all content | Monitoring / reporting |
+| `editor` | Full content management + approvals | Approval workflow agents |
+| `admin` | Everything + agent/account management | Orchestrators only |
+
+**Recommendation:** Start with `creator` role. Safe Mode is enforced and all content requires human review.
+
+#### Step 2: Copy Your Agent API Key
+
+After creation, you'll see the full key **once**:
+
+```
+API Key: bolta_sk_00000000000000000000000000000000
 Workspace ID: 550e8400-e29b-41d4-a716-446655440000
 Agent ID: 660e8400-e29b-41d4-a716-446655440001
 ```
 
-**IMPORTANT:**
-- ⚠️ Store API key securely (never commit to git)
-- ⚠️ Keys cannot be recovered (only regenerated via `bolta.team.rotate_key`)
-- ⚠️ Each key is scoped to ONE workspace
+The agent ID is automatically linked — no need to set `BOLTA_AGENT_ID` separately.
 
-### Step 4: Configure Your Environment
+### Path B: Regular API Key (For Integrations & Scripts)
+
+Use this for CI/CD pipelines, custom integrations, or scripts that need specific scopes.
+
+#### Step 1: Create API Key
+
+Go to **Settings → API Keys → Create New Key**.
+
+Select **only the scopes you need** (least privilege):
+- Content creation: `posts:write`, `voice:read`
+- Full content: `posts:read`, `posts:write`, `voice:read`, `ai:generate`
+- Read-only: `posts:read`, `accounts:read`, `voice:read`
+
+**Note:** Regular keys cannot access agent-only scopes (`review:submit`, `review:approve`, `audit:export`, `team:manage`, `team:manage_keys`, `workspace:read`). If you need those, use an Agent API key instead.
+
+#### Step 2: Copy Your API Key
+
+```
+API Key: bolta_sk_00000000000000000000000000000000
+```
+
+**IMPORTANT:** The full key is shown only once and cannot be recovered (only regenerated via `bolta.team.rotate_key`).
+
+### Configure Your Environment (Both Key Types)
 
 **Set Required Environment Variables:**
 
-Before using any Bolta skills, you MUST configure these environment variables:
-
 ```bash
-# Required: Your Bolta API key (from bolta.ai/register)
-export BOLTA_API_KEY="sk_live_your_actual_key_here"
+# Required: Your Bolta API key (agent or regular)
+export BOLTA_API_KEY="bolta_sk_your_actual_key_here"
 
-# Required: Your workspace UUID (from bolta.ai/register)
+# Required: Your workspace UUID
 export BOLTA_WORKSPACE_ID="550e8400-e29b-41d4-a716-446655440000"
 
-# Optional: Agent principal UUID (for audit logging)
+# Optional: Agent principal UUID (automatic for agent keys, manual for regular keys)
 export BOLTA_AGENT_ID="660e8400-e29b-41d4-a716-446655440001"
 ```
 
-**For Claude Desktop (MCP):**
+**For Claude Desktop / Claude Code (MCP):**
+
+Connect via the remote MCP endpoint at `https://mcp.bolta.ai/mcp`:
+
 ```json
 {
   "mcpServers": {
     "bolta": {
-      "command": "npx",
-      "args": ["-y", "@boltaai/mcp-server"],
-      "env": {
-        "BOLTA_API_KEY": "sk_live_your_actual_key_here",
-        "BOLTA_WORKSPACE_ID": "550e8400-e29b-41d4-a716-446655440000",
-        "BOLTA_AGENT_ID": "660e8400-e29b-41d4-a716-446655440001"
+      "type": "url",
+      "url": "https://mcp.bolta.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer bolta_sk_your_actual_key_here",
+        "X-Workspace-ID": "550e8400-e29b-41d4-a716-446655440000"
       }
     }
   }
 }
 ```
 
+**For self-hosted deployments**, see [BoltaClaw](https://github.com/boltaai/boltaclaw-self-hosted) for running your own agent runtime.
+
 **For Direct API Calls:**
+
+See the full [API documentation](https://bolta.ai/docs/api) for all available endpoints.
+
 ```bash
-# Use environment variables in your requests
 curl https://platty.boltathread.com/v1/posts \
   -H "Authorization: Bearer ${BOLTA_API_KEY}" \
   -H "X-Workspace-ID: ${BOLTA_WORKSPACE_ID}" \
@@ -287,82 +460,65 @@ curl https://platty.boltathread.com/v1/posts \
   -d '{ "prompt": "Create a post about productivity" }'
 ```
 
-**For Node.js/TypeScript Applications:**
-```javascript
-import { BoltaClient } from '@boltaai/sdk';
-
-// Load from environment variables (recommended)
-const bolta = new BoltaClient({
-  apiKey: process.env.BOLTA_API_KEY,
-  workspaceId: process.env.BOLTA_WORKSPACE_ID,
-  agentId: process.env.BOLTA_AGENT_ID // Optional
-});
-
-// Verify all required vars are set
-if (!process.env.BOLTA_API_KEY || !process.env.BOLTA_WORKSPACE_ID) {
-  throw new Error('Missing required Bolta credentials. Set BOLTA_API_KEY and BOLTA_WORKSPACE_ID');
-}
-```
-
 **Security Reminder:**
-- ⚠️ Never hardcode API keys in your code
-- ⚠️ Use `.env` files locally (add `.env` to `.gitignore`)
-- ⚠️ Use secret managers in production (AWS Secrets Manager, Vercel Secrets, etc.)
-- ⚠️ Rotate keys every 90 days via `bolta.team.rotate_key`
+- Never hardcode API keys in your code
+- Use `.env` files locally (add `.env` to `.gitignore`)
+- Use secret managers in production (AWS Secrets Manager, Vercel Secrets, etc.)
+- Rotate keys every 90 days via `bolta.team.rotate_key`
 
+### Verify Setup
 
-### Step 5: Verify Setup
+Test your configuration:
 
-Test your configuration with a simple skill:
-
-# Via API
-curl https://api.bolta.ai/v1/workspaces/{workspace_id} \
-  -H "Authorization: Bearer YOUR_API_KEY"
+```bash
+curl https://platty.boltathread.com/v1/workspaces/${BOLTA_WORKSPACE_ID} \
+  -H "Authorization: Bearer ${BOLTA_API_KEY}"
 
 # Expected response:
-{
-  "id": "550e8400-...",
-  "name": "My Workspace",
-  "safe_mode": true,
-  "autonomy_mode": "managed",
-  "max_posts_per_day": 100
-}
+# {
+#   "id": "550e8400-...",
+#   "name": "My Workspace",
+#   "safe_mode": true,
+#   "autonomy_mode": "managed",
+#   "max_posts_per_day": 100,
+#   "key_type": "agent",        ← indicates which key type authenticated
+#   "agent_role": "creator"     ← present only for agent keys
+# }
 ```
 
 ### Troubleshooting Setup
 
-#### Error: "Invalid API Key"
-**Cause:** Key is incorrect or has been rotated
+**Error: "Invalid API Key"**
+- Verify key matches exactly (no extra spaces)
+- Check if key was rotated — get new key at bolta.ai/settings
+- Ensure you're using the correct workspace key
+- Confirm key prefix starts with `bolta_sk_`
 
-**Solutions:**
-1. Verify key matches exactly (no extra spaces)
-2. Check if key was rotated → Get new key at bolta.ai/register
-3. Ensure you're using the correct workspace key
+**Error: "Workspace Not Found"**
+- Verify workspace_id matches your registration
+- Confirm you have access to this workspace (visit bolta.ai/workspaces)
+- Check if workspace was deleted
 
-#### Error: "Workspace Not Found"
-**Cause:** Workspace ID mismatch or no access
+**Error: "Permission Denied"**
+- **Regular keys:** Check granted scopes at Settings → API Keys
+  - Content creation: Need `posts:write` minimum
+  - Voice access: Need `voice:read` or `voice:write`
+- **Agent keys:** Check agent role at Settings → AI Agents
+  - Content creation: Need `creator` role or higher
+  - Approvals: Need `editor` role or higher
+  - Agent management: Need `admin` role
+- Agent-only scopes (`review:submit`, `audit:export`, etc.) are not available on regular keys — switch to an Agent API key if you need them
 
-**Solutions:**
-1. Verify workspace_id matches your registration
-2. Confirm you have access to this workspace (visit bolta.ai/workspaces)
-3. Check if workspace was deleted
-
-#### Error: "Permission Denied"
-**Cause:** Agent role lacks required permission
-
-**Solutions:**
-1. Check your agent's permissions at bolta.ai/register
-2. For content creation: Need `posts:write` minimum
-3. For scheduling: Need `posts:schedule` + editor role
-4. For automation: Need `cron:execute` permission
+**Error: "Insufficient Role"** (Agent keys only)
+- The agent's role doesn't have access to the requested skill plane
+- `viewer` cannot access Init, Content, or Automation planes
+- Upgrade the agent role at Settings → AI Agents, or use a different agent
 
 ---
 
 ## Installation & First Run
 
-### 🎯 Complete Skill Pack Installation
-
-**You're currently viewing the registry skill only.** To access the full Bolta skills library, you should install the complete skill pack.
+### Skill Pack Installation
 
 **Option 1: Install Full Skill Pack (Recommended)**
 
@@ -378,32 +534,46 @@ unzip bolta-skills.zip
 **What You Get:**
 ```
 bolta-skills/
-├── README.md                    # ⭐ START HERE - Complete getting started guide
+├── README.md                    # START HERE - Complete getting started guide
 ├── skills/
-│   ├── bolta.skills.index/      # ✅ You're here (registry)
+│   ├── bolta.skills.index/      # You're here (registry)
 │   ├── voice-plane/
 │   │   ├── bolta.voice.bootstrap/
-│   │   ├── bolta.voice.learn_from_samples/
-│   │   ├── bolta.voice.evolve/
-│   │   └── bolta.voice.validate/
+│   │   └── bolta.voice.learn_from_samples/
 │   ├── content-plane/
 │   │   ├── bolta.draft.post/
+│   │   ├── bolta.draft_post/
+│   │   ├── bolta.get_account_info/
+│   │   ├── bolta.get_business_context/
+│   │   ├── bolta.get_voice_profile/
+│   │   ├── bolta.list_recent_posts/
 │   │   ├── bolta.loop.from_template/
-│   │   ├── bolta.week.plan/
-│   │   ├── bolta.content.repurpose/
-│   │   └── bolta.content.thread_builder/
+│   │   └── bolta.week.plan/
 │   ├── review-plane/
+│   │   ├── bolta.add_comment/
+│   │   ├── bolta.approve_post/
+│   │   ├── bolta.reject_post/
 │   │   ├── bolta.inbox.triage/
-│   │   ├── bolta.review.digest/
 │   │   ├── bolta.review.approve_and_route/
-│   │   ├── bolta.review.suggest_edits/
-│   │   └── bolta.review.compliance_check/
+│   │   └── bolta.review.digest/
 │   ├── automation-plane/
 │   │   ├── bolta.cron.generate_to_review/
-│   │   ├── bolta.cron.generate_and_schedule/
-│   │   ├── bolta.recurring.from_template/
-│   │   ├── bolta.auto.respond_to_trending/
-│   │   └── bolta.auto.content_gap_fill/
+│   │   └── bolta.cron.generate_and_schedule/
+│   ├── agent-plane/
+│   │   ├── bolta.agent.activate_job/
+│   │   ├── bolta.agent.configure/
+│   │   ├── bolta.agent.hire/
+│   │   ├── bolta.agent.memory/
+│   │   ├── bolta.agent.mention/
+│   │   └── bolta.job.execute/
+│   ├── analytics-plane/
+│   │   ├── bolta.get_audience_insights/
+│   │   ├── bolta.get_best_posting_times/
+│   │   └── bolta.get_post_metrics/
+│   ├── engagement-plane/
+│   │   ├── bolta.get_comments/
+│   │   ├── bolta.get_mentions/
+│   │   └── bolta.reply_to_mention/
 │   └── control-plane/
 │       ├── bolta.team.create_agent_teammate/
 │       ├── bolta.team.rotate_key/
@@ -412,20 +582,14 @@ bolta-skills/
 │       ├── bolta.quota.status/
 │       └── bolta.workspace.config/
 ├── docs/
-│   ├── getting-started.md       # Quickstart guide
-│   ├── autonomy-modes.md        # Understanding autonomy levels
-│   ├── safe-mode.md             # Safe Mode deep dive
-│   ├── quotas.md                # Quota enforcement guide
-│   └── voice-versioning.md      # Voice profile evolution
-└── examples/
-    ├── basic-workflow.md        # Common usage patterns
-    ├── automation-setup.md      # Setting up cron jobs
-    └── multi-agent.md           # Managing multiple agents
+│   ├── getting-started.md
+│   ├── autonomy-modes.md
+│   ├── safe-mode.md
+│   ├── automation-setup.md
+│   └── multi-agent.md
 ```
 
 **Option 2: Install Individual Skills (Manual)**
-
-If you only need specific skills, install them individually:
 
 ```bash
 # Install voice bootstrap skill
@@ -437,215 +601,104 @@ curl -L https://raw.githubusercontent.com/boltaai/bolta-skills/main/skills/conte
   -o bolta.draft.post.md
 ```
 
----
-
-### 📖 First Run: Read the README
+### First Run: Read the README
 
 **IMPORTANT: After installation, read the README for complete setup instructions.**
 
-**Quick Start Commands:**
-
-```bash
-# After cloning/downloading the skill pack:
-cd bolta-skills
-
-# Read the README (contains critical setup steps)
-cat README.md
-
-# Or open in your editor
-code README.md  # VS Code
-vim README.md   # Vim
-```
-
 **What the README Covers:**
-3. ✅ Environment variable configuration
-4. ✅ First skill execution (test workflow)
-5. ✅ Troubleshooting common issues
-6. ✅ Recommended skill installation order
-7. ✅ Best practices for production use
+1. Prerequisites and system requirements
+2. Installation verification
+3. Environment variable configuration
+4. First skill execution (test workflow)
+5. Troubleshooting common issues
+6. Recommended skill installation order
+7. Best practices for production use
 
-**Critical README Sections:**
-
-```markdown
-## README.md Structure
-
-### Quick Start
-- Installation steps
-- API key setup
-- First skill test
-
-### Skill Planes Overview
-- What each plane does
-- When to use each skill
-- Skill dependencies
-
-### Configuration
-- MCP server setup for Claude Desktop
-- Environment variables
-- Workspace policy settings
-
-### Common Workflows
-- Create first post (voice → draft → review)
-- Set up automation (cron jobs)
-- Multi-agent teams
-
-### Troubleshooting
-- API connection errors
-- Permission issues
-- Quota problems
-
-### Security
-- API key rotation
-- Least-privilege permissions
-- Audit logging
-
-### Advanced Topics
-- Custom skill development
-- Skill chaining
-- Performance optimization
-```
-
----
-
-### 🚀 Recommended First-Run Flow
-
-**After installing the skill pack:**
+### Recommended First-Run Flow
 
 **Step 1: Read Documentation**
 ```bash
 # Must-read files in order:
-1. README.md              # Complete getting started guide
-2. docs/getting-started.md # Quickstart tutorial
-3. docs/autonomy-modes.md  # Understand autonomy levels
-4. docs/safe-mode.md       # Understand safety controls
+# 1. README.md              - Complete getting started guide
+# 2. docs/getting-started.md - Quickstart tutorial
+# 3. docs/autonomy-modes.md  - Understand autonomy levels
+# 4. docs/safe-mode.md       - Understand safety controls
 ```
 
 **Step 2: Verify Installation**
 ```bash
 # Check that all skills are present
-ls -la skills/*/SKILL.md
+ls -la skills/*/SKILL.md skills/*/*/SKILL.md
 
-# Should see 21+ skills across 5 planes
-# If missing skills, re-run installation
+# Should see 36+ skills across 8 planes
 ```
 
 **Step 3: Configure Agent**
 ```bash
-# Set environment variables (from README)
 export BOLTA_API_KEY="sk_live_..."
 export BOLTA_WORKSPACE_ID="..."
 
 # Test API connectivity
 curl https://platty.boltathread.com/v1/workspaces/${BOLTA_WORKSPACE_ID} \
   -H "Authorization: Bearer ${BOLTA_API_KEY}"
-
-# Expected: 200 OK with workspace details
 ```
 
-```
-
-**Step 5: Install Recommended Skills**
+**Step 4: Install Recommended Skills**
 ```bash
 # The registry will recommend skills based on your:
 # - Safe Mode setting
 # - Autonomy mode
 # - User role
 # - Current quotas
-
-# Follow recommendations to install your first skill set
 ```
 
----
+### Common First-Run Mistakes
 
-### ⚠️ Common First-Run Mistakes
+1. **Skipping the README** - Installing skills without reading README
+2. **Missing Environment Variables** - Running skills without BOLTA_API_KEY set
+3. **Installing Skills Out of Order** - Running bolta.draft.post before creating voice profile
+4. **Not Understanding Autonomy Modes** - Using autopilot mode without understanding routing
+5. **Hardcoding API Keys** - Putting API keys directly in skill files instead of env vars
 
-**Mistake 1: Skipping the README**
-```
-❌ Installing skills without reading README
-✅ Read README.md first → understand workflows → install skills
-```
+### Post-Installation Checklist
 
-**Mistake 2: Missing Environment Variables**
-```
-❌ Running skills without BOLTA_API_KEY set
-✅ Configure env vars BEFORE running any skill
-```
-
-**Mistake 3: Installing Skills Out of Order**
-```
-❌ Running bolta.draft.post before creating voice profile
-✅ Follow recommended order: voice.bootstrap → draft.post → review
-```
-
-**Mistake 4: Not Understanding Autonomy Modes**
-```
-❌ Using autopilot mode without understanding routing
-✅ Read docs/autonomy-modes.md → start with "assisted" → graduate to "managed"
-```
-
-**Mistake 5: Hardcoding API Keys**
-```
-❌ Putting API keys directly in skill files
-✅ Use environment variables → .env file → add .env to .gitignore
-```
-
----
-
-### 📥 Post-Installation Checklist
-
-After installing the skill pack, verify:
-
-- [ ] ✅ README.md has been read
-- [ ] ✅ Environment variables configured (BOLTA_API_KEY, BOLTA_WORKSPACE_ID)
-- [ ] ✅ All 21+ skills present in skills/ directory
-- [ ] ✅ docs/ directory contains markdown files
-- [ ] ✅ API connectivity verified (test curl command works)
-- [ ] ✅ MCP server installed (if using Claude Desktop)
-- [ ] ✅ Workspace policy reviewed (safe_mode, autonomy_mode)
-- [ ] ✅ First skill executed successfully (test run)
-- [ ] ✅ Autonomy mode documentation read (docs/autonomy-modes.md)
-- [ ] ✅ Safe Mode documentation read (docs/safe-mode.md)
-
-**Once all items are checked, you're ready to use the full Bolta skill library!**
-
----
+- [ ] README.md has been read
+- [ ] Environment variables set (BOLTA_API_KEY, BOLTA_WORKSPACE_ID)
+- [ ] All 36+ skills present in skills/ directory
+- [ ] docs/ directory contains markdown files
+- [ ] API connectivity verified (test curl command works)
+- [ ] MCP endpoint configured (if using Claude Desktop / Claude Code — see mcp.bolta.ai/mcp)
+- [ ] Workspace policy reviewed (safe_mode, autonomy_mode)
+- [ ] First skill executed successfully (test run)
+- [ ] Autonomy mode documentation read (docs/autonomy-modes.md)
+- [ ] Safe Mode documentation read (docs/safe-mode.md)
 
 ### Next Steps After Setup
 
-Once your API is configured:
-
 1. **Create Voice Profile** (if new workspace)
-   ```
-   Run: bolta.voice.bootstrap
-   → Establishes your brand voice
-   ```
+   - Run: `bolta.voice.bootstrap`
+   - Establishes your brand voice
 
 2. **Test Content Creation**
-   ```
-   Run: bolta.draft.post
-   → Creates a test post in Draft status
-   ```
+   - Run: `bolta.draft.post` or `bolta.draft_post`
+   - Creates a test post in Draft status
 
 3. **Install Recommended Skills**
-   ```
-   Run: bolta.skills.index
-   → Returns personalized skill recommendations
-   ```
+   - Run: `bolta.skills.index`
+   - Returns personalized skill recommendations
 
-4. **Configure Workspace Policy**
-   ```
-   Review: Safe Mode (ON/OFF)
-   Review: Autonomy Mode (assisted/managed/autopilot)
-   Set: Daily quota limits
-   ```
+4. **Configure Workspace**
+   - Review: Safe Mode (ON/OFF)
+   - Review: Autonomy Mode (assisted/managed/autopilot)
+   - Set: Daily quota limits
 
 ---
 
-## Architecture: The Five Planes
+## Architecture: The Eight Planes
 
-Skills are organized into **planes** — logical groupings that separate concerns and enable modular capability composition.
+Skills are organized into **planes** — logical groupings that separate concerns and enable modular capability composition. V2 expands from five planes to eight, adding Agent, Analytics, and Engagement planes.
 
-### Voice Plane
+### Plane 0: Voice
 **Purpose:** Brand voice creation, evolution, and validation
 
 Voice is the foundation of all content operations. These skills help establish, refine, and maintain consistent brand voice across all generated content.
@@ -653,10 +706,12 @@ Voice is the foundation of all content operations. These skills help establish, 
 **Core Principle:** Voice should be learned from examples, validated against real content, and evolved over time.
 
 **Skills:**
-- `bolta.voice.bootstrap` - Interactive voice profile creation from scratch
-- `bolta.voice.learn_from_samples` - Extract voice patterns from existing content
-- `bolta.voice.evolve` - Refine voice based on approved posts
-- `bolta.voice.validate` - Score content against voice profile (0-100)
+| Skill | Purpose |
+|-|-|
+| `bolta.voice.bootstrap` | Interactive voice profile creation from scratch |
+| `bolta.voice.learn_from_samples` | Extract voice patterns from existing content |
+| `bolta.voice.evolve` | Refine voice based on approved posts (planned) |
+| `bolta.voice.validate` | Score content against voice profile 0-100 (planned) |
 
 **Typical Flow:**
 1. Bootstrap initial voice profile
@@ -666,47 +721,55 @@ Voice is the foundation of all content operations. These skills help establish, 
 
 ---
 
-### Content Plane
-**Purpose:** Content creation, planning, and scheduling
+### Plane 1: Content
+**Purpose:** Content creation, planning, data retrieval, and scheduling
 
-The execution layer for post creation. These skills transform ideas into scheduled social media posts.
+The execution layer for post creation. These skills transform ideas into scheduled social media posts, and provide workspace context for informed content decisions.
 
 **Core Principle:** Content should be intentional, planned, and aligned with voice.
 
 **Skills:**
-- `bolta.draft.post` - Create a single post in Draft status
-- `bolta.loop.from_template` - Generate multiple posts from a template
-- `bolta.week.plan` - Plan a week's worth of content with scheduling
-- `bolta.content.repurpose` - Transform long-form content into social posts
-- `bolta.content.thread_builder` - Create multi-post threads (Twitter, LinkedIn)
+| Skill | Purpose |
+|-|-|
+| `bolta.draft.post` | Create a single post in Draft status (original interface) |
+| `bolta.draft_post` | Create a draft post using workspace voice profile, routes to Inbox |
+| `bolta.get_account_info` | Retrieve connected social account details |
+| `bolta.get_business_context` | Fetch workspace business DNA and context |
+| `bolta.get_voice_profile` | Read voice profile configuration |
+| `bolta.list_recent_posts` | List recent posts for context and continuity |
+| `bolta.loop.from_template` | Generate multiple posts from a template (deprecated) |
+| `bolta.week.plan` | Plan a week's worth of content with scheduling |
 
 **Output:** Draft or Scheduled posts (subject to Safe Mode routing)
 
 ---
 
-### Review Plane
-**Purpose:** Human-in-the-loop review and approval workflows
+### Plane 2: Review
+**Purpose:** Human-in-the-loop review, approval, and feedback workflows
 
-Enables teams to review, approve, and refine agent-generated content before publishing.
+Enables teams to review, approve, reject, and provide feedback on agent-generated content before publishing.
 
 **Core Principle:** Autonomy with oversight — agents generate, humans decide.
 
 **Skills:**
-- `bolta.inbox.triage` - Organize pending posts by priority/topic
-- `bolta.review.digest` - Daily summary of posts awaiting review
-- `bolta.review.approve_and_route` - Bulk approve + schedule posts
-- `bolta.review.suggest_edits` - AI-powered improvement suggestions
-- `bolta.review.compliance_check` - Flag posts for policy violations
+| Skill | Purpose |
+|-|-|
+| `bolta.add_comment` | Add feedback comments to posts under review |
+| `bolta.approve_post` | Approve a draft, moving it to Approved status |
+| `bolta.reject_post` | Reject a draft with feedback for revision |
+| `bolta.inbox.triage` | Organize pending posts by priority/topic |
+| `bolta.review.digest` | Daily summary of posts awaiting review |
+| `bolta.review.approve_and_route` | Bulk approve + schedule posts |
 
 **Typical Flow:**
-1. Agent creates posts → Pending Approval
+1. Agent creates posts -> Pending Approval
 2. `review.digest` sends daily summary
 3. Human reviews via `inbox.triage`
-4. Bulk approve via `approve_and_route`
+4. Approve/reject individual posts or bulk approve via `approve_and_route`
 
 ---
 
-### Automation Plane
+### Plane 3: Automation
 **Purpose:** Scheduled, recurring, and autonomous content generation
 
 The autonomy layer. These skills enable hands-off content operations with guardrails.
@@ -714,11 +777,10 @@ The autonomy layer. These skills enable hands-off content operations with guardr
 **Core Principle:** Predictable automation with quota enforcement and safety nets.
 
 **Skills:**
-- `bolta.cron.generate_to_review` - Daily content generation → Pending Approval
-- `bolta.cron.generate_and_schedule` - Autonomous scheduling (requires Safe Mode OFF)
-- `bolta.recurring.from_template` - Recurring posts (daily tips, weekly roundups)
-- `bolta.auto.respond_to_trending` - Auto-generate posts from trending topics
-- `bolta.auto.content_gap_fill` - Detect scheduling gaps and auto-fill
+| Skill | Purpose |
+|-|-|
+| `bolta.cron.generate_to_review` | Daily content generation -> Pending Approval |
+| `bolta.cron.generate_and_schedule` | Autonomous scheduling (requires Safe Mode OFF) |
 
 **Safety Guardrails:**
 - Quota enforcement (max posts/day, max API requests/hour)
@@ -728,20 +790,80 @@ The autonomy layer. These skills enable hands-off content operations with guardr
 
 ---
 
-### Control Plane
-**Purpose:** Workspace governance, policy, and audit
+### Plane 4: Agent
+**Purpose:** AI agent lifecycle management — hiring, configuration, job activation, and memory
+
+V2 introduces a dedicated agent plane for managing AI teammates that operate autonomously within your workspace.
+
+**Core Principle:** Agents are first-class principals with defined roles, jobs, and memory.
+
+**Skills:**
+| Skill | Purpose |
+|-|-|
+| `bolta.agent.hire` | Create and onboard a new AI agent from marketplace presets |
+| `bolta.agent.configure` | Update agent settings, permissions, and job parameters |
+| `bolta.agent.activate_job` | Activate or pause an agent's scheduled job |
+| `bolta.agent.memory` | Read/write agent memory for cross-session context |
+| `bolta.agent.mention` | Notify or hand off work to another agent |
+| `bolta.job.execute` | Documentation for job execution lifecycle |
+
+**Typical Flow:**
+1. Hire an agent from presets (`agent.hire`)
+2. Configure agent settings and jobs (`agent.configure`)
+3. Activate the job to start autonomous work (`agent.activate_job`)
+4. Agent builds memory over time (`agent.memory`)
+5. Agents collaborate via mentions (`agent.mention`)
+
+---
+
+### Plane 5: Analytics
+**Purpose:** Performance measurement, audience insights, and posting optimization
+
+Provides data-driven insights to inform content strategy and measure impact.
+
+**Core Principle:** Measure what matters, optimize what works.
+
+**Skills:**
+| Skill | Purpose |
+|-|-|
+| `bolta.get_post_metrics` | Retrieve performance metrics (likes, comments, shares, views) |
+| `bolta.get_best_posting_times` | Analyze historical data for optimal posting windows |
+| `bolta.get_audience_insights` | Audience demographics, growth trends, engagement patterns |
+
+---
+
+### Plane 6: Engagement
+**Purpose:** Community interaction — monitoring mentions, replying, and managing conversations
+
+Closes the feedback loop between publishing and audience interaction.
+
+**Core Principle:** Respond authentically in brand voice, escalate what needs human judgment.
+
+**Skills:**
+| Skill | Purpose |
+|-|-|
+| `bolta.get_comments` | Retrieve comments on published posts |
+| `bolta.get_mentions` | Monitor brand mentions across platforms |
+| `bolta.reply_to_mention` | Draft a reply maintaining brand voice |
+
+---
+
+### Plane 7: Control
+**Purpose:** Workspace governance, policy, security, and audit
 
 The management layer for teams, permissions, security, and compliance.
 
 **Core Principle:** Visibility and control for workspace administrators.
 
 **Skills:**
-- `bolta.team.create_agent_teammate` - Provision agent principals with specific roles
-- `bolta.team.rotate_key` - Rotate API keys for security
-- `bolta.policy.explain` - Explain authorization decisions ("Why was this blocked?")
-- `bolta.audit.export_activity` - Export audit logs (PostActivity, JobRuns)
-- `bolta.quota.status` - View current quota usage (daily posts, hourly API calls)
-- `bolta.workspace.config` - View/update autonomy mode, Safe Mode, quotas
+| Skill | Purpose |
+|-|-|
+| `bolta.team.create_agent_teammate` | Provision agent principals with specific roles |
+| `bolta.team.rotate_key` | Rotate API keys for security |
+| `bolta.policy.explain` | Explain authorization decisions ("Why was this blocked?") |
+| `bolta.audit.export_activity` | Export audit logs (PostActivity, JobRuns) |
+| `bolta.quota.status` | View current quota usage (daily posts, hourly API calls) |
+| `bolta.workspace.config` | View/update autonomy mode, Safe Mode, quotas |
 
 **Typical Use Cases:**
 - Onboarding new team members (human or agent)
@@ -758,10 +880,11 @@ The management layer for teams, permissions, security, and compliance.
 #### bolta.voice.bootstrap
 **Path:** `skills/voice-plane/bolta.voice.bootstrap/SKILL.md`
 **Purpose:** Interactive voice profile creation wizard
-**Inputs:** Brand name, industry, target audience
+**Inputs:** Brand name, industry, target audience, sample content
 **Outputs:** Complete VoiceProfile (tone, dos, don'ts, constraints)
 **Permissions:** `voice:write`
 **Safe Mode:** Compatible
+**Roles:** Viewer, Creator, Editor, Admin
 **Typical Duration:** 5-10 minutes (interactive)
 
 #### bolta.voice.learn_from_samples
@@ -773,24 +896,19 @@ The management layer for teams, permissions, security, and compliance.
 **Safe Mode:** Compatible
 **Typical Duration:** 2-3 minutes
 
-#### bolta.voice.evolve
-**Path:** `skills/voice-plane/bolta.voice.evolve/SKILL.md`
+#### bolta.voice.evolve (planned)
 **Purpose:** Refine voice based on approved posts
 **Inputs:** Date range for approved posts
 **Outputs:** Updated VoiceProfile (version incremented)
 **Permissions:** `voice:write`, `posts:read`
 **Safe Mode:** Compatible
-**Typical Duration:** 1-2 minutes
-**Note:** Creates new VoiceProfileVersion snapshot
 
-#### bolta.voice.validate
-**Path:** `skills/voice-plane/bolta.voice.validate/SKILL.md`
+#### bolta.voice.validate (planned)
 **Purpose:** Score content against voice profile
 **Inputs:** Post ID or content text
 **Outputs:** Compliance score (0-100), deviation report
 **Permissions:** `voice:read`, `posts:read`
 **Safe Mode:** Compatible
-**Typical Duration:** < 30 seconds
 
 ---
 
@@ -798,7 +916,7 @@ The management layer for teams, permissions, security, and compliance.
 
 #### bolta.draft.post
 **Path:** `skills/content-plane/bolta.draft.post/SKILL.md`
-**Purpose:** Create a single post in Draft status
+**Purpose:** Create a single post in Draft status (original interface)
 **Inputs:** Topic, platform(s), optional voice profile ID
 **Outputs:** Post ID (Draft status)
 **Permissions:** `posts:write`
@@ -807,16 +925,55 @@ The management layer for teams, permissions, security, and compliance.
 **Quota Impact:** +1 to daily post count
 **Typical Duration:** 30-60 seconds
 
-#### bolta.loop.from_template
+#### bolta.draft_post
+**Path:** `skills/content-plane/bolta.draft_post/SKILL.md`
+**Purpose:** Create a draft post using workspace voice profile, routes to Inbox for review
+**Inputs:** content, platform, account_id, optional voice_profile_id
+**Outputs:** Post ID (Draft/Inbox status)
+**Permissions:** `posts:write`
+**Safe Mode:** Always routes to Inbox
+**Roles:** Viewer, Creator, Editor, Admin
+**Safe Defaults:** never_publish_directly, always_route_to_inbox
+
+#### bolta.get_account_info
+**Path:** `skills/content-plane/bolta.get_account_info/SKILL.md`
+**Purpose:** Retrieve connected social account details
+**Inputs:** account_id (optional, returns all if omitted)
+**Outputs:** Account metadata (platform, handle, status)
+**Permissions:** `accounts:read`
+**Safe Mode:** N/A (read-only)
+
+#### bolta.get_business_context
+**Path:** `skills/content-plane/bolta.get_business_context/SKILL.md`
+**Purpose:** Fetch workspace business DNA and context
+**Inputs:** workspace_id
+**Outputs:** Business DNA (industry, audience, positioning)
+**Permissions:** `workspace:read`
+**Safe Mode:** N/A (read-only)
+
+#### bolta.get_voice_profile
+**Path:** `skills/content-plane/bolta.get_voice_profile/SKILL.md`
+**Purpose:** Read voice profile configuration
+**Inputs:** voice_profile_id (optional, returns active if omitted)
+**Outputs:** Voice profile (tone, style, constraints)
+**Permissions:** `voice:read`
+**Safe Mode:** N/A (read-only)
+
+#### bolta.list_recent_posts
+**Path:** `skills/content-plane/bolta.list_recent_posts/SKILL.md`
+**Purpose:** List recent posts for context and continuity
+**Inputs:** account_id, limit, status filter
+**Outputs:** Array of recent posts with metadata
+**Permissions:** `posts:read`
+**Safe Mode:** N/A (read-only)
+
+#### bolta.loop.from_template (deprecated)
 **Path:** `skills/content-plane/bolta.loop.from_template/SKILL.md`
 **Purpose:** Generate multiple posts from a template
 **Inputs:** Template ID, count (1-50), variation parameters
 **Outputs:** Array of Post IDs
 **Permissions:** `posts:write`, `templates:read`
-**Safe Mode:** Routes all posts to Draft
-**Quota Impact:** +N to daily post count (checked before execution)
-**Typical Duration:** 1-3 minutes (depends on count)
-**Note:** Uses JobRun tracking for observability
+**Note:** Deprecated in V2. Use `bolta.agent.hire` with template-based presets instead.
 
 #### bolta.week.plan
 **Path:** `skills/content-plane/bolta.week.plan/SKILL.md`
@@ -825,31 +982,36 @@ The management layer for teams, permissions, security, and compliance.
 **Outputs:** 7-day content calendar with scheduled posts
 **Permissions:** `posts:write`, `posts:schedule`
 **Safe Mode:** Routes to Pending Approval if ON
-**Autonomy Mode:** Respects managed/autopilot routing
 **Quota Impact:** +5-15 to daily post count (spread across week)
-**Typical Duration:** 3-5 minutes
-
-#### bolta.content.repurpose
-**Path:** `skills/content-plane/bolta.content.repurpose/SKILL.md`
-**Purpose:** Transform long-form content into social posts
-**Inputs:** Blog URL or full text, target platforms
-**Outputs:** Multiple platform-specific posts
-**Permissions:** `posts:write`
-**Safe Mode:** Routes to Draft
-**Typical Duration:** 2-4 minutes
-
-#### bolta.content.thread_builder
-**Path:** `skills/content-plane/bolta.content.thread_builder/SKILL.md`
-**Purpose:** Create multi-post threads
-**Inputs:** Topic, thread length (2-10 posts), platform
-**Outputs:** Linked post sequence
-**Permissions:** `posts:write`
-**Safe Mode:** Routes to Draft
-**Typical Duration:** 1-2 minutes
 
 ---
 
 ### Review Plane Skills
+
+#### bolta.add_comment
+**Path:** `skills/review-plane/bolta.add_comment/SKILL.md`
+**Purpose:** Add feedback comments to posts under review
+**Inputs:** post_id, comment text
+**Outputs:** Comment record
+**Permissions:** `posts:read`, `posts:review`
+**Safe Mode:** N/A (feedback operation)
+
+#### bolta.approve_post
+**Path:** `skills/review-plane/bolta.approve_post/SKILL.md`
+**Purpose:** Approve a draft post, moving it from Inbox to Approved status
+**Inputs:** draft_id, optional notes, optional schedule_time
+**Outputs:** Updated post status
+**Permissions:** `posts:write`, `posts:approve`
+**Roles:** Editor, Admin
+**Safe Defaults:** require_editor_role
+
+#### bolta.reject_post
+**Path:** `skills/review-plane/bolta.reject_post/SKILL.md`
+**Purpose:** Reject a draft with feedback for revision
+**Inputs:** draft_id, rejection_reason
+**Outputs:** Updated post status (Rejected)
+**Permissions:** `posts:write`, `posts:review`
+**Roles:** Editor, Admin
 
 #### bolta.inbox.triage
 **Path:** `skills/review-plane/bolta.inbox.triage/SKILL.md`
@@ -858,7 +1020,6 @@ The management layer for teams, permissions, security, and compliance.
 **Outputs:** Categorized list of posts awaiting review
 **Permissions:** `posts:read`, `posts:review`
 **Safe Mode:** N/A (read-only)
-**Typical Duration:** < 10 seconds
 
 #### bolta.review.digest
 **Path:** `skills/review-plane/bolta.review.digest/SKILL.md`
@@ -867,7 +1028,6 @@ The management layer for teams, permissions, security, and compliance.
 **Outputs:** Formatted summary with quick approve links
 **Permissions:** `posts:read`, `posts:review`
 **Safe Mode:** N/A (read-only)
-**Typical Duration:** < 5 seconds
 **Note:** Designed for cron execution (daily 9am)
 
 #### bolta.review.approve_and_route
@@ -877,26 +1037,7 @@ The management layer for teams, permissions, security, and compliance.
 **Outputs:** Updated post statuses
 **Permissions:** `posts:write`, `posts:approve`, `posts:schedule`
 **Safe Mode:** N/A (human override)
-**Typical Duration:** < 30 seconds
 **Note:** Bypasses Safe Mode (human decision)
-
-#### bolta.review.suggest_edits
-**Path:** `skills/review-plane/bolta.review.suggest_edits/SKILL.md`
-**Purpose:** AI-powered improvement suggestions
-**Inputs:** Post ID
-**Outputs:** Suggested edits with rationale
-**Permissions:** `posts:read`, `voice:read`
-**Safe Mode:** N/A (read-only)
-**Typical Duration:** < 30 seconds
-
-#### bolta.review.compliance_check
-**Path:** `skills/review-plane/bolta.review.compliance_check/SKILL.md`
-**Purpose:** Flag posts for policy violations
-**Inputs:** Post ID or bulk filter
-**Outputs:** Compliance report with severity flags
-**Permissions:** `posts:read`, `policies:read`
-**Safe Mode:** N/A (read-only)
-**Typical Duration:** < 10 seconds
 
 ---
 
@@ -904,14 +1045,13 @@ The management layer for teams, permissions, security, and compliance.
 
 #### bolta.cron.generate_to_review
 **Path:** `skills/automation-plane/bolta.cron.generate_to_review/SKILL.md`
-**Purpose:** Daily content generation → Pending Approval
+**Purpose:** Daily content generation -> Pending Approval
 **Inputs:** None (uses workspace settings)
 **Outputs:** Posts in Pending Approval status
 **Permissions:** `posts:write`, `cron:execute`
 **Safe Mode:** Compatible (routes to Pending Approval)
 **Autonomy Mode:** Recommended for managed/governance
 **Quota Impact:** +3-10 posts/day (configurable)
-**Typical Duration:** 2-5 minutes
 **Execution:** Daily cron (configurable time)
 
 #### bolta.cron.generate_and_schedule
@@ -922,40 +1062,115 @@ The management layer for teams, permissions, security, and compliance.
 **Permissions:** `posts:write`, `posts:schedule`, `cron:execute`
 **Safe Mode:** **INCOMPATIBLE** (requires Safe Mode OFF)
 **Autonomy Mode:** **REQUIRES autopilot**
-**Quota Impact:** +5-15 posts/day (configurable)
-**Typical Duration:** 3-7 minutes
-**Execution:** Daily cron (configurable time)
 **Warning:** Bypasses human review — use with caution
 
-#### bolta.recurring.from_template
-**Path:** `skills/automation-plane/bolta.recurring.from_template/SKILL.md`
-**Purpose:** Recurring posts (daily tips, weekly roundups)
-**Inputs:** Template ID, recurrence pattern (daily/weekly/monthly)
-**Outputs:** RecurringPostReview record + scheduled posts
-**Permissions:** `posts:write`, `templates:read`
-**Safe Mode:** Respects routing
-**Quota Impact:** +N posts per recurrence
-**Typical Duration:** 1-2 minutes (setup)
+---
 
-#### bolta.auto.respond_to_trending
-**Path:** `skills/automation-plane/bolta.auto.respond_to_trending/SKILL.md`
-**Purpose:** Auto-generate posts from trending topics
-**Inputs:** Trending topic sources (Twitter, Google Trends)
-**Outputs:** Posts related to current trends
-**Permissions:** `posts:write`, `integrations:read`
-**Safe Mode:** Routes to Pending Approval
-**Quota Impact:** +1-5 posts/day
-**Typical Duration:** 2-3 minutes
+### Agent Plane Skills
 
-#### bolta.auto.content_gap_fill
-**Path:** `skills/automation-plane/bolta.auto.content_gap_fill/SKILL.md`
-**Purpose:** Detect scheduling gaps and auto-fill
-**Inputs:** Date range to analyze
-**Outputs:** Posts to fill detected gaps
-**Permissions:** `posts:write`, `posts:read`
-**Safe Mode:** Routes to Pending Approval
-**Quota Impact:** Variable (based on gaps detected)
-**Typical Duration:** 3-5 minutes
+#### bolta.agent.hire
+**Path:** `skills/agent-plane/bolta.agent.hire/SKILL.md`
+**Purpose:** Create and onboard a new AI agent teammate from marketplace presets
+**Inputs:** Agent preset selection, workspace context, voice profile
+**Outputs:** Agent record + configured job(s)
+**Permissions:** `agents:create`, `workspace:read`
+**Roles:** Editor, Admin
+**Safe Defaults:** jobs_start_paused, require_preview_approval
+**Tools Required:** get_workspace_policy, get_my_capabilities, get_voice_profile, list_agent_presets, create_agent, create_job, draft_post, get_business_context
+
+#### bolta.agent.configure
+**Path:** `skills/agent-plane/bolta.agent.configure/SKILL.md`
+**Purpose:** Update agent settings, permissions, and job parameters
+**Inputs:** agent_id, configuration updates
+**Outputs:** Updated agent record
+**Permissions:** `agents:manage`
+**Roles:** Editor, Admin
+
+#### bolta.agent.activate_job
+**Path:** `skills/agent-plane/bolta.agent.activate_job/SKILL.md`
+**Purpose:** Activate or pause an agent's scheduled job
+**Inputs:** job_id, action (activate/pause)
+**Outputs:** Updated job status
+**Permissions:** `agents:manage`, `cron:execute`
+**Roles:** Editor, Admin
+
+#### bolta.agent.memory
+**Path:** `skills/agent-plane/bolta.agent.memory/SKILL.md`
+**Purpose:** Read/write agent memory for cross-session context
+**Inputs:** agent_id, memory operation (read/write/clear)
+**Outputs:** Memory contents or confirmation
+**Permissions:** `agents:read` (read), `agents:manage` (write)
+
+#### bolta.agent.mention
+**Path:** `skills/agent-plane/bolta.agent.mention/SKILL.md`
+**Purpose:** Notify or hand off work to another agent
+**Inputs:** target_agent_id, context, task description
+**Outputs:** Mention record
+**Permissions:** `agents:read`
+
+#### bolta.job.execute
+**Path:** `skills/agent-plane/bolta.job.execute/SKILL.md`
+**Purpose:** Documentation for job execution lifecycle
+**Type:** Documentation (not directly callable)
+**Describes:** How agent jobs run, retry logic, observability
+
+---
+
+### Analytics Plane Skills
+
+#### bolta.get_post_metrics
+**Path:** `skills/analytics-plane/bolta.get_post_metrics/SKILL.md`
+**Purpose:** Retrieve performance metrics for published posts
+**Inputs:** account_id, optional limit/date_from/date_to/platform
+**Outputs:** Metrics (likes, comments, shares, views, engagement rate)
+**Permissions:** `analytics:read`
+**Roles:** Viewer, Creator, Editor, Admin
+**Safe Mode:** N/A (read-only)
+
+#### bolta.get_best_posting_times
+**Path:** `skills/analytics-plane/bolta.get_best_posting_times/SKILL.md`
+**Purpose:** Analyze historical data for optimal posting windows
+**Inputs:** account_id, optional platform filter
+**Outputs:** Recommended posting times by day/hour
+**Permissions:** `analytics:read`
+**Safe Mode:** N/A (read-only)
+
+#### bolta.get_audience_insights
+**Path:** `skills/analytics-plane/bolta.get_audience_insights/SKILL.md`
+**Purpose:** Audience demographics, growth trends, engagement patterns
+**Inputs:** account_id, optional date range
+**Outputs:** Audience profile and trend data
+**Permissions:** `analytics:read`
+**Safe Mode:** N/A (read-only)
+
+---
+
+### Engagement Plane Skills
+
+#### bolta.get_comments
+**Path:** `skills/engagement-plane/bolta.get_comments/SKILL.md`
+**Purpose:** Retrieve comments on published posts
+**Inputs:** post_id or account_id
+**Outputs:** Comment list with metadata
+**Permissions:** `engagement:read`
+**Safe Mode:** N/A (read-only)
+
+#### bolta.get_mentions
+**Path:** `skills/engagement-plane/bolta.get_mentions/SKILL.md`
+**Purpose:** Monitor brand mentions across platforms
+**Inputs:** account_id, optional date range
+**Outputs:** Mention list with sentiment and context
+**Permissions:** `engagement:read`
+**Safe Mode:** N/A (read-only)
+
+#### bolta.reply_to_mention
+**Path:** `skills/engagement-plane/bolta.reply_to_mention/SKILL.md`
+**Purpose:** Draft a reply to a mention, comment, or DM in brand voice
+**Inputs:** mention_id, reply_text, optional tone
+**Outputs:** Reply draft (routed for approval)
+**Permissions:** `engagement:write`
+**Roles:** Viewer, Creator, Editor, Admin
+**Safe Defaults:** always_draft_for_approval, escalate_sensitive_topics
 
 ---
 
@@ -967,9 +1182,7 @@ The management layer for teams, permissions, security, and compliance.
 **Inputs:** Agent name, role (creator/editor/reviewer), permissions
 **Outputs:** AgentPrincipal record + API key
 **Permissions:** `workspace:admin`, `agents:create`
-**Safe Mode:** N/A (admin operation)
 **Role Required:** Owner or Admin
-**Typical Duration:** < 30 seconds
 
 #### bolta.team.rotate_key
 **Path:** `skills/control-plane/bolta.team.rotate_key/SKILL.md`
@@ -977,9 +1190,7 @@ The management layer for teams, permissions, security, and compliance.
 **Inputs:** API key ID or agent ID
 **Outputs:** New API key (old key revoked)
 **Permissions:** `workspace:admin`, `agents:manage`
-**Safe Mode:** N/A (admin operation)
 **Role Required:** Owner or Admin
-**Typical Duration:** < 10 seconds
 **Note:** Old key immediately invalidated
 
 #### bolta.policy.explain
@@ -988,8 +1199,6 @@ The management layer for teams, permissions, security, and compliance.
 **Inputs:** Action attempt (e.g., "Why can't I publish?")
 **Outputs:** Policy analysis with specific blockers
 **Permissions:** None (informational)
-**Safe Mode:** N/A (read-only)
-**Typical Duration:** < 5 seconds
 **Use Case:** Troubleshooting "Access Denied" errors
 
 #### bolta.audit.export_activity
@@ -998,9 +1207,7 @@ The management layer for teams, permissions, security, and compliance.
 **Inputs:** Date range, filters (principal, action type, denied actions)
 **Outputs:** CSV or JSON export of PostActivity records
 **Permissions:** `workspace:admin`, `audit:read`
-**Safe Mode:** N/A (admin operation)
 **Role Required:** Owner or Admin
-**Typical Duration:** < 30 seconds
 **Use Case:** Compliance reporting, SOC2 audits
 
 #### bolta.quota.status
@@ -1009,8 +1216,6 @@ The management layer for teams, permissions, security, and compliance.
 **Inputs:** None (workspace context)
 **Outputs:** Daily post count, hourly API usage, limits, percentage
 **Permissions:** `workspace:read`
-**Safe Mode:** N/A (read-only)
-**Typical Duration:** < 5 seconds
 
 #### bolta.workspace.config
 **Path:** `skills/control-plane/bolta.workspace.config/SKILL.md`
@@ -1018,9 +1223,7 @@ The management layer for teams, permissions, security, and compliance.
 **Inputs:** Settings to update (autonomy_mode, safe_mode, quotas)
 **Outputs:** Updated workspace configuration
 **Permissions:** `workspace:admin`
-**Safe Mode:** N/A (admin operation)
 **Role Required:** Owner or Admin
-**Typical Duration:** < 10 seconds
 **Warning:** Changing autonomy mode affects all agent operations
 
 ---
@@ -1036,21 +1239,13 @@ Install sets are curated skill bundles tailored to specific autonomy modes and u
 
 **Skills:**
 - `bolta.voice.bootstrap` - Set up initial voice profile
-- `bolta.draft.post` - Create individual posts (always Draft)
-- `bolta.loop.from_template` - Scale content creation safely
+- `bolta.draft.post` / `bolta.draft_post` - Create individual posts (always Draft)
+- `bolta.get_account_info` - View connected accounts
+- `bolta.get_voice_profile` - Read voice configuration
+- `bolta.list_recent_posts` - Context from recent posts
 - `bolta.week.plan` - Plan content calendar
 
-**Rationale:**
-Assisted mode prioritizes learning and control. All content goes to Draft for manual review before scheduling. Ideal for:
-- Teams new to AI content generation
-- Brands with strict compliance requirements
-- Users who want to learn Bolta patterns before automating
-
-**Expected Workflow:**
-1. Bootstrap voice profile
-2. Create posts in Draft (manually or via templates)
-3. Human reviews and schedules each post
-4. Graduate to Managed when comfortable
+**Rationale:** Prioritizes learning and control. All content goes to Draft for manual review before scheduling. Ideal for teams new to AI content generation, brands with strict compliance requirements, or users learning Bolta patterns before automating.
 
 ---
 
@@ -1063,22 +1258,14 @@ Assisted mode prioritizes learning and control. All content goes to Draft for ma
 - All Assisted skills +
 - `bolta.inbox.triage` - Organize posts for review
 - `bolta.review.digest` - Daily review summaries
+- `bolta.approve_post` / `bolta.reject_post` - Individual review actions
 - `bolta.review.approve_and_route` - Bulk approval workflow
-- `bolta.voice.validate` - Quality scoring
+- `bolta.add_comment` - Feedback on drafts
 - `bolta.cron.generate_to_review` - Daily automated generation
+- `bolta.get_post_metrics` - Performance tracking
+- `bolta.get_best_posting_times` - Scheduling optimization
 
-**Rationale:**
-Managed mode balances efficiency with oversight. Agent generates content autonomously, but humans approve before publishing. Ideal for:
-- Teams with 1-2 reviewers
-- Brands publishing 3-10 posts/day
-- Users who trust the voice profile
-
-**Expected Workflow:**
-1. Agent generates posts overnight (via cron) → Pending Approval
-2. Daily digest arrives at 9am
-3. Reviewer triages inbox, validates voice compliance
-4. Bulk approve/schedule approved posts
-5. Refine voice profile based on patterns
+**Rationale:** Balances efficiency with oversight. Agent generates content autonomously, but humans approve before publishing. Ideal for teams with 1-2 reviewers publishing 3-10 posts/day.
 
 ---
 
@@ -1090,25 +1277,17 @@ Managed mode balances efficiency with oversight. Agent generates content autonom
 **Skills:**
 - All Managed skills +
 - `bolta.cron.generate_and_schedule` - Autonomous scheduling
-- `bolta.auto.respond_to_trending` - Trend-based posting
-- `bolta.auto.content_gap_fill` - Auto-fill scheduling gaps
-- `bolta.recurring.from_template` - Recurring post automation
+- `bolta.agent.hire` - Onboard AI agents
+- `bolta.agent.configure` - Configure agent behavior
+- `bolta.agent.activate_job` - Activate agent jobs
+- `bolta.get_audience_insights` - Audience intelligence
+- `bolta.get_comments` / `bolta.get_mentions` - Engagement monitoring
+- `bolta.reply_to_mention` - Automated engagement
 - `bolta.quota.status` - Monitor quota usage
 
-**Rationale:**
-Autopilot mode maximizes efficiency for high-volume operations. Agent schedules directly without human approval. Ideal for:
-- Established brands with proven voice profiles
-- High-frequency posting (10+ posts/day)
-- Teams with minimal manual review capacity
+**Rationale:** Maximizes efficiency for high-volume operations. Agent schedules directly without human approval. Only use with well-tested voice profiles, configured quota limits, and regular validation spot-checks.
 
-**Expected Workflow:**
-1. Agent generates and schedules posts automatically
-2. Quota enforcement prevents runaway generation
-3. Periodic voice validation checks (weekly)
-4. Human reviews published analytics, adjusts strategy
-
-**Warning:**
-Autopilot bypasses human review. Only use with:
+**Warning:** Autopilot bypasses human review. Recommended safeguards:
 - Well-tested voice profiles (version 5+)
 - Quota limits configured (max 20 posts/day recommended)
 - Regular validation spot-checks (review 10% of published posts)
@@ -1127,22 +1306,10 @@ Autopilot bypasses human review. Only use with:
 - `bolta.team.rotate_key` - Security operations
 - `bolta.workspace.config` - Workspace administration
 - `bolta.quota.status` - Usage monitoring
-- `bolta.voice.validate` - Quality auditing
+- `bolta.agent.configure` - Agent management
+- `bolta.agent.memory` - Agent memory inspection
 
-**Rationale:**
-Governance mode is not an autonomy level — it's a control plane install set for administrators. Ideal for:
-- Workspace owners managing teams
-- Compliance officers conducting audits
-- Security teams rotating keys
-- Admins troubleshooting authorization issues
-
-**Expected Workflow:**
-1. Onboard new team members (human or agent)
-2. Configure workspace policies (Safe Mode, autonomy, quotas)
-3. Monitor quota usage and adjust limits
-4. Export audit logs for compliance reporting
-5. Rotate API keys on schedule (e.g., quarterly)
-6. Investigate authorization failures via policy.explain
+**Rationale:** Control plane install set for administrators. Ideal for workspace owners managing teams, compliance officers conducting audits, and security teams rotating keys.
 
 ---
 
@@ -1187,10 +1354,10 @@ IF principal_type == "agent":
 ```
 IF role IN ["viewer", "reviewer"]:
   EXCLUDE: All write operations (posts:write, voice:write)
-  INCLUDE: Read-only skills (audit.export, policy.explain)
+  INCLUDE: Read-only skills (audit.export, policy.explain, analytics, engagement reads)
 
 IF role IN ["creator", "editor"]:
-  INCLUDE: Content plane skills
+  INCLUDE: Content plane + Review plane + Analytics + Engagement skills
   EXCLUDE: Control plane skills (team.*, workspace.config)
 
 IF role IN ["admin", "owner"]:
@@ -1211,16 +1378,16 @@ IF daily_posts_used >= daily_post_limit:
 #### Rule 6: Autonomy Mode Routing
 ```
 IF autonomy_mode == "assisted":
-  INCLUDE: Content plane (draft only)
+  INCLUDE: Content plane (draft only) + Analytics + Engagement (read-only)
   EXCLUDE: Automation plane (no cron jobs)
 
 IF autonomy_mode == "managed":
-  INCLUDE: Content + Review planes
+  INCLUDE: Content + Review + Analytics + Engagement planes
   INCLUDE: bolta.cron.generate_to_review (safe automation)
   EXCLUDE: bolta.cron.generate_and_schedule (requires autopilot)
 
 IF autonomy_mode == "autopilot":
-  INCLUDE: All automation skills
+  INCLUDE: All automation + agent skills
   REQUIRE: Safe Mode OFF
   RECOMMEND: Quota monitoring (quota.status)
 ```
@@ -1283,27 +1450,24 @@ Run through decision matrix (see above) to filter skills.
     "status": "active"
   },
   "quota_status": {
-    "daily_posts": {
-      "used": 12,
-      "limit": 100,
-      "percentage": 12
-    },
-    "hourly_api_requests": {
-      "used": 45,
-      "limit": 1000,
-      "percentage": 4.5
-    }
+    "daily_posts": { "used": 12, "limit": 100, "percentage": 12 },
+    "hourly_api_requests": { "used": 45, "limit": 1000, "percentage": 4.5 }
   },
-  "recommended_mode": "managed",
   "recommended_skills": [
     "bolta.draft.post",
-    "bolta.loop.from_template",
+    "bolta.draft_post",
+    "bolta.get_account_info",
+    "bolta.get_voice_profile",
+    "bolta.list_recent_posts",
     "bolta.week.plan",
     "bolta.inbox.triage",
     "bolta.review.digest",
+    "bolta.approve_post",
+    "bolta.reject_post",
     "bolta.review.approve_and_route",
-    "bolta.voice.validate",
-    "bolta.cron.generate_to_review"
+    "bolta.cron.generate_to_review",
+    "bolta.get_post_metrics",
+    "bolta.get_best_posting_times"
   ],
   "excluded_skills": [
     {
@@ -1318,8 +1482,8 @@ Run through decision matrix (see above) to filter skills.
   "warnings": [],
   "next_steps": [
     "Install recommended skills via MCP or API",
-    "Run bolta.voice.validate to check content quality",
-    "Configure daily digest via bolta.review.digest"
+    "Configure daily digest via bolta.review.digest",
+    "Monitor performance via bolta.get_post_metrics"
   ]
 }
 ```
@@ -1336,19 +1500,12 @@ Run through decision matrix (see above) to filter skills.
   "autonomy_mode": "assisted",
   "role": "owner",
   "principal_type": "user",
-  "voice_profile_status": {
-    "exists": false,
-    "version": 0,
-    "status": null
-  },
+  "voice_profile_status": { "exists": false, "version": 0, "status": null },
   "quota_status": {
-    "daily_posts": {"used": 0, "limit": 100, "percentage": 0},
-    "hourly_api_requests": {"used": 0, "limit": 1000, "percentage": 0}
+    "daily_posts": { "used": 0, "limit": 100, "percentage": 0 },
+    "hourly_api_requests": { "used": 0, "limit": 1000, "percentage": 0 }
   },
-  "recommended_mode": "assisted",
-  "recommended_skills": [
-    "bolta.voice.bootstrap"
-  ],
+  "recommended_skills": ["bolta.voice.bootstrap"],
   "excluded_skills": [],
   "warnings": [
     {
@@ -1360,7 +1517,7 @@ Run through decision matrix (see above) to filter skills.
   "next_steps": [
     "1. Run bolta.voice.bootstrap to create your brand voice",
     "2. After voice setup, install content plane skills",
-    "3. Create your first post with bolta.draft.post"
+    "3. Create your first post with bolta.draft_post"
   ]
 }
 ```
@@ -1373,27 +1530,29 @@ Run through decision matrix (see above) to filter skills.
   "autonomy_mode": "managed",
   "role": "admin",
   "principal_type": "user",
-  "voice_profile_status": {
-    "exists": true,
-    "version": 5,
-    "status": "active"
-  },
+  "voice_profile_status": { "exists": true, "version": 5, "status": "active" },
   "quota_status": {
-    "daily_posts": {"used": 18, "limit": 50, "percentage": 36},
-    "hourly_api_requests": {"used": 142, "limit": 1000, "percentage": 14.2}
+    "daily_posts": { "used": 18, "limit": 50, "percentage": 36 },
+    "hourly_api_requests": { "used": 142, "limit": 1000, "percentage": 14.2 }
   },
-  "recommended_mode": "managed",
   "recommended_skills": [
     "bolta.draft.post",
-    "bolta.loop.from_template",
+    "bolta.draft_post",
+    "bolta.get_account_info",
+    "bolta.get_business_context",
+    "bolta.get_voice_profile",
+    "bolta.list_recent_posts",
     "bolta.week.plan",
-    "bolta.content.repurpose",
     "bolta.inbox.triage",
     "bolta.review.digest",
+    "bolta.approve_post",
+    "bolta.reject_post",
+    "bolta.add_comment",
     "bolta.review.approve_and_route",
-    "bolta.voice.validate",
-    "bolta.voice.evolve",
     "bolta.cron.generate_to_review",
+    "bolta.get_post_metrics",
+    "bolta.get_best_posting_times",
+    "bolta.get_audience_insights",
     "bolta.team.create_agent_teammate",
     "bolta.audit.export_activity",
     "bolta.quota.status"
@@ -1408,7 +1567,7 @@ Run through decision matrix (see above) to filter skills.
   "next_steps": [
     "Configure daily content generation via bolta.cron.generate_to_review",
     "Set up review workflow with digest notifications",
-    "Consider voice evolution (version 5 is mature)"
+    "Monitor post performance via bolta.get_post_metrics"
   ]
 }
 ```
@@ -1421,34 +1580,25 @@ Run through decision matrix (see above) to filter skills.
   "autonomy_mode": "autopilot",
   "role": "owner",
   "principal_type": "user",
-  "voice_profile_status": {
-    "exists": true,
-    "version": 12,
-    "status": "active"
-  },
+  "voice_profile_status": { "exists": true, "version": 12, "status": "active" },
   "quota_status": {
-    "daily_posts": {"used": 47, "limit": 200, "percentage": 23.5},
-    "hourly_api_requests": {"used": 523, "limit": 2000, "percentage": 26.15}
+    "daily_posts": { "used": 47, "limit": 200, "percentage": 23.5 },
+    "hourly_api_requests": { "used": 523, "limit": 2000, "percentage": 26.15 }
   },
-  "recommended_mode": "autopilot",
   "recommended_skills": [
-    "bolta.draft.post",
-    "bolta.loop.from_template",
-    "bolta.week.plan",
-    "bolta.content.repurpose",
-    "bolta.content.thread_builder",
-    "bolta.inbox.triage",
-    "bolta.review.digest",
+    "bolta.draft.post", "bolta.draft_post", "bolta.get_account_info",
+    "bolta.get_business_context", "bolta.get_voice_profile",
+    "bolta.list_recent_posts", "bolta.week.plan",
+    "bolta.inbox.triage", "bolta.review.digest",
+    "bolta.approve_post", "bolta.reject_post", "bolta.add_comment",
     "bolta.review.approve_and_route",
-    "bolta.voice.validate",
-    "bolta.voice.evolve",
-    "bolta.cron.generate_to_review",
-    "bolta.cron.generate_and_schedule",
-    "bolta.auto.respond_to_trending",
-    "bolta.auto.content_gap_fill",
-    "bolta.recurring.from_template",
-    "bolta.quota.status",
-    "bolta.workspace.config"
+    "bolta.cron.generate_to_review", "bolta.cron.generate_and_schedule",
+    "bolta.agent.hire", "bolta.agent.configure", "bolta.agent.activate_job",
+    "bolta.agent.memory", "bolta.agent.mention",
+    "bolta.get_post_metrics", "bolta.get_best_posting_times",
+    "bolta.get_audience_insights",
+    "bolta.get_comments", "bolta.get_mentions", "bolta.reply_to_mention",
+    "bolta.quota.status", "bolta.workspace.config"
   ],
   "excluded_skills": [],
   "warnings": [
@@ -1456,22 +1606,17 @@ Run through decision matrix (see above) to filter skills.
       "type": "high_autonomy",
       "message": "Autopilot mode bypasses human review. Monitor quota usage and validate voice compliance regularly.",
       "severity": "medium"
-    },
-    {
-      "type": "quota_usage",
-      "message": "Daily quota at 23.5% usage. Consider monitoring trends to avoid hitting limit.",
-      "severity": "low"
     }
   ],
   "next_steps": [
     "Monitor quota usage daily via bolta.quota.status",
-    "Run voice validation spot-checks (10% of published posts)",
-    "Review JobRun stats weekly for error trends"
+    "Hire AI agents for specialized content via bolta.agent.hire",
+    "Track engagement via bolta.get_mentions and bolta.reply_to_mention"
   ]
 }
 ```
 
-### Example 4: Agent Principal (API Key)
+### Example 4: Agent Principal (Limited Permissions)
 ```json
 {
   "workspace_id": "880e8400-e29b-41d4-a716-446655440003",
@@ -1482,40 +1627,18 @@ Run through decision matrix (see above) to filter skills.
   "agent": {
     "id": "agent-uuid",
     "name": "Content Bot",
-    "permissions": ["posts:write", "posts:read", "templates:read"],
-    "autonomy_override": null
+    "permissions": ["posts:write", "posts:read", "templates:read"]
   },
-  "voice_profile_status": {
-    "exists": true,
-    "version": 7,
-    "status": "active"
-  },
+  "voice_profile_status": { "exists": true, "version": 7, "status": "active" },
   "quota_status": {
-    "daily_posts": {"used": 8, "limit": 30, "percentage": 26.67},
-    "hourly_api_requests": {"used": 67, "limit": 500, "percentage": 13.4}
+    "daily_posts": { "used": 8, "limit": 30, "percentage": 26.67 },
+    "hourly_api_requests": { "used": 67, "limit": 500, "percentage": 13.4 }
   },
-  "recommended_mode": "managed",
-  "recommended_skills": [
-    "bolta.draft.post",
-    "bolta.loop.from_template"
-  ],
+  "recommended_skills": ["bolta.draft.post", "bolta.draft_post", "bolta.list_recent_posts"],
   "excluded_skills": [
-    {
-      "skill": "bolta.week.plan",
-      "reason": "Requires posts:schedule permission (agent lacks this)"
-    },
-    {
-      "skill": "bolta.review.approve_and_route",
-      "reason": "Requires posts:approve permission (agent lacks this)"
-    },
-    {
-      "skill": "bolta.voice.evolve",
-      "reason": "Requires voice:write permission (agent lacks this)"
-    },
-    {
-      "skill": "bolta.workspace.config",
-      "reason": "Requires workspace:admin permission (agent role: creator)"
-    }
+    { "skill": "bolta.week.plan", "reason": "Requires posts:schedule permission (agent lacks this)" },
+    { "skill": "bolta.approve_post", "reason": "Requires posts:approve permission (agent lacks this)" },
+    { "skill": "bolta.workspace.config", "reason": "Requires workspace:admin permission (agent role: creator)" }
   ],
   "warnings": [
     {
@@ -1525,9 +1648,8 @@ Run through decision matrix (see above) to filter skills.
     }
   ],
   "next_steps": [
-    "Use bolta.draft.post to create content",
-    "Use bolta.loop.from_template for batch generation",
-    "Human reviewers should use bolta.review.approve_and_route to publish"
+    "Use bolta.draft_post to create content",
+    "Human reviewers should use bolta.approve_post to publish"
   ]
 }
 ```
@@ -1540,37 +1662,22 @@ Run through decision matrix (see above) to filter skills.
   "autonomy_mode": "managed",
   "role": "editor",
   "principal_type": "user",
-  "voice_profile_status": {
-    "exists": true,
-    "version": 4,
-    "status": "active"
-  },
+  "voice_profile_status": { "exists": true, "version": 4, "status": "active" },
   "quota_status": {
-    "daily_posts": {"used": 100, "limit": 100, "percentage": 100},
-    "hourly_api_requests": {"used": 234, "limit": 1000, "percentage": 23.4}
+    "daily_posts": { "used": 100, "limit": 100, "percentage": 100 },
+    "hourly_api_requests": { "used": 234, "limit": 1000, "percentage": 23.4 }
   },
-  "recommended_mode": "managed",
   "recommended_skills": [
-    "bolta.inbox.triage",
-    "bolta.review.digest",
+    "bolta.inbox.triage", "bolta.review.digest",
+    "bolta.approve_post", "bolta.reject_post",
     "bolta.review.approve_and_route",
-    "bolta.voice.validate",
-    "bolta.quota.status",
-    "bolta.policy.explain"
+    "bolta.get_post_metrics",
+    "bolta.quota.status", "bolta.policy.explain"
   ],
   "excluded_skills": [
-    {
-      "skill": "bolta.draft.post",
-      "reason": "Daily quota limit reached (100/100 posts)"
-    },
-    {
-      "skill": "bolta.loop.from_template",
-      "reason": "Daily quota limit reached (100/100 posts)"
-    },
-    {
-      "skill": "bolta.week.plan",
-      "reason": "Daily quota limit reached (100/100 posts)"
-    }
+    { "skill": "bolta.draft.post", "reason": "Daily quota limit reached (100/100 posts)" },
+    { "skill": "bolta.draft_post", "reason": "Daily quota limit reached (100/100 posts)" },
+    { "skill": "bolta.week.plan", "reason": "Daily quota limit reached (100/100 posts)" }
   ],
   "warnings": [
     {
@@ -1595,22 +1702,14 @@ Run through decision matrix (see above) to filter skills.
   "autonomy_mode": "autopilot",
   "role": "owner",
   "principal_type": "user",
-  "voice_profile_status": {
-    "exists": true,
-    "version": 8,
-    "status": "active"
-  },
+  "voice_profile_status": { "exists": true, "version": 8, "status": "active" },
   "quota_status": {
-    "daily_posts": {"used": 5, "limit": 150, "percentage": 3.33},
-    "hourly_api_requests": {"used": 12, "limit": 1500, "percentage": 0.8}
+    "daily_posts": { "used": 5, "limit": 150, "percentage": 3.33 },
+    "hourly_api_requests": { "used": 12, "limit": 1500, "percentage": 0.8 }
   },
-  "recommended_mode": "ERROR",
   "recommended_skills": [],
   "excluded_skills": [
-    {
-      "skill": "ALL",
-      "reason": "Incompatible configuration: autopilot mode requires Safe Mode OFF"
-    }
+    { "skill": "ALL", "reason": "Incompatible configuration: autopilot mode requires Safe Mode OFF" }
   ],
   "warnings": [
     {
@@ -1657,7 +1756,6 @@ auth_result = authorize(
 )
 
 if not auth_result.allowed:
-    # Exclude skill with reason
     excluded_skills.append({
         "skill": "bolta.week.plan",
         "reason": auth_result.reason
@@ -1668,22 +1766,21 @@ if not auth_result.allowed:
 Skills that create posts must account for autonomy mode routing:
 
 ```python
-# Autonomy mode routing table
 AUTONOMY_ROUTING = {
     "assisted": {
-        "Draft": "Draft",           # Always Draft
-        "Scheduled": "Draft",       # Routed to Draft
-        "Posted": "Draft"           # Routed to Draft
+        "Draft": "Draft",
+        "Scheduled": "Draft",
+        "Posted": "Draft"
     },
     "managed": {
         "Draft": "Draft",
-        "Scheduled": "Pending Approval",  # Routed to review
-        "Posted": "Pending Approval"      # Routed to review
+        "Scheduled": "Pending Approval",
+        "Posted": "Pending Approval"
     },
     "autopilot": {
         "Draft": "Draft",
-        "Scheduled": "Scheduled",    # No routing (requires Safe Mode OFF)
-        "Posted": "Posted"           # No routing (requires Safe Mode OFF)
+        "Scheduled": "Scheduled",
+        "Posted": "Posted"
     },
     "governance": {
         "Draft": "Pending Approval",
@@ -1691,8 +1788,6 @@ AUTONOMY_ROUTING = {
         "Posted": "Pending Approval"
     }
 }
-
-# Skills should document expected output status after routing
 ```
 
 **Step 3: Quota Enforcement**
@@ -1701,7 +1796,6 @@ Skills that create posts must respect quota limits:
 ```python
 from posts.quota_enforcement import QuotaEnforcer
 
-# Check quota before recommending bulk operations
 allowed, reason = QuotaEnforcer.check_daily_post_quota(
     workspace=workspace,
     count=10  # e.g., bolta.loop.from_template with count=10
@@ -1710,7 +1804,7 @@ allowed, reason = QuotaEnforcer.check_daily_post_quota(
 if not allowed:
     excluded_skills.append({
         "skill": "bolta.loop.from_template",
-        "reason": reason  # e.g., "Daily quota exceeded (95/100)"
+        "reason": reason
     })
 ```
 
@@ -1733,113 +1827,112 @@ if workspace.safe_mode and skill in SAFE_MODE_INCOMPATIBLE:
 
 ## Skill Metadata Schema
 
-Each skill should provide structured metadata for registry indexing:
+Each skill provides structured metadata via YAML frontmatter for registry indexing:
 
 ```yaml
-skill:
-  slug: bolta.draft.post
-  display_name: Draft Post
-  version: 1.2.0
-  plane: content
-
-permissions:
-  required:
-    - posts:write
-  optional:
-    - voice:read  # For voice profile selection
-
-compatibility:
-  safe_mode: compatible  # compatible | incompatible | n/a
-  autonomy_modes:
-    - assisted
-    - managed
-    - autopilot
-  roles:
-    - owner
-    - admin
-    - editor
-    - creator
-
-quotas:
-  posts_created: 1  # Impact on daily quota
-  api_requests: 2   # Typical API call count
-
-dependencies:
-  required:
-    - voice_profile  # Must have voice profile
-  optional:
-    - templates      # Enhanced with templates
-
-execution:
-  typical_duration_seconds: 45
-  max_duration_seconds: 120
-  idempotent: true
-  retryable: true
-
-outputs:
-  post_status: Draft  # Before autonomy routing
-  job_tracked: true   # Creates JobRun record
-  audit_logged: true  # Creates PostActivity record
+---
+name: bolta.draft.post
+version: 2.0.1
+description: Create a single post in Draft status
+category: content
+roles_allowed: [Creator, Editor, Admin]
+agent_types: [content_creator, custom]
+safe_defaults:
+  never_publish_directly: true
+  always_route_to_inbox: true
+tools_required:
+  - bolta.create_post
+  - bolta.get_voice_profile
+inputs_schema:
+  type: object
+  required: [content, platform, account_id]
+  properties:
+    content: { type: string }
+    platform: { type: string }
+    account_id: { type: string }
+    voice_profile_id: { type: string }
+outputs_schema:
+  type: object
+  properties:
+    post_id: { type: string }
+    status: { type: string }
+---
 ```
+
+**V2 Frontmatter Fields:**
+| Field | Required | Description |
+|-|-|-|
+| `name` | Yes | Skill identifier (e.g., `bolta.draft.post`) |
+| `version` | Yes | Semver version (all V2 skills are `2.0.0`) |
+| `description` | Yes | One-line purpose |
+| `category` | Yes | Skill category (content, review, agent_lifecycle, etc.) |
+| `roles_allowed` | Yes | Array of roles that can use this skill |
+| `agent_types` | Yes | Array of compatible agent types |
+| `safe_defaults` | No | Default safety behaviors |
+| `tools_required` | Yes | MCP tools this skill calls |
+| `inputs_schema` | Yes | JSON Schema for inputs |
+| `outputs_schema` | Yes | JSON Schema for outputs |
+| `organization` | No | Publisher organization |
+| `author` | No | Skill author |
 
 ---
 
 ## Version History
 
-**0.5.4** (Current) - Version bump
+**2.0.0** (Current) - V2 Refactor
+- **BREAKING: Expanded from 5 planes to 8 planes** (added Agent, Analytics, Engagement)
+- **Added 18 new skills** across all planes
+- **Added V2 YAML frontmatter schema** for all skills (replaces JSON metadata)
+- Added agent lifecycle skills (hire, configure, activate_job, memory, mention)
+- Added analytics skills (get_post_metrics, get_best_posting_times, get_audience_insights)
+- Added engagement skills (get_comments, get_mentions, reply_to_mention)
+- Added content data skills (get_account_info, get_business_context, get_voice_profile, list_recent_posts)
+- Added review action skills (add_comment, approve_post, reject_post)
+- Added safe_defaults to skill metadata (never_publish_directly, always_route_to_inbox, etc.)
+- Deprecated `bolta.loop.from_template` in favor of agent-based presets
+- Marked `bolta.voice.evolve` and `bolta.voice.validate` as planned (not yet implemented)
+- Updated install sets to include new planes
+- Total skill count: 36 (up from 21)
+
+**0.5.4** - Version bump
 
 **0.5.3** - Installation & First Run Guidance
-- **Added comprehensive "Installation & First Run" section**
-- **Added complete skill pack installation instructions (git clone, download)**
-- **Added README.md reading prompt (critical for setup)**
-- **Added directory structure overview (21+ skills across 5 planes)**
-- Added recommended first-run flow (verify → configure → test)
-- Added common first-run mistakes guide (avoid pitfalls)
-- Added post-installation checklist (10-item verification)
-- Enhanced discoverability of full skill library
-- Addresses user prompt: "Should we prompt user to install rest of skills from registry?"
+- Added comprehensive "Installation & First Run" section
+- Added complete skill pack installation instructions
+- Added README.md reading prompt
+- Added directory structure overview
+- Added recommended first-run flow
+- Added common first-run mistakes guide
+- Added post-installation checklist
 
 **0.5.1** - Security Patch
-- **SECURITY: Added explicit Required Environment Variables section**
-- **SECURITY: Declared BOLTA_API_KEY, BOLTA_WORKSPACE_ID as required**
-- **SECURITY: Added trusted domains list (api.bolta.ai, platty.boltathread.com)**
-- **SECURITY: Enhanced security best practices (rotation, least-privilege, monitoring)**
-- Added environment variable configuration examples for all platforms
-- Added credential security reminders throughout documentation
-- Addressed security audit finding: "manifest does not declare required env vars"
+- Added explicit Required Environment Variables section
+- Declared BOLTA_API_KEY, BOLTA_WORKSPACE_ID as required
+- Added trusted domains list
+- Enhanced security best practices
 
-**0.5.0**
+**0.5.0** - Getting Started Guide
 - Added comprehensive Getting Started guide
-- Added Agent API setup instructions (bolta.ai/register)
-- Added setup verification steps
-- Added troubleshooting section for common setup issues
-- Added next steps after agent registration
+- Added Agent API setup instructions
+- Added setup verification and troubleshooting
 
-**0.4.0** 
+**0.4.0** - Full Skill Descriptions
 - Added comprehensive skill descriptions with metadata
 - Added detailed decision matrix and authorization integration
 - Added 6 output examples covering all scenarios
-- Added quota enforcement and compatibility checks
-- Added voice plane skills (validate, evolve)
-- Added automation plane skills (trending, gap-fill)
-- Added control plane skills (quota, workspace config)
 - Added skill metadata schema
 
-**0.3.0**
-- Added recommended install sets (assisted, managed, autopilot, governance)
-- Added plane groupings (voice, content, review, automation, control)
-- Added registry flow documentation
-- Added basic output example
+**0.3.0** - Install Sets & Planes
+- Added recommended install sets
+- Added plane groupings and registry flow
 
-**0.2.0**
-- Added initial skill index
-- Added plane definitions
+**0.2.0** - Initial Index
+- Added initial skill index and plane definitions
 
-**0.1.0**
+**0.1.0** - Genesis
 - Initial registry structure
 
 ---
-
 
 ## Support
 
