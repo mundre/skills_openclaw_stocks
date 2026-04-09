@@ -169,3 +169,4 @@ CellCog News Cog is designed with agent workflows in mind. The output is:
 5. **Ask for citations**: "Include source URLs for each item" — when traceability matters.
 
 6. **Indicate priority signals**: "Highlight anything about regulation changes or major funding rounds" — helps CellCog surface what matters to you.
+
