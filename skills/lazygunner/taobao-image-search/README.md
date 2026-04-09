@@ -1,87 +1,90 @@
-# taobao-image-search-skill
+# Taobao (淘宝) Image Search Skill
 
-淘宝以图搜同款与加购技能（脚本优先，browser 兜底）。
+Taobao (淘宝) image search and add-to-cart skill with script-first execution and browser-fallback. Now featuring automated login handling.
 
-## 功能
+## Features
 
-- 基于图片在淘宝搜索同款/相似商品
-- 自动进入候选商品详情页并尝试加入购物车
-- 自动校验登录状态，未登录时提示先登录
-- 产出结构化结果与截图，便于回归验证
+- **Search by Image**: Find identical or similar products on Taobao (淘宝) using an image.
+- **Automated Workflow**: Automatically enters product details and attempts to add to cart.
+- **Auto Login Detection**: Automatically checks for login status. if not logged in, it opens a login window and waits for completion before resuming the task.
+- **Structured Results**: Produces detailed JSON results, execution logs, and screenshots for verification.
 
-## 快速开始
+## Quick Start
 
-### 1. 安装依赖（如未安装）
+### 1. Installation
 
-```bash
-npx playwright install chromium
-```
+1. Clone or copy these scripts to your environment.
+2. Install Playwright and browser dependencies:
+   ```bash
+   npm install playwright
+   npx playwright install chromium
+   ```
 
-### 2. 准备测试图片
+### 2. Prepare Test Image
 
-默认使用仓库内 `test.png`。也可以在执行时传入任意本地图片路径：
-
-```bash
-node verify-taobao-runner.js --image /absolute/path/to/your-image.png
-```
-
-### 3. 首次登录并保存状态
+The project uses `test.png` by default. You can also provide any local image path during execution:
 
 ```bash
-node save-taobao-cookie.js
+node run-taobao-task.js --image /absolute/path/to/your-image.png
 ```
 
-脚本会打开浏览器。登录淘宝后回到终端按回车，保存登录态到：
+### 3. Run with Automatic Login
 
-- `verification-artifacts/taobao-storage-state.json`
-
-### 4. 执行完整验证流程
+You no longer need to run a separate cookie-saving script. Simply run the orchestrator:
 
 ```bash
-node verify-taobao-runner.js
+node run-taobao-task.js --image ./test.png --headed
 ```
 
-传入指定图片：
+**How it works:**
+1. The script checks if you are logged into Taobao (淘宝).
+2. If **not logged in**, a browser window will pop up.
+3. Complete the login in that window.
+4. The script **automatically detects** your success and **resumes the search task** immediately.
+
+### 4. Advanced Configuration
+
+You can pass arguments directly to the orchestrator:
 
 ```bash
-node verify-taobao-runner.js --image ./test.png
+node run-taobao-task.js --image ./test.png --headed --delay-ms 5000
 ```
 
-默认是有界面模式；如需 headless：
+Available arguments:
+- `--image, -i`: Path to the image (default: `test.png`).
+- `--headless` / `--headed`: Running mode (default: `--headed`).
+- `--out-dir`: Output directory (default: `verification-artifacts`).
+- `--delay-ms`: Additional wait time for slow networks (default: `5000`).
 
-```bash
-node verify-taobao-runner.js --image ./test.png --headless
-```
+## Output Artifacts
 
-可选参数：
+- `verification-artifacts/result.json`: Structured results.
+- `verification-artifacts/run-log.txt`: Detailed execution logs.
+- `verification-artifacts/*.png`: Screenshots of key steps.
 
-- `--image, -i`：图片路径（默认 `test.png`）
-- `--headless` / `--headed`：是否无头运行（默认 `--headed`，除非设置 `PW_HEADLESS=1`）
-- `--out-dir`：输出目录（默认 `verification-artifacts`）
-- `--state`：登录态文件路径（默认 `verification-artifacts/taobao-storage-state.json`）
-- `--engine`：当前仅支持 `playwright`（OpenClaw 的 `browser` 工具由技能运行时调用，不通过该本地脚本）
+Key Result Fields:
+- `success`: Whether the overall flow succeeded.
+- `loginCheck.isLoggedIn`: Login status.
+- `addToCart.success`: Whether the "Add to Cart" confirmation was detected.
 
-## 输出结果
+## Project Structure
 
-- `verification-artifacts/result.json`：结构化执行结果
-- `verification-artifacts/run-log.txt`：执行日志
-- `verification-artifacts/*.png`：关键步骤截图
+- `SKILL.md`: Instructions for OpenClaw/Codex (Script-first).
+- `run-taobao-task.js`: The main orchestrator with auto-login support.
+- `auto-login-taobao.js`: Background script for login monitoring.
+- `verify-taobao-runner.js`: The underlying automation script.
 
-关键字段：
+## Security & Privacy Note
 
-- `success`：流程是否整体执行成功
-- `loginCheck.isLoggedIn`：登录状态
-- `addToCart.success`：是否检测到加购成功提示
-- `addToCart.reason`：失败原因（如有）
+> [!CAUTION]
+> **This skill persists browser session tokens locally.**
+> - Storage locations: `verification-artifacts/taobao-storage-state.json` and `.pw-user-data-taobao/`.
+> - These files contain active session cookies for Taobao. **Do not share or upload them.**
+> - Use the skill on trusted machines only.
+> - To completely log out and remove tokens, delete these directories manually.
 
-## 与 SKILL 的关系
+## Troubleshooting
 
-- `SKILL.md`：给 OpenClaw/Codex 的技能说明（脚本优先）
-- `verify-taobao-runner.js`：本地自动化验证主脚本
-- `save-taobao-cookie.js`：登录态保存脚本
-
-## 常见问题
-
-- 未登录报错：重新执行 `node save-taobao-cookie.js`
-- 找不到弹窗搜索按钮：淘宝页面结构变更，优先按 `SKILL.md` 的 browser 回退流程手动验证
-- 加购失败：通常是规格选择、风控或登录态过期导致
+- **Login Timeout**: If you don't log in within 10 minutes, the task will stop.
+- **Selector Changes**: If Taobao (淘宝) changes its page structure, refer to the browser fallback instructions in `SKILL.md`.
+- **Add to Cart Failure**: Usually caused by SKU selection requirements, risk control, or session expiration.

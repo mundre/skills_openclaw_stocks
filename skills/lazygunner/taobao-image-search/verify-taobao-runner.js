@@ -2,7 +2,14 @@
 // OpenClaw production flow should use the browser tool, not this Playwright script.
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('/opt/homebrew/lib/node_modules/playwright');
+let chromium;
+try {
+  ({ chromium } = require('playwright'));
+} catch (e) {
+  console.error('\n[Error] Playwright is not installed. Please run "npm install playwright" and "npx playwright install chromium" first.');
+  process.exit(1);
+}
+
 
 const cwd = __dirname;
 
@@ -124,32 +131,24 @@ Examples:
   process.exit(0);
 }
 
-let cli;
-try {
-  cli = parseCliArgs(process.argv.slice(2));
-  if (cli.help) {
-    printHelpAndExit();
-  }
-  if (cli.engine !== 'playwright') {
-    throw new Error(`unsupported engine: ${cli.engine}. This local script currently supports only 'playwright'.`);
-  }
-} catch (err) {
-  console.error(`argument error: ${String(err.message || err)}`);
-  console.error('run `node verify-taobao-runner.js --help` for usage');
-  process.exit(2);
-}
+let cli, imagePath, outDir, resultPath, logPath, statePath, logLines;
 
-const imagePath = path.resolve(cwd, cli.image || 'test.png');
-const outDir = path.resolve(cwd, cli.outDir || 'verification-artifacts');
-const resultPath = path.join(outDir, 'result.json');
-const logPath = path.join(outDir, 'run-log.txt');
-const statePath = path.resolve(cwd, cli.state || path.join(outDir, 'taobao-storage-state.json'));
-
-const logLines = [];
 function log(msg) {
   const line = `[${new Date().toISOString()}] ${msg}`;
-  logLines.push(line);
+  if (logLines) logLines.push(line);
   console.log(line);
+}
+
+async function runSearchTask(cliInput) {
+  cli = cliInput;
+  imagePath = path.resolve(cwd, cli.image || 'test.png');
+  outDir = path.resolve(cwd, cli.outDir || 'verification-artifacts');
+  resultPath = path.join(outDir, 'result.json');
+  logPath = path.join(outDir, 'run-log.txt');
+  statePath = path.resolve(cwd, cli.state || path.join(outDir, 'taobao-storage-state.json'));
+  logLines = [];
+
+  return await run();
 }
 
 async function waitWithDelay(page, baseMs, reason) {
@@ -370,31 +369,40 @@ function isValidCookieValue(value) {
 
 async function verifyTaobaoLogin(page, context) {
   const cookies = await context.cookies('https://www.taobao.com').catch(() => []);
-  const nickCookieNames = ['_nk_', 'tracknick', 'lgc'];
+  const nickCookieNames = ['_nk_', 'tracknick', 'lgc', 'uc1', 'unb', 'sn'];
 
   let cookieNick = null;
-  for (const name of nickCookieNames) {
-    const matched = cookies.find(c => c.name === name && isValidCookieValue(c.value));
-    if (matched) {
-      cookieNick = matched.value;
-      break;
+  let hasSessionCookie = false;
+
+  for (const c of cookies) {
+    const name = c.name.toLowerCase();
+    const value = (c.value || '').trim().toLowerCase();
+    if (nickCookieNames.includes(name) && value && !['deleted', 'null', 'undefined'].includes(value)) {
+      cookieNick = c.value;
+    }
+    if (['_tb_token_', 'cookie2', 't'].includes(name) && value) {
+      hasSessionCookie = true;
     }
   }
 
   const nickSelectors = [
     '.site-nav-login-info-nick',
     '.member-nick-info',
-    '.J_UserNick'
+    '.J_UserNick',
+    '.nick',
+    '.name',
+    '.site-nav-user',
+    '#J_SiteNavMyTaobao'
   ];
 
   let pageNick = null;
   for (const selector of nickSelectors) {
     const node = page.locator(selector).first();
-    const visible = await node.isVisible({ timeout: 1200 }).catch(() => false);
+    const visible = await node.isVisible({ timeout: 1000 }).catch(() => false);
     if (!visible) continue;
 
     const text = ((await node.textContent().catch(() => null)) || '').trim();
-    if (text && !/登录/.test(text)) {
+    if (text && !/登录|注册/.test(text)) {
       pageNick = text;
       break;
     }
@@ -403,21 +411,25 @@ async function verifyTaobaoLogin(page, context) {
   const loginPromptSelectors = [
     "text=亲，请登录",
     ".member-logout .login-guide-title",
-    "a:has-text('立即登录')"
+    "a:has-text('立即登录')",
+    ".login-btn"
   ];
   let loginPromptVisible = false;
   for (const selector of loginPromptSelectors) {
-    if (await page.locator(selector).first().isVisible({ timeout: 1000 }).catch(() => false)) {
+    if (await page.locator(selector).first().isVisible({ timeout: 800 }).catch(() => false)) {
       loginPromptVisible = true;
       break;
     }
   }
 
-  const isLoggedIn = Boolean(cookieNick || pageNick) && !loginPromptVisible;
+  // Consistent robust check
+  const isLoggedIn = Boolean(pageNick) || (Boolean(cookieNick) && hasSessionCookie);
+
   return {
     isLoggedIn,
-    cookieNick: cookieNick || null,
-    pageNick: pageNick || null,
+    cookieNick,
+    pageNick,
+    hasSessionCookie,
     loginPromptVisible
   };
 }
@@ -805,12 +817,31 @@ async function run() {
   }
 }
 
-run()
-  .then((result) => {
-    console.log('VERIFICATION_RESULT=' + JSON.stringify(result));
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error('VERIFICATION_FAILED=' + String(err.message || err));
-    process.exit(1);
-  });
+module.exports = { runSearchTask, verifyTaobaoLogin, parseCliArgs };
+
+if (require.main === module) {
+  let cliInput;
+  try {
+    cliInput = parseCliArgs(process.argv.slice(2));
+    if (cliInput.help) {
+      printHelpAndExit();
+    }
+    if (cliInput.engine !== 'playwright') {
+      throw new Error(`unsupported engine: ${cliInput.engine}. This local script currently supports only 'playwright'.`);
+    }
+  } catch (err) {
+    console.error(`argument error: ${String(err.message || err)}`);
+    console.error('run `node verify-taobao-runner.js --help` for usage');
+    process.exit(2);
+  }
+
+  runSearchTask(cliInput)
+    .then((result) => {
+      console.log('VERIFICATION_RESULT=' + JSON.stringify(result));
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('VERIFICATION_FAILED=' + String(err.message || err));
+      process.exit(1);
+    });
+}
