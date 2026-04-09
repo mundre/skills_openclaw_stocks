@@ -3,11 +3,16 @@
   "slug": "think-cog",
   "displayName": "Think Cog",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1775180665294,
-    "commit": "https://github.com/openclaw/skills/commit/30b69fced8dce9b1400fca8a770403f35664dab2"
+    "version": "1.0.7",
+    "publishedAt": 1775627938575,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1775180665294,
+      "commit": "https://github.com/openclaw/skills/commit/30b69fced8dce9b1400fca8a770403f35664dab2"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1774585096356,

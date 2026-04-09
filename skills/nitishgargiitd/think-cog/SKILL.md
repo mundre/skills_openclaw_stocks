@@ -252,3 +252,4 @@ Think-cog is for when you're in discovery mode. Other skills are for when you're
 > Thoughts? Or should we explore other niches?"
 
 The conversation continues, ideas refine, and eventually you arrive at a clear strategy to execute.
+
