@@ -38,6 +38,16 @@ export STEALTHY_AUTO_BROWSE_URL=http://localhost:8080
 
 All commands: `POST $STEALTHY_AUTO_BROWSE_URL/` with JSON body `{"action": "name", ...params}`.
 
+If `AUTH_TOKEN` is set on the server, include it on every request (except `/health`):
+
+```
+Authorization: Bearer <key>
+```
+
+Or pass it as a query param: `?auth_token=<key>` (useful for MCP clients that can't set headers).
+
+In single-instance mode, requests are serialized automatically — only one runs at a time, the rest queue up.
+
 Every response:
 
 ```json
@@ -265,6 +275,23 @@ Capture `console.log`, `console.error`, `console.warn`, etc. Each entry has `typ
 
 Call `calibrate` after fullscreen changes.
 
+### Multi-Step Scripts
+
+Run multiple actions as one atomic request. Steps with `output_id` collect results.
+
+```json
+{"action": "run_script", "steps": [
+    {"action": "goto", "url": "https://example.com", "wait_until": "domcontentloaded"},
+    {"action": "sleep", "duration": 2},
+    {"action": "get_text", "output_id": "text"},
+    {"action": "eval", "expression": "document.title", "output_id": "title"}
+]}
+```
+
+Also accepts `"yaml": "..."` with the same YAML format used in script mode.
+
+`on_error`: `"stop"` (default) or `"continue"`.
+
 ### Utility
 
 ```json
@@ -279,6 +306,30 @@ Call `calibrate` after fullscreen changes.
 curl $STEALTHY_AUTO_BROWSE_URL/health     # "ok" when ready
 curl $STEALTHY_AUTO_BROWSE_URL/state      # {"status", "url", "title", "window_offset"}
 ```
+
+## MCP Server
+
+The browser exposes all actions as MCP tools via Streamable HTTP at `/mcp/` on the same port as the HTTP API.
+
+```
+http://localhost:8080/mcp/
+```
+
+Connect any MCP-compatible client to that URL. All actions from the HTTP API are available as tools — `goto`, `screenshot`, `system_click`, `system_type`, `eval_js`, `get_text`, `get_cookies`, `run_script` (multi-step), `browser_action` (generic fallback for everything else), and more.
+
+If `AUTH_TOKEN` is set, connect to `http://localhost:8080/mcp/?auth_token=<key>`.
+
+Works in both standalone and cluster mode — HAProxy routes MCP traffic with the same sticky sessions.
+
+## Cluster Mode
+
+Run multiple browser instances behind HAProxy with a request queue, sticky sessions, and Redis cookie sync. For setup see [references/setup.md](references/setup.md).
+
+Entry point is `http://localhost:8080` — same API. HAProxy queues requests when all instances are busy instead of returning errors.
+
+**Sticky sessions:** HAProxy sets an `INSTANCEID` cookie. Send it back on subsequent requests to keep routing to the same browser instance. All browser state (tabs, DOM, JS, local storage) lives on that specific container — only cookies sync via Redis.
+
+**Redis cookie sync:** Cookies set on any instance propagate to all others instantly via PubSub. Log in once, the whole fleet is authenticated.
 
 ## Script Mode
 
@@ -392,6 +443,29 @@ steps:
 ```
 
 Match fields are optional but at least one is required. All specified fields must match.
+
+## Example Scripts
+
+### Web Search (`scripts/websearch.py`)
+
+Multi-engine parallel web search using the browser API. Searches Brave, Google, and Bing, extracts structured results (title, URL, snippet) and AI overviews when available.
+
+```bash
+pip install requests beautifulsoup4
+
+# Search all engines
+STEALTHY_AUTO_BROWSE_URL=http://localhost:8080 \
+  python scripts/websearch.py "your search query"
+
+# Search specific engines
+WEBSEARCH_ENGINES=brave,google python scripts/websearch.py "query"
+```
+
+Output is JSON: `[{"engine": "brave", "query": "...", "ai_overview": "...", "search_results": [{"title": "...", "url": "...", "snippet": "..."}]}]`
+
+Env vars: `STEALTHY_AUTO_BROWSE_URL`, `WEBSEARCH_ENGINES` (default: `brave,google,bing`), `AUTH_TOKEN`, `USER_AGENT`.
+
+In cluster mode, each engine gets its own browser instance for true parallelism. In single mode, requests serialize via the request lock.
 
 ## Tips
 
