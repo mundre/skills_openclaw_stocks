@@ -1,6 +1,6 @@
 ---
 name: content-quality-auditor
-description: 'Publish-readiness gate: 80-item CORE-EEAT audit with weighted scoring, veto checks, and fix plan. 内容质量/EEAT评分'
+description: 'SEO content quality auditor: 80-item CORE-EEAT publish-readiness audit with weighted scoring, veto checks, and prioritized fix plan for search rankings. Part of a 20-skill SEO & GEO suite. 内容质量/EEAT评分/内容评估/内容可信度/发布审核'
 version: "6.0.0"
 license: Apache-2.0
 allowed-tools: WebFetch
@@ -68,16 +68,11 @@ metadata:
 
 # Content Quality Auditor
 
-> Based on [CORE-EEAT Content Benchmark](https://github.com/aaron-he-zhu/core-eeat-content-benchmark). Full benchmark reference: [references/core-eeat-benchmark.md](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/core-eeat-benchmark.md)
+**Stop publishing content that underperforms.** This skill runs a rigorous 80-item CORE-EEAT audit across 8 dimensions — giving you a clear publish/fix/block verdict, weighted scores by content type, and a prioritized action plan so you know exactly what to improve before hitting publish.
 
+**How to start**: `Audit the quality of [URL]` — get an 80-item scored report, a publish/fix/block verdict, and a ranked fix list with the 5 highest-impact improvements.
 
-> **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
-> **System Mode**: This cross-cutting skill is part of the protocol layer and follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
-
-
-This skill evaluates content quality across 80 standardized criteria organized in 8 dimensions. It produces a comprehensive audit report with per-item scoring, dimension and system scores, weighted totals by content type, and a prioritized action plan.
-
-**System role**: Publish Readiness Gate. It decides whether content is ready to ship, what blocks publication, and what should be promoted into durable project memory.
+> Based on [CORE-EEAT Content Benchmark](https://github.com/aaron-he-zhu/core-eeat-content-benchmark) · **Part of the [SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
 
 ## When This Must Trigger
 
@@ -401,3 +396,14 @@ See [references/item-reference.md](https://github.com/aaron-he-zhu/seo-geo-claud
 ## Next Best Skill
 
 - **Primary**: [content-refresher](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/optimize/content-refresher/SKILL.md) — turn failed checks into a concrete rewrite plan.
+
+## Related Skills
+
+> Part of the [SEO & GEO Skills Suite](https://github.com/aaron-he-zhu/seo-geo-claude-skills) — 20 specialized skills for search optimization.
+
+| Need | Skill |
+|------|-------|
+| Rewrite weak content based on audit results | `content-refresher` |
+| Evaluate domain-level trust and authority | `domain-authority-auditor` |
+| Write new SEO + GEO optimized content | `seo-content-writer` |
+| Optimize content for AI engine citations | `geo-content-optimizer` |
