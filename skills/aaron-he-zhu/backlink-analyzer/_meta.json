@@ -1,13 +1,18 @@
 {
   "owner": "aaron-he-zhu",
   "slug": "backlink-analyzer",
-  "displayName": "Backlink Analyzer",
+  "displayName": "SEO Backlink Analyzer & Link Auditor",
   "latest": {
-    "version": "6.2.0",
-    "publishedAt": 1775113077543,
-    "commit": "https://github.com/openclaw/skills/commit/149e1d0c4de559529f6178436998b1a4cc5f7f5b"
+    "version": "7.2.0",
+    "publishedAt": 1775475045521,
+    "commit": null
   },
   "history": [
+    {
+      "version": "6.2.0",
+      "publishedAt": 1775113077543,
+      "commit": "https://github.com/openclaw/skills/commit/149e1d0c4de559529f6178436998b1a4cc5f7f5b"
+    },
     {
       "version": "4.0.0",
       "publishedAt": 1774347743231,

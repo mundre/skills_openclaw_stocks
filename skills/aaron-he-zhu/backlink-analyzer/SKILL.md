@@ -1,6 +1,6 @@
 ---
 name: backlink-analyzer
-description: 'Analyze backlink profiles: link authority, toxic links, building opportunities, competitor link gaps. 外链分析/反向链接'
+description: 'SEO backlink analyzer: audit link profiles for authority, toxic links, link building opportunities, and competitor backlink gaps. Part of a 20-skill SEO & GEO workflow suite. 外链分析/反向链接/外链建设/链接建设/链接审计'
 version: "6.0.0"
 license: Apache-2.0
 compatibility: "Claude Code ≥1.0, skills.sh marketplace, ClawHub marketplace, Vercel Labs skills ecosystem. No system packages required. Optional: MCP network access for SEO tool integrations."
@@ -79,14 +79,13 @@ metadata:
 
 # Backlink Analyzer
 
+**Audit your link profile, find toxic links, and uncover competitor backlink opportunities** — this skill evaluates the authority and quality of every referring domain, generates a disavow file for harmful links, and surfaces high-DA link building prospects your competitors already have.
 
-> **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
-> **System Mode**: This monitoring skill follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
-
-
-Analyzes, monitors, and optimizes backlink profiles. Identifies link quality, discovers opportunities, and tracks competitor link building activities.
+**How to start**: `Analyze backlink profile for [domain]` or `Find link building opportunities by analyzing [competitor domains]`
 
 **System role**: Monitoring layer skill. It turns performance changes into deltas, alerts, and next actions.
+
+> **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
 
 ## When This Must Trigger
 
@@ -299,3 +298,15 @@ If any findings should influence ongoing strategy, recommend promoting key concl
 ## Next Best Skill
 
 - **Primary**: [domain-authority-auditor](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/cross-cutting/domain-authority-auditor/SKILL.md) — translate link findings into a domain-level trust view.
+
+## Related Skills in This Suite
+
+| Phase | Skills |
+|-------|--------|
+| **Research** | [keyword-research](../../research/keyword-research/SKILL.md), [competitor-analysis](../../research/competitor-analysis/SKILL.md), [serp-analysis](../../research/serp-analysis/SKILL.md), [content-gap-analysis](../../research/content-gap-analysis/SKILL.md) |
+| **Build** | [seo-content-writer](../../build/seo-content-writer/SKILL.md), [geo-content-optimizer](../../build/geo-content-optimizer/SKILL.md), [meta-tags-optimizer](../../build/meta-tags-optimizer/SKILL.md), [schema-markup-generator](../../build/schema-markup-generator/SKILL.md) |
+| **Optimize** | [on-page-seo-auditor](../../optimize/on-page-seo-auditor/SKILL.md), [technical-seo-checker](../../optimize/technical-seo-checker/SKILL.md), [internal-linking-optimizer](../../optimize/internal-linking-optimizer/SKILL.md), [content-refresher](../../optimize/content-refresher/SKILL.md) |
+| **Monitor** | [rank-tracker](../rank-tracker/SKILL.md), [backlink-analyzer](../backlink-analyzer/SKILL.md), [performance-reporter](../performance-reporter/SKILL.md), [alert-manager](../alert-manager/SKILL.md) |
+| **Cross-cutting** | [content-quality-auditor](../../cross-cutting/content-quality-auditor/SKILL.md), [domain-authority-auditor](../../cross-cutting/domain-authority-auditor/SKILL.md), [entity-optimizer](../../cross-cutting/entity-optimizer/SKILL.md), [memory-management](../../cross-cutting/memory-management/SKILL.md) |
+
+> **Install the full suite**: See [README](https://github.com/aaron-he-zhu/seo-geo-claude-skills) for one-command install of all 20 skills.
