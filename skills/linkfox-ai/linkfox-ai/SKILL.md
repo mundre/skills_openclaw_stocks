@@ -1,12 +1,12 @@
 ---
 name: linkfoxai
-description: "调用 LinkFox AI 开放平台 AI 作图/视频 API（换模特、抠图、扩图、场景裂变、智能修图、套图、姿势裂变、带货口播等）。适用场景：(1) AI 任务创建与结果轮询，(2) 通过 api-call 调用任意开放平台接口，(3) 素材连通性测试。"
+description: "调用 LinkFox AI 开放平台 AI 作图/视频 API（换模特、抠图、扩图、场景裂变、智能修图、套图、姿势裂变、带货口播、图转视频等）。适用场景：(1) AI 任务创建与结果轮询，(2) 通过 api-call 调用任意开放平台接口，(3) 素材连通性测试。"
 metadata: {"clawdbot":{"emoji":"🦊","requires":{"env":["LINKFOXAI_API_KEY"]}}}
 ---
 
 # LinkFoxAI - LinkFox AI 开放平台 Skill
 
-LinkFoxAI 让 OpenClaw 调用 LinkFox AI 开放平台 AI 作图/视频能力：换模特、自动抠图、场景裂变、智能扩图、高清放大、消除笔、智能修图、商品套图、服装套图、姿势裂变、带货口播等。
+LinkFoxAI 让 OpenClaw 调用 LinkFox AI 开放平台 AI 作图/视频能力：换模特、自动抠图、场景裂变、智能扩图、高清放大、消除笔、智能修图、商品套图、服装套图、姿势裂变、带货口播、图转视频等。
 
 ## 配置
 
@@ -103,9 +103,10 @@ sessions_spawn:
 | `scene-fission --image-url <url> [--strength 0.5] [--prompt "描述"] [--provider SCENE_FISSION_REALISTIC]` | 场景裂变 |
 | `expand-image --image-url <url> --width 1024 --height 1024 [--prompt "描述"]` | 智能扩图 |
 | `super-resolution --image-url <url> --magnification 2 [--enhance]` | 图片高清放大 |
-| `image-edit --image-url <url> --prompt "描述" [--provider BANANA_PRO] [--template 白底图]` | 智能修图 |
+| `image-edit --image-url <url> --prompt "描述" [--provider BANANA_PRO/WAN2_7/SEEDREAM5] [--template 白底图]` | 智能修图 |
 | `erase --image-url <url> --mask-url <url>` | 消除笔 |
-| `sales-video --prompt "口播文案" --video-type WAN [--image-list <url1> <url2>] [--video-time 10] [--aspect-ratio 9:16]` | 带货口播（WAN: 10/15秒） |
+| `sales-video --prompt "口播文案" --video-type WAN\|SEED [--image-list <url1> <url2>] [--video-time 10] [--aspect-ratio 9:16] [--is-pro]` | 带货口播（WAN: 10/15秒, SEED: 5/10/15秒） |
+| `image-to-video --image-url <url> --video-type SEED [--prompt "描述"] [--video-time 10] [--is-pro] [--aspect-ratio 9:16]` | 图转视频（KLING/V/WAN/SEED/HAILUO） |
 
 所有作图快捷命令均支持 `--wait [--timeout 300] [--interval 3]`，提交任务后自动轮询直到完成。
 
@@ -140,6 +141,7 @@ sessions_spawn:
 | 服装套图 | `/linkfox-ai/image/v2/make/wearCollectionV2` |
 | 姿势裂变 | `/linkfox-ai/image/v2/make/modelPoseFission` |
 | 带货口播 | `/linkfox-ai/image/v2/make/salesVideo` |
+| 图转视频 | `/linkfox-ai/image/v2/make/imageToVideo` |
 
 ## 连通性测试
 
@@ -171,4 +173,6 @@ sessions_spawn:
 3. **自动抠图**：「用 LinkFoxAI 把这张图抠图」→ `cutout --wait --sub-type 1`
 4. **智能修图**：「用 LinkFoxAI 把这张图改成白底图」→ `image-edit --wait --prompt "白底图" --template 白底图`（高质量：加 `--provider BANANA_PRO`）
 5. **带货口播**：「用 LinkFoxAI 生成一条 10 秒带货口播视频，竖版」→ `sales-video --wait --video-type WAN --video-time 10 --aspect-ratio 9:16 --prompt "..."`
-6. **通用调用**：「用 LinkFoxAI 做 AI 穿衣」→ `api-call --path /linkfox-ai/image/v2/make/fittingRoom --body '{...}'` + `poll --id <id>`
+6. **带货口播(SEED)**：「用 LinkFoxAI 生成一条 SEED 15 秒口播视频」→ `sales-video --wait --video-type SEED --video-time 15 --prompt "..."`
+7. **图转视频**：「用 LinkFoxAI 把这张图生成 SEED 视频」→ `image-to-video --wait --image-url <url> --video-type SEED --video-time 10`
+8. **通用调用**：「用 LinkFoxAI 做 AI 穿衣」→ `api-call --path /linkfox-ai/image/v2/make/fittingRoom --body '{...}'` + `poll --id <id>`

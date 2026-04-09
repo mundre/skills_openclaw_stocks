@@ -17,7 +17,8 @@ Commands:
     super-resolution --image-url <url> --magnification 2         # 高清放大
     image-edit      --image-url <url> --prompt "描述"             # 智能修图
     erase           --image-url <url> --mask-url <url>           # 消除笔
-    sales-video     --prompt "文案" --video-type WAN             # 带货口播
+    sales-video     --prompt "文案" --video-type WAN|SEED         # 带货口播
+    image-to-video  --image-url <url> --video-type SEED          # 图转视频
     refresh         --id <image_id> [--format jpg]               # 刷新结果图片地址
     api-call        --path /linkfox-ai/... --body '{...}'        # 通用 API 调用
 """
@@ -286,9 +287,40 @@ def cmd_sales_video(
         body["imageList"] = image_list
     if video_time is not None:
         body["videoTime"] = video_time
+    if is_pro:
+        body["isPro"] = True
     if aspect_ratio:
         body["aspectRatio"] = aspect_ratio
     return api_post(f"{PATH_PREFIX}/image/v2/make/salesVideo", body)
+
+
+def cmd_image_to_video(
+    image_url: str,
+    video_type: str,
+    prompt: str = None,
+    video_time: int = None,
+    is_pro: bool = False,
+    aspect_ratio: str = None,
+    last_frame_image_url: str = None,
+    camera: str = None,
+    prompt_optimizer: int = 0,
+) -> dict:
+    body = {"imageUrl": image_url, "videoType": video_type}
+    if prompt:
+        body["prompt"] = prompt
+    if video_time is not None:
+        body["videoTime"] = video_time
+    if is_pro:
+        body["isPro"] = True
+    if aspect_ratio:
+        body["aspectRatio"] = aspect_ratio
+    if last_frame_image_url:
+        body["lastFrameImageUrl"] = last_frame_image_url
+    if camera:
+        body["camera"] = camera
+    if prompt_optimizer:
+        body["promptOptimizer"] = prompt_optimizer
+    return api_post("/linkfox-ai/image/v2/make/imageToVideo", body)
 
 
 def cmd_api_call(path: str, body_str: str) -> dict:
@@ -382,7 +414,7 @@ def build_parser():
     p = sub.add_parser("image-edit", help="智能修图")
     p.add_argument("--image-url", required=True)
     p.add_argument("--prompt", required=True)
-    p.add_argument("--provider", default="BANANA_2", help="BANANA/BANANA_2/BANANA_PRO")
+    p.add_argument("--provider", default="BANANA_2", help="BANANA/BANANA_2/BANANA_PRO/WAN2_7/SEEDREAM5")
     p.add_argument("--output-num", type=int, default=1)
     p.add_argument("--template", default=None)
     p.add_argument("--resolution", default=None, help="1K/2K/4K")
@@ -409,11 +441,26 @@ def build_parser():
     # sales-video
     p = sub.add_parser("sales-video", help="带货口播")
     p.add_argument("--prompt", required=True, help="口播脚本/提示词")
-    p.add_argument("--video-type", required=True, choices=["WAN"], help="模型类型")
+    p.add_argument("--video-type", required=True, choices=["WAN", "SEED"], help="模型类型：WAN/SEED")
     p.add_argument("--image-list", nargs="+", default=None, help="参考图 URL 列表，空格分隔")
-    p.add_argument("--video-time", type=int, default=None, help="视频时长（秒）")
+    p.add_argument("--video-time", type=int, default=None, help="视频时长（秒）：WAN 10/15, SEED 5/10/15")
     p.add_argument("--is-pro", action="store_true", help="开启高质量模式")
     p.add_argument("--aspect-ratio", default=None, help="16:9/9:16/1:1")
+    p.add_argument("--wait", action="store_true", help="提交后自动轮询结果")
+    p.add_argument("--timeout", type=int, default=300)
+    p.add_argument("--interval", type=int, default=3)
+
+    # image-to-video
+    p = sub.add_parser("image-to-video", help="图转视频")
+    p.add_argument("--image-url", required=True, help="原图地址")
+    p.add_argument("--video-type", required=True, choices=["KLING", "V", "WAN", "SEED", "HAILUO"], help="模型类型")
+    p.add_argument("--prompt", default=None, help="视频提示词")
+    p.add_argument("--video-time", type=int, default=None, help="视频时长（秒）：SEED 5/10/15, KLING 5/10 等")
+    p.add_argument("--is-pro", action="store_true", help="开启高质量/Pro模式")
+    p.add_argument("--aspect-ratio", default=None, help="16:9/9:16/1:1")
+    p.add_argument("--last-frame-image-url", default=None, help="尾帧图地址")
+    p.add_argument("--camera", default=None, help="运镜参数")
+    p.add_argument("--prompt-optimizer", type=int, default=0, choices=[0, 1], help="提示词优化：0=否 1=是")
     p.add_argument("--wait", action="store_true", help="提交后自动轮询结果")
     p.add_argument("--timeout", type=int, default=300)
     p.add_argument("--interval", type=int, default=3)
@@ -435,7 +482,12 @@ def maybe_poll(resp: dict, args) -> dict:
     data = resp.get("data", resp)
     if isinstance(data, dict) and "data" in data:
         data = data["data"]
-    task_id = data.get("id") if isinstance(data, dict) else None
+    if isinstance(data, dict):
+        task_id = data.get("id")
+    elif isinstance(data, (str, int)):
+        task_id = data
+    else:
+        task_id = None
     if not task_id:
         return resp
     print(f"[wait] Task created: {task_id}, polling...", file=sys.stderr)
@@ -493,6 +545,21 @@ def main():
                 args.video_time,
                 args.is_pro,
                 args.aspect_ratio,
+            ),
+            args,
+        )
+    elif args.command == "image-to-video":
+        out = maybe_poll(
+            cmd_image_to_video(
+                args.image_url,
+                args.video_type,
+                args.prompt,
+                args.video_time,
+                args.is_pro,
+                args.aspect_ratio,
+                args.last_frame_image_url,
+                args.camera,
+                args.prompt_optimizer,
             ),
             args,
         )

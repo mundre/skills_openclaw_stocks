@@ -560,11 +560,11 @@
 |------|------|------|------|
 | imageUrl | 原图。支持 jpg/jpeg/png/webp；尺寸 300x300 ~ 4096x4096；宽高比 0.4 ~ 2.5 | 是 | string |
 | prompt | 提示词 | 是 | string |
-| provider | 模型：BANANA / BANANA_2 / BANANA_PRO | 是 | string |
+| provider | 模型：BANANA / BANANA_2 / BANANA_PRO / WAN2_7 / SEEDREAM5 | 是 | string |
 | outputNum | 输出张数 [1,4]，默认 1 | 否 | integer |
-| resolution | 分辨率：1K / 2K / 4K。BANANA_PRO 默认 2K，其余默认 1K | 否 | string |
-| aspectRatio | 比例，如 1:1、16:9、9:16 | 否 | string |
-| supplyType | 供应模式：eco（经济）/ stable（稳定，默认） | 否 | string |
+| resolution | 分辨率：1K / 2K / 4K。BANANA_PRO 默认 2K，其余默认 1K。WAN2_7不支持 4K / SEEDREAM5 不支持 1K、4K | 否 | string |
+| aspectRatio | 可选：1:1、3:4、4:3、4:5、5:4、16:9、9:16、2:3、3:2、21:9（SEEDREAM5 不支持 4:5 / 5:4） | 否 | string |
+| supplyType | 供应模式：eco（经济）/ stable（稳定，默认）。仅 BANANA 系列生效 | 否 | string |
 | needOptimize | 是否提示词优化：true/false | 否 | boolean |
 | template | 提示词模板名称（模板中的 provider、needOptimize 优先级更高） | 否 | string |
 
@@ -580,14 +580,14 @@
 
 | 参数 | 说明 | 必填 | 类型 |
 |------|------|------|------|
-| imageList | 图片列表。支持 jpg/jpeg/png/webp（10M 以内），最小 800x800，最大 4096x4096 | 是 | array[string] |
-| provider | 模型：BANANA / BANANA_2 / BANANA_PRO | 是 | string |
+| imageList | 图片列表。支持 jpg/jpeg/png/webp（10M 以内），最小 800x800，最大 4096x4096。限制:BANANA<=3张、WAN2_7 <=4张、其余<=6张 | 是 | array[string] |
+| provider | 模型：BANANA / BANANA_2 / BANANA_PRO / WAN2_7 / SEEDREAM5 | 是 | string |
 | prompt | 强化内容描述（100 字以内） | 否 | string |
 | outputNum | 输出张数，默认 1 | 否 | integer |
-| resolution | 分辨率：1K / 2K / 4K | 否 | string |
-| aspectRatio | 比例，如 1:1、16:9、9:16 | 否 | string |
-| supplyType | 供应模式：eco（经济）/ stable（稳定，默认） | 否 | string |
-| needOptimize | 是否提示词优化：true/false | 否 | boolean |
+| resolution | 分辨率：1K / 2K / 4K。BANANA_PRO 默认 2K，其余默认 1K。WAN2_7不支持 4K / SEEDREAM5 不支持 1K、4K | 否 | string |
+| aspectRatio | 可选：1:1、3:4、4:3、4:5、5:4、16:9、9:16、2:3、3:2、21:9（SEEDREAM5 不支持 4:5 / 5:4） | 否 | string |
+| supplyType | 供应模式：eco（经济）/ stable（稳定，默认）。仅 BANANA 系列生效 | 否 | string |
+| needOptimize | 是否提示词优化：true/false。仅 BANANA_PRO 支持 | 否 | boolean |
 | template | 提示词模板名称（模板中的 provider、needOptimize 优先级更高） | 否 | string |
 
 ---
@@ -605,7 +605,20 @@
 - 各类型数量（aPlusNum/sellerTypeNum/sceneTypeNum 等）单项最大 8。
 - aPlusStyles/pointStyles 传入时，数量需与目标生成数量一致。
 - brandKey 为 JSON 对象，总长度不超过 1000 字符。
-- 结果通过获取作图结果接口轮询，`resultList[].extendField.type` 标识图片类型（APlusNormal/APlusPro/APlusHasPhone/sellPoint/scene/closeUp/closeUpWhite/whiteBg）。
+- 结果通过获取作图结果接口轮询，`resultList[].extendField.type` 标识图片类型，参见下方「参数→输出 type 映射」。
+
+**参数→输出 type 映射：**
+
+| 参数 | 生成内容 | `extendField.type` |
+|------|----------|---------------------|
+| aPlusNum | 普通 A+ 排版图 | APlusNormal |
+| aPlusProNum | 高级 A+ 排版图 | APlusPro |
+| aPlusHasPhone | 手机版 A+（基于高级 A+ 结果） | APlusHasPhone |
+| sellerTypeNum | 卖点图 | sellPoint |
+| sceneTypeNum | 场景图 | scene |
+| closeUpTypeNum | 特写图 | closeUp |
+| closeUpWhiteTypeNum | 白底特写图 | closeUpWhite |
+| whiteBgTypeNum | 白底图 | whiteBg |
 
 | 参数 | 说明 | 必填 | 类型 |
 |------|------|------|------|
@@ -641,7 +654,22 @@
 **注意**：
 - imageList 最多 5 张，最小 384x384，最大 4096x4096，10M 以内。
 - sellerPoint 建议包含面料、卖点、目标人群、使用场景、尺码等信息，有助于提升结果质量。
-- 结果通过获取作图结果接口轮询，`resultList[].extendField.type` 标识类型（APlusNormal/APlusPro/APlusHasPhone/scene/point/ins/size/white）。
+- 结果通过获取作图结果接口轮询，`resultList[].extendField.type` 标识图片类型，参见下方「参数→输出 type 映射」。
+
+**参数→输出 type 映射：**
+
+| 参数 | 生成内容 | `extendField.type` |
+|------|----------|---------------------|
+| aPlusNum | 普通 A+ 排版图 | APlusNormal |
+| aPlusProNum | 高级 A+ 排版图 | APlusPro |
+| aPlusHasPhone | 手机版 A+（基于高级 A+ 结果） | APlusHasPhone |
+| modelTypeNum | **模特+场景合成图**（非纯模特图） | **scene** |
+| insTypeNum | 种草图 | ins |
+| sellerTypeNum | 卖点图 | point |
+| sizeTypeNum | 尺码图 | size |
+| whiteTypeNum | 白底图 | white |
+
+> **⚠️ 特别说明**：`modelTypeNum` 生成的是**模特穿上服装并置于场景中的合成图**，输出 type 为 `scene`，而非 `model`。命名虽含 "model"，但产出是模特+场景的完整合成结果。
 
 | 参数 | 说明 | 必填 | 类型 |
 |------|------|------|------|
@@ -653,11 +681,11 @@
 | aPlusHasPhone | 是否生成手机版 A+，默认 false | 否 | boolean |
 | aPlusAspectRatio | A+ 宽高比 | 否 | string |
 | aPlusStyles | A+ 排版列表（id 或 prompt） | 否 | List |
-| modelTypeNum | 模特图数量，默认 0，最大 8 | 否 | integer |
-| modelImageUrl | 模特参考图，未设置时启动智能模式 | 否 | string |
-| sceneImageUrl | 场景参考图，未设置时启动智能模式 | 否 | string |
-| isExactScene | 场景裂变模式：true=遵循背景（默认），false=相似裂变 | 否 | boolean |
-| modelAndSceneInfo | 描述想要的场景内容和模特特征 | 否 | string |
+| modelTypeNum | **模特+场景合成图**数量（输出 type=`scene`），默认 0，最大 8 | 否 | integer |
+| ↳ modelImageUrl | 模特参考图，未设置时启动智能模式。**仅 modelTypeNum > 0 时生效** | 否 | string |
+| ↳ sceneImageUrl | 场景参考图，未设置时启动智能模式。**仅 modelTypeNum > 0 时生效** | 否 | string |
+| ↳ isExactScene | 场景裂变模式：true=遵循背景（默认），false=相似裂变。**仅 modelTypeNum > 0 时生效** | 否 | boolean |
+| ↳ modelAndSceneInfo | 描述想要的场景内容和模特特征。**仅 modelTypeNum > 0 时生效** | 否 | string |
 | insTypeNum | 种草图数量，默认 0，最大 8 | 否 | integer |
 | sellerTypeNum | 卖点图数量，默认 0，最大 8 | 否 | integer |
 | isExtractPrePoint | 是否自动分析卖点，默认 false | 否 | boolean |
@@ -687,7 +715,7 @@
 
 ## 三十七、带货口播
 
-**路径**：`/openApi/v2/imageMake/salesVideo`
+**路径**：`/linkfox-ai/image/v2/make/salesVideo`
 
 **注意**：
 - 该接口返回任务 ID（`taskId`），需继续轮询「获取作图结果」接口查询最终资源。
@@ -697,8 +725,30 @@
 | 参数 | 说明 | 必填 | 类型 |
 |------|------|------|------|
 | prompt | 口播脚本/提示词 | 是 | string |
-| imageList | 参考图 URL 列表（建议 1~5 张） | 否 | array[string] |
-| videoType | 模型类型：WAN | 是 | string |
-| videoTime | 视频时长（秒） | 否 | number |
+| imageList | 参考图 URL 列表（建议 1~6 张） | 否 | array[string] |
+| videoType | 模型类型：WAN / SEED（seed = seedance） | 是 | string |
+| videoTime | 视频时长（秒）。WAN: 10/15秒；SEED: 5/10/15秒 | 否 | number |
 | isPro | 是否开启高质量模式 | 否 | boolean |
 | aspectRatio | 视频比例：16:9 / 9:16 / 1:1 | 否 | string |
+
+---
+
+## 三十八、图转视频
+
+**路径**：`/linkfox-ai/image/v2/make/imageToVideo`
+
+**注意**：
+- 该接口返回任务 ID（`taskId`），需继续轮询「获取作图结果」接口查询最终视频地址。
+- 不同模型支持的时长不同，SEED 支持 5/10/15 秒。
+
+| 参数 | 说明 | 必填 | 类型 |
+|------|------|------|------|
+| imageUrl | 原图地址。格式：jpg/jpeg/png/webp | 是 | string |
+| prompt | 视频提示词 | 否 | string |
+| promptOptimizer | 是否开启提示词优化：0=否，1=是，默认 0 | 否 | number |
+| videoType | 模型类型：KLING（可灵）/ V（VIGGLE）/ HAILUO（海螺）/ WAN / SEED | 是 | string |
+| videoTime | 视频时长（秒）。SEED: 5/10/15秒 | 否 | number |
+| isPro | 是否开启高质量/Pro 模式 | 否 | boolean |
+| lastFrameImageUrl | 尾帧图地址 | 否 | string |
+| aspectRatio | 视频比例：16:9 / 9:16 / 1:1 | 否 | string |
+| camera | 运镜参数 | 否 | string |
