@@ -1,0 +1,11 @@
+ROUND: 1
+MODE: skill-review
+DECISION: take
+NEXT_ACTION: resume full flow from RESUME_SNIPPET if user asks
+RESUME_SNIPPET: |
+  ROUND: 1
+  TOPIC: dual-thinking-shortcut
+  MODE: skill-review
+  SESSION: dt-dual-thinking-shortcut-20260409-local
+  LAST_CONSULTANT: local
+  NEXT_ACTION: resume full flow from RESUME_SNIPPET if user asks
