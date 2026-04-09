@@ -1,0 +1,11 @@
+{
+  "owner": "austindixson",
+  "slug": "dacker",
+  "displayName": "Docker",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1771812628882,
+    "commit": null
+  },
+  "history": []
+}
