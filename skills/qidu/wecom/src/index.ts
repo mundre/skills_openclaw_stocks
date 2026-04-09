@@ -121,6 +121,47 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
+  if (name === "send_wecom_markdown_v2") {
+    const content = args?.content as string;
+
+    if (!content) {
+      throw new Error("content is required");
+    }
+
+    try {
+      const response = await axios.post(
+        WECOM_WEBHOOK_URL,
+        {
+          msgtype: "markdown_v2",
+          markdown_v2: {
+            content,
+          },
+        },
+        {
+          timeout: WECOM_TIMEOUT_MS,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data?.errcode !== 0 && response.data?.errcode !== undefined) {
+        throw new Error(`WeCom API error: ${response.data.errmsg}`);
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Markdown v2 message sent to WeCom successfully",
+          },
+        ],
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to send WeCom markdown_v2: ${error.message}`);
+    }
+  }
+
   throw new Error(`Unknown tool: ${name}`);
 });
 
@@ -158,6 +199,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             content: {
               type: "string",
               description: "Markdown content to send",
+            },
+          },
+          required: ["content"],
+        },
+      },
+      {
+        name: "send_wecom_markdown_v2",
+        description: "Send a markdown_v2 message to WeCom via webhook. Supports tables, nested blockquotes, code blocks, headers H1-H3, and all markdown_v2 features.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            content: {
+              type: "string",
+              description: "Markdown v2 content to send",
             },
           },
           required: ["content"],

@@ -43,7 +43,7 @@ Add to your `~/.config/claude_code/mcp.json`:
 }
 ```
 
-Then restart Claude Code. You'll have two new tools:
+Then restart Claude Code. You'll have three new tools:
 
 # Tools
 
@@ -62,28 +62,57 @@ await send_wecom_message({
 });
 ```
 
-## `send_wecom_markdown`
+## `send_wecom_markdown_v2`
 
-Send a markdown message (WeCom flavor).
+Send a markdown_v2 message to WeCom. **Recommended** — supports tables, code blocks, nested blockquotes, H1-H3 headers, and all standard markdown.
 
 ```bash
-await send_wecom_markdown({
-  content: `# Daily Report
-  
-**Completed:**
-- Task A
-- Task B
+await send_wecom_markdown_v2({
+  content: `# Annual Report
 
-**Pending:**
-- Task C
+## Revenue by Quarter
+| Quarter | Revenue | Growth |
+| :---- | -----: | ----: |
+| Q1 | ¥1.2M | +15% |
+| Q2 | ¥1.8M | +50% |
+| Q3 | ¥2.1M | +17% |
 
-<@zhangsan>`
+## Notes
+> Key insight: mobile revenue grew 80%
+>
+>> Detail: driven by short video ads
+>
+>> Another point: new user acquisition cost down 30%
+
+## Code Example
+\`\`\`python
+def hello():
+    print("Hello WeCom!")
+\`\`\`
+
+---
+
+More info [here](https://work.weixin.qq.com/api/doc)`
 });
 ```
 
-# WeCom Markdown Tags
+# WeCom Markdown v2 Features
 
-WeCom supports:
+markdown_v2 supports everything the original markdown supports, **plus**:
+
+| Feature | Syntax | Example |
+|---------|--------|----------|
+| Tables | `\| col \| col \|` with `\| :--- \| -----: \|` | Supported with alignment |
+| Nested blockquotes | `>>>` or `>>` | Up to 3 levels |
+| H1/H2/H3 | `#` `##` `###` | Three heading levels |
+| Code blocks | `\`code\`` and `\`\`\`lang` | Inline and multi-line |
+| Horizontal rule | `---` | Dividers |
+| Links | `[text](url)` | Standard markdown |
+| Images | `![alt](url)` | Direct URL |
+
+# WeCom Markdown (v1) Tags
+
+The original `send_wecom_markdown` supports these limited tags:
 
 | Feature | Syntax |
 |---------|--------|
@@ -95,6 +124,8 @@ WeCom supports:
 | Image | `<img src="url" />` |
 | Font size | `<font size="5">text</font>` |
 | Color | `<font color="#FF0000">text</font>` |
+
+⚠️ **v1 does NOT support tables, code blocks, or H1-H3 headers.** Use `send_wecom_markdown_v2` when you need those.
 
 # Environment Variables
 

@@ -1,13 +1,18 @@
 {
   "owner": "qidu",
   "slug": "wecom",
-  "displayName": "WeCom",
+  "displayName": "Wecom",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1772510056571,
-    "commit": "https://github.com/openclaw/skills/commit/7286cf4fb1c46044c725f32a2895c36e7a637075"
+    "version": "1.0.3",
+    "publishedAt": 1775542997860,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1772510056571,
+      "commit": "https://github.com/openclaw/skills/commit/7286cf4fb1c46044c725f32a2895c36e7a637075"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1769648402810,
