@@ -1,0 +1,11 @@
+{
+  "owner": "lbs-bmap",
+  "slug": "baidu-map-harmonyos-sdk",
+  "displayName": "Baidu Map Harmonyos SDK（百度地图官方鸿蒙 SKills）",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1775534846451,
+    "commit": null
+  },
+  "history": []
+}
