@@ -41,7 +41,13 @@ const PACKAGE_VERSION: string = (() => {
     const pkg = JSON.parse(readFileSync(join(__dirname_local, "package.json"), "utf-8")) as { version: string };
     return pkg.version;
   } catch {
-    return "0.0.0"; // fallback — should never happen in normal operation
+    // Second attempt: try openclaw.plugin.json (always co-located)
+    try {
+      const manifest = JSON.parse(readFileSync(join(__dirname_local, "openclaw.plugin.json"), "utf-8")) as { version: string };
+      return manifest.version;
+    } catch {
+      return "unknown"; // should never happen — both files are always present
+    }
   }
 })();
 import type {
@@ -62,6 +68,18 @@ import {
 import { importCodexAuth } from "./src/codex-auth-import.js";
 import { startProxyServer } from "./src/proxy-server.js";
 import { patchOpencllawConfig } from "./src/config-patcher.js";
+import {
+  DEFAULT_PROXY_PORT,
+  DEFAULT_PROXY_API_KEY,
+  DEFAULT_PROXY_TIMEOUT_MS,
+  DEFAULT_MODEL_TIMEOUTS,
+  DEFAULT_MODEL_FALLBACKS,
+  STATE_FILE as CONFIG_STATE_FILE,
+  PENDING_FILE as CONFIG_PENDING_FILE,
+  OPENCLAW_DIR,
+  CLI_TEST_DEFAULT_MODEL as CONFIG_CLI_TEST_DEFAULT_MODEL,
+  PROFILE_DIRS,
+} from "./src/config.js";
 import {
   loadSession,
   deleteSession,
@@ -98,6 +116,7 @@ interface CliPluginConfig {
   proxyPort?: number;
   proxyApiKey?: string;
   proxyTimeoutMs?: number;
+  modelTimeouts?: Record<string, number>;
   grokSessionPath?: string;
 }
 
@@ -108,11 +127,11 @@ interface CliPluginConfig {
 let grokBrowser: Browser | null = null;
 let grokContext: BrowserContext | null = null;
 
-// Persistent profile dirs — survive gateway restarts, keep cookies intact
-const GROK_PROFILE_DIR = join(homedir(), ".openclaw", "grok-profile");
-const GEMINI_PROFILE_DIR = join(homedir(), ".openclaw", "gemini-profile");
-const CLAUDE_PROFILE_DIR = join(homedir(), ".openclaw", "claude-profile");
-const CHATGPT_PROFILE_DIR = join(homedir(), ".openclaw", "chatgpt-profile");
+// Persistent profile dirs — imported from config.ts
+const GROK_PROFILE_DIR = PROFILE_DIRS.grok;
+const GEMINI_PROFILE_DIR = PROFILE_DIRS.gemini;
+const CLAUDE_PROFILE_DIR = PROFILE_DIRS.claude;
+const CHATGPT_PROFILE_DIR = PROFILE_DIRS.chatgpt;
 
 // Stealth launch options — prevent Cloudflare/bot detection from flagging the browser
 const STEALTH_ARGS = [
@@ -239,6 +258,14 @@ let _cdpBrowserLaunchPromise: Promise<import("playwright").BrowserContext | null
 // Startup restore guard — module-level so it survives hot-reloads (SIGUSR1).
 // Set to true after first run; hot-reloads see true and skip the restore loop.
 let _startupRestoreDone = false;
+
+// ── Proxy guards ─────────────────────────────────────────────────────────────
+// register() is called per-agent (~11×) AND on every hot-reload (~60s).
+// All noisy info logs removed. Only warnings/errors remain. These simple
+// module-level booleans are sufficient — probeExisting() handles the real
+// deduplication for the proxy.
+let _proxyStarted = false;
+let _proxyOwnedByThisProcess = false;
 
 // Session keep-alive interval — refreshes browser cookies every 20h
 let _keepAliveInterval: ReturnType<typeof setInterval> | null = null;
@@ -676,14 +703,13 @@ async function tryRestoreGrokSession(
   }
 }
 
-const DEFAULT_PROXY_PORT = 31337;
-const DEFAULT_PROXY_API_KEY = "cli-bridge";
+// DEFAULT_PROXY_PORT, DEFAULT_PROXY_API_KEY imported from config.ts
 
 // ──────────────────────────────────────────────────────────────────────────────
 // State file — persists the model that was active before the last /cli-* switch
 // Located at ~/.openclaw/cli-bridge-state.json (survives gateway restarts)
 // ──────────────────────────────────────────────────────────────────────────────
-const STATE_FILE = join(homedir(), ".openclaw", "cli-bridge-state.json");
+const STATE_FILE = CONFIG_STATE_FILE;
 
 interface CliBridgeState {
   previousModel: string;
@@ -699,7 +725,7 @@ function readState(): CliBridgeState | null {
 
 function writeState(state: CliBridgeState): void {
   try {
-    mkdirSync(join(homedir(), ".openclaw"), { recursive: true });
+    mkdirSync(OPENCLAW_DIR, { recursive: true });
     writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + "\n", "utf8");
   } catch {
     // non-fatal — /cli-back will just report no previous model
@@ -771,7 +797,7 @@ const CLI_MODEL_COMMANDS = [
 ] as const;
 
 /** Default model used by /cli-test when no arg is given */
-const CLI_TEST_DEFAULT_MODEL = "cli-claude/claude-sonnet-4-6";
+const CLI_TEST_DEFAULT_MODEL = CONFIG_CLI_TEST_DEFAULT_MODEL;
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Staged-switch state file
@@ -779,7 +805,7 @@ const CLI_TEST_DEFAULT_MODEL = "cli-claude/claude-sonnet-4-6";
 // Written by /cli-* (default), applied by /cli-apply or /cli-* --now.
 // Located at ~/.openclaw/cli-bridge-pending.json
 // ──────────────────────────────────────────────────────────────────────────────
-const PENDING_FILE = join(homedir(), ".openclaw", "cli-bridge-pending.json");
+const PENDING_FILE = CONFIG_PENDING_FILE;
 
 interface CliBridgePending {
   model: string;
@@ -797,7 +823,7 @@ function readPending(): CliBridgePending | null {
 
 function writePending(pending: CliBridgePending): void {
   try {
-    mkdirSync(join(homedir(), ".openclaw"), { recursive: true });
+    mkdirSync(OPENCLAW_DIR, { recursive: true });
     writeFileSync(PENDING_FILE, JSON.stringify(pending, null, 2) + "\n", "utf8");
   } catch {
     // non-fatal
@@ -979,7 +1005,9 @@ const plugin = {
     const enableProxy = cfg.enableProxy ?? true;
     const port = cfg.proxyPort ?? DEFAULT_PROXY_PORT;
     const apiKey = cfg.proxyApiKey ?? DEFAULT_PROXY_API_KEY;
-    const timeoutMs = cfg.proxyTimeoutMs ?? 120_000;
+    const timeoutMs = cfg.proxyTimeoutMs ?? DEFAULT_PROXY_TIMEOUT_MS;
+    // Per-model timeout overrides — defaults from config.ts, can be extended via plugin config.
+    const modelTimeouts = { ...DEFAULT_MODEL_TIMEOUTS, ...cfg.modelTimeouts };
     const codexAuthPath = cfg.codexAuthPath ?? DEFAULT_CODEX_AUTH_PATH;
     const grokSessionPath = cfg.grokSessionPath ?? DEFAULT_SESSION_PATH;
 
@@ -991,14 +1019,8 @@ const plugin = {
       modelCommands[modelId] = `/${entry.name}`;
     }
 
-    // ── Default model fallback chain ──────────────────────────────────────────
-    // When a primary model fails (timeout, error), retry once with a lighter variant.
-    const modelFallbacks: Record<string, string> = {
-      "cli-gemini/gemini-2.5-pro":       "cli-gemini/gemini-2.5-flash",
-      "cli-gemini/gemini-3-pro-preview":  "cli-gemini/gemini-3-flash-preview",
-      "cli-claude/claude-opus-4-6":       "cli-claude/claude-sonnet-4-6",
-      "cli-claude/claude-sonnet-4-6":     "cli-claude/claude-haiku-4-5",
-    };
+    // ── Default model fallback chain (from config.ts) ──────────────────────────
+    const modelFallbacks = { ...DEFAULT_MODEL_FALLBACKS };
 
     // ── Migrate legacy per-provider cookie expiry files to consolidated store ─
     const migration = migrateLegacyFiles();
@@ -1010,9 +1032,8 @@ const plugin = {
     // Stealth mode uses channel: "chrome" (real system Chrome). If it's missing,
     // browser launches will fail or Cloudflare will block the bundled Chromium.
     const chromeCheck = checkSystemChrome();
-    if (chromeCheck.available) {
-      api.logger.info(`[cli-bridge] system Chrome found: ${chromeCheck.version ?? chromeCheck.path}`);
-    } else {
+    // Chrome warning only — success is silent (logged hundreds of times per minute otherwise)
+    if (!chromeCheck.available) {
       api.logger.warn(
         `[cli-bridge] ⚠ system Chrome not found! Web browser providers (/grok-login, /gemini-login, etc.) ` +
         `require Google Chrome or Chromium installed system-wide. ` +
@@ -1027,7 +1048,13 @@ const plugin = {
     // restore once, on the very first load (when all contexts are null).
     //
     // Guard: _startupRestoreDone is module-level and persists across hot-reloads.
-    if (!_startupRestoreDone) {
+    // IMPORTANT: Only restore sessions when the proxy is enabled (gateway mode).
+    // Short-lived CLI commands (openclaw models status, openclaw doctor, etc.)
+    // must NOT launch 4 Chromium instances — they block the process from exiting.
+    // Only restore browser sessions when this process OWNS the proxy (gateway mode).
+    // Short-lived CLI commands (openclaw models status) reuse an external proxy and
+    // must not launch 4 Chromium instances that block the process from exiting.
+    if (!_startupRestoreDone && _proxyOwnedByThisProcess) {
       _startupRestoreDone = true;
       void (async () => {
         await new Promise(r => setTimeout(r, 5000)); // wait for proxy + gateway to settle
@@ -1260,19 +1287,19 @@ const plugin = {
         },
       });
 
-      api.logger.info("[cli-bridge] openai-codex provider registered");
+      // Provider registration is silent — logged hundreds of times otherwise
 
       // Auto-import Codex CLI credentials into the agent auth store (Issue #2).
       // This ensures `openai-codex/*` models work immediately without manual
       // `openclaw models auth login`. Runs async, non-blocking.
+      // Codex auth import: silent log callback (suppress "already up-to-date" spam)
+      // Only log on actual import or error — not on skip/already-current.
       void importCodexAuth({
         codexAuthPath,
-        log: (msg) => api.logger.info(`[cli-bridge:codex-import] ${msg}`),
+        log: () => {}, // silent — internal "already up-to-date" spam suppressed
       }).then((result) => {
         if (result.imported) {
           api.logger.info("[cli-bridge] Codex auth auto-imported into agent auth store ✅");
-        } else if (result.skipped) {
-          api.logger.info("[cli-bridge] Codex auth already current in agent auth store");
         } else if (result.error) {
           api.logger.warn(`[cli-bridge] Codex auth import failed: ${result.error}`);
         }
@@ -1302,10 +1329,15 @@ const plugin = {
       };
 
       const startProxy = async (): Promise<void> => {
+        // Guard: only the first register() call starts the proxy.
+        // Subsequent per-agent calls AND hot-reloads skip entirely.
+        if (_proxyStarted) return;
+        _proxyStarted = true;
+
         // If a healthy proxy is already up, reuse it — no need to rebind.
         const alive = await probeExisting();
         if (alive) {
-          api.logger.info(`[cli-bridge] proxy already running on :${port} — reusing`);
+          // Silent — this fires on every hot-reload (~60s) and every register() call
           return;
         }
 
@@ -1361,6 +1393,7 @@ const plugin = {
             version: plugin.version,
             modelCommands,
             modelFallbacks,
+            modelTimeouts,
             getExpiryInfo: () => ({
               grok:    (() => { const e = loadGrokExpiry();    return e ? formatExpiryInfo(e)    : null; })(),
               gemini:  (() => { const e = loadGeminiExpiry();  return e ? formatGeminiExpiry(e)  : null; })(),
@@ -1369,9 +1402,31 @@ const plugin = {
             }),
           });
           proxyServer = server;
+          _proxyOwnedByThisProcess = true;
           api.logger.info(
             `[cli-bridge] proxy ready on :${port} — vllm/cli-gemini/* and vllm/cli-claude/* available`
           );
+
+          // Warn if OpenClaw's LLM idle timeout is too low for CLI models.
+          // CLI subprocesses (especially with large prompts) need time before producing
+          // the first token. The default 60s causes premature 408 timeouts.
+          const llmIdleTimeout = (api.pluginConfig as Record<string, unknown>)?._resolvedAgentDefaults?.llm?.idleTimeoutSeconds;
+          if (llmIdleTimeout === undefined) {
+            // Can't read the resolved config — check the raw file instead
+            try {
+              const ocConfig = JSON.parse(readFileSync(join(OPENCLAW_DIR, "openclaw.json"), "utf-8")) as Record<string, unknown>;
+              const agentDefaults = (ocConfig?.agents as Record<string, unknown>)?.defaults as Record<string, unknown> | undefined;
+              const llm = agentDefaults?.llm as Record<string, unknown> | undefined;
+              const idle = llm?.idleTimeoutSeconds as number | undefined;
+              if (idle === undefined || (idle > 0 && idle < 120)) {
+                api.logger.warn(
+                  `[cli-bridge] ⚠️  agents.defaults.llm.idleTimeoutSeconds is ${idle ?? "not set (default 60s)"} — ` +
+                  `CLI models need at least 120–300s. Set to 300 in openclaw.json to prevent premature 408 timeouts.`
+                );
+              }
+            } catch { /* non-fatal — just skip the check */ }
+          }
+
           const result = patchOpencllawConfig(port);
           if (result.patched) {
             api.logger.info(
@@ -1396,7 +1451,7 @@ const plugin = {
             // One final attempt
             try {
               const server = await startProxyServer({
-                port, apiKey, timeoutMs, modelCommands, modelFallbacks,
+                port, apiKey, timeoutMs, modelCommands, modelFallbacks, modelTimeouts,
                 log: (msg) => api.logger.info(msg),
                 warn: (msg) => api.logger.warn(msg),
                 getGrokContext: () => grokContext,
@@ -2442,7 +2497,7 @@ const plugin = {
       "/bridge-status",
       "/cli-help",
     ];
-    api.logger.info(`[cli-bridge] registered ${allCommands.length} commands: ${allCommands.join(", ")}`);
+    // Command registration is silent — fires on every register() call
   },
 };
 

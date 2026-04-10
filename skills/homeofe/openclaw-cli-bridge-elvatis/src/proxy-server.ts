@@ -10,15 +10,28 @@
 
 import http from "node:http";
 import { randomBytes } from "node:crypto";
-import { type ChatMessage, routeToCliRunner } from "./cli-runner.js";
+import { type ChatMessage, type CliToolResult, type ToolDefinition, routeToCliRunner, extractMultimodalParts, cleanupMediaFiles } from "./cli-runner.js";
 import { scheduleTokenRefresh, setAuthLogger, stopTokenRefresh } from "./claude-auth.js";
 import { grokComplete, grokCompleteStream, type ChatMessage as GrokChatMessage } from "./grok-client.js";
 import { geminiComplete, geminiCompleteStream, type ChatMessage as GeminiBrowserChatMessage } from "./gemini-browser.js";
 import { claudeComplete, claudeCompleteStream, type ChatMessage as ClaudeBrowserChatMessage } from "./claude-browser.js";
 import { chatgptComplete, chatgptCompleteStream, type ChatMessage as ChatGPTBrowserChatMessage } from "./chatgpt-browser.js";
+import { geminiApiComplete, geminiApiCompleteStream, type GeminiApiResult, type ContentPart } from "./gemini-api-runner.js";
 import type { BrowserContext } from "playwright";
 import { renderStatusPage, type StatusProvider } from "./status-template.js";
 import { sessionManager } from "./session-manager.js";
+import { metrics, estimateTokens } from "./metrics.js";
+import { providerSessions } from "./provider-sessions.js";
+import {
+  DEFAULT_PROXY_TIMEOUT_MS,
+  MAX_EFFECTIVE_TIMEOUT_MS,
+  TIMEOUT_PER_EXTRA_MSG_MS,
+  TIMEOUT_PER_TOOL_MS,
+  SSE_KEEPALIVE_INTERVAL_MS,
+  DEFAULT_BITNET_SERVER_URL,
+  BITNET_MAX_MESSAGES,
+  BITNET_SYSTEM_PROMPT,
+} from "./config.js";
 
 export type GrokCompleteOptions = Parameters<typeof grokComplete>[1];
 export type GrokCompleteStreamOptions = Parameters<typeof grokCompleteStream>[1];
@@ -62,6 +75,10 @@ export interface ProxyServerOptions {
   _chatgptComplete?: typeof chatgptComplete;
   /** Override for testing — replaces chatgptCompleteStream */
   _chatgptCompleteStream?: typeof chatgptCompleteStream;
+  /** Override for testing — replaces geminiApiComplete */
+  _geminiApiComplete?: typeof geminiApiComplete;
+  /** Override for testing — replaces geminiApiCompleteStream */
+  _geminiApiCompleteStream?: typeof geminiApiCompleteStream;
   /** Returns human-readable expiry string for each web provider (null = no login yet) */
   getExpiryInfo?: () => {
     grok: string | null;
@@ -81,6 +98,20 @@ export interface ProxyServerOptions {
    * with the fallback model. Example: "cli-gemini/gemini-2.5-pro" → "cli-gemini/gemini-2.5-flash"
    */
   modelFallbacks?: Record<string, string>;
+  /**
+   * Per-model timeout overrides (ms). Keys are model IDs (without "vllm/" prefix).
+   * Use this to give heavy models more time or limit fast models.
+   *
+   * Example:
+   *   {
+   *     "cli-claude/claude-sonnet-4-6": 180_000,   // 3 min for interactive chat
+   *     "cli-claude/claude-opus-4-6":   300_000,    // 5 min for heavy tasks
+   *     "cli-claude/claude-haiku-4-5":  90_000,     // 90s for fast responses
+   *   }
+   *
+   * When not set for a model, falls back to proxyTimeoutMs (default 300s base).
+   */
+  modelTimeouts?: Record<string, number>;
 }
 
 /** Available CLI bridge models for GET /v1/models */
@@ -114,6 +145,9 @@ export const CLI_MODELS = [
   { id: "web-gemini/gemini-3-flash",   name: "Gemini 3 Flash (web session)",   contextWindow: 1_048_576, maxTokens: 65_536 },
   // Claude → use cli-claude/* instead (web-claude removed in v1.6.x)
   // ChatGPT → use openai-codex/* or copilot-proxy instead (web-chatgpt removed in v1.6.x)
+  // ── Gemini API (native SDK, supports image generation) ─────────────────
+  { id: "gemini-api/gemini-2.5-flash", name: "Gemini 2.5 Flash (API)", contextWindow: 1_048_576, maxTokens: 65_535 },
+  { id: "gemini-api/gemini-2.5-pro",   name: "Gemini 2.5 Pro (API)",   contextWindow: 1_048_576, maxTokens: 65_535 },
   // ── OpenCode CLI ──────────────────────────────────────────────────────────
   { id: "opencode/default",             name: "OpenCode (CLI)",             contextWindow: 128_000,   maxTokens: 16_384 },
   // ── Pi CLI ──────────────────────────────────────────────────────────────
@@ -138,16 +172,29 @@ export function startProxyServer(opts: ProxyServerOptions): Promise<http.Server>
       });
     });
 
-    // Stop the token refresh interval and session manager when the server closes (timer-leak prevention)
+    // Stop timers and flush state when the server closes (timer-leak prevention)
     server.on("close", () => {
       stopTokenRefresh();
       sessionManager.stop();
+      providerSessions.stop();
     });
 
-    server.on("error", (err) => reject(err));
+    server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        // Port is held by a previous gateway process. probeExisting() should have
+        // caught a healthy proxy and reused it. If we get here, the old proxy is
+        // unhealthy but the OS hasn't released the socket yet. Just log and skip —
+        // do NOT fuser -k: the proxy runs in-process and killing the port holder
+        // would kill the gateway itself, causing a systemd restart loop.
+        opts.log(`[cli-bridge] port ${opts.port} in use by another process — proxy skipped (will retry on next gateway restart)`);
+        resolve(server); // resolve without a listening server — probeExisting handles reuse
+      } else {
+        reject(err);
+      }
+    });
     server.listen(opts.port, "127.0.0.1", () => {
       opts.log(
-        `[cli-bridge] proxy server listening on http://127.0.0.1:${opts.port}`
+        `[cli-bridge] proxy listening on :${opts.port}`
       );
       // unref() so the proxy server does not keep the Node.js event loop alive
       // when openclaw doctor or other short-lived CLI commands load plugins.
@@ -210,6 +257,7 @@ async function handleRequest(
         chatgpt: sessionStatus("chatgpt", opts.getChatGPTContext, expiry.chatgpt),
       },
       models: CLI_MODELS.length,
+      metrics: metrics.getMetrics(),
     };
     res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
     res.end(JSON.stringify(health, null, 2));
@@ -228,7 +276,7 @@ async function handleRequest(
       { name: "ChatGPT",  icon: "◉",  expiry: expiry.chatgpt, loginCmd: "/chatgpt-login", ctx: opts.getChatGPTContext?.() ?? null },
     ];
 
-    const html = renderStatusPage({ version, port: opts.port, providers, models: CLI_MODELS, modelCommands: opts.modelCommands });
+    const html = renderStatusPage({ version, port: opts.port, providers, models: CLI_MODELS, modelCommands: opts.modelCommands, metrics: metrics.getMetrics() });
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(html);
     return;
@@ -246,9 +294,8 @@ async function handleRequest(
           object: "model",
           created: now,
           owned_by: "openclaw-cli-bridge",
-          // CLI-proxy models stream plain text — no tool/function call support
           capabilities: {
-            tools: !(m.id.startsWith("cli-gemini/") || m.id.startsWith("cli-claude/") || m.id.startsWith("openai-codex/") || m.id.startsWith("opencode/") || m.id.startsWith("pi/") || m.id.startsWith("local-bitnet/")),
+            tools: !m.id.startsWith("local-bitnet/"), // all CLI models support tools via prompt injection; only bitnet is text-only
           },
         })),
       })
@@ -284,9 +331,10 @@ async function handleRequest(
       return;
     }
 
-    const { model, messages, stream = false } = parsed as { model: string; messages: ChatMessage[]; stream?: boolean; tools?: unknown; workdir?: string };
+    const { model, messages, stream = false } = parsed as { model: string; messages: ChatMessage[]; stream?: boolean; tools?: ToolDefinition[]; workdir?: string };
     const workdir = (parsed as { workdir?: string }).workdir;
-    const hasTools = Array.isArray((parsed as { tools?: unknown }).tools) && (parsed as { tools?: unknown[] }).tools!.length > 0;
+    const tools = (parsed as { tools?: ToolDefinition[] }).tools;
+    const hasTools = Array.isArray(tools) && tools.length > 0;
 
     if (!model || !messages?.length) {
       res.writeHead(400, { "Content-Type": "application/json" });
@@ -294,23 +342,14 @@ async function handleRequest(
       return;
     }
 
-    // CLI-proxy models (cli-gemini/*, cli-claude/*) are plain text completions —
-    // they cannot process tool/function call schemas. Return a clear 400 so
-    // OpenClaw can surface a meaningful error instead of getting a garbled response.
-    const isCliModel = model.startsWith("cli-gemini/") || model.startsWith("cli-claude/") || model.startsWith("openai-codex/") || model.startsWith("opencode/") || model.startsWith("pi/"); // local-bitnet/* exempt: llama-server silently ignores tools
-    if (hasTools && isCliModel) {
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        error: {
-          message: `Model ${model} does not support tool/function calls. Use a native API model (e.g. github-copilot/gpt-5-mini) for agents that need tools.`,
-          type: "invalid_request_error",
-          code: "tools_not_supported",
-        }
-      }));
-      return;
-    }
+    // Extract multimodal content (images, audio) from messages → temp files
+    const { cleanMessages, mediaFiles } = extractMultimodalParts(messages);
 
-    opts.log(`[cli-bridge] ${model} · ${messages.length} msg(s) · stream=${stream}${hasTools ? " · tools=unsupported→rejected" : ""}`);
+    // Estimate prompt tokens from message content (used when CLIs don't report usage)
+    const promptText = cleanMessages.map(m => typeof m.content === "string" ? m.content : "").join(" ");
+    const estPromptTokens = estimateTokens(promptText);
+
+    opts.log(`[cli-bridge] ${model} · ${cleanMessages.length} msg(s) · stream=${stream}${hasTools ? ` · tools=${tools!.length}` : ""}${mediaFiles.length ? ` · media=${mediaFiles.length}` : ""}`);
 
     const id = `chatcmpl-cli-${randomBytes(6).toString("hex")}`;
     const created = Math.floor(Date.now() / 1000);
@@ -332,6 +371,7 @@ async function handleRequest(
       const grokMessages = messages as GrokChatMessage[];
       const doGrokComplete = opts._grokComplete ?? grokComplete;
       const doGrokCompleteStream = opts._grokCompleteStream ?? grokCompleteStream;
+      const grokStart = Date.now();
       try {
         if (stream) {
           res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", ...corsHeaders() });
@@ -342,11 +382,13 @@ async function handleRequest(
             (token) => sendSseChunk(res, { id, created, model, delta: { content: token }, finish_reason: null }),
             opts.log
           );
+          metrics.recordRequest(model, Date.now() - grokStart, true, result.promptTokens, result.completionTokens);
           sendSseChunk(res, { id, created, model, delta: {}, finish_reason: result.finishReason });
           res.write("data: [DONE]\n\n");
           res.end();
         } else {
           const result = await doGrokComplete(grokCtx, { messages: grokMessages, model: grokModel, timeoutMs }, opts.log);
+          metrics.recordRequest(model, Date.now() - grokStart, true, result.promptTokens, result.completionTokens);
           res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
           res.end(JSON.stringify({
             id, object: "chat.completion", created, model,
@@ -355,6 +397,7 @@ async function handleRequest(
           }));
         }
       } catch (err) {
+        metrics.recordRequest(model, Date.now() - grokStart, false, estPromptTokens);
         const msg = (err as Error).message;
         opts.warn(`[cli-bridge] Grok error for ${model}: ${msg}`);
         if (!res.headersSent) {
@@ -381,6 +424,7 @@ async function handleRequest(
       const geminiMessages = messages as GeminiBrowserChatMessage[];
       const doGeminiComplete = opts._geminiComplete ?? geminiComplete;
       const doGeminiCompleteStream = opts._geminiCompleteStream ?? geminiCompleteStream;
+      const geminiStart = Date.now();
       try {
         if (stream) {
           res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", ...corsHeaders() });
@@ -391,19 +435,23 @@ async function handleRequest(
             (token) => sendSseChunk(res, { id, created, model, delta: { content: token }, finish_reason: null }),
             opts.log
           );
+          metrics.recordRequest(model, Date.now() - geminiStart, true, estPromptTokens, estimateTokens(result.content));
           sendSseChunk(res, { id, created, model, delta: {}, finish_reason: result.finishReason });
           res.write("data: [DONE]\n\n");
           res.end();
         } else {
           const result = await doGeminiComplete(geminiCtx, { messages: geminiMessages, model, timeoutMs }, opts.log);
+          const estComp = estimateTokens(result.content);
+          metrics.recordRequest(model, Date.now() - geminiStart, true, estPromptTokens, estComp);
           res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
           res.end(JSON.stringify({
             id, object: "chat.completion", created, model,
             choices: [{ index: 0, message: { role: "assistant", content: result.content }, finish_reason: result.finishReason }],
-            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+            usage: { prompt_tokens: estPromptTokens, completion_tokens: estComp, total_tokens: estPromptTokens + estComp },
           }));
         }
       } catch (err) {
+        metrics.recordRequest(model, Date.now() - geminiStart, false, estPromptTokens);
         const msg = (err as Error).message;
         opts.warn(`[cli-bridge] Gemini browser error for ${model}: ${msg}`);
         if (!res.headersSent) {
@@ -430,6 +478,7 @@ async function handleRequest(
       const claudeMessages = messages as ClaudeBrowserChatMessage[];
       const doClaudeComplete = opts._claudeComplete ?? claudeComplete;
       const doClaudeCompleteStream = opts._claudeCompleteStream ?? claudeCompleteStream;
+      const claudeStart = Date.now();
       try {
         if (stream) {
           res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", ...corsHeaders() });
@@ -440,19 +489,23 @@ async function handleRequest(
             (token) => sendSseChunk(res, { id, created, model, delta: { content: token }, finish_reason: null }),
             opts.log
           );
+          metrics.recordRequest(model, Date.now() - claudeStart, true, estPromptTokens, estimateTokens(result.content));
           sendSseChunk(res, { id, created, model, delta: {}, finish_reason: result.finishReason });
           res.write("data: [DONE]\n\n");
           res.end();
         } else {
           const result = await doClaudeComplete(claudeCtx, { messages: claudeMessages, model, timeoutMs }, opts.log);
+          const estComp = estimateTokens(result.content);
+          metrics.recordRequest(model, Date.now() - claudeStart, true, estPromptTokens, estComp);
           res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
           res.end(JSON.stringify({
             id, object: "chat.completion", created, model,
             choices: [{ index: 0, message: { role: "assistant", content: result.content }, finish_reason: result.finishReason }],
-            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+            usage: { prompt_tokens: estPromptTokens, completion_tokens: estComp, total_tokens: estPromptTokens + estComp },
           }));
         }
       } catch (err) {
+        metrics.recordRequest(model, Date.now() - claudeStart, false, estPromptTokens);
         const msg = (err as Error).message;
         opts.warn(`[cli-bridge] Claude browser error for ${model}: ${msg}`);
         if (!res.headersSent) {
@@ -480,6 +533,7 @@ async function handleRequest(
       const chatgptMessages = messages as ChatGPTBrowserChatMessage[];
       const doChatGPTComplete = opts._chatgptComplete ?? chatgptComplete;
       const doChatGPTCompleteStream = opts._chatgptCompleteStream ?? chatgptCompleteStream;
+      const chatgptStart = Date.now();
       try {
         if (stream) {
           res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", ...corsHeaders() });
@@ -490,19 +544,23 @@ async function handleRequest(
             (token) => sendSseChunk(res, { id, created, model, delta: { content: token }, finish_reason: null }),
             opts.log
           );
+          metrics.recordRequest(model, Date.now() - chatgptStart, true, estPromptTokens, estimateTokens(result.content));
           sendSseChunk(res, { id, created, model, delta: {}, finish_reason: result.finishReason });
           res.write("data: [DONE]\n\n");
           res.end();
         } else {
           const result = await doChatGPTComplete(chatgptCtx, { messages: chatgptMessages, model: chatgptModel, timeoutMs }, opts.log);
+          const estComp = estimateTokens(result.content);
+          metrics.recordRequest(model, Date.now() - chatgptStart, true, estPromptTokens, estComp);
           res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
           res.end(JSON.stringify({
             id, object: "chat.completion", created, model,
             choices: [{ index: 0, message: { role: "assistant", content: result.content }, finish_reason: result.finishReason }],
-            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+            usage: { prompt_tokens: estPromptTokens, completion_tokens: estComp, total_tokens: estPromptTokens + estComp },
           }));
         }
       } catch (err) {
+        metrics.recordRequest(model, Date.now() - chatgptStart, false, estPromptTokens);
         const msg = (err as Error).message;
         opts.warn(`[cli-bridge] ChatGPT browser error for ${model}: ${msg}`);
         if (!res.headersSent) {
@@ -514,9 +572,97 @@ async function handleRequest(
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ── Gemini API routing (native SDK — supports image generation) ─────────
+    // Strip vllm/ prefix if present — OpenClaw sends full provider path
+    const geminiApiModel = model.startsWith("vllm/") ? model.slice(5) : model;
+    if (geminiApiModel.startsWith("gemini-api/")) {
+      const doComplete = opts._geminiApiComplete ?? geminiApiComplete;
+      const doCompleteStream = opts._geminiApiCompleteStream ?? geminiApiCompleteStream;
+      const perModelTimeout = opts.modelTimeouts?.[geminiApiModel];
+      const timeoutMs = perModelTimeout ?? opts.timeoutMs ?? 180_000;
+      const apiStart = Date.now();
+      const apiOpts = { model: geminiApiModel, timeoutMs, tools: hasTools ? tools : undefined, log: opts.log };
+      try {
+        if (stream) {
+          res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", ...corsHeaders() });
+          sendSseChunk(res, { id, created, model: geminiApiModel, delta: { role: "assistant" }, finish_reason: null });
+          const result = await doCompleteStream(
+            cleanMessages,
+            apiOpts,
+            (token) => sendSseChunk(res, { id, created, model: geminiApiModel, delta: { content: token }, finish_reason: null })
+          );
+          const estComp = typeof result.content === "string" ? estimateTokens(result.content) : (result.completionTokens ?? 0);
+          metrics.recordRequest(geminiApiModel, Date.now() - apiStart, true, estPromptTokens, estComp);
+          // If images were generated during streaming, send the full multimodal content as a final chunk
+          if (Array.isArray(result.content)) {
+            sendSseChunk(res, { id, created, model: geminiApiModel, delta: { content: JSON.stringify(result.content) }, finish_reason: null });
+          }
+          if (result.tool_calls?.length) {
+            const toolCalls = result.tool_calls;
+            sendSseChunk(res, {
+              id, created, model: geminiApiModel,
+              delta: {
+                tool_calls: toolCalls.map((tc, idx) => ({
+                  index: idx, id: tc.id, type: "function",
+                  function: { name: tc.function.name, arguments: "" },
+                })),
+              },
+              finish_reason: null,
+            });
+            for (let idx = 0; idx < toolCalls.length; idx++) {
+              sendSseChunk(res, {
+                id, created, model: geminiApiModel,
+                delta: { tool_calls: [{ index: idx, function: { arguments: toolCalls[idx].function.arguments } }] },
+                finish_reason: null,
+              });
+            }
+            sendSseChunk(res, { id, created, model: geminiApiModel, delta: {}, finish_reason: "tool_calls" });
+          } else {
+            sendSseChunk(res, { id, created, model: geminiApiModel, delta: {}, finish_reason: result.finishReason });
+          }
+          res.write("data: [DONE]\n\n");
+          res.end();
+        } else {
+          const result = await doComplete(cleanMessages, apiOpts);
+          const estComp = typeof result.content === "string"
+            ? estimateTokens(result.content)
+            : (result.completionTokens ?? 0);
+          metrics.recordRequest(geminiApiModel, Date.now() - apiStart, true, estPromptTokens, estComp);
+          const message: Record<string, unknown> = { role: "assistant" };
+          if (result.tool_calls?.length) {
+            message.content = null;
+            message.tool_calls = result.tool_calls;
+          } else {
+            message.content = result.content;
+          }
+          const finishReason = result.tool_calls?.length ? "tool_calls" : result.finishReason;
+          res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
+          res.end(JSON.stringify({
+            id, object: "chat.completion", created, model: geminiApiModel,
+            choices: [{ index: 0, message, finish_reason: finishReason }],
+            usage: {
+              prompt_tokens: result.promptTokens ?? estPromptTokens,
+              completion_tokens: result.completionTokens ?? estComp,
+              total_tokens: (result.promptTokens ?? estPromptTokens) + (result.completionTokens ?? estComp),
+            },
+          }));
+        }
+      } catch (err) {
+        metrics.recordRequest(geminiApiModel, Date.now() - apiStart, false, estPromptTokens);
+        const msg = (err as Error).message;
+        opts.warn(`[cli-bridge] Gemini API error for ${geminiApiModel}: ${msg}`);
+        if (!res.headersSent) {
+          res.writeHead(500, { "Content-Type": "application/json", ...corsHeaders() });
+          res.end(JSON.stringify({ error: { message: msg, type: "gemini_api_error" } }));
+        }
+      }
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // ── BitNet local inference routing ────────────────────────────────────────
     if (model.startsWith("local-bitnet/")) {
-      const bitnetUrl = opts.getBitNetServerUrl?.() ?? "http://127.0.0.1:8082";
+      const bitnetUrl = opts.getBitNetServerUrl?.() ?? DEFAULT_BITNET_SERVER_URL;
       const timeoutMs = opts.timeoutMs ?? 120_000;
       // llama-server (BitNet build) crashes with std::runtime_error on multi-part
       // content arrays (ref: https://github.com/ggerganov/llama.cpp/issues/8367).
@@ -533,20 +679,17 @@ async function handleRequest(
       };
       // BitNet has a 4096 token context window. Long sessions blow it up and
       // cause a hard C++ crash (no graceful error). Truncate to system prompt +
-      // last 10 messages (~2k tokens max) to stay safely within the limit.
-      const BITNET_MAX_MESSAGES = 6;
-      // Replace the full system prompt (MEMORY.md etc, ~2k+ tokens) with a
-      // minimal one so BitNet's 4096-token context isn't blown by the system msg alone.
-      const BITNET_SYSTEM = "You are Akido, a concise AI assistant. Answer briefly and directly. Current user: Emre. Timezone: Europe/Berlin.";
+      // last N messages (~2k tokens max) to stay safely within the limit.
       const allFlat = parsed.messages.map((m) => ({
         role: m.role,
         content: flattenContent(m.content),
       }));
       const nonSystemMsgs = allFlat.filter((m) => m.role !== "system");
       const truncated = nonSystemMsgs.slice(-BITNET_MAX_MESSAGES);
-      const bitnetMessages = [{ role: "system", content: BITNET_SYSTEM }, ...truncated];
+      const bitnetMessages = [{ role: "system", content: BITNET_SYSTEM_PROMPT }, ...truncated];
       const requestBody = JSON.stringify({ ...parsed, messages: bitnetMessages, tools: undefined });
 
+      const bitnetStart = Date.now();
       try {
         const targetUrl = new URL("/v1/chat/completions", bitnetUrl);
         const proxyRes = await new Promise<http.IncomingMessage>((resolve, reject) => {
@@ -567,6 +710,7 @@ async function handleRequest(
           proxyReq.end();
         });
 
+        metrics.recordRequest(model, Date.now() - bitnetStart, true);
         // Forward status + headers
         const fwdHeaders: Record<string, string> = { ...corsHeaders() };
         const ct = proxyRes.headers["content-type"];
@@ -578,6 +722,7 @@ async function handleRequest(
         res.writeHead(proxyRes.statusCode ?? 200, fwdHeaders);
         proxyRes.pipe(res);
       } catch (err) {
+        metrics.recordRequest(model, Date.now() - bitnetStart, false);
         const msg = (err as Error).message;
         if (msg.includes("ECONNREFUSED") || msg.includes("ECONNRESET") || msg.includes("ENOTFOUND")) {
           res.writeHead(503, { "Content-Type": "application/json", ...corsHeaders() });
@@ -600,36 +745,32 @@ async function handleRequest(
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    // ── CLI runner routing (Gemini / Claude Code) ─────────────────────────────
-    let content: string;
+    // ── CLI runner routing (Gemini / Claude Code / Codex) ──────────────────────
+    let result: CliToolResult;
     let usedModel = model;
-    try {
-      content = await routeToCliRunner(model, messages, opts.timeoutMs ?? 120_000, { workdir });
-    } catch (err) {
-      const msg = (err as Error).message;
-      // ── Model fallback: retry once with a lighter model if configured ────
-      const fallbackModel = opts.modelFallbacks?.[model];
-      if (fallbackModel) {
-        opts.warn(`[cli-bridge] ${model} failed (${msg}), falling back to ${fallbackModel}`);
-        try {
-          content = await routeToCliRunner(fallbackModel, messages, opts.timeoutMs ?? 120_000, { workdir });
-          usedModel = fallbackModel;
-          opts.log(`[cli-bridge] fallback to ${fallbackModel} succeeded`);
-        } catch (fallbackErr) {
-          const fallbackMsg = (fallbackErr as Error).message;
-          opts.warn(`[cli-bridge] fallback ${fallbackModel} also failed: ${fallbackMsg}`);
-          res.writeHead(500, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: { message: `${model}: ${msg} | fallback ${fallbackModel}: ${fallbackMsg}`, type: "cli_error" } }));
-          return;
-        }
-      } else {
-        opts.warn(`[cli-bridge] CLI error for ${model}: ${msg}`);
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: { message: msg, type: "cli_error" } }));
-        return;
-      }
-    }
+    const routeOpts = { workdir, tools: hasTools ? tools : undefined, mediaFiles: mediaFiles.length ? mediaFiles : undefined, log: opts.log };
 
+    // ── Provider session: ensure a persistent session for this model ────────
+    // Extract provider prefix from model (e.g. "cli-claude" from "cli-claude/claude-sonnet-4-6")
+    const providerPrefix = model.split("/")[0];
+    const incomingSessionId = (parsed as { providerSessionId?: string }).providerSessionId;
+    const session = incomingSessionId
+      ? (providerSessions.getSession(incomingSessionId) ?? providerSessions.ensureSession(providerPrefix, model))
+      : providerSessions.ensureSession(providerPrefix, model);
+    providerSessions.touchSession(session.id);
+
+    // ── Dynamic timeout: scale with conversation size ────────────────────────
+    // Per-model timeout takes precedence, then global proxyTimeoutMs, then 300s default.
+    const perModelTimeout = opts.modelTimeouts?.[model];
+    const baseTimeout = perModelTimeout ?? opts.timeoutMs ?? DEFAULT_PROXY_TIMEOUT_MS;
+    const msgExtra = Math.max(0, cleanMessages.length - 10) * TIMEOUT_PER_EXTRA_MSG_MS;
+    const toolExtra = (tools?.length ?? 0) * TIMEOUT_PER_TOOL_MS;
+    const effectiveTimeout = Math.min(baseTimeout + msgExtra + toolExtra, MAX_EFFECTIVE_TIMEOUT_MS);
+    opts.log(`[cli-bridge] ${model} session=${session.id} timeout: ${Math.round(effectiveTimeout / 1000)}s (base=${Math.round(baseTimeout / 1000)}s${perModelTimeout ? " per-model" : ""}, +${Math.round(msgExtra / 1000)}s msgs, +${Math.round(toolExtra / 1000)}s tools)`);
+
+    // ── SSE keepalive: send headers early so OpenClaw doesn't read-timeout ──
+    let sseHeadersSent = false;
+    let keepaliveInterval: ReturnType<typeof setInterval> | null = null;
     if (stream) {
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
@@ -637,27 +778,127 @@ async function handleRequest(
         Connection: "keep-alive",
         ...corsHeaders(),
       });
+      sseHeadersSent = true;
+      res.write(": keepalive\n\n");
+      keepaliveInterval = setInterval(() => { res.write(": keepalive\n\n"); }, SSE_KEEPALIVE_INTERVAL_MS);
+    }
 
-      // Role chunk
-      sendSseChunk(res, { id, created, model: usedModel, delta: { role: "assistant" }, finish_reason: null });
+    const cliStart = Date.now();
+    try {
+      result = await routeToCliRunner(model, cleanMessages, effectiveTimeout, routeOpts);
+      const estCompletionTokens = estimateTokens(result.content ?? "");
+      metrics.recordRequest(model, Date.now() - cliStart, true, estPromptTokens, estCompletionTokens);
+      providerSessions.recordRun(session.id, false);
+    } catch (err) {
+      const primaryDuration = Date.now() - cliStart;
+      const msg = (err as Error).message;
+      // ── Model fallback: retry once with a lighter model if configured ────
+      const isTimeout = msg.includes("timeout:") || msg.includes("exit 143") || msg.includes("exited 143");
+      // Record the run (with timeout flag) — session is preserved, not deleted
+      providerSessions.recordRun(session.id, isTimeout);
+      const fallbackModel = opts.modelFallbacks?.[model];
+      if (fallbackModel) {
+        metrics.recordRequest(model, primaryDuration, false, estPromptTokens);
+        const reason = isTimeout ? `timeout by supervisor, session=${session.id} preserved` : msg;
+        opts.warn(`[cli-bridge] ${model} failed (${reason}), falling back to ${fallbackModel}`);
+        const fallbackStart = Date.now();
+        try {
+          result = await routeToCliRunner(fallbackModel, cleanMessages, effectiveTimeout, routeOpts);
+          const fbCompTokens = estimateTokens(result.content ?? "");
+          metrics.recordRequest(fallbackModel, Date.now() - fallbackStart, true, estPromptTokens, fbCompTokens);
+          usedModel = fallbackModel;
+          opts.log(`[cli-bridge] fallback to ${fallbackModel} succeeded`);
+        } catch (fallbackErr) {
+          metrics.recordRequest(fallbackModel, Date.now() - fallbackStart, false, estPromptTokens);
+          const fallbackMsg = (fallbackErr as Error).message;
+          opts.warn(`[cli-bridge] fallback ${fallbackModel} also failed: ${fallbackMsg}`);
+          if (sseHeadersSent) {
+            res.write(`data: ${JSON.stringify({ error: { message: `${model}: ${msg} | fallback ${fallbackModel}: ${fallbackMsg}`, type: "cli_error" } })}\n\n`);
+            res.write("data: [DONE]\n\n");
+            res.end();
+          } else {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: { message: `${model}: ${msg} | fallback ${fallbackModel}: ${fallbackMsg}`, type: "cli_error" } }));
+          }
+          return;
+        }
+      } else {
+        metrics.recordRequest(model, primaryDuration, false, estPromptTokens);
+        opts.warn(`[cli-bridge] CLI error for ${model}: ${msg}`);
+        if (sseHeadersSent) {
+          res.write(`data: ${JSON.stringify({ error: { message: msg, type: "cli_error" } })}\n\n`);
+          res.write("data: [DONE]\n\n");
+          res.end();
+        } else {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: { message: msg, type: "cli_error" } }));
+        }
+        return;
+      }
+    } finally {
+      if (keepaliveInterval) clearInterval(keepaliveInterval);
+      cleanupMediaFiles(mediaFiles);
+    }
 
-      // Content in chunks (~50 chars each for natural feel)
-      const chunkSize = 50;
-      for (let i = 0; i < content.length; i += chunkSize) {
+    const hasToolCalls = !!(result.tool_calls?.length);
+    const finishReason = hasToolCalls ? "tool_calls" : "stop";
+
+    if (stream) {
+      // SSE headers already sent above — stream response chunks directly
+
+      if (hasToolCalls) {
+        // Stream tool_calls in OpenAI SSE format
+        const toolCalls = result.tool_calls!;
+        // Role chunk with all tool_calls (name + empty arguments)
         sendSseChunk(res, {
-          id,
-          created,
-          model: usedModel,
-          delta: { content: content.slice(i, i + chunkSize) },
+          id, created, model: usedModel,
+          delta: {
+            role: "assistant",
+            tool_calls: toolCalls.map((tc, idx) => ({
+              index: idx, id: tc.id, type: "function",
+              function: { name: tc.function.name, arguments: "" },
+            })),
+          },
           finish_reason: null,
         });
+        // Arguments chunks (one per tool call)
+        for (let idx = 0; idx < toolCalls.length; idx++) {
+          sendSseChunk(res, {
+            id, created, model: usedModel,
+            delta: {
+              tool_calls: [{ index: idx, function: { arguments: toolCalls[idx].function.arguments } }],
+            },
+            finish_reason: null,
+          });
+        }
+        // Stop chunk
+        sendSseChunk(res, { id, created, model: usedModel, delta: {}, finish_reason: "tool_calls" });
+      } else {
+        // Standard text streaming
+        sendSseChunk(res, { id, created, model: usedModel, delta: { role: "assistant" }, finish_reason: null });
+        const content = result.content ?? "";
+        const chunkSize = 50;
+        for (let i = 0; i < content.length; i += chunkSize) {
+          sendSseChunk(res, {
+            id, created, model: usedModel,
+            delta: { content: content.slice(i, i + chunkSize) },
+            finish_reason: null,
+          });
+        }
+        sendSseChunk(res, { id, created, model: usedModel, delta: {}, finish_reason: "stop" });
       }
 
-      // Stop chunk
-      sendSseChunk(res, { id, created, model: usedModel, delta: {}, finish_reason: "stop" });
       res.write("data: [DONE]\n\n");
       res.end();
     } else {
+      const message: Record<string, unknown> = { role: "assistant" };
+      if (hasToolCalls) {
+        message.content = null;
+        message.tool_calls = result.tool_calls;
+      } else {
+        message.content = result.content;
+      }
+
       const response = {
         id,
         object: "chat.completion",
@@ -666,11 +907,17 @@ async function handleRequest(
         choices: [
           {
             index: 0,
-            message: { role: "assistant", content },
-            finish_reason: "stop",
+            message,
+            finish_reason: finishReason,
           },
         ],
-        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+        usage: {
+          prompt_tokens: estPromptTokens,
+          completion_tokens: estimateTokens(typeof message.content === "string" ? message.content : ""),
+          total_tokens: estPromptTokens + estimateTokens(typeof message.content === "string" ? message.content : ""),
+        },
+        // Propagate session ID so callers can resume in the same session
+        provider_session_id: session.id,
       };
 
       res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
@@ -787,6 +1034,26 @@ async function handleRequest(
     }
     res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
     res.end(JSON.stringify(result));
+    return;
+  }
+
+  // ── Provider session endpoints ──────────────────────────────────────────────
+
+  // GET /v1/provider-sessions — list all provider sessions with stats
+  if (url === "/v1/provider-sessions" && req.method === "GET") {
+    const sessions = providerSessions.listSessions();
+    const stats = providerSessions.stats();
+    res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders() });
+    res.end(JSON.stringify({ sessions, stats }));
+    return;
+  }
+
+  // DELETE /v1/provider-sessions/:id — delete a specific provider session
+  const provSessionMatch = url.match(/^\/v1\/provider-sessions\/([a-zA-Z0-9:_-]+)$/);
+  if (provSessionMatch && req.method === "DELETE") {
+    const ok = providerSessions.deleteSession(decodeURIComponent(provSessionMatch[1]));
+    res.writeHead(ok ? 200 : 404, { "Content-Type": "application/json", ...corsHeaders() });
+    res.end(JSON.stringify({ ok }));
     return;
   }
 

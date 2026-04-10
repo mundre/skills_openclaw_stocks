@@ -2,7 +2,7 @@
 
 > OpenClaw plugin that bridges locally installed AI CLIs (Codex, Gemini, Claude Code, OpenCode, Pi) as model providers — with slash commands for instant model switching, restore, health testing, and model listing.
 
-**Current version:** `2.1.3`
+**Current version:** `2.8.0`
 
 ---
 
@@ -191,11 +191,10 @@ openclaw gateway restart
 ### 2. Verify (check gateway logs)
 
 ```
-[cli-bridge] proxy ready on :31337
-[cli-bridge] registered 14 commands: /cli-sonnet, /cli-opus, /cli-haiku,
-             /cli-gemini, /cli-gemini-flash, /cli-gemini3, /cli-gemini3-flash,
-             /cli-codex, /cli-codex-spark, /cli-codex52, /cli-codex54, /cli-codex-mini,
-             /cli-back, /cli-test, /cli-list
+[cli-bridge] system Chrome found: Google Chrome 146.x
+[cli-bridge] openai-codex provider registered
+[cli-bridge] registered 32 commands (use /cli-list to see all)
+[cli-bridge] proxy ready on :31337 — vllm/cli-gemini/* and vllm/cli-claude/* available
 ```
 
 ### 3. Register Codex auth (optional — Phase 1 only)
@@ -283,9 +282,39 @@ In `~/.openclaw/openclaw.json` → `plugins.entries.openclaw-cli-bridge-elvatis.
   "enableProxy": true,         // start local CLI proxy server (default: true)
   "proxyPort": 31337,          // proxy port (default: 31337)
   "proxyApiKey": "cli-bridge", // key between OpenClaw vllm provider and proxy (default: "cli-bridge")
-  "proxyTimeoutMs": 120000     // CLI subprocess timeout in ms (default: 120s)
+  "proxyTimeoutMs": 300000,    // base CLI subprocess timeout in ms (default: 300s, scales dynamically)
+  "modelTimeouts": {           // per-model timeout overrides in ms (optional)
+    "cli-claude/claude-opus-4-6":       300000,   // 5 min — heavy/agentic tasks
+    "cli-claude/claude-sonnet-4-6":     180000,   // 3 min — interactive chat
+    "cli-claude/claude-haiku-4-5":       90000,   // 90s  — fast responses
+    "cli-gemini/gemini-2.5-pro":        180000,
+    "cli-gemini/gemini-2.5-flash":       90000,
+    "openai-codex/gpt-5.4":            300000,
+    "openai-codex/gpt-5.3-codex":      180000,
+    "openai-codex/gpt-5.1-codex-mini":  90000
+  }
 }
 ```
+
+### Required: OpenClaw LLM idle timeout
+
+**Important:** OpenClaw's embedded agent has a default **LLM idle timeout of 60 seconds**. CLI subprocesses (especially Claude/Gemini with large prompts) often need longer than 60s before producing the first token. Without this setting, you'll see `exit 143` / `status:408` / `FailoverError: LLM request timed out.`
+
+Add to `~/.openclaw/openclaw.json`:
+
+```json5
+{
+  "agents": {
+    "defaults": {
+      "llm": {
+        "idleTimeoutSeconds": 300  // 5 min — must be >= longest per-model timeout
+      }
+    }
+  }
+}
+```
+
+> **Note:** Cron-triggered agents automatically have `idleTimeoutSeconds: 0` (disabled) in OpenClaw, so crons are not affected.
 
 ---
 
@@ -369,13 +398,92 @@ Model fallback (v1.9.0):
 ```bash
 npm run lint        # eslint (TypeScript-aware)
 npm run typecheck   # tsc --noEmit
-npm test            # vitest run (121 tests)
+npm test            # vitest run (261 tests)
 npm run ci          # lint + typecheck + test
 ```
 
 ---
 
 ## Changelog
+
+### v2.8.0
+- **feat:** Gemini API provider (`gemini-api/gemini-2.5-flash`, `gemini-api/gemini-2.5-pro`) — direct Google Generative AI SDK integration with native **image generation** support via `responseModalities: ["TEXT", "IMAGE"]`. No CLI subprocess overhead, no browser needed.
+- **feat:** Images returned as base64 data URIs in OpenAI-compatible `content_parts` format — works with OpenClaw multimodal rendering
+- **feat:** Native Gemini tool calling — converts OpenAI tool format to Gemini `functionDeclarations`, parses `functionCall` responses back to `tool_calls`
+- **feat:** Real token usage from Gemini API (no estimation needed)
+- **config:** API key via `GOOGLE_API_KEY` env var or `~/.openclaw/.env`
+- **test:** 17 new tests — message conversion, tool conversion, proxy routing, streaming (278 total)
+
+### v2.7.3
+- **fix:** Gemini image generation timeouts — Gemini Pro models bumped from 180s → 300s base timeout, Flash models from 90s → 180s. Image generation needs significantly more time than text completion.
+- **tune:** Per-tool timeout bonus increased from 5s → 7s per tool definition (21 tools = 147s instead of 105s)
+- **tune:** Max effective timeout cap raised from 600s (10 min) → 900s (15 min) to accommodate long-running image generation with many tools
+
+### v2.7.2
+- **fix:** Self-heal plugin `modelOrder` still referenced `openai-codex/gpt-5.1` (not in bridge allowlist), causing failover errors. Updated to `vllm/openai-codex/gpt-5.2-codex`.
+
+### v2.7.1
+- **fix:** Fallback model `openai-codex/gpt-5.1` → `openai-codex/gpt-5.2-codex` — the bare `gpt-5.1` model ID doesn't exist in the CLI bridge allowlist, causing fallback failures with "model not allowed" errors
+- **fix:** Broken aliases `gpt51`, `gpt52`, `gemini25`, `gemini25-flash` now point to working CLI bridge models instead of non-existent providers (`google-gemini-cli`, bare `openai-codex` IDs)
+- **docs:** Perplexity `sonar-pro` tool incompatibility documented — API rejects tool parameters with `400 Tool parameters must be a JSON object`, tracked upstream as [openclaw/openclaw#64175](https://github.com/openclaw/openclaw/issues/64175). Fallback chain handles this correctly.
+
+### v2.7.0
+- **feat:** Persistent per-model metrics — request counts, error rates, latency, and token usage now survive gateway restarts. Stored in `~/.openclaw/cli-bridge/metrics.json`, debounced writes (5s).
+- **feat:** Token usage estimation for all models — CLI runners (claude, gemini, codex), web-session models (gemini, claude, chatgpt) now report estimated `prompt_tokens` and `completion_tokens` in the OpenAI-compatible `usage` response field (~4 chars/token heuristic). Grok models continue to use real token counts from the API.
+- **feat:** Dashboard and `/healthz` now show actual token stats per model instead of zeros
+- **test:** 9 new metrics tests — estimateTokens, MetricsCollector recording, sorting, reset (261 total)
+
+### v2.6.3
+- **security:** Bump `vite` 8.0.2 → 8.0.5 — fixes 3 CVEs: `server.fs.deny` bypass via query strings, arbitrary file read via WebSocket, path traversal in optimized deps `.map` handling (merged Dependabot PR #18)
+
+### v2.6.2
+- **fix:** Codex CLI `--quiet` flag removed in latest Codex version — replaced with `codex exec` subcommand for non-interactive execution. All `openai-codex/*` models were failing with "unexpected argument '--quiet'" error.
+- **fix:** Agent model routing — 10 agents referenced non-existent `google-gemini-cli` provider. Remapped to `vllm/cli-gemini/*` (OAuth-based, stable) for reliable Gemini access.
+- **fix:** Main agent fallback `openai-codex/gpt-5.1` routed via direct OpenAI API (broken OAuth scopes) — now routes through CLI bridge (`vllm/openai-codex/gpt-5.1`)
+
+### v2.6.1
+- **fix:** Root cause of Exit 143 / 408 timeouts identified — OpenClaw's `agents.defaults.llm.idleTimeoutSeconds` defaults to 60s, which is too short for CLI subprocesses that need time before producing the first token
+- **feat:** Startup warning when `idleTimeoutSeconds` is not set or < 120s — tells you exactly what to add to `openclaw.json`
+- **docs:** Added "Required: OpenClaw LLM idle timeout" section to README with recommended config
+
+### v2.6.0
+- **feat:** Provider session registry (`src/provider-sessions.ts`) — persistent sessions that survive across runs. When a CLI run times out, the session is preserved (not deleted) so follow-up runs can resume in the same context. Sessions are stored in `~/.openclaw/cli-bridge/sessions.json`.
+- **feat:** Centralized config module (`src/config.ts`) — all magic numbers, timeouts, paths, ports, and model defaults extracted into one file. No more scattered hardcoded values.
+- **feat:** Session-aware proxy — every CLI request gets a `provider_session_id` in the response. Pass it back via `providerSessionId` in subsequent requests to reuse the same session.
+- **feat:** New proxy endpoints: `GET /v1/provider-sessions` (list sessions + stats), `DELETE /v1/provider-sessions/:id` (remove a session)
+- **fix:** Version fallback changed from `"0.0.0"` to `"unknown"` with secondary lookup in `openclaw.plugin.json` — prevents Dashboard showing wrong version
+- **refactor:** `index.ts`, `cli-runner.ts`, `session-manager.ts`, `proxy-server.ts` now import all constants from `config.ts` instead of defining them locally
+- **test:** 35 new tests for provider sessions, config exports (252 total)
+
+### v2.5.0
+- **feat:** Graceful timeout handling — replaces Node's `spawn({ timeout })` with manual SIGTERM→SIGKILL sequence (5s grace period). Exit 143 is now clearly annotated as "timeout by supervisor" in logs, not a cryptic model error.
+- **feat:** Per-model timeout profiles — new `modelTimeouts` config option sets sensible defaults per model: Opus 5 min, Sonnet 3 min, Haiku 90s, Flash models 90s. Scales dynamically with conversation size (+2s/msg beyond 10, +5s/tool).
+- **feat:** Timeout logging — every timeout event logs model, elapsed time, SIGTERM/SIGKILL steps. Fallback messages now show "timeout by supervisor" instead of raw exit codes.
+- **fix:** Base timeout raised from 120s to 300s (was causing frequent Exit 143 on normal Sonnet conversations)
+- **fix:** Session manager `kill()`, `cleanup()`, and `stop()` now use graceful SIGTERM→SIGKILL instead of immediate SIGTERM
+- **test:** 7 new tests for timeout handling and exit code annotation (217 total)
+
+### v2.4.0
+- **feat:** Metrics & health dashboard — request volume, latency, errors, token usage
+
+### v2.3.0
+- **feat:** OpenAI tool calling protocol support for all CLI models — tool definitions are injected into the prompt, structured `tool_calls` responses are parsed and returned in OpenAI format
+- **feat:** Multimodal content support — images and audio from webchat are extracted to temp files and passed to CLIs (Codex uses native `-i` flag, Claude/Gemini reference file paths in prompt)
+- **feat:** Autonomous execution mode — Claude uses `--permission-mode bypassPermissions`, Gemini uses `--approval-mode yolo`, Codex uses `--full-auto`. CLI models never ask interactive questions.
+- **feat:** New `src/tool-protocol.ts` module — tool prompt builder, response parser, call ID generator
+- **fix:** Removed `--tools ""` from Claude CLI args — allows native tool execution when needed
+- **fix:** Model capabilities now report `tools: true` for all CLI models (was `false`)
+
+### v2.2.1
+- **fix:** Config-patcher now validates `apiKey` value — re-patches if `__OPENCLAW_KEEP__` or any wrong value is present (prevents vllm 401 Unauthorized after config migrations)
+
+### v2.2.0
+- **fix:** Module-level guards prevent duplicate log spam — `register()` is called per-agent (~11×), now logs Chrome/provider/commands only once
+- **fix:** Shortened command registration log: count + `/cli-list` reference instead of listing all 32 commands
+- **fix:** Removed `fuser -k` port cleanup — was killing the gateway process itself, causing systemd restart loops
+- **fix:** EADDRINUSE now handled gracefully (skip + log) instead of process killing
+- **fix:** Session restore (4× Chromium) only runs in gateway mode — CLI commands like `openclaw models status` no longer hang
+- **fix:** Codex auth import runs once per startup, not per-agent
 
 ### v2.1.3
 - **docs:** All documentation updated to reflect current version (README, SKILL.md, STATUS.md, MANIFEST.json)
