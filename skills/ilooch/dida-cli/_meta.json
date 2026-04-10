@@ -3,11 +3,16 @@
   "slug": "dida-cli",
   "displayName": "滴答清单",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773718108780,
-    "commit": "https://github.com/openclaw/skills/commit/b2ea998c987a0bd85921a7b243af3e3d0853e98d"
+    "version": "1.0.4",
+    "publishedAt": 1775711449476,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773718108780,
+      "commit": "https://github.com/openclaw/skills/commit/b2ea998c987a0bd85921a7b243af3e3d0853e98d"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773236681386,
