@@ -18,15 +18,7 @@ if [ "${#QUERY}" -gt 280 ]; then
   echo "Error: Query too long (max 280 chars)." >&2
   exit 1
 fi
-
-# Reject control characters (including newlines/tabs) to avoid ambiguous payloads.
-if printf '%s' "$QUERY" | LC_ALL=C grep -q '[[:cntrl:]]'; then
-  echo "Error: Query contains control characters." >&2
-  exit 1
-fi
-
-ALLOWLIST_REGEX="^[A-Za-z0-9 ,./()!?&$€£¥'\\-]+$"
-if ! printf '%s' "$QUERY" | grep -qE "$ALLOWLIST_REGEX"; then
+if ! echo "$QUERY" | grep -qE '^[a-zA-Z0-9 ,.\-\/\$€£¥()!?'\''&]+$'; then
   echo "Error: Query contains unsupported characters." >&2
   exit 1
 fi

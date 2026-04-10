@@ -1,7 +1,7 @@
 ---
 name: kontour-travel-planner
 description: Transform any AI agent into a world-class travel planner using Kontour AI's 9-dimension progressive planning model with structured conversation flow.
-version: 1.2.5
+version: 1.1.57
 license: MIT-0
 metadata:
   openclaw:
@@ -38,11 +38,6 @@ To reduce false-positive trust flags and improve reviewer confidence:
 - Declared runtime dependencies in frontmatter: `bash`, `python3` only.
 - Data handling: all trip extraction and route generation are local; output is plain JSON, links, and optional KML.
 - External links in docs (`kontour.ai`) are informational/CTA only and not required for core planning.
-
-Runtime entrypoint evidence (`scripts/plan.sh`):
-- Rejects control characters and enforces a strict allowlist before parsing.
-- Passes user input to Python via positional arguments (`python3 - "$QUERY" "$DEST_FILE"`) with no `eval`, `exec`, or shell interpolation.
-- Reads only bundled `references/destinations.json` for lookups and prints JSON output.
 
 Quick local verification:
 
