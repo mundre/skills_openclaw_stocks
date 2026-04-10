@@ -10,9 +10,10 @@
 import { appendFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { ArenaClient, ArenaStreamClient } from './arena-client.js';
+import { ArenaWebSocketClient } from './arena-ws-client.js';
 import { LLMClient } from './llm.js';
 import {
-  ARENA_API_KEY, ARENA_LLM_MODEL, TICK_INTERVAL_MS, LOGS_DIR,
+  ARENA_API_KEY, ARENA_LLM_MODEL, TICK_INTERVAL_MS, LOGS_DIR, ARENA_TRANSPORT,
   RANK_TITLES, DISTRICTS, DRUGS, DRUG_RANK_REQ, DRUG_PRECURSOR_COST,
   DRUG_BASE_PRICE, QUALITY_TIERS, GEAR_CATALOG, HEAT_MAX, PVP_MIN_RANK,
   MAX_ACTION_HISTORY, STUCK_THRESHOLD, AGENT_DIRTY_CASH_RESERVE,
@@ -109,19 +110,35 @@ function formatAvailableActions(state, rank, availableDrugs, hasActiveContract, 
     const available = suggested.filter(a => a.available);
     const blocked = suggested.filter(a => !a.available);
 
-    // Compact format: action(params) on one line
-    const availLines = available.map(a => {
-      if (a.params_hint) {
-        const params = Object.entries(a.params_hint).map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`).join(',');
-        return `${a.action}(${params})`;
-      }
-      return a.action;
-    });
-    const blockedLines = blocked.map(a => `${a.action}(${a.reason})`);
+    // Group by priority for clearer LLM guidance
+    const high = available.filter(a => a.priority === 'high');
+    const medium = available.filter(a => a.priority === 'medium');
+    const low = available.filter(a => a.priority === 'low');
 
-    let text = `## Actions\nAvailable: ${availLines.join(', ')}\n`;
-    if (blockedLines.length > 0) {
-      text += `Blocked: ${blockedLines.join(', ')}\n`;
+    function formatAction(a) {
+      let line = a.action;
+      if (a.params_hint) {
+        const params = Object.entries(a.params_hint)
+          .filter(([k]) => k !== 'available_gear') // skip verbose gear list
+          .map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`).join(',');
+        if (params) line += `(${params})`;
+      }
+      if (a.note) line += ` — ${a.note}`;
+      return line;
+    }
+
+    let text = '## Actions\n';
+    if (high.length > 0) {
+      text += `**DO FIRST:** ${high.map(formatAction).join('; ')}\n`;
+    }
+    if (medium.length > 0) {
+      text += `Available: ${medium.map(formatAction).join(', ')}\n`;
+    }
+    if (low.length > 0) {
+      text += `Low priority: ${low.map(a => a.action).join(', ')}\n`;
+    }
+    if (blocked.length > 0) {
+      text += `Blocked: ${blocked.map(a => `${a.action}(${a.reason})`).join(', ')}\n`;
     }
     return text;
   }
@@ -151,7 +168,10 @@ ${rank >= 2 ? `- hostile_action: Attack player. Params: {action_type: "rob|snitc
 - buy_gear: Purchase gear. Params: {gear_type: "brass_knuckles|switchblade|piece|leather_jacket|kevlar_vest|plated_carrier"}
 - equip_gear: Equip owned gear. Params: {gear_id: "UUID"}
 - accept_contract: Take contract (max 1 active). Params: {contract_id: "UUID"}${hasActiveContract ? ' *** you already have an active contract — accepting another will fail ***' : ''}
-- bail: Leave prison early (costs clean cash). No params.`;
+- bail: Leave prison early (costs clean cash). No params.
+- bail_dealer: Post bail for an ARRESTED dealer. Params: {dealer_id: "UUID"} *** only works on "arrested" status, not "busted" ***
+- fire_dealer: Fire any dealer (returns inventory). Params: {dealer_id: "UUID"} *** use this to clear busted dealers and free slots for new recruits ***
+- dismiss_dealer: Dismiss a busted/arrested dealer (no inventory return). Params: {dealer_id: "UUID"}`;
 
   // Crew actions
   if (!inCrew && rank >= 2 && clean >= CREW_CREATE_COST) {
@@ -792,6 +812,21 @@ function tryDeterministicAction(state) {
     }
   }
 
+  // Bail arrested dealers (bail window is time-limited)
+  const dealers = state.dealers || [];
+  const dirty = player.dirty_cash || 0;
+  const arrestedDealer = dealers.find(d => d.status === 'arrested');
+  if (arrestedDealer && dirty >= 500) {
+    return { action: 'bail_dealer', params: { dealer_id: arrestedDealer.id }, reasoning: `Bailing arrested dealer ${arrestedDealer.name} before window expires` };
+  }
+
+  // Fire busted dealers — these are permanently gone (bail window expired), can only be fired
+  const bustedDealers = dealers.filter(d => d.status === 'busted');
+  if (bustedDealers.length > 0) {
+    const worst = bustedDealers.sort((a, b) => (a.loyalty || 0) - (b.loyalty || 0))[0];
+    return { action: 'fire_dealer', params: { dealer_id: worst.id }, reasoning: `Firing busted dealer ${worst.name} — permanently gone, freeing slot` };
+  }
+
   return null; // no deterministic action — use LLM
 }
 
@@ -979,14 +1014,31 @@ async function run() {
   const client = new ArenaClient();
   const stream = new ArenaStreamClient();
   const llm = new LLMClient(effectiveModel);
-  const USE_SSE = process.env.ARENA_NO_SSE !== '1';
+
+  // Transport selection: ws > sse > polling
+  const transport = ARENA_TRANSPORT || (process.env.ARENA_NO_SSE === '1' ? 'polling' : 'sse');
+  let wsClient = null;
+
+  // Transport-agnostic action executor — WS mode sends over the socket,
+  // REST/SSE mode uses the HTTP client. Both return {success, error?, responses?}.
+  async function executeAction(action, params, reasoning, model) {
+    if (transport === 'ws' && wsClient?.connected) {
+      try {
+        const result = await wsClient.send(action, params, reasoning, model);
+        return { success: true, responses: [result] };
+      } catch (e) {
+        return { success: false, error: e.message, code: e.code, suggestion: e.suggestion, alternatives: e.alternatives };
+      }
+    }
+    return client.executeAction(PLAYER_ID, action, params, reasoning, model);
+  }
 
   log('info', `Arena Agent starting`, {
     player_id: PLAYER_ID,
     duration: DURATION_STR,
     model: effectiveModel,
     tick_interval: TICK_INTERVAL_MS,
-    transport: USE_SSE ? 'sse' : 'polling',
+    transport,
   });
 
   const startTime = Date.now();
@@ -1032,6 +1084,7 @@ async function run() {
     shuttingDown = true;
     log('info', `Received ${signal}, shutting down gracefully`);
     stream.disconnect();
+    if (wsClient) wsClient.disconnect();
   }
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
@@ -1092,7 +1145,7 @@ async function run() {
       }
       // Execute the deterministic action directly
       try {
-        const result = await client.executeAction(PLAYER_ID, deterministic.action, deterministic.params, deterministic.reasoning, effectiveModel);
+        const result = await executeAction(deterministic.action, deterministic.params, deterministic.reasoning, effectiveModel);
         if (result.success) {
           log('info', `Success (deterministic): ${deterministic.action}`);
           pushAction(recentActions, { tick: tickCount, action: deterministic.action, outcome: 'success' });
@@ -1127,7 +1180,7 @@ async function run() {
       pushAction(recentActions, { tick: tickCount, action: 'wait', outcome: 'ok' });
       sessionStats.waitCount++;
       if (decision.action === 'wait' && decision.reasoning) {
-        try { await client.executeAction(PLAYER_ID, 'list_district_players', {}, decision.reasoning, effectiveModel); } catch {}
+        try { await executeAction('list_district_players', {}, decision.reasoning, effectiveModel); } catch {}
       }
       errorStreak = 0;
       return;
@@ -1170,7 +1223,7 @@ async function run() {
     log('info', `Action: ${action}`, { params, reasoning });
 
     try {
-      const result = await client.executeAction(PLAYER_ID, action, params, reasoning, effectiveModel);
+      const result = await executeAction(action, params, reasoning, effectiveModel);
       if (result.success) {
         log('info', `Success: ${action}`, { responses: result.responses?.length });
         pushAction(recentActions, { tick: tickCount, action, outcome: 'success' });
@@ -1214,7 +1267,7 @@ async function run() {
     // Auto-accept crew invites
     if ((kind === 'crew_invite') && !player.crew_id) {
       try {
-        await client.executeAction(PLAYER_ID, 'crew_invite_response',
+        await executeAction('crew_invite_response',
           { crew_id: notif.crew_id, accept: true },
           `Accepting crew invite to ${notif.crew_name || 'crew'}`, effectiveModel);
         log('info', `Auto-accepted crew invite to ${notif.crew_name || notif.crew_id}`);
@@ -1223,6 +1276,91 @@ async function run() {
       }
     }
 
+  }
+
+  // ── WebSocket event-driven loop ───────────────────────────────────
+
+  async function runWebSocket() {
+    wsClient = new ArenaWebSocketClient(undefined, undefined, PLAYER_ID);
+
+    return new Promise((resolve) => {
+      let processing = false;
+      let lastTickTime = 0;
+
+      async function scheduleDecision(state, source) {
+        if (processing) return;
+        const now = Date.now();
+        const elapsed = now - lastTickTime;
+        const adaptiveDelay = getNextTickDelay(lastState, lastActionName);
+        if (elapsed < adaptiveDelay * 0.8) return;
+        processing = true;
+        lastTickTime = now;
+        try {
+          await handleTick(state);
+        } catch (e) {
+          log('error', `${source} tick error: ${e.message}`);
+        } finally {
+          processing = false;
+        }
+      }
+
+      wsClient.on('connected', () => {
+        log('info', 'WebSocket connected');
+      });
+
+      wsClient.on('authenticated', (state) => {
+        log('info', `WebSocket authenticated: ${state.player?.username} in ${state.player?.current_district}`);
+        scheduleDecision(state, 'auth');
+      });
+
+      wsClient.on('tick', (_delta) => {
+        const state = wsClient.gameState;
+        if (state) scheduleDecision(state, 'tick');
+      });
+
+      wsClient.on('notification', (notif) => {
+        const state = wsClient.gameState;
+        handleNotification(notif, state).catch(e =>
+          log('error', `Notification error: ${e.message}`)
+        );
+        // Re-trigger decision on important notifications
+        if (['cook_complete', 'dealer_busted', 'rank_up', 'travel_arrived'].includes(notif.kind || notif.event)) {
+          if (state) scheduleDecision(state, 'notification');
+        }
+      });
+
+      wsClient.on('server_error', (err) => {
+        log('warn', `WS server error: ${err.code} ${err.message}`);
+      });
+
+      wsClient.on('disconnected', ({ code, reason }) => {
+        log('info', `WebSocket disconnected: ${code} ${reason || ''}`);
+      });
+
+      wsClient.on('reconnecting', ({ attempt, delay }) => {
+        log('info', `WebSocket reconnecting (attempt ${attempt}) in ${delay}ms`);
+      });
+
+      wsClient.on('session_replaced', () => {
+        log('warn', 'Session replaced by another connection');
+        shuttingDown = true;
+      });
+
+      wsClient.connect().catch(e => {
+        log('error', `WebSocket connect failed: ${e.message}, falling back to SSE`);
+        // Fall back to SSE on WS failure
+        runSSE().then(resolve);
+        return;
+      });
+
+      const check = setInterval(() => {
+        if (shuttingDown || Date.now() - startTime >= DURATION_MS) {
+          clearInterval(check);
+          if (wsClient) wsClient.disconnect();
+          resolve();
+        }
+      }, 5000);
+    });
   }
 
   // ── SSE event-driven loop ──────────────────────────────────────────
@@ -1335,7 +1473,9 @@ async function run() {
   // ── Run ────────────────────────────────────────────────────────────
 
   try {
-    if (USE_SSE) {
+    if (transport === 'ws') {
+      await runWebSocket();
+    } else if (transport === 'sse') {
       await runSSE();
     } else {
       await runPolling();
@@ -1348,7 +1488,7 @@ async function run() {
 
     log('info', `Arena Agent stopped`, {
       reason: shuttingDown ? 'signal' : (errorStreak >= 10 ? 'error_limit' : 'duration'),
-      transport: USE_SSE ? 'sse' : 'polling',
+      transport,
       ticks: tickCount,
       elapsed_secs: elapsed,
       actions_success: sessionStats.successCount,

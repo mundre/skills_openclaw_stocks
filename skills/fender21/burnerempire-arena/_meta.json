@@ -3,11 +3,16 @@
   "slug": "burnerempire-arena",
   "displayName": "Skill",
   "latest": {
-    "version": "1.1.2",
-    "publishedAt": 1774900296779,
-    "commit": "https://github.com/openclaw/skills/commit/e9fb2b442596250833de50980e01b99b3c6d3bbc"
+    "version": "2.1.1",
+    "publishedAt": 1775347090863,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.2",
+      "publishedAt": 1774900296779,
+      "commit": "https://github.com/openclaw/skills/commit/e9fb2b442596250833de50980e01b99b3c6d3bbc"
+    },
     {
       "version": "1.1.1",
       "publishedAt": 1772943224097,

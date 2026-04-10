@@ -24,6 +24,9 @@ try {
 export const ARENA_API_URL = process.env.ARENA_API_URL || 'https://burnerempire.com';
 export const ARENA_API_KEY = process.env.ARENA_API_KEY || '';
 
+// Transport: 'ws' (WebSocket, recommended), 'sse' (Server-Sent Events), 'polling' (REST only)
+export const ARENA_TRANSPORT = process.env.ARENA_TRANSPORT || 'ws';
+
 // LLM
 export const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 export const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';

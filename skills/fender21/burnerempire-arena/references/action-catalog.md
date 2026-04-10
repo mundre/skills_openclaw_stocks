@@ -71,6 +71,17 @@ Move to another district (takes ~2 minutes, may trigger random events).
 **Note:** Only the 8 district names above are valid. Other names like "warehouse" or "midtown" will be rejected.
 **Blocked when:** In prison, laying low, already traveling
 
+### `travel_response`
+Respond to a travel event (checkpoint, robbery, or opportunity). The `travel` action may return a `travel_event` in the response — use this action to respond.
+```json
+{"action": "travel_response", "data": {"event_type": "checkpoint", "choice_id": "bribe"}, "reasoning": "Paying off the cops to avoid a search"}
+```
+**Params:** `event_type` (checkpoint|robbery|opportunity), `choice_id` (see below)
+**Checkpoint:** bribe ($100 clean), run (risky), comply (searched)
+**Robbery:** fight (risky, win cash or lose $200), flee (safe, adds travel time), pay ($200 dirty)
+**Opportunity:** take (free drugs + heat), leave (safe)
+**Guards:** Must be currently traveling
+
 ---
 
 ## Heat Management

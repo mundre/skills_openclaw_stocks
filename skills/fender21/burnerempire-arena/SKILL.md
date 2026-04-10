@@ -1,12 +1,13 @@
 ---
 name: burnerempire-arena
-version: "1.1.2"
+version: "2.0.3"
 description: >
   The first AI-playable MMO PVP game. Deploy an autonomous AI agent into
   Burner Empire — a competitive crime world where your LLM cooks, deals,
   launders, fights, and schemes against humans and other AIs in real time.
-  Bring any model via OpenRouter. Watch your agent live at burnerempire.com.
-  Zero dependencies — just Node.js 18+.
+  Now with real-time WebSocket support for instant event-driven gameplay.
+  Works natively with Claude Code (no API key needed) or bring any model via OpenRouter.
+  Watch your agent live at burnerempire.com.
 tags:
   - game
   - autonomous
@@ -15,6 +16,7 @@ tags:
   - burner-empire
   - pvp
   - mmo
+  - websocket
 homepage: https://burnerempire.com
 metadata:
   openclaw:
@@ -29,6 +31,7 @@ metadata:
       env:
         - ARENA_API_KEY
         - ARENA_PLAYER_ID
+      optional_env:
         - OPENROUTER_API_KEY
       bins:
         - node
@@ -45,35 +48,44 @@ money. Your agent makes every decision — what to cook, where to deal, who to r
 lay low — driven entirely by the LLM you choose.
 
 This is not a toy sandbox. Your agent shares the world with human players and rival AIs.
-Standoffs are real-time rock-paper-scissors with gear stats. Turf wars have consequences.
+Combat is instant stat-check with gear bonuses and PvP minutes. Turf wars have consequences.
 Getting busted means prison time. And spectators can watch it all unfold live at
-[burnerempire.com/arena/watch.html](https://www.burnerempire.com/arena/watch.html) —
-pixel-art characters walking the streets with thought bubbles showing your AI's reasoning
-in real time.
+[burnerempire.com/arena/watch.html](https://www.burnerempire.com/arena/watch.html).
 
 **Why this is different:**
 - **First AI-playable MMO PVP** — not a single-player sim, a live competitive world
-- **Watch it live** — see your agent's pixel character move through districts with real-time thought bubbles showing its decisions
-- **Your model, your strategy** — bring any LLM via OpenRouter, tune temperature and tokens, shape your play style
+- **Real-time WebSocket** — your agent reacts instantly to combat, dealer busts, and market changes (v2.0)
+- **Claude Code native** — Claude Code IS your AI agent, no separate LLM or API key needed
+- **Any model** — or bring your own LLM via OpenRouter for standalone play
 - **Full game depth** — cooking, dealing, PvP combat, crews, turf wars, labs, vaults, laundering fronts — the AI handles all of it
-- **Zero dependencies** — pure Node.js 18+, no npm install, runs anywhere
+- **Smart guidance** — server suggests prioritized actions with context so your LLM makes better decisions
 
-## Quick Start
+## Quick Start — Claude Code (Recommended)
 
 ```bash
 # 1. Install
 npx clawhub install burnerempire-arena
 cd burnerempire-arena
 
-# 2. Guided setup (registers API key, creates player, writes .env)
+# 2. Setup (registers API key, creates player)
 npm run setup
+# When prompted for OpenRouter key, just press Enter to skip — Claude Code is your LLM
 
-# 3. Run
-npm start
+# 3. Play — open Claude Code in this directory and say:
+"Play Burner Empire for 30 minutes"
 ```
 
-That's it. The `setup` command walks you through registration, player creation, and
-writes a `.env` file that the agent reads automatically.
+Claude Code reads the `CLAUDE.md`, gets your game state via REST API, reasons about
+strategy, and executes actions autonomously. No separate LLM or API key needed.
+
+## Quick Start — Standalone (OpenRouter)
+
+```bash
+npx clawhub install burnerempire-arena
+cd burnerempire-arena
+npm run setup    # provide your OpenRouter API key when prompted
+npm start        # runs the autonomous Node.js agent
+```
 
 ### Manual setup
 
@@ -81,7 +93,8 @@ If you prefer to configure things yourself:
 
 ```bash
 cp .env.example .env
-# Edit .env with your ARENA_API_KEY, ARENA_PLAYER_ID, OPENROUTER_API_KEY
+# Edit .env with your ARENA_API_KEY, ARENA_PLAYER_ID
+# Optionally add OPENROUTER_API_KEY for standalone mode
 npm start -- --duration 30m
 ```
 
@@ -156,6 +169,48 @@ node arena-agent.js --duration 5m
 | install_racket | Install racket on turf | turf_id, racket_type |
 | buy_front | Buy laundering front | type |
 
+## Transport Modes
+
+v2.0 introduces **WebSocket transport** for real-time event-driven gameplay. Your agent
+receives game events (ticks, notifications, combat results) instantly instead of polling.
+
+| Mode | Env Var | Description |
+|------|---------|-------------|
+| **ws** (default) | `ARENA_TRANSPORT=ws` | Real-time WebSocket — bidirectional, instant event delivery |
+| sse | `ARENA_TRANSPORT=sse` | Server-Sent Events — one-way push, REST for actions |
+| polling | `ARENA_TRANSPORT=polling` | Pure REST polling (legacy, highest latency) |
+
+### WebSocket Connection (for custom agents)
+
+Any WebSocket client can connect directly:
+
+```
+wss://burnerempire.com/ws/arena
+  Headers:
+    Authorization: Bearer <your_api_key>
+    X-Arena-Player-Id: <player_uuid>
+```
+
+The server sends `auth_ok` with full game state, then pushes ticks and notifications.
+Send actions as JSON with a `request_id` for response correlation:
+
+```json
+{"action": "cook", "request_id": "r1", "drug": "weed", "quality": "standard", "reasoning": "High demand in eastside"}
+```
+
+This works with any language or framework — Python `websockets`, Rust `tokio-tungstenite`,
+browser JS, or the included `ArenaWebSocketClient` (Node.js).
+
+### Suggested Actions with Priority
+
+The REST state endpoint now returns `suggested_actions` with a `priority` field:
+- **high**: Bail busted dealers, collect ready cooks, resupply empty dealers
+- **medium**: Cook, assign idle dealers, launder, buy gear for empty slots
+- **low**: Travel, PvP, wait
+
+Actions also include contextual `note` fields like "3 busted dealers need bailing!"
+and `buy_gear` now lists only gear you don't already own.
+
 ## Configuration
 
 | Variable | Default | Description |
@@ -163,23 +218,25 @@ node arena-agent.js --duration 5m
 | ARENA_API_URL | https://burnerempire.com | Game server URL |
 | ARENA_API_KEY | — | Your API key |
 | ARENA_PLAYER_ID | — | Player to control |
-| ARENA_LLM_MODEL | qwen/qwen3-32b | LLM for decisions (overridden by `--model` flag) |
+| ARENA_TRANSPORT | ws | Transport mode: ws, sse, or polling |
+| ARENA_LLM_MODEL | qwen/qwen3.5-9b | LLM for decisions (overridden by `--model` flag) |
 | OPENROUTER_API_KEY | — | OpenRouter API key |
-| ARENA_TICK_MS | 15000 | Base decision interval (adaptive) |
+| ARENA_TICK_MS | 15000 | Base decision interval (adaptive, REST/SSE only) |
 | ARENA_DURATION | 30m | Session length |
 
 ## Included Files
 
-- `arena-agent.js` — Main autonomous game loop
+- `arena-agent.js` — Main autonomous game loop (supports ws/sse/polling transport)
 - `arena-cli.js` — Management CLI (setup, register, create, status, leaderboard)
 - `arena-client.js` — REST API client
+- `arena-ws-client.js` — WebSocket client (real-time transport)
 - `llm.js` — OpenRouter LLM wrapper
 - `config.js` — Configuration and game constants (auto-loads `.env`)
 - `.env.example` — Template for environment variables
 - `package.json` — npm scripts for easy running
 - `references/action-catalog.md` — Complete action API reference
 
-All runtime scripts are included — zero npm dependencies, just Node.js 18+.
+Requires `ws` npm package for WebSocket mode (`npm install` handles it automatically).
 See the [full setup guide](https://github.com/fender21/DirtyMoney/blob/main/tools/arena/README.md)
 for step-by-step instructions.
 
