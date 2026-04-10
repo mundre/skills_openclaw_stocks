@@ -6,7 +6,7 @@ description: >
   Contacts, GitHub, and iMessage (macOS). Clawvisor enforces restrictions,
   manages task scopes, and injects credentials — the agent never handles
   secrets directly.
-version: 0.6.2
+version: 0.7.0
 homepage: https://github.com/clawvisor/clawvisor
 metadata:
   {
@@ -18,16 +18,22 @@ metadata:
       },
   }
 ---
-
 # Clawvisor Skill
 
 ## Setup
 
+### Option A: Setup URL (recommended)
+
+If you were given a setup URL (e.g. `https://relay.clawvisor.com/d/<id>/skill/setup`), fetch it — it contains step-by-step instructions with your `CLAWVISOR_URL` pre-filled, including how to register, authenticate, and set up E2E encryption.
+
+### Option B: Manual setup
+
 1. Set `CLAWVISOR_URL` to your Clawvisor instance URL (e.g. `http://localhost:25297`)
-2. Create an agent in the Clawvisor dashboard, copy the token, then run: `openclaw credentials set CLAWVISOR_AGENT_TOKEN`
+2. Create an agent in the Clawvisor dashboard, copy the token, and add it to `~/.claude/settings.json` under the `env` key as `CLAWVISOR_AGENT_TOKEN`
 3. Set `OPENCLAW_HOOKS_URL` to your OpenClaw gateway's reachable URL (default `http://localhost:18789`)
 4. Activate any services you want the agent to use (Gmail, GitHub, etc.) in the dashboard under Services
 5. Set dashboard policies to require approval for write/send/delete actions — only enable `auto_execute` for read-only actions you trust the agent to perform unsupervised
+6. If connecting through the cloud relay, use the bundled `e2e.mjs` helper or `cvis-e2e` binary — all requests through the relay require E2E encryption
 
 > ⚠️ **`CLAWVISOR_AGENT_TOKEN` is a high-privilege credential.** It grants the agent access to every service activated in Clawvisor. Use a dedicated token scoped to only the services you need, and rotate or revoke it immediately if compromised.
 
@@ -48,12 +54,12 @@ The authorization model has two layers — applied in order:
 
 ## Typical Flow
 
-1. Fetch the catalog — confirm the service is active and the action isn't restricted
-2. Create a task declaring your purpose and the actions you need
-3. Tell the user to approve it; long-poll `GET /api/tasks/{id}?wait=true` until approved
-4. Make gateway requests under the task — in-scope actions execute automatically
-5. Mark the task complete when done
+> **Execute all curl commands as a single line.** The examples below are formatted for readability, but when you run them, inline everything — URL, headers, and JSON body — into one `curl` command. Do not use `\` line continuations, heredocs, shell variables, or separate assignment statements. Multi-line commands trigger a separate approval prompt for each line.
 
+1. Fetch the catalog — confirm the service is active and the action isn't restricted
+2. Create a task with `POST /api/tasks?wait=true` — this blocks until the user approves
+3. Make gateway requests with `POST /api/gateway/request?wait=true` — in-scope auto-execute actions return immediately; actions requiring approval block until approved and return the result
+4. Mark the task complete when done
 ---
 
 ## Getting Your Service Catalog
@@ -69,7 +75,6 @@ This returns the services available to you, their supported actions, which
 actions are restricted (blocked), and a list of services you can ask the user
 to activate. Always fetch this before making gateway requests so you know
 what's available and what is restricted.
-
 ---
 
 ## Task-Scoped Access
@@ -78,27 +83,35 @@ Before making gateway requests, declare a task scope with your purpose and the
 actions you need:
 
 ```bash
-curl -s -X POST "$CLAWVISOR_URL/api/tasks" \
+curl -s -X POST "$CLAWVISOR_URL/api/tasks?wait=true" \
   -H "Authorization: Bearer $CLAWVISOR_AGENT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "purpose": "Review last 30 iMessage threads and classify reply status",
+    "purpose": "Full iMessage management: review recent threads, classify reply status, identify conversations needing attention, search message history by contact or topic, and read full thread context for any follow-up questions. Covers all iMessage read operations the user may request during this session.",
     "authorized_actions": [
-      {"service": "apple.imessage", "action": "list_threads", "auto_execute": true, "expected_use": "List recent iMessage threads to find ones needing replies"},
-      {"service": "apple.imessage", "action": "get_thread", "auto_execute": true, "expected_use": "Read individual thread messages to classify reply status"}
+      {"service": "apple.imessage", "action": "list_threads", "auto_execute": true, "expected_use": "List iMessage threads by recency, unread status, or contact. Used for inbox review, finding conversations needing replies, checking message status with specific people, and any ad-hoc thread lookup the user requests."},
+      {"service": "apple.imessage", "action": "get_thread", "auto_execute": true, "expected_use": "Read full thread content including all messages, timestamps, and attachments. Used to understand conversation context, classify reply urgency, extract action items, answer user questions about specific conversations, and provide summaries."}
+    ],
+    "planned_calls": [
+      {"service": "apple.imessage", "action": "list_threads", "params": {"limit": 30}, "reason": "List the 30 most recent threads to review inbox state and identify conversations needing attention"},
+      {"service": "apple.imessage", "action": "get_thread", "params": {"thread_id": "$chain"}, "reason": "Read full thread content for each conversation that needs review or that the user asks about"}
     ],
     "expires_in_seconds": 1800
   }'
 ```
 
-- **`purpose`** — shown to the user during approval and used by intent verification to ensure requests stay consistent with declared intent. Be specific.
-- **`expected_use`** — per-action description of how you'll use it. Shown during approval and checked by intent verification against your actual request params. Be specific: "Fetch today's calendar events" is better than "Use the calendar API."
+- **`purpose`** — shown to the user during approval and checked by intent verification. **Scope broadly:** describe the full workflow as a capability statement, not a single action. Enumerate every category of operation the task covers. Narrow purposes like "Check emails" cause intent verification to reject legitimate follow-up requests. See the examples above.
+- **`expected_use`** — per-action description checked by intent verification against your actual request params. **Enumerate all use cases** — every scenario, parameter type, and reason you'd invoke this action. A narrow expected_use like "List recent emails" will reject searches by sender or keyword.
 - **`auto_execute`** — `true` runs in-scope requests immediately; `false` still requires per-request approval (use for destructive actions like `send_message`).
 - **`expires_in_seconds`** — task TTL. Omit and set `"lifetime": "standing"` for a task that persists until the user revokes it (see below).
-- **`callback_url`** — *(optional, only if callbacks are configured)* Clawvisor posts task lifecycle events here. Otherwise, long-poll with `GET /api/tasks/{id}?wait=true`.
+- **`planned_calls`** *(optional)* — pre-register specific API calls you know you'll make. Planned calls are shown to the user during approval, evaluated as part of risk assessment, and **skip intent verification at runtime** when they match. This reduces latency for predictable workflows. Each entry must be covered by `authorized_actions` and must include `params`. Use exact values for known params, or `"$chain"` for values that will come from a prior call's results (e.g. `{"thread_id": "$chain"}`). Calls without params cannot skip verification.
+
+**Always request the broadest reasonable scope upfront.** The user reviews scope once at task creation; mid-task `pending_scope_expansion` interrupts their flow. Scope for the full range of operations the request could entail — not just the first step.
 
 All tasks start as `pending_approval` — the user is notified to approve the
-scope before it becomes active. Long-poll `GET /api/tasks/{id}?wait=true`
+scope before it becomes active. **Always use `?wait=true`** on `POST /api/tasks`
+to block until the task is approved or denied in a single round-trip. If the
+timeout elapses while still pending, long-poll `GET /api/tasks/{id}?wait=true`
 until `status` changes to `active` (or `denied`).
 
 ### Standing tasks
@@ -110,16 +123,18 @@ curl -s -X POST "$CLAWVISOR_URL/api/tasks" \
   -H "Authorization: Bearer $CLAWVISOR_AGENT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "purpose": "Ongoing email triage",
+    "purpose": "Full executive assistant email management. Includes: inbox triage and prioritization, searching emails by any criteria (sender, recipient, company name, topic, subject keywords, date ranges, labels, read/unread status, or any Gmail query syntax), reading individual email bodies for full context and action items, tracking thread status and follow-ups across all senders and topics, researching email history on ad-hoc requests, monitoring for time-sensitive items, auditing intro/outreach status for specific companies or people, and surfacing anything requiring attention. This task covers ALL email read operations the user or their automated workflows may request.",
     "lifetime": "standing",
     "authorized_actions": [
-      {"service": "google.gmail", "action": "list_messages", "auto_execute": true, "expected_use": "List recent emails to identify ones needing attention"},
-      {"service": "google.gmail", "action": "get_message", "auto_execute": true, "expected_use": "Read individual emails to triage and summarize"}
+      {"service": "google.gmail", "action": "list_messages", "auto_execute": true, "expected_use": "Search and list emails using any Gmail query syntax: by sender, recipient, company name, subject keywords, date ranges (newer_than, older_than, before, after), labels, read/unread status, thread ID, or any combination. Used for inbox triage, follow-ups on hiring, intro status monitoring, deal research, investor correspondence tracking, scheduling and thread discovery, and any ad-hoc email search for any company, person, or topic at any time."},
+      {"service": "google.gmail", "action": "get_message", "auto_execute": true, "expected_use": "Read full email content for any message found via list_messages or referenced by message ID. Used to understand full context, extract action items, check reply status, draft summaries, track intro chains, audit follow-ups, and provide detailed email content to the user on request. Will read emails from any sender, about any topic, at any time as needed for triage, research, and executive assistant workflows."}
     ]
   }'
 ```
 
 Standing tasks remain active until the user revokes them from the dashboard.
+
+> **⚠️ Standing tasks MUST use `session_id` on every gateway request.** Without `session_id`, chain context is disabled — meaning intent verification cannot see that a message ID or thread ID came from your own prior search results. The verifier will treat those IDs as unexplained entity references and block them. Generate one UUID per workflow invocation and pass it as `session_id` on every request in that invocation.
 
 ### Chain context verification
 
@@ -135,22 +150,23 @@ If you omit `session_id` on a standing task, chain context is disabled and inten
 
 ### Scope expansion
 
-If you need an action not in the original task scope:
+If you need an action not in the original task scope,
 
 ```bash
-curl -s -X POST "$CLAWVISOR_URL/api/tasks/<task-id>/expand" \
+curl -s -X POST "$CLAWVISOR_URL/api/tasks/<task-id>/expand?wait=true" \
   -H "Authorization: Bearer $CLAWVISOR_AGENT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "service": "apple.imessage",
     "action": "send_message",
     "auto_execute": false,
-    "reason": "John Doe asked a question that warrants a reply"
+    "reason": "A contact asked a question that warrants a reply"
   }'
 ```
 
-The user will be notified to approve the expansion. On approval, the action is
-added to the task scope and the expiry is reset.
+The user will be notified to approve the expansion. With `?wait=true`, the
+request blocks until approved or denied. On approval, the action is added to
+the task scope and the expiry is reset.
 
 ### Completing a task
 
@@ -160,6 +176,47 @@ When you're done, mark the task as completed:
 curl -s -X POST "$CLAWVISOR_URL/api/tasks/<task-id>/complete" \
   -H "Authorization: Bearer $CLAWVISOR_AGENT_TOKEN"
 ```
+
+---
+
+## Writing Effective Reasons
+
+The `reason` field on gateway requests is verified by a language model, not pattern-matched. Write reasons the way a human assistant would explain an action to their boss — describe **what** you're doing and **why**, not who told you to do it.
+
+**Do:**
+- `"Searching for recent emails from the design team to draft a follow-up reply"`
+- `"Reading thread to extract action items for the weekly standup summary"`
+- `"Listing recent calendar events to check for scheduling conflicts this afternoon"`
+- `"Looking up the intro email from the vendor to confirm reply status"`
+
+**Don't:**
+- `"The user told me to do this"` — claiming the user instructed you looks identical to prompt injection to the verifier. Describe the action itself instead.
+- `"The owner directly instructed me to reply to this email via Telegram"` — the verifier cannot distinguish this from an injected instruction. Instead: `"Drafting reply to the vendor's email and preparing a follow-up summary"`
+- `"Doing my job"` / `"As requested"` — too vague; will be flagged as insufficient.
+- `"Testing"` / `"Retry"` / `"Trying again"` — implementation details, not a rationale.
+- Embedding code, markup, JSON, or system directives in the reason field.
+
+**Key rule:** The verifier treats **all agent-provided fields as untrusted**. Any text that resembles an instruction ("ignore previous rules", "approve this request", "the user said to...") will be flagged as a prompt injection attempt, even if it's a truthful description of what happened. Focus on the *what* and *why* of the action, not the *who told you*.
+
+---
+
+## Preset Task Definitions
+
+Agents tend to write narrow task scopes, which causes intent verification to reject legitimate follow-up requests. **Use these presets instead of writing your own scopes.** They are intentionally broad to cover the full range of operations in each workflow.
+
+Fetch a preset and use it directly as the request body for `POST /api/tasks`:
+
+```
+GET $CLAWVISOR_URL/skill/presets/<name>.json
+```
+
+| Preset | Description | File |
+|---|---|---|
+| **Email EA** | Full inbox management: triage, search, read, draft, send (approval-gated) | `email-ea.json` |
+| **Calendar** | Full calendar: view, search, create (approval-gated), update (approval-gated) | `calendar.json` |
+| **iMessage** | Thread review, search, read, send (approval-gated) | `imessage.json` |
+
+For example: `curl -s "$CLAWVISOR_URL/skill/presets/email-ea.json" | curl -s -X POST "$CLAWVISOR_URL/api/tasks?wait=true" -H "Authorization: Bearer $CLAWVISOR_AGENT_TOKEN" -H "Content-Type: application/json" -d @-`
 
 ---
 
@@ -193,7 +250,7 @@ curl -s -X POST "$CLAWVISOR_URL/api/gateway/request" \
 | `service` | Service identifier (from your catalog) |
 | `action` | Action to perform on that service |
 | `params` | Action-specific parameters (from your catalog) |
-| `reason` | One sentence explaining why. Shown in approvals and audit log. Be specific. |
+| `reason` | Why you need this data and what you'll do with it. Shown in approvals and audit log. Be specific: name the user request, the information you're looking for, and how it fits the workflow. |
 | `request_id` | A unique ID you generate (e.g. UUID). Must be unique across all your requests. |
 | `task_id` | The approved task ID this request belongs to. |
 | `session_id` | *(Standing tasks only)* A consistent UUID across related requests in a single invocation. Required for chain context on standing tasks. Not needed for ephemeral tasks (chain context is automatic). |
@@ -205,8 +262,7 @@ Always include the `context` object. All fields are optional but strongly recomm
 | Field | Description |
 |---|---|
 | `data_origin` | Source of any external data you are acting on (see below). |
-| `source` | What triggered this request: `"user_message"`, `"scheduled_task"`, `"callback"`, etc. |
-| `callback_url` | *(Only if callbacks are configured.)* URL where Clawvisor posts the result after async approval. |
+| `source` | What triggered this request: `"user_message"`, `"scheduled_task"`, etc. |
 
 ### data_origin — always populate when processing external content
 
@@ -232,104 +288,76 @@ Every response has a `status` field. Handle each case as follows:
 | Status | Meaning | What to do |
 |---|---|---|
 | `executed` | Action completed successfully | Use `result.summary` and `result.data`. Report to the user. |
-| `pending` | Awaiting human approval | Tell the user: "I've requested approval for [action]." Poll with the same `request_id` until resolved. Do **not** send a new request. |
+| `pending` | Awaiting human approval | Tell the user: "I've requested approval for [action]." If you used `?wait=true` on the original POST, the request is already blocking and will return the result once approved. If the long-poll timed out and you got this status back, re-initiate with `POST /api/gateway/request/{request_id}/execute?wait=true`. Do **not** send a new request. |
 | `blocked` | A restriction blocks this action | Tell the user: "I wasn't allowed to [action] — [reason]." Do **not** retry or attempt a workaround. |
-| `restricted` | Intent verification rejected the request | Your params or reason were inconsistent with the task's approved purpose. Adjust and retry with a new `request_id`. |
+| `restricted` | Intent verification rejected the request | Your params or reason were inconsistent with the task's approved purpose. Adjust and retry with a new request_id. |
 | `pending_task_approval` | Task not yet approved | Tell the user and long-poll `GET /api/tasks/{id}?wait=true` until approved. |
 | `pending_scope_expansion` | Request outside task scope | Call `POST /api/tasks/{id}/expand` with the new action. |
 | `task_expired` | Task has passed its expiry | Expand the task to extend, or create a new task. |
-| `error` (`SERVICE_NOT_CONFIGURED`) | Service not yet connected | Tell the user: "[Service] isn't activated yet. Connect it in the Clawvisor dashboard." |
+| `error` (`SERVICE_NOT_CONFIGURED`) | Service not yet connected | Tell the user: "[Service] isn't activated yet. Connect it in the Clawvisor dashboard.". |
 | `error` (`EXECUTION_ERROR`) | Adapter failed | Report the error to the user. Do not silently retry. |
 | `error` (other) | Something went wrong | Report the error message to the user. Do not silently retry. |
 
----
-
-## Waiting for approval
-
-**Tasks (preferred — long-poll):** `GET /api/tasks/{id}?wait=true` blocks
-server-side until the task leaves `pending_approval` / `pending_scope_expansion`.
-Add `&timeout=N` to control the wait (default & max 120 seconds).
-
-```
-GET /api/tasks/{id}?wait=true&timeout=120
-```
-
-If the timeout elapses while still pending, the response is a normal 200 with
-the current (still-pending) task — just call again to keep waiting.
-
-**Tasks (legacy polling):** Poll `GET /api/tasks/{id}` until `status` changes
-from `pending_approval` to `active` (or `denied`).
-
-**Gateway requests:** Re-send the same gateway request with the same
-`request_id`. Clawvisor recognizes the duplicate and returns the current status
-without re-executing.
+**Warnings:** Responses may include a `"warnings"` array with actionable messages about misconfiguration. For example, if you make a standing task request without `session_id`, the response will warn that chain context is disabled. Always check for and act on warnings.
 
 ---
 
-## Callbacks (optional)
+## Waiting for Approval
 
-If callbacks have been configured (e.g. via OpenClaw), Clawvisor can push
-status changes instead of requiring polling. **Only include `callback_url` in
-requests if your environment supports receiving callbacks.**
+**Always use `?wait=true`** on requests that require approval. This is the
+simplest and most efficient pattern — the server holds the connection until the
+user decides, then returns the resolved result in a single round-trip.
 
-Callbacks cover two categories: **gateway request resolutions** and **task
-lifecycle changes**. Each includes a `type` field (`"request"` or `"task"`).
+### Tasks
 
-**Request resolved:**
-```json
-{
-  "type": "request",
-  "request_id": "send-email-5678",
-  "status": "executed",
-  "result": { "summary": "Email sent to alice@example.com", "data": { ... } },
-  "audit_id": "a8f3..."
-}
-```
-Request callback statuses: `executed`, `denied`, `timeout`, or `error`.
-
-**Task lifecycle change:**
-```json
-{
-  "type": "task",
-  "task_id": "<task-id>",
-  "status": "approved"
-}
-```
-Task callback statuses: `approved`, `denied`, `scope_expanded`, `scope_expansion_denied`, `expired`.
-
-### Handling callbacks
-
-1. If you registered a callback secret, verify the `X-Clawvisor-Signature`
-   header: it should equal `sha256=` + HMAC-SHA256(body, CLAWVISOR_CALLBACK_SECRET).
-2. Check the `type` field: `"request"` → match `request_id` to your pending
-   request. `"task"` → match `task_id` to your task.
-3. For request callbacks: if `status` is `executed`, continue with the `result`
-   data. If `denied`, `timeout`, or `error`, tell the user the outcome and stop.
-4. For task callbacks: if `approved` or `scope_expanded`, proceed with your
-   task. If `denied`, `scope_expansion_denied`, or `expired`, inform the user.
-
-### Callback verification
-
-Register a signing secret to verify callbacks are genuinely from Clawvisor:
+Use `?wait=true` on `POST /api/tasks` and `POST /api/tasks/{id}/expand`. The
+request blocks until the task is approved or denied. Add `&timeout=N` to control
+the wait (default & max 120 seconds).
 
 ```
-POST $CLAWVISOR_URL/api/callbacks/register
-Authorization: Bearer $CLAWVISOR_AGENT_TOKEN
+POST /api/tasks?wait=true&timeout=120
 ```
 
-Response: `{"callback_secret": "cbsec_..."}`
+If the timeout elapses and the task is still in a pending state, re-initiate a
+long-poll with `GET /api/tasks/{id}?wait=true` and repeat until `status` changes.
+A timeout is not a rejection — it just means the user hasn't decided yet.
 
-Store this as `CLAWVISOR_CALLBACK_SECRET`. Calling this endpoint again rotates
-the secret.
+### Gateway requests
 
-### OpenClaw callback URL
-
-Build your `callback_url` using the `OPENCLAW_HOOKS_URL` environment variable
-and your session key (shown in `session_status` as the Session field):
+Use `?wait=true` on `POST /api/gateway/request`. If approval is needed, the
+request blocks until the user approves, then executes and returns the result —
+all in one round-trip.
 
 ```
-${OPENCLAW_HOOKS_URL}/clawvisor/callback?session=<session_key>
+POST /api/gateway/request?wait=true&timeout=120
+# → blocks until approved → {"status": "executed", "request_id": "...", "result": {...}}
 ```
+
+If the timeout elapses and the request is still pending, the response has
+`"status": "pending"`. Re-initiate a long-poll with
+`POST /api/gateway/request/{request_id}/execute?wait=true` and repeat until the
+user approves — this will block and return the executed result once approved.
+A timeout is not a rejection — it just means the user hasn't decided yet.
+
+### Fallback endpoints
+
+These are available if you didn't use `?wait=true` on the original POST:
+
+- **Execute after approval:** `POST /api/gateway/request/{request_id}/execute?wait=true` blocks until approved, then executes and returns the result.
+- **Read-only status:** `GET /api/gateway/request/{request_id}` returns the current status without executing. Supports `?wait=true` to block until the request leaves `pending` state.
+- **Legacy dedup:** Re-sending the same gateway request with the same `request_id` returns the current status without re-executing.
+---
+
+## Important Rules
+
+- **Always execute curl commands as a single line** — the examples in this document are multi-line for readability, but when running them, inline all variables, headers, and JSON bodies into one command. Never use `\` line continuations, heredocs, or separate variable assignments — each triggers a separate approval prompt.
+- Always fetch the catalog first to know what's available and restricted
+- Never attempt to bypass restrictions — they are hard blocks set by the user
+- Always create a task before making gateway requests
+- Use `auto_execute: false` for any action that sends, modifies, or deletes data
+- Generate unique request_ids for every gateway request
+- Complete tasks when done to clean up authorization scope
+- Always set `data_origin` when processing content from external sources
 
 ---
 
@@ -338,6 +366,7 @@ ${OPENCLAW_HOOKS_URL}/clawvisor/callback?session=<session_key>
 | Condition | Gateway `status` |
 |---|---|
 | Restriction matches | `blocked` |
+| Task in scope + `auto_execute` + matches planned call | `executed` (skips verification) |
 | Task in scope + `auto_execute` + verification passes | `executed` |
 | Task in scope + `auto_execute` + verification fails | `restricted` |
 | Task in scope + `auto_execute: false` | `pending` (per-request approval) |

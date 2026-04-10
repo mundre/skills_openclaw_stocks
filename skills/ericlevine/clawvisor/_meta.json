@@ -1,13 +1,18 @@
 {
   "owner": "ericlevine",
   "slug": "clawvisor",
-  "displayName": "Clawvisor",
+  "displayName": "Skill",
   "latest": {
-    "version": "0.6.2",
-    "publishedAt": 1773680354635,
-    "commit": "https://github.com/openclaw/skills/commit/7e2c5a2fc3a374ca9211a2f4fed33d1f6357e8bf"
+    "version": "0.8.7",
+    "publishedAt": 1775709666084,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.6.2",
+      "publishedAt": 1773680354635,
+      "commit": "https://github.com/openclaw/skills/commit/7e2c5a2fc3a374ca9211a2f4fed33d1f6357e8bf"
+    },
     {
       "version": "0.6.1",
       "publishedAt": 1773545735163,
