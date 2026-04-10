@@ -3,11 +3,16 @@
   "slug": "ravi-email-send",
   "displayName": "Ravi email-send",
   "latest": {
-    "version": "1.7.1",
-    "publishedAt": 1772960973095,
-    "commit": "https://github.com/openclaw/skills/commit/bd259e2f3247544956f3ec9e67fcd4fd07d961b9"
+    "version": "2.1.1",
+    "publishedAt": 1775627167059,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.7.1",
+      "publishedAt": 1772960973095,
+      "commit": "https://github.com/openclaw/skills/commit/bd259e2f3247544956f3ec9e67fcd4fd07d961b9"
+    },
     {
       "version": "1.6.0",
       "publishedAt": 1772282632328,
