@@ -1,11 +1,17 @@
 {
   "owner": "zhangzixuan961128-blip",
   "slug": "dknowc-official-doc-writer",
-  "displayName": "深知公文写作助手",
+  "displayName": "Dknowc Official Doc Writer",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774344143396,
-    "commit": "https://github.com/openclaw/skills/commit/a89a7c3f418110b5f4298e4d023002e62255153e"
+    "version": "2.0.1",
+    "publishedAt": 1775812704797,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774344143396,
+      "commit": "https://github.com/openclaw/skills/commit/a89a7c3f418110b5f4298e4d023002e62255153e"
+    }
+  ]
 }

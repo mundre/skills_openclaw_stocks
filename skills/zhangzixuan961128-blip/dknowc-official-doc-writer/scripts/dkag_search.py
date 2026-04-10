@@ -28,43 +28,13 @@ QUERY_TOO_SHORT_ERROR = f"错误：查询关键词过短，最少需要 {MIN_QUE
 
 # ========== 环境变量加载 ==========
 
-def _load_openclaw_config():
-    """从 OpenClaw 配置文件读取（兜底机制）。
-
-    优先级：进程环境变量 > skills.entries.env > 顶层 env
-    """
-    config_path = os.path.expanduser("~/.openclaw/openclaw.json")
-    if not os.path.isfile(config_path):
-        return {}
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+def _load_env_config():
+    """从进程环境变量读取配置（OpenClaw 会自动注入 skill 级 env）。"""
 
 
-def _get_env(name, config=None):
-    """获取环境变量，兜底读取 OpenClaw 配置文件。"""
-    val = os.environ.get(name)
-    if val:
-        return val
-    if config is None:
-        config = _load_openclaw_config()
-    # 先查 skill 级别
-    try:
-        val = config["skills"]["entries"]["official-doc-writer"]["env"][name]
-        if val:
-            return val
-    except (KeyError, TypeError):
-        pass
-    # 再查全局级别
-    try:
-        val = config["env"][name]
-        if val:
-            return val
-    except (KeyError, TypeError):
-        pass
-    return None
+def _get_env(name):
+    """获取环境变量（OpenClaw 已注入 skill 级 env 到进程）。"""
+    return os.environ.get(name)
 
 
 def _load_search_config():
@@ -73,9 +43,8 @@ def _load_search_config():
     Returns:
         (api_key, api_url) 元组
     """
-    config = _load_openclaw_config()
-    api_key = _get_env("DKNOWC_SEARCH_API_KEY", config)
-    api_url = _get_env("DKNOWC_SEARCH_ENDPOINT", config)
+    api_key = _get_env("DKNOWC_SEARCH_API_KEY")
+    api_url = _get_env("DKNOWC_SEARCH_ENDPOINT")
 
     if not api_key:
         print("错误：搜索 API Key 未配置。", file=sys.stderr)
