@@ -3,11 +3,16 @@
   "slug": "ravi-feedback",
   "displayName": "Ravi feedback",
   "latest": {
-    "version": "1.7.1",
-    "publishedAt": 1772960981212,
-    "commit": "https://github.com/openclaw/skills/commit/aacb108882bad79f38b468bf3459218139bd509c"
+    "version": "2.1.1",
+    "publishedAt": 1775627175315,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.7.1",
+      "publishedAt": 1772960981212,
+      "commit": "https://github.com/openclaw/skills/commit/aacb108882bad79f38b468bf3459218139bd509c"
+    },
     {
       "version": "1.7.0",
       "publishedAt": 1772783511397,
