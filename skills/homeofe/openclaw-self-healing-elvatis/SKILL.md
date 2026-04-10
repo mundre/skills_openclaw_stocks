@@ -23,4 +23,4 @@ clawhub install openclaw-self-healing-elvatis
 
 Keep repository content public-safe (no private identifiers).
 
-**Version:** 0.2.10
+**Version:** 0.2.12

@@ -1,13 +1,18 @@
 {
   "owner": "homeofe",
   "slug": "openclaw-self-healing-elvatis",
-  "displayName": "OpenClaw Self-Healing",
+  "displayName": "Openclaw Self Healing Elvatis",
   "latest": {
-    "version": "0.2.10",
-    "publishedAt": 1772957557641,
-    "commit": "https://github.com/openclaw/skills/commit/448b43e5e4c5b011944c6e903db2fb221165c7ac"
+    "version": "0.2.13",
+    "publishedAt": 1775800900565,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.2.10",
+      "publishedAt": 1772957557641,
+      "commit": "https://github.com/openclaw/skills/commit/448b43e5e4c5b011944c6e903db2fb221165c7ac"
+    },
     {
       "version": "0.2.5",
       "publishedAt": 1772468462169,

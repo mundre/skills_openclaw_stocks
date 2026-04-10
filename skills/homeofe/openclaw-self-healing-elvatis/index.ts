@@ -2,6 +2,32 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
+// ---------------------------------------------------------------------------
+// Metrics export
+// ---------------------------------------------------------------------------
+
+export type MetricEntry = {
+  ts: number;
+  plugin: "self-heal";
+  event: string;
+  dryRun?: boolean;
+  [key: string]: unknown;
+};
+
+/**
+ * Append a single JSONL line to the metrics file.
+ * Creates the parent directory if it does not exist.
+ * Errors are silently swallowed — metrics must never crash the plugin.
+ */
+export function appendMetric(entry: MetricEntry, metricsFile: string): void {
+  try {
+    fs.mkdirSync(path.dirname(metricsFile), { recursive: true });
+    fs.appendFileSync(metricsFile, JSON.stringify(entry) + "\n");
+  } catch {
+    // best-effort only
+  }
+}
+
 export function expandHome(p: string): string {
   if (!p) return p;
   if (p === "~") return os.homedir();
@@ -129,6 +155,7 @@ export type PluginConfig = {
   cooldownMinutes: number;
   stateFile: string;
   statusFile: string;
+  metricsFile: string;
   sessionsFile: string;
   configFile: string;
   configBackupsDir: string;
@@ -197,9 +224,9 @@ export function buildGhIssueCreateCommand(args: {
 }
 
 const DEFAULT_MODEL_ORDER = [
-  "anthropic/claude-opus-4-6",
-  "openai-codex/gpt-5.2",
-  "google-gemini-cli/gemini-2.5-flash",
+  "vllm/cli-claude/claude-sonnet-4-6",
+  "openai-codex/gpt-5.1",
+  "github-copilot/claude-sonnet-4.6",
 ];
 
 export function parseConfig(raw: any): PluginConfig {
@@ -211,6 +238,7 @@ export function parseConfig(raw: any): PluginConfig {
     cooldownMinutes: cfg.cooldownMinutes ?? 300,
     stateFile: expandHome(cfg.stateFile ?? "~/.openclaw/workspace/memory/self-heal-state.json"),
     statusFile: expandHome(cfg.statusFile ?? "~/.openclaw/workspace/memory/self-heal-status.json"),
+    metricsFile: expandHome(cfg.metricsFile ?? "~/.aahp/metrics.jsonl"),
     sessionsFile: expandHome(cfg.sessionsFile ?? "~/.openclaw/agents/main/sessions/sessions.json"),
     configFile: expandHome(cfg.configFile ?? "~/.openclaw/openclaw.json"),
     configBackupsDir: expandHome(cfg.configBackupsDir ?? "~/.openclaw/backups/openclaw.json"),
@@ -542,6 +570,17 @@ export default function register(api: any) {
       dryRun: config.dryRun,
     });
 
+    if (!config.dryRun) {
+      appendMetric({
+        ts: hitAt,
+        plugin: "self-heal",
+        event: "model-cooldown",
+        model: key,
+        reason: err?.slice(0, 160),
+        cooldownSec: nextAvail - hitAt,
+      }, config.metricsFile);
+    }
+
     const fallback = pickFallback(config.modelOrder, state);
 
     if (config.patchPins && ctx?.sessionKey && fallback && fallback !== pinnedModel) {
@@ -557,6 +596,18 @@ export default function register(api: any) {
         trigger: "agent_end",
         dryRun: config.dryRun,
       });
+
+      if (!config.dryRun) {
+        appendMetric({
+          ts: hitAt,
+          plugin: "self-heal",
+          event: "session-patched",
+          sessionKey: ctx.sessionKey,
+          oldModel: pinnedModel ?? key,
+          newModel: fallback,
+          trigger: "agent_end",
+        }, config.metricsFile);
+      }
     }
   });
 
@@ -585,12 +636,33 @@ export default function register(api: any) {
       dryRun: config.dryRun,
     });
 
+    if (!config.dryRun) {
+      appendMetric({
+        ts: hitAt,
+        plugin: "self-heal",
+        event: "model-cooldown",
+        model: config.modelOrder[0],
+        reason: "outbound error observed",
+        cooldownSec: config.cooldownMinutes * 60,
+        trigger: "message_sent",
+      }, config.metricsFile);
+    }
+
     const fallback = pickFallback(config.modelOrder, state);
     if (config.patchPins && ctx?.sessionKey) {
       if (config.dryRun) {
         api.logger?.info?.(`[self-heal] [dry-run] would patch session ${ctx.sessionKey} model -> ${fallback}`);
       } else {
         patchSessionModel(config.sessionsFile, ctx.sessionKey, fallback, api.logger);
+        appendMetric({
+          ts: hitAt,
+          plugin: "self-heal",
+          event: "session-patched",
+          sessionKey: ctx.sessionKey,
+          oldModel: config.modelOrder[0],
+          newModel: fallback,
+          trigger: "message_sent",
+        }, config.metricsFile);
       }
       api.emit?.("self-heal:session-patched", {
         sessionKey: ctx.sessionKey,
@@ -673,6 +745,15 @@ export default function register(api: any) {
                   disconnectStreak: streak,
                   dryRun: config.dryRun,
                 });
+
+                if (!config.dryRun) {
+                  appendMetric({
+                    ts: nowSec(),
+                    plugin: "self-heal",
+                    event: "whatsapp-restart",
+                    disconnectStreak: streak,
+                  }, config.metricsFile);
+                }
               }
             }
           }
@@ -760,6 +841,17 @@ export default function register(api: any) {
                   lastError: lastError.slice(0, 160),
                   dryRun: config.dryRun,
                 });
+
+                if (!config.dryRun) {
+                  appendMetric({
+                    ts: nowSec(),
+                    plugin: "self-heal",
+                    event: "cron-disabled",
+                    cronId: id,
+                    cronName: name,
+                    consecutiveFailures: failCount,
+                  }, config.metricsFile);
+                }
 
                 state.cron!.failCounts![id] = 0;
               }
@@ -865,6 +957,14 @@ export default function register(api: any) {
                   model,
                   isPreferred: model === config.modelOrder[0],
                 });
+
+                appendMetric({
+                  ts: nowSec(),
+                  plugin: "self-heal",
+                  event: "model-recovered",
+                  model,
+                  isPreferred: model === config.modelOrder[0],
+                }, config.metricsFile);
 
                 if (model === config.modelOrder[0]) {
                   api.logger?.info?.(

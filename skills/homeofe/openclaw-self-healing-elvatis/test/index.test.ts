@@ -20,9 +20,11 @@ import {
   isValidIssueRepoSlug,
   resolveIssueRepo,
   buildGhIssueCreateCommand,
+  appendMetric,
   type State,
   type PluginConfig,
   type StatusSnapshot,
+  type MetricEntry,
 } from "../index.js";
 import register from "../index.js";
 
@@ -1950,9 +1952,9 @@ describe("parseConfig", () => {
   it("returns defaults for empty input", () => {
     const c = parseConfig({});
     expect(c.modelOrder).toEqual([
-      "anthropic/claude-opus-4-6",
-      "openai-codex/gpt-5.2",
-      "google-gemini-cli/gemini-2.5-flash",
+      "vllm/cli-claude/claude-sonnet-4-6",
+      "openai-codex/gpt-5.1",
+      "github-copilot/claude-sonnet-4.6",
     ]);
     expect(c.cooldownMinutes).toBe(300);
     expect(c.patchPins).toBe(true);
@@ -2343,6 +2345,7 @@ describe("validateConfig", () => {
       cooldownMinutes: 300,
       stateFile: path.join(dir, "state.json"),
       statusFile: path.join(dir, "status.json"),
+      metricsFile: path.join(dir, "metrics.jsonl"),
       sessionsFile: path.join(dir, "sessions.json"),
       configFile: path.join(dir, "openclaw.json"),
       configBackupsDir: path.join(dir, "backups"),
@@ -2678,5 +2681,294 @@ describe("writeStatusFile", () => {
     // Should have logged a warning about failed status file write
     const warnCalls = api.logger.warn.mock.calls.map((c: any[]) => c[0]);
     expect(warnCalls.some((msg: string) => msg.includes("failed to write status file"))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// appendMetric
+// ---------------------------------------------------------------------------
+
+describe("appendMetric", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "metrics-test-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("writes a JSONL line to the metrics file", () => {
+    const metricsFile = path.join(dir, "metrics.jsonl");
+    const entry: MetricEntry = {
+      ts: 1700000000,
+      plugin: "self-heal",
+      event: "model-cooldown",
+      model: "model-a",
+      reason: "rate limit",
+      cooldownSec: 600,
+    };
+    appendMetric(entry, metricsFile);
+
+    const content = fs.readFileSync(metricsFile, "utf-8").trim();
+    expect(JSON.parse(content)).toEqual(entry);
+  });
+
+  it("appends multiple lines (one per call)", () => {
+    const metricsFile = path.join(dir, "metrics.jsonl");
+    const e1: MetricEntry = { ts: 1, plugin: "self-heal", event: "model-cooldown", model: "a" };
+    const e2: MetricEntry = { ts: 2, plugin: "self-heal", event: "session-patched", sessionKey: "s1" };
+    appendMetric(e1, metricsFile);
+    appendMetric(e2, metricsFile);
+
+    const lines = fs.readFileSync(metricsFile, "utf-8").trim().split("\n");
+    expect(lines).toHaveLength(2);
+    expect(JSON.parse(lines[0]!)).toEqual(e1);
+    expect(JSON.parse(lines[1]!)).toEqual(e2);
+  });
+
+  it("creates parent directories if they do not exist", () => {
+    const metricsFile = path.join(dir, "nested", "deep", "metrics.jsonl");
+    appendMetric({ ts: 1, plugin: "self-heal", event: "test" }, metricsFile);
+    expect(fs.existsSync(metricsFile)).toBe(true);
+  });
+
+  it("does not throw when the directory is not writable (best-effort)", () => {
+    const blocker = path.join(dir, "blocker");
+    fs.writeFileSync(blocker, "occupied");
+    const metricsFile = path.join(blocker, "sub", "metrics.jsonl");
+    // Should not throw
+    expect(() => appendMetric({ ts: 1, plugin: "self-heal", event: "test" }, metricsFile)).not.toThrow();
+  });
+
+  it("each line ends with newline (valid JSONL format)", () => {
+    const metricsFile = path.join(dir, "metrics.jsonl");
+    appendMetric({ ts: 1, plugin: "self-heal", event: "test" }, metricsFile);
+    const raw = fs.readFileSync(metricsFile, "utf-8");
+    expect(raw.endsWith("\n")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Metrics integration: heal events write to metricsFile
+// ---------------------------------------------------------------------------
+
+describe("metrics integration", () => {
+  let dir: string;
+  let stateFile: string;
+  let sessionsFile: string;
+  let configFile: string;
+  let metricsFile: string;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "metrics-int-test-"));
+    stateFile = path.join(dir, "state.json");
+    sessionsFile = path.join(dir, "sessions.json");
+    configFile = path.join(dir, "openclaw.json");
+    metricsFile = path.join(dir, "metrics.jsonl");
+    fs.writeFileSync(configFile, JSON.stringify({ valid: true }));
+  });
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  function readMetrics(): MetricEntry[] {
+    if (!fs.existsSync(metricsFile)) return [];
+    return fs.readFileSync(metricsFile, "utf-8")
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => JSON.parse(l) as MetricEntry);
+  }
+
+  it("writes model-cooldown metric on agent_end rate-limit", () => {
+    const api = mockApi({
+      pluginConfig: {
+        stateFile,
+        sessionsFile,
+        configFile,
+        metricsFile,
+        modelOrder: ["model-a", "model-b"],
+        cooldownMinutes: 10,
+      },
+    });
+    register(api);
+
+    api._emit("agent_end", { success: false, error: "HTTP 429 rate limit exceeded" }, {});
+
+    const entries = readMetrics();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.event).toBe("model-cooldown");
+    expect(entries[0]!.plugin).toBe("self-heal");
+    expect(entries[0]!.model).toBe("model-a");
+    expect(entries[0]!.cooldownSec).toBe(10 * 60);
+    expect(entries[0]!.ts).toBeGreaterThan(0);
+  });
+
+  it("writes session-patched metric on agent_end when session is patched", () => {
+    fs.writeFileSync(sessionsFile, JSON.stringify({ "s1": { model: "model-a" } }));
+
+    const api = mockApi({
+      pluginConfig: {
+        stateFile,
+        sessionsFile,
+        configFile,
+        metricsFile,
+        modelOrder: ["model-a", "model-b"],
+        cooldownMinutes: 10,
+      },
+    });
+    register(api);
+
+    api._emit("agent_end", { success: false, error: "rate limit hit" }, { sessionKey: "s1" });
+
+    const entries = readMetrics();
+    const patched = entries.find((e) => e.event === "session-patched");
+    expect(patched).toBeDefined();
+    expect(patched!.sessionKey).toBe("s1");
+    expect(patched!.oldModel).toBe("model-a");
+    expect(patched!.newModel).toBe("model-b");
+    expect(patched!.trigger).toBe("agent_end");
+  });
+
+  it("writes model-cooldown metric on message_sent rate-limit", () => {
+    const api = mockApi({
+      pluginConfig: {
+        stateFile,
+        sessionsFile,
+        configFile,
+        metricsFile,
+        modelOrder: ["primary", "fallback"],
+        cooldownMinutes: 5,
+      },
+    });
+    register(api);
+
+    api._emit("message_sent", { content: "Error: quota exceeded" }, {});
+
+    const entries = readMetrics();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.event).toBe("model-cooldown");
+    expect(entries[0]!.trigger).toBe("message_sent");
+    expect(entries[0]!.reason).toBe("outbound error observed");
+  });
+
+  it("writes session-patched metric on message_sent when session is patched", () => {
+    fs.writeFileSync(sessionsFile, JSON.stringify({ "s1": { model: "primary" } }));
+
+    const api = mockApi({
+      pluginConfig: {
+        stateFile,
+        sessionsFile,
+        configFile,
+        metricsFile,
+        modelOrder: ["primary", "fallback"],
+        cooldownMinutes: 5,
+      },
+    });
+    register(api);
+
+    api._emit("message_sent", { content: "429 Too Many Requests" }, { sessionKey: "s1" });
+
+    const entries = readMetrics();
+    const patched = entries.find((e) => e.event === "session-patched");
+    expect(patched).toBeDefined();
+    expect(patched!.sessionKey).toBe("s1");
+    expect(patched!.trigger).toBe("message_sent");
+  });
+
+  it("writes model-recovered metric when model recovers via probe", async () => {
+    const hitAt = nowSec() - 400;
+    saveState(stateFile, {
+      limited: {
+        "model-a": { lastHitAt: hitAt, nextAvailableAt: nowSec() + 9999 },
+      },
+      pendingBackups: {},
+      whatsapp: {},
+      cron: { failCounts: {}, lastIssueCreatedAt: {} },
+      plugins: { lastDisableAt: {} },
+    });
+
+    const api = mockApi({
+      pluginConfig: {
+        stateFile,
+        sessionsFile,
+        configFile,
+        metricsFile,
+        modelOrder: ["model-a", "model-b"],
+        probeEnabled: true,
+        probeIntervalSec: 300,
+      },
+    });
+    api.runtime.system.runCommandWithTimeout.mockResolvedValue({
+      exitCode: 0,
+      stdout: "ok",
+      stderr: "",
+    });
+    register(api);
+
+    const svc = api._services[0];
+    await svc.start();
+    await new Promise((r) => setTimeout(r, 50));
+    await svc.stop();
+
+    const entries = readMetrics();
+    const recovered = entries.find((e) => e.event === "model-recovered");
+    expect(recovered).toBeDefined();
+    expect(recovered!.model).toBe("model-a");
+    expect(recovered!.isPreferred).toBe(true);
+  });
+
+  it("does NOT write metrics in dry-run mode", () => {
+    const api = mockApi({
+      pluginConfig: {
+        stateFile,
+        sessionsFile,
+        configFile,
+        metricsFile,
+        modelOrder: ["model-a", "model-b"],
+        cooldownMinutes: 10,
+        dryRun: true,
+      },
+    });
+    register(api);
+
+    api._emit("agent_end", { success: false, error: "HTTP 429 rate limit exceeded" }, {});
+
+    expect(fs.existsSync(metricsFile)).toBe(false);
+  });
+
+  it("does not write metrics for non-rate-limit errors", () => {
+    const api = mockApi({
+      pluginConfig: {
+        stateFile,
+        sessionsFile,
+        configFile,
+        metricsFile,
+        modelOrder: ["model-a"],
+      },
+    });
+    register(api);
+
+    api._emit("agent_end", { success: false, error: "generic timeout" }, {});
+
+    expect(fs.existsSync(metricsFile)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseConfig: metricsFile
+// ---------------------------------------------------------------------------
+
+describe("parseConfig metricsFile", () => {
+  it("defaults to ~/.aahp/metrics.jsonl", () => {
+    const c = parseConfig({});
+    expect(c.metricsFile).toBe(path.join(os.homedir(), ".aahp", "metrics.jsonl"));
+  });
+
+  it("accepts a custom metricsFile path", () => {
+    const c = parseConfig({ metricsFile: "~/custom/metrics.jsonl" });
+    expect(c.metricsFile).toBe(path.join(os.homedir(), "custom", "metrics.jsonl"));
   });
 });

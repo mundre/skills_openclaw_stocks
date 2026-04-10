@@ -1,6 +1,6 @@
 ﻿# openclaw-self-healing-elvatis
 
-**Current version: `0.2.10`**
+**Current version: `0.2.13`**
 
 OpenClaw plugin that improves resilience by automatically fixing reversible failures.
 
@@ -12,6 +12,38 @@ OpenClaw plugin that improves resilience by automatically fixing reversible fail
 - **Plugin crashes** — If a plugin reports `status=error` or `status=crash`: auto-disable + GitHub issue
 
 ## Changelog
+
+### v0.2.13 — 2026-04-10
+**Docs: version bump for clean publish pipeline trigger**
+Version bump to trigger npm + ClawHub publish via GitHub release CI.
+Includes all v0.2.12 fixes plus updated handoff docs.
+
+### v0.2.12 — 2026-04-10
+**Fix: Default model fallback order used Google Gemini CLI as last resort**
+The default `modelOrder` included `google-gemini-cli/gemini-2.5-flash` as the final fallback.
+Google Gemini CLI models have no system permissions (cannot write files or execute tools),
+making the plugin non-functional when all higher-priority models were in cooldown.
+
+Updated default order to use only models with full system/write permissions:
+1. `vllm/cli-claude/claude-sonnet-4-6` (Claude CLI — full permissions)
+2. `openai-codex/gpt-5.1` (OpenAI Codex — write access)
+3. `github-copilot/claude-sonnet-4.6` (Copilot-routed Claude — write access)
+
+Also fixed mismatch between `DEFAULT_MODEL_ORDER` in code and the `openclaw.plugin.json`
+schema default — both now use the same values.
+
+### v0.2.11 — 2026-03-19
+**Feature: Heal metrics export to JSONL**
+Heal events are now written to `~/.aahp/metrics.jsonl` (configurable via `metricsFile` config key).
+Each entry is a JSON line with `ts`, `plugin`, `event`, and event-specific fields:
+- `{ ts, plugin, event: "model-cooldown", model, reason, cooldownSec, trigger }`
+- `{ ts, plugin, event: "session-patched", sessionKey, oldModel, newModel, trigger }`
+- `{ ts, plugin, event: "whatsapp-restart", disconnectStreak }`
+- `{ ts, plugin, event: "cron-disabled", cronId, cronName, consecutiveFailures }`
+- `{ ts, plugin, event: "model-recovered", model, isPreferred }`
+
+Metrics writes are skipped in dry-run mode. The parent directory is created automatically.
+Closes #12.
 
 ### v0.2.10 — 2026-03-08
 Docs fix: README and STATUS.md version headers were stuck at 0.2.8 after v0.2.9 bump; SKILL.md missing version footer; add universal release-rule to CONVENTIONS.md.
@@ -64,9 +96,9 @@ openclaw gateway restart
         "enabled": true,
         "config": {
           "modelOrder": [
-            "anthropic/claude-opus-4-6",
-            "openai-codex/gpt-5.2",
-            "google-gemini-cli/gemini-2.5-flash"
+            "vllm/cli-claude/claude-sonnet-4-6",
+            "openai-codex/gpt-5.1",
+            "github-copilot/claude-sonnet-4.6"
           ],
           "cooldownMinutes": 300,
           "autoFix": {
@@ -108,10 +140,10 @@ The file is written atomically (write to `.tmp` then rename) to prevent partial 
 ```json
 {
   "health": "healthy | degraded | healing",
-  "activeModel": "anthropic/claude-opus-4-6",
+  "activeModel": "vllm/cli-claude/claude-sonnet-4-6",
   "models": [
     {
-      "id": "anthropic/claude-opus-4-6",
+      "id": "vllm/cli-claude/claude-sonnet-4-6",
       "status": "available | cooldown",
       "cooldownReason": "rate limit (only when in cooldown)",
       "cooldownRemainingSec": 1234,
