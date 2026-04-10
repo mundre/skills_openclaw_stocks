@@ -1,49 +1,34 @@
-# Pattern Harvesting
+# Pattern Harvesting Guide
 
-Use this when another skill contains a good idea that may improve the workspace shared memory system.
+## When to harvest a learning
+Harvest into `.learnings/` when:
+- the user corrects the agent
+- a command/tool fails and you fix it
+- a workaround becomes reliable
+- a better generic strategy is found
+- a repeated attempt reveals a stable path
 
-## Goal
-Learn from other skills without copying them blindly.
+## Good learning pattern
+A useful learning should answer:
+- what happened
+- what failed or was missing
+- what eventually worked
+- what rule can be reused later
 
-## Harvest flow
+## Recommended structure
+- Summary
+- Trigger
+- Failure or friction
+- Resolution
+- Reusable rule
+- Suggested action
 
-### 1. Detect a candidate pattern
-Examples:
-- cleaner routing rules
-- better onboarding checklist
-- stronger safety boundary wording
-- useful migration flow
-- compact review format
-- clearer conflict resolution rule
+## Bad learning pattern
+Avoid entries that are only:
+- raw logs
+- one-off trivia with no reuse value
+- sensitive secrets or credentials
+- vague statements like “be careful next time”
 
-### 2. Capture as candidate, not law
-Do NOT auto-promote immediately.
-First record it as a candidate in the smallest appropriate place:
-- daily note
-- `memory/corrections.md`
-- project note
-- review note
-
-### 3. Ask: is it truly reusable here?
-Check:
-- does it fit the workspace memory model?
-- does it conflict with existing rules?
-- is it specific to that other skill's domain?
-- has it proven useful more than once?
-
-### 4. Promote only after validation
-Promotion targets:
-- stable memory rule → `memory/rules.md`
-- reusable collaboration behavior → `memory/routines.md`
-- shared-memory skill reference or body
-- workspace `AGENTS.md` only if truly global
-
-## What not to do
-- do not copy large chunks from other skills without adaptation
-- do not absorb domain-specific quirks as global rules
-- do not turn every good sentence into a permanent standard
-
-## Good outcomes
-- the workspace gains better structure over time
-- the shared-memory model evolves slowly and coherently
-- improvements are deliberate, not impulsive
+## Promotion heuristic
+If a learning is reused repeatedly or keeps proving true, consider promoting it into durable memory.

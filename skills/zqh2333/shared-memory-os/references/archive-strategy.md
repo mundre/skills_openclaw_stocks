@@ -1,21 +1,31 @@
 # Archive Strategy
 
-Use archive for information that is no longer active but still worth retaining.
+## Goal
+Keep shared memory compact, current, and reusable.
 
-## Move to archive when
-- Content is outdated but may be historically useful
-- A project has cooled off and no longer needs prime workspace attention
-- A rule or pattern was replaced but should remain discoverable
+## Daily maintenance
+At task close:
+- update current-day memory
+- append new learnings when warranted
+- avoid promoting unstable notes too early
 
-## Keep out of archive when
-- It still affects daily collaboration
-- It is a stable user preference
-- It is part of an active project
+## Weekly maintenance
+At least weekly:
+- merge duplicate learnings
+- prune stale or superseded notes
+- consolidate similar lessons into one stronger entry
 
-## Archive styles
-- By topic: `archive/openclaw-old.md`
-- By period: `archive/2026-04.md`
-- By retired project: `archive/blog-pre-upgrade.md`
+## Monthly maintenance
+At least monthly:
+- review durable memory for outdated rules
+- remove obsolete constraints
+- promote repeated learnings into durable memory when appropriate
 
-## Principle
-Archive is for demotion, not deletion.
+## Archive triggers
+Archive or rewrite entries when:
+- the same lesson has been learned multiple times
+- a temporary workaround becomes a standard rule
+- a memory note has become misleading or stale
+
+## Quality rule
+Short, reusable, and accurate beats long and noisy.

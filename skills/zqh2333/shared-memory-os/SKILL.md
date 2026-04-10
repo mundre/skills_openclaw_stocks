@@ -1,184 +1,171 @@
 ---
 name: shared-memory-os
-description: Shared memory governance for multi-agent OpenClaw workspaces — with tiered memory, heartbeat maintenance, review cycles, conflict handling, and controlled evolution.
+description: Shared memory governance for multi-agent OpenClaw workspaces — with tiered memory, learnings capture, promotion review, lifecycle management, self-maintaining reports, cross-skill collaboration, and bilingual ClawHub-friendly docs.
+version: 1.7.1
 ---
 
 # Shared Memory OS
 
-Use this skill when a workspace wants **all current and future agents** to share one memory model instead of each agent improvising its own note style.
+> English and 中文 are on the same page below. In ClawHub, read the language section directly instead of relying on anchor-jump behavior.
 
-Shared Memory OS is not just another memory skill. It provides a shared memory governance layer for multi-agent OpenClaw workspaces, helping agents remember, review, and evolve shared context without creating fragmented parallel systems.
+---
 
-## Core model
+# English
 
-Adopt this tiering:
+Shared Memory OS turns workspace memory into a governed system instead of a pile of notes.
 
-- **HOT** → `MEMORY.md`
-- **DAILY** → `memory/YYYY-MM-DD.md`
-- **WARM** → `memory/`
-  - `active-thread.md`
-  - `current-state.md`
-  - `recent-focus.md`
-  - `trigger-map.md`
-  - `heartbeat-promotions.md`
-  - `success-patterns.md`
-  - `default-behaviors.md`
-  - `feedback-model.md`
-  - `projects.md` + `projects/*.md`
-  - `decisions.md`
-  - `routines.md`
-  - `people.md`
-  - `prompts.md`
-  - `inbox.md`
-  - `pattern-candidates.md`
-  - `intake-log.md`
-  - `promotion-log.md`
-  - `conflict-log.md`
-  - `governance-dashboard.md`
-  - `governance-guide.md`
-  - `skill-release-state.md`
-  - `evolution-log.md`
-- **RESTRICTED** → `memory/`
-  - `private-secrets.md`
-- **CONTROL** → `memory/`
-  - `index.md`
-  - `rules.md`
-  - `corrections.md`
-  - `heartbeat-state.md`
-  - `weekly-review.md`
-  - `monthly-review.md`
-  - `monthly-governance-review.md`
-  - `archive/`
+## Core capabilities
+- layered memory governance
+- active learnings harvesting into `.learnings/`
+- review cadence and archive strategy
+- conflict resolution order
+- health scoring and health history
+- duplicate learnings detection with evidence/confidence
+- promotion candidate detection with review state
+- promotion suggestion and memory patch generation
+- weekly review, audit report, and dashboard generation
+- stale durable memory detection with lifecycle hints
+- validated repeated rule detection
+- low-value learning detection
+- workflow optimization suggestions
+- conflict logging and conflict review reporting
+- learning merge suggestions
+- skill upgrade candidate detection
+- migration guidance and initialization scripts
+- self-improving loop
+- maintenance runner
+- policy profiles and workspace profiles
+- cross-skill collaboration governance
+- multi-agent write and review guidance
+- periodic maintenance-day guidance
 
-## Required workspace behavior
+## References
+- `references/governance-guide.md`
+- `references/pattern-harvesting.md`
+- `references/archive-strategy.md`
+- `references/learnings-template.md`
+- `references/health-check.md`
+- `references/self-improving-loop.md`
+- `references/health-score-model.md`
+- `references/conflict-template.md`
+- `references/migration-guide.md`
+- `references/policy-profiles.md`
+- `references/workspace-profiles.md`
+- `references/cross-skill-collaboration.md`
+- `references/multi-agent-governance.md`
+- `references/maintenance-day.md`
+- `references/zh-cn-guide.md`
 
-When attaching a new agent to the workspace:
+## Scripts
+- `scripts/bootstrap-shared-memory-os.js`
+- `scripts/ensure-shared-memory-crons.js`
+- `scripts/init-shared-memory-os.js`
+- `scripts/migrate-notes-into-memory.js`
+- `scripts/run-shared-memory-maintenance.js`
+- `scripts/check-memory-health.js`
+- `scripts/rebuild-learnings-index.js`
+- `scripts/find-duplicate-learnings.js`
+- `scripts/find-promotion-candidates.js`
+- `scripts/find-stale-durable-memory.js`
+- `scripts/find-validated-rules.js`
+- `scripts/find-low-value-learnings.js`
+- `scripts/build-workflow-optimization-suggestions.js`
+- `scripts/log-memory-conflict.js`
+- `scripts/build-conflict-review-report.js`
+- `scripts/build-weekly-review.js`
+- `scripts/record-health-snapshot.js`
+- `scripts/build-promotion-suggestions.js`
+- `scripts/build-learning-merge-suggestions.js`
+- `scripts/find-skill-upgrade-candidates.js`
+- `scripts/build-memory-patch-candidates.js`
+- `scripts/build-audit-report.js`
+- `scripts/build-dashboard.js`
 
-1. Read `SOUL.md`
-2. Read `USER.md`
-3. Read today and yesterday daily files if present
-4. In direct/private main sessions, also read `MEMORY.md`
-5. Read `memory/active-thread.md` and `memory/current-state.md` before acting on an ongoing thread
-6. If the user references something previously summarized in heartbeat/maintenance context, check `memory/heartbeat-promotions.md`
-7. Use `memory/index.md` only when routing help is needed
-8. Do not read `memory/private-secrets.md` unless the task explicitly requires credentialed action or secret lookup
+## Setup
+For first-time setup, run `node skills/shared-memory-os/scripts/bootstrap-shared-memory-os.js` from the workspace root. It initializes memory directories, installs or updates the default daily/weekly/monthly OpenClaw cron jobs, and runs one full maintenance pass.
 
-Do not load every memory file by default. Prefer HOT, then the smallest matching WARM file.
+If you only need to repair or reapply automation, run `node skills/shared-memory-os/scripts/ensure-shared-memory-crons.js`. The cron installer is idempotent: it updates matching jobs by name and creates missing ones.
 
-For onboarding details, read `references/onboarding-checklist.md`.
-For operational navigation, read `references/governance-guide.md` and mirror it into `memory/governance-guide.md` if the workspace enables the full governance layer.
+## Guidance
+Use this skill when you want memory to stay useful over time: keep facts durable, keep daily state local, keep lessons reusable, let promotion stay reviewable, let low-value noise get pruned, and let repeated lessons improve other skills too.
 
-## Promotion rules
+---
 
-Promote information only when it is:
-- Repeated
-- Stable
-- Likely to improve future collaboration
-- Clearly more than one-off noise
+# 中文
 
-Routing:
-- Stable preference / long-lived context → `MEMORY.md`
-- Current main thread / what “continue” should mean → `active-thread.md`
-- Current front-of-mind state → `current-state.md`
-- Recent 24-72h active topics → `recent-focus.md`
-- High-frequency aliases / fuzzy references → `trigger-map.md`
-- Heartbeat-thread summaries that will likely be asked again in main chat → `heartbeat-promotions.md`
-- Proven good collaboration pattern → `success-patterns.md`
-- Default behavior that should now be assumed → `default-behaviors.md`
-- User evaluation / feedback model → `feedback-model.md`
-- Multi-step ongoing work → `projects/*.md`
-- Reasoned choice with tradeoff → `decisions.md`
-- Reusable workflow → `routines.md`
-- Explicit mistake or reusable lesson → `corrections.md`
-- Pattern not yet validated → `pattern-candidates.md`
-- Skill release / publish state → `skill-release-state.md`
-- System-level learning / evolution record → `evolution-log.md`
-- Secrets / tokens / passwords / keys that truly must be remembered → `private-secrets.md`
-- Unsorted temporary capture → `inbox.md`
+Shared Memory OS 的目标，是把 workspace 里的共享记忆变成“可治理、可维护、可进化、可协同”的系统，而不是零散笔记。
 
-## Front-of-mind working memory
+## 核心能力
+- 分层记忆治理
+- 主动沉淀 `.learnings/`
+- review cadence 与 archive strategy
+- 冲突处理顺序
+- 健康评分与历史趋势
+- 带 evidence/confidence 的重复经验检测
+- 带 review 状态的 promotion candidate 检测
+- promotion 建议与 `MEMORY.md` patch 候选生成
+- 周报、审计报告、dashboard 生成
+- 带生命周期提示的 stale durable memory 检测
+- 反复验证规则检测
+- 低价值 learning 检测
+- 工作流优化建议生成
+- 冲突日志与冲突审查报告
+- learning 合并建议
+- skill 升级候选检测
+- 初始化与迁移脚本
+- 自学习进化闭环
+- 一键 maintenance runner
+- policy profile / workspace profile
+- 与其他 skills 的协同治理
+- 多 agent 写入与审核边界建议
+- 周期性 maintenance day 指南
 
-A human-like memory system does not just store facts; it keeps the right things near the front.
+## 参考文档
+- `references/zh-cn-guide.md`
+- `references/governance-guide.md`
+- `references/pattern-harvesting.md`
+- `references/archive-strategy.md`
+- `references/learnings-template.md`
+- `references/health-check.md`
+- `references/self-improving-loop.md`
+- `references/health-score-model.md`
+- `references/conflict-template.md`
+- `references/migration-guide.md`
+- `references/policy-profiles.md`
+- `references/workspace-profiles.md`
+- `references/cross-skill-collaboration.md`
+- `references/multi-agent-governance.md`
+- `references/maintenance-day.md`
 
-Use these files together:
-- `active-thread.md` → current main line of work
-- `current-state.md` → current high-priority facts
-- `recent-focus.md` → what has been repeatedly active recently
-- `trigger-map.md` → fuzzy phrase / alias → intended topic
-- `heartbeat-promotions.md` → heartbeat-side summaries that have been promoted for future main-session recall
+## 脚本
+- `scripts/bootstrap-shared-memory-os.js`
+- `scripts/ensure-shared-memory-crons.js`
+- `scripts/init-shared-memory-os.js`
+- `scripts/migrate-notes-into-memory.js`
+- `scripts/run-shared-memory-maintenance.js`
+- `scripts/check-memory-health.js`
+- `scripts/rebuild-learnings-index.js`
+- `scripts/find-duplicate-learnings.js`
+- `scripts/find-promotion-candidates.js`
+- `scripts/find-stale-durable-memory.js`
+- `scripts/find-validated-rules.js`
+- `scripts/find-low-value-learnings.js`
+- `scripts/build-workflow-optimization-suggestions.js`
+- `scripts/log-memory-conflict.js`
+- `scripts/build-conflict-review-report.js`
+- `scripts/build-weekly-review.js`
+- `scripts/record-health-snapshot.js`
+- `scripts/build-promotion-suggestions.js`
+- `scripts/build-learning-merge-suggestions.js`
+- `scripts/find-skill-upgrade-candidates.js`
+- `scripts/build-memory-patch-candidates.js`
+- `scripts/build-audit-report.js`
+- `scripts/build-dashboard.js`
 
-These files exist to improve immediate context recall, not long-term archival depth.
+## 初始化方式
+首次接入时，优先在 workspace 根目录运行：`node skills/shared-memory-os/scripts/bootstrap-shared-memory-os.js`。它会完成目录初始化、创建/更新默认的 daily/weekly/monthly OpenClaw cron 任务，并立即跑一次完整 maintenance。
 
-## Heartbeat integration
+如果只是补装或修复自动化任务，运行：`node skills/shared-memory-os/scripts/ensure-shared-memory-crons.js`。这个脚本是幂等的：同名任务会被更新，缺失任务会被创建。
 
-Use `HEARTBEAT.md` as the lightweight maintenance entrypoint.
-
-On heartbeat:
-1. Check `memory/heartbeat-state.md`
-2. Review recent daily files
-3. Review `inbox.md` only if needed
-4. Promote / merge / compact only when there is real value
-5. Optionally review newly added skills for intake classification
-6. Check whether repeated errors, repeated success patterns, new aliases, or recent active themes should be upgraded
-7. If heartbeat produces a summary that is likely to be asked about again in main chat, promote it into `heartbeat-promotions.md` and, if needed, `recent-focus.md` / `current-state.md`
-8. Otherwise respond with `HEARTBEAT_OK`
-
-Heartbeat should maintain memory quietly, not create noise.
-
-## Weekly and monthly maintenance
-
-- Weekly: promote useful daily items into HOT/WARM/corrections
-- Monthly: compress HOT, refine WARM, archive stale items
-- Monthly governance: review whether the governance layer itself is growing coherently
-
-Read these only when doing maintenance:
-- `memory/weekly-review.md`
-- `memory/monthly-review.md`
-- `memory/monthly-governance-review.md`
-
-For migration guidance, read `references/migration-playbook.md`.
-For archive policy, read `references/archive-strategy.md`.
-For new skill checks, read `references/skill-intake-protocol.md` and `references/new-skill-checklist.md`.
-For learning from other skills, read `references/pattern-harvesting.md`.
-For sync after changes, read `references/auto-sync-checklist.md`.
-
-## Multi-agent safety
-
-- `MEMORY.md` is private-main-session material unless the workspace explicitly decides otherwise
-- Never expose personal memory in shared/group contexts
-- Do not infer preferences from silence alone
-- Treat `private-secrets.md` as a special-case restricted file, not a normal shared memory tier
-
-## Skill publishing governance
-
-When the workspace uses shared memory to manage local/custom skills, treat release state as governed memory rather than ad-hoc chat context.
-
-Required rules:
-- Distinguish clearly between local edits, local packaging, ClawHub published version, and current displayed registry state
-- Do not assume local packaging means the newest changes are already published
-- Before bumping any skill version, verify:
-  1. which exact skill is being discussed
-  2. what changed locally
-  3. what version is already published
-  4. whether a new version bump is actually justified
-- If a user refers to “the skill changed yesterday”, identify the exact skill first before publishing anything else
-- Store materially important release-state facts in stable memory, project notes, or a dedicated release-state record instead of relying only on transient session context
-
-For publish-specific notes, read the relevant skill's `references/release-state.md` when present.
-
-## Files to update when standardizing a workspace
-
-Update:
-- `AGENTS.md`
-- `HEARTBEAT.md`
-- `memory/README.md`
-- `memory/index.md`
-- existing memory files as needed
-
-## Keep it lean
-
-A good shared memory system is:
-- Easy for a new agent to enter
-- Hard to pollute with noise
-- Structured enough for maintenance
-- Small enough to load selectively
+## 使用建议
+当你希望共享记忆长期可用时，用它来维持：长期事实要稳定、当天状态要就地、经验要可复用、promotion 要可审查、低价值噪音要能被清理、而且反复验证过的经验还应反向推动其他 skills 一起变强。

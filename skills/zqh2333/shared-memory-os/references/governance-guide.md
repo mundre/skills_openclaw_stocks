@@ -1,54 +1,53 @@
 # Governance Guide
 
-Use this as the operational entrypoint for the governance layer.
+## Layer boundaries
 
-## New skill intake
-Read in this order:
-1. `references/new-skill-checklist.md`
-2. `references/skill-intake-protocol.md`
-3. Update `memory/intake-log.md`
-4. If there is conflict, update `memory/conflict-log.md`
-5. If there is a reusable pattern, update `memory/pattern-candidates.md`
-6. Update `memory/governance-dashboard.md`
+### Durable memory
+Use for:
+- stable user preferences
+- stable agent behavior rules
+- long-term constraints
+- lasting decisions
 
-## Weekly review
-Read in this order:
-1. `memory/weekly-review.md`
-2. Recent daily files
-3. `memory/pattern-candidates.md`
-4. `memory/intake-log.md`
-5. `memory/conflict-log.md`
-6. `memory/promotion-log.md`
-7. `memory/governance-dashboard.md`
+Do not use for:
+- day-specific blockers
+- temporary plans
+- unstable hypotheses
 
-## Monthly review
-Read in this order:
-1. `memory/monthly-review.md`
-2. `memory/monthly-governance-review.md`
-3. `memory/governance-dashboard.md`
-4. Then inspect intake / conflict / promotion / candidates only if needed
+### Daily memory
+Use for:
+- current context
+- in-progress state
+- temporary blockers
+- unresolved ambiguity
+- current execution notes
 
-## Current-state quick check
-Read:
-1. `memory/active-thread.md`
-2. `memory/current-state.md`
-3. `memory/recent-focus.md`
-4. `memory/trigger-map.md`
-5. `memory/skill-release-state.md` when skill publishing is in play
+### Learnings archive
+Use for:
+- reusable debugging results
+- tool behavior discoveries
+- corrections that change future behavior
+- reliable successful paths found after retries
 
-## Success / defaults / feedback check
-Read when tuning collaboration quality:
-1. `memory/success-patterns.md`
-2. `memory/default-behaviors.md`
-3. `memory/feedback-model.md`
-4. `memory/evolution-log.md`
+## Promotion rules
+Promote an item upward only when it is likely to remain true.
 
-## Restricted secrets access
-Read `memory/private-secrets.md` only when the current task explicitly requires secret lookup or credential-backed action.
-Do not load it during normal startup, heartbeat, or general review.
+- daily → durable memory: when a task-level note becomes a long-term rule or preference
+- daily → learnings: when a task-level result becomes reusable operational knowledge
+- learnings → durable memory: only when the learning becomes a stable standing rule
 
-## Slimming rule
-- Logs keep history
-- Dashboard keeps summary
-- Guide keeps navigation
-- Review files keep cadence
+## Demotion / cleanup rules
+Move or remove items when:
+- a durable rule turns out to be temporary
+- a learning is too narrow to be reusable
+- a daily note is obsolete after task completion
+
+## Conflict handling
+When two layers disagree:
+1. trust explicit latest user instruction first
+2. then durable memory
+3. then latest daily memory
+4. then learnings
+5. then older history
+
+Always record unresolved conflicts in daily memory.
