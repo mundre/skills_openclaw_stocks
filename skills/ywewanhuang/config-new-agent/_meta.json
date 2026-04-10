@@ -1,11 +1,17 @@
 {
   "owner": "ywewanhuang",
   "slug": "config-new-agent",
-  "displayName": "Config New Agent",
+  "displayName": "config-new-agent",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774882414330,
-    "commit": "https://github.com/openclaw/skills/commit/aa2f4b6870ec64905627796b1b6093dbc709f59a"
+    "version": "1.0.2",
+    "publishedAt": 1775791126923,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774882414330,
+      "commit": "https://github.com/openclaw/skills/commit/aa2f4b6870ec64905627796b1b6093dbc709f59a"
+    }
+  ]
 }

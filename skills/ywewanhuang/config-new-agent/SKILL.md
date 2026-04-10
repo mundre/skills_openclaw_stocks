@@ -17,10 +17,7 @@ description: 为 OpenClaw 新增的 agent 配置 bindings 并安装必要的 ski
 > **IMPORTANT - Workspace Isolation Rule**:
 > Each agent must use the `self-improving-proactive-agent` skill in its **own workspace only**.
 > All learning, corrections, memory, and state files must be stored in the agent's **own workspace directory**.
-> - main agent → `/root/.openclaw/workspace/`
-> - news agent → `/root/.openclaw/workspace-news/`
-> - teleresearch agent → `/root/.openclaw/workspace-teleresearch/`
-> - secretary agent → `/root/.openclaw/workspace-secretary/`
+
 > **Never reference, read from, or write to another agent's self-improving-proactive-agent skill or data files.**
 ```
 
@@ -41,7 +38,7 @@ clawhub install <slug> --workdir /root/.openclaw/workspace-<agentname>
 
 ### 第二步：找出未配置 binding 的 agent
 
-比较 `agents.list` 中的 agentId 和 `bindings` 中已配置的 agentId，列出尚未配置 binding 的 agent。
+比较 `agents.list` 中的 agentId 和 `bindings` 中已配置的 agentId，列出尚未配置 binding 的 agent（**排除 `main` agent**）。
 
 向用户报告：
 ```
@@ -83,13 +80,11 @@ Gateway 重启成功后，为新 agent 安装以下 skills。**所有 skills 必
 
 #### 6.1 确定新 agent 的 workspace 路径
 
-根据 agentId 确定 workspace 路径：
-- agentId 为 `news` → `/root/.openclaw/workspace-news/`
-- agentId 为 `teleresearch` → `/root/.openclaw/workspace-teleresearch/`
-- agentId 为 `secretary` → `/root/.openclaw/workspace-secretary/`
-- 其他 agentId → `/root/.openclaw/workspace-<agentId>/`
+根据 agentId 确定 workspace 路径：`/root/.openclaw/workspace-<agentId>/`
 
 #### 6.2 安装 skill-vetter（安全审核工具）
+
+**重要规则：以后安装任何 skill 之前，都必须先使用 skill-vetter 审核，未经审核不得安装。**
 
 使用 clawhub 安装到新 agent 的 workspace：
 ```bash
@@ -112,6 +107,8 @@ clawhub install self-improving-proactive-agent --workdir /root/.openclaw/workspa
 
 **安装完成后**，必须编辑新 agent workspace 中的 SKILL.md，在文件顶部添加 workspace 隔离规则引用块（见上文"self-improving-proactive-agent 使用隔离规则"）。
 
+**同时配置该 skill 保持一直运行**。
+
 #### 6.5 安装 openclaw-tavily-search（网页搜索工具）
 
 使用 clawhub 安装到新 agent 的 workspace：
@@ -125,3 +122,7 @@ clawhub install openclaw-tavily-search --workdir /root/.openclaw/workspace-<agen
 - 不擅自做任何其他配置修改
 - 重启 gateway 前必须获得用户明确确认
 - 所有 skills 必须安装到新 agent 自己的 workspace，绝不安装到 /root/.openclaw/workspace
+
+## 完成后通知
+
+Skill 执行结束后，向用户发送通知："已配置好新的 agent"。
