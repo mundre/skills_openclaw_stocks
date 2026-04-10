@@ -3,11 +3,16 @@
   "slug": "ticktick-cli-skill",
   "displayName": "TickTick",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773712529545,
-    "commit": "https://github.com/openclaw/skills/commit/f74e7e29b28f6afe79e365f8db4f265e849919d9"
+    "version": "1.0.5",
+    "publishedAt": 1775711486243,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773712529545,
+      "commit": "https://github.com/openclaw/skills/commit/f74e7e29b28f6afe79e365f8db4f265e849919d9"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773236330566,

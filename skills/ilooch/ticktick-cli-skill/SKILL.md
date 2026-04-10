@@ -82,6 +82,12 @@ The CLI uses OAuth PKCE in a browser to log in.
    - This should open a browser window/tab.
    - The user logs in and authorizes the app.
 
+### Alternative methods
+   **API token:** Get your API token from **Settings > Account > API Keys**:
+   ```bash
+   ticktick auth token <token>   # set access token directly (for headless environments)
+   ```   
+
 2. Confirm login status:
 
    ```bash
