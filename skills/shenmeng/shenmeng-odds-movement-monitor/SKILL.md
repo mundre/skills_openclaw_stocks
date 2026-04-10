@@ -1,5 +1,6 @@
 ---
 name: odds-movement-monitor
+version: 1.0.0
 description: |
   追踪体育赛事亚盘、欧赔、大小球的实时变动。
   发现赔率异动、识别机构态度转变、捕捉投注时机。
