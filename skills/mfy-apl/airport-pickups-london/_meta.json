@@ -3,11 +3,16 @@
   "slug": "airport-pickups-london",
   "displayName": "Airport Pickups London",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1774663913983,
-    "commit": "https://github.com/openclaw/skills/commit/ba267967e7d45b608650a4e5e9e962391793d261"
+    "version": "1.0.4",
+    "publishedAt": 1775754233412,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1774663913983,
+      "commit": "https://github.com/openclaw/skills/commit/ba267967e7d45b608650a4e5e9e962391793d261"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1773101052798,

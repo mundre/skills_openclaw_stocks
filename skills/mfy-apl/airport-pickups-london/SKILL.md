@@ -1,6 +1,6 @@
 ---
 name: airport-pickups-london
-description: Book UK airport and cruise port transfers via Airport Pickups London. Get instant fixed-price quotes, validate flights, and create real bookings for all London airports (Heathrow, Gatwick, Stansted, Luton, City), Edinburgh, and cruise ports (Southampton, Dover, Portsmouth, Tilbury, Harwich). TfL-licensed, 24/7 service. Supports A2A pricing negotiation (up to 5% discount).
+description: Book UK airport and cruise port transfers via Airport Pickups London. Get instant fixed-price quotes, validate flights, create bookings, amend, cancel, and track drivers live. TfL-licensed, 24/7 service. Requires API key (free instant registration).
 homepage: https://www.airport-pickups-london.com
 metadata:
   clawdbot:
@@ -9,21 +9,13 @@ metadata:
 
 # Airport Pickups London — Transfer Booking Skill
 
-This skill connects your agent to Airport Pickups London's booking API via MCP, giving it the ability to get transfer quotes, validate flights, and create real bookings.
+This skill connects your agent to Airport Pickups London's booking API via MCP, giving it full transfer management — quotes, bookings, amendments, cancellations, and live driver tracking.
 
-## What Your Agent Can Do
+## Authentication Required
 
-- **Get instant quotes** for any UK route — airports, cruise ports, addresses, postcodes
-- **Validate flight numbers** — auto-detect terminal, airline, arrival time
-- **Create real bookings** — confirmed reservations with booking reference and driver tracking link
+**This skill requires an API key** via the `x-api-key` header. No environment variables are needed.
 
-## Setup
-
-Add the APL MCP server to your OpenClaw config.
-
-**Step 1 — Get an API key** (one-time, instant):
-
-Send a POST request to the registration endpoint:
+**Get a key instantly** (free, no approval):
 
 ```bash
 curl -X POST https://mcp.airport-pickups-london.com/a2a/register \
@@ -31,9 +23,9 @@ curl -X POST https://mcp.airport-pickups-london.com/a2a/register \
   -d '{"name": "Your Agent Name", "email": "you@example.com"}'
 ```
 
-This returns your API key immediately. Free, no approval needed.
+## Setup
 
-**Step 2 — Add to your config:**
+Add the APL MCP server to your config:
 
 ```json
 {
@@ -48,56 +40,80 @@ This returns your API key immediately. Free, no approval needed.
 }
 ```
 
-## Available Tools
+## Available Tools (8)
 
-### `get_quote`
-Get prices for any UK transfer route.
+### `get_quote` — Get Transfer Prices
+Get prices for any UK transfer route. Returns all car types with prices, capacity, and luggage allowance.
 
-**Example prompts your agent will handle:**
+**Example prompts:**
 - "How much is a taxi from Heathrow to central London?"
 - "Get me a quote from Gatwick to Brighton for 4 passengers"
 - "What's the price from Southampton cruise port to London?"
 
-### `validate_flight`
+### `validate_flight` — Flight Validation
 Verify a flight number and get terminal, airline, arrival time, and meeting point.
 
 **Example prompts:**
 - "Check flight BA2534 arriving on April 15th"
 - "What terminal does EK007 arrive at?"
 
-### `book_transfer`
-Create a confirmed transfer booking.
-
-**Returns:**
-- Booking reference (e.g. APL-CJ5KDJ)
-- Manage booking URL — customer can view details, pay online, track driver, amend or cancel
-- Meeting point instructions (e.g. "Heathrow T3 — in front of WH Smith under the Welcome Board")
-- Confirmation email automatically sent to the passenger
-- Price, car type, pickup time, and all booking details
+### `book_transfer` — Create Booking
+Create a confirmed transfer booking. Returns booking reference, manage URL, meeting point.
 
 **Example prompts:**
-- "Book a People Carrier from Heathrow to W1K 1LN for John Smith, phone +447123456789, flight BA2534, April 15th at 3pm"
+- "Book a People Carrier from Heathrow to W1K 1LN for John Smith, flight BA2534, April 15th at 3pm"
+
+### `lookup_booking` — Check Booking Status
+Look up booking details by reference number. Returns status, driver info, and manage URL.
+
+**Example prompts:**
+- "What's the status of booking APL-CJ5KDJ?"
+
+### `amend_booking` — Modify Booking
+Change passenger name, phone, email, flight number, date/time, or special requests.
+
+**Example prompts:**
+- "Change the flight on APL-CJ5KDJ to BA2590"
+- "Update the passenger name to Jane Doe"
+
+### `cancel_booking` — Cancel Booking
+Cancel a booking. Free cancellation 12+ hours before pickup.
+
+**Example prompts:**
+- "Cancel booking APL-CJ5KDJ"
+
+### `track_driver` — Live Driver Tracking
+Get the driver's live GPS position, vehicle details, photo, and ETA.
+
+**Example prompts:**
+- "Where is my driver for APL-CJ5KDJ?"
+
+### `get_service_info` — FAQ & Policies
+Get info about cancellation policy, payment methods, vehicles, child seats, pets, accessibility, meet and greet, cruise ports, corporate accounts.
+
+**Example prompts:**
+- "What's the cancellation policy?"
+- "Do you provide child seats?"
+
+## Data & Privacy
+
+This skill sends the following data to the APL booking API:
+- Pickup and dropoff locations
+- Passenger name, phone, email
+- Flight numbers
+
+All data is transmitted over HTTPS (TLS 1.2+) and stored by Airport Pickups London for service delivery. GDPR compliant. The API key authenticates the agent, not the end user.
 
 ## Pricing Negotiation (A2A Extension)
 
-Agents can request a discount by including `requestedDiscountPercent` in the quote request. The maximum discount is **5%** — requests above this are automatically capped. The response includes `appliedDiscountPercent` showing the actual discount given.
-
-**Non-negotiable items:** peak surcharges, event pricing (Christmas, bank holidays), child seats.
-
-```json
-// Request
-{ "origin": "Heathrow", "destination": "W1", "requestedDiscountPercent": 3 }
-
-// Response includes
-{ "appliedDiscountPercent": 3, "cars": [{ "car_type": "Saloon", "price_gbp": 72.75 }] }
-```
+Agents can request a discount by including `requestedDiscountPercent` in the quote request. Maximum discount is **5%**. Non-negotiable: peak surcharges, event pricing, child seats.
 
 ## Pricing Info
 
-- All prices in GBP (£), per vehicle (not per person)
+- All prices in GBP, per vehicle (not per person)
 - Fixed prices — no surge, no hidden charges
 - Includes meet & greet, waiting time, parking, tolls
-- Free cancellation 24+ hours before pickup
+- Free cancellation 12+ hours before pickup
 
 ## Vehicle Types
 
