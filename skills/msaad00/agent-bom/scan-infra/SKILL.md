@@ -4,7 +4,7 @@ description: >-
   Scan infrastructure-as-code, cloud configurations, and find secrets. Use when:
   "check terraform", "scan kubernetes", "IaC", "find secrets",
   "scan dockerfile", "cloud security", "misconfigurations".
-version: 0.75.13
+version: 0.76.1
 license: Apache-2.0
 compatibility: >-
   Requires Python 3.11+. Install via pipx or pip. Optional: kubectl for
@@ -16,11 +16,11 @@ metadata:
   source: https://github.com/msaad00/agent-bom
   pypi: https://pypi.org/project/agent-bom/
   scorecard: https://securityscorecards.dev/viewer/?uri=github.com/msaad00/agent-bom
-  tests: 6533
+  tests: 7239
   install:
     pipx: agent-bom
     pip: agent-bom
-    docker: ghcr.io/msaad00/agent-bom:0.75.13
+    docker: ghcr.io/msaad00/agent-bom:0.76.1
   openclaw:
     requires:
       bins: []

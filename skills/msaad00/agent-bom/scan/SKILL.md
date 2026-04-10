@@ -6,7 +6,7 @@ description: >-
   KEV), container images, provenance, filesystems, and SBOMs. Use
   when: "check package", "scan image", "verify", "is this safe",
   "scan dependencies", "CVE lookup", "blast radius".
-version: 0.75.13
+version: 0.76.1
 license: Apache-2.0
 compatibility: >-
   Requires Python 3.11+. Install via pipx or pip. Native container image
@@ -18,11 +18,11 @@ metadata:
   source: https://github.com/msaad00/agent-bom
   pypi: https://pypi.org/project/agent-bom/
   scorecard: https://securityscorecards.dev/viewer/?uri=github.com/msaad00/agent-bom
-  tests: 6533
+  tests: 7239
   install:
     pipx: agent-bom
     pip: agent-bom
-    docker: ghcr.io/msaad00/agent-bom:0.75.13
+    docker: ghcr.io/msaad00/agent-bom:0.76.1
   openclaw:
     requires:
       bins: []
@@ -142,7 +142,7 @@ agent-bom where              # show all discovery paths
   "mcpServers": {
     "agent-bom": {
       "command": "uvx",
-      "args": ["agent-bom", "mcp"]
+      "args": ["agent-bom", "mcp", "server"]
     }
   }
 }
@@ -216,6 +216,6 @@ agent-bom agents
 ## Verification
 
 - **Source**: [github.com/msaad00/agent-bom](https://github.com/msaad00/agent-bom) (Apache-2.0)
-- **Sigstore signed**: `agent-bom verify agent-bom@0.75.13`
-- **6,533+ tests** with CodeQL + OpenSSF Scorecard
+- **Sigstore signed**: `agent-bom verify agent-bom@0.76.1`
+- **7,100+ tests** with CodeQL + OpenSSF Scorecard
 - **No telemetry**: Zero tracking, zero analytics
