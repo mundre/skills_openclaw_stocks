@@ -1,69 +1,49 @@
 ---
 name: xhs-cover
-version: 1.0.3
-description: 生成小红书风格封面图片。使用场景：(1) 用户要求生成小红书封面 (2) 用户要求生成社交媒体封面图 (3) 用户为笔记/文章生成配图 (4) 用户询问 credit 余额或生成历史。
+version: 3.0.0
+description: 生成小红书风格封面图片。使用场景：(1) 用户要求生成小红书封面 (2) 用户要求生成社交媒体封面图 (3) 用户为笔记/文章生成配图 (4) 用户询问 credit 余额或生成历史。首次使用会自动引导注册。
 requires:
   binaries:
-    - mcporter
-  env:
-    XHS_COVER_API_URL:
-      description: API 地址
-      default: https://api.xhscover.cn
-    XHS_COVER_API_KEY:
-      description: API 密钥（在 xhscover.cn/dashboard 获取）
-      required: true
+    - npx
 sendsDataTo:
   - https://api.xhscover.cn
-  - npm://@emit/xhs-cover-mcp-server
 ---
 
 # 小红书封面生成器
 
-通过 MCP 协议生成小红书风格封面图片。
+通过 `npx xhscover` 生成小红书风格封面图片。首次使用自动引导注册，跨平台支持。
 
-> ⚠️ **注意**：本技能需要将您的 API Key 发送到 xhscover.cn 服务。请确保您信任该服务后再使用。
+> **注意**：本技能需要将您的 API Key 和封面文案发送到 xhscover.cn 服务。请确保您信任该服务后再使用。
 
 ## 环境要求
 
-- `mcporter` - MCP 客户端
+- Node.js >= 18（用于 npx）
 
-## 快速配置
+## 首次使用
+
+如果未配置 API Key，运行以下命令注册并自动配置：
 
 ```bash
-# 1. 安装 mcporter
-npm i -g mcporter
-
-# 2. 设置 API Key
-export XHS_COVER_API_KEY="xhs_your_api_key"  # 在 xhscover.cn/dashboard 获取
+npx xhscover setup
 ```
+
+注册即获 10 个免费积分。
 
 ## 快速使用
 
 ```bash
 # 生成封面（默认 3:4 竖版）
-./scripts/xhs-cover.sh generate "5个习惯让你越来越自律"
+npx xhscover generate "5个习惯让你越来越自律"
 
 # 指定宽高比
-./scripts/xhs-cover.sh generate "今日份好心情" 1:1
+npx xhscover generate "今日份好心情" 1:1
 
 # 查询余额
-./scripts/xhs-cover.sh balance
+npx xhscover balance
 
 # 查看历史
-./scripts/xhs-cover.sh history
-
-# 查看帮助
-./scripts/xhs-cover.sh help
+npx xhscover history
 ```
-
-## 环境变量
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `XHS_COVER_API_URL` | API 地址 | https://api.xhscover.cn |
-| `XHS_COVER_API_KEY` | API 密钥 | 无（必填） |
-
-在 [xhscover.cn/dashboard](https://xhscover.cn/dashboard) 获取您的 API Key。
 
 ## 宽高比选项
 
@@ -76,14 +56,10 @@ export XHS_COVER_API_KEY="xhs_your_api_key"  # 在 xhscover.cn/dashboard 获取
 
 ## 数据流向
 
-本技能通过 mcporter ad-hoc 模式调用 `@emit/xhs-cover-mcp-server` MCP 服务，该服务会将您的：
-- 封面文案
-- API Key
-
-发送到 `api.xhscover.cn` 进行处理。
+本技能通过 `npx xhscover` 调用 `api.xhscover.cn` REST API，将封面文案和 API Key 发送到服务端进行处理。
 
 ## 相关链接
 
 - 官网：https://xhscover.cn
-- API 文档：https://xhscover.cn/docs
-- MCP Server：https://npmjs.com/package/@emit/xhs-cover-mcp-server
+- CLI 工具：https://github.com/xwchris/xhscover-cli
+- npm 包：https://www.npmjs.com/package/xhscover
