@@ -1,11 +1,17 @@
 {
   "owner": "zhangj85",
   "slug": "almanac-creator",
-  "displayName": "黄历制作技能",
+  "displayName": "Almanac Creator",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1775658431972,
-    "commit": "https://github.com/openclaw/skills/commit/cbc6beef1a444635ee38d9714c7a2c81cca6fbb5"
+    "version": "2.3.1",
+    "publishedAt": 1775907287871,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1775658431972,
+      "commit": "https://github.com/openclaw/skills/commit/cbc6beef1a444635ee38d9714c7a2c81cca6fbb5"
+    }
+  ]
 }

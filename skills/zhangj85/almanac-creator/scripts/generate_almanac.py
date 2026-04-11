@@ -1,3 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+黄历生成脚本 V2.2 - lunar-java 集成版
+升级内容：
+1. 集成 lunar-python 库（lunar-java 的 Python 版本）
+2. 干支计算 - 使用 lunar-python 准确计算（替代映射表）
+3. 宜忌生成 - 使用 lunar-python 传统算法（替代本地池）
+4. 新增彭祖百忌、纳音、星宿等传统元素支持
+V2.1 修复内容：
+1. 生肖运势算法 - 吉凶分离，逻辑正确
+2. 吉时计算 - 使用十二神值时
+3. 财神方位 - 根据日干计算
+"""
+
 import sys
 import io
 from PIL import Image, ImageDraw, ImageFont
@@ -5,88 +20,357 @@ import os
 import argparse
 from datetime import datetime
 
+# 导入 lunar-python（lunar-java 的 Python 版本）
+from lunar_python import Lunar, Solar
+
 # 设置 UTF-8 输出
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # 图片规格
 WIDTH = 1080
-PAGE_HEIGHT = 1450  # 增加高度，确保底部内容显示完整（原 1400）
+PAGE_HEIGHT = 1400
 BACKGROUND_COLOR = '#F8F0E6'
 
-# 颜色标准
-COLORS = {
-    'china_red': '#8B0000',
-    'bright_red': '#C41E3A',
-    'ink_black': '#2C2C2C',
-    'gold': '#D4AF37',
-    'light_gray': '#999999',
-    'pale_gray': '#CCCCCC'
+# 【V2.3 新增】5 套模板配色方案
+TEMPLATES = {
+    'traditional': {
+        'name': '传统中国风',
+        'bg': '#F8F0E6',        # 米黄宣纸色
+        'border_outer': '#8B0000',  # 中国红外框
+        'border_inner': '#D4AF37',  # 金色内框
+        'title': '#8B0000',     # 中国红标题
+        'section': '#C41E3A',   # 亮红色栏目
+        'text': '#2C2C2C',      # 墨黑色正文
+        'small': '#999999',     # 浅灰色小字
+        'separator': '#D4AF37', # 金色分隔线
+        'decoration': 'double_border'  # 双层边框
+    },
+    'modern': {
+        'name': '简约现代风',
+        'bg': '#F0F4F8',        # 浅蓝灰背景
+        'border_outer': '#2C5F8D',  # 深蓝色外框
+        'border_inner': '#C9A961',  # 香槟金内框
+        'title': '#1A3A52',     # 深蓝黑标题
+        'section': '#2C5F8D',   # 深蓝色栏目
+        'text': '#1A3A52',      # 深蓝黑正文
+        'small': '#6B7280',     # 中灰色小字
+        'separator': '#C9A961', # 香槟金分隔线
+        'decoration': 'single_border'  # 单层边框
+    },
+    'festive': {
+        'name': '喜庆吉祥风',
+        'bg': '#FFF5E6',        # 暖白色背景
+        'border_outer': '#D4AF37',  # 金色外框
+        'border_inner': '#FF6B35',  # 橙红色内框
+        'title': '#D4AF37',     # 金色标题
+        'section': '#FF6B35',   # 橙红色栏目
+        'text': '#8B0000',      # 深红色正文
+        'small': '#B8860B',     # 暗金色小字
+        'separator': '#FF6B35', # 橙红色分隔线
+        'decoration': 'ornament'  # 装饰花纹
+    },
+    'elegant': {
+        'name': '典雅古风',
+        'bg': '#F5F5DC',        # 宣纸色背景
+        'border_outer': '#4A5D4F',  # 墨绿色外框
+        'border_inner': '#9A8B4F',  # 古铜金内框
+        'title': '#2C3E36',     # 深绿黑标题
+        'section': '#4A5D4F',   # 墨绿色栏目
+        'text': '#2C3E36',      # 深绿黑正文
+        'small': '#8B8680',     # 灰褐色小字
+        'separator': '#9A8B4F', # 古铜金分隔线
+        'decoration': 'cloud'   # 祥云装饰
+    },
+    'fresh': {
+        'name': '清新自然风',
+        'bg': '#F0F8E6',        # 浅绿色背景
+        'border_outer': '#6B8E4E',  # 草绿色外框
+        'border_inner': '#B8C99E',  # 嫩绿色内框
+        'title': '#3A4F2E',     # 深绿色标题
+        'section': '#6B8E4E',   # 草绿色栏目
+        'text': '#3A4F2E',      # 深绿色正文
+        'small': '#8FA885',     # 浅绿色小字
+        'separator': '#B8C99E', # 嫩绿色分隔线
+        'decoration': 'leaf'    # 叶子装饰
+    }
 }
 
-# 字体大小标准
+# 颜色标准（默认使用 traditional 模板）
+COLORS = TEMPLATES['traditional']
+
+# 字体大小标准（V2.3 优化版 - 加大字号提升可读性）
 FONT_SIZES = {
     'title': 90,
     'subtitle': 65,
-    'section': 55,
-    'content': 45,
-    'small': 38
+    'section': 60,        # 55 → 60 (+5px) 栏目题加大
+    'content': 48,        # 45 → 48 (+3px) 正文加大
+    'content_large': 44,  # 40 → 44 (+4px) 故事/养生正文加大
+    'small': 40           # 38 → 40 (+2px) 小字加大
 }
 
-def load_fonts():
-    """加载字体"""
+# 间距设置（V2.3 优化版 - 增加行间距提升可读性）
+SPACING = {
+    'after_title': 10,
+    'after_subtitle': 8,
+    'after_lunar': 6,
+    'after_ganzhi': 8,
+    'after_special': 25,
+    'after_section': 28,   # 25 → 28 (+3px) 栏目后间距加大
+    'after_content': 20,   # 18 → 20 (+2px) 内容后间距加大
+    'after_zodiac_title': 12,
+    'after_zodiac_item': 6,
+    'separator_after': 28, # 25 → 28 (+3px) 分隔线后间距加大
+}
+
+def get_template(date_str):
+    """【V2.3 新增】根据日期选择模板（每日轮换）"""
+    date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    # 按日期轮换模板（5 天一个循环）
+    template_names = list(TEMPLATES.keys())
+    template_index = date_obj.day % len(template_names)
+    template_name = template_names[template_index]
+    return template_name, TEMPLATES[template_name]
+
+def load_fonts(template_name='traditional'):
+    """加载字体（统一使用黑体，保持可读性和品牌一致性）"""
     try:
+        # 统一使用黑体（所有模板）
+        font_file = 'C:/Windows/Fonts/simhei.ttf'
+        
         fonts = {
-            'title': ImageFont.truetype('C:/Windows/Fonts/simhei.ttf', FONT_SIZES['title']),
-            'subtitle': ImageFont.truetype('C:/Windows/Fonts/simhei.ttf', FONT_SIZES['subtitle']),
-            'section': ImageFont.truetype('C:/Windows/Fonts/simhei.ttf', FONT_SIZES['section']),
-            'content': ImageFont.truetype('C:/Windows/Fonts/simhei.ttf', FONT_SIZES['content']),
-            'small': ImageFont.truetype('C:/Windows/Fonts/simhei.ttf', FONT_SIZES['small'])
+            'title': ImageFont.truetype(font_file, FONT_SIZES['title']),
+            'subtitle': ImageFont.truetype(font_file, FONT_SIZES['subtitle']),
+            'section': ImageFont.truetype(font_file, FONT_SIZES['section']),
+            'content': ImageFont.truetype(font_file, FONT_SIZES['content']),
+            'small': ImageFont.truetype(font_file, FONT_SIZES['small'])
         }
     except:
-        fonts = {
-            'title': ImageFont.load_default(),
-            'subtitle': ImageFont.load_default(),
-            'section': ImageFont.load_default(),
-            'content': ImageFont.load_default(),
-            'small': ImageFont.load_default()
-        }
+        fonts = {size: ImageFont.load_default() for size in FONT_SIZES}
     return fonts
 
 def draw_centered_text(draw, text, y, font, color):
-    """居中绘制文字"""
+    """居中绘制文字（支持颜色名称或色值）"""
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     x = (WIDTH - text_width) // 2
     draw.text((x, y), text, fill=color, font=font)
     return y + (bbox[3] - bbox[1])
 
-def draw_double_border(draw):
-    """绘制双层边框"""
-    draw.rectangle([10, 10, WIDTH-10, PAGE_HEIGHT-10], 
-                   outline=COLORS['china_red'], width=8)
-    draw.rectangle([22, 22, WIDTH-22, PAGE_HEIGHT-22], 
-                   outline=COLORS['gold'], width=2)
+def get_color(template, color_name):
+    """【V2.3 新增】获取模板颜色"""
+    # 如果 color_name 是色值（以#开头），直接返回
+    if color_name.startswith('#'):
+        return color_name
+    
+    # 否则从模板中获取
+    return template.get(color_name, '#2C2C2C')
 
-def draw_separator(draw, y):
-    """绘制金色分隔线"""
-    draw.line([(80, y), (WIDTH-80, y)], fill=COLORS['gold'], width=2)
-    return y + 35
+def draw_decoration(draw, template_name, template):
+    """【V2.3 新增】根据模板绘制装饰元素"""
+    decoration_type = template.get('decoration', 'double_border')
+    
+    if decoration_type == 'double_border':
+        # 传统双层边框
+        draw.rectangle([10, 10, WIDTH-10, PAGE_HEIGHT-10], 
+                       outline=template['border_outer'], width=8)
+        draw.rectangle([22, 22, WIDTH-22, PAGE_HEIGHT-22], 
+                       outline=template['border_inner'], width=2)
+    
+    elif decoration_type == 'single_border':
+        # 简约单层边框
+        draw.rectangle([15, 15, WIDTH-15, PAGE_HEIGHT-15], 
+                       outline=template['border_outer'], width=4)
+        draw.rectangle([25, 25, WIDTH-25, PAGE_HEIGHT-25], 
+                       outline=template['border_inner'], width=1)
+    
+    elif decoration_type == 'ornament':
+        # 喜庆装饰（添加角花）
+        draw.rectangle([10, 10, WIDTH-10, PAGE_HEIGHT-10], 
+                       outline=template['border_outer'], width=6)
+        draw.rectangle([20, 20, WIDTH-20, PAGE_HEIGHT-20], 
+                       outline=template['border_inner'], width=2)
+        # 四角装饰
+        corner_size = 40
+        # 左上角
+        draw.arc([10, 10, 10+corner_size, 10+corner_size], 0, 90, 
+                 fill=template['border_inner'], width=3)
+        # 右上角
+        draw.arc([WIDTH-10-corner_size, 10, WIDTH-10, 10+corner_size], 90, 180, 
+                 fill=template['border_inner'], width=3)
+        # 左下角
+        draw.arc([10, PAGE_HEIGHT-10-corner_size, 10+corner_size, PAGE_HEIGHT-10], 270, 360, 
+                 fill=template['border_inner'], width=3)
+        # 右下角
+        draw.arc([WIDTH-10-corner_size, PAGE_HEIGHT-10-corner_size, WIDTH-10, PAGE_HEIGHT-10], 180, 270, 
+                 fill=template['border_inner'], width=3)
+    
+    elif decoration_type == 'cloud':
+        # 典雅古风（祥云装饰简化版）
+        draw.rectangle([12, 12, WIDTH-12, PAGE_HEIGHT-12], 
+                       outline=template['border_outer'], width=5)
+        draw.rectangle([24, 24, WIDTH-24, PAGE_HEIGHT-24], 
+                       outline=template['border_inner'], width=2)
+        # 顶部祥云（简化为弧线）
+        for i in range(5):
+            x = 100 + i * 200
+            draw.arc([x, 15, x+60, 75], 0, 180, 
+                     fill=template['border_inner'], width=2)
+    
+    elif decoration_type == 'leaf':
+        # 清新自然（叶子装饰简化版）
+        draw.rectangle([10, 10, WIDTH-10, PAGE_HEIGHT-10], 
+                       outline=template['border_outer'], width=4)
+        draw.rectangle([22, 22, WIDTH-22, PAGE_HEIGHT-22], 
+                       outline=template['border_inner'], width=2)
+        # 四角叶子（简化为椭圆）
+        leaf_size = 30
+        # 左上角
+        draw.ellipse([10, 10, 10+leaf_size, 10+leaf_size*2], 
+                     outline=template['border_inner'], width=2)
+        # 右上角
+        draw.ellipse([WIDTH-10-leaf_size, 10, WIDTH-10, 10+leaf_size*2], 
+                     outline=template['border_inner'], width=2)
+        # 左下角
+        draw.ellipse([10, PAGE_HEIGHT-10-leaf_size*2, 10+leaf_size, PAGE_HEIGHT-10], 
+                     outline=template['border_inner'], width=2)
+        # 右下角
+        draw.ellipse([WIDTH-10-leaf_size, PAGE_HEIGHT-10-leaf_size*2, WIDTH-10, PAGE_HEIGHT-10], 
+                     outline=template['border_inner'], width=2)
+
+def draw_double_border(draw):
+    """绘制双层边框（兼容旧版）"""
+    draw.rectangle([10, 10, WIDTH-10, PAGE_HEIGHT-10], 
+                   outline=COLORS['border_outer'], width=8)
+    draw.rectangle([22, 22, WIDTH-22, PAGE_HEIGHT-22], 
+                   outline=COLORS['border_inner'], width=2)
+
+def draw_separator(draw, y, color='#D4AF37'):
+    """绘制分隔线（支持自定义颜色）"""
+    draw.line([(80, y), (WIDTH-80, y)], fill=color, width=2)
+    return y + SPACING['separator_after']
+
+def get_ganzhi(date_str):
+    """【V2.2 升级】使用 lunar-python 计算干支（替代映射表，代码简化 80+ 行）"""
+    date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    lunar = Lunar.fromYmd(date_obj.year, date_obj.month, date_obj.day)
+    
+    # lunar-python 直接提供准确的干支
+    year_gz = lunar.getYearInGanZhi()
+    month_gz = lunar.getMonthInGanZhi()
+    day_gz = lunar.getDayInGanZhi()
+    
+    return f"{year_gz}年 {month_gz}月 {day_gz}日", day_gz
+
+def get_jishi(day_ganzhi):
+    """【修复 2】使用十二神值时准确计算吉凶"""
+    # 天干对应索引（五鼠遁元）
+    tian_gan_map = {
+        '甲': 0, '己': 0,  # 甲己日起甲子时
+        '乙': 1, '庚': 1,  # 乙庚日起丙子时
+        '丙': 2, '辛': 2,  # 丙辛日起戊子时
+        '丁': 3, '壬': 3,  # 丁壬日起庚子时
+        '戊': 4, '癸': 4,  # 戊癸日起壬子时
+    }
+    
+    # 12 时辰
+    shi_chen = [
+        ('子时', '23-1 点'), ('丑时', '1-3 点'), ('寅时', '3-5 点'),
+        ('卯时', '5-7 点'), ('辰时', '7-9 点'), ('巳时', '9-11 点'),
+        ('午时', '11-13 点'), ('未时', '13-15 点'), ('申时', '15-17 点'),
+        ('酉时', '17-19 点'), ('戌时', '19-21 点'), ('亥时', '21-23 点')
+    ]
+    
+    # 十二神（固定顺序）
+    shi_er_shen = [
+        '青龙', '明堂', '天刑', '朱雀', '金匮', '天德',
+        '白虎', '玉堂', '天牢', '玄武', '司命', '勾陈'
+    ]
+    
+    # 吉凶属性
+    shen_jixiong = {
+        '青龙': '吉', '明堂': '吉', '金匮': '吉', 
+        '天德': '吉', '玉堂': '吉', '司命': '吉',
+        '天刑': '凶', '朱雀': '凶', '白虎': '凶',
+        '天牢': '凶', '玄武': '凶', '勾陈': '凶'
+    }
+    
+    # 根据日干确定起始神
+    gan = day_ganzhi[0]
+    start_index = tian_gan_map.get(gan, 0)
+    
+    # 计算 12 时辰对应的神
+    ji_shi = []
+    xiong_shi = []
+    
+    for i, (name, time) in enumerate(shi_chen):
+        shen_index = (start_index + i) % 12
+        shen_name = shi_er_shen[shen_index]
+        jixiong = shen_jixiong[shen_name]
+        
+        if jixiong == '吉':
+            ji_shi.append(f"{name} ({time})")
+        else:
+            xiong_shi.append(f"{name} ({time})")
+    
+    return {
+        'ji': ji_shi,
+        'xiong': xiong_shi
+    }
+
+def get_changyi(day_ganzhi):
+    """根据日柱天干计算穿衣建议（五行颜色）"""
+    wu_xing_map = {
+        '甲': '木', '乙': '木',
+        '丙': '火', '丁': '火',
+        '戊': '土', '己': '土',
+        '庚': '金', '辛': '金',
+        '壬': '水', '癸': '水'
+    }
+    
+    color_map = {
+        '木': {'lucky': '绿色、青色', 'avoid': '白色、金色'},
+        '火': {'lucky': '红色、紫色', 'avoid': '黑色、蓝色'},
+        '土': {'lucky': '黄色、棕色', 'avoid': '绿色、青色'},
+        '金': {'lucky': '白色、金色', 'avoid': '红色、紫色'},
+        '水': {'lucky': '黑色、蓝色', 'avoid': '黄色、棕色'}
+    }
+    
+    gan = day_ganzhi[0]
+    wx = wu_xing_map.get(gan, '火')
+    return color_map.get(wx, {'lucky': '红色、紫色', 'avoid': '黑色、蓝色'})
+
+def get_cai_shen(day_ganzhi):
+    """【修复 3】根据日干准确计算财神方位"""
+    cai_shen_map = {
+        '甲': {'xi': "东南方", 'fu': "正南方", 'cai': "东北方", 'tai': "占门床外正南"},
+        '乙': {'xi': "西北方", 'fu': "正北方", 'cai': "东北方", 'tai': "占厨灶厕外西南"},
+        '丙': {'xi': "西南方", 'fu': "正东方", 'cai': "正西方", 'tai': "占门户碓磨外正南"},
+        '丁': {'xi': "正南方", 'fu': "正东方", 'cai': "正西方", 'tai': "占房床厕外正南"},
+        '戊': {'xi': "东南方", 'fu': "正南方", 'cai': "正北方", 'tai': "占门床外正南"},
+        '己': {'xi': "东北方", 'fu': "正南方", 'cai': "正北方", 'tai': "占碓磨厕外东南"},
+        '庚': {'xi': "西北方", 'fu': "西南方", 'cai': "正东方", 'tai': "占房床厕外东北"},
+        '辛': {'xi': "西南方", 'fu': "东北方", 'cai': "正东方", 'tai': "占仓库厕外正东"},
+        '壬': {'xi': "正北方", 'fu': "西南方", 'cai': "正南方", 'tai': "占门床外正南"},
+        '癸': {'xi': "东南方", 'fu': "正西方", 'cai': "正南方", 'tai': "占房床厕外东北"}
+    }
+    
+    gan = day_ganzhi[0]
+    return cai_shen_map.get(gan, cai_shen_map['甲'])
 
 def get_almanac_data(date_str):
-    """获取黄历数据（使用农历库正确计算）"""
-    from datetime import datetime
+    """获取黄历数据（修复版）"""
     from lunarcalendar import Converter, Solar
+    from datetime import datetime
     
-    # 解析日期
     date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-    weekday = date_obj.weekday()  # 0=星期一，6=星期日
+    weekday = date_obj.weekday()
     weekday_names = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
     
     # 转换为农历
     solar = Solar(date_obj.year, date_obj.month, date_obj.day)
     lunar = Converter.Solar2Lunar(solar)
     
-    # 农历月份和日期（中文）
+    # 农历日期
     lunar_months = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊']
     lunar_days = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
                   '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
@@ -96,71 +380,137 @@ def get_almanac_data(date_str):
     lunar_day_name = lunar_days[lunar.day - 1]
     lunar_date = f"农历{lunar.year}年{lunar_month_name}月{lunar_day_name}"
     
-    # 计算清明节气第几天（2026 年清明是 4 月 5 日）
+    # 【修复 1】获取准确干支
+    ganzhi_full, day_gz = get_ganzhi(date_str)
+    
+    # 计算清明节气第几天
     qingming = datetime(2026, 4, 5).date()
     qingming_day = (date_obj - qingming).days + 1
     
-    # 根据日期生成不同的宜忌（使用更复杂的算法）
-    # 基础宜忌库（10 组，根据日期轮换）
-    yi_ji_pool = [
-        (["祭祀", "祈福", "开市", "交易", "纳财", "入宅", "安床", "栽种"], ["动土", "破土", "安葬", "行丧", "词讼", "开仓"]),
-        (["祭祀", "祈福", "出行", "订婚", "纳财", "入宅", "修造", "动土"], ["安葬", "行丧", "开光", "词讼", "掘井"]),
-        (["开市", "交易", "纳财", "栽种", "安床", "修造", "破土", "拆卸"], ["安葬", "行丧", "开仓", "掘井", "词讼"]),
-        (["祈福", "祭祀", "求嗣", "开光", "出行", "解除", "移徙", "纳畜"], ["开市", "安床", "安葬", "词讼"]),
-        (["嫁娶", "祭祀", "祈福", "求嗣", "开光", "出行", "出火", "进人口"], ["安葬", "行丧", "词讼", "掘井"]),
-        (["开市", "交易", "立券", "纳财", "挂匾", "栽种", "祭祀", "祈福"], ["嫁娶", "安葬", "行丧", "词讼"]),
-        (["动土", "上梁", "进人口", "嫁娶", "安床", "开光", "祭祀", "祈福"], ["开市", "交易", "安葬", "词讼"]),
-        (["祭祀", "沐浴", "整容", "剃头", "解除", "扫舍", "求医", "治病"], ["开市", "安葬", "行丧", "词讼"]),
-        (["纳财", "开市", "交易", "立券", "安葬", "移柩", "启攒", "祭祀"], ["嫁娶", "出行", "词讼", "掘井"]),
-        (["求嗣", "祭祀", "祈福", "开光", "解除", "理发", "整手足甲", "游猎"], ["开市", "安葬", "词讼", "掘井"])
-    ]
+    # 【V2.2 升级】使用 lunar-python 获取准确宜忌（替代本地池，代码简化 50+ 行）
+    lunar = Lunar.fromYmd(date_obj.year, date_obj.month, date_obj.day)
+    yi = lunar.getDayYi()[:8]  # 限制显示前 8 项，避免超出宽度
+    ji = lunar.getDayJi()[:8]  # 限制显示前 8 项，避免超出宽度
     
-    # 根据日期选择宜忌（使用日期和星期的组合）
-    yi_ji_index = (date_obj.day + date_obj.month + weekday) % len(yi_ji_pool)
-    yi, ji = yi_ji_pool[yi_ji_index]
+    # 【V2.2 新增】获取传统黄历元素（可选）
+    pengzu_gan = lunar.getPengZuGan()       # 彭祖百忌（天干）
+    pengzu_zhi = lunar.getPengZuZhi()       # 彭祖百忌（地支）
+    na_yin = lunar.getDayNaYin()            # 纳音
+    xing_su = lunar.getXiu()                # 星宿
+    zhi_xing = lunar.getZhiXing()           # 建除十二值星
+    jiu_xing = lunar.getDayNineStar()       # 九星
     
-    # 根据日期生成不同的生肖运势（精简版，确保能显示完整）
-    zodiac_pool = [
-        ("兔", "六合吉日，贵人相助，诸事顺利"),
-        ("羊", "三合助力，财运亨通，合作愉快"),
-        ("虎", "寅亥相合，事业有成，家庭和睦"),
-        ("马", "午火当值，热情高涨，注意冲动"),
-        ("狗", "三合入命，贵人扶持，事事顺心"),
-        ("鸡", "金鸡报喜，财运上升，把握机会"),
-        ("龙", "龙行天下，事业突破，注意健康"),
-        ("牛", "牛气冲天，努力工作，收获满满"),
-        ("蛇", "巳火旺盛，谨慎行事，避免争执"),
-        ("猪", "亥水当值，情绪波动，注意健康"),
-        ("猴", "申金相害，小人暗算，防备损失"),
-        ("鼠", "子水相冲，诸事不顺，谨言慎行")
-    ]
+    # 【修复 5】生肖运势 - 吉凶分离，逻辑正确
+    # 根据地支计算六合、三合（红榜）和相冲、相害（黑榜）
+    zodiac_map = {
+        '子': '鼠', '丑': '牛', '寅': '虎', '卯': '兔',
+        '辰': '龙', '巳': '蛇', '午': '马', '未': '羊',
+        '申': '猴', '酉': '鸡', '戌': '狗', '亥': '猪'
+    }
     
-    # 根据日期选择不同的生肖（每日轮换）
-    zodiac_index = (date_obj.day + weekday) % len(zodiac_pool)
+    # 六合关系
+    liu_he = {
+        '子': '丑', '丑': '子', '寅': '亥', '卯': '戌',
+        '辰': '酉', '巳': '申', '午': '未', '未': '午',
+        '申': '巳', '酉': '辰', '戌': '卯', '亥': '寅'
+    }
+    
+    # 三合关系
+    san_he = {
+        '子': ['辰', '申'], '丑': ['巳', '酉'], '寅': ['午', '戌'],
+        '卯': ['未', '亥'], '辰': ['子', '申'], '巳': ['丑', '酉'],
+        '午': ['寅', '未'], '未': ['卯', '亥'], '申': ['子', '辰'],
+        '酉': ['丑', '巳'], '戌': ['寅', '午'], '亥': ['卯', '未']
+    }
+    
+    # 相冲关系
+    xiang_chong = {
+        '子': '午', '丑': '未', '寅': '申', '卯': '酉',
+        '辰': '戌', '巳': '亥', '午': '子', '未': '丑',
+        '申': '寅', '酉': '卯', '戌': '辰', '亥': '巳'
+    }
+    
+    # 相害关系
+    xiang_hai = {
+        '子': '未', '丑': '午', '寅': '巳', '卯': '辰',
+        '辰': '卯', '巳': '寅', '午': '丑', '未': '子',
+        '申': '亥', '酉': '戌', '戌': '酉', '亥': '申'
+    }
+    
+    # 获取当日地支
+    day_zhi = day_gz[1]  # 如"酉"
+    day_zodiac = zodiac_map[day_zhi]  # 如"鸡"
+    
+    # 红榜：六合 + 三合（3 个）
+    he_zodiac = liu_he[day_zhi]
+    he_zodiac_name = zodiac_map[he_zodiac]
+    
+    san_he_zodiacs = san_he[day_zhi]
+    san_he_names = [zodiac_map[z] for z in san_he_zodiacs]
+    
+    # 红榜生肖描述（传统文化参考）
     zodiac_red = [
-        f"{zodiac_pool[(zodiac_index + i) % 12][0]}：{zodiac_pool[(zodiac_index + i) % 12][1]}"
-        for i in range(3)
+        f"{he_zodiac_name}：传统说法六合，贵人相助",
+        f"{san_he_names[0]}：传统说法三合，合作顺利",
+        f"{san_he_names[1]}：传统说法三合，家庭和睦"
     ]
+    
+    # 黑榜：相冲 + 相害 + 相刑（3 个，避免重复且不与红榜冲突）
+    chong_zodiac = xiang_chong[day_zhi]
+    chong_zodiac_name = zodiac_map[chong_zodiac]
+    
+    hai_zodiac = xiang_hai[day_zhi]
+    hai_zodiac_name = zodiac_map[hai_zodiac]
+    
+    # 相刑关系
+    xiang_xing = {
+        '子': '卯', '丑': '戌', '寅': '巳', '卯': '子',
+        '辰': '辰', '巳': '寅', '午': '午', '未': '丑',
+        '申': '寅', '酉': '酉', '戌': '丑', '亥': '亥'
+    }
+    xing_zodiac = xiang_xing[day_zhi]
+    
+    # 【V2.3 修复】确保黑榜生肖不重复且不与红榜冲突
+    red_zodiacs = [he_zodiac] + san_he_zodiacs
+    black_zodiacs = [chong_zodiac, hai_zodiac]
+    
+    # 如果相刑与已有黑榜重复，或在红榜中，选择其他凶煞生肖
+    if xing_zodiac in black_zodiacs or xing_zodiac in red_zodiacs:
+        # 选择与三合生肖相冲的作为备选（也是凶煞）
+        # 例如：寅日三合是午和戌，午冲子，戌冲辰
+        # 选择子或辰作为第三个黑榜
+        san_he_chong = {
+            '子': '午', '丑': '未', '寅': '申', '卯': '酉',
+            '辰': '戌', '巳': '亥', '午': '子', '未': '丑',
+            '申': '寅', '酉': '卯', '戌': '辰', '亥': '巳'
+        }
+        # 取第一个三合生肖的对冲
+        first_san_he = san_he_zodiacs[0]
+        xing_zodiac = san_he_chong[first_san_he]
+        
+        # 如果还是重复，取第二个三合生肖的对冲
+        if xing_zodiac in black_zodiacs or xing_zodiac in red_zodiacs:
+            second_san_he = san_he_zodiacs[1]
+            xing_zodiac = san_he_chong[second_san_he]
+    
+    xing_zodiac_name = zodiac_map[xing_zodiac]
+    
     zodiac_black = [
-        f"{zodiac_pool[(zodiac_index + 6 + i) % 12][0]}：{zodiac_pool[(zodiac_index + 6 + i) % 12][1]}"
-        for i in range(3)
+        f"{chong_zodiac_name}：传统说法相冲，建议谨慎行事",
+        f"{hai_zodiac_name}：传统说法相害，注意人际关系",
+        f"{xing_zodiac_name}：传统说法相刑，注意健康"
     ]
     
-    # 财神方位（根据日期天干地支计算，使用更复杂的算法）
-    cai_shen_directions = [
-        {'xi': "西南方", 'fu': "正东方", 'cai': "东南方", 'tai': "占门床外正南"},
-        {'xi': "正南方", 'fu': "东南方", 'cai': "正东方", 'tai': "占厨灶厕外西南"},
-        {'xi': "东南方", 'fu': "正南方", 'cai': "西南方", 'tai': "占门户碓磨外正南"},
-        {'xi': "正东方", 'fu': "西南方", 'cai': "正南方", 'tai': "占房床厕外正南"},
-        {'xi': "东北方", 'fu': "正西方", 'cai': "正北方", 'tai': "占门床外正南"},
-        {'xi': "正西方", 'fu': "西北方", 'cai': "东北方", 'tai': "占碓磨厕外东南"},
-        {'xi': "西北方", 'fu': "正北方", 'cai': "正西方", 'tai': "占房床厕外东北"},
-        {'xi': "正北方", 'fu': "东北方", 'cai': "西北方", 'tai': "占仓库厕外正东"}
-    ]
-    # 使用日期、月份、星期的组合确保每日不同
-    cai_shen = cai_shen_directions[(date_obj.day + date_obj.month + weekday) % len(cai_shen_directions)]
+    # 【修复 3】获取准确财神方位
+    cai_shen = get_cai_shen(day_gz)
     
-    # 养生建议（根据季节和日期变化）
+    # 【修复 2】获取准确吉时
+    jishi = get_jishi(day_gz)
+    
+    # 穿衣建议
+    changyi = get_changyi(day_gz)
+    
+    # 养生建议（6 组循环）
     yangsheng_pool = [
         {
             'diet_yi': "宜吃：菠菜 芹菜 百合 莲子 枸杞 菊花茶",
@@ -200,11 +550,10 @@ def get_almanac_data(date_str):
         }
     ]
     
-    # 根据日期选择养生建议
     yangsheng_index = (date_obj.day + date_obj.month) % len(yangsheng_pool)
     yangsheng = yangsheng_pool[yangsheng_index]
     
-    # 黄历科普（每日不同）
+    # 黄历科普（4 组循环）
     kepu_pool = [
         {
             'ganzhi': "天干地支纪日法，每日对应一个干支组合",
@@ -236,153 +585,451 @@ def get_almanac_data(date_str):
         }
     ]
     
-    # 根据日期选择科普内容
     kepu_index = date_obj.day % len(kepu_pool)
     kepu = kepu_pool[kepu_index]
     
-    # 传统故事（每日不同）
+    # 【V2.2 扩展】传统故事池（24 个节气故事 + 民俗故事 + 历史典故）
     story_pool = [
+        # ========== 春季节气故事（6 个）==========
         {
-            'title': "清明节由来",
+            'title': "立春·咬春习俗",
+            'season': '春',
             'content': [
-                "春秋时期，晋国公子重耳流亡国外十九年，",
-                "大臣介子推始终追随左右，忠心耿耿。",
-                "一次重耳饿晕，介子推割下自己腿肉",
-                "煮汤救活重耳。后来重耳成为晋文公，",
-                "大赏功臣却忘了介子推。介子推携母",
-                "隐居绵山。晋文公得知后亲自寻访，",
-                "放火烧山逼其出山，介子推宁死不屈，",
-                "抱树而死。晋文公悲痛万分，下令将",
-                "介子推死难之日定为寒食节，禁火冷食。",
-                "后来寒食节与清明节合并，成为祭祖扫墓的节日。"
+                "立春是二十四节气之首，标志着春天开始。",
+                "古代有'咬春'习俗，即立春之日吃春饼、春卷。",
+                "春饼是用面粉烙制的薄饼，卷入新鲜蔬菜。",
+                "咬春寓意咬住春天，祈求风调雨顺、五谷丰登。",
+                "《燕京岁时记》记载：'立春之日，富家食春饼。'",
+                "这一习俗至今在北方地区仍广泛流传。"
             ],
-            'moral': "忠诚、廉洁、气节"
+            'moral': "辞旧迎新、祈福丰收"
         },
         {
-            'title': "黄历的起源",
+            'title': "雨水·春雨贵如油",
+            'season': '春',
             'content': [
-                "黄历起源于黄帝时代，距今已有四千多年历史。",
-                "传说黄帝命大挠氏创制干支，用来纪年月日时。",
-                "后来逐渐发展出择吉、择日等术数体系。",
-                "唐代时，黄历由朝廷统一颁布，称为'皇历'。",
-                "明清时期，黄历在民间广泛流传，",
-                "成为百姓日常生活的重要参考。",
-                "黄历融合了天文、历法、术数等知识，",
-                "是中华传统文化的重要组成部分。"
+                "雨水节气标志着降雨开始，雨量渐增。",
+                "农谚云：'春雨贵如油'，说明春雨对农作物的重要性。",
+                "雨水时节，农民开始春耕备耕，准备播种。",
+                "民间有'拉保保'习俗，为孩子祈求健康平安。",
+                "雨水还讲究'回娘家'，出嫁女儿回家探望父母。",
+                "这一节气体现了古人对自然规律的深刻认知。"
             ],
-            'moral': "传承文化、尊重传统、趋吉避凶"
+            'moral': "珍惜资源、感恩自然"
         },
         {
-            'title': "十二生肖的传说",
+            'title': "惊蛰·春雷惊百虫",
+            'season': '春',
             'content': [
-                "相传玉皇大帝要选十二种动物做生肖，",
-                "规定谁先到达天宫谁就入选。",
-                "老鼠机智地坐在牛背上，",
-                "快到终点时跳下来得了第一。",
-                "牛第二，虎第三，兔第四，",
-                "龙第五，蛇第六，马第七，",
-                "羊第八，猴第九，鸡第十，",
-                "狗第十一，猪第十二。",
-                "从此有了十二生肖纪年的传统。"
+                "惊蛰时节，春雷乍动，惊醒蛰伏的昆虫。",
+                "古人认为春雷是上天唤醒万物的信号。",
+                "民间有'打小人'习俗，用鞋底拍打纸人驱邪。",
+                "惊蛰也是春耕的重要时节，农民开始播种。",
+                "客家人有'炒虫'习俗，炒豆子寓意消灭害虫。",
+                "这一节气反映了古人对生物节律的观察。"
             ],
-            'moral': "智慧、勤奋、团结、坚持"
+            'moral': "顺应天时、驱邪纳福"
         },
         {
-            'title': "二十四节气的智慧",
+            'title': "春分·阴阳平衡",
+            'season': '春',
             'content': [
-                "二十四节气是古人观察太阳运行规律制定的。",
-                "从立春开始，到冬至结束，循环往复。",
-                "每个节气约 15 天，指导农事活动。",
-                "春雨惊春清谷天，夏满芒夏暑相连，",
-                "秋处露秋寒霜降，冬雪雪冬小大寒。",
-                "二十四节气体现了古人'天人合一'的智慧，",
-                "2016 年被列入联合国非遗名录。"
+                "春分之日，昼夜平分，阴阳平衡。",
+                "古人认为春分是调节身体的好时机。",
+                "民间有'竖蛋'游戏，春分之日最容易成功。",
+                "春分还有'祭日'习俗，皇帝率群臣祭日神。",
+                "农民忙着春灌、施肥，管理越冬作物。",
+                "这一节气体现了古人'天人合一'的哲学思想。"
             ],
-            'moral': "顺应自然、尊重规律、和谐共生"
+            'moral': "平衡和谐、顺应自然"
+        },
+        {
+            'title': "清明·祭祖扫墓",
+            'season': '春',
+            'content': [
+                "清明既是节气，也是传统节日。",
+                "源于寒食节，纪念春秋时期介子推。",
+                "清明扫墓，缅怀先人，表达哀思。",
+                "清明踏青，亲近自然，感受春意。",
+                "插柳、戴柳，寓意驱邪避灾。",
+                "清明文化传承千年，是中华孝道的重要体现。"
+            ],
+            'moral': "慎终追远、孝道传承"
+        },
+        {
+            'title': "谷雨·雨生百谷",
+            'season': '春',
+            'content': [
+                "谷雨是春季最后一个节气。",
+                "'雨生百谷'，雨水滋润万物，谷物茁壮成长。",
+                "谷雨有'祭海'习俗，渔民祈求出海平安。",
+                "喝谷雨茶，传说能清火明目。",
+                "谷雨时节，农民忙着插秧、种豆。",
+                "这一节气体现了农耕文明的智慧。"
+            ],
+            'moral': "感恩自然、勤劳致富"
+        },
+        
+        # ========== 夏季节气故事（6 个）==========
+        {
+            'title': "立夏·称人习俗",
+            'season': '夏',
+            'content': [
+                "立夏标志着夏季开始。",
+                "民间有'称人'习俗，立夏之日称体重。",
+                "传说称人后，夏天不会消瘦，健康度夏。",
+                "立夏吃蛋，称为'立夏蛋'，寓意圆满。",
+                "皇帝率群臣'迎夏'，祈求风调雨顺。",
+                "这一习俗体现了古人对健康的重视。"
+            ],
+            'moral': "珍爱健康、顺应四时"
+        },
+        {
+            'title': "小满·麦粒渐满",
+            'season': '夏',
+            'content': [
+                "小满时节，麦粒开始饱满，但尚未成熟。",
+                "'小满不满，麦有一险'，提醒农民注意防灾。",
+                "小满有'祭车神'习俗，祈求灌溉顺利。",
+                "吃苦菜，清热解暑，预防疾病。",
+                "小满体现了古人'满招损，谦受益'的哲理。",
+                "人生如节气，小满即安，不求全满。"
+            ],
+            'moral': "谦虚谨慎、知足常乐"
+        },
+        {
+            'title': "芒种·忙收忙种",
+            'season': '夏',
+            'content': [
+                "芒种是'有芒之谷可稼种'之意。",
+                "此时麦子成熟，稻谷可种，农事繁忙。",
+                "民间有'送花神'习俗，饯别春花。",
+                "'芒种不种，再种无用'，强调农时重要。",
+                "煮梅、吃梅，是芒种的传统习俗。",
+                "这一节气体现了农耕的辛勤与智慧。"
+            ],
+            'moral': "珍惜时光、勤劳耕耘"
+        },
+        {
+            'title': "夏至·日长之至",
+            'season': '夏',
+            'content': [
+                "夏至之日，白昼最长，黑夜最短。",
+                "古人认为夏至阳气最盛，需防暑降温。",
+                "民间有'夏至面'习俗，吃面消暑。",
+                "皇帝'祭地'，祈求国泰民安。",
+                "妇女互赠香囊，驱蚊避邪。",
+                "夏至体现了古人对天文现象的精准观测。"
+            ],
+            'moral': "阴阳转化、物极必反"
+        },
+        {
+            'title': "小暑·炎热初现",
+            'season': '夏',
+            'content': [
+                "小暑标志着炎热夏季正式到来。",
+                "'小暑大暑，上蒸下煮'，形容天气炎热。",
+                "民间有'晒伏'习俗，晒衣物防霉防虫。",
+                "吃藕、吃黄鳝，是 small 暑的养生习俗。",
+                "小暑时节，农民忙着田间管理。",
+                "这一节气体现了古人的养生智慧。"
+            ],
+            'moral': "防暑降温、养生保健"
+        },
+        {
+            'title': "大暑·酷热难耐",
+            'season': '夏',
+            'content': [
+                "大暑是一年中最热的节气。",
+                "'大暑大暑，热得无处躲'，形容酷热。",
+                "民间有'送大暑船'习俗，祈求平安度夏。",
+                "喝伏茶、吃仙草，清热解毒。",
+                "大暑时节，早稻收获，晚稻插秧。",
+                "这一节气体现了劳动人民的坚韧精神。"
+            ],
+            'moral': "不畏酷暑、坚韧不拔"
+        },
+        
+        # ========== 秋季节气故事（6 个）==========
+        {
+            'title': "立秋·贴秋膘",
+            'season': '秋',
+            'content': [
+                "立秋标志着秋季开始。",
+                "民间有'贴秋膘'习俗，立秋之日吃肉。",
+                "夏天清淡饮食，立秋补补身体。",
+                "'咬秋'吃西瓜，寓意消除暑气。",
+                "皇帝'迎秋'，祭祀秋神。",
+                "这一习俗体现了古人的养生智慧。"
+            ],
+            'moral': "适时进补、调养身心"
+        },
+        {
+            'title': "处暑·暑气消退",
+            'season': '秋',
+            'content': [
+                "处暑意味着炎热暑气即将结束。",
+                "'处暑天还暑，好似秋老虎'，提醒余热未消。",
+                "民间有'放河灯'习俗，悼念逝者。",
+                "处暑吃鸭子，滋阴养胃。",
+                "农民开始收获早熟作物。",
+                "这一节气体现了季节转换的规律。"
+            ],
+            'moral': "寒暑交替、自然规律"
+        },
+        {
+            'title': "白露·露水凝结",
+            'season': '秋',
+            'content': [
+                "白露时节，早晚露水凝结。",
+                "'白露秋分夜，一夜冷一夜'，天气渐凉。",
+                "民间有'白露茶'习俗，采白露时节的茶。",
+                "喝白露米酒，是江浙地区的传统。",
+                "白露时节，候鸟开始南飞。",
+                "这一节气体现了物候变化的精妙。"
+            ],
+            'moral': "观察自然、顺应变化"
+        },
+        {
+            'title': "秋分·昼夜平分",
+            'season': '秋',
+            'content': [
+                "秋分之日，昼夜再次平分。",
+                "秋分是传统的'祭月节'，后来演变为中秋。",
+                "民间有'竖蛋'游戏，与春分类似。",
+                "秋分吃秋菜，祈求身体健康。",
+                "农民忙着秋收、秋耕、秋种。",
+                "这一节气体现了古人的天文智慧。"
+            ],
+            'moral': "阴阳平衡、收获感恩"
+        },
+        {
+            'title': "寒露·露水寒冷",
+            'season': '秋',
+            'content': [
+                "寒露时节，露水增多且寒冷。",
+                "'寒露寒露，遍地冷露'，形容天气转凉。",
+                "民间有'登高'习俗，重阳节前后登山。",
+                "赏菊花、饮菊花酒，是寒露的传统。",
+                "寒露时节，晚稻收割，冬小麦播种。",
+                "这一节气体现了季节的深刻变化。"
+            ],
+            'moral': "登高望远、胸怀开阔"
+        },
+        {
+            'title': "霜降·霜冻降临",
+            'season': '秋',
+            'content': [
+                "霜降是秋季最后一个节气。",
+                "霜降之日，开始出现霜冻。",
+                "民间有'补冬不如补霜降'的说法。",
+                "吃柿子，是霜降的传统习俗。",
+                "农民抢收晚稻，防止霜冻损害。",
+                "这一节气体现了农事与节气的紧密联系。"
+            ],
+            'moral': "未雨绸缪、防患未然"
+        },
+        
+        # ========== 冬季节气故事（6 个）==========
+        {
+            'title': "立冬·冬季开始",
+            'season': '冬',
+            'content': [
+                "立冬标志着冬季正式开始。",
+                "皇帝'迎冬'，祭祀冬神。",
+                "民间有'补冬'习俗，立冬之日进补。",
+                "吃饺子，是北方的立冬传统。",
+                "农民开始冬闲，修缮农具。",
+                "这一节气体现了古人的养生之道。"
+            ],
+            'moral': "养精蓄锐、待时而动"
+        },
+        {
+            'title': "小雪·雪花初现",
+            'season': '冬',
+            'content': [
+                "小雪时节，北方开始下雪。",
+                "'小雪封地，大雪封河'，形容天气寒冷。",
+                "民间有'腌菜'习俗，储备过冬蔬菜。",
+                "小雪吃糍粑，是南方地区的传统。",
+                "渔民开始晒鱼干，储备食物。",
+                "这一节气体现了古人的生存智慧。"
+            ],
+            'moral': "未雨绸缪、储备过冬"
+        },
+        {
+            'title': "大雪·雪花纷飞",
+            'season': '冬',
+            'content': [
+                "大雪时节，降雪量增大。",
+                "'瑞雪兆丰年'，冬雪预示来年丰收。",
+                "民间有'进补'习俗，吃羊肉、狗肉。",
+                "大雪腌肉，是传统习俗。",
+                "农民修整农田，准备来年春耕。",
+                "这一节气体现了劳动人民的乐观精神。"
+            ],
+            'moral': "乐观向上、期盼丰收"
+        },
+        {
+            'title': "冬至·日短之至",
+            'season': '冬',
+            'content': [
+                "冬至之日，白昼最短，黑夜最长。",
+                "古人认为冬至是阴阳转化的关键节点。",
+                "北方吃饺子，南方吃汤圆。",
+                "'冬至大如年'，是重要的传统节日。",
+                "皇帝'祭天'，祈求国泰民安。",
+                "这一节气体现了古人的天文观测能力。"
+            ],
+            'moral': "阴阳转化、否极泰来"
+        },
+        {
+            'title': "小寒·寒冷初现",
+            'season': '冬',
+            'content': [
+                "小寒标志着一年中最冷时期到来。",
+                "'小寒大寒，冷成冰团'，形容严寒。",
+                "民间有'九九消寒图'习俗，记录寒冬。",
+                "吃腊八粥，是 small 寒的传统。",
+                "农民开始准备年货，迎接春节。",
+                "这一节气体现了古人的乐观精神。"
+            ],
+            'moral': "不畏严寒、期盼春暖"
+        },
+        {
+            'title': "大寒·严寒之极",
+            'season': '冬',
+            'content': [
+                "大寒是一年中最冷的节气。",
+                "大寒过后，春天即将到来。",
+                "民间有'尾牙祭'习俗，祭祀土地神。",
+                "吃八宝饭、年糕，寓意年年高。",
+                "大寒时节，人们开始准备春节。",
+                "这一节气体现了冬去春来的自然规律。"
+            ],
+            'moral': "严冬将过、春天不远"
         }
     ]
     
-    # 根据日期选择传统故事
-    story_index = date_obj.day % len(story_pool)
-    story = story_pool[story_index]
+    # 【V2.3.1 修复】根据季节选择故事（避免春季显示秋季故事）
+    # 1. 按月份确定季节
+    month = date_obj.month
+    if month in [3, 4, 5]:
+        season = '春'
+        season_name = '春季'
+    elif month in [6, 7, 8]:
+        season = '夏'
+        season_name = '夏季'
+    elif month in [9, 10, 11]:
+        season = '秋'
+        season_name = '秋季'
+    else:
+        season = '冬'
+        season_name = '冬季'
+    
+    # 2. 筛选当季故事
+    seasonal_stories = [s for s in story_pool if s.get('season') == season]
+    
+    # 3. 如果当季故事为空， fallback 到全部故事（兼容性）
+    if not seasonal_stories:
+        seasonal_stories = story_pool
+    
+    # 4. 按日期轮换（确保同一季节内不重复）
+    # 使用 (day + month) 组合，避免每月同一天重复
+    story_index = (date_obj.day + date_obj.month) % len(seasonal_stories)
+    story = seasonal_stories[story_index]
+    
+    print(f"[INFO] 季节：{season_name}，故事池：{len(seasonal_stories)}个，选择：{story['title']}")
     
     return {
         'date_gregorian': f"{date_str} {weekday_names[weekday]}",
         'date_lunar': lunar_date,
+        'ganzhi_full': ganzhi_full,
         'special_day': f"清明节气第 {qingming_day} 天",
         'yi': yi,
         'ji': ji,
         'zodiac_red': zodiac_red,
         'zodiac_black': zodiac_black,
         'cai_shen': cai_shen,
+        'jishi': jishi,
+        'changyi': changyi,
         'yangsheng': yangsheng,
         'kepu': kepu,
         'story': story
     }
 
-def generate_page1(data, fonts, output_dir, date_str):
+def generate_page1(data, fonts, output_dir, date_str, template_name=None, template=None):
     """生成第 1 页：封面 + 宜忌 + 生肖"""
-    img = Image.new('RGB', (WIDTH, PAGE_HEIGHT), BACKGROUND_COLOR)
+    # 【V2.3 新增】如果没有传入模板，自动选择
+    if template_name is None or template is None:
+        template_name, template = get_template(date_str)
+    
+    # 使用模板配色
+    img = Image.new('RGB', (WIDTH, PAGE_HEIGHT), template['bg'])
     draw = ImageDraw.Draw(img)
     
-    draw_double_border(draw)
+    # 绘制装饰边框
+    draw_decoration(draw, template_name, template)
     
-    y = 50
-    y = draw_centered_text(draw, "每日黄历", y, fonts['title'], COLORS['china_red'])
+    # 使用模板颜色绘制
+    y = 40
+    y = draw_centered_text(draw, "每日黄历", y, fonts['title'], template['title'])
+    y += SPACING['after_title']
+    y = draw_centered_text(draw, data['date_gregorian'], y, fonts['subtitle'], template['text'])
+    y += SPACING['after_subtitle']
+    y = draw_centered_text(draw, data['date_lunar'], y, fonts['section'], template['text'])
+    y += SPACING['after_lunar']
+    y = draw_centered_text(draw, data['ganzhi_full'], y, fonts['content'], template['text'])
+    y += SPACING['after_ganzhi']
+    y = draw_centered_text(draw, data['special_day'], y, fonts['small'], template['small'])
+    
+    y = draw_separator(draw, y + 25, template['separator'])
+    
     y += 15
-    y = draw_centered_text(draw, data['date_gregorian'], y, fonts['subtitle'], COLORS['ink_black'])
-    y += 10
-    y = draw_centered_text(draw, data['date_lunar'], y, fonts['section'], COLORS['ink_black'])
-    y += 10
-    y = draw_centered_text(draw, data['special_day'], y, fonts['small'], COLORS['pale_gray'])
-    
-    y = draw_separator(draw, y + 35)
-    
-    y += 20
-    y = draw_centered_text(draw, "今日宜", y, fonts['section'], COLORS['bright_red'])
-    y += 10
+    y = draw_centered_text(draw, "传统习俗：适合", y, fonts['section'], template['section'])
+    y += 8
     
     yi_line1 = " ".join(data['yi'][:4])
     yi_line2 = " ".join(data['yi'][4:])
-    y = draw_centered_text(draw, yi_line1, y, fonts['content'], COLORS['ink_black'])
-    y += 10
-    y = draw_centered_text(draw, yi_line2, y, fonts['content'], COLORS['ink_black'])
+    y = draw_centered_text(draw, yi_line1, y, fonts['content'], template['text'])
+    y += 8
+    y = draw_centered_text(draw, yi_line2, y, fonts['content'], template['text'])
     
-    y += 25
-    y = draw_centered_text(draw, "今日忌", y, fonts['section'], COLORS['china_red'])
-    y += 10
-    y = draw_centered_text(draw, " ".join(data['ji']), y, fonts['content'], COLORS['ink_black'])
+    y += 18
+    y = draw_centered_text(draw, "传统讲究：避免", y, fonts['section'], template['section'])
+    y += 8
+    y = draw_centered_text(draw, " ".join(data['ji']), y, fonts['content'], template['text'])
     
-    y = draw_separator(draw, y + 35)
-    
-    y += 20
-    y = draw_centered_text(draw, "今日生肖运势", y, fonts['section'], COLORS['china_red'])
+    y = draw_separator(draw, y + 25, template['separator'])
     
     y += 15
-    y = draw_centered_text(draw, "红榜生肖", y, fonts['content'], COLORS['bright_red'])
-    y += 8  # 减少间距
+    y = draw_centered_text(draw, "今日生肖运势", y, fonts['section'], template['section'])
     
-    # 移除 emoji，使用文字前缀，确保排版整齐
-    for i, zodiac in enumerate(data['zodiac_red']):
-        y = draw_centered_text(draw, zodiac, y, fonts['content'], COLORS['ink_black'])
-        y += 8  # 减少间距
+    y += SPACING['after_zodiac_title']
+    y = draw_centered_text(draw, "今日吉生肖", y, fonts['content'], template['section'])
+    y += SPACING['after_zodiac_item']
     
-    y += 12  # 减少间距
-    y = draw_centered_text(draw, "黑榜生肖", y, fonts['content'], COLORS['china_red'])
-    y += 8  # 减少间距
+    for zodiac in data['zodiac_red']:
+        y = draw_centered_text(draw, zodiac, y, fonts['content'], template['text'])
+        y += SPACING['after_zodiac_item']
+    
+    y += 8
+    y = draw_centered_text(draw, "今日需注意生肖", y, fonts['content'], template['section'])
+    y += SPACING['after_zodiac_item']
     
     for zodiac in data['zodiac_black']:
-        y = draw_centered_text(draw, zodiac, y, fonts['content'], COLORS['ink_black'])
-        y += 8  # 减少间距
+        y = draw_centered_text(draw, zodiac, y, fonts['content'], template['text'])
+        y += SPACING['after_zodiac_item']
     
-    y = draw_separator(draw, y + 20)  # 减少间距
+    y = draw_separator(draw, y + 18, template['separator'])
     
-    y += 10
-    y = draw_centered_text(draw, "传统文化 仅供参考", y, fonts['small'], COLORS['light_gray'])
+    y += 8
+    # 【V2.3 整改】增加免责声明
+    disclaimer_text = "传统文化参考 请理性看待 相信科学"
+    y = draw_centered_text(draw, disclaimer_text, y, fonts['small'], template['small'])
     y += 5
-    draw_centered_text(draw, data['date_gregorian'], y, fonts['small'], COLORS['light_gray'])
+    draw_centered_text(draw, data['date_gregorian'], y, fonts['small'], template['small'])
     
-    # 生成文件名（使用日期字符串，不包含星期）
     date_only = date_str.replace('-', '')
     filename = f"{date_only}_黄历.png"
     filepath = os.path.join(output_dir, filename)
@@ -390,16 +1037,22 @@ def generate_page1(data, fonts, output_dir, date_str):
     print(f"[OK] 第 1 页已保存：{filepath}")
     return filepath
 
-def generate_page2(data, fonts, output_dir, date_str):
+def generate_page2(data, fonts, output_dir, date_str, template_name=None, template=None):
     """生成第 2 页：财神 + 养生"""
-    img = Image.new('RGB', (WIDTH, PAGE_HEIGHT), BACKGROUND_COLOR)
+    # 【V2.3 新增】如果没有传入模板，自动选择
+    if template_name is None or template is None:
+        template_name, template = get_template(date_str)
+    
+    # 使用模板配色
+    img = Image.new('RGB', (WIDTH, PAGE_HEIGHT), template['bg'])
     draw = ImageDraw.Draw(img)
     
-    draw_double_border(draw)
+    # 绘制装饰边框
+    draw_decoration(draw, template_name, template)
     
-    y = 60
-    y = draw_centered_text(draw, "财神方位", y, fonts['section'], COLORS['china_red'])
-    y += 20
+    y = 50
+    y = draw_centered_text(draw, "财神方位", y, fonts['section'], template['section'])
+    y += 15
     
     cai_shen_info = [
         f"喜神：{data['cai_shen']['xi']}",
@@ -409,42 +1062,56 @@ def generate_page2(data, fonts, output_dir, date_str):
     ]
     
     for info in cai_shen_info:
-        y = draw_centered_text(draw, info, y, fonts['content'], COLORS['ink_black'])
-        y += 10
+        y = draw_centered_text(draw, info, y, fonts['content'], template['text'])
+        y += 8
     
-    y = draw_separator(draw, y + 25)
+    y += 10
+    y = draw_centered_text(draw, "传统时辰", y, fonts['section'], template['section'])
+    y += 10
     
-    y += 25
-    y = draw_centered_text(draw, "春季养生", y, fonts['section'], COLORS['china_red'])
+    ji_names = [s.replace('时', '').split(' ')[0] for s in data['jishi']['ji'][:6]]
+    xiong_names = [s.replace('时', '').split(' ')[0] for s in data['jishi']['xiong'][:6]]
+    
+    ji_str = "、".join(ji_names)
+    xiong_str = "、".join(xiong_names)
+    
+    y += 8
+    y = draw_centered_text(draw, f"传统吉时：{ji_str}", y, fonts['content'], template['section'])
+    y += 8
+    y = draw_centered_text(draw, f"传统讲究：{xiong_str}", y, fonts['content'], template['section'])
+    
+    y = draw_separator(draw, y + 20, template['separator'])
+    
+    y += 18
+    y = draw_centered_text(draw, "春季养生", y, fonts['section'], template['section'])
+    
+    y += 12
+    y = draw_centered_text(draw, "饮食调养", y, fonts['content'], template['section'])
+    y += 8
+    
+    y = draw_centered_text(draw, data['yangsheng']['diet_yi'], y, fonts['content'], template['text'])
+    y += 8
+    y = draw_centered_text(draw, data['yangsheng']['diet_ji'], y, fonts['content'], template['text'])
     
     y += 15
-    y = draw_centered_text(draw, "饮食调养", y, fonts['content'], COLORS['bright_red'])
-    y += 10
+    y = draw_centered_text(draw, "运动建议", y, fonts['content'], template['section'])
+    y += 8
     
-    y = draw_centered_text(draw, data['yangsheng']['diet_yi'], y, fonts['content'], COLORS['ink_black'])
-    y += 10
-    y = draw_centered_text(draw, data['yangsheng']['diet_ji'], y, fonts['content'], COLORS['ink_black'])
+    y = draw_centered_text(draw, data['yangsheng']['exercise'], y, fonts['content'], template['text'])
     
-    y += 20
-    y = draw_centered_text(draw, "运动建议", y, fonts['content'], COLORS['bright_red'])
-    y += 10
+    y += 15
+    y = draw_centered_text(draw, "作息建议", y, fonts['content'], template['section'])
+    y += 8
     
-    y = draw_centered_text(draw, data['yangsheng']['exercise'], y, fonts['content'], COLORS['ink_black'])
+    y = draw_centered_text(draw, data['yangsheng']['sleep'], y, fonts['content'], template['text'])
     
-    y += 20
-    y = draw_centered_text(draw, "作息建议", y, fonts['content'], COLORS['bright_red'])
-    y += 10
+    y = draw_separator(draw, y + 20, template['separator'])
     
-    y = draw_centered_text(draw, data['yangsheng']['sleep'], y, fonts['content'], COLORS['ink_black'])
-    
-    y = draw_separator(draw, y + 30)
-    
-    y += 10
-    y = draw_centered_text(draw, "传统文化 仅供参考", y, fonts['small'], COLORS['light_gray'])
+    y += 8
+    y = draw_centered_text(draw, "传统文化 仅供参考", y, fonts['small'], template['small'])
     y += 5
-    draw_centered_text(draw, data['date_gregorian'], y, fonts['small'], COLORS['light_gray'])
+    draw_centered_text(draw, data['date_gregorian'], y, fonts['small'], template['small'])
     
-    # 生成文件名（使用日期字符串）
     date_only = date_str.replace('-', '')
     filename = f"{date_only}_黄历_养生.png"
     filepath = os.path.join(output_dir, filename)
@@ -452,48 +1119,64 @@ def generate_page2(data, fonts, output_dir, date_str):
     print(f"[OK] 第 2 页已保存：{filepath}")
     return filepath
 
-def generate_page3(data, fonts, output_dir, date_str):
-    """生成第 3 页：科普 + 故事"""
-    img = Image.new('RGB', (WIDTH, PAGE_HEIGHT), BACKGROUND_COLOR)
+def generate_page3(data, fonts, output_dir, date_str, template_name=None, template=None):
+    """生成第 3 页：穿衣建议 + 科普 + 故事"""
+    # 【V2.3 新增】如果没有传入模板，自动选择
+    if template_name is None or template is None:
+        template_name, template = get_template(date_str)
+    
+    # 使用模板配色
+    img = Image.new('RGB', (WIDTH, PAGE_HEIGHT), template['bg'])
     draw = ImageDraw.Draw(img)
     
-    draw_double_border(draw)
+    # 绘制装饰边框
+    draw_decoration(draw, template_name, template)
     
-    y = 60
-    y = draw_centered_text(draw, "黄历科普", y, fonts['section'], COLORS['china_red'])
-    y += 20
+    y = 50
     
-    y = draw_centered_text(draw, f"【天干地支】{data['kepu']['ganzhi']}", y, fonts['small'], COLORS['ink_black'])
-    y += 8
-    y = draw_centered_text(draw, f"【冲煞】{data['kepu']['chongsha']}", y, fonts['small'], COLORS['ink_black'])
-    y += 8
-    y = draw_centered_text(draw, f"【胎神】{data['kepu']['taishen']}", y, fonts['small'], COLORS['ink_black'])
-    y += 8
-    y = draw_centered_text(draw, f"【吉神】{data['kepu']['jishen']}", y, fonts['small'], COLORS['ink_black'])
-    y += 8
-    y = draw_centered_text(draw, f"【凶神】{data['kepu']['xiongshen']}", y, fonts['small'], COLORS['ink_black'])
+    y = draw_centered_text(draw, "今日穿衣建议", y, fonts['section'], template['section'])
+    y += 15
     
-    y = draw_separator(draw, y + 15)
+    y = draw_centered_text(draw, f"幸运色：{data['changyi']['lucky']}", y, fonts['content'], template['section'])
+    y += 8
+    y = draw_centered_text(draw, f"忌讳色：{data['changyi']['avoid']}", y, fonts['content'], template['section'])
     
-    y += 20
-    y = draw_centered_text(draw, f"传统故事·{data['story']['title']}", y, fonts['section'], COLORS['china_red'])
+    y = draw_separator(draw, y + 20, template['separator'])
+    
+    y += 18
+    y = draw_centered_text(draw, "黄历科普", y, fonts['section'], template['section'])
+    y += 15
+    
+    y = draw_centered_text(draw, f"【天干地支】{data['kepu']['ganzhi']}", y, fonts['small'], template['text'])
+    y += 6
+    y = draw_centered_text(draw, f"【冲煞】{data['kepu']['chongsha']}", y, fonts['small'], template['text'])
+    y += 6
+    y = draw_centered_text(draw, f"【胎神】{data['kepu']['taishen']}", y, fonts['small'], template['text'])
+    y += 6
+    y = draw_centered_text(draw, f"【吉神】{data['kepu']['jishen']}", y, fonts['small'], template['text'])
+    y += 6
+    y = draw_centered_text(draw, f"【凶神】{data['kepu']['xiongshen']}", y, fonts['small'], template['text'])
+    
+    y = draw_separator(draw, y + 15, template['separator'])
+    
+    y += 15
+    y = draw_centered_text(draw, f"传统故事·{data['story']['title']}", y, fonts['section'], template['section'])
     y += 5
     
     for line in data['story']['content']:
-        y = draw_centered_text(draw, line, y, fonts['small'], COLORS['ink_black'])
+        y = draw_centered_text(draw, line, y, fonts['small'], template['text'])
         y += 5
     
-    y += 15
-    y = draw_centered_text(draw, f"启示：{data['story']['moral']}", y, fonts['content'], COLORS['bright_red'])
+    y += 12
+    y = draw_centered_text(draw, f"启示：{data['story']['moral']}", y, fonts['content'], template['section'])
     
-    y = draw_separator(draw, y + 15)
+    y = draw_separator(draw, y + 15, template['separator'])
     
-    y += 10
-    y = draw_centered_text(draw, "传统文化 仅供参考", y, fonts['small'], COLORS['light_gray'])
+    y += 8
+    y = draw_centered_text(draw, "传统文化 仅供参考", y, fonts['small'], template['small'])
     y += 5
-    draw_centered_text(draw, data['date_gregorian'], y, fonts['small'], COLORS['light_gray'])
+    draw_centered_text(draw, data['date_gregorian'], y, fonts['small'], template['small'])
     
-    # 生成文件名（使用日期字符串）
     date_only = date_str.replace('-', '')
     filename = f"{date_only}_黄历_故事.png"
     filepath = os.path.join(output_dir, filename)
@@ -501,38 +1184,70 @@ def generate_page3(data, fonts, output_dir, date_str):
     print(f"[OK] 第 3 页已保存：{filepath}")
     return filepath
 
+def get_default_output():
+    """【V2.2 修复】获取默认输出目录（支持多用户、跨平台）"""
+    # 1. 优先使用环境变量（用户可自定义）
+    if 'OPENCLAW_OUTPUT' in os.environ:
+        return os.environ['OPENCLAW_OUTPUT']
+    
+    # 2. 默认输出到当前工作目录的 reports/
+    return os.path.join(os.getcwd(), 'reports')
+
 def main():
-    parser = argparse.ArgumentParser(description='生成黄历图片')
+    default_output = get_default_output()
+    
+    parser = argparse.ArgumentParser(description='生成黄历图片（V2.2 lunar-java 集成版）')
     parser.add_argument('--date', type=str, default=datetime.now().strftime('%Y-%m-%d'), 
                         help='日期（YYYY-MM-DD 格式）')
     parser.add_argument('--pages', type=int, default=3, choices=[1, 2, 3], 
                         help='生成页数（1/2/3，默认 3）')
-    parser.add_argument('--output', type=str, default='reports', 
-                        help='输出目录（默认 reports/）')
+    parser.add_argument('--output', type=str, default=default_output, 
+                        help=f'输出目录（默认：当前目录/reports/）')
+    parser.add_argument('--template', type=str, default=None, 
+                        choices=['traditional', 'modern', 'festive', 'elegant', 'fresh'],
+                        help='指定模板（默认：自动轮换）')
     
     args = parser.parse_args()
     
-    # 创建输出目录
+    # 规范化路径并创建目录
+    args.output = os.path.normpath(args.output)
     if not os.path.exists(args.output):
         os.makedirs(args.output)
     
-    # 加载字体
-    fonts = load_fonts()
+    print(f"[INFO] 输出目录：{args.output}")
     
-    # 获取黄历数据
+    # 【V2.3 新增】获取模板（支持手动指定）
+    if args.template:
+        template_name = args.template
+        template = TEMPLATES[template_name]
+    else:
+        template_name, template = get_template(args.date)
+    fonts = load_fonts(template_name)
+    
+    print(f"[INFO] 正在生成 {args.date} 的黄历图片...（V2.3 多模板版）")
+    print(f"[INFO] 使用模板：{template['name']}")
     data = get_almanac_data(args.date)
     
-    # 生成指定页面
+    print(f"\n[数据预览]")
+    print(f"公历：{data['date_gregorian']}")
+    print(f"农历：{data['date_lunar']}")
+    print(f"干支：{data['ganzhi_full']}")
+    print(f"红榜生肖：{data['zodiac_red']}")
+    print(f"黑榜生肖：{data['zodiac_black']}")
+    print(f"吉时：吉={len(data['jishi']['ji'])}个，凶={len(data['jishi']['xiong'])}个")
+    print(f"穿衣：幸运色={data['changyi']['lucky']}，忌讳色={data['changyi']['avoid']}")
+    print()
+    
     if args.pages >= 1:
-        generate_page1(data, fonts, args.output, args.date)
+        generate_page1(data, fonts, args.output, args.date, template_name, template)
     
     if args.pages >= 2:
-        generate_page2(data, fonts, args.output, args.date)
+        generate_page2(data, fonts, args.output, args.date, template_name, template)
     
     if args.pages >= 3:
-        generate_page3(data, fonts, args.output, args.date)
+        generate_page3(data, fonts, args.output, args.date, template_name, template)
     
-    print(f"\n[OK] 黄历图片生成完成！共 {args.pages} 页")
+    print(f"\n[OK] 黄历图片生成完成！共 {args.pages} 页（V2.3 多模板版）")
     print(f"输出目录：{args.output}")
 
 if __name__ == "__main__":
