@@ -13,7 +13,7 @@ compatibility: >
   Sign up at https://robotomail.com or via the API.
 metadata:
   author: Robotomail
-  version: 1.0.3
+  version: 1.0.5
   website: https://robotomail.com
   openclaw:
     requires:
@@ -83,6 +83,7 @@ If the user doesn't have an API key yet, they can sign up at https://robotomail.
 | Set up a webhook | POST | `/v1/webhooks` |
 | Stream events with SSE | GET | `/v1/events` |
 | Upload an attachment | POST | `/v1/attachments` (multipart) |
+| Download an attachment | GET | `/v1/attachments/{id}` |
 | Check account & usage | GET | `/v1/account` |
 
 For full endpoint details including request/response schemas, read `references/api-reference.md`.
@@ -141,6 +142,32 @@ See `references/webhook-verification.md` for signature verification code.
 1. Upload the file: `POST /v1/attachments` (multipart/form-data, field name `file`, max 25MB)
 2. Note the returned attachment `id`
 3. Send the message with `attachments: ["<attachment-id>"]`
+
+### "Read an inbound email's attachments" / "Handle inline images"
+
+Inbound messages with attachments expose them on two surfaces with **different shapes**. Pick the right one for your access pattern — do not assume REST responses contain ready-to-use download URLs.
+
+1. **Webhook / SSE `message.received` payload** — `data.attachments[]` is delivered with a ready-to-use `download_url` field (presigned R2 URL, valid 24h from publish time) on each attachment, alongside `id`, `filename`, `content_type`, `size_bytes`, and `content_id`. Field names are snake_case. Fetch each file directly — no Authorization header needed:
+   ```
+   for att in event.data.attachments:
+       bytes = HTTP_GET(att.download_url)
+       save_to(att.filename, bytes)
+   ```
+2. **REST `GET /v1/mailboxes/{id}/messages` and `GET /v1/mailboxes/{id}/messages/{msgId}`** — `attachments[]` contains **metadata only** (`id`, `filename`, `contentType`, `sizeBytes`, `contentId`), no URL field. To download, call `GET /v1/attachments/{id}` for each attachment id and use the `url` field on that response. Field names are camelCase. This is also how you refresh an expired `download_url` from an old webhook/SSE replay.
+
+**Inline images:** when an attachment's `content_id` (snake_case in webhook/SSE) or `contentId` (camelCase in REST) is non-null, the attachment is referenced in `body_html` / `bodyHtml` as `<img src="cid:<content_id>">`. Rewrite each `cid:` reference to a real downloadable URL before passing the HTML to a renderer or vision model. From a webhook/SSE payload (where `download_url` is already on the attachment):
+```
+for att in event.data.attachments where att.content_id is not None:
+    body_html = body_html.replace(f"cid:{att.content_id}", att.download_url)
+```
+From a REST message read, fetch a presigned URL per inline attachment first:
+```
+for att in message.attachments where att.contentId is not None:
+    url = GET(f"/v1/attachments/{att.id}").url
+    bodyHtml = bodyHtml.replace(f"cid:{att.contentId}", url)
+```
+
+**Drop limits:** if a message has more than 20 attachments, or any single attachment exceeds 25 MB, the payload includes `attachments_dropped: true` and `attachments_dropped_reason: "size" | "count" | "both"`. The message itself is still delivered, but the over-limit attachments are not stored. Tell the user if you see this flag.
 
 ## Key Constraints
 

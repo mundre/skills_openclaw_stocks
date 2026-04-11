@@ -1,13 +1,18 @@
 {
   "owner": "johnjoubert",
   "slug": "robotomail",
-  "displayName": "Robotomail",
+  "displayName": "Openclaw",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1775170460133,
-    "commit": "https://github.com/openclaw/skills/commit/cbde4276e684c6e054f69a9c232aca79b7a27b6b"
+    "version": "1.0.5",
+    "publishedAt": 1775809514367,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1775170460133,
+      "commit": "https://github.com/openclaw/skills/commit/cbde4276e684c6e054f69a9c232aca79b7a27b6b"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1774369544131,

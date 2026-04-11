@@ -350,13 +350,25 @@ Lists messages in a mailbox, newest first.
       "bodyHtml": "<p>HTML content</p> | null",
       "headers": {},
       "status": "RECEIVED",
-      "hasAttachments": false,
+      "hasAttachments": true,
       "createdAt": "ISO-8601",
-      "attachments": []
+      "attachments": [
+        {
+          "id": "uuid",
+          "filename": "invoice.pdf",
+          "contentType": "application/pdf",
+          "sizeBytes": 204800,
+          "contentId": null
+        }
+      ],
+      "attachmentsDropped": false,
+      "attachmentsDroppedReason": null
     }
   ]
 }
 ```
+
+**Inbound attachments:** for messages received via SMTP, the `attachments` array contains every file part Robotomail extracted from the MIME tree (including inline images). Each entry's `contentId` is non-null for inline images — match it against `cid:` references in `bodyHtml` to rewrite to a downloadable URL. The list view does NOT include presigned URLs — call `GET /v1/attachments/{id}` (or read the `download_url` field on the SSE/webhook payload, which is included there) to fetch one. If a message has more than 20 attachments or any single attachment exceeds 25 MB, `attachmentsDropped` is `true` and `attachmentsDroppedReason` explains which limit was hit (`"size"`, `"count"`, or `"both"`); the message itself is still ingested.
 
 ### POST /v1/mailboxes/{id}/messages
 
@@ -453,18 +465,27 @@ Uploads a file. Use `multipart/form-data` with field name `file`. Max 25MB.
 
 ### GET /v1/attachments/{id}
 
-Returns metadata and a presigned download URL (valid 24 hours).
+Returns metadata and a presigned download URL (valid 24 hours). Works for both **outbound** uploads and **inbound** message attachments — inbound attachments are owned by the recipient (the user whose mailbox received the email), so the same access check applies. Mailbox-scoped API keys can only access attachments linked to a message in an in-scope mailbox; unattached uploads return 404 for scoped keys.
 
 **Response:**
 ```json
 {
   "id": "uuid",
+  "messageId": "uuid | null",
+  "userId": "string",
   "filename": "document.pdf",
   "contentType": "application/pdf",
   "sizeBytes": 245000,
+  "contentId": "logo@acme | null",
+  "r2Key": "internal storage key",
+  "createdAt": "ISO-8601",
   "url": "https://presigned-download-url..."
 }
 ```
+
+- `messageId` — parent Message row this attachment is linked to. `null` for orphaned uploads not yet attached to a sent message.
+- `contentId` — for inline images, the `Content-ID` header value (without angle brackets). Match against `cid:foo` references in the HTML body. `null` for normal attachments and outbound uploads.
+- `url` — presigned R2 URL valid for 24 hours from the moment of this request. Call this endpoint again for a fresh URL after expiry.
 
 ### DELETE /v1/attachments/{id}
 
@@ -611,10 +632,32 @@ Server-Sent Events stream for real-time event delivery.
 ```
 id: <event-id>
 event: message.received
-data: {"message_id":"uuid","mailbox_id":"uuid","from":"sender@example.com",...}
+data: {"event":"message.received","timestamp":"ISO-8601","data":{
+  "message_id":"uuid",
+  "mailbox_id":"uuid",
+  "from":"sender@example.com",
+  "to":["agent@example.com"],
+  "subject":"Hello",
+  "body_text":"...",
+  "body_html":"<img src=\"cid:logo@acme\" />...",
+  "attachments":[
+    {
+      "id":"uuid",
+      "filename":"invoice.pdf",
+      "content_type":"application/pdf",
+      "size_bytes":204800,
+      "content_id":null,
+      "download_url":"https://...r2.cloudflarestorage.com/...?signed-24h"
+    }
+  ]
+}}
 ```
 
-Heartbeat every 30s. Max 10 concurrent connections per user.
+Each attachment in the SSE/webhook payload is delivered with a fresh `download_url` (presigned R2 URL, valid 24 hours from publish time). Fetch it directly with HTTP GET — no Authorization header required, the URL is self-authenticating. For inline images, match `content_id` against `cid:` references in `body_html`. If the URL has expired (e.g. when replaying old SSE events from the buffer), call `GET /v1/attachments/{id}` for a fresh one.
+
+If a message has more than 20 attachments or any single attachment exceeds 25 MB, the payload includes `attachments_dropped: true` and `attachments_dropped_reason: "size" | "count" | "both"`. The message itself is still delivered.
+
+Heartbeat every 30s. Max 5 concurrent SSE connections per user; a 6th returns `429 Too Many Requests`. Connections have a maximum lifetime of approximately 4.5 minutes — before the upstream proxy timeout the server emits an `event: reconnect` frame to signal a graceful reconnect.
 
 ---
 
