@@ -27,9 +27,19 @@ description: Create complete WeChat Official Account viral articles from a user-
 
 ### 开头写法
 
-- 用观察/痛点切入：「绝大多数人对AI的耐心，正在消失」
-- 回应读者期待：「测评和教学终于来了」
-- 3句话内抓住注意力
+**Hook 是必须的：开头必须有一个 Hook，不能直接进入正文。**
+
+Hook 的结构：**承认一个普遍痛点 + 今天这期的独特发现**
+
+Jeff 给的示范：
+「大家使用 OpenClaw，其实并没有特别好的找到商业应用场景。今天通过地图 API 的结合，让我们看到了更多商业落地应用的可能性。」
+
+其他 Hook 示例：
+- 「很多人装了 OpenClaw，但不知道它还能这样用……」
+- 「你以为 OpenClaw 只能聊天？实际上它能干这个……」
+- 「大多数人用 AI 工具只用到了一成功能……」
+
+**一句话总结：开头先承认用户的困惑或局限，再抛出今天的发现，让读者觉得『这正是我需要的』。**
 
 ### 正文结构
 
@@ -134,17 +144,42 @@ ls scripts/yt_dlp_captions.py
 - Inform user if files are missing
 - DO NOT proceed without verifying script availability
 
-### Step 3: Tool Status Communication
+### Step 3: Verify Web Search Tools
+```bash
+# Test Tavily (primary) - check credentials first
+python3 -c "import json; print(json.load(open('/root/.openclaw/credentials/tavily.json'))['api_key'])" && echo "Tavily: OK"
+
+# Test Brave (fallback) - check credentials
+python3 -c "import json; print(json.load(open('/root/.openclaw/credentials/brave.json'))['api_key'])" && echo "Brave: OK"
+
+# Test smart_search script
+python3 /root/.openclaw/workspace/scripts/smart_search.py "test" --max-results 1 2>&1 | head -5
+```
+
+**If Tavily/Brave credentials exist:**
+- ✅ "Web search tools verified: Tavily API ✓, Brave API ✓"
+- Proceed with web research using smart_search.py (Tavily primary, Brave fallback)
+
+**If credentials missing:**
+- ⚠️ "Web search credentials not found in credentials/ — check Tavily/Brave setup"
+- Fall back to: YouTube search results + X/Nitter + official pages (still viable)
+
+### Step 4: Tool Status Communication
 Always inform user of tool status:
 - ✅ "yt-dlp installed (version X.X.X), proceeding with YouTube content extraction"
+- ✅ "Web search: Tavily ✓, Brave ✓"
 - ❌ "yt-dlp not found, please install with: pip install yt-dlp"
 - ⚠️ "Scripts found but yt-dlp missing, installation required"
+- ⚠️ "Web search unavailable — using YouTube search + X/Nitter + official pages"
 
 **IMPORTANT PRINCIPLE:**
 - Tool checking is a PREREQUISITE, not optional
 - "Optionally run scripts" means "use if available", NOT "skip if inconvenient"
 - Local scripts are PRIMARY method, WebFetch is FALLBACK
 - Never assume tools are unavailable without checking first
+- **Web Search: Always use smart_search.py via exec FIRST (Tavily → Brave fallback)**
+  - Test: `python3 /root/.openclaw/workspace/scripts/smart_search.py "test" --max-results 1`
+  - Do NOT use OpenClaw built-in `web_search` tool as primary (it has separate Brave key config)
 
 ## Workflow
 
@@ -178,7 +213,7 @@ Always inform user of tool status:
    **FALLBACK METHOD (If scripts fail):**
    - Try WebFetch on YouTube video pages
    - If WebFetch blocked, request user to provide video URLs manually
-   - Use WebSearch to find YouTube video links, then extract metadata
+   - Use smart_search.py via exec to find YouTube video links, then extract metadata
 
    **LAST RESORT (If all YouTube access fails):**
    - Proceed with other sources (articles, reports, blogs)
@@ -262,6 +297,40 @@ Always inform user of tool status:
 
 - Load `references/wechat_viral_frameworks.md` to diversify angles and hooks.
 - Generate 3-5 potential article topics based on **multi-source web research** (YouTube, blogs, reports, discussions).
+
+### 4.5) Write Research to Shared Memory (MANDATORY)
+
+**CRITICAL: Before presenting options to user, write full research context to shared memory.**
+
+This is required because: the cron job runs in an isolated session. After presenting options via Feishu, the session ends. When the user responds with "选X" in the main session, Chief Agent must be able to retrieve the research context.
+
+**Write to this file:**
+```
+/root/.openclaw/workspace/memory/daily/research-YYYY-MM-DD.md
+```
+
+**File must include:**
+- All candidate topics with titles, target readers, core promises
+- **Every YouTube/video URL** (this is the most commonly missing field)
+- Full outlines for each topic
+- Source URLs for all references
+- Which topic is recommended as Option 1 and why
+
+**Format:**
+```markdown
+# Research - YYYY-MM-DD
+
+## Candidate 1 (Recommended)
+**Title:** ...
+**Target:** ...
+**Source URLs:** https://youtube.com/... (CRITICAL - include all)
+**Outline:** ...
+
+## Candidate 2
+...
+```
+
+**After writing memory, THEN present options to user (Step 5).**
 <<<<<<< HEAD
 =======
 
@@ -530,14 +599,14 @@ After completing the MD draft, perform a structured quality review and scoring:
    notebooklm artifact wait <artifact_id> --timeout 900
 
    # Download to output directory
-   notebooklm download infographic "D:\AI\contents\CCoutput\YYYY-MM-DD-[slug]-[data-name].png"
+   notebooklm download infographic "YYYY-MM-DD-[slug]-[data-name].png"
    ```
 
 5. **CRITICAL: Compress image for WeChat upload:**
    ```bash
    # NotebookLM generates large PNG files (5-10MB) that timeout during WeChat upload
    # ALWAYS compress to JPEG before publishing
-   python scripts/compress_image.py "D:\AI\contents\CCoutput\YYYY-MM-DD-[slug]-[data-name].png"
+   python scripts/compress_image.py "YYYY-MM-DD-[slug]-[data-name].png"
 
    # This creates: YYYY-MM-DD-[slug]-[data-name]-compressed.jpg (typically < 1MB)
    # Compression: PNG 5.93MB → JPEG 0.68MB (88% reduction, quality=85)
@@ -605,26 +674,28 @@ After completing the MD draft, perform a structured quality review and scoring:
 **MANDATORY: Always generate ALL FOUR formats**
 
 **Format 1: Markdown (.md) - 完整专业版**
-- Save to `D:\AI\contents\CCoutput\YYYY-MM-DD-[article-title-slug].md`
+- Save to `/root/.openclaw/workspace/output/YYYY-MM-DD-[article-title-slug].md`
 - Clean markdown with proper heading hierarchy
 - **DO NOT include metadata/frontmatter** - Start directly with `# Article Title`
 - No YAML header, no version info, no date header
 
 **Format 2: HTML (.html) - 完整专业版**
-- Save to `D:\AI\contents\CCoutput\YYYY-MM-DD-[article-title-slug].html`
+- Save to `/root/.openclaw/workspace/output/YYYY-MM-DD-[article-title-slug].html`
 - **⚠️ INFOGRAPHIC GENERATION REQUIRED**: If article contains core data (market trends, statistics, comparisons), use Phase 4 workflow to generate infographics via notebooklm-api skill BEFORE finalizing HTML
 - Use the enhanced HTML structure and styling:
-  - **Color scheme**: Blue-based theme (#1a5490, #2980b9, #3498db) - UNIFIED COLOR SYSTEM
+  - **Color scheme**: 墨绿主题 + 砖红点缀双色体系
+  - 墨绿（主色）：文字 #556b2f，竖线 #556b2f，背景 #f6fff6
+  - 砖红（强调色）：文字 #b74134，背景 #fff8e7，奶黄阴影
   - **Font family**: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei"
   - **Line height**: 1.75 (reduced from 1.9 for tighter spacing)
   - **Max width**: 860px, centered
-  - **Headings**: Blue color scheme (h1: #1a5490, h2: #1a5490 with #2980b9 border and text-shadow for depth, h3: #2c5282)
-  - **Blockquote**: Blue theme with shadow (#ebf5fb background, #3498db border, box-shadow)
+  - **Headings**: 墨绿配色 (h2: #556b2f 加粗，左侧墨绿竖线)
+  - **Blockquote**: 墨绿主题 (#f6fff6 background, #556b2f border, box-shadow)
   - **Enhanced text styles**:
     - `.highlight` - Blue highlight background (linear-gradient)
-    - `.highlight-blue` - Blue text with blue highlight background
-    - `.highlight-green` - DEPRECATED: Use `.highlight-blue` instead (unified blue theme)
-    - `.highlight-orange` - DEPRECATED: Use `.highlight-blue` instead (unified blue theme)
+    - `.highlight-green` - Blue text with blue highlight background
+    - `.highlight-green` - DEPRECATED: Use `.highlight-green` instead (unified blue theme)
+    - `.highlight-orange` - DEPRECATED: Use `.highlight-green` instead (unified blue theme)
     - `.underline-dotted` - Dotted underline for emphasis (2px dotted #3498db)
     - `.data-box` - Data highlight box with shadow
     - `.key-number` - Key numbers in blue, bold, larger font
@@ -640,68 +711,105 @@ After completing the MD draft, perform a structured quality review and scoring:
 
 ### 🚨 微信公众号排版规范 (CRITICAL - 必须遵守)
 
-**1. 段落行间距 (必须只有一行)**
-- `<p>` 标签之间不能有额外的空行
-- CSS: `p { margin: 4px 0; line-height: 1.4; }` (紧凑间距，一行)
+**⚠️ 权威规范文件：`references/wechat-format-rules.md`（以此为准，不得与该文件冲突）**
 
-**2. 标题样式 (必须有背景阴影和左侧下划线)**
-- `# 标题`：紫色渐变背景 + 白色字 + 左侧白线
-  - CSS: `h1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-left: 5px solid #fff; padding: 10px 14px; border-radius: 6px; }`
-- `## 二级标题`：黄橙渐变背景 + 左侧红线
-  - CSS: `h2 { background: linear-gradient(120deg, #f6d365 0%, #fda085 100%); border-left: 4px solid #ff6b6b; padding: 8px 12px; border-radius: 5px; }`
-- `### 三级标题`：蓝色渐变背景 + 白色字 + 左侧白线
-  - CSS: `h3 { background: linear-gradient(120deg, #4facfe 0%, #00f2fe 100%); color: #fff; border-left: 3px solid #fff; padding: 6px 10px; border-radius: 4px; }`
+**🚨 2026-04-09 重大更新（经验教训）：**
 
-**3. 重点字词背景阴影**
-- 使用黄色渐变背景突出重点词汇
-- CSS类: `.key-point { background: linear-gradient(120deg, #fff3cd 0%, #fff8e1 100%); padding: 2px 6px; border-radius: 3px; }`
-- 应用场景: 核心概念、关键数据、行动词
+**核心问题**：微信安全过滤会强制覆盖 `<h1>/<h2>/<h3>/<p>/<strong>` 等HTML默认标签的样式（变蓝色），所有CSS class和 `<style>` 块都会被剥离。
 
-**4. 重点句点下划线**
-- 使用点状下划线强调重要句子
-- CSS类: `.important { border-bottom: 2px dotted #ff6b6b; padding-bottom: 2px; }`
-- 应用场景: 核心观点、关键结论、重要提醒
+**唯一安全方案：所有样式必须用 `<div>` 和 `<span>` 标签的 style="" 内联属性，禁止使用任何被微信强制覆盖的标签。**
 
-**5. 完整CSS样式示例 (必须使用)**
-```css
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 16px; line-height: 1.4; padding: 16px; }
-h1 { font-size: 20px; font-weight: bold; margin: 16px 0 8px; color: #fff; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 10px 14px; border-radius: 6px; border-left: 5px solid #fff; }
-h2 { font-size: 18px; font-weight: bold; margin: 14px 0 6px; color: #333; background: linear-gradient(120deg, #f6d365 0%, #fda085 100%); padding: 8px 12px; border-radius: 5px; border-left: 4px solid #ff6b6b; }
-h3 { font-size: 16px; font-weight: bold; margin: 12px 0 4px; color: #fff; background: linear-gradient(120deg, #4facfe 0%, #00f2fe 100%); padding: 6px 10px; border-radius: 4px; border-left: 3px solid #fff; }
-p { margin: 4px 0; line-height: 1.4; }
-ul, ol { margin: 4px 0; padding-left: 18px; }
-li { margin: 2px 0; line-height: 1.4; }
-.key-point { background: linear-gradient(120deg, #fff3cd 0%, #fff8e1 100%); padding: 2px 6px; border-radius: 3px; }
-.important { border-bottom: 2px dotted #ff6b6b; padding-bottom: 2px; }
-.cta-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 10px; text-align: center; color: #fff; margin: 16px 0; }
+排版规范核心要点（完整内容见 `references/wechat-format-rules.md`）：
+
+#### 文章标题（H1 - 用于脚本提取）
+```html
+<!-- 供 wechat_publish.py 提取标题，必须保留且 display:none -->
+<h1 style="display:none;">从张雪峰.skill到金谷园饺子馆.skill，给我们带来的思考</h1>
 ```
 
-**6. HTML中使用方式**
-- 标题: 使用标准 Markdown `# ## ###`
-- 重点词汇: `<span class="key-point">核心概念</span>`
-- 重点句子: `<span class="important">关键结论</span>`
-- 引用块: `<blockquote>引用的重点内容</blockquote>`
-
-**7. 禁止事项**
-- ❌ 禁止在文章结尾添加 "本文由AI Agent编写" 等说明
-- ❌ 禁止添加日期、版本号等元信息
-- ❌ 禁止添加非必要的版权声明
-
-**8. 结尾CTA (必须添加)**
+#### 二级标题（Section Title）
 ```html
-<div class="cta-box">
-<p>如果你觉得这篇文章有帮助，欢迎关注我们</p>
-<p>📱 微信公众号：搜索「AI进化社」</p>
-<p>🔗 官网：https://example.com</p>
-<p>💬 评论区聊聊：你用的是什么方案？</p>
+<!-- 禁止用 <h2>，微信会强制覆盖为蓝色！必须用 div 内联 -->
+<div style="font-size:17px;color:#556b2f;font-weight:bold;margin:28px 15px 14px;padding-left:12px;border-left:4px solid #556b2f;">一、章节标题</div>
+```
+- 字体：17px，墨绿色 #556b2f，加粗
+- 左侧墨绿竖线：4px solid #556b2f
+- 左侧留白：padding-left:12px
+- 上下间距：margin:28px 15px 14px
+
+#### 正文段落（Body Paragraph）
+```html
+<!-- 禁止用 <p>，微信会覆盖样式！必须用 div 内联 -->
+<div style="margin:0 0 12px;padding:0 15px;line-height:1.8;">正文内容</div>
+```
+- 段间距：margin:0 0 12px（下一段前留12px）
+- 左右留白：padding:0 15px
+- 行高：line-height:1.8
+
+#### 重点字词（Highlighted Key Terms）
+```html
+<!-- 砖红字体 + 奶黄背景，不是红色！ -->
+<span style="background:#fff8e7;padding:2px 6px;border-radius:3px;color:#b74134;font-weight:600;">重点字词</span>
+```
+
+#### 重点句（Important Sentences - 点下划线）
+```html
+<!-- 墨绿色点状下划线，不是红色！ -->
+<span style="border-bottom:2px dotted #556b2f;padding-bottom:2px;color:#556b2f;">重点句子</span>
+```
+
+#### 数字强调（Key Numbers）
+```html
+<span style="color:#556b2f;font-weight:bold;">12天</span>
+```
+
+#### Hook区域（开篇摘要框）
+```html
+<div style="background:#f6fff6;border-left:5px solid #556b2f;box-shadow:3px 3px 10px rgba(85,107,47,0.12);padding:18px 20px;border-radius:0 10px 10px 0;margin:0 0 24px 0;font-size:15px;line-height:1.9;">
+    <span style="color:#556b2f;font-weight:bold;">2026年4月</span>，短短两天内...
 </div>
 ```
 
-- **Apply styling classes to key content**:
-  - Wrap important numbers in `<span class="key-number">$XXX</span>`
-  - Wrap key concepts in `<span class="highlight-blue">text</span>` 或 `<span class="key-point">text</span>`
-  - Wrap emphasized terms in `<span class="underline-dotted">text</span>` 或 `<span class="important">text</span>`
-  - Wrap data comparisons in `<div class="data-box">...</div>`
+#### CTA结尾（必须添加）
+```html
+<div style="background:#556b2f;padding:16px;border-radius:10px;text-align:center;color:#fff;margin:24px 0 0;">
+    <div style="margin:0;color:#fff;font-size:15px;line-height:1.8;">如果你觉得文章对你有所帮助，请关注就行</div>
+</div>
+```
+
+#### 完整HTML结构规则
+
+| 元素 | ❌ 禁止 | ✅ 正确 |
+|------|--------|--------|
+| 文章标题 | `<h1>`（会变蓝） | `<h1 style="display:none;">` + 视觉标题用div |
+| 二级标题 | `<h2>/<p>`（会变蓝） | `<div style="border-left:4px solid #556b2f;color:#556b2f;">` |
+| 正文段落 | `<p>`（会变蓝） | `<div style="margin:0 0 12px;padding:0 15px;">` |
+| 加粗强调 | `<strong>`（会变蓝） | `<span style="color:#556b2f;font-weight:bold;">` |
+| 重点字词 | class样式（被剥离） | `<span style="background:#fff8e7;padding:2px 6px;border-radius:3px;color:#b74134;">` |
+| 重点句下划线 | class样式（被剥离） | `<span style="border-bottom:2px dotted #556b2f;padding-bottom:2px;color:#556b2f;">` |
+| CTA区域 | `<p>`（会变蓝） | `<div style="background:#556b2f;...;">` |
+| 列表 | `<ul>/<ol>/<li>`（圆点不可控） | `<div style="margin:0 0 6px 20px;">• 内容</div>` |
+
+#### 颜色系统（Jeff品牌色）
+
+| 用途 | 颜色值 | 示例 |
+|------|--------|------|
+| 二级标题 | #556b2f（墨绿） | `color:#556b2f;font-weight:bold;` |
+| 左侧竖线 | #556b2f（墨绿） | `border-left:4px solid #556b2f;` |
+| 重点句点下划线 | #556b2f（墨绿） | `border-bottom:2px dotted #556b2f;` |
+| 重点字词背景 | #fff8e7（奶黄） | `background:#fff8e7;` |
+| 重点字词字体 | #b74134（砖红） | `color:#b74134;` |
+| CTA背景 | #556b2f（墨绿） | `background:#556b2f;` |
+
+#### 发布命令（必须使用 -X utf8）
+```bash
+cd /root/.openclaw/workspace/skills/content-factory && python3 -X utf8 scripts/wechat_publish.py --html "/root/.openclaw/workspace/output/YYYY-MM-DD-article-slug.html" --cover "/root/.openclaw/workspace/output/YYYY-MM-DD-article-slug-cover.png"
+```
+
+- **必须加 `-X utf8`**：否则中文会变成 `\uXXXX` 转义序列
+- **必须加 `--cover`**：否则封面图使用默认图片
+- **禁止元信息**：禁止日期、版本号、版权声明
+
 - **Content structure optimization**:
   - REDUCE bullet points - convert to flowing narrative paragraphs
   - INCREASE first-person narrative ("我发现...", "我观察到...", "在我看来...")
@@ -730,7 +838,7 @@ li { margin: 2px 0; line-height: 1.4; }
   - Use `<p class="image-source">` with clickable attribution links
 
 **Format 3: Markdown (.md) - 小红书版 (Xiaohongshu Style)**
-- Save to `D:\AI\contents\CCoutput\YYYY-MM-DD-[article-title-slug]-小红书.md`
+- Save to `/root/.openclaw/workspace/output/YYYY-MM-DD-[article-title-slug]-小红书.md`
 - **🚨 STRICT CHARACTER COUNT (CRITICAL)**:
   - Target: **800-1000 characters** (Chinese chars + English words)
   - **MUST use Python script to verify before sending to user**
@@ -779,7 +887,7 @@ li { margin: 2px 0; line-height: 1.4; }
   ```
 
 **Format 4: Text (.txt) - X/Twitter 英文长推文版 (X Pro)**
-- Save to `D:\AI\contents\CCoutput\YYYY-MM-DD-[article-title-slug]-tweet.txt`
+- Save to `/root/.openclaw/workspace/output/YYYY-MM-DD-[article-title-slug]-tweet.txt`
 - **English language only** - Professional, data-driven long-form tweet
 - **Maximum length: 1000 characters** (optimized for readability and engagement)
 - **MUST include 2-3 complete cases with specific metrics** from the article
@@ -816,7 +924,7 @@ li { margin: 2px 0; line-height: 1.4; }
 
 **Output Directory Structure:**
 ```
-D:\AI\contents\CCoutput\
+
 ├── 2026-01-14-[article-title-slug].md
 ├── 2026-01-14-[article-title-slug].html
 ├── 2026-01-14-[article-title-slug]-小红书.md
@@ -844,7 +952,7 @@ Create the output directory if it doesn't exist.
    python scripts/generate_cover_photo.py \
      --title "[article title]" \
      --theme "[article theme]" \
-     --output "D:\AI\contents\CCoutput\YYYY-MM-DD-[article-slug]-cover.png"
+     --output "/root/.openclaw/workspace/output/YYYY-MM-DD-[article-slug]-cover.png"
    ```
 
 3. **Image will be automatically generated at 21:9 ratio (900x386 pixels)**
@@ -852,10 +960,10 @@ Create the output directory if it doesn't exist.
 4. **Compress if needed:**
    ```bash
    # Check file size
-   ls -lh "D:\AI\contents\CCoutput\YYYY-MM-DD-[article-slug]-cover.png"
+   ls -lh "YYYY-MM-DD-[article-slug]-cover.png"
 
    # If > 1MB, compress to JPEG
-   python scripts/compress_image.py "D:\AI\contents\CCoutput\YYYY-MM-DD-[article-slug]-cover.png"
+   python scripts/compress_image.py "YYYY-MM-DD-[article-slug]-cover.png"
    # Creates: YYYY-MM-DD-[article-slug]-cover-compressed.jpg
    ```
 
@@ -999,7 +1107,7 @@ Create the output directory if it doesn't exist.
 **Publishing Script Usage (CRITICAL - Windows UTF-8 Mode):**
 ```bash
 # ALWAYS use -X utf8 flag on Windows to prevent encoding errors
-python -X utf8 scripts/wechat_publish.py --html "D:\AI\contents\CCoutput\YYYY-MM-DD-[article-title-slug].html"
+python -X utf8 scripts/wechat_publish.py --html "/root/.openclaw/workspace/output/YYYY-MM-DD-[article-title-slug].html"
 
 # WITHOUT -X utf8, Chinese characters will show as \uXXXX escape sequences
 # This is a Windows-specific issue due to GBK default encoding
@@ -1026,7 +1134,7 @@ python -X utf8 scripts/wechat_publish.py --html "D:\AI\contents\CCoutput\YYYY-MM
 
 **Error Handling:**
 - If API call fails, save HTML locally and notify user
-- Log error details to `D:\AI\contents\CCoutput\publish_errors.log`
+- Log error details to `publish_errors.log`
 - Provide manual publishing instructions
 
 **Security Notes:**
@@ -1044,12 +1152,12 @@ Instead of listing "参考来源" or "References", ALWAYS end Format 1 (MD) and 
 ```markdown
 ---
 
-如果你觉得文章对你有所帮助，请关注。让我们一起在AI时代找到您的竞争优势。
+如果觉得这篇文章对您帮助，欢迎关注公众号。
 ```
 
 **HTML Format (for Format 2, add before `</body>`):**
 ```html
-<p>如果你觉得文章对你有所帮助，请关注。让我们一起在AI时代找到您的竞争优势。</p>
+<p>如果觉得这篇文章对您帮助，欢迎关注公众号。</p>
 ```
 
 **Important Notes:**
@@ -1179,7 +1287,7 @@ Continue      → Try WebFetch    → Retry scripts
 **Correct approach:**
 ```bash
 # ALWAYS use Python UTF-8 mode on Windows for WeChat publishing
-python -X utf8 scripts/wechat_publish.py --html "path/to/article.html"
+python -X utf8 scripts/wechat_publish.py --html "/root/.openclaw/workspace/output/article.html"
 
 # NOT just PYTHONIOENCODING (insufficient):
 # PYTHONIOENCODING=utf-8 python scripts/wechat_publish.py  # ❌ Only fixes I/O
@@ -1250,7 +1358,7 @@ print(f'Original: {original_mb:.2f}MB → Compressed: {compressed_mb:.2f}MB')
 # With:    <img src="output-compressed.jpg" ...>
 
 # Step 4: Publish with compressed image
-python -X utf8 scripts/wechat_publish.py --html "article.html"
+python -X utf8 scripts/wechat_publish.py --html "/root/.openclaw/workspace/output/article.html"
 ```
 
 **Compression results:**
@@ -1424,14 +1532,10 @@ All API keys and credentials are stored in `.env` file for security and easy man
 - `assets/wechat_outline_template.md` - Outline template (optional)
 
 **Output Directory:**
-- `D:\AI\contents\CCoutput\` - Target directory for generated MD, HTML, Xiaohongshu, Tweet files, and cover photos
+- `/root/.openclaw/workspace/output/` - Target directory for generated MD, HTML, Xiaohongshu, Tweet files, and cover photos
 
 ---
 
-如果你觉得这篇文章有帮助，欢迎关注我们
-
-📱 微信公众号：搜索「AI进化社」
-🔗 官网：https://example.com
-💬 评论区聊聊：你用的是什么方案？
+如果觉得这篇文章对您帮助，欢迎关注公众号。
 ```
 

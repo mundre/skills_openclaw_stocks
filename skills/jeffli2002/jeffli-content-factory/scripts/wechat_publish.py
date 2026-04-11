@@ -361,17 +361,33 @@ class WeChatPublisher:
                 if h4.get('class'):
                     del h4['class']
 
-            # Process paragraphs
+            # Process paragraphs - preserve ALL existing inline styles
+            # Only apply default style to paragraphs that have no existing style
             for p in body.find_all('p'):
-                p['style'] = 'margin: 18px 0; line-height: 1.75; color: #2c3e50;'
+                existing = p.get('style', '')
+                if not existing:
+                    p['style'] = 'margin: 10px 0; line-height: 1.8; color: #333;'
+                # If paragraph already has custom style (border-left, background, etc.), preserve it
                 if p.get('class'):
                     del p['class']
 
-            # Process blockquotes
+            # Process blockquotes - preserve existing styles, use olive green for custom ones
             for blockquote in body.find_all('blockquote'):
-                blockquote['style'] = 'border-left: 4px solid #3498db; padding: 16px 20px; color: #34495e; margin: 28px 0; background: #ebf5fb; border-radius: 4px;'
-                if blockquote.get('class'):
-                    del blockquote['class']
+                existing = blockquote.get('style', '')
+                if '556b2f' in existing or 'border-left' in existing:
+                    # Preserve custom border-left style
+                    if blockquote.get('class'):
+                        del blockquote['class']
+                else:
+                    blockquote['style'] = 'border-left: 4px solid #556b2f; padding: 16px 20px; color: #34495e; margin: 28px 0; background: #ebf5fb; border-radius: 4px;'
+                    if blockquote.get('class'):
+                        del blockquote['class']
+
+            # Process strong tags - preserve existing styles, only add default if plain
+            for strong in body.find_all('strong'):
+                existing = strong.get('style', '')
+                if not existing:
+                    strong['style'] = 'color: #556b2f; font-weight: 600;'
 
             # Process lists
             for ul in body.find_all('ul'):
@@ -416,10 +432,6 @@ class WeChatPublisher:
                     div['style'] = 'background: #ebf5fb; border-left: 4px solid #2980b9; padding: 16px 20px; margin: 20px 0; border-radius: 4px;'
                 if div.get('class'):
                     del div['class']
-
-            # Process strong tags
-            for strong in body.find_all('strong'):
-                strong['style'] = 'color: #1a5490; font-weight: 600;'
 
             # Process figure and figcaption
             for figure in body.find_all('figure'):
