@@ -2,118 +2,64 @@
 name: xiaomi-any2speech
 description: >
   声音世界模型（Speech World Model）：不只是 TTS，而是理解场景、角色、情绪并自主规划表达的语音大模型。
-  原生支持长文+多人，中英双语，将任意内容转为播客/有声书/相声/Rap/广播剧等，单次最长 ~10 分钟，输出 WAV。
-  涵盖单人TTS、VoiceDesigner音色定制、多人对话合成、长文有声化、Instruct TTS 的超集。
+  原生支持长文+多人、中英双语，也支持上传参考音频进行音色克隆（Voice Prompt / voice cloning），内置高能创作模板，将任意内容转为播客/有声书/相声/Rap/广播剧等，单次最长 ~10 分钟，输出 WAV。
+  涵盖单人TTS、VoiceDesigner音色定制、参考音频克隆、多人人物对话合成、长文有声化、Instruct TTS 的超集。
   A Speech World Model: beyond TTS — understands scenes, characters, and emotions to autonomously plan expressive speech.
-  Native long-form & multi-speaker synthesis in Chinese/English, up to ~10 min per pass.
-  触发意图：做成播客/相声/辩论/有声书/Rap/新闻/脱口秀/电台/课程/广播剧/评书/讲故事、朗读/念出来/转语音/TTS/生成音频/做个语音版/配音/模仿声音、变成能听的/用XX腔念、发语音/做成XX发给我。
-  English: make a podcast/audiobook/debate/rap/news/stand-up/story/radio drama, read aloud/TTS/generate audio/voice over/narrate/dub/mimic voice, make it listenable, send as voice.
+  Native long-form & multi-speaker synthesis in Chinese/English, and supports reference-audio voice cloning (Voice Prompt), up to ~10 min per pass.
+  触发意图：用我的声音/用这个音色/参考这段录音/克隆声音/模仿声音、做成播客/相声/辩论/有声书/Rap/新闻/脱口秀/电台/课程/广播剧/评书/讲故事、朗读/念出来/转语音/TTS/生成音频/做个语音版/配音、变成能听的/用XX腔念、发语音/做成XX发给我、用模板/选模板/有什么模板。
+  English: make a podcast/audiobook/debate/rap/news/stand-up/story/radio drama, read aloud/TTS/generate audio/voice over/narrate/dub/mimic voice/clone voice/use my voice/use this voice sample, make it listenable, send as voice.
 ---
 
 # Any2Speech
 
-所有能力通过同一套 API 完成，由 `instruction` 字段决定最终形态——播客、有声书、相声、Rap、广播剧、新闻播报……万物皆可听（ListenHub）。
+所有能力通过同一套 API 完成，由 `instruction` 字段决定最终形态。内置免费公开 Key，无需注册。
 
-**为什么选 Any2Speech**：
-- **零门槛**：一句自然语言描述风格，不需要调参数、不需要选模型
-- **原生多人对话**：不是逐句拼接，而是真正的多人交互——插话、重叠、情绪联动，一次生成
-- **即开即用**：内置免费公开 Key，无需申请、无需注册，立刻可用
-- **中英双语**：同一个接口支持中文、英文和中英混合，自动切换发音
-- **声音世界模型**：不只是念字，而是理解内容后自主规划语气、节奏、情绪弧线
-
-**适用场景**：`内容创作` `教育` `游戏配音` `自媒体` `无障碍阅读` `语音原型` `品牌声音` `有声出版` `儿童启蒙` `语言学习`
-
-**运行环境**：需要 `curl` 和 `jq`；飞书发送可选需要 `ffmpeg`/`ffprobe`。
-
-**环境变量**：
-- `API_KEY`：可选，默认 `sk-anytospeech-pub-free`，无需额外配置即可使用
-- `FEISHU_TENANT_TOKEN`（或 `APP_ID` + `APP_SECRET`）、`CHAT_ID`：仅飞书发送时需要，敏感凭据仅在用户主动请求时提供，skill 不会主动索取或持久化存储
+**运行环境**：需要 `curl` 和 `python3`（用于 JSON 解析）；飞书发送可选需要 `ffmpeg`/`ffprobe`。
 
 ```bash
 BASE=https://miplus-tts-public.ai.xiaomi.com
 API_KEY=${API_KEY:-sk-anytospeech-pub-free}
 ```
 
-## Step 1 · 确认输入来源
+## Step 1 · 确认输入
 
 | 用户给了什么 | source_type | curl 参数 |
 |---|---|---|
-| 文字内容 | `text` | `-F "text=内容"` |
-| 本地文件 | `file` | `-F "file=@/路径/文件"` |
+| 文字内容 | `text` | `-F "source_type=text" -F "text=内容"` |
+| 网页链接 | `url` | `-F "source_type=url" -F "url=链接"` |
+| 本地文件 | `file` | `-F "source_type=file" -F "file=@/路径/文件"` |
+| 参考音色文件 + 文字 | → **VP 流程** | 跳到 Step 3-VP |
+| 参考音色文件 + 选模板 | → **VP 模板** | 跳到 VP 模板章节（不需要文字） |
 
-**来源缺失时**：停下来问"请提供文字内容或文件路径"，不要猜测或用空值执行。
+**来源缺失时**：停下来问"请提供文字内容、网页链接或文件路径"，不要猜测或用空值执行。
 
-**文件路径安全**：仅接受用户在当前对话中明确提供的路径。不要自行扫描目录或猜测文件；不要读取 `~/.ssh`、`~/.env`、`~/.config` 等敏感路径；发送前向用户确认文件名。
+**文件路径安全**：仅接受用户在当前对话中明确提供的路径。不要自行扫描目录或猜测文件；不要读取 `~/.ssh`、`~/.env`、`~/.config` 等敏感路径。
+
+**VP 判断**：用户提供了参考音色文件（wav/mp3/m4a/flac/ogg/webm），或说了"用我的声音"、"克隆音色"、"参考这段录音"等 → 走 **Step 3-VP**。用户说了"用模板"或指定模板名 → 走 **VP 模板**（不需要文字）。VP 的一步式和两步式需要 `text`，模板不需要。
 
 ## Step 2 · 构造 instruction
 
-`instruction` 是控制最终合成形态的关键——同一个 API 通过不同 instruction 覆盖下述全部能力：
+`instruction` 控制合成形态。选择逻辑：用户明确描述了风格 → 直接用；只说"帮我读" → 留空（单人朗读）；说了场景没细节 → 从下表取最近的；英文输入 → 加 `English` 关键词。
 
-| 能力 | 说明 | instruction 示例 |
+| 场景 | 中文 instruction | English instruction |
 |---|---|---|
-| **单人 TTS** | 单一说话人朗读 | 留空，或 `女声，职业干练，语速偏快` / `Female, professional tone, slightly fast` |
-| **VoiceDesigner** | 精细定制音色、语气、情绪 | `声音醇厚磁性，带沙哑感，低沉男声` / `Deep baritone, slightly husky, slow and calm` |
-| **多人播客/对话** | 两人或多人分角色对话 | `两人播客，一人理性分析，一人感性追问` / `Two-host podcast, one analytical, one curious` |
-| **长文有声化** | 长篇文档转有声书 | `第三人称叙述，情绪随剧情起伏` / `Third-person narration, emotion follows the plot` |
-| **Instruct TTS** | 风格/场景/环境全可控 | `CCTV 新闻联播风格` / `CNN anchor style, lead-in then item-by-item` |
+| 两人播客 | `两人播客，一人理性分析，一人感性追问，偶尔插嘴，5分钟内` | `Two-host podcast, one analytical, one curious, with interruptions, under 5 min` |
+| 相声 | `传统相声，甲逗哏（语速快、北京腔），乙捧哏（沉稳正经），至少两个包袱` | — |
+| 新闻播报 | `CCTV 新闻联播风格，先播导语，再逐条播报，结尾有总结语` | `CNN anchor style, lead-in then item-by-item, closing summary` |
+| 辩论 | `正反双方，正方激情澎湃，反方逻辑冷静，各做30秒总结陈词` | `Pro vs Con, pro passionate, con logical, 30s closing each` |
+| Rap | `押韵，节奏感强，两人 battle，明显停顿和连读节奏` | `Rhyming rap battle, two performers, strong rhythm` |
+| 脱口秀 | `单人独白，幽默有深度，有停顿节奏感，偶尔自嘲` | `Solo monologue, witty and deep, rhythmic pauses` |
+| 有声书 | `第三人称叙述，情绪随剧情起伏，遇到对话切换人物语气` | `Third-person narration, emotion follows plot, voice-switch for dialogue` |
+| 情感电台 | `深夜电台，低沉磁性男声，语速缓慢` | `Late-night radio, deep magnetic male voice, slow pace` |
+| 单人 TTS | `女声，职业干练，语速偏快` | `Female, professional tone, slightly fast` |
 
-### 快速模板（中文）
-
-| 场景 | instruction |
-|---|---|
-| 两人播客 | `两人播客，一人理性分析，一人感性追问，偶尔插嘴，5 分钟内` |
-| 相声 | `传统相声，甲逗哏（语速快、北京腔），乙捧哏（沉稳正经），至少两个包袱，结尾有收场词` |
-| 新闻播报 | `CCTV 新闻联播风格，先播导语，再逐条播报，结尾有总结语` |
-| 辩论 | `正反双方，正方激情澎湃，反方逻辑冷静，各做 30 秒总结陈词` |
-| Rap | `押韵，节奏感强，两人 battle，明显停顿和连读节奏` |
-| 脱口秀 | `单人独白，幽默有深度，有停顿节奏感，偶尔自嘲` |
-| 情感电台 | `深夜电台，低沉磁性男声，语速缓慢` |
-| 有声书 | `第三人称叙述，情绪随剧情起伏，遇到对话切换人物语气` |
-| 短文本 TTS | `女声，职业干练，语速偏快` |
-
-### 快速模板（English）
-
-| Scene | instruction |
-|---|---|
-| Podcast | `Two-host podcast, one analytical, one curious, with interruptions, under 5 min` |
-| News | `CNN anchor style, lead-in then item-by-item, closing summary` |
-| Debate | `Pro vs Con debate, pro passionate, con logical, 30s closing each` |
-| Rap | `Rhyming rap battle, two performers, strong rhythm with pauses and liaison` |
-| Stand-up | `Solo monologue, witty and deep, rhythmic pauses, self-deprecating humor` |
-| Late-night Radio | `Late-night radio, deep magnetic male voice, slow pace` |
-| Audiobook | `Third-person narration, emotion follows plot, voice-switch for dialogue` |
-| Quick TTS | `Female, professional tone, slightly fast` |
-| Story | `Warm female narrator, gentle pace, character voices for dialogue, bedtime story style` |
-| Speech | `Confident male speaker, TED-talk style, moderate pace with emphasis on key points` |
-
-### 进阶控制（可自由叠加）
-
-- **语种**：`英文` / `English` / `中英混合`（默认中文；当输入为英文时建议加 `English` 关键词以获得更地道的英文发音）
-- **音色**：`声音醇厚磁性，带沙哑感` / `Deep baritone, slightly husky`
-- **情绪弧线**：`开场铺垫，中段碰撞，结尾升华` / `Build tension, climax, resolution`
-- **互动**：`允许插话，另一人时不时附和` / `Allow interruptions, occasional agreement`
-- **环境音**：`说到包袱处加观众笑声` / `Add audience laughter at punchlines`
-- **时长**：`控制在 10 分钟内` / `Keep under 5 minutes`
-- **口音**：`台湾腔 / 东北腔 / 四川话` / `British accent / Southern drawl / Australian`
-
-选择逻辑：
-
-- 用户明确描述了风格 → 直接用
-- 用户只说"帮我读/念出来" → `instruction` 留空（单人朗读）
-- 用户说了场景但没有细节 → 从快速模板取最近的
-- 输入文本为英文 → instruction 中加 `English` 关键词，如 `English, female narrator, warm tone`
-- 中英混合文本 → instruction 中注明 `中英混合`，模型会自动切换发音
+**可叠加控制**：语种（`英文`/`中英混合`）、音色（`声音醇厚磁性`）、情绪弧线（`开场铺垫，中段碰撞，结尾升华`）、互动（`允许插话`）、环境音（`加观众笑声`）、时长（`10分钟内`）、口音（`东北腔`/`British accent`）。建议核心控制点 ≤ 5 个。
 
 ## Step 3 · 选接口并执行
 
-**默认走同步接口**——大多数请求可在 10-120s 内完成。切换到异步接口的条件：
-- 同步返回 504（超时）
-- 输入为**文件**（pdf/docx/音视频等非纯文本，处理时间不可预测）
-- 文本超过 1000 字（长文本生成耗时可能超出同步超时窗口）
+**默认走同步**，切异步条件：504 超时 / 文件输入 / 文本超 1000 字。
 
----
-
-### 同步接口（默认）
+### 同步
 
 ```bash
 OUTPUT=output_$(date +%s).wav
@@ -127,61 +73,171 @@ curl -X POST "$BASE/v1/audio/generate" \
 echo "✓ 保存至 $OUTPUT"
 ```
 
-### 异步接口（同步 504 / 文件输入 / 文本超 1000 字时使用）
+### 异步（504 / 文件 / 长文本）
 
 ```bash
 OUTPUT=output_$(date +%s).wav
-
-# 1. 提交，获取 job_id
 JOB=$(curl -s -X POST "$BASE/v1/audio/jobs" \
   -H "Authorization: Bearer $API_KEY" \
   -F "source_type=text" \
   -F "text=内容" \
-  -F "instruction=两人播客，一人理性分析，一人感性追问，5 分钟内" | jq -r '.job_id')
+  -F "instruction=两人播客，一人理性分析，一人感性追问，5分钟内" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['job_id'])")
 echo "已提交: $JOB"
 
-# 2. 轮询直到完成（间隔 10s，最多 60 次 = 10 分钟，静默等待）
 for i in $(seq 1 60); do
   STATUS=$(curl -s -H "Authorization: Bearer $API_KEY" \
-    "$BASE/v1/audio/jobs/$JOB" | jq -r '.status')
+    "$BASE/v1/audio/jobs/$JOB" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
   [ "$STATUS" = "done" ]   && break
   [ "$STATUS" = "failed" ] && echo "生成失败" && exit 1
   sleep 10
 done
-[ "$STATUS" != "done" ] && echo "轮询超时（10 分钟），请稍后手动查询 job_id: $JOB" && exit 1
+[ "$STATUS" != "done" ] && echo "轮询超时" && exit 1
 
-# 3. 下载
 curl -s -H "Authorization: Bearer $API_KEY" \
   "$BASE/v1/audio/jobs/$JOB/download" --output "$OUTPUT"
 echo "✓ 保存至 $OUTPUT"
 ```
 
-## 错误处理（有限自动重试，最多 1 次）
+## Step 3-VP · 参考音频克隆（Voice Prompt）
 
-| 错误 | 处置 |
-|---|---|
-| 422 | 检查 source_type / text / file 参数后重试 **1 次** |
-| 429 | 频率限制，等待 **30s** 后重试 **1 次** |
-| 504 | 切换到异步接口重试 **1 次** |
-| 502 / 500 | 等待 30s 后重试 **1 次**，仍失败则告知用户 |
-| 异步 failed | 简化 instruction 后重新提交 **1 次**，仍失败则告知用户 |
+VP 接口与标准接口共用同一个 `$BASE` 和 `$API_KEY`。
 
-所有重试均限 **1 次**；两次均失败时停止并向用户报告错误信息。
+**默认走一步式**——Agent 场景下一次调用最简洁。仅当用户明确要求"先看脚本"或"指定谁演谁"时才用两步式。
+
+**多人角色与参考音频的对应关系**：如果需要确认“每个说话人用哪段参考音频”，优先走两步式 `think -> synthesize`。先用 `think` 拿到 `speakers` 和 `script_lines`，向用户确认角色列表，再按 `voice_file_{角色名}` 精确上传；不要只依赖上传顺序。多文件在字段名不匹配时按上传顺序兜底。
+
+**单文件行为差异**：一步式（`generate`/`jobs`）传 1 个参考音频时，服务端自动注入单人朗读提示，强制生成单角色脚本；两步式 `synthesize` 无此限制，单文件会被复制给所有角色。因此多人场景只有 1 个参考音频时，应走两步式。
+
+### 一步式（默认）
+
+一次调用完成规划 + 合成。单人传一个 `voice_file_角色名`，多人传多个。
+
+```bash
+OUTPUT=vp_$(date +%s).wav
+curl -X POST "$BASE/v1/audio/vp/generate" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "source_type=text" \
+  -F "text=要合成的文本内容" \
+  -F "instruction=两人播客，一人理性分析，一人感性追问" \
+  -F "voice_file_主持人A=@/path/to/host_a.wav" \
+  -F "voice_file_主持人B=@/path/to/host_b.mp3" \
+  -F "denoise=1" \
+  --max-time 600 \
+  --output "$OUTPUT"
+```
+
+> 单人场景只需一个 `voice_file_主播=@ref.wav`。异步版用 `$BASE/v1/audio/vp/jobs` 提交，轮询方式与标准异步相同（加 `voice_file_*` 和可选 `denoise` 字段）。
+
+### 两步式（用户要求预览脚本 / 指定角色映射 / 多次合成时使用）
+
+**第一步 think**：LLM 规划，返回角色列表 + 可编辑脚本。
+
+```bash
+THINK=$(curl -s -X POST "$BASE/v1/audio/vp/think" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "source_type=text" \
+  -F "text=要合成的文本内容" \
+  -F "instruction=两人播客")
+REQ_ID=$(echo "$THINK" | python3 -c "import sys,json; print(json.load(sys.stdin)['req_id'])")
+echo "$THINK" | python3 -c "import sys,json; d=json.load(sys.stdin); print('speakers:', d['speakers']); [print(f\"  {l['speaker']}: {l['text']}\") for l in d['script_lines']]"
+```
+
+返回 `speakers`（如 `["主持人A","主持人B"]`）和 `script_lines`（`[{"speaker":"..","text":".."},...]`）。向用户展示脚本和角色列表，确认后进入第二步。
+
+**第二步 synthesize**：上传参考音频合成。`voice_file_` 后缀必须与 `speakers` 中的角色名完全一致。同一 `req_id` 可多次调用，换音色或改脚本。
+
+```bash
+OUTPUT=vp_$(date +%s).wav
+curl -X POST "$BASE/v1/audio/vp/synthesize" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "req_id=$REQ_ID" \
+  -F "voice_file_主持人A=@/path/to/host_a.wav" \
+  -F "voice_file_主持人B=@/path/to/host_b.webm" \
+  -F "denoise=1" \
+  --max-time 3600 \
+  --output "$OUTPUT"
+```
+
+编辑脚本时加 `script_lines_json` 字段（JSON 字符串）：
+
+```bash
+curl -X POST "$BASE/v1/audio/vp/synthesize" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "req_id=$REQ_ID" \
+  -F 'script_lines_json=[{"speaker":"主持人A","text":"修改后的台词"},{"speaker":"主持人B","text":"另一句"}]' \
+  -F "voice_file_主持人A=@host_a.wav" \
+  -F "voice_file_主持人B=@host_b.wav" \
+  --max-time 3600 \
+  --output "vp_edited.wav"
+```
+
+### VP 参数速查
+
+| 参数 | 接口 | 说明 |
+|---|---|---|
+| `voice_file_{角色名}` | synthesize / generate / jobs | 参考音频（wav/mp3/m4a/flac/ogg/webm），5~20s 清晰人声最佳，超 20s 自动裁切 |
+| `denoise` | synthesize / generate / jobs | `1`=显式开启降噪，`0`=显式关闭；未传时跟随服务端 `VP_DENOISE` 配置，当前部署默认关闭。参考音频环境嘈杂时建议显式传 `1` |
+| `req_id` | synthesize | 来自 think 返回值 |
+| `script_lines_json` | synthesize | 可选，编辑后脚本 `[{"speaker":"..","text":".."},...]` |
+
+> 降噪预览（不合成，仅试听降噪效果）：`curl -X POST "$BASE/v1/audio/vp/denoise" -H "Authorization: Bearer $API_KEY" -F "voice_file=@ref.webm" --output denoised.wav`。当前返回标准 WAV，采样率为 48kHz。
+
+### VP 模板（预置脚本，不需要输入文本）
+
+列出模板 → prepare 选用 → synthesize 合成，与两步式共用 synthesize。
+
+```bash
+# 列出模板（返回 title / speakers / voice_count / sentence_count）
+curl -s -H "Authorization: Bearer $API_KEY" "$BASE/v1/audio/vp/templates" \
+  | python3 -c "import sys,json; [print(f\"{t['title']}（{t['voice_count']}人，{t['sentence_count']}句）\") for t in json.load(sys.stdin)['templates']]"
+
+# prepare（用 title 标识，需 URL encode；不需要 text）
+# 返回 req_id / speakers / summary / sentence_count / script_lines
+TITLE="罗永浩、王自如的世纪骂战"
+ENCODED=$(python3 -c "import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1]))" "$TITLE")
+PREP=$(curl -s -X POST "$BASE/v1/audio/vp/templates/$ENCODED/prepare" \
+  -H "Authorization: Bearer $API_KEY")
+REQ_ID=$(echo "$PREP" | python3 -c "import sys,json; print(json.load(sys.stdin)['req_id'])")
+echo "$PREP" | python3 -c "import sys,json; d=json.load(sys.stdin); print('speakers:', d['speakers'])"
+
+# synthesize（同两步式）
+OUTPUT=vp_$(date +%s).wav
+curl -X POST "$BASE/v1/audio/vp/synthesize" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "req_id=$REQ_ID" \
+  -F "voice_file_主持人=@host.wav" \
+  -F "voice_file_嘉宾=@guest.wav" \
+  --max-time 3600 \
+  --output "$OUTPUT"
+```
+
+---
+
+## 错误处理
+
+| 接口 | 错误 | 处置 |
+|---|---|---|
+| 标准 generate | 504 | 切 `/v1/audio/jobs` 异步重试 |
+| 标准 generate | 502/500 | 等 30s 重试 1 次，仍失败告知用户 |
+| VP generate（一步式） | 504 | 切 `/v1/audio/vp/jobs` 异步重试 |
+| VP synthesize（两步式/模板） | 504/502 | **用同一个 `req_id` 重试 synthesize**（间隔 60s，最多 3 次）。不要切 `vp/jobs`——一步式会重新规划角色名，导致 `voice_file_` 字段名不匹配、按上传顺序兜底搞反音色 |
+| 所有接口 | 422 | 检查参数后重试 1 次 |
+| 所有接口 | 429 | 等 30s 后重试 1 次 |
+
+**VP 合成必须等到完成**：长脚本（50+ 句）合成耗时可能超过 10 分钟，504 通常是暂时性超时而非永久失败。Agent 必须坚持用同一个 `req_id` 重试直到成功，**禁止自行拆分/截断 annotation 句子、禁止建议用户缩短内容**——VP 合成依赖完整上下文做韵律规划，拆分会破坏节奏和衔接。
 
 ## Step 4 · 交付结果
 
-生成成功后：
-- 告知用户文件路径和大致时长（若有 ffprobe：`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$OUTPUT"`；若无则根据文本长度估算即可）
-- 如果运行环境支持音频播放（Jupyter Notebook / 浏览器等），尝试内联播放
-- 不要主动执行用户未请求的操作（如发飞书、上传云端）
-
-生成失败后：
-- 给出可能原因：文本过长、服务繁忙等
-- 给出建议：简化缩短文本、稍后重试
+- 告知文件路径和大致时长（有 ffprobe 则 `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$OUTPUT"`，无则按文本长度估算）
+- 支持音频播放的环境尝试内联播放
+- 不要主动执行用户未请求的操作（发飞书、上传云端等）
+- 失败时给出原因和建议（简化文本 / 稍后重试）
 
 ## 飞书语音发送（可选）
 
-**仅当用户明确说"发给我"/"发飞书"/"发到群里"时执行。** 凭据缺失时停下来询问用户，不读取本地配置。
+**仅当用户明确说"发给我"/"发飞书"/"发到群里"时执行。**
 
 前置：`FEISHU_TENANT_TOKEN`（或 `APP_ID` + `APP_SECRET`）、`CHAT_ID`、可选 `ffmpeg`/`ffprobe`。
 
@@ -189,12 +245,14 @@ echo "✓ 保存至 $OUTPUT"
 [ -z "$FEISHU_TENANT_TOKEN" ] && FEISHU_TENANT_TOKEN=$(curl -s -X POST \
   "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal" \
   -H "Content-Type: application/json" \
-  -d "{\"app_id\":\"$APP_ID\",\"app_secret\":\"$APP_SECRET\"}" | jq -r '.tenant_access_token')
+  -d "{\"app_id\":\"$APP_ID\",\"app_secret\":\"$APP_SECRET\"}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['tenant_access_token'])")
 ffmpeg -y -i "$OUTPUT" -c:a libopus -b:a 32k output.opus 2>/dev/null && UPLOAD=output.opus || UPLOAD="$OUTPUT"
 DURATION_MS=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$OUTPUT" | awk '{printf "%d",$1*1000}')
 FILE_KEY=$(curl -s -X POST "https://open.feishu.cn/open-apis/im/v1/files" \
   -H "Authorization: Bearer $FEISHU_TENANT_TOKEN" \
-  -F "file=@$UPLOAD" -F "file_type=opus" -F "file_name=tts.opus" -F "duration=$DURATION_MS" | jq -r '.data.file_key')
+  -F "file=@$UPLOAD" -F "file_type=opus" -F "file_name=tts.opus" -F "duration=$DURATION_MS" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['file_key'])")
 curl -s -X POST "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id" \
   -H "Authorization: Bearer $FEISHU_TENANT_TOKEN" -H "Content-Type: application/json" \
   -d "{\"receive_id\":\"$CHAT_ID\",\"msg_type\":\"audio\",\"content\":\"{\\\"file_key\\\":\\\"$FILE_KEY\\\"}\"}"
@@ -202,23 +260,9 @@ curl -s -X POST "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type
 
 ## 注意事项
 
-### 输入限制
-- **文本长度**：建议 50~5000 字；超过 1000 字自动走异步接口
-- **音视频时长**：输入音视频尽量 < 10 分钟
-- **文件大小**：> 20MB 建议先压缩或截短
-- **支持格式**：`txt` `md` `pdf` `docx` `csv` `json` `html` + 常见音视频格式
-
-### 频率限制
-- 默认公共 API Key 有并发限制，建议**请求间隔 ≥ 3s**，避免短时间内密集调用
-- 若收到 429（Too Many Requests），等待 30s 后重试
-- 批量生成场景建议串行执行，不要并行发送多个请求
-
-### 生成耗时参考
-- 短文本 TTS（< 500 字）：10–30s
-- 长文有声化（1000–5000 字）：30s–3min
-- 多人节目（播客/对话/相声）：1–10min
-
-### 其他
-- 输出固定为 WAV（24kHz）；用时间戳命名（`output_$(date +%s).wav`）避免覆盖
-- instruction 过于复杂时模型可能忽略部分指令，建议核心控制点 ≤ 5 个
-- 多人合成时说话人建议 ≤ 4 人，人数越多控制难度越高
+- **文本长度**：建议 50~5000 字；超 1000 字自动走异步
+- **文件大小**：> 20MB 建议先压缩；支持 `txt` `md` `pdf` `docx` `csv` `json` `html` + 常见音视频
+- **频率**：公共 Key 有并发限制，间隔 ≥ 3s，429 则等 30s 重试，批量请串行
+- **耗时参考**：短文本 10–30s / 长文 30s–3min / 多人节目 1–10min
+- **输出**：生成接口默认返回 WAV（24kHz）；`/v1/audio/vp/denoise` 降噪预览当前返回 WAV（48kHz）。建议用时间戳命名避免覆盖
+- **说话人**：建议 ≤ 4 人，人数越多控制难度越高
