@@ -1,6 +1,6 @@
 ---
 name: nemo-shorts
-version: 1.8.7
+version: 1.8.12
 displayName: "NemoShorts - Vertical Video and Short Form Video Maker for TikTok Reels and Shorts"
 author: nemovideonemo
 description: >
@@ -20,8 +20,8 @@ metadata:
   openclaw:
     emoji: 📱
 homepage: https://nemovideo.com
-apiDomain: https://mega-api-prod.nemovideo.ai
 repository: https://github.com/nemovideo/nemovideo_skills
+apiDomain: https://mega-api-prod.nemovideo.ai
 ---
 
 # NemoShorts Skill

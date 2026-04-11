@@ -3,11 +3,16 @@
   "slug": "nemo-shorts",
   "displayName": "Nemo Shorts",
   "latest": {
-    "version": "1.8.11",
-    "publishedAt": 1774745634243,
-    "commit": "https://github.com/openclaw/skills/commit/1a2471727a4e10ebe627e176bec72151c3085980"
+    "version": "1.8.12",
+    "publishedAt": 1775639513686,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.8.11",
+      "publishedAt": 1774745634243,
+      "commit": "https://github.com/openclaw/skills/commit/1a2471727a4e10ebe627e176bec72151c3085980"
+    },
     {
       "version": "1.8.3",
       "publishedAt": 1774141103961,
