@@ -18,16 +18,34 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
-def add_field(lines: list[str], label: str, value: Any) -> None:
-    if value is None:
-        return
+def sanitize_value(value: Any) -> Any:
     if isinstance(value, str):
-        value = sanitize_ref(value)
-        if not value.strip():
-            return
-    if isinstance(value, list) and not value:
+        return sanitize_ref(value)
+    if isinstance(value, list):
+        cleaned = []
+        for item in value:
+            sanitized = sanitize_value(item)
+            if sanitized in ("", [], {}):
+                continue
+            cleaned.append(sanitized)
+        return cleaned
+    if isinstance(value, dict):
+        cleaned = {}
+        for key, item in value.items():
+            sanitized = sanitize_value(item)
+            if sanitized in ("", [], {}):
+                continue
+            cleaned[key] = sanitized
+        return cleaned
+    return value
+
+
+def add_field(lines: list[str], label: str, value: Any) -> None:
+    value = sanitize_value(value)
+    if value in (None, "", [], {}):
         return
-    lines.append(f"- {label}: `{value}`")
+    rendered = json.dumps(value, ensure_ascii=True, sort_keys=True) if isinstance(value, (list, dict)) else str(value)
+    lines.append(f"- {label}: `{rendered}`")
 
 
 def main() -> int:
@@ -56,13 +74,15 @@ def main() -> int:
 
     execution = payload.get("execution") or {}
     lines.append("## Execution")
-    for key in ("lane", "compute_budget", "wall_time_budget", "critical_ablation_question"):
+    for key in ("lane", "auth_mode", "compute_budget", "wall_time_budget", "critical_ablation_question"):
         add_field(lines, key, execution.get(key))
+    for thread in execution.get("agent_threads") or []:
+        add_field(lines, "agent_thread", thread)
     lines.append("")
 
     evaluation = payload.get("evaluation") or {}
     lines.append("## Evaluation")
-    for key in ("benchmark_contract_path", "score", "delta_vs_baseline"):
+    for key in ("benchmark_contract_path", "score", "delta_vs_baseline", "slice_scores", "reruns", "review_packet_path"):
         add_field(lines, key, evaluation.get(key))
     for key in ("failure_cases", "regression_notes"):
         values = evaluation.get(key) or []

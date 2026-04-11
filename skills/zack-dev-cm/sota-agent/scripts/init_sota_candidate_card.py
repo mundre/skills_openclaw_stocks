@@ -22,7 +22,7 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     payload = {
-        "schema_version": "1.0",
+        "schema_version": "1.2",
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "campaign_id": args.campaign_id,
         "candidate_id": args.candidate_id,
@@ -35,16 +35,23 @@ def main() -> int:
         },
         "execution": {
             "lane": "",
+            "auth_mode": "chatgpt_or_codex_oauth",
             "compute_budget": "",
             "wall_time_budget": "",
             "critical_ablation_question": "",
+            "agent_threads": [],
         },
         "evaluation": {
             "benchmark_contract_path": "",
             "score": "",
             "delta_vs_baseline": "",
+            "slice_scores": {},
+            "reruns": [],
             "failure_cases": [],
             "regression_notes": [],
+            "review_dashboard_path": "",
+            "claim_safety_paths": [],
+            "review_packet_path": "",
         },
         "claim_review": {
             "status": "hold",

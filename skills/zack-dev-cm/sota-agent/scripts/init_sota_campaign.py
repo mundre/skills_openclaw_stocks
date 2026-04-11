@@ -51,6 +51,60 @@ def main() -> int:
 - what qualifies as "match"
 - what qualifies as "beat"
 - what blocks a SOTA claim
+
+## Auth Contract
+
+- ChatGPT or Codex OAuth-backed sessions
+- no paid API keys by default
+
+## Agent Roles
+
+- main thread owns the benchmark contract
+- bounded subagents for scouting, reproduction, and review
+""",
+        "program.md": """# Program
+
+## Benchmark Contract
+
+- task
+- dataset
+- metric
+- split
+- claim threshold
+- minimum meaningful delta
+
+## Baselines
+
+- name / score / trust level
+
+## Frontier Sources
+
+- source / why it matters
+
+## Rerun Rule
+
+- small-delta threshold
+- minimum reruns
+- seed strategy
+""",
+        "agents.md": """# Agents
+
+## Main Thread
+
+- benchmark contract
+- stop conditions
+- final claim wording
+
+## Bounded Subagents
+
+- scout: paper, repo, and leaderboard triage
+- reproducer: baseline and reference inspection
+- reviewer: contamination, regressions, and evidence completeness
+
+## Auth Rule
+
+- prefer ChatGPT or Codex OAuth-backed sessions
+- treat paid API-key frameworks as reference-only by default
 """,
         "research.md": """# Research
 
