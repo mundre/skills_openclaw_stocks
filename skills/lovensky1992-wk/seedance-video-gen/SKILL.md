@@ -1,6 +1,14 @@
 ---
 name: seedance-video
-description: "Generate AI videos using ByteDance Seedance. Use when the user wants to: (1) generate videos from text prompts, (2) generate videos from images (first frame, first+last frame, reference images), or (3) query/manage video generation tasks. Supports Seedance 1.5 Pro (with audio), 1.0 Pro, 1.0 Pro Fast, and 1.0 Lite models."
+description: >
+  使用字节跳动 Seedance 生成 AI 视频：文生视频、图生视频（首帧/首尾帧/参考图）、
+  异步任务查询。支持 Seedance 2.0（多模态输入、视频续生、视频编辑）等多个模型。
+  Use when: (1) 用户说"生成视频"/"做个视频"/"AI视频"/"text to video",
+  (2) 用户要求根据图片生成视频/动画/"图生视频"/"image to video",
+  (3) 用户提到 Seedance/字节视频生成,
+  (4) 用户说"帮我做段视频"/"生成一段动画"。
+  NOT for: 从已有视频中抽帧/截图（用 video-frames）、
+  视频剪辑/转码/格式转换（用 ffmpeg 直接操作）、实拍视频处理。
 version: 1.0.0
 category: file-generation
 argument-hint: "[text prompt or task ID]"
@@ -24,13 +32,17 @@ export ARK_API_KEY="your-api-key-here"
 
 | Model | Model ID | Capabilities |
 |-------|----------|-------------|
+| **Seedance 2.0** | `doubao-seedance-2-0-260128` | **Multimodal input (text+image+video+audio), Video extension, Video editing** |
+| Seedance 2.0 Fast | `doubao-seedance-2-0-fast-260128` | Same as 2.0, faster generation |
 | Seedance 1.5 Pro | `doubao-seedance-1-5-pro-251215` | Text-to-video, Image-to-video (first frame, first+last frame), Audio support, Draft mode |
-| Seedance 1.0 Pro | `doubao-seedance-1-0-pro-250428` | Text-to-video, Image-to-video (first frame, first+last frame) |
-| Seedance 1.0 Pro Fast | `doubao-seedance-1-0-pro-fast-250528` | Text-to-video, Image-to-video (first frame only) |
-| Seedance 1.0 Lite T2V | `doubao-seedance-1-0-lite-t2v-250219` | Text-to-video only |
-| Seedance 1.0 Lite I2V | `doubao-seedance-1-0-lite-i2v-250219` | Image-to-video (first frame, first+last frame, reference images 1-4) |
+| Seedance 1.0 Pro | `doubao-seedance-1-0-pro-250528` | Text-to-video, Image-to-video (first frame, first+last frame) |
+| Seedance 1.0 Pro Fast | `doubao-seedance-1-0-pro-fast-251015` | Text-to-video, Image-to-video (first frame only) |
+| Seedance 1.0 Lite T2V | `doubao-seedance-1-0-lite-t2v-250428` | Text-to-video only |
+| Seedance 1.0 Lite I2V | `doubao-seedance-1-0-lite-i2v-250428` | Image-to-video (first frame, first+last frame, reference images 1-4) |
 
-**Default model**: `doubao-seedance-1-5-pro-251215` (latest, supports audio)
+**Default model**: `doubao-seedance-1-5-pro-251215` (stable, supports audio)
+
+> 💡 Seedance 2.0 (`doubao-seedance-2-0-260128`) 已上线但需在方舟控制台激活，激活后改 seedance.py 的 DEFAULT_MODEL 即可切换。
 
 ## Execution (Recommended: Python CLI Tool)
 
