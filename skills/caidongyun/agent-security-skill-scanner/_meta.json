@@ -1,13 +1,18 @@
 {
   "owner": "caidongyun",
   "slug": "agent-security-skill-scanner",
-  "displayName": "Agent Security Skill Scanner",
+  "displayName": "Agent Security Skill Scanner Gitee",
   "latest": {
-    "version": "2.2.1",
-    "publishedAt": 1773645575073,
-    "commit": "https://github.com/openclaw/skills/commit/1de3f8fdf753295adf40c68cc58730cb23c22508"
+    "version": "4.1.5",
+    "publishedAt": 1775547302190,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.1",
+      "publishedAt": 1773645575073,
+      "commit": "https://github.com/openclaw/skills/commit/1de3f8fdf753295adf40c68cc58730cb23c22508"
+    },
     {
       "version": "2.0.1-beta",
       "publishedAt": 1773462902155,
