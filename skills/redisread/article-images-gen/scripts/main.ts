@@ -3,9 +3,8 @@
  * Simple single-image generation entry point
  */
 
-import path from "node:path";
 import process from "node:process";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { generateImage } from "./image-generator";
 
 type CliArgs = {

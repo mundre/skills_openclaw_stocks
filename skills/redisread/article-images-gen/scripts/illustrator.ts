@@ -9,25 +9,14 @@
 import path from "node:path";
 import process from "node:process";
 import { readFile, writeFile, mkdir, access, copyFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import { generateImage } from "./image-generator";
-import { analyzeArticleContent, generateOutline, generatePromptFiles } from "./article-analyzer";
+import { generateOutline, generatePromptFiles } from "./article-analyzer";
 
 type CliArgs = {
   articlePath: string | null;
   density: "minimal" | "balanced" | "per-section" | "rich" | null;
   outputDir: string | null;
   help: boolean;
-};
-
-type ExtendConfig = {
-  default_output_dir?: "same-dir" | "imgs-subdir" | "illustrations-subdir" | "independent";
-  language?: string;
-  watermark?: {
-    enabled: boolean;
-    content: string;
-    position: string;
-  };
 };
 
 const DENSITY_OPTIONS = ["minimal", "balanced", "per-section", "rich"] as const;
@@ -84,93 +73,13 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
-async function loadExtendConfig(): Promise<{
-  source: "project" | "user" | null;
-  config: ExtendConfig | null;
-}> {
-  const projectPath = path.join(process.cwd(), ".baoyu-skills/article-images-gen/EXTEND.md");
-  const userPath = path.join(homedir(), ".baoyu-skills/article-images-gen/EXTEND.md");
-
-  if (await fileExists(projectPath)) {
-    const content = await readFile(projectPath, "utf8");
-    return { source: "project", config: parseExtendMd(content) };
-  }
-
-  if (await fileExists(userPath)) {
-    const content = await readFile(userPath, "utf8");
-    return { source: "user", config: parseExtendMd(content) };
-  }
-
-  return { source: null, config: null };
-}
-
-function parseExtendMd(content: string): ExtendConfig {
-  const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!yamlMatch) return {};
-
-  const yaml = yamlMatch[1]!;
-  const config: ExtendConfig = {};
-
-  let currentKey: string | null = null;
-  let currentObj: Record<string, unknown> = {};
-
-  for (const line of yaml.split("\n")) {
-    if (!line.trim()) continue;
-
-    const match = line.match(/^(\s*)(\w+):\s*(.*)$/);
-    if (!match) continue;
-
-    const indent = match[1]!.length;
-    const key = match[2]!;
-    const value = match[3]!.replace(/^["']|["']$/g, "");
-
-    if (indent === 0) {
-      if (currentKey && Object.keys(currentObj).length > 0) {
-        config[currentKey as keyof ExtendConfig] = currentObj as never;
-      }
-      currentKey = key;
-      currentObj = {};
-    } else if (currentKey) {
-      currentObj[key] = value === "true" ? true : value === "false" ? false : value;
-    }
-  }
-
-  if (currentKey && Object.keys(currentObj).length > 0) {
-    config[currentKey as keyof ExtendConfig] = currentObj as never;
-  }
-
-  return config;
-}
-
-function determineOutputDir(
-  articlePath: string,
-  config: ExtendConfig | null,
-  overrideDir: string | null
-): string {
+function determineOutputDir(articlePath: string, overrideDir: string | null): string {
   if (overrideDir) {
     return overrideDir;
   }
-
-  const articleDir = path.dirname(articlePath);
-  const outputDirSetting = config?.default_output_dir || "imgs-subdir";
-
-  switch (outputDirSetting) {
-    case "same-dir":
-      return articleDir;
-    case "imgs-subdir":
-      return path.join(articleDir, "imgs");
-    case "illustrations-subdir":
-      return path.join(articleDir, "illustrations");
-    case "independent":
-      const topicSlug = path.basename(articlePath, ".md").replace(/[^a-z0-9]+/g, "-");
-      return path.join(process.cwd(), "illustrations", topicSlug);
-    default:
-      return path.join(articleDir, "imgs");
-  }
-}
-
-async function readArticle(articlePath: string): Promise<string> {
-  return readFile(articlePath, "utf8");
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const articleName = path.basename(articlePath, path.extname(articlePath));
+  return `/tmp/imageGen/${today}/${articleName}`;
 }
 
 async function generateIllustrationsForArticle(
@@ -211,8 +120,7 @@ async function generateIllustrationsForArticle(
     }
 
     const promptContent = await readFile(promptFile, "utf8");
-    const promptText = extractPromptFromMarkdown(promptContent);
-
+    const promptText = promptContent.replace(/^---\n[\s\S]*?\n---\n/, "").trim();
     const outputPath = path.join(outputDir, position.filename);
 
     try {
@@ -225,6 +133,11 @@ async function generateIllustrationsForArticle(
         `  ✗ Illustration ${position.index}: ${error instanceof Error ? error.message : String(error)}`
       );
       failureCount++;
+    }
+
+    // Avoid rate limiting between requests
+    if (position.index < outline.positions.length) {
+      await new Promise((resolve) => setTimeout(resolve, 15000));
     }
   }
 
@@ -246,12 +159,6 @@ async function generateIllustrationsForArticle(
   }
 }
 
-function extractPromptFromMarkdown(content: string): string {
-  // Remove YAML frontmatter
-  const withoutFrontmatter = content.replace(/^---\n[\s\S]*?\n---\n/, "");
-  return withoutFrontmatter.trim();
-}
-
 async function updateArticleWithImages(
   articlePath: string,
   positions: Array<{ index: number; section: string; filename: string }>,
@@ -261,23 +168,18 @@ async function updateArticleWithImages(
   const lines = content.split("\n");
   const newLines: string[] = [];
 
-  // Compute relative path from article to images
   const articleDir = path.dirname(articlePath);
   const getRelativeImagePath = (filename: string) => {
     const imagePath = path.join(outputDir, filename);
     return path.relative(articleDir, imagePath);
   };
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
+  for (const line of lines) {
     newLines.push(line);
 
-    // Check if this line is a section heading
     const headingMatch = line.match(/^##+\s+(.+)$/);
     if (headingMatch) {
       const heading = headingMatch[1]!.trim();
-
-      // Check if any illustration should be inserted after this heading
       const position = positions.find((p) => p.section === heading);
       if (position) {
         const relativePath = getRelativeImagePath(position.filename);
@@ -287,7 +189,6 @@ async function updateArticleWithImages(
     }
   }
 
-  // Backup existing file
   const backupPath = `${articlePath}.bak-${Date.now()}`;
   await copyFile(articlePath, backupPath);
   console.log(`  Backup created: ${backupPath}`);
@@ -303,34 +204,20 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Validate article path
   if (!(await fileExists(args.articlePath))) {
     console.error(`Error: Article not found: ${args.articlePath}`);
     process.exit(1);
   }
 
-  // Load config
-  const { config } = await loadExtendConfig();
-  if (config) {
-    console.log("Loaded configuration");
-  } else {
-    console.log("No configuration found, using defaults");
-  }
-
-  // Determine density
   const density = args.density || "per-section";
   if (!DENSITY_OPTIONS.includes(density)) {
     console.error(`Error: Invalid density "${density}". Options: ${DENSITY_OPTIONS.join(", ")}`);
     process.exit(1);
   }
 
-  // Determine output directory
-  const outputDir = determineOutputDir(args.articlePath, config, args.outputDir);
+  const outputDir = determineOutputDir(args.articlePath, args.outputDir);
+  const articleContent = await readFile(args.articlePath, "utf8");
 
-  // Read article
-  const articleContent = await readArticle(args.articlePath);
-
-  // Generate illustrations
   await generateIllustrationsForArticle(args.articlePath, articleContent, density, outputDir);
 }
 
