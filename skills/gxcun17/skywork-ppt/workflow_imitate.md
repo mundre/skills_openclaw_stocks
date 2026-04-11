@@ -22,7 +22,7 @@ If the user provides a template but no new topic, **ask what they want to create
 Extract the local PPTX path from the user's message. It may appear as:
 
 - An absolute path: `/Users/xxx/templates/style.pptx`
-- A relative path or filename: `my_template.pptx` (infer the full path from context)
+- A relative path or filename: `my_template.pptx` (ask the user to confirm the exact full path before using it)
 - An attachment uploaded in the conversation (the platform will provide a local temp path)
 
 **If the path is ambiguous, ask the user for the full absolute path.**

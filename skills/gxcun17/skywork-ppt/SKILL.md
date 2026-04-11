@@ -1,11 +1,6 @@
 ---
 name: Skywork-ppt
-description: |
-  Use this skill when the user wants to work with PowerPoint presentations. Triggers include:
-  - Generating a new PPT from a topic: 'generate a PPT' / '帮我做个PPT' / 'PPTを作って' / 'PPT 만들어줘', 'create a presentation about X' / '生成关于X的演示文稿' / 'Xについてのプレゼンを作って' / 'X에 대한 발표 자료 만들어줘', 'help me make slides' / '帮我做幻灯片' / 'スライドを作って' / '슬라이드 만들어줘'
-  - Imitating an existing .pptx style/template: 'use this template' / '用这个模板' / 'このテンプレートを使って' / '이 템플릿을 써줘', 'imitate this PPT' / '仿照这个PPT' / 'このPPTを真似して' / '이 PPT를 따라 해줘', 'imitate this style' / '仿照这个风格' / 'このスタイルを真似して' / '이 스타일을 따라 해줘'
-  - Editing an existing PPT via natural language: 'modify slide N' / '修改第N页' / 'N枚目のスライドを修正して' / 'N번 슬라이드 수정해줘', 'change the background' / '更换背景' / '背景を変えて' / '배경 바꿔줘', 'add a slide' / '新增一页幻灯片' / 'スライドを追加して' / '슬라이드 추가해줘', 'make it more beautiful' / '美化一下PPT' / 'もっときれいにして' / '더 예쁘게 다듬어줘', 'edit this PPT' / '改一下这个PPT' / 'このPPTを編集して' / '이 PPT 수정해줘'
-  - Local file operations on .pptx (no backend): 'delete slide N' / '删除第N页' / 'N枚目のスライドを削除して' / 'N번 슬라이드 삭제해줘', 'reorder slides' / '调整幻灯片顺序' / 'スライドを並べ替えて' / '슬라이드 순서 바꿔줘', 'merge pptx' / '合并PPT' / 'pptxを結合して' / 'pptx 합쳐줘', 'extract slides' / '提取幻灯片' / 'スライドを抽出して' / '슬라이드 추출해줘', 'how many slides' / '有多少页幻灯片' / 'スライドは何枚ある' / '슬라이드 몇 장이야'
+description: Skywork PPT (skywork) - Use when the user wants to work with PowerPoint presentations. Triggers: (1) Generate a new PPT from a topic — 'generate a PPT', 'create a presentation about X', 'make slides', '帮我做个PPT', '生成演示文稿', 'PPTを作って', 'スライドを作って', 'PPT 만들어줘', '슬라이드 만들어줘'; (2) Imitate an existing .pptx style/template — 'use this template', 'imitate this PPT/style', '用这个模板', '仿照这个PPT', 'このテンプレートを使って', '이 템플릿 써줘'; (3) Edit existing PPT via natural language — 'modify slide N', 'change background', 'add a slide', 'make it more beautiful', '修改第N页', '更换背景', '新增一页', '美化一下', 'N枚目を修正', '背景を変えて', 'きれいにして', 'N번 슬라이드 수정', '배경 바꿔줘'; (4) Local .pptx file ops — 'delete slide N', 'reorder slides', 'merge pptx', 'extract slides', 'how many slides', '删除第N页', '调整顺序', '合并PPT', '提取幻灯片', 'スライドを削除/並べ替え/結合/抽出', '슬라이드 삭제/순서 변경/합치기/추출'.
 metadata:
   openclaw:
     requires:
@@ -25,7 +20,7 @@ Four capabilities: **generate**, **template imitation**, **edit existing PPT**, 
 ## Prerequisites
 
 ### API Key Configuration (Required First)
-This skill requires a **SKYWORK_API_KEY** to be configured in OpenClaw.
+This skill requires a **SKYWORK_API_KEY** to be configured before use.
 
 If you don't have an API key yet, please visit:
 **https://skywork.ai**
@@ -38,7 +33,6 @@ For detailed setup instructions, see:
 ## Privacy & Remote Calls (Read Before Use)
 
 - **Remote upload & processing**: Layers 1/2/4 upload local files and send the full, verbatim user query to the Skywork service. Avoid sensitive or confidential content unless you trust the remote service and its data handling policies.
-- **Local-only operations**: Layer 3 (local ops) runs entirely on-device and does **not** call the remote gateway. Use Layer 3 if you need strict local processing.
 - **Polling behavior**: The generation/edit workflows include periodic status polling (about every 5 seconds) while waiting for backend jobs. This is expected.
 
 ---
@@ -131,7 +125,7 @@ Use this layer when the user wants to modify an existing PPT using natural langu
 
 ---
 
-## Layer 3 — Local file operations
+## Layer 3 — PPT File operations
 
 ```bash
 # Inspect slide count and titles

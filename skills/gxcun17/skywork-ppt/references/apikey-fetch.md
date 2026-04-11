@@ -1,4 +1,4 @@
-# Skywork API Key Setup Guide (OpenClaw)
+# Skywork API Key Setup Guide
 
 ## SKYWORK_API_KEY Not Configured
 
@@ -41,14 +41,48 @@ Replace `"your_actual_skywork_api_key_here"` with your real key.
 
 For multiple Skywork skills, repeat the same `apiKey` field on each skill entry.
 
-### 3. Verify Configuration
+### 3. Configure Claude Code
+
+If you are using Claude Code, use one of these lightweight options:
+
+**Option A — shell environment**
+
+Export the API key before running the skill:
 
 ```bash
-# Check JSON format
+export SKYWORK_API_KEY="your_actual_skywork_api_key_here"
+```
+
+To persist it across sessions, add the same line to `~/.zshrc` or `~/.bashrc`, then reload the shell.
+
+**Option B — Claude Code settings**
+
+Add the variable to `~/.claude/settings.json`:
+
+```json
+{
+  "env": {
+    "SKYWORK_API_KEY": "your_actual_skywork_api_key_here"
+  }
+}
+```
+
+Use the method that best matches how you run Claude Code.
+
+### 4. Verify Configuration
+
+```bash
+# Check that the environment variable is available
+echo "$SKYWORK_API_KEY"
+```
+
+For OpenClaw, you can also validate the config file:
+
+```bash
 cat ~/.openclaw/openclaw.json | python3 -m json.tool
 ```
 
-### 4. Restart OpenClaw
+### 5. Restart OpenClaw
 
 ```bash
 openclaw gateway restart
@@ -57,8 +91,9 @@ openclaw gateway restart
 ## Troubleshooting
 
 - Ensure `~/.openclaw/openclaw.json` exists and is valid JSON
+- Ensure `SKYWORK_API_KEY` is available in Claude Code through your shell or `~/.claude/settings.json`
 - Confirm the API key is active and not expired
 - Check Skywork account status, membership, or quota if requests fail with auth or benefit errors
 - Restart OpenClaw after configuration changes
 
-**Recommended**: Use the OpenClaw configuration file for centralized environment management.
+**Recommended**: Use the setup method that matches your runtime. OpenClaw should use the OpenClaw config file; Claude Code can use either the shell environment or `~/.claude/settings.json`.
