@@ -1,408 +1,359 @@
 ---
 name: daxiapi
-version: 2.1.0
-description: 大虾皮(daxiapi.com)金融数据API接口，获取A股市场宽度、行业相对强度、市场估值水平、个股动量排名，帮助进行自下向上选股。系统理论来自马克米勒维尼的VCP、欧奈尔的RPS、Wyckoff与价格行为学理论。此skill应在用户请求股票数据、市场分析、板块热度、个股动量等金融数据时触发。
-metadata:
-  category: 金融分析
-  tags: [大虾皮, daxiapi, 金融分析, 股票, 市场热力图, 动量, 估值, 风格轮动]
-  compatibility: [Linux, macOS, Windows]
+description: '大虾皮(daxiapi.com)金融数据API服务入口，负责路由分发到具体分析skill。触发词：A股数据、市场数据、股票分析、板块分析、选股、市场复盘、财务分析、财报分析、ROE分析、杜邦分析、个股舆情、公告解读、研报解读、主力资金、资金流向、资金动向。适用场景：获取A股市场、板块、个股、财报、消息面、资金流向数据时的统一入口，根据用户需求分发到对应的专业skill。不适用场景：非A股市场分析、非金融数据分析、纯技术问答。
 ---
 
-# 大虾皮 API Skill
+# 大虾皮 API 路由 Skill
 
-大虾皮(daxiapi.com)提供专业的A股量化数据API服务，本skill指导如何正确调用这些接口。
+大虾皮(daxiapi.com)提供专业的A股量化数据API服务，本skill作为统一入口，负责识别用户意图并路由分发到具体分析skill。
 
-## 使用前提
-可以先安装 `daxiapi-cli` 命令行工具，安装后可直接在终端调用：
+## Overview（功能概述）
 
-```bash
-npx daxiapi-cli@latest {command_args}
+识别用户的金融数据分析需求，智能匹配并调用对应的专业skill，确保分析质量和效率。如果已有明确的专业skill覆盖用户需求，则直接调用该skill；否则提供通用CLI命令供用户使用。
+
+## When to Use（何时使用）
+
+当用户请求以下数据时，触发此skill进行路由分发：
+
+- A股市场相关数据查询
+- 板块、行业分析需求
+- 股票筛选和选股需求
+- 市场情绪、温度、估值分析
+- 风格轮动、大小盘分析
+- 个股财务分析、财报分析、ROE/杜邦分析
+- 个股舆情、公告、研报等消息面分析
+- 个股主力资金流向、个股资金动向分析
+
+**具体触发词**：A股数据、市场数据、股票分析、板块分析、选股、市场复盘、财务分析、财报分析、ROE分析、杜邦分析、个股舆情、公告解读、研报解读、消息面分析、个股主力资金、个股资金流向、个股资金动向   
+
+## When Not to Use（何时不使用）
+
+以下场景不应使用本Skill：
+
+- 非A股市场分析（美股、港股、债券、基金、期货等）
+- 非金融数据分析需求
+- 纯技术问答或编程问题
+- 理论知识讲解（如"什么是EMA"）
+
+## Process（流程主体）
+
+### Step 1: 意图识别与路由分发
+
+**目标**：识别用户的具体需求，匹配对应的专业skill
+
+**路由映射表**：
+
+| 用户需求关键词 | 匹配Skill | 说明 |
+|--------------|-----------|------|
+| 市场复盘、今天市场怎么样、市场分析、每日复盘 | `xiapi-market-review` | 综合市场复盘 |
+| 市场温度、市场估值、恐贪指数、市场情绪、趋势温度、动量温度 | `xiapi-market-temperature` | 市场温度分析（底层命令：`market temp` + `market compass`） |
+| 大小盘风格、风格轮动、大盘股小盘股、风格切换 | `xiapi-style-rotation` | 风格轮动分析 |
+| 板块热力图、行业轮动、热门板块、领涨板块 | `xiapi-heatmap-analysis` | 板块热力图分析 |
+| 涨停、跌停、炸板、涨跌停分析 | `xiapi-price-limit-analysis` | 涨跌停分析 |
+| 热门股票、领涨股、强势股、涨幅榜 | `xiapi-top-stocks` | 热门股票分析 |
+| 股票筛选、选股、VCP形态、RPS强势股、创新高、技术形态 | `xiapi-screener` | 技术形态选股 |
+| 个股分析、个股对比、财报对比、价值分析、技术分析、基本面、买卖点、选时、ST分析 | `xiapi-stock-analysis` | 个股深度分析与多股对比（综合/技术/财报/价值） |
+| 财务分析、财报分析、ROE分析、杜邦分析、盈利质量、净利润质量、`report finance` | `xiapi-financial-roe-analysis` | 基于 `daxiapi report finance <code>` 的个股财务深度分析 |
+| 个股舆情、公告解读、研报解读、消息面分析、新闻催化、利好利空、`news sentiment`、`news notice`、`news report` | `xiapi-news-catalyst-analysis` | 基于 `daxiapi news` 的个股消息面交叉验证与影响评分分析 |
+| 红利指数、红利分析、中证红利、红利低波、股息率指数 | `xiapi-dividend-analysis` | 红利指数分析 |
+| 个股主力资金、个股资金流向、个股主力净流入、个股资金动向 | 通用CLI命令 | 使用 `daxiapi stock capital-flow <code>` 获取个股主力资金流向 |
+
+**路由判断流程**：
+
+1. **扫描关键词**：从用户输入中提取关键词
+2. **匹配Skill**：根据路由映射表匹配对应skill
+3. **优先匹配专业skill**：
+   - 若出现"财务分析/财报分析/ROE/杜邦/盈利质量"等意图，优先路由到 `xiapi-financial-roe-analysis`
+   - 若出现"舆情/公告/研报/消息面/利好利空/新闻催化"等意图，优先路由到 `xiapi-news-catalyst-analysis`
+   - 若出现"个股分析/个股对比/技术分析/价值分析/基本面/买卖点"等意图，优先路由到 `xiapi-stock-analysis`
+   - 若出现"个股主力资金/个股资金流向/个股主力净流入/个股资金动向"等意图，提供CLI命令 `daxiapi stock capital-flow <code>`
+4. **直接调用**：找到匹配skill后，直接调用该skill执行分析
+5. **无匹配处理**：如无明确匹配，进入Step 2通用处理
+
+**示例**：
+
 ```
-如果电脑没有安装 `Nodejs` 环境，可以使用HTTP工具来发送请求，具体参考 [使用方式](#使用方式) 部分。
+用户输入："分析一下红利低波指数"
+匹配结果：关键词包含"红利低波" → 调用 `xiapi-dividend-analysis`
 
-## 关于数据更新
+用户输入："今天涨停板有哪些？"
+匹配结果：关键词包含"涨停" → 调用 `xiapi-price-limit-analysis`
 
-- 数据更新频率：每日收盘后开始更新，一般在17:00之前更新完K线、热力图和个股数据，在20:30更新市场恐慌指数等汇总信息
+用户输入："帮我选一些VCP形态的股票"
+匹配结果：关键词包含"VCP形态"、"选股" → 调用 `xiapi-screener`
 
-## 关于第三方API说明：
-- 免费使用,无需VIP Token
-- 数据更新频率高(实时或准实时)
-- **可作为大虾皮API的补充数据源，必要的时候优先获取三方API的数据**
-- 注意请求频率限制和数据缓存
+用户输入："分析一下宁德时代的财务质量"
+匹配结果：关键词包含"财务质量"、"财务分析" → 调用 `xiapi-financial-roe-analysis`
 
-## 核心概念
+用户输入："用 report finance 看一下 300750 的 ROE 和盈利质量"
+匹配结果：关键词包含"report finance"、"ROE"、"盈利质量" → 调用 `xiapi-financial-roe-analysis`
 
-### 动量与形态指标
+用户输入："帮我看下 600031 最近舆情、公告和研报，判断利好利空"
+匹配结果：关键词包含"舆情"、"公告"、"研报"、"利好利空" → 调用 `xiapi-news-catalyst-analysis`
 
-| 指标 | 全称 | 说明 |
+用户输入："帮我分析一下宁德时代和比亚迪，哪个更值得持有"
+匹配结果：关键词包含"个股对比"、"值得持有" → 调用 `xiapi-stock-analysis`
+
+用户输入："三一重工现在技术面怎么样，适合买入吗"
+匹配结果：关键词包含"技术面"、"买入" → 调用 `xiapi-stock-analysis`
+```
+
+---
+
+### Step 2: 通用处理（无明确匹配时）
+
+**触发条件**：用户需求无法匹配到具体skill
+
+**处理方式**：
+
+1. **提供CLI命令**：直接提供对应的CLI命令供用户使用
+2. **说明数据范围**：告知用户该命令能获取的数据类型
+3. **优先补充路由提示**：如果用户已表现出分析意图，不只给命令，要优先引导到对应skill
+4. **引导到相关skill**：如有相关skill，推荐用户使用
+
+**CLI 命令速查表**：
+
+### 配置管理
+
+| 命令 | 说明 | 示例 |
 |------|------|------|
-| **CS** | Close-Short MA | 短期动量，股价与EMA20的乖离率。公式：`(ln(Close) - ln(EMA(ln(Close),20))) × 100`。入场阈值5-15，止损阈值<-5 |
-| **SM** | Short-Medium MA | 中期动量，EMA20与EMA60的乖离率。值>0表示多头排列 |
-| **ML** | Medium-Long MA | 长期动量，EMA60与EMA120的乖离率 |
-| **RPS** | Relative Price Strength | 欧奈尔股价相对强度，全市场排名百分比。RPS>80为强势股 |
-| **SCTR** | StockCharts Technical Rank | 技术排名，如60代表强于市场60%的股票 |
+| `config set <key> <value>` | 设置配置项 | `daxiapi config set token YOUR_TOKEN` |
+| `config get` | 查看所有配置 | `daxiapi config get` |
+| `config delete <key>` | 删除配置项 | `daxiapi config delete token` |
 
-### Wyckoff与价格行为形态
+### 市场数据
 
-| 形态 | 说明 |
-|------|------|
-| **VCP** | 波动收缩模式，供应吸收后可能上涨 |
-| **SOS** | 强势走势行为（Sign of Strength） |
-| **LPS** | 最后支撑点（Last Point of Support），突破后可买入 |
-| **Spring** | 弹簧形态，假破位后快速回升 |
-| **信号K** | 价格行为学入场信号，突破小区间 |
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `market index` | 获取A股市场主流指数数据（上证指数、深证成指、沪深300、上证50、中证500、创业板指、科创50等） | `daxiapi market index` |
+| `market compass` | 获取市场三维结构综合判断（趋势+估值+情绪），**推荐优先使用** | `daxiapi market compass` |
+| `market temp` | 获取市场温度原始数据（估值温度、恐贪指数、趋势温度、动量温度），compass 的数据来源 | `daxiapi market temp` |
+| `market style` | 获取A股市场风格数据（大小盘风格轮动） | `daxiapi market style` |
+| `market value` | 获取A股主要指数估值数据（PE、PB、估值温度、百分位等） | `daxiapi market value` |
 
-### 市场温度指标
+### 板块数据
 
-| 指标 | 定义 | 关键阈值 |
-|------|------|----------|
-| **估值温度** | 市盈率历史百分位（0-100） | <20低估，>70高估 |
-| **恐贪指数** | 市场贪婪恐惧程度（0-100） | 0-10极度恐惧（底部），90-100极度贪婪（顶部） |
-| **趋势温度** | 股价高于MA60的占比（0-100） | <20低迷，>80过热 |
-| **动量温度** | 动量中位数历史百分位 | <20超跌，>80高潮将至 |
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `sector heatmap` | 获取A股板块热力图数据（支持按强度、涨跌幅排序） | `daxiapi sector heatmap --order cs --limit 5` |
+| `sector bk` | 获取A股行业板块数据（同花顺分类） | `daxiapi sector bk` |
+| `sector stocks` | 获取A股指定板块内股票排名（支持多维度排序） | `daxiapi sector stocks --code BK0428 --order cs` |
+| `sector top` | 获取A股热门股票数据（涨幅>7%且IBS>50） | `daxiapi sector top` |
+| `sector gn` | 获取A股热门概念板块列表 | `daxiapi sector gn --type ths` |
 
-### 风格轮动指标
+### 个股数据
 
-| 指标 | 计算方式 | 解读 |
-|------|----------|------|
-| **大小盘波动差值** | 中证2000涨幅 - 沪深300涨幅 | >0小盘强，<0大盘强；±10%注意均值回归 |
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `stock info <codes...>` | 根据股票代码获取详细信息（支持批量，最多20只） | `daxiapi stock info 000001 600031 300750` |
+| `stock gn <gnId>` | 根据概念板块ID获取该概念下的所有股票 | `daxiapi stock gn GN1234 --type ths` |
+| `stock pattern <pattern>` | 根据技术形态筛选股票（支持27种形态） | `daxiapi stock pattern vcp` |
+| `stock capital-flow <code>` | 获取个股主力资金流向（默认5天，最多30天） | `daxiapi stock capital-flow 600031 --days 10` |
 
-## 认证方式
+**capital-flow 字段说明**：
+- `当日资金流入`：主力当日净流入金额（正=净流入，负=净流出），单位元
+- `当日资金流入占比`：主力净流入占当日成交额比例（%），反映主力参与强度
+- `5日资金流入金额`：近5日主力净流入累计，判断中短期资金趋势
+- `5日资金流入占比`：近5日主力净流入占比
+- `板块资金流入`：所属行业板块当日主力净流入，判断板块整体资金方向
+- `5日板块资金流入金额`：所属板块近5日主力净流入累计
 
-API支持两种认证方式：
+**技术形态类型**：
+- 强度指标类：`gxl`、`rps`、`sctr`、`csTop3`、`sctrTop3`、`rpsTop3`
+- 趋势形态类：`trendUp`、`high_60d`、`newHigh`、`crossMa50`、`crossoverBox`
+- 成交量形态类：`fangliang`、`fangliangtupo`
+- 涨跌幅排名类：`zdf1dTop3`、`zdf5dTop3`、`zdf10dTop3`、`zdf20dTop3`
+- 经典技术形态类：`vcp`、`joc`、`sos`、`spring`、`w`、`lps`、`sos_h1`
+- 其他：`ibs`、`shizhiTop3`
 
-### 1. X-API-Token 方式（推荐给VIP用户）
+### K线数据
 
-在请求头中添加 `X-API-Token`：
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `kline <code>` | 获取A股股票、指数、板块的K线数据 | `daxiapi kline 000001` |
 
-```javascript
-fetch('/coze/get_index_k', {
-    headers: { 'X-API-Token': 'your_32_char_token' }
-})
-```
+### 涨跌停数据
 
-**限流规则：**
-- 每日上限：1000次
-- 每分钟上限：10次
-- 超限时返回 429 状态码
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `zdt` | 获取A股涨跌停股票池数据 | `daxiapi zdt --type zt` |
 
-### 2. 固定Key方式（内部使用）
+**类型参数**：
+- `zt` - 涨停
+- `dt` - 跌停
+- `zb` - 炸板
 
-```javascript
-// 方式：Bearer Token
-headers: { 'Authorization': 'Bearer YOUR_ACCESS_TOKEN' }
-```
+### 代码转换与搜索
 
-## 使用方式
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `secid <code>` | 将各种股票代码格式转换为标准secid格式 | `daxiapi secid 000001` |
+| `search <keyword>` | 搜索A股股票或板块（支持模糊查询） | `daxiapi search 平安 --type stock` |
 
-API 支持两种调用方式：
+### 红利指数
 
-### 方式一：CLI 命令行工具（推荐）
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `dividend score` | 获取红利类指数的打分数据 | `daxiapi dividend score -c 2.H30269` |
 
-使用 `daxiapi-cli` 命令行工具，安装后可直接在终端调用：
+**常用指数代码**：
+- `2.H30269` - 红利低波
+- `2.930955` - 红利低波100
+- `1.000922` - 中证红利
+- `2.932365` - 中证现金流
+
+### 热榜数据
+
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `hotrank stock` | 获取A股热股榜数据 | `daxiapi hotrank stock --type hour --list-type normal` |
+| `hotrank concept` | 获取A股概念板块热榜数据 | `daxiapi hotrank concept` |
+| `hotrank board` | 获取A股行业板块热榜数据 | `daxiapi hotrank board --type industry` |
+
+**热股榜类型**：
+- `normal` - 大家都在看
+- `skyrocket` - 快速飙升个股
+- `trend` - 趋势投资派关注个股
+- `value` - 价值派关注个股
+- `tech` - 技术派关注个股
+
+### 成交额数据
+
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `turnover` | 获取A股市场成交额数据 | `daxiapi turnover` |
+
+### 新闻数据
+
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `news sentiment` | 获取个股舆情列表（传入 `code`，内部自动转 secid） | `daxiapi news sentiment -c 600031 -p 20` |
+| `news notice` | 获取个股公告列表 | `daxiapi news notice -c 600031 -p 20 -i 1` |
+| `news report` | 获取个股研报列表（支持时间区间） | `daxiapi news report -c 600031 -p 25 -i 1 -b 2026-01-01 -e 2026-04-08` |
+
+### 财报数据
+
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `report finance <code>` | 获取指定股票的财务报表数据；若用户要进一步做 ROE、杜邦、盈利质量分析，应路由到 `xiapi-financial-roe-analysis` | `daxiapi report finance 300014` |
+
+---
+
+### Step 3: Token 配置检查（可选）
+
+**触发条件**：用户首次使用或提示认证失败
+
+**跳过条件**：Token已配置且有效
+
+**执行步骤**：
+
+**步骤 3.1：检查Token配置状态**
 
 ```bash
-# 安装
-npm install -g daxiapi-cli
-
-# 配置Token
-daxiapi config set token YOUR_API_TOKEN
-
-# 使用示例
-daxiapi market              # 市场概览
-daxiapi market -d           # 市场温度
-daxiapi sector              # 板块热力图
-daxiapi stock 000001        # 查询个股
-daxiapi search 三一重工     # 搜索股票
-
-# 简写形式
-dxp market                  # 使用 dxp 别名
+npx daxiapi-cli@latest config get token
 ```
 
-**CLI 命令说明：**
+**步骤 3.2：如未配置，获取Token**
 
-| 命令 | 说明 |
-|------|------|
-| `daxiapi config set token <token>` | 设置API Token |
-| `daxiapi config get` | 查看当前配置 |
-| `daxiapi market` | 市场概览（指数、涨跌分布） |
-| `daxiapi market -d` | 市场温度分析 |
-| `daxiapi sector` | 板块热力图 |
-| `daxiapi stock <codes>` | 查询个股（多个用逗号分隔） |
-| `daxiapi kline <code>` | 获取个股K线数据 |
-| `daxiapi search <keyword>` | 搜索股票/行业 |
+1. 提示用户访问 [daxiapi.com](https://daxiapi.com) 个人主页
+2. 开通API Token功能
+3. 获取生成的Token
 
-**K线命令详解：**
+**步骤 3.3：配置Token**
 
 ```bash
-# 获取日线数据（默认300条）
-daxiapi kline 600519
+# 方式一：通过CLI配置（推荐）
+npx daxiapi-cli@latest config set token YOUR_TOKEN_FROM_DAXIAPI
 
-# 获取最近500条日线
-daxiapi kline 600519 -l 500
-
-# 获取周线数据
-daxiapi kline 600519 -t week
-
-# 获取月线数据
-daxiapi kline 600519 -t month
-
-# 输出JSON格式
-daxiapi kline 600519 -j
-
-# 简单输出格式
-daxiapi kline 600519 -s
+# 方式二：设置环境变量
+export DAXIAPI_TOKEN=YOUR_TOKEN_FROM_DAXIAPI
 ```
 
-### 方式二：HTTP 请求
-
-直接调用 API 接口：
-
-```javascript
-// JavaScript Fetch
-const response = await fetch('https://daxiapi.com/coze/get_index_k', {
-    method: 'GET',
-    headers: { 'X-API-Token': 'your_api_token' }
-});
-const data = await response.json();
-```
+**步骤 3.4：验证配置**
 
 ```bash
-# cURL
-curl -H "X-API-Token: your_api_token" https://daxiapi.com/coze/get_market_data
+npx daxiapi-cli@latest market
 ```
 
-## Token 保存与使用指南
+如返回正常市场数据，则配置成功。
 
-**重要：** 调用API前，必须先确认用户是否已提供有效的 API Token。
+## Quality Checks（质量检查）
 
-### Token 获取方式
-用户需要在 daxiapi.com 用户中心页面申请 API Token（仅限VIP用户）。
+### 路由准确性检查
 
-### AI 使用 Token 的推荐方式
+| 检查项 | 说明 | 标准 |
+|-------|------|------|
+| ✅ 关键词匹配 | 是否正确识别用户意图关键词 | 至少匹配1个关键词 |
+| ✅ Skill调用 | 是否调用了正确的skill | skill名称与需求一致 |
+| ✅ 降级处理 | 无匹配时是否提供有效方案 | 提供CLI命令或引导 |
 
-#### 方式一：环境变量（推荐）
-将 token 存储在环境变量中，代码中通过 `process.env` 读取：
+### 服务质量检查
 
-```javascript
-// .env 文件
-DAXIAPI_TOKEN=your_32_char_token_here
+| 检查项 | 说明 | 标准 |
+|-------|------|------|
+| ✅ Token状态 | 是否检查Token配置 | 首次使用时检查 |
+| ✅ 错误处理 | 认证失败是否有明确提示 | 提供配置指引 |
+| ✅ 用户引导 | 是否提供清晰的使用说明 | 说明数据范围和限制 |
 
-// 代码中使用
-const token = process.env.DAXIAPI_TOKEN;
-fetch('/coze/get_index_k', {
-    headers: { 'X-API-Token': token }
-});
-```
+## Common Pitfalls（常见陷阱）
 
-#### 方式二：配置文件
-创建独立的配置文件（需加入 .gitignore）：
+| 陷阱 | 说明 | 避免方法 |
+|-----|------|----------|
+| 误判意图 | 将单一指标需求误判为综合分析 | 优先匹配具体skill，再考虑综合skill |
+| 财务分析漏路由 | 用户已明确要求财报/ROE/杜邦分析，却只返回 `report finance` 命令 | 命中财务关键词时优先调用 `xiapi-financial-roe-analysis` |
+| 重复路由 | 在路由skill和具体skill之间循环调用 | 明确区分路由层和执行层职责 |
+| 忽略Token | 未检查Token配置直接调用API | 首次使用时强制检查Token状态 |
 
-```javascript
-// config/api.js
-module.exports = {
-    daxiapi: {
-        token: 'your_32_char_token_here',
-        baseUrl: 'https://daxiapi.com'
-    }
-};
-```
+## Key Principles（重要原则）
 
-#### 方式三：临时使用（仅限对话上下文）
-若用户在对话中直接提供 token，AI 可临时用于测试，但需提醒用户：
-- 不要在公开代码仓库中提交 token
-- Token 泄露后应立即重新申请
+1. **精确匹配优先**：优先匹配具体的专业skill，避免泛泛调用
+2. **分析意图优先于取数意图**：比如用户一旦表达“财务分析/ROE/杜邦/盈利质量”诉求，应优先路由到 `xiapi-financial-roe-analysis`，而不是只停留在命令层
+3. **避免重复分析**：不要同时调用多个有重叠功能的skill
+4. **降级有方案**：无匹配skill时，提供有效的CLI命令
+5. **Token透明**：首次使用时主动检查Token配置状态
 
-### AI 调用流程
+## Error Handling（错误处理）
 
-1. **首次使用**：询问用户是否有 API Token
-   - 有 → 使用用户提供的 token
-   - 无 → 提示用户去 daxiapi.com 申请
+### 路由错误
 
-2. **存储 token**：根据项目类型选择存储方式
-   - Node.js 项目 → 使用 `.env` 文件
-   - Python 项目 → 使用 `.env` 或 `config.py`
-   - 临时测试 → 在对话上下文中使用
+**错误1：无匹配skill**
 
-3. **调用 API**：在请求头中携带 `X-API-Token`
+- 场景：用户需求无法匹配到任何skill
+- 处理：提供相关CLI命令，说明数据范围
 
-### 安全提醒
+**错误2：多skill匹配**
 
-- 永远不要在前端 JavaScript 代码中硬编码 token
-- `.env` 文件必须加入 `.gitignore`
-- Token 泄露后应立即在用户中心重新申请
+- 场景：用户需求同时匹配多个skill
+- 处理：选择最具体的skill，或询问用户具体需求
 
-## 市场分析框架
+### 认证错误
 
-详细分析方法请参阅以下文档：
+**错误3：Token缺失或失效**
 
-### 综合分析
-详细分析方法请参阅 `references/market-analysis.md`，包括：
-- CS指标阈值判断与市场宽度分析四维度
-- 大小盘风格轮动分析方法
-- 估值温度、恐贪指数、趋势温度、动量温度解读
-- 个股技术面分析（动量/成交量/形态/步骤）
-- 个股基本面分析（估值/财务/市值）
-- 综合评估报告输出规范
-
-### 市场风格分析
-大小盘风格轮动的详细分析方法请参阅 `references/market-style-analysis.md`，包括：
-- 大小盘波动差值指标详解
-- 均值回归信号判断
-- 运动方向分析方法
-- 机构vs游资活跃度判断
-- 完整分析框架与实战案例
-
-### 市场温度分析
-市场温度指标的详细解读方法请参阅 `references/market-temp-analysis.md`，包括：
-- 估值温度、恐贪指数、趋势温度、动量温度四大指标详解
-- 各指标的阈值判断与投资建议
-- 完整分析流程与输出规范
-- 实战案例与注意事项
-
-### 行业热力图分析
-行业板块热力图的详细解读方法请参阅 `references/sector-heatmap-analysis.md`，包括：
-- 四维度分析方法（延续扩散、领涨、上升、反转）
-- 完整输出规范与报告格式
-- CS动量指标判断规则
-- 重要要求与语言规范
-- 实战案例与注意事项
-
-## 可用API列表
-
-详细API参数说明请参阅 `references/api-reference.md`。
-
-### 市场数据类
-| API路径 | 方法 | 功能描述 |
-|---------|------|----------|
-| `/coze/get_index_k` | GET | 获取上证指数K线数据 |
-| `/coze/get_market_data` | GET | 获取市场整体数据（指数、涨跌分布、宽度） |
-| `/coze/get_market_degree` | GET | 获取市场温度（冷热判断） |
-| `/coze/get_market_style` | GET | 获取大小盘风格数据 |
-| `/api/xingtai/high_60d.json` | GET | 获取带量创60日新高的股票 |
-| `/coze/get_market_temp` | POST | 获取市场温度表格（估值/恐贪/情绪） |
-| `/coze/get_market_value_data` | GET | 获取指数估值数据（PE/PB/温度） |
-| `/coze/get_market_end_news` | GET | 获取收盘新闻 |
-
-### 板块/概念类
-| API路径 | 方法 | 功能描述 |
-|---------|------|----------|
-| `/coze/get_sector_data` | POST | 获取行业板块热力图 |
-| `/coze/get_sector_rank_stock` | POST | 获取行业内个股排名 |
-| `/coze/get_gn_table` | POST | 获取概念板块数据 |
-| `/coze/get_gainian_stock` | POST | 获取概念内个股数据 |
-
-### 个股查询类
-| API路径 | 方法 | 功能描述 |
-|---------|------|----------|
-| `/coze/get_stock_data` | POST | 获取个股详细信息（动量、形态、估值） |
-| `/coze/query_stock_data` | POST | 根据关键字查询股票/行业代码 |
-
-### 第三方API
-除了大虾皮官方API外,还可以使用以下第三方API获取补充数据,详细接口说明请参阅 `references/api-reference.md` 的"第三方API接口"章节。
-
-#### 东方财富API
-| 接口 | 功能描述 |
-|------|----------|
-| 指数行情数据 | 获取多个指数的实时行情,包括涨跌家数 |
-| K线数据 | 获取股票、指数、ETF的K线历史数据 |
-| 涨停股票池 | 获取当日涨停股票列表,包括连板数、封单金额 |
-| 跌停股票池 | 获取当日跌停股票列表 |
-| 炸板股票池 | 获取当日炸板股票列表 |
-| 股指期货数据 | 获取IH、IC、IF、IM等期货合约数据 |
-
-**涨跌停数据获取：**
-
-涨跌停数据使用东方财富API获取，详细接口说明请参阅 `references/api-reference.md` 的"第三方API接口 - 东方财富API"章节。
-
-- **涨停股票池**：获取当日涨停股票列表，包括连板数、封单金额、涨停原因等
-- **跌停股票池**：获取当日跌停股票列表
-- **炸板股票池**：获取当日炸板（涨停后打开）股票列表
-
-这些接口免费使用，无需VIP Token，数据实时更新。
-
-#### 集思录API
-| 接口 | 功能描述 |
-|------|----------|
-| 可转债指数报价 | 获取可转债市场整体数据,包括等权指数、平均溢价率、市场温度 |
-
-#### 同花顺API
-| 接口 | 功能描述 |
-|------|----------|
-| 市场成交额数据 | 获取市场成交额历史数据,支持日线和分钟线 |
-
-**第三方API特点:**
-- 免费使用,无需VIP Token
-- 数据更新频率高(实时或准实时)
-- **可作为大虾皮API的补充数据源，必要的时候优先获取三方API的数据**
-- 注意请求频率限制和数据缓存
-
-### K线数据类
-| API路径 | 方法 | 功能描述 |
-|---------|------|----------|
-| `/coze/get_index_k` | GET | 获取上证指数K线数据（需要VIP Token） |
-| 腾讯财经API | GET | 免费获取个股K线数据，支持前复权 |
-| 东方财富API | GET | 免费获取个股K线数据（备选数据源） |
-
-**K线数据获取方式：**
-
-1. **CLI方式（推荐）**：使用 `daxiapi kline <code>` 命令，自动选择最优数据源
-2. **腾讯财经API**：直接调用腾讯接口，数据更稳定
-3. **东方财富API**：备选数据源，当腾讯接口失败时自动切换
-
-**数据源详解：**
-
-首选：腾讯财经API
 ```bash
-# 单只股票实时行情
-curl -sL 'https://qt.gtimg.cn/q=sh600547' | iconv -f gbk -t utf-8
+# 错误表现
+401 Unauthorized
+Authentication failed
 
-# K线数据（前复权）
-# 格式：https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=&param={市场代码}{股票代码},{类型},,,{条数},qfq
-# 市场代码：sh(上海)、sz(深圳)
-# 类型：day(日线)、week(周线)、month(月线)
-curl 'https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=&param=sh600519,day,,,300,qfq&r=0.123'
+# 处理方式
+npx daxiapi-cli@latest config get token  # 检查配置
+npx daxiapi-cli@latest config set token YOUR_TOKEN  # 重新配置
 ```
 
-备选：东方财富API
+**错误4：请求频率超限**
+
 ```bash
-# K线数据
-# secid: 1.{代码}(上海)、0.{代码}(深圳)
-# klt: 101(日线)、102(周线)、103(月线)
-curl 'https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.600519&klt=101&fqt=1&lmt=300'
+# 错误表现
+429 Too Many Requests
+
+# 处理方式
+等待30-60秒后重试
 ```
 
-**返回字段说明：**
-- `date`: 交易日期
-- `open`: 开盘价
-- `close`: 收盘价
-- `high`: 最高价
-- `low`: 最低价
-- `volume`: 成交量（手）
-- `amount`: 成交额（万元）
+## References
 
-## 响应格式
+详细文档请参考：
 
-所有API返回统一格式：
+- [API参考](references/api-reference.md) - 详细API参数说明
+- [字段说明](references/field-descriptions.md) - 专用名词和字段详细说明
 
-```json
-{
-    "errCode": 0,
-    "errMsg": "OK",
-    "data": { ... }
-}
-```
-
-**错误码说明：**
-- `0` - 成功
-- `401` - 认证失败（Token无效或非VIP）
-- `404` - API不存在
-- `429` - 请求频率超限
-- `500` - 服务器错误
-
-## 注意事项
-
-1. **Token安全**：API Token应在服务端使用，避免在前端代码中暴露
-2. **限流策略**：高频请求会触发限流，建议合理控制请求频率
-3. **数据延迟**：部分数据可能存在延迟，不构成投资建议
-4. **接口限制**：每天1000次，每分钟10次

@@ -1,27 +1,557 @@
-# Coze API 详细参考文档
+# 大虾皮 API 详细参考文档
 
 **Base URL:** `https://daxiapi.com/coze`
+
+**认证方式:** `Authorization: Bearer YOUR_TOKEN`
+
+> 说明：本文档已按当前对外能力重新校对。各接口示例以主要返回内容为主，实际返回结果请以线上接口为准。
 
 ---
 
 ## GET 接口
 
-### get_index_k
-获取上证指数的K线数据（最近30天）
+### get_index_data
+
+获取市场主流指数数据。
 
 **请求方式:** `GET`
 
 **请求示例:**
+
 ```javascript
-fetch('/coze/get_index_k', {
-    headers: { 'X-API-Token': 'your_token' }
-})
+fetch('/coze/get_index_data', {
+    headers: {Authorization: 'Bearer YOUR_TOKEN'}
+});
+```
+
+**响应格式:**
+
+```json
+{
+    "date": "04-05",
+    "index": [
+        {
+            "fullDate": "2025-04-05",
+            "date": "04-05",
+            "name": "沪深300",
+            "cs": 3.5,
+            "zdf": 1.2,
+            "zdf5": 2.3,
+            "zdf10": 4.5,
+            "zdf20": 6.7,
+            "zdf30": 8.9
+        }
+    ]
+}
 ```
 
 **响应字段:**
 | 字段 | 说明 |
 |------|------|
-| name | 指数名称 |
+| date | 当前数据日期（`MM-DD`） |
+| index[] | 主流指数列表 |
+| index[].fullDate | 完整日期（`YYYY-MM-DD`） |
+| index[].date | 简写日期（`MM-DD`） |
+| index[].name | 指数名称 |
+| index[].cs | 短期动量 CS 值 |
+| index[].zdf | 当日涨跌幅(%) |
+| index[].zdf5/zdf10/zdf20/zdf30 | 5/10/20/30 日涨跌幅 |
+
+**使用说明:**
+
+- CS 值用于判断短期动量强度，正值表示多头，负值表示空头。
+- 涨跌幅字段可用于横向比较指数强弱与市场风格切换。
+
+**CLI 对应命令:** `daxiapi market index`
+
+**监控的指数列表:**
+
+- 159628 创业板
+- 159949 创业板50
+- 510050 上证50
+- 510300 沪深300
+- 510500 中证500
+- 512100 中证1000
+- 515080 新能车
+- 159920 恒生
+- 588000 科创50
+- 588800 科创板50
+- 513180 恒生科技
+
+---
+
+### get_market_temp
+
+获取市场温度数据。
+
+**请求方式:** `GET`
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_market_temp', {
+    headers: {Authorization: 'Bearer YOUR_TOKEN'}
+});
+```
+
+**响应格式:**
+
+返回字符串，通常为 Toon 表格或多行文本，包含最近一段时间的市场温度数据。
+
+**常见内容维度:**
+| 指标 | 说明 | 使用方法 |
+|------|------|----------|
+| 估值温度 | 基于估值分位的温度指标 | `<20` 偏低估，`>70` 偏高估 |
+| 恐贪指数 | 市场情绪强弱 | `0-10` 极度恐惧，`90-100` 极度贪婪 |
+| 趋势温度 | 站上关键均线的股票比例 | `<20` 低迷，`>80` 过热 |
+| 动量温度 | 市场整体动量 | 正值偏强，负值偏弱 |
+
+**CLI 对应命令:** `daxiapi market temp`
+
+---
+
+### get_market_style
+
+获取大小盘风格数据。
+
+**请求方式:** `GET`
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_market_style', {
+    headers: {Authorization: 'Bearer YOUR_TOKEN'}
+});
+```
+
+**响应格式:**
+
+返回 Toon 格式表格字符串，包含日期和大小盘波动差值。
+
+**使用说明:**
+
+- 差值 `> 0`：小盘股表现优于大盘股。
+- 差值 `< 0`：大盘股表现优于小盘股。
+- 差值持续扩大：风格趋势延续。
+- 差值由正转负或由负转正：常作为风格切换信号。
+
+**CLI 对应命令:** `daxiapi market style`
+
+---
+
+### get_market_value_data
+
+获取指数估值数据。
+
+**请求方式:** `GET`
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_market_value_data', {
+    headers: {Authorization: 'Bearer YOUR_TOKEN'}
+});
+```
+
+**响应格式:**
+
+```json
+{
+    "date": "2025-04-05",
+    "items": [
+        {
+            "code": "000300",
+            "name": "沪深300",
+            "PE": 12.5,
+            "PB": 1.4,
+            "PEPercentile": 35.2,
+            "PBPercentile": 28.6,
+            "wendu": 31.9,
+            "date": "2025-04-05"
+        }
+    ]
+}
+```
+
+**响应字段:**
+| 字段 | 说明 |
+|------|------|
+| date | 当前数据日期 |
+| items[] | 估值数据列表 |
+| items[].code | 指数代码 |
+| items[].name | 指数名称 |
+| items[].PE | 市盈率 |
+| items[].PB | 市净率 |
+| items[].PEPercentile | PE 历史分位值(%) |
+| items[].PBPercentile | PB 历史分位值(%) |
+| items[].wendu | 综合温度值 |
+| items[].date | 该条记录对应日期 |
+
+**温度使用方法:**
+
+- `20` 以下：低估区域，可开始定投。
+- `10` 以下：明显低估，可加量定投。
+- `5` 以下：极度低估，可提升定投额度。
+- `60` 以上：高估区域，关注止盈。
+- `80` 以上：明显高估，考虑分批止盈。
+
+**CLI 对应命令:** `daxiapi market value`
+
+---
+
+### get_bk_data
+
+获取行业板块数据。
+
+**请求方式:** `GET`
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_bk_data', {
+    headers: {Authorization: 'Bearer YOUR_TOKEN'}
+});
+```
+
+**响应格式:**
+
+返回字符串，通常为 Toon 表格或多行文本，常见字段包括：
+
+- 行业名称
+- 今日涨幅
+- 5 日涨幅
+- 20 日涨幅
+- CS 强度
+- CS 均线
+- QD 指标
+
+**使用说明:**
+
+- 数据通常按今日涨幅降序排列，便于快速识别强势行业。
+- CS 强度用于判断行业短期动量。
+- QD 指标用于判断行业综合强度。
+
+**CLI 对应命令:** `daxiapi sector bk`
+
+---
+
+## POST 接口
+
+### get_stock_data
+
+获取 A 股个股详细信息。
+
+**请求方式:** `POST`
+
+**请求参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| code | string / string[] | 是 | 股票代码，支持单个代码或多个代码。 |
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_stock_data', {
+    method: 'POST',
+    headers: {
+        Authorization: 'Bearer YOUR_TOKEN',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({code: ['000001', '600031']})
+});
+```
+
+**响应格式:**
+
+返回数组，包含个股详细信息。CLI 描述中建议单次最多查询 20 只股票。
+
+**常见字段:**
+| 字段 | 说明 | 使用方法 |
+|------|------|----------|
+| stockId | 股票代码 | - |
+| name | 股票名称 | - |
+| zdf | 当日涨跌幅(%) | - |
+| cs | 短期动量 | 可用于观察短线强弱 |
+| sm | 中期动量 | `>0` 常表示中期偏强 |
+| rps_score | RPS 相对强度 | 高值通常代表相对强势 |
+| sctr | 技术排名百分比 | 值越高通常越强势 |
+| isVCP | 是否为 VCP 形态 | `1` 表示是 |
+| isCrossoverBox | 是否突破箱体 | `1` 表示是 |
+| vcs | 成交量动量 | `>0` 常表示放量 |
+| pe_ttm | 市盈率 TTM | - |
+| hy_name / hy | 所属行业 | - |
+| gainian | 所属概念 | - |
+
+**CLI 对应命令:** `daxiapi stock info <codes...>`
+
+---
+
+### get_sector_data
+
+获取行业板块热力图。
+
+**请求方式:** `POST`
+
+**请求参数:**
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| orderBy | string | 否 | `cs` | 排序指标，如 `cs`、`zdf` 等 |
+| lmt | integer | 否 | `5` | 返回窗口大小 |
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_sector_data', {
+    method: 'POST',
+    headers: {
+        Authorization: 'Bearer YOUR_TOKEN',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({orderBy: 'zdf', lmt: 5})
+});
+```
+
+**响应格式:**
+
+```json
+{
+    "crossover": "今日板块内突破箱体股票较多的板块为：xxx,xxx",
+    "csHeatmap": "...",
+    "zdfHeatmap": "...",
+    "zdf5Heatmap": "...",
+    "total": 100,
+    "cs_gt_ma20_names": ["板块1", "板块2"],
+    "cs_gt_5_names": ["板块1", "板块2"]
+}
+```
+
+**响应字段:**
+| 字段 | 说明 |
+|------|------|
+| crossover | 板块内箱体突破情况摘要 |
+| csHeatmap | CS 动量热力图字符串 |
+| zdfHeatmap | 当日涨跌幅热力图字符串 |
+| zdf5Heatmap | 5 日涨跌幅热力图字符串 |
+| total | 板块总数 |
+| cs_gt_ma20_names | CS 高于 MA20 的板块名称列表 |
+| cs_gt_5_names | CS 高于 5 的板块名称列表 |
+
+**CLI 对应命令:** `daxiapi sector heatmap --order <field> --limit <num>`
+
+---
+
+### get_sector_rank_stock
+
+获取指定板块内的股票排名。
+
+**请求方式:** `POST`
+
+**请求参数:**
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| sectorCode | string | 是 | - | 板块代码，如 `BK0428`、`0428`、`881155` |
+| orderBy | string | 否 | `cs` | 排序字段，CLI 常用 `cs`、`zdf`、`sm`、`cg`、`cr`、`sctr` |
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_sector_rank_stock', {
+    method: 'POST',
+    headers: {
+        Authorization: 'Bearer YOUR_TOKEN',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({sectorCode: 'BK0428', orderBy: 'cs'})
+});
+```
+
+**响应格式:**
+
+返回数组，包含板块内股票的详细数据。
+
+**常见字段:**
+
+- 股票代码、名称
+- 涨跌幅与多周期涨跌幅
+- CS、SM、SCTR 等强度指标
+- 成交额、换手率等排序字段
+- 所属行业、概念等补充信息
+
+**CLI 对应命令:** `daxiapi sector stocks --code <bkCode> --order <field>`
+
+---
+
+### get_gn_hot
+
+获取热门概念板块列表。
+
+**请求方式:** `POST`
+
+**请求参数:**
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| type | string | 否 | `ths` | 数据源类型：`ths`（同花顺）或 `dfcf`（东方财富） |
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_gn_hot', {
+    method: 'POST',
+    headers: {
+        Authorization: 'Bearer YOUR_TOKEN',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({type: 'ths'})
+});
+```
+
+**响应格式:**
+
+返回字符串，通常为 Toon 表格或多行文本，常见内容包括：
+
+- 概念名称
+- 今日涨幅
+- 涨幅 7% 以上股票个数
+- 5/10/20 日涨幅
+- QD（强度）与 CS（动量）
+
+**CLI 对应命令:** `daxiapi sector gn --type <ths|dfcf>`
+
+---
+
+### get_top_stocks
+
+获取热门股票数据。
+
+**请求方式:** `POST`
+
+**请求参数:** 无
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_top_stocks', {
+    method: 'POST',
+    headers: {
+        Authorization: 'Bearer YOUR_TOKEN',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({})
+});
+```
+
+**响应格式:**
+
+返回字符串，通常为 Toon 表格或多行文本，常见内容包括：
+
+- 股票名称、代码
+- 所属板块
+- 当日涨跌幅
+- 5/10/20 日涨跌幅
+- 相关概念
+
+**CLI 对应命令:** `daxiapi sector top`
+
+---
+
+### get_gainian_stock
+
+根据概念板块获取股票列表。
+
+**请求方式:** `POST`
+
+**请求参数:**
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| gnId | string | 是 | - | 概念板块代码，如 `881155`、`BK0428` |
+| type | string | 否 | `ths` | 数据源类型：`ths` 或 `dfcf` |
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_gainian_stock', {
+    method: 'POST',
+    headers: {
+        Authorization: 'Bearer YOUR_TOKEN',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({gnId: '881155', type: 'ths'})
+});
+```
+
+**响应格式:**
+
+返回数组，包含该概念板块下股票的详细数据。
+
+**常见字段:**
+
+- 股票代码、名称
+- 涨跌幅
+- CS、SCTR、RPS 等强度指标
+- 所属行业、概念
+
+**CLI 对应命令:** `daxiapi stock gn <gnId> --type <ths|dfcf>`
+
+---
+
+### get_kline
+
+获取股票、指数或板块的 K 线数据。
+
+**请求方式:** `POST`
+
+**请求参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| code | string | 是 | 代码 |
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_kline', {
+    method: 'POST',
+    headers: {
+        Authorization: 'Bearer YOUR_TOKEN',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({code: '000001'})
+});
+```
+
+**支持的代码格式:**
+
+- `000001`：6 位股票/指数代码
+- `sh000001` / `sz000001`：带交易所前缀代码
+- `BK0428`：板块代码，BK开头是东方财富板块代码，8开头的是同花顺
+- `1.000300`：标准 secid
+
+**响应格式:**
+
+```json
+{
+    "code": "000001",
+    "name": "上证指数",
+    "date": "2025-04-05",
+    "klines": [
+        {
+            "date": "2025-01-01",
+            "open": 3100.5,
+            "close": 3150.2,
+            "high": 3180.0,
+            "low": 3090.0,
+            "vol": 12345678
+        }
+    ]
+}
+```
+
+**响应字段:**
+| 字段 | 说明 |
+|------|------|
+| code | 代码 |
+| name | 名称 |
+| date | 最新日期 |
+| klines[] | K 线数据数组 |
 | klines[].date | 日期 |
 | klines[].open | 开盘价 |
 | klines[].close | 收盘价 |
@@ -29,364 +559,326 @@ fetch('/coze/get_index_k', {
 | klines[].low | 最低价 |
 | klines[].vol | 成交量 |
 
----
-
-### get_market_data
-获取A股市场主流指数信息，包括名称、涨跌幅、市场宽度等
-
-**请求方式:** `GET`
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| above_ma200_ratio | 全市场股票在200日均线之上的占比 |
-| index[] | 主流指数列表 |
-| index[].name | 指数名称 |
-| index[].cs | 短期动量CS |
-| index[].zdf | 当日涨跌幅(%) |
-| index[].zdf5/zdf10/zdf20/zdf30 | 5/10/20/30日涨跌幅 |
-| zdfRange | 涨跌幅区间分布 |
+**CLI 对应命令:** `daxiapi kline <code>`
 
 ---
 
-### get_market_degree
-获取A股市场温度，判断市场冷热程度
+### get_zdt_pool
 
-**请求方式:** `GET`
-
-**用途:** 市场冷清时考虑抄底，过热时考虑卖出
-
-**响应内容:** 包含市场温度、估值指标、抄底信号等综合分析文本
-
----
-
-### get_market_style
-获取大小盘风格数据
-
-**请求方式:** `GET`
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| 日期 | 交易日期 |
-| 大小盘波动差值 | 正值大盘强,负值小盘强 |
-
----
-
-### get_60d_high_stocks
-获取带量创60日新高的股票
-
-**请求方式:** `GET`
-
-**请求路径:** `/api/xingtai/high_60d.json`
-
-**用途:** 筛选出近期突破60日高点且伴随成交量放大的强势股票,捕捉趋势突破机会
-
-**请求示例:**
-```javascript
-fetch('https://daxiapi.com/api/xingtai/high_60d.json', {
-    headers: { 'X-API-Token': 'your_token' }
-})
-```
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| data[] | 股票列表 |
-| data[].code/stockId | 股票代码 |
-| data[].name | 股票名称 |
-| data[].close/price | 收盘价 |
-| data[].high/low | 最高/最低价 |
-| data[].vol/vol1 | 当日/昨日成交量 |
-| data[].vcs | 成交量动量(>0为放量) |
-| data[].vma5 | 5日均量 |
-| data[].cs | 短期动量CS |
-| data[].sm | 中期动量SM |
-| data[].ml | 长期动量ML |
-| data[].rps_score | RPS相对强度 |
-| data[].sctr | 技术排名百分比 |
-| data[].zdf | 当日涨跌幅 |
-| data[].zdf_5d/zdf_10d/zdf_20d/zdf_30d | 5/10/20/30日涨跌幅 |
-| data[].ma20/ma50/ma150/ma200 | 各期均线 |
-| data[].ema20 | 20日EMA |
-| data[].isVCP | 是否VCP形态(1=是) |
-| data[].isSOS | 是否SOS强势走势(1=是) |
-| data[].isLPS | 是否LPS支撑点(1=是) |
-| data[].isSpring | 是否弹簧形态(1=是) |
-| data[].isCrossoverBox | 是否突破箱体(1=是) |
-| data[].isIB | 是否Inside Bar(1=是) |
-| data[].isNR4/isNR7 | 是否振幅收窄4/7天(1=是) |
-| data[].isHigh1 | 是否价格行为学高1概念(1=是) |
-| data[].isW | 是否W底形态(1=是) |
-| data[].tags[] | 标签(Good/LPS/↑TR/H2/Sp) |
-| data[].high_52w/low_52w | 52周高低点 |
-| data[].pe_ttm | 市盈率TTM |
-| data[].shizhi_lt | 流通市值 |
-| data[].bkId/bkName | 所属板块代码/名称 |
-| data[].rsi | RSI指标 |
-| data[].alli_g/alli_r/alli_b | 鳄鱼线绿/红/蓝线 |
-| data[].cg/cr/cb | Close与鳄鱼线距离 |
-| data[].gr/rb | 鳄鱼线各线距离 |
-| dates[] | 日期列表 |
-| groups[] | 分组信息 |
-
-**投资价值:**
-- 创60日新高代表股票突破近期阻力位,展现强势特征
-- 带量突破更加可靠,成交量放大确认资金流入
-- 可结合动量指标(CS/SM/ML)和技术形态(VCP/SOS/LPS)筛选优质标的
-
----
-
-### get_market_end_news
-获取收盘新闻信息
-
-**请求方式:** `GET`
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| title | 新闻标题 |
-| summary | 新闻摘要 |
-| content | 新闻内容 |
-| showTime | 发布时间 |
-| uniqueUrl | 新闻链接 |
-
----
-
-### get_market_value_data
-获取市场主流指数估值数据（PE/PB/温度）
-
-**请求方式:** `GET`
-
-**用途:** 评估指数估值水平，指导定投和止盈
-
-**投资建议:**
-- 买入：20°C以下慢慢定投，10°C以下加量，5°C以下提升额度
-- 卖出：60°C以上关注止盈，80°C以上分批止盈
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| name | 指数名称 |
-| PE | 市盈率 |
-| PEPercentile | PE历史分位值 |
-| PB | 市净率 |
-| PBPercentile | PB历史分位值 |
-| wendu | 综合温度（最重要指标） |
-
----
-
-
-### get_gn_table
-获取概念板块数据（资金流入、涨跌幅、涨幅7%股票个数）
-
-**请求方式:** `POST`
-
----
-
-### get_jsl_topics
-获取集思录热门话题
-
-**请求方式:** `GET`
-
----
-
-## POST 接口
-
-### get_stock_data
-获取A股个股详细信息
-
-**请求方式:** `POST`
-
-**请求参数:**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| code | string | 是 | 股票代码，多个用逗号分隔，最多20个 |
-
-**请求示例:**
-```javascript
-fetch('/coze/get_stock_data', {
-    method: 'POST',
-    headers: {
-        'X-API-Token': 'your_token',
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ code: '000001,600031' })
-})
-```
-
-**响应字段（重要）:**
-| 字段 | 说明 |
-|------|------|
-| code/stockId | 股票代码 |
-| name | 股票名称 |
-| close/price | 收盘价 |
-| zdf | 当日涨跌幅(%) |
-| zdf_5d/zdf_10d/zdf_20d/zdf_30d | 5/10/20/30日涨跌幅 |
-| cs | 短期动量（Close与EMA20乖离率） |
-| sm | 中期动量（EMA20与EMA60乖离率） |
-| ml | 长期动量（EMA60与EMA120乖离率） |
-| rps_score | RPS相对强度（>80为强势股） |
-| sctr | 技术排名百分比 |
-| ma20/ma50/ma150/ma200 | 各期均线 |
-| ema20 | 20日EMA |
-| isVCP | 是否VCP形态（1=是） |
-| isSOS | 是否SOS强势走势（1=是） |
-| isLPS | 是否LPS支撑点（1=是） |
-| isSpring | 是否弹簧形态（1=是） |
-| isCrossoverBox | 是否突破箱体（1=是） |
-| isIB | 是否Inside Bar（1=是） |
-| isNR4/isNR7 | 是否振幅收窄4/7天（1=是） |
-| tags[] | 标签（Good/LPS/↑TR/H2/Sp） |
-| vol/vol1 | 当日/昨日成交量 |
-| vcs | 成交量动量（>0为放量） |
-| vma5 | 5日均量 |
-| high_52w/low_52w | 52周高低点 |
-| pe_ttm | 市盈率TTM |
-| shizhi_lt | 流通市值 |
-| bkId/bkName | 所属板块代码/名称 |
-| gainian | 所属概念 |
-
----
-
-### get_sector_data
-获取行业板块热力图
+获取涨停、跌停或炸板股票池。
 
 **请求方式:** `POST`
 
 **请求参数:**
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| orderBy | string | 否 | cs | 排序指标：cs/zdf/zdf5/zdf10/zdf20/cs_avg/stock_cs_avg |
-| lmt | integer | 否 | 5 | 返回天数 |
+| type | string | 否 | `zt` | 类型：`zt`（涨停）、`dt`（跌停）、`zb`（炸板） |
 
 **请求示例:**
+
 ```javascript
-fetch('/coze/get_sector_data', {
+fetch('/coze/get_zdt_pool', {
     method: 'POST',
     headers: {
-        'X-API-Token': 'your_token',
+        Authorization: 'Bearer YOUR_TOKEN',
         'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ orderBy: 'zdf', lmt: 5 })
-})
+    body: JSON.stringify({type: 'zt'})
+});
 ```
 
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| csHeatmap | CS动量热力图（Markdown表格） |
-| zdfHeatmap | 当日涨跌幅热力图 |
-| crossover | 箱体突破板块信息 |
-| topStocksTable | 龙头股表格 |
-| cs_gt_ma20_names | CS>CS_MA20的板块名称 |
-| cs_gt_5_names | CS>5的板块名称 |
+**响应格式:**
+
+返回字符串，通常为 Toon 表格或多行文本，常见内容包括：
+
+- 股票代码、名称
+- 连板/开板等统计信息
+- 所属行业、概念
+- CS 强度、SCTR 排名
+
+**CLI 对应命令:** `daxiapi zdt --type <zt|dt|zb>`
 
 ---
 
-### get_sector_rank_stock
-获取特定行业的股票排名
+### get_sec_id
 
-**请求方式:** `POST`
-
-**请求参数:**
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| sectorCode | string | 是 | - | 行业代码（以BK开头） |
-| orderBy | string | 否 | cs | 排序指标 |
-
-**orderBy 可选值:**
-- `cs` - 短期动量
-- `sm` - 中期动量
-- `zdf/zdf_5d/zdf_10d/zdf_20d/zdf_30d` - 涨跌幅
-- `sctr` - 技术排名
-- `cg/cr/cb` - 鳄鱼线乖离率
-
-**请求示例:**
-```javascript
-fetch('/coze/get_sector_rank_stock', {
-    method: 'POST',
-    headers: {
-        'X-API-Token': 'your_token',
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ sectorCode: 'BK0477', orderBy: 'cs' })
-})
-```
-
----
-
-### get_gainian_stock
-根据概念获取股票信息
+代码转换（获取标准 secid）。
 
 **请求方式:** `POST`
 
 **请求参数:**
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| gnId | string | 是 | 概念代码 |
+| code | string | 是 | 股票、指数或板块代码 |
 
 **请求示例:**
+
 ```javascript
-fetch('/coze/get_gainian_stock', {
+fetch('/coze/get_sec_id', {
     method: 'POST',
     headers: {
-        'X-API-Token': 'your_token',
+        Authorization: 'Bearer YOUR_TOKEN',
         'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ gnId: 'GN1234' })
-})
+    body: JSON.stringify({code: '000001'})
+});
 ```
+
+**常见转换结果:**
+
+- `000001` → `0.000001`（深市）
+- `600000` → `1.600000`（沪市）
+- `BK0428` → `90.BK0428`（板块）
+
+**响应格式:**
+
+返回标准 secid 格式字符串，如 `0.000001`。
 
 ---
 
 ### query_stock_data
-根据关键字查询股票/行业代码
+
+搜索股票或板块代码。
 
 **请求方式:** `POST`
 
 **请求参数:**
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| q | string | 是 | - | 关键字/拼音/代码，多个用逗号分隔，最多10个 |
-| type | string | 是 | stock | 类型：stock（个股）/ hy（行业） |
+| q | string | 是 | - | 搜索关键词 |
+| type | string | 否 | `stock` | 搜索类型，CLI 约定使用 `stock` 或 `bk` |
 
 **请求示例:**
-```javascript
-// 查询个股
-fetch('/coze/query_stock_data', {
-    method: 'POST',
-    headers: {
-        'X-API-Token': 'your_token',
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ q: '三一重工', type: 'stock' })
-})
 
-// 查询行业
+```javascript
 fetch('/coze/query_stock_data', {
     method: 'POST',
     headers: {
-        'X-API-Token': 'your_token',
+        Authorization: 'Bearer YOUR_TOKEN',
         'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ q: '机械', type: 'hy' })
-})
+    body: JSON.stringify({q: '平安', type: 'stock'})
+});
+```
+
+**响应格式:**
+
+返回数组，常见字段包括：
+
+- `code`：代码
+- `name`：名称
+- `type`：类型（如 `stock` / `bk`）
+- `pinyin`：拼音缩写
+
+**CLI 对应命令:** `daxiapi search <keyword> --type <stock|bk>`
+
+---
+
+### get_pattern_stocks
+
+根据技术形态筛选股票。
+
+**请求方式:** `POST`
+
+**请求参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| pattern | string | 是 | 技术形态编码 |
+
+**请求示例:**
+
+```javascript
+fetch('/coze/get_pattern_stocks', {
+    method: 'POST',
+    headers: {
+        Authorization: 'Bearer YOUR_TOKEN',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({pattern: 'vcp'})
+});
+```
+
+**CLI 当前支持的 pattern 值:**
+
+- `gxl`
+- `rps`
+- `sctr`
+- `trendUp`
+- `high_60d`
+- `crossMa50`
+- `rpsTop3`
+- `sos_h1`
+- `csTop3`
+- `sctrTop3`
+- `newHigh`
+- `fangliang`
+- `shizhiTop3`
+- `zdf5dTop3`
+- `zdf1dTop3`
+- `zdf10dTop3`
+- `zdf20dTop3`
+- `ibs`
+- `vcp`
+- `joc`
+- `sos`
+- `spring`
+- `w`
+- `fangliangtupo`
+- `crossoverBox`
+- `lps`
+- `cs_crossover_20`
+
+**响应格式:**
+
+返回数组，包含符合指定技术形态的股票列表。
+
+**常见字段:**
+
+- 股票代码、名称
+- 当日涨跌幅
+- RPS、SCTR、CS 等强度指标
+- 所属板块、概念等补充信息
+
+**CLI 对应命令:** `daxiapi stock pattern <pattern>`
+
+---
+
+## 相关能力
+
+### dividend score
+
+用于获取红利类指数最近 60 个交易日的打分结果，可辅助判断超买超卖状态、趋势强弱和阶段位置。
+
+**CLI 对应命令:** `daxiapi dividend score -c <code>`
+
+**参数说明:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| code | string | 是 | 指数代码，如 `2.H30269`、`2.930955`、`1.000922`、`2.932365` |
+
+**响应格式:**
+
+```json
+{
+    "code": "2.H30269",
+    "name": "红利低波",
+    "scores": [
+        {
+            "date": "2025-04-05",
+            "score": 63.21,
+            "cs": "4.18",
+            "rsi": "58.30"
+        }
+    ]
+}
 ```
 
 **响应字段:**
 | 字段 | 说明 |
 |------|------|
-| code | 股票/行业代码 |
-| name | 名称 |
-| pinyin | 拼音缩写 |
-| type | 类型（stock/hy） |
+| code | 指数代码 |
+| name | 指数名称 |
+| scores[] | 最近 60 个交易日的打分结果 |
+| scores[].date | 日期 |
+| scores[].score | 综合分数 |
+| scores[].cs | CS 值 |
+| scores[].rsi | RSI 值 |
+
+---
+
+### news sentiment
+
+用于获取个股舆情列表，适合做消息面异动跟踪。CLI 传入 `code` 后会自动转换为 `secid`。
+
+**CLI 对应命令:** `daxiapi news sentiment -c <code> -p <pageSize>`
+
+**参数说明:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| code | string | 是 | 股票代码，如 `600031` |
+| pageSize | number | 否 | 每页条数，默认 `20` |
+
+**响应字段（核心）:**
+| 字段 | 说明 |
+|------|------|
+| pageIndex | 页码 |
+| pageSize | 每页条数 |
+| total | 总条数 |
+| list[].title | 新闻标题 |
+| list[].showTime | 发布时间 |
+| list[].artCode | 文章编号 |
+| list[].url | 原文链接 |
+| list[].originUrl | 原始链接 |
+
+---
+
+### news notice
+
+用于获取个股公告列表，适合跟踪法定披露信息。
+
+**CLI 对应命令:** `daxiapi news notice -c <code> -p <pageSize> -i <pageIndex>`
+
+**参数说明:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| code | string | 是 | 股票代码，如 `600031` |
+| pageSize | number | 否 | 每页条数，默认 `20` |
+| pageIndex | number | 否 | 页码，默认 `1` |
+
+**响应字段（核心）:**
+| 字段 | 说明 |
+|------|------|
+| pageIndex | 页码 |
+| pageSize | 每页条数 |
+| total | 总条数 |
+| list[].title | 公告标题 |
+| list[].noticeDate | 公告日期 |
+| list[].displayTime | 展示时间 |
+| list[].artCode | 公告编号 |
+| list[].stockCode | 股票代码 |
+| list[].url | 公告详情链接 |
+| list[].columns[] | 公告分类标签 |
+
+---
+
+### news report
+
+用于获取个股研报列表，支持按时间区间筛选。
+
+**CLI 对应命令:** `daxiapi news report -c <code> -p <pageSize> -i <pageIndex> -b <beginTime> -e <endTime>`
+
+**参数说明:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| code | string | 是 | 股票代码，如 `600031` |
+| pageSize | number | 否 | 每页条数，默认 `25` |
+| pageIndex | number | 否 | 页码，默认 `1` |
+| beginTime | string | 否 | 开始日期，格式 `YYYY-MM-DD` |
+| endTime | string | 否 | 结束日期，格式 `YYYY-MM-DD` |
+
+**响应字段（核心）:**
+| 字段 | 说明 |
+|------|------|
+| pageIndex | 页码 |
+| pageSize | 每页条数 |
+| total | 总条数 |
+| list[].title | 研报标题 |
+| list[].stockCode | 股票代码 |
+| list[].stockName | 股票名称 |
+| list[].publishDate | 研报日期 |
+| list[].orgName | 机构名称 |
+| list[].rating | 评级 |
+| list[].infoCode | 研报编号 |
+| list[].url | 研报详情链接 |
 
 ---
 
 ## 错误处理
 
 ### 统一响应格式
+
+> 下面的统一响应格式适用于大部分接口；个别能力的返回结构可能有所不同，请以实际返回为准。
+
 ```json
 {
     "errCode": 0,
@@ -396,41 +888,63 @@ fetch('/coze/query_stock_data', {
 ```
 
 ### 错误码说明
+
 | 错误码 | 说明 | 处理建议 |
-|--------|------|----------|
+| ------ | ---- | -------- |
 | 0 | 成功 | - |
-| 401 | Token无效或非VIP | 提示用户检查Token或申请VIP |
-| 404 | API不存在 | 检查请求路径和方法 |
-| 429 | 请求频率超限 | 等待后重试，每分钟限10次，每日限1000次 |
-| 500 | 服务器错误 | 联系管理员 |
+| 401 | Token 无效或未配置 | 检查 Token 配置 |
+| 403 | 无访问权限 | 检查账号权限或套餐能力 |
+| 404 | API 不存在 / 资源不存在 | 检查请求路径、方法或代码参数 |
+| 429 | 请求频率超限 | 等待后重试，避免短时间内高频请求 |
+| 500 | 服务器错误 | 稍后重试或联系管理员 |
 
 ---
 
 ## 使用场景示例
 
 ### 场景1：分析市场整体情况
-1. 调用 `get_market_data` 获取市场宽度
-2. 调用 `get_market_degree` 获取市场温度
-3. 调用 `get_market_style` 判断大小盘风格
+
+1. 调用 `get_index_data` 获取主流指数数据。
+2. 调用 `get_market_temp` 获取市场温度。
+3. 调用 `get_market_style` 判断大小盘风格。
 
 ### 场景2：自下向上选股
-1. 调用 `get_sector_data` 找出强势行业
-2. 调用 `get_sector_rank_stock` 获取行业内龙头股
-3. 调用 `get_stock_data` 分析个股详细指标
+
+1. 调用 `get_sector_data` 找出强势行业。
+2. 调用 `get_sector_rank_stock` 获取行业内龙头股。
+3. 调用 `get_stock_data` 分析个股详细指标。
 
 ### 场景3：查询特定股票
-1. 调用 `query_stock_data` 搜索股票代码
-2. 调用 `get_stock_data` 获取详细信息
+
+1. 调用 `query_stock_data` 搜索股票代码。
+2. 调用 `get_stock_data` 获取详细信息。
+3. 调用 `get_kline` 获取 K 线数据。
 
 ### 场景4：定投决策
-1. 调用 `get_market_value_data` 获取指数估值
-2. 根据温度值决定定投金额
+
+1. 调用 `get_market_value_data` 获取指数估值。
+2. 结合温度值决定定投节奏与金额。
+
+### 场景5：涨跌停分析
+
+1. 调用 `get_zdt_pool` 获取涨停/跌停/炸板股票池。
+2. 调用 `get_top_stocks` 获取热门股票。
+
+### 场景6：技术形态选股
+
+1. 调用 `get_pattern_stocks` 获取符合技术形态的股票列表。
+2. 再调用 `get_stock_data` 或 `get_kline` 做二次验证。
+
+### 场景7：红利指数打分
+
+1. 调用 `dividend score` 获取最近 60 个交易日分数。
+2. 结合 `score`、`cs`、`rsi` 观察超买超卖与趋势变化。
 
 ---
 
 ## 第三方API接口
 
-除了大虾皮官方API外,还可以使用以下第三方API获取补充数据。
+除了大虾皮官方API外，还可以使用以下第三方API获取补充数据。
 
 ### 东方财富API
 
@@ -438,16 +952,17 @@ fetch('/coze/query_stock_data', {
 
 **接口地址:** `GET https://push2.eastmoney.com/api/qt/ulist/get`
 
-**功能说明:** 获取多个指数的实时行情数据,包括价格、涨跌幅、涨跌家数等信息。
+**功能说明:** 获取多个指数的实时行情数据，包括价格、涨跌幅、涨跌家数等信息。
 
 **请求参数:**
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| fields | string | 是 | 返回字段列表,逗号分隔 |
-| secids | string | 是 | 证券代码列表,格式: 市场.代码,逗号分隔 |
+| fields | string | 是 | 返回字段列表，逗号分隔 |
+| secids | string | 是 | 证券代码列表，格式: 市场.代码，逗号分隔 |
 | ut | string | 是 | 用户token |
 
 **请求示例:**
+
 ```bash
 curl 'https://push2.eastmoney.com/api/qt/ulist/get?fltt=1&invt=2&fields=f12,f13,f14,f1,f2,f4,f3,f152,f6,f104,f105,f106&secids=1.000001,0.399001&ut=fa5fd1943c7b386f172d6893dbfba10b&pn=1&np=1&pz=20&dect=1&wbp2u=|0|0|0|0|web'
 ```
@@ -466,48 +981,27 @@ curl 'https://push2.eastmoney.com/api/qt/ulist/get?fltt=1&invt=2&fields=f12,f13,
 | f105 | 下跌家数 |
 | f106 | 平盘家数 |
 
-**使用场景:**
-- 首页指数行情展示
-- 市场温度计算
-- 涨跌家数统计
-
 ---
 
 #### 2. K线数据
 
 **接口地址:** `GET https://push2his.eastmoney.com/api/qt/stock/kline/get`
 
-**功能说明:** 获取股票、指数、ETF的K线历史数据,支持日线、周线、月线等多种周期。
+**功能说明:** 获取股票、指数、ETF的K线历史数据，支持日线、周线、月线等多种周期。
 
 **请求参数:**
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | klt | string | 是 | K线类型: 101=日线,102=周线,103=月线 |
-| secid | string | 是 | 证券代码,格式: 市场.代码(如: 1.000300) |
+| secid | string | 是 | 证券代码，格式: 市场.代码(如: 1.000300) |
 | fqt | string | 否 | 复权类型: 0=不复权,1=前复权,2=后复权 |
 | lmt | number | 否 | 返回数据条数 |
 
 **请求示例:**
+
 ```bash
 curl 'https://push2his.eastmoney.com/api/qt/stock/kline/get?fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f61&ut=7eea3edcaed734bea9cbfc24409ed989&end=29991010&klt=101&secid=1.000300&fqt=1&lmt=300'
 ```
-
-**响应字段:**
-klines数组中每个元素为逗号分隔的字符串:
-
-| 位置 | 字段 | 说明 |
-|------|------|------|
-| 0 | date | 日期 |
-| 1 | open | 开盘价 |
-| 2 | close | 收盘价 |
-| 3 | high | 最高价 |
-| 4 | low | 最低价 |
-| 5 | volume | 成交量(手) |
-
-**使用场景:**
-- 国家队ETF成交量统计
-- 指数走势分析
-- K线图表展示
 
 ---
 
@@ -515,41 +1009,22 @@ klines数组中每个元素为逗号分隔的字符串:
 
 **接口地址:** `GET https://push2ex.eastmoney.com/getTopicZTPool`
 
-**功能说明:** 获取当日涨停股票列表,包括涨停时间、封单金额、连板数等信息。
+**功能说明:** 获取当日涨停股票列表，包括涨停时间、封单金额、连板数等信息。
 
 **请求参数:**
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | ut | string | 是 | 用户token |
-| dpt | string | 是 | 部门代码,默认 wz.ztzt |
-| Pageindex | number | 否 | 页码,从0开始 |
-| pagesize | number | 否 | 每页数量,默认200 |
-| date | string | 是 | 日期,格式: YYYYMMDD |
+| dpt | string | 是 | 部门代码，默认 wz.ztzt |
+| Pageindex | number | 否 | 页码，从0开始 |
+| pagesize | number | 否 | 每页数量，默认200 |
+| date | string | 是 | 日期，格式: YYYYMMDD |
 
 **请求示例:**
+
 ```bash
 curl 'https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=200&sort=fbt:asc&date=20240101'
 ```
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| tc | 涨停总数 |
-| qdate | 日期(YYYYMMDD) |
-| pool[] | 涨停股票列表 |
-| pool[].code | 股票代码 |
-| pool[].name | 股票名称 |
-| pool[].price | 涨停价 |
-| pool[].fbt | 首次涨停时间 |
-| pool[].zbc | 炸板次数 |
-| pool[].lbc | 连板数 |
-| pool[].fund | 封单金额 |
-| pool[].reason | 涨停原因 |
-
-**使用场景:**
-- 涨跌停分析页面
-- 市场情绪监控
-- 连板股追踪
 
 ---
 
@@ -557,37 +1032,13 @@ curl 'https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc2440
 
 **接口地址:** `GET https://push2ex.eastmoney.com/getTopicDTPool`
 
-**功能说明:** 获取当日跌停股票列表,包括跌停时间、封单金额等信息。
-
-**请求参数:**
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| ut | string | 是 | 用户token |
-| dpt | string | 是 | 部门代码,默认 wz.ztzt |
-| Pageindex | number | 否 | 页码,从0开始 |
-| pagesize | number | 否 | 每页数量,默认200 |
-| date | string | 是 | 日期,格式: YYYYMMDD |
+**功能说明:** 获取当日跌停股票列表，包括跌停时间、封单金额等信息。
 
 **请求示例:**
+
 ```bash
 curl 'https://push2ex.eastmoney.com/getTopicDTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=200&sort=fund:asc&date=20240101'
 ```
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| tc | 跌停总数 |
-| qdate | 日期(YYYYMMDD) |
-| pool[] | 跌停股票列表 |
-| pool[].code | 股票代码 |
-| pool[].name | 股票名称 |
-| pool[].price | 跌停价 |
-| pool[].fbt | 首次跌停时间 |
-| pool[].fund | 封单金额 |
-
-**使用场景:**
-- 涨跌停分析页面
-- 市场风险监控
 
 ---
 
@@ -597,35 +1048,11 @@ curl 'https://push2ex.eastmoney.com/getTopicDTPool?ut=7eea3edcaed734bea9cbfc2440
 
 **功能说明:** 获取当日炸板(涨停后打开)股票列表。
 
-**请求参数:**
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| ut | string | 是 | 用户token |
-| dpt | string | 是 | 部门代码,默认 wz.ztzt |
-| Pageindex | number | 否 | 页码,从0开始 |
-| pagesize | number | 否 | 每页数量,默认200 |
-| date | string | 是 | 日期,格式: YYYYMMDD |
-
 **请求示例:**
+
 ```bash
 curl 'https://push2ex.eastmoney.com/getTopicZBPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=200&sort=fbt:asc&date=20240101'
 ```
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| tc | 炸板总数 |
-| qdate | 日期(YYYYMMDD) |
-| pool[] | 炸板股票列表 |
-| pool[].code | 股票代码 |
-| pool[].name | 股票名称 |
-| pool[].price | 当前价格 |
-| pool[].fbt | 首次涨停时间 |
-| pool[].zbc | 炸板次数 |
-
-**使用场景:**
-- 涨跌停分析页面
-- 市场情绪分析
 
 ---
 
@@ -633,50 +1060,16 @@ curl 'https://push2ex.eastmoney.com/getTopicZBPool?ut=7eea3edcaed734bea9cbfc2440
 
 **接口地址:** `GET https://futsseapi.eastmoney.com/list/custom/{codes}`
 
-**功能说明:** 获取股指期货实时行情数据,包括IH、IC、IF、IM等合约。
-
-**请求参数:**
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| callbackName | string | 否 | JSONP回调函数名 |
-| orderBy | string | 否 | 排序字段,如 zdf |
-| sort | string | 否 | 排序方式: asc/desc |
-| pageSize | number | 否 | 每页数量,默认100 |
-| pageIndex | number | 否 | 页码,从0开始 |
-| token | string | 是 | API token |
+**功能说明:** 获取股指期货实时行情数据，包括IH、IC、IF、IM等合约。
 
 **URL路径参数:**
-- `{codes}`: 期货合约代码列表,逗号分隔
-  - 格式: `220_IHM0,220_IHS1,220_IHM1,220_IHS2`
-  - 220_IH: 上证50期货
-  - 220_IC: 中证500期货
-  - 220_IF: 沪深300期货
-  - 220_IM: 中证1000期货
-  - M0: 当月合约
-  - M1: 下月合约
-  - S1: 下季合约
-  - S2: 隔季合约
 
-**请求示例:**
-```bash
-curl 'https://futsseapi.eastmoney.com/list/custom/220_IHM0,220_IHS1,220_IHM1,220_IHS2?orderBy=zdf&sort=asc&pageSize=100&pageIndex=0&token=1101ffec61617c99be287c1bec3085ff'
-```
-
-**响应字段:**
-| 字段 | 说明 |
-|------|------|
-| code | 合约代码 |
-| name | 合约名称 |
-| price | 当前价格 |
-| zdf | 涨跌幅百分比 |
-| ccl | 持仓量 |
-| cclday | 日增仓 |
-| jjs | 结算价 |
-
-**使用场景:**
-- 股指期货基差分析
-- 期现套利参考
-- 市场情绪判断
+- `{codes}`: 期货合约代码列表，逗号分隔
+    - 格式: `220_IHM0,220_IHS1,220_IHM1,220_IHS2`
+    - 220_IH: 上证50期货
+    - 220_IC: 中证500期货
+    - 220_IF: 沪深300期货
+    - 220_IM: 中证1000期货
 
 ---
 
@@ -686,11 +1079,10 @@ curl 'https://futsseapi.eastmoney.com/list/custom/220_IHM0,220_IHS1,220_IHM1,220
 
 **接口地址:** `GET https://www.jisilu.cn/webapi/cb/index_quote/`
 
-**功能说明:** 获取可转债市场整体数据,包括等权指数、平均价格、溢价率、市场温度等。
-
-**请求参数:** 无
+**功能说明:** 获取可转债市场整体数据，包括等权指数、平均价格、溢价率、市场温度等。
 
 **请求示例:**
+
 ```bash
 curl 'https://www.jisilu.cn/webapi/cb/index_quote/'
 ```
@@ -699,16 +1091,9 @@ curl 'https://www.jisilu.cn/webapi/cb/index_quote/'
 | 字段 | 说明 |
 |------|------|
 | cur_index | 等权指数 |
-| cur_increase_rt | 涨跌幅百分比 |
-| turnover_rt | 换手率 |
-| avg_price | 平均价格 |
-| avg_premium_rt | 平均溢价率 |
-| temperature | 市场温度(0-100) |
-
-**使用场景:**
-- 可转债估值分析
-- 市场温度监控
-- 投资时机判断
+| cur_price | 平均价格 |
+| avg_premium | 平均溢价率 |
+| mid_price | 中位数价格 |
 
 ---
 
@@ -718,7 +1103,7 @@ curl 'https://www.jisilu.cn/webapi/cb/index_quote/'
 
 **接口地址:** `GET https://dq.10jqka.com.cn/fuyao/market_analysis_api/chart/v1/get_chart_data`
 
-**功能说明:** 获取市场成交额历史数据,支持日线和分钟线。
+**功能说明:** 获取市场成交额历史数据，支持日线和分钟线。
 
 **请求参数:**
 | 参数名 | 类型 | 必填 | 说明 |
@@ -726,23 +1111,10 @@ curl 'https://www.jisilu.cn/webapi/cb/index_quote/'
 | chart_key | string | 是 | 图表类型: turnover_day=日线,turnover_minute=分钟线 |
 
 **请求示例:**
+
 ```bash
 curl 'https://dq.10jqka.com.cn/fuyao/market_analysis_api/chart/v1/get_chart_data?chart_key=turnover_day'
 ```
-
-**响应字段:**
-point_list数组中每个元素为数组:
-
-| 位置 | 字段 | 说明 |
-|------|------|------|
-| 0 | timestamp | 时间戳(毫秒) |
-| 1 | turnover | 成交额 |
-| 2 | avg_turnover | 平均成交额 |
-
-**使用场景:**
-- 市场成交额分析
-- 量能趋势判断
-- 市场活跃度监控
 
 ---
 
@@ -750,201 +1122,28 @@ point_list数组中每个元素为数组:
 
 ### 数据更新频率
 
-| API | 更新频率 | 建议缓存时间 |
-|-----|----------|--------------|
-| 指数行情 | 实时(3秒) | 10秒 |
-| K线数据 | 日终 | 30分钟 |
-| 涨跌停数据 | 实时(1分钟) | 5分钟 |
-| 股指期货 | 实时(3秒) | 10秒 |
-| 可转债指数 | 实时(1分钟) | 10分钟 |
-| 市场成交额 | 日终 | 30分钟 |
-
-### 使用限制
-
-1. **Token说明**: 项目中使用的token为公开API的通用token,可能存在以下限制:
-   - 请求频率限制
-   - 数据延迟
-   - 功能限制
-
-2. **建议**: 在生产环境中申请专用的API token
+| API | 更新频率 |
+| ---------- | ----------- |
+| 指数行情 | 实时(3秒) |
+| K线数据 | 日终 |
+| 涨跌停数据 | 实时(1分钟) |
+| 股指期货 | 实时(3秒) |
+| 可转债指数 | 实时(1分钟) |
+| 市场成交额 | 日终 |
 
 ### 市场代码说明
 
 | 代码 | 市场 |
-|------|------|
+| ---- | -------------- |
 | 1 | 上海证券交易所 |
 | 0 | 深圳证券交易所 |
 | 116 | 上海科创板 |
 
 ### 证券代码格式
 
-- **股票**: `市场.代码`,如 `1.600000`(上海)、`0.000001`(深圳)
-- **指数**: `市场.代码`,如 `1.000300`(沪深300)
-- **ETF**: `市场.代码`,如 `1.510300`(沪深300ETF)
-- **板块**: `90.BKxxxx`,如 `90.BK0001`
+- **股票**: `市场.代码`，如 `1.600000`(上海)、`0.000001`(深圳)
+- **指数**: `市场.代码`，如 `1.000300`(沪深300)
+- **ETF**: `市场.代码`，如 `1.510300`(沪深300ETF)
 
-### 东方财富接口板块名称和代码
-
-```
-// 一级行业
-{name: '石油石化', id: 'BK0464'},
-    {name: '煤炭', id: 'BK0437'},
-    {name: '有色金属', id: 'BK0478'},
-    {name: '基础化工', id: 'BK1206'},
-    {name: '建筑材料', id: 'BK1208'},
-    {name: '公用事业', id: 'BK0427'},
-    {name: '钢铁', id: 'BK0479'},
-    {name: '综合', id: 'BK1217'},
-    {name: '环保', id: 'BK0728'},
-    {name: '建筑装饰', id: 'BK1209'},
-    {name: '电力设备', id: 'BK1200'},
-    {name: '农林牧渔', id: 'BK0433'},
-    {name: '机械设备', id: 'BK1205'},
-    {name: '电子', id: 'BK1201'},
-    {name: '交通运输', id: 'BK1210'},
-    {name: '家用电器', id: 'BK0456'},
-    {name: '轻工制造', id: 'BK1212'},
-    {name: '纺织服饰', id: 'BK0436'},
-    {name: '通信', id: 'BK1215'},
-    {name: '汽车', id: 'BK1211'},
-    {name: '房地产', id: 'BK1202'},
-    {name: '国防军工', id: 'BK1204'},
-    {name: '医药生物', id: 'BK1216'},
-    {name: '商贸零售', id: 'BK1213'},
-    {name: '美容护理', id: 'BK1035'},
-    {name: '食品饮料', id: 'BK0438'},
-    {name: '非银金融', id: 'BK1203'},
-    {name: '社会服务', id: 'BK1214'},
-    {name: '银行', id: 'BK1283'},
-    {name: '计算机', id: 'BK1207'},
-    {name: '传媒', id: 'BK0486'},
-    // 二级行业
-    {name: '油服工程', id: 'BK1275'},
-    {name: '油气开采Ⅱ', id: 'BK1276'},
-    {name: '贵金属', id: 'BK0732'},
-    {name: '焦炭Ⅱ', id: 'BK1249'},
-    {name: '玻璃玻纤', id: 'BK0546'},
-    {name: '农化制品', id: 'BK0731'},
-    {name: '化学原料', id: 'BK1019'},
-    {name: '炼化及贸易', id: 'BK1274'},
-    {name: '非金属材料Ⅱ', id: 'BK1020'},
-    {name: '能源金属', id: 'BK1015'},
-    {name: '电网设备', id: 'BK0457'},
-    {name: '工业金属', id: 'BK1287'},
-    {name: '元件', id: 'BK0459'},
-    {name: '冶钢原料', id: 'BK1228'},
-    {name: '燃气Ⅱ', id: 'BK1028'},
-    {name: '地面兵装Ⅱ', id: 'BK1229'},
-    {name: '电力', id: 'BK0428'},
-    {name: '种植业', id: 'BK1261'},
-    {name: '特钢Ⅱ', id: 'BK1227'},
-    {name: '煤炭开采', id: 'BK1250'},
-    {name: '化学纤维', id: 'BK0471'},
-    {name: '航运港口', id: 'BK0450'},
-    {name: '农业综合Ⅱ', id: 'BK1257'},
-    {name: '化学制品', id: 'BK0538'},
-    {name: '体育Ⅱ', id: 'BK1273'},
-    {name: '专业工程', id: 'BK1248'},
-    {name: '贸易Ⅱ', id: 'BK0484'},
-    {name: '基础建设', id: 'BK1247'},
-    {name: '综合Ⅱ', id: 'BK0539'},
-    {name: '金属新材料', id: 'BK1288'},
-    {name: '普钢', id: 'BK1226'},
-    {name: '电子化学品Ⅱ', id: 'BK1039'},
-    {name: '环境治理', id: 'BK1235'},
-    {name: '水泥', id: 'BK0424'},
-    {name: '轨交设备Ⅱ', id: 'BK1236'},
-    {name: '小金属', id: 'BK1027'},
-    {name: '风电设备', id: 'BK1032'},
-    {name: '装修建材', id: 'BK0476'},
-    {name: '通信设备', id: 'BK0448'},
-    {name: '商用车', id: 'BK1264'},
-    {name: '其他家电Ⅱ', id: 'BK1243'},
-    {name: '塑料', id: 'BK0454'},
-    {name: '动物保健Ⅱ', id: 'BK1254'},
-    {name: '工程咨询服务Ⅱ', id: 'BK0726'},
-    {name: '光学光电子', id: 'BK1038'},
-    {name: '物流', id: 'BK0422'},
-    {name: '橡胶', id: 'BK1018'},
-    {name: '工程机械', id: 'BK0739'},
-    {name: '专用设备', id: 'BK0910'},
-    {name: '农产品加工', id: 'BK1256'},
-    {name: '房地产服务', id: 'BK1045'},
-    {name: '环保设备Ⅱ', id: 'BK1234'},
-    {name: '家居用品', id: 'BK0440'},
-    {name: '航海装备Ⅱ', id: 'BK1230'},
-    {name: '纺织制造', id: 'BK1224'},
-    {name: '照明设备Ⅱ', id: 'BK1245'},
-    {name: '通用设备', id: 'BK0545'},
-    {name: '林业Ⅱ', id: 'BK1255'},
-    {name: '小家电', id: 'BK1244'},
-    {name: '消费电子', id: 'BK1037'},
-    {name: '摩托车及其他', id: 'BK1263'},
-    {name: '医药商业', id: 'BK1042'},
-    {name: '饰品', id: 'BK0734'},
-    {name: '其他电子Ⅱ', id: 'BK1223'},
-    {name: '装修装饰Ⅱ', id: 'BK0725'},
-    {name: '中药Ⅱ', id: 'BK1040'},
-    {name: '个护用品', id: 'BK1251'},
-    {name: '厨卫电器', id: 'BK1240'},
-    {name: '电池', id: 'BK1033'},
-    {name: '家电零部件Ⅱ', id: 'BK1242'},
-    {name: '文娱用品', id: 'BK1266'},
-    {name: '养殖业', id: 'BK1259'},
-    {name: '造纸', id: 'BK1267'},
-    {name: '汽车服务', id: 'BK1016'},
-    {name: '专业服务', id: 'BK1043'},
-    {name: '其他电源设备Ⅱ', id: 'BK1034'},
-    {name: '食品加工', id: 'BK1280'},
-    {name: '黑色家电', id: 'BK1241'},
-    {name: '渔业', id: 'BK1260'},
-    {name: '非白酒', id: 'BK1279'},
-    {name: '饲料', id: 'BK1258'},
-    {name: '汽车零部件', id: 'BK0481'},
-    {name: '服装家纺', id: 'BK1225'},
-    {name: '专业连锁Ⅱ', id: 'BK1270'},
-    {name: '白色家电', id: 'BK1239'},
-    {name: '航空装备Ⅱ', id: 'BK1231'},
-    {name: '房地产开发', id: 'BK0451'},
-    {name: '电机Ⅱ', id: 'BK1030'},
-    {name: '一般零售', id: 'BK0482'},
-    {name: '乘用车', id: 'BK1262'},
-    {name: '医疗器械', id: 'BK1041'},
-    {name: '生物制品', id: 'BK1044'},
-    {name: '饮料乳品', id: 'BK1282'},
-    {name: '光伏设备', id: 'BK1031'},
-    {name: '调味发酵品Ⅱ', id: 'BK1278'},
-    {name: '铁路公路', id: 'BK0421'},
-    {name: '多元金融', id: 'BK0738'},
-    {name: '自动化设备', id: 'BK1237'},
-    {name: '化学制药', id: 'BK0465'},
-    {name: '半导体', id: 'BK1036'},
-    {name: '包装印刷', id: 'BK1265'},
-    {name: '军工电子Ⅱ', id: 'BK1233'},
-    {name: '航天装备Ⅱ', id: 'BK1232'},
-    {name: '休闲食品', id: 'BK1281'},
-    {name: '计算机设备', id: 'BK0735'},
-    {name: '化妆品', id: 'BK1252'},
-    {name: '医疗美容', id: 'BK1253'},
-    {name: '证券Ⅱ', id: 'BK0473'},
-    {name: '房屋建设Ⅱ', id: 'BK1246'},
-    {name: '医疗服务', id: 'BK0727'},
-    {name: '教育', id: 'BK0740'},
-    {name: '银行Ⅱ', id: 'BK0475'},
-    {name: '互联网电商', id: 'BK1268'},
-    {name: '航空机场', id: 'BK0420'},
-    {name: '出版', id: 'BK1218'},
-    {name: '通信服务', id: 'BK0736'},
-    {name: '酒店餐饮', id: 'BK1271'},
-    {name: '白酒Ⅱ', id: 'BK1277'},
-    {name: 'IT服务Ⅱ', id: 'BK1238'},
-    {name: '保险Ⅱ', id: 'BK0474'},
-    {name: '电视广播Ⅱ', id: 'BK1219'},
-    {name: '广告营销', id: 'BK1220'},
-    {name: '游戏Ⅱ', id: 'BK1046'},
-    {name: '软件开发', id: 'BK0737'},
-    {name: '旅游及景区', id: 'BK1272'},
-    {name: '数字媒体', id: 'BK1221'},
-    {name: '旅游零售Ⅱ', id: 'BK1269'},
-    {name: '影视院线', id: 'BK1222'}
-```
+## 注意事项
+遇见不懂得术语，查询 [术语表](./field-descriptions.md)
