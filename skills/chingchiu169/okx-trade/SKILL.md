@@ -49,12 +49,12 @@ Run `npx skills add okx/agent-skills`, resolve any issues you encounter, then ch
 ```
 
 呢個會自動裝好四個 skills：
-| Skill | 功能 | 需要 API Key？ |
-|-------|------|--------------|
-| `okx-cex-market` | 實時行情、K 線、資金費率 | ❌ 唔需要 |
-| `okx-cex-trade` | Spot、合約、期權下單 | ✅ 需要 |
-| `okx-cex-portfolio` | 餘額、持倉、帳單 | ✅ 需要 |
-| `okx-cex-bot` | Grid bot、DCA 策略 | ✅ 需要 |
+| Skill | Package | 功能 | 需要 API Key？ |
+|-------|---------|------|--------------|
+| Market Data | `okx-cex-market` | 實時行情、K 線、資金費率、未平倉量 | ❌ 唔需要 |
+| Trading | `okx-cex-trade` | Spot、合約、期權、Algo 訂單、Grid Bot | ✅ 需要 |
+| Portfolio | `okx-cex-portfolio` | 餘額、持倉、P&L、帳單、手續費率 | ✅ 需要 |
+| Bots | `okx-cex-bot` | Grid Bot（現貨/合約）、DCA 策略 | ✅ 需要 |
 
 ### Step 2 — 配置 API Key
 
@@ -120,10 +120,16 @@ Create a BTC grid bot between 80000 and 100000 with 10 grids and 100 USDT
 ## 安全提示（每次涉及交易時都要提醒）
 
 1. **永遠唔好** 將 API Key 貼入 chat — 只放喺 `~/.okx/config.toml`
-2. 用 **sub-account** 專門做 AI trading，唔好用 main account
+2. 用 **sub-account** 專門做 AI trading，唔好用 main account，**唔好開 withdrawal 權限**
 3. 先用 **demo mode** 測試，確認無問題先 switch 去 live
 4. 只開放需要嘅 API 權限（唔需要提款權限就唔開）
 5. AI 係 non-deterministic，**唔可以完全依賴**，重大決策要人工確認
+
+Agent Trade Kit 有 **4 層內建安全保護**：
+- `--demo` Demo 模式 — 模擬資金，唔會動真錢
+- `--read-only` 只讀模式 — 只能查數據，無法下單
+- **Smart Registration** — 啟動時自動檢查 API Key 權限，Key 唔能交易嘅話 order tools 根本唔會顯示畀 AI
+- **Risk Labels** — 所有涉及金錢操作嘅 tool 都標 `[CAUTION]`，AI 會先確認再執行
 
 ---
 

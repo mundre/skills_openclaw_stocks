@@ -51,8 +51,17 @@ okx-trade-mcp setup --client <client>
 | Cursor | `cursor` |
 | VS Code | `vscode` |
 | Windsurf | `windsurf` |
+| Windsurf | `windsurf` |
 
-## 啟動選項
+## 4 層安全保護
+
+| Layer | 說明 |
+|-------|------|
+| `--demo` | 模擬資金，零真錢風險 |
+| `--read-only` | 只能查數據，禁止下單 |
+| Smart Registration | 啟動時驗 API 權限，無權限嘅 tools 唔顯示 |
+| Risk Labels | 涉錢 tools 標 `[CAUTION]`，AI 會先確認 |
+
 
 | 需求 | 指令 |
 |------|------|
