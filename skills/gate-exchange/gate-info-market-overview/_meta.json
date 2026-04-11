@@ -3,11 +3,16 @@
   "slug": "gate-info-market-overview",
   "displayName": "gate-info-marketoverview",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775184702731,
-    "commit": "https://github.com/openclaw/skills/commit/b6bf2ab9d09c65a67efe2eb47855aede7e52aaa5"
+    "version": "1.0.3",
+    "publishedAt": 1775558081561,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775184702731,
+      "commit": "https://github.com/openclaw/skills/commit/b6bf2ab9d09c65a67efe2eb47855aede7e52aaa5"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773375264383,
