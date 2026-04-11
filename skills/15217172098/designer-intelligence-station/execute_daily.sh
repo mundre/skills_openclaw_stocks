@@ -50,10 +50,41 @@ echo ""
 echo "🌐 步骤 3: 抓取网页源（自动化）..."
 python3 tools/web_fetcher_standalone.py fetch-all 2>&1 | grep "✅" || true
 
-# 查找最新的 web 缓存文件
-WEB_CACHE=$(ls -t data/cache/web_cache_*.json 2>/dev/null | head -1)
-if [ -n "$WEB_CACHE" ]; then
-    cp "$WEB_CACHE" /tmp/dis_daily/web_items.json
+# 合并所有 web 缓存文件（修复：之前只取最新 1 个文件，现在合并全部）
+WEB_CACHES=$(ls data/cache/web_cache_*.json 2>/dev/null | sort)
+if [ -n "$WEB_CACHES" ]; then
+    # 使用 Python 合并所有缓存文件
+    python3 << 'EOF'
+import json
+import glob
+
+all_items = []
+cache_files = sorted(glob.glob('data/cache/web_cache_*.json'))
+
+for cache_file in cache_files:
+    try:
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            items = json.load(f)
+            if isinstance(items, list):
+                all_items.extend(items)
+    except Exception as e:
+        print(f"⚠️ 读取 {cache_file} 失败：{e}")
+
+# 去重（按 link 去重）
+seen_links = set()
+deduped_items = []
+for item in all_items:
+    link = item.get('link', '')
+    if link and link not in seen_links:
+        seen_links.add(link)
+        deduped_items.append(item)
+
+# 保存合并后的结果
+with open('/tmp/dis_daily/web_items.json', 'w', encoding='utf-8') as f:
+    json.dump(deduped_items, f, ensure_ascii=False, indent=2)
+
+print(f"合并完成：{len(deduped_items)} 条（来自 {len(cache_files)} 个缓存文件）")
+EOF
     WEB_COUNT=$(python3 -c "import json; print(len(json.load(open('/tmp/dis_daily/web_items.json'))))" 2>/dev/null || echo "0")
     echo "   ✅ Web: $WEB_COUNT 条"
 else
