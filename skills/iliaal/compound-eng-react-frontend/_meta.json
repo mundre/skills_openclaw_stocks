@@ -3,9 +3,15 @@
   "slug": "compound-eng-react-frontend",
   "displayName": "react-frontend",
   "latest": {
-    "version": "2.53.0",
-    "publishedAt": 1775444263378,
-    "commit": "https://github.com/openclaw/skills/commit/a45d6055c9378bd4b38f300b6dd983a7b8afe244"
+    "version": "2.55.0",
+    "publishedAt": 1775869285430,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.53.0",
+      "publishedAt": 1775444263378,
+      "commit": "https://github.com/openclaw/skills/commit/a45d6055c9378bd4b38f300b6dd983a7b8afe244"
+    }
+  ]
 }
