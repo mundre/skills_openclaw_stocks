@@ -180,10 +180,36 @@ fi
 if [[ -n "$ACTUAL_SHA256" ]]; then
   info "Downloaded file SHA256: $ACTUAL_SHA256"
 
-  # Try to download SHA256SUMS from the same release
-  CHECKSUMS_URL=""
+  EXPECTED_SHA256=""
+  VERIFY_SOURCE=""
+
+  # Prefer per-asset digest metadata from the GitHub release API when available.
   if command -v python3 >/dev/null 2>&1; then
-    CHECKSUMS_URL=$(echo "$RELEASE_JSON" | python3 -c "
+    EXPECTED_SHA256=$(echo "$RELEASE_JSON" | python3 -c "
+import sys, json
+
+data = json.load(sys.stdin)
+filename = '$FILENAME'
+for asset in data.get('assets', []):
+    if asset.get('name') != filename:
+        continue
+    digest = (asset.get('digest') or '').strip()
+    if digest.lower().startswith('sha256:'):
+        print(digest.split(':', 1)[1].strip())
+        break
+    if len(digest) == 64:
+        print(digest)
+        break
+" 2>/dev/null || true)
+  fi
+
+  if [[ -n "$EXPECTED_SHA256" ]]; then
+    VERIFY_SOURCE="GitHub release asset metadata"
+  else
+    # Fallback: try to download a SHA256SUMS/checksums asset from the same release.
+    CHECKSUMS_URL=""
+    if command -v python3 >/dev/null 2>&1; then
+      CHECKSUMS_URL=$(echo "$RELEASE_JSON" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 for asset in data.get('assets', []):
@@ -192,28 +218,30 @@ for asset in data.get('assets', []):
         print(asset['browser_download_url'])
         break
 " 2>/dev/null || true)
-  fi
+    fi
 
-  if [[ -n "$CHECKSUMS_URL" ]]; then
-    info "Downloading checksums from: $CHECKSUMS_URL"
-    CHECKSUMS_FILE="$TMPDIR_INSTALL/SHA256SUMS"
-    if curl -fsSL "$CHECKSUMS_URL" -o "$CHECKSUMS_FILE" 2>/dev/null || wget -qO "$CHECKSUMS_FILE" "$CHECKSUMS_URL" 2>/dev/null; then
-      # Look for our filename in the checksums file
-      EXPECTED_SHA256=$(grep "$FILENAME" "$CHECKSUMS_FILE" | awk '{print $1}' | head -1)
-      if [[ -n "$EXPECTED_SHA256" ]]; then
-        if [[ "$ACTUAL_SHA256" == "$EXPECTED_SHA256" ]]; then
-          success "SHA256 checksum verified: $ACTUAL_SHA256"
+    if [[ -n "$CHECKSUMS_URL" ]]; then
+      info "Downloading checksums from: $CHECKSUMS_URL"
+      CHECKSUMS_FILE="$TMPDIR_INSTALL/SHA256SUMS"
+      if curl -fsSL "$CHECKSUMS_URL" -o "$CHECKSUMS_FILE" 2>/dev/null || wget -qO "$CHECKSUMS_FILE" "$CHECKSUMS_URL" 2>/dev/null; then
+        EXPECTED_SHA256=$(grep -F "$FILENAME" "$CHECKSUMS_FILE" | awk '{print $1}' | head -1)
+        if [[ -n "$EXPECTED_SHA256" ]]; then
+          VERIFY_SOURCE="checksum asset"
         else
-          die "SHA256 MISMATCH! Expected: $EXPECTED_SHA256, Got: $ACTUAL_SHA256 — download may be corrupted or tampered with."
+          die "Checksums file found but no entry for '$FILENAME'. Cannot verify integrity — aborting."
         fi
       else
-        die "Checksums file found but no entry for '$FILENAME'. Cannot verify integrity — aborting."
+        die "Could not download checksums file. Cannot verify integrity — aborting."
       fi
     else
-      die "Could not download checksums file. Cannot verify integrity — aborting."
+      die "No per-asset digest metadata or SHA256SUMS file found in the release. Cannot verify integrity — aborting. Download manually from: $RELEASES_URL"
     fi
+  fi
+
+  if [[ "$ACTUAL_SHA256" == "$EXPECTED_SHA256" ]]; then
+    success "SHA256 checksum verified via ${VERIFY_SOURCE}: $ACTUAL_SHA256"
   else
-    die "No SHA256SUMS file found in the release. Cannot verify integrity — aborting. Download manually from: $RELEASES_URL"
+    die "SHA256 MISMATCH! Expected: $EXPECTED_SHA256, Got: $ACTUAL_SHA256 — download may be corrupted or tampered with."
   fi
 fi
 
