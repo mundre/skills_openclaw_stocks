@@ -260,6 +260,16 @@ function readOpenClawConfig(configPath: string): OpenClawConfig {
 /**
  * 写入 openclaw.json 配置文件
  */
+/**
+ * 创建配置文件备份
+ */
+function createBackup(configPath: string): string {
+  const backupPath = `${configPath}.backup.${Date.now()}`;
+  const content = fs.readFileSync(configPath, 'utf-8');
+  fs.writeFileSync(backupPath, content, 'utf-8');
+  return backupPath;
+}
+
 function writeOpenClawConfig(configPath: string, config: OpenClawConfig): void {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
 }
@@ -446,10 +456,16 @@ async function createMultipleAgents(ctx: SessionContext, agents: Array<{
   isDefault?: boolean;
   model?: string;
 }>): Promise<{ success: boolean; results: Array<{ id: string; success: boolean; error?: string }> }> {
-  const configPath = '/home/node/.openclaw/openclaw.json';
+  // 动态获取用户主目录，避免硬编码
+  const homeDir = process.env.HOME || process.env.USERPROFILE || '/home/node';
+  const configPath = path.join(homeDir, '.openclaw', 'openclaw.json');
   const results: Array<{ id: string; success: boolean; error?: string }> = [];
   
   try {
+    // 配置前自动备份
+    const backupPath = createBackup(configPath);
+    await ctx.send(`📦 已自动备份配置文件到：\`${backupPath}\``);
+    
     // 1. 读取现有配置
     const config = readOpenClawConfig(configPath);
     
@@ -469,9 +485,9 @@ async function createMultipleAgents(ctx: SessionContext, agents: Array<{
           continue;
         }
         
-        // 创建工作区路径 - 每个 Agent 完全独立
-        const workspacePath = `/home/node/.openclaw/workspace-${agent.agentId}`;
-        const agentDirPath = `/home/node/.openclaw/agents/${agent.agentId}/agent`;
+        // 创建工作区路径 - 每个 Agent 完全独立（使用动态 homeDir）
+        const workspacePath = path.join(homeDir, '.openclaw', `workspace-${agent.agentId}`);
+        const agentDirPath = path.join(homeDir, '.openclaw', 'agents', agent.agentId, 'agent');
         
         // 创建 Agent 配置
         const newAgent: AgentConfig = {
@@ -824,7 +840,8 @@ ${failedList.map((r, i) => `${i + 1}. **${r.id}**: ${r.error}`).join('\n')}
       
       case 'show_status': {
         // 显示当前配置状态
-        const configPath = '/home/node/.openclaw/openclaw.json';
+        const homeDir = process.env.HOME || process.env.USERPROFILE || '/home/node';
+        const configPath = path.join(homeDir, '.openclaw', 'openclaw.json');
         
         try {
           const config = readOpenClawConfig(configPath);

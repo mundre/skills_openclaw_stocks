@@ -3,11 +3,16 @@
   "slug": "feishu-multi-agent-manager",
   "displayName": "Feishu Multi Agent Manager",
   "latest": {
-    "version": "2.0.4",
-    "publishedAt": 1775065655869,
-    "commit": "https://github.com/openclaw/skills/commit/686e14ed11fda2170bd284cbddf5f897e384ea6b"
+    "version": "2.0.5",
+    "publishedAt": 1775735324778,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.4",
+      "publishedAt": 1775065655869,
+      "commit": "https://github.com/openclaw/skills/commit/686e14ed11fda2170bd284cbddf5f897e384ea6b"
+    },
     {
       "version": "2.0.2",
       "publishedAt": 1774297615153,
