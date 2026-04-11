@@ -109,7 +109,7 @@ def send_email(date_str, df_weain, df_military, df_nudt, dates_info, to_override
 
 汇总如下：
 
-【全军武器装备采购信息网】{len(df_weain)}条（更新日期: {dates_info.get('weain', date_str)}）
+【全军武器装备采购信息网】{len(df_weain)}条（更新日期: {dates_info.get('weain') or date_str}）
 
 高推荐项目：
 """
@@ -119,7 +119,7 @@ def send_email(date_str, df_weain, df_military, df_nudt, dates_info, to_override
         body += f"{i}. {item['title']}... | {item['type']}{deadline}\n"
 
     body += f"""
-【军队采购网】{len(df_military)}条（更新日期: {dates_info.get('military', date_str)}）
+【军队采购网】{len(df_military)}条（更新日期: {dates_info.get('military') or date_str}）
 
 高推荐项目：
 """
@@ -129,7 +129,7 @@ def send_email(date_str, df_weain, df_military, df_nudt, dates_info, to_override
         body += f"{i}. {item['title']}... | {item['type']}{region}\n"
 
     body += f"""
-【国防科大采购信息网】{len(df_nudt)}条（更新日期: {dates_info.get('nudt', date_str)}）
+【国防科大采购信息网】{len(df_nudt)}条（更新日期: {dates_info.get('nudt') or date_str}）
 
 高推荐项目：
 """
@@ -143,7 +143,7 @@ def send_email(date_str, df_weain, df_military, df_nudt, dates_info, to_override
 {sender_name}"""
 
     # 获取Excel文件路径
-    excel_path = os.path.expanduser(f"~/.openclaw/workspace/military-bidding/商机信息汇总_{date_str}.xlsx")
+    excel_path = os.path.expanduser(f"~/.openclaw/workspace/military-bidding/军队采购商机汇总_{date_str}.xlsx")
 
     # 确定收件人/抄送人
     env_config = get_email_config()
