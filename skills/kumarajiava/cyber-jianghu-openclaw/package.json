@@ -1,6 +1,6 @@
 {
   "name": "@8kugames/cyber-jianghu-openclaw",
-  "version": "0.0.1",
+  "version": "0.3.6",
   "description": "Cyber-Jianghu Agent - OpenClaw integration for MMO-MAS game",
   "author": "8kugames",
   "license": "MIT-0",
@@ -24,32 +24,41 @@
     "SKILL.md",
     "README.md",
     "DEPLOYMENT.md",
-    "hooks/",
-    "tools/",
-    "plugins/",
-    "templates/",
     "register.ts",
+    "ws-client.ts",
+    "http-client.ts",
+    "types.ts",
     "openclaw.plugin.json"
   ],
   "openclaw": {
     "extensions": [
       "./register.ts"
     ],
-    "hooks": [
-      "./hooks/cyber-jianghu-openclaw-bootstrap"
-    ]
+    "compat": {
+      "pluginApi": "^1.0.0"
+    }
   },
   "peerDependencies": {
     "openclaw": "^2026.3.13"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --noEmit",
     "lint": "oxlint",
-    "version:check": "node scripts/version-check.js",
-    "postversion": "node scripts/sync-version.js && git add openclaw.plugin.json && git commit --amend --no-edit"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "version": "node scripts/sync-versions.mjs"
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "oxlint": "^1.57.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.49"
   }
 }
