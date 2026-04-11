@@ -3,9 +3,15 @@
   "slug": "nexus-code-explain",
   "displayName": "NEXUS Code Explain",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773347341447,
-    "commit": "https://github.com/openclaw/skills/commit/536accb0d8d427d0ca75d1da8b1887c7f5a91eda"
+    "version": "1.1.0",
+    "publishedAt": 1775754484191,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773347341447,
+      "commit": "https://github.com/openclaw/skills/commit/536accb0d8d427d0ca75d1da8b1887c7f5a91eda"
+    }
+  ]
 }
