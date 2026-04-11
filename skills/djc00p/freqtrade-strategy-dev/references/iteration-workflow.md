@@ -102,7 +102,7 @@ Pick the single biggest issue from Step 4. Change ONLY that parameter.
 
 Run backtest on identical date range. Compare to baseline:
 
-```
+```text
 Metric              | v1 Baseline | v3 (Volume) | v4 (CCI) | v5 (2% SL)
 Total Trades        | 150         | 65          | 42       | 42
 Win Rate            | 52%         | 60%         | 64%      | 65%
@@ -171,7 +171,7 @@ Only increase position size after 50+ live trades with positive results.
 
 For each version, use a naming pattern:
 
-```
+```text
 MyStrategy_v1.py  # Baseline
 MyStrategy_v2.py  # Added volume filter
 MyStrategy_v3.py  # Added CCI confirmation
