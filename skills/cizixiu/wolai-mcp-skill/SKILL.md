@@ -1,8 +1,8 @@
 ---
 name: wolai-mcp
-description: 通过 wolai MCP 协议操作 wolai 笔记（MCP 版本）。支持读取页面/大纲/块内容、创建/删除/更新文档、搜索文档、Section 级编辑、块级精确操作、多栏布局等。比 API 版本功能更强大，支持删除、修改、搜索等 API 版本不支持的操作。当用户配置了 WOLAI_MCP_TOKEN 时优先使用此 skill。触发场景：「读取 wolai 页面」、「搜索 wolai 文档」、「删除 wolai 页面」、「修改 wolai 内容」、「存入 wolai 笔记」等。
+description: "Wolai MCP skill — 操作 wolai 笔记（块/页面/搜索/数据库）/ Wolai Mcp Skill - Operate wolai notes (blocks, pages, search, database) via MCP protocol"
 allowed-tools:
-disable: true
+version: "1.3.1"
 runtime: windows-powershell
 credentials:
   WOLAI_MCP_TOKEN:
@@ -33,11 +33,9 @@ MCP 服务地址：`https://api.wolai.com/v1/mcp`
 
 ### 2. 配置 Token 到环境变量
 
-Token 需要配置为系统环境变量 `WOLAI_MCP_TOKEN`，配置后重启 WorkBuddy 即可生效。以下提供三种方法：
+Token 需要配置为系统环境变量 `WOLAI_MCP_TOKEN`，配置后重启 WorkBuddy 即可生效。以下提供两种方法：
 
-> 💡 **最简单的方式**：直接把你的 Token 告诉 AI 助手，说「帮我把 WOLAI_MCP_TOKEN 设置为 sk-xxx」，AI 会自动帮你写入，无需手动操作。
-
----
+> ⚠️ **安全提醒**：不要把 Token 直接粘贴到聊天对话框中。请使用下方方法 A 或 B 手动配置。
 
 #### 方法 A：图形界面操作（推荐，最直观）
 
