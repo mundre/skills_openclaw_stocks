@@ -1,6 +1,6 @@
 # Statistische Signale – KI-Erkennung durch Textstatistik
 
-> Vier messbare Signale die zwischen menschlichem und KI-generiertem Text unterscheiden.
+> Fuenf messbare Signale die zwischen menschlichem und KI-generiertem Text unterscheiden.
 > Jedes Signal hat: Formel, Schwellenwerte, Beispielberechnung, Interpretation.
 
 ---
@@ -282,7 +282,7 @@ Flesch 68.9 – leicht lesbar, typisch für Sachbuch. Kein KI-Verdacht.
 
 ## Gesamt-Statistik-Score
 
-Die vier Signale addieren sich zum statistischen Teil des Gesamt-Scores:
+Die fuenf Signale addieren sich zum statistischen Teil des Gesamt-Scores:
 
 | Signal | Max-Punkte |
 |--------|-----------|
@@ -298,12 +298,13 @@ Die vier Signale addieren sich zum statistischen Teil des Gesamt-Scores:
 ```
   STATISTIK
   ─────────────────────────────
-  Burstiness:       0.42  ✓ menschlich (>0.3)
+  Burstiness:       0.42  ✓ menschlich (>0.3)    [nur bei >=20 Saetzen]
   TTR:              0.58  ✓ menschlich (>0.5)
-  Satzlängen-CoV:   0.21  ✗ KI-typisch (<0.3)  → +5
+  Satzlaengen-CoV:  0.21  ✗ KI-typisch (<0.3)    → +5
   Trigramm-Rate:    0.04  ✓ normal (<0.10)
+  Flesch-DE:        45.2  ✗ KI-Sweetspot (40-50)  → +3
 
-  Statistik-Score: +5
+  Statistik-Score: +8
 ```
 
 ---

@@ -1,9 +1,31 @@
 # Humanizer-DE – Session-Log
 
-> **Sessions:** 46 (Skill-Bau) + 47 (Phase 4 – Tests & Kalibrierung)
-> **Datum:** 05.03.2026
-> **Gesamtumfang:** 10 Dateien, 2.032 Zeilen Code/Doku
-> **Status:** Phase 1–4 fertig, Phase 5 (Veröffentlichung) steht an
+> **Sessions:** 46 (Skill-Bau) + 47 (Phase 4 – Tests & Kalibrierung) + 196 (Cleanup, Morphologie & v1.1.0) + 209 (Gedankenstrich-Erkennung & v1.2.0)
+> **Datum:** 05.03.2026 (erstellt), 07.04.2026 (aktualisiert)
+> **Gesamtumfang:** 10 Dateien, ~2.300 Zeilen Code/Doku
+> **Status:** Phase 1–5 fertig. Auf ClawHub veroeffentlicht (`Tikitackr/humanizer-de`). v1.2.0.
+>
+> **v1.2.0 Aenderungen (Session 209):**
+> - Muster #13 (Gedankenstrich-Seuche) im CLI implementiert: countGedankenstriche()
+> - En-Dashes (–) im Fliesstext zaehlen, Code-Bloecke/Inline-Code/QR-Platzhalter filtern
+> - Scoring: >3 pro ~250 Woerter = +5 Punkte pro Ueberschreitung, max +25
+> - Neuer Abschnitt im Analyse-Report: "GEDANKENSTRICHE" mit Treffer-Anzahl, Dichte und Bewertung
+> - Version 1.1.2 → 1.2.0 in _meta.json, SKILL.md, README.md
+>
+> **v1.1.0 Aenderungen (Session 196):**
+> - README geschaerft: Klare Trennung Agent-Modus vs. CLI-Modus
+> - Tier-1 Vokabeln synchronisiert (35 → 45, jetzt identisch mit vokabeln.md)
+> - Fix-Befehl: Morphologisch korrekte Ersetzung (Adjektiv-/Substantiv-Suffixe)
+> - Fix-Befehl: .bak-Backup vor Ueberschreiben
+> - TIER1-Array um Wortart-Feld erweitert (adj/noun/verb/adv)
+> - Chatbot-Artefakte in vokabeln.md dokumentiert
+> - statistische-signale.md: "4 Signale" → "5 Signale" korrigiert, Report-Beispiel ergaenzt
+> - SKILL.md: Kapitelverweise und Dashboard-Links aktualisiert
+> - SESSION-LOG: Tier-2-Bug als gefixt markiert, Zahlen aktualisiert
+> - _meta.json: Version 1.0.1 → 1.1.0, Description aktualisiert
+> - Morphologische Ersetzung im Fix-Befehl: Adjektiv-Suffixe, Substantiv-Suffixe, Artikel-Korrektur
+> - TIER1-Array um Wortart-Feld erweitert (adj/noun/verb/adv) + Genus-Mapping fuer Substantive
+> - Artikel-Korrektur mit Praepositions-Heuristik (Dativ-Praep → dem/der, sonst Genitiv)
 
 ---
 
@@ -89,9 +111,9 @@ node humanize-de.js fix     datei.md    # Automatische Tier-1/Phrasen-Ersetzung
 |----------|-------|
 | `splitSentences(text)` | Text in Sätze aufteilen |
 | `tokenize(text)` | Text in Wörter aufteilen |
-| `findTier1(text)` | Tier-1-Wörter finden (35 Paare) |
-| `findTier2(text)` | Tier-2-Wörter finden (29 Wörter) |
-| `findVerbotenePhrasen(text)` | 27 verbotene Phrasen scannen |
+| `findTier1(text)` | Tier-1-Woerter finden (45 Paare, v1.1.0 sync mit vokabeln.md) |
+| `findTier2(text)` | Tier-2-Woerter finden (45 Woerter, v1.1-Erweiterung) |
+| `findVerbotenePhrasen(text)` | 48 verbotene Phrasen scannen (v1.1-Erweiterung) |
 | `findChatbotArtefakte(text)` | 16 Chatbot-Artefakte scannen |
 | `calcBurstiness(sentences)` | Burstiness-Score berechnen |
 | `calcTTR(text)` | Type-Token-Ratio (100-Wort-Fenster) |
@@ -197,12 +219,13 @@ Das englische Original (`Kevjade/operator-humanizer`) wurde als ZIP analysiert. 
 
 ---
 
-## Bekannte Einschränkungen
+## Bekannte Einschraenkungen
 
-1. **Burstiness-Berechnung** liefert manchmal negative Werte (z.B. -0.240 bei Kapitel 1). Mathematisch korrekt per Formel, aber ungewöhnlich. **Fix Session 47:** Mindest-Satzanzahl auf 20 erhöht – bei kurzen Texten wird das Signal jetzt übersprungen.
-2. **Tier-2-Zählung** zählt derzeit jedes Vorkommen als Überschuss, statt das Limit von 1 pro 500 Wörter zu berücksichtigen. Feature-Request für Phase 4.
-3. **Muster-Scan (24 KI-Muster)** ist nur in der SKILL.md als Workflow dokumentiert, NICHT im JS-Script implementiert. Das JS-Script erkennt Tier-1/2-Wörter und Phrasen, aber nicht die 24 benannten Muster. Dies müsste in einem zukünftigen Update ergänzt werden.
-4. **Fix-Befehl** ersetzt nur Tier-1-Wörter und einige verbotene Phrasen. Kein Rewriting ganzer Sätze.
+1. **Burstiness-Berechnung** liefert manchmal negative Werte (z.B. -0.240 bei Kapitel 1). Mathematisch korrekt per Formel, aber ungewoehnlich. **Fix Session 47:** Mindest-Satzanzahl auf 20 erhoeht – bei kurzen Texten wird das Signal jetzt uebersprungen.
+2. ~~**Tier-2-Zaehlung** zaehlte jedes Vorkommen als Ueberschuss, statt das Limit von 1 pro 500 Woerter zu beruecksichtigen.~~ **Gefixt (v1.1):** `findTier2()` prueft jetzt korrekt `count > maxAllowed` und zaehlt nur Ueberschuss-Treffer.
+3. **Muster-Scan (24 KI-Muster)** ist nur in der SKILL.md als Workflow dokumentiert, NICHT im JS-Script implementiert. Das ist **by design**: Die 24-Muster-Erkennung braucht semantisches Verstaendnis und laeuft ueber den OpenClaw-Agent. Das CLI-Tool ist ein regelbasiertes Subset. README.md dokumentiert diese Trennung seit v1.1.0.
+4. **Fix-Befehl** ersetzt Tier-1-Woerter (morphologisch korrekt) und verbotene Phrasen. Kein Rewriting ganzer Saetze. **Seit v1.1.0:** Morphologische Ersetzung mit 3 Ebenen: (a) Adjektiv-Suffixe -e/-en/-em/-er/-es werden aufs Ersatzwort uebertragen. (b) Substantiv-Suffixe (Genitiv-s, Plural) werden intelligent gehandhabt (kein doppeltes -s bei "Basis" etc.). (c) Artikel-Korrektur bei Genus-Wechsel mit Praepositions-Heuristik fuer Dativ/Genitiv-Unterscheidung. Erstellt automatisch ein `.bak`-Backup vor dem Ueberschreiben. **Bekannte Einschraenkungen:** (1) Komposita mit Bindestrich ("KI-Landschaft") → Artikel-Suche findet Artikel manchmal nicht. (2) Phrasen-Ersetzungen ("Meilenstein" → "wichtiger Schritt") → Gross/Kleinschreibung des Adjektivs im Ersatz nicht immer korrekt.
+5. **Tier-3 nicht im CLI.** Reference-Dateien: 45 Tier-1, 46 Tier-2, 34 Tier-3, 48 Phrasen. CLI (v1.1.0): 45 Tier-1, 45 Tier-2, 48 Phrasen + 16 Chatbot-Artefakte. Tier-3 nur im Agent-Modus (braucht Kontext-Verstaendnis).
 
 ---
 

@@ -2,9 +2,9 @@
 
 **Erster deutscher KI-Text-Detektor für OpenClaw.**
 
-5-Durchgang-Analyse: Erkennt 24 KI-Schreibmuster, flaggt 168 deutsche KI-Vokabeln und Phrasen in 3 Schweregrad-Stufen, misst 5 statistische Signale (Burstiness, TTR, Flesch-DE) und schreibt Texte mit Personality Injection um. Inklusive Lesch-Stil-Layer.
+5-Durchgang-Analyse: Erkennt 24 KI-Schreibmuster, flaggt 125+ deutsche KI-Vokabeln in 3 Tiers + 48 Phrasen + 16 Chatbot-Artefakte, misst 5 statistische Signale (Burstiness, TTR, Flesch-DE) und schreibt Texte mit Personality Injection um. Inklusive Lesch-Stil-Layer.
 
-> **Version:** 1.0.0
+> **Version:** 1.2.0
 > **Autor:** OpenClaw
 > **Sprache:** Deutsch
 > **Lizenz:** MIT
@@ -207,7 +207,7 @@ Wenn der Benutzer einen vollständigen Check will, gib den Report in diesem Form
 | Datei | Inhalt |
 |-------|--------|
 | `references/ki-muster.md` | 24 KI-Schreibmuster mit Beispielen, Schweregrad, Erkennungsregeln |
-| `references/vokabeln.md` | 168 deutsche KI-Marker in 3 Tiers + 48 verbotene Phrasen + 7 Co-Occurrence-Cluster + Ersetzungen |
+| `references/vokabeln.md` | 125+ KI-Vokabeln in 3 Tiers + 48 verbotene Phrasen + 16 Chatbot-Artefakte + 7 Co-Occurrence-Cluster + Ersetzungen |
 | `references/statistische-signale.md` | Formeln für Burstiness, TTR, CoV, Trigramm-Rate, Flesch-DE + Schwellenwerte |
 | `references/personality-injection.md` | 5 Techniken zur Vermenschlichung + Regeln + deutsche Beispiele |
 | `references/examples.md` | 6 deutsche Vorher/Nachher-Transformationen (Blogpost, E-Mail, Social Media, Tech Doku, Sachbuch, Förderantrag) |
@@ -228,6 +228,6 @@ Sag deinem OpenClaw:
 
 ### Im OpenClaw-Ökosystem
 
-- **Im Buch:** Kapitel 3/4 erklärt die Theorie hinter den 24 Mustern. Der Skill ist die Praxis.
-- **Im Dashboard:** Widget zeigt deinen letzten Score und den Verlauf über Zeit.
+- **Im Buch:** Kapitel 9 (Agent-Architektur) erklaert die Theorie hinter Skills. Kap 13 zeigt den Humanizer als Praxis-Beispiel.
+- **Im Dashboard:** https://openclaw-buch.de
 - **In Cowan:** "Hey Cowan, check diesen Text" – per Sprache oder Kamera (OCR).

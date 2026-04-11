@@ -1,8 +1,7 @@
 # Deutsche KI-Vokabel-Datenbank
 
-> 168 Wörter und Phrasen die verraten, dass ein Text von einer KI stammt.
-> Sortiert in 3 Schweregrad-Tiers + verbotene Phrasen.
-> Jedes Wort hat einen konkreten Ersetzungsvorschlag.
+> 125+ Vokabeln in 3 Tiers, 48 verbotene Phrasen und 16 Chatbot-Artefakte.
+> Sortiert nach Schweregrad. Jeder Eintrag hat einen konkreten Ersetzungsvorschlag.
 
 ---
 
@@ -207,6 +206,24 @@ Diese Phrasen sind eindeutige KI-Marker. Jede einzelne muss raus.
 | "Von entscheidender Bedeutung" | "Wichtig" oder "Zentral". |
 | "Stellt einen wichtigen Schritt dar" | "Ist ein wichtiger Schritt" oder konkreter. |
 | "Sowohl... als auch..." (inflationär) | Zwei Sätze. 1x pro Text okay, 3x+ ist KI. |
+
+---
+
+## Chatbot-Artefakte (sofort ersetzen, +5 Punkte pro Treffer)
+
+Diese Phrasen verraten, dass der Text direkt aus einem Chatbot stammt – ohne jede Nachbearbeitung. Jede einzelne muss raus.
+
+| Artefakt | Ersetzung |
+|----------|-----------|
+| "Tolle Frage!" / "Gute Frage!" / "Hervorragende Frage!" | Streichen. Einfach antworten. |
+| "Ich hoffe, das hilft" | Streichen. |
+| "Lass mich wissen" / "Lassen Sie mich wissen" | Streichen. |
+| "Gerne!" / "Natuerlich!" / "Selbstverstaendlich!" | Streichen (als Satzanfang). |
+| "Da haben Sie voellig recht" / "Da hast du voellig recht" | Streichen oder konkreter formulieren. |
+| "Stand meiner letzten Schulung" | Streichen. Kein Mensch sagt das. |
+| "Soweit mir bekannt" / "Zum Zeitpunkt meines Wissens" | "Meines Wissens" oder konkretes Datum nennen. |
+
+> **Hinweis:** Diese Artefakte sind im CLI-Tool als eigene Kategorie implementiert (16 Varianten). Im Agent-Modus werden sie zusaetzlich ueber Muster #18 (ki-muster.md) erkannt.
 
 ---
 

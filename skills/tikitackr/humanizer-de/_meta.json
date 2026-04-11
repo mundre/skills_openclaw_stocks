@@ -3,9 +3,15 @@
   "slug": "humanizer-de",
   "displayName": "Humanizer-DE",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773941134446,
-    "commit": "https://github.com/openclaw/skills/commit/598cbc8df104d242db856993cb45dffc001d520a"
+    "version": "1.2.0",
+    "publishedAt": 1775568138074,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773941134446,
+      "commit": "https://github.com/openclaw/skills/commit/598cbc8df104d242db856993cb45dffc001d520a"
+    }
+  ]
 }

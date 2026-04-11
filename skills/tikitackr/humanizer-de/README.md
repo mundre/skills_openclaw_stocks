@@ -1,10 +1,17 @@
 # Humanizer-DE
 
-**Erster deutscher KI-Text-Detektor für OpenClaw.**
+**Erster deutscher KI-Text-Detektor fuer OpenClaw.**
 
-5-Durchgang-Analyse: Erkennt 24 KI-Schreibmuster, flaggt 168 deutsche KI-Vokabeln und Phrasen in 3 Schweregrad-Stufen, misst 5 statistische Signale (Burstiness, TTR, Flesch-DE) und schreibt Texte mit Personality Injection um. Inklusive Lesch-Stil-Layer.
+> Version 1.2.0 · Autor: OpenClaw · Lizenz: MIT · Sprache: Deutsch
 
-> Version 1.0.0 · Autor: OpenClaw · Lizenz: MIT · Sprache: Deutsch
+Dieser Skill hat **zwei Betriebsarten:**
+
+| Modus | Was passiert | Umfang |
+|-------|-------------|--------|
+| **Agent-Modus** (SKILL.md) | OpenClaw fuehrt die vollstaendige 5-Durchgangs-Analyse durch | 24 KI-Muster, 125+ Vokabeln in 3 Tiers, 48 Phrasen, 5 Statistik-Signale, Personality Injection, Stil-Layer |
+| **CLI-Modus** (humanize-de.js) | Standalone Node.js-Script, laeuft ohne KI | Tier-1/2-Vokabelcheck (90 Woerter), 48 Phrasen, 16 Chatbot-Artefakte, 5 Statistik-Signale, Co-Occurrence-Cluster, Auto-Fix |
+
+Der **Agent-Modus** nutzt Claude als Analysemotor und hat Zugriff auf alle Reference-Dateien – inklusive 24 KI-Schreibmuster-Erkennung und Personality Injection. Das **CLI-Tool** ist ein regelbasiertes Subset fuer schnelle Checks ohne KI-Kosten.
 
 ---
 
@@ -13,8 +20,8 @@
 Du gibst ihm einen deutschen Text. Er sagt dir:
 
 1. **Wie stark** der Text nach KI klingt (Score 0–100)
-2. **Wo genau** KI-Muster stecken (markiert + erklärt)
-3. **Wie du es besser machst** (konkrete Umschreibvorschläge)
+2. **Wo genau** KI-Muster stecken (markiert + erklaert)
+3. **Wie du es besser machst** (konkrete Umschreibvorschlaege)
 
 Score 0 = klingt menschlich. Score 100 = klingt wie ChatGPT auf Autopilot.
 
@@ -26,9 +33,9 @@ Sag deinem OpenClaw:
 
 > *"Installiere den Skill Tikitackr/humanizer-de"*
 
-OpenClaw lädt den Skill herunter und bestätigt die Installation. Fertig. Kein Terminal, kein manueller Download – alles läuft über den Chat.
+OpenClaw laedt den Skill herunter und bestaetigt die Installation. Fertig. Kein Terminal, kein manueller Download – alles laeuft ueber den Chat.
 
-Der Skill wird per Chat-Befehl aufgerufen (z.B. "Check diesen Text") – er läuft nicht automatisch im Hintergrund.
+Der Skill wird per Chat-Befehl aufgerufen (z.B. "Check diesen Text") – er laeuft nicht automatisch im Hintergrund.
 
 ---
 
@@ -47,18 +54,24 @@ Der Skill wird per Chat-Befehl aufgerufen (z.B. "Check diesen Text") – er läu
 
 ## Was wird analysiert?
 
-### 24 KI-Schreibmuster
+### 24 KI-Schreibmuster (nur Agent-Modus)
 
-Der Skill erkennt 24 typische Muster, die KI-generierte deutsche Texte verraten – von Bedeutungsinflation über Aufzählungs-Sucht bis zu leeren Verstärkern. Jedes Muster hat einen Schweregrad (HOCH / MITTEL / NIEDRIG) und konkrete Umschreibvorschläge.
+Der Skill erkennt 24 typische Muster, die KI-generierte deutsche Texte verraten – von Bedeutungsinflation ueber Aufzaehlungs-Sucht bis zu leeren Verstaerkern. Jedes Muster hat einen Schweregrad (HOCH / MITTEL / NIEDRIG) und konkrete Umschreibvorschlaege.
 
-### 168 KI-Vokabeln & Phrasen in 3 Tiers
+> **Hinweis:** Die 24-Muster-Erkennung laeuft ueber den OpenClaw-Agent (SKILL.md). Das CLI-Tool prueft Vokabeln, Phrasen und Statistik – aber nicht die 24 Muster.
 
-- **Tier 1 (VERBOTEN):** 44 Wörter die sofort auffallen ("ermöglicht", "nahtlos", "maßgeblich")
-- **Tier 2 (SPARSAM):** 47 Wörter die in Maßen okay sind, aber bei Häufung KI signalisieren (inkl. Nominalstil-Marker wie "Fragestellung", "Zielsetzung")
-- **Tier 3 (BEOBACHTEN):** 35 Wörter die nur im Cluster verdächtig werden (inkl. Anglizismen wie "Benchmark", "Use Case", "Impact")
-- **Verbotene Phrasen:** 48 Phrasen die sofort raus müssen ("Es ist wichtig zu beachten", "In der heutigen Welt", "Vor dem Hintergrund")
+### KI-Vokabeln & Phrasen in 3 Tiers
 
-Plus **7 Co-Occurrence-Sets** – Wort-Cluster die gemeinsam auftreten und KI-Herkunft verraten (inkl. Anglizismen-Cluster und Nominalstil-Cluster).
+Die Reference-Datenbank (`references/vokabeln.md`) umfasst 125+ Vokabeln und 48 Phrasen:
+
+- **Tier 1 (VERBOTEN):** 45 Woerter die sofort auffallen ("ermoeglicht", "nahtlos", "massgeblich")
+- **Tier 2 (SPARSAM):** 46 Woerter die in Massen okay sind, aber bei Haeufung KI signalisieren (inkl. Nominalstil-Marker wie "Fragestellung", "Zielsetzung")
+- **Tier 3 (BEOBACHTEN):** 34 Woerter die nur im Cluster verdaechtig werden (inkl. Anglizismen wie "Benchmark", "Use Case", "Impact")
+- **Verbotene Phrasen:** 48 Phrasen die sofort raus muessen ("Es ist wichtig zu beachten", "In der heutigen Welt", "Vor dem Hintergrund")
+
+Das **CLI-Tool** implementiert davon: 45 Tier-1, 45 Tier-2, 48 Phrasen + 16 Chatbot-Artefakte. Tier-3 wird nur im Agent-Modus geprueft.
+
+Plus **7 Co-Occurrence-Sets** – Wort-Cluster die gemeinsam auftreten und KI-Herkunft verraten (inkl. Anglizismen-Cluster und Nominalstil-Cluster). Im CLI und Agent verfuegbar.
 
 ### 5 Statistische Signale
 
@@ -81,14 +94,25 @@ Plus **7 Co-Occurrence-Sets** – Wort-Cluster die gemeinsam auftreten und KI-He
 
 ---
 
-## CLI-Tool (optional, Subset)
+## CLI-Tool (Standalone, Subset)
 
-Im Ordner `scripts/` liegt ein Node.js CLI-Tool fuer schnelle Analysen **ohne KI**. Das CLI implementiert einen Teil der Analyse: Tier-1/2-Vokabelcheck, Phrasenersetzung und statistische Signale. Die vollstaendige 5-Durchgangs-Analyse mit allen 24 KI-Mustern und Personality Injection laeuft ueber den OpenClaw-Agent (SKILL.md).
+Im Ordner `scripts/` liegt ein Node.js CLI-Tool fuer schnelle Analysen **ohne KI**. Es implementiert:
+
+- **45** Tier-1-Woerter (verboten, +3 Punkte)
+- **45** Tier-2-Woerter (sparsam, +1 Punkt ueber Limit von 1x/500 Woerter)
+- **48** verbotene Phrasen (+4 Punkte)
+- **16** Chatbot-Artefakte (+5 Punkte)
+- **5** statistische Signale (Burstiness, TTR, CoV, Trigramm-Rate, Flesch-DE)
+- **7** Co-Occurrence-Sets (Cluster-Erkennung)
+- **Personality-Bonus** (Abzuege fuer menschliche Stilmittel)
+
+**Nicht im CLI:** 24 KI-Muster-Scan, Tier-3-Vokabeln, Personality Injection, Stil-Layer. Dafuer den Agent-Modus (SKILL.md) nutzen.
 
 ```bash
-node humanize-de.js score   < mein-text.txt
-node humanize-de.js analyze < mein-text.txt
-node humanize-de.js suggest < mein-text.txt
+node humanize-de.js score   datei.md    # Nur Score (0-100)
+node humanize-de.js analyze datei.md    # Vollstaendiger Report
+node humanize-de.js suggest datei.md    # Ersetzungsvorschlaege
+node humanize-de.js fix     datei.md    # Auto-Ersetzung (erstellt .bak-Backup)
 ```
 
 Nur `fs` und `path` als Dependencies – kein Netzwerk, keine externen Pakete.
@@ -137,8 +161,8 @@ Dieser Skill ist eigenständig nutzbar – du brauchst kein Buch und kein Dashbo
 
 Wenn du mehr willst: Der Skill ist Teil des **OpenClaw Sachbuch-Projekts** ("Agentic Authorship"), das erklärt wie man KI-Agenten baut, betreibt und qualitätssichert. Das Buch nutzt den Humanizer selbst für die eigene Textqualität.
 
-- Dashboard: https://tikitackr.github.io/OpenClaw-Dashboard/
-- Cowan (mobiler Buch-Begleiter): https://tikitackr.github.io/Cowan/
+- Dashboard: https://openclaw-buch.de
+- Cowan (mobiler Buch-Begleiter): https://openclaw-buch.de/?module=companion
 
 ---
 
