@@ -3,11 +3,16 @@
   "slug": "gate-news-event-explain",
   "displayName": "gate-news-eventexplain",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1775184894713,
-    "commit": "https://github.com/openclaw/skills/commit/022c9ed330c85b07b3769beff0f4b283f71e2025"
+    "version": "1.0.4",
+    "publishedAt": 1775558163524,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1775184894713,
+      "commit": "https://github.com/openclaw/skills/commit/022c9ed330c85b07b3769beff0f4b283f71e2025"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773364383339,
