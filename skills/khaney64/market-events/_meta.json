@@ -3,11 +3,16 @@
   "slug": "market-events",
   "displayName": "Market Events",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1774200250074,
-    "commit": "https://github.com/openclaw/skills/commit/461d4aae31b777bb508838dd2d5a944938d8f737"
+    "version": "0.1.2",
+    "publishedAt": 1775583123248,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1774200250074,
+      "commit": "https://github.com/openclaw/skills/commit/461d4aae31b777bb508838dd2d5a944938d8f737"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1773697224794,
