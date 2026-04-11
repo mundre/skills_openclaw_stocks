@@ -1,7 +1,15 @@
 ---
 name: problem-solving
 version: 1.0.0
-description: "Structured problem diagnosis and resolution methodology. Use when: (1) a problem's cause is unclear and requires investigation, (2) a previous fix attempt failed, (3) the issue involves multiple components interacting, (4) modifications carry risk or side effects, (5) user explicitly asks to analyze before fixing. NOT for: obvious one-liner fixes, clear error messages with known solutions, or when user says 'just fix it' for simple issues."
+description: >
+  结构化问题诊断与解决方法论。
+  Use when: (1) 问题原因不明需要调查/"分析一下这个问题"/"排查一下",
+  (2) 之前的修复尝试失败了,
+  (3) 问题涉及多个组件交互/"为什么会这样"/"调查一下原因",
+  (4) 修改有风险或副作用/"诊断一下",
+  (5) 用户明确要求先分析再修复。
+  NOT for: 明显的一行修复、错误信息清晰且有已知方案的问题、
+  用户说"直接修"的简单问题。
 ---
 
 # Structured Problem Solving
@@ -20,6 +28,44 @@ description: "Structured problem diagnosis and resolution methodology. Use when:
 - Wrong fix could cause data loss, privacy leak, or downtime
 
 ## The Process
+
+### Step 0: Question Dissolution (消解层)
+
+Before solving, check if the problem itself is valid. Many problems dissolve when examined properly.
+
+**Run these 3 checks sequentially. If any check dissolves the problem, stop and tell the user — a dissolved problem is more valuable than a solved one.**
+
+#### 0.1 Language Trap Detection (语言陷阱)
+
+Does the problem statement contain vague, undefined key terms?
+
+Common trap words: "优化" "合适" "更好" "正常" "应该" "稳定"
+
+**Test**: Can you give a measurable or actionable definition for every key term? If not, the problem can't be solved because it hasn't been stated.
+
+→ If trapped: Ask the user to define the vague term. "你说的'优化'具体指什么？响应时间从 X 降到 Y？还是内存占用？还是用户体验？"
+
+#### 0.2 Hidden Assumption Check (假设检验)
+
+Rewrite the problem as: "This problem assumes X. Is X true?"
+
+Common false assumptions:
+- "系统变慢了" → assumes it was faster before (was it? measured when?)
+- "用户不喜欢这个功能" → assumes users have tried it (have they? data?)
+- "我们需要加这个功能" → assumes the current system can't do it (can it?)
+
+→ If assumption is false: Tell the user. "你的问题假设了「X」，但这个前提可能不成立。如果 X 不成立，问题就消失了。"
+
+#### 0.3 Question vs. Problem Classification
+
+- **Question**: Has a standard answer, can be resolved by looking it up or reading docs
+  - → Answer directly, don't enter the full diagnostic process
+- **Problem**: No standard answer, requires investigation + experimentation
+  - → Continue to Step 1
+
+If the problem survives all 3 checks, proceed to full diagnosis.
+
+---
 
 ### Step 1: Define the Problem
 
@@ -151,3 +197,16 @@ Write lessons to `.learnings/` if reusable.
 - **Execute**: Confirm before risky operations
 - **Verify**: Ask user to check on their end
 - **Throughout**: Say "I'm not sure yet" over false confidence
+
+---
+
+## 下一步建议（条件触发）
+
+问题解决后，根据结果判断是否推荐下一步。
+
+| 触发条件 | 推荐 |
+|---------|------|
+| 根因是代码 bug，修复需要多文件改动 | 「根因清楚了，修复交给 coding-agent spawn Claude Code 来做。」 |
+| 问题根因值得记录（同类问题可能再犯） | 「这个教训值得记下来，写到 .learnings/ 防止再犯。」 |
+| 问题在消解层被消解（问题本身不成立） | 「问题已经消解了。如果背后有更大的决策要做，可以拉出来单独讨论。」 |
+| 诊断过程发现系统架构层面的隐患 | 「这次修好了，但架构上还有隐患。要不要排个时间做一次 healthcheck？」 |
