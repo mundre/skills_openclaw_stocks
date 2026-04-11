@@ -3,11 +3,16 @@
   "slug": "stocks-query-base-skill",
   "displayName": "A股-股市分析和投资顾问（安西军项目）",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1775235690187,
-    "commit": "https://github.com/openclaw/skills/commit/30ffb40d13e09a665c4adfd8f9170a70f70d06ec"
+    "version": "0.2.1",
+    "publishedAt": 1775645308757,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1775235690187,
+      "commit": "https://github.com/openclaw/skills/commit/30ffb40d13e09a665c4adfd8f9170a70f70d06ec"
+    },
     {
       "version": "0.0.5",
       "publishedAt": 1773949455978,
