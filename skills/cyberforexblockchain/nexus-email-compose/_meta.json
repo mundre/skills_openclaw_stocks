@@ -3,9 +3,15 @@
   "slug": "nexus-email-compose",
   "displayName": "NEXUS Email Compose",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773360353493,
-    "commit": "https://github.com/openclaw/skills/commit/921948fedf872e2d21c9a416b29ee2210d589b84"
+    "version": "1.1.0",
+    "publishedAt": 1775754655578,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773360353493,
+      "commit": "https://github.com/openclaw/skills/commit/921948fedf872e2d21c9a416b29ee2210d589b84"
+    }
+  ]
 }
