@@ -3,9 +3,15 @@
   "slug": "wander",
   "displayName": "Wander",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1774599878362,
-    "commit": "https://github.com/openclaw/skills/commit/f105b262230bae645b725af03298f08652f014fc"
+    "version": "1.0.6",
+    "publishedAt": 1775817516095,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1774599878362,
+      "commit": "https://github.com/openclaw/skills/commit/f105b262230bae645b725af03298f08652f014fc"
+    }
+  ]
 }

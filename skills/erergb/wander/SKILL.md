@@ -48,6 +48,8 @@ gh run view <RUN_ID> --log-failed
 
 **Current engine**: GitHub Actions only. For EAS builds triggered via `eas build` CLI, Wander cannot monitor directly — use a GHA wrapper workflow that calls EAS, then monitor that workflow.
 
+For the full **v1 scope** statement (GHA vs non-GHA CLIs, workarounds, roadmap links), see the repository README: [v1 scope: GitHub Actions today](https://github.com/ERerGB/wander/blob/main/README.md#v1-scope-github-actions-today).
+
 ---
 
 ## Agent auto-trigger (mandatory)
