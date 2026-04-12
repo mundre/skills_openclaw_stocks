@@ -42,6 +42,7 @@ Consistency rules:
 - [ ] The default behavior is described the same way everywhere.
 - [ ] The anti-copy rule is described the same way everywhere.
 - [ ] The output file structure is described the same way everywhere.
+- [ ] The `project/<delivery-slug>/` delivery root and `./image/bg.png` contract are described the same way everywhere.
 
 ## 3. Mode behavior
 
@@ -68,6 +69,8 @@ Consistency rules:
   - [ ] `main.js`
   - [ ] `mock-data.js`
 - [ ] Uses plain JavaScript in interaction logic when behavior is needed.
+- [ ] Includes a real or explicitly required `./image/bg.png` contract when the brief is poster-led.
+- [ ] Includes a signature interaction animation plus supporting motion when the page is reward-led.
 
 ### full mode
 - [ ] Follows the complete flow:
@@ -111,6 +114,8 @@ Consistency rules:
 - [ ] JavaScript logic is readable and limited to realistic demo behavior.
 - [ ] DOM interaction uses plain JavaScript APIs consistently where needed.
 - [ ] Mock data is separated from rendering logic when possible.
+- [ ] Python local delivery creates `project/`, `project/<delivery-slug>/`, and `project/<delivery-slug>/image/` before saving generated assets.
+- [ ] When local output is requested, the contract requires actual file writes rather than only a file tree or code blocks.
 - [ ] The output does not pretend to include backend integration unless explicitly provided.
 
 ## 7. Schema quality
@@ -122,6 +127,9 @@ Check `examples/campaign-schema-example.json`:
 - [ ] It includes popup definitions.
 - [ ] It includes state-related fields where needed.
 - [ ] It includes tracking or event fields if the skill claims tracking support.
+- [ ] It includes configurable activity generation fields when the brief is open-ended.
+- [ ] It includes animation-system fields when the skill claims richer motion.
+- [ ] It includes asset-output fields for `./image/bg.png`, `deliverySlug`, and local delivery.
 - [ ] The schema matches the documented output sections.
 - [ ] The schema reflects H5/Web delivery, not framework-specific component trees.
 

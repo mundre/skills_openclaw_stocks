@@ -4,6 +4,77 @@ All notable changes to this skill are documented here.
 
 This repository now uses a simple repository version tracked in the `VERSION` file.
 
+## [0.6.0] - 2026-04-08
+
+### Changed
+- Tightened the local delivery contract so explicit local-output requests must write files to disk instead of only returning file structure or code blocks.
+- Changed the bundle layout from `project/...` to `project/<delivery-slug>/...` so every delivery is wrapped in one extra bundle directory.
+- Updated `SKILL.md`, `README.md`, `README.zh-CN.md`, `references/scope.md`, and examples to document the nested delivery bundle path and actual-write requirement.
+
+### Fixed
+- Fixed the local artifact path contract so proposal, delivery, and full-mode artifacts now land under paths such as `project/<delivery-slug>/campaign-proposal.pptx` and `project/<delivery-slug>/index.html`.
+- Bumped the repository version from `0.5.0` to `0.6.0`.
+
+## [0.5.0] - 2026-04-08
+
+### Changed
+- Changed the local delivery root so all final generated files must be written under the current execution environment's `project/` directory.
+- Updated `SKILL.md`, `README.md`, `README.zh-CN.md`, `references/scope.md`, and examples to replace workspace/current-directory local output guidance with the new `project/` delivery-root contract.
+- Updated local artifact examples so proposal, delivery, and full-mode outputs now use paths such as `project/campaign-proposal.pptx`, `project/index.html`, and `project/image/bg.png`.
+
+### Fixed
+- Fixed the Python local-output contract so runs must create `project/` automatically when missing, then create `project/image/` before saving the hero asset.
+- Bumped the repository version from `0.4.0` to `0.5.0`.
+
+## [0.4.0] - 2026-04-08
+
+### Added
+- Added an intelligent activity-generation contract so open-ended briefs can produce a configurable new mechanic instead of being limited to the reference activity family.
+- Added an animation choreography contract covering signature interaction motion, supporting ambient layers, activity-specific animation defaults, and reduced-motion guidance.
+- Added schema coverage for `activityFactory`, `activityConfig`, `animationSystem`, `visualPreset`, and `assetOutput`.
+
+### Changed
+- Updated `SKILL.md` to push hero-image generation toward photorealistic commercial-poster quality, including anatomy and uncanny-image quality gates.
+- Updated `README.md`, `README.zh-CN.md`, `references/scope.md`, and examples to document the stronger image-quality target, richer motion system, and dynamic activity-generation behavior.
+- Updated delivery and architecture examples so later handoffs explicitly cover configurable activity mechanics and animation-system planning.
+
+### Fixed
+- Fixed the Python local-output contract so `delivery` and `full` runs must create the project-root `image/` directory and save the generated hero asset to `./image/bg.png`.
+- Bumped the repository version from `0.3.2` to `0.4.0`.
+
+## [0.3.2] - 2026-04-07
+
+### Added
+- Added a character-only hero-image contract so generated visuals focus on a new female hero plus festive atmosphere instead of copying reward modules or lower-page layouts from the reference.
+- Added a fixed image handoff contract for `delivery` and `full`: project-root `image/` directory, code references to `./image/bg.png`, and an explicit plain-language asset note after code delivery.
+
+### Changed
+- Updated `SKILL.md` to require stronger character innovation, including new face/pose/outfit variation rather than recreating the same woman from the reference.
+- Raised the front-end finish bar for festive pages by requiring stronger decorative density and lightweight motion cues such as CTA pulse, sparkle drift, and popup rise-in.
+- Updated `README.md`, `README.zh-CN.md`, `references/scope.md`, and delivery/full examples to reflect the new hero-image boundary and `./image/bg.png` asset path.
+- Bumped the repository version from `0.3.1` to `0.3.2`.
+
+## [0.3.1] - 2026-04-07
+
+### Added
+- Added a mandatory image-generation gate for poster-led `delivery` and `full` runs, including explicit trigger conditions, current-run completion checks, and a default `regenerate_each_run` policy.
+
+### Changed
+- Updated `SKILL.md` so image-required briefs must generate `image.png` before front-end files and must stop with a blocked result when image generation is unavailable.
+- Updated `README.md`, `README.zh-CN.md`, `references/scope.md`, and delivery/full examples to document direct tool-calling guidance such as `image_generate` when exposed by the host.
+- Bumped the repository version from `0.3.0` to `0.3.1`.
+
+## [0.3.0] - 2026-04-07
+
+### Added
+- Added a stronger first-screen image contract so poster-led `delivery` and `full` outputs default to a real top hero visual such as `image.png` instead of a placeholder-only image slot.
+- Added reference-driven background guidance so generated hero visuals can inherit festive backdrop density and decorative mood from supplied activity references.
+
+### Changed
+- Reworked `SKILL.md` to require image-led hero placement at the top of the page for poster-style campaign drafts, while keeping `assets/hero-figure.png` as an optional supporting layer only.
+- Updated `README.md`, `README.zh-CN.md`, `references/scope.md`, and delivery-focused examples to show `image.png`-first hero treatment and top-of-page placement.
+- Bumped the repository version from `0.2.0` to `0.3.0`.
+
 ## [0.2.0] - 2026-03-27
 
 ### Added

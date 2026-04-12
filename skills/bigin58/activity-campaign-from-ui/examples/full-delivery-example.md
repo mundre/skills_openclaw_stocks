@@ -92,34 +92,52 @@ The schema should cover both campaign config and delivery structure.
 ### Suggested schema sections
 - `campaignMeta`
 - `hero`
+- `activityFactory`
+- `activityConfig`
 - `progressRoute`
 - `tasks`
 - `checkpointRewards`
 - `lottery`
 - `tabs`
 - `popups`
+- `animationSystem`
+- `assetOutput`
 - `stateMachine`
 - `tracking`
 
 ## 6. Visual direction
 - dominant palette: cherry red, amber gold, warm cream
 - page mood: festive, busy, rewarding, glossy
-- hero composition: adult female glamour figure in red-dominant festive styling, layered title art, and a loud prize device
+- hero composition: a real top-of-page hero image at `./image/bg.png` with one new adult female glamour figure in red-dominant festive styling and photorealistic commercial-poster rendering
 - first screen should feel poster-led, with the woman as the primary visual anchor
 - secondary content should be compressed into sticky tabs instead of a long stacked page
 - module treatment: decorated panels with stronger top headers and contrast separators
 - CTA language: loud, central, badge-supported
+- motion system: one signature interaction animation plus ambient sparkle drift, CTA pulse, and popup rise-in
 - popup style: branded celebration layer instead of a neutral modal
 
 ## 7. H5/Web high-fidelity draft files
 ### File structure
-- `index.html`
-- `styles.css`
-- `main.js`
-- `mock-data.js`
-- `assets/hero-figure.png` optional
+- `project/<delivery-slug>/index.html`
+- `project/<delivery-slug>/styles.css`
+- `project/<delivery-slug>/main.js`
+- `project/<delivery-slug>/mock-data.js`
+- `project/<delivery-slug>/image/`
+- `project/<delivery-slug>/image/bg.png` for the top hero visual
 
-If the user explicitly asks for local output and Python/local execution is available, these front-end files may be written directly to the workspace in addition to being presented in the response.
+Execution note:
+- generate the asset used for `./image/bg.png` in the current run before the front-end files when the brief is poster-led
+- if the host exposes a concrete tool such as `image_generate`, call it directly
+- default to `regenerate_each_run`; only reuse an existing image when the user explicitly asks to do so
+- if required image generation is unavailable, stop and report the run as blocked instead of downgrading to placeholders
+- keep the generated image focused on one new woman and atmosphere instead of copying page modules or the reference face
+- when Python writes local files, create `project/`, `project/<delivery-slug>/`, and `project/<delivery-slug>/image/` first and save the hero asset to `project/<delivery-slug>/image/bg.png`
+- when local output was requested, do not stop at a file structure summary; actually write the files and report the resulting paths
+
+Asset handoff note:
+`需要把生成好的图片，改名为bg，图片类型为 png，放到 project/<delivery-slug>/image 目录下`
+
+If the user explicitly asks for local output and Python/local execution is available, these front-end files should be written inside `project/<delivery-slug>/` in addition to being presented in the response.
 
 ### index.html
 ```html
@@ -127,30 +145,27 @@ If the user explicitly asks for local output and Python/local execution is avail
   <div class="route-page-glow route-page-glow-top"></div>
   <main class="route-shell">
     <section id="hero" class="route-hero">
-      <div class="route-hero-copy">
-        <span class="hero-pill">春日限定玩法</span>
-        <h1 class="route-title">春日闯关大道</h1>
-        <p class="route-subtitle">完成每日任务点亮路标，开出阶段宝箱并冲刺终点大奖</p>
-        <div class="route-meta">
-          <span>活动时间 02.01 - 02.14</span>
-          <span>累计完成越多，奖励越高</span>
+      <div class="route-hero-visual">
+        <img src="./image/bg.png" alt="活动首屏主视觉" />
+        <div class="route-hero-copy">
+          <span class="hero-pill">春日限定玩法</span>
+          <h1 class="route-title">春日闯关大道</h1>
+          <p class="route-subtitle">完成每日任务点亮路标，开出阶段宝箱并冲刺终点大奖</p>
+          <div class="route-meta">
+            <span>活动时间 02.01 - 02.14</span>
+            <span>累计完成越多，奖励越高</span>
+          </div>
+          <div class="route-hero-actions">
+            <button class="hero-side-cta js-start-draw">冲刺终点</button>
+            <button class="hero-ghost-cta js-switch-tab" data-tab="tasks">先做任务</button>
+          </div>
         </div>
-        <div class="route-hero-actions">
-          <button class="hero-side-cta js-start-draw">冲刺终点</button>
-          <button class="hero-ghost-cta js-switch-tab" data-tab="tasks">先做任务</button>
-        </div>
+        <aside class="hero-side-card">
+          <p>终点大奖</p>
+          <strong>锦鲤礼包 x 1</strong>
+          <span>再完成 1 个任务即可额外解锁 1 次抽奖</span>
+        </aside>
       </div>
-
-      <div class="route-hero-figure">
-        <div class="hero-figure-aura"></div>
-        <img src="assets/hero-figure.png" alt="活动美女主视觉" />
-      </div>
-
-      <aside class="hero-side-card">
-        <p>终点大奖</p>
-        <strong>锦鲤礼包 x 1</strong>
-        <span>再完成 1 个任务即可额外解锁 1 次抽奖</span>
-      </aside>
     </section>
 
     <section class="route-summary-panel">
@@ -210,10 +225,7 @@ body {
 }
 
 .route-hero {
-  display: grid;
-  grid-template-columns: 0.95fr 0.9fr 0.75fr;
-  gap: 16px;
-  padding: 24px;
+  padding: 0;
   margin-bottom: 16px;
   color: #fff8eb;
   background:
@@ -221,26 +233,49 @@ body {
     linear-gradient(140deg, #8f0f17 0%, #d33730 52%, #ff8a47 100%);
 }
 
-.route-hero-figure {
+.route-hero-visual {
   position: relative;
-  min-height: 340px;
+  min-height: 560px;
 }
 
-.route-hero-figure img {
-  position: relative;
-  z-index: 1;
+.route-hero-visual img {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: bottom center;
+  object-fit: cover;
+  object-position: top center;
 }
 
-.hero-figure-aura {
+.route-hero-copy {
   position: absolute;
-  inset: auto 12% 2% 12%;
-  height: 72%;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 224, 138, 0.78), rgba(255, 224, 138, 0));
+  inset: auto 20px 20px 20px;
+  z-index: 1;
+}
+
+.route-hero-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(30, 0, 0, 0.04), rgba(74, 8, 12, 0.12) 36%, rgba(56, 4, 7, 0.7) 100%);
+  pointer-events: none;
+}
+
+.hero-side-cta {
+  animation: routePulse 1.8s ease-in-out infinite;
+}
+
+.hero-side-card {
+  animation: routeFloat 3s ease-in-out infinite;
+}
+
+@keyframes routePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@keyframes routeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 .route-summary-panel {

@@ -76,22 +76,29 @@ Visit page → complete daily tasks → unlock milestone cards → earn final dr
 - draw_result_view
 
 ## Delivery schema
-See `campaign-schema-example.json` for one possible contract.
+See `campaign-schema-example.json` for one possible contract, including `activityFactory`, `animationSystem`, and `assetOutput`.
 
 ## Visual direction
 - warm red-gold festive palette with dense decorative layering
+- a new photorealistic top hero image at `./image/bg.png` focused on the woman and festive atmosphere instead of a placeholder slot or a copied page collage
 - high-contrast hero, framed content panels, and a glossy CTA area
+- a signature reward interaction animation plus supporting motion such as CTA pulse or sparkle drift for stronger launch-ready feel
 - chips, badges, progress nodes, and prize cards instead of empty placeholders
 
 ## H5/Web starter files
+When local files are written, place the final artifacts under `project/<delivery-slug>/`, for example `project/<delivery-slug>/index.html`, `project/<delivery-slug>/styles.css`, `project/<delivery-slug>/main.js`, `project/<delivery-slug>/mock-data.js`, and `project/<delivery-slug>/image/bg.png`.
+
 ### index.html
 ```html
 <div class="campaign-shell">
   <section id="hero" class="hero-banner">
-    <div class="hero-copy">
-      <span class="hero-kicker">春日活动主会场</span>
-      <h1>Spring Benefit Relay</h1>
-      <p>完成任务点亮里程碑，领取阶段奖励并解锁终极抽奖。</p>
+    <div class="hero-top-visual">
+      <img src="./image/bg.png" alt="春日活动首屏主视觉" />
+      <div class="hero-top-overlay">
+        <span class="hero-kicker">春日活动主会场</span>
+        <h1>Spring Benefit Relay</h1>
+        <p>完成任务点亮里程碑，领取阶段奖励并解锁终极抽奖。</p>
+      </div>
     </div>
     <div class="hero-highlight-card">
       <p>终极奖励</p>
@@ -118,11 +125,22 @@ body { margin: 0; background: var(--bg-main); }
 .campaign-shell { max-width: 750px; margin: 0 auto; padding: 16px; }
 .hero-banner,
 .feature-panel { border-radius: 28px; overflow: hidden; }
-.hero-banner { padding: 24px; background: linear-gradient(135deg, #a40f1a 0%, #f06a3e 100%); }
+.hero-banner { padding: 0 0 24px; background: linear-gradient(135deg, #a40f1a 0%, #f06a3e 100%); }
+.hero-top-visual { position: relative; min-height: 420px; }
+.hero-top-visual img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.hero-top-overlay { position: absolute; left: 20px; right: 20px; bottom: 20px; color: #fff7e7; }
+.hero-highlight-card { animation: heroFloat 3s ease-in-out infinite; }
+@keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.hero-highlight-card { margin: 16px 20px 0; }
 .feature-panel { margin-top: 14px; padding: 18px; background: var(--panel-fill); }
 .feature-panel-highlight { background: linear-gradient(180deg, #fff2c5 0%, #ffd672 100%); }
 .popup-mask { position: fixed; inset: 0; display: none; }
 ```
+
+### Asset note
+`需要把生成好的图片，改名为bg，图片类型为 png，放到 project/<delivery-slug>/image 目录下`
+
+If local files are written with Python, create `project/`, `project/<delivery-slug>/`, and `project/<delivery-slug>/image/` first, then save the generated hero asset to `project/<delivery-slug>/image/bg.png`.
 
 ### main.js
 ```javascript

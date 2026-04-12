@@ -14,11 +14,11 @@ proposal
 - keep the result in proposal mode and do not switch to front-end delivery
 - make the output read like an operations campaign visual deck rather than a plain memo
 - lead with campaign hook, hero concept, visual direction, and reward hook
-- if the user explicitly asks for a local deck and Python/local execution is available, `campaign-proposal.pptx` may be generated in the workspace
+- if the user explicitly asks for a local deck and Python/local execution is available, the file should actually be written to `project/<delivery-slug>/campaign-proposal.pptx`, and both `project/` and `project/<delivery-slug>/` must be created if missing
 
 ### File targets
 - `campaign-proposal.md`
-- `campaign-proposal.pptx` optional local artifact when explicitly requested and supported
+- `project/<delivery-slug>/campaign-proposal.pptx` optional local artifact when explicitly requested and supported
 
 ### Brief reference summary
 The references use a reward-first seasonal layout with task-driven engagement.

@@ -12,16 +12,18 @@ architecture
 
 ### Page module plan
 1. hero banner
-2. campaign info bar
-3. checkpoint progress strip
-4. daily task section
-5. reward exchange / draw zone
-6. reward pool section
-7. rule section
-8. record entry
+2. dynamic activity stage
+3. campaign info bar
+4. checkpoint progress strip
+5. daily task section
+6. reward exchange / draw zone
+7. reward pool section
+8. rule section
+9. record entry
 
 ### Module notes
 - `hero banner`: communicates theme, date, and primary CTA
+- `dynamic activity stage`: hosts the core generated mechanic and can switch between wheel draw, red-packet burst, sign-in stamp, scratch reveal, or treasure chest unlock
 - `campaign info bar`: shows time range, eligibility, and shortcut actions
 - `checkpoint progress strip`: visualizes progress and unlock milestones
 - `daily task section`: lists task items and task states
@@ -37,22 +39,31 @@ architecture
 - `checkpointUnlockPopup`
 
 ### State flow
-`init -> taskUpdated -> checkpointUnlocked -> chanceReady -> actionStarted -> resultShown`
+`init -> activityReady -> taskUpdated -> checkpointUnlocked -> chanceReady -> actionStarted -> resultShown`
 
 ### Tracking suggestions
+- `activity_generated`
 - `hero_cta_click`
+- `activity_action_start`
 - `task_action_click`
 - `checkpoint_reward_view`
 - `draw_start_click`
 - `draw_result_view`
 - `rules_open`
 
+### Activity factory hint
+- `activityFactory`: pick a generated activity family when the brief does not pin one
+- `activityConfig`: keep chance count, milestone count, reward cadence, and visual preset configurable
+- `animationSystem`: define one signature interaction animation plus two supporting motion layers
+- `assetOutput`: reserve `./image/bg.png`, write final files under `project/<delivery-slug>/`, and require local delivery to create `project/`, `project/<delivery-slug>/`, and `project/<delivery-slug>/image/` first
+
 ### Delivery contract hint
 Suggested file layout for later delivery mode:
-- `index.html`
-- `styles.css`
-- `main.js`
-- `mock-data.js`
+- `project/<delivery-slug>/index.html`
+- `project/<delivery-slug>/styles.css`
+- `project/<delivery-slug>/main.js`
+- `project/<delivery-slug>/mock-data.js`
+- `project/<delivery-slug>/image/`
 
 ## What this mode should not do
 - do not write large HTML/CSS/JS code blocks

@@ -103,7 +103,8 @@ Given one or more campaign references, do all relevant parts of the following:
 3. Abstract the gameplay and module patterns
 4. Propose a **new** campaign instead of copying the reference
 5. Design a buildable H5/Web page architecture
-6. Output fixed-stack high-fidelity draft code when requested
+6. Generate a buildable activity mechanic and visual preset when the brief is under-specified
+7. Output fixed-stack high-fidelity draft code when requested
 
 ## Output rules
 Prefer practical output over broad commentary.
@@ -135,27 +136,65 @@ Preferred structure:
 
 If the user explicitly asks for a local proposal deck and the host environment supports local execution, the skill may generate a local `.pptx` file with Python.
 
+## Intelligent activity generation rule
+When the user does not pin a specific activity family, reward interaction, or theme, do not stop at the reference activity types.
+
+Default behavior:
+- infer the target engagement goal from the reference and user brief, then generate a new but buildable campaign mechanic
+- support activity families such as wheel draw, split red packet, sign-in relay, scratch reveal, flip-card memory, treasure chest unlock, collection merge, timed rush, quiz challenge, or mixed mechanics
+- choose one primary mechanic and at most two supporting mechanics so the page still reads cleanly on mobile
+- keep the mechanic editable through data/config instead of burying the logic only in prose copy
+- avoid limiting the generated campaign to the exact activity family shown in the reference when the brief is open
+
+Required output additions when the activity is newly generated:
+- name the generated activity family clearly
+- explain why it fits the brief and how it differs from the reference
+- expose configurable parameters such as duration, chance count, reward cadence, milestone count, animation preset, and visual preset
+- keep the page shell reusable so another generated activity can replace the current one without rewriting the whole structure
+
 ## File handoff rules
 Do not append executable local file-write commands.
 
-If the user explicitly asks for local files and the host environment supports local execution, the skill may use Python to generate artifacts directly in the workspace instead of only presenting them inline.
+If the user explicitly asks for local files and the host environment supports local execution, the skill should use Python to generate artifacts on disk instead of stopping at a file structure or code-only response.
 
 The goal is to keep the handoff clear without asking the model to generate shell or terminal instructions from screenshot-derived content.
 
+Local delivery root:
+- place all final generated files under the current execution environment's `project/` directory
+- create `project/` automatically if it does not already exist
+- create one additional delivery bundle directory under it, using `project/<delivery-slug>/...` rather than writing files directly into `project/`
+- derive `delivery-slug` from `campaignMeta.id`, a sanitized campaign title, or a stable fallback such as `campaign-delivery`
+- do not scatter final files across the workspace root, temporary folders, mixed output directories, or directly under `project/`
+
 Mode-specific file targets:
-- `analysis`: present the main result as one Markdown document such as `campaign-analysis.md`
-- `proposal`: present the main result as one Markdown document such as `campaign-proposal.md`
-- `proposal` optional local artifact: `campaign-proposal.pptx` when the user explicitly asks for a local visual deck and Python execution is available
-- `architecture`: present the main result as one Markdown document such as `campaign-architecture.md`
-- `delivery`: present the generated front-end files as `index.html`, `styles.css`, `main.js`, and `mock-data.js`
-- `full`: present the planning content as one Markdown document such as `campaign-full.md`, and present the front-end files as `index.html`, `styles.css`, `main.js`, and `mock-data.js`
+- `analysis`: present the main result as one Markdown document such as `project/<delivery-slug>/campaign-analysis.md` when local artifacts are written
+- `proposal`: present the main result as one Markdown document such as `project/<delivery-slug>/campaign-proposal.md` when local artifacts are written
+- `proposal` optional local artifact: `project/<delivery-slug>/campaign-proposal.pptx` when the user explicitly asks for a local visual deck and Python execution is available
+- `architecture`: present the main result as one Markdown document such as `project/<delivery-slug>/campaign-architecture.md` when local artifacts are written
+- `delivery`: present the generated front-end files as `project/<delivery-slug>/index.html`, `project/<delivery-slug>/styles.css`, `project/<delivery-slug>/main.js`, and `project/<delivery-slug>/mock-data.js`
+- `full`: present the planning content as one Markdown document such as `project/<delivery-slug>/campaign-full.md`, and present the front-end files as `project/<delivery-slug>/index.html`, `project/<delivery-slug>/styles.css`, `project/<delivery-slug>/main.js`, and `project/<delivery-slug>/mock-data.js`
+- when a hero image asset is used in `delivery` or `full`, reserve `project/<delivery-slug>/image/` and point the code to `./image/bg.png`
 
 Handoff requirements:
 - label each file clearly in the response body
 - keep file names and section order aligned with the response body
 - when the mode includes multiple files, provide each file's full content in its own clearly labeled section
 - when local artifacts are generated with Python, report the exact file names and paths in plain language
+- when the user explicitly asked for local output, do not stop after showing file structure or code blocks; confirm that the files were actually written under `project/<delivery-slug>/`
 - if the user explicitly asks how to save the files locally, describe the file names and where the content belongs in plain language rather than generating executable commands
+- when the delivery uses a generated hero image, include an explicit asset note that tells the user to rename the generated image to `bg.png`, keep it as PNG, and place it in `project/<delivery-slug>/image/`
+
+## Python local output contract
+When local artifacts are generated with Python:
+- resolve the final output root as `project/<delivery-slug>/`
+- create `project/` first, then create `project/<delivery-slug>/`, then create `project/<delivery-slug>/image/`, for example with `Path(exec_root, "project", delivery_slug, "image").mkdir(parents=True, exist_ok=True)`
+- place every final delivery file under `project/<delivery-slug>/`
+- keep front-end image references at `./image/bg.png`
+- save, move, or copy the generated hero asset into `<output_root>/image/bg.png` before reporting success
+- do not leave the generated image only in a temporary directory, the workspace root, under bare `project/`, or outside `project/<delivery-slug>/`
+- when additional generated images are needed, keep them under the same `project/<delivery-slug>/image/` directory with stable names
+- ensure the generated files are readable by default and that directory creation does not depend on manual pre-setup
+- if `project/` was not created, or `project/<delivery-slug>/` was not created, or `project/<delivery-slug>/image/` was not created, or `bg.png` was not saved into it, treat the Python local delivery as incomplete
 
 ## Anti-copy rules
 Do not simply restyle the reference.
@@ -204,29 +243,70 @@ For `delivery` and `full`, default to this file set:
 - `main.js`
 - `mock-data.js`
 
-Optional when a character-led hero is requested and image generation is available:
-- `assets/hero-figure.png`
+Project-root asset directory when the page uses generated imagery:
+- `project/<delivery-slug>/image/`
 
-If the user explicitly asks for local front-end files and the host environment supports local execution, the skill may use Python to write these files directly to the workspace or user-specified directory.
+Default first-screen visual artifact when the page is poster-led or character-led and image generation is available:
+- `project/<delivery-slug>/image/bg.png`
+
+If the user explicitly asks for local front-end files and the host environment supports local execution, the skill should use Python to write these files directly to `project/<delivery-slug>/`.
 
 File responsibilities:
-- `index.html`: page structure, visible module internals, decorative wrappers, and realistic placeholder copy
+- `index.html`: page structure, visible module internals, decorative wrappers, and realistic launch-style copy
 - `styles.css`: design tokens, background atmosphere, section chrome, CTA styling, popup styling, and responsive behavior
-- `main.js`: render repeating data, event binding, state updates, popup control, and lightweight view-state changes
-- `mock-data.js`: campaign meta, tasks, prizes, CTA text, popup data, and enough mock content to render a visually complete first screen
+- `main.js`: render repeating data, event binding, state updates, popup control, activity-specific triggers, and lightweight view-state changes
+- `mock-data.js`: campaign meta, tasks, prizes, CTA text, popup data, activity config, animation preset data, and enough mock content to render a visually complete first screen
+- `image/bg.png`: generated hero visual asset focused on the woman and theme atmosphere, without embedding lower-page reward modules, task grids, or rule panels
 
-## Optional hero asset generation
+## Top visual asset generation
 
-When the user wants a character-led campaign page but does not provide a source image, the skill may generate one original hero asset before front-end delivery if the host environment supports image generation.
+For `delivery` and `full`, when the page depends on a poster-style first screen and the user does not provide a finished key visual, the skill should generate one original top visual asset before front-end delivery if the host environment supports image generation.
+
+Mandatory trigger:
+- set `need_image = true` when the brief, references, or user wording clearly imply a poster-led first screen, a female-led hero, a generated first-screen visual, or an image-first activity page
+- do not treat poster-led hero generation as optional once `need_image = true`
+
+Default contract:
+- generate one real hero visual asset for the woman and use `./image/bg.png` as the code-facing path
+- if the host image tool only emits a flat file such as `image.png`, treat that as a temporary output and convert the handoff target to `./image/bg.png`
+- the generated asset should focus on the adult female lead, theme-matched props, lighting, and festive atmosphere instead of reproducing page modules from the reference
+- when the user provides festive campaign references, borrow their palette, density, wardrobe direction, and decorative mood for the hero background atmosphere, but do not copy their prize panels, invitation boards, task modules, or page text into the generated image
+- place `./image/bg.png` in the first visible hero block at the top of the page
+
+Execution gate:
+- before writing `index.html`, `styles.css`, `main.js`, or `mock-data.js`, call the host image generation tool to create the hero image asset
+- if the host exposes a concrete tool such as `image_generate`, call it directly instead of describing the step abstractly
+- do not claim success just by mentioning `./image/bg.png` in code or prose
+- the run is incomplete unless the hero image asset for `./image/bg.png` was generated in the current run when `need_image = true`
+
+Regeneration policy:
+- default to `regenerate_each_run`
+- if the same input is run again and `need_image = true`, generate a new hero image again by default
+- reuse an existing `./image/bg.png` only when the user explicitly asks to reuse the existing asset
 
 Constraints:
 - generate one original adult female hero image
-- image direction should prioritize theme-matched wardrobe, dominant colors, accessories, props, and styling
+- prioritize a photorealistic commercial-poster result rather than an illustrated, anime, or plastic-CGI result
+- image direction should prioritize theme-matched wardrobe, dominant colors, accessories, props, styling, and background atmosphere
+- emphasize realistic skin texture, natural facial asymmetry, believable hand anatomy, fabric folds, hair strands, and coherent light direction
+- keep the asset focused on the woman and atmosphere, not on page UI modules
 - use a glamorous, attractive, stylish, slightly sexy commercial campaign poster direction
 - do not generate a male hero by default
+- default to one adult woman unless the user explicitly asks for multiple figures
 - do not generate explicit sexual content, nudity, fetish styling, or pornographic framing
-- save or label the asset as `assets/hero-figure.png`
-- if image generation is unavailable, still output the hero structure and clearly reserve the asset slot
+- do not embed readable prize tables, invitation reward boards, task cards, rules sections, or full-page screenshot layouts into the generated hero asset
+- do not reproduce the reference woman's exact face, hairstyle, expression, pose, camera angle, or outfit details
+- treat the reference as styling inspiration, not as an identity template
+- do not imitate a recognizable spokesperson or celebrity-like likeness from the reference
+- if image generation is unavailable or the image tool fails when `need_image = true`, clearly report that the run is blocked and stop instead of downgrading to placeholders, gradient-only heroes, or image slots without a generated asset
+
+Quality gate:
+- if the generated woman has uncanny anatomy, broken hands, duplicated props, waxy skin, incorrect eye direction, or obviously synthetic poster artifacts, regenerate before treating the run as complete
+- prefer prompt language that pushes toward photorealistic commercial photography, cinematic rim light, realistic textile detail, and believable facial depth
+- avoid prompt language that biases toward cartoon, illustration, doll-like beauty filters, flat 3D render, or over-smoothed skin
+
+Required handoff note:
+- after delivering code that references `./image/bg.png`, include a clear plain-language note such as `需要把生成好的图片，改名为bg，图片类型为 png，放到 project/<delivery-slug>/image 目录下`
 
 ## Female-led hero default
 
@@ -234,6 +314,7 @@ For character-led campaign delivery, the default first-screen visual should use 
 
 Requirements:
 - the hero figure must be an adult woman
+- the first visible block in the page should be the hero image rather than a text-only header placed above it
 - do not replace the hero with a male figure by default
 - do not generate mixed-gender hero focus unless the user explicitly asks for it
 - the wardrobe, dominant colors, accessories, props, and styling must match the campaign theme
@@ -241,7 +322,15 @@ Requirements:
 - prioritize glamour, attractiveness, confidence, and poster-like visual appeal
 - allow stylish and slightly sexy commercial-fashion styling for stronger attention
 - keep the result within public campaign standards: no nudity, no explicit sexual pose, no fetish styling, and no pornographic framing
-- the female figure should remain the main first-screen anchor, with title, CTA, and reward device arranged around her
+- the female figure should remain the main first-screen anchor, with `./image/bg.png` or an equivalent top poster block placed above summary modules, tabs, and lower content
+
+## Character innovation rule
+
+When generating a new female hero from campaign references:
+- use the reference for color mood, seasonal styling, ornament density, and glamour level
+- generate a new woman with distinct facial features, hair treatment, pose, expression, and outfit detail changes
+- do not preserve the same face, same pose, same camera crop, or same two-person composition unless the user explicitly asks for that structure
+- when the reference contains two women but the user only asks for a female hero image, default to one new woman instead of recreating the dual-character arrangement
 
 Theme examples:
 - Spring Festival: red as the dominant color, with gold accents, festive dress or qipao-inspired styling, lanterns, knots, and warm holiday accessories
@@ -264,17 +353,47 @@ In these cases:
 - place verbose rules, records, and explanations in popups, drawers, or accordions when appropriate
 - use tabs as a page-shortening strategy, not as a cosmetic decoration
 
+## Animation choreography rule
+For reward-led and interactive campaign pages, motion is part of the delivery contract rather than a last-minute decoration.
+
+Minimum choreography:
+- include 1 signature interaction animation tied to the main activity mechanic
+- include 2 supporting ambient or feedback motion layers
+- keep motion performant with transform/opacity-first implementation where possible
+- provide a `prefers-reduced-motion` fallback or equivalent lower-motion behavior
+
+Activity-specific defaults:
+- wheel draw / lottery: wheel acceleration and deceleration, pointer bounce, winning sector glow, result popup rise-in
+- split red packet: envelope crack or unfold, coin burst, amount count-up, sparkle or confetti drift
+- sign-in / check-in: stamp press, calendar highlight or flip, streak beam, reward badge pop-up
+- generic reward reveal: card flip, gift-box open, ribbon sweep, badge settle, counter roll-up
+
+Creative interaction options when the brief is open:
+- scratch-card reveal
+- flip-card memory combo
+- treasure chest unlock
+- lantern or wish-drop release
+- route runner or treasure-map advance
+- puzzle merge or collection synthesis
+
+Do not add motion randomly; tie it to reward feedback, task progress, CTA emphasis, and popup states.
+
 ## Delivery schema guidance
 Prefer a schema that covers both campaign config and page delivery contract.
 
 Typical sections:
 - `campaignMeta`
 - `hero`
+- `activityFactory`
+- `activityConfig`
 - `tasks`
 - `rewards`
 - `lottery`
 - `modules`
 - `popups`
+- `animationSystem`
+- `visualPreset`
+- `assetOutput`
 - `stateMachine`
 - `tracking`
 
@@ -300,6 +419,8 @@ Before writing code, extract the screenshot's likely visual language in 4 to 8 s
 
 Then make the code reflect that visual language directly.
 
+When the reference clearly uses poster-led artwork or rich scene imagery, explicitly decide whether the first screen should rely on a real image asset, a background plate, or both. Do not downgrade that into a text-first hero with only gradient fills.
+
 But do not follow the screenshot's visual language blindly.
 
 Use this priority order for visual decisions:
@@ -319,12 +440,16 @@ For `delivery` and `full`, the generated result should feel like a launch-ready 
 
 Requirements:
 - render a visually complete mobile-first first screen with strong hierarchy, atmosphere, and branded tone
+- when the brief is image-led, render or reference a real hero visual at `./image/bg.png` rather than a placeholder asset slot
+- when `need_image = true`, ensure the asset used for `./image/bg.png` was generated in the current run before delivering the front-end files
 - include representative internal structure for each major module instead of empty containers
 - use realistic mock copy, labels, badges, numbers, CTA text, and popup content
 - cover key front-end states such as active, selected, disabled, claimed, exhausted, popup-open, and tab-selected when relevant
 - prefer compact, production-like H5 information architecture instead of excessive vertical stacking
 - include responsive behavior, stable spacing, and usable touch targets for mobile rendering
 - make CTA areas, popup layers, tab bars, and reward/task states feel polished enough for design review or front-end handoff
+- for festival or reward-led campaigns, include one signature interaction animation plus supporting ambient motion so the result feels closer to an online activity page than a static poster slice
+- when the brief is open-ended, expose the chosen activity family and its configurable parameters in the delivery schema and mock data
 - keep the code editable and data-driven without inventing backend APIs or hidden business logic
 
 Boundary:
@@ -333,9 +458,10 @@ Boundary:
 ### HTML expectations
 - Do not output only empty section containers.
 - Include representative nested content for the hero, progress/task/reward modules, active tab panels, and popup shells.
-- When a female-led hero is used, include an explicit figure wrapper and image slot such as `assets/hero-figure.png` instead of leaving the hero text-only.
+- When a female-led or poster-led hero is used, render `./image/bg.png` inside the first visible hero block at the top of the page.
+- Keep the main hero image above summary chips, tabs, task modules, and rules.
 - For tab-first pages, include a sticky tab bar and representative nested content inside each tab panel.
-- Use realistic wrappers such as badges, ribbons, tabs, stat chips, progress nodes, reward cards, glow layers, and floating ornaments when the reference implies them.
+- Use realistic wrappers such as badges, ribbons, tabs, stat chips, progress nodes, reward cards, glow layers, floating ornaments, celebratory particles, and richer festive framing when the reference implies them.
 - Keep the structure editable, but visually expressive on first render.
 
 ### CSS expectations
@@ -344,17 +470,22 @@ Boundary:
 - Prefer layered gradients, image-free ornaments, shadows, strokes, masks, and glow treatments over flat white cards.
 - Style sections as distinct visual modules instead of repeating the same generic card everywhere.
 - Support sticky mobile tabs, active tab states, and compact tab-panel switching for long H5 pages.
+- When the references imply rich festive posters, let the hero rely on `./image/bg.png` and reference-driven backdrop styling rather than a plain gradient-only header.
 - When a female-led hero is used, style the figure area as a real visual focal point with framing, light, depth, and theme-specific ornaments.
+- Include at least 1 signature interaction animation and 2 supporting layers for festive or reward-led pages, such as wheel spin, red-packet burst, stamp press, sparkle drift, ribbon shimmer, CTA pulse, marquee movement, or popup rise-in.
+- Add reduced-motion handling when the animation system is richer than a simple CTA pulse.
 - Include responsive handling for mobile-first rendering.
 
 ### JavaScript expectations
 - Render repeated lists from data, but avoid reducing the whole page to blank placeholders.
 - Support interactive states that help sell the concept visually, such as active tabs, selected rewards, progress states, countdown text, and popup opening.
 - Support lightweight tab switching and active panel state when the delivery uses a tab-first layout.
+- Support configurable activity triggers and simple front-end motion such as popup entrance, tab fade/slide, countdown refresh, wheel start/stop, red-packet burst, sign-in stamp, marquee movement, or reward highlight state when they help the page feel launch-ready.
+- Keep the animation state machine data-driven so a different generated activity type can reuse the same page shell.
 - Keep interactions lightweight and front-end only unless the user provides real APIs.
 
 ### Mock data expectations
-- Provide enough titles, subtitles, badges, numbers, and CTA text to make the page look complete.
+- Provide enough titles, subtitles, badges, numbers, CTA text, activity config, animation preset data, and asset references to make the page look complete.
 - Use mock labels that match the proposed campaign tone instead of filler text.
 
 ## Delivery anti-patterns
@@ -365,7 +496,17 @@ Avoid these default outputs unless the user explicitly asks for minimal scaffold
 - visually neutral buttons with no hierarchy
 - a page that reads like a wireframe rather than a campaign landing page
 - a character-led brief solved with a text-only hero and no figure slot
+- a character-led brief solved with a placeholder image slot or a `./image/bg.png` mention that never becomes the top visual
+- a required photorealistic hero delivered as an illustration-like, doll-like, or obviously broken figure
+- a rerun that quietly reuses an old hero image even though the user did not ask to reuse it
+- saying the page uses a generated image even though no image tool was called in the current run
+- a generated hero image that contains copied prize modules, invitation boards, page text, or lower-page layouts from the reference
+- a generated hero image that recreates the same woman's face or pose from the reference instead of producing a new character
+- an open-ended brief that still gets locked to only wheel/check-in/red-packet options with no attempt to generate a fresher mechanic
 - a long H5 page created by vertically stacking every module by default
+- a text-first header or summary strip placed above the main hero image
+- a festive campaign page that stays almost fully static and under-decorated
+- a Python local delivery that writes HTML/CSS/JS but forgets to create `project/`, `project/<delivery-slug>/`, or `project/<delivery-slug>/image/`
 - rules, records, and prize details all expanded on the main page without tabs or progressive disclosure
 - output that looks like a bare demo, starter, or wireframe instead of a near-launch H5 front-end draft
 - placeholder-only sections with weak hierarchy and incomplete module internals

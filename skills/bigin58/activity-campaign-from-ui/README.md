@@ -1,6 +1,6 @@
 # activity-campaign-from-ui
 
-Current repository version: **0.2.0**
+Current repository version: **0.6.0**
 
 A reusable OpenClaw skill for turning campaign UI references into a **new H5/Web campaign plan and delivery-ready high-fidelity front-end draft**.
 
@@ -54,7 +54,7 @@ If the user does not specify a mode:
 - gameplay abstraction
 - new campaign proposal
 - page architecture
-- config/schema suggestions
+- config/schema suggestions, including activity factory, animation system, and asset output contract
 - visual direction summary
 - H5/Web high-fidelity draft code (`index.html`, `styles.css`, `main.js`, `mock-data.js`)
 
@@ -86,14 +86,30 @@ For `delivery` and `full`:
 - for Spring Festival directions, default the female hero styling toward a red-dominant festive look with gold details rather than a generic modern outfit
 - allow glamorous and slightly sexy commercial-fashion styling, while keeping the result suitable for a public-facing campaign page
 - prefer tab-first mobile layouts when the page would otherwise become too long
-- if the user requests a character-led hero but provides no asset, optionally generate one original adult female hero image and wire it as `assets/hero-figure.png` when the environment supports image generation
+- when the first screen is poster-led, default to generating a hero image asset that the project references as `./image/bg.png`
+- push the generated hero toward photorealistic commercial-poster quality with natural skin, hands, hair, lighting, and fabric detail instead of an illustration-like or plastic result
+- keep that generated image focused on the woman and theme atmosphere rather than copying prize modules, invitation boards, or lower-page UI from the references
+- treat the reference as style input, not as an identity template: generate a new woman rather than recreating the same face or pose
+- keep `./image/bg.png` as the top-most first-screen visual, with summary strips, tabs, and lower modules following beneath it
+- when image generation is required for the brief, generate the asset for `./image/bg.png` before the front-end files rather than only mentioning it in code
+- default to `regenerate_each_run`; reuse an existing hero image only when the user explicitly asks to reuse it
+- if the host exposes a concrete tool such as `image_generate`, call it directly
+- if image generation is unavailable for an image-required brief, stop and report the run as blocked instead of downgrading to placeholders
+- place all final generated files under the current execution environment's `project/` directory and create it automatically if missing
+- wrap each delivery in one extra bundle layer such as `project/<delivery-slug>/index.html` rather than writing files directly under `project/`
+- create `project/<delivery-slug>/image/` for image assets and include an explicit handoff note telling the user to rename the generated image to `bg.png` and place it there
+- when the brief does not pin the activity type, generate a new configurable activity family instead of only repeating the reference mechanic
+- for festive or reward-led pages, add one signature interaction animation plus supporting ambient motion so the result feels closer to an online activity page
 - this higher quality bar means production-like front-end finish, not a fully backend-connected deployment
 
 ## Local artifact generation
 - in `proposal`, the result should feel closer to an operations campaign visual deck than a plain strategy memo
-- if the user explicitly asks for a local visual deck and the host environment supports local execution, Python may be used to generate `campaign-proposal.pptx`
-- in `delivery` and `full`, if the user explicitly asks for local front-end files and the host environment supports local execution, Python may be used to write `index.html`, `styles.css`, `main.js`, and `mock-data.js`
-- use a user-specified directory when provided; otherwise default to the current working directory
+- if the user explicitly asks for a local visual deck and the host environment supports local execution, Python should generate `project/<delivery-slug>/campaign-proposal.pptx`
+- in `delivery` and `full`, if the user explicitly asks for local front-end files and the host environment supports local execution, Python should write `project/<delivery-slug>/index.html`, `project/<delivery-slug>/styles.css`, `project/<delivery-slug>/main.js`, and `project/<delivery-slug>/mock-data.js`
+- treat the current execution environment's `project/` directory as the mandatory top-level output root and create it automatically if it does not exist
+- create an additional bundle directory `project/<delivery-slug>/` automatically and place all final artifacts there
+- when Python writes local output, it must create `project/<delivery-slug>/image/` first and save the generated hero asset to `project/<delivery-slug>/image/bg.png`
+- when local output was requested, the run should actually write the files and report the written paths instead of only showing file structure or code blocks
 - even when local artifacts are generated, do not output shell file-write commands in the response; report the created file paths instead
 
 ## Repository structure

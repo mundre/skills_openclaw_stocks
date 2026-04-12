@@ -21,6 +21,8 @@ A good answer should:
 - separate Observed / Inferred / Assumed clearly
 - explain how the new campaign differs from the references
 - stay on HTML + CSS + JavaScript
+- keep `./image/bg.png` photorealistic and focused on one new adult female hero when the page is poster-led
+- add a signature reward interaction animation instead of leaving the page almost static
 - avoid claiming exact unreadable text
 
 ## What to avoid

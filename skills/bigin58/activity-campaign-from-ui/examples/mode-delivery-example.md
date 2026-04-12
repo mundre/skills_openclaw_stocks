@@ -3,7 +3,7 @@
 ## User input
 The user sends one campaign reference and asks:
 
-> 我只要更像可上线成品的前端 H5 页面，固定 H5 / Web，技术栈 HTML + CSS + JS。首屏要有美女人物主视觉，如果我没给人物图就生成一张，整体不要拉得太长，走 delivery mode。
+> 我只要更像可上线成品的前端 H5 页面，固定 H5 / Web，技术栈 HTML + CSS + JS。首屏要有美女人物主视觉，如果我没给人物图就生成一张页面效果图，图片一定要在页面最上面，整体不要拉得太长，走 delivery mode。
 
 ## Expected response shape
 
@@ -17,24 +17,43 @@ delivery
 - do not claim pixel-perfect recovery from the screenshot
 - summarize the likely visual language before code
 - use one adult female hero figure as the dominant first-screen visual focus
+- generate a new female hero asset for `./image/bg.png` instead of leaving a placeholder image slot
+- push `./image/bg.png` toward a photorealistic commercial-poster result with natural skin, hair, hands, and lighting
+- keep the generated image focused on the woman and festive atmosphere rather than embedding prize cards, invitation boards, or lower-page layouts from the references
+- use the references as style direction only; do not recreate the same woman's face, pose, or dual-character composition unless the user explicitly asks for it
+- keep the first visible block at the top of the page as the hero image itself
+- generate the asset used for `./image/bg.png` in the current run before writing the front-end files
+- if the host exposes a concrete tool such as `image_generate`, call it directly
+- default to `regenerate_each_run` unless the user explicitly asks to reuse an existing image asset
+- if image generation is unavailable for this brief, stop and report the run as blocked instead of downgrading to placeholders
 - keep the female wardrobe and styling aligned with the campaign theme
 - allow glamorous and slightly sexy commercial-fashion styling, while staying suitable for a public campaign page
 - prefer sticky tabs when the H5 would otherwise become too long
-- if the user explicitly asks for local files and Python/local execution is available, the generated front-end files may be written directly to the workspace
+- when the brief is open, generate a configurable activity family instead of being limited to the reference mechanic
+- add one signature interaction animation plus supporting ambient motion so the page feels closer to a live activity page
+- if the user explicitly asks for local files and Python/local execution is available, the generated front-end files should be written under `project/<delivery-slug>/`
+- when Python writes the local files, create `project/`, `project/<delivery-slug>/`, and `project/<delivery-slug>/image/` first and save the generated hero image to `project/<delivery-slug>/image/bg.png`
+- when local output was requested, do not stop at the file tree; actually write the files and return the written paths
 
 ### File structure
-- `index.html`
-- `styles.css`
-- `main.js`
-- `mock-data.js`
-- `assets/hero-figure.png` optional
+- `project/<delivery-slug>/index.html`
+- `project/<delivery-slug>/styles.css`
+- `project/<delivery-slug>/main.js`
+- `project/<delivery-slug>/mock-data.js`
+- `project/<delivery-slug>/image/`
+- `project/<delivery-slug>/image/bg.png` for the top hero visual
+
+### Asset handoff note
+`需要把生成好的图片，改名为bg，图片类型为 png，放到 project/<delivery-slug>/image 目录下`
 
 ### Visual extraction summary
 - warm festive palette with red, gold, and cream contrast
 - adult female hero in a red-dominant festive outfit with gold details and lantern accents
+- `./image/bg.png` should read like a new photorealistic female hero image with festive atmosphere, not a screenshot-like page collage
 - first screen is anchored by the woman, title art, and a loud draw-machine device instead of a text-only layout
 - content below the hero is compressed into sticky tabs rather than a long vertical stack
 - modules feel like decorated panels, not plain white cards
+- the page should include a core spectacle motion such as wheel spin or reward burst, plus ambient sparkle drift, CTA pulse, and popup rise-in
 - CTA area is loud and centered, with glow and badge support
 - popup style should feel celebratory and branded
 
@@ -46,30 +65,27 @@ delivery
 
   <main class="festival-page">
     <section id="hero" class="hero-banner">
-      <div class="hero-copy">
-        <p class="hero-badge">春节限定</p>
-        <h1 class="hero-title">吃瓜网春游活动</h1>
-        <p class="hero-subtitle">完成每日任务赢抽奖机会，解锁限定好礼与终极红包大奖。</p>
-        <div class="hero-meta">
-          <span class="meta-pill">12.26 - 01.01</span>
-          <span class="meta-pill">美女主理人助阵</span>
+      <div class="hero-top-visual">
+        <img class="hero-top-image" src="./image/bg.png" alt="春节活动首屏主视觉" />
+        <div class="hero-top-overlay">
+          <p class="hero-badge">春节限定</p>
+          <h1 class="hero-title">吃瓜网春游活动</h1>
+          <p class="hero-subtitle">完成每日任务赢抽奖机会，解锁限定好礼与终极红包大奖。</p>
+          <div class="hero-meta">
+            <span class="meta-pill">12.26 - 01.01</span>
+            <span class="meta-pill">美女主理人助阵</span>
+          </div>
+          <div class="hero-actions">
+            <button class="hero-main-cta js-open-popup" data-popup="rewardResultPopup">立即开抽</button>
+            <button class="hero-secondary-cta js-switch-tab" data-tab="tasks">先做任务</button>
+          </div>
         </div>
-        <div class="hero-actions">
-          <button class="hero-main-cta js-open-popup" data-popup="rewardResultPopup">立即开抽</button>
-          <button class="hero-secondary-cta js-switch-tab" data-tab="tasks">先做任务</button>
-        </div>
+        <aside class="hero-machine-card">
+          <span class="hero-card-kicker">今日主奖</span>
+          <strong class="hero-card-value">888 元新春礼盒</strong>
+          <p class="hero-card-copy">完成任务可得抽奖次数，晚 20:00 额外掉落红包雨。</p>
+        </aside>
       </div>
-
-      <div class="hero-figure-wrap">
-        <div class="hero-figure-glow"></div>
-        <img class="hero-figure-image" src="assets/hero-figure.png" alt="春节活动美女主视觉" />
-      </div>
-
-      <aside class="hero-machine-card">
-        <span class="hero-card-kicker">今日主奖</span>
-        <strong class="hero-card-value">888 元新春礼盒</strong>
-        <p class="hero-card-copy">完成任务可得抽奖次数，晚 20:00 额外掉落红包雨。</p>
-      </aside>
     </section>
 
     <section class="hero-summary-panel">
@@ -147,10 +163,7 @@ body {
 }
 
 .hero-banner {
-  display: grid;
-  grid-template-columns: 0.95fr 0.9fr 0.75fr;
-  gap: 16px;
-  padding: 26px 22px 22px;
+  padding: 0;
   margin-bottom: 14px;
   background:
     radial-gradient(circle at top, rgba(255, 235, 159, 0.78), transparent 34%),
@@ -158,26 +171,65 @@ body {
   color: #fff8ea;
 }
 
-.hero-figure-wrap {
+.hero-top-visual {
   position: relative;
-  min-height: 320px;
+  min-height: 540px;
 }
 
-.hero-figure-image {
-  position: relative;
-  z-index: 1;
+.hero-top-image {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: bottom center;
+  object-fit: cover;
+  object-position: top center;
 }
 
-.hero-figure-glow {
+.hero-top-overlay {
   position: absolute;
-  inset: auto 12% 4% 12%;
-  height: 74%;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 229, 160, 0.72), rgba(255, 229, 160, 0));
+  inset: auto 20px 20px 20px;
+  z-index: 1;
+}
+
+.hero-top-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(59, 0, 0, 0.04), rgba(85, 9, 12, 0.12) 38%, rgba(74, 7, 8, 0.72) 100%);
+  pointer-events: none;
+}
+
+.hero-main-cta {
+  animation: ctaPulse 1.9s ease-in-out infinite;
+}
+
+.hero-machine-card {
+  animation: floatCard 3.2s ease-in-out infinite;
+}
+
+.festival-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(255, 219, 116, 0.28) 0 8%, transparent 9%) 12% 18% / 120px 120px,
+    radial-gradient(circle, rgba(255, 244, 205, 0.18) 0 7%, transparent 8%) 78% 24% / 160px 160px;
+  pointer-events: none;
+  animation: sparkleDrift 10s linear infinite;
+}
+
+@keyframes ctaPulse {
+  0%, 100% { transform: scale(1); box-shadow: var(--shadow-cta); }
+  50% { transform: scale(1.03); box-shadow: 0 14px 32px rgba(171, 42, 0, 0.42); }
+}
+
+@keyframes floatCard {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes sparkleDrift {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(0, 18px, 0); }
 }
 
 .hero-summary-panel {
@@ -232,6 +284,7 @@ body {
 document.addEventListener('DOMContentLoaded', function () {
   renderPage(window.campaignData);
   bindEvents();
+  primeHeroMotion(window.campaignData.animationSystem);
   setActiveTab('tasks');
 });
 
@@ -282,6 +335,10 @@ function bindEvents() {
   });
 }
 
+function primeHeroMotion(animationSystem) {
+  document.documentElement.setAttribute('data-motion-preset', animationSystem.primarySequence);
+}
+
 function setActiveTab(tabKey) {
   document.querySelectorAll('.sticky-tab').forEach(function (tab) {
     tab.classList.toggle('is-active', tab.getAttribute('data-tab') === tabKey);
@@ -311,6 +368,14 @@ function openPopup(id) {
 ### mock-data.js
 ```javascript
 window.campaignData = {
+  activityFactory: {
+    activityFamily: 'lucky-draw-stage',
+    supportingMechanics: ['daily-task', 'red-packet-burst']
+  },
+  animationSystem: {
+    primarySequence: 'drawBurst',
+    ambientLayers: ['sparkleDrift', 'ctaPulse']
+  },
   tasks: [
     { tag: '每日任务', title: '浏览主会场 30 秒', desc: '完成后可获得 1 次抽奖机会', ctaText: '去完成' },
     { tag: '加速任务', title: '邀请好友助力 1 次', desc: '完成后额外获得 2 次抽奖机会', ctaText: '去邀请' }
