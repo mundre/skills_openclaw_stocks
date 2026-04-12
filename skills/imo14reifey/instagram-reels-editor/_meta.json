@@ -3,11 +3,16 @@
   "slug": "instagram-reels-editor",
   "displayName": "Instagram Reels Editor",
   "latest": {
-    "version": "10.0.0",
-    "publishedAt": 1774709654520,
-    "commit": "https://github.com/openclaw/skills/commit/e911c62db75d4fb6374d6587d958e9c9c2703bcb"
+    "version": "1.0.6",
+    "publishedAt": 1775439838232,
+    "commit": null
   },
   "history": [
+    {
+      "version": "10.0.0",
+      "publishedAt": 1774709654520,
+      "commit": "https://github.com/openclaw/skills/commit/e911c62db75d4fb6374d6587d958e9c9c2703bcb"
+    },
     {
       "version": "50.0.0",
       "publishedAt": 1774685422381,
