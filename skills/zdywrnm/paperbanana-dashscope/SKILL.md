@@ -1,106 +1,147 @@
 ---
 name: paperbanana-dashscope
-description: Generate publication-quality academic diagrams from paper methodology text (DashScope/Alibaba Cloud adaptation)
-license: MIT-0
-dependencies:
-  env:
-    - OPENAI_API_KEY (DashScope API key, required)
-  runtime:
-    - python3
-    - uv
+description: Generate academic figures and scientific diagrams from paper text using a multi-agent pipeline powered by Alibaba Cloud DashScope (Qwen-VL + Wanxiang/Qwen-Image). Use when the user wants to create figures for research papers, visualize methods sections, generate architecture diagrams, or produce illustrations for academic content. Supports diagram and plot tasks with multi-round critic refinement.
 ---
 
-# PaperBanana-DashScope
+# paperbanana-dashscope
 
-基于阿里云 DashScope API 的学术论文插图自动生成工具。从论文方法章节文本和图注出发，通过多智能体流水线（Retriever → Planner → Stylist → Visualizer → Critic）生成可直接用于投稿的学术插图。
+Native TypeScript CLI for generating academic figures from paper text. Zero Python dependencies. Powered by Alibaba Cloud DashScope.
 
-本项目是 PaperBanana/PaperVizAgent 的 DashScope 适配版，将 VLM 替换为 qwen-vl-max，图像生成替换为 wanx2.1-t2i-turbo。
-
-## Environment Setup
-
+## Install & Update
 ```bash
-cd <repo-root>
-uv pip install -r requirements.txt
+npm install -g paperbanana-dashscope
+paperbanana-dashscope --version
 ```
 
-设置 DashScope API Key（通过环境变量或 `configs/model_config.yaml`）：
+## Prerequisites
 
+User must configure a DashScope API key. Check current status:
 ```bash
-export OPENAI_API_KEY="sk-your-dashscope-api-key"
+paperbanana-dashscope info
 ```
 
-或在 `configs/model_config.yaml` 中配置：
+If no API key is configured, set one of:
+```bash
+# Option 1: Environment variable (simplest)
+export OPENAI_API_KEY="sk-xxx"
 
-```yaml
-api_keys:
-  openai_api_key: "sk-your-dashscope-api-key"
-
-dashscope:
-  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-  api_base: "https://dashscope.aliyuncs.com"
+# Option 2: Global config file
+mkdir -p ~/.paperbanana-dashscope
+cat > ~/.paperbanana-dashscope/config.yaml << 'YAML'
+defaults:
+  main_model_name: "qwen-vl-max"
   image_gen_model_name: "wanx2.1-t2i-turbo"
+api_keys:
+  openai_api_key: "sk-xxx"
+YAML
 ```
 
-## Usage
+## Basic Usage
 
+Generate a single figure from text:
 ```bash
-python skill/run.py \
-  --content "METHOD_TEXT" \
-  --caption "FIGURE_CAPTION" \
-  --task diagram \
-  --output output.png
+paperbanana-dashscope generate \
+  --content "Method section text describing the architecture..." \
+  --caption "Figure 1: System overview" \
+  --output ~/Downloads/figure.png \
+  --num-candidates 1
 ```
 
-## Parameters
+## Key Options
 
-| Parameter | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `--content` | Yes* | | 要可视化的方法章节文本 |
-| `--content-file` | Yes* | | 包含方法文本的文件路径（替代 `--content`） |
-| `--caption` | Yes | | 图注或视觉意图描述 |
-| `--task` | No | `diagram` | 任务类型：`diagram` 或 `plot` |
-| `--output` | No | `output.png` | 输出图像文件路径 |
-| `--aspect-ratio` | No | `21:9` | 宽高比：`21:9`、`16:9` 或 `3:2` |
-| `--max-critic-rounds` | No | `3` | Critic 最大迭代轮数 |
-| `--num-candidates` | No | `10` | 并行生成候选图数量 |
-| `--retrieval-setting` | No | `auto` | 检索模式：`auto`、`manual`、`random` 或 `none` |
-| `--main-model-name` | No | `qwen-vl-max` | VLM 主模型（通过 DashScope 兼容模式调用） |
-| `--image-gen-model-name` | No | `wanx2.1-t2i-turbo` | 图像生成模型（通过 DashScope 原生 API 调用） |
-| `--exp-mode` | No | `demo_full` | 流水线模式：`demo_full`（含 Stylist）或 `demo_planner_critic`（不含 Stylist） |
+| Option | Description | Default |
+|---|---|---|
+| `--content <text>` | Paper text describing the method | required |
+| `--caption <text>` | Figure caption | required |
+| `--output <path>` | Output PNG file path | required |
+| `--task <type>` | `diagram` or `plot` | `diagram` |
+| `--num-candidates <n>` | Number of candidates to generate | `1` |
+| `--max-critic-rounds <n>` | Critic refinement iterations | `3` |
+| `--aspect-ratio <ratio>` | `1:1`, `16:9`, `4:3`, `21:9`, etc | `21:9` |
+| `--main-model-name <id>` | VLM for planning/critic | `qwen-vl-max` |
+| `--image-gen-model-name <id>` | Image generation model | `wanx2.1-t2i-turbo` |
 
-*`--content` 和 `--content-file` 二选一。
+## Available Image Models
 
-当 `--num-candidates` > 1 时，输出文件命名为 `<stem>_0.png`、`<stem>_1.png` 等。
+DashScope supports three families of text-to-image models:
 
-## Output
+**Wanxiang legacy (fast, cheap):**
+- `wanx2.1-t2i-turbo` (default, fastest)
+- `wanx2.1-t2i-plus` (better quality)
 
-每张保存的图像绝对路径会逐行输出到 stdout。
+**Wanxiang 2.7 (latest, highest quality):**
+- `wan2.7-image-pro` (professional, supports 4K output in text-to-image)
+- `wan2.7-image` (standard, supports up to 2K, same pricing as wan2.6)
 
-## Examples
+**Wanxiang 2.x (previous generation):**
+- `wan2.6-t2i` (flagship of 2.6 series)
+- `wan2.5-t2i-preview`
+- `wan2.2-t2i-flash` / `wan2.2-t2i-plus`
 
-### Diagram
+**Qwen-Image (best for figures with text labels):**
+- `qwen-image-plus` (recommended for diagrams with English/Chinese labels)
+- `qwen-image-max` (top-tier text rendering)
 
+Switch models inline:
 ```bash
-python skill/run.py \
-  --content "We propose a transformer-based encoder-decoder architecture. The encoder consists of 12 self-attention layers with residual connections. The decoder uses cross-attention to attend to encoder outputs and generates the target sequence autoregressively." \
-  --caption "Figure 1: Overview of the proposed transformer architecture" \
-  --task diagram \
-  --output architecture.png
+paperbanana-dashscope generate \
+  --content "..." \
+  --caption "..." \
+  --image-gen-model-name wan2.6-t2i \
+  --output figure.png
 ```
 
-## Important Notes
+## Pipeline Modes
 
-- **Runtime**: 单个候选图通常需要 3-10 分钟。默认 10 个候选并行生成，总计约 10-30 分钟。
-- **API calls**: 每个候选涉及多次 LLM 调用（Retriever + Planner + Stylist + Visualizer + 最多 3 轮 Critic）。
-- **Image generation**: Visualizer Agent 通过 DashScope 原生异步 API 调用 wanx2.1-t2i-turbo 生成图像。
-- **DashScope 适配**: VLM 调用通过 DashScope 的 OpenAI 兼容模式（qwen-vl-max），图像生成通过 DashScope 原生 API。
+Use `--exp-mode` to control which agents run:
 
-## About
+| Mode | Agents | Use case |
+|---|---|---|
+| `vanilla` | Vanilla only | Fastest, no refinement |
+| `dev_planner` | Planner only | Just generate description |
+| `dev_planner_critic` | Planner + Critic | With refinement loop |
+| `dev_full` | Planner + Stylist + Visualizer + Critic | Full pipeline |
+| `demo_full` | Same as dev_full + retriever | Default, best quality |
 
-本项目基于 **PaperVizAgent** 框架，是一个参考驱动的多智能体学术插图自动生成系统。
+## Common Workflows
 
-> **PaperBanana: Automating Academic Illustration for AI Scientists**
-> Dawei Zhu, Rui Meng, Yale Song, Xiyu Wei, Sujian Li, Tomas Pfister, Jinsung Yoon
-> arXiv:2601.23265
+**Quick draft (fast, low cost):**
+```bash
+paperbanana-dashscope generate \
+  --content "..." \
+  --caption "..." \
+  --output draft.png \
+  --exp-mode vanilla \
+  --image-gen-model-name wanx2.1-t2i-turbo
+```
 
-DashScope 适配由 [TashanGKD](https://github.com/TashanGKD) 完成。
+**High-quality figure for paper submission:**
+```bash
+paperbanana-dashscope generate \
+  --content "..." \
+  --caption "..." \
+  --output paper_fig.png \
+  --image-gen-model-name wan2.6-t2i \
+  --num-candidates 3 \
+  --max-critic-rounds 5
+```
+
+**Figure with English/Chinese text labels:**
+```bash
+paperbanana-dashscope generate \
+  --content "..." \
+  --caption "..." \
+  --output labeled.png \
+  --image-gen-model-name qwen-image-plus
+```
+
+## Troubleshooting
+
+- **"未检测到任何 API Key"**: Run `paperbanana-dashscope info` and follow the configuration guide.
+- **"size is not in the correct format"**: This is fixed in v1.0.2+. Run `npm update -g paperbanana-dashscope`.
+- **"url error"**: Old version. Upgrade to v1.0.2+ for support of new wan2.6 / qwen-image models.
+
+## Resources
+
+- npm: https://www.npmjs.com/package/paperbanana-dashscope
+- GitHub: https://github.com/TashanGKD/PaperBanana-DashScope
