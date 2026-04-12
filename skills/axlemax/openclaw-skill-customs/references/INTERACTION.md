@@ -3,6 +3,8 @@
 在异步任务轮询等待期间，根据当前状态和累计等待时长，选用以下话术与用户互动。
 **不要沉默等待，每次轮询后都应输出一条互动消息。**
 
+> **说明**：话术中的 `{progress}` 来自 `submit_and_poll.py` 通过 stderr 输出的 JSON 中的 `progress` 字段（0–100 整数）。`{elapsed}` 为累计等待秒数，`{error_message}` 为 `error_message` 字段。如平台不支持流式响应，上述话术在脚本返回后根据 stderr 记录输出即可。
+
 ---
 
 ## 分类任务等待话术（classify_fast）
@@ -39,4 +41,4 @@
 | 任务仍为 `pending` | 📬 任务排队中，等待处理器分配资源... |
 | 任务 `completed` | ✅ 处理完成！共耗时约 {elapsed}秒 |
 | 任务 `failed` | ❌ 任务失败：{error_message}。建议检查源文件是否完整，或尝试重试。 |
-| 轮询超时（30次后） | 🕐 已等待超过 4 分钟，任务可能仍在执行。可稍后用以下命令手动查询：<br>`python scripts/submit_and_poll.py --mode poll --result-id <result_id>` |
+| 轮询超时（等待超过 300 秒后） | 🕐 已等待超过 5 分钟，任务可能仍在执行。可稍后用以下命令手动查询：<br>`python scripts/submit_and_poll.py --mode poll --result-id <result_id>` |

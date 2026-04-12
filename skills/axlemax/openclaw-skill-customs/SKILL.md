@@ -1,26 +1,27 @@
 ---
 name: openclaw-skill-customs
-description: "海关报关智能助手。上传报关单据（发票/装箱单/提单等）、智能分类识别文件类型、提交报关数据提取、轮询任务状态、下载报关 Excel 结果。当用户提到报关、海关、customs、发票、装箱单、提单、bill of lading、packing list、invoice、HS编码等关键词时触发此技能。前置条件：需配置 LEAP_API_KEY 环境变量。"
-homepage: https://platform.daofeiai.com
+description: >
+  海关报关单据处理助手。上传报关单据（发票、装箱单、提单等），AI 自动分类识别文件类型，
+  提取报关结构化数据，生成标准报关 Excel。当用户提到报关、海关、customs declaration、
+  invoice、packing list、bill of lading、HS 编码等关键词时，使用此技能。
+license: Proprietary
+compatibility: Requires Python 3.8+ and network access to platform.daofeiai.com
 metadata: {"openclaw":{"homepage":"https://platform.daofeiai.com","requires":{"env":["LEAP_API_KEY"]},"primaryEnv":"LEAP_API_KEY"}}
 ---
 
 # 海关报关智能助手
 
-## 角色设定
+## ⛔ 行为约束
 
-你是一位专业的**海关报关分析员**，精通中国海关报关流程和国际贸易单证。
-你严格按流程执行，绝不跳步，在等待期间主动与用户互动分享进展。
+严格按 Step 0 → Step 6 顺序执行，绝不跳步。在等待期间主动与用户互动分享进展。
 
----
+### 五条铁律 — 在任何情况下都不得违反
 
-## ⛔ 四条铁律 — 在任何情况下都不得违反
-
-1. **异步等待不可跳过**：分类和报关都是异步任务，提交后必须通过 `poll_task.py` 轮询，等到 `status=completed` 才能继续。**禁止**在 `pending/processing` 状态下进入下一步。
+1. **异步等待不可跳过**：分类和报关都是异步任务，提交后必须通过 `submit_and_poll.py` 轮询，等到 `status=completed` 才能继续。**禁止**在 `pending/processing` 状态下进入下一步。
 2. **用户确认不可跳过**：分类结果展示后，必须等用户明确回复"确认/OK/好的"后，才能提交报关任务。
-3. **多文件必须全部收集**：有多个文件时，逐个上传并收集齐所有 `file_id`，才能提交分类。
+3. **文件收集完毕由用户决定**：收到文件后只做保存和确认，**禁止**自行判断"文件够了"而进入 Step 2。只有用户明确发出处理意图（如"开始处理"/"开始分类"/"就这些"/"OK"）后，才能进入 Step 2 的上传和分类流程。
 4. **信任平台分类结果**：API 返回的 `file_type` 是由专业 AI 模型识别的，**禁止**用你自己的知识或推理去质疑、修正或重新解读分类结果。展示时严格按 `references/FILE_TYPES.md` 中的 `file_type → 中文名称` 映射翻译，不要自行翻译枚举值，不要因为文件名与类型名"看起来不一致"而向用户发出警告。只有在置信度低于 0.70 时，才提醒用户人工确认。
-
+5. **上传阶段禁止解析文件内容**：Step 1 中，用户发送的报关文件（PDF/Excel/图片）是二进制数据，仅需将其保存到工作区文件夹即可。**绝对不要**尝试打开、读取、解析或在对话中展示这些文件的内容。如果平台自动将文件内容以文本形式注入了对话上下文（特别是 Excel 的 unicode 乱码），**忽略这些内容**，不要基于它做任何判断。文件内容的分类和解析由 Leap 平台 AI 完成。（注意：此规则仅限上传阶段。Step 6 修改阶段需要从原始文件提取字段值时，允许读取已保存的文件。）
 ---
 
 ## Step 0：配置 API Key
@@ -60,51 +61,66 @@ python scripts/check_config.py
 
 ---
 
-## Step 1：上传文件（多文件逐个上传）
+## Step 1：文件收集与上传
 
-**有几个文件就调用几次，收集齐所有 `file_id` 后才进入 Step 2。**
+### 1a. 创建任务工作区
 
-macOS / Linux:
+当用户提到报关意图或发送第一个文件时，立即创建本次任务的工作目录：
+
 ```bash
-curl -X POST "https://platform.daofeiai.com/api/v1/files/upload" \
-  -H "Authorization: Bearer $LEAP_API_KEY" \
-  -F "file=@<文件路径>"
+mkdir -p tasks/customs_<YYYYMMDD_HHMMSS>/raw
 ```
 
-Windows (PowerShell):
-```powershell
-curl.exe -X POST "https://platform.daofeiai.com/api/v1/files/upload" `
-  -H "Authorization: Bearer $env:LEAP_API_KEY" `
-  -F "file=@<文件路径>"
+> 以当前时间戳命名（如 `customs_20260408_231500`）。后续所有步骤的中间文件（classify_result.json、customs_payload.json 等）都存放在该任务目录下。
+
+### 1b. 收集文件到工作区（循环）
+
+每当用户发送一个文件，将其保存到任务目录的 `raw/` 子目录中：
+
+```bash
+cp <平台提供的文件路径> tasks/customs_<id>/raw/
 ```
 
-Windows (cmd.exe):
-```cmd
-curl -X POST "https://platform.daofeiai.com/api/v1/files/upload" ^
-  -H "Authorization: Bearer %LEAP_API_KEY%" ^
-  -F "file=@<文件路径>"
+保存后立即确认：
+
+> ✅ 已收到 `{文件名}`（工作区已有 {N} 个文件）
+> 📎 请继续发送下一个文件，或说「**开始处理**」进入分类。
+
+⛔ **在用户明确发出处理意图之前，禁止进入 Step 2。** 每次收到文件都只做保存和确认这两件事。
+
+### 1c. 用户确认后批量上传
+
+用户说"开始处理"/"开始"/"就这些"后：
+
+1. 列出 `raw/` 目录内所有文件（含文件大小），展示汇总表
+2. ⛔ **等用户确认文件列表无误后才执行上传。** 如用户说"还有一个"，返回 Step 1b 继续收集。
+3. 确认后，**一次命令**批量上传所有文件到 Leap 平台：
+
+```bash
+python scripts/file_transfer.py --mode upload \
+  --file-path "tasks/customs_<id>/raw/file1.pdf" \
+  --file-path "tasks/customs_<id>/raw/file2.xlsx"
 ```
 
-每次上传成功立即告知用户：
-> ✅ 文件 {N}/{总数} 上传成功：`{文件名}` → `file_id: {id}`
-> （如 `is_duplicate: true`，说明该文件已存在，将复用记录）
-
-全部完成后展示汇总，格式参考 `references/FILE_TYPES.md`。
-
+3. 收集返回的所有 `file_id`，展示上传结果汇总，进入 Step 2
 ---
 
 ## Step 2：提交分类 + ⛔ 等待完成
 
-**执行分类脚本，该命令会自动在阻塞进程中完成提交并在等待直至处理完成（completed/failed）后才会退出。**
+**执行分类脚本，该命令会阻塞等待直至任务处理完成（completed/failed）后才返回。**
 如果是多文件，传递多个 `--file-id`：
 
 ```bash
 python scripts/submit_and_poll.py --mode classify \
   --file-id "<id_1>" \
-  --file-id "<id_2>"
+  --file-id "<id_2>" \
+  --save-to tasks/customs_<id>/classify_result.json
 ```
 
-- 该命令会自动阻塞等待进程结束，**期间参考 `references/INTERACTION.md` 从 stderr 读取进度并与用户互动，切记不要沉默空等。**
+- **`--save-to tasks/customs_<id>/classify_result.json`**：任务完成后自动将完整结果保存到任务目录，Step 3~4 均从此文件读取数据。
+- 脚本运行期间会通过 stderr 定期输出进度 JSON；**参考 `references/INTERACTION.md` 的话术与用户互动，切记不要沉默空等。**
+  - 如平台支持流式响应（如飞书 WebSocket 模式）：在等待期间实时输出话术。
+  - 如平台为批量回调模式：命令返回后，根据累计 stderr 记录补述等待过程。
 - 脚本退出码 `0` = 成功，输出完整结果 JSON。
 - 脚本退出码 `1` = 失败或超时，按提示处理。
 
@@ -112,42 +128,51 @@ python scripts/submit_and_poll.py --mode classify \
 
 ## Step 3：展示分类结果 + ⛔ 等待用户确认
 
-从上述脚本输出的 `result_data.files[].segments` 解析分类结果。
+从任务目录的 `classify_result.json` 中的 `result_data.files[].segments` 解析分类结果。
 
 **为每个文件生成分片表格**，格式和置信度标注规则参见 `references/FILE_TYPES.md`。
 
 **⛔ 展示后必须停下来，等用户明确回复"确认/OK/好的"后才能继续 Step 4。**
-- 用户要求修改 → 更新 segments 数据，重新展示，再次等待确认
+- 用户要求修改分片类型 → 直接修改任务目录下的 `classify_result.json` 中对应 segment 的 `file_type` 字段，重新展示表格，再次等待确认
 - 用户直接确认 → 进入 Step 4
+
+> ⚠️ 修改任务目录下的 `classify_result.json` 时仅更改 `file_type` 字段，不得展开、删除或省略其他字段（`type`、`confidence`、`pages` 等必须完整保留）。
 
 ---
 
-## Step 4：提交报关 + ⛔ 等待完成
+## Step 4：生成 payload + 提交报关 + ⛔ 等待完成
 
-**将用户确认后的 segments 数据作为 JSON 传入。**执行报关脚本，该命令会阻塞等待直至报关最终完成：
+**先一键生成 customs payload，再提交报关任务。**
 
 ```bash
+# 第一步：从 classify_result.json 自动组装完整 segments，生成 customs_payload.json
+python scripts/build_payload.py --input tasks/customs_<id>/classify_result.json \
+  --output tasks/customs_<id>/customs_payload.json
+
+# 第二步：提交报关任务，阻塞等待完成
 python scripts/submit_and_poll.py --mode customs \
-  --json-data '{"files": [{"file_id": "<id>", "segments": [<确认后的segments>]}]}'
+  --json-file tasks/customs_<id>/customs_payload.json \
+  --save-to tasks/customs_<id>/customs_result.json
 ```
 
-- **等待期间参考 `references/INTERACTION.md` 读取 stderr 进度并与用户互动，不要沉默。**
+- 脚本运行期间会通过 stderr 定期输出进度 JSON；**参考 `references/INTERACTION.md` 的话术与用户互动，不要沉默。**
+  - 如平台支持流式响应：在等待期间实时输出话术。
+  - 如平台为批量回调模式：命令返回后，根据累计 stderr 记录补述等待过程。
 - 脚本退出码 `0` = 成功，继续 Step 5。
 
 ---
 
 ## Step 5：展示结果并下载
 
-从脚本输出的 `result_data` 中提取：
-- `structured_data.summary` → 展示报关表头（申报单位、贸易国别、总金额等）
-- `structured_data.items` → 展示商品明细表（商品编码、品名、数量、单价）
-- `output_files[].file_name` → 提供下载命令
+从任务目录的 `customs_result.json` 中提取：
+- `result_data.structured_data.summary` → 展示报关表头（申报单位、贸易国别、总金额等）
+- `result_data.structured_data.items` → 展示商品明细表（商品编码、品名、数量、单价）
+- `result_data.output_files[].file_name` → 提供下载命令
 
-下载 Excel 文件：
+下载 Excel 文件（保存到任务目录）：
 ```bash
-curl -o customs_result.xlsx \
-  -H "Authorization: Bearer $LEAP_API_KEY" \
-  "https://platform.daofeiai.com/api/v1/results/<result_id>/files/<filename>"
+python scripts/file_transfer.py --mode download --result-id <result_id> --filename <filename> \
+  --output tasks/customs_<id>/customs_result.xlsx
 ```
 
 展示完结果后，**主动询问用户**：
@@ -157,91 +182,11 @@ curl -o customs_result.xlsx \
 
 ## Step 6：结果修改（用户反馈修正）
 
-当用户对 Step 5 展示的结果提出修改要求时，进入本步骤。
+当用户对 Step 5 展示的结果提出修改要求时，参照 [MODIFICATION.md](references/MODIFICATION.md) 执行。
 
-### ⛔ 约束
+核心约束：**禁止**重新上传文件或提交新任务，**必须**基于已有 `structured_data` 和已下载的 Excel 文件直接修改单元格。修改前必须展示变更对比并等待用户确认。
 
-- **禁止**重新上传文件或提交新的分类/报关任务
-- **禁止**自行创建新的 Excel 模板或格式
-- **必须**基于当前任务已有的 `structured_data` 进行修改，再用已下载的 Excel 文件直接修改对应单元格
-
-### 工作流程
-
-**1. 判断修改类型** — 用户的修改意图分为两类：
-
-#### 类型 A：用户直接给出修改值
-
-用户明确说出了要改成什么值，直接映射到 `structured_data` 字段：
-
-| 用户说法示例 | 对应操作 |
-|---|---|
-| "第3项品名改成塑料薄膜" | `items[2].品名 = "塑料薄膜"` |
-| "HS编码第一个改成3920109090" | `items[0].商品编码 = "3920109090"` |
-| "总金额应该是5000美元" | `summary.总金额 = "5000"` |
-| "删掉最后一行" | 删除 `items` 末尾元素 |
-| "加一个商品：螺丝，编码7318159001，100千克" | 在 `items` 末尾追加 |
-
-→ 直接进入步骤 2（展示修改预览）。
-
-#### 类型 B：用户只给方向，不给具体值
-
-用户指向一个**原始文件**，要求从中提取某些字段来补充或修正结果。用户不会把每个值都列出来——他们用工具就是为了不手动抄写。
-
-| 用户说法示例 | 用户真实意图 |
-|---|---|
-| "根据上传的报关单草单，把收货人、运输方式补充进去" | Agent 去读草单文件，找到收货人和运输方式的值 |
-| "装箱单上的件数和毛重跟结果不一样，以装箱单为准" | Agent 去读装箱单，提取件数和毛重来覆盖结果 |
-| "发票上的单价好像提取错了，你再看看" | Agent 去读发票，重新确认单价 |
-| "把报关单里的贸易国别、成交方式这些表头信息补全" | Agent 去读报关单，提取多个表头字段 |
-
-**处理步骤**：
-
-1. **确定目标文件** — 根据用户提及的文件类型（报关单/装箱单/发票等），在对话上下文中找到对应的原始上传文件
-2. **自行阅读文件** — 使用你自身的能力（视觉理解/文本阅读）直接读取该文件内容
-3. **提取用户要求的字段值** — 从文件中找到用户提及的字段（收货人、运输方式、件数等）
-4. **进入步骤 2** — 将提取到的值作为修改预览展示给用户确认
-
-> ⛔ **类型 B 仍然是修改操作，不是重新执行报关任务。** 你只是用自己的能力从原始文件中读取特定字段值，然后修改 `structured_data` 和 Excel。**禁止**重新调用 `submit_and_poll.py` 或提交新的处理任务。
-
-**2. 展示修改预览** — 修改前必须展示变更对比，等用户确认：
-
-```
-📝 将按您的要求修改以下内容：
-
-| # | 字段 | 原值 | → | 新值 |
-|---|------|------|---|------|
-| 1 | 第3项 品名 | 塑料板 | → | 塑料薄膜 |
-| 2 | 第3项 商品编码 | 3920991000 | → | 3920109090 |
-
-确认修改吗？（确认/OK/取消）
-```
-
-**3. 用户确认后，直接修改 Excel 文件** — 使用 Python + openpyxl 打开已下载的 Excel 文件，定位到对应单元格修改值并保存：
-
-> ⚠️ **此步骤需要 `openpyxl` 库（非标准库）。** 如果用户环境未安装，先执行 `pip install openpyxl`。
-
-```python
-from openpyxl import load_workbook
-
-wb = load_workbook("customs_result.xlsx")
-ws = wb.active
-
-# 根据实际行列位置修改对应单元格
-# 例如: 第3项品名在第 N 行第 M 列
-ws.cell(row=<行号>, column=<列号>).value = "塑料薄膜"
-
-wb.save("customs_result_v2.xlsx")
-wb.close()
-```
-
-> ⚠️ 修改时保留原文件样式和格式，只改值，不改结构。
-> 保存为新文件名（如 `_v2`、`_v3`），避免覆盖原始结果。
-
-**4. 告知用户修改完成** — 展示修改后的数据摘要，并告知新文件位置。
-
-### 多轮修改
-
-用户可以反复修改。每次修改都基于**最新版本**的数据和文件继续调整，不回退到原始版本。
+---
 
 ## 辅助命令
 
@@ -250,16 +195,13 @@ wb.close()
 python scripts/submit_and_poll.py --mode poll --result-id <result_id>
 
 # 查找历史任务（如遗忘了 result_id）
-curl -s "https://platform.daofeiai.com/api/v1/process/tasks?limit=10" \
-  -H "Authorization: Bearer $LEAP_API_KEY"
+python scripts/submit_and_poll.py --mode list-tasks --limit 10
 
 # 取消任务
-curl -X DELETE "https://platform.daofeiai.com/api/v1/process/tasks/<result_id>" \
-  -H "Authorization: Bearer $LEAP_API_KEY"
+python scripts/submit_and_poll.py --mode cancel --result-id <result_id>
 
 # 重试失败任务
-curl -X POST "https://platform.daofeiai.com/api/v1/process/tasks/<result_id>/retry" \
-  -H "Authorization: Bearer $LEAP_API_KEY"
+python scripts/submit_and_poll.py --mode retry --result-id <result_id>
 ```
 
 ## 常见错误
@@ -276,3 +218,4 @@ curl -X POST "https://platform.daofeiai.com/api/v1/process/tasks/<result_id>/ret
 - 详细 API 接口规范：[API_REFERENCE.md](references/API_REFERENCE.md)
 - 文件类型枚举与展示格式：[FILE_TYPES.md](references/FILE_TYPES.md)
 - 等待期互动话术：[INTERACTION.md](references/INTERACTION.md)
+- 结果修改详细流程：[MODIFICATION.md](references/MODIFICATION.md)
