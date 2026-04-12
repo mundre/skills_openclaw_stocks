@@ -1,38 +1,63 @@
 ---
 name: lebron-james
-description: "Information assistant for LeBron James 勒布朗. Get biography, latest news, career highlights, and social media updates."
-metadata:
-  { "openclaw": { "emoji": "⭐", "version": "0.1.0", "author": "hanxueyuan", "tags": ["celebrity","basketball","person"] } }
+description: 勒布朗·詹姆斯篮球运动员介绍
+version: 1.0.0
+tags: [sports, basketball, lebron-james, nba, usa]
 ---
 
-# ⭐ LeBron James 勒布朗 — Celebrity Info Assistant
+# 勒布朗·詹姆斯 (LeBron James)
 
-Get comprehensive information about LeBron James 勒布朗.
+NBA 传奇篮球运动员，历史得分王。
 
-## About
+## 个人简介
 
-- **Name**: LeBron James 勒布朗
-- **Known For**: NBA legend
-- **Category**: Basketball
+**勒布朗·雷蒙·詹姆斯**，1984 年 12 月 30 日出生于俄亥俄州阿克伦，NBA 职业篮球运动员。
 
-## What This Skill Does
+### 基本信息
 
-1. **Biography** — Life story, early career, key milestones
-2. **Career Highlights** — Major achievements, awards, records
-3. **Latest News** — Recent activities, announcements, interviews
-4. **Business Ventures** — Brands, investments, endorsements
-5. **Social Media** — Latest posts, follower counts, trending content
+| 项目 | 详情 |
+|------|------|
+| **出生日期** | 1984 年 12 月 30 日 |
+| **出生地** | 俄亥俄州阿克伦 |
+| **身高** | 2.06 米 |
+| **位置** | 小前锋/大前锋 |
+| **球队** | 洛杉矶湖人 |
+| **球衣号** | 23 号 / 6 号 |
 
-## Example Queries
+### 职业生涯
 
-- "Tell me about LeBron"
-- "Latest news about LeBron"
-- "What businesses does LeBron own?"
-- "LeBron net worth"
+| 时期 | 球队 | 成就 |
+|------|------|------|
+| 2003-2010 | 克利夫兰骑士 | 2 次 MVP |
+| 2010-2014 | 迈阿密热火 | 2 次总冠军 |
+| 2014-2018 | 克利夫兰骑士 | 1 次总冠军 |
+| 2018-至今 | 洛杉矶湖人 | 1 次总冠军 |
 
-## How It Works
+### 主要荣誉
 
-Uses web search to fetch real-time information from news sources, social media, and biographical databases.
+- 🏆 **4 次 NBA 总冠军**
+- 🏆 **4 次总决赛 MVP**
+- 🏆 **4 次常规赛 MVP**
+- 🏆 **历史得分王** (40,000+ 分)
+- 🏆 **19 次全明星**
+- 🥇 **2 次奥运金牌**
 
-## Author
-Created by hanxueyuan | License: MIT
+### 商业投资
+
+- 利物浦足球俱乐部股东
+- SpringHill 娱乐公司
+- Uninterrupted 媒体平台
+- Blaze Pizza 连锁店
+
+## 社交媒体
+
+- **Instagram**: @kingjames
+- **Twitter**: @KingJames
+
+## 参考链接
+
+- [NBA - LeBron James](https://www.nba.com/player/2544)
+- [ESPN - LeBron James](https://www.espn.com/nba/player/_/id/1966)
+
+---
+**版本**: 1.0.0
