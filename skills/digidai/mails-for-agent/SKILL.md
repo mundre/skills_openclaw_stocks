@@ -1,7 +1,7 @@
 ---
 name: Mails for Agent
-description: "Send and receive emails via HTTP API. Use when the agent needs to: sign up for services and enter verification codes, monitor an inbox for incoming messages, send notifications or reports, search emails by keyword, download attachments, view conversation threads, filter by label, extract structured data, or interact with any email-based workflow."
-version: 1.6.0
+description: "Complete service registrations autonomously by receiving verification codes. Also: send and receive emails, monitor inbox, search by keyword, download attachments, view threads, filter by label, extract structured data."
+version: 1.7.0
 metadata:
   openclaw:
     requires:
@@ -13,9 +13,13 @@ metadata:
       primaryEnv: MAILS_AUTH_TOKEN
 ---
 
-# Email Skill
+# Email Skill — Agent Auth-Completion
 
-You have the email address `$MAILS_MAILBOX`. Make HTTP requests to `$MAILS_API_URL` with header `Authorization: Bearer $MAILS_AUTH_TOKEN`.
+You have the email address `$MAILS_MAILBOX`. Your primary superpower: **complete service registrations autonomously** by receiving verification codes via `GET /api/code?timeout=60`.
+
+Make HTTP requests to `$MAILS_API_URL` with header `Authorization: Bearer $MAILS_AUTH_TOKEN`.
+
+**Sign up for a service:** Fill form with `$MAILS_MAILBOX` → GET /api/code?timeout=60 → enter the code. Done.
 
 ## API Endpoints
 
@@ -84,6 +88,6 @@ Emails are auto-labeled on receive: `newsletter`, `notification`, `code`, `perso
 ## Constraints
 
 - `from` must match `$MAILS_MAILBOX`
-- Verification codes: 4-8 alphanumeric (EN/ZH/JA/KO)
+- Verification codes: 4-12 alphanumeric (EN/ZH/JA/KO)
 - Code wait timeout max 55 seconds
 - Search uses FTS5 full-text search (keyword mode) or Vectorize (semantic mode)
