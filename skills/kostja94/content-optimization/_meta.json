@@ -3,9 +3,15 @@
   "slug": "content-optimization",
   "displayName": "content-optimization",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1774545714263,
-    "commit": "https://github.com/openclaw/skills/commit/7ce3378f7577e0fefbc8c8870d22f2dca7120cac"
+    "version": "1.2.1",
+    "publishedAt": 1775323689196,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1774545714263,
+      "commit": "https://github.com/openclaw/skills/commit/7ce3378f7577e0fefbc8c8870d22f2dca7120cac"
+    }
+  ]
 }
