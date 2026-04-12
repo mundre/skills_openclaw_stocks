@@ -436,7 +436,7 @@ def _get_recommendation(title: str, matched_kw: list, high_value_kw: list) -> st
         return '高'
     if '系统' in matched_kw:
         return '中'
-    return ''
+    return '低'
 
 
 def _generate_remarks(title: str, matched_kw: list) -> str:
@@ -471,77 +471,6 @@ def _generate_remarks(title: str, matched_kw: list) -> str:
 # ──────────────────────────────────────────────
 # 北京中建云智 主抓取流程
 # ──────────────────────────────────────────────
-
-def _fetch_bjzc_detail_for_row(row: dict, high_value_kw: list) -> list:
-    """在独立 session 中补全单条 bjzc 记录的详情，返回标段记录列表（一条公告可能有多个标段）。"""
-    session = _build_session()
-    gg_guid = row.get('ggGuid', '')
-    gc_guid = row.get('gcGuid', '')
-    title = row.get('ggName', '')
-    matched_kw = row.get('_matched_kw', [])
-    publish_date = _ts_to_date(row.get('ggStartTime'))
-
-    base_record = {
-        '项目名称': title,
-        '标段名称': row.get('bdNames', ''),
-        '招标方式': row.get('zbFangShiName', ''),
-        '合同估价(元)': '',
-        '文件获取开始时间': '',
-        '文件获取截止时间': '',
-        '开标时间': '',
-        '采购人': '',
-        '采购人电话': '',
-        '代理机构': '',
-        '详情链接': '',
-        '发布日期': publish_date,
-        '匹配关键词': ','.join(matched_kw),
-        '推荐等级': _get_recommendation(title, matched_kw, high_value_kw),
-        '备注': _generate_remarks(title, matched_kw),
-    }
-
-    bd_list = _fetch_bjzc_gg_bd_list(session, gg_guid)
-    if not bd_list:
-        bd_list = [{}]
-
-    purchaser_info = _fetch_bjzc_purchaser_info(session, gc_guid) if gc_guid else {}
-    purchaser_name  = purchaser_info.get('zbRName', '')
-    purchaser_phone = purchaser_info.get('lianXiRenPhone', '')
-    agency_name     = purchaser_info.get('zbDLName', '')
-    agency_phone    = (purchaser_info.get('zbDLZBFuZeRenMobile')
-                       or purchaser_info.get('zbDLZBFuZeRenPhone') or '')
-
-    records = []
-    for bd in bd_list:
-        bd_guid = bd.get('bdGuid', '')
-        file_start = _ts_to_datetime(bd.get('zbWJHuoQuStartTime'))
-        file_end   = _ts_to_datetime(bd.get('zbWJHuoQuEndTime'))
-        open_bid   = _ts_to_datetime(bd.get('kbTime'))
-        detail_url = _build_detail_url(bd_guid, gc_guid, gg_guid) if bd_guid else ''
-
-        record = dict(base_record)
-        contract_price = bd.get('bdHeTongGuJia')
-        if contract_price:
-            try:
-                yuan = int(contract_price) // 100
-                contract_price_fmt = f'{yuan:,}'
-            except (ValueError, TypeError):
-                contract_price_fmt = str(contract_price)
-        else:
-            contract_price_fmt = ''
-        record.update({
-            '标段名称': bd.get('bdName') or base_record['标段名称'],
-            '合同估价(元)': contract_price_fmt,
-            '文件获取开始时间': file_start,
-            '文件获取截止时间': file_end,
-            '开标时间': open_bid,
-            '采购人': purchaser_name,
-            '采购人电话': purchaser_phone,
-            '代理机构': agency_name,
-            '详情链接': detail_url,
-        })
-        records.append(record)
-    return records
-
 
 def fetch_bjzc_bidding(
     session: requests.Session,
@@ -619,24 +548,79 @@ def fetch_bjzc_bidding(
             })
         return results
 
-    # 并行补全详情
-    ordered: list = [None] * len(filtered)
-    with ThreadPoolExecutor(max_workers=_DETAIL_WORKERS) as executor:
-        future_to_idx = {
-            executor.submit(_fetch_bjzc_detail_for_row, row, high_value_kw): i
-            for i, row in enumerate(filtered)
-        }
-        for future in as_completed(future_to_idx):
-            i = future_to_idx[future]
-            title = filtered[i].get('ggName', '')
-            with _PRINT_LOCK:
-                print(f'  [{i + 1}/{len(filtered)}] 完成: {title[:30]}...')
-            ordered[i] = future.result()
-
+    # 串行补全详情（bjzc 使用滚动式 session cookie，并发请求会导致旧 token 失效，字段为空）
     results = []
-    for records in ordered:
-        if records:
-            results.extend(records)
+    for idx, row in enumerate(filtered, 1):
+        gg_guid = row.get('ggGuid', '')
+        gc_guid = row.get('gcGuid', '')
+        title = row.get('ggName', '')
+        matched_kw = row.get('_matched_kw', [])
+        publish_date = _ts_to_date(row.get('ggStartTime'))
+
+        base_record = {
+            '项目名称': title,
+            '标段名称': row.get('bdNames', ''),
+            '招标方式': row.get('zbFangShiName', ''),
+            '合同估价(元)': '',
+            '文件获取开始时间': '',
+            '文件获取截止时间': '',
+            '开标时间': '',
+            '采购人': '',
+            '采购人电话': '',
+            '代理机构': '',
+            '详情链接': '',
+            '发布日期': publish_date,
+            '匹配关键词': ','.join(matched_kw),
+            '推荐等级': _get_recommendation(title, matched_kw, high_value_kw),
+            '备注': _generate_remarks(title, matched_kw),
+        }
+
+        print(f'  [{idx}/{len(filtered)}] 补全详情: {title[:30]}...')
+
+        # Step1: queryGgBdList — 分包列表 + 文件获取时间 + 开标时间
+        bd_list = _fetch_bjzc_gg_bd_list(session, gg_guid)
+        if not bd_list:
+            bd_list = [{}]
+
+        # Step2: queryPurchaserInfo — 采购人 + 代理机构（每个公告只查一次）
+        purchaser_info = _fetch_bjzc_purchaser_info(session, gc_guid) if gc_guid else {}
+        purchaser_name  = purchaser_info.get('zbRName', '')
+        purchaser_phone = purchaser_info.get('lianXiRenPhone', '')
+        agency_name     = purchaser_info.get('zbDLName', '')
+        agency_phone    = (purchaser_info.get('zbDLZBFuZeRenMobile')
+                           or purchaser_info.get('zbDLZBFuZeRenPhone') or '')
+
+        for bd in bd_list:
+            bd_guid = bd.get('bdGuid', '')
+            file_start = _ts_to_datetime(bd.get('zbWJHuoQuStartTime'))
+            file_end   = _ts_to_datetime(bd.get('zbWJHuoQuEndTime'))
+            open_bid   = _ts_to_datetime(bd.get('kbTime'))
+            detail_url = _build_detail_url(bd_guid, gc_guid, gg_guid) if bd_guid else ''
+
+            record = dict(base_record)
+            contract_price = bd.get('bdHeTongGuJia')
+            # 接口返回单位为分，转换为元并格式化为逗号分隔
+            if contract_price:
+                try:
+                    yuan = int(contract_price) // 100
+                    contract_price_fmt = f'{yuan:,}'
+                except (ValueError, TypeError):
+                    contract_price_fmt = str(contract_price)
+            else:
+                contract_price_fmt = ''
+            record.update({
+                '标段名称': bd.get('bdName') or base_record['标段名称'],
+                '合同估价(元)': contract_price_fmt,
+                '文件获取开始时间': file_start,
+                '文件获取截止时间': file_end,
+                '开标时间': open_bid,
+                '采购人': purchaser_name,
+                '采购人电话': purchaser_phone,
+                '代理机构': agency_name,
+                '详情链接': detail_url,
+            })
+            results.append(record)
+
     return results
 
 
@@ -710,6 +694,7 @@ _THIN_BORDER  = Border(
 )
 _HIGH_FILL = PatternFill(start_color='FFE699', end_color='FFE699', fill_type='solid')
 _MID_FILL  = PatternFill(start_color='D9E1F2', end_color='D9E1F2', fill_type='solid')
+_LOW_FILL  = PatternFill(start_color='E2EFDA', end_color='E2EFDA', fill_type='solid')
 
 
 def _active_columns(rows: list) -> list:
@@ -739,7 +724,9 @@ def _write_sheet(ws, rows: list, columns: list = None) -> None:
     # 数据行
     for row_idx, record in enumerate(rows, 2):
         recommendation = record.get('推荐等级', '')
-        row_fill = _HIGH_FILL if recommendation == '高' else (_MID_FILL if recommendation == '中' else None)
+        row_fill = (_HIGH_FILL if recommendation == '高' else
+                    _MID_FILL  if recommendation == '中' else
+                    _LOW_FILL  if recommendation == '低' else None)
 
         ws.cell(row=row_idx, column=1, value=row_idx - 1)
         for col_idx, (col_name, _) in enumerate(cols[1:], 2):
