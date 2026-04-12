@@ -1,0 +1,11 @@
+{
+  "owner": "danielsinewe",
+  "slug": "sherpa-onnx-tts",
+  "displayName": "Sherpa ONNX TTS",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1774854213756,
+    "commit": null
+  },
+  "history": []
+}
