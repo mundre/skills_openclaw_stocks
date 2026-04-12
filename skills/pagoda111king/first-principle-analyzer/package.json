@@ -1,31 +1,18 @@
 {
   "name": "first-principle-analyzer",
-  "version": "0.2.0",
-  "description": "第一性原理分析器 - 用第一性原理分解复杂问题，提取基本真理，重构创新方案",
-  "main": "src/analyzer-factory.js",
+  "version": "2.4.1",
+  "description": "First principles thinking enhancement tool for complex problem analysis",
+  "main": "src/index.js",
   "scripts": {
     "test": "jest",
-    "test:coverage": "jest --coverage",
-    "test:watch": "jest --watch"
+    "start": "node src/index.js"
   },
-  "keywords": [
-    "first-principles",
-    "analysis",
-    "thinking",
-    "decision-making",
-    "problem-solving",
-    "strategy-pattern",
-    "template-method",
-    "builder-pattern",
-    "factory-pattern"
-  ],
-  "author": "王的奴隶 · 严谨专业版",
-  "license": "Commercial",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/cloud-shrimp/first-principle-analyzer"
-  },
-  "devDependencies": {
-    "jest": "^29.7.0"
+  "keywords": ["analysis", "first-principles", "problem-solving", "decision-making", "meta-skill"],
+  "author": "pagoda111king",
+  "license": "MIT",
+  "clawhub": {
+    "slug": "first-principle-analyzer",
+    "name": "First Principle Analyzer",
+    "tags": ["analysis", "first-principles", "problem-solving", "decision-making", "meta-skill"]
   }
 }
