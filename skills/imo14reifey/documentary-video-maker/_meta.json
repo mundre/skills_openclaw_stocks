@@ -3,11 +3,16 @@
   "slug": "documentary-video-maker",
   "displayName": "Documentary Video Maker",
   "latest": {
-    "version": "1.2.2",
-    "publishedAt": 1774727677296,
-    "commit": "https://github.com/openclaw/skills/commit/de3477412f679564bbd8e0b84d7126b8fb5da22e"
+    "version": "1.2.3",
+    "publishedAt": 1775523332167,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.2",
+      "publishedAt": 1774727677296,
+      "commit": "https://github.com/openclaw/skills/commit/de3477412f679564bbd8e0b84d7126b8fb5da22e"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1774645381245,
