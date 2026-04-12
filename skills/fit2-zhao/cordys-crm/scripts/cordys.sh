@@ -19,10 +19,41 @@ CORDYS_CRM_DOMAIN="${CORDYS_CRM_DOMAIN:-https://www.cordys.cn}"
 # ── 辅助函数 ───────────────────────────────────────────────────────────
 die()  { echo "错误: $*" >&2; exit 1; }
 info() { echo ":: $*" >&2; }
+warn() { echo "⚠️  警告: $*" >&2; }
 
 check_keys() {
   [[ -n "${CORDYS_ACCESS_KEY:-}" ]] || die "未设置 CORDYS_ACCESS_KEY"
   [[ -n "${CORDYS_SECRET_KEY:-}" ]] || die "未设置 CORDYS_SECRET_KEY"
+}
+
+# 验证URL是否指向可信的Cordys CRM域名
+validate_url() {
+  local url="$1"
+  
+  # 提取域名部分
+  local domain
+  if [[ "$url" =~ ^https?://([^/]+) ]]; then
+    domain="${BASH_REMATCH[1]}"
+  else
+    return 0  # 不是完整URL，可能是相对路径
+  fi
+  
+  # 从配置的CORDYS_CRM_DOMAIN中提取可信域名
+  local trusted_domain
+  if [[ "$CORDYS_CRM_DOMAIN" =~ ^https?://([^/]+) ]]; then
+    trusted_domain="${BASH_REMATCH[1]}"
+  else
+    trusted_domain="$CORDYS_CRM_DOMAIN"
+  fi
+  
+  # 检查域名是否匹配（支持子域名）
+  if [[ "$domain" != "$trusted_domain" ]] && [[ "$domain" != *".$trusted_domain" ]]; then
+    warn "目标域名 '$domain' 与配置的Cordys CRM域名 '$trusted_domain' 不匹配"
+    warn "这可能会泄露您的API凭证！"
+    return 1
+  fi
+  
+  return 0
 }
 
 page_payload() {
@@ -148,6 +179,19 @@ raw_api() {
   shift 2
 
   if [[ "$path" == http* ]]; then
+    # 验证URL域名
+    if ! validate_url "$path"; then
+      echo "❌ 拒绝请求：目标域名与配置的Cordys CRM域名不匹配" >&2
+      echo "   配置的域名: $CORDYS_CRM_DOMAIN" >&2
+      echo "   如需强制发送，请设置环境变量 CORDYS_ALLOW_UNTRUSTED=1" >&2
+      
+      if [[ "${CORDYS_ALLOW_UNTRUSTED:-0}" != "1" ]]; then
+        exit 1
+      else
+        warn "已启用不受信任域名模式，继续发送请求..."
+      fi
+    fi
+    
     api "$method" "$path" "$@"
   else
     api "$method" "${CORDYS_CRM_DOMAIN}${path}" "$@"
@@ -173,18 +217,29 @@ CRM 操作:
   crm product [关键词|JSON]      查询产品列表
   crm contact <模块> <ID>             获取联系人列表
 
-示例:
+支持的 CRM 一级模块:
+ [lead（线索）, opportunity（商机）, account（客户）,contact（联系人）,contract（合同）]
+
+列表查询示例:
   cordys crm view lead
-  cordys crm page lead '{"current":1,"pageSize":30,"sort":{},"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","viewId":"ALL","filters":[]}'
+  cordys crm page lead
   cordys crm page lead "测试"
+  cordys crm page lead '{"current":1,"pageSize":30,"sort":{},"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","viewId":"ALL","filters":[]}'
   cordys crm page contract/payment-plan '{"current":1,"pageSize":30,"sort":{},"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","viewId":"ALL","filters":[]}'
-  cordys crm search account '{"current":1,"pageSize":50,"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"xyz","viewId":"ALL","filters":[]}'
+  cordys crm search account '{"current":1,"pageSize":30,"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"xyz","viewId":"ALL","filters":[]}'
   cordys crm org
-  cordys crm members '{"current":1,"pageSize":50,"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","departmentIds":["deptId1","deptId2"],"filters":[]}'
+  cordys crm members '{"current":1,"pageSize":30,"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","departmentIds":["deptId1","deptId2"],"filters":[]}'
   cordys crm follow plan lead '{"sourceId":"927627065163785","current":1,"pageSize":10,"keyword":"","status":"ALL","myPlan":false}'
   cordys crm follow record account '{"sourceId":"1751888184018919","current":1,"pageSize":10,"keyword":"","myPlan":false}'
   cordys crm product "测试"
   cordys crm contact account '927627065163785'
+
+支持的 CRM 二级模块 :
+  [contract/payment-plan(回款计划), invoice（发票）,contract/business-title(工商抬头）,contract/payment-record(回款记录), opportunity/quotation(报价单)]
+
+列表查询示例：
+  cordys crm page contract/payment-plan
+  cordys crm page contract/business-title
 
 原始 API:
   raw <方法> <路径> [curl参数...]
@@ -195,11 +250,6 @@ CRM 操作:
   CORDYS_SECRET_KEY
   CORDYS_CRM_DOMAIN
 
-支持的 CRM 一级模块列表查询 cordys crm page lead:
-  lead（线索）, opportunity（商机）, account（客户）,contact（联系人）,contract（合同）
-
-支持的 CRM 二级模块列表查询 cordys crm page contract/payment-plan:
-  contract/payment-plan(回款计划), invoice（发票）,contract/business-title(工商抬头）,contract/payment-record(回款记录), opportunity/quotation(报价单)
 EOF
 }
 

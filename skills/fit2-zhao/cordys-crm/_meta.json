@@ -1,11 +1,17 @@
 {
   "owner": "fit2-zhao",
   "slug": "cordys-crm",
-  "displayName": "Cordys CRM",
+  "displayName": "CordysCRM",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774426667195,
-    "commit": "https://github.com/openclaw/skills/commit/874d9f4d025059a845d7c4020f32bac2d9760eeb"
+    "version": "1.0.3",
+    "publishedAt": 1775542455293,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774426667195,
+      "commit": "https://github.com/openclaw/skills/commit/874d9f4d025059a845d7c4020f32bac2d9760eeb"
+    }
+  ]
 }

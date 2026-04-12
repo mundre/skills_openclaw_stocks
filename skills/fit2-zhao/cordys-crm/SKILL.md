@@ -1,26 +1,72 @@
 ---
-name: cordys.sh-crm
-description: |
-   Cordys CRM CLI 指令映射技能，本技能用于将自然语言需求精准转换为可执行的 `cordys.sh crm` 标准命令，确保输出稳定、可预测、无歧义。
-    
-    【核心能力】
-    - 自动识别用户意图（列表 / 搜索 / 详情 / 跟进 / 原始接口）
-    - 自动识别模块（lead / account / opportunity / contract 等）
-    - 自动补全 JSON 参数
-    - 自动构造 filters / sort / combineSearch
-    - 自动补充分页默认值
-    - 支持“查询全部/全部导出/拉全量”等语义下的自动翻页拉取
-    - 支持二级模块（如 contract/payment-plan,pool/account,pool/lead）
-
+name: cordys-crm
+description: Cordys CRM CLI 指令映射技能，支持将自然语言高效转换为标准 `cordys crm` 命令，具备意图识别、模块匹配、参数补全及分页与全量查询处理能力，输出简洁稳定、无歧义。
+environment:
+  required:
+    - CORDYS_ACCESS_KEY
+    - CORDYS_SECRET_KEY
+    - CORDYS_CRM_DOMAIN
+  optional: []
+security:
+  requiresSecrets: true
+  sensitiveEnvironment: true
+  externalNetworkAccess: true
+  notes: 此技能需要访问Cordys CRM API，使用X-Access-Key和X-Secret-Key进行身份验证。请确保只向可信的CORDYS_CRM_DOMAIN发送请求。
 ---
 
 # Cordys CRM CLI 使用说明
 
-该技能封装了 `cordys` 命令，帮助把自然语言转换成标准 CLI 调用。针对不同模块（lead/account/opportunity/pool 等）和常见操作（查询、分页、搜索、跟进计划/记录、原始接口）提供明确的映射策略。
+  Cordys CRM CLI 指令映射技能，本技能用于将自然语言需求精准转换为可执行的 `cordys crm` 标准命令，确保输出稳定、可预测、无歧义。
+  
+【核心能力】
 
+  - 自动识别用户意图（列表 / 搜索 / 详情 / 跟进 / 原始接口）
+  - 自动识别模块（lead / account / opportunity / contract 等）
+  - 自动补全 JSON 参数
+  - 自动构造 filters / sort / combineSearch
+  - 自动补充分页默认值
+  - 支持“查询全部/全部导出/拉全量”等语义下的自动翻页拉取
+  - 支持二级模块（如 contract/payment-plan,pool/account,pool/lead）
+
+## 安装
+
+```bash
+clawdhub install cordys-crm
+```
+
+## 环境变量（必须）
+
+此技能需要以下环境变量才能正常工作。这些变量可以通过两种方式提供：
+
+1. **系统环境变量**：直接设置在当前shell环境中
+2. **`.env`文件**：在技能目录中创建`.env`文件（注意：此文件包含敏感信息，不应提交到版本控制）
+
+### 必需变量
+```bash
+# 访问 Cordys CRM API 的必要信息：
+CORDYS_ACCESS_KEY=你的 Access Key
+CORDYS_SECRET_KEY=你的 Secret Key
+CORDYS_CRM_DOMAIN=https://your-cordys-domain
+```
+
+### 安全注意事项
+- `.env`文件中的凭证是高度敏感的，应妥善保管
+- 建议使用环境变量而非`.env`文件，以避免凭证泄露
+- 定期轮换API密钥
+- 确保`CORDYS_CRM_DOMAIN`指向可信的Cordys CRM实例
+
+## ⚠️ 安全警告
+
+此技能需要敏感的环境变量（API密钥和域名）。请注意以下安全事项：
+
+1. **凭证安全**：`CORDYS_ACCESS_KEY` 和 `CORDYS_SECRET_KEY` 是敏感凭证，请妥善保管
+2. **域名验证**：确保 `CORDYS_CRM_DOMAIN` 指向可信的Cordys CRM实例
+3. **网络请求**：此技能会向指定的域名发送HTTP请求，包含您的API凭证
+4. **`raw`命令风险**：使用 `cordys.sh raw` 命令时，脚本会将您的凭证发送到指定的URL。请勿向不受信任的域名发送请求
+5. **环境隔离**：建议在受控环境中使用此技能，避免凭证泄露
+
+建议仅在信任的Cordys CRM实例上使用此技能，并定期轮换API密钥。
 ## CLI 版本选择
-
-# CLI 版本选择（优先 Shell）
 
 本项目提供两个版本 CLI：
 
@@ -29,8 +75,8 @@ description: |
 | **Shell 版本 `cordys.sh`** |  推荐 | 无需 Python，执行更轻量 |
 | Python 版本 `cordys.py`    | 备用 | 需要 Python3 + requests |
 
-目录结构里，`scripts/` 目录存放这两个 CLI 实现，标准化排列为：
 
+目录结构里，`scripts/` 目录存放这两个 CLI 实现，标准化排列为：
 ```
 scripts/
 ├── cordys.sh       # 优先的 Shell 可执行脚本
@@ -61,21 +107,15 @@ Python 版本仅在以下情况使用：
 | 跟进计划或记录  | `cordys.sh crm follow plan 或 record <module> <body>` | `body` 应包含 `sourceId`，计划还需要 `status`/`myPlan` |
 | 原始接口     | `cordys raw <METHOD> <PATH> [<body>]`             | 用于自定义端点或二级模块，如 `/contract/payment-plan`                |
 
-## 分页查询交互优化
-为了避免分页查询的交互断层，优先执行一次识别出的指令并返回结果：
-1. **分页控制**：默认 `current=1`、`pageSize=50`，根据响应判断是否有多页，如果有则提示用户是否要翻下一页。
-2. **字段与输出范围**：默认全部字段、摘要、特定字段组合。
-3. **默认格式**：表格或列表形式展示，除非用户特别说明要 JSON 或其他格式。
-
-## 高级技巧
-- 搜索命令需要完整 JSON，若用户只给关键词或简单条件，可自动补齐 `current=1`、`pageSize=30`、`combineSearch={...}`。
-- 过滤器格式为 `{"field":"字段","operator":"equals","value":"值"}`，排序格式为 `{"field":"desc"}`。
-- 支持二级模块（例如 `contract/payment-plan`、`contract/payment-record`），CLI 命令形式仍为 `cordys.sh crm page <module>`。
-- `cordys.sh raw` 可以按原始 GET/POST 访问 `/settings/fields`、`/contract/business-title` 等非标准接口。
-
-
 ## 常用示例
 ```bash
+# 分页查询线索列表（默认分页参数）
+cordys.sh crm page lead
+# 分页查询商机列表（默认分页参数）
+cordys.sh crm page opportunity
+# 分页查询客户列表（默认分页参数）
+cordys.sh crm page account
+
 # 分页列表（带关键词）
 cordys.sh crm page lead "测试"
 
@@ -139,13 +179,17 @@ cordys.sh raw GET /settings/fields?module=account
 cordys.sh crm search opportunity '{"filters":[{"field":"Stage","operator":"equals","value":"Closed Won"}]}'
 ```
 
-## 环境变量（必须）
-```bash
-# 从 `.env` 文件或环境变量中读取，包含访问 Cordys CRM API 的必要信息：
-CORDYS_ACCESS_KEY=xxx
-CORDYS_SECRET_KEY=xxx
-CORDYS_CRM_DOMAIN=https://your-cordys-domain
-```
+## 分页查询交互优化
+为了避免分页查询的交互断层，优先执行一次识别出的指令并返回结果：
+1. **分页控制**：默认 `current=1`、`pageSize=30`，根据响应判断是否有多页，如果有则提示用户是否要翻下一页。
+2. **字段与输出范围**：默认全部字段、摘要、特定字段组合。
+3. **默认格式**：表格或列表形式展示，除非用户特别说明要 JSON 或其他格式。
+
+## 高级技巧
+- 搜索命令需要完整 JSON，若用户只给关键词或简单条件，可自动补齐 `current=1`、`pageSize=30`、`combineSearch={...}`。
+- 过滤器格式为 `{"field":"字段","operator":"equals","value":"值"}`，排序格式为 `{"field":"desc"}`。
+- 支持二级模块（例如 `contract/payment-plan`、`contract/payment-record`），CLI 命令形式仍为 `cordys.sh crm page <module>`。
+- `cordys.sh raw` 可以按原始 GET/POST 访问 `/settings/fields`、`/contract/business-title` 等非标准接口。
 
 ## 助手判断意图的提示词
 - “列表”/“分页查看”：映射到 `page` 指令；可补上关键词或 filters
@@ -158,3 +202,7 @@ CORDYS_CRM_DOMAIN=https://your-cordys-domain
 - CLI 默认读取 `.env`，也可通过前置环境变量覆盖。
 - 若返回 `code` 非 `100200`，要记录 `message` 并向用户说明。
 - 若返回 401 或 403，提示用户检查认证信息。
+
+## 问题反馈
+如有任何问题或建议，请通过以下方式联系我们：
+- GitHub Issues: https://github.com/1Panel-dev/CordysCRM-skills/issues

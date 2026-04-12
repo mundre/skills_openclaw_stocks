@@ -62,6 +62,33 @@ def check_keys() -> None:
     if not CORDYS_SECRET_KEY:
         die("未设置 CORDYS_SECRET_KEY")
 
+def warn(message: str) -> None:
+    """打印警告信息"""
+    print(f"⚠️  警告: {message}", file=sys.stderr)
+
+def validate_url(url: str) -> bool:
+    """验证URL是否指向可信的Cordys CRM域名"""
+    from urllib.parse import urlparse
+    
+    # 解析URL
+    parsed = urlparse(url)
+    if not parsed.netloc:
+        return True  # 不是完整URL，可能是相对路径
+    
+    # 从配置的CORDYS_CRM_DOMAIN中提取可信域名
+    trusted_parsed = urlparse(CORDYS_CRM_DOMAIN)
+    trusted_domain = trusted_parsed.netloc or CORDYS_CRM_DOMAIN
+    
+    # 检查域名是否匹配（支持子域名）
+    request_domain = parsed.netloc
+    
+    if request_domain != trusted_domain and not request_domain.endswith(f".{trusted_domain}"):
+        warn(f"目标域名 '{request_domain}' 与配置的Cordys CRM域名 '{trusted_domain}' 不匹配")
+        warn("这可能会泄露您的API凭证！")
+        return False
+    
+    return True
+
 
 def page_payload(keyword: str = "") -> Dict[str, Any]:
     """生成分页请求的标准 payload"""
@@ -220,6 +247,17 @@ def crm_members(json_data: str) -> str:
 def raw_api(method: str, path: str, *args) -> str:
     """执行原始 API 调用"""
     if path.startswith("http"):
+        # 验证URL域名
+        if not validate_url(path):
+            print("❌ 拒绝请求：目标域名与配置的Cordys CRM域名不匹配", file=sys.stderr)
+            print(f"   配置的域名: {CORDYS_CRM_DOMAIN}", file=sys.stderr)
+            print("   如需强制发送，请设置环境变量 CORDYS_ALLOW_UNTRUSTED=1", file=sys.stderr)
+            
+            if os.environ.get("CORDYS_ALLOW_UNTRUSTED", "0") != "1":
+                sys.exit(1)
+            else:
+                warn("已启用不受信任域名模式，继续发送请求...")
+        
         url = path
     else:
         url = f"{CORDYS_CRM_DOMAIN}{path}"
@@ -235,7 +273,7 @@ def print_usage():
 cordys — CORDYS CRM CLI 工具（X-Access-Key 模式）
 
 使用方法:
-  cordys.py <命令> [参数...]
+  cordys <命令> [参数...]
 
 CRM 操作:
   crm view <模块> [参数]             列出视图记录（例：account/lead/opportunity）
@@ -248,33 +286,39 @@ CRM 操作:
   crm product [关键词|JSON]      查询产品列表
   crm contact <模块> <ID>             获取联系人列表
 
-示例:
-  cordys.py crm view lead
-  cordys.py crm page lead '{"current":1,"pageSize":30,"sort":{},"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","viewId":"ALL","filters":[]}'
-  cordys.py crm page lead "测试"
-  cordys.py crm page contract/payment-plan '{"current":1,"pageSize":30,"sort":{},"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","viewId":"ALL","filters":[]}'
-  cordys.py crm search account '{"current":1,"pageSize":50,"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"xyz","viewId":"ALL","filters":[]}'
-  cordys.py crm org
-  cordys.py crm members '{"current":1,"pageSize":50,"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","departmentIds":["deptId1","deptId2"],"filters":[]}'
-  cordys.py crm follow plan lead '{"sourceId":"927627065163785","current":1,"pageSize":10,"keyword":"","status":"ALL","myPlan":false}'
-  cordys.py crm follow record account '{"sourceId":"1751888184018919","current":1,"pageSize":10,"keyword":"","myPlan":false}'
-  cordys.py crm product "测试"
-  cordys.py crm contact account '927627065163785'
+支持的 CRM 一级模块:
+ [lead（线索）, opportunity（商机）, account（客户）,contact（联系人）,contract（合同）]
+
+列表查询示例:
+  cordys crm view lead
+  cordys crm page lead
+  cordys crm page lead "测试"
+  cordys crm page lead '{"current":1,"pageSize":30,"sort":{},"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","viewId":"ALL","filters":[]}'
+  cordys crm page contract/payment-plan '{"current":1,"pageSize":30,"sort":{},"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","viewId":"ALL","filters":[]}'
+  cordys crm search account '{"current":1,"pageSize":30,"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"xyz","viewId":"ALL","filters":[]}'
+  cordys crm org
+  cordys crm members '{"current":1,"pageSize":30,"combineSearch":{"searchMode":"AND","conditions":[]},"keyword":"","departmentIds":["deptId1","deptId2"],"filters":[]}'
+  cordys crm follow plan lead '{"sourceId":"927627065163785","current":1,"pageSize":10,"keyword":"","status":"ALL","myPlan":false}'
+  cordys crm follow record account '{"sourceId":"1751888184018919","current":1,"pageSize":10,"keyword":"","myPlan":false}'
+  cordys crm product "测试"
+  cordys crm contact account '927627065163785'
+
+支持的 CRM 二级模块 :
+  [contract/payment-plan(回款计划), invoice（发票）,contract/business-title(工商抬头）,contract/payment-record(回款记录), opportunity/quotation(报价单)]
+
+列表查询示例：
+  cordys crm page contract/payment-plan
+  cordys crm page contract/business-title
 
 原始 API:
   raw <方法> <路径> [curl参数...]
-  cordys.py raw GET /settings/fields?module=account
+  cordys raw GET /settings/fields?module=account
 
 环境变量要求:
   CORDYS_ACCESS_KEY
   CORDYS_SECRET_KEY
   CORDYS_CRM_DOMAIN
 
-支持的 CRM 一级模块列表查询 cordys.py crm page lead:
-  lead（线索）, opportunity（商机）, account（客户）,contact（联系人）,contract（合同）
-
-支持的 CRM 二级模块列表查询 cordys.py crm page contract/payment-plan:
-  contract/payment-plan(回款计划), invoice（发票）,contract/business-title(工商抬头）,contract/payment-record(回款记录), opportunity/quotation(报价单)
 """
     print(usage_text)
 
