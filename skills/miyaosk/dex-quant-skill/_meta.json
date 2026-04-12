@@ -3,11 +3,16 @@
   "slug": "dex-quant-skill",
   "displayName": "Dex Skill",
   "latest": {
-    "version": "3.40.0",
-    "publishedAt": 1775290436484,
-    "commit": "https://github.com/openclaw/skills/commit/493b6edff6e25742c98cef85bfc3f0d2f5981412"
+    "version": "3.46.0",
+    "publishedAt": 1775814445348,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.40.0",
+      "publishedAt": 1775290436484,
+      "commit": "https://github.com/openclaw/skills/commit/493b6edff6e25742c98cef85bfc3f0d2f5981412"
+    },
     {
       "version": "3.36.0",
       "publishedAt": 1775285986297,

@@ -1,6 +1,6 @@
 ---
 name: dex-quant-skill
-version: 3.40.0
+version: 3.46.0
 description: |
   加密货币量化交易 AI Skill。用自然语言描述交易规则 → 生成策略脚本 → 服务器回测 → 参数优化 → 实时监控。
   支持 Binance/Hyperliquid 全币种，6 种优化算法（genetic/bayesian/grid/random/annealing/pso），异步进度推送。
@@ -547,21 +547,18 @@ If the strategy hasn't been backtested, warn: "这个策略还没有回测过，
 
 When user triggers Monitor workflow, you MUST present this message verbatim:
 
-> 📡 **策略监控部署**
+> 📡 **策略监控部署** — 请选择模式：
 >
-> 服务器 7×24 定时执行你的策略，产生买卖信号。
->
-> 1️⃣ **仅监控信号** — 收到信号后你自己手动操作
-> 2️⃣ **监控 + 自动下单** — 需要配置 Hyperliquid 钱包密钥（通过安全链接，不在聊天里输入）
+> 1️⃣ **仅监控信号** — 服务器 7×24 运行，收到信号后你自己操作，不需要私钥
+> 2️⃣ **监控 + 自动下单** — 服务器 7×24 运行，信号产生后自动下单到 Hyperliquid
 >
 > 两种模式都：免费 3 个策略、7×24、无需本地开机。
+> 模式 2 需要通过安全链接配置钱包密钥（不在聊天里输入）。
 > 回复 1 或 2 选择。
 
 Wait for user to choose before proceeding.
 
-### Step 2a: 仅监控信号（用户选了 1）
-
-直接启动监控，不需要私钥：
+### Mode 1: 仅监控信号（用户选了 1）
 
 ```python
 import sys; sys.path.insert(0, '{baseDir}/scripts')
@@ -581,27 +578,24 @@ result = client.start_monitor(
 print(f"✅ 监控已启动 | Job ID: {result['job_id']} | 配额 {result['quota_used']}/{result['quota_max']}")
 ```
 
-### Step 2b: 监控 + 自动下单（用户选了 2）
+### Mode 2: 监控 + 自动下单（用户选了 2）
 
-**先检查密钥是否已配置 → 没有则生成安全链接 → 用户在浏览器提交 → 再启动监控。**
+**先配置密钥（安全链接） → 再启动监控。信号产生后服务器自动下单。**
 
 ```python
 import sys; sys.path.insert(0, '{baseDir}/scripts')
 from api_client import QuantAPIClient
 
 client = QuantAPIClient(timeout=60.0)
-
-# 第一步：检查密钥状态
 vault = client.vault_status()
 if not vault.get("has_key"):
-    # 生成安全链接，用户在浏览器中提交私钥
     link = client.vault_setup_link()
-    print(f"\n请在浏览器中打开以下链接，粘贴你的钱包私钥：")
+    print(f"\n🔐 请在浏览器中打开以下链接，安全提交你的钱包私钥：")
     print(f"{link['url']}")
-    print(f"\n提交完成后，回来告诉我「OK」。")
+    print(f"\n⏰ 链接 30 分钟内有效。提交完成后回来告诉我「OK」。")
 ```
 
-When user confirms key is set, verify and start monitor:
+When user confirms key is set:
 
 ```python
 import sys; sys.path.insert(0, '{baseDir}/scripts')
@@ -622,7 +616,7 @@ else:
         interval_seconds=14400,
     )
     net = vault.get("network", "mainnet")
-    print(f"✅ 监控已启动 | Job ID: {result['job_id']} | 网络: {net}")
+    print(f"✅ 监控+自动下单已启动 | Job ID: {result['job_id']} | {net}")
     print(f"   产生信号后将自动下单到 Hyperliquid {'测试网' if net == 'testnet' else '主网'}")
 ```
 
