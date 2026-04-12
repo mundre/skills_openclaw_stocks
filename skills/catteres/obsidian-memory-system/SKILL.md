@@ -20,9 +20,10 @@ Persistent agent memory using an Obsidian vault with structured folders, daily j
 ├── USER.md ──symlink──→ vault/00-brain/USER.md
 ├── AGENTS.md ──symlink──→ vault/00-brain/AGENTS.md
 ├── TOOLS.md ──symlink──→ vault/00-brain/TOOLS.md
-├── MEMORY.md ──symlink──→ vault/00-brain/MEMORY.md
+├── MEMORY.md                (copy, NOT symlink — indexer skips symlinks)
 ├── HEARTBEAT.md             (standalone, periodic tasks)
-├── memory/                  (daily memory files for semantic search)
+├── memory/                  (real dir with copies — synced from vault/10-journal/)
+├── scripts/sync-memory.sh   (rsync vault→memory every 30 min via cron)
 └── vault/                   ← Obsidian vault
     ├── 00-brain/            Core identity files
     ├── 10-journal/          Daily work logs (YYYY-MM-DD.md)
@@ -35,6 +36,8 @@ Persistent agent memory using an Obsidian vault with structured folders, daily j
 ```
 
 OpenClaw auto-loads workspace root files (SOUL, USER, AGENTS, TOOLS, MEMORY) every session. Symlinks bridge workspace ↔ vault so Obsidian and the agent see the same files.
+
+**⚠️ Memory indexer symlink limitation:** OpenClaw's memory indexer (`memorySearch`) uses `lstat` and explicitly skips all symlinks — both directories and files. Use real file copies for `MEMORY.md` and `memory/` with a sync script (see `references/discord-setup.md` → Memory Integration).
 
 ## Setup
 
@@ -166,21 +169,37 @@ Project A app | vault: 20-projects/project-a/ | repo: user/project-a | port: 300
 {
   "channels": {
     "discord": {
+      "enabled": true,
+      "token": "YOUR_BOT_TOKEN",
+      "groupPolicy": "allowlist",
+      "dmPolicy": "allowlist",
+      "allowFrom": ["YOUR_USER_ID"],
+      "guilds": {
+        "YOUR_GUILD_ID": {
+          "requireMention": false,
+          "users": ["YOUR_USER_ID"]
+        }
+      },
       "streaming": "partial",
       "replyToMode": "first",
-      "requireMention": false,   // under guilds.GUILD_ID
-      "threadBindings": { "enabled": true },
-      "voice": {
-        "enabled": true,
-        "tts": { "provider": "openai", "openai": { "voice": "onyx" } }
-      },
-      "ackReaction": "🦅"
+      "historyLimit": 30,
+      "threadBindings": { "enabled": true, "spawnSubagentSessions": true, "spawnAcpSessions": true },
+      "ackReaction": "🦅",
+      "autoPresence": { "enabled": true, "healthyText": "Online" }
     }
-  }
+  },
+  "tools": {
+    "profile": "full",
+    "exec": { "security": "full", "ask": "off" }
+  },
+  "messages": { "ackReactionScope": "all" }
 }
 ```
 
-Full config and migration guide: `read references/discord-setup.md`
+**⚠️ Without the `guilds` block, the bot only works in DMs.** This is the #1 setup issue.
+
+Full production config with status reactions, custom emoji, voice, components, and troubleshooting: `read references/discord-setup.md`
+Full OpenClaw config reference: `read references/openclaw-config.md`
 
 ## Quick Commands
 
