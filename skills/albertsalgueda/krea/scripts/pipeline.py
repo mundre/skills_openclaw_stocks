@@ -17,63 +17,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from krea_helpers import (
     get_api_key, api_post, api_get, poll_job, download_file, output_path,
     get_cu_estimate, ensure_image_url, send_notification,
+    get_image_models, get_video_models, get_enhancers, get_default_enhancer_model,
+    resolve_model as resolve,
 )
-
-IMAGE_MODELS = {
-    "z-image": "/generate/image/z-image/z-image",
-    "flux": "/generate/image/bfl/flux-1-dev",
-    "flux-kontext": "/generate/image/bfl/flux-1-kontext-dev",
-    "flux-pro": "/generate/image/bfl/flux-1.1-pro",
-    "flux-pro-ultra": "/generate/image/bfl/flux-1.1-pro-ultra",
-    "nano-banana": "/generate/image/google/nano-banana",
-    "nano-banana-flash": "/generate/image/google/nano-banana-flash",
-    "nano-banana-pro": "/generate/image/google/nano-banana-pro",
-    "imagen-3": "/generate/image/google/imagen-3",
-    "imagen-4": "/generate/image/google/imagen-4",
-    "imagen-4-fast": "/generate/image/google/imagen-4-fast",
-    "imagen-4-ultra": "/generate/image/google/imagen-4-ultra",
-    "ideogram-2-turbo": "/generate/image/ideogram/ideogram-2-turbo",
-    "ideogram-3": "/generate/image/ideogram/ideogram-3",
-    "gpt-image": "/generate/image/openai/gpt-image",
-    "runway-gen4": "/generate/image/runway/gen-4",
-    "seedream-3": "/generate/image/bytedance/seedream-3",
-    "seedream-4": "/generate/image/bytedance/seedream-4",
-    "seedream-5-lite": "/generate/image/bytedance/seedream-5-lite",
-    "qwen": "/generate/image/qwen/2512",
-}
-
-VIDEO_MODELS = {
-    "kling-1.0": "/generate/video/kling/kling-1.0",
-    "kling-1.5": "/generate/video/kling/kling-1.5",
-    "kling-2.5": "/generate/video/kling/kling-2.5",
-    "veo-3": "/generate/video/google/veo-3",
-    "veo-3.1": "/generate/video/google/veo-3.1",
-    "hailuo-2.3": "/generate/video/hailuo/hailuo-2.3",
-    "wan-2.5": "/generate/video/alibaba/wan-2.5",
-}
-
-ENHANCERS = {
-    "topaz": "/generate/enhance/topaz/standard-enhance",
-    "topaz-generative": "/generate/enhance/topaz/generative-enhance",
-    "topaz-bloom": "/generate/enhance/topaz/bloom-enhance",
-}
-
-DEFAULT_ENHANCER_MODELS = {
-    "topaz": "Standard V2",
-    "topaz-generative": "Redefine",
-    "topaz-bloom": "Reimagine",
-}
-
-
-def resolve(model, models_dict, prefix):
-    if model in models_dict:
-        return models_dict[model]
-    if model.startswith(prefix):
-        return model
-    for ep in models_dict.values():
-        if ep.endswith("/" + model):
-            return ep
-    return f"{prefix}{model}"
 
 
 def get_result_url(job):
@@ -198,7 +144,7 @@ def estimate_cu(steps, fan_out_multiplier=4):
         if action == "fan_out":
             sub = step.get("step", {})
             sub_action = sub.get("action", "generate_image")
-            model = sub.get("model") or sub.get("enhancer", "topaz")
+            model = sub.get("model") or sub.get("enhancer", "topaz-standard-enhance")
             cu = get_cu_estimate(sub_action, model)
             if cu is not None:
                 step_cu = cu * fan_out_multiplier
@@ -208,7 +154,7 @@ def estimate_cu(steps, fan_out_multiplier=4):
                 unknown.append(f"Step {i} fan_out [{model}]")
                 print(f"  Step {i} (fan_out x ~{fan_out_multiplier}): {sub_action} [{model}] = ? CU (unknown)", file=sys.stderr)
         else:
-            model = step.get("model") or step.get("enhancer", "topaz")
+            model = step.get("model") or step.get("enhancer", "topaz-standard-enhance")
             cu = get_cu_estimate(action, model)
             if cu is not None:
                 total += cu
@@ -296,10 +242,14 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
     else:
         print(f"\n=== Step {step_num}/{total}: {action} ===", file=sys.stderr)
 
+    image_models = get_image_models()
+    video_models = get_video_models()
+    enhancers = get_enhancers()
+
     result_urls = []
 
     if action == "generate_image":
-        endpoint = resolve(step.get("model", "flux"), IMAGE_MODELS, "/generate/image/")
+        endpoint = resolve(step.get("model", "nano-banana-2"), image_models, "/generate/image/")
         body = {"prompt": step["prompt"]}
         for k in ("width", "height", "seed", "steps", "batchSize", "quality", "aspectRatio", "resolution"):
             if k in step:
@@ -307,7 +257,7 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
         if "guidance_scale" in step:
             body["guidance_scale_flux"] = step["guidance_scale"]
         if step.get("use_previous") and prev_urls:
-            if step.get("model", "flux").startswith("flux"):
+            if "flux" in step.get("model", "nano-banana-2"):
                 body["imageUrl"] = prev_urls[0]
             else:
                 body["imageUrls"] = [prev_urls[0]]
@@ -322,10 +272,10 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
         result = poll_job(api_key, job["job_id"])
         result_urls = result.get("result", {}).get("urls", [])
         if progress:
-            progress.add_cu("generate_image", step.get("model", "flux"))
+            progress.add_cu("generate_image", step.get("model", "nano-banana-2"))
 
     elif action == "generate_video":
-        endpoint = resolve(step.get("model", "kling-2.5"), VIDEO_MODELS, "/generate/video/")
+        endpoint = resolve(step.get("model", "veo-3.1-fast"), video_models, "/generate/video/")
         body = {"prompt": step["prompt"]}
         for k in ("duration", "aspectRatio", "resolution", "mode", "generateAudio"):
             if k in step:
@@ -343,11 +293,11 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
         if url:
             result_urls = [url]
         if progress:
-            progress.add_cu("generate_video", step.get("model", "kling-2.5"))
+            progress.add_cu("generate_video", step.get("model", "veo-3.1-fast"))
 
     elif action == "enhance":
-        enhancer_name = step.get("enhancer", "topaz")
-        endpoint = resolve(enhancer_name, ENHANCERS, "/generate/enhance/")
+        enhancer_name = step.get("enhancer", "topaz-standard-enhance")
+        endpoint = resolve(enhancer_name, enhancers, "/generate/enhance/")
         image_url = step.get("image_url")
         if step.get("use_previous") and prev_urls:
             image_url = prev_urls[0]
@@ -358,8 +308,10 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
             "image_url": image_url,
             "width": step.get("width", 4096),
             "height": step.get("height", 4096),
-            "model": step.get("model", DEFAULT_ENHANCER_MODELS.get(enhancer_name, "Standard V2")),
         }
+        model_val = step.get("model") or get_default_enhancer_model(enhancer_name)
+        if model_val:
+            body["model"] = model_val
         for k in ("prompt", "creativity", "face_enhancement", "sharpen", "denoise", "output_format"):
             if k in step:
                 body[k] = step[k]
@@ -378,25 +330,24 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
             sys.exit(1)
 
         parallel = step.get("parallel", False)
+        sub_steps_info = []
 
         if parallel:
-            # Build all sub-jobs first, then run in parallel
             sub_jobs = []
-            sub_steps_info = []  # keep track for downloading
             for i, src_url in enumerate(sources):
                 sub = dict(sub_template)
                 sub["use_previous"] = False
                 sub_action = sub.get("action", "generate_image")
 
                 if sub_action == "generate_image":
-                    endpoint = resolve(sub.get("model", "flux"), IMAGE_MODELS, "/generate/image/")
+                    endpoint = resolve(sub.get("model", "nano-banana-2"), image_models, "/generate/image/")
                     body = {"prompt": sub.get("prompt", "")}
                     for k in ("width", "height", "seed", "steps", "batchSize", "quality", "aspectRatio", "resolution"):
                         if k in sub:
                             body[k] = sub[k]
                     if "guidance_scale" in sub:
                         body["guidance_scale_flux"] = sub["guidance_scale"]
-                    if sub.get("model", "flux").startswith("flux"):
+                    if "flux" in sub.get("model", "nano-banana-2"):
                         body["imageUrl"] = src_url
                     else:
                         body["imageUrls"] = [src_url]
@@ -404,7 +355,7 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
                         body["styles"] = sub["styles"]
                     interval = 3
                 elif sub_action == "generate_video":
-                    endpoint = resolve(sub.get("model", "kling-2.5"), VIDEO_MODELS, "/generate/video/")
+                    endpoint = resolve(sub.get("model", "veo-3.1-fast"), video_models, "/generate/video/")
                     body = {"prompt": sub.get("prompt", "")}
                     for k in ("duration", "aspectRatio", "resolution", "mode", "generateAudio"):
                         if k in sub:
@@ -412,14 +363,16 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
                     body["startImage"] = src_url
                     interval = 5
                 elif sub_action == "enhance":
-                    enhancer_name = sub.get("enhancer", "topaz")
-                    endpoint = resolve(enhancer_name, ENHANCERS, "/generate/enhance/")
+                    enhancer_name = sub.get("enhancer", "topaz-standard-enhance")
+                    endpoint = resolve(enhancer_name, enhancers, "/generate/enhance/")
                     body = {
                         "image_url": src_url,
                         "width": sub.get("width", 4096),
                         "height": sub.get("height", 4096),
-                        "model": sub.get("model", DEFAULT_ENHANCER_MODELS.get(enhancer_name, "Standard V2")),
                     }
+                    model_val = sub.get("model") or get_default_enhancer_model(enhancer_name)
+                    if model_val:
+                        body["model"] = model_val
                     for k in ("prompt", "creativity", "face_enhancement", "sharpen", "denoise", "output_format"):
                         if k in sub:
                             body[k] = sub[k]
@@ -428,12 +381,16 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
                     print(f"Error: unsupported fan_out sub-action '{sub_action}'", file=sys.stderr)
                     sys.exit(1)
 
-                # Apply {i} replacements to prompt in body
+                iteration = str(i + 1)
                 if "prompt" in body and "{i}" in body["prompt"]:
-                    body["prompt"] = body["prompt"].replace("{i}", str(i + 1))
+                    body["prompt"] = body["prompt"].replace("{i}", iteration)
+
+                resolved_sub = dict(sub)
+                if "filename" in resolved_sub and "{i}" in resolved_sub["filename"]:
+                    resolved_sub["filename"] = resolved_sub["filename"].replace("{i}", iteration)
 
                 sub_jobs.append((endpoint, body, interval))
-                sub_steps_info.append(sub)
+                sub_steps_info.append(resolved_sub)
 
             results = run_fan_out_parallel(api_key, sub_jobs, max_parallel)
 
@@ -447,16 +404,15 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
                     urls = result.get("result", {}).get("urls", [])
                     result_urls.extend(urls)
                 if progress:
-                    model = sub.get("model") or sub.get("enhancer", "topaz")
+                    model = sub.get("model") or sub.get("enhancer", "topaz-standard-enhance")
                     progress.add_cu(sub_action, model)
         else:
-            # Sequential fan_out (original behavior)
             for i, src_url in enumerate(sources):
                 print(f"\n  --- fan_out {i + 1}/{len(sources)} ---", file=sys.stderr)
                 sub = dict(sub_template)
                 sub["use_previous"] = False
                 if sub.get("action") == "generate_image":
-                    if sub.get("model", "flux").startswith("flux"):
+                    if "flux" in sub.get("model", "nano-banana-2"):
                         sub["imageUrl"] = src_url
                     else:
                         sub["imageUrls"] = [src_url]
@@ -472,17 +428,30 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
                 result_urls.extend(urls)
 
     # Download results
-    base_name = step.get("filename", f"step-{step_num}")
-    for i, url in enumerate(result_urls):
-        ext = ".mp4" if action == "generate_video" or (action == "fan_out" and step.get("step", {}).get("action") == "generate_video") else ".png"
-        if len(result_urls) == 1:
-            fname = f"{base_name}{ext}" if not base_name.endswith(ext) else base_name
-        else:
-            fname = f"{base_name}-{i + 1}{ext}"
-        path = download_file(url, output_path(fname, out_dir))
-        print(f"  Saved: {path}", file=sys.stderr)
-        if progress:
-            progress.add_files(1)
+    if action == "fan_out" and step.get("parallel", False) and sub_steps_info:
+        ext = ".mp4" if step.get("step", {}).get("action") == "generate_video" else ".png"
+        url_idx = 0
+        for sub_info in sub_steps_info:
+            sub_base = sub_info.get("filename", f"step-{step_num}-fan")
+            if url_idx < len(result_urls):
+                fname = f"{sub_base}{ext}" if not sub_base.endswith(ext) else sub_base
+                path = download_file(result_urls[url_idx], output_path(fname, out_dir))
+                print(f"  Saved: {path}", file=sys.stderr)
+                if progress:
+                    progress.add_files(1)
+                url_idx += 1
+    else:
+        base_name = step.get("filename", f"step-{step_num}")
+        for i, url in enumerate(result_urls):
+            ext = ".mp4" if action == "generate_video" or (action == "fan_out" and step.get("step", {}).get("action") == "generate_video") else ".png"
+            if len(result_urls) == 1:
+                fname = f"{base_name}{ext}" if not base_name.endswith(ext) else base_name
+            else:
+                fname = f"{base_name}-{i + 1}{ext}"
+            path = download_file(url, output_path(fname, out_dir))
+            print(f"  Saved: {path}", file=sys.stderr)
+            if progress:
+                progress.add_files(1)
 
     if progress:
         progress.summary_line(step_num, action, model or None)
@@ -494,7 +463,7 @@ def run_step(api_key, step, step_num, total, prev_urls, out_dir=None, progress=N
 def main():
     parser = argparse.ArgumentParser(
         description="Run multi-step Krea AI pipelines",
-        epilog='Example: pipeline.py --pipeline \'{"steps":[{"action":"generate_image","model":"flux","prompt":"a cat","filename":"cat"}]}\'',
+        epilog='Example: pipeline.py --pipeline \'{"steps":[{"action":"generate_image","prompt":"a cat","filename":"cat"}]}\'',
     )
     parser.add_argument("--pipeline", required=True, help="Path to pipeline JSON file, or inline JSON string")
     parser.add_argument("--api-key", help="Krea API token")
@@ -563,7 +532,6 @@ def main():
     for i, step in enumerate(steps, 1):
         step_key = str(i)
 
-        # Resume: restore prev_urls from manifest if step was already completed
         if args.resume and step_key in manifest["steps"]:
             saved = manifest["steps"][step_key]
             saved_urls = saved.get("urls", [])
@@ -576,7 +544,6 @@ def main():
         prev_urls = urls
         all_results.append({"step": i, "action": step.get("action"), "urls": urls})
 
-        # Save to manifest after each successful step
         manifest["steps"][step_key] = {"urls": urls, "action": step.get("action")}
         save_manifest(args.output_dir, manifest)
 

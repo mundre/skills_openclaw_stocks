@@ -10,36 +10,17 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from krea_helpers import get_api_key, api_post, poll_job, download_file, ensure_image_url, output_path
-
-KNOWN_MODELS = {
-    "kling-1.0": "/generate/video/kling/kling-1.0",
-    "kling-1.5": "/generate/video/kling/kling-1.5",
-    "kling-2.5": "/generate/video/kling/kling-2.5",
-    "veo-3": "/generate/video/google/veo-3",
-    "veo-3.1": "/generate/video/google/veo-3.1",
-    "hailuo-2.3": "/generate/video/hailuo/hailuo-2.3",
-    "wan-2.5": "/generate/video/alibaba/wan-2.5",
-}
-
-
-def resolve_model(model_arg):
-    if model_arg in KNOWN_MODELS:
-        return KNOWN_MODELS[model_arg]
-    if model_arg.startswith("/generate/video/"):
-        return model_arg
-    for endpoint in KNOWN_MODELS.values():
-        if endpoint.endswith("/" + model_arg):
-            return endpoint
-    print(f"Warning: Unknown model '{model_arg}', trying as endpoint path", file=sys.stderr)
-    return f"/generate/video/{model_arg}"
+from krea_helpers import (
+    get_api_key, api_post, poll_job, download_file, ensure_image_url, output_path,
+    get_video_models, resolve_model as _resolve,
+)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Generate videos with Krea AI")
     parser.add_argument("--prompt", required=True, help="Text description")
     parser.add_argument("--filename", required=True, help="Output filename")
-    parser.add_argument("--model", default="kling-2.5", help="Model ID, raw name, or full endpoint path")
+    parser.add_argument("--model", default="veo-3.1-fast", help="Model ID, raw name, or full endpoint path")
     parser.add_argument("--duration", type=int, help="Duration in seconds")
     parser.add_argument("--aspect-ratio", default="16:9", choices=["16:9", "9:16", "1:1"], help="Aspect ratio")
     parser.add_argument("--start-image", help="Starting image URL or local file path for image-to-video")
@@ -52,7 +33,7 @@ def main():
     args = parser.parse_args()
 
     api_key = get_api_key(args.api_key)
-    endpoint = resolve_model(args.model)
+    endpoint = _resolve(args.model, get_video_models(), "/generate/video/")
 
     body = {"prompt": args.prompt}
     if args.aspect_ratio:

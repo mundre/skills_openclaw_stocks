@@ -9,33 +9,19 @@ import argparse
 import os
 import sys
 
-# Allow importing from the same directory when run via uv
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from krea_helpers import get_api_key, api_post, poll_job, download_file, ensure_image_url, output_path
-
-KNOWN_ENHANCERS = {
-    "topaz": "/generate/enhance/topaz/standard-enhance",
-    "topaz-generative": "/generate/enhance/topaz/generative-enhance",
-    "topaz-bloom": "/generate/enhance/topaz/bloom-enhance",
-}
-
-DEFAULT_ENHANCER_MODELS = {
-    "topaz": "Standard V2",
-    "topaz-generative": "Redefine",
-    "topaz-bloom": "Reimagine",
-}
+from krea_helpers import (
+    get_api_key, api_post, poll_job, download_file, ensure_image_url, output_path,
+    get_enhancers, get_default_enhancer_model, resolve_model as _resolve,
+)
 
 
 def resolve_enhancer(enhancer_arg):
-    if enhancer_arg in KNOWN_ENHANCERS:
-        return enhancer_arg, KNOWN_ENHANCERS[enhancer_arg]
-    if enhancer_arg.startswith("/generate/enhance/"):
-        return enhancer_arg, enhancer_arg
-    for name, endpoint in KNOWN_ENHANCERS.items():
-        if endpoint.endswith("/" + enhancer_arg):
-            return name, endpoint
-    print(f"Warning: Unknown enhancer '{enhancer_arg}', trying as endpoint path", file=sys.stderr)
-    return enhancer_arg, f"/generate/enhance/{enhancer_arg}"
+    enhancers = get_enhancers()
+    if enhancer_arg in enhancers:
+        return enhancer_arg, enhancers[enhancer_arg]
+    endpoint = _resolve(enhancer_arg, enhancers, "/generate/enhance/")
+    return enhancer_arg, endpoint
 
 
 def main():
@@ -44,7 +30,7 @@ def main():
     parser.add_argument("--filename", required=True, help="Output filename")
     parser.add_argument("--width", type=int, required=True, help="Target width")
     parser.add_argument("--height", type=int, required=True, help="Target height")
-    parser.add_argument("--enhancer", default="topaz", help="Enhancer ID or full endpoint path")
+    parser.add_argument("--enhancer", default="topaz-standard-enhance", help="Enhancer ID or full endpoint path")
     parser.add_argument("--enhancer-model", help="Sub-model (e.g. 'Standard V2', 'Redefine', 'Reimagine')")
     parser.add_argument("--prompt", help="Enhancement guidance prompt")
     parser.add_argument("--creativity", type=int, help="Creativity level (generative: 1-6, bloom: 1-9)")
@@ -60,15 +46,16 @@ def main():
     api_key = get_api_key(args.api_key)
     enhancer_name, endpoint = resolve_enhancer(args.enhancer)
 
-    # Resolve local files to URLs
     image_url = ensure_image_url(args.image_url, api_key)
 
     body = {
         "image_url": image_url,
         "width": args.width,
         "height": args.height,
-        "model": args.enhancer_model or DEFAULT_ENHANCER_MODELS.get(enhancer_name, "Standard V2"),
     }
+    model_val = args.enhancer_model or get_default_enhancer_model(enhancer_name)
+    if model_val:
+        body["model"] = model_val
     if args.prompt:
         body["prompt"] = args.prompt
     if args.creativity is not None:
