@@ -1,58 +1,110 @@
 ---
 name: clawmover-migration
-description: Operate ClawMover migration from an OpenClaw-connected channel when the host machine cannot be accessed over SSH. Use this skill to verify or install the `clawmover` CLI, run migration backup or restore in two non-interactive phases, always include `--yes` to skip confirmations, ask the user for the emailed 6-digit verification code, resume the pending operation with `--verification-code`, prefer `--dest-path` for safe restore testing, and report migration, restore, and plugin reinstall results.
-metadata: {"openclaw":{"requires":{"bins":["node","npm"]}}}
+description: Shared OpenClaw skill for guiding ClawMover backup and restore workflows with explicit confirmation, input validation, and a manual-command-first execution policy.
 ---
 
-# OpenClaw Migration
+# ClawMover Migration
 
-Use this skill when a user wants OpenClaw to migrate an OpenClaw instance through a connected channel such as Feishu, especially when the user cannot SSH into the host machine.
+Use this skill when the user wants help with OpenClaw backup, restore, migration planning, simulated restore, or checking whether the ClawMover CLI is installed.
 
-Run the `clawmover` CLI on the host machine. Do not ask the user to run commands manually unless installation or execution fails and the failure cannot be handled automatically.
+This is a shared OpenClaw skill. It must behave conservatively, validate inputs before use, and explain risky operations before execution.
 
-Current CLI behavior:
+## Purpose
 
-- `--non-interactive` skips the verification code prompt. If no verification code is provided, the CLI sends the code by email and exits so the workflow can resume later.
-- `--yes` skips backup plan confirmation.
-- `--yes` makes restore select all non-ignored tags automatically and use the default conflict strategy.
-- `--dest-path` avoids restore path prompts by forcing a test restore root.
+This skill helps OpenClaw understand natural language requests such as:
 
-For agent-driven execution, always include both `--non-interactive` and `--yes`, and provide `--verification-code` only in phase 2 after the user replies with the 6-digit code.
+- `Back up this OpenClaw machine`
+- `Check whether ClawMover is installed`
+- `Do a simulated restore first`
+- `Restore this migration onto this machine`
 
-## Preconditions
+## Runtime Dependency
 
-- Ensure the host can execute shell commands.
-- Ensure `node` and `npm` are available.
-- Ensure OpenClaw is installed on the host.
-- Ensure the user can receive an emailed verification code.
+This skill depends on the published CLI package `@clawmover/cli`.
 
-Before migration backup or restore, ensure the user already has a valid ClawMover migration order:
+If the CLI is missing, do not install it silently.
 
-- The user must create a migration order at `https://clawmover.com`.
-- The user must complete payment before the `instanceId` becomes valid.
-- If the user does not already have a paid migration order, tell them to create one on `https://clawmover.com` first.
+First explain the installation step and offer two options:
 
-Explain the required inputs clearly:
+- provide the install command for the user to run manually
+- run the install command only after explicit confirmation
 
-- `instanceId`: The migration instance ID created by ClawMover after the user creates and pays for a migration order on `https://clawmover.com`.
-- `dataSecretKey`: The data encryption password used to encrypt and decrypt backup data. If this key is lost, the backup data cannot be recovered.
+## Shared-Skill Expectation
+
+This skill is intended to be installed as a shared skill with the directory name:
+
+`clawmover-migration`
+
+## Execution Policy
+
+Default behavior:
+
+- explain what command or step is needed
+- validate required inputs before use
+- prefer providing commands for the user to run manually
+- only execute commands when the user clearly asks the agent to do so
+
+Always require explicit confirmation before:
+
+- installing `@clawmover/cli`
+- starting a backup
+- performing a real restore without `--dest-path`
+
+Prefer simulated restore before real restore.
+
+## Input Validation Rules
+
+Validate inputs before generating or executing any command.
+
+### instanceId
+
+- accept only the expected ClawMover migration identifier format
+- reject values containing whitespace, shell separators, or control characters
+- if the format looks invalid, stop and ask the user to re-check the value from `https://clawmover.com`
+
+### verificationCode
+
+- accept only exactly 6 digits
+- reject any other format
+
+### destPath
+
+- accept only a single local absolute path
+- reject values containing newlines or shell control characters such as `;`, `&&`, `|`, or backticks
+- if the path is ambiguous, ask the user to provide a clean absolute path
+
+### dataSecretKey
+
+- treat as sensitive input
+- do not echo it back in full
+- do not include it in logs or explanatory output
+- do not store it outside the immediate task context
+
+## Sensitive Data Handling
+
+Treat the following as sensitive:
+
+- `dataSecretKey`
+- verification codes
+- any local paths that may reveal user-specific private data
+
+Rules:
+
+- never repeat the full `dataSecretKey`
+- never include the full key in examples, logs, or summaries
+- mask sensitive values in displayed commands unless the user explicitly asks for the exact command text
+- do not ask the user to paste sensitive values again unless necessary
 
 ## Install Or Verify CLI
 
-Check whether `clawmover` is installed:
+First check whether `clawmover` is available.
 
-```bash
-clawmover --version
-```
+If it is missing:
 
-If not installed, install it:
-
-```bash
-npm install -g @clawmover/cli
-clawmover --version
-```
-
-If installation fails, report the error summary and stop.
+- explain that this skill requires `@clawmover/cli`
+- explain that installation modifies the host environment
+- offer the manual install command
+- only run the install command after explicit confirmation
 
 ## Backup Workflow
 
@@ -61,32 +113,17 @@ Required inputs:
 - `instanceId`
 - `dataSecretKey`
 
-Phase 1: trigger email verification and expect exit code `2`
+The `instanceId` is obtained after the user creates a new migration at `https://clawmover.com` and completes payment.
 
-```bash
-clawmover backup --instance-id <instanceId> --data-secret-key <dataSecretKey> --non-interactive --yes
-```
+Preferred workflow:
 
-If the command exits with code `2`, tell the user a verification code was sent and ask them to reply with the 6-digit code.
+1. verify that required inputs are present and valid
+2. explain the backup command that will be used
+3. ask whether the user wants to run it manually or have the agent run it
+4. if the service requests email verification, ask for the 6-digit code
+5. validate the code before resuming
 
-Phase 2: resume backup with the code
-
-```bash
-clawmover backup --instance-id <instanceId> --data-secret-key <dataSecretKey> --verification-code <code> --non-interactive --yes
-```
-
-Important:
-
-- Always include `--yes` for agent-driven backup.
-- Without `--yes`, backup may stop at the backup plan confirmation prompt.
-
-Return a short result summary:
-
-- success or failure
-- snapshot id
-- protected data size
-- duration
-- plugin inventory summary if shown
+When showing example commands, use placeholders only as documentation examples and do not treat them as directly executable templates.
 
 ## Restore Workflow
 
@@ -95,90 +132,52 @@ Required inputs:
 - `instanceId`
 - `dataSecretKey`
 
+The `instanceId` is obtained after the user creates a new migration at `https://clawmover.com` and completes payment.
+
 Optional inputs:
 
 - `snapshotId`
 - `destPath`
 
-Prefer test restore first with `--dest-path`.
+Preferred workflow:
 
-Phase 1: trigger email verification and expect exit code `2`
+1. recommend simulated restore first using `--dest-path`
+2. validate `destPath` before use
+3. explain whether the restore is simulated or real
+4. ask whether the user wants to run it manually or have the agent run it
+5. if email verification is required, request and validate the 6-digit code before resuming
 
-```bash
-clawmover restore --instance-id <instanceId> --data-secret-key <dataSecretKey> --non-interactive --yes --dest-path <destPath>
-```
+For real restore, omit `--dest-path`, but only after explicit confirmation that the user wants to modify the local OpenClaw environment.
 
-If the command exits with code `2`, tell the user a verification code was sent and ask them to reply with the 6-digit code.
+## Manual Command Option
 
-Phase 2: resume restore with the code
+When possible, offer to provide exact commands for the user to run manually.
 
-```bash
-clawmover restore --instance-id <instanceId> --data-secret-key <dataSecretKey> --verification-code <code> --non-interactive --yes --dest-path <destPath>
-```
+Use this option by default if:
 
-For real restore, omit `--dest-path`:
+- the user is uncomfortable with agent-executed commands
+- the environment is sensitive
+- the action installs software globally
+- the action performs a real restore
 
-```bash
-clawmover restore --instance-id <instanceId> --data-secret-key <dataSecretKey> --verification-code <code> --non-interactive --yes
-```
+## Safety Rules
 
-Important:
-
-- Always include `--yes` for agent-driven restore.
-- Prefer `--dest-path` for testing because it also removes restore path confirmation risk.
-
-Return a short result summary:
-
-- success or failure
-- restored tags
-- snapshot id
-- duration
-- plugin reinstall summary if shown
-
-## Pending State
-
-When phase 1 exits with code `2`, keep the pending operation context:
-
-- action: `backup` or `restore`
-- `instanceId`
-- `dataSecretKey`
-- `snapshotId` if provided
-- `destPath` if provided
-
-When the user later sends a 6-digit code, resume the same pending operation with `--verification-code <code>`.
-
-If there is no pending operation, ask the user to start backup or restore again.
-
-## Restore Safety
-
-- Prefer `--dest-path` for testing.
-- If the user asks for a real restore without `--dest-path`, warn that it may modify the real OpenClaw environment.
-- In test mode, `clawmover` skips plugin installation and OpenClaw restart.
-- In real restore mode, `clawmover` may reinstall reinstallable plugins automatically.
-
-## Sensitive Data Handling
-
-- Do not echo `dataSecretKey` back to the user.
-- Do not print the full verification code after it is used.
-- Do not include secrets in summaries unless the user explicitly asks.
-- If the user seems unsure about `dataSecretKey`, explicitly warn them that losing it makes the backup unrecoverable.
-
-## Error Handling
-
-- If `clawmover` is missing, install it automatically.
-- If exit code is `2`, ask for the verification code and wait.
-- If the repository password is wrong, tell the user the provided `dataSecretKey` does not match the existing backup repository.
-- If restore reports that no backup exists, tell the user no backup was found for that instance.
-- If plugin reinstall fails during a real restore, report which plugin failed and include the command error summary.
+- do not silently install `@clawmover/cli`
+- do not silently run backup
+- do not silently run real restore
+- do not execute commands using unvalidated user input
+- prefer simulated restore before real restore
+- explain when a command will modify the local OpenClaw environment
+- treat verification codes and `dataSecretKey` as sensitive inputs
+- keep behavior suitable for a shared skill available across sessions
 
 ## Response Style
 
-Keep channel messages short and operational.
+Keep responses short, operational, and explicit about risk.
 
-Examples:
+Good examples:
 
-- `ClawMover CLI is not installed. Installing it now.`
-- `You need a paid migration order from https://clawmover.com before this instanceId can be used.`
-- `A verification code has been sent to your email. Reply with the 6-digit code to continue.`
-- `Backup completed. Snapshot: <id>. Protected data: <size>. Duration: <time>.`
-- `Restore completed to test path <destPath>. Reinstallable plugins: 1.`
+- `I can check whether clawmover is installed first.`
+- `I can give you the install command, or run it after your confirmation.`
+- `I recommend a simulated restore with a validated destination path before a real restore.`
+- `A real restore can modify your local OpenClaw environment.`
