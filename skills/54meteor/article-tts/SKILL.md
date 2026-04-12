@@ -182,7 +182,7 @@ for i, sentence in enumerate(sentences, 1):
 
 | Channel | 音频支持 | 备注 |
 |---------|---------|------|
-| Feishu | ✅ | 直接发送 mp3 |
+| Feishu | ✅ | **推荐使用 feishu-voice-send skill 发送语音消息** |
 | Telegram | ✅ | 直接发送 mp3 |
 | Discord | ✅ | 作为附件发送 |
 | WhatsApp | ✅ | 直接发送 mp3 |
@@ -191,6 +191,61 @@ for i, sentence in enumerate(sentences, 1):
 | WeChat Work | ✅ | 同 Feishu |
 
 If the channel does not support audio, the agent saves the file to `OUTPUT_DIR` and sends the file path as a text message instead.
+
+---
+
+## 如何发送为语音消息（而非附件）
+
+**重要说明：** OpenClaw 内置的飞书媒体发送存在 bug（缺少 `duration` 参数），导致 `.ogg` 文件有时显示为附件而非语音消息。
+
+**推荐方案：使用 feishu-voice-send skill**
+
+该 skill 调用飞书官方 API，正确传递 `duration` 参数，确保语音消息正常显示。
+
+### 方式一：通过 feishu-voice-send skill 发送
+
+```bash
+# 发送现有的 .ogg 文件
+python3 /mnt/d/wslspace/workspace/skills/feishu-voice-send/scripts/send_voice.py \
+    /path/to/audio.ogg \
+    <接收者open_id>
+
+# 或直接生成 TTS 并发送
+python3 /mnt/d/wslspace/workspace/skills/feishu-voice-send/scripts/tts_and_send.py \
+    "要转换的文字" \
+    <接收者open_id> \
+    -v zh-CN-YunjianNeural \
+    -r -10%
+```
+
+### 方式二：手动调用（不推荐）
+
+如果必须使用 OpenClaw 内置的 `message` 工具，需要：
+1. 将 mp3 转换为标准 Ogg Opus 格式
+2. 发送时必须带 message 参数
+3. 注意：即使带 message 参数，仍可能因为缺少 duration 而显示为附件
+
+```bash
+# 1. 用 edge-tts 生成 mp3
+uvx edge-tts \
+  -t "Your text here" \
+  -v en-US-EmmaNeural \
+  --rate=-10% \
+  --write-media OUTPUT_DIR/voice.mp3
+
+# 2. 用 ffmpeg 转换为标准 Ogg Opus
+ffmpeg -i OUTPUT_DIR/voice.mp3 \
+  -c:a libopus \
+  -b:a 32k \
+  -ar 24000 \
+  -ac 1 \
+  OUTPUT_DIR/voice.ogg
+
+# 3. 使用 message 工具发送（仍可能显示为附件）
+message(action="send", channel="feishu", \
+        message="📄 语音", \
+        media="OUTPUT_DIR/voice.ogg")
+```
 
 ## Available TTS Voices
 
