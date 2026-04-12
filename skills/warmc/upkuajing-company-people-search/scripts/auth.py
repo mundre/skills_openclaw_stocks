@@ -120,6 +120,14 @@ def new_rec_order() -> dict:
     return response
 
 
+def price_info() -> dict:
+    """
+    获取开放平台接口定价信息
+    """
+    response = make_request('/api/list', {})
+    return response
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='跨境魔方认证管理'
@@ -139,6 +147,11 @@ def main():
         action='store_true',
         help='创建充值订单'
     )
+    parser.add_argument(
+        '--price_info',
+        action='store_true',
+        help='获取开放平台接口定价信息'
+    )
 
     args = parser.parse_args()
 
@@ -146,12 +159,13 @@ def main():
     action_count = sum([
         args.new_key,
         args.account_info,
-        args.new_rec_order
+        args.new_rec_order,
+        args.price_info
     ])
 
     if action_count == 0:
         print("错误：请指定要执行的操作", file=sys.stderr)
-        print("可用操作：--new_key, --account_info, --new_rec_order", file=sys.stderr)
+        print("可用操作：--new_key, --account_info, --new_rec_order, --price_info", file=sys.stderr)
         sys.exit(1)
 
     if action_count > 1:
@@ -170,6 +184,10 @@ def main():
 
     elif args.new_rec_order:
         result = new_rec_order()
+        print_json_output(result)
+
+    elif args.price_info:
+        result = price_info()
         print_json_output(result)
 
 

@@ -1,7 +1,7 @@
 ---
 name: upkuajing-company-people-search
 description: Official skill for upkuajing (跨境魔方). Find companies (找公司) and global people (找人) data. Get business registration, background info, and contact details (Email, Phone, WhatsApp). Ideal for customer development, background checks, and talent search.
-metadata: {"version":"1.0.4","homepage":"https://www.upkuajing.com","clawdbot":{"emoji":"🏢","requires":{"bins":["python"],"env":["UPKUAJING_API_KEY"]},"primaryEnv":"UPKUAJING_API_KEY"}}
+metadata: {"version":"1.0.5","homepage":"https://www.upkuajing.com","clawdbot":{"emoji":"🏢","requires":{"bins":["python"],"env":["UPKUAJING_API_KEY"]},"primaryEnv":"UPKUAJING_API_KEY"}}
 ---
 
 # UpKuaJing Company and People Search
@@ -90,7 +90,9 @@ Use this script to get account information for UPKUAJING_API_KEY: `auth.py --acc
 ## Fees
 
 **All API calls incur fees**, different interfaces have different billing methods.
+
 **Latest pricing**: Users can visit [Detailed Price Description](https://www.upkuajing.com/web/openapi/price.html)
+Or use: `python scripts/auth.py --price_info` (returns complete pricing for all interfaces)
 
 ### List Search Billing Rules
 
@@ -202,5 +204,5 @@ python scripts/company_list_search.py --task_id 'task-id-here' --query_count 200
 - Product names and industry names must be in **English**
 - Search quantity affects API response time, recommend setting timeout:120
 - **Prohibit outputting technical parameter format**: Do not display code-style parameters in responses, convert to natural language
-- **Do not** estimate or guess per-call fees (each interface has different pricing), if needed use `auth.py --account_info` to get balance
+- **Do not estimate or guess per-call fees** — use `python scripts/auth.py --price_info` to get accurate pricing information
 - **Do not** guess parameter names, get accurate parameter names and formats from documentation
