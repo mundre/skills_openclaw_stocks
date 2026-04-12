@@ -1,5 +1,7 @@
 # Ownership and Borrowing
 
+For pointer type selection, Copy trait guidance, Cow patterns, and iterator idioms, see the `beagle-rust:rust-best-practices` skill.
+
 ## Critical Anti-Patterns
 
 ### 1. Clone to Silence the Borrow Checker
@@ -103,7 +105,7 @@ struct Service {
 
 Rust elides lifetimes when the rules are unambiguous. Understanding them prevents unnecessary lifetime annotations:
 
-1. Each input reference gets its own lifetime: `fn f(a: &T, b: &U)` → `fn f<'a, 'b>(a: &'a T, b: &'b U)`
+1. Each input reference gets its own lifetime: `fn f(a: &T, b: &U)` becomes `fn f<'a, 'b>(a: &'a T, b: &'b U)`
 2. If there's exactly one input lifetime, it's assigned to all output references
 3. If `&self` or `&mut self` is an input, its lifetime is assigned to outputs
 
@@ -115,99 +117,90 @@ fn first_word(s: &str) -> &str { ... }
 fn longest<'a>(a: &'a str, b: &'a str) -> &'a str { ... }
 ```
 
-## Smart Pointer Guidelines
+## RPIT Lifetime Capture (Edition 2024)
 
-| Type | Use When | Thread Safe |
-|------|----------|-------------|
-| `Box<T>` | Heap allocation, recursive types, trait objects | Yes (if T: Send) |
-| `Rc<T>` | Shared ownership, single thread | No |
-| `Arc<T>` | Shared ownership, multi-thread | Yes |
-| `Cow<'a, T>` | Clone-on-write, avoid allocation when possible | Depends on T |
-
-Common mistake: using `Arc<Mutex<T>>` when the data is only accessed from one thread. Use `Rc<RefCell<T>>` in single-threaded code.
-
-## Copy Trait Guidelines
-
-Not all types should be passed by reference. If a type is small and cheap to copy, pass it by value.
-
-### When to Derive `Copy`
-
-- All fields are themselves `Copy`
-- The struct is small (≤24 bytes / 2-3 machine words)
-- The type represents plain data without heap allocations (`Vec`, `String` are NOT `Copy`)
+In edition 2024, `-> impl Trait` return types capture **all** in-scope generic parameters and lifetimes by default. In edition 2021, only type parameters used in the bounds were captured.
 
 ```rust
-// GOOD - small plain data, derive Copy
-#[derive(Debug, Copy, Clone)]
-struct Point {
-    x: f32,
-    y: f32,
-    z: f32,
+// Edition 2021: this compiled — 'a is NOT captured by impl Display
+fn foo<'a>(x: &'a str, y: String) -> impl Display {
+    y // fine: returned value doesn't borrow 'a
 }
 
-// GOOD - tag-like enum, derive Copy
-#[derive(Debug, Copy, Clone)]
-enum Direction {
-    North,
-    South,
-    East,
-    West,
+// Edition 2024: same code captures 'a — returned impl Display now
+// borrows 'a even though it doesn't use it. This can cause
+// unexpected borrow checker errors at call sites.
+
+// GOOD — use precise capturing to opt out of capturing 'a
+fn foo<'a>(x: &'a str, y: String) -> impl Display + use<> {
+    y // explicitly captures nothing
 }
 
-// BAD - String is not Copy
-#[derive(Debug, Clone)]
-struct User {
-    age: i32,
-    name: String, // String is not Copy, so User can't be either
+// GOOD — capture only what you need
+fn bar<'a, 'b>(x: &'a str, y: &'b str) -> impl Display + use<'b> {
+    y.to_uppercase() // only captures 'b
 }
 ```
 
-Enum size is determined by the largest variant. Keep variants small or Box large payloads.
+**When to flag**: Functions returning `impl Trait` that take multiple lifetime parameters — check whether the edition 2024 default capture causes unintended borrowing at call sites. If callers get unexpected "borrowed value does not live long enough" errors, add `+ use<...>` to narrow the capture.
 
-### Primitive Type Sizes
+## `if let` Temporary Scope (Edition 2024)
 
-| Type | Size | Type | Size |
-|------|------|------|------|
-| `bool` | 1 byte | `i8`/`u8` | 1 byte |
-| `char` | 4 bytes | `i16`/`u16` | 2 bytes |
-| `f32` | 4 bytes | `i32`/`u32` | 4 bytes |
-| `f64` | 8 bytes | `i64`/`u64` | 8 bytes |
-| `isize`/`usize` | arch | `i128`/`u128` | 16 bytes |
-
-## `Cow` for Maybe-Owned Data
-
-When ownership requirements are ambiguous, use `Cow<'_, T>` to avoid unnecessary cloning:
+In edition 2024, temporaries created in `if let` conditions are dropped at the end of the condition, not at the end of the `if` block. This breaks patterns that relied on temporaries living through the `else` branch.
 
 ```rust
-use std::borrow::Cow;
-
-// Accepts both borrowed and owned strings without cloning
-fn process_name(name: Cow<'_, str>) {
-    println!("Hello {name}");
+// BAD in edition 2024 — MutexGuard dropped before else branch
+if let Some(val) = mutex.lock().unwrap().get("key") {
+    use_val(val);
+} else {
+    // mutex is already unlocked here — was locked in 2021
 }
 
-process_name(Cow::Borrowed("Alice"));
-process_name(Cow::Owned("Bob".to_string()));
+// GOOD — bind the guard explicitly to control its lifetime
+let guard = mutex.lock().unwrap();
+if let Some(val) = guard.get("key") {
+    use_val(val);
+} else {
+    // guard still alive — explicit control
+}
 ```
 
-`Cow` is useful for functions that usually borrow but occasionally need to own (e.g., string normalization that only allocates when the input needs modification).
+## Tail Expression Temporary Scope (Edition 2024)
 
-## Full Pointer Type Reference
+In edition 2024, temporaries in tail expressions (the final expression in a block without a semicolon) are dropped **before** local variables. This can break code where a temporary borrows a local.
 
-| Pointer Type | Description | Send + Sync | Main Use |
-|-------------|-------------|-------------|----------|
-| `&T` | Shared reference | Yes | Shared read access |
-| `&mut T` | Exclusive mutable reference | Send (if T: Send), Sync (if T: Sync) | Exclusive mutation |
-| `Box<T>` | Heap-allocated owning pointer | Yes (if T: Send + Sync) | Heap allocation, recursive types |
-| `Rc<T>` | Single-threaded ref count | No | Multiple owners (single-thread) |
-| `Arc<T>` | Atomic ref count | Yes | Multiple owners (multi-thread) |
-| `Cell<T>` | Interior mutability for Copy types | Not Sync | Shared mutable, non-threaded |
-| `RefCell<T>` | Runtime borrow checking | Not Sync | Shared mutable, non-threaded |
-| `Mutex<T>` | Thread-safe exclusive access | Yes | Shared mutable, threaded |
-| `RwLock<T>` | Thread-safe read OR exclusive write | Yes | Shared mutable, threaded |
-| `OnceCell<T>` / `OnceLock<T>` | One-time initialization | `OnceLock`: Yes | Lazy static values |
-| `LazyCell<T>` / `LazyLock<T>` | Lazy init with closure | `LazyLock`: Yes | Complex lazy initialization |
-| `*const T` / `*mut T` | Raw pointers | No (manual) | FFI, raw memory |
+```rust
+// BAD in edition 2024 — temporary String dropped before local
+fn example() -> &str {
+    let s = String::from("hello");
+    s.as_str() // temporary borrow dropped before s in 2024
+}
+
+// GOOD — return owned data or bind explicitly
+fn example() -> String {
+    String::from("hello")
+}
+```
+
+**When to flag**: Tail expressions that create temporaries referencing local variables — in edition 2024 the drop order changed and this may cause borrow checker errors that didn't exist in 2021.
+
+## `IntoIterator` for `Box<[T]>` (Edition 2024)
+
+`Box<[T]>` now implements `IntoIterator` directly in edition 2024, yielding owned `T` values without converting to `Vec` first.
+
+```rust
+// BEFORE edition 2024 — had to convert to Vec
+let boxed: Box<[i32]> = vec![1, 2, 3].into_boxed_slice();
+for item in boxed.into_vec() {
+    process(item);
+}
+
+// GOOD in edition 2024 — iterate directly
+let boxed: Box<[i32]> = vec![1, 2, 3].into_boxed_slice();
+for item in boxed {
+    process(item);
+}
+```
 
 ## Review Questions
 
@@ -216,5 +209,6 @@ process_name(Cow::Owned("Bob".to_string()));
 3. Do functions borrow when they don't need ownership?
 4. Is interior mutability (`RefCell`, `Cell`) used only when compile-time borrowing is genuinely insufficient?
 5. Are smart pointers chosen appropriately for the sharing and threading model?
-6. Are `Copy` types passed by value rather than by reference?
-7. Is `Cow<'_, T>` used where ownership is ambiguous?
+6. **Edition 2024**: Do `-> impl Trait` returns use `+ use<...>` when default lifetime capture is too broad?
+7. **Edition 2024**: Are `if let` temporaries explicitly bound when their lifetime matters?
+8. **Edition 2024**: Are tail expression temporaries safe given the new drop order?

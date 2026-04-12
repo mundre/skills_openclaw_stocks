@@ -1,4 +1,6 @@
-# Common Mistakes
+# Unsafe Code, API Design, and Derive Patterns
+
+> For performance, pointer types, clippy config, iterators, generics, and documentation guidance, see the `beagle-rust:rust-best-practices` skill.
 
 ## Unsafe Code
 
@@ -15,6 +17,62 @@ let value = unsafe { &*ptr };
 // is guaranteed to be valid until `drop()` is called. We hold &self,
 // which prevents concurrent mutation.
 let value = unsafe { &*ptr };
+```
+
+### Unsafe Operations in `unsafe fn` (Edition 2024)
+
+In edition 2024, `unsafe_op_in_unsafe_fn` is deny by default. Being inside an `unsafe fn` no longer implicitly permits unsafe operations — each one needs its own `unsafe {}` block with a safety comment.
+
+```rust
+// BAD in edition 2024 — unsafe ops without explicit blocks
+unsafe fn process_raw(ptr: *const u8, len: usize) -> &[u8] {
+    std::slice::from_raw_parts(ptr, len) // ERROR: requires unsafe block
+}
+
+// GOOD — explicit unsafe block inside unsafe fn
+unsafe fn process_raw(ptr: *const u8, len: usize) -> &[u8] {
+    // SAFETY: caller guarantees ptr is valid for len bytes and
+    // the resulting slice does not outlive the allocation.
+    unsafe { std::slice::from_raw_parts(ptr, len) }
+}
+```
+
+This makes `unsafe fn` bodies auditable at the same granularity as regular functions. Every unsafe operation gets its own safety justification.
+
+### `unsafe extern` Blocks (Edition 2024)
+
+In edition 2024, `extern` blocks must be marked `unsafe` because declaring foreign functions is inherently unsafe (the compiler cannot verify the signatures are correct).
+
+```rust
+// BAD in edition 2024
+extern "C" {
+    fn strlen(s: *const c_char) -> usize;
+}
+
+// GOOD in edition 2024
+unsafe extern "C" {
+    fn strlen(s: *const c_char) -> usize;
+}
+```
+
+### `unsafe` Attributes (Edition 2024)
+
+Attributes that affect ABI or symbol names are now safety-sensitive and must be wrapped in `unsafe(...)`:
+
+```rust
+// BAD in edition 2024
+#[no_mangle]
+pub extern "C" fn my_func() {}
+
+#[export_name = "custom_name"]
+pub fn another_func() {}
+
+// GOOD in edition 2024
+#[unsafe(no_mangle)]
+pub extern "C" fn my_func() {}
+
+#[unsafe(export_name = "custom_name")]
+pub fn another_func() {}
 ```
 
 ### Overly Broad Unsafe Blocks
@@ -84,270 +142,32 @@ impl ServerBuilder {
 }
 ```
 
-### Type State Pattern
-
-Use zero-sized marker types to encode state transitions in the type system, making invalid states unrepresentable at compile time.
-
-```rust
-// States as zero-sized types
-pub struct Draft;
-pub struct Published;
-
-pub struct Document<S> {
-    content: String,
-    _state: std::marker::PhantomData<S>,
-}
-
-impl Document<Draft> {
-    pub fn publish(self) -> Document<Published> {
-        Document {
-            content: self.content,
-            _state: PhantomData,
-        }
-    }
-}
-
-// Can't call publish() on an already-published document - won't compile
-```
-
-## Performance Pitfalls
-
-### Unnecessary Allocations
-
-```rust
-// BAD - allocates a String just to compare
-if input.to_string() == "hello" { ... }
-
-// GOOD - compare directly
-if input == "hello" { ... }
-
-// BAD - collecting then iterating
-let items: Vec<_> = source.iter().filter(|x| x.is_valid()).collect();
-for item in &items { process(item); }
-
-// GOOD - chain iterators
-for item in source.iter().filter(|x| x.is_valid()) {
-    process(item);
-}
-```
-
-### String Formatting in Hot Paths
-
-`format!` allocates a new `String` every call. In hot paths, prefer `write!` to a pre-allocated buffer.
-
-```rust
-// BAD in hot path - allocates per iteration
-for item in items {
-    let msg = format!("processing {}", item.id);
-    log(&msg);
-}
-
-// GOOD - reuse buffer
-let mut buf = String::with_capacity(64);
-for item in items {
-    buf.clear();
-    write!(&mut buf, "processing {}", item.id).unwrap();
-    log(&buf);
-}
-```
-
-### Missing Capacity Hints
-
-When the final size is known or estimable, pre-allocate to avoid repeated reallocations.
-
-```rust
-// BAD - grows the vec incrementally
-let mut results = Vec::new();
-for item in &items {
-    results.push(transform(item));
-}
-
-// GOOD - allocate upfront
-let mut results = Vec::with_capacity(items.len());
-for item in &items {
-    results.push(transform(item));
-}
-
-// BEST - use iterator
-let results: Vec<_> = items.iter().map(transform).collect();
-```
-
 ## Clippy Patterns Worth Flagging
 
-These are patterns that `clippy` warns about but are easy to miss:
+These are patterns that `clippy` warns about but are easy to miss during review:
 
 - `manual_map` — match arms that just wrap in `Some`/`Ok`; use `.map()` instead
 - `needless_borrow` — `&` on values that already implement the trait for references
-- `redundant_closure` — closures that just call a function: `|x| foo(x)` → `foo`
+- `redundant_closure` — closures that just call a function: `|x| foo(x)` -> `foo`
 - `single_match` — `match` with one arm + wildcard; use `if let` instead
 - `or_fun_call` — `.unwrap_or(Vec::new())` allocates even on the happy path; use `.unwrap_or_default()`
 
-## Clippy Lints to Respect
-
-| Lint | Why | Category |
-|------|-----|----------|
-| `redundant_clone` | Detects unnecessary clones with performance impact | perf |
-| `needless_borrow` | Removes redundant `&` borrowing | style |
-| `large_enum_variant` | Warns about oversized variants — consider Boxing | perf |
-| `unnecessary_wraps` | Function always returns Some/Ok — drop the wrapper | pedantic |
-| `clone_on_copy` | Catches `.clone()` on Copy types like `u32` | complexity |
-| `needless_collect` | Prevents unnecessary intermediate collection allocation | nursery |
-| `manual_ok_or` | Suggests `.ok_or_else()` over match | style |
-
 ### `#[expect]` Over `#[allow]`
 
-Prefer `#[expect(clippy::lint)]` over `#[allow(clippy::lint)]`. The `expect` attribute warns when the lint no longer triggers, preventing stale suppressions:
+`#[expect(clippy::lint)]` warns when the suppression is no longer needed. `#[allow]` stays forever unnoticed:
 
 ```rust
-// BAD - stale allow stays forever unnoticed
+// BAD - stale suppression goes undetected
 #[allow(clippy::large_enum_variant)]
-enum Message { ... }
+enum Message { /* ... */ }
 
-// GOOD - warns when the lint is no longer needed
+// GOOD - compiler warns when lint no longer triggers
+// Justification: Content variant intentionally large for fast matching
 #[expect(clippy::large_enum_variant)]
-enum Message { ... }
+enum Message { /* ... */ }
 ```
 
 Always add a justification comment when suppressing lints.
-
-### Workspace Lint Configuration
-
-Configure lints in `Cargo.toml` for consistent enforcement:
-
-```toml
-[lints.clippy]
-all = { level = "deny", priority = 10 }
-redundant_clone = { level = "deny", priority = 9 }
-pedantic = { level = "warn", priority = 3 }
-
-[lints.rust]
-future-incompatible = "warn"
-nonstandard_style = "deny"
-```
-
-## Stack vs Heap Size Awareness
-
-- Keep small types (Copy types, usize, bool) on the stack
-- Avoid passing types >512 bytes by value — use references
-- Heap-allocate recursive data structures with `Box`
-- Use `#[inline]` only when benchmarks prove benefit — Rust is already good at inlining
-- For large const arrays, consider `smallvec` which auto-promotes to heap
-
-```rust
-// BAD - allocates 64KB on stack then boxes
-let buffer: Box<[u8; 65536]> = Box::new([0u8; 65536]);
-
-// GOOD - allocates directly on heap
-let buffer: Box<[u8]> = vec![0u8; 65536].into_boxed_slice();
-```
-
-## Profiling Before Optimizing
-
-> Don't guess, measure.
-
-- Always benchmark with `--release` (debug builds lack optimizations)
-- Run `cargo clippy -- -D clippy::perf` for performance hints
-- Use `cargo bench` for micro-benchmarks (>5% improvement = worthwhile)
-- Use `cargo flamegraph` or `samply` (macOS) for CPU profiling
-
-## Iterator Best Practices
-
-### When to Prefer Iterators
-
-- Transforming collections (`.filter().map().collect()`)
-- Composing multiple steps elegantly
-- Using `.enumerate()`, `.windows()`, `.chunks()`
-- Combining data from multiple sources
-
-### When to Prefer `for` Loops
-
-- Early exits (`break`, `continue`, `return`)
-- Simple iteration with side effects (logging, I/O)
-- When readability matters more than chaining
-
-### Iterator Anti-Patterns
-
-- Collecting just to iterate again — pass the iterator directly
-- Using `.into_iter()` on Copy types — prefer `.iter()`
-- Using `.fold()` for summing — prefer `.sum()` (compiler optimizes better)
-- Chaining without line breaks — each chained call on its own line
-
-```rust
-// BAD - unnecessary intermediate collection
-let doubled: Vec<_> = items.iter().map(|x| x * 2).collect();
-process(doubled.into_iter());
-
-// GOOD - pass the iterator (fn process(arg: impl Iterator<Item = T>))
-let doubled_iter = items.iter().map(|x| x * 2);
-process(doubled_iter);
-```
-
-## Import Ordering
-
-Follow the standard Rust import convention:
-
-```rust
-// 1. std / core / alloc
-use std::sync::Arc;
-
-// 2. External crates (from Cargo.toml [dependencies])
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
-
-// 3. Workspace crates
-use shared_types::Config;
-
-// 4. super:: / crate::
-use super::schema::Context;
-use crate::models::Event;
-```
-
-Configure `rustfmt.toml` for automatic enforcement:
-
-```toml
-reorder_imports = true
-imports_granularity = "Crate"
-group_imports = "StdExternalCrate"
-```
-
-## Generics and Dispatch
-
-### Static Dispatch (`impl Trait` / `<T: Trait>`)
-
-Prefer for performance-critical code. Zero runtime cost, inlined at compile time.
-
-### Dynamic Dispatch (`dyn Trait`)
-
-Use when you need heterogeneous collections or runtime polymorphism.
-
-| Aspect | Static (`impl Trait`) | Dynamic (`dyn Trait`) |
-|--------|----------------------|----------------------|
-| Performance | Faster, inlined | Slower, vtable indirection |
-| Binary size | Larger (monomorphized) | Smaller (shared code) |
-| Flexibility | One type at a time | Mix types in collections |
-
-Rules of thumb:
-- Start with generics, switch to `dyn Trait` when flexibility outweighs speed
-- Prefer `&dyn Trait` over `Box<dyn Trait>` when you don't need ownership
-- Don't box inside structs unless required (recursive types) or at API boundaries
-- Trait objects require object safety: no generic methods, no `Self: Sized`
-
-## Documentation Lints
-
-Enable these lints for library crates:
-
-| Lint | Purpose |
-|------|---------|
-| `missing_docs` | Warn on undocumented public items |
-| `broken_intra_doc_links` | Detect broken `[links]` in doc comments |
-| `missing_panics_doc` | Require `# Panics` section when function can panic |
-| `missing_errors_doc` | Require `# Errors` section for Result-returning functions |
-| `missing_safety_doc` | Require `# Safety` section for unsafe public functions |
-
-```rust
-// In lib.rs
-#![deny(missing_docs)]
-```
 
 ## Derive Macro Guidelines
 
@@ -361,16 +181,41 @@ Enable these lints for library crates:
 | `Serialize, Deserialize` | Type crosses serialization boundaries (API, DB, config) |
 | `Send, Sync` | Auto-derived; manually implement ONLY with unsafe justification |
 
+## `LazyCell` / `LazyLock` (Stable Since 1.80)
+
+`std::cell::LazyCell` and `std::sync::LazyLock` replace the `once_cell` and `lazy_static` crates for lazy initialization. Prefer the std types in new code.
+
+```rust
+// BAD — external dependency for something std now provides
+use once_cell::sync::Lazy;
+static CONFIG: Lazy<Config> = Lazy::new(|| load_config());
+
+// BAD — macro-based, no longer needed
+lazy_static::lazy_static! {
+    static ref CONFIG: Config = load_config();
+}
+
+// GOOD — std::sync::LazyLock for thread-safe global lazy init
+use std::sync::LazyLock;
+static CONFIG: LazyLock<Config> = LazyLock::new(|| load_config());
+
+// GOOD — std::cell::LazyCell for single-threaded lazy init
+use std::cell::LazyCell;
+let value: LazyCell<String> = LazyCell::new(|| expensive_compute());
+```
+
+**When to flag**: New code (or code with MSRV >= 1.80) using `once_cell` or `lazy_static` when `LazyCell`/`LazyLock` would work. Existing code using these crates is fine if the MSRV prevents migration.
+
 ## Review Questions
 
 1. Does every `unsafe` block have a safety comment?
 2. Are `unsafe` blocks as narrow as possible?
 3. Are public enums `#[non_exhaustive]` if they may grow?
-4. Are there unnecessary allocations in hot paths?
-5. Are appropriate derive macros present for each type's usage?
+4. Are appropriate derive macros present for each type's usage?
+5. Is `#[expect]` used instead of `#[allow]` for lint suppression?
 6. Would clippy flag any of these patterns?
-7. Is `#[expect]` used instead of `#[allow]` for lint suppression?
-8. Are imports ordered (std → external → workspace → crate)?
-9. Are iterators preferred over manual loops for collection transforms?
-10. Is static dispatch used where performance matters?
-11. Are doc lints enabled for library crates?
+7. Are builders used for types with many optional fields?
+8. **Edition 2024**: Do `unsafe fn` bodies use explicit `unsafe {}` blocks?
+9. **Edition 2024**: Are `extern` blocks marked `unsafe extern`?
+10. **Edition 2024**: Are `#[no_mangle]` / `#[export_name]` wrapped in `#[unsafe(...)]`?
+11. Is `LazyLock`/`LazyCell` used instead of `once_cell`/`lazy_static` when MSRV allows?
