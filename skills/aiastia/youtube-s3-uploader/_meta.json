@@ -1,13 +1,18 @@
 {
   "owner": "aiastia",
   "slug": "youtube-s3-uploader",
-  "displayName": "Youtube S3 Uploader",
+  "displayName": "Universal Video to S3 Uploader",
   "latest": {
-    "version": "3.0.3",
-    "publishedAt": 1774619129693,
-    "commit": "https://github.com/openclaw/skills/commit/1bf9f8813827d1f40ae3d846a975a194d6cbdfb3"
+    "version": "3.0.5",
+    "publishedAt": 1775783493377,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.3",
+      "publishedAt": 1774619129693,
+      "commit": "https://github.com/openclaw/skills/commit/1bf9f8813827d1f40ae3d846a975a194d6cbdfb3"
+    },
     {
       "version": "3.0.2",
       "publishedAt": 1774504132786,

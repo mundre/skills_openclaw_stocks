@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-/**
- * Universal Video to S3 Uploader
- * 通用视频下载器：支持 YouTube, Twitter/X, 抖音, B站等平台
- * 使用方法: node video-to-s3-universal.js <视频URL>
- */
+// Universal Video to S3 Uploader
+// Universal Video to S3 Uploader
+// 通用视频下载器：支持 YouTube, Twitter/X, 抖音, B站等平台
+// 使用方法: node video-to-s3-universal.js <视频URL>
 
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -12,7 +11,7 @@ const path = require('path');
 const FixedS3Uploader = require('./fixed-upload-video-to-s3.js');
 
 // 配置
-const YT_DLP_PATH = '/home/node/.npm-global/bin/yt-dlp';
+const YT_DLP_PATH = '/home/node/.openclaw/workspace/yt-dlp';
 const DOWNLOAD_DIR = '/home/node/.openclaw/workspace/downloads';
 const CONFIG_FILE = '/home/node/.openclaw/workspace/.r2-upload.yml';
 const FFMPEG_PATH = '/home/node/.openclaw/workspace/ffmpeg';
