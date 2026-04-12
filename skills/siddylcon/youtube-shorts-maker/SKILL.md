@@ -1,114 +1,140 @@
 ---
 name: youtube-shorts-maker
-version: "1.1.0"
-displayName: "YouTube Shorts Maker — Create Viral YouTube Shorts from Any Content with AI"
+version: "15.0.1"
+displayName: "YouTube Shorts Maker — Create and Export Vertical Shorts"
 description: >
-  Create viral YouTube Shorts from any content with AI — extract the best moments from long-form videos, generate original short-form vertical content from text, apply Shorts-optimized editing with hook-first structure, add animated captions for muted viewing, and produce the 60-second vertical videos that drive YouTube channel growth. NemoVideo creates Shorts that the algorithm promotes: front-loaded hooks in the first 2 seconds, high completion rates through tight pacing, animated captions for the majority watching without sound, vertical-native composition with face tracking, and the replay-worthy endings that signal quality to YouTube's recommendation system. YouTube Shorts maker AI, create YouTube Shorts, Shorts video creator, make Shorts from video, YouTube short form maker, extract Shorts from long video, vertical video YouTube, Shorts editor AI, YouTube Shorts generator.
-metadata: {"openclaw": {"emoji": "📱", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+  Get 1080p MP4 files from your video clips using this youtube-shorts-maker tool. It runs AI short video creation on cloud GPUs, so your machine does zero heavy lifting. YouTubers can generating short clips from long recordings in roughly 1-2 minutes — supports MP4, MOV, AVI, WebM.
+metadata: {"openclaw": {"emoji": "🎬", "requires": {"env": ["NEMO_TOKEN"], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN", "variant": "control"}}
 ---
 
-# YouTube Shorts Maker — 60 Seconds That Grow Your Channel Faster Than 60 Videos
+## Getting Started
 
-YouTube Shorts is YouTube's answer to TikTok and Instagram Reels — and it has become the single most effective channel growth tool on the platform. YouTube's own data shows that Shorts reach 2 billion logged-in users monthly. Channels that publish Shorts grow subscribers 2-5x faster than channels publishing only long-form. A single Short that goes viral can add 10,000-100,000 subscribers in 24 hours — growth that long-form content takes months to achieve. The strategic logic: Shorts are discovery. Long-form is retention. A Short reaches viewers who have never heard of the channel. If the Short delivers value, those viewers visit the channel, discover the long-form library, and subscribe. The Short is the advertisement; the long-form content is the product. YouTube Shorts has specific algorithmic preferences that differ from TikTok and Reels. YouTube's Shorts algorithm weights: completion rate (percentage of viewers who watch the full Short), replay rate (percentage who loop back), engagement velocity (likes and comments in the first hour), and subscribe-through rate (viewers who subscribe after watching). NemoVideo optimizes every Short for these specific signals: hooks that prevent swipe-away, pacing that maintains attention to the last frame, endings that encourage replay, and content that converts Short viewers into channel subscribers.
+> Let's do some youtube shorts maker. Upload your files or describe what you're after.
 
-## Use Cases
+**Try saying:**
+- "create a 10-minute YouTube video recording into a 1080p MP4"
+- "cut this into a 60-second vertical YouTube Short with captions and transitions"
+- "generating short clips from long recordings for YouTubers"
 
-1. **Long-Form to Shorts — Extract Channel Growth Moments (any source → 15-60s each)** — A creator's existing YouTube library is an untapped goldmine of Shorts. Every 10-minute video contains 3-5 moments that would perform as standalone Shorts: the best tip, the funniest reaction, the most surprising revelation, the most quotable insight. NemoVideo: analyzes the entire video for Short-worthy moments (peak speech energy, visual highlights, complete standalone thoughts), extracts each with hook-first restructuring (the payoff or most striking element in the first 2 seconds, then the context), converts to 9:16 with AI face tracking (the speaker stays centered as the vertical crop follows them), adds animated captions (essential — YouTube Shorts autoplay muted), and produces 3-5 Shorts per long-form video. A library of 100 long-form videos becomes 300-500 Shorts — months of daily publishing from existing content.
+### First-Time Connection
 
-2. **Original Shorts — Text Idea to Vertical Video (15-60s)** — A creator has Short ideas that do not require filming: quick tips, hot takes, educational facts, motivational messages, or commentary on trending topics. NemoVideo: generates complete Shorts from text descriptions (AI visuals matching the described content, voiceover narration, animated text overlays), applies Shorts-native pacing (a new visual or text element every 2-3 seconds — the cadence that holds attention in vertical scroll-feeds), adds hook-first structure automatically (leading with the most provocative or valuable statement), and produces ready-to-upload Shorts from ideas alone. Zero filming, zero editing, direct from concept to published Short.
+When a user first opens this skill, connect to the processing backend automatically. Briefly let them know (e.g. "Setting up...").
 
-3. **Podcast to Shorts — Quotable Moments as Growth Engine (any podcast → multiple Shorts)** — A podcast episode contains 5-10 quotable moments — insights, hot takes, funny exchanges, surprising revelations — each capable of reaching new audiences as a Short. NemoVideo: transcribes the entire podcast, identifies the most standalone-valuable statements (complete thoughts that make sense without context, delivered with energy and conviction), extracts each as a Short (with 2-3 seconds of setup for context), converts podcast audio to vertical format (speaker video with face tracking, or animated audiogram with waveform and text), adds animated captions, and produces a week of Shorts from one podcast episode. The discovery engine that turns podcast listeners into channel subscribers.
+**Authentication**: Check if `NEMO_TOKEN` is set in the environment. If it is, skip to step 2.
 
-4. **Tutorial Shorts — Single-Tip Quick Lessons (15-30s)** — The "one tip in one minute" format is the highest-performing educational Short format. A creator teaches one software trick, one cooking technique, one fitness move, or one life hack per Short. NemoVideo: structures each tip with the proven tutorial-Short format (hook showing the result → 3-step process → result again), applies zoom-to-action on screen recordings (showing exactly where to click, what to tap), adds numbered step overlays ("Step 1 → Step 2 → Step 3"), generates captions for muted viewing, and produces batch tutorial Shorts from a list of tips. A list of 30 tips becomes 30 Shorts — a month of daily educational content from a text document.
+1. **Obtain a free token**: Generate a random UUID as client identifier. POST to `https://mega-api-prod.nemovideo.ai/api/auth/anonymous-token` with header `X-Client-Id` set to that UUID. The response `data.token` is your NEMO_TOKEN — 100 free credits, valid 7 days.
+2. **Create a session**: POST to `https://mega-api-prod.nemovideo.ai/api/tasks/me/with-session/nemo_agent` with `Authorization: Bearer <token>`, `Content-Type: application/json`, and body `{"task_name":"project","language":"<detected>"}`. Store the returned `session_id` for all subsequent requests.
 
-5. **Trending Topic Shorts — Timely Content for Algorithm Boost (15-30s)** — A creator wants to capitalize on trending topics, news, or cultural moments with timely Shorts that ride the wave of public interest. NemoVideo: takes a brief description of the trending topic and the creator's take ("React to the new iPhone announcement — focus on the camera improvements, mention that it's evolutionary not revolutionary"), generates a Short with appropriate pacing and visual style (faster for reaction content, more measured for analysis), adds trending-relevant text overlays and hashtags, applies the visual treatment that performs for the topic category (tech reactions get clean, bright treatment; entertainment reactions get energetic, colorful treatment), and produces a timely Short that can be published within the trend's relevance window. Speed-to-publish determines whether a trending Short reaches millions or dozens.
+Keep setup communication brief. Don't display raw API responses or token values to the user.
 
-## How It Works
+# Create Video Clips Into Vertical Short Clips
 
-### Step 1 — Upload Source or Describe Content
-Long-form video for extraction, podcast audio, text tips for generation, or trending topic description for timely content.
+This does AI short video creation for video clips. Everything runs server-side.
 
-### Step 2 — Configure Shorts Output
-Number of Shorts, target duration, caption style, hook approach, and any specific moments to include or avoid.
+A quick walkthrough: upload a 10-minute YouTube video recording → ask for cut this into a 60-second vertical YouTube Short with captions and transitions → wait roughly 1-2 minutes → download your MP4 at 1080p. The backend handles rendering, encoding, all of it.
 
-### Step 3 — Generate
-```bash
-curl -X POST https://mega-api-prod.nemovideo.ai/api/v1/generate \
-  -H "Authorization: Bearer $NEMO_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "skill": "youtube-shorts-maker",
-    "prompt": "Extract 5 YouTube Shorts from a 15-minute tech review video. For each Short: find a complete, standalone-valuable moment (a single tip, insight, or revelation). Hook-first: lead with the most striking visual or statement in the first 2 seconds. Convert to 9:16 with face tracking. Animated captions: bold white, word-by-word highlight in electric blue (#0088FF), positioned above YouTube Shorts bottom UI. Target 30-45 seconds each (sweet spot for completion rate). Add subtle background music under speech. End each Short with a 1-second subscribe prompt overlay. Also create one compilation Short: the single best 5-second quote from each of the 5 Shorts, rapid-cut with transitions, 30 seconds total.",
-    "source": "long-form-extraction",
-    "count": 5,
-    "per_short": {
-      "hook_first": true,
-      "duration": "30-45s",
-      "format": "9:16",
-      "face_tracking": true,
-      "captions": {"style": "animated", "highlight": "#0088FF", "safe_zone": "youtube-shorts"},
-      "music": "subtle-under-speech",
-      "end_card": "subscribe-prompt-1s"
-    },
-    "compilation": {"count": 1, "duration": 30, "style": "rapid-quote-montage"},
-    "resolution": "1080x1920"
-  }'
+Fair warning — clips under 60 seconds process faster and meet YouTube Shorts length requirements automatically.
+
+## Sorting Your Requests
+
+The skill checks your message against a few patterns and routes it to the right handler.
+
+| User says... | Action | Skip SSE? |
+|-------------|--------|----------|
+| "export" / "导出" / "download" / "send me the video" | → §3.5 Export | ✅ |
+| "credits" / "积分" / "balance" / "余额" | → §3.3 Credits | ✅ |
+| "status" / "状态" / "show tracks" | → §3.4 State | ✅ |
+| "upload" / "上传" / user sends file | → §3.2 Upload | ✅ |
+| Everything else (generate, edit, add BGM…) | → §3.1 SSE | ❌ |
+
+## Technical Details
+
+Processing runs on remote GPUs through NemoVideo's API. The skill sends your input, waits for the render, and hands back the result — all server-side.
+
+All calls go to `https://mega-api-prod.nemovideo.ai`. The main endpoints:
+
+1. **Session** — `POST /api/tasks/me/with-session/nemo_agent` with `{"task_name":"project","language":"<lang>"}`. Gives you a `session_id`.
+2. **Chat (SSE)** — `POST /run_sse` with `session_id` and your message in `new_message.parts[0].text`. Set `Accept: text/event-stream`. Up to 15 min.
+3. **Upload** — `POST /api/upload-video/nemo_agent/me/<sid>` — multipart file or JSON with URLs.
+4. **Credits** — `GET /api/credits/balance/simple` — returns `available`, `frozen`, `total`.
+5. **State** — `GET /api/state/nemo_agent/me/<sid>/latest` — current draft and media info.
+6. **Export** — `POST /api/render/proxy/lambda` with render ID and draft JSON. Poll `GET /api/render/proxy/lambda/<id>` every 30s for `completed` status and download URL.
+
+Formats: mp4, mov, avi, webm, mkv, jpg, png, gif, webp, mp3, wav, m4a, aac.
+
+Three attribution headers are required on every request and must match this file's frontmatter:
+
+| Header | Value |
+|--------|-------|
+| `X-Skill-Source` | `youtube-shorts-maker` |
+| `X-Skill-Version` | frontmatter `version` |
+| `X-Skill-Platform` | auto-detect: `clawhub` / `cursor` / `unknown` from install path |
+
+Include `Authorization: Bearer <NEMO_TOKEN>` and all attribution headers on every request — omitting them triggers a 402 on export.
+
+**Draft field mapping**: `t`=tracks, `tt`=track type (0=video, 1=audio, 7=text), `sg`=segments, `d`=duration(ms), `m`=metadata.
+
+```
+Timeline (3 tracks): 1. Video: city timelapse (0-10s) 2. BGM: Lo-fi (0-10s, 35%) 3. Title: "Urban Dreams" (0-3s)
 ```
 
-### Step 4 — Verify Completion Rate Potential
-Watch each Short as a casual viewer would — on a phone, in scroll mode. Ask: does the hook stop the scroll in 2 seconds? Does every subsequent second deliver enough value or curiosity to prevent swiping? Does the ending encourage replay or subscribe action? If any Short has a "dead zone" where nothing happens for 3+ seconds, it needs tightening.
+### Backend Response Translation
 
-## Parameters
+The backend assumes a GUI exists. Translate these into API actions:
 
-| Parameter | Type | Required | Description |
-|-----------|------|:--------:|-------------|
-| `prompt` | string | ✅ | Shorts creation requirements |
-| `source` | string | | "long-form-extraction", "podcast", "text-generation", "trending-topic" |
-| `count` | int | | Number of Shorts to produce |
-| `per_short` | object | | {hook_first, duration, format, face_tracking, captions, music, end_card} |
-| `compilation` | object | | {count, duration, style} for highlight compilations |
-| `batch_tips` | array | | List of tips for tutorial Shorts batch |
-| `trending` | object | | {topic, take, urgency} for timely content |
-| `resolution` | string | | "1080x1920" (standard) |
+| Backend says | You do |
+|-------------|--------|
+| "click [button]" / "点击" | Execute via API |
+| "open [panel]" / "打开" | Query session state |
+| "drag/drop" / "拖拽" | Send edit via SSE |
+| "preview in timeline" | Show track summary |
+| "Export button" / "导出" | Execute export workflow |
 
-## Output Example
+### SSE Event Handling
 
-```json
-{
-  "job_id": "ytshr-20260329-001",
-  "status": "completed",
-  "source_duration": "15:08",
-  "shorts_produced": 6,
-  "outputs": {
-    "short_1": {"file": "camera-trick-9x16.mp4", "duration": "0:38", "hook": "2s"},
-    "short_2": {"file": "battery-hack-9x16.mp4", "duration": "0:42", "hook": "2s"},
-    "short_3": {"file": "hidden-feature-9x16.mp4", "duration": "0:35", "hook": "2s"},
-    "short_4": {"file": "comparison-test-9x16.mp4", "duration": "0:44", "hook": "2s"},
-    "short_5": {"file": "final-verdict-9x16.mp4", "duration": "0:31", "hook": "2s"},
-    "compilation": {"file": "best-quotes-compilation-9x16.mp4", "duration": "0:28"}
-  }
-}
-```
+| Event | Action |
+|-------|--------|
+| Text response | Apply GUI translation (§4), present to user |
+| Tool call/result | Process internally, don't forward |
+| `heartbeat` / empty `data:` | Keep waiting. Every 2 min: "⏳ Still working..." |
+| Stream closes | Process final response |
 
-## Tips
+~30% of editing operations return no text in the SSE stream. When this happens: poll session state to verify the edit was applied, then summarize changes to the user.
 
-1. **30-45 seconds is the Shorts sweet spot for completion rate** — Under 20 seconds often feels too thin to deliver value. Over 50 seconds tests attention limits. The 30-45 second range delivers enough substance for value while maintaining the completion rate that the algorithm rewards.
-2. **The first 2 seconds determine the Short's fate** — YouTube Shorts autoplay in a vertical scroll feed. Viewers decide to watch or swipe in under 2 seconds. The hook must be immediate, visual, and curiosity-generating. No intros, no titles, no build-up — start with the moment that makes someone pause their thumb.
-3. **Completion rate and replay rate are the algorithm's primary signals** — A Short where 80% of viewers watch to the end will be promoted to millions. A Short where 40% complete will die in obscurity. Every editorial decision — pacing, length, structure — should optimize for "will the viewer stay until the last frame?"
-4. **Existing long-form content is the most efficient Shorts source** — Filming specifically for Shorts is one approach. But extracting Shorts from existing long-form content is faster, requires no additional filming, and has a proven advantage: the moments that generated high engagement in long-form will likely perform in short-form. Mine your existing library.
-5. **Subscribe-through is the Shorts metric that matters most for channel growth** — A Short with 1 million views and 0 subscribes did not grow the channel. A Short with 100K views and 5,000 subscribes transformed it. End each Short with a clear, earned subscribe prompt at the moment of peak viewer satisfaction.
+### Error Handling
 
-## Output Formats
+| Code | Meaning | Action |
+|------|---------|--------|
+| 0 | Success | Continue |
+| 1001 | Bad/expired token | Re-auth via anonymous-token (tokens expire after 7 days) |
+| 1002 | Session not found | New session §3.0 |
+| 2001 | No credits | Anonymous: show registration URL with `?bind=<id>` (get `<id>` from create-session or state response when needed). Registered: "Top up credits in your account" |
+| 4001 | Unsupported file | Show supported formats |
+| 4002 | File too large | Suggest compress/trim |
+| 400 | Missing X-Client-Id | Generate Client-Id and retry (see §1) |
+| 402 | Free plan export blocked | Subscription tier issue, NOT credits. "Register or upgrade your plan to unlock export." |
+| 429 | Rate limit (1 token/client/7 days) | Retry in 30s once |
 
-| Format | Resolution | Platform |
-|--------|-----------|----------|
-| MP4 9:16 | 1080x1920 | YouTube Shorts (primary) |
-| MP4 9:16 | 1080x1920 | TikTok / Reels (cross-post) |
-| MP4 1:1 | 1080x1080 | Instagram Feed (alternative) |
+## Common Workflows
 
-## Related Skills
+**Quick edit**: Upload → "cut this into a 60-second vertical YouTube Short with captions and transitions" → Download MP4. Takes 1-2 minutes for a 30-second clip.
 
-- [youtube-video-editor](/skills/youtube-video-editor) — Long-form YouTube editing
-- [reels-creator](/skills/reels-creator) — Instagram Reels creation
-- [ai-video-caption-generator](/skills/ai-video-caption-generator) — Animated captions
-- [ai-video-highlight-maker](/skills/ai-video-highlight-maker) — Moment extraction
+**Batch style**: Upload multiple files in one session. Process them one by one with different instructions. Each gets its own render.
+
+**Iterative**: Start with a rough cut, preview the result, then refine. The session keeps your timeline state so you can keep tweaking.
+
+## FAQ
+
+**How long does processing take?** Depends on length — a 30-second video finishes in 1-2 minutes, a 10-minute video might need 3-5 minutes.
+
+**What formats work?** MP4, MOV, AVI, WebM on input. Output is always MP4.
+
+**Is there a file size limit?** Yeah, 500MB. Compress or trim if you're over.
+
+**Do I need an account?** Nope. You get 100 free credits on first use, no signup.
+
+## Quick Start Guide
+
+First time? Just upload a video clips and describe what you need. I'll run it through NemoVideo's backend and hand you back a 1080p MP4.
+
+Processing takes about 1-2 minutes depending on video length. You start with 100 free credits — most edits cost 1-3.
