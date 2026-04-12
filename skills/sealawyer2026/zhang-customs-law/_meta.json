@@ -1,13 +1,18 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-customs-law",
-  "displayName": "九章-海关法律专家",
+  "displayName": "Zhang Customs Law",
   "latest": {
-    "version": "1.5.0",
-    "publishedAt": 1775098679807,
-    "commit": "https://github.com/openclaw/skills/commit/86aa6fc516075eb898db3e011e24be11251cc600"
+    "version": "1.0.0",
+    "publishedAt": 1775483856525,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.0",
+      "publishedAt": 1775098679807,
+      "commit": "https://github.com/openclaw/skills/commit/86aa6fc516075eb898db3e011e24be11251cc600"
+    },
     {
       "version": "1.4.0",
       "publishedAt": 1774502312252,
