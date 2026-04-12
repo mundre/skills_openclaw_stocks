@@ -1,6 +1,6 @@
 ---
 name: playasia
-version: 0.1.2
+version: 0.1.3
 kind: capability-manifest
 visibility: public
 auth_required: false
@@ -60,11 +60,11 @@ POST /l402/v1/buy  {"pax":"PAX0004012102", "method":"bitcoin"}
 
 Send BTC to the address. ~20 min for 2 confirmations.
 Poll status_url for delivery:
-GET /l402/v1/order?oid={order_id}&sid={sid}
+GET /l402/v1/order?oid={order_id}&order_sid={order_sid}
 → Once confirmed, the digital code appears in the response.
 ```
 
-**Important:** For anonymous Bitcoin/Lightning orders, save the `sid` and `order_id` from the response to retrieve your code later.
+**Important:** For anonymous Bitcoin/Lightning orders, save the `order_sid` and `order_id` from the response to retrieve your code later.
 
 ## Authentication
 
@@ -73,7 +73,7 @@ GET /l402/v1/order?oid={order_id}&sid={sid}
 | Search catalog | None | Free, no token needed |
 | Check prices | None | Free, no token needed |
 | Buy with Lightning | None | Anonymous |
-| Buy with Bitcoin | None | Anonymous, track via `sid` |
+| Buy with Bitcoin | None | Anonymous, track via `order_sid` |
 | Buy with wallet | `X-PA-Token` | Needs `purchase` scope |
 | Check balance/orders | `X-PA-Token` | Any scope |
 | Support tickets | `X-PA-Token` | Any scope |
@@ -89,13 +89,13 @@ Get a token at: https://www.play-asia.com/account/access-tokens
 
 ### Browse (free, no auth)
 
-- `GET /l402/v1/catalog?q={query}&limit={n}&offset={n}&currency={code}` — Search products
+- `GET /l402/v1/catalog?q={query}&limit={n}&offset={n}&currency={code}&affiliate_id={id}` — Search products. When `affiliate_id` is provided, each product includes a `url` field with the affiliate tracking link.
 - `GET /l402/v1/price?pax={PAX}` — Get product price
 
 ### Buy + Order
 
 - `POST /l402/v1/buy` — **With token**: wallet buy. **Without**: anonymous BTC/LN. Body: `{"pax":"PAX...", "method":"lightning|bitcoin"}`
-- `GET /l402/v1/order?oid={id}` — **With token**: order by customer. **With `&sid=...`**: anonymous access. Includes `payment_detected` for unpaid orders.
+- `GET /l402/v1/order?oid={id}` — **With token**: order by customer. **With `&order_sid=...`**: anonymous access. Includes `payment_detected` for unpaid orders.
 
 ### Wallet (requires X-PA-Token)
 
@@ -130,7 +130,7 @@ Get a token at: https://www.play-asia.com/account/access-tokens
 | 402 | `insufficient_balance` | Top up wallet or use anonymous buy |
 | 402 | L402 payment required | Pay the returned invoice |
 | 403 | `scope_denied`, `limit_raise_denied` | Token lacks permission |
-| 404 | `not_found`, `out_of_stock` | Product unavailable |
+| 404 | `not_found` | Product not found or not digital |
 | 429 | `rate_limited`, `too_many_pending` | Wait and retry |
 
 ## Rate limits
