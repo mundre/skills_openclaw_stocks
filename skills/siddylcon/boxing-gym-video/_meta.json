@@ -1,11 +1,17 @@
 {
   "owner": "siddylcon",
   "slug": "boxing-gym-video",
-  "displayName": "Boxing Gym Video — Class Preview and Student Recruitment Videos for Boxing Gym Facilities",
+  "displayName": "Boxing Gym Video",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774944866002,
-    "commit": "https://github.com/openclaw/skills/commit/af1f5590408cb5413a1ac153e078e53af0ada50f"
+    "version": "1.0.1",
+    "publishedAt": 1775598111125,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774944866002,
+      "commit": "https://github.com/openclaw/skills/commit/af1f5590408cb5413a1ac153e078e53af0ada50f"
+    }
+  ]
 }
