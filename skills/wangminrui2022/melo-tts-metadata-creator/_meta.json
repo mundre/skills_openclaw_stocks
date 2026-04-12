@@ -3,11 +3,16 @@
   "slug": "melo-tts-metadata-creator",
   "displayName": "melo-tts-metadata-creator",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775315768581,
-    "commit": "https://github.com/openclaw/skills/commit/38353668ca16b5af9e3a385b01bec1cb4dbf43dc"
+    "version": "1.0.4",
+    "publishedAt": 1775746732858,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775315768581,
+      "commit": "https://github.com/openclaw/skills/commit/38353668ca16b5af9e3a385b01bec1cb4dbf43dc"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774796020973,
