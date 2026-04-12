@@ -3,11 +3,16 @@
   "slug": "llm-sast-scanner",
   "displayName": "llm-sast-scanner",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775035269571,
-    "commit": "https://github.com/openclaw/skills/commit/1bc48e844243505dcd2f8930ac9647c60e19ff8f"
+    "version": "1.3.2",
+    "publishedAt": 1775539006878,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775035269571,
+      "commit": "https://github.com/openclaw/skills/commit/1bc48e844243505dcd2f8930ac9647c60e19ff8f"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774788816794,
