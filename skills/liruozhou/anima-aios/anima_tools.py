@@ -442,7 +442,7 @@ def get_cognitive_profile(agent_name: str = "current") -> Dict:
             sys.path.insert(0, str(ANIMA_HOME / "core"))
             from cognitive_profile import CognitiveProfileGenerator
             generator = CognitiveProfileGenerator(agent_name, facts_base=str(FACTS_BASE))
-            profile = generator.generate_profile(auto_scan=False)
+            profile = generator.generate_profile(auto_scan=True)
             
             # core 返回的维度名称映射
             dimension_map = {
@@ -477,7 +477,14 @@ def get_cognitive_profile(agent_name: str = "current") -> Dict:
             progress = int((total_exp / next_exp) * 100) if next_exp > 0 else 0
             
             # 计算认知总分（五维加权平均）
-            cognitive_score = round(sum(dimensions.values()) / max(len(dimensions), 1), 2)
+            weights = {
+                'internalization': 0.2,
+                'application': 0.2,
+                'creation': 0.25,
+                'metacognition': 0.15,
+                'collaboration': 0.2
+            }
+            cognitive_score = round(sum(dimensions.get(k, 0) * v for k, v in weights.items()), 2)
             
             return {
                 "agent": profile["agent"],

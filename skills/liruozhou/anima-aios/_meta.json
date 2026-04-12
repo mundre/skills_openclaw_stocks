@@ -3,11 +3,16 @@
   "slug": "anima-aios",
   "displayName": "Anima Aios",
   "latest": {
-    "version": "6.2.3",
-    "publishedAt": 1774512127351,
-    "commit": "https://github.com/openclaw/skills/commit/a22a0f25ca8e256ecb3a04c62da1bc9782198a9e"
+    "version": "6.3.0",
+    "publishedAt": 1774921082265,
+    "commit": null
   },
   "history": [
+    {
+      "version": "6.2.3",
+      "publishedAt": 1774512127351,
+      "commit": "https://github.com/openclaw/skills/commit/a22a0f25ca8e256ecb3a04c62da1bc9782198a9e"
+    },
     {
       "version": "6.2.0",
       "publishedAt": 1774457431885,

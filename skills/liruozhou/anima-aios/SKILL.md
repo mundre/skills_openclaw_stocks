@@ -94,7 +94,41 @@ GitHub: https://github.com/anima-aios/anima | Apache 2.0
 
 ---
 
-## ✨ v6.2.2 New Features (Current Version)
+## ✨ v6.2.4 New Features (Current Version)
+
+### 🤝 self-improving-agent Compatibility
+
+**Silent Detection:**
+- Automatically scans `.learnings/` directory if exists
+- No prompts if user hasn't installed self-improving
+- Extracts high-value learning records to L2 facts
+- Rewards EXP for learning behavior
+
+**Compatibility:**
+- Users with self-improving: Auto-sync enabled
+- Users without: No impact, normal operation
+
+### 🏆 Team Ranking Built-in
+
+**Features:**
+- Auto-scans all agents' cognitive profiles
+- Generates rankings by EXP/Level/5-Dimensions
+- Outputs Markdown + JSON formats
+- Scheduled daily at 00:00
+
+**Ranking Types:**
+- EXP Ranking (Top 10)
+- Level Ranking (Top 10)
+- Cognitive Score Ranking (Top 10)
+- 5-Dimension Rankings (Each dimension Top 10)
+
+**Output:**
+- `/home/画像/shared/团队排行榜_{date}.md`
+- `/home/画像/shared/团队排行榜_{date}.json`
+
+---
+
+## ✨ v6.2.3 New Features (Previous Version)
 
 ### 🔒 Security & Privacy Fixes
 - **Version Unification** - __init__.py updated from 6.1.2 to 6.2.1
