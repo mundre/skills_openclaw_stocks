@@ -1,13 +1,18 @@
 {
   "owner": "sealawyer2026",
   "slug": "zhang-banking-law",
-  "displayName": "九章-银行法律专家",
+  "displayName": "Zhang Banking Law",
   "latest": {
-    "version": "1.5.0",
-    "publishedAt": 1775095028600,
-    "commit": "https://github.com/openclaw/skills/commit/6e40c53c7370f1e65a4eb8b5194e91756427a7f6"
+    "version": "1.0.0",
+    "publishedAt": 1775483711739,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.0",
+      "publishedAt": 1775095028600,
+      "commit": "https://github.com/openclaw/skills/commit/6e40c53c7370f1e65a4eb8b5194e91756427a7f6"
+    },
     {
       "version": "1.4.0",
       "publishedAt": 1774502239786,
