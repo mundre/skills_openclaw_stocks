@@ -1,56 +1,37 @@
 ---
-name: amd
-description: "Information assistant for AMD. Search products, news, financials, and official resources for AMD."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","amd","enterprise-info"] } }
+summary: "AMD - 美国芯片公司技能"
+read_when:
+  - 用户需要查询 AMD 产品信息
+  - 用户询问 CPU/GPU
+  - 用户需要电脑硬件建议
 ---
 
-# AMD — Information Assistant
+# AMD 技能
 
-Query products, news, stock prices, financial reports, and official resources for **AMD**.
+## 技能描述
+AMD（Advanced Micro Devices）是美国知名半导体公司，全球领先的 CPU、GPU、芯片组制造商，与英特尔、英伟达竞争。本技能帮助用户查询 AMD 产品、技术信息。
 
-## About
+## 核心功能
+- 💻 **产品查询**：CPU、GPU、芯片组、服务器芯片
+- 📊 **技术信息**：架构、制程、性能对比
+- 📅 **新品发布**：最新产品资讯
+- 💰 **价格查询**：产品价格范围
+- 🌟 **产品系列**：Ryzen、Radeon、EPYC、Threadripper 等
+- 🎮 **游戏应用**：游戏优化、显卡性能
 
-- **Company**: AMD
-- **Industry**: Processors, GPUs
-- **Official Website**: https://www.amd.com
+## 使用场景
+- 查询 AMD 最新产品
+- 了解 CPU/GPU 性能
+- 对比英特尔/英伟达
+- 获取装机建议
+- 了解技术架构
 
-## What This Skill Does
+## 注意事项
+- AMD 是美国半导体公司
+- 成立于 1969 年，总部位于加州
+- 全球第二大 CPU 制造商
 
-When activated, this skill helps you:
-
-1. **Product Search** — Find and compare AMD products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
-
-## Usage Examples
-
-- "What are the latest AMD products?"
-- "Show me AMD stock price"
-- "Compare AMD with competitors"
-- "Find AMD official support page"
-- "What's new at AMD?"
-
-## How It Works
-
-This skill uses web search to fetch real-time information about AMD from:
-- Official website: https://www.amd.com
-- Financial data providers
-- News aggregators
-- Product databases
-
-## Instructions for Agent
-
-When this skill is triggered:
-1. Identify the user's specific query about AMD
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.amd.com)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
-
-## Author
-
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+## 相关技能
+- intel - 英特尔
+- nvidia - 英伟达
+- qualcomm - 高通

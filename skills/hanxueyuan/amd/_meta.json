@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "amd",
-  "displayName": "amd",
+  "displayName": "Amd",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774492257961,
-    "commit": "https://github.com/openclaw/skills/commit/ccc5ee2166a269d0e9e7d71bca89fe4dd608379f"
+    "version": "1.0.0",
+    "publishedAt": 1775910030936,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774492257961,
+      "commit": "https://github.com/openclaw/skills/commit/ccc5ee2166a269d0e9e7d71bca89fe4dd608379f"
+    }
+  ]
 }
