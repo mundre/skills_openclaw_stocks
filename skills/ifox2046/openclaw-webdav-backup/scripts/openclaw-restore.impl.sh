@@ -30,6 +30,7 @@ DELETE_OLD_DAYS=""
 DIFF_MODE=0
 DIFF_FORMAT="summary"
 CHECK_DEPS=0
+VERIFY_RESTORE=0
 
 # 声明日志函数先，确保在函数定义前可用
 log() { printf '[restore] %s\n' "$*"; }
@@ -416,6 +417,10 @@ while [[ $# -gt 0 ]]; do
       CHECK_DEPS=1
       shift
       ;;
+    --verify-restore|--test-restore)
+      VERIFY_RESTORE=1
+      shift
+      ;;
     --help|-h)
       echo "Usage: bash scripts/openclaw-restore.sh [OPTIONS]"
       echo ""
@@ -429,6 +434,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --diff              Preview changes before restore"
       echo "  --diff-format <fmt> Diff format: summary|full|json"
       echo "  --check-deps        Check dependencies before restore"
+      echo "  --verify-restore    Verify backup can be restored without overwriting"
       echo "  --dry-run           Show what would be done without executing"
       echo "  --help, -h          Show this help message"
       echo ""
@@ -439,6 +445,7 @@ while [[ $# -gt 0 ]]; do
       echo "  bash scripts/openclaw-restore.sh --delete 2026-04-01-030000"
       echo "  bash scripts/openclaw-restore.sh --delete-old 7"
       echo "  bash scripts/openclaw-restore.sh --check-deps"
+      echo "  bash scripts/openclaw-restore.sh --from <dir> --verify-restore --decrypt-config"
       echo "  bash scripts/openclaw-restore.sh --from <dir> --diff"
       exit 0
       ;;
@@ -585,29 +592,12 @@ run() {
   fi
 }
 
-need_cmd tar
-mkdir -p "${STATE_DIR}"
-
-if [[ ! -f "${BACKUP_DIR}/workspace.tar.gz" ]]; then
-  echo "Missing workspace.tar.gz in ${BACKUP_DIR}" >&2
-  exit 1
-fi
-
-log "Preparing restore from ${BACKUP_DIR}"
-
-# 自动运行依赖检查（除非是 dry-run）
-if [[ ${DRY_RUN} -eq 0 ]]; then
-  check_dependencies || exit 1
-fi
-
-# 备份完整性验证
 verify_backup_integrity() {
   local backup_dir="$1"
   local errors=0
-  
+
   log "Verifying backup integrity..."
-  
-  # Check workspace archive
+
   if [[ -f "${backup_dir}/workspace.tar.gz" ]]; then
     if tar -tzf "${backup_dir}/workspace.tar.gz" >/dev/null 2>&1; then
       log "  ✅ workspace.tar.gz is valid"
@@ -619,8 +609,7 @@ verify_backup_integrity() {
     log "  ❌ workspace.tar.gz is missing"
     errors=$((errors + 1))
   fi
-  
-  # Check extensions archive (optional)
+
   if [[ -f "${backup_dir}/extensions.tar.gz" ]]; then
     if tar -tzf "${backup_dir}/extensions.tar.gz" >/dev/null 2>&1; then
       log "  ✅ extensions.tar.gz is valid"
@@ -629,22 +618,128 @@ verify_backup_integrity() {
       errors=$((errors + 1))
     fi
   fi
-  
-  # Check manifest
+
   if [[ -f "${backup_dir}/manifest.txt" ]]; then
     log "  ✅ manifest.txt exists"
   else
     log "  ⚠️ manifest.txt is missing"
   fi
-  
+
   if [[ ${errors} -gt 0 ]]; then
     log "ERROR: Backup integrity check failed with ${errors} error(s)"
     return 1
   fi
-  
+
   log "✅ Backup integrity verified"
   return 0
 }
+
+verify_restore_feasibility() {
+  local backup_dir="$1"
+  local temp_root
+  temp_root="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-restore-verify.XXXXXX")"
+  trap 'rm -rf "${temp_root}"' RETURN
+
+  log "Running restore verification (no overwrite)"
+  verify_backup_integrity "$backup_dir"
+
+  if [[ -f "${backup_dir}/checksums.sha256" ]]; then
+    need_cmd sha256sum
+    log "Verifying SHA-256 checksums"
+    (
+      cd "$backup_dir" || exit 1
+      sha256sum -c checksums.sha256 >/dev/null
+    ) || {
+      log "ERROR: Checksum verification failed"
+      return 1
+    }
+    log "  ✅ checksums.sha256 verified"
+  else
+    log "  ⚠️ checksums.sha256 missing, skip checksum verification"
+  fi
+
+  local workspace_probe="${temp_root}/workspace"
+  local extensions_probe="${temp_root}/state"
+  mkdir -p "$workspace_probe" "$extensions_probe"
+
+  log "Extracting workspace archive to temp dir"
+  tar -xzf "${backup_dir}/workspace.tar.gz" -C "$workspace_probe"
+  if find "$workspace_probe" -mindepth 1 -maxdepth 1 | grep -q .; then
+    log "  ✅ workspace archive extracted"
+  else
+    log "ERROR: workspace archive extracted but appears empty"
+    return 1
+  fi
+
+  if [[ -f "${backup_dir}/extensions.tar.gz" ]]; then
+    log "Extracting extensions archive to temp dir"
+    tar -xzf "${backup_dir}/extensions.tar.gz" -C "$extensions_probe"
+    log "  ✅ extensions archive extracted"
+  else
+    log "  ⚠️ extensions.tar.gz missing, skip extensions restore probe"
+  fi
+
+  if [[ -f "${backup_dir}/manifest.txt" ]]; then
+    log "Checking manifest fields"
+    grep -q '^workspace_archive=' "${backup_dir}/manifest.txt" || {
+      log "ERROR: manifest.txt missing workspace_archive entry"
+      return 1
+    }
+    log "  ✅ manifest.txt contains workspace_archive"
+  fi
+
+  if [[ -f "${backup_dir}/openclaw.json.enc" ]]; then
+    resolve_encrypt_pass
+    : "${BACKUP_ENCRYPT_PASS:?BACKUP_ENCRYPT_PASS is required for encrypted config verification}"
+    need_cmd openssl
+    log "Testing encrypted config decryption to temp dir"
+    openssl enc -d -aes-256-cbc -pbkdf2 \
+      -in "${backup_dir}/openclaw.json.enc" \
+      -out "${temp_root}/openclaw.json" \
+      -pass env:BACKUP_ENCRYPT_PASS >/dev/null 2>&1 || {
+      log "ERROR: encrypted config decryption failed"
+      return 1
+    }
+    python3 -m json.tool "${temp_root}/openclaw.json" >/dev/null 2>&1 || {
+      log "ERROR: decrypted openclaw.json is not valid JSON"
+      return 1
+    }
+    log "  ✅ encrypted config can be decrypted"
+  elif [[ -f "${backup_dir}/openclaw.json" ]]; then
+    python3 -m json.tool "${backup_dir}/openclaw.json" >/dev/null 2>&1 || {
+      log "ERROR: openclaw.json is not valid JSON"
+      return 1
+    }
+    log "  ✅ plain config is valid JSON"
+  else
+    log "  ⚠️ no config file found in backup"
+  fi
+
+  log "✅ Restore verification passed (no files overwritten)"
+  return 0
+}
+
+need_cmd tar
+mkdir -p "${STATE_DIR}"
+
+if [[ ! -f "${BACKUP_DIR}/workspace.tar.gz" ]]; then
+  echo "Missing workspace.tar.gz in ${BACKUP_DIR}" >&2
+  exit 1
+fi
+
+if [[ ${VERIFY_RESTORE} -eq 1 ]]; then
+  log "Preparing restore verification from ${BACKUP_DIR}"
+  check_dependencies || exit 1
+  verify_restore_feasibility "${BACKUP_DIR}"
+  exit $?
+fi
+
+log "Preparing restore from ${BACKUP_DIR}"
+
+# 自动运行依赖检查（除非是 dry-run）
+if [[ ${DRY_RUN} -eq 0 ]]; then
+  check_dependencies || exit 1
+fi
 
 # Verify backup integrity before restore
 if [[ ${DRY_RUN} -eq 0 ]]; then

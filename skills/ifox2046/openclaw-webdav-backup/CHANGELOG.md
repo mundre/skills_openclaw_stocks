@@ -2,6 +2,19 @@
 
 All notable changes to the OpenClaw WebDAV Backup skill.
 
+## [1.2.7] - 2026-04-06
+
+### Added
+- **Restore Verification Mode** - Added `--verify-restore` / `--test-restore` to validate backup recoverability without overwriting the live OpenClaw environment
+  - Verifies backup archive integrity before restore testing
+  - Validates `checksums.sha256` when present
+  - Extracts workspace and extensions archives into a temporary directory
+  - Verifies encrypted config can be decrypted and parsed as valid JSON
+  - Leaves the existing `~/.openclaw` environment untouched
+
+### Changed
+- **Publish hygiene** - Moved internal `ROADMAP.md` out of the skill package so future ClawHub releases do not include internal planning notes
+
 ## [1.2.6] - 2026-04-06
 
 ### Added
