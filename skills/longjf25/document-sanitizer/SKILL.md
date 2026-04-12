@@ -2,241 +2,231 @@
 name: document-sanitizer
 description: >
   Batch desensitize docx/xlsx files via keyword and regex rules, with one-click reversible restoration.
-  批量对 docx/xlsx 文件执行关键字和正则脱敏替换，支持一键反向恢复。
-description_en: "Batch sanitize docx/xlsx documents with keyword & regex rules; reversible one-click restore"
-description_zh: "批量对 docx/xlsx 文件执行关键字/正则脱敏，支持一键反向恢复"
-version: 1.2.0
+  Replace sensitive terms (company names, personal info, phone numbers, IDs, emails) with safe placeholders,
+  then restore originals anytime using the unified mapping record.
+description_zh: "批量对 docx/xlsx 文件执行关键字和正则脱敏替换，支持一键反向恢复"
+description_en: "Batch desensitize docx/xlsx files via keyword and regex rules, with one-click reversible restoration"
+license: MIT
+metadata:
+  version: "1.5.1"
+  category: document-processing
+  author: longjf25
+  platform: Cross-platform
+  requirements:
+    - Python 3.8+
+    - python-docx
+    - openpyxl
+    - (Optional) pywin32 + Microsoft Word for .doc auto-conversion on Windows
+    - (Optional) xlrd for .xls auto-conversion
+triggers:
+  - desensitize documents
+  - sanitize docx xlsx
+  - 文档脱敏
+  - 批量脱敏
+  - 敏感词替换
+  - 脱敏恢复
+  - document sanitization
+  - redact sensitive data
 ---
 
-# Document Sanitizer / 文档脱敏及恢复
+# document-sanitizer
 
-> **Document Security Tool** — Batch replace sensitive text in docx/xlsx files, record mappings, and restore on demand.
->
-> **文档安全处理工具** —— 对工作区中的 docx/xlsx 文件批量执行关键字替换（脱敏），完整记录映射关系，支持可逆恢复。
+## 技能说明 / Skill Description
 
+### 概述 / Overview
+
+本技能用于批量对 Word (.docx) 和 Excel (.xlsx) 文件执行脱敏处理，支持关键字精确替换和正则表达式动态替换，并提供一键恢复功能。
+
+This skill batch-desensitizes Word (.docx) and Excel (.xlsx) files using keyword exact-match and regex dynamic replacement, with one-click reversible restoration.
+
+### 核心特性 / Key Features
+
+| 特性 | 说明 / Description |
+|------|-------------------|
+| 关键字精确替换 / Exact Match | 配置关键字对，替换为带 `[]` 标记的占位符（如"白云"→`[黑水]`）|
+| 正则动态替换 / Regex Dynamic | 匹配手机号、身份证号、邮箱等，自动生成占位符如 `[RED_手机号_1]` |
+| 文件名脱敏 / Filename Sanitization | 默认开启，输出文件自动使用脱敏后的文件名 |
+| 统一脱敏记录 / Unified Record | 所有映射累积到 `_sanitize_record.json`，无论文档如何修改都能恢复 |
+| 一键恢复 / One-Click Restore | 读取记录反向替换，还原文件名和内容，校验残留占位符 |
+| 旧格式自动转换 / Legacy Format Conversion | 检测到 .doc/.xls 时提示自动转换为 .docx/.xlsx |
+
+---
+
+## 前置依赖 / Prerequisites
+
+### Python 包依赖 / Python Dependencies
+
+```bash
+pip install python-docx openpyxl
 ```
-Define Rules → Batch Sanitize → Record Mappings → Restore on Demand
-定义规则 → 批量脱敏 → 记录映射 → 按需恢复
+
+### 可选依赖（旧格式转换）/ Optional (Legacy Format Conversion)
+
+```bash
+pip install xlrd pywin32
 ```
 
----
-
-## Prerequisites / 工具依赖
-
-| Tool | Install / 安装命令 | Purpose / 用途 |
-|------|-------------------|----------------|
-| python-docx | `pip install python-docx` | Word document read/write / Word 文档读写 |
-| openpyxl | `pip install openpyxl` | Excel document read/write / Excel 文档读写 |
-
-> Ensure dependencies before first use / 首次使用前需确保：`pip install python-docx openpyxl`
+- `.doc → .docx` 转换需要 Windows + Microsoft Word（使用 Word COM 自动化）
+- `.xls → .xlsx` 转换使用 xlrd + openpyxl（跨平台）
 
 ---
 
-## Trigger Scenarios / 触发场景
+## 使用方法 / Usage
 
-| Scenario / 场景 | Trigger Words / 触发词 |
-|-----------------|----------------------|
-| Sanitize / 脱敏 | 「脱敏文档」「文档脱敏」「sanitize documents」「关键字替换」「敏感信息处理」 |
-| Restore / 恢复 | 「恢复文档」「恢复脱敏」「还原文档」「撤销脱敏」「restore documents」 |
-| Config / 配置 | 「生成脱敏配置」「脱敏配置模板」「新建脱敏规则」「generate sanitize config」 |
+### 1. 准备配置文件 / Prepare Config File
 
----
+在工作目录下创建 `_sanitize_config.json`：
 
-## Configuration / 配置文件格式
-
-Desensitization rules are defined in `_sanitize_config.json` at the workspace root.
-脱敏规则通过工作区根目录下的 `_sanitize_config.json` 定义。
+Create `_sanitize_config.json` in your workspace:
 
 ```json
 {
   "exact_rules": [
-    {"pattern": "张三", "replacement": ""},
-    {"pattern": "某某公司", "replacement": "[Company A]"}
+    {"pattern": "白云", "replacement": "黑水"},
+    {"pattern": "南方", "replacement": "北风"},
+    {"pattern": "广州", "replacement": "镇北"}
   ],
   "regex_rules": [
-    {"pattern": "1[3-9]\\d{9}", "replacement": "", "label": "手机号/Phone"},
-    {"pattern": "\\d{6}(?:19|20)\\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\\d|3[01])\\d{3}[\\dXx]", "replacement": "", "label": "身份证号/ID Card"},
-    {"pattern": "[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}", "replacement": "", "label": "邮箱/Email"}
+    {"pattern": "1[3-9]\\d{9}", "label": "手机号"},
+    {"pattern": "\\d{6}(?:19|20)\\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\\d|3[01])\\d{3}[\\dXx]", "label": "身份证号"},
+    {"pattern": "[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}", "label": "邮箱"}
   ]
 }
 ```
 
-### Field Description / 字段说明
-
-| Field / 字段 | Type / 类型 | Description / 说明 |
-|-------------|------------|-------------------|
-| `pattern` | string | Exact keyword / 精确匹配的关键字, or regex / 或正则表达式 |
-| `replacement` | string | Replacement text / 替换内容。Leave empty for auto-generated placeholder / 留空则自动生成占位符（如 `[RED_0001]`） |
-| `label` | string | Regex label only / 仅限正则规则。Used for readable placeholders / 用于生成易读的占位符 |
-
-### Auto Placeholder Rules / 自动占位符规则
-
-- **Exact match / 精确匹配**: Empty replacement → `[RED_0001]`, `[RED_0002]`... (global incremental / 全局递增序号)
-- **Regex match / 正则匹配**: Empty replacement → `[RED_手机号_1]`, `[RED_邮箱_2]`... (with label / 带 label 标签)
-
----
-
-## Three Modes / 三种工作模式
-
-```
-config    → Generate config template / 生成配置模板（首次使用 / first use）
-sanitize  → Execute sanitization / 执行脱敏（read config → replace → output to _sanitized_output/）
-restore   → Execute restoration / 执行恢复（read record → reverse replace → output to _restored_output/）
-```
-
----
-
-## Workflow 1: Generate Config / 工作流一：生成配置模板
-
-When user says 「生成脱敏配置」/ "generate sanitize config", execute / 当用户说时执行：
+### 2. 执行脱敏 / Run Sanitization
 
 ```bash
-python scripts/sanitize.py config <workspace>
+# 基本脱敏（默认脱敏文件名）
+python <skill_dir>/scripts/sanitize.py sanitize <工作目录>
+
+# 不脱敏文件名
+python <skill_dir>/scripts/sanitize.py sanitize <工作目录> --no-rename
+
+# 自动转换 .doc/.xls 旧格式文件
+python <skill_dir>/scripts/sanitize.py sanitize <工作目录> --auto-convert
 ```
 
-Steps / 执行步骤：
-1. Generate `_sanitize_config.json` at workspace root / 在工作区根目录生成配置模板
-2. Prompt user to edit the config, add actual keywords and regex rules / 提醒用户编辑配置文件
-
----
-
-## Workflow 2: Execute Sanitization / 工作流二：执行脱敏
-
-When user says 「脱敏文档」/ "sanitize documents", execute / 当用户说时执行：
+### 3. 恢复文档 / Restore Documents
 
 ```bash
-# Sanitize entire workspace / 脱敏整个工作区
-python scripts/sanitize.py sanitize <workspace>
-
-# Sanitize a specific subdirectory / 脱敏指定子目录
-python scripts/sanitize.py sanitize <workspace> --target <subdir>
-
-# Sanitize with filename replacement / 包含文件名脱敏
-python scripts/sanitize.py sanitize <workspace> --target <subdir> --rename
-```
-
-Steps / 执行步骤：
-1. Check if `_sanitize_config.json` exists / 检查配置文件是否存在
-2. Read and parse config / 读取并解析配置
-3. Scan docx/xlsx files in target directory (skip `_sanitized_output/`, `_restored_output/`, `_文档_md/`, etc.) / 扫描目标目录中的文档
-4. Copy files to `_sanitized_output/` (preserve directory structure) / 复制到输出目录（保持目录结构）
-5. Execute text replacement on copies / 对副本执行替换：
-   - **docx**: Paragraphs, table cells, headers/footers, textboxes / 段落、表格、页眉页脚、文本框
-   - **xlsx**: All worksheet cells / 所有工作表单元格
-6. Generate timestamped record file `_sanitize_record_YYYYMMDD_HHMMSS.json` / 生成脱敏记录文件
-7. Output log to `_sanitize_log.txt` / 输出操作日志
-8. Report results / 汇报结果
-
-### Directory Structure / 目录结构示例
-
-```
-workspace/                          工作文件夹/
-├── _sanitize_config.json           ← User-maintained rules / 用户维护的脱敏规则
-├── _sanitized_output/              ← Sanitized files / 脱敏后的文件
-│   ├── subfolder/
-│   │   └── document.docx
-│   └── ...
-├── _sanitize_record_20260329_121500.json ← Mapping record / 映射记录（用于恢复）
-└── _sanitize_log.txt               ← Operation log / 操作日志
+python <skill_dir>/scripts/sanitize.py restore <工作目录>
 ```
 
 ---
 
-## Workflow 3: Execute Restoration / 工作流三：执行恢复
+## 命令行参数 / CLI Arguments
 
-When user says 「恢复文档」/ "restore documents", execute / 当用户说时执行：
-
-```bash
-# Restore using latest record / 使用最新记录恢复
-python scripts/sanitize.py restore <workspace>
-
-# Restore using specific record / 使用指定记录恢复
-python scripts/sanitize.py restore <workspace> --record _sanitize_record_20260329_121500.json
-```
-
-Steps / 执行步骤：
-1. Check record file / 检查脱敏记录文件
-2. Build reverse mapping (placeholder → original) / 构建反向映射表
-3. Scan `_sanitized_output/` / 扫描脱敏输出目录
-4. Copy to default restore directory `_restored_output/` / 复制到默认恢复目录 `_restored_output/`
-5. Execute reverse replacement / 反向替换
-6. Restore filenames using `filename_mapping` in record / 使用记录中的文件名映射还原文件名
-7. Verify: check for residual `[RED_` placeholders / 安全校验：检测残留占位符
-8. Report results / 汇报结果
-
-> - If `--record` is not specified, the latest record file is used automatically. / 若不指定 `--record`，自动使用最新记录。
-> - Restored files are always output to `_restored_output/` (default directory). / 恢复文件默认输出到 `_restored_output/` 目录，原文件不会被修改。
-> - The `_restored_output/` directory preserves the same subdirectory structure as `_sanitized_output/`. / `_restored_output/` 保持与 `_sanitized_output/` 相同的子目录结构。
+| 参数 / Argument | 说明 / Description |
+|----------------|-------------------|
+| `sanitize <workspace>` | 执行脱敏 / Run sanitization |
+| `restore <workspace>` | 恢复文档 / Restore documents |
+| `--no-rename` | 不对文件名脱敏 / Skip filename sanitization |
+| `--auto-convert` | 自动转换 .doc/.xls，无需确认 / Auto-convert legacy formats |
 
 ---
 
-## Record File Format / 脱敏记录文件格式
+## 输出目录 / Output Directories
+
+| 目录 / Directory | 说明 / Description |
+|-----------------|-------------------|
+| `_sanitized_output/` | 脱敏后的文件 / Sanitized files |
+| `_restored_output/` | 恢复后的文件 / Restored files |
+| `_sanitize_record.json` | 统一脱敏记录（映射累积）/ Unified record (accumulative mapping) |
+| `_sanitize_config.json` | 脱敏规则配置 / Sanitization rules config |
+
+---
+
+## 脱敏记录结构 / Record Structure
 
 ```json
 {
-  "timestamp": "2026-03-29 12:15:00",
-  "config_file": "_sanitize_config.json",
-  "rules_applied": { "exact": 5, "regex": 3 },
-  "rename_files": true,
-  "files_processed": ["subfolder/document.docx"],
-  "filename_mapping": {
-    "sanitized_name.docx": "original_name.docx"
-  },
+  "version": 2,
+  "created_at": "2026-04-08 16:02:07",
+  "last_updated": "2026-04-08 16:02:07",
   "mapping": {
-    "[RED_0001]": "张三",
-    "[RED_Phone_1]": "13800138000",
-    "[RED_Email_1]": "zhangsan@example.com"
-  }
+    "黑水": "白云",
+    "[RED_手机号_1]": "13828417396"
+  },
+  "filename_mapping": {
+    "黑水物流文档.docx": "白云物流文档.docx"
+  },
+  "runs": [
+    {"timestamp": "...", "files_processed": ["..."]}
+  ]
 }
 ```
 
----
+**核心原理 / Core Principle**：只要 `mapping`（脱敏值→原始值）完整，无论文档经过多少修改，都可以用它来反向替换恢复。
 
-## Security Mechanisms / 安全机制
-
-| Mechanism / 机制 | Description / 说明 |
-|-----------------|-------------------|
-| **Original files untouched / 原文件安全** | Sanitize & restore work on copies only; originals are never modified / 脱敏和恢复均在副本上操作，原文件不变 |
-| **Restore verification / 恢复校验** | Post-restore scan for residual placeholders to prevent info leakage / 恢复后检测残留占位符，防止部分恢复导致信息泄露 |
-| **Immutable records / 记录不可篡改** | Record filenames include timestamps; each run generates an independent record / 记录文件名含时间戳，每次操作生成独立记录 |
-| **Multi-version support / 多版本记录** | Multiple sanitization runs create independent records; restore to any version / 支持多次脱敏，每次独立记录，可按需恢复 |
-| **No external connections / 无外部连接** | Script runs entirely locally with no network access / 脚本完全本地运行，无任何网络访问 |
-| **No credential handling / 无凭证处理** | No passwords, tokens, or credentials are processed / 不处理任何密码、令牌或凭证信息 |
+As long as the `mapping` (sanitized value → original value) is complete, documents can be restored regardless of modifications.
 
 ---
 
-## Supported Formats / 支持格式
+## 示例 / Examples
 
-| Format / 格式 | Supported / 是否支持 | Notes / 备注 |
-|--------------|---------------------|-------------|
-| `.docx` | ✅ Yes | Paragraphs, tables, headers/footers, textboxes / 段落、表格、页眉页脚、文本框 |
-| `.xlsx` | ✅ Yes | All worksheet cells / 所有工作表单元格 |
-| `.doc` | ❌ No | Legacy binary format / 旧版二进制格式 |
-| `.pdf` | ❌ No | Not supported / 不支持 |
+### 示例 1：基本脱敏流程 / Example 1: Basic Sanitization
 
----
+```bash
+# 1. 创建配置文件 _sanitize_config.json
+# 2. 执行脱敏
+python sanitize.py sanitize ./my-docs
 
-## FAQ / 常见问题
-
-### Where to put the config file? / 配置文件放在哪里？
-Workspace root: `_sanitize_config.json`. Use `config` command to generate template. / 工作区根目录下。使用 `config` 命令自动生成模板。
-
-### What if replacement is empty? / 替换内容留空会怎样？
-Auto-generates a unique placeholder (e.g., `[RED_0001]`), recorded in the mapping for restoration. / 自动生成唯一占位符，记录在脱敏记录中，确保可恢复。
-
-### Will document formatting change? / 脱敏后文档格式会变吗？
-No. Only text content is replaced; formatting, styles, and layout remain unchanged. / 不会。仅替换文本内容，格式、样式、排版完全保持不变。
-
-### How to select which version to restore? / 如何选择恢复到哪个版本？
-Record filenames contain timestamps. Use `--record` to specify. Defaults to latest. / 记录文件名含时间戳，使用 `--record` 指定。不指定时自动选择最新。
-
----
-
-## File Structure / 文件结构
-
+# 输出:
+# [RENAME] 白云物流文档.docx → 黑水物流文档.docx
+# [1/1] 白云物流文档.docx [OK]
+# 脱敏输出目录: ./my-docs/_sanitized_output
 ```
-document-sanitizer/                 文档脱敏/
-├── SKILL.md                        ← Skill definition / 技能定义文件
-└── scripts/
-    └── sanitize.py                 ← Core script / 核心脚本 (config/sanitize/restore)
+
+### 示例 2：脱敏后恢复 / Example 2: Sanitize then Restore
+
+```bash
+# 脱敏
+python sanitize.py sanitize ./my-docs
+
+# 恢复（可多次执行，对修改后的文档也有效）
+python sanitize.py restore ./my-docs
+
+# 输出:
+# [RENAME] 黑水物流文档.docx → 白云物流文档.docx
+# [OK] 无残留占位符
 ```
+
+### 示例 3：处理包含旧格式文件的目录 / Example 3: Directory with Legacy Files
+
+```bash
+# 自动转换 .doc/.xls 并脱敏
+python sanitize.py sanitize ./my-docs --auto-convert
+```
+
+---
+
+## 技术要点 / Technical Notes
+
+1. **Word run 拆分 / Run Splitting**: Word 会将文本拆分到多个 `<w:r>` 元素中，脚本先合并所有 `w:t` 文本再替换再写回，确保跨 run 的关键字也能正确匹配
+
+   Word splits text across multiple `<w:r>` elements. The script merges all `w:t` text first, applies replacements, then writes back — ensuring cross-run keywords are correctly matched.
+
+2. **反向替换顺序 / Reverse Order**: 恢复时按 key 长度降序替换，避免短 key 误匹配长 key 的子串
+
+   Restoration sorts keys by length descending to prevent short keys from partially matching longer keys.
+
+3. **脱敏范围 / Scope**: 仅支持 .docx/.xlsx 格式。.doc/.xls 旧格式需先转换（可自动完成）
+
+   Only .docx/.xlsx are supported. Legacy .doc/.xls must be converted first (auto-conversion available).
+
+4. **原始文件安全 / Original Safety**: 原始文件不会被修改，所有操作在输出目录中进行
+
+   Original files are never modified — all operations happen in output directories.
+
+---
+
+## 错误处理 / Error Handling
+
+| 错误 / Error | 解决方法 / Solution |
+|-------------|-------------------|
+| "未找到配置文件" / Config not found | 在工作目录创建 `_sanitize_config.json` |
+| "python-docx import error" | 运行 / Run: `pip install python-docx` |
+| "openpyxl import error" | 运行 / Run: `pip install openpyxl` |
+| ".doc 转换失败" / .doc conversion failed | 确保 Windows + Word 已安装 / Ensure Word is installed |
+| "残留占位符" / Residual placeholders | 检查脱敏记录是否完整 / Check record completeness |

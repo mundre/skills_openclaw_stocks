@@ -1,242 +1,114 @@
 """
-文档脱敏与恢复工具 v1.1
-- config 模式：生成脱敏配置模板
-- sanitize 模式：批量脱敏 docx/xlsx 文件
-- restore 模式：从脱敏记录恢复原始内容
+文档脱敏脚本 v2 - 统一记录版
+改进点：
+1. 默认开启文件名脱敏
+2. 统一脱敏记录（固定文件名 _sanitize_record.json，累积合并映射）
+3. 新增恢复功能（restore）
+4. 仅支持 docx/xlsx，检测到 doc/xls 时提示自动转换
+核心思路：对每个 w:t 元素直接操作，合并相邻 w:t 后替换，再写回
 """
 import os
 import re
 import sys
 import json
 import shutil
+import subprocess
 from pathlib import Path
 from datetime import datetime
-from collections import defaultdict
 
 # ============================================================
-# 安全常量
-# ============================================================
-
-# 配置文件最大允许大小（1 MB），防止加载超大文件导致内存溢出
-MAX_CONFIG_SIZE = 1 * 1024 * 1024
-# 正则匹配超时秒数，防止恶意正则（ReDoS）导致 CPU 挂起
-REGEX_TIMEOUT = 10
-# 单个文本最大处理长度（10 MB），跳过超长文本避免性能问题
-MAX_TEXT_LENGTH = 10 * 1024 * 1024
-
-# ============================================================
-# 工具函数
-# ============================================================
-
-LOG_FILE = None
-
-
-def log(msg):
-    """日志输出（控制台 + 文件），写入失败不影响主流程"""
-    clean = ''.join(c for c in str(msg) if c.isprintable() or c in '\n\r\t')
-    print(clean)
-    if LOG_FILE:
-        try:
-            with open(LOG_FILE, "a", encoding="utf-8") as f:
-                f.write(clean + "\n")
-        except OSError:
-            pass  # 磁盘满或权限问题时不中断
-
-
-def init_log(workspace):
-    """初始化日志文件"""
-    global LOG_FILE
-    LOG_FILE = workspace / "_sanitize_log.txt"
-    try:
-        with open(LOG_FILE, "w", encoding="utf-8") as f:
-            f.write(f"Document Sanitizer v1.1 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("=" * 60 + "\n")
-    except OSError as e:
-        print(f"[WARN] 无法创建日志文件: {e}")
-
-
-def validate_subpath(workspace, target):
-    """
-    安全校验：确保 target 目录在 workspace 范围内，防止路径穿越攻击
-    返回 (resolved_target, error_msg)
-    """
-    try:
-        resolved = (workspace / target).resolve()
-        workspace_resolved = workspace.resolve()
-        # 检查 resolved 是否以 workspace_resolved 开头
-        if not str(resolved).startswith(str(workspace_resolved)):
-            return None, f"目标路径 '{target}' 超出工作区范围，已拒绝"
-        return resolved, None
-    except (OSError, ValueError) as e:
-        return None, f"路径解析失败: {e}"
-
-
-# ============================================================
-# 配置模板
-# ============================================================
-
-CONFIG_TEMPLATE = '''{
-  "exact_rules": [
-    {"pattern": "张三", "replacement": ""},
-    {"pattern": "某某公司", "replacement": "[公司A]"}
-  ],
-  "regex_rules": [
-    {"pattern": "1[3-9]\\\\d{9}", "replacement": "", "label": "手机号"},
-    {"pattern": "\\\\d{6}(?:19|20)\\\\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\\\\d|3[01])\\\\d{3}[\\\\dXx]", "replacement": "", "label": "身份证号"}
-  ]
-}
-'''
-
-
-def generate_config(workspace):
-    """生成配置模板"""
-    config_path = workspace / "_sanitize_config.json"
-    if config_path.exists():
-        log(f"[INFO] 配置文件已存在: {config_path}")
-        log("  如需重新生成，请先删除或重命名现有配置文件。")
-        return
-
-    with open(config_path, "w", encoding="utf-8") as f:
-        f.write(CONFIG_TEMPLATE)
-
-    log(f"[OK] 配置模板已生成: {config_path}")
-    log("")
-    log("使用说明:")
-    log("  1. 编辑 _sanitize_config.json，添加需要脱敏的关键字和正则规则")
-    log("  2. exact_rules: 精确匹配规则，直接替换指定文本")
-    log("  3. regex_rules: 正则匹配规则，支持模式匹配（手机号、身份证等）")
-    log("  4. replacement 为空时自动生成占位符（如 [RED_0001]）")
-    log("  5. regex_rules 的 label 字段用于生成易读的占位符标签")
-    log("")
-    log("编辑完成后，执行「脱敏文档」即可批量处理。")
-
-
-# ============================================================
-# 配置读取与映射表构建
-# ============================================================
-
-def load_config(root_dir):
-    """读取并验证配置文件（从根目录查找），含大小限制防内存溢出"""
-    config_path = root_dir / "_sanitize_config.json"
-    if not config_path.exists():
-        log("[ERROR] 未找到配置文件 _sanitize_config.json")
-        log("  请先执行: python sanitize.py config <工作文件夹>")
-        return None
-
-    # 安全校验：文件大小检查
-    file_size = config_path.stat().st_size
-    if file_size > MAX_CONFIG_SIZE:
-        log(f"[ERROR] 配置文件过大 ({file_size:,} bytes)，上限 {MAX_CONFIG_SIZE:,} bytes")
-        return None
-
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
-    except json.JSONDecodeError as e:
-        log(f"[ERROR] 配置文件 JSON 格式错误: {e}")
-        return None
-    except OSError as e:
-        log(f"[ERROR] 无法读取配置文件: {e}")
-        return None
-
-    # 验证结构
-    if not isinstance(config, dict):
-        log("[ERROR] 配置文件根元素必须是 JSON 对象")
-        return None
-    if "exact_rules" not in config:
-        config["exact_rules"] = []
-    if "regex_rules" not in config:
-        config["regex_rules"] = []
-
-    # 安全校验：规则数量上限（防止单次配置上千条规则）
-    total_rules = len(config["exact_rules"]) + len(config["regex_rules"])
-    if total_rules > 500:
-        log(f"[WARN] 规则数量较多 ({total_rules} 条)，处理可能较慢")
-
-    return config
-
-
-def build_mapping(config, workspace):
-    """
-    根据配置构建完整的映射表
-    返回: {
-        "mapping": {原文: 替换内容, ...},
-        "exact_rules": [(pattern, replacement), ...],
-        "regex_rules": [(compiled_regex, replacement), ...]
-    }
-    """
-    mapping = {}
-    exact_rules = []
-    regex_rules = []
-    counter = 1  # 全局序号
-
-    # 处理精确匹配规则
-    log("\n[CONFIG] 精确匹配规则:")
-    for rule in config.get("exact_rules", []):
-        pattern = rule.get("pattern", "").strip()
-        if not pattern:
-            continue
-        replacement = rule.get("replacement", "").strip()
-        if not replacement:
-            replacement = f"[RED_{counter:04d}]"
-            counter += 1
-        mapping[("exact", pattern)] = replacement
-        exact_rules.append((pattern, replacement))
-        log(f"  {pattern} → {replacement}")
-
-    # 处理正则匹配规则（注意：占位符在脱敏执行时动态生成，以确保每个不同匹配项有唯一占位符）
-    log("\n[CONFIG] 正则匹配规则:")
-    for rule in config.get("regex_rules", []):
-        pattern = rule.get("pattern", "").strip()
-        if not pattern:
-            continue
-        label = rule.get("label", "").strip()
-        replacement = rule.get("replacement", "").strip()
-        try:
-            # 安全校验：设置正则超时，防止 ReDoS 攻击
-            compiled = re.compile(pattern, timeout=REGEX_TIMEOUT)
-        except re.error as e:
-            log(f"  [WARN] 正则表达式无效: {pattern} ({e})，已跳过")
-            continue
-        except TypeError:
-            # Python < 3.11 不支持 timeout 参数，回退到无超时编译
-            try:
-                compiled = re.compile(pattern)
-            except re.error as e:
-                log(f"  [WARN] 正则表达式无效: {pattern} ({e})，已跳过")
-                continue
-
-        if not replacement:
-            # 占位符将在脱敏时动态生成，这里用 None 标记
-            replacement = None
-        regex_rules.append((compiled, replacement, pattern, label))
-        label_str = f" (标签: {label})" if label else ""
-        repl_str = replacement if replacement else "[动态生成]"
-        log(f"  /{pattern}/{label_str} → {repl_str}")
-
-    return {
-        "mapping": mapping,
-        "exact_rules": exact_rules,
-        "regex_rules": regex_rules,
-        "_counter": counter,  # 传递计数器状态
-    }
-
-
-# ============================================================
-# 文件扫描
+# 配置
 # ============================================================
 
 SKIP_DIRS = {"_sanitized_output", "_restored_output", "_文档_md", "_markdown", "update",
              "_文档_md_backup", "node_modules", ".git", "__pycache__"}
 DOC_EXTENSIONS = {".docx", ".xlsx"}
+LEGACY_EXTENSIONS = {".doc", ".xls"}
+RECORD_FILE = "_sanitize_record.json"
+
+# doc_xls2docx_xlsx 技能脚本路径
+SKILL_SCRIPTS_DIR = Path.home() / ".workbuddy" / "skills" / "doc_xls2docx_xlsx" / "scripts"
+
+# ============================================================
+# 工具函数
+# ============================================================
+
+def load_config(workspace):
+    config_path = workspace / "_sanitize_config.json"
+    if not config_path.exists():
+        print(f"[ERROR] 未找到配置文件: {config_path}")
+        return None
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+    if "exact_rules" not in config:
+        config["exact_rules"] = []
+    if "regex_rules" not in config:
+        config["regex_rules"] = []
+    return config
+
+
+def load_record(workspace):
+    """加载已有的统一脱敏记录，不存在则返回空记录结构"""
+    record_path = workspace / RECORD_FILE
+    if record_path.exists():
+        with open(record_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {
+        "version": 2,
+        "created_at": None,
+        "last_updated": None,
+        "mapping": {},           # 脱敏值 → 原始值（核心，恢复依赖此表）
+        "filename_mapping": {},  # 脱敏文件名 → 原始文件名
+        "runs": []               # 运行历史
+    }
+
+
+def save_record(workspace, record):
+    """保存统一脱敏记录"""
+    record_path = workspace / RECORD_FILE
+    with open(record_path, "w", encoding="utf-8") as f:
+        json.dump(record, f, ensure_ascii=False, indent=2)
+
+
+def merge_record(existing, new_mapping, new_filename_mapping, files_processed, timestamp):
+    """将本次脱敏结果合并到已有记录中"""
+    now_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+    if existing["created_at"] is None:
+        existing["created_at"] = now_str
+    existing["last_updated"] = now_str
+
+    # 合并 mapping：脱敏值→原始值
+    for key, value in new_mapping.items():
+        if key in existing["mapping"] and existing["mapping"][key] != value:
+            print(f"  [WARN] 映射冲突: {key} → 旧值={existing['mapping'][key]}, 新值={value}，以新值为准")
+        existing["mapping"][key] = value
+
+    # 合并 filename_mapping
+    for key, value in new_filename_mapping.items():
+        if key in existing["filename_mapping"] and existing["filename_mapping"][key] != value:
+            print(f"  [WARN] 文件名映射冲突: {key} → 旧值={existing['filename_mapping'][key]}, 新值={value}，以新值为准")
+        existing["filename_mapping"][key] = value
+
+    # 追加运行记录
+    existing["runs"].append({
+        "timestamp": now_str,
+        "files_processed": files_processed
+    })
+
+    return existing
 
 
 def scan_documents(workspace):
-    """扫描工作区中的 docx/xlsx 文件"""
+    """扫描 raw 文件夹内的文档"""
     documents = []
-    for root, dirs, files in os.walk(workspace):
-        # 跳过特殊目录
-        rel_root = Path(root).relative_to(workspace)
+    raw_dir = workspace / "raw"
+    if not raw_dir.exists():
+        print(f"[WARN] 未找到 raw 文件夹: {raw_dir}")
+        return documents
+    
+    for root, dirs, files in os.walk(raw_dir):
+        rel_root = Path(root).relative_to(raw_dir)
         skip = False
         for part in rel_root.parts:
             if part in SKIP_DIRS:
@@ -244,43 +116,129 @@ def scan_documents(workspace):
                 break
         if skip:
             continue
-
+        # 跳过 Word 临时文件
         for f in files:
+            if f.startswith("~$"):
+                continue
             ext = Path(f).suffix.lower()
             if ext in DOC_EXTENSIONS:
                 documents.append(Path(root) / f)
-
     return documents
 
 
-# ============================================================
-# 文本替换引擎
-# ============================================================
+def scan_legacy_documents(workspace):
+    """扫描 raw 文件夹中的 .doc/.xls 旧格式文件"""
+    legacy = []
+    raw_dir = workspace / "raw"
+    if not raw_dir.exists():
+        return legacy
+    
+    for root, dirs, files in os.walk(raw_dir):
+        rel_root = Path(root).relative_to(raw_dir)
+        skip = False
+        for part in rel_root.parts:
+            if part in SKIP_DIRS:
+                skip = True
+                break
+        if skip:
+            continue
+        for f in files:
+            if f.startswith("~$"):
+                continue
+            ext = Path(f).suffix.lower()
+            if ext in LEGACY_EXTENSIONS:
+                legacy.append(Path(root) / f)
+    return legacy
 
-def do_replace(text, exact_rules, regex_rules, mapping, counter):
-    """
-    对文本执行所有替换规则
-    正则匹配时为每个不同的匹配项动态生成唯一占位符
-    mapping 使用元组 key (type, original_text) 避免冲突
-    安全校验：跳过超长文本防止性能问题
-    """
-    # 安全校验：跳过超长文本
-    if len(text) > MAX_TEXT_LENGTH:
-        return text
 
-    # 先执行正则替换（优先处理模式匹配）
-    for compiled, replacement, _pattern, label in regex_rules:
-        if replacement is not None:
-            # 用户指定了固定替换内容
-            text = compiled.sub(replacement, text)
-            # 记录映射
-            for m in compiled.finditer(text):
-                matched = m.group(0)
-                key = ("regex", matched)
-                if key not in mapping:
-                    mapping[key] = replacement
+def convert_legacy_files(legacy_files, workspace):
+    """
+    将 .doc/.xls 文件转换为 .docx/.xlsx 格式
+    使用 doc_xls2docx_xlsx 技能脚本进行转换
+    返回: (成功转换的文件列表, 失败的文件列表)
+    """
+    doc_files = [f for f in legacy_files if f.suffix.lower() == ".doc"]
+    xls_files = [f for f in legacy_files if f.suffix.lower() == ".xls"]
+
+    converted = []
+    failed = []
+
+    # 转换 .doc → .docx
+    if doc_files:
+        print(f"\n[CONVERT] 开始转换 {len(doc_files)} 个 .doc 文件...")
+        doc_script = SKILL_SCRIPTS_DIR / "doc_to_docx_com.py"
+        if not doc_script.exists():
+            print(f"  [ERROR] 未找到转换脚本: {doc_script}")
+            print(f"  请确保已安装 doc_xls2docx_xlsx 技能")
+            failed.extend(doc_files)
         else:
-            # 动态生成占位符：每个不同的匹配值获得唯一占位符
+            for doc_file in doc_files:
+                # 输出到同目录，扩展名改为 .docx
+                output_path = doc_file.with_suffix(".docx")
+                try:
+                    result = subprocess.run(
+                        [sys.executable, str(doc_script), str(doc_file), str(output_path)],
+                        capture_output=True, text=True, encoding="gbk", errors="replace", timeout=120
+                    )
+                    if result.returncode == 0 and output_path.exists():
+                        converted.append(output_path)
+                        print(f"  [OK] {doc_file.name} → {output_path.name}")
+                    else:
+                        error_msg = result.stderr.strip() or result.stdout.strip() or "未知错误"
+                        print(f"  [FAIL] {doc_file.name}: {error_msg}")
+                        failed.append(doc_file)
+                except subprocess.TimeoutExpired:
+                    print(f"  [FAIL] {doc_file.name}: 转换超时（120秒）")
+                    failed.append(doc_file)
+                except Exception as e:
+                    print(f"  [FAIL] {doc_file.name}: {e}")
+                    failed.append(doc_file)
+
+    # 转换 .xls → .xlsx
+    if xls_files:
+        print(f"\n[CONVERT] 开始转换 {len(xls_files)} 个 .xls 文件...")
+        xls_script = SKILL_SCRIPTS_DIR / "xls_to_xlsx.py"
+        if not xls_script.exists():
+            print(f"  [ERROR] 未找到转换脚本: {xls_script}")
+            print(f"  请确保已安装 doc_xls2docx_xlsx 技能")
+            failed.extend(xls_files)
+        else:
+            for xls_file in xls_files:
+                output_path = xls_file.with_suffix(".xlsx")
+                try:
+                    result = subprocess.run(
+                        [sys.executable, str(xls_script), str(xls_file), str(output_path)],
+                        capture_output=True, text=True, encoding="gbk", errors="replace", timeout=120
+                    )
+                    if result.returncode == 0 and output_path.exists():
+                        converted.append(output_path)
+                        print(f"  [OK] {xls_file.name} → {output_path.name}")
+                    else:
+                        error_msg = result.stderr.strip() or result.stdout.strip() or "未知错误"
+                        print(f"  [FAIL] {xls_file.name}: {error_msg}")
+                        failed.append(xls_file)
+                except subprocess.TimeoutExpired:
+                    print(f"  [FAIL] {xls_file.name}: 转换超时（120秒）")
+                    failed.append(xls_file)
+                except Exception as e:
+                    print(f"  [FAIL] {xls_file.name}: {e}")
+                    failed.append(xls_file)
+
+    return converted, failed
+
+
+def apply_rules(text, exact_rules, regex_rules, mapping, counter, for_filename=False):
+    """对文本应用所有替换规则
+    
+    Args:
+        for_filename: 若为 True，关键字替换结果不加 [] 标记（用于文件名脱敏）；
+                      若为 False（默认），关键字替换结果加 [] 标记（用于内容脱敏）
+    """
+    # 先正则替换
+    for compiled, replacement, pattern_str, label in regex_rules:
+        if replacement is not None:
+            text = compiled.sub(replacement, text)
+        else:
             def dynamic_replace(match, _label=label, _mapping=mapping, _counter=counter):
                 matched_text = match.group(0)
                 key = ("regex", matched_text)
@@ -294,91 +252,163 @@ def do_replace(text, exact_rules, regex_rules, mapping, counter):
                     placeholder = f"[RED_REGEX_{_counter[0]:04d}]"
                 _mapping[key] = placeholder
                 return placeholder
-
             text = compiled.sub(dynamic_replace, text)
 
-    # 再执行精确替换
+    # 再精确替换
     for pattern, replacement in exact_rules:
-        text = text.replace(pattern, replacement)
+        if for_filename:
+            # 文件名脱敏：不加 [] 标记（避免文件名中特殊字符问题）
+            text = text.replace(pattern, replacement)
+        else:
+            # 内容脱敏：加 [] 标记，便于识别脱敏位置
+            bracketed = f"[{replacement}]"
+            text = text.replace(pattern, bracketed)
 
     return text
 
 
 # ============================================================
-# docx 处理
+# docx 处理 - 直接操作 XML w:t 元素
 # ============================================================
 
-def replace_in_paragraph(para, exact_rules, regex_rules, mapping, counter):
-    """对段落中的完整文本执行替换，保留第一个 run 的格式"""
-    full_text = para.text
+def replace_in_xml_element(element, replace_rules):
+    """
+    对 XML 元素（段落 w:p）中的文本执行替换
+    核心改进：合并所有 w:t 文本 → 整体替换 → 写回
+    replace_rules: [(old, new), ...] 替换对列表
+    """
+    from docx.oxml.ns import qn
+
+    # 收集所有 w:t 元素及其文本
+    t_elems = list(element.iter(qn('w:t')))
+    if not t_elems:
+        return False
+
+    # 合并所有文本
+    texts = [t.text or "" for t in t_elems]
+    full_text = "".join(texts)
     if not full_text:
-        return
+        return False
 
-    new_text = do_replace(full_text, exact_rules, regex_rules, mapping, counter)
+    # 应用替换规则
+    new_text = full_text
+    for old, new in replace_rules:
+        new_text = new_text.replace(old, new)
+
     if new_text == full_text:
-        return  # 无变化
+        return False  # 无变化
 
-    # 将替换后的文本写入第一个 run，清空其余 run
-    if para.runs:
-        para.runs[0].text = new_text
-        for run in para.runs[1:]:
-            run.text = ""
-    else:
-        # 无 run 时创建一个
-        run = para.add_run(new_text)
+    # 将替换后的文本写入第一个 w:t，清空其余
+    t_elems[0].text = new_text
+    t_elems[0].set(qn('xml:space'), 'preserve')
+    for t in t_elems[1:]:
+        t.text = ""
+
+    return True
 
 
-def sanitize_docx(file_path, exact_rules, regex_rules, mapping, counter):
-    """脱敏 docx 文件：段落、表格、页眉页脚、文本框"""
+def replace_docx_content(file_path, replace_rules):
+    """对 docx 文件执行替换（脱敏或恢复均可用）"""
     from docx import Document
+    from docx.oxml.ns import qn
 
     doc = Document(str(file_path))
+    changed = False
 
-    # 替换段落文本
+    # 1. 替换段落
     for para in doc.paragraphs:
-        replace_in_paragraph(para, exact_rules, regex_rules, mapping, counter)
+        if replace_in_xml_element(para._element, replace_rules):
+            changed = True
 
-    # 替换表格单元格
+    # 2. 替换表格
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for para in cell.paragraphs:
-                    replace_in_paragraph(para, exact_rules, regex_rules, mapping, counter)
+                    if replace_in_xml_element(para._element, replace_rules):
+                        changed = True
 
-    # 替换页眉页脚
+    # 3. 替换页眉页脚
     for section in doc.sections:
         for header in [section.header, section.first_page_header, section.even_page_header]:
             if header and header.paragraphs:
                 for para in header.paragraphs:
-                    replace_in_paragraph(para, exact_rules, regex_rules, mapping, counter)
+                    if replace_in_xml_element(para._element, replace_rules):
+                        changed = True
         for footer in [section.footer, section.first_page_footer, section.even_page_footer]:
             if footer and footer.paragraphs:
                 for para in footer.paragraphs:
-                    replace_in_paragraph(para, exact_rules, regex_rules, mapping, counter)
+                    if replace_in_xml_element(para._element, replace_rules):
+                        changed = True
 
-    # 替换文本框（通过 XML 查找）
+    # 4. 替换文本框
     try:
-        from docx.oxml.ns import qn
         for textbox in doc.element.iter(qn('w:txbxContent')):
             for para_elem in textbox.iter(qn('w:p')):
-                # 收集所有文本
-                texts = []
-                for text_elem in para_elem.iter(qn('w:t')):
-                    texts.append(text_elem.text or "")
-                full_text = "".join(texts)
-                if not full_text:
-                    continue
-                new_text = do_replace(full_text, exact_rules, regex_rules, mapping, counter)
-                if new_text == full_text:
-                    continue
-                # 将新文本写入第一个 text 元素，清空其余
-                text_elems = list(para_elem.iter(qn('w:t')))
-                if text_elems:
-                    text_elems[0].text = new_text
-                    for te in text_elems[1:]:
-                        te.text = ""
+                if replace_in_xml_element(para_elem, replace_rules):
+                    changed = True
     except Exception:
-        pass  # 文本框处理失败不影响主流程
+        pass
+
+    doc.save(str(file_path))
+    return changed
+
+
+def sanitize_docx(file_path, exact_rules, regex_rules, mapping, counter):
+    """脱敏 docx 文件"""
+    from docx.oxml.ns import qn
+
+    # 构建精确+正则规则的替换对（供统一替换函数使用）
+    # 这里需要用 apply_rules 来处理，保留原有的 mapping/counter 逻辑
+    from docx import Document
+
+    doc = Document(str(file_path))
+
+    def process_element(element):
+        t_elems = list(element.iter(qn('w:t')))
+        if not t_elems:
+            return
+        texts = [t.text or "" for t in t_elems]
+        full_text = "".join(texts)
+        if not full_text:
+            return
+        new_text = apply_rules(full_text, exact_rules, regex_rules, mapping, counter)
+        if new_text == full_text:
+            return
+        t_elems[0].text = new_text
+        t_elems[0].set(qn('xml:space'), 'preserve')
+        for t in t_elems[1:]:
+            t.text = ""
+
+    # 1. 替换段落
+    for para in doc.paragraphs:
+        process_element(para._element)
+
+    # 2. 替换表格
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    process_element(para._element)
+
+    # 3. 替换页眉页脚
+    for section in doc.sections:
+        for header in [section.header, section.first_page_header, section.even_page_header]:
+            if header and header.paragraphs:
+                for para in header.paragraphs:
+                    process_element(para._element)
+        for footer in [section.footer, section.first_page_footer, section.even_page_footer]:
+            if footer and footer.paragraphs:
+                for para in footer.paragraphs:
+                    process_element(para._element)
+
+    # 4. 替换文本框
+    try:
+        for textbox in doc.element.iter(qn('w:txbxContent')):
+            for para_elem in textbox.iter(qn('w:p')):
+                process_element(para_elem)
+    except Exception:
+        pass
 
     doc.save(str(file_path))
     return True
@@ -389,128 +419,265 @@ def sanitize_docx(file_path, exact_rules, regex_rules, mapping, counter):
 # ============================================================
 
 def sanitize_xlsx(file_path, exact_rules, regex_rules, mapping, counter):
-    """脱敏 xlsx 文件：所有工作表的单元格"""
+    """脱敏 xlsx 文件"""
     from openpyxl import load_workbook
 
     wb = load_workbook(str(file_path))
-
     for ws in wb.worksheets:
         for row in ws.iter_rows():
             for cell in row:
                 if cell.value and isinstance(cell.value, str):
-                    new_value = do_replace(cell.value, exact_rules, regex_rules, mapping, counter)
+                    new_value = apply_rules(cell.value, exact_rules, regex_rules, mapping, counter)
                     if new_value != cell.value:
                         cell.value = new_value
-
     wb.save(str(file_path))
     return True
 
 
+def restore_xlsx(file_path, replace_rules):
+    """恢复 xlsx 文件"""
+    from openpyxl import load_workbook
+
+    wb = load_workbook(str(file_path))
+    changed = False
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.value and isinstance(cell.value, str):
+                    new_value = cell.value
+                    for old, new in replace_rules:
+                        new_value = new_value.replace(old, new)
+                    if new_value != cell.value:
+                        cell.value = new_value
+                        changed = True
+    wb.save(str(file_path))
+    return changed
+
+
 # ============================================================
-# 文件名脱敏
+# 文件名脱敏/恢复
 # ============================================================
 
 def sanitize_filename(filename, exact_rules, regex_rules, mapping, counter):
-    """
-    对文件名（不含扩展名）执行脱敏替换
-    返回 (脱敏后文件名, 是否有变化)
-    """
     name_without_ext = Path(filename).stem
     ext = Path(filename).suffix
-
-    new_name = do_replace(name_without_ext, exact_rules, regex_rules, mapping, counter)
+    # 文件名脱敏：使用 for_filename=True，避免添加 -- 标记
+    new_name = apply_rules(name_without_ext, exact_rules, regex_rules, mapping, counter, for_filename=True)
     if new_name == name_without_ext:
         return filename, False
-
     return new_name + ext, True
 
 
+def restore_filename(filename, filename_mapping):
+    """根据 filename_mapping 还原文件名"""
+    if filename in filename_mapping:
+        return filename_mapping[filename], True
+    return filename, False
+
+
 # ============================================================
-# 脱敏执行
+# 验证函数
 # ============================================================
 
-def run_sanitize(workspace, target_dir=None, rename_files=False):
-    """
-    执行脱敏流程
-    workspace: 工作区根目录（配置文件、输出目录、记录文件的存放位置）
-    target_dir: 脱敏目标目录（扫描文档的范围），为 None 时默认为 workspace
-    """
-    if target_dir is None:
-        target_dir = workspace
+def verify_sanitization(orig_path, san_path, exact_rules, regex_rules):
+    """对比原始文件和脱敏文件，验证替换效果"""
+    from docx import Document
+    from docx.oxml.ns import qn
 
-    # 安全校验：确保 target_dir 在 workspace 范围内
-    if target_dir != workspace:
-        validated_target, err = validate_subpath(workspace, target_dir)
-        if err:
-            log(f"[ERROR] {err}")
-            return
-        target_dir = validated_target
+    orig = Document(str(orig_path))
+    san = Document(str(san_path))
 
-    # 读取配置（从工作区根目录）
+    def get_all_text(doc):
+        texts = []
+        for para in doc.paragraphs:
+            texts.append(para.text)
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    texts.append(cell.text)
+        try:
+            for textbox in doc.element.iter(qn('w:txbxContent')):
+                for para_elem in textbox.iter(qn('w:p')):
+                    t_parts = []
+                    for t_elem in para_elem.iter(qn('w:t')):
+                        t_parts.append(t_elem.text or "")
+                    texts.append("".join(t_parts))
+        except:
+            pass
+        return "\n".join(texts)
+
+    orig_text = get_all_text(orig)
+    san_text = get_all_text(san)
+
+    results = []
+    for pattern, replacement in exact_rules:
+        orig_count = orig_text.count(pattern)
+        san_count = san_text.count(pattern)
+        new_count = san_text.count(replacement)
+        results.append({
+            "rule": f"{pattern} → {replacement}",
+            "orig_count": orig_count,
+            "san_remaining": san_count,
+            "replaced": orig_count - san_count,
+            "new_count": new_count,
+            "success": san_count == 0
+        })
+
+    for compiled, replacement, pattern_str, label in regex_rules:
+        orig_matches = compiled.findall(orig_text)
+        san_matches = compiled.findall(san_text)
+        results.append({
+            "rule": f"正则:{label or pattern_str}",
+            "orig_count": len(orig_matches),
+            "san_remaining": len(san_matches),
+            "replaced": len(orig_matches) - len(san_matches),
+            "success": len(san_matches) == 0
+        })
+
+    return results
+
+
+# ============================================================
+# 脱敏主流程
+# ============================================================
+
+def run_sanitize(workspace, rename_files=True, auto_convert=False):
     config = load_config(workspace)
     if not config:
         return
 
-    init_log(workspace)
-    log("\n[SANITIZE] 文档脱敏")
-    log("=" * 60)
-    if target_dir != workspace:
-        log(f"  脱敏范围: {target_dir.relative_to(workspace)}")
+    print("\n[SANITIZE] 文档脱敏 v2（统一记录版）")
+    print("=" * 60)
+    print("[INFO] 仅支持 .docx 和 .xlsx 格式的文档脱敏")
 
-    # 构建映射表
-    rule_data = build_mapping(config, workspace)
-    exact_rules = rule_data["exact_rules"]
-    regex_rules = rule_data["regex_rules"]
-    mapping = rule_data["mapping"]  # 共享映射表
-    counter = [rule_data.get("_counter", 1)]  # 计数器（用列表包装以便闭包修改）
+    # 检测旧格式文件
+    legacy_files = scan_legacy_documents(workspace)
+    if legacy_files:
+        print(f"\n[WARN] 发现 {len(legacy_files)} 个旧格式文件（仅 .docx/.xlsx 支持脱敏）:")
+        for lf in legacy_files:
+            print(f"  - {lf.name} ({lf.suffix.lower()})")
+
+        if auto_convert:
+            print("\n[AUTO-CONVERT] --auto-convert 已启用，自动转换旧格式文件...")
+            converted, conv_failed = convert_legacy_files(legacy_files, workspace)
+            if conv_failed:
+                print(f"\n[WARN] {len(conv_failed)} 个文件转换失败，将跳过这些文件")
+            if converted:
+                print(f"[INFO] 成功转换 {len(converted)} 个文件，将继续脱敏流程")
+        else:
+            print("\n是否要将这些旧格式文件自动转换为 .docx/.xlsx 格式？")
+            print("  转换后即可进行脱敏处理。原始文件不会被删除。")
+            print("  提示: 使用 --auto-convert 参数可跳过确认自动转换")
+            try:
+                answer = input("\n请输入 Y 确认转换，N 跳过这些文件: ").strip().upper()
+            except EOFError:
+                answer = "N"
+
+            if answer == "Y":
+                converted, conv_failed = convert_legacy_files(legacy_files, workspace)
+                if conv_failed:
+                    print(f"\n[WARN] {len(conv_failed)} 个文件转换失败，将跳过这些文件")
+                if converted:
+                    print(f"[INFO] 成功转换 {len(converted)} 个文件，将继续脱敏流程")
+            else:
+                print("[INFO] 已跳过旧格式文件，仅处理 .docx/.xlsx 文件")
+
+    # 加载已有记录
+    existing_record = load_record(workspace)
+    print(f"[RECORD] 已有记录: mapping {len(existing_record['mapping'])} 条, "
+          f"filename_mapping {len(existing_record['filename_mapping'])} 条")
+
+    # 构建规则
+    exact_rules = []
+    regex_rules = []
+    mapping = {}
+    counter = [1]
+
+    # 从已有 mapping 初始化 counter（避免占位符编号冲突）
+    for key in existing_record["mapping"]:
+        m = re.match(r'\[RED_(?:\w+?)_(\d+)\]', key)
+        if m:
+            num = int(m.group(1))
+            if num >= counter[0]:
+                counter[0] = num + 1
+
+    print("\n[CONFIG] 精确匹配规则:")
+    for rule in config.get("exact_rules", []):
+        pattern = rule.get("pattern", "").strip()
+        if not pattern:
+            continue
+        replacement = rule.get("replacement", "").strip()
+        if not replacement:
+            replacement = f"[RED_{counter[0]:04d}]"
+            counter[0] += 1
+        # mapping 中存储带 [] 标记的值，用于恢复时反向替换
+        bracketed_replacement = f"[{replacement}]"
+        mapping[("exact", pattern)] = bracketed_replacement
+        exact_rules.append((pattern, replacement))
+        print(f"  {pattern} → {bracketed_replacement}")
+
+    print("\n[CONFIG] 正则匹配规则:")
+    for rule in config.get("regex_rules", []):
+        pattern = rule.get("pattern", "").strip()
+        if not pattern:
+            continue
+        label = rule.get("label", "").strip()
+        replacement = rule.get("replacement", "").strip()
+        try:
+            compiled = re.compile(pattern)
+        except re.error as e:
+            print(f"  [WARN] 正则表达式无效: {pattern} ({e})，已跳过")
+            continue
+        if not replacement:
+            replacement = None
+        regex_rules.append((compiled, replacement, pattern, label))
+        label_str = f" (标签: {label})" if label else ""
+        print(f"  /{pattern}/{label_str} → {'[动态生成]' if replacement is None else replacement}")
 
     if not exact_rules and not regex_rules:
-        log("[WARN] 未配置任何脱敏规则，请编辑 _sanitize_config.json")
+        print("[WARN] 未配置任何脱敏规则")
         return
 
-    # 扫描文档（在目标目录中扫描，但跳过工作区级的输出目录）
-    log("\n[SCAN] 扫描文档...")
-    documents = scan_documents(target_dir)
-    log(f"  发现 {len(documents)} 个文档")
+    # 扫描文档
+    print("\n[SCAN] 扫描文档...")
+    documents = scan_documents(workspace)
+    print(f"  发现 {len(documents)} 个文档")
+    for doc in documents:
+        print(f"  - {doc.name}")
 
     if not documents:
-        log("[WARN] 未发现任何 docx/xlsx 文件")
+        print("[WARN] 未发现任何 .docx/.xlsx 文件")
+        print("  提示: 仅支持 .docx/.xlsx 格式，.doc/.xls 文件需先转换")
         return
 
-    for doc in documents:
-        rel = doc.relative_to(target_dir)
-        log(f"  - {rel}")
-
-    # 创建输出目录（在工作区根目录下）
+    # 创建输出目录
     output_dir = workspace / "_sanitized_output"
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
     output_dir.mkdir(exist_ok=True)
 
     # 执行脱敏
-    log("\n[PROCESS] 开始脱敏...")
+    print("\n[PROCESS] 开始脱敏...")
     success = 0
     failed = []
     files_processed = []
-    filename_mapping = {}  # 文件名映射: {脱敏后相对路径: 原始相对路径}
+    filename_mapping = {}
 
     for doc in documents:
-        # 计算相对路径（相对于目标目录）
-        rel_to_target = doc.relative_to(target_dir)
+        rel = doc.relative_to(workspace)
+        original_rel = str(rel)
 
         # 文件名脱敏
-        original_rel = str(rel_to_target)
         if rename_files:
-            new_filename, changed = sanitize_filename(
-                rel_to_target.name, exact_rules, regex_rules, mapping, counter
-            )
+            new_filename, changed = sanitize_filename(rel.name, exact_rules, regex_rules, mapping, counter)
             if changed:
-                new_rel = rel_to_target.parent / new_filename
-                log(f"  [RENAME] {rel_to_target.name} → {new_filename}")
+                new_rel = rel.parent / new_filename
+                print(f"  [RENAME] {rel.name} → {new_filename}")
             else:
-                new_rel = rel_to_target
+                new_rel = rel
         else:
-            new_rel = rel_to_target
+            new_rel = rel
 
-        # 在输出目录中保持相对路径
         dest = output_dir / new_rel
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -525,418 +692,274 @@ def run_sanitize(workspace, target_dir=None, rename_files=False):
                 sanitize_xlsx(dest, exact_rules, regex_rules, mapping, counter)
 
             success += 1
-            files_processed.append(str(rel_to_target))
+            files_processed.append(str(rel))
 
-            # 记录文件名映射（仅当文件名有变化时）
             if str(new_rel) != original_rel:
                 filename_mapping[str(new_rel)] = original_rel
 
-            log(f"  [{success}/{len(documents)}] {rel_to_target.name} [OK]")
+            print(f"  [{success}/{len(documents)}] {rel.name} [OK]")
         except Exception as e:
-            failed.append((str(rel_to_target), str(e)))
-            log(f"  [{success + len(failed)}/{len(documents)}] {rel_to_target.name} [FAIL: {e}]")
+            failed.append((str(rel), str(e)))
+            print(f"  [{success + len(failed)}/{len(documents)}] {rel.name} [FAIL: {e}]")
 
-    # 生成脱敏记录
-    log("\n[RECORD] 生成脱敏记录...")
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    record_file = workspace / f"_sanitize_record_{timestamp}.json"
+    # 构建本次 mapping（脱敏值→原始值）
+    new_mapping = {v: k[1] for k, v in mapping.items()}
 
-    record = {
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "config_file": "_sanitize_config.json",
-        "rules_applied": {
-            "exact": len(exact_rules),
-            "regex": len(regex_rules)
-        },
-        "rename_files": rename_files,
-        "files_processed": files_processed,
-        "filename_mapping": filename_mapping,  # 文件名映射
-        # 从 mapping {("exact"/"regex", original): placeholder} 转为 {placeholder: original}
-        "mapping": {v: k[1] for k, v in mapping.items()}
-    }
+    # 合并到统一记录
+    timestamp = datetime.now()
+    merged_record = merge_record(existing_record, new_mapping, filename_mapping, files_processed, timestamp)
+    save_record(workspace, merged_record)
 
-    with open(record_file, "w", encoding="utf-8") as f:
-        json.dump(record, f, ensure_ascii=False, indent=2)
+    print(f"\n[RECORD] 统一记录已更新: {workspace / RECORD_FILE}")
+    print(f"  累积 mapping: {len(merged_record['mapping'])} 条")
+    print(f"  累积 filename_mapping: {len(merged_record['filename_mapping'])} 条")
+    print(f"  运行历史: {len(merged_record['runs'])} 次")
+
+    # 验证脱敏效果
+    print("\n[VERIFY] 验证脱敏效果...")
+    for doc in documents:
+        rel = doc.relative_to(workspace)
+        if rename_files:
+            new_filename, _ = sanitize_filename(rel.name, exact_rules, regex_rules, mapping, counter)
+            san_path = output_dir / rel.parent / new_filename
+        else:
+            san_path = output_dir / rel
+
+        if san_path.exists() and doc.suffix.lower() == ".docx":
+            results = verify_sanitization(doc, san_path, exact_rules, regex_rules)
+            print(f"\n  文件: {rel.name}")
+            all_ok = True
+            for r in results:
+                status = "[OK]" if r["success"] else "[FAIL]"
+                if not r["success"]:
+                    all_ok = False
+                if r["orig_count"] > 0 or not r["success"]:
+                    print(f"    {status} {r['rule']}: {r['orig_count']} -> {r['san_remaining']} (replaced {r['replaced']})")
+            if all_ok:
+                print(f"    [OK] All rules verified")
 
     # 汇报结果
-    log("\n" + "=" * 60)
-    log(f"[RESULT] 脱敏完成: {success}/{len(documents)} 成功")
+    print("\n" + "=" * 60)
+    print(f"[RESULT] 脱敏完成: {success}/{len(documents)} 成功")
     if failed:
-        log(f"失败文件: {len(failed)}")
+        print(f"失败文件: {len(failed)}")
         for path, err in failed:
-            log(f"  - {path}: {err}")
-    log(f"\n脱敏输出目录: {output_dir}")
-    log(f"脱敏记录文件: {record_file}")
-    log(f"操作日志: {LOG_FILE}")
-    log("=" * 60)
+            print(f"  - {path}: {err}")
+    print(f"\n脱敏输出目录: {output_dir}")
+    print(f"统一脱敏记录: {workspace / RECORD_FILE}")
+    print("=" * 60)
 
     if success > 0:
-        log("\n恢复方法:")
-        log(f"  python scripts/sanitize.py restore <工作文件夹> --record {record_file.name}")
-
-
-
-
-def extract_text(file_path):
-    """提取文档中的文本（用于正则匹配预扫描）"""
-    ext = file_path.suffix.lower()
-    texts = []
-
-    try:
-        if ext == ".docx":
-            from docx import Document
-            doc = Document(str(file_path))
-            for para in doc.paragraphs:
-                texts.append(para.text)
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        texts.append(cell.text)
-        elif ext == ".xlsx":
-            from openpyxl import load_workbook
-            wb = load_workbook(str(file_path))
-            for ws in wb.worksheets:
-                for row in ws.iter_rows():
-                    for cell in row:
-                        if cell.value and isinstance(cell.value, str):
-                            texts.append(cell.value)
-    except Exception:
-        return ""
-
-    return "\n".join(texts)
+        print(f"\n恢复方法:")
+        print(f"  python sanitize_v2.py restore <工作文件夹>")
 
 
 # ============================================================
-# 恢复执行
+# 恢复主流程
 # ============================================================
 
-def run_restore(workspace, record_path=None):
-    """执行恢复流程"""
-    # 查找记录文件
-    if not record_path:
-        record_path = find_latest_record(workspace)
-
-    if not record_path:
-        log("[ERROR] 未找到脱敏记录文件")
-        log("  请使用 --record 参数指定记录文件")
-        return
-
+def run_restore(workspace):
+    """从统一脱敏记录恢复文档"""
+    record_path = workspace / RECORD_FILE
     if not record_path.exists():
-        log(f"[ERROR] 记录文件不存在: {record_path}")
+        print(f"[ERROR] 未找到统一脱敏记录: {record_path}")
+        print("  请先执行脱敏操作生成记录")
         return
 
-    init_log(workspace)
-    log("\n[RESTORE] 文档恢复")
-    log("=" * 60)
-
-    # 读取记录
-    try:
-        with open(record_path, "r", encoding="utf-8") as f:
-            record = json.load(f)
-    except json.JSONDecodeError as e:
-        log(f"[ERROR] 记录文件格式错误: {e}")
-        return
+    with open(record_path, "r", encoding="utf-8") as f:
+        record = json.load(f)
 
     mapping = record.get("mapping", {})
+    filename_mapping = record.get("filename_mapping", {})
+
     if not mapping:
-        log("[ERROR] 记录文件中无映射数据")
+        print("[ERROR] 脱敏记录中 mapping 为空，无法恢复")
         return
 
-    filename_mapping = record.get("filename_mapping", {})
-    if filename_mapping:
-        log(f"  文件名映射: {len(filename_mapping)} 条")
-
-    log(f"  记录文件: {record_path.name}")
-    log(f"  脱敏时间: {record.get('timestamp', '未知')}")
-    log(f"  映射条目: {len(mapping)} 条")
-
-    # mapping 格式: {placeholder: original_text}
-    # 构建反向替换规则: [(placeholder, original_text), ...]
-    reverse_exact = [(placeholder, original) for placeholder, original in mapping.items()]
-    log(f"  反向映射: {len(reverse_exact)} 条")
-
-    # 用于检测占位符的集合
-    placeholder_set = set(mapping.keys())
+    print("\n[RESTORE] 文档恢复")
+    print("=" * 60)
+    print("[INFO] 仅支持 .docx 和 .xlsx 格式的文档恢复")
+    print(f"[RECORD] 脱敏记录: mapping {len(mapping)} 条, filename_mapping {len(filename_mapping)} 条")
+    print(f"  创建时间: {record.get('created_at', 'N/A')}")
+    print(f"  最后更新: {record.get('last_updated', 'N/A')}")
 
     # 扫描脱敏输出目录
-    output_dir = workspace / "_sanitized_output"
-    if not output_dir.exists():
-        log(f"[ERROR] 脱敏输出目录不存在: {output_dir}")
+    input_dir = workspace / "_sanitized_output"
+    if not input_dir.exists():
+        print(f"[ERROR] 未找到脱敏输出目录: {input_dir}")
         return
 
-    log(f"\n[SCAN] 扫描脱敏文件...")
-    documents = []
-    for root, dirs, files in os.walk(output_dir):
+    # 收集脱敏文件
+    sanitized_files = []
+    for root, dirs, files in os.walk(input_dir):
         for f in files:
+            if f.startswith("~$"):
+                continue
             ext = Path(f).suffix.lower()
             if ext in DOC_EXTENSIONS:
-                documents.append(Path(root) / f)
+                sanitized_files.append(Path(root) / f)
 
-    log(f"  发现 {len(documents)} 个文件")
-
-    if not documents:
-        log("[WARN] 脱敏输出目录中没有文件")
+    if not sanitized_files:
+        print("[WARN] 脱敏输出目录中未发现任何 docx/xlsx 文件")
         return
+
+    print(f"\n[SCAN] 发现 {len(sanitized_files)} 个脱敏文件")
+    for f in sanitized_files:
+        print(f"  - {f.name}")
+
+    # 构建反向替换规则：脱敏值 → 原始值
+    # 关键：长 key 优先替换，避免短 key 误匹配长 key 的子串
+    replace_rules = sorted(mapping.items(), key=lambda x: len(x[0]), reverse=True)
+
+    print(f"\n[CONFIG] 反向替换规则（共 {len(replace_rules)} 条）:")
+    for old, new in replace_rules:
+        print(f"  {old} → {new}")
 
     # 创建恢复输出目录
-    restore_dir = workspace / "_restored_output"
-    restore_dir.mkdir(exist_ok=True)
+    output_dir = workspace / "_restored_output"
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(exist_ok=True)
 
     # 执行恢复
-    log("\n[PROCESS] 开始恢复...")
+    print("\n[PROCESS] 开始恢复...")
     success = 0
     failed = []
-    warnings = []
+    restored_filenames = 0
 
-    for doc in documents:
-        rel = doc.relative_to(output_dir)
-        # 恢复原始文件名
-        rel_str = str(rel)
-        original_rel_str = filename_mapping.get(rel_str, rel_str)
-        original_rel = Path(original_rel_str)
-        dest = restore_dir / original_rel
+    for sf in sanitized_files:
+        rel = sf.relative_to(input_dir)
+        dest = output_dir / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
 
-        # 如果文件名被恢复了，日志显示
-        if rel_str != original_rel_str:
-            log(f"  [RENAME] {rel.name} → {original_rel.name}")
-
         # 复制到恢复目录
-        shutil.copy2(str(doc), str(dest))
+        shutil.copy2(str(sf), str(dest))
 
         try:
-            ext = doc.suffix.lower()
-
-            # 先检查文件中是否包含占位符
-            text = extract_text(dest)
-            has_placeholder = any(p in text for p in placeholder_set)
-
-            if not has_placeholder:
-                warnings.append(str(original_rel))
-                log(f"  [WARN] {original_rel.name} - 未检测到脱敏占位符，跳过恢复")
-                continue
-
+            ext = dest.suffix.lower()
             if ext == ".docx":
-                restore_docx(dest, reverse_exact)
+                replace_docx_content(dest, replace_rules)
             elif ext == ".xlsx":
-                restore_xlsx(dest, reverse_exact)
+                restore_xlsx(dest, replace_rules)
+
+            # 文件名恢复 - 使用完整相对路径查找映射
+            current_rel = str(rel)
+            restored_rel, name_changed = restore_filename(current_rel, filename_mapping)
+            if name_changed:
+                # 计算恢复后的完整路径
+                restored_path = output_dir / restored_rel
+                restored_path.parent.mkdir(parents=True, exist_ok=True)
+                dest.rename(restored_path)
+                dest = restored_path
+                restored_filenames += 1
+                print(f"  [RENAME] {rel.name} → {Path(restored_rel).name}")
 
             success += 1
-            log(f"  [{success}/{len(documents)}] {original_rel.name} [OK]")
+            print(f"  [{success}/{len(sanitized_files)}] {rel.name} [OK]")
         except Exception as e:
-            failed.append((str(original_rel), str(e)))
-            log(f"  [FAIL] {original_rel.name}: {e}")
+            failed.append((str(rel), str(e)))
+            print(f"  [{success + len(failed)}/{len(sanitized_files)}] {rel.name} [FAIL: {e}]")
 
-    # 残留检查
-    residual_warnings = []
-    if success > 0:
-        log("\n[CHECK] 检查残留占位符...")
-        for doc_path in restore_dir.rglob("*.docx"):
-            text = extract_text(doc_path)
-            residual = re.findall(r'\[RED_[^\]]+\]', text)
-            if residual:
-                unique = set(residual)
-                rel = doc_path.relative_to(restore_dir)
-                residual_warnings.append((str(rel), list(unique)))
+    # 校验残留占位符
+    print("\n[VERIFY] 校验残留占位符...")
+    residual_count = 0
+    # 获取所有脱敏标记（mapping 的 keys），用于精确匹配残留
+    sanitization_marks = set(mapping.keys())
+    for sf_root, sf_dirs, sf_files in os.walk(output_dir):
+        for f in sf_files:
+            fpath = Path(sf_root) / f
+            ext = fpath.suffix.lower()
+            if ext == ".docx":
+                from docx import Document
+                from docx.oxml.ns import qn
+                doc = Document(str(fpath))
+                texts = []
+                for para in doc.paragraphs:
+                    texts.append(para.text)
+                for table in doc.tables:
+                    for row in table.rows:
+                        for cell in row.cells:
+                            texts.append(cell.text)
+                full_text = "\n".join(texts)
+                # 只检测 mapping 中定义的脱敏标记
+                found_marks = [mark for mark in sanitization_marks if mark in full_text]
+                if found_marks:
+                    residual_count += len(found_marks)
+                    print(f"  [WARN] {fpath.name} 残留脱敏标记: {found_marks}")
+            elif ext == ".xlsx":
+                from openpyxl import load_workbook
+                wb = load_workbook(str(fpath))
+                for ws in wb.worksheets:
+                    for row in ws.iter_rows():
+                        for cell in row:
+                            if cell.value and isinstance(cell.value, str):
+                                # 只检测 mapping 中定义的脱敏标记
+                                found_marks = [mark for mark in sanitization_marks if mark in cell.value]
+                                if found_marks:
+                                    residual_count += len(found_marks)
+                                    print(f"  [WARN] {fpath.name} 残留脱敏标记: {found_marks}")
 
-        for doc_path in restore_dir.rglob("*.xlsx"):
-            text = extract_text(doc_path)
-            residual = re.findall(r'\[RED_[^\]]+\]', text)
-            if residual:
-                unique = set(residual)
-                rel = doc_path.relative_to(restore_dir)
-                residual_warnings.append((str(rel), list(unique)))
+    if residual_count == 0:
+        print("  [OK] 无残留占位符")
+    else:
+        print(f"  [WARN] 共发现 {residual_count} 个残留占位符，请检查脱敏记录是否完整")
 
     # 汇报结果
-    log("\n" + "=" * 60)
-    log(f"[RESULT] 恢复完成: {success}/{len(documents)} 成功")
+    print("\n" + "=" * 60)
+    print(f"[RESULT] 恢复完成: {success}/{len(sanitized_files)} 成功")
+    if restored_filenames:
+        print(f"  文件名恢复: {restored_filenames} 个")
     if failed:
-        log(f"失败文件: {len(failed)}")
+        print(f"失败文件: {len(failed)}")
         for path, err in failed:
-            log(f"  - {path}: {err}")
-    if warnings:
-        log(f"\n跳过文件（无脱敏标记）: {len(warnings)}")
-        for path in warnings:
-            log(f"  - {path}")
-    if residual_warnings:
-        log(f"\n[WARN] 残留占位符检测:")
-        for path, placeholders in residual_warnings:
-            log(f"  - {path}: {', '.join(placeholders)}")
-        log("  请检查这些文件是否已完全恢复。")
-
-    log(f"\n恢复输出目录: {restore_dir}")
-    log(f"操作日志: {LOG_FILE}")
-    log("=" * 60)
-
-
-def restore_in_paragraph(para, reverse_rules):
-    """对段落执行反向替换，保留第一个 run 的格式"""
-    full_text = para.text
-    if not full_text:
-        return
-
-    new_text = do_replace_restore(full_text, reverse_rules)
-    if new_text == full_text:
-        return
-
-    if para.runs:
-        para.runs[0].text = new_text
-        for run in para.runs[1:]:
-            run.text = ""
-    else:
-        run = para.add_run(new_text)
-
-
-def do_replace_restore(text, reverse_rules):
-    """恢复时执行反向替换"""
-    for pattern, replacement in reverse_rules:
-        text = text.replace(pattern, replacement)
-    return text
-
-
-def restore_docx(file_path, reverse_rules):
-    """恢复 docx 文件"""
-    from docx import Document
-    doc = Document(str(file_path))
-
-    for para in doc.paragraphs:
-        restore_in_paragraph(para, reverse_rules)
-
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for para in cell.paragraphs:
-                    restore_in_paragraph(para, reverse_rules)
-
-    for section in doc.sections:
-        for header in [section.header, section.first_page_header, section.even_page_header]:
-            if header and header.paragraphs:
-                for para in header.paragraphs:
-                    restore_in_paragraph(para, reverse_rules)
-        for footer in [section.footer, section.first_page_footer, section.even_page_footer]:
-            if footer and footer.paragraphs:
-                for para in footer.paragraphs:
-                    restore_in_paragraph(para, reverse_rules)
-
-    try:
-        from docx.oxml.ns import qn
-        for textbox in doc.element.iter(qn('w:txbxContent')):
-            for para_elem in textbox.iter(qn('w:p')):
-                texts = []
-                for text_elem in para_elem.iter(qn('w:t')):
-                    texts.append(text_elem.text or "")
-                full_text = "".join(texts)
-                if not full_text:
-                    continue
-                new_text = do_replace_restore(full_text, reverse_rules)
-                if new_text == full_text:
-                    continue
-                text_elems = list(para_elem.iter(qn('w:t')))
-                if text_elems:
-                    text_elems[0].text = new_text
-                    for te in text_elems[1:]:
-                        te.text = ""
-    except Exception:
-        pass
-
-    doc.save(str(file_path))
-
-
-def restore_xlsx(file_path, reverse_rules):
-    """恢复 xlsx 文件"""
-    from openpyxl import load_workbook
-    wb = load_workbook(str(file_path))
-
-    for ws in wb.worksheets:
-        for row in ws.iter_rows():
-            for cell in row:
-                if cell.value and isinstance(cell.value, str):
-                    new_value = do_replace_restore(cell.value, reverse_rules)
-                    if new_value != cell.value:
-                        cell.value = new_value
-
-    wb.save(str(file_path))
-
-
-def find_latest_record(workspace):
-    """查找最新的脱敏记录文件"""
-    records = sorted(workspace.glob("_sanitize_record_*.json"))
-    if records:
-        return records[-1]
-    return None
+            print(f"  - {path}: {err}")
+    print(f"\n恢复输出目录: {output_dir}")
+    print("=" * 60)
 
 
 # ============================================================
-# 主入口
+# 命令行入口
 # ============================================================
 
-def main():
-    if len(sys.argv) < 2:
-        print("用法:")
-        print("  python sanitize.py config <工作文件夹>                                    生成配置模板")
-        print("  python sanitize.py sanitize <工作文件夹> [--target <子目录>] [--rename]     执行脱敏")
-        print("  python sanitize.py restore <工作文件夹> [--record <记录文件>]              执行恢复")
-        print()
-        print("示例:")
-        print("  python sanitize.py config .")
-        print("  python sanitize.py sanitize .")
-        print("  python sanitize.py sanitize . --target 进港全流程智慧化项目\\update --rename")
-        print("  python sanitize.py restore . --record _sanitize_record_20260329_121500.json")
-        sys.exit(1)
+def print_usage():
+    print("""
+文档脱敏脚本 v2（统一记录版）
 
-    mode = sys.argv[1].lower()
+用法:
+  python sanitize_v2.py sanitize <工作目录> [--no-rename] [--auto-convert]   脱敏文档
+  python sanitize_v2.py restore <工作目录>                                  恢复文档
 
-    # 提取工作目录（跳过 --record/--target/--rename 及其值）
-    skip_next = False
-    args = []
-    extra_flags = set()
-    target_dir = None
+选项:
+  --no-rename      不对文件名进行脱敏（默认会脱敏文件名）
+  --auto-convert   检测到 .doc/.xls 时自动转换为 .docx/.xlsx，无需确认
 
-    for i, a in enumerate(sys.argv[2:], 2):
-        if skip_next:
-            skip_next = False
-            continue
-        if a in ("--record", "--target"):
-            # 下一个参数是对应的值，跳过
-            skip_next = True
-            continue
-        if a == "--rename":
-            extra_flags.add("rename")
-            continue
-        args.append(a)
-
-    workspace = Path(args[0]).resolve() if args else Path.cwd()
-
-    # 提取 --target 参数
-    if "--target" in sys.argv:
-        idx = sys.argv.index("--target")
-        if idx + 1 < len(sys.argv):
-            target_dir = workspace / sys.argv[idx + 1]
-
-    if mode == "config":
-        generate_config(workspace)
-    elif mode == "sanitize":
-        run_sanitize(workspace, target_dir=target_dir, rename_files="rename" in extra_flags)
-    elif mode == "restore":
-        # 提取 record 参数
-        record_path = None
-        if "--record" in sys.argv:
-            idx = sys.argv.index("--record")
-            if idx + 1 < len(sys.argv):
-                record_path = Path(sys.argv[idx + 1])
-                if not record_path.is_absolute():
-                    record_path = workspace / record_path
-                # 安全校验：确保 record 文件在 workspace 范围内
-                record_path = record_path.resolve()
-                if not str(record_path).startswith(str(workspace.resolve())):
-                    log(f"[ERROR] 记录文件路径超出工作区范围: {record_path}")
-                    sys.exit(1)
-        run_restore(workspace, record_path)
-    else:
-        log(f"[ERROR] 未知模式: {mode}")
-        log("  支持的模式: config / sanitize / restore")
-        sys.exit(1)
+说明:
+  仅支持 .docx 和 .xlsx 格式的文档脱敏
+  检测到 .doc/.xls 旧格式文件时，会提示是否自动转换
+  脱敏记录统一保存为 _sanitize_record.json，每次运行累积合并映射
+  恢复时读取该记录执行反向替换，无需指定具体记录文件
+""")
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 3:
+        print_usage()
+        sys.exit(1)
+
+    command = sys.argv[1].lower()
+    workspace = Path(sys.argv[2])
+
+    if not workspace.exists():
+        print(f"[ERROR] 工作目录不存在: {workspace}")
+        sys.exit(1)
+
+    if command == "sanitize":
+        rename = "--no-rename" not in sys.argv
+        auto_convert = "--auto-convert" in sys.argv
+        run_sanitize(workspace, rename_files=rename, auto_convert=auto_convert)
+    elif command == "restore":
+        run_restore(workspace)
+    else:
+        print(f"[ERROR] 未知命令: {command}")
+        print_usage()
+        sys.exit(1)

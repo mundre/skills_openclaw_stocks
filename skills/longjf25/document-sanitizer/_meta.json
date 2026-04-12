@@ -1,11 +1,17 @@
 {
   "owner": "longjf25",
   "slug": "document-sanitizer",
-  "displayName": "Document Sanitizer / 文档脱敏及恢复",
+  "displayName": "Document Sanitizer",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1774795318921,
-    "commit": "https://github.com/openclaw/skills/commit/6dc59934f6b0910a921abe3ab06eee961bccd444"
+    "version": "1.5.1",
+    "publishedAt": 1775708020485,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1774795318921,
+      "commit": "https://github.com/openclaw/skills/commit/6dc59934f6b0910a921abe3ab06eee961bccd444"
+    }
+  ]
 }
