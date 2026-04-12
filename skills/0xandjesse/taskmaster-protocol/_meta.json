@@ -1,13 +1,18 @@
 {
   "owner": "0xandjesse",
   "slug": "taskmaster-protocol",
-  "displayName": "TaskMaster Protocol",
+  "displayName": "Taskmaster Protocol",
   "latest": {
-    "version": "3.0.0",
-    "publishedAt": 1775120557797,
-    "commit": "https://github.com/openclaw/skills/commit/54155cc906da49b47e74c941f570147003b90e69"
+    "version": "2.2.0",
+    "publishedAt": 1775581176156,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.0",
+      "publishedAt": 1775120557797,
+      "commit": "https://github.com/openclaw/skills/commit/54155cc906da49b47e74c941f570147003b90e69"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1774983696505,
