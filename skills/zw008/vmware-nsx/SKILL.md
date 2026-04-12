@@ -4,15 +4,16 @@ description: >
   Use this skill whenever the user needs to manage VMware NSX networking — segments, gateways, NAT, routing, and IP pools.
   Directly handles: create/manage network segments, configure Tier-0/Tier-1 gateways, set up NAT rules, manage static routes, configure IP pools, check transport node and edge cluster health.
   Always use this skill for "create segment", "set up gateway", "create NAT rule", "check network health", "troubleshoot connectivity", or any NSX/networking/segment task.
-  For DFW/firewall rules use vmware-nsx-security, for VM operations use vmware-aiops, for multi-step workflows use vmware-pilot. For load balancing/AVI/AKO use vmware-avi.
+  Do NOT use for DFW firewall rules or security groups (use vmware-nsx-security), VM lifecycle (use vmware-aiops), or AVI/ALB load balancing (use vmware-avi).
+  For multi-step workflows use vmware-pilot.
 installer:
   kind: uv
   package: vmware-nsx-mgmt
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_NSX_TARGET_PASSWORD"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 compatibility: >
-  Requires vmware-policy (auto-installed). All operations audited to ~/.vmware/audit.db.
+  vmware-policy auto-installed as Python dependency (provides @vmware_tool decorator and audit logging). All write operations audited to ~/.vmware/audit.db.
 ---
 
 # VMware NSX
@@ -129,7 +130,7 @@ vmware-nsx health alarms --target nsx-lab
 | Cloud models (Claude, GPT-4o) | Either | MCP gives structured JSON I/O |
 | Automated pipelines | **MCP** | Type-safe parameters, structured output |
 
-## MCP Tools (31)
+## MCP Tools (31 — 18 read, 13 write)
 
 All MCP tools accept an optional `target` parameter to select which NSX Manager to connect to.
 
@@ -262,7 +263,7 @@ The password environment variable is missing. Variable names follow the pattern 
 ## Safety
 
 - **Read-heavy**: 18 of 31 tools are read-only (list, get, status, health, troubleshoot)
-- **Audit logging**: All operations logged to `~/.vmware-nsx/audit.log` in JSON Lines format with timestamp, user, target, operation, parameters, and result
+- **Audit logging**: All operations logged to `~/.vmware/audit.db` (SQLite WAL, via vmware-policy) with timestamp, user, target, operation, parameters, and result
 - **Double confirmation**: CLI write commands require two separate confirmation prompts before executing
 - **Dry-run mode**: All write commands support `--dry-run` to preview API calls without executing
 - **Dependency checks**: Segment delete checks for connected ports; gateway delete checks for connected segments; prevents accidental cascade failures
