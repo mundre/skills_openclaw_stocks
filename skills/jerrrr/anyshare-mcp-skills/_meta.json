@@ -3,11 +3,16 @@
   "slug": "anyshare-mcp-skills",
   "displayName": "AnyShare MCP Skills",
   "latest": {
-    "version": "0.2.6",
-    "publishedAt": 1775095873013,
-    "commit": "https://github.com/openclaw/skills/commit/6e7ba644267fe9ff893f31090ef72e8565d593c1"
+    "version": "0.2.7",
+    "publishedAt": 1775625371354,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.2.6",
+      "publishedAt": 1775095873013,
+      "commit": "https://github.com/openclaw/skills/commit/6e7ba644267fe9ff893f31090ef72e8565d593c1"
+    },
     {
       "version": "0.2.3",
       "publishedAt": 1775025319031,

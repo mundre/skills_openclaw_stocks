@@ -238,7 +238,7 @@ chmod 600 token.backup
 
 ### skill_name
 
-- `__全文写作__2` — 生成大纲
+- `__全文写作__3` — 生成大纲
 - `__大纲写作__1` — 生成正文
 
 ---
@@ -318,7 +318,7 @@ chmod 600 token.backup
 
 ### smart_assistant（全文写作 · 生成大纲）
 
-**skill_name**：`__全文写作__2`
+**skill_name**：`__全文写作__3`
 
 **`source_ranges[].id`** 传 **id**（docid 最后一段），**禁止传完整 docid**（C5）。
 
@@ -529,7 +529,7 @@ mcporter list asmcp
 
 确认 **id** 后 **直接进入第 2 步**，**勿**先 **`file_osdownload`**（**C10**）。
 
-**第 2 步：生成大纲（`__全文写作__2`）**
+**第 2 步：生成大纲（`__全文写作__3`）**
 
 入参、返回字段与 JSON 示例见 **[上文「本技能工具与 mcporter 调用」→ smart_assistant（全文写作 · 生成大纲）](#本技能工具与-mcporter-调用)**。向用户展示并请其确认（**C4**）的稿，以返回 **`streaming_answer`** 为准；**`completion_answer`** 多为收尾/提示，**不作为**大纲正文。第 3 步需传入的 **`conversation_id`** 取自本步返回。
 
