@@ -10,9 +10,9 @@ installer:
   package: vmware-storage
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_STORAGE_CONFIG"],"bins":["vmware-storage"],"config":["~/.vmware-storage/config.yaml","~/.vmware-storage/.env"]},"primaryEnv":"VMWARE_STORAGE_CONFIG","homepage":"https://github.com/zw008/VMware-Storage","emoji":"🗄️","os":["macos","linux"]}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_STORAGE_CONFIG"],"bins":["vmware-storage"],"config":["~/.vmware-storage/config.yaml","~/.vmware-storage/.env"]},"optional":{"env":["VMWARE_TARGET_PASSWORD"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_STORAGE_CONFIG","homepage":"https://github.com/zw008/VMware-Storage","emoji":"🗄️","os":["macos","linux"]}}
 compatibility: >
-  Requires vmware-policy (auto-installed). All operations audited to ~/.vmware/audit.db.
+  vmware-policy auto-installed as Python dependency (provides @vmware_tool decorator and audit logging). All write operations audited to ~/.vmware/audit.db.
 ---
 
 # VMware Storage
@@ -71,7 +71,7 @@ vmware-storage doctor
 ### Set Up iSCSI Storage on a Host
 
 1. Enable iSCSI adapter → `vmware-storage iscsi enable esxi-01`
-2. Add target → `vmware-storage iscsi add-target esxi-01 10.0.0.100`
+2. Add target → `vmware-storage iscsi add-target esxi-01 &lt;iscsi-target-ip&gt;`
 3. Verify → `vmware-storage iscsi status esxi-01`
 
 The `add-target` command automatically rescans storage after adding the target. If you need an additional rescan later:
@@ -81,7 +81,7 @@ The `add-target` command automatically rescans storage after adding the target. 
 **Dry-run first**: Append `--dry-run` to any write command to preview without executing:
 ```bash
 vmware-storage iscsi enable esxi-01 --dry-run
-vmware-storage iscsi add-target esxi-01 10.0.0.100 --dry-run
+vmware-storage iscsi add-target esxi-01 &lt;iscsi-target-ip&gt; --dry-run
 ```
 
 ### Find Deployable Images Across Datastores
@@ -205,7 +205,7 @@ The `doctor` command tests connectivity with a 5-second TCP timeout. If your vCe
 
 - **No VM operations**: This skill cannot power on/off, create, delete, or modify VMs — that scope belongs to `vmware-aiops`
 - **Read-heavy**: 6 of 11 tools are read-only (list, browse, scan, status, health, capacity)
-- **Audit logging**: All operations (including reads) are logged to `~/.vmware-storage/audit.log` in JSON Lines format with timestamp, user, target, operation, parameters, and result
+- **Audit logging**: All operations (including reads) are logged to `~/.vmware/audit.db` (SQLite WAL, via vmware-policy) with timestamp, user, target, operation, parameters, and result
 - **Double confirmation**: CLI write commands (iSCSI enable, add/remove target) require two separate "Are you sure?" prompts before executing
 - **Dry-run mode**: All write commands support `--dry-run` to preview API calls without executing
 - **Input validation**: IP addresses validated via `ipaddress.ip_address()`, ports checked for 1-65535 range, host/cluster/datastore names looked up before operations
@@ -222,7 +222,8 @@ mkdir -p ~/.vmware-storage
 cp config.example.yaml ~/.vmware-storage/config.yaml
 # Edit config.yaml with your vCenter/ESXi targets
 
-echo "VMWARE_MY_VCENTER_PASSWORD=your_password" > ~/.vmware-storage/.env
+# Add to ~/.vmware-storage/.env (create if missing, chmod 600):
+# VMWARE_MY_VCENTER_PASSWORD=<your-password>
 chmod 600 ~/.vmware-storage/.env
 
 vmware-storage doctor
