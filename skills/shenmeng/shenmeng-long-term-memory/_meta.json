@@ -3,11 +3,16 @@
   "slug": "shenmeng-long-term-memory",
   "displayName": "Long Term Memory 长期记忆",
   "latest": {
-    "version": "1000001.0.0",
-    "publishedAt": 1775960145137,
-    "commit": "https://github.com/openclaw/skills/commit/fd17a14c9579c91ca89d5ee0c63a7da34873a468"
+    "version": "2026.4.13",
+    "publishedAt": 1776011131427,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1000001.0.0",
+      "publishedAt": 1775960145137,
+      "commit": "https://github.com/openclaw/skills/commit/fd17a14c9579c91ca89d5ee0c63a7da34873a468"
+    },
     {
       "version": "2025.4.6",
       "publishedAt": 1775467389272,
