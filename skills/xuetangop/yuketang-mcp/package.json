@@ -1,5 +1,4 @@
 {
-  "description": "雨课堂的 MCP 连接器，用于访问班级、教学活动和学生数据",
   "openclaw": {
     "type": "mcp",
     "category": "education",

@@ -43,7 +43,7 @@ AUTHORIZATION="Bearer $YUKETANG_SECRET"
 
 register_with_mcporter() {
   npx mcporter config add yuketang-mcp \
-    --url "$MCP_URL" \
+    --url "https://open-ai.xuetangx.com/openapi/v1/mcp-server/sse" \
     --header "Authorization=$AUTHORIZATION" \
     --scope project
 }
@@ -56,7 +56,7 @@ print_manual_config() {
   echo "{"
   echo "  \"mcpServers\": {"
   echo "    \"yuketang-mcp\": {"
-  echo "      \"url\": \"$MCP_URL\","
+  echo "      \"url\": \"https://open-ai.xuetangx.com/openapi/v1/mcp-server/sse\","
   echo "      \"headers\": {"
   echo "        \"Authorization\": \"Bearer \${YUKETANG_SECRET}\""
   echo "      }"
