@@ -1,17 +1,15 @@
 ---
 name: dbdoctor-tools
 description: >
-  DBDoctor database performance diagnosis platform tools.
+  DBdoctor database performance diagnosis platform tools.
   Invoke when user needs to query database instances, slow SQL,
   inspection reports, performance metrics, or perform SQL audit/rewrite operations.
 license: Apache-2.0
-compatibility: Requires Python 3.9+ with requests, pycryptodome, python-dotenv packages. Network access to DBDoctor API server required.
+compatibility: Requires Python 3.9+ with requests, pycryptodome, python-dotenv packages. Network access to DBdoctor API server required.
 allowed-tools: Bash Read
 requires:
   env:
     - DBDOCTOR_URL
-    - DBDOCTOR_USER
-    - DBDOCTOR_PASSWORD
   commands:
     - python
     - pip
@@ -68,7 +66,12 @@ python scripts/ai_sql_rewrite.py --instance-id [instance_id] --database [db] --s
 
 ### Credential Management
 
-This skill requires three environment variables: `DBDOCTOR_URL`, `DBDOCTOR_USER`, `DBDOCTOR_PASSWORD` (sensitive).
+This skill supports two authentication modes:
+
+- **Mode 1 - Password login** (企业版（免费试用）): Requires `DBDOCTOR_URL`, `DBDOCTOR_USER`, `DBDOCTOR_PASSWORD`.
+- **Mode 2 - Email verification code login** (免费版（永久免费）, Windows/Mac): Requires `DBDOCTOR_URL`, `DBDOCTOR_EMAIL`. When a verification code is needed, the user will be prompted interactively.
+
+If `DBDOCTOR_EMAIL` is configured, email mode takes precedence.
 
 Credentials are managed by the platform and injected as environment variables at runtime. **This skill does not write credentials to disk.** The `.token_cache` file (API session token only) is the only file persisted locally and is listed in `.gitignore`.
 
@@ -79,38 +82,50 @@ Two tools perform write operations that require operator care:
 - **execute\_sql**: Executes arbitrary SQL on the target database. Review all SQL statements before execution. The tool does not enforce read-only restrictions.
 - **manage\_instance**: Registers new database instances to the platform. Verify all connection parameters (IP, port, credentials) before execution.
 
-All other tools are read-only queries against the DBDoctor API.
+All other tools are read-only queries against the DBdoctor API.
 
 ### Authentication Mechanism
 
-The program reads credentials from environment variables, automatically AES-encrypts the password for API login, obtains a Token, and caches it in `.token_cache`. Token refresh is automatic. No manual auth management is required.
+The program supports two login methods:
+
+1. **Password mode**: Reads username/password from environment variables, AES-encrypts the password, and calls `/nephele/login` to obtain a Token.
+2. **Email mode**: Sends a verification code to the configured email via `/drapi/user/verificationCode`, prompts the user to enter the code, AES-encrypts it, and calls `/nephele/login` with `authType=authCode`.
+
+Token is cached in `.token_cache`. When the token expires, the system automatically re-authenticates (password mode is silent; email mode prompts for a new verification code). No manual auth management is required.
 
 ***
 
 ## Configuration
 
-Set the following environment variables:
+Set the following environment variables based on your login mode:
 
-| Variable | Description |
-| --- | --- |
-| DBDOCTOR\_URL | DBDoctor API base URL (e.g. `http://host:port`) |
-| DBDOCTOR\_USER | Login username (also used as UserId) |
-| DBDOCTOR\_PASSWORD | Login password (sensitive) |
+| Variable | Description | Required |
+| --- | --- | --- |
+| DBDOCTOR\_URL | DBdoctor API base URL (e.g. `http://host:port`) | Always |
+| DBDOCTOR\_USER | Login username (also used as UserId) | Password mode only |
+| DBDOCTOR\_PASSWORD | Login password (sensitive) | Password mode only |
+| DBDOCTOR\_EMAIL | Login email for verification code | Email mode only |
 
-### Option 1: CLI configuration (recommended)
+> **Note**: If `DBDOCTOR_EMAIL` is set, email verification code mode is used. Otherwise, username/password mode is used.
+
+### Mode 1: Password login (企业版（免费试用）)
 
 ```bash
-# Configure API URL
+# CLI configuration (recommended)
 clawdbot skills config dbdoctor-tools DBDOCTOR_URL "http://[host]:[port]"
-
-# Configure username
 clawdbot skills config dbdoctor-tools DBDOCTOR_USER "[username]"
-
-# Configure password (sensitive)
 clawdbot skills config dbdoctor-tools DBDOCTOR_PASSWORD "[password]"
 ```
 
-### Option 2: Manual configuration
+### Mode 2: Email verification code login (免费版（永久免费）)
+
+```bash
+# CLI configuration (recommended)
+clawdbot skills config dbdoctor-tools DBDOCTOR_URL "http://[host]:[port]"
+clawdbot skills config dbdoctor-tools DBDOCTOR_EMAIL "[email]"
+```
+
+### Manual configuration
 
 Edit `~/.clawdbot/clawdbot.json`:
 
@@ -120,9 +135,14 @@ Edit `~/.clawdbot/clawdbot.json`:
     entries: {
       "dbdoctor-tools": {
         env: {
+          // Mode 1: Password login
           DBDOCTOR_URL: "http://[host]:[port]",
           DBDOCTOR_USER: "[username]",
           DBDOCTOR_PASSWORD: "[password]"
+
+          // Mode 2: Email login (use this instead of USER/PASSWORD)
+          // DBDOCTOR_URL: "http://[host]:[port]",
+          // DBDOCTOR_EMAIL: "[email]"
         }
       }
     }
@@ -130,18 +150,26 @@ Edit `~/.clawdbot/clawdbot.json`:
 }
 ```
 
-### Option 3: System environment variables
+### System environment variables
 
 ```bash
-# Linux / Mac
+# Linux / Mac - Password mode
 export DBDOCTOR_URL="http://[host]:[port]"
 export DBDOCTOR_USER="[username]"
 export DBDOCTOR_PASSWORD="[password]"
 
-# Windows PowerShell
+# Linux / Mac - Email mode
+export DBDOCTOR_URL="http://[host]:[port]"
+export DBDOCTOR_EMAIL="[email]"
+
+# Windows PowerShell - Password mode
 $env:DBDOCTOR_URL="http://[host]:[port]"
 $env:DBDOCTOR_USER="[username]"
 $env:DBDOCTOR_PASSWORD="[password]"
+
+# Windows PowerShell - Email mode
+$env:DBDOCTOR_URL="http://[host]:[port]"
+$env:DBDOCTOR_EMAIL="[email]"
 ```
 
 ### Install Dependencies
