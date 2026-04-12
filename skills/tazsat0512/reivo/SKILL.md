@@ -3,7 +3,7 @@ name: reivo
 description: Track AI agent costs in real-time, set budget limits, and auto-detect runaway loops. Smart routing reduces costs 40-60%. Works with OpenAI, Anthropic, and Google models. Free to use — just route your API calls through the Reivo proxy.
 homepage: https://reivo.dev
 user-invocable: true
-metadata: {"openclaw": {"emoji": "💰", "homepage": "https://reivo.dev", "requires": {"env": ["REIVO_API_KEY"], "bins": ["curl"], "anyBins": ["jq", "python3"]}, "primaryEnv": "REIVO_API_KEY", "envVars": [{"name": "REIVO_API_KEY", "required": true, "description": "Reivo API key (starts with rv_). Get one free at https://reivo.dev"}], "os": ["darwin", "linux"], "author": "tazsat0512"}}
+metadata: {"openclaw": {"emoji": "💰", "homepage": "https://reivo.dev", "requires": {"env": ["REIVO_API_KEY"], "bins": ["curl", "node"]}, "primaryEnv": "REIVO_API_KEY", "envVars": [{"name": "REIVO_API_KEY", "required": true, "description": "Reivo API key (starts with rv_). Get one free at https://reivo.dev"}], "os": ["darwin", "linux"], "author": "tazsat0512"}}
 ---
 
 # Reivo — AI Agent Cost Optimizer
@@ -133,28 +133,21 @@ curl -s -X POST \
   "https://app.reivo.dev/api/v1/settings"
 ```
 
-### Add Provider API Key
+### Manage Provider API Keys
 
-When the user wants to add or change a provider key:
+Provider keys should be managed via the dashboard for security:
 
-```bash
-curl -s -X POST \
-  -H "Authorization: Bearer $REIVO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "openai", "label": "Default", "key": "sk-..."}' \
-  "https://app.reivo.dev/api/v1/provider-keys"
-```
+> **Add or rotate provider keys at:** https://app.reivo.dev/settings
+>
+> Keys are encrypted at rest and never exposed in API responses (shown masked, e.g. `sk-abc1...xyz9`).
+> For maximum security, create limited-scope or project-scoped keys dedicated to Reivo.
 
-### List Provider Keys
-
-When the user asks "which keys are configured?":
+To list currently configured keys:
 
 ```bash
 curl -s -H "Authorization: Bearer $REIVO_API_KEY" \
   "https://app.reivo.dev/api/v1/provider-keys"
 ```
-
-Keys are returned masked (e.g. `sk-abc1...xyz9`). Full keys are never exposed.
 
 ### View Agent Breakdown
 
@@ -194,14 +187,7 @@ If the user hasn't set up Reivo yet, guide them:
    ```bash
    export REIVO_API_KEY="rv_your_key_here"
    ```
-4. **Add provider keys** via CLI or dashboard:
-   ```bash
-   curl -s -X POST \
-     -H "Authorization: Bearer $REIVO_API_KEY" \
-     -H "Content-Type: application/json" \
-     -d '{"provider": "openai", "label": "Default", "key": "sk-your-openai-key"}' \
-     "https://app.reivo.dev/api/v1/provider-keys"
-   ```
+4. **Add provider keys** via the dashboard at https://app.reivo.dev/settings (recommended for security — keys are encrypted at rest)
 5. **Route API calls through the proxy** by changing the base URL in your provider config.
 
 For OpenClaw specifically, update the provider configuration:
