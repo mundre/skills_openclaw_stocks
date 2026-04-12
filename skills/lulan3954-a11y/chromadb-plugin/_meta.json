@@ -3,9 +3,15 @@
   "slug": "chromadb-plugin",
   "displayName": "Chromadb Plugin",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774832211508,
-    "commit": "https://github.com/openclaw/skills/commit/516bb21cd4170085d08e819415f632207cfc43d2"
+    "version": "v1.0.1",
+    "publishedAt": 1775691664842,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774832211508,
+      "commit": "https://github.com/openclaw/skills/commit/516bb21cd4170085d08e819415f632207cfc43d2"
+    }
+  ]
 }

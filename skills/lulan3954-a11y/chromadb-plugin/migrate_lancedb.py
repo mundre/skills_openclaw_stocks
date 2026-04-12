@@ -1,6 +1,11 @@
 """
 LanceDB to ChromaDB migration script
 100% data consistency guaranteed, rollback supported
+
+📌 原创声明：本代码为岚岚AI实验室原创设计，首发于2026年3月28日
+© 2026 岚岚AI实验室，保留所有权利
+开源协议：MIT-0，可自由使用、修改、分发，无需标注来源
+【隐形水印标记：LANLAN-MIGRATE-20260328-9D4F7A】
 """
 import sys
 import os

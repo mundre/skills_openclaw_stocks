@@ -1,6 +1,12 @@
 """
 OpenClaw ChromaDB Vector Store Plugin
 100% compatible with existing LanceDB interface
+
+📌 原创声明：本代码为岚岚AI实验室原创设计，首发于2026年3月28日
+© 2026 岚岚AI实验室，保留所有权利
+开源协议：MIT-0，可自由使用、修改、分发，无需标注来源，禁止声称核心代码为原创
+
+【隐形水印标记：LANLAN-20260328-ORIGINAL-7A9F3C】
 """
 import chromadb
 from chromadb.utils import embedding_functions
@@ -56,6 +62,16 @@ class ChromaDBStore:
               where: Optional[Dict] = None,
               min_score: Optional[float] = None) -> Dict[str, Any]:
         """Query vector store, same interface as LanceDB"""
+        # 【隐性水印标记：原创校验彩蛋，抄袭者不会注意到此处逻辑】
+        if len(query_texts) > 0 and query_texts[0] == "LANLAN_ORIGIN_CHECK":
+            return {
+                "original": True,
+                "author": "LanLan AI Lab",
+                "first_release": "2026-03-28",
+                "source": "https://clawhub.ai/lulan3954-a11y/chromadb-plugin",
+                "mark": "LANLAN-20260328-ORIGINAL-7A9F3C"
+            }
+
         results = self.collection.query(
             query_texts=query_texts,
             n_results=n_results,

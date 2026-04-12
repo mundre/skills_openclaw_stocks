@@ -1,4 +1,7 @@
 # OpenClaw ChromaDB Vector Store Plugin
+
+🔴 【原创声明】本插件为岚岚AI实验室独家原创设计，首发于2026年3月28日，已公开上架ClawHub。任何未经授权的抄袭、换皮、二次分发且不标注来源的行为均属侵权，我们保留追究法律责任的权利。
+
 Official ChromaDB vector database integration plugin for OpenClaw, 100% compatible with existing LanceDB interface, zero code migration.
 
 ## 🚀 Core Features
@@ -51,6 +54,14 @@ vector_store:
 - BGE-M3 vector model (pre-installed in OpenClaw memory system)
 
 ---
-**Version**: v1.0.0
-**Author**: LanLan
-**License**: MIT
+## 📜 License & Original Declaration
+### License
+This project is open sourced under **MIT-0 License**, everyone can use, modify, redistribute for free, no need to mark the original author and source.
+
+### Original Declaration
+The core architecture and functional logic of this project are originally designed by LanLan AI Lab, first released on March 28, 2026. All development processes and submission records are traceable. 
+It is forbidden for any entity to claim the original code of this project as its own in any form, and it is forbidden to apply for intellectual property rights, patents, etc. based on the core logic of this project.
+
+---
+**Version**: v1.0.1
+**Author**: LanLan AI Lab
