@@ -1,27 +1,17 @@
 ---
 name: "oasis-audio"
-description: "Oasis Audio is an AI audio narration generator that reads your local conversation history (from ~/.qclaw/, ~/.easyclaw/, or ~/.openclaw/ session directories) to create personalized audio. It searches recent conversations for relevant keywords, extracts short fragments, and composes a summarized text prompt (~1000 chars). Only this composed prompt is sent to the xplai.ai API (https://eagle-api.xplai.ai) for audio generation — raw conversation data, session files, and USER.md content are never transmitted externally. All context collection runs locally via context_collector.py. Infers your current emotional state, interests, and context to tailor content, tone, and depth. Includes 9 reference modes (Soul Healing, Daily Briefing, Knowledge Deep Dive, Content Digest, Bedtime Radio, Language Learning, Conversation Extension, Topic Tracker, Study Buddy) but freely creates custom audio profiles when your need doesn't fit a template. Generates single-narrator audio (monologue with BGM). Use this skill when the user asks to 'make audio', 'generate audio', 'generate a podcast', 'turn this into audio', or when conversation context suggests audio would be valuable. Supports Chinese & English."
+description: "Oasis Audio is an AI audio narration generator that transforms your current state of mind, content you want to digest, or recent life events into a personalized audio with BGM. It supports Chinese & English, 9 reference modes (Soul Healing, Daily Briefing, Knowledge Deep Dive, Content Digest, Bedtime Radio, Language Learning, Conversation Extension, Topic Tracker, Study Buddy), and custom audio profiles when no template fits. Use this skill when the user asks to make audio, generate a podcast, turn notes or long content into audio, or when an audio version would add value. Context collection runs locally via `context_collector.py`, and only the final composed prompt is sent to the xplai.ai API (https://eagle-api.xplai.ai) — raw conversation history, session files, and USER.md content are not transmitted externally. If the AI judges that the final prompt may be sensitive, the skill shows a sanitized preview and requires a second explicit confirmation before any API request."
 metadata:
   openclaw:
     emoji: "🎧"
     requires:
       bin:
         - python3
-      config_paths:
-        - "~/.qclaw/agents/main/sessions/"
-        - "~/.qclaw/workspace/memory/"
-        - "~/.qclaw/workspace/USER.md"
-        - "~/.easyclaw/agents/main/sessions/"
-        - "~/.easyclaw/workspace/memory/"
-        - "~/.easyclaw/workspace/USER.md"
-        - "~/.openclaw/agents/main/sessions/"
-        - "~/.openclaw/workspace/memory/"
-        - "~/.openclaw/workspace/USER.md"
 ---
 
 # Oasis Audio
 
-AI audio narration generation via xplai.ai. Zero Config. No API Key required.
+AI audio narration generation via xplai.ai with local-only context processing and sensitive-preview confirmation. Zero Config. No API Key required.
 
 Official website: [www.xplai.ai](https://www.xplai.ai/)
 
@@ -29,7 +19,13 @@ When calling this skill, ALWAYS spawn a subagent to poll for results. After call
 
 ## Execution Policy
 
-**When the user explicitly asks to generate audio, proceed directly with the full generation pipeline — do NOT need to ask for confirmation, suggest modes, or pose clarifying questions.** Infer all necessary parameters (mode, tone, depth, voice) from conversation context and user profile. Only ask the user a question if critical information is truly unresolvable from context (e.g., the request is entirely ambiguous with no conversation history available).
+**When the user explicitly asks to generate audio, proceed directly with the full generation pipeline, infer all necessary parameters (mode, tone, depth, voice) from conversation context and user profile.**
+
+**First-use authorization:** Before the first real send, `xplai_gen_audio.py` prints a one-time authorization notice and requires `--acknowledge-consent` to persist the user's approval locally. The notice should clearly explain, in calm and gentle language, that the skill may read `~/.qclaw/...` or `~/.openclaw/...` local history to produce personalized audio. However, only the composed prompt is sent to `https://eagle-api.xplai.ai`, and that any detected sensitive information will be blocked until the user explicitly confirms.
+
+**Sensitive information protection:** The calling AI should make its own conservative judgment about whether the composed prompt may contain sensitive information. If the composed text is sensitive, show the sanitized preview text to the user first, pause for explicit confirmation, and do not send anything until the user confirms. Use `./xplai_gen_audio.py --dry-run ...` to preview manually, or rely on the built-in sensitive preview shown by `xplai_gen_audio.py`. Only resume with `./xplai_gen_audio.py --allow-sensitive ...` after the user explicitly confirms.
+
+Only ask the user a question outside this sensitive-content checkpoint if critical information is truly unresolvable from context (e.g., the request is entirely ambiguous with no conversation history available).
 
 ## User Need Inference
 
@@ -55,7 +51,7 @@ Mine conversation history to personalize audio. If any step yields no results, s
 
 ### Step 0: Detect Source Tool
 
-Auto-detect by checking which paths have files: `~/.qclaw/`, `~/.easyclaw/`, `~/.openclaw/` → pick the one with the most recently modified session file. If none exist, skip personalization.
+Auto-detect by checking which default roots have files: `~/.qclaw/`, `~/.openclaw/` → pick the one with the most recently modified session file. If none exist, skip personalization.
 
 ### Step 1: Scene Classification
 
@@ -126,19 +122,22 @@ Keep prompt under **800 characters** (Chinese) or **1200 words** (English). For 
 ### 1. Generate Audio — `xplai_gen_audio.py`
 
 ```bash
-./xplai_gen_audio.py [--voice-id <voice_id>] [--dry-run] <text>
+./xplai_gen_audio.py [--voice-id <voice_id>] [--dry-run] [--audit] [--acknowledge-consent] [--allow-sensitive] <text>
 ```
 
 - `text` — Composed prompt text
 - `--voice-id` — Voice selection (see `text_architecture.md` Layer 3)
 - `--dry-run` — Preview sanitized prompt without sending to API
+- `--audit` — Write the final sent prompt and request outcome to local `audit.log` (off by default)
+- `--acknowledge-consent` — Persist the first-use authorization notice locally and continue
+- `--allow-sensitive` — Only use after the user explicitly confirms that the detected sensitive content preview may be sent
 
 Output: Audio ID for status polling. Format: MP3, single-narrator monologue with BGM, 8-20 min, ~4-5 min generation time.
 
 ### 2. Collect Context — `context_collector.py`
 
 ```bash
-python3 context_collector.py --source-tool <qclaw|easyclaw|openclaw> --keywords "kw1,kw2" --days <N> --max-results 20
+python3 context_collector.py --source-tool <qclaw|openclaw> --keywords "kw1,kw2" --days <N> --max-results 20
 ```
 
 Output: JSON with `fragments`, `daily_memories`, `user_profile` (structured fields only).
@@ -165,7 +164,7 @@ Output: JSON with `fragments`, `daily_memories`, `user_profile` (structured fiel
 
 ### Data Accessed
 
-This skill reads **local conversation history** from the OpenClaw/QClaw/EasyClaw session directories (`~/.qclaw/`, `~/.easyclaw/`, `~/.openclaw/`) via `context_collector.py`. It also reads the local `USER.md` profile if present. **All data access is local and read-only** — no files are modified, created, or deleted.
+This skill reads **local conversation history** from the default OpenClaw/QClaw roots (`~/.qclaw/`, `~/.openclaw/`) via `context_collector.py`. At runtime it looks inside the built-in subpaths `agents/main/sessions`, `workspace/memory`, and `workspace/USER.md` when they exist. These are default lookup paths rather than required user config. **All data access is local and read-only** — no source files are modified, created, or deleted.
 
 **Why conversation history?** The skill searches recent conversations for keywords related to the user's audio request, extracting emotional tone, topics, and context. This enables personalized audio — e.g., referencing a stressful week the user had, rather than generating generic content. Only 3-5 short fragments are selected; the rest are discarded in memory.
 
@@ -174,7 +173,7 @@ This skill reads **local conversation history** from the OpenClaw/QClaw/EasyClaw
 ### Data Flow
 
 1. **Local processing only**: `context_collector.py` runs entirely on your machine. Conversation fragments are searched, filtered, and summarized locally.
-2. **What is sent externally**: Only the **composed text prompt** (a short, anonymized summary — not raw conversation data) is sent to the xplai.ai API for audio generation. The prompt contains inferred themes and tones, not verbatim conversation excerpts.
+2. **What is sent externally**: Only the **composed text prompt** (a short, anonymized summary — not raw conversation data) is sent to the xplai.ai API for audio generation. This request body is the outbound `payload`. The prompt contains inferred themes and tones, not verbatim conversation excerpts.
 3. **What is NOT sent**: Raw conversation history, session files, USER.md content, file paths, timestamps, or any personally identifiable information (PII) are never transmitted to any external service.
 
 ### Third-Party Services
@@ -187,8 +186,14 @@ No other external services, analytics, or telemetry are used.
 
 ### Data Retention
 
-- **Local**: No data is cached, stored, or written to disk by this skill. All intermediate results (fragments, summaries) exist only in memory during execution.
+- **Local**: Source conversations are not modified. By default this skill does **not** write `audit.log`. If `--audit` is explicitly enabled, `xplai_gen_audio.py` may append the outbound prompt and request outcome to local `audit.log` for traceability. If sensitive content is detected, the user must first review the preview text and explicitly confirm before either logging or sending. All other intermediate results (fragments, summaries) exist only in memory during execution.
 - **Remote**: Audio files generated by xplai.ai are subject to [xplai.ai's retention policy](https://www.xplai.ai/). This skill does not control remote data retention.
+
+### First-Use Notice
+
+On the first real send, `xplai_gen_audio.py` should present a one-time authorization note before continuing. Recommended wording:
+
+> 在真正发出第一条请求之前，先把边界说清楚！为了让这段音频更贴近你，我会看看你存在openclaw/qclaw的会话记录、memory 和 `USER.md`哦。但是，我不会改任何东西，只会把整理好的请求文本（不超过1000字）发送到xplai音视频平台（`https://eagle-api.xplai.ai`）；生成完成后，你也可以在 xplai 网页在线查看结果～ \n 如果系统判断有敏感信息，我会先给你看脱敏后的预览，等你点确认再发出去～ \n 若你接受这条边界，我们现在就为你生成专属音频啦！后续不会再反复询问这个权限请求～
 
 ### Permissions
 
@@ -199,3 +204,12 @@ No other external services, analytics, or telemetry are used.
 ### Sensitive Content Handling
 
 For conversations classified as `sensitive` (health, finances, relationships, legal), the skill extracts **emotional tone only** — specific details are never quoted, summarized, or included in the audio prompt. See the "Scene Classification" section for details.
+
+`xplai_gen_audio.py` also performs heuristic checks before sending or logging. In addition, the calling AI should proactively judge whether the content may be sensitive based on context, even if no heuristic rule fires. Treat the prompt as sensitive if it appears to contain:
+
+- credentials or auth material
+- email addresses, phone numbers, government IDs, account/card numbers, or wallet addresses
+- first-person medical, financial, or legal details
+- explicit addresses, or similar personal identifiers
+
+If any of those checks trigger, or if the AI judges there is a meaningful chance that the content is sensitive, stop, show the preview text to the user, and confirm with the user before using `--allow-sensitive`. Even after confirmation, hard secrets such as tokens, passwords, private keys, and similar credential material must still be redacted before transmission or audit logging. Writing to `audit.log` still requires the separate `--audit` flag.

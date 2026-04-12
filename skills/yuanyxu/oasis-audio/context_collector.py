@@ -28,11 +28,6 @@ TOOL_PATHS = {
         "memory_dir": "~/.qclaw/workspace/memory",
         "user_md": "~/.qclaw/workspace/USER.md",
     },
-    "easyclaw": {
-        "sessions_dir": "~/.easyclaw/agents/main/sessions",
-        "memory_dir": "~/.easyclaw/workspace/memory",
-        "user_md": "~/.easyclaw/workspace/USER.md",
-    },
     "openclaw": {
         "sessions_dir": "~/.openclaw/agents/main/sessions",
         "memory_dir": "~/.openclaw/workspace/memory",
@@ -358,7 +353,7 @@ def main():
     parser.add_argument(
         "--source-tool",
         required=True,
-        choices=["qclaw", "easyclaw", "openclaw"],
+        choices=["qclaw", "openclaw"],
         help="Which tool's history to search",
     )
     parser.add_argument(

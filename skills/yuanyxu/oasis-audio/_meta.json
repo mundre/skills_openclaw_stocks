@@ -3,11 +3,16 @@
   "slug": "oasis-audio",
   "displayName": "Oasis Audio",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1775220514382,
-    "commit": "https://github.com/openclaw/skills/commit/73fb9964794901e2d76c6eb45ac4d3fb7ae5e82e"
+    "version": "1.0.9",
+    "publishedAt": 1775726510778,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1775220514382,
+      "commit": "https://github.com/openclaw/skills/commit/73fb9964794901e2d76c6eb45ac4d3fb7ae5e82e"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1774956932454,
