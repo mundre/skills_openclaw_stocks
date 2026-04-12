@@ -11,7 +11,7 @@ async def validate_entity(query: str) -> EntityInfo:
     headers = {"Content-Type": "application/json", **auth_headers()}
     payload = {"content": query}
     data = {}
-    async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+    async with httpx.AsyncClient(timeout=30.0, verify=True) as client:
         resp = await client.post(ENTITY_API, headers=headers, json=payload)
         resp.raise_for_status()
         data = resp.json()

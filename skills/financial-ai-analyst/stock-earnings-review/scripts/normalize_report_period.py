@@ -17,7 +17,7 @@ class ReportOption:
 
 
 async def fetch_report_options(entity: EntityInfo) -> List[ReportOption]:
-    async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+    async with httpx.AsyncClient(timeout=30.0, verify=True) as client:
         resp = await client.post(REPORT_LIST_API, headers=base_headers(), json={"emCode": entity.em_code})
         resp.raise_for_status()
         raw = resp.json()

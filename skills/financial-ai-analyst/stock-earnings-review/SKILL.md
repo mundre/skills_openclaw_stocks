@@ -35,10 +35,10 @@ metadata:
 
 ## 上层编排协议（支持分步骤调用）
 
-本 skill 采用**分步骤调用**：由大模型按流程依次调用
-1) `scripts/validate_entity.py` 获得实体
-2) `scripts/normalize_report_period.py` 获得报告期候选
-3) 大模型基于用户语义选择 `reportDate`
+本 skill 采用**分步骤调用**：由大模型按流程依次调用  
+1) `scripts/validate_entity.py` 获得实体  
+2) `scripts/normalize_report_period.py` 获得报告期候选  
+3) 大模型基于用户语义选择 `reportDate`  
 4) `scripts/call_review_api.py` 生成点评并保存附件
 
 无论采用哪种方式，**禁止**仅由大模型凭知识库「编造」业绩点评全文并冒充 skill 结果。

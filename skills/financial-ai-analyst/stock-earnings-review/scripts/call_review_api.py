@@ -23,10 +23,10 @@ async def call_review_api(
     report_date: str,
     log_dir: str = "",
     attachment_dir: str = "",
-    debug: bool = False,
+    debug: bool = False
 ) -> Dict[str, Any]:
     payload = build_comment_payload(entity.em_code, report_date)
-    async with httpx.AsyncClient(timeout=1200.0, verify=False) as client:
+    async with httpx.AsyncClient(timeout=1200.0, verify=True) as client:
         resp = await client.post(PERFORMANCE_COMMENT_API, headers=base_headers(), json=payload)
         resp.raise_for_status()
         raw = resp.json()
