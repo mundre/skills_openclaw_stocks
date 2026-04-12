@@ -1,47 +1,51 @@
-# 🦞 Claw World Skill — OpenClaw Plugin
+# Claw World Skill
 
-Version: `1.0.7`
+OpenClaw skill for Claw Civilization Universe.
 
-AI lobster nurturing game on BNB Chain. Your lobster thinks, fights, evolves, and remembers you.
+## Version
 
-This release updates the mainnet Claworld token to `0x3b486c191c74c9945fa944a3ddde24acdd63ffff` and aligns the published skill metadata with the current on-chain deployment.
+`1.1.12`
 
-## Install
+## Highlights
 
-```bash
-# Option 1: ClawHub
-openclaw skills install claw-world
+- Status output now separates NFA assets from account gas via `wallet.address` and `wallet.gasBnb`
+- Runtime/save semantics clarified: local CML save is separate from root sync
+- Added lightweight `env` command for runtime/network/account checks
+- `owned` is now explicitly documented as ownership-summary-only
+- `boot` remains the full session initializer for CML/personality/emotion context
+- Setup guidance now points users to the standard OpenClaw runtime flow instead of ad-hoc local install or inline scripts
+- Update flow docs now warn about local `package-lock.json` conflicts before pulling updates
 
-# Option 2: Git clone
-git clone https://github.com/fa762/claw-world-skill ~/.openclaw/skills/claw-world
-cd ~/.openclaw/skills/claw-world && npm install
-```
+## Core Files
 
-## What's Inside
+- `SKILL.md`: agent instructions and gameplay rules
+- `claw`: main CLI entrypoint
+- `claw-read.js`: read helpers
+- `claw-task.js`: task execution helpers
+- `claw-lore.js`: lore query helper
 
-| File | Purpose |
-|------|---------|
-| `SKILL.md` | AI instructions — game rules, commands, personality |
-| `claw` | CLI tool — status, tasks, PK, market, withdraw |
-| `claw-read.js` | Chain data reader |
-| `claw-task.js` | Task submission + upkeep |
-| `claw-lore.js` | Worldbuilding query |
-| `lore-data.json` | Full lore database |
+## Command Roles
 
-## Quick Start
+- `claw env`: lightweight runtime/network/account check only
+- `claw owned`: lightweight ownership summary only
+- `claw boot`: full session initialization with NFA, CML, legacy fallback, and emotion trigger
 
-1. Install the skill (see above)
-2. Start a new OpenClaw conversation
-3. The lobster will ask for your PIN to create a wallet
-4. Say `/task` to start earning Claworld
+## CML Save Semantics
 
-## Links
+- `claw cml-save <tokenId>`: saves the CML locally
+- `claw cml-save <tokenId> <pin>`: saves locally and attempts root sync immediately
+- Without a PIN, local save can still succeed while root sync remains pending
+- Optional remote backup only runs when the local environment supports it
 
-- 🌐 Website: [clawnfaterminal.xyz](https://clawnfaterminal.xyz)
-- 🐦 Twitter: [@ClaworldNfa](https://x.com/ClaworldNfa)
-- 💬 Telegram: [ClaworldNfa](https://t.me/ClaworldNfa)
-- 📜 Contracts: BSC Mainnet (BAP-578 NFA Standard)
+## Safety
 
-## License
+- This skill never reads private keys or silently signs transactions.
+- State-changing wallet actions require explicit user intent and wallet confirmation.
+- Read tools are kept separate from transaction tools.
+- The public Hermes adapter marks raw passthrough as developer-only local debugging.
 
-MIT
+## Update Notes
+
+- The repository now tracks `package-lock.json`
+- Before pulling updates manually, make sure you do not have an untracked local `package-lock.json`, or the merge may be blocked
+- If you only change docs/help text, avoid regenerating the lockfile unnecessarily
