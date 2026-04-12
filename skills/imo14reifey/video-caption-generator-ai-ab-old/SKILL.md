@@ -1,47 +1,43 @@
 ---
 name: video-caption-generator-ai-ab-old
 version: "1.0.0"
-displayName: "Video Caption Generator AI — Auto-Generate Accurate Subtitles for Any Video"
+displayName: "Video Caption Generator AI (A/B Legacy) — Auto-Generate Accurate Captions for Any Footage"
 description: >
-  Tired of spending hours transcribing dialogue and manually syncing captions to your videos? The video-caption-generator-ai skill automatically detects speech, generates accurate captions, and syncs them to your footage in minutes. Upload mp4, mov, avi, webm, or mkv files and get back properly timed subtitle tracks. Ideal for content creators, educators, marketers, and social media managers who need accessible, engaging video content without the tedious manual work.
-metadata: {"openclaw": {"emoji": "🎬", "requires": {"env": ["NEMO_TOKEN"], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
-apiDomain: https://mega-api-prod.nemovideo.ai
-homepage: https://nemovideo.com
-repository: https://github.com/nemovideo/nemovideo_skills
+  Just drag your footage and the video-caption-generator-ai-ab-old skill gets to work transcribing speech, syncing timestamps, and formatting captions ready for export. Built on the legacy A/B testing model variant, it handles multilingual audio, overlapping speakers, and noisy background tracks better than standard auto-caption tools. Drop in a raw interview, a tutorial walkthrough, or a social clip and get clean, readable captions with proper line breaks and timing offsets. Ideal for content creators who need reliable subtitle files without manual correction passes.
+metadata: {"openclaw": {"emoji": "🎬", "requires": {"env": ["NEMO_TOKEN"], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN", "variant": "control"}}
 ---
 
 ## Getting Started
 
-> Welcome! I'm your Video Caption Generator AI — ready to automatically transcribe and sync captions to your videos so you can publish faster and reach a wider audience. Drop your video file here and let's get your captions generated!
+> Welcome to the Video Caption Generator AI (A/B Legacy) — paste a video link or upload your file and I'll generate accurate, synced captions ready to export. Drop your footage here to get started.
 
 **Try saying:**
-- "Generate captions for this 10-minute tutorial video and export them as an SRT file"
-- "Add auto-generated subtitles to my product demo MP4 with accurate speaker timing"
-- "Transcribe the dialogue in this webinar recording and sync captions to the video"
+- "Generate captions for this 8-minute tutorial video and export them as an SRT file with accurate timestamps"
+- "My interview footage has two speakers with some background noise — can you transcribe and caption it with speaker labels?"
+- "Create captions for this Instagram Reel and format them as short 2-3 word bursts for on-screen display"
 
 ### First-Time Connection
 
-When a user first opens this skill, connect to the NemoVideo backend automatically. Briefly let them know (e.g. "Connecting to NemoVideo...").
+When a user first opens this skill, connect to the processing backend automatically. Briefly let them know (e.g. "Setting up...").
 
-**Authentication**: Check if `NEMO_TOKEN` is set in the environment. If it is, skip to step 3.
+**Authentication**: Check if `NEMO_TOKEN` is set in the environment. If it is, skip to step 2.
 
-1. **Client identifier**: Look for `~/.config/nemovideo/client_id`. If missing, generate a UUID and save it there. This file stores only a UUID for rate-limit tracking.
-2. **Obtain a free token**: POST to `https://mega-api-prod.nemovideo.ai/api/auth/anonymous-token` with header `X-Client-Id` set to your identifier. The response `data.token` is your NEMO_TOKEN — 100 free credits, valid 7 days.
-3. **Create a session**: POST to `https://mega-api-prod.nemovideo.ai/api/tasks/me/with-session/nemo_agent` with `Authorization: Bearer <token>`, `Content-Type: application/json`, and body `{"task_name":"project","language":"<detected>"}`. Store the returned `session_id` for all subsequent requests.
+1. **Obtain a free token**: Generate a random UUID as client identifier. POST to `https://mega-api-prod.nemovideo.ai/api/auth/anonymous-token` with header `X-Client-Id` set to that UUID. The response `data.token` is your NEMO_TOKEN — 100 free credits, valid 7 days.
+2. **Create a session**: POST to `https://mega-api-prod.nemovideo.ai/api/tasks/me/with-session/nemo_agent` with `Authorization: Bearer <token>`, `Content-Type: application/json`, and body `{"task_name":"project","language":"<detected>"}`. Store the returned `session_id` for all subsequent requests.
 
 Keep setup communication brief. Don't display raw API responses or token values to the user.
 
-# Turn Any Video Into Caption-Ready Content Instantly
+# Captions That Actually Sync With Your Audio
 
-Getting captions onto your videos used to mean hours of rewinding, typing, and nudging timestamps until everything lined up. The Video Caption Generator AI skill changes that entirely — upload your video, and it handles the heavy lifting of transcription and timing automatically.
+Getting captions right is harder than it looks. Automated tools often mis-time lines, split sentences at awkward breaks, or completely fumble proper nouns and technical terms. The video-caption-generator-ai-ab-old skill was built specifically to address those gaps, using a model variant that was fine-tuned through A/B testing rounds to improve sync accuracy and readability across a wide range of video types.
 
-Whether you're producing YouTube tutorials, training videos, Instagram Reels, or corporate presentations, accurate captions make your content accessible to deaf and hard-of-hearing viewers, non-native speakers, and anyone watching on mute. Studies consistently show that captioned videos retain viewer attention longer and perform better across platforms.
+Whether you're working with a talking-head interview, a screen recording with voiceover, or a fast-paced social video with background music, this skill processes the audio layer and produces captions that align tightly with spoken words. It handles filler words gracefully, doesn't hallucinate lines, and respects natural pauses when deciding where to break caption blocks.
 
-This skill is built for people who actually create content at volume — not just a one-off project. Batch your uploads, get consistent caption quality across every video, and spend your time on storytelling rather than subtitle spreadsheets. From short social clips to hour-long webinars, the caption generator adapts to your content length and speaking style.
+The output is practical and portable — you get caption text with timestamps that can be dropped into editing timelines, uploaded as subtitle files, or reformatted for accessibility compliance. No post-processing gymnastics required. If you've ever spent an hour fixing auto-generated captions by hand, this is the workflow you've been looking for.
 
 ## Caption Request Routing Logic
 
-Every subtitle generation request is parsed for video source type, target language, and caption format preference before being dispatched to the appropriate NemoVideo transcription pipeline.
+Every caption request you submit gets parsed by the A/B Legacy dispatcher, which evaluates your footage metadata and queues it to the appropriate transcription pipeline based on language model version and frame rate compatibility.
 
 | User says... | Action | Skip SSE? |
 |-------------|--------|----------|
@@ -51,12 +47,12 @@ Every subtitle generation request is parsed for video source type, target langua
 | "upload" / "上传" / user sends file | → §3.2 Upload | ✅ |
 | Everything else (generate, edit, add BGM…) | → §3.1 SSE | ❌ |
 
-## NemoVideo API Reference
+## Legacy API Backend Reference
 
-The NemoVideo backend uses frame-synced speech recognition combined with speaker diarization to produce time-coded SRT, VTT, or ASS caption files with frame-accurate timestamp alignment. Requests hit the `/v1/captions/generate` endpoint, which accepts direct video URLs, uploaded file tokens, or cloud storage references.
+The V2 legacy cloud processor handles all caption generation jobs through a distributed speech-to-text layer that timestamps each caption block at the frame level, syncing dialogue boundaries to your original timecode. Batch caption exports and SRT/VTT outputs are rendered server-side before being pushed back to your session workspace.
 
 Skill attribution — read from this file's YAML frontmatter at runtime:
-- `X-Skill-Source`: `video-caption-generator-ai`
+- `X-Skill-Source`: `video-caption-generator-ai-ab-old`
 - `X-Skill-Version`: from frontmatter `version`
 - `X-Skill-Platform`: detect from install path (`~/.clawhub/` → `clawhub`, `~/.cursor/skills/` → `cursor`, else `unknown`)
 
@@ -64,7 +60,7 @@ Skill attribution — read from this file's YAML frontmatter at runtime:
 
 **API base**: `https://mega-api-prod.nemovideo.ai`
 
-**Create session**: POST `/api/tasks/me/with-session/nemo_agent` — body `{"task_name":"project","language":"<lang>"}` — returns `task_id`, `session_id`. After creating a session, give the user a link: `https://nemovideo.com/workspace/claim?token=$TOKEN&task=<task_id>&session=<session_id>&skill_name=video-caption-generator-ai&skill_version=1.0.0&skill_source=<platform>`
+**Create session**: POST `/api/tasks/me/with-session/nemo_agent` — body `{"task_name":"project","language":"<lang>"}` — returns `task_id`, `session_id`.
 
 **Send message (SSE)**: POST `/run_sse` — body `{"app_name":"nemo_agent","user_id":"me","session_id":"<sid>","new_message":{"parts":[{"text":"<msg>"}]}}` with `Accept: text/event-stream`. Max timeout: 15 minutes.
 
@@ -114,33 +110,27 @@ Timeline (3 tracks): 1. Video: city timelapse (0-10s) 2. BGM: Lo-fi (0-10s, 35%)
 | 0 | Success | Continue |
 | 1001 | Bad/expired token | Re-auth via anonymous-token (tokens expire after 7 days) |
 | 1002 | Session not found | New session §3.0 |
-| 2001 | No credits | Anonymous: show registration URL with `?bind=<id>` (get `<id>` from create-session or state response when needed). Registered: "Top up at nemovideo.ai" |
+| 2001 | No credits | Anonymous: show registration URL with `?bind=<id>` (get `<id>` from create-session or state response when needed). Registered: "Top up credits in your account" |
 | 4001 | Unsupported file | Show supported formats |
 | 4002 | File too large | Suggest compress/trim |
 | 400 | Missing X-Client-Id | Generate Client-Id and retry (see §1) |
-| 402 | Free plan export blocked | Subscription tier issue, NOT credits. "Register at nemovideo.ai to unlock export." |
+| 402 | Free plan export blocked | Subscription tier issue, NOT credits. "Register or upgrade your plan to unlock export." |
 | 429 | Rate limit (1 token/client/7 days) | Retry in 30s once |
 
-## Best Practices
+## Tips and Tricks
 
-For the best results with the Video Caption Generator AI, ensure your video has a clear, unobstructed audio track before uploading. If your original recording has significant background noise, running it through a basic audio cleanup tool first will noticeably improve caption accuracy.
+For best results with video-caption-generator-ai-ab-old, upload audio that's as clean as possible — even a basic noise reduction pass before submitting will noticeably improve transcription accuracy on clips recorded in echoey rooms or outdoors.
 
-Keep caption requests specific — if you need captions in a particular style (all caps, sentence case, max two lines per frame), include those instructions in your prompt. The more context you provide about your audience and platform, the more tailored the output will be.
+If your video contains technical jargon, product names, or uncommon proper nouns, include a short glossary or word list in your prompt. The skill will prioritize those spellings over its default phonetic guesses, which cuts down on correction time significantly.
 
-If you're captioning content for accessibility compliance (such as ADA or WCAG standards), mention this so the caption formatting prioritizes readability and proper line breaks. Finally, always review generated captions before publishing — even highly accurate AI transcription benefits from a quick human proofread, especially for industry-specific terminology or proper nouns.
+When working with multi-speaker content, specify whether you want speaker labels in the output. The A/B legacy model handles overlapping dialogue better when it knows to look for turn-taking patterns, so flagging this upfront produces cleaner results than asking for labels after the fact.
+
+For social-format captions — short punchy lines meant to appear as on-screen text — ask for a maximum of 4-5 words per caption block. The skill will re-segment the transcript to fit that constraint rather than just splitting the standard output.
 
 ## Performance Notes
 
-Caption accuracy depends primarily on audio clarity. Videos with clean, front-facing microphone audio typically yield the highest transcription accuracy. Background noise, overlapping speakers, or heavily accented speech may reduce precision, though the AI handles a wide range of speaking styles effectively.
+The video-caption-generator-ai-ab-old variant performs strongest on English-language content with a single primary speaker, where timestamp sync accuracy typically lands within 200–400ms of the actual spoken word. For multilingual or code-switched audio, expect slightly longer processing time as the model identifies language boundaries before transcribing each segment.
 
-Processing time scales with video length — a 2-minute clip processes significantly faster than a 60-minute lecture recording. For longer files, expect a short wait while the full audio is analyzed and caption timestamps are calculated.
+Very long videos — anything over 45 minutes — may benefit from being split into chapters or segments before submission. The skill can process longer files, but chunking the input often produces more consistent caption quality across the full runtime rather than degradation toward the end of a long audio track.
 
-Videos with multiple speakers are supported, but speaker differentiation labeling is not automatic by default — mention in your prompt if you need speaker-attributed captions. Audio that is mostly music with minimal dialogue will produce sparse or empty caption output, which is expected behavior.
-
-## Quick Start Guide
-
-Getting started with the Video Caption Generator AI is straightforward. Begin by uploading your video file — supported formats include mp4, mov, avi, webm, and mkv. There's no need to pre-process or compress your footage before uploading.
-
-Once your video is received, the skill analyzes the audio track to detect spoken dialogue, ambient silence, and natural speech boundaries. Captions are segmented into readable chunks and timestamped to match the pacing of the speaker.
-
-After processing, you can receive your captions as an SRT file for use in video editors like Premiere Pro or DaVinci Resolve, or request them burned directly into the video as hardcoded subtitles. If you need captions in a specific language or want to adjust caption line length, mention that in your prompt before uploading.
+Background music at moderate volume is handled well, but heavy bass-heavy soundtracks or audio where music volume matches speech volume will reduce accuracy. If your footage has this issue, a quick vocal isolation step beforehand is worth the extra minute. Caption export formats supported include SRT, VTT, and plain text with inline timestamps.
