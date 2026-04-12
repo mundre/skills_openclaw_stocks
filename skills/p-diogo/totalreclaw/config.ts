@@ -70,8 +70,11 @@ export const CONFIG = {
     cerebras: process.env.CEREBRAS_API_KEY || '',
   } as Record<string, string>,
 
-  // Embedding model: "default" (640d, fp16 ~553MB), "small" (384d, q8 ~34MB), or "large" (1024d, q8 ~600MB)
+  // Embedding model: "default" (640d, Harrier q4), "small" (384d, e5-small), or "large" (1024d, Qwen3)
   embeddingModel: (process.env.TOTALRECLAW_EMBEDDING_MODEL || 'default') as 'default' | 'small' | 'large',
+
+  // Observability — optional session ID for tracing QA runs in relay logs (Axiom)
+  sessionId: process.env.TOTALRECLAW_SESSION_ID || '',
 
   // Paths
   home,

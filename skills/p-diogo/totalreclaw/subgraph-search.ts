@@ -60,10 +60,18 @@ async function gqlQuery<T>(
       headers,
       body: JSON.stringify({ query, variables }),
     });
-    if (!response.ok) return null;
-    const json = await response.json() as { data?: T };
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      console.error(`[TotalReclaw] Subgraph query failed: HTTP ${response.status} — ${body.slice(0, 200)}`);
+      return null;
+    }
+    const json = await response.json() as { data?: T; error?: string; errors?: Array<{ message: string }> };
+    if (json.error || json.errors) {
+      console.error(`[TotalReclaw] Subgraph query error: ${json.error || json.errors?.map(e => e.message).join('; ')}`);
+    }
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[TotalReclaw] Subgraph query exception: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
@@ -84,6 +92,7 @@ const SEARCH_QUERY = `
         encryptedEmbedding
         decayScore
         timestamp
+        createdAt
         isActive
         contentFp
         sequenceId
@@ -108,6 +117,7 @@ const PAGINATE_QUERY = `
         encryptedBlob
         encryptedEmbedding
         timestamp
+        createdAt
         decayScore
         isActive
         contentFp
@@ -276,6 +286,7 @@ export async function searchSubgraphBroadened(
         encryptedEmbedding
         decayScore
         timestamp
+        createdAt
         isActive
         contentFp
         sequenceId

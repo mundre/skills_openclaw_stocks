@@ -16,7 +16,7 @@
  * Also registers a `before_agent_start` hook that automatically injects
  * relevant memories into the agent's context.
  *
- * All data is encrypted client-side with AES-256-GCM. The server never
+ * All data is encrypted client-side with XChaCha20-Poly1305. The server never
  * sees plaintext.
  */
 
@@ -30,8 +30,8 @@ import {
   generateContentFingerprint,
 } from './crypto.js';
 import { createApiClient, type StoreFactPayload } from './api-client.js';
-import { extractFacts, extractDebrief, type ExtractedFact } from './extractor.js';
-import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client.js';
+import { extractFacts, extractDebrief, EXTRACTION_SYSTEM_PROMPT, type ExtractedFact } from './extractor.js';
+import { initLLMClient, resolveLLMConfig, chatCompletion, generateEmbedding, getEmbeddingDims } from './llm-client.js';
 import { LSHHasher } from './lsh.js';
 import { rerank, cosineSimilarity, detectQueryIntent, INTENT_WEIGHTS, type RerankerCandidate } from './reranker.js';
 import { deduplicateBatch } from './semantic-dedup.js';
@@ -136,7 +136,7 @@ const CREDENTIALS_PATH = CONFIG.credentialsPath;
  * memories into context. Below this threshold, the query is considered
  * irrelevant to any stored memories and results are suppressed.
  *
- * Default 0.15 is tuned for bge-small-en-v1.5 which produces lower
+ * Default 0.15 is tuned for local ONNX models which produce lower
  * similarity scores than OpenAI models. Configurable via env var.
  */
 const COSINE_THRESHOLD = CONFIG.cosineThreshold;
@@ -170,6 +170,10 @@ const SEMANTIC_SKIP_THRESHOLD = CONFIG.semanticSkipThreshold;
 
 // Auto-extract throttle (C3): only extract every N turns in agent_end hook
 let turnsSinceLastExtraction = 0;
+
+// BUG-2 fix: Skip agent_end extraction during import operations.
+// Import failures previously triggered agent_end → re-extraction → re-import loops.
+let _importInProgress = false;
 const AUTO_EXTRACT_EVERY_TURNS_ENV = CONFIG.extractInterval;
 
 // Hard cap on facts per extraction to prevent LLM over-extraction from dense conversations
@@ -1422,28 +1426,39 @@ async function storeExtractedFacts(
     }
   }
 
-  // Batch-submit all subgraph payloads in a single UserOp (gas-efficient).
+  // Batch-submit subgraph payloads in UserOps of up to 15 facts each.
+  // Submitting all facts in a single UserOp exceeds gas limits for large imports.
+  // Each batch awaits full receipt confirmation (up to 120s) before proceeding,
+  // so no inter-batch delay is needed — the nonce is consumed on-chain before
+  // the next batch fetches it.
+  const BATCH_USEROP_SIZE = 15;
   let batchError: string | undefined;
   if (pendingPayloads.length > 0 && isSubgraphMode()) {
-    try {
-      const batchConfig = { ...getSubgraphConfig(), authKeyHex: authKeyHex!, walletAddress: subgraphOwner ?? undefined };
-      const result = await submitFactBatchOnChain(pendingPayloads, batchConfig);
-      if (result.success) {
-        stored += preparedForSubgraph;
-        logger.info(`Batch submitted ${result.batchSize} payloads in 1 UserOp (tx=${result.txHash.slice(0, 10)}…)`);
-      } else {
-        batchError = `On-chain batch submission failed (tx=${result.txHash.slice(0, 10)}…)`;
-        logger.warn(batchError);
-      }
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes('403') || errMsg.toLowerCase().includes('quota')) {
-        try { fs.unlinkSync(BILLING_CACHE_PATH); } catch { /* ignore */ }
-        batchError = `Quota exceeded — billing cache invalidated. ${errMsg}`;
-        logger.warn(batchError);
-      } else {
-        batchError = `Batch submission failed: ${errMsg}`;
-        logger.warn(batchError);
+    const batchConfig = { ...getSubgraphConfig(), authKeyHex: authKeyHex!, walletAddress: subgraphOwner ?? undefined };
+    for (let i = 0; i < pendingPayloads.length; i += BATCH_USEROP_SIZE) {
+      const slice = pendingPayloads.slice(i, i + BATCH_USEROP_SIZE);
+      try {
+        const result = await submitFactBatchOnChain(slice, batchConfig);
+        if (result.success) {
+          stored += slice.length;
+          logger.info(`Batch ${Math.floor(i / BATCH_USEROP_SIZE) + 1}: submitted ${result.batchSize} payloads (tx=${result.txHash.slice(0, 10)}…)`);
+        } else {
+          batchError = `On-chain batch submission failed (tx=${result.txHash.slice(0, 10)}…)`;
+          logger.warn(batchError);
+          break; // Stop submitting remaining batches
+        }
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg.includes('403') || errMsg.toLowerCase().includes('quota')) {
+          try { fs.unlinkSync(BILLING_CACHE_PATH); } catch { /* ignore */ }
+          batchError = `Quota exceeded — billing cache invalidated. ${errMsg}`;
+          logger.warn(batchError);
+          break;
+        } else {
+          batchError = `Batch submission failed: ${errMsg}`;
+          logger.warn(batchError);
+          break;
+        }
       }
     }
   }
@@ -1452,10 +1467,16 @@ async function storeExtractedFacts(
     logger.info(`Auto-extraction results: stored=${stored}, superseded=${superseded}, skipped=${skipped}, failed=${failedFacts}`);
   }
 
-  // If nothing was stored and there were failures, throw so callers can surface the error
-  if (stored === 0 && (failedFacts > 0 || batchError)) {
-    const reason = batchError || `${failedFacts} fact(s) failed to store`;
-    throw new Error(`Memory storage failed: ${reason}`);
+  // If ANY batch failed, throw — even if some facts were stored earlier.
+  // A failed/timed-out UserOp may still linger in the bundler mempool as a
+  // "nonce zombie." If we return normally, the caller's next storeExtractedFacts
+  // call will fetch the same on-chain nonce and hit AA25 ("invalid account nonce").
+  // Throwing forces all callers (import loops, chunk handlers) to stop submitting.
+  if (batchError) {
+    throw new Error(`Memory storage failed (${stored} stored before failure): ${batchError}`);
+  }
+  if (stored === 0 && failedFacts > 0) {
+    throw new Error(`Memory storage failed: ${failedFacts} fact(s) failed to store`);
   }
 
   return stored;
@@ -1479,10 +1500,11 @@ async function handlePluginImportFrom(
   params: Record<string, unknown>,
   logger: OpenClawPluginApi['logger'],
 ): Promise<Record<string, unknown>> {
+  _importInProgress = true;
   const startTime = Date.now();
 
   const source = params.source as string;
-  const validSources = ['mem0', 'mcp-memory', 'chatgpt', 'claude', 'memoclaw', 'generic-json', 'generic-csv'];
+  const validSources = ['mem0', 'mcp-memory', 'chatgpt', 'claude', 'gemini', 'memoclaw', 'generic-json', 'generic-csv'];
 
   if (!source || !validSources.includes(source)) {
     return { success: false, error: `Invalid source. Must be one of: ${validSources.join(', ')}` };
@@ -1514,18 +1536,31 @@ async function handlePluginImportFrom(
     // Dry run: report what was parsed (chunks or facts)
     if (params.dry_run) {
       if (hasChunks) {
+        const totalChunks = parseResult.chunks.length;
+        const EXTRACTION_RATIO = 2.5; // avg facts per chunk, from empirical data
+        const BATCH_SIZE = 25;
+        const SECONDS_PER_BATCH = 45; // ~30s extraction + ~15s embed+store
+        const estimatedFacts = Math.round(totalChunks * EXTRACTION_RATIO);
+        const estimatedBatches = Math.ceil(totalChunks / BATCH_SIZE);
+        const estimatedMinutes = Math.ceil(estimatedBatches * SECONDS_PER_BATCH / 60);
+
         return {
           success: true,
           dry_run: true,
           source,
-          total_chunks: parseResult.chunks.length,
+          total_chunks: totalChunks,
           total_messages: parseResult.totalMessages,
+          estimated_facts: estimatedFacts,
+          estimated_batches: estimatedBatches,
+          estimated_minutes: estimatedMinutes,
+          batch_size: BATCH_SIZE,
+          use_background: totalChunks > 50,
           preview: parseResult.chunks.slice(0, 5).map((c) => ({
             title: c.title,
             messages: c.messages.length,
             first_message: c.messages[0]?.text.slice(0, 100),
           })),
-          note: 'Chunks will be processed through LLM extraction (same quality as auto-extraction).',
+          note: `Estimated ${estimatedFacts} facts from ${totalChunks} chunks (~${estimatedMinutes} min).${totalChunks > 50 ? ' Recommended: background import via sessions_spawn.' : ''}`,
           warnings: parseResult.warnings,
         };
       }
@@ -1556,28 +1591,42 @@ async function handlePluginImportFrom(
       action: 'ADD' as const,
     }));
 
-    // Store in batches of 50
+    // Store in batches of 50. Stop on any batch failure to prevent
+    // nonce zombies from blocking subsequent UserOps (AA25).
     let totalStored = 0;
+    let storeError: string | undefined;
     const batchSize = 50;
 
     for (let i = 0; i < extractedFacts.length; i += batchSize) {
       const batch = extractedFacts.slice(i, i + batchSize);
-      const stored = await storeExtractedFacts(batch, logger);
-      totalStored += stored;
+      try {
+        const stored = await storeExtractedFacts(batch, logger);
+        totalStored += stored;
 
-      logger.info(
-        `Import progress: ${Math.min(i + batchSize, extractedFacts.length)}/${extractedFacts.length} processed, ${totalStored} stored`,
-      );
+        logger.info(
+          `Import progress: ${Math.min(i + batchSize, extractedFacts.length)}/${extractedFacts.length} processed, ${totalStored} stored`,
+        );
+      } catch (err: unknown) {
+        storeError = err instanceof Error ? err.message : String(err);
+        logger.warn(`Import stopped at batch ${Math.floor(i / batchSize) + 1}: ${storeError}`);
+        break; // Stop processing further batches
+      }
+    }
+
+    const importWarnings = [...parseResult.warnings];
+    if (storeError) {
+      importWarnings.push(`Import stopped early: ${storeError}`);
     }
 
     return {
-      success: true,
+      success: totalStored > 0,
       source,
       import_id: crypto.randomUUID(),
       total_found: parseResult.facts.length,
       imported: totalStored,
       skipped: parseResult.facts.length - totalStored,
-      warnings: parseResult.warnings,
+      stopped_early: !!storeError,
+      warnings: importWarnings,
       duration_ms: Date.now() - startTime,
     };
   } catch (e) {
@@ -1585,6 +1634,343 @@ async function handlePluginImportFrom(
     logger.error(`Import failed: ${msg}`);
     return { success: false, error: `Import failed: ${msg}` };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Smart Import — Two-Pass Pipeline (Profile + Triage)
+// ---------------------------------------------------------------------------
+
+// Lazy-load WASM for smart import functions (same pattern as crypto.ts / subgraph-store.ts).
+let _smartImportWasm: typeof import('@totalreclaw/core') | null = null;
+function getSmartImportWasm() {
+  if (!_smartImportWasm) _smartImportWasm = require('@totalreclaw/core');
+  return _smartImportWasm;
+}
+
+/**
+ * Check whether the @totalreclaw/core WASM module exposes smart import functions.
+ * Returns false if the module is an older version without smart import support.
+ */
+function hasSmartImportSupport(): boolean {
+  try {
+    const wasm = getSmartImportWasm();
+    return typeof wasm.chunksToSummaries === 'function' &&
+      typeof wasm.buildProfileBatchPrompt === 'function' &&
+      typeof wasm.parseProfileBatchResponse === 'function' &&
+      typeof wasm.buildTriagePrompt === 'function' &&
+      typeof wasm.parseTriageResponse === 'function' &&
+      typeof wasm.enrichExtractionPrompt === 'function';
+  } catch {
+    return false;
+  }
+}
+
+/** Smart import result containing profile, triage decisions, and enriched system prompt. */
+interface SmartImportContext {
+  /** JSON-serialized UserProfile (for WASM calls that require profile_json) */
+  profileJson: string;
+  /** Triage decisions indexed by chunk_index */
+  decisions: Array<{ chunk_index: number; decision: string; reason: string }>;
+  /** Enriched system prompt for extraction (profile context injected) */
+  enrichedSystemPrompt: string;
+  /** Number of chunks marked for extraction */
+  extractCount: number;
+  /** Number of chunks marked for skipping */
+  skipCount: number;
+  /** Duration of the profiling + triage pipeline in ms */
+  durationMs: number;
+}
+
+/**
+ * Run the smart import two-pass pipeline: profile the user from conversation
+ * summaries, then triage chunks as EXTRACT or SKIP.
+ *
+ * All prompt construction and response parsing happens in @totalreclaw/core WASM.
+ * LLM calls use the plugin's existing chatCompletion() function.
+ *
+ * Returns null if smart import is unavailable (old WASM, no LLM config, etc.)
+ * so the caller can fall back to blind extraction.
+ */
+async function runSmartImportPipeline(
+  chunks: import('./import-adapters/types.js').ConversationChunk[],
+  logger: { info: (msg: string) => void; warn: (msg: string) => void },
+): Promise<SmartImportContext | null> {
+  // Guard: WASM must have smart import functions
+  if (!hasSmartImportSupport()) {
+    logger.info('Smart import: WASM module does not support smart import, falling back to blind extraction');
+    return null;
+  }
+
+  // Guard: LLM must be available
+  const llmConfig = resolveLLMConfig();
+  if (!llmConfig) {
+    logger.info('Smart import: no LLM available, falling back to blind extraction');
+    return null;
+  }
+
+  const pipelineStart = Date.now();
+  const wasm = getSmartImportWasm();
+
+  try {
+    // Step 0: Convert chunks to compact summaries (first + last message)
+    const wasmChunks = chunks.map((c, i) => ({
+      index: i,
+      title: c.title || 'Untitled',
+      messages: c.messages.map((m) => ({ role: m.role, content: m.text })),
+      timestamp: c.timestamp || null,
+    }));
+    const summaries = wasm.chunksToSummaries(JSON.stringify(wasmChunks));
+    const summariesJson = JSON.stringify(summaries);
+
+    // Step 1: Build user profile (batch summarize -> merge)
+    const PROFILE_BATCH_SIZE = 50;
+    const profileStart = Date.now();
+    const partials: unknown[] = [];
+
+    for (let i = 0; i < summaries.length; i += PROFILE_BATCH_SIZE) {
+      const batch = summaries.slice(i, i + PROFILE_BATCH_SIZE);
+      const prompt = wasm.buildProfileBatchPrompt(JSON.stringify(batch));
+      const response = await chatCompletion(llmConfig, [
+        { role: 'user', content: prompt },
+      ], { maxTokens: 2048, temperature: 0 });
+
+      if (!response) {
+        logger.warn(`Smart import: LLM returned empty response for profile batch ${Math.floor(i / PROFILE_BATCH_SIZE) + 1}`);
+        continue;
+      }
+
+      const partial = wasm.parseProfileBatchResponse(response);
+      partials.push(partial);
+    }
+
+    if (partials.length === 0) {
+      logger.warn('Smart import: no profile batches produced, falling back to blind extraction');
+      return null;
+    }
+
+    let profile: unknown;
+    if (partials.length === 1) {
+      // Single batch — skip merge, promote partial to full profile
+      // parseProfileBatchResponse returns a PartialProfile; convert to UserProfile shape
+      const p = partials[0] as Record<string, unknown>;
+      profile = {
+        identity: p.identity ?? null,
+        themes: p.themes ?? [],
+        projects: p.projects ?? [],
+        stack: p.stack ?? [],
+        decisions: p.decisions ?? [],
+        interests: p.interests ?? [],
+        skip_patterns: p.skip_patterns ?? [],
+      };
+    } else {
+      const mergePrompt = wasm.buildProfileMergePrompt(JSON.stringify(partials));
+      const mergeResponse = await chatCompletion(llmConfig, [
+        { role: 'user', content: mergePrompt },
+      ], { maxTokens: 2048, temperature: 0 });
+
+      if (!mergeResponse) {
+        logger.warn('Smart import: LLM returned empty response for profile merge, falling back to blind extraction');
+        return null;
+      }
+
+      profile = wasm.parseProfileResponse(mergeResponse);
+    }
+
+    const profileJson = JSON.stringify(profile);
+    const profileDuration = Date.now() - profileStart;
+
+    const p = profile as Record<string, unknown>;
+    const themeCount = Array.isArray(p.themes) ? p.themes.length : 0;
+    const skipPatternCount = Array.isArray(p.skip_patterns) ? p.skip_patterns.length : 0;
+    logger.info(
+      `Smart import: profile built in ${profileDuration}ms (themes=${themeCount}, skip_patterns=${skipPatternCount})`,
+    );
+
+    // Step 1.5: Chunk triage (EXTRACT or SKIP)
+    const triageStart = Date.now();
+    const allDecisions: Array<{ chunk_index: number; decision: string; reason: string }> = [];
+    const TRIAGE_BATCH_SIZE = 50;
+
+    for (let i = 0; i < summaries.length; i += TRIAGE_BATCH_SIZE) {
+      const batch = summaries.slice(i, i + TRIAGE_BATCH_SIZE);
+      const triagePrompt = wasm.buildTriagePrompt(profileJson, JSON.stringify(batch));
+      const triageResponse = await chatCompletion(llmConfig, [
+        { role: 'user', content: triagePrompt },
+      ], { maxTokens: 4096, temperature: 0 });
+
+      if (!triageResponse) {
+        logger.warn(`Smart import: LLM returned empty response for triage batch ${Math.floor(i / TRIAGE_BATCH_SIZE) + 1}, defaulting to EXTRACT`);
+        // Default all chunks in this batch to EXTRACT
+        for (let j = i; j < Math.min(i + TRIAGE_BATCH_SIZE, summaries.length); j++) {
+          allDecisions.push({ chunk_index: j, decision: 'EXTRACT', reason: 'triage LLM unavailable' });
+        }
+        continue;
+      }
+
+      const batchDecisions = wasm.parseTriageResponse(triageResponse) as Array<{
+        chunk_index: number;
+        decision: string;
+        reason: string;
+      }>;
+      allDecisions.push(...batchDecisions);
+    }
+
+    const triageDuration = Date.now() - triageStart;
+
+    const extractCount = allDecisions.filter((d) => d.decision !== 'SKIP').length;
+    const skipCount = allDecisions.filter((d) => d.decision === 'SKIP').length;
+    logger.info(
+      `Smart import: triage complete in ${triageDuration}ms (extract=${extractCount}, skip=${skipCount}, total=${chunks.length})`,
+    );
+
+    // Step 2: Build enriched system prompt for extraction
+    const enrichedSystemPrompt = wasm.enrichExtractionPrompt(profileJson, EXTRACTION_SYSTEM_PROMPT);
+
+    const totalDuration = Date.now() - pipelineStart;
+    logger.info(`Smart import: pipeline complete in ${totalDuration}ms`);
+
+    return {
+      profileJson,
+      decisions: allDecisions,
+      enrichedSystemPrompt,
+      extractCount,
+      skipCount,
+      durationMs: totalDuration,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn(`Smart import: pipeline failed (${msg}), falling back to blind extraction`);
+    return null;
+  }
+}
+
+/**
+ * Check if a chunk should be skipped based on triage decisions.
+ * If no decision exists for the chunk index, defaults to EXTRACT (safe default).
+ */
+function isChunkSkipped(
+  chunkIndex: number,
+  decisions: Array<{ chunk_index: number; decision: string }>,
+): { skipped: boolean; reason: string } {
+  const decision = decisions.find((d) => d.chunk_index === chunkIndex);
+  if (decision && decision.decision === 'SKIP') {
+    return { skipped: true, reason: (decision as { reason?: string }).reason || 'triage: skip' };
+  }
+  return { skipped: false, reason: '' };
+}
+
+/**
+ * Process a batch (slice) of conversation chunks from a file.
+ * Called repeatedly by the agent for large imports.
+ */
+async function handleBatchImport(
+  params: Record<string, unknown>,
+  logger: OpenClawPluginApi['logger'],
+): Promise<Record<string, unknown>> {
+  _importInProgress = true;
+  const source = params.source as string;
+  const filePath = params.file_path as string | undefined;
+  const content = params.content as string | undefined;
+  const offset = (params.offset as number) ?? 0;
+  const batchSize = (params.batch_size as number) ?? 25;
+
+  const validSources = ['mem0', 'mcp-memory', 'chatgpt', 'claude', 'gemini', 'memoclaw', 'generic-json', 'generic-csv'];
+  if (!source || !validSources.includes(source)) {
+    return { success: false, error: `Invalid source. Must be one of: ${validSources.join(', ')}` };
+  }
+
+  const startTime = Date.now();
+
+  const { getAdapter } = await import('./import-adapters/index.js');
+  const adapter = getAdapter(source as import('./import-adapters/types.js').ImportSource);
+
+  const parseResult = await adapter.parse({ content, file_path: filePath });
+
+  if (parseResult.errors.length > 0 && parseResult.chunks.length === 0) {
+    return { success: false, error: parseResult.errors.join('; ') };
+  }
+
+  const totalChunks = parseResult.chunks.length;
+  const slice = parseResult.chunks.slice(offset, offset + batchSize);
+  const remaining = Math.max(0, totalChunks - offset - slice.length);
+
+  // --- Smart Import: Profile + Triage ---
+  // Build profile from ALL chunks (not just the slice) for full context,
+  // then triage only the current slice. For simplicity, we rebuild on every
+  // batch call — optimization (caching) can come later.
+  const smartCtx = await runSmartImportPipeline(parseResult.chunks, logger);
+  let chunksSkipped = 0;
+
+  // Process the slice through the normal extraction + storage pipeline.
+  // If a batch fails (nonce zombie, quota exceeded, etc.), stop immediately
+  // to prevent subsequent UserOps from hitting AA25 nonce conflicts.
+  let factsExtracted = 0;
+  let factsStored = 0;
+  let chunksProcessed = 0;
+  let storeError: string | undefined;
+
+  for (let i = 0; i < slice.length; i++) {
+    const chunk = slice[i];
+    const globalIndex = offset + i; // Index in the full chunks array
+
+    // Smart import: skip chunks triaged as SKIP
+    if (smartCtx) {
+      const { skipped, reason } = isChunkSkipped(globalIndex, smartCtx.decisions);
+      if (skipped) {
+        logger.info(`Import: skipping chunk ${globalIndex + 1}/${totalChunks}: "${chunk.title}" (${reason})`);
+        chunksSkipped++;
+        chunksProcessed++;
+        continue;
+      }
+    }
+
+    logger.info(`Import: extracting facts from chunk ${globalIndex + 1}/${totalChunks}: "${chunk.title}"`);
+
+    const messages = chunk.messages.map((m) => ({ role: m.role, content: m.text }));
+    const facts = await extractFacts(
+      messages,
+      'full',
+      undefined, // no existing memories for dedup during import
+      smartCtx?.enrichedSystemPrompt, // profile-enriched extraction prompt
+    );
+    chunksProcessed++;
+
+    if (facts.length > 0) {
+      factsExtracted += facts.length;
+      try {
+        const stored = await storeExtractedFacts(facts, logger);
+        factsStored += stored;
+      } catch (err: unknown) {
+        storeError = err instanceof Error ? err.message : String(err);
+        logger.warn(`Import batch stopped at chunk ${globalIndex + 1}/${totalChunks}: ${storeError}`);
+        break; // Stop processing further chunks — a zombie UserOp may block writes
+      }
+    }
+  }
+
+  return {
+    success: factsStored > 0 || (!storeError && factsExtracted === 0),
+    batch_offset: offset,
+    batch_size: chunksProcessed,
+    total_chunks: totalChunks,
+    facts_extracted: factsExtracted,
+    facts_stored: factsStored,
+    chunks_skipped: chunksSkipped,
+    remaining_chunks: remaining,
+    is_complete: remaining === 0 && !storeError,
+    stopped_early: !!storeError,
+    error: storeError,
+    smart_import: smartCtx ? {
+      profile_duration_ms: smartCtx.durationMs,
+      extract_count: smartCtx.extractCount,
+      skip_count: smartCtx.skipCount,
+    } : null,
+    // Estimation for the full import
+    estimated_total_facts: Math.round(totalChunks * 2.5),
+    estimated_total_userops: Math.ceil(totalChunks * 2.5 / 15),
+    estimated_minutes: Math.ceil(Math.ceil(totalChunks / batchSize) * 45 / 60),
+    duration_ms: Date.now() - startTime,
+  };
 }
 
 /**
@@ -1605,9 +1991,29 @@ async function handleChunkImport(
   let totalExtracted = 0;
   let totalStored = 0;
   let chunksProcessed = 0;
+  let chunksSkipped = 0;
 
-  for (const chunk of chunks) {
+  let storeError: string | undefined;
+
+  // --- Smart Import: Profile + Triage ---
+  const smartCtx = await runSmartImportPipeline(chunks, logger);
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
     chunksProcessed++;
+
+    // Smart import: skip chunks triaged as SKIP
+    if (smartCtx) {
+      const { skipped, reason } = isChunkSkipped(i, smartCtx.decisions);
+      if (skipped) {
+        logger.info(
+          `Import: skipping chunk ${chunksProcessed}/${chunks.length}: "${chunk.title}" (${reason})`,
+        );
+        chunksSkipped++;
+        continue;
+      }
+    }
+
     logger.info(
       `Import: extracting facts from chunk ${chunksProcessed}/${chunks.length}: "${chunk.title}"`,
     );
@@ -1621,22 +2027,35 @@ async function handleChunkImport(
 
     // Use 'full' mode to extract ALL valuable memories from the chunk
     // (not just the last few messages like 'turn' mode does).
-    const facts = await extractFacts(messages, 'full');
+    // Smart import: pass enriched system prompt with user profile context.
+    const facts = await extractFacts(
+      messages,
+      'full',
+      undefined, // no existing memories for dedup during import
+      smartCtx?.enrichedSystemPrompt, // profile-enriched extraction prompt
+    );
 
     if (facts.length > 0) {
       totalExtracted += facts.length;
 
-      // Store through the normal pipeline (dedup, encrypt, store)
-      const stored = await storeExtractedFacts(facts, logger);
-      totalStored += stored;
+      try {
+        // Store through the normal pipeline (dedup, encrypt, store).
+        // storeExtractedFacts throws on batch failure to prevent nonce zombies.
+        const stored = await storeExtractedFacts(facts, logger);
+        totalStored += stored;
 
-      logger.info(
-        `Import chunk ${chunksProcessed}/${chunks.length}: extracted ${facts.length} facts, stored ${stored}`,
-      );
+        logger.info(
+          `Import chunk ${chunksProcessed}/${chunks.length}: extracted ${facts.length} facts, stored ${stored}`,
+        );
+      } catch (err: unknown) {
+        storeError = err instanceof Error ? err.message : String(err);
+        logger.warn(`Import stopped at chunk ${chunksProcessed}/${chunks.length}: ${storeError}`);
+        break; // Stop processing further chunks — a zombie UserOp may block writes
+      }
     }
   }
 
-  if (totalExtracted === 0 && chunks.length > 0) {
+  if (totalExtracted === 0 && chunks.length > 0 && !storeError && chunksSkipped < chunks.length) {
     warnings.push(
       `Processed ${chunks.length} conversation chunks (${totalMessages} messages) but the LLM ` +
       `did not extract any facts worth storing. This can happen if the conversations are mostly ` +
@@ -1644,15 +2063,27 @@ async function handleChunkImport(
     );
   }
 
+  if (storeError) {
+    warnings.push(`Import stopped early: ${storeError}. ${chunks.length - chunksProcessed} chunk(s) not processed.`);
+  }
+
   return {
     success: totalStored > 0 || totalExtracted > 0,
     source,
     import_id: crypto.randomUUID(),
     total_chunks: chunks.length,
+    chunks_processed: chunksProcessed,
+    chunks_skipped: chunksSkipped,
     total_messages: totalMessages,
     facts_extracted: totalExtracted,
     imported: totalStored,
     skipped: totalExtracted - totalStored,
+    stopped_early: !!storeError,
+    smart_import: smartCtx ? {
+      profile_duration_ms: smartCtx.durationMs,
+      extract_count: smartCtx.extractCount,
+      skip_count: smartCtx.skipCount,
+    } : null,
     warnings,
     duration_ms: Date.now() - startTime,
   };
@@ -1867,6 +2298,7 @@ const plugin = {
               if (!result.success) {
                 throw new Error(`On-chain submission failed (tx=${result.txHash?.slice(0, 10) || 'none'}…)`);
               }
+              api.logger.info(`totalreclaw_remember: stored on-chain (tx=${result.txHash.slice(0, 10)}…)`);
             } else {
               await apiClient!.store(userId!, [factPayload], authKeyHex!);
             }
@@ -2261,16 +2693,22 @@ const plugin = {
             }> = [];
 
             if (isSubgraphMode()) {
-              // Query subgraph for all active facts
+              // Query subgraph for all active facts (cursor-based pagination via id_gt)
               const config = getSubgraphConfig();
               const relayUrl = config.relayUrl;
               const PAGE_SIZE = 1000;
-              let skip = 0;
-              let hasMore = true;
+              let lastId = '';
               const owner = subgraphOwner || userId || '';
+              console.error(`[TotalReclaw Export] owner=${owner} subgraphOwner=${subgraphOwner} userId=${userId} relayUrl=${relayUrl} authKey=${authKeyHex ? authKeyHex.slice(0, 8) + '...' : 'MISSING'} isSubgraph=${isSubgraphMode()}`);
 
-              while (hasMore) {
-                const query = `{ facts(where: { owner: "${owner}", isActive: true }, first: ${PAGE_SIZE}, skip: ${skip}, orderBy: sequenceId, orderDirection: asc) { id encryptedBlob source agentId timestamp sequenceId } }`;
+              while (true) {
+                const hasLastId = lastId !== '';
+                const query = hasLastId
+                  ? `query($owner:Bytes!,$first:Int!,$lastId:String!){facts(where:{owner:$owner,isActive:true,id_gt:$lastId},first:$first,orderBy:id,orderDirection:asc){id encryptedBlob timestamp sequenceId}}`
+                  : `query($owner:Bytes!,$first:Int!){facts(where:{owner:$owner,isActive:true},first:$first,orderBy:id,orderDirection:asc){id encryptedBlob timestamp sequenceId}}`;
+                const variables: Record<string, unknown> = hasLastId
+                  ? { owner, first: PAGE_SIZE, lastId }
+                  : { owner, first: PAGE_SIZE };
 
                 const res = await fetch(`${relayUrl}/v1/subgraph`, {
                   method: 'POST',
@@ -2279,13 +2717,24 @@ const plugin = {
                     'X-TotalReclaw-Client': 'openclaw-plugin',
                     ...(authKeyHex ? { Authorization: `Bearer ${authKeyHex}` } : {}),
                   },
-                  body: JSON.stringify({ query }),
+                  body: JSON.stringify({ query, variables }),
                 });
 
                 const json = (await res.json()) as {
                   data?: { facts?: Array<{ id: string; encryptedBlob: string; source: string; agentId: string; timestamp: string; sequenceId: string }> };
+                  error?: string;
+                  errors?: Array<{ message: string }>;
                 };
+                // Surface relay/subgraph errors instead of silently returning empty
+                if (json.error || json.errors) {
+                  const errMsg = json.error || json.errors?.map(e => e.message).join('; ') || 'Unknown error';
+                  api.logger.error(`Export subgraph query failed: ${errMsg} (owner=${owner}, status=${res.status})`);
+                  return {
+                    content: [{ type: 'text', text: `Export failed: ${errMsg}` }],
+                  };
+                }
                 const facts = json?.data?.facts || [];
+                if (facts.length === 0) break;
 
                 for (const fact of facts) {
                   try {
@@ -2304,8 +2753,8 @@ const plugin = {
                   }
                 }
 
-                skip += PAGE_SIZE;
-                hasMore = facts.length === PAGE_SIZE;
+                if (facts.length < PAGE_SIZE) break;
+                lastId = facts[facts.length - 1].id;
               }
             } else {
               // HTTP server mode — paginate through PostgreSQL facts
@@ -2467,13 +2916,13 @@ const plugin = {
         name: 'totalreclaw_consolidate',
         label: 'Consolidate',
         description:
-          'Scan all stored memories and merge near-duplicates. Keeps the most important/recent version and removes redundant copies.',
+          'Deduplicate and merge related memories. Self-hosted mode only.',
         parameters: {
           type: 'object',
           properties: {
             dry_run: {
               type: 'boolean',
-              description: 'Preview consolidation without deleting (default: false)',
+              description: 'Preview only (default: false)',
             },
           },
           additionalProperties: false,
@@ -2624,7 +3073,7 @@ const plugin = {
         name: 'totalreclaw_import_from',
         label: 'Import From',
         description:
-          'Import memories from other AI memory tools (Mem0, MCP Memory Server, ChatGPT, Claude, MemoClaw, or generic JSON/CSV). ' +
+          'Import memories from other AI memory tools (Mem0, MCP Memory Server, ChatGPT, Claude, Gemini, MemoClaw, or generic JSON/CSV). ' +
           'Provide the source name and either an API key, file content, or file path. ' +
           'Use dry_run=true to preview before importing. Idempotent — safe to run multiple times.',
         parameters: {
@@ -2632,8 +3081,8 @@ const plugin = {
           properties: {
             source: {
               type: 'string',
-              enum: ['mem0', 'mcp-memory', 'chatgpt', 'claude', 'memoclaw', 'generic-json', 'generic-csv'],
-              description: 'The source system to import from (chatgpt: conversations.json or memory text; claude: memory text)',
+              enum: ['mem0', 'mcp-memory', 'chatgpt', 'claude', 'gemini', 'memoclaw', 'generic-json', 'generic-csv'],
+              description: 'The source system to import from (gemini: Google Takeout HTML; chatgpt: conversations.json or memory text; claude: memory text)',
             },
             api_key: {
               type: 'string',
@@ -2673,6 +3122,56 @@ const plugin = {
         },
       },
       { name: 'totalreclaw_import_from' },
+    );
+
+    // ---------------------------------------------------------------
+    // Tool: totalreclaw_import_batch
+    // ---------------------------------------------------------------
+
+    api.registerTool(
+      {
+        name: 'totalreclaw_import_batch',
+        label: 'Import Batch',
+        description:
+          'Process one batch of a large import. Call repeatedly with increasing offset until is_complete=true.',
+        parameters: {
+          type: 'object',
+          properties: {
+            source: {
+              type: 'string',
+              enum: ['gemini', 'chatgpt', 'claude'],
+              description: 'Source format',
+            },
+            file_path: {
+              type: 'string',
+              description: 'Path to source file',
+            },
+            content: {
+              type: 'string',
+              description: 'File content (text sources)',
+            },
+            offset: {
+              type: 'number',
+              description: 'Starting chunk index (0-based)',
+            },
+            batch_size: {
+              type: 'number',
+              description: 'Chunks per call (default 25)',
+            },
+          },
+          required: ['source'],
+        },
+        async execute(_toolCallId: string, params: Record<string, unknown>) {
+          try {
+            await requireFullSetup(api.logger);
+            return handleBatchImport(params, api.logger);
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            return { error: message };
+          }
+        },
+      },
+      { name: 'totalreclaw_import_batch' },
     );
 
     // ---------------------------------------------------------------
@@ -2968,6 +3467,25 @@ const plugin = {
                 content: [{ type: 'text', text: 'Error: recovery_phrase is required.' }],
               };
             }
+
+            // Guard: refuse to overwrite existing credentials with a DIFFERENT phrase
+            // (prevents data loss when background sessions_spawn workers call setup).
+            // Allow re-init with the SAME phrase (handles agent exec → setup flow).
+            try {
+              const existing = fs.readFileSync(CREDENTIALS_PATH, 'utf-8');
+              const creds = JSON.parse(existing);
+              if (creds.mnemonic && creds.userId && creds.mnemonic !== mnemonic) {
+                api.logger.info('totalreclaw_setup: credentials exist with different mnemonic, refusing to overwrite');
+                return {
+                  content: [{
+                    type: 'text',
+                    text: 'TotalReclaw is already set up with an existing recovery phrase. Your encrypted memories are tied to that phrase.\n\n' +
+                          'If you intentionally want to start fresh with a NEW phrase (this will make existing memories inaccessible), ' +
+                          'delete ~/.totalreclaw/credentials.json first, then call this tool again.',
+                  }],
+                };
+              }
+            } catch { /* credentials.json doesn't exist or is corrupted — proceed with setup */ }
 
             // Basic validation: must be 12 words
             const words = mnemonic.split(/\s+/);
@@ -3437,6 +3955,14 @@ const plugin = {
           // memory system doesn't write sensitive data in cleartext, even if
           // our extraction fails below.
           ensureMemoryHeader(api.logger);
+
+          // BUG-2 fix: skip extraction if an import was in progress this turn.
+          // Import failures were retriggering agent_end → extraction → import loops.
+          if (_importInProgress) {
+            _importInProgress = false; // auto-reset for next turn
+            api.logger.info('agent_end: skipping extraction (import was in progress)');
+            return { memoryHandled: true };
+          }
 
           const evt = event as { messages?: unknown[]; success?: boolean } | undefined;
           if (!evt?.messages || evt.messages.length < 2) {

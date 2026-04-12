@@ -73,7 +73,7 @@ const PROVIDER_KEY_NAMES: Record<string, string[]> = {
 };
 
 const PROVIDER_BASE_URLS: Record<string, string> = {
-  zai:        'https://api.z.ai/api/paas/v4',
+  zai:        'https://api.z.ai/api/coding/paas/v4',
   anthropic:  'https://api.anthropic.com/v1',
   openai:     'https://api.openai.com/v1',
   gemini:     'https://generativelanguage.googleapis.com/v1beta/openai',
@@ -106,8 +106,8 @@ function deriveCheapModel(provider: string, primaryModel: string): string {
   // Derive based on provider naming conventions
   switch (provider) {
     case 'zai': {
-      // glm-5 -> glm-4.5-flash, glm-4.6 -> glm-4.5-flash
-      return 'glm-4.5-flash';
+      // glm-5.1 -> glm-5-turbo (fast, available on coding endpoint)
+      return 'glm-5-turbo';
     }
     case 'anthropic': {
       // claude-sonnet-4-5 -> claude-haiku-4-5-20251001
@@ -207,17 +207,8 @@ export function initLLMClient(options: {
         const ocProvider = openclawProviders[provider];
         if (ocProvider?.apiKey) {
           apiKey = ocProvider.apiKey;
-          // Use the provider's configured baseUrl but normalize for extraction.
-          // OpenClaw's Z.AI config may use /api/coding/paas/v4 (coding-specific
-          // endpoint), but extraction uses the cheap model (glm-4.5-flash) which
-          // is available on the standard /api/paas/v4 endpoint. Normalize to
-          // avoid routing extraction calls through the coding endpoint.
           if (ocProvider.baseUrl) {
-            let url = ocProvider.baseUrl.replace(/\/+$/, '');
-            if (provider === 'zai') {
-              url = url.replace('/api/coding/paas/', '/api/paas/');
-            }
-            baseUrl = url;
+            baseUrl = ocProvider.baseUrl.replace(/\/+$/, '');
           }
         }
       }
@@ -246,10 +237,6 @@ export function initLLMClient(options: {
       const provider = providerName.toLowerCase();
       let baseUrl = providerConfig.baseUrl?.replace(/\/+$/, '') || PROVIDER_BASE_URLS[provider];
       if (!baseUrl) continue;
-      // Normalize Z.AI coding endpoint to standard endpoint for extraction
-      if (provider === 'zai') {
-        baseUrl = baseUrl.replace('/api/coding/paas/', '/api/paas/');
-      }
 
       // Pick a model from the provider's configured models, or use our default
       const firstModelId = providerConfig.models?.[0]?.id;
@@ -329,7 +316,7 @@ export function resolveLLMConfig(): LLMClientConfig | null {
   if (zaiKey) {
     return {
       apiKey: zaiKey,
-      baseUrl: 'https://api.z.ai/api/paas/v4',
+      baseUrl: 'https://api.z.ai/api/coding/paas/v4',
       model,
       apiFormat: 'openai',
     };
@@ -479,6 +466,6 @@ async function chatCompletionAnthropic(
 // ---------------------------------------------------------------------------
 
 // Embeddings are now generated locally via @huggingface/transformers
-// (bge-small-en-v1.5 ONNX model). No API key needed.
+// (Harrier-OSS-v1-270M ONNX model). No API key needed.
 // See embedding.ts for implementation details.
 export { generateEmbedding, getEmbeddingDims } from './embedding.js';
