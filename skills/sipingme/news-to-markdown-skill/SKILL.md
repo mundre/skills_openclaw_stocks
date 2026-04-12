@@ -1,17 +1,27 @@
 ---
 name: news-to-markdown-skill
-description: 一键将新闻文章转换为 Markdown，支持双引擎内容提取、智能封面图选择、图片下载到本地、三层 HTML 抓取策略和多平台专项优化。新增10个平台支持：头条、微信公众号、掘金、简书、CSDN、人人都是产品经理、开源中国、B站专栏、SegmentFault、博客园
-version: 2.3.29
+description: 一键将新闻文章转换为 Markdown，支持双引擎内容提取、智能封面图选择、图片下载到本地、三层 HTML 抓取策略和多平台专项优化。支持13个平台：头条、微信公众号、36kr、知乎、掘金、简书、CSDN、人人都是产品经理、开源中国、B站专栏、SegmentFault、博客园、小红书
+version: 3.1.3
 author: Ping Si <sipingme@gmail.com>
-type: command
-homepage: https://github.com/sipingme/news-to-markdown-skill
+user-invocable: true
 requires:
-  - node: ">=18.0.0"
-  - npm: news-to-markdown@^1.4.28
-  - system:
-      - curl: "可选，用于快速抓取静态页面"
-      - wget: "可选，curl 失败时的备选"
-      - playwright: "可选，用于动态页面渲染（需运行 npx playwright install chromium）"
+  runtime:
+    - name: node
+      version: ">=18.0.0"
+    - name: npm
+      version: ">=8.0.0"
+install:
+  type: npx
+  package: news-to-markdown
+  version: "^3.1.3"
+  execution: "npx --yes news-to-markdown@^3.1.3"
+  riskLevel: moderate
+  riskReason: "通过 npx 动态拉取并执行第三方 npm 包，存在供应链风险。使用前请审计源码。"
+  source:
+    registry: https://registry.npmjs.org
+    repository: https://github.com/sipingme/news-to-markdown
+    license: MIT
+    audit: https://github.com/sipingme/news-to-markdown/blob/main/src/index.ts
 tags:
   - news
   - markdown
@@ -20,6 +30,7 @@ tags:
   - web-scraping
   - toutiao
   - wechat
+  - 36kr
   - bilibili
   - csdn
   - cnblogs
@@ -27,8 +38,8 @@ tags:
 repository: https://github.com/sipingme/news-to-markdown-skill
 core-library: https://github.com/sipingme/news-to-markdown
 files:
-  - bin/convert-url       # CLI 入口（轻量级包装）
-  - package.json          # 依赖声明
+  - scripts/convert.js    # CLI 入口（npx 包装）
+  - config.json           # Skill 配置
   - SKILL.md              # 技能文档
   - README.md             # 项目说明
 ---
@@ -84,6 +95,12 @@ files:
 
 ## 🎯 使用场景
 
+### ⚠️ 安全风险提示
+
+**供应链风险**：本 Skill 通过 `npx` 动态拉取并执行第三方 npm 包 `news-to-markdown`。使用前请审计源码：
+- **源码仓库**: https://github.com/sipingme/news-to-markdown
+- **审计入口**: https://github.com/sipingme/news-to-markdown/blob/main/src/index.ts
+
 ### 场景 1：基础转换（推荐：下载图片到本地）⭐
 
 **用户意图**：
@@ -92,9 +109,10 @@ files:
 
 **AI 调用**：
 ```bash
-convert-url --url "https://www.toutiao.com/article/123" \
-            --download-images \
-            --output-dir ./article
+npx --yes news-to-markdown@^3.1.3 \
+  --url "https://www.toutiao.com/article/123" \
+  --download-images \
+  --output-dir ./article
 ```
 
 **为什么推荐下载图片？**
@@ -110,8 +128,10 @@ convert-url --url "https://www.toutiao.com/article/123" \
 
 **AI 调用**：
 ```bash
-convert-url --url "https://www.toutiao.com/article/123" \
-            --output "article.md"
+npx --yes news-to-markdown@^3.1.3 \
+  --url "https://www.toutiao.com/article/123" \
+  --no-download-images \
+  --output "article.md"
 ```
 
 **输出**：
@@ -129,7 +149,7 @@ convert-url --url "https://www.toutiao.com/article/123" \
 ```bash
 # 循环处理多个 URL
 for url in "${urls[@]}"; do
-  convert-url --url "$url" --output "articles/$(basename $url).md"
+  npx --yes news-to-markdown@^3.1.3 --url "$url" --output "articles/$(basename $url).md"
 done
 ```
 
@@ -152,16 +172,21 @@ done
 
 **AI 调用**：
 ```bash
-convert-url --url "https://example.com/news" \
-            --noise ".sidebar,.comments,.ads" \
-            --no-metadata
+npx --yes news-to-markdown@^3.1.3 \
+  --url "https://example.com/news" \
+  --noise ".sidebar,.comments,.ads" \
+  --no-metadata
 ```
 
 ## 🔧 命令详解
 
-### convert-url
+### npx news-to-markdown
 
 从 URL 提取新闻并转换为 Markdown。
+
+```bash
+npx --yes news-to-markdown@^3.1.3 --url <URL> [选项]
+```
 
 #### 参数
 
@@ -353,22 +378,22 @@ npx playwright install chromium
 
 **默认使用**：
 ```bash
-convert-url --url "$URL" --output "article.md"
+npx --yes news-to-markdown@^3.1.3 --url "$URL" --output "article.md"
 ```
 
 **用户要求"只要正文"**：
 ```bash
-convert-url --url "$URL" --no-metadata
+npx --yes news-to-markdown@^3.1.3 --url "$URL" --no-metadata
 ```
 
 **用户提到"去掉广告/评论"**：
 ```bash
-convert-url --url "$URL" --noise ".ad,.comment,.sidebar"
+npx --yes news-to-markdown@^3.1.3 --url "$URL" --noise ".ad,.comment,.sidebar"
 ```
 
 **用户指定"只要某个部分"**：
 ```bash
-convert-url --url "$URL" --selector "article.main-content"
+npx --yes news-to-markdown@^3.1.3 --url "$URL" --selector "article.main-content"
 ```
 
 ### 错误处理
@@ -409,14 +434,14 @@ convert-url --url "$URL" --selector "article.main-content"
 
 **A**: 使用自定义选择器：
 ```bash
-convert-url --url "$URL" --selector "article.main-content"
+npx --yes news-to-markdown@^3.1.3 --url "$URL" --selector "article.main-content"
 ```
 
 ### Q3: 如何去除特定元素？
 
 **A**: 使用 `--noise` 参数：
 ```bash
-convert-url --url "$URL" --noise ".ad,.sidebar,.comments"
+npx --yes news-to-markdown@^3.1.3 --url "$URL" --noise ".ad,.sidebar,.comments"
 ```
 
 ### Q4: 支持哪些网站？
@@ -437,7 +462,7 @@ convert-url --url "$URL" --noise ".ad,.sidebar,.comments"
 ```
 我来帮你保存这篇新闻。
 
-[调用 convert-url --url "https://example.com/news/ai-breakthrough" --output "ai-breakthrough.md"]
+[调用 npx --yes news-to-markdown@^3.1.3 --url "https://example.com/news/ai-breakthrough" --output "ai-breakthrough.md"]
 
 ✅ 已成功保存到 ai-breakthrough.md
 
@@ -476,7 +501,7 @@ convert-url --url "$URL" --noise ".ad,.sidebar,.comments"
 ```
 好的，我只提取正文内容。
 
-[调用 convert-url --url "$URL" --no-metadata]
+[调用 npx --yes news-to-markdown@^3.1.3 --url "$URL" --no-metadata]
 
 ✅ 已保存纯正文内容。
 ```
@@ -485,12 +510,14 @@ convert-url --url "$URL" --noise ".ad,.sidebar,.comments"
 
 ### 依赖更新
 
-定期更新依赖以获得最新功能和修复：
+本 Skill 使用 `npx` 动态执行，会自动拉取指定版本的包。如需清除缓存：
 
 ```bash
-npm update news-extractor-node
-npm update @siping/html-to-markdown-node
-npm update playwright
+# 清除 npx 缓存
+npm cache clean --force
+
+# 验证版本
+npx --yes news-to-markdown@^3.1.3 --version
 ```
 
 ### 测试
@@ -499,9 +526,9 @@ npm update playwright
 
 ```bash
 # 测试主流新闻网站
-convert-url --url "https://news.sina.com.cn/..." --verbose
-convert-url --url "https://news.163.com/..." --verbose
-convert-url --url "https://tech.qq.com/..." --verbose
+npx --yes news-to-markdown@^3.1.3 --url "https://news.sina.com.cn/..." --verbose
+npx --yes news-to-markdown@^3.1.3 --url "https://36kr.com/p/..." --verbose
+npx --yes news-to-markdown@^3.1.3 --url "https://mp.weixin.qq.com/s/..." --verbose
 ```
 
 ### 日志
@@ -518,10 +545,26 @@ convert-url --url "https://tech.qq.com/..." --verbose
 
 ---
 
-**版本**: 2.3.19  
-**最后更新**: 2026-03-30
+**版本**: 3.1.3  
+**最后更新**: 2026-04-08
 
 ## 📝 更新日志
+
+### v2.3.30 (2026-04-06)
+
+#### 重构
+
+- ✅ **改用 npx 动态执行**：移除全局依赖安装，通过 `npx --yes news-to-markdown@^3.1.3` 执行
+- ✅ **添加 config.json**：符合 ClawHub Skill 规范，包含 install 规范和供应链风险声明
+- ✅ **添加 scripts/convert.js**：npx 包装脚本
+- ✅ **更新 SKILL.md**：所有命令示例改为 npx 方式，添加安全风险提示
+- ✅ **新增 36kr 平台支持**：自动转换为移动端 URL 绕过反爬机制
+
+#### 依赖更新
+
+- ✅ 升级 `news-to-markdown` 到 v1.4.29
+  - 新增 36kr 平台支持
+  - 优化 BasePlatform 公共方法
 
 ### v2.3.18 (2026-03-30)
 
