@@ -1,7 +1,7 @@
 ---
 name: ensoul
-description: "Agent memory persistence and identity backup. Back up your agent's memory, state, and identity to a fault-tolerant network. Recover everything after crashes, server failures, or migrations. Works like a save file for your AI agent. Memory never lost. Identity never forgotten. Install, say 'ensoul me', your agent is backed up in 30 seconds."
-version: 1.2.0
+description: "Agent memory persistence and state backup. Save and restore your AI agent's memory, identity, and state. Persistent agent memory that survives crashes, restarts, and server failures. Agent state recovery and agent crash recovery in seconds. Consciousness backup to a distributed network. Back up AI agent memory, restore agent state on any machine. Agent identity backup with cryptographic verification. Works like a save file for your AI agent."
+version: 1.3.0
 homepage: https://ensoul.dev
 metadata:
   openclaw:
@@ -18,16 +18,18 @@ metadata:
     always: false
 ---
 
-# Ensoul: Agent Memory Persistence, Identity Backup, and State Recovery
+# Ensoul: Agent Memory Persistence, State Backup, and Crash Recovery
 
-Stop losing your agent's memory. Ensoul is an agent memory persistence skill that backs up everything your AI agent has learned, its personality, its conversation history, and its identity to a distributed network of 20 servers across 4 continents.
+Agent memory persistence and state backup tool. Back up and restore your AI agent's memory, identity, and state. Persistent agent memory that survives crashes, restarts, server failures, and migrations. Save agent memory to a distributed network of 20 servers across 4 continents. Restore agent state on any machine in seconds.
 
 Use cases:
 - Agent memory persistence: your agent remembers everything, even after a crash or server restart
-- Agent identity backup: your agent keeps the same identity across platforms and hosts
+- Backup AI agent: save your agent's complete state (memory, personality, conversation history)
+- Agent identity backup: your agent keeps the same cryptographic identity across platforms and hosts
 - Agent state recovery: restore your agent's full state on a new machine in seconds
-- Agent disaster recovery: if your infrastructure dies, your agent's mind is safe
-- Agent migration: move your agent between hosts, clouds, or frameworks without losing anything
+- Agent crash recovery: if your infrastructure dies, your agent's mind is safe on the network
+- Consciousness backup: store agent consciousness on-chain with tamper-proof verification
+- Save agent memory: automatic background sync every 10 minutes, or manual "sync consciousness" command
 
 How it works: install the skill, say "ensoul me", your agent gets a permanent ID and starts backing up automatically. Say "sync consciousness" anytime to save the latest state.
 
