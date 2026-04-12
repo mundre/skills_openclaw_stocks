@@ -1,7 +1,10 @@
 ---
+version: "1.0.0"
 name: bumblebee
-description: "Two modes: (1) BUMBLEBEE — Communicate through music by playing exact lyric lines on Spotify, like Bumblebee from Transformers speaking through radio snippets. (2) R2-DJ — Contextual music curation that reads the moment (time, mood, recent listening, activity) and builds the perfect queue. Use when: expressing something through song lyrics, playing music for the current vibe, curating a playlist for a mood/activity, responding to 'play music' or 'what should I listen to', DJ requests, or any music playback control (play, pause, skip, volume, search). Triggers: 'say it with music', 'bumblebee mode', 'play that lyric', 'speak through songs', 'play music', 'play the right music', 'DJ mode', 'what should I listen to', 'set the vibe', or any Spotify playback request. Requires: Spotify Premium with active device, OAuth tokens in projects/spotify/."
+description: "Two modes: (1) BUMBLEBEE — Communicate through music by playing exact lyric lines on Spotify, like Bumblebee from Transformers speaking through radio snippets. (2) R2-DJ — Contextual music curation that reads the moment (time, mood, recent listening, activity) and builds the perfect queue. Use when: expressing something through song lyrics, playing music for the current vibe, curating a playlist for a mood/activity, responding to 'play music' or 'what should I listen to', DJ requests, or any music playback control (play, pause, skip, volume, search). Requires: Spotify Premium with active device, OAuth tokens in projects/spotify/."
 ---
+
+# Bumblebee + R2-DJ — Talk Through Music & Curate the Vibe 🐝🎧
 
 # Bumblebee + R2-DJ — Talk Through Music & Curate the Vibe 🐝🎧
 
@@ -117,6 +120,7 @@ Available intents: greeting, motivation, freedom, empathy, celebration, goodnigh
 - **When compose fails**, try rephrasing with common song vocabulary: "baby", "tonight", "forever", "hold on", "let me", "I need", "don't stop"
 
 ---
+version: "1.0.0"
 
 # R2-DJ — Contextual Music Curation 🎧🤖
 
