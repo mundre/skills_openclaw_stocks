@@ -1,4 +1,4 @@
-# FunASR 标点恢复 - OpenClaw 技能（v1.5.1）
+# FunASR 标点恢复 - OpenClaw 技能
 
 [![OpenClaw Skill](https://img.shields.io/badge/OpenClaw-Skill-blue)](https://clawhub.ai)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org)
@@ -20,9 +20,13 @@
 
 你可以直接对你的 Agent 说：
 
-请使用 funasr-punctuation-restore 技能，将 "F:\命理学-音频-干声-文本\猴哥说易\月支月令如何看一个人事业！_20260322_131438.txt" 文本恢复标点符号。
+帮我给这段文本加标点：今天天气很好我们去公园玩吧
 
-请使用 funasr-punctuation-restore 技能，将 "F:/命理学-音频-干声-文本" 目录下的所有.txt文本恢复标点符号。
+把这个转录文件加标点："F:\命理学-音频-干声-文本\猴哥说易\月支月令如何看一个人事业！_20260322_131438.txt"
+
+给整个文件夹里的笔记加标点："F:\命理学-音频-干声-切片-文本\猴哥说易"
+
+/Funasr-Punctuation-Restore --text "你好今天怎么样" （斜杠命令强制触发）
 
 ## **🚀 快速安装 & 使用**
 
