@@ -3,11 +3,16 @@
   "slug": "bowlong-quant-aio",
   "displayName": "波龙股神量化交易系统",
   "latest": {
-    "version": "2.1.0",
-    "publishedAt": 1774698828615,
-    "commit": "https://github.com/openclaw/skills/commit/f8028d78ab3123967e56437868cfb3a0c7a96ad1"
+    "version": "2.1.3",
+    "publishedAt": 1775967736775,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.1.0",
+      "publishedAt": 1774698828615,
+      "commit": "https://github.com/openclaw/skills/commit/f8028d78ab3123967e56437868cfb3a0c7a96ad1"
+    },
     {
       "version": "2.0.0",
       "publishedAt": 1774627817865,
