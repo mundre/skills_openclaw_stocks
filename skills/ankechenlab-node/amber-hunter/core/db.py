@@ -127,6 +127,13 @@ def init_db():
     except Exception:
         pass
 
+    # v1.2.39+: temporal validity — 事实有效期（用于矛盾检测）
+    for col in ["valid_from TEXT", "valid_to TEXT"]:
+        try:
+            c.execute(f"ALTER TABLE capsules ADD COLUMN {col}")
+        except Exception:
+            pass
+
     # v1.2.8+: memory_hits — record each recall usage
     c.execute("""
         CREATE TABLE IF NOT EXISTS memory_hits (
@@ -140,12 +147,15 @@ def init_db():
     """)
 
     # v1.2.17+: insights — compressed memory summaries by category_path
+    # v1.2.38+: 新增 concept_slug（slug化 path）和 wiki_content（markdown + wikilinks）
     c.execute("""
         CREATE TABLE IF NOT EXISTS insights (
             id               TEXT PRIMARY KEY,
             capsule_ids      TEXT,          -- JSON array of source capsule IDs
-            summary          TEXT,           -- LLM-compressed summary
+            summary          TEXT,           -- plain text summary (backward compat)
             path             TEXT,          -- category_path
+            concept_slug     TEXT,          -- e.g. "dev-python" (v1.2.38+)
+            wiki_content     TEXT,          -- full markdown with [[wikilinks]] (v1.2.38+)
             hotness_score   REAL DEFAULT 0,
             created_at      REAL DEFAULT (strftime('%s', 'now')),
             updated_at      REAL DEFAULT (strftime('%s', 'now'))
@@ -155,6 +165,13 @@ def init_db():
         c.execute("CREATE INDEX IF NOT EXISTS idx_insights_path ON insights(path)")
     except Exception:
         pass
+
+    # v1.2.38+: migration — 新增 concept_slug 和 wiki_content 列（向后兼容）
+    for col in ["concept_slug TEXT", "wiki_content TEXT"]:
+        try:
+            c.execute(f"ALTER TABLE insights ADD COLUMN {col}")
+        except Exception:
+            pass
 
     # v1.2.27: user_profile 表（P1-1 Structured User Profile）
     c.execute("""
@@ -211,6 +228,29 @@ def init_db():
         except Exception:
             pass
 
+    # v1.2.32: capsule_genes — Co-occurrence Gene Graph
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS capsule_genes (
+            id              TEXT PRIMARY KEY,
+            capsule_a       TEXT NOT NULL,
+            capsule_b       TEXT NOT NULL,
+            co_count        INTEGER DEFAULT 1,
+            total_relevance REAL DEFAULT 0.0,
+            avg_relevance   REAL DEFAULT 0.0,
+            last_seen       REAL DEFAULT (strftime('%s', 'now')),
+            created_at      REAL DEFAULT (strftime('%s', 'now'))
+        )
+    """)
+    for index_sql in [
+        "CREATE INDEX IF NOT EXISTS idx_genes_a ON capsule_genes(capsule_a)",
+        "CREATE INDEX IF NOT EXISTS idx_genes_b ON capsule_genes(capsule_b)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_genes_pair ON capsule_genes(capsule_a, capsule_b)"
+    ]:
+        try:
+            c.execute(index_sql)
+        except Exception:
+            pass
+
     conn.commit()
     conn.close()
 
@@ -234,6 +274,12 @@ def insert_capsule(
     updated_at: float = 0.0,
     key_source: str = "pbkdf2",
     vector_id: str | None = None,
+    *,
+    valid_from: str | None = None,
+    valid_to: str | None = None,
+    # ── 以下为由 CapsuleData dataclass 捆绑的字段 ─────────────────
+    # 建议未来通过 CapsuleData(capsule_id=..., memo=..., ...) 调用
+    # 以避免 18 个参数顺序记错。当前签名保留，向后兼容。
 ) -> bool:
     conn = sqlite3.connect(str(DB_PATH))
     c = conn.cursor()
@@ -241,11 +287,11 @@ def insert_capsule(
         c.execute("""
             INSERT INTO capsules
               (id,memo,content,tags,session_id,window_title,url,created_at,
-               salt,nonce,encrypted_len,content_hash,synced,source_type,category,category_path,updated_at,key_source,vector_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               salt,nonce,encrypted_len,content_hash,synced,source_type,category,category_path,updated_at,key_source,vector_id,valid_from,valid_to)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (capsule_id, memo, content, tags, session_id, window_title,
               url, created_at, salt, nonce, encrypted_len, content_hash,
-              0, source_type, category, category_path, updated_at or created_at, key_source, vector_id))
+              0, source_type, category, category_path, updated_at or created_at, key_source, vector_id, valid_from, valid_to))
         conn.commit()
         return True
     finally:
@@ -258,14 +304,14 @@ def get_capsule(capsule_id: str) -> dict | None:
     try:
         row = c.execute(
             "SELECT id,memo,content,tags,session_id,window_title,url,created_at,"
-            "salt,nonce,encrypted_len,content_hash,synced,source_type,category,category_path,updated_at,key_source,vector_id "
+            "salt,nonce,encrypted_len,content_hash,synced,source_type,category,category_path,updated_at,key_source,vector_id,valid_from,valid_to "
             "FROM capsules WHERE id=?", (capsule_id,)
         ).fetchone()
         if not row:
             return None
         keys = ["id","memo","content","tags","session_id","window_title","url",
                 "created_at","salt","nonce","encrypted_len","content_hash","synced",
-                "source_type","category","category_path","updated_at","key_source","vector_id"]
+                "source_type","category","category_path","updated_at","key_source","vector_id","valid_from","valid_to"]
         return dict(zip(keys, row))
     finally:
         conn.close()
@@ -278,6 +324,58 @@ def count_capsules() -> int:
     row = c.execute("SELECT COUNT(*) FROM capsules").fetchone()
     conn.close()
     return row[0] if row else 0
+
+
+# ── v1.2.33: Capsule Deduplication ───────────────────────────────────────
+
+def find_capsule_by_content_hash(content_hash: str) -> str | None:
+    """
+    通过 content_hash 精确查找已存在的胶囊 ID。
+    用于 /ingest 去重：相同内容不重复写入。
+    """
+    if not content_hash:
+        return None
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    row = c.execute(
+        "SELECT id FROM capsules WHERE content_hash=? LIMIT 1",
+        (content_hash,)
+    ).fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def find_similar_capsules(memo: str, top_k: int = 3, min_score: float = 0.85) -> list[dict]:
+    """
+    通过 embedding 向量相似度找语义相似的胶囊。
+    用于 /ingest 软去重：即使内容不完全相同，高度相似的也提示用户。
+    
+    返回: [{"id": "...", "memo": "...", "sim_score": 0.xx}, ...]
+    """
+    if not memo or len(memo.strip()) < 10:
+        return []
+    try:
+        from core.embedding import find_snippets
+        from core.vector import search_vectors
+        # 先用向量搜索 top_k*2 个候选
+        results = search_vectors(memo, top_k * 2)
+        if not results:
+            return []
+        similar = []
+        for r in results:
+            if r.get("score", 0) >= min_score:
+                cap = get_capsule(r["id"])
+                if cap:
+                    similar.append({
+                        "id": cap["id"],
+                        "memo": cap["memo"],
+                        "sim_score": round(r["score"], 3),
+                    })
+            if len(similar) >= top_k:
+                break
+        return similar
+    except Exception:
+        return []
 
 
 def list_capsules(limit: int = 50, category_path: str = "") -> list[dict]:
@@ -310,19 +408,28 @@ def mark_synced(capsule_id: str):
     conn.close()
 
 
-def get_unsynced_capsules(limit: int = 0) -> list[dict]:
+def get_unsynced_capsules(limit: int = 0, since: float = 0.0) -> list[dict]:
+    """
+    获取未同步或自 since 以来修改过的胶囊（支持增量 sync）。
+    - 未同步胶囊：synced=0
+    - 增量同步：updated_at > since（即使已标记 synced）
+    """
     conn = sqlite3.connect(str(DB_PATH))
     c = conn.cursor()
-    sql = ("SELECT id,memo,content,tags,session_id,window_title,url,created_at,"
-           "salt,nonce,encrypted_len,content_hash,synced,source_type,category,category_path,updated_at,key_source,vector_id "
-           "FROM capsules WHERE synced=0 ORDER BY created_at ASC")
-    if limit > 0:
-        sql += f" LIMIT {limit}"
-    rows = c.execute(sql).fetchall()
-    conn.close()
     keys = ["id","memo","content","tags","session_id","window_title","url",
             "created_at","salt","nonce","encrypted_len","content_hash","synced",
             "source_type","category","category_path","updated_at","key_source","vector_id"]
+    if since > 0:
+        sql = (f"SELECT {','.join(keys)} FROM capsules "
+               f"WHERE synced=0 OR updated_at > ? ORDER BY updated_at ASC")
+        rows = c.execute(sql, (since,)).fetchall()
+    else:
+        sql = (f"SELECT {','.join(keys)} FROM capsules "
+               f"WHERE synced=0 ORDER BY created_at ASC")
+        if limit > 0:
+            sql += f" LIMIT {limit}"
+        rows = c.execute(sql).fetchall()
+    conn.close()
     return [dict(zip(keys, r)) for r in rows]
 
 
@@ -588,22 +695,49 @@ def record_correction(
     return log_id
 
 
+def cleanup_correction_log(age_days: float = 30.0) -> dict:
+    """
+    清理 correction_log 中 age_days 天前的旧条目。
+    返回 {"removed": N, "remaining": M}。
+    """
+    import sqlite3
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    cutoff = time.time() - age_days * 86400
+    before = c.execute("SELECT COUNT(*) FROM correction_log").fetchone()[0]
+    c.execute("DELETE FROM correction_log WHERE created_at < ?", (cutoff,))
+    removed = before - c.execute("SELECT COUNT(*) FROM correction_log").fetchone()[0]
+    conn.commit()
+    conn.close()
+    return {"removed": removed, "remaining": before - removed, "cutoff_days": age_days}
+
+
 def get_correction_stats(field: str = "") -> dict:
     """
     统计校正数据。
     返回 {corrections: [{original, corrected, count, last_corrected}], total: N}
-    如果指定 field 则只统计该类型。
+    如果指定 field 则只统计该类型，为空则统计所有类型。
     """
     conn = sqlite3.connect(str(DB_PATH))
     c = conn.cursor()
-    sql = """
-        SELECT original_value, corrected_value, COUNT(*) as cnt, MAX(created_at) as last_at
-        FROM correction_log
-        WHERE field = ?
-        GROUP BY original_value, corrected_value
-        ORDER BY cnt DESC, last_at DESC
-    """
-    rows = c.execute(sql, (field,)).fetchall()
+    # 空 field → 统计所有类型（不设 WHERE 过滤）
+    if field:
+        sql = """
+            SELECT original_value, corrected_value, COUNT(*) as cnt, MAX(created_at) as last_at
+            FROM correction_log
+            WHERE field = ?
+            GROUP BY original_value, corrected_value
+            ORDER BY cnt DESC, last_at DESC
+        """
+        rows = c.execute(sql, (field,)).fetchall()
+    else:
+        sql = """
+            SELECT original_value, corrected_value, COUNT(*) as cnt, MAX(created_at) as last_at
+            FROM correction_log
+            GROUP BY original_value, corrected_value
+            ORDER BY cnt DESC, last_at DESC
+        """
+        rows = c.execute(sql).fetchall()
     conn.close()
     corrections = [
         {"original": r[0], "corrected": r[1], "count": r[2], "last_corrected": r[3]}
@@ -683,3 +817,106 @@ def get_tag_corrections() -> dict[str, str]:
             pass
     return result
 
+
+# ── capsule_genes — Co-occurrence Gene Graph v1.2.32 ──────────────────────
+
+def record_gene(capsule_a: str, capsule_b: str, relevance: float) -> bool:
+    """
+    记录一次胶囊对共现事件（在同一 recall session 中被一起召回）。
+    如果 pair 已存在，累加 co_count 和 total_relevance，更新 avg_relevance 和 last_seen。
+    保证 capsule_a < capsule_b（字母序）以保证唯一性。
+    """
+    import secrets
+    if capsule_a == capsule_b:
+        return False
+    # 字母序保证 pair 唯一性
+    a, b = sorted([capsule_a, capsule_b])
+    gene_id = hashlib.md5(f"{a}:{b}".encode()).hexdigest()[:16]
+    now = time.time()
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    try:
+        existing = c.execute(
+            "SELECT co_count, total_relevance FROM capsule_genes WHERE capsule_a=? AND capsule_b=?",
+            (a, b)
+        ).fetchone()
+        if existing:
+            new_count = existing[0] + 1
+            new_total = existing[1] + relevance
+            new_avg = new_total / new_count
+            c.execute("""
+                UPDATE capsule_genes
+                SET co_count=?, total_relevance=?, avg_relevance=?, last_seen=?
+                WHERE capsule_a=? AND capsule_b=?
+            """, (new_count, new_total, new_avg, now, a, b))
+        else:
+            c.execute("""
+                INSERT INTO capsule_genes
+                  (id, capsule_a, capsule_b, co_count, total_relevance, avg_relevance, last_seen, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (gene_id, a, b, 1, relevance, relevance, now, now))
+        conn.commit()
+        return True
+    except Exception as e:
+        import sys
+        print(f"[db] record_gene failed: {e}", file=sys.stderr)
+        return False
+    finally:
+        conn.close()
+
+
+def get_genes_for_capsule(capsule_id: str, limit: int = 10) -> list[dict]:
+    """
+    返回与 capsule_id 共现过的所有胶囊及其基因分数。
+    按 co_score 降序。
+    co_score = avg_relevance * min(1, co_count / 3)  — 兼顾相关度和共现次数
+    """
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    rows = c.execute("""
+        SELECT capsule_a, capsule_b, co_count, avg_relevance, last_seen, created_at
+        FROM capsule_genes
+        WHERE capsule_a = ? OR capsule_b = ?
+        ORDER BY avg_relevance DESC
+        LIMIT ?
+    """, (capsule_id, capsule_id, limit)).fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        peer = r[1] if r[0] == capsule_id else r[0]
+        co_count = r[2]
+        avg_rel = r[3]
+        co_score = avg_rel * min(1.0, co_count / 3.0)
+        result.append({
+            "capsule_id": peer,
+            "co_count": co_count,
+            "avg_relevance": round(avg_rel, 3),
+            "co_score": round(co_score, 3),
+            "last_seen": r[4],
+            "created_at": r[5],
+        })
+    result.sort(key=lambda x: x["co_score"], reverse=True)
+    return result[:limit]
+
+
+def get_max_co_count() -> int:
+    """返回当前最大 co_count，用于归一化 gene score"""
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    row = c.execute("SELECT MAX(co_count) FROM capsule_genes").fetchone()
+    conn.close()
+    return row[0] if row and row[0] else 1
+
+
+def record_recall_session_genes(capsule_ids: list[str], relevance_scores: list[float]) -> None:
+    """
+    批量记录一次 recall session 中所有胶囊对的共现关系。
+    对 top-k 胶囊两两记录 gene（k*(k-1)/2 个 pair）。
+    """
+    if len(capsule_ids) < 2:
+        return
+    k = len(capsule_ids)
+    for i in range(k):
+        for j in range(i + 1, k):
+            rel = (relevance_scores[i] + relevance_scores[j]) / 2.0
+            record_gene(capsule_ids[i], capsule_ids[j], rel)

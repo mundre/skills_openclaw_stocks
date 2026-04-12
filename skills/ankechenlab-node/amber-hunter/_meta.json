@@ -3,11 +3,16 @@
   "slug": "amber-hunter",
   "displayName": "Amber Hunter",
   "latest": {
-    "version": "1.2.30",
-    "publishedAt": 1775316224582,
-    "commit": "https://github.com/openclaw/skills/commit/896adf342941b5c68447e4474c2ed3653084a501"
+    "version": "1.2.41",
+    "publishedAt": 1775788477877,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.30",
+      "publishedAt": 1775316224582,
+      "commit": "https://github.com/openclaw/skills/commit/896adf342941b5c68447e4474c2ed3653084a501"
+    },
     {
       "version": "1.2.29",
       "publishedAt": 1775314787782,

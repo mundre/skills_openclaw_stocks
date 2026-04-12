@@ -149,6 +149,8 @@ def auto_extract(session_key: str | None = None) -> dict:
     from core.session import read_session_messages, get_current_session_key
     from core.db import insert_capsule, queue_insert, set_config
     from core.vector import index_capsule
+    # v1.2.39: contradiction check
+    from core.contradiction import check_contradiction_on_ingest
 
     sk = session_key or get_current_session_key()
     if not sk:
@@ -160,17 +162,31 @@ def auto_extract(session_key: str | None = None) -> dict:
 
     candidates = extract_memories_from_messages(messages, sk)
     stored = 0
+    contradiction_warnings = []
 
     for c in candidates:
         cap_id = secrets.token_hex(8)
         now = time.time()
+        memo = (c["memo"] or "").strip()
+        if not memo:
+            continue  # 跳过空白内容，防止重复空胶囊
+
+        # v1.2.39: 时间解析 + 矛盾检测
+        try:
+            from amber_hunter import _infer_category_path
+            cap_path = _infer_category_path(memo, c.get("context", ""), c["type"])
+        except Exception:
+            cap_path = "general/default"
+
+        valid_from, valid_to, warnings = check_contradiction_on_ingest(memo, cap_path)
+        contradiction_warnings.extend(warnings)
 
         if c["confidence"] >= 0.9:
             # 高置信 → 直接入库
             try:
                 insert_capsule(
                     capsule_id=cap_id,
-                    memo=c["memo"],
+                    memo=memo,
                     content=c.get("context", ""),
                     tags=c["type"],
                     session_id=sk,
@@ -179,6 +195,9 @@ def auto_extract(session_key: str | None = None) -> dict:
                     created_at=now,
                     source_type="auto_extract",
                     category="",
+                    category_path=cap_path,
+                    valid_from=valid_from,
+                    valid_to=valid_to,
                 )
                 try:
                     index_capsule(cap_id, c["memo"], now)
@@ -210,4 +229,5 @@ def auto_extract(session_key: str | None = None) -> dict:
     except Exception:
         pass
 
-    return {"status": "ok", "extracted": stored, "session_key": sk}
+    return {"status": "ok", "extracted": stored, "session_key": sk,
+            "contradictions": contradiction_warnings}

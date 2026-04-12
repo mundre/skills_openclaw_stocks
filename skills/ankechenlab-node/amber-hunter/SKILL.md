@@ -1,391 +1,421 @@
-# Amber-Hunter Skill
-> Gives any AI client long-term memory — captures, encrypts, and recalls personal context across sessions
-> Version: 1.2.30 | 2026-04-04
-
+---
+title: amber-hunter
+summary: Long-term memory and knowledge compilation skill for Claude Code — manages memory capsules, insight caching, semantic/keyword hybrid recall, DID E2E encryption, and AI-driven knowledge wiki compiler.
+version: 1.2.41
+source: ~/.openclaw/skills/amber-hunter/amber_hunter.py
+protocol: FastAPI / Bearer Token / localhost-only admin ops
+port: 18998
 ---
 
-> **Tags**: ai-memory | second-brain | local-encrypted | proactive-recall | cross-platform | context-management | RAG | long-term-memory | AI-personal-assistant | privacy-first
+# amber-hunter — AI 第二大脑 Skill
 
----
+## What It Is
 
-amber-hunter runs on the user's local machine (Mac / Linux / Windows). Local AI clients communicate via `localhost:18998`. External AI clients (ChatGPT, Claude.ai) use the cloud API at `huper.org/api`.
+amber-hunter 是运行在本地（port 18998）的 FastAPI 服务，为 Claude Code 提供长期记忆能力和知识自动编译能力。
 
----
+**核心能力矩阵：**
 
-## What It Does
+| 能力 | 说明 | 引入版本 |
+|------|------|---------|
+| 记忆胶囊 | 持久化存储 AI 工作产生的想法/决策/上下文 | v1.0 |
+| 混合搜索 | LanceDB 向量 + 关键词联合检索 | v1.2.27 |
+| 意图预测 | 根据 session 内容预测下一步最可能的需求 | v1.2.27 |
+| DID E2E 加密 | 设备绑定加密，云端隐私保护 | v1.2.24 |
+| 知识编译器 | 同类胶囊自动编译成 wiki 概念页 | v1.2.38 |
 
-Amber-Hunter is the **capture and recall layer** of Huper琥珀 — a personal memory protocol that works across any AI client and any platform.
-
-- **AI long-term memory** — gives ChatGPT, Claude, and any AI client persistent context across conversations
-- **Proactive capture** — AI-initiated writes via `/ingest`; user reviews and approves before memories are stored
-- **Instant recall** — `/recall?q=<query>` retrieves relevant past memories before responding (hybrid semantic + keyword search)
-- **Second brain** — builds a personal knowledge base that survives context windows and session boundaries
-- **E2E encrypted** — AES-256-GCM, master_password in OS keychain, never uploaded in plaintext
-- **Cross-platform** — macOS / Windows / Linux (desktop + headless server)
-- **Cloud sync** — optional encrypted upload to huper.org for cross-device access
-- **RAG-ready** — `/recall` endpoint returns structured context for Retrieval Augmented Generation pipelines
-
----
-
-## Memory Category System (v1.1.9+)
-
-琥珀 uses a two-level taxonomy: **category** (8 fixed domains) + **tags** (specific labels).
-
-### The 8 Categories
-
-| category | emoji | Label | Covers |
-|----------|-------|-------|--------|
-| `thought` | 💭 | 想法 | Fleeting ideas, insights, eureka moments |
-| `learning` | 📖 | 学习 | Reading notes, courses, new knowledge |
-| `decision` | 🎯 | 决策 | Choices made, directions set |
-| `reflection` | 🌱 | 成长 | Reflections, reviews, emotional records |
-| `people` | 🤝 | 关系 | Conversations with others, notes about people |
-| `life` | 🏃 | 生活 | Health, food, daily observations |
-| `creative` | 🎨 | 创意 | Design ideas, things to build |
-| `dev` | 💻 | 开发 | All developer-specific content (code, errors, APIs, etc.) |
-
-### Auto-detection Keywords
-
-The system auto-tags based on content keywords. AI clients should also suggest `category` when calling `/ingest`:
-
-```
-thought    → "想到", "突然想", "realize", "just thought"
-learning   → "读了", "看了", "reading", "book says"
-decision   → "决定", "选择了", "decided", "going with"
-reflection → "反思", "复盘", "reflecting", "looking back"
-people     → "和...聊", "talked to", "met with"
-life       → "运动", "睡眠", "sleep", "exercise"
-creative   → creative/design keywords
-dev        → python/js/git/docker/api/sql/error keywords (all existing dev rules)
-```
-
----
-
-## Multi-Client Integration Guide
-
-### Which endpoint to use
-
-| AI Client | Network | Endpoint | Auth |
-|-----------|---------|----------|------|
-| **openclaw** | localhost | `POST /ingest` | Bearer token |
-| **Claude Code** | localhost | `POST /ingest` | Bearer token |
-| **Claude in Cowork** | localhost (Desktop Commander) | `POST /ingest` | Bearer token |
-| **ChatGPT** | internet (cloud) | `POST https://huper.org/api/ingest` | User JWT / API key |
-| **Claude.ai** | internet (cloud) | `POST https://huper.org/api/ingest` | User JWT / API key |
-
-### Get the local API token
+## 启动
 
 ```bash
-curl http://localhost:18998/token
-# → {"api_key": "ahk_xxxx..."}
+cd ~/.openclaw/skills/amber-hunter
+python3 amber_hunter.py
+# 或后台运行
+python3 amber_hunter.py &
 ```
 
----
+服务启动时：
+1. 自动初始化 SQLite 数据库（`memory.db`）
+2. 启动编译 daemon（每 6 小时扫描一次覆盖缺口）
+3. 冷启动编译（启动时如果有覆盖缺口，立即触发一次）
 
-## What's Worth Capturing — Judgment Rules
+## 认证
 
-Use these rules when deciding whether to call `/ingest` during a conversation:
+| 操作 | 认证方式 |
+|------|---------|
+| 所有外部请求 | Bearer Token（从 `/token` 获取，写入 `~/.openclaw/token`）|
+| `/token`, `/bind-apikey`, `/master-password` | 强制 localhost 检查 |
+| Bearer Token 调用 | 在 `Authorization: Bearer <token>` Header 中传递 |
 
-| Signal | Example | confidence | review_required |
-|--------|---------|-----------|-----------------|
-| save_request | "记住这个" / "save this" / "提醒我" | 1.0 | false |
-| decision | "决定用 SQLite" / "we're going with plan B" / "用 FastAPI" | 0.9 | true |
-| preference | "我更喜欢..." / "I prefer TypeScript" | 0.85 | true |
-| personal_fact | 我的名字是... / 我住在... / 我在...工作 | 0.8 | true |
-| summary | "总结一下..." / "key takeaways" / "tl;dr" | 0.7 | true |
-| insight | "没想到..." / "discovered that" / "game changer" | 0.6 | true |
+**Token 获取流程（首次设置）：**
+```bash
+# 1. 启动服务
+python3 amber_hunter.py
 
-**Proactive Hook** (v1.2.13): `handler.js/ts` auto-detects these 6 signals from `agent:response` events and calls `/ingest` with `review_required: true`. All captured signals appear in the review queue before becoming permanent memories.
+# 2. 从本地获取 token（仅 localhost 可访问）
+curl http://localhost:18998/token
+# 返回: {"token": "xxx"}
 
-**Default behavior**: when in doubt, set `review_required: true`. The user reviews in the dashboard and accepts/rejects. Accepted/rejected history improves future judgment.
+# 3. 写入本地配置
+echo "Bearer xxx" > ~/.openclaw/token
+```
 
-**Never capture**: conversation scaffolding ("can you help me"), ephemeral context ("right now I need"), common knowledge, task details that won't recur.
+## API 端点总览
 
----
+### 无需认证（localhost）
 
-## API Endpoints (v1.2.9)
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `GET /status` | GET | 服务状态、版本、平台、胶囊数 |
+| `GET /token` | GET | 读取本地 API Token |
+| `POST /bind-apikey` | POST | 更新 Huper 云端 API Key（存 Keychain）|
+| `POST /master-password` | POST | 设置 master_password（Keychain）|
 
-### Core
+### 核心 — 胶囊管理（Bearer Token）
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/status` | GET | none | Service health + capsule_count + queue_pending + last_sync + semantic_model_loaded |
-| `/` | GET | none | Root info + version |
-| `/token` | GET | localhost only | Get local API key |
-| `/memories` | GET | localhost only | Local memory snapshot (no auth required) |
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/capsules` | GET | 列出胶囊（支持 `category_path` 过滤 + 分页 `limit`）|
+| `/capsules` | POST | 创建胶囊 |
+| `/capsules/{id}` | GET | 获取单个胶囊详情 |
+| `/capsules/{id}` | PATCH | 更新胶囊 |
+| `/capsules/{id}` | DELETE | 删除胶囊 |
 
-### Memory Retrieval
+### 核心 — 记忆召回（Bearer Token）
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/recall` | GET | Bearer / ?token= | Retrieve relevant memories (`?q=<query>&limit=3&rerank=true&category_path=<path>&use_insights=true`); hybrid mode: `0.4×keyword + 0.6×semantic`; `category_path` 支持前缀匹配（如 `knowledge` 匹配 `knowledge/python`）；`use_insights=true` 时若存在对应路径的 insight 缓存则优先返回压缩摘要（v1.2.17）；返回 category/source_type |
-| `/rerank` | POST | Bearer / ?token= | LLM re-rank candidates; body: `{query, memories[]}` → `{memories: [...]}` |
-| `/recall/{id}/hit` | PATCH | Bearer / ?token= | Increment capsule access count (updates hotness) |
-| `/classify` | GET | none | Topic classify; `?text=<text>` → `{"topics": "tag1,tag2"}`; keyword primary, LLM fallback |
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/recall` | GET | 混合搜索（向量+关键词+LanceDB，rerank）|
+| `/rerank` | POST | 强制 LLM 重排候选记忆 |
+| `/classify` | GET | 关键词+LLM fallback 分类 |
+| `/extract` | POST | 从文本中提取记忆（LLM 驱动）|
+| `/ingest` | POST | AI 主动写入记忆（→ 入库或审阅队列）|
 
-### Memory Writes
+**`/recall` 参数：**
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/capsules` | GET | Bearer | List local capsules (`?limit=1-300`); returns category/source_type |
-| `/capsules` | POST | Bearer | Create capsule manually |
-| `/capsules/{id}` | GET | Bearer | Get capsule by ID |
-| `/capsules/{id}` | DELETE | Bearer | Delete capsule |
-| `/ingest` | POST | Bearer / ?token= | AI pushes memory → direct capsule if confidence≥0.95+review_required=false, else → queue |
-| `/extract` | POST | Bearer / ?token= | Structured LLM extraction; body: `{text, source}` → extracted memories |
+| 参数 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `q` | string | 必填 | 查询文本 |
+| `rerank` | bool | false | 是否启用 LLM rerank (deprecated, use rerank_engine) |
+| `rerank_engine` | string | "auto" | 重排序引擎：auto \| model \| llm \| none |
+| `hyde` | bool | false | 是否启用 HyDE（假设性答案增强检索）v1.2.41 |
+| `multi_hop` | bool | false | 是否启用多跳检索 v1.2.41 |
+| `limit` | int | 3 | 返回数量 |
+| `category_path` | string | "" | MFS路径过滤 |
+| `use_insights` | bool | true | 是否优先返回 insight 缓存 |
+| `citation` | int | 0 | 1=返回 embedding 裁剪的片段 |
 
-### Queue Management
+**`/recall` 响应新增字段（v1.2.41）：**
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/queue` | GET | Bearer / ?token= | List pending memories awaiting review |
-| `/queue/{id}/approve` | POST | Bearer / ?token= | Accept → writes to capsules |
-| `/queue/{id}/reject` | POST | Bearer / ?token= | Dismiss → status=rejected |
-| `/queue/{id}/edit` | POST | Bearer / ?token= | Edit then accept → writes modified to capsules |
-| `/-review` | GET | Bearer / ?token= | Terminal-friendly queue list (v1.2.9) |
-| `/-review/{qid}` | POST | Bearer / ?token= | approve/reject queue item from CLI (v1.2.9) |
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `rerank_time_ms` | float | reranker 耗时（毫秒） |
+| `hyde_time_ms` | float | HyDE 生成耗时（毫秒） |
+| `retrieval_hops` | int | 检索跳数（multi_hop 启用时 > 1） |
 
-### Session Context (proactive capture)
+**`/recall/evaluate` 端点（v1.2.41）：**
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/freeze` | GET/POST | Bearer / ?token= | Capture current dev session context |
-| `/session/summary` | GET | Bearer | Get current session summary |
-| `/session/files` | GET | Bearer | Get open files in current session |
-| `/session/preload` | GET | Bearer | Get preloaded memories for current scene (v1.2.19) |
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/recall/evaluate` | POST | RAG 评测（RAGAS + NDCG@5） |
 
-### DID Identity (v1.2.20 — multi-device)
-
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/did/setup` | POST | Bearer | Generate mnemonic + derive device key → save locally (mnemonic shown once) |
-| `/did/status` | GET | Bearer | Check if local DID identity is configured |
-| `/did/register-device` | POST | Bearer | Register device public key to cloud (cloud account must have DID set up) |
-
-### Sync & Config
-
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/sync` | GET | Bearer / ?token= | Sync to huper.org cloud |
-| `/config` | GET/POST | Bearer / ?token= | Read/set config (auto_sync etc.) |
-| `/config/llm` | GET/PUT | Bearer / ?token= | Read/set LLM provider (minimax/openai/claude/local) |
-
-### Localhost-only (security restricted)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/master-password` | POST | Set master_password (stored in OS keychain) |
-| `/bind-apikey` | POST | Update huper.org API key in config |
-
----
-
-## `/ingest` Request Format
-
+**`/recall/evaluate` 请求体：**
 ```json
-POST http://localhost:18998/ingest?token={api_key}
-Content-Type: application/json
+{"queries": [{"q": "...", "expected_capsule_ids": ["..."]}]}
+```
 
+**`/recall/evaluate` 响应：**
+```json
 {
-  "memo": "Anke prefers SQLite over Postgres for simpler deployment",
-  "context": "During database selection discussion for amber project",
-  "category": "decision",
-  "tags": "decided,database",
-  "source": "claude_cowork",
-  "confidence": 0.9,
-  "review_required": true,
-  "agent_tag": "openclaw"    // v2.0.0: optional, adds #agent:openclaw tag for color-coding in UI
+  "ragas_scores": {"faithfulness": 0.x, "answer_relevancy": 0.x, "context_precision": 0.x},
+  "ndcg_at_5": 0.x,
+  "evaluated_at": "...",
+  "total_queries": 2
 }
 ```
 
-**Response**:
+**`/ingest` 参数：**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `content` | string | 记忆内容 |
+| `tags` | string | 标签（逗号分隔）|
+| `session_key` | string | 来源 session |
+| `auto_review` | bool | true=直接入库，false=进审阅队列 |
+
+### 审阅队列（Bearer Token）
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/queue` | GET | 列出待审阅记忆 |
+| `/queue/{qid}/approve` | POST | 批准写入胶囊 |
+| `/queue/{qid}/reject` | POST | 拒绝 |
+| `/queue/{qid}/edit` | POST | 修改后批准 |
+
+### 知识编译器 v1.2.38+（Bearer Token）
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/concepts` | GET | 列出所有已编译概念页（`?limit=50&offset=0` 分页）|
+| `/concepts/{path}` | GET | 获取指定 path 的 wiki 内容 |
+| `/admin/compile` | POST | 手动触发编译（`?path=` 指定路径）|
+| `/admin/compile/status` | GET | daemon 状态 + 覆盖缺口列表 + **健康指标**（alert/crashes/success_count）|
+
+**编译触发条件：**
+
+| 条件 | 说明 |
+|------|------|
+| 胶囊数比上次编译时多 ≥100 | 增量触发 |
+| 超过 6 小时未编译 | 定时触发 |
+
+**覆盖缺口：** 有 ≥3 个胶囊但无 concept page 的 category_path。
+
+### 管理操作（Bearer Token + localhost）
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/admin/backfill-paths` | POST | 批量修复缺失的 category_path |
+| `/admin/reindex-vectors` | POST | 重建 LanceDB 向量索引 |
+| `/admin/train` | POST | 触发 embedding 模型训练 |
+| `/admin/train/status` | GET | 训练状态 |
+| `/admin/train/score` | GET | 模型评分 |
+| `/admin/train/tags` | GET | 标签统计 |
+| `/admin/generate-insights` | POST | 手动生成 insights（按 path）|
+| `/stats` | GET | 系统统计 |
+| `/admin/export` | GET | 导出备份 |
+
+### DID E2E 加密（Bearer Token）
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/did/setup` | POST | 初始化 DID（生成密钥对，存 Keychain）|
+| `/did/status` | GET | DID 初始化状态 |
+| `/did/register-device` | POST | 注册设备到 DID 网络 |
+| `/did/auth/challenge` | POST | 获取 auth challenge |
+| `/did/auth/sign-challenge` | POST | 签名 challenge，完成认证 |
+
+### WAL（Write-Ahead Log）
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/wal/status` | GET | WAL 状态 |
+| `/wal/entries` | GET | 读取 WAL 条目 |
+| `/wal/gc` | POST | 触发 WAL GC |
+
+### Session 上下文
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/session/summary` | GET | 当前 session 记忆摘要 |
+| `/session/files` | GET | 当前 session 相关文件列表 |
+| `/session/preload` | GET | 预加载 context（供 Claude Code 使用）|
+| `/freeze` | GET/POST | 冻结当前 session 上下文 |
+
+### Profile
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/profile` | GET | 完整用户 profile |
+| `/profile/{section}` | GET/PUT | 读取/更新 profile 章节 |
+| `/profile/build` | POST | 触发 profile 自动构建 |
+
+### Corrections（记忆纠错）
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/corrections/stats` | GET | 纠错统计 |
+| `/corrections/suggestions` | GET | 纠错建议 |
+| `/corrections/apply` | POST | 应用纠错规则 |
+
+### 工具类
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `GET /` | GET | 根路径，返回欢迎信息 |
+| `GET /patterns` | GET | 当前系统运作的 Pattern 列表 |
+| `POST /mcp` | POST | MCP（Model Context Protocol）接口 |
+
+## 数据模型
+
+### capsules 表
+
+```sql
+CREATE TABLE capsules (
+    id              TEXT PRIMARY KEY,     -- 唯一 ID (secrets.token_hex)
+    memo            TEXT,                 -- 记忆摘要
+    content         TEXT,                  -- 完整内容
+    category_path   TEXT,                  -- 分类路径，如 "dev/python"
+    tags            TEXT,                  -- 逗号分隔标签
+    hotness_score   REAL DEFAULT 0,        -- 热度分
+    hit_count       INTEGER DEFAULT 0,     -- 被 recall 命中的次数
+    session_id      TEXT,                  -- 来源 session
+    encrypted       INTEGER DEFAULT 0,     -- 是否加密
+    vector_id       TEXT,                  -- LanceDB 向量 ID
+    synced          INTEGER DEFAULT 0,    -- 是否已同步云端
+    created_at      REAL,                  -- unix timestamp
+    updated_at      REAL,
+    content_hash    TEXT                   -- 去重用
+)
+```
+
+### insights 表（v1.2.17+）
+
+```sql
+CREATE TABLE insights (
+    id              TEXT PRIMARY KEY,
+    capsule_ids     TEXT,          -- JSON array
+    summary         TEXT,           -- 纯文本摘要
+    path            TEXT,           -- category_path
+    concept_slug    TEXT,           -- slug化 path (v1.2.38+)
+    wiki_content    TEXT,           -- 完整 markdown (v1.2.38+)
+    hotness_score   REAL DEFAULT 0,
+    created_at      REAL,
+    updated_at      REAL
+)
+```
+
+### memory_queue 表
+
+```sql
+CREATE TABLE memory_queue (
+    id          TEXT PRIMARY KEY,
+    content     TEXT,
+    tags        TEXT,
+    session_id  TEXT,
+    source      TEXT DEFAULT 'ingest',
+    created_at  REAL
+)
+```
+
+## 配置
+
+配置文件：`~/.openclaw/skills/amber-hunter/config.json`
+
 ```json
-// Goes to review queue:
-{"queued": true, "queue_id": "abc123", "category": "decision", "source_type": "ingest"}
-
-// Written directly (confidence≥0.95 and review_required=false):
-{"queued": false, "capsule_id": "xyz456", "category": "decision", "source_type": "ingest"}
-
-// First ingest (capsule_count==0, v2.0.0):
-{"queued": false, "capsule_id": "xyz456", "welcome": true, "message": "这是你的第一条记忆！...", "sample_count": 3}
+{
+  "auto_sync": true,
+  "sync_interval_seconds": 300,
+  "embed_model": "BAAI/bge-m3",
+  "vector_dim": 1024,
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "llm_model": "gpt-4o-mini",
+  "huper_api_key": "sk-...",
+  "key_source": "pbkdf2",
+  "compile_interval_hours": 6.0,
+  "compile_capsule_threshold": 100
+}
 ```
 
----
+## 关键行为
 
-## LLM Provider Configuration (v1.2.1+)
+### 胶囊创建时的 category_path 推断
 
-amber-hunter supports multiple LLM providers:
+`/ingest` 和 `/capsules POST` 会自动从内容中推断 category_path：
 
-| Provider | Config key | Notes |
-|---------|-----------|-------|
-| **MiniMax** | `minimax` | Default; auto-detects API key from OpenClaw config |
-| **OpenAI** | `openai` | GPT-4o mini etc. |
-| **Claude** | `claude` | Claude 3.5 Haiku etc. |
-| **Local** | `local` | Ollama / LM Studio |
+```
+推理依据：content + tags → LLM 分类
+兜底：category_path = "general/default"
+```
+
+### `/recall` 混合评分公式
+
+```
+final_score = 0.35 * norm_lance + 0.25 * norm_kw + 0.20 * recency + 0.20 * hotness
+```
+
+- LanceDB 向量相似度（归一化）
+- 关键词 overlap 分
+- 近期性（7天衰减）
+- 热度分
+
+### wikilinks 注入策略（Knowledge Compiler）
+
+LLM 生成 wikilinks 不稳定（max_tokens=600 时 Related Capsules 部分常被截断）。
+最终策略：**代码事后注入**：
+
+```python
+wikilinks = " ".join(f"[[{cid}:{short_label}]]" for cid in capsule_ids)
+wiki_content = wiki_content.rstrip() + f"\n\n### Related Capsules\n{wikilinks}"
+```
+
+### Cold Start 行为
+
+服务启动时：
+1. 如果有覆盖缺口，立即触发一次 `_run_batch_compile()`
+2. 如果 `auto_train` 启用，触发 embedding 模型训练
+
+## 使用示例
+
+### 创建记忆
 
 ```bash
-# Set provider
-curl -X PUT http://localhost:18998/config/llm?token={api_key} \
+curl -X POST http://localhost:18998/ingest \
+  -H "Authorization: Bearer $(cat ~/.openclaw/token)" \
   -H "Content-Type: application/json" \
-  -d '{"provider": "openai"}'
-
-# Get current provider
-curl http://localhost:18998/config/llm?token={api_key}
+  -d '{"content": "修了一个版本号测试过时的问题", "tags": "amber-hunter,bugfix"}'
 ```
 
----
-
-## Usage Patterns
-
-### openclaw / Claude Code
+### 召回记忆
 
 ```bash
-# 1. At conversation start — retrieve relevant context
-TOKEN=$(curl -s http://localhost:18998/token | python3 -c "import sys,json; print(json.load(sys.stdin)['api_key'])")
-curl "http://localhost:18998/recall?token=$TOKEN&q=YOUR_QUERY&limit=3"
-
-# 2. During conversation — push a memory when something worth keeping surfaces
-curl -X POST "http://localhost:18998/ingest?token=$TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "memo": "User decided to use SQLite for simpler ops",
-    "category": "decision",
-    "tags": "decided",
-    "source": "claude_code",
-    "confidence": 0.9,
-    "review_required": true
-  }'
-
-# 3. End of conversation — auto-extract 1-2 key takeaways (confidence=0.7)
-curl -X POST "http://localhost:18998/ingest?token=$TOKEN" \
-  -d '{"memo":"Summary: ...", "source":"claude_code", "confidence":0.7, "review_required":true}'
+curl "http://localhost:18998/recall?query=amber-hunter版本号问题&rerank=true" \
+  -H "Authorization: Bearer $(cat ~/.openclaw/token)"
 ```
 
-### ChatGPT (via GPT Action / cloud API)
+### 手动触发知识编译
 
 ```bash
-curl -X POST https://huper.org/api/ingest \
-  -H "Authorization: Bearer USER_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "memo": "User mentioned they prefer async Python patterns",
-    "category": "dev",
-    "tags": "python",
-    "source": "chatgpt",
-    "confidence": 0.8,
-    "review_required": true
-  }'
+# 编译指定 path
+curl -X POST "http://localhost:18998/admin/compile?path=knowledge/devops" \
+  -H "Authorization: Bearer $(cat ~/.openclaw/token)"
+
+# 查看 daemon 状态和缺口
+curl "http://localhost:18998/admin/compile/status" \
+  -H "Authorization: Bearer $(cat ~/.openclaw/token)"
 ```
 
----
-
-## Platform Support
-
-| Feature | macOS | Linux | Windows |
-|---------|-------|-------|---------|
-| amber-hunter service | ✅ LaunchAgent | ✅ systemd | ✅ Planned |
-| Keychain storage | ✅ security CLI | ✅ secret-tool / config.json | ✅ cmdkey |
-| Semantic search | ✅ | ✅ | ✅ |
-| Proactive capture | ✅ | ✅ | ❌ |
-| `/freeze` session | ✅ | ✅ | ❌ |
-
----
-
-## Troubleshooting
+### 获取已编译的概念页
 
 ```bash
-# Service not running
-curl http://localhost:18998/status
-tail -f ~/.amber-hunter/amber-hunter.log
+# 列出所有概念页
+curl "http://localhost:18998/concepts" \
+  -H "Authorization: Bearer $(cat ~/.openclaw/token)"
 
-# Linux: secret-tool not found
-sudo apt install libsecret-tools        # Ubuntu/Debian
-sudo dnf install libsecret             # Fedora
-
-# Check pending memories
-curl "http://localhost:18998/queue?token=$(curl -s localhost:18998/token | python3 -c 'import sys,json;print(json.load(sys.stdin)[\"api_key\"])')"
+# 获取指定概念页
+curl "http://localhost:18998/concepts/knowledge/devops" \
+  -H "Authorization: Bearer $(cat ~/.openclaw/token)"
 ```
 
----
+## 已知限制
 
-## FAQ & Known Issues
+1. **Bearer Token 存在磁盘**：`~/.openclaw/token` 是明文，localhost 以外不安全
+2. **向量索引重建昂贵**：`/admin/reindex-vectors` 在大量胶囊时耗时较长
+3. **Wiki 编译器依赖 LLM**：LLM 不可用时 `compile_concept_page` 返回 None
+4. **DID 注册需要 Huper 云端**：本地 DID setup 后还需要云端注册才生效
 
-### Q: amber-hunter runs on a VPS, not my local Mac. How do I configure the API key?
+## 相关文件
 
-When amber-hunter is on a **different machine** than your browser, the dashboard's "Generate API Key" button can't auto-bind (it POSTs to `127.0.0.1:18998` which is your local machine, not the VPS).
-
-**Manual setup on the VPS:**
-
-```bash
-# Option 1: environment variable (recommended for VPS)
-echo 'export AMBER_TOKEN="your_api_key_here"' >> ~/.bashrc
-source ~/.bashrc
-
-# Option 2: write directly to config.json
-mkdir -p ~/.amber-hunter
-cat >> ~/.amber-hunter/config.json << 'EOF'
-{"api_token": "your_api_key_here"}
-EOF
-
-# Then restart amber-hunter
-launchctl unload ~/Library/LaunchAgents/com.huper.amber-hunter.plist
-launchctl load ~/Library/LaunchAgents/com.huper.amber-hunter.plist
+```
+amber-hunter/
+├── amber_hunter.py      # FastAPI 主文件，所有端点
+├── core/
+│   ├── db.py            # SQLite 数据层
+│   ├── wiki_compiler.py # 知识编译器（v1.2.38）
+│   └── llm.py           # LLM 调用封装
+├── tests/
+│   └── test_api/
+│       └── test_status.py  # 状态 API 测试
+├── config.json          # 配置文件
+└── SKILL.md             # 本文档
 ```
 
-**How to get the API key:**
-1. Go to huper.org → Dashboard → Account → API Key
-2. Click "Generate API Key" and copy the key immediately (it's only shown once)
+## 适用场景
 
-### Q: Dashboard shows "尚未生成API Key" even after I generated one
+**用 amber-hunter 当：**
+- 需要 AI 在长时间对话中保持"记忆"
+- 需要从历史胶囊中检索相关经验
+- 需要将多个相关记忆自动组织成概念页
+- 需要加密存储敏感记忆到云端
 
-This is a UI bug in older versions. Update to the latest version, or refresh the dashboard page. The key is stored correctly in the database — the display just wasn't updating after generation.
-
-### Q: Sync shows "network unreachable" or "Token 无效" errors
-
-**If amber-hunter is on a VPS:** The `api_token` in config.json may be empty or wrong. Verify:
-
-```bash
-cat ~/.amber-hunter/config.json | grep api_token
-```
-
-If empty, the VPS can't reach huper.org cloud sync. Manually set the `api_token` as shown in the FAQ above.
-
-**If amber-hunter is on your local Mac:** Make sure `bind-apikey` completed successfully (it runs automatically after generating a key). Check:
-
-```bash
-curl -s http://localhost:18998/config | python3 -c "import sys,json; d=json.load(sys.stdin); print('api_token:', d.get('api_key','(not set)')[:10]+'...')"
-```
-
-### Q: I generated a new API Key but amber-hunter on VPS stopped syncing
-
-Each key can only be used by **one** amber-hunter instance at a time. If you generate a new key from the dashboard, the old key (still configured on VPS) becomes invalid. Either:
-- Copy the new key to the VPS config and restart
-- Or keep using the old key (don't click "Generate New Key" unless you mean to rotate it)
-
-### Q: "尚未生成API Key" never goes away on first use
-
-This means you haven't generated an API key yet. Click the orange "生成 API Key" button on the Dashboard → Account → API Key page. The key is shown once — copy it immediately and save it somewhere before leaving the page.
-
----
-
-## Version History
-
-- **v1.2.29** (2026-04-04): G1 Self-Correction Loop — `correction_log` SQLite 表记录每次校正事件；`_normalize_tag` 应用用户校正规则（5分钟缓存）；`record_tag_correction` / `record_category_correction` 在 queue edit 时调用；`GET /corrections/stats` 分析校正模式；`POST /corrections/apply` 采纳替换规则。
-- **v1.2.28** (2026-04-04): P2-1 Mem0 Auto-extraction — `core/extractor.py` 从对话自动抽取 facts/preferences/decisions；`POST /extract/auto` 高置信直接入库/中置信进队列；`GET /extract/status` 查看抽取统计；结合 WAL 信号 + 偏好提取 + LLM 结构化抽取三重机制。
-- **v1.2.27** (2026-04-04): P1-1 Structured User Profile — `user_profile` SQLite 表；`core/profile.py` LLM extraction；`GET /profile` 返回四段画像；`PUT /profile/{section}` 手动更新；`POST /profile/build` 从 session 构建；recall 响应注入 `profile` 字段。
-- **v1.2.26** (2026-04-04): P0-2续 WAL GC — `wal_gc(age_hours=24)` 删除已处理条目；`get_wal_stats()` 新增 `processed_count`；懒 GC（>50 条已处理时自动清理）；`POST /wal/gc` 端点支持手动 GC。
-- **v1.2.25** (2026-04-04): P0-3 可解释召回 — `_kw_score` 返回 `(score, matched_terms)`；`breakdown` 新增 `matched_terms` + `wal_signal`；`reason` 改为详细自然语言说明（含具体匹配词、语义相似度%、WAL信号类型）。
-- **v1.2.24** (2026-04-04): P0-2 WAL 热存储 — `core/wal.py` 新增 Session State WAL 模块；`recall_memories` 返回前检测偏好/决定/修正信号并写入 `~/.amber-hunter/session_wal.jsonl`；新增 `/wal/status` + `/wal/entries` 端点。
-- **v1.2.23** (2026-04-04): P0-1 LanceDB 向量搜索 — `core/vector.py` 新增 LanceDB 封装；胶囊入库时同步写向量；recall 优先 LanceDB top_k 检索（0.50权重），on-the-fly 回退；升级 torch 2.8.0。
-- **v1.2.22** (2026-04-04): Fix line 1570 bug (`row[2]`→`stored_challenge`) in `/api/did/auth/verify`; add `POST /did/auth/challenge` + `POST /did/auth/sign-challenge` in amber_hunter; fix `did_register_device` to use `get_api_token()`; fix `HOME` reference before definition.
-- **v1.2.21** (2026-04-04): D2 DID Challenge-Response Auth + capsule key derivation — `derive_capsule_key` wired into `create_capsule`/`get_capsule` (DID device key → AES-256-GCM, PBKDF2 fallback); `POST /api/did/auth/challenge` + `POST /api/did/auth/verify` endpoints; `require_auth` supports DID token; `device_priv` saved to `did.json`.
-- **v1.2.8** (2026-04-01): Fix proactive-check.js — filter log lines from session transcript; memo truncation 60→80 chars.
-- **v1.2.4** (2026-04-01): Fix `source_type`/`category` missing in sync payload; `httpx.Client` reuse for sync; `/capsules` limit param; `/memories` new fields.
-- **v1.2.3** (2026-04-01): Fix `/recall` semantic search on full corpus; hybrid mode `0.4×keyword + 0.6×semantic`; `/status` enhanced with capsule_count/queue_pending/last_sync.
-- **v1.2.1** (2026-03-31): LLM abstraction layer (`core/llm.py`); `/rerank` endpoint; `/classify` LLM fallback; proactive session selection by message count.
-- **v1.1.9** (2026-03-31): Universal memory taxonomy (8 life categories); `/ingest` + queue management; `source_type` + `category` fields; ChatGPT GPT Action.
-- **v0.9.5** (2026-03-28): amber-proactive V4 — self-contained cron, LLM extraction.
-- **v0.8.4** (2026-03-22): E2E encryption, cross-platform keychain, `/memories` no-auth.
-
----
-
-*Built with 🔒 by [Anke Chen](https://github.com/ankechenlab-node) for the [Huper琥珀](https://huper.org) ecosystem.*
+**不用 amber-hunter 当：**
+- 简单 KV 存储（用文件或 SQLite 直接写）
+- 需要服务端部署（它是纯本地服务）
+- 需要多人实时协作（它是单人设计）

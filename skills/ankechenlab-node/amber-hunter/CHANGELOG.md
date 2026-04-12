@@ -1,3 +1,68 @@
+## [v1.2.41] — 2026-04-09
+
+### Added
+- **BGE-M3 Embedding** — `core/embedding.py` 新增 `BGEProvider` 类，支持 BAAI/bge-m3（1024-dim，多语言）；`encode_chunks(text)` 方法支持按句子边界分块
+- **BM25 关键词检索** — `core/bm25.py` 新建 `BM25Searcher` 类，使用 rank_bm25 库；recall 在 keyword/hybrid 模式下自动启用 BM25 增强关键词匹配
+- **Cross-Encoder Reranker** — `core/reranker.py` 新建 `Reranker` 类，使用 BAAI/bge-reranker-v2-m3 本地模型；`rerank_engine=model` 时调用
+- **HyDE 支持** — `core/hyde.py` 新建 `HyDEGenerator` 类，用 LLM 生成假设性答案增强检索；`hyde=True` 参数启用
+- **Multi-Hop 检索** — 多跳推理支持，从种子胶囊扩展查询；`multi_hop=True` 参数启用
+- **`POST /recall/evaluate`** — RAG 评测端点，使用 RAGAS 框架计算 faithfulness/answer_relevancy/context_precision + NDCG@5
+- **`benchmark/recall_eval.py`** — RAG 评测工具，输出 `benchmark/results/recall_eval_<timestamp>.json`
+
+### Changed
+- **Embedding 模型升级** — 默认从 all-MiniLM-L6-v2 (384-dim) 升级到 BAAI/bge-m3 (1024-dim)
+- **config.json** — 新增 `embed_model`、`embed_dimension`、`rerank_model`、`bm25_enabled`、`chunk_size`、`chunk_overlap`、`hyde_enabled`、`multi_hop_enabled` 配置项
+- **/recall 响应** — 新增 `rerank_time_ms`、`hyde_time_ms`、`retrieval_hops` 字段
+
+### Fixed
+- **向后兼容** — 所有新参数均有默认值，原有调用不受影响；BM25/Reranker/HyDE 默认关闭
+
+## [v1.2.40] — 2026-04-08
+
+### Fixed
+- **P0: 语义模型从未真正加载** — `_get_embed_model()` 和 `_preload_embed_model()` 均只创建 Provider 实例但未触发 `SentenceTransformer` 实际加载；现已对两个函数均加入 `provider.encode(["..."])` 强制热启动，并正确更新 `_EMBED_MODEL` 全局变量；`/status` 的 `semantic_model_loaded: true` / `semantic_model_state: "ready"` 现在正确反映状态
+- **P2: Vector DB size 始终显示 0** — `get_vector_stats()` 用 `iterdir()` 只扫描顶层文件，LanceDB 数据实际存储在 `capsule_vectors.lance/` 子目录的多层 version 文件夹中；改为 `os.walk()` 递归计算，1698 条向量正确显示 141.41 MB
+
+### Added
+- **文档修正** — SKILL.md `/recall` API 参数 `query` → `q`（与实际 API 一致）
+
+### Changed
+- **版本统一** — amber_hunter.py 3处版本号（FastAPI app、/status、/root）统一为 v1.2.40
+- **SKILL.md version** → 1.2.40
+
+## [v1.2.39] — 2026-04-07
+
+### Added
+- **Temporal validity** — `valid_from`/`valid_to` columns on capsules (schema migration)
+- **Contradiction Detection** — `core/contradiction.py` detects fact conflicts before ingest:
+  - Date/time parsing: `since 2022`, `2021 to 2023`, `3 years ago`, `Jan 2024`
+  - Entity extraction: `team_size`, `years_exp`, `start_year`, `db_type`, `project_status`
+  - Conflict rules: ≥2 person difference, ≥1 year difference, any start year conflict
+- **`/ingest` → contradiction check** — direct-write path (confidence≥0.95) and queue approve both run `check_contradiction_on_ingest()`; warnings returned in API response
+- **`/extract/auto` → contradiction check** — auto-extract now runs contradiction detection with `valid_from`/`valid_to` and category_path inference
+- **Claude Code hooks** — `hooks/amber_save_hook.sh` (Stop hook, every 15 exchanges) + `hooks/amber_precompact_hook.sh` (PreCompact hook, emergency save)
+
+### Changed
+- `insert_capsule()` gains `valid_from`/`valid_to` keyword args
+
+## [v1.2.38] — 2026-04-07
+
+### Added
+- **Knowledge Compiler** — `core/wiki_compiler.py` 生成带 `[[capsule_id:topic]]` wikilinks 的 markdown concept page
+- **`GET /concepts`** — 列出所有 concept pages
+- **`GET /concepts/<path>`** — 获取指定 path 的完整 wiki markdown
+- **`POST /admin/compile`** — 手动触发 concept page 编译（单 path 或批量覆盖缺口）
+- **`GET /admin/compile/status`** — 查看编译状态 + 覆盖缺口列表
+- **Daemon** — `start_compile_daemon(interval_hours=6.0, capsule_threshold=100)` 后台自动编译
+- **wikilinks 代码事后注入** — LLM 生成 wikilinks 不稳定，改为 post-process 拼接
+
+### Changed
+- `insights` 表新增 `concept_slug`/`wiki_content` 列（向后兼容 migration）
+- `generate_insight()` 改用 `_generate_wiki_insight()` 生成 wiki markdown
+
+### Fixed
+- `core/extractor.py` — 跳过空白 memo 防止空胶囊入库
+
 ## [v1.2.22] — 2026-04-04
 
 ### Added

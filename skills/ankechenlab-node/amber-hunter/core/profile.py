@@ -96,6 +96,11 @@ def build_or_update_profile(session_key: str) -> dict:
         else:
             insert_profile(section, content, source="llm_extracted", session_id=session_key)
 
+    # 处理完 WAL 条目后标记为已处理（避免下次重复读取）
+    from core.wal import mark_wal_processed
+    for e in entries:
+        mark_wal_processed(e.get("ts", 0))
+
     return profile_data
 
 

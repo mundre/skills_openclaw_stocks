@@ -5,6 +5,10 @@
 
 set -e
 
+# 确保脚本自身目录为工作目录（无论从哪里执行）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 VERSION=${1:?Usage: bash release.sh v0.9.1 [github_token]}
 TOKEN=${2:-${GITHUB_TOKEN:?Requires GITHUB_TOKEN env or second argument}}
 REPO="ankechenlab-node/amber_hunter"

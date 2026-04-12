@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * amber-proactive V3.1: Zero-LLM Extraction
+ * amber-proactive V3.2: Zero-LLM Extraction
  * 
  * 此版本回归设计初衷：skill 脚本不调用任何外部大模型。
  * 该脚本只负责读取 session 对话并推送到 queue 中。真正的大模型提取、
@@ -147,15 +147,32 @@ async function main() {
     return;
   }
 
-  // 去重：当前 session 已存在于 pending_extract.jsonl 则跳过（避免重复捕获）
+  // 去重 v1.2.33: 检查 session 是否已在队列中
+  // - 若 session 已存在但消息数未增加 → 跳过（避免重复提取）
+  // - 若 session 已存在且消息数增加了 → 更新队列条目（增量提取新内容）
   if (fs.existsSync(PENDING_FILE)) {
     const lines = fs.readFileSync(PENDING_FILE, 'utf8').split('\n').filter(l => l.trim());
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
       try {
-        const item = JSON.parse(line);
+        const item = JSON.parse(lines[i]);
         if (item.session_id === sessionId) {
-          log(`[main] Session ${sessionId} already in queue, skipping`);
-          return;
+          if (item.message_count >= messages.length) {
+            log(`[main] Session ${sessionId} already in queue (${item.message_count} msgs), no new messages — skipping`);
+            return;
+          } else {
+            // 消息数增加了，更新队列条目（替换旧行）
+            log(`[main] Session ${sessionId} grew ${item.message_count}→${messages.length} msgs — updating queue entry`);
+            const conversation = buildConversationText(messages);
+            const updated = JSON.stringify({
+              session_id: sessionId,
+              message_count: messages.length,
+              created_at: Math.floor(Date.now() / 1000),
+              conversation: conversation
+            }) + '\n';
+            lines[i] = updated;
+            fs.writeFileSync(PENDING_FILE, lines.join('\n') + '\n');
+            return;
+          }
         }
       } catch {}
     }
