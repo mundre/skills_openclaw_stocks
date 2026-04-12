@@ -3,11 +3,16 @@
   "slug": "shenmeng-self-evolution-engine",
   "displayName": "Self Evolution Engine 自我进化引擎",
   "latest": {
-    "version": "1000001.0.0",
-    "publishedAt": 1775960145492,
-    "commit": "https://github.com/openclaw/skills/commit/0b2fe7ed49d7e11dc597999413dfef0238450aea"
+    "version": "2026.4.13-1",
+    "publishedAt": 1776036322320,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1000001.0.0",
+      "publishedAt": 1775960145492,
+      "commit": "https://github.com/openclaw/skills/commit/0b2fe7ed49d7e11dc597999413dfef0238450aea"
+    },
     {
       "version": "99.0.0",
       "publishedAt": 1775749818900,
