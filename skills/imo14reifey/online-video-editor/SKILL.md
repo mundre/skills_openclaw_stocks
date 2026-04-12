@@ -1,132 +1,150 @@
 ---
 name: online-video-editor
-version: "1.0.0"
-displayName: "Online Video Editor — Edit Videos Online Free with AI No Download Required"
+version: 3.0.2
+displayName: "Online Video Editor — Edit, Trim & Export Polished Videos Without Software"
 description: >
-  Edit videos online with AI — trim, cut, merge, add captions, background music, transitions, color correction, text overlays, speed adjustments, and multi-format export directly through chat. NemoVideo is the online video editor that requires no software download, no account setup, and no timeline learning curve. Describe your edit and the AI executes it: professional results from conversational instructions. Works on any device with an internet connection. Online video editor free, edit video online no download, AI video editor online, free video editing tool, browser video editor, cloud video editor, edit videos without software.
-metadata: {"openclaw": {"emoji": "🌐", "requires": {"env": [], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN"}}
+  Turn raw, uncut footage into share-ready videos without installing a single app. This online-video-editor skill handles trimming, cutting, captioning, transitions, and format conversion through simple chat commands. Whether you're producing social content, training videos, or event highlights, you get precise editing guidance and output-ready instructions tailored to your platform and audience.
+metadata: {"openclaw": {"emoji": "🎬", "requires": {"env": ["NEMO_TOKEN"], "configPaths": ["~/.config/nemovideo/"]}, "primaryEnv": "NEMO_TOKEN", "variant": "control"}}
+homepage: https://nemovideo.com
+repository: https://github.com/nemovideo/nemovideo_skills
+apiDomain: https://mega-api-prod.nemovideo.ai
 ---
 
-# Online Video Editor — Professional Editing Without Installing Anything
+## Getting Started
 
-Desktop video editing software requires: downloading a multi-gigabyte installer, meeting minimum hardware requirements (most require 8GB+ RAM and a dedicated GPU), learning a complex interface with hundreds of buttons and menus, and keeping the software updated through regular patches. Mobile editing apps require: downloading from an app store, limited functionality compared to desktop, tiny screen for precise editing work, and storage space on an already-full phone. NemoVideo requires: an internet connection. That is it. No download. No installation. No hardware requirements beyond what runs a web browser. No interface to learn because there is no visual interface — you describe the edit in words and the AI executes it. This fundamentally changes who can edit video. A teacher preparing a lesson on a school Chromebook: can edit. A small business owner on a tablet during lunch: can edit. A student on a library computer: can edit. A marketing team collaborating across different operating systems: can edit. A person on a phone with 2GB of free storage: can edit. The constraint that kept video editing locked to expensive hardware and specialized software is gone. The editing power that previously required Premiere Pro or Final Cut is now accessible through a text description.
+> Welcome to your online video editor assistant — whether you're trimming a clip, adding captions, or building a full highlight reel, I'm ready to help you get it done. Tell me what footage you're working with and what you want the final video to look like!
 
-## Use Cases
+**Try saying:**
+- "I have a 15-minute interview recording and need to cut it down to a 2-minute highlight reel for LinkedIn. The guest talks about remote work culture — which parts should I keep?"
+- "Can you help me add animated captions to my cooking tutorial video so it works without sound on Instagram Reels? The video is 45 seconds long."
+- "I recorded a birthday event on my phone in portrait mode but I need a horizontal version for YouTube. How do I reframe and export it correctly?"
 
-1. **Quick Trim — Remove Start and End (any length)** — A meeting recording has 2 minutes of "is everyone here?" at the beginning and 3 minutes of "okay bye" at the end. NemoVideo: trims the first 2 minutes and last 3 minutes, adds a 0.5-second fade-in at the new start and fade-out at the new end, and exports. A 5-second description replaces 10 minutes of importing into editing software and finding the right cut points.
-2. **Social Media Repurpose — One Video, Four Formats (any length)** — A creator has a 16:9 YouTube video that needs to be posted on TikTok (9:16), Instagram Feed (4:5), Instagram Reels (9:16 with captions), and LinkedIn (1:1). NemoVideo: intelligently reframes for each aspect ratio (face tracking for vertical crops), adds word-by-word captions for the Reels version, applies platform-specific color optimization, and exports all four formats from one command. Multi-platform publishing from a single source video.
-3. **Combine Clips — Merge Multiple Videos (any number)** — A teacher recorded a lesson in 5 separate phone clips because they kept getting interrupted. NemoVideo: merges all 5 clips in sequence, color-matches across clips (phone auto-exposure created different looks), adds crossfade transitions between clips (smooths the interruption gaps), normalizes audio levels, and exports as one continuous video. Five fragments become one cohesive lesson.
-4. **Full Edit — Talking-Head Polish (5-25 min)** — A YouTuber records a raw video and describes the complete edit: "Remove silences, add zoom-cuts, put in lo-fi music, add word-by-word captions, and make a Shorts clip from the best 55 seconds." NemoVideo executes the entire pipeline: silence removal (0.8s threshold), zoom-cuts (100%/120% alternating every 10 seconds), color grade (warm-clean), music at -20dB with ducking, captions in trending style, chapter detection, and Shorts extraction. The complete YouTube post-production workflow from one description.
-5. **Emergency Edit — Fix Before Deadline (any length)** — A presenter realizes 30 minutes before a meeting that their video has a 10-second section where they said the wrong number ("$5 million" instead of "$50 million"). NemoVideo: cuts the 10-second error segment (specified by timestamp), smooths the audio transition, and re-exports in 2 minutes. Crisis averted without opening editing software.
+### Automatic Setup
 
-## How It Works
+On first interaction, connect to the processing API before doing anything else. Show a brief status like "Setting things up...".
 
-### Step 1 — Upload Video
-Upload from any device: phone, tablet, laptop, desktop. Any format accepted. No software to install first.
+**Token**: If `NEMO_TOKEN` environment variable is already set, use it and skip to **Session** below.
 
-### Step 2 — Describe the Edit
-Type what you want in plain language. Simple edits: "trim the first 30 seconds." Complex edits: "remove silences, add captions, music, and color correction, then export in three formats." NemoVideo understands both.
+**Free token**: Generate a UUID as client identifier, then POST to `https://mega-api-prod.nemovideo.ai/api/auth/anonymous-token` with header `X-Client-Id: <uuid>`. The response field `data.token` becomes your NEMO_TOKEN (100 credits, 7-day expiry).
 
-### Step 3 — Generate
-```bash
-curl -X POST https://mega-api-prod.nemovideo.ai/api/v1/generate \
-  -H "Authorization: Bearer $NEMO_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "skill": "online-video-editor",
-    "prompt": "Edit a 15-minute raw talking-head video. Full professional edit: remove silences over 1 second, add zoom-cuts every 10 seconds, apply warm-clean color grade, add lo-fi music at -20dB with speech ducking, generate word-by-word captions (white text, yellow highlight, dark pill background), auto-detect chapters, extract best 55-second Shorts clip (9:16 with captions). Export main video as 16:9 1080p.",
-    "edits": ["silence-removal", "zoom-cuts", "color-grade", "music", "captions", "chapters", "shorts"],
-    "silence_threshold": 1.0,
-    "zoom_cuts_interval": 10,
-    "color_grade": "warm-clean",
-    "music": "lo-fi",
-    "music_volume": "-20dB",
-    "captions": {"style": "word-highlight", "text": "#FFFFFF", "highlight": "#FFD700", "bg": "pill-dark"},
-    "chapters": true,
-    "shorts": {"duration": "55 sec"},
-    "format": "16:9"
-  }'
+**Session**: POST to `https://mega-api-prod.nemovideo.ai/api/tasks/me/with-session/nemo_agent` with Bearer auth and body `{"task_name":"project"}`. Save `session_id` from the response.
+
+Confirm to the user you're connected and ready. Don't print tokens or raw JSON.
+
+# Edit Any Video From Your Browser, Instantly
+
+Most video editing tools demand a steep learning curve, expensive subscriptions, or a powerful desktop machine. This skill flips that entirely. By working through natural conversation, you can describe exactly what you want your video to look like — and get step-by-step guidance, edit plans, or ready-to-execute instructions without ever opening a timeline editor.
+
+The online video editor skill is built for creators who move fast. Need to cut a 10-minute interview down to a punchy 90-second highlight reel? Want to add captions in a specific font style for Instagram Reels? Trying to stitch together clips from different devices into one cohesive piece? Describe it, and the skill maps out exactly how to get there.
+
+This isn't a one-size-fits-all approach. Every edit recommendation accounts for your target platform, aspect ratio, audience, and tone. From YouTube long-form to TikTok vertical clips to corporate presentation videos, the skill adapts its guidance to match what you're actually making.
+
+## Routing Edits to the Right Tool
+
+When you submit a request — whether it's trimming a clip, adding captions, applying a color grade, or exporting in a specific codec — ClawHub parses your intent and routes it to the matching video processing endpoint automatically.
+
+| User says... | Action | Skip SSE? |
+|-------------|--------|----------|
+| "export" / "导出" / "download" / "send me the video" | → §3.5 Export | ✅ |
+| "credits" / "积分" / "balance" / "余额" | → §3.3 Credits | ✅ |
+| "status" / "状态" / "show tracks" | → §3.4 State | ✅ |
+| "upload" / "上传" / user sends file | → §3.2 Upload | ✅ |
+| Everything else (generate, edit, add BGM…) | → §3.1 SSE | ❌ |
+
+## Cloud Rendering API Reference
+
+All timeline edits, transitions, and export jobs run through a distributed cloud rendering backend, so your browser never handles the heavy transcoding work. Requests are queued, processed frame-accurately, and returned as a streamable or downloadable output file without requiring any local software.
+
+Skill attribution — read from this file's YAML frontmatter at runtime:
+- `X-Skill-Source`: `online-video-editor`
+- `X-Skill-Version`: from frontmatter `version`
+- `X-Skill-Platform`: detect from install path (`~/.clawhub/` → `clawhub`, `~/.cursor/skills/` → `cursor`, else `unknown`)
+
+**All requests** must include: `Authorization: Bearer <NEMO_TOKEN>`, `X-Skill-Source`, `X-Skill-Version`, `X-Skill-Platform`. Missing attribution headers will cause export to fail with 402.
+
+**API base**: `https://mega-api-prod.nemovideo.ai`
+
+**Create session**: POST `/api/tasks/me/with-session/nemo_agent` — body `{"task_name":"project","language":"<lang>"}` — returns `task_id`, `session_id`.
+
+**Send message (SSE)**: POST `/run_sse` — body `{"app_name":"nemo_agent","user_id":"me","session_id":"<sid>","new_message":{"parts":[{"text":"<msg>"}]}}` with `Accept: text/event-stream`. Max timeout: 15 minutes.
+
+**Upload**: POST `/api/upload-video/nemo_agent/me/<sid>` — file: multipart `-F "files=@/path"`, or URL: `{"urls":["<url>"],"source_type":"url"}`
+
+**Credits**: GET `/api/credits/balance/simple` — returns `available`, `frozen`, `total`
+
+**Session state**: GET `/api/state/nemo_agent/me/<sid>/latest` — key fields: `data.state.draft`, `data.state.video_infos`, `data.state.generated_media`
+
+**Export** (free, no credits): POST `/api/render/proxy/lambda` — body `{"id":"render_<ts>","sessionId":"<sid>","draft":<json>,"output":{"format":"mp4","quality":"high"}}`. Poll GET `/api/render/proxy/lambda/<id>` every 30s until `status` = `completed`. Download URL at `output.url`.
+
+Supported formats: mp4, mov, avi, webm, mkv, jpg, png, gif, webp, mp3, wav, m4a, aac.
+
+### SSE Event Handling
+
+| Event | Action |
+|-------|--------|
+| Text response | Apply GUI translation (§4), present to user |
+| Tool call/result | Process internally, don't forward |
+| `heartbeat` / empty `data:` | Keep waiting. Every 2 min: "⏳ Still working..." |
+| Stream closes | Process final response |
+
+~30% of editing operations return no text in the SSE stream. When this happens: poll session state to verify the edit was applied, then summarize changes to the user.
+
+### Backend Response Translation
+
+The backend assumes a GUI exists. Translate these into API actions:
+
+| Backend says | You do |
+|-------------|--------|
+| "click [button]" / "点击" | Execute via API |
+| "open [panel]" / "打开" | Query session state |
+| "drag/drop" / "拖拽" | Send edit via SSE |
+| "preview in timeline" | Show track summary |
+| "Export button" / "导出" | Execute export workflow |
+
+**Draft field mapping**: `t`=tracks, `tt`=track type (0=video, 1=audio, 7=text), `sg`=segments, `d`=duration(ms), `m`=metadata.
+
+```
+Timeline (3 tracks): 1. Video: city timelapse (0-10s) 2. BGM: Lo-fi (0-10s, 35%) 3. Title: "Urban Dreams" (0-3s)
 ```
 
-### Step 4 — Download
-Preview the edited video and Shorts clip. Download directly to your device. Upload to any platform.
+### Error Handling
 
-## Parameters
+| Code | Meaning | Action |
+|------|---------|--------|
+| 0 | Success | Continue |
+| 1001 | Bad/expired token | Re-auth via anonymous-token (tokens expire after 7 days) |
+| 1002 | Session not found | New session §3.0 |
+| 2001 | No credits | Anonymous: show registration URL with `?bind=<id>` (get `<id>` from create-session or state response when needed). Registered: "Top up credits in your account" |
+| 4001 | Unsupported file | Show supported formats |
+| 4002 | File too large | Suggest compress/trim |
+| 400 | Missing X-Client-Id | Generate Client-Id and retry (see §1) |
+| 402 | Free plan export blocked | Subscription tier issue, NOT credits. "Register or upgrade your plan to unlock export." |
+| 429 | Rate limit (1 token/client/7 days) | Retry in 30s once |
 
-| Parameter | Type | Required | Description |
-|-----------|------|:--------:|-------------|
-| `prompt` | string | ✅ | Describe the edit in plain language |
-| `edits` | array | | Specific edits to apply |
-| `trim` | object | | {start, end} or {remove: "0:00-0:30"} |
-| `merge` | boolean | | Combine multiple uploaded clips |
-| `silence_threshold` | float | | Remove silences above N seconds |
-| `zoom_cuts_interval` | integer | | Seconds between zoom changes |
-| `color_grade` | string | | "warm-clean", "cinematic", "bright", "none" |
-| `music` | string | | "lo-fi", "upbeat", "corporate", "none" |
-| `music_volume` | string | | "-14dB" to "-22dB" |
-| `captions` | object | | {style, text, highlight, bg} |
-| `speed` | float | | Playback speed (0.25-4.0) |
-| `chapters` | boolean | | Auto-detect chapters |
-| `shorts` | object | | {duration} for Shorts extraction |
-| `formats` | array | | ["16:9","9:16","1:1","4:5"] |
+## Use Cases — What You Can Build With This Skill
 
-## Output Example
+Content creators use this skill to repurpose long-form YouTube videos into short clips for Shorts, Reels, and TikTok — getting a complete cut list without manually scrubbing through footage.
 
-```json
-{
-  "job_id": "ove-20260328-001",
-  "status": "completed",
-  "source_duration": "15:22",
-  "edited_duration": "10:48",
-  "edits_applied": {
-    "silences_removed": "4:34 (112 cuts)",
-    "zoom_cuts": 65,
-    "color_grade": "warm-clean",
-    "music": "lo-fi at -20dB with ducking",
-    "captions": "word-highlight (326 lines)"
-  },
-  "outputs": {
-    "main_video": {
-      "file": "edited-16x9.mp4",
-      "duration": "10:48",
-      "resolution": "1920x1080"
-    },
-    "chapters": [
-      {"title": "Introduction", "timestamp": "0:00"},
-      {"title": "The Core Problem", "timestamp": "2:15"},
-      {"title": "Solution Framework", "timestamp": "5:02"},
-      {"title": "Implementation Steps", "timestamp": "7:38"},
-      {"title": "Closing Thoughts", "timestamp": "9:45"}
-    ],
-    "shorts": {
-      "file": "shorts-9x16.mp4",
-      "duration": "0:55"
-    }
-  }
-}
-```
+Small business owners use it to turn product demo recordings into polished explainer videos, complete with caption suggestions, background music cues, and call-to-action overlays timed to key moments.
 
-## Tips
+Educators and course creators rely on it to restructure lecture recordings, remove filler sections, and plan chapter markers that make long videos easier to navigate on platforms like Teachable or Kajabi.
 
-1. **Start simple, refine later** — "Make this video look professional" is a valid first instruction. If the result is 90% right but the music is too loud, follow up with "lower the music to -22dB." Iterative editing through conversation is faster than getting every parameter right on the first try.
-2. **Multi-format export in one request saves time** — Instead of editing once for YouTube, then again for TikTok, then again for Instagram, request all formats in one generation. The AI handles the reframing, and you get all versions simultaneously.
-3. **Silence removal is the highest-impact single edit** — If you only apply one edit to raw footage, make it silence removal. It instantly tightens pacing by 20-35% and makes any video feel more engaging. Everything else is refinement.
-4. **Captions are the second-highest-impact edit** — Adding captions increases social media watch time by 12-40%. The combination of silence removal + captions transforms amateur footage into professional content with just two instructions.
-5. **No learning curve is the real advantage** — The point of an online editor is not just convenience — it is accessibility. Someone who has never opened Premiere Pro can describe a complex multi-step edit and get professional results. The AI replaces the learning curve entirely.
+Event videographers use the skill to plan highlight reels from wedding or conference footage — identifying the strongest emotional beats, sequencing clips for narrative flow, and choosing appropriate transition styles for the event's tone.
 
-## Output Formats
+## Tips and Tricks for Faster, Better Edits
 
-| Format | Resolution | Use Case |
-|--------|-----------|----------|
-| MP4 16:9 | 1080p / 4K | YouTube / website |
-| MP4 9:16 | 1080x1920 | TikTok / Reels / Shorts |
-| MP4 1:1 | 1080x1080 | Instagram / LinkedIn |
-| MP4 4:5 | 1080x1350 | Instagram feed |
-| MOV | 1080p | Professional workflow |
-| WebM | 720p+ | Web embed |
+When describing your footage, include the platform you're publishing to upfront. A video destined for TikTok needs different pacing, aspect ratio, and caption placement than one going to YouTube or a company website. Mentioning this early saves multiple rounds of revision.
 
-## Related Skills
+For trimming requests, give timestamps or describe the content at each section rather than just saying 'cut the boring parts.' The more context you provide — like 'the speaker repeats themselves between minutes 3 and 5' — the more precise the edit plan you'll receive.
 
-- [gaming-video-editor](/skills/gaming-video-editor) — Gaming video editing
-- [video-splitter](/skills/video-splitter) — Video splitting
-- [speed-ramp-video](/skills/speed-ramp-video) — Speed ramp effects
+If you're working with multiple clips that need to be stitched together, list them in order with a one-line description of each. This lets the skill suggest the best transition types, pacing adjustments, and whether a title card or intro sequence would help the final video feel cohesive.
+
+## Troubleshooting Common Online Video Editing Problems
+
+If your exported video looks pixelated or blurry, the issue is almost always export resolution or bitrate settings, not the edit itself. Describe your source footage quality and the platform you're uploading to, and the skill will recommend the correct export settings for that destination.
+
+Audio sync issues — where the video and audio drift apart mid-clip — typically happen when mixing footage from different devices or frame rates. Share the specs of each clip (frame rate, recording device) and you'll get a clear plan for normalizing them before editing begins.
+
+If captions appear misaligned or overflow the frame on mobile, it's usually a font size or safe-zone issue. The skill can recommend caption positioning rules for each major platform so your text never gets cropped by a phone's interface elements.
+
+For videos that feel too long but you're unsure what to cut, describe the goal of the video in one sentence — the skill will use that as a filter to identify which sections directly serve that goal and which are safe to remove.

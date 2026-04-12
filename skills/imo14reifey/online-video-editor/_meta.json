@@ -3,11 +3,16 @@
   "slug": "online-video-editor",
   "displayName": "Online Video Editor",
   "latest": {
-    "version": "3.0.0",
-    "publishedAt": 1774684858218,
-    "commit": "https://github.com/openclaw/skills/commit/32a21255f0002e5aeaf56d5ae538d7de2ce37b11"
+    "version": "1.0.6",
+    "publishedAt": 1775666153773,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.0",
+      "publishedAt": 1774684858218,
+      "commit": "https://github.com/openclaw/skills/commit/32a21255f0002e5aeaf56d5ae538d7de2ce37b11"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774509973336,
