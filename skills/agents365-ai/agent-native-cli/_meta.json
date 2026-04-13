@@ -1,0 +1,11 @@
+{
+  "owner": "agents365-ai",
+  "slug": "agent-native-cli",
+  "displayName": "Agent Native Cli",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775730507070,
+    "commit": null
+  },
+  "history": []
+}
