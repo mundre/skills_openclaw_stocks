@@ -4,11 +4,12 @@ from bs4 import BeautifulSoup
 import re
 from ddgs import DDGS
 
+from urllib.parse import urlparse
+
+ALLOWED_HOSTS = {"mychords.net", "amdm.ru", "www.amdm.ru", "ultimate-guitar.com", "tabs.ultimate-guitar.com"}
+
 def search_chords(query):
     sites = ["mychords.net", "amdm.ru/akkordi", "ultimate-guitar.com/tabs"]
-    
-    # Очищаем запрос от лишних символов для проверки URL
-    query_clean = re.sub(r'[^a-zA-Z0-9а-яА-Я]', '', query).lower()
     
     for site in sites:
         try:
@@ -19,7 +20,14 @@ def search_chords(query):
             for r in results:
                 href = r.get('href', '')
                 
-                # Проверяем, что хотя бы часть запроса есть в URL (чтобы отсеять случайные совпадения по тексту)
+                # Проверяем, что URL начинается с http(s) и хост в allow-list
+                if not href.startswith(('http://', 'https://')):
+                    continue
+                parsed = urlparse(href)
+                if parsed.hostname and parsed.hostname not in ALLOWED_HOSTS:
+                    continue
+                
+                # Проверяем, что хотя бы часть запроса есть в URL
                 url_parts = href.lower().replace('-', '').replace('_', '')
                 if not any(word in url_parts for word in query.lower().split()):
                     continue
@@ -28,7 +36,7 @@ def search_chords(query):
                     return href, 'mychords'
                 elif 'amdm.ru/akkordi/' in href:
                     return href, 'amdm'
-                elif 'ultimate-guitar.com/tabs/' in href or 'ultimate-guitar.com/pro/' not in href:
+                elif 'ultimate-guitar.com/tabs/' in href and 'ultimate-guitar.com/pro/' not in href:
                     return href, 'ultimate-guitar'
         except Exception as e:
             print(f"Error searching DuckDuckGo for {site}: {e}")

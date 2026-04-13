@@ -3,9 +3,15 @@
   "slug": "chords-fetcher",
   "displayName": "Chords Fetcher",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775048023712,
-    "commit": "https://github.com/openclaw/skills/commit/6a074bfe418651035ba47f743f3c6ec989bb43da"
+    "version": "1.1.0",
+    "publishedAt": 1775680568067,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775048023712,
+      "commit": "https://github.com/openclaw/skills/commit/6a074bfe418651035ba47f743f3c6ec989bb43da"
+    }
+  ]
 }
