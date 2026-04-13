@@ -1,31 +1,29 @@
 ---
 name: second-brain-visualizer
-version: 1.2.0
+version: 1.5.0
 description: "Unload your cognitive baggage. Drop ideas anywhere, find the signal later."
 homepage: https://github.com/highnoonoffice/hno-skills
 source: https://github.com/highnoonoffice/hno-skills/tree/main/second-brain-visualizer
 license: MIT-0
+credentials:
+  - name: "openclaw-gateway.json"
+    description: "Required. Create at ~/.openclaw/credentials/openclaw-gateway.json with fields: host (default: 127.0.0.1), port (default: 18789), key (your OpenClaw gateway auth key). Keep host set to 127.0.0.1 to ensure atom corpus stays on-machine."
+    required: true
+  - name: "slack-sb.json"
+    description: "Optional. Slack bot API key for automated ingestion from a private Slack channel. Format: { apiKey: string }"
+    required: false
+  - name: "telegram-sb.json"
+    description: "Optional. Telegram bot API key for automated ingestion from a private Telegram channel. Format: { apiKey: string, chat_id: string }"
+    required: false
 metadata:
   config:
     - OPENCLAW_VAULT: "Path to your vault directory containing memory/second-brain.md"
-    - OPENCLAW_GATEWAY_HOST: "OpenClaw gateway host (default: 127.0.0.1)"
-    - OPENCLAW_GATEWAY_PORT: "OpenClaw gateway port (default: 18789)"
     - SBV_MODEL: "LLM model for clustering and insight generation (default: openclaw:main)"
     - SBV_ATOMS_FILE: "Output path for parsed atoms JSON"
     - SBV_CLUSTERS_FILE: "Output path for cluster JSON"
-  credentials:
-    - name: "OPENCLAW_GATEWAY_TOKEN"
-      description: "Required. Gateway auth token for your local OpenClaw gateway. Set as environment variable."
-      required: true
-    - name: "slack-sb.json"
-      description: "Optional. Slack bot token for automated ingestion from a private Slack channel. Format: { token: string }"
-      required: false
-    - name: "telegram-sb.json"
-      description: "Optional. Telegram bot token for automated ingestion from a private Telegram channel. Format: { token: string, chat_id: string }"
-      required: false
   dataFlow:
     - "Reads local markdown ledger from OPENCLAW_VAULT/memory/second-brain.md"
-    - "POSTs atom corpus to LLM via OpenClaw gateway for clustering and insight generation"
+    - "POSTs atom corpus to LLM via OpenClaw gateway at the host configured in ~/.openclaw/credentials/openclaw-gateway.json (default: 127.0.0.1) — keep host set to localhost to ensure data stays on-machine"
     - "No data leaves your local OpenClaw gateway — LLM routing is controlled by your OpenClaw config"
     - "Optional ingestion credentials (Slack, Telegram) stored locally in ~/.openclaw/credentials/ — never sent externally"
 ---
@@ -40,7 +38,7 @@ Second Brain Visualizer reads what accumulates. Not to categorize it. To find th
 
 One note is just a note. Fifty notes across three weeks is a pattern. A year of notes is a portrait of how you think.
 
-The clustering engine reads for intent, not keywords. A joke about AI billing and a note about Simone Weil may belong in the same cluster if they're reaching toward the same underlying question. Clusters surface with a name, a one-sentence insight, and a status: ESTABLISHED, FORMING, or FADING. Tensions show you where you're arguing with yourself. Notable absences show you what your idea stream isn't touching yet.
+The clustering engine reads for intent, not keywords. A note about LLM inference costs and a quote from Simone Weil may belong in the same cluster if they're reaching toward the same underlying question. Clusters surface with a name, a one-sentence insight, and a status: ESTABLISHED, FORMING, or FADING. Tensions show you where you're arguing with yourself. Notable absences show you what your idea stream isn't touching yet.
 
 This is not a note-taking app. Most note-taking tools are mirrors — they show you what you put in. This reads what it means.
 
@@ -48,7 +46,7 @@ This is not a note-taking app. Most note-taking tools are mirrors — they show 
 
 ### What It Does
 
-Your raw idea stream gets parsed into **atoms** — the smallest units of intent. Atoms are clustered by **affinity of meaning**, not keyword overlap. A joke about AI billing models and a note about Simone Weil may belong in the same cluster if they're both probing the same underlying question about attention and value.
+Your raw idea stream gets parsed into **atoms** — the smallest units of intent. Atoms are clustered by **affinity of meaning**, not keyword overlap. A note about LLM inference costs and a quote from Simone Weil may belong in the same cluster if they're both probing the same underlying question about attention and value.
 
 Each cluster gets:
 - A sharp name capturing the underlying drive (not a generic domain label)
