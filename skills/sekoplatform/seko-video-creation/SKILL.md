@@ -1,6 +1,6 @@
 ---
 name: seko-video-creation
-description: Seko One-stop long video creation skills, including long-form video production, short video creation, AIGC short plays, and film/video project planning (script writing, art direction, character design, scene design, storyboarding). Seko一站式AI视频创作技能，包括长视频创作，短剧创作生成，影视策划案（剧本/美术策划/角色设计/场景设计/故事板）创作等。
+description: All-in-one AI video creation that builds complete, consistent, production-ready long-form videos from simple text prompt. Powered by seko.sensetime.com, which integrates the entire filmmaking workflow, from Pre-production (script writing, art direction, character and scene design, storyboarding) to AI video generation, AI lip-sync, background music, subtitles and transitions. Perfect for creators who need to transform a rough sketch or a simple idea into high-quality, controlled, and consistent AI video. Ideal for AIGC feature films, AI short plays, TVC(Television Commercial) video, social media content, educational videos, product demos, and any AI video creation project where you need a complete solution.
 metadata:
   {
     "openclaw":
