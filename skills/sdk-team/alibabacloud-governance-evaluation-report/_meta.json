@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-governance-evaluation-report",
+  "displayName": "Alibabacloud Governance Evaluation Report",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1775721391785,
+    "commit": null
+  },
+  "history": []
+}
