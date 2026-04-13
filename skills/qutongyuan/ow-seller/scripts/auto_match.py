@@ -1,268 +1,428 @@
 #!/usr/bin/env python3
 """
-OWS 自动匹配引擎
-24小时自动搜索并匹配买家需求
+OW Seller 自动搜索匹配脚本 V2.5
+全球卖家版本 - 卖家自己选择发货区域（本国/全球/指定国家）
+信用系统为可选功能
+
+功能：
+1. 搜索OW社区求购信息
+2. 智能匹配产品清单
+3. 区域匹配 - 根据卖家配置的发货范围筛选买家
+4. 通知卖家新商机
+5. 展示买家信用（可选）
+
+发货模式：
+- local: 本国发货，只匹配本国买家
+- regional: 区域发货，匹配指定国家买家
+- global: 全球发货，匹配任何国家买家
 """
 
 import json
-import pathlib
-import sys
-import time
-import threading
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+import urllib.request
 import re
+from datetime import datetime
+from pathlib import Path
 
-STATE_DIR = pathlib.Path(__file__).resolve().parent.parent / "state"
-SHARED_DIR = pathlib.Path(__file__).resolve().parent.parent / ".." / "shared" / "state"
+STATE_DIR = Path(__file__).parent.parent / "state"
 CATALOG_FILE = STATE_DIR / "product_catalog.json"
-MATCHES_DIR = STATE_DIR / "matches"
-REQUIREMENTS_DIR = SHARED_DIR / "requirements"
+REGION_FILE = STATE_DIR / "region_config.json"
+MATCH_LOG_FILE = STATE_DIR / "match_log.json"
 
-# 平台 API 端点
-PLATFORMS = {
-    "ow": "http://localhost:3000/api/posts?type=request",
-    "moltslist": "https://moltslist.com/api/v1/listings?type=request",
-    "moltbook": "https://moltbook.com/api/posts?type=request"
+# OW API URL - 可通过环境变量配置，默认使用 HTTPS
+import os
+OW_API = os.environ.get("OW_API_URL", "https://www.owshanghai.com/api/posts") + "?type=request&limit=50"
+
+# 信用系统为可选功能，不修改 sys.path
+CREDIT_SYSTEM_ENABLED = False
+format_buyer_credit_display = None
+get_credit_warning = None
+get_buyer_profile = None
+
+def get_simple_credit_display(buyer_id: str) -> str:
+    """简化版信用信息显示（当信用系统未安装时）"""
+    return "📊 信用系统未安装\n   安装：npx skills add Enze-dai/ow-skills/ow-credit"
+
+# IP区域映射（简化版）
+IP_REGION_MAP = {
+    # 中国IP前缀 -> 区域
+    "202": "中国", "203": "中国", "210": "中国", "211": "中国",
+    "218": "中国", "219": "中国", "220": "中国", "221": "中国",
+    "222": "中国", "58": "中国", "59": "中国", "60": "中国",
+    "61": "中国", "116": "中国", "117": "中国", "118": "中国",
+    "119": "中国", "120": "中国", "121": "中国", "122": "中国",
+    "123": "中国", "124": "中国", "125": "中国",
+    
+    # 香港
+    "203.186": "香港", "218.102": "香港",
+    
+    # 台湾
+    "61.216": "台湾", "61.217": "台湾", "61.218": "台湾",
+    
+    # 海外主要国家
+    "8": "美国", "12": "美国", "13": "美国", "14": "美国",
+    "23": "美国", "24": "美国", "26": "美国", "27": "美国",
+    "50": "美国", "51": "美国", "52": "美国", "53": "美国",
+    "54": "美国", "64": "美国", "65": "美国", "66": "美国",
+    "67": "美国", "68": "美国", "69": "美国", "70": "美国",
+    "71": "美国", "72": "美国", "73": "美国", "74": "美国",
+    
+    "153": "日本", "150": "日本",
+    "133": "韩国", "147": "韩国",
+    "62": "欧洲", "80": "欧洲", "81": "欧洲", "82": "欧洲",
+    "83": "欧洲", "84": "欧洲", "85": "欧洲", "86": "欧洲",
+    "87": "欧洲", "88": "欧洲", "89": "欧洲", "90": "欧洲",
+    "91": "欧洲", "92": "欧洲", "93": "欧洲", "94": "欧洲",
+    "95": "欧洲",
 }
 
-class AutoMatchEngine:
-    """自动匹配引擎"""
-    
-    def __init__(self):
-        self.running = False
-        self.thread = None
-        self.last_scan = None
-        self.matches = []
-    
-    def load_catalog(self) -> Dict:
-        """加载产品清单"""
-        if CATALOG_FILE.exists():
-            return json.loads(CATALOG_FILE.read_text())
-        return {"products": [], "auto_match": {}}
-    
-    def load_requirements(self) -> List[Dict]:
-        """加载所有采购需求"""
-        requirements = []
-        
-        # 从本地文件加载
-        if REQUIREMENTS_DIR.exists():
-            for req_file in REQUIREMENTS_DIR.glob("*.json"):
-                try:
-                    req = json.loads(req_file.read_text())
-                    requirements.append(req)
-                except:
-                    pass
-        
-        return requirements
-    
-    def calculate_match_score(self, product: Dict, requirement: Dict) -> float:
-        """计算匹配得分"""
-        config = self.load_catalog().get("auto_match", {})
-        keywords_weight = config.get("keywords_weight", 0.6)
-        category_weight = config.get("category_weight", 0.4)
-        
-        score = 0.0
-        
-        # 关键词匹配
-        product_keywords = set(k.lower() for k in product.get("keywords", []))
-        product_name_words = set(re.findall(r'\w+', product.get("name", "").lower()))
-        all_product_words = product_keywords | product_name_words
-        
-        req_text = f"{requirement.get('item', '')} {requirement.get('content', '')} {requirement.get('description', '')}".lower()
-        req_words = set(re.findall(r'\w+', req_text))
-        
-        if all_product_words and req_words:
-            keyword_match = len(all_product_words & req_words) / len(all_product_words)
-            score += keyword_match * keywords_weight
-        
-        # 类别匹配
-        product_category = product.get("category", "").lower()
-        req_category = requirement.get("category", "").lower()
-        
-        if product_category and req_category:
-            if product_category == req_category:
-                score += 1.0 * category_weight
-            elif product_category in req_category or req_category in product_category:
-                score += 0.5 * category_weight
-        
-        return score
-    
-    def check_price_match(self, product: Dict, requirement: Dict) -> bool:
-        """检查价格是否匹配"""
-        config = self.load_catalog().get("auto_match", {})
-        tolerance = config.get("price_match_tolerance", 0.3)
-        
-        price_range = product.get("price_range", [0, 999999])
-        budget_max = requirement.get("budget_max", requirement.get("budget", 999999))
-        
-        min_acceptable = price_range[0] * (1 - tolerance)
-        
-        return budget_max >= min_acceptable
-    
-    def find_matches(self) -> List[Dict]:
-        """查找所有匹配"""
-        catalog = self.load_catalog()
-        config = catalog.get("auto_match", {})
-        min_score = config.get("min_match_score", 0.5)
-        
-        products = [p for p in catalog.get("products", []) if p.get("active", True)]
-        requirements = self.load_requirements()
-        
-        matches = []
-        
-        for product in products:
-            for req in requirements:
-                # 跳过已过期的需求
-                deadline = req.get("deadline")
-                if deadline:
-                    try:
-                        if datetime.fromisoformat(deadline.replace("Z", "")) < datetime.now():
-                            continue
-                    except:
-                        pass
-                
-                # 计算匹配得分
-                score = self.calculate_match_score(product, req)
-                
-                # 检查价格
-                price_ok = self.check_price_match(product, req)
-                
-                if score >= min_score and price_ok:
-                    matches.append({
-                        "match_id": f"MATCH-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                        "product_id": product.get("product_id"),
-                        "product_name": product.get("name"),
-                        "req_id": req.get("req_id", req.get("id")),
-                        "requirement": req,
-                        "match_score": round(score, 2),
-                        "price_match": price_ok,
-                        "matched_at": datetime.now().isoformat(),
-                        "notified": False
-                    })
-        
-        # 按匹配得分排序
-        matches.sort(key=lambda x: x["match_score"], reverse=True)
-        
-        return matches
-    
-    def save_matches(self, matches: List[Dict]):
-        """保存匹配结果"""
-        MATCHES_DIR.mkdir(parents=True, exist_ok=True)
-        
-        for match in matches:
-            match_file = MATCHES_DIR / f"{match['match_id']}.json"
-            match_file.write_text(json.dumps(match, indent=2, ensure_ascii=False))
-    
-    def scan(self):
-        """执行一次扫描"""
-        print(f"[{datetime.now().isoformat()}] 🔍 开始扫描...")
-        
-        matches = self.find_matches()
-        
-        if matches:
-            self.save_matches(matches)
-            print(f"[{datetime.now().isoformat()}] ✅ 发现 {len(matches)} 个匹配")
-            
-            # 高匹配通知
-            for match in matches:
-                if match["match_score"] >= 0.8:
-                    print(f"   🔔 高匹配: {match['product_name']} ↔ {match['requirement'].get('item', 'N/A')} ({match['match_score']*100:.0f}%)")
-        else:
-            print(f"[{datetime.now().isoformat()}] ℹ️ 未发现新匹配")
-        
-        self.last_scan = datetime.now()
-        self.matches = matches
-        
-        return matches
-    
-    def start_background(self, interval_minutes: int = 30):
-        """启动后台扫描"""
-        def run():
-            while self.running:
-                try:
-                    self.scan()
-                except Exception as e:
-                    print(f"扫描错误: {e}")
-                
-                time.sleep(interval_minutes * 60)
-        
-        self.running = True
-        self.thread = threading.Thread(target=run, daemon=True)
-        self.thread.start()
-        print(f"✅ 自动匹配引擎已启动 (每 {interval_minutes} 分钟扫描一次)")
-    
-    def stop(self):
-        """停止后台扫描"""
-        self.running = False
-        if self.thread:
-            self.thread.join(timeout=5)
-        print("⏹️ 自动匹配引擎已停止")
+def load_catalog():
+    """加载产品清单"""
+    with open(CATALOG_FILE, 'r') as f:
+        return json.load(f)
 
-# 全局引擎实例
-engine = AutoMatchEngine()
+def save_catalog(catalog):
+    """保存产品清单"""
+    with open(CATALOG_FILE, 'w') as f:
+        json.dump(catalog, f, ensure_ascii=False, indent=2)
 
-def main():
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="OWS 自动匹配引擎")
-    parser.add_argument("action", choices=["scan", "start", "stop", "matches", "status"])
-    parser.add_argument("--interval", type=int, default=30, help="扫描间隔（分钟）")
-    parser.add_argument("--limit", type=int, default=20, help="显示数量")
-    
-    args = parser.parse_args()
-    
-    if args.action == "scan":
-        matches = engine.scan()
-        if matches:
-            print(f"\n发现 {len(matches)} 个匹配:\n")
-            for m in matches[:args.limit]:
-                print(f"📌 {m['product_name']} ↔ {m['requirement'].get('item', 'N/A')}")
-                print(f"   匹配度: {m['match_score']*100:.0f}%")
-                print(f"   预算: ¥{m['requirement'].get('budget_max', 'N/A')}")
-                print()
-    
-    elif args.action == "start":
-        engine.start_background(args.interval)
-        print("按 Ctrl+C 停止...")
+def load_region_config():
+    """加载区域配置"""
+    if REGION_FILE.exists():
         try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            engine.stop()
+            with open(REGION_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"加载区域配置失败: {e}")
+    # 默认配置
+    return {
+        "ship_regions": {
+            "enabled": ["中国-全国"],
+            "disabled": [],
+            "international": {"enabled": False, "countries": []}
+        }
+    }
+
+def get_region_from_ip(ip_address):
+    """根据IP地址判断区域"""
+    if not ip_address:
+        return "未知"
     
-    elif args.action == "stop":
-        engine.stop()
+    # 提取IP前缀
+    ip_prefix = ip_address.split('.')[0]
     
-    elif args.action == "matches":
-        if not MATCHES_DIR.exists():
-            print("暂无匹配记录")
-            return
+    # 直接匹配
+    if ip_prefix in IP_REGION_MAP:
+        base_region = IP_REGION_MAP[ip_prefix]
         
-        matches = []
-        for f in sorted(MATCHES_DIR.glob("*.json"), reverse=True)[:args.limit]:
-            matches.append(json.loads(f.read_text()))
+        # 进一步判断是否港澳台
+        if base_region == "中国":
+            # 检查是否港澳台特殊IP段
+            for prefix, region in IP_REGION_MAP.items():
+                if ip_address.startswith(prefix) and region in ["香港", "台湾", "澳门"]:
+                    return region
+            return "中国"
         
-        print(f"📋 最近 {len(matches)} 个匹配:\n")
-        for m in matches:
-            score = m.get('match_score', 0) * 100
-            emoji = "🔔" if score >= 80 else "📌"
-            print(f"{emoji} {m.get('product_name', 'N/A')} ↔ {m.get('requirement', {}).get('item', 'N/A')}")
-            print(f"   匹配度: {score:.0f}% | 时间: {m.get('matched_at', 'N/A')}")
-            print()
+        return base_region
     
-    elif args.action == "status":
-        catalog = engine.load_catalog()
-        config = catalog.get("auto_match", {})
-        products = catalog.get("products", [])
+    # 默认判断
+    try:
+        prefix_num = int(ip_prefix)
+        if prefix_num >= 1 and prefix_num <= 126:
+            return "美国/欧洲"  # 北美/欧洲常见
+        elif prefix_num >= 200 and prefix_num <= 223:
+            return "中国"  # 中国常见段
+    except:
+        pass
+    
+    return "海外"
+
+def can_ship_to_region(buyer_region, region_config, seller_country=None):
+    """判断是否可发货到买家区域（全球卖家视角）"""
+    ship_regions = region_config.get("ship_regions", {})
+    mode = ship_regions.get("mode", "local")  # local/regional/global
+    
+    enabled = ship_regions.get("enabled", [])
+    disabled = ship_regions.get("disabled", [])
+    countries = ship_regions.get("countries", [])
+    
+    # 检查是否在禁发列表
+    for dis in disabled:
+        if buyer_region in dis or dis in buyer_region:
+            return False, f"不可发货到 {buyer_region} | Cannot ship to {buyer_region}"
+    
+    # 根据发货模式判断
+    if mode == "global":
+        # 全球发货模式 - 接受所有买家（除非在禁发列表）
+        return True, f"全球发货，可发货到 {buyer_region} | Global shipping"
+    
+    elif mode == "local":
+        # 本国发货模式 - 只接受本国买家
+        # 特殊处理：未知区域
+        if buyer_region == "未知" or buyer_region == "Unknown":
+            if ship_regions.get("allow_unknown_as_local", True):
+                return True, f"本国发货，默认可发货（买家区域未知，视为本国）"
+            return False, f"仅本国发货，买家区域未知"
         
-        print("📊 自动匹配状态\n")
-        print(f"产品数量: {len(products)}")
-        print(f"启用状态: {'✅ 已启用' if config.get('enabled', True) else '❌ 已禁用'}")
-        print(f"扫描间隔: {config.get('scan_interval_minutes', 30)} 分钟")
-        print(f"价格容差: {config.get('price_match_tolerance', 0.3) * 100}%")
-        print(f"最低匹配: {config.get('min_match_score', 0.5) * 100}%")
-        print(f"上次扫描: {engine.last_scan or '未扫描'}")
+        if buyer_region == seller_country:
+            return True, f"本国发货，可发货到 {buyer_region}"
+        # 检查enabled列表
+        for en in enabled:
+            if buyer_region in en or en in buyer_region:
+                return True, f"可发货到 {buyer_region}"
+        return False, f"仅本国发货，不可发货到 {buyer_region}"
+    
+    elif mode == "regional":
+        # 区域发货模式 - 检查是否在指定国家列表
+        # 特殊处理：未知区域
+        if buyer_region == "未知" or buyer_region == "Unknown":
+            if ship_regions.get("allow_unknown", False):
+                return True, f"允许未知区域买家"
+            return False, f"买家区域未知，无法判断发货范围"
+        
+        for country in countries:
+            if buyer_region in country or country in buyer_region:
+                return True, f"区域发货，可发货到 {buyer_region}"
+        return False, f"不在发货范围内 | Not in shipping region"
+    
+    # 默认：检查enabled列表
+    for en in enabled:
+        if buyer_region in en or en in buyer_region:
+            return True, f"可发货到 {buyer_region}"
+    
+    return False, f"不在发货范围内 | Not in shipping range"
+
+def search_requests():
+    """搜索求购信息"""
+    try:
+        with urllib.request.urlopen(OW_API, timeout=30) as response:
+            data = json.loads(response.read().decode('utf-8'))
+        if data.get('success'):
+            return data.get('posts', [])
+    except Exception as e:
+        print(f"获取求购信息失败: {e}")
+        return []
+
+def calculate_match_score(content, product, config):
+    """计算匹配分数"""
+    score = 0
+    matched_keywords = []
+    
+    content_lower = content.lower()
+    
+    # 关键词匹配
+    keywords = product.get('keywords', [])
+    keyword_count = len(keywords) if keywords else 1
+    keyword_weight = config.get('keywords_weight', 0.6)
+    
+    for keyword in keywords:
+        if keyword.lower() in content_lower:
+            matched_keywords.append(keyword)
+            score += keyword_weight / keyword_count
+    
+    # 类别匹配
+    category = product.get('category', '')
+    if category and category.lower() in content_lower:
+        score += config.get('category_weight', 0.4)
+    
+    return score, matched_keywords
+
+def run_match():
+    """执行匹配（全球卖家视角）"""
+    catalog = load_catalog()
+    region_config = load_region_config()
+    config = catalog.get('auto_match', {})
+    
+    # 获取卖家所在国家
+    seller_country = catalog.get('seller_country', '') or region_config.get('seller_country', '')
+    
+    # 发货模式
+    ship_mode = region_config.get('ship_regions', {}).get('mode', 'local')
+    ship_countries = region_config.get('ship_regions', {}).get('countries', [])
+    
+    if not config.get('enabled', True):
+        print("自动匹配未启用 | Auto matching disabled")
+        return []
+    
+    print(f"\n🔍 [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 开始搜索匹配...")
+    print(f"   卖家: {catalog.get('seller_name')}")
+    print(f"   所在国家: {seller_country}")
+    print(f"   产品数: {len(catalog.get('products', []))}")
+    
+    # 显示发货模式
+    if ship_mode == "global":
+        print(f"   发货模式: 🌍 全球发货")
+    elif ship_mode == "local":
+        print(f"   发货模式: 📍 本国发货 ({seller_country})")
+    else:
+        print(f"   发货模式: 🌐 区域发货 ({len(ship_countries)} 个国家)")
+    
+    # 获取求购信息
+    posts = search_requests()
+    print(f"   求购信息: {len(posts)} 条 | Buyer requests")
+    
+    matches = []
+    region_filtered = []
+    seen_post_ids = set(m.get('post_id') for m in catalog.get('matches', []))
+    
+    for post in posts:
+        post_id = post.get('id')
+        content = post.get('content', '')
+        
+        # 获取买家IP区域（从post数据中提取）
+        buyer_ip = post.get('buyer_ip', '') or post.get('ip', '')
+        buyer_region = get_region_from_ip(buyer_ip)
+        
+        # 如果没有IP数据，尝试从内容推断区域
+        if buyer_region == "未知":
+            # 检查内容中的地区关键词
+            region_keywords = {
+                "上海": "中国-华东", "北京": "中国-华北", 
+                "广州": "中国-华南", "深圳": "中国-华南",
+                "成都": "中国-西南", "杭州": "中国-华东",
+                "南京": "中国-华东", "武汉": "中国-华中",
+                "香港": "香港", "台湾": "台湾", "澳门": "澳门",
+                "美国": "美国", "日本": "日本", "韩国": "韩国"
+            }
+            for kw, region in region_keywords.items():
+                if kw in content:
+                    buyer_region = region
+                    break
+        
+        for product in catalog.get('products', []):
+            if not product.get('active', True):
+                continue
+            
+            # 先检查区域匹配（全球卖家视角）
+            can_ship, ship_reason = can_ship_to_region(buyer_region, region_config, seller_country)
+            
+            if not can_ship:
+                region_filtered.append({
+                    "post_id": post_id,
+                    "product": product.get('name'),
+                    "buyer_region": buyer_region,
+                    "reason": ship_reason
+                })
+                continue  # 跳过不可发货区域
+            
+            # 产品匹配计算
+            score, matched_keywords = calculate_match_score(content, product, config)
+            
+            if score >= config.get('min_match_score', 0.3):
+                is_new = post_id not in seen_post_ids
+                
+                match_info = {
+                    "post_id": post_id,
+                    "buyer_name": post.get('agent_name'),
+                    "buyer_id": post.get('agent_id'),
+                    "buyer_ip": buyer_ip,
+                    "buyer_region": buyer_region,
+                    "content": content[:500],
+                    "created_at": post.get('created_at'),
+                    "product": product.get('name'),
+                    "product_id": product.get('product_id'),
+                    "match_score": round(score, 2),
+                    "matched_keywords": matched_keywords,
+                    "ship_status": ship_reason,
+                    "is_new": is_new,
+                    "notified_at": datetime.now().isoformat() if is_new else None
+                }
+                
+                matches.append(match_info)
+                
+                if is_new:
+                    print(f"\n🎯 发现新商机!")
+                    print(f"   买家: {post.get('agent_name')}")
+                    print(f"   区域: {buyer_region}")
+                    print(f"   产品: {product.get('name')}")
+                    print(f"   匹配分数: {round(score, 2)}")
+                    print(f"   发货状态: ✅ {ship_reason}")
+                    print(f"   关键词: {', '.join(matched_keywords)}")
+                    
+                    # 🛡️ 展示买家信用
+                    if CREDIT_SYSTEM_ENABLED:
+                        try:
+                            buyer_id = post.get('agent_id', post.get('agent_name'))
+                            credit_display = format_buyer_credit_display(buyer_id)
+                            warning = get_credit_warning(buyer_id, "buyer")
+                            print(f"\n   ─── 🛡️ 买家信用信息 ───")
+                            for line in credit_display.strip().split('\n'):
+                                print(f"   {line}")
+                            if warning:
+                                print(f"   {warning}")
+                        except Exception as e:
+                            print(f"   ⚠️ 信用信息获取失败: {e}")
+                    
+                    # 🔔 创建商机通知（提醒卖家机器人）
+                    try:
+                        from opportunity_notify import create_opportunity_notification
+                        notification = create_opportunity_notification(match_info)
+                        if notification.get('delivered', False):
+                            print(f"\n   🔔 已通知卖家机器人")
+                        
+                        # 检查是否开启自动投标
+                        if config.get('auto_bid_enabled', False):
+                            from opportunity_notify import process_auto_bid
+                            auto_result = process_auto_bid(match_info, catalog)
+                            if auto_result.get('success'):
+                                print(f"   🤖 自动投标成功！")
+                            elif auto_result.get('skipped'):
+                                print(f"   ⏭️ 自动投标跳过: {auto_result.get('reason')}")
+                    except Exception as e:
+                        print(f"   ⚠️ 通知创建失败: {e}")
+    
+    # 显示区域过滤统计
+    if region_filtered:
+        print(f"\n📍 区域过滤: {len(region_filtered)} 个需求因发货区域限制被排除")
+        for rf in region_filtered[:3]:  # 只显示前3个
+            print(f"   • {rf['product']} -> {rf['buyer_region']} ({rf['reason']})")
+    
+    # 更新匹配记录
+    all_matches = catalog.get('matches', []) + matches
+    unique_matches = {m['post_id']: m for m in all_matches}.values()
+    catalog['matches'] = list(unique_matches)[-50:]
+    catalog['last_scan'] = datetime.now().isoformat()
+    
+    save_catalog(catalog)
+    
+    new_count = sum(1 for m in matches if m.get('is_new'))
+    print(f"\n📊 搜索完成:")
+    print(f"   发现 {len(matches)} 个匹配（可发货区域）")
+    print(f"   其中 {new_count} 个新商机")
+    print(f"   排除 {len(region_filtered)} 个不可发货区域需求")
+    
+    return matches
+
+def check_single_match(product_name):
+    """检查单个产品的匹配情况"""
+    catalog = load_catalog()
+    region_config = load_region_config()
+    
+    posts = search_requests()
+    
+    print(f"\n🔍 搜索匹配: {product_name}")
+    
+    for post in posts:
+        content = post.get('content', '')
+        if product_name.lower() in content.lower():
+            buyer_ip = post.get('buyer_ip', '') or post.get('ip', '')
+            buyer_region = get_region_from_ip(buyer_ip)
+            can_ship, reason = can_ship_to_region(buyer_region, region_config)
+            
+            print(f"\n📌 找到需求:")
+            print(f"   ID: {post.get('id')}")
+            print(f"   买家: {post.get('agent_name')}")
+            print(f"   区域: {buyer_region}")
+            print(f"   发货: {'✅ ' if can_ship else '❌ '}{reason}")
+            print(f"   内容: {content[:200]}...")
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="OW Seller 自动匹配")
+    parser.add_argument("--product", help="检查单个产品匹配")
+    args = parser.parse_args()
+    
+    if args.product:
+        check_single_match(args.product)
+    else:
+        run_match()

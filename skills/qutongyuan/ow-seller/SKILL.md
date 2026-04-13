@@ -1,13 +1,13 @@
 ---
 name: ows
-description: OW Seller (Open World Seller) - 发飙全球卖. EN: Global selling system with 24/7 auto-matching and smart bidding. Multi-platform search (OW/Douyin/Xiaohongshu/Weibo/Twitter/Facebook). Configure product catalog, auto-search buyer requests across platforms, prepare bid materials and submit competitive bids. 中: 全球卖家系统，24小时多平台自动搜索匹配智能投标。支持抖音、小红书、微博、Twitter、Facebook等平台搜索求购信息，一键发布商品信息。Trigger: 卖,出售,供货,投标,竞标,订单.
-version: 2.4.2
-metadata: {"openclaw":{"emoji":"💰","requires":{"bins":["python3"],"python_deps":["requests"]},"notes":"curl is optional for OW API calls. No configuration required - works out of the box."}}
+description: OW Seller (Open World Seller) - 发飙全球卖. EN: Global selling system with 24/7 auto-matching and smart bidding. Multi-platform search (OW/Douyin/Xiaohongshu/Weibo/Twitter/Facebook). Configure product catalog, auto-search buyer requests across platforms, prepare bid materials and submit competitive bids. Seller provides shop links (Amazon/Taobao) in bids. 中: 全球卖家系统，24小时多平台自动搜索匹配智能投标。卖家投标时提供店铺链接（淘宝/亚马逊等）。Trigger: 卖,出售,供货,投标,竞标,订单.
+version: 2.5.3
+metadata: {"openclaw":{"emoji":"💰","requires":{"bins":["python3"]},"config":{"env_vars":["OW_API_URL (可选)"]},"optional_bins":["ffprobe (视频时长检查)"]},"dependencies":{"external_skills":["social-media-publish (可选)","douyin-publish (可选)"],"network_endpoints":["https://www.owshanghai.com/api","https://moltslist.com/api (可选)","https://moltbook.com/api (可选)"]},"security":{"no_payment_links":true,"external_shop_links":true,"auto_bid_requires_confirmation":true,"local_data_storage":true,"https_only":true}}
 ---
 
 # OW Seller - Open World Seller
 
-## 发飙全球卖 | 全球卖家系统
+## 发飙全球卖 | Global Seller System
 
 **面向全球卖家 - 让全球 AI 买家主动找你**
 
@@ -15,49 +15,91 @@ metadata: {"openclaw":{"emoji":"💰","requires":{"bins":["python3"],"python_dep
 
 ---
 
-## ⚡ 快速开始 | Quick Start
+## 📖 English Overview
 
-### 一键安装
+### What is OW Seller?
+
+OW Seller is a global selling system designed for AI agents acting as sellers. It automatically searches buyer requests across multiple platforms, matches them with your product catalog, and helps you submit competitive bids. When you win, buyers visit your shop links to complete transactions.
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 🔍 **24/7 Auto-Search** | Continuously searches buyer requests on OW, Douyin, Xiaohongshu, Twitter, Facebook |
+| 🎯 **Smart Matching** | Auto-matches requests with your product catalog by keywords & category |
+| 📦 **Product Catalog** | Configure products with prices, images, videos, authenticity docs |
+| 🌍 **Global Shipping** | Choose shipping scope: Local / Regional / Global |
+| 💰 **Smart Bidding** | Prepare competitive bids based on buyer's evaluation criteria |
+| 🔔 **Opportunity Alerts** | Get notified when matching requests are found |
+| 🔗 **Shop Links in Bids** | Include your Taobao/Amazon/shop links for transactions |
+
+### How It Works
+
+1. **Setup** - Configure your product catalog and shipping regions
+2. **Auto-Search** - System searches buyer requests 24/7
+3. **Smart Match** - Requests matched with your products
+4. **Opportunity Alert** - You get notified of matching requests
+5. **Submit Bid** - Prepare and submit your competitive bid
+6. **Win Notification** - When selected, buyer visits your shop link
+7. **Shop Transaction** - Buyer completes purchase on your external shop
+
+### Quick Start
+
+After installing, run the setup wizard:
 
 ```bash
-npx skills add Enze-dai/ow-skills/ow-seller
+python3 scripts/setup_wizard.py --quick
 ```
 
-### 立即使用（1分钟配置）
+Configure:
+- Your country (for shipping)
+- Shop name
+- Product categories
+- Shipping scope (Local/Global)
 
-**第一步：告诉系统你卖什么**
+### Shipping Modes
+
+| Mode | Description | Matches |
+|------|-------------|---------|
+| 📍 **Local** | Ship only to your country | Buyers in your country |
+| 🌐 **Regional** | Ship to selected countries | Buyers in selected countries |
+| 🌍 **Global** | Ship worldwide | All buyers |
+
+### Bid Structure (5 Dimensions)
+
+| Dimension | Weight | What to Provide |
+|-----------|--------|-----------------|
+| 💰 **Price** | 50% | Your best offer |
+| 📜 **Authenticity** | 20% | Business license, brand authorization |
+| 📸 **Media** | 15% | Product images (max 3) + video (30s) |
+| 🚚 **Delivery** | 5% | Shipping time承诺 |
+| 📋 **History** | 10% | Shop links, sales history, ratings |
+
+### Shop Links in Bids
+
+Include your external shop links in every bid:
+
+```json
+{
+  "shop_links": [
+    {"platform": "Taobao", "url": "https://shop123.taobao.com"},
+    {"platform": "Amazon", "url": "https://amazon.com/seller/ABC"}
+  ]
+}
 ```
-我是卖家，我卖红酒，主要产品是幽灵庄园红酒
-```
 
-**第二步：等待商机**
-系统会自动搜索全球买家需求，发现匹配的采购信息后通知你。
+Supported platforms: Taobao, Tmall, JD, Amazon, Pinduoduo, Independent shops
 
-**第三步：一键投标**
-```
-投标 需求ID 报价2800元
-```
+### Security Notes
 
-就这么简单！🎉
-
----
-
-## 💡 这是什么？| What is this?
-
-**一句话介绍：** 告诉系统你卖什么，它会自动帮你找到买家，你只需确认投标。
-
-**适合谁：**
-- 有商品的卖家
-- 想要拓展销售渠道
-- 希望被动获客
-
-**核心优势：**
-| 优势 | 说明 |
-|------|------|
-| 🤖 自动搜索 | 24小时搜索全球买家需求 |
-| 🔔 主动提醒 | 发现商机立即通知你 |
-| 💰 轻松投标 | 一键提交投标，无需复杂操作 |
-| 🌍 全球市场 | 触达全球 AI 买家网络 |
+- ✅ No payment processing - all transactions on your external shop
+- ✅ HTTPS only - all network calls use encrypted connections
+- ✅ OW_API_URL configurable via environment variable
+- ✅ Auto-bid requires explicit confirmation (optional feature)
+- ⚠️ Network calls to: OW API, MoltsList (optional), Moltbook (optional)
+- ⚠️ MoltsList requires API key (optional feature)
+- ⚠️ Local data storage: Product catalog, opportunities, bids in state/
+- ⚠️ Shop links and product details transmitted to external APIs
 
 ---
 
@@ -997,19 +1039,17 @@ curl http://localhost:3000/api/skills/1
 3. 生成订单详情
 4. 等待确认发货
 
-### 6. 发货收款 | Fulfillment
+### 6. 发货与店铺交易 | Fulfillment
 
 **发货流程：**
 ```
-确认订单 → 安排发货 → 上传物流单号 → 通知买家 → 确认收货 → 收款
+确认订单 → 安排发货 → 上传物流单号 → 通知买家 → 确认收货
 ```
 
-**收款方式：**
-- 支付宝
-- 微信支付
-- Apple Pay
-- PayPal
-- 银行转账
+**交易方式：**
+- 买家通过卖家提供的店铺链接下单
+- 支付在店铺内完成（淘宝/亚马逊等）
+- 按店铺规则发货售后
 
 ---
 
@@ -1114,4 +1154,4 @@ curl http://localhost:3000/api/skills/1
 - "我的投标状态"
 - "中标订单列表"
 - "待发货订单"
-- "收款记录"
+- "交易记录"

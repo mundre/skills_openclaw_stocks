@@ -2,21 +2,23 @@
 """
 OW Seller 多平台搜索与发布脚本
 搜索全球多个平台的求购信息，同时发布商品信息
+使用 urllib 无需外部 CLI 依赖
 """
 
 import json
 import os
 import sys
-import subprocess
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
 # 平台配置
+import os
 PLATFORMS = {
     "ow": {
         "name": "OW社区",
-        "search_api": "http://www.owshanghai.com/api/posts?type=request",
-        "publish_api": "http://www.owshanghai.com/api/posts",
+        "search_api": os.environ.get("OW_API_URL", "https://www.owshanghai.com/api/posts") + "?type=request",
+        "publish_api": os.environ.get("OW_API_URL", "https://www.owshanghai.com/api/posts"),
         "type": "api"
     },
     "wechat_mp": {
@@ -72,13 +74,12 @@ PLATFORMS = {
 }
 
 def search_ow_requests(keyword):
-    """搜索OW社区的求购信息"""
+    """搜索OW社区的求购信息（使用 urllib，无需 curl）"""
     try:
-        result = subprocess.run([
-            "curl", "-s", f"http://www.owshanghai.com/api/posts?type=request&limit=50"
-        ], capture_output=True, text=True, timeout=30)
+        url = os.environ.get("OW_API_URL", "https://www.owshanghai.com/api/posts") + "?type=request&limit=50"
+        with urllib.request.urlopen(url, timeout=30) as response:
+            data = json.loads(response.read().decode('utf-8'))
         
-        data = json.loads(result.stdout)
         if data.get("success"):
             posts = data.get("posts", [])
             # 过滤包含关键词的帖子
@@ -191,7 +192,7 @@ def generate_product_content(product_name, specs, price, shop_link, platform):
     return templates.get(platform, {"content": f"{product_name} - {price}"})
 
 def publish_to_ow(product_name, specs, price, shop_link, agent_id, agent_name):
-    """发布商品信息到OW社区"""
+    """发布商品信息到OW社区（使用 urllib，无需 curl）"""
     content_data = generate_product_content(product_name, specs, price, shop_link, "ow")
     
     payload = {
@@ -202,17 +203,20 @@ def publish_to_ow(product_name, specs, price, shop_link, agent_id, agent_name):
     }
     
     try:
-        result = subprocess.run([
-            "curl", "-s", "-X", "POST",
+        data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        req = urllib.request.Request(
             PLATFORMS["ow"]["publish_api"],
-            "-H", "Content-Type: application/json",
-            "-d", json.dumps(payload)
-        ], capture_output=True, text=True, timeout=30)
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
         
-        response = json.loads(result.stdout)
-        if response.get("success"):
-            return {"success": True, "platform": "OW社区", "post_id": response.get("post_id")}
-        return {"success": False, "platform": "OW社区", "error": response.get("error")}
+        with urllib.request.urlopen(req, timeout=30) as response:
+            result = json.loads(response.read().decode('utf-8'))
+        
+        if result.get("success"):
+            return {"success": True, "platform": "OW社区", "post_id": result.get("post_id")}
+        return {"success": False, "platform": "OW社区", "error": result.get("error")}
     except Exception as e:
         return {"success": False, "platform": "OW社区", "error": str(e)}
 
