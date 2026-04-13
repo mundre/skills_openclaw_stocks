@@ -3,11 +3,16 @@
   "slug": "pingharbor",
   "displayName": "PingHarbor",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775301272246,
-    "commit": "https://github.com/openclaw/skills/commit/7e4210048bc748b62855f4c8aa42f953f47f7312"
+    "version": "1.0.2",
+    "publishedAt": 1775561558848,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775301272246,
+      "commit": "https://github.com/openclaw/skills/commit/7e4210048bc748b62855f4c8aa42f953f47f7312"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775134821343,

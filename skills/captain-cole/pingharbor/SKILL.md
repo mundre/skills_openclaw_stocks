@@ -23,7 +23,7 @@ Generate a key at: **Administration â†’ API Keys** inside your PingHarbor d
 ## MCP Endpoint
 
 ```
-https://aeuudydvwlmbvuqgqsqu.supabase.co/functions/v1/mcp
+https://api.pingharbor.com/functions/v1/mcp
 ```
 
 Pass the key as a Bearer token:
@@ -36,15 +36,14 @@ Authorization: Bearer $PINGHARBOR_API_KEY
 
 | Tool | Description |
 |------|-------------|
-| `list_sites` | List all sites for the authenticated account |
-| `create_site` | Create a new site to group monitors together |
 | `list_monitors` | List all monitors and their current status |
 | `get_incidents` | Retrieve recent incidents and downtime events |
 | `create_monitor` | Create a new uptime monitor programmatically |
 | `get_monitor_report` | Fetch SLA and response time report for a monitor |
 | `list_heartbeat_monitors` | List all heartbeat monitors and their health status |
 | `create_heartbeat_monitor` | Create a new heartbeat monitor with webhook URL |
-
+| `list_sites` | List all sites for the authenticated account |
+| `create_site` | Create a new site to group monitors together |
 
 ## Example Usage
 
