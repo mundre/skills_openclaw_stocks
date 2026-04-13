@@ -3,11 +3,16 @@
   "slug": "code-workflow",
   "displayName": "Code Workflow",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1775194529914,
-    "commit": "https://github.com/openclaw/skills/commit/576ffa924c73579ac91f40b44218fe5bcd377e92"
+    "version": "0.1.2",
+    "publishedAt": 1775831116139,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1775194529914,
+      "commit": "https://github.com/openclaw/skills/commit/576ffa924c73579ac91f40b44218fe5bcd377e92"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1775018064184,

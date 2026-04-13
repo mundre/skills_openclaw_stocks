@@ -1,6 +1,6 @@
----
+﻿---
 name: code-workflow
-depends-on: [skill-toolkit, tdd]
+depends-on: [skill-kit, tdd]
 description: |
   4-stage workflow for code changes: research → plan → user review → implement (TDD). Applies to all tasks requiring code changes: issue implementation, fix_plan items, new feature additions. TDD (Red→Green→Refactor) is applied by default in the implementation stage; users can opt out with --no-tdd.
   Use when: "coding workflow", "research plan implement", "research first", "write plan", "plan md", "user review", "review before implement", "code plan", "implementation process", "research md", "code changes".
@@ -32,6 +32,7 @@ Include:
 - Code snippets showing actual changes
 - List of file paths to be modified
 - Considerations / trade-offs
+- **Verification plan** (required): For each change group, specify verification procedure, command/URL, and expected result
 
 ### Step 3: User Review
 
@@ -87,4 +88,4 @@ Revise the plan and restart from step 3 (user review).
 After this skill invocation completes, **self-improve based on the conversation**:
 
 1. Detect limitations, failures, and workaround patterns for this skill in the conversation
-2. If improvement candidates are found, run `/skill-toolkit upgrade coding-workflow`
+2. If improvement candidates are found, run `/skill-kit upgrade code-workflow`
