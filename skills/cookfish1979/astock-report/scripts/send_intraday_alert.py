@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from keys_loader import wx_push, get_webhook_url, already_sent, mark_sent, is_trading_window, ts, now_bj
 
 # 六大指数配置（名称 → AKShare/腾讯代码）
+# 六大指数配置（名称 → 腾讯代码）
 INDICES = {
     "上证指数": "sh000001",
     "深证成指": "sz399001",
@@ -19,27 +20,28 @@ INDICES = {
 }
 
 ALERT_THRESHOLD = 2.0   # 触发阈值（%）
-STATE_FILE = ".alert_sent"
+STATE_FILE = "/workspace/.alert_sent"
 
 def get_index_data():
     """从腾讯财经获取六大指数实时数据"""
     try:
-        import urllib.request
-        import json
+        import requests as _req
         codes = ",".join(INDICES.values())
         url = f"https://qt.gtimg.cn/q={codes}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            raw = resp.read().decode("gbk", errors="replace")
+        r = _req.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+        raw = r.content.decode("gbk", errors="replace")
         lines = raw.strip().split("\n")
         result = {}
         for line in lines:
             if not line.strip():
                 continue
-            parts = line.split("~")
+            # 腾讯接口返回格式: v_sh000001="1~上证指数~000001~..."
+            # 需要去掉 v_ 前缀后再解析
+            content = line.lstrip("v_")
+            parts = content.split("~")
             if len(parts) < 32:
                 continue
-            code = parts[2].strip()
+            code = parts[2].strip().lstrip("sh").lstrip("sz")  # 统一去掉sh/sz前缀
             name = parts[1].strip()
             price = float(parts[3]) if parts[3] else 0
             change_pct = float(parts[32]) if parts[32] else 0
@@ -76,7 +78,7 @@ def get_threshold_bucket(pct: float) -> int:
 def get_state_file_for_index(idx_code: str) -> str:
     """每个指数有独立状态文件"""
     today = now_bj().strftime("%Y%m%d")
-    return f".alert_{idx_code}_{today}.state"
+    return f"/workspace/.alert_{idx_code}_{today}.state"
 
 def already_alerted(idx_code: str, bucket: int) -> bool:
     state_file = get_state_file_for_index(idx_code)
@@ -111,7 +113,7 @@ def build_alert_text(idx_info: dict) -> str:
     arrow = "▲" if pct > 0 else "▼"
     now_ts = ts()
     return (
-        f"🚨 【{direction}预警】{name} {now_ts}\n\n"
+        f"🚨 【{direction}预警】{name} | 北京时间 {now_ts}\n\n"
         f"• 最新点位：{price:.2f}（{arrow}{abs(pct):.2f}%）\n"
         f"• 最高/最低：{high:.2f} / {low:.2f}\n"
         f"⚠️ 请关注后续走势，做好风险管理。"
@@ -129,21 +131,22 @@ def main():
 
     pushed = False
     for name, code in INDICES.items():
-        if code not in data:
+        code_un = code.lstrip("sh").lstrip("sz")  # 统一去掉sh/sz前缀，与data key一致
+        if code_un not in data:
             continue
-        info = data[code]
+        info = data[code_un]
         pct = info["change_pct"]
         abs_pct = abs(pct)
         if abs_pct < ALERT_THRESHOLD:
             continue
         bucket = get_threshold_bucket(pct)
-        if already_alerted(code, bucket):
+        if already_alerted(code_un, bucket):
             print(f"  {name}: {pct:+.2f}%，已推送过，跳过")
             continue
         text = build_alert_text(info)
         err = wx_push(text)
         if err == 0:
-            mark_alerted(code, bucket)
+            mark_alerted(code_un, bucket)
             print(f"  ✅ {name}: {pct:+.2f}%，已推送")
         else:
             print(f"  ❌ {name}: 推送失败，errcode={err}")
