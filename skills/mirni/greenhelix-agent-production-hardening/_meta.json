@@ -1,0 +1,11 @@
+{
+  "owner": "mirni",
+  "slug": "greenhelix-agent-production-hardening",
+  "displayName": "The Agent Production Hardening Guide",
+  "latest": {
+    "version": "1.2.0",
+    "publishedAt": 1776065312198,
+    "commit": null
+  },
+  "history": []
+}
