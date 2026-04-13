@@ -1,11 +1,11 @@
 ---
 name: notehelper
-description: 当用户想保存文章/链接到笔记库、搜索已保存的文章、或配置 API 密钥时触发。触发词：「保存」「存一下」「收藏」（save），「搜文章」「找找」「最近存了什么」（search），「配置笔记」「设置密钥」「连接笔记服务」（config）。也可直接使用 /notehelper save、search、config 命令。
+description: 当用户想保存文章/链接到笔记库、搜索已保存的文章、或配置 API 密钥时触发。触发词：「保存」「存一下」「收藏」（save），「保存链接」「抓这个链接」「帮我抓取」或只发了一个 URL（link），「搜文章」「找找」「最近存了什么」（search），「配置笔记」「设置密钥」「连接笔记服务」（config）。也可直接使用 /notehelper save、link、search、config 命令。
 license: MIT-0
 compatibility: 需要网络访问 claw.notebooksyncer.com（笔记同步助手官方服务）；API 密钥手动获取后写入 ~/.openclaw/notehelper.json，无自动授权流程，不修改 shell 配置文件
 metadata:
   openclaw:
-    version: "1.0.0"
+    version: "1.1.0"
     optionalEnv:
       - NOTEHELPER_API_KEY
       - NOTEHELPER_BASE_URL
@@ -16,13 +16,13 @@ metadata:
 
 # NoteHelper
 
-统一入口，管理 Obsidian Omnivore Server 笔记库。当前支持子命令：`save`、`search`、`config`。
+统一入口，管理 Obsidian Omnivore Server 笔记库。当前支持子命令：`save`、`link`、`search`、`config`。
 
 ## 安全说明
 
 - **网络访问**：仅通过 HTTPS 请求 `claw.notebooksyncer.com`（笔记同步助手官方服务），不访问其他域名
 - **本地文件**：仅在用户主动执行 config 时，将 API 密钥写入 `~/.openclaw/notehelper.json`，不修改 shell 配置文件（~/.bashrc 等）
-- **授权方式**：无自动 OAuth 流程；密钥由用户手动获取后配置，**请勿在对话中直接粘贴 API 密钥**
+- **授权方式**：无自动 OAuth 流程；密钥由用户手动获取后配置，**即使密钥泄露，影响也有限，可以交由agent 协助用户配置写入**
 - **传输内容**：save 时发送用户主动提供的文章标题/URL/正文；search 时发送搜索关键词；密钥仅作为请求头传输，不出现在请求体中
 
 ## Auth
@@ -30,7 +30,7 @@ metadata:
 执行 `save`/`search` 前，先检查 `$NOTEHELPER_API_KEY` 是否已设置。未设置时停止并提示：
 
 ```
-未检测到 NOTEHELPER_API_KEY，请先运行 /notehelper config 完成配置。
+未检测到密钥，请先运行 /notehelper config 完成配置。
 ```
 
 **所有请求均需携带请求头**：
@@ -49,9 +49,12 @@ https://claw.notebooksyncer.com
 
 | 用户意图 | 子命令 |
 |---------|--------|
-| 保存文章/链接，说"存一下"、"收藏"、发出一个 URL | `/notehelper save` |
+| 保存文章（有标题/正文内容），说"存一下"、"收藏" | `/notehelper save` |
+| 保存链接让系统抓取原文，说"帮我抓这个链接"、"保存这个链接"、只发了一个 URL 没有其他内容 | `/notehelper link` |
 | 搜索文章，说"找找"、"有没有关于 X 的"、"最近存了什么" | `/notehelper search` |
 | 配置密钥，说"配置笔记"、"设置 API Key"、"连接笔记服务" | `/notehelper config` |
+
+> **save vs link 选择规则**：如果用户提供了文章标题+正文内容，用 `save`（同步保存）。如果用户只给了 URL，用 `link`（异步抓取原文+生成摘要）。
 
 ---
 
@@ -85,6 +88,107 @@ curl -s -X POST https://claw.notebooksyncer.com/api/articles \
 ```
 
 **成功后**：显示保存的文章标题和 ID，格式：`✓ 已保存「{title}」(id: {id})`
+
+---
+
+## /notehelper link
+
+> 异步链接笔记：提交 URL 后系统后台抓取原文、净化内容。适合用户只给了一个 URL 的场景。
+
+### 步骤 1 — 提交任务
+
+**接口**：`POST /note/save`
+
+**请求头**：
+```
+x-api-key: $NOTEHELPER_API_KEY
+Content-Type: application/json
+```
+
+**请求体**：
+```json
+{
+  "note_type": "link",
+  "link_url": "https://..."
+}
+```
+
+**响应**：
+```json
+{
+  "data": {
+    "created_count": 1,
+    "tasks": [{"task_id": "69c3995e99f5a67e", "url": "https://..."}],
+    "message": "链接笔记任务已创建，请通过 /note/task/progress 接口查询处理状态"
+  }
+}
+```
+
+> ⚠️ **task_id 在 `data.tasks[0].task_id`**，不是 `data.task_id`。
+
+提交成功后，**立即告诉用户**：
+> ✅ 链接已保存，正在抓取原文和生成总结，稍后告诉你结果...
+
+> ⚠️ **积分不足**时接口返回 HTTP 402，此时提示用户积分余额不足。
+
+### 步骤 2 — 后台轮询
+
+**接口**：`POST /note/task/progress`
+
+**请求头**：同步骤 1
+
+**请求体**：
+```json
+{
+  "task_id": "69c3995e99f5a67e"
+}
+```
+
+**响应**：
+```json
+{
+  "data": {
+    "task_id": "69c3995e99f5a67e",
+    "status": "pending|processing|success|failed",
+    "note_id": "article-uuid",
+    "title": "提取的文章标题",
+    "content_summary": "文章前200字摘要...",
+    "error": null,
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:01:00Z"
+  }
+}
+```
+
+**轮询策略**：每 **15 秒**查询一次，直到 `status` 为 `success` 或 `failed`。
+
+### 步骤 3 — 展示结果
+
+任务成功后（`status === "success"`），向用户展示：
+
+> ✅ 笔记生成完成！
+> - 📄 **标题**：{title}
+> - 📝 **摘要**：{content_summary}
+> - 🔗 **来源**：{link_url}
+
+任务失败时（`status === "failed"`）：
+
+> ❌ 链接处理失败：{error}
+
+**示例**：
+```bash
+# 步骤1: 提交
+curl -s -X POST https://claw.notebooksyncer.com/note/save \
+  -H "x-api-key: $NOTEHELPER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"note_type":"link","link_url":"https://example.com/article"}'
+
+# 步骤2: 轮询
+curl -s -X POST https://claw.notebooksyncer.com/note/task/progress \
+  -H "x-api-key: $NOTEHELPER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"task_id":"69c3995e99f5a67e"}'
+```
 
 ---
 
@@ -173,3 +277,6 @@ curl -s -H "x-api-key: $NOTEHELPER_API_KEY" \
 - `labels` 传标签名字符串数组，不是 ID：`["前端", "JS"]` ✅，`["uuid-xxx"]` ❌
 - 过滤器拼在 `variables.query` 字符串内：`"react in:library"` ✅，作为单独字段传 ❌
 - 笔记 ID 为 UUID，操作具体文章需先 search 获取
+- link 命令的 task_id 在 `data.tasks[0].task_id`，不是 `data.task_id` ❌
+- link 命令重复提交同一 URL 会创建新任务（API 不去重），调用方需自行判断
+- link 和 save 接口路径不同：link 用 `/note/save`，save 用 `/api/articles`，都在 `claw.notebooksyncer.com`

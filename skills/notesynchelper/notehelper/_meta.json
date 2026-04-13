@@ -3,9 +3,15 @@
   "slug": "notehelper",
   "displayName": "笔记同步助手",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775549268933,
-    "commit": "https://github.com/openclaw/skills/commit/93a0d25bb35183bf918ada1b882cadebe3cc6983"
+    "version": "1.0.3",
+    "publishedAt": 1775716668821,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775549268933,
+      "commit": "https://github.com/openclaw/skills/commit/93a0d25bb35183bf918ada1b882cadebe3cc6983"
+    }
+  ]
 }
