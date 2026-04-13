@@ -4,6 +4,7 @@ description: >
   将飞书 Wiki 文档同步到 Obsidian PARA 知识库。
   触发：当用户说"同步飞书"或"同步文档"时使用。
   遵循 Pipeline 模式，4 步顺序执行，带硬检查点。
+  必需文件：vault 根目录必须有 SYNC-RULES.md。
 metadata:
   pattern: pipeline
   steps: "4"
@@ -11,7 +12,14 @@ metadata:
 
 # Feishu → Obsidian PARA Sync
 
-> **模式：Pipeline** | 按需加载 Tool Wrapper（PARA 路由知识）
+> **模式：Pipeline** | 数据源和目标路径从 SYNC-RULES.md 读取
+
+---
+
+## 核心设计
+
+**内容获取由 Agent 的 feishu_fetch_doc 工具完成，Python 脚本只做路径构建和文件写入。**
+这样无需在脚本里管理 Access Token，也不需要在 clawhub 发布时携带敏感权限。
 
 ---
 
@@ -21,44 +29,60 @@ metadata:
 
 ---
 
-## Step 1 — 获取 Wiki 节点列表
+## Step 1 — 前置检查 + 获取 Wiki 节点（并行遍历）
 
 **触发**：用户要求同步飞书文档
 
-**执行**：
-1. 加载 `references/routing-rules.md` 了解 Wiki Space 配置
-2. 使用 `feishu_wiki_space_node` 工具获取两个知识库的节点：
+### 1a. 前置检查
+1. 检查 vault 根目录是否存在 `SYNC-RULES.md`
+   - 不存在 → 触发初始化流程
+2. 读取 `SYNC-RULES.md` 中的「数据源」表格
+
+### 1b. 获取 Wiki 根节点
+使用 `feishu_wiki_space_node` 工具获取每个 Wiki 的根节点。
+
+### 1c. 并行遍历子节点
+对于 `has_child: true` 的节点，**并行**获取子节点：
+- 每个 has_child 节点分配一个并行任务
+- 各分支同时请求，不等待串行
+- 递归直到所有分支都没有子节点
 
 ```
-Wiki Space 列表：
-- 个人成长：space_id = 7619963059842419643
-- openclaw知识库：space_id = 7617330356886178745
+个人成长 (root)
+├── 2026-03 (has_child) ──────┐
+│   └── 7个子节点              │ 并行遍历
+├── 软考笔记 (has_child) ──────┼
+│   └── 4个课程文件夹          │ 并行遍历
+├── Obsidian 整理报告
+└── 辞职决策记录
 
-工具调用：
-feishu_wiki_space_node(action="list", space_id="7619963059842419643")
-feishu_wiki_space_node(action="list", space_id="7617330356886178745")
+openclaw知识库 (root)
+├── 11个文档节点（部分有子节点）  并行遍历
 ```
 
-**Gate**：获取到节点列表后，显示节点数量，问用户确认是否继续。
+### 1d. 生成同步计划
+将完整节点列表传给 `sync.py --plan`，获取待写入文件清单：
+
+```bash
+echo '[节点JSON]' | python3 sync.py --stdin --plan
+```
+
+**输出**：
+- `need_fetch`：需要 Agent fetch 内容的 docx 文档
+- `no_fetch_needed`：只写占位符的非 docx 类型
+
+**Gate**：显示节点总数、来源 Wiki、待写入文件数，问用户确认是否继续。
 
 ---
 
-## Step 2 — 匹配 PARA 路由规则
+## Step 2 — 确认同步路径
 
 **触发**：Step 1 确认后
 
 **执行**：
-1. 加载 `references/routing-rules.md` 获取路由知识
-2. 对每个 docx 类型节点，按优先级匹配目标路径：
-   - 遍历规则，第一个命中终止
-   - 命中条件：标题包含关键词（不区分大小写）
-3. 未命中任何规则 → 落入该 wiki 的兜底目录
+`sync.py --plan` 已输出每个文件的 `relative_path` 和 `filename`，显示路径映射表。
 
-**路由知识**（来自 routing-rules.md）：
-- 个人成长 wiki → 兜底：`05进思斋`
-- openclaw知识库 wiki → 兜底：`03藏珍之库/工具`
-
-**Gate**：显示每个文档的目标路径，确认是否继续。
+**Gate**：显示写入路径映射表，确认是否继续。
 
 ---
 
@@ -66,16 +90,24 @@ feishu_wiki_space_node(action="list", space_id="7617330356886178745")
 
 **触发**：Step 2 确认后
 
-**执行**：
-1. 对每个新文档（vault 中不存在的）：
-   - 使用 `feishu_fetch_doc` 获取文档内容
-   - 按 `assets/frontmatter-template.md` 生成 frontmatter
-   - 调用 sync.py 写入 Obsidian
+### 3a. Agent fetch 内容
+对 `need_fetch` 中的每个文档，调用 `feishu_fetch_doc` 获取正文。
 
-**同步逻辑**：
-- 按 feishu_doc_token 去重（已存在则跳过）
-- 目标路径不存在时自动创建目录
-- 非 docx 类型（sheet/bitable）只写链接占位符
+### 3b. 批量写入
+将「文档信息 + fetch 到的内容」传给 `sync.py --write`：
+
+```bash
+echo '[{"title":"...","obj_token":"...","content":"...",...}]' \
+  | python3 sync.py --stdin --write [--dry-run]
+```
+
+### frontmatter 生成规则
+- 基础字段：`date`、`lastmod`、`draft`、`categories`、`tags`
+- 飞书扩展字段：**无条件追加**：`feishu_doc_token`、`feishu_wiki`、`feishu_node_token`
+- `feishu_doc_token` 用于去重，已存在则跳过
+
+### 目录自动创建
+`relative_path` 目录不存在时，自动创建。
 
 **Gate**：显示将写入的文件列表，确认后执行。
 
@@ -85,13 +117,10 @@ feishu_wiki_space_node(action="list", space_id="7617330356886178745")
 
 **触发**：Step 3 执行完成后
 
-**执行**：
+### 执行
 1. 加载 `references/review-checklist.md`
-2. 对照检查清单验证同步结果：
-   - 每个文档都有 frontmatter
-   - feishu_doc_token / feishu_node_token 正确
-   - 路径符合 PARA 映射
-3. 报告检查结果，修复可修复的问题
+2. 对照检查清单验证同步结果
+3. 报告检查结果
 
 **输出格式**：
 ```
@@ -103,19 +132,34 @@ feishu_wiki_space_node(action="list", space_id="7617330356886178745")
 
 ---
 
+## 初始化流程
+
+**触发**：vault 缺少 SYNC-RULES.md
+
+**执行**：
+1. 向用户说明缺少文件
+2. 生成默认版本（SYNC-RULES.md 模板）
+3. 展示给用户确认
+4. 用户确认后写入 vault 根目录
+5. 继续 Step 1
+
+**模板文件**：`assets/sync-rules-template.md`
+
+---
+
 ## 参考文件
 
-| 文件 | 模式 | 作用 |
-|------|------|------|
-| `references/routing-rules.md` | Tool Wrapper | PARA 路由知识库 |
-| `references/review-checklist.md` | Reviewer | 同步质量检查清单 |
-| `assets/frontmatter-template.md` | Generator | frontmatter 填空模板 |
-| `scripts/sync.py` | - | 执行脚本 |
+| 文件 | 作用 |
+|------|------|
+| `scripts/sync.py` | 纯路径构建 + 写入工具，双模式（--plan / --write）|
+| `assets/sync-rules-template.md` | SYNC-RULES.md 生成模板 |
+| `assets/agents-template-additions.md` | AGENTS.md 补充章节 |
+| `references/review-checklist.md` | 同步质量检查清单 |
 
 ---
 
 ## 已知限制
 
-- 电子表格（sheet）、多维表格（bitable）只写链接占位符，不拉内容
-- 同步需要飞书 Access Token（由 OpenClaw 插件管理）
-- sync.py 每次运行会缓存规则到内存（同一个进程内有效）
+- 电子表格（sheet）、多维表格（bitable）、思维导图（mindnote）只写链接占位符，不拉内容
+- 并行遍历依赖 subagent 能力，每个 has_child 分支可同时请求
+- Space ID 和目标路径从 SYNC-RULES.md 读取，修改配置后重新同步即可生效

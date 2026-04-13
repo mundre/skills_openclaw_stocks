@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 """
-Feishu Wiki → Obsidian PARA Sync (feishu-sync-obsidian)
+Feishu Wiki → Obsidian Sync (feishu-sync-obsidian)
 
-从飞书多维表格读取映射规则，将飞书文档同步到本地 Obsidian vault。
-支持按需创建 Obsidian 不存在的目录。
+纯路径构建 + 文件写入工具。
+内容获取由 Agent 通过 feishu_fetch_doc 工具完成，脚本不直接调用飞书 API。
+
+从 vault 根目录的 SYNC-RULES.md 读取数据源配置，
+保留飞书 Wiki 的目录层级结构，增量同步（按 feishu_doc_token 去重）。
 
 Usage:
-    echo '[{"title":"...","obj_token":"...","obj_type":"docx","node_token":"...","wiki_name":"个人成长"}]' \
-      | python3 sync.py --stdin [--dry-run]
+    # Step A：节点遍历（脚本只返回待写入列表，不调用 API）
+    echo '[{"title":"...","obj_token":"...","obj_type":"docx","node_token":"...",
+          "parent_node_token":"...","wiki_name":"个人成长","space_id":"..."}]' \
+      | python3 sync.py --stdin --plan
+
+    # Step B：内容写入（Agent fetch 完内容后，再次调用于写入）
+    echo '[{"title":"...","obj_token":"...","content":"..."}]' \
+      | python3 sync.py --stdin --write [--dry-run]
+
+Environment:
+    VAULT_DIR   - Obsidian vault 路径（默认：/home/ink/个人知识库）
 """
 
 import json
@@ -19,319 +31,405 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 # ── 路径配置 ──────────────────────────────────────────────────────────────
-VAULT_DIR  = Path("/home/ink/个人知识库")
+VAULT_DIR  = Path(os.environ.get("VAULT_DIR", "/home/ink/个人知识库"))
 CACHE_DIR  = Path("/tmp/feishu-sync-obsidian")
+SYNC_RULES = VAULT_DIR / "SYNC-RULES.md"
 
-# ── 飞书多维表格配置（PARA映射规则）─────────────────────────────────────
-BITABLE_APP_TOKEN = "VfcMbtzZUaWpOKs6PeOcamEjn1f"
-BITABLE_TABLE_ID  = "tblrRBUXGjBXda6z"
-
-# ── Wiki Space 配置 ──────────────────────────────────────────────────────
-WIKI_SPACES = {
-    "个人成长":       "7619963059842419643",
-    "openclaw知识库": "7617330356886178745",
-}
-
-# ── 缓存的映射规则（内存缓存）───────────────────────────────────────────
-_mapping_cache: Dict[str, List[Tuple[str, str]]] = {}
-
-# ── 内嵌规则（无 token 时使用，来自飞书表格快照）────────────────────────
-EMBEDDED_RULES: Dict[str, List[Tuple[str, str]]] = {
-    "个人成长": [
-        ("软考笔记", "01务实之道/学习计划-软考"),
-        ("软考",     "01务实之道/学习计划-软考"),
-        ("学习计划", "01务实之道/学习计划-软考"),
-        ("英语",     "01务实之道/英语学习"),
-        ("三言二拍", "01务实之道/读书计划/三言二拍"),
-        ("思维框架", "02修持之域/自我成长"),
-        ("思维变迁", "02修持之域/自我成长"),
-        ("人生困境", "02修持之域/自我成长"),
-        ("认知框架", "02修持之域/自我成长"),
-    ],
-    "openclaw知识库": [
-        ("事故",      "04归藏之府"),
-        ("报告",      "04归藏之府"),
-        ("skills",   "03藏珍之库/工具"),
-        ("evoclaw",  "03藏珍之库/工具"),
-        ("openclaw", "03藏珍之库/工具"),
-        ("Proactive-Agent", "03藏珍之库/工具"),
-        ("默认",     "03藏珍之库/工具"),
-    ],
-}
-
-# ── 飞书 API ─────────────────────────────────────────────────────────────
-
-def get_access_token() -> str:
-    """获取飞书 Access Token。"""
-    token = os.environ.get("FEISHU_ACCESS_TOKEN", "")
-    if token:
-        return token
-    token_file = Path.home() / ".openclaw" / "plugins" / "feishu-oauth" / "tokens.json"
-    if token_file.exists():
-        try:
-            tokens = json.loads(token_file.read_text())
-            for k, v in tokens.items():
-                if isinstance(v, dict) and "access_token" in v:
-                    return v["access_token"]
-        except Exception:
-            pass
-    print("[ERROR] No Feishu access token found. Set FEISHU_ACCESS_TOKEN env.", file=sys.stderr)
-    sys.exit(1)
-
-def feishu_get(endpoint: str, token: str) -> dict:
-    """GET 请求飞书 Open API。"""
-    import urllib.request
-    url = f"https://open.feishu.cn/open-apis/{endpoint}"
-    headers = {"Authorization": f"Bearer {token}"}
-    req = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            result = json.loads(resp.read())
-            if result.get("code", 1) != 0:
-                raise Exception(f"API error {result.get('code')}: {result.get('msg')}")
-            return result.get("data", {})
-    except Exception as e:
-        print(f"[ERROR] GET {endpoint} failed: {e}", file=sys.stderr)
-        return {}
-
-# ── 从飞书表格读取映射规则 ───────────────────────────────────────────────
-
-def load_rules_from_bitable(token: str, wiki_name: str) -> List[Tuple[str, str]]:
-    """从飞书多维表格读取指定 wiki 的映射规则（无 token 时使用内嵌规则）。"""
-    """
-    从飞书多维表格读取指定 wiki 的映射规则。
-    返回 [(关键词, 目标PARA路径), ...]，已按优先级排序。
-    """
-    global _mapping_cache
-    cache_key = wiki_name
-
-    if cache_key in _mapping_cache:
-        return _mapping_cache[cache_key]
-
-    # 无 token 时使用内嵌规则
-    if not token:
-        _mapping_cache[cache_key] = EMBEDDED_RULES.get(wiki_name, [])
-        return _mapping_cache[cache_key]
-
-    rules: List[Tuple[str, str]] = []
-    page_token = ""
-
-    while True:
-        endpoint = f"bitable/v1/apps/{BITABLE_APP_TOKEN}/tables/{BITABLE_TABLE_ID}/records"
-        params = f"?page_size=100&field_names=%5B%22wiki%E5%90%8D%E7%A7%B0%22,%22%E6%A0%87%E9%A2%98%E5%85%B3%E9%94%AE%E8%AF%8D%22,%22%E7%9B%AE%E6%A0%87PARA%E8%B7%AF%E5%BE%84%22,%22%E4%BC%98%E5%85%88%E7%BA%A7%22%5D"
-        if page_token:
-            params += f"&page_token={page_token}"
-        data = feishu_get(endpoint + params, token)
-        items = data.get("items", [])
-
-        for item in items:
-            fields = item.get("fields", {})
-            wiki_field = fields.get("wiki名称", {})
-            if isinstance(wiki_field, list) and len(wiki_field) > 0:
-                wiki_val = wiki_field[0].get("text", "") if isinstance(wiki_field[0], dict) else str(wiki_field[0])
-            elif isinstance(wiki_field, str):
-                wiki_val = wiki_field
-            else:
-                wiki_val = ""
-            if wiki_val != wiki_name:
-                continue
-
-            keyword = fields.get("标题关键词", "")
-            para_path = fields.get("目标PARA路径", "")
-            if keyword and para_path:
-                rules.append((str(keyword), str(para_path)))
-
-        if not data.get("has_more"):
-            break
-        page_token = data.get("page_token", "")
-        if not page_token:
-            break
-
-    _mapping_cache[cache_key] = rules
-    return rules
+# ── 缓存 ─────────────────────────────────────────────────────────────────
+_config_cache: Optional[Tuple[List[Tuple[str, str, str]], Dict[str, str]]] = None
 
 
-def resolve_para_folder(title: str, wiki_name: str, token: str) -> str:
-    """
-    根据标题和 wiki 名，从飞书表格规则中匹配 PARA 文件夹。
-    规则：优先级最小（数字最小）最先命中；关键词精确包含即命中。
-    """
-    # 兜底路径
-    fallback = "05进思斋" if wiki_name == "个人成长" else "03藏珍之库/工具"
+# ── lark-table → Markdown ─────────────────────────────────────────────────
 
-    rules = load_rules_from_bitable(token, wiki_name)
-    if not rules:
-        return fallback
+def convert_lark_tables(text: str) -> str:
+    """将飞书 <lark-table> 标签转换为 Markdown 表格。"""
+    def replace_table(match):
+        table_content = match.group(0)
+        rows_content: List[List[str]] = []
 
-    title_lower = title.lower()
+        for row_match in re.finditer(r'<lark-tr>(.*?)</lark-tr>', table_content, re.DOTALL):
+            row_text = row_match.group(1)
+            cells: List[str] = []
+            for cell_match in re.finditer(r'<lark-td>(.*?)</lark-td>', row_text, re.DOTALL):
+                cell = cell_match.group(1)
+                # 字面 \n（反斜杠+n）→ 空格（飞书 API 编码的换行）
+                cell = re.sub(r'\\+n', ' ', cell)
+                # 移除所有 HTML 标签
+                cell = re.sub(r'<[^>]+>', '', cell)
+                cell = cell.strip()
+                cells.append(cell)
+            if cells:
+                rows_content.append(cells)
 
-    # 优先级已经在表格里定义，这里取第一个命中（表格已按优先级排好）
-    # 关键词精确包含匹配
-    for keyword, folder in rules:
-        if keyword == "默认":
+        if not rows_content:
+            return ""
+
+        md_lines = []
+        for i, row in enumerate(rows_content):
+            md_lines.append("| " + " | ".join(row) + " |")
+            if i == 0:
+                md_lines.append("| " + " | ".join(["---"] * len(row)) + " |")
+
+        return "\n".join(md_lines)
+
+    return re.sub(r'<lark-table[^>]*>.*?</lark-table>', replace_table, text, flags=re.DOTALL)
+
+
+# ── SYNC-RULES.md 解析 ──────────────────────────────────────────────────
+
+def _parse_sync_rules() -> Tuple[List[Tuple[str, str, str]], Dict[str, str]]:
+    """解析 vault/SYNC-RULES.md，提取数据源配置。"""
+    global _config_cache
+    if _config_cache is not None:
+        return _config_cache
+
+    if not SYNC_RULES.exists():
+        print(f"[WARN] SYNC-RULES.md not found at {SYNC_RULES}", file=sys.stderr)
+        _config_cache = ([], {})
+        return _config_cache
+
+    text = SYNC_RULES.read_text(encoding="utf-8")
+    wiki_spaces: List[Tuple[str, str, str]] = []
+    fallback_map: Dict[str, str] = {}
+    in_datasource_section = False
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("##"):
+            in_datasource_section = "数据源" in stripped
             continue
-        if keyword.lower() in title_lower or keyword in title:
-            return folder
+        if not in_datasource_section:
+            continue
+        if not stripped.startswith("|") or stripped.startswith("|---") or stripped.startswith("| Wiki"):
+            continue
+        parts = [p.strip() for p in stripped.split("|")]
+        if len(parts) < 4:
+            continue
+        wiki_name, space_id, target_path = parts[1], parts[2], parts[3]
+        if wiki_name and space_id and target_path:
+            wiki_spaces.append((wiki_name, space_id, target_path))
 
-    # 默认兜底
-    for keyword, folder in rules:
-        if keyword == "默认":
-            return folder
+    if not wiki_spaces:
+        print(f"[WARN] No data source found in SYNC-RULES.md", file=sys.stderr)
+        _config_cache = ([], {})
+        return _config_cache
 
-    return fallback
+    _config_cache = (wiki_spaces, fallback_map)
+    return wiki_spaces, fallback_map
 
-# ── Obsidian 写入 ───────────────────────────────────────────────────────────
 
-def sanitize_filename(title: str) -> str:
+def get_wiki_spaces() -> List[Tuple[str, str, str]]:
+    return _parse_sync_rules()[0]
+
+
+# ── 路径构建 ───────────────────────────────────────────────────────────────
+
+def sanitize_filename(title: str, suffix: str = "") -> str:
     """标题转为安全文件名。"""
     s = re.sub(r'[\\/:*?"<>|]', "", title)
     s = re.sub(r'\s+', "-", s.strip())
-    return s[:80] + ".md"
+    if suffix:
+        max_len = 80 - len(suffix) - 1
+        s = s[:max_len] + suffix
+    return s + ".md"
 
-def ensure_obsidian_folder(para_path: str) -> Path:
-    """确保 Obsidian 目录存在，不存在则新建。"""
-    dest_dir = VAULT_DIR / para_path
+
+def build_path_from_nodes(
+    node: dict,
+    wiki_name: str,
+    token_to_info: Dict[str, Tuple[str, str]],
+    parent_of: Dict[str, bool]
+) -> Tuple[str, str]:
+    """
+    根据节点及其父节点链，构建 Obsidian 中的完整相对路径。
+
+    返回 (relative_path, filename)
+    - relative_path: wiki_name/父节点1/父节点2/...
+    - filename: 当前节点文件名
+
+    冲突处理：has_child=true 且 obj_type=docx 的节点，
+    文件名加 _index 后缀，避免「软考笔记/软考笔记.md」歧义。
+    """
+    node_token = node.get("node_token", "")
+    parent_token = node.get("parent_node_token", "")
+    title = node.get("title", "未命名")
+
+    is_container_with_content = (
+        parent_of.get(node_token, False) and node.get("obj_type") == "docx"
+    )
+
+    path_parts: List[str] = []
+    current_token = node_token
+    visited: set = set()
+
+    while current_token:
+        if current_token in visited:
+            break
+        visited.add(current_token)
+
+        if current_token == node_token:
+            path_parts.append(sanitize_filename(title).replace(".md", ""))
+            current_token = parent_token
+        else:
+            if current_token in token_to_info:
+                parent_title, _ = token_to_info[current_token]
+                path_parts.append(sanitize_filename(parent_title).replace(".md", ""))
+                _, current_parent = token_to_info[current_token]
+                current_token = current_parent
+            else:
+                break
+
+    path_parts.reverse()
+    parent_parts = path_parts[:-1]
+    relative = wiki_name + ("/" + "/".join(parent_parts) if parent_parts else "")
+    filename = (
+        sanitize_filename(title, "_index")
+        if is_container_with_content
+        else sanitize_filename(title)
+    )
+    return relative, filename
+
+
+# ── Obsidian 写入 ─────────────────────────────────────────────────────────
+
+def ensure_obsidian_folder(relative_path: str) -> Path:
+    dest_dir = VAULT_DIR / relative_path
     dest_dir.mkdir(parents=True, exist_ok=True)
     return dest_dir
 
+
 def build_frontmatter(doc_token: str, node_token: str, wiki_name: str,
-                     created: str, doc_type: str = "随记",
-                     status: str = "2-进行中") -> str:
-    """生成 YAML frontmatter。"""
+                      date: Optional[str] = None) -> str:
+    if date is None:
+        date = datetime.now().strftime("%Y-%m-%d")
     return f"""---
-type: {doc_type}
-status: {status}
+date: {date}
+lastmod: {date}
+draft: false
+categories: []
 tags: [来源/飞书同步]
-created: {created}
 feishu_doc_token: {doc_token}
-feishu_node_token: {node_token}
 feishu_wiki: {wiki_name}
+feishu_node_token: {node_token}
 ---"""
 
+
 def find_existing_by_doc_token(doc_token: str) -> Optional[Path]:
-    """在 vault 中查找是否已存在相同 feishu_doc_token 的文件。"""
+    """按 feishu_doc_token 查重（排除 .trash）。"""
     if not doc_token:
         return None
     for md_file in VAULT_DIR.rglob("*.md"):
+        if '.trash' in md_file.parts:
+            continue
         try:
             text = md_file.read_text(encoding="utf-8")
-            if text.startswith("---"):
-                end = text.find("\n---", 3)
-                if end < 0:
-                    continue
-                fm_text = text[3:end]
-                for line in fm_text.splitlines():
-                    if line.strip().startswith("feishu_doc_token:"):
-                        existing_token = line.split(":", 1)[1].strip()
-                        if existing_token == doc_token:
-                            return md_file
+            if not text.startswith("---"):
+                continue
+            end = text.find("\n---", 3)
+            if end < 0:
+                continue
+            for fline in text[3:end].splitlines():
+                if fline.strip().startswith("feishu_doc_token:"):
+                    if fline.split(":", 1)[1].strip() == doc_token:
+                        return md_file
         except Exception:
             continue
     return None
 
-def write_obsidian_file(folder: str, title: str, content: str,
+
+def write_obsidian_file(relative_path: str, filename: str, title: str, content: str,
                         doc_token: str, node_token: str, wiki_name: str,
                         dry_run: bool = False) -> Optional[str]:
     """写入 Obsidian 文件，返回路径（已存在则返回 None）。"""
-    # 去重：检查 vault 中是否已有相同 feishu_doc_token 的文件
+    content = convert_lark_tables(content)
+
     existing = find_existing_by_doc_token(doc_token)
     if existing:
-        print(f"  [SKIP] {title} → 已存在，跳过写入 ({existing.name})")
+        print(f"  [SKIP] {title} → 已存在 ({existing.name})")
         return None
 
-    dest_dir = ensure_obsidian_folder(folder)
-    filename = sanitize_filename(title)
+    dest_dir = ensure_obsidian_folder(relative_path)
     dest_path = dest_dir / filename
 
-    # 避免重名（文件名冲突）
     counter = 1
     while dest_path.exists() and counter < 100:
-        dest_path = dest_dir / sanitize_filename(f"{title}-{counter}")
+        base, ext = filename.rsplit(".", 1)
+        dest_path = dest_dir / f"{base}-{counter}.{ext}"
         counter += 1
 
     if dry_run:
-        print(f"  [DRY-RUN] {title} → {folder}/{dest_path.name}")
+        print(f"  [DRY-RUN] {title} → {relative_path}/{filename}")
         return str(dest_path)
 
-    frontmatter = build_frontmatter(
-        doc_token, node_token, wiki_name,
-        datetime.now().strftime("%Y-%m-%d")
-    )
-    full_content = f"{frontmatter}\n\n{content}"
-    dest_path.write_text(full_content, encoding="utf-8")
-    print(f"  [SYNCED] {title} → {folder}/{dest_path.name}")
+    frontmatter = build_frontmatter(doc_token, node_token, wiki_name)
+    dest_path.write_text(f"{frontmatter}\n\n{content}", encoding="utf-8")
+    print(f"  [SYNCED] {title} → {relative_path}/{dest_path.name}")
     return str(dest_path)
 
-# ── 主流程 ─────────────────────────────────────────────────────────────────
 
-def main_from_nodes(nodes: List[dict], dry_run: bool = False):
-    """从节点列表同步到 Obsidian（Agent 调用模式）。"""
-    print(f"\n{'[DRY-RUN] ' if dry_run else ''}Feishu → Obsidian Sync")
+# ── 两种运行模式 ───────────────────────────────────────────────────────────
+
+def mode_plan(nodes: List[dict]):
+    """
+    模式A：分析节点，返回待写入文件列表（plan）。
+    Agent 根据此列表决定 fetch 哪些文档。
+    """
+    wiki_spaces = get_wiki_spaces()
+    if not wiki_spaces:
+        print("[ERROR] No wiki spaces in SYNC-RULES.md", file=sys.stderr)
+        sys.exit(1)
+
+    space_id_to_info: Dict[str, Tuple[str, str]] = {
+        sid: (name, path) for name, sid, path in wiki_spaces
+    }
+    token_to_info: Dict[str, Tuple[str, str]] = {}
+    for n in nodes:
+        if n.get("node_token"):
+            token_to_info[n["node_token"]] = (n.get("title", "未命名"), n.get("parent_node_token", ""))
+
+    parent_of: Dict[str, bool] = {}
+    for n in nodes:
+        if n.get("parent_node_token"):
+            parent_of[n["parent_node_token"]] = True
+
+    todo: List[dict] = []
+    for node in nodes:
+        obj_type = node.get("obj_type", "")
+        obj_token = node.get("obj_token", "")
+        wiki_name = node.get("wiki_name", "")
+        space_id = node.get("space_id", "")
+        node_token = node.get("node_token", "")
+
+        if space_id and space_id in space_id_to_info:
+            resolved_wiki_name, target_path = space_id_to_info[space_id]
+        elif wiki_name:
+            resolved_wiki_name, target_path = wiki_name, None
+            for name, sid, path in wiki_spaces:
+                if name == wiki_name:
+                    target_path = path
+                    break
+            if target_path is None:
+                continue
+        else:
+            continue
+
+        # relative_path = target_path/父节点链/当前节点
+        # build_path_from_nodes 返回的是 wiki_name/父节点/...，需拼 target_path 前缀
+        relative_no_target, filename = build_path_from_nodes(node, resolved_wiki_name, token_to_info, parent_of)
+        relative = (
+            (target_path + "/" + relative_no_target)
+            if relative_no_target
+            else target_path
+        )
+
+        if obj_type != "docx":
+            todo.append({
+                "title": node.get("title", "未命名"),
+                "obj_token": obj_token,
+                "obj_type": obj_type,
+                "node_token": node_token,
+                "wiki_name": resolved_wiki_name,
+                "relative_path": relative,
+                "filename": filename,
+                "need_fetch": False,
+                "content": f"[飞书 {obj_type} 文档](https://vcndmev90kwz.feishu.cn/wiki/{node_token})"
+            })
+        else:
+            todo.append({
+                "title": node.get("title", "未命名"),
+                "obj_token": obj_token,
+                "obj_type": obj_type,
+                "node_token": node_token,
+                "wiki_name": resolved_wiki_name,
+                "relative_path": relative,
+                "filename": filename,
+                "need_fetch": True
+            })
+
+    # 输出 plan JSON
+    plan = {
+        "wiki_spaces": [{"name": n, "sid": s, "path": p} for n, s, p in wiki_spaces],
+        "total_nodes": len(nodes),
+        "need_fetch": [t for t in todo if t.get("need_fetch")],
+        "no_fetch_needed": [t for t in todo if not t.get("need_fetch")],
+    }
+    print(json.dumps(plan, ensure_ascii=False, indent=2))
+
+    # 同步状态缓存
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    (CACHE_DIR / "plan.json").write_text(
+        json.dumps({"todo": todo, "timestamp": datetime.now().isoformat()}, ensure_ascii=False, indent=2)
+    )
+
+
+def mode_write(nodes: List[dict], dry_run: bool = False):
+    """
+    模式B：写入文件（Agent fetch 完内容后调用）。
+    nodes 格式：[{"title":"...","obj_token":"...","content":"...",
+                  "node_token":"...","wiki_name":"...","relative_path":"...","filename":"..."}]
+    """
+    print(f"\n{'[DRY-RUN] ' if dry_run else ''}Feishu → Obsidian Write")
     print(f"Vault: {VAULT_DIR}")
-    print(f"Rules source: Feishu Bitable ({BITABLE_APP_TOKEN})")
     print()
 
-    token = get_access_token() if "--no-token" not in sys.argv else ""
-    sync_date = datetime.now().strftime("%Y-%m-%d")
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    todo = json.loads((CACHE_DIR / "plan.json").read_text())["todo"]
+    todo_map: Dict[str, dict] = {t["obj_token"]: t for t in todo}
 
-    all_synced_files = []
+    all_synced, skipped, failed = [], 0, []
 
-    # 按 wiki 分组
-    for wiki_name, space_id in WIKI_SPACES.items():
-        wiki_nodes = [n for n in nodes if n.get("wiki_name") == wiki_name
-                     or n.get("space_id") == space_id]
-        if not wiki_nodes:
+    for node in nodes:
+        title = node.get("title", "未命名")
+        obj_token = node.get("obj_token", "")
+        content = node.get("content", "")
+        node_token = node.get("node_token", "")
+        wiki_name = node.get("wiki_name", "")
+        relative_path = node.get("relative_path", wiki_name)
+        filename = node.get("filename", sanitize_filename(title))
+
+        if not content:
+            skipped += 1
             continue
-        print(f"[INFO] Syncing wiki: {wiki_name} ({len(wiki_nodes)} nodes)")
 
-        for node in wiki_nodes:
-            obj_type = node.get("obj_type", "")
-            title = node.get("title", "未命名")
-            node_token = node.get("node_token", "")
-            obj_token = node.get("obj_token", "")
-            content = node.get("content", "")
-            node_wiki = node.get("wiki_name", wiki_name)
-
-            if not content:
-                content = (f"[内容由 Agent 通过 feishu_fetch_doc 获取]\n"
-                           f"obj_token: {obj_token}\nobj_type: {obj_type}")
-
-            folder = resolve_para_folder(title, node_wiki, token)
-
+        try:
             path = write_obsidian_file(
-                folder, title, content,
-                obj_token, node_token, node_wiki,
+                relative_path, filename, title, content,
+                obj_token, node_token, wiki_name,
                 dry_run=dry_run
             )
             if path:
-                all_synced_files.append(path)
+                all_synced.append(path)
+            else:
+                skipped += 1
+        except Exception as e:
+            print(f"  [ERROR] {title} → {e}")
+            failed.append((title, str(e)))
 
-    cache_file = CACHE_DIR / "sync_state.json"
-    cache_file.write_text(json.dumps({
-        "sync_date": sync_date,
-        "files": all_synced_files
-    }, ensure_ascii=False, indent=2))
-
-    print(f"\n[OK] {len(all_synced_files)} files processed.")
+    print(f"\n[OK] {len(all_synced)} written, {skipped} skipped, {len(failed)} failed.")
+    if failed:
+        for ftitle, err in failed:
+            print(f"  - {ftitle}: {err}")
     if dry_run:
         print("(dry run - no files written)")
 
 
-def main_stdin(dry_run: bool = False):
-    """从 stdin 读取 JSON 节点列表。"""
-    nodes = json.loads(sys.stdin.read())
-    if not isinstance(nodes, list):
-        print("[ERROR] Expected JSON array of nodes", file=sys.stderr)
+def main_stdin():
+    """解析命令行参数，从 stdin 读取 JSON。"""
+    dry_run = "--dry-run" in sys.argv
+    if "--plan" in sys.argv:
+        mode_plan(json.loads(sys.stdin.read()))
+    elif "--write" in sys.argv:
+        mode_write(json.loads(sys.stdin.read()), dry_run=dry_run)
+    else:
+        print("[ERROR] 缺少模式参数：--plan（分析） 或 --write（写入）", file=sys.stderr)
+        print("示例：echo '[...]' | python3 sync.py --stdin --plan", file=sys.stderr)
+        print("示例：echo '[...]' | python3 sync.py --stdin --write", file=sys.stderr)
         sys.exit(1)
-    main_from_nodes(nodes, dry_run=dry_run)
 
 
 if __name__ == "__main__":
-    dry_run = "--dry-run" in sys.argv
     if "--stdin" in sys.argv:
-        main_stdin(dry_run=dry_run)
+        main_stdin()
     else:
-        print("[ERROR] 请使用 --stdin 模式传入节点数据", file=sys.stderr)
-        print("示例: echo '[...]' | python3 sync.py --stdin [--dry-run]", file=sys.stderr)
+        print("[ERROR] 请使用 --stdin 模式", file=sys.stderr)
+        print("示例：echo '[...]' | python3 sync.py --stdin --plan", file=sys.stderr)
         sys.exit(1)
