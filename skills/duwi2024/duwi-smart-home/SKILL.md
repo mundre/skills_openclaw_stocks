@@ -1,9 +1,11 @@
 ---
-name: Duwi Smart Home
-version: 1.0.4
+name: duwi-smart-home
+displayName: Duwi Smart Home
+version: 1.0.6
+summary: 迪惟智能家居控制技能，支持灯光、窗帘、空调、地暖等设备控制
 description: 迪惟智能家居技能，基于 Duwi 开放平台 API，支持设备控制、场景执行、状态查询等功能
 author: 迪惟科技
-tags: [smart-home, iot, device-control]
+tags: [duwi,smart-home, iot, device-control, home-automation]
 ---
 
 # Duwi 迪惟智能家居技能

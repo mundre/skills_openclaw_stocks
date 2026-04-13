@@ -131,6 +131,7 @@ class DuwiClient:
             "appVersion": "1.0.0",
             "clientVersion": "1.0.0",
             "Content-Type": "application/json",
+            "clientModel":"openclaw-skill",
         }
 
         if self.access_token:
