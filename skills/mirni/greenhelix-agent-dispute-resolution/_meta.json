@@ -3,9 +3,15 @@
   "slug": "greenhelix-agent-dispute-resolution",
   "displayName": "Agent Dispute Resolution & Chargeback Defense",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775629784869,
-    "commit": "https://github.com/openclaw/skills/commit/9268cb5c127fb9d1828c91f9f4bff6792ab84d36"
+    "version": "1.2.0",
+    "publishedAt": 1776065199405,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775629784869,
+      "commit": "https://github.com/openclaw/skills/commit/9268cb5c127fb9d1828c91f9f4bff6792ab84d36"
+    }
+  ]
 }

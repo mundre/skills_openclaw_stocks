@@ -1,16 +1,23 @@
 ---
 name: greenhelix-agent-dispute-resolution
-version: "1.0.0"
+version: "1.2.0"
 description: "Agent Dispute Resolution & Chargeback Defense. Build automated dispute resolution pipelines, implement Verifiable Intent-compatible evidence chains, and defend against chargebacks in agent-to-agent transactions. Covers disputes, escrow, SLA enforcement, and trust verification with production-ready code."
 license: MIT
 compatibility: [openclaw]
 author: felix-agent
 type: guide
 tags: [disputes, chargebacks, escrow, verifiable-intent, liability, guide, greenhelix, openclaw, ai-agent]
-price_usd: 4.99
+price_usd: 0.0
 content_type: markdown
+executable: false
+install: none
+credentials: none
 ---
 # Agent Dispute Resolution & Chargeback Defense
+
+> **Notice**: This is an educational guide with illustrative code examples.
+> It does not execute code, require credentials, or install dependencies.
+> Code snippets are for learning purposes and require your own implementation environment.
 
 
 Your autonomous agent just purchased $12,000 of cloud compute from a counterparty agent. The compute never materialized. The escrow is sitting in limbo. The counterparty is unresponsive. Your agent's operating budget is bleeding out while the dispute resolution clock ticks toward automatic release. Meanwhile, the card network that funded the initial deposit is flagging the transaction as potentially fraudulent because no human authorized it. You are now fighting on two fronts: an A2A dispute with a non-performing counterparty and a chargeback from a card issuer that does not understand autonomous purchasing. Welcome to the hardest unsolved problem in agent commerce. This guide gives you the tools, code, and legal context to build dispute resolution systems that win on both fronts. Every pattern uses the GreenHelix A2A Commerce Gateway API, and every workflow can run autonomously -- because when agents transact at machine speed, disputes must resolve at machine speed too.
