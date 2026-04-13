@@ -113,10 +113,10 @@ https://api.github.com/search/repositories?q=<KEYWORDS>&sort=stars&order=desc&pe
 - 每日发表趋势
 
 ## 📄 ArXiv 论文精选
-（7方向，每方向列出所有检索论文）
+（7方向，每方向列出所有检索论文，精选论文配 ArXiv 原文 figure）
 
 ## 🐙 GitHub 开源项目
-（新建仓库精选 + 经典仓库重点更新）
+（新建仓库精选 + 经典仓库重点更新，配项目截图）
 
 ## 💡 核心洞察
 （5大趋势分析 + 下周关注点）
@@ -124,17 +124,62 @@ https://api.github.com/search/repositories?q=<KEYWORDS>&sort=stars&order=desc&pe
 
 生成文件：`embodied_ai_weekly_report_<YEAR>_w<WEEK>.md`
 
-### 3.2 综合 HTML 可视化报告
+### 3.2 论文配图获取
+
+报告需要配图来增强可读性。配图来源为 ArXiv 论文原文和 GitHub 项目页面，**禁止使用 AI 生成图片**。
+
+**图片获取策略：**
+
+1. **ArXiv 论文图片**：使用 Playwright 或直接 HTTP 请求访问论文 HTML 版本，下载其中的 figure 图片
+   - HTML 版本 URL 模板：`https://arxiv.org/html/<ARXIV_ID>v<VERSION>/`
+   - 图片通常为 `x1.png`、`x2.png` 等命名
+   - 可直接用 HTTP 下载：`https://arxiv.org/html/<ARXIV_ID>v<VERSION>/x1.png`
+   - 保存到工作区 `images/` 目录
+
+2. **GitHub 项目截图**：使用 Playwright 对 GitHub 仓库页面进行截图
+   - 截取 README Banner 或项目首页区域
+   - 保存到 `images/` 目录
+
+3. **论文项目页截图**：部分论文有配套项目页（如 `https://faceong.github.io/CoEnv/`），可直接截图
+
+**图片嵌入位置：**
+- **封面区（Hero）**：选择当周最重要/最热门的论文项目页截图
+- **精选论文卡片**：每篇精选论文配 1-2 张 ArXiv 原文 figure
+- **GitHub 热榜卡片**：配 GitHub 仓库截图
+- 每张图片附带 `<figcaption>` 注明来源链接
+
+**批量下载脚本示例（Node.js + Playwright）：**
+
+```javascript
+const { chromium } = require('playwright');
+// 使用 Playwright 截图 GitHub 页面
+// 使用 fetch/axios 下载 ArXiv 论文图片
+// 保存到 images/ 目录
+```
+
+**图片 CSS 样式（添加到 HTML 内联样式）：**
+
+```css
+.paper-figure { margin: 14px 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+.paper-figure img { width: 100%; display: block; max-height: 400px; object-fit: contain; background: #fff; }
+.paper-figure figcaption { padding: 8px 14px; font-size: 11px; color: var(--text3); text-align: center; }
+.hero-figure { margin: 30px auto; max-width: 900px; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 40px rgba(99,102,241,.15); }
+.hero-figure img { width: 100%; display: block; }
+.github-figure { margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.github-figure img { width: 100%; display: block; max-height: 320px; object-fit: cover; }
+```
+
+### 3.3 综合 HTML 可视化报告
 
 HTML 报告的视觉风格参考 `references/html_template_guide.md`。
 
 **必须包含的模块：**
 
-1. **Header Hero 区**：渐变标题 + 报告日期 + Executive Summary
+1. **Header Hero 区**：渐变标题 + 报告日期 + Executive Summary + 封面图
 2. **Stats Cards 数据卡片**：论文数、GitHub 仓库数、方向数等
 3. **ArXiv 分布条形图**：使用 Chart.js 或纯 CSS 条形图展示7方向论文分布
-4. **论文卡片区**：Top 3-5 精选论文深度解读 + 完整论文表格（可折叠）
-5. **GitHub 热榜**：Top 3 仓库卡片 + 全方向仓库矩阵
+4. **论文卡片区**：Top 3-5 精选论文深度解读 + 每篇配图 + 完整论文表格（可折叠）
+5. **GitHub 热榜**：Top 3 仓库卡片 + 仓库截图 + 全方向仓库矩阵
 6. **核心洞察区**：5大趋势 + 下周关注
 
 **技术规范：**
@@ -146,7 +191,7 @@ HTML 报告的视觉风格参考 `references/html_template_guide.md`。
 
 生成文件：`embodied_ai_weekly_report_<YEAR>_w<WEEK>.html`
 
-### 3.3 推送到 GitHub Pages
+### 3.4 推送到 GitHub Pages
 
 **目标仓库结构：**
 ```
@@ -211,6 +256,7 @@ git push origin main
 
 | 文件 | 内容 | 位置 |
 |------|------|------|
+| `images/` | 论文配图与项目截图目录 | 工作区根目录 |
 | `embodied_ai_weekly_arxiv_<Y>_w<W>.md` | ArXiv 论文整理 | 工作区根目录 |
 | `embodied_ai_weekly_arxiv_<Y>_w<W>.html` | ArXiv 报告网页版 | 工作区根目录 |
 | `embodied_ai_weekly_github_<Y>_w<W>.md` | GitHub 项目整理 | 工作区根目录 |

@@ -1,11 +1,17 @@
 {
   "owner": "jessy-huang",
   "slug": "embodied-ai-weekly",
-  "displayName": "具身智能周报",
+  "displayName": "Embodied Ai Weekly",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775220428992,
-    "commit": "https://github.com/openclaw/skills/commit/d54355fb1fe232e8104821d670797dd5f479504d"
+    "version": "1.1.0",
+    "publishedAt": 1775774710343,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775220428992,
+      "commit": "https://github.com/openclaw/skills/commit/d54355fb1fe232e8104821d670797dd5f479504d"
+    }
+  ]
 }
