@@ -3,9 +3,15 @@
   "slug": "simplelogin-cli",
   "displayName": "Simplelogin Cli",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775675470572,
-    "commit": "https://github.com/openclaw/skills/commit/6282e561458ed42b78a71540245e7c9e400fca7d"
+    "version": "1.0.1",
+    "publishedAt": 1776057210062,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775675470572,
+      "commit": "https://github.com/openclaw/skills/commit/6282e561458ed42b78a71540245e7c9e400fca7d"
+    }
+  ]
 }
