@@ -9,10 +9,40 @@
 [![Safe Code](https://img.shields.io/badge/code-no%20eval-brightgreen.svg)](SECURITY.md)
 [![ClawHub](https://img.shields.io/badge/ClawHub-yumfu-purple)](https://clawhub.ai/skills/yumfu)
 [![Multiplayer](https://img.shields.io/badge/multiplayer-Telegram%20%26%20Discord-blue)](https://clawhub.ai/skills/yumfu)
+[![Support via Stripe](https://img.shields.io/badge/Support-Stripe-635BFF?style=flat&logo=stripe&logoColor=white)](https://buy.stripe.com/8x26oHc329ha6GvaiggjC00)
+
+## 💖 Support YumFu
+
+If YumFu helped you or made you smile, you can support future development here:
+
+[Donate via Stripe](https://buy.stripe.com/8x26oHc329ha6GvaiggjC00)
 
 ---
 
-## 🌍 9 Worlds to Explore
+## 💬 Join the YumFu Fun Discord
+
+Come play, test new worlds, share screenshots, and hang out with other players:
+
+- **Invite:** <https://discord.gg/g6zBMHpP8>
+
+### Discord QR Code
+
+![YumFu Fun Discord QR](docs/community/yumfu-fun-discord-qr.jpg)
+
+---
+
+## ✨ Why YumFu feels different
+
+- 🎨 **Automatic AI scene art** — major moments can arrive with matching world-specific illustrations
+- 🎧 **Audio story delivery** — turns can be turned into voice bubbles / narrated story audio
+- 📚 **Art storybooks** — your sessions can become shareable illustrated storybooks and PDFs
+- 👥 **Multiplayer-first** — play inside group chats with PvP, teams, and shared world state
+- 🌍 **Multi-world, multi-language** — wuxia, magic school, epic fantasy, modern war, myth, comedy
+- 💬 **Natural language play** — just talk instead of memorizing commands
+
+---
+
+## 🌍 Worlds to Explore
 
 | World | Genre | Language | Status |
 |-------|-------|----------|--------|
@@ -25,6 +55,7 @@
 | 🐉 **Game of Thrones** | Dark fantasy politics | English | ✅ Playable |
 | 🧙 **Lord of the Rings** | Epic fantasy quest | English | ✅ Playable |
 | 🐒 **西游记** (Journey to the West) | Mythological RPG | 中文/EN | ✅ Playable |
+| 🩲 **内裤超人** (Captain Underpants) | Comedy chaos RPG | 中/EN | ✅ Playable |
 | 🏹 **射雕英雄传** (Legend of Condor Heroes) | Jin Yong wuxia | 中文 | 🚧 Coming |
 
 ---
@@ -104,35 +135,44 @@ YumFu stores all game data **locally** on your machine:
 
 ---
 
-## 🎨 **World Showcase**
+## 🎨 World Showcase
 
 <table>
 <tr>
-<td width="33%">
+<td width="50%">
+
+### 🛵 F15 Down: Azure Peninsula War
+![F15 Down Showcase](docs/showcase/showcase-f15down.jpg)
+*Modern military chaos — damaged aircraft, desert coastline, command decisions, frontline survival*
+
+</td>
+<td width="50%">
+
+### 🐉 Game of Thrones / Dorne
+![Game of Thrones Dorne Showcase](docs/showcase/showcase-got-dorne.png)
+*Political danger in Sunspear — desert palaces, noble intrigue, dangerous private choices*
+
+</td>
+</tr>
+<tr>
+<td width="50%">
 
 ### ⚔️ Chinese Wuxia
 ![Chinese Wuxia](docs/showcase/showcase-xiaoao-jianghu.png)
-*Ancient martial arts world - Traditional temples, misty mountains, heroic swordsmen*
+*Ancient martial arts world — traditional temples, misty mountains, heroic swordsmen*
 
 </td>
-<td width="33%">
+<td width="50%">
 
 ### ⚡ Wizard School
 ![Wizard School](docs/showcase/showcase-harry-potter.png)
-*Magical academy - Underground chambers, enchanted lakes, spell practice*
-
-</td>
-<td width="33%">
-
-### 🐉 Medieval Fantasy
-![Medieval Fantasy](docs/showcase/showcase-game-of-thrones.png)
-*Political intrigue - Desert palaces, noble houses, strategic conflicts*
+*Magical academy — enchanted halls, underground chambers, spell practice, house rivalries*
 
 </td>
 </tr>
 </table>
 
-*All images generated in real-time during gameplay with world-specific art styles*
+*All showcase images are generated from real YumFu gameplay with world-specific art direction.*
 
 ---
 
@@ -242,12 +282,13 @@ Reply: /yumfu world 3  (or just say "I want to play Warrior Clans")
 
 ## ✨ Features
 
-- 🗣️ **Natural Language** - Just talk! No need for commands (e.g., "I want to explore the castle")
+- 🗣️ **Natural Language** - Just talk; no need to memorize command syntax
 - 🌍 **Multi-language** - Chinese & English
-- 🎭 **Multiple universes** - Wuxia, Wizard School, Middle-earth, Medieval...
-- 🎨 **AI-generated art** - Each scene gets a styled illustration
-- 🤝 **Multiplayer** - PvP duels, teams (OpenClaw only)
-- 📖 **Rich storytelling** - Authentic genre writing
+- 🎭 **Multiple universes** - Wuxia, wizard school, epic fantasy, modern war, myth, comedy
+- 🎨 **Automatic AI image generation** - scenes can arrive with world-matched art
+- 🎧 **Audio story mode** - gameplay turns can be delivered as narrated voice bubbles / story audio
+- 📚 **Art storybooks** - session logs can be turned into illustrated HTML / PDF storybooks
+- 🤝 **Multiplayer** - PvP, teams, shared world state (OpenClaw-first)
 - 💾 **Save system** - Multiple save slots per world
 
 ---
@@ -307,25 +348,6 @@ yumfu/
 
 ---
 
-## 🗺️ Roadmap
-
-### Phase 1 ✅ (Complete)
-- [x] Chinese (笑傲江湖)
-- [x] English (Wizard School)
-- [x] Bilingual UI
-- [x] World config system
-
-### Phase 2 (Next)
-- [ ] Add Middle-earth, Medieval, Monster Hunter
-- [ ] More Chinese worlds (倚天, 射雕, 天龙)
-- [ ] Cross-world easter eggs
-
-### Phase 3 (Future)
-- [ ] Community-contributed worlds
-- [ ] Custom world editor
-- [ ] Character import across worlds
-
----
 
 ## 🎯 Example Gameplay
 

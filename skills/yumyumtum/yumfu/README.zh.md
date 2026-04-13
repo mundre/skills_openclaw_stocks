@@ -4,29 +4,86 @@
 
 ---
 
-## 🌐 支持的世界
+## ✨ 核心特色
 
-### 🇨🇳 中文世界（武侠）
-- ⚔️ **笑傲江湖** - 剑客时代，华山派纷争
-- 🗡️ **倚天屠龙记** - 倚天剑与屠龙刀 *(即将推出)*
-- 📖 **射雕英雄传** - 郭靖黄蓉江南七怪 *(即将推出)*
-
-### 🇬🇧 英文世界（奇幻）
-- ⚡ **Harry Potter** - 霍格沃茨，四大学院，魔法决斗
-- 🐱 **Warrior Cats** - 四大族群，野猫冒险
-- 🗡️ **Lord of the Rings** - 中土世界，魔戒远征 *(即将推出)*
-- 🐉 **Game of Thrones** - 维斯特洛，铁王座 *(即将推出)*
+- 🎨 **自动生图** - 关键场景可自动生成符合世界风格的配图
+- 🎧 **音频 Story** - 游戏回合可转成语音气泡 / 旁白式故事音频
+- 📚 **艺术 Storybook** - 冒险过程可导出为带插图的 HTML / PDF 故事书
+- 🤝 **多人游玩** - 支持群聊 PvP、组队、共享世界状态
+- 🌍 **多世界多语言** - 武侠、魔法、史诗奇幻、现代战争、神话、搞笑世界一起玩
+- 💬 **自然语言输入** - 不必死记命令，直接说你想做什么
 
 ---
 
-## ✨ 核心特性
+## 🌐 支持的世界
 
-- 🌍 **双语支持** - 中文/英文无缝切换
-- 🎭 **多宇宙** - 武侠、哈利波特、猫武士等
-- 🎨 **AI配图** - 每个场景自动生成风格化插画
-- 🤝 **多人游戏** - PvP对决、组队（仅OpenClaw）
-- 📖 **剧情丰富** - 原汁原味的类型文学写作
-- 💾 **存档系统** - 多存档槽位，随时读档
+### 🇨🇳 中文世界
+- ⚔️ **笑傲江湖** - 剑客时代，华山派纷争
+- 🦞 **龙虾三国** - 龙虾版三国争霸，策略与乱斗并存
+- 🗡️ **倚天屠龙记** - 倚天剑与屠龙刀
+- 🐒 **西游记** - 鲜亮童话神话风的取经冒险
+- 🩲 **内裤超人** - 荒诞搞笑 chaos RPG
+- 📖 **射雕英雄传** - 郭靖黄蓉江湖线 *(即将推出)*
+
+### 🇬🇧 / 🌍 英文与双语世界
+- ⚡ **Harry Potter** - 霍格沃茨，四大学院，魔法决斗
+- 🐱 **Warrior Cats** - 四大族群，野猫冒险
+- 🐉 **Game of Thrones** - 维斯特洛 / 多恩政治冒险
+- 🧙 **Lord of the Rings** - 中土世界，远征与传奇
+- 🛵 **F15 Down: Azure Peninsula War** - 现代战争 / 指挥与前线双线路
+
+---
+
+## 🎨 世界展示
+
+<table>
+<tr>
+<td width="50%">
+
+### 🛵 F15 Down: Azure Peninsula War
+![F15 Down Showcase](docs/showcase/showcase-f15down.jpg)
+*现代战争世界：坠机、海岸线、指挥决策、前线求生。*
+
+</td>
+<td width="50%">
+
+### 🐉 Game of Thrones / Dorne
+![Game of Thrones Dorne Showcase](docs/showcase/showcase-got-dorne.png)
+*多恩宫廷世界：沙漠宫殿、贵族阴谋、危险的私下交易。*
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### ⚔️ 笑傲江湖
+![Chinese Wuxia](docs/showcase/showcase-xiaoao-jianghu.png)
+*传统武侠世界：门派、山门、剑客、江湖恩怨。*
+
+</td>
+<td width="50%">
+
+### ⚡ Harry Potter
+![Wizard School](docs/showcase/showcase-harry-potter.png)
+*魔法学院世界：礼堂、密室、咒语训练、学院竞争。*
+
+</td>
+</tr>
+</table>
+
+*这些展示图来自 YumFu 实际游玩中的世界风格生图。*
+
+---
+
+## 💬 加入 YumFu Fun Discord 游玩群
+
+欢迎来群里一起玩、测试新世界、晒截图、交流点子：
+
+- **邀请链接：** <https://discord.gg/g6zBMHpP8>
+
+### Discord 二维码
+
+![YumFu Fun Discord QR](docs/community/yumfu-fun-discord-qr.jpg)
 
 ---
 

@@ -327,13 +327,13 @@
     {"id": "buddha_rebellion", "name": "反出西天", "desc": "（西天路线）揭露如来布局真相，三界大乱"}
   ],
 
-  "art_style": "chinese_classical_painting",
+  "art_style": "journey_to_the_west_fairytale_classic",
   "art_direction": {
-    "visual_style": "中国古典彩绘风格，融合敦煌壁画和明清插图美学",
-    "color_palette": "金色天庭、火红妖界、青绿仙境、素白佛土",
-    "character_portraits": "古典神话人物，华服飘带，神仙气韵",
-    "battle_scenes": "云雾缭绕，法宝交击，金光闪闪",
-    "reference": ["《西游记》人民美术出版社版插图", "张大千西游主题画", "86版西游记电视剧美术"]
+    "visual_style": "鲜亮、童话、朴素的经典西游记插画风，不走武侠修仙，不走厚重写实；更像老版西游记童话插图、少年读物封面、经典连环画神话场景",
+    "color_palette": "明快高饱和：金黄、朱红、青绿、天蓝、乳白、暖橙；整体清透鲜亮，不灰暗不肃杀",
+    "character_portraits": "神话人物造型夸张而亲切，线条干净，面相带童话感，服装与飘带简洁鲜明，云朵镶边、祥云纹、山石草木都带朴素装饰感",
+    "battle_scenes": "热闹神话童话风，法宝飞舞但不过度爆炸化，云雾与金光偏装饰感，画面鲜亮、灵动、清楚，像经典西游记故事插图",
+    "reference": ["《西游记》人民美术出版社版插图", "经典西游记童话插图", "86版西游记电视剧美术", "中国传统少儿神话绘本风格"]
   },
 
   "created": "2026-04-09",

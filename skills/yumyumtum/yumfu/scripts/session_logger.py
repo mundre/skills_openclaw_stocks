@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 """
-Session Logger for YumFu - V2 (OPTIONAL - Privacy-Aware)
+Session Logger for YumFu - V3 (OPTIONAL - Privacy-Aware)
 Tracks gameplay conversations for storybook generation.
 
 ⚠️ PRIVACY NOTICE:
 This logger stores complete gameplay conversations (player input + AI responses).
 To disable logging, set environment variable: YUMFU_NO_LOGGING=1
 
+V3 adds a dual-track format:
+- raw player / AI text
+- storybook-ready player / AI prose
+
 Usage:
     from scripts.session_logger import log_turn
-    
+
     # Logging is automatically disabled if YUMFU_NO_LOGGING=1
     log_turn(
         user_id="YOUR_USER_ID",
         universe="warrior-cats",
         player_input="/yumfu look",
         ai_response="You see the ThunderClan camp...",
-        image_generated="tumpaw-camp-20260403.png"
+        image="tumpaw-camp-20260403.png",
+        player_storybook="You lifted your head and took in the ThunderClan camp in full.",
+        ai_storybook="The ThunderClan camp opened before you, alive with movement and evening voices."
     )
 """
 
@@ -24,13 +30,38 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 
 
 # Privacy control: Check if logging is disabled
 def _is_logging_disabled() -> bool:
     """Check if user has disabled session logging for privacy"""
     return os.getenv("YUMFU_NO_LOGGING", "0") == "1"
+
+
+def _normalize_whitespace(text: str) -> str:
+    return " ".join((text or "").strip().split())
+
+
+def _default_player_storybook(player_input: str) -> str:
+    raw = _normalize_whitespace(player_input)
+    if not raw:
+        return ""
+    lowered = raw.lower()
+    if lowered.startswith('/yumfu '):
+        raw = raw[7:].strip()
+    elif lowered == '/yumfu':
+        raw = 'continued the adventure'
+
+    if raw in {'A', 'B', 'C', 'D', '1', '2', '3', '4'}:
+        return f"You chose option {raw}."
+    if len(raw) <= 4 and raw.upper() == raw and raw.isalpha():
+        return f"You chose {raw}."
+    return raw[:1].upper() + raw[1:] if raw else raw
+
+
+def _default_ai_storybook(ai_response: str) -> str:
+    return _normalize_whitespace(ai_response)
 
 
 class SessionLogger:
@@ -56,24 +87,38 @@ class SessionLogger:
         # Session metadata
         self.start_time = datetime.now().isoformat()
         
-    def log_turn(self, player_input: str, ai_response: str, image: Optional[str] = None):
+    def log_turn(
+        self,
+        player_input: str,
+        ai_response: str,
+        image: Optional[str] = None,
+        player_storybook: Optional[str] = None,
+        ai_storybook: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
         """
         Log a complete game turn (player action + AI response + optional image)
-        
+
         Args:
             player_input: What the player typed (e.g., "/yumfu look")
             ai_response: The AI's narrative response
             image: Optional image filename if generated this turn
+            player_storybook: Optional book-style retelling of the player's action
+            ai_storybook: Optional book-style retelling of the AI scene text
+            metadata: Optional extra turn metadata
         """
         if self.disabled:
             return  # No-op if logging disabled
-        
+
         entry = {
             "timestamp": datetime.now().isoformat(),
             "type": "turn",
             "player": player_input,
+            "player_storybook": player_storybook or _default_player_storybook(player_input),
             "ai": ai_response,
-            "image": image
+            "ai_storybook": ai_storybook or _default_ai_storybook(ai_response),
+            "image": image,
+            "metadata": metadata or {}
         }
         self._append_to_file(entry)
     
@@ -168,22 +213,40 @@ def get_current_session(user_id: str, universe: str) -> SessionLogger:
         return SessionLogger(user_id, universe)
 
 
-def log_turn(user_id: str, universe: str, player_input: str, ai_response: str, image: Optional[str] = None):
+def log_turn(
+    user_id: str,
+    universe: str,
+    player_input: str,
+    ai_response: str,
+    image: Optional[str] = None,
+    player_storybook: Optional[str] = None,
+    ai_storybook: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+):
     """
     Convenience function to log a complete turn.
     Automatically manages sessions (creates/resumes).
-    
+
     Example:
         log_turn(
             user_id="YOUR_USER_ID",
             universe="warrior-cats",
             player_input="/yumfu look",
             ai_response="You see the ThunderClan camp bustling with activity...",
-            image_generated="tumpaw-camp-20260403.png"
+            image="tumpaw-camp-20260403.png",
+            player_storybook="You paused to study the camp around you.",
+            ai_storybook="The ThunderClan camp bustled with activity around the fresh-kill pile."
         )
     """
     logger = get_current_session(user_id, universe)
-    logger.log_turn(player_input, ai_response, image)
+    logger.log_turn(
+        player_input,
+        ai_response,
+        image=image,
+        player_storybook=player_storybook,
+        ai_storybook=ai_storybook,
+        metadata=metadata,
+    )
     return logger.session_file
 
 

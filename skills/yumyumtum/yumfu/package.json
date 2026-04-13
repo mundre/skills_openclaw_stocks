@@ -1,7 +1,7 @@
 {
   "name": "yumfu",
-  "version": "1.5.4",
-  "description": "Multi-World MUD - Wuxia, Harry Potter, LOTR & more | 多世界MUD - 武侠/哈利波特/指环王等",
+  "version": "1.7.5",
+  "description": "Multi-World MUD with Dynamic Daily Evolution + Sengoku Chaos - Wuxia, Harry Potter, LOTR & more | 多世界MUD + 每日世界演进 + 战国乱世", 
   "keywords": [
     "game",
     "mud",
@@ -12,6 +12,8 @@
     "text-adventure",
     "multiplayer",
     "ai-art",
+    "daily-evolution",
+    "dynamic-world",
     "中文",
     "武侠",
     "笑傲江湖"

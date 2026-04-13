@@ -1,6 +1,6 @@
 ---
 name: yumfu
-description: "Multiplayer text RPG with 8 playable worlds — play together in Telegram groups! Worlds: 笑傲江湖, Harry Potter, Warrior Cats, F15 Down, 龙虾三国, 倚天屠龙记, Game of Thrones, Lord of the Rings. Each player gets their own character in a shared world with AI art every scene. PvP, team quests, natural language — no commands needed. Use when: /yumfu, group RPG, text adventure, 武侠, 권力의게임, LOTR, 指环王, 权力的游戏, 三国, 张无忌."
+description: "Multiplayer text RPG with 10 playable worlds — play together in Telegram groups! Worlds: 笑傲江湖, Harry Potter, Warrior Cats, F15 Down, 龙虾三国, 倚天屠龙记, Game of Thrones, Lord of the Rings, 西游记 (Journey to the West), 战国乱世 (Sengoku Chaos). Each player gets their own character in a shared world with AI art every scene. PvP, team quests, natural language — no commands needed. Use when: /yumfu, group RPG, text adventure, 武侠, 西游记, 孙悟空, LOTR, 指环王, 权力的游戏, 三国, 张无忌, 战国, 织田信长, 丰臣秀吉, 德川家康, 武田信玄."
 homepage: https://github.com/yumyumtum/yumfu
 metadata:
   {
@@ -8,16 +8,19 @@ metadata:
       {
         "emoji": "🌍",
         "requires": { "bins": ["uv"] },
-        "triggers": ["/yumfu", "/江湖", "笑傲江湖", "华山派", "武当", "Harry Potter", "Hogwarts", "warrior cats", "ThunderClan", "倚天屠龙记", "张无忌", "赵敏", "九阳神功", "明教", "龙虾三国", "三国", "Game of Thrones", "Westeros", "Iron Throne", "Stark", "Lannister", "Targaryen", "权力的游戏", "Lord of the Rings", "LOTR", "Fellowship", "Frodo", "Aragorn", "Gandalf", "指环王", "魔戒"]
+        "triggers": ["/yumfu", "/江湖", "笑傲江湖", "华山派", "武当", "Harry Potter", "Hogwarts", "warrior cats", "ThunderClan", "倚天屠龙记", "张无忌", "赵敏", "九阳神功", "明教", "龙虾三国", "三国", "Game of Thrones", "Westeros", "Iron Throne", "Stark", "Lannister", "Targaryen", "权力的游戏", "Lord of the Rings", "LOTR", "Fellowship", "Frodo", "Aragorn", "Gandalf", "指环王", "魔戒", "西游记", "孙悟空", "唐僧", "猪八戒", "牛魔王", "取经", "Journey to the West", "内裤超人", "Captain Underpants", "乔治", "哈罗德", "屎尿教授", "Professor Poopypants", "战国乱世", "战国", "织田信长", "丰臣秀吉", "德川家康", "武田信玄", "新选组", "绯村剑心"]
       }
   }
 ---
 
 # YumFu 🌍
 
-**Multi-world text adventure RPG with AI art.** Play solo or with friends across 7 universes.
+**Multi-world text adventure RPG with AI art.** Play solo or with friends across 10 universes.
 
 **Start**: `/yumfu start` &nbsp;|&nbsp; **Continue**: `/yumfu continue`
+
+If YumFu is useful to you, you can support future development here:
+**Donate via Stripe:** https://buy.stripe.com/8x26oHc329ha6GvaiggjC00
 
 Just talk naturally after starting — no commands needed. Say what you want to do and the story unfolds.
 
@@ -32,9 +35,12 @@ Just talk naturally after starting — no commands needed. Say what you want to 
 | 🧙 Lord of the Rings | Epic fantasy | ✅ Playable |
 | 🐉 Game of Thrones | Political | 🚧 Soon |
 | ⚔️ 倚天屠龙记 | Jin Yong wuxia | 🚧 Soon |
+| 🏯 战国乱世 | Sengoku alt-history | ✅ NEW |
 
 ### ✨ Features
 - 🎨 AI-generated art every scene (world-specific style)
+- 🔊 Default per-turn voice narration (can be turned off per save)
+- 🗓️ Optional daily world evolution updates (opt-in per player)
 - 📖 30+ story branches, 6-8 unique endings per world
 - 🧠 NPCs remember your choices
 - 💾 Persistent saves across sessions
@@ -72,9 +78,10 @@ Just talk naturally after starting — no commands needed. Say what you want to 
 
 **Then you MUST:**
 1. ✅ Load their save file with `load_game.py`
-2. ✅ Generate images for significant moments (location/NPC/combat/etc.)
-3. ✅ Save their progress with `save_game.py`
-4. ✅ Use the world's art style and narrative tone
+2. ✅ Generate images for **every game turn** (mandatory), with especially strong prompts for location / NPC / combat / chapter moments
+3. ✅ Generate **TTS by default for every gameplay turn** unless the player has explicitly turned TTS off for that save
+4. ✅ Save their progress with `save_game.py`
+5. ✅ Use the world's art style and narrative tone
 
 **DO NOT:**
 - ❌ Manually roleplay without checking save files
@@ -149,17 +156,52 @@ This causes the text to appear AFTER the image and get ignored/folded.
 message(action="send", media="path/to/image.jpg", message="[full story text here]", target=...)
 ```
 
+✅ **CRITICAL tool rule for YumFu gameplay**:
+Use an image generation path that writes a **local file only** and does **not** auto-send media to the chat by itself.
+For official YumFu turns, prefer local-file generators such as `scripts/generate_image.py` or an equivalent wrapper that returns only a saved path.
+
+❌ Do **not** use any image tool/path that auto-inserts or auto-delivers the generated image into the current chat before the turn delivery logic runs.
+
 ❌ **WRONG pattern** — two separate messages:
 ```
 message(action="send", message="story text")   # DON'T
 message(action="send", media="path/to/image.jpg")  # DON'T
 ```
 
+❌ **ALSO WRONG** — send image first, then send image+caption again:
+```
+message(action="send", media="path/to/image.jpg")
+message(action="send", media="path/to/image.jpg", message="story text")
+```
+This causes the same turn to feel like a duplicate image send.
+
 Telegram caption limit is 1024 chars. If story text exceeds that:
 1. Put a short scene summary (~200 chars) as caption
 2. Send the full story text as a FOLLOW-UP message immediately after
 
 This ensures the image and story are always visually paired together.
+
+### 6c. Turn Delivery Rule - CRITICAL
+For each gameplay turn, enforce a single `turn_id` and delivery state.
+
+Hard limits per turn:
+- **main_text_sent**: at most once
+- **image_sent**: at most once
+- **tts_sent**: at most once
+- **Never send a standalone image first if you still intend to send image+caption for the same turn later**
+
+Preferred delivery order:
+1. Try image+caption as the main message
+2. If image generation times out, send text-only once as the main story message
+3. If the delayed image later arrives, send image-only once as a fallback visual add-on
+4. TTS follows the main story message; never jumps ahead of the story
+
+Fallback sequencing rule:
+- If a turn needs two sends because image generation was slow, the order must be:
+  **text first → delayed image later**
+- Never do:
+  **image first → image+caption later**
+- If text has already been sent for a turn, the delayed image must stay image-only (or ultra-short visual note), not a second full story delivery.
 
 **7. World-Specific Art Styles**
 - 笑傲江湖: Chinese ink painting, classical wuxia illustration
@@ -198,10 +240,12 @@ Trigger one of: Encounter / Crisis / Discovery / Opportunity / Echo (delayed con
 - 🦞 **龙虾三国** - Three Kingdoms era, 5 roles, weapons/mounts/ultimate skills
 - 🗡️ **倚天屠龙记** - The Heaven Sword & Dragon Saber, 4 romance routes, 6 endings
 - 🐉 **Game of Thrones** - Seven Kingdoms, 7 houses, play as Jon/Dany/Tyrion/Arya/Cersei
+- 🏯 **战国乱世** - 日本战国架空沙盒，含信长/秀吉/家康/武田、朝鲜名将、明朝名臣、南蛮火器技师、名妓与密探
 
 ### 🚧 **Coming Soon (Roadmap):**
 - 🧙 **Lord of the Rings** - Middle-earth, 5 races, Ring corruption system, play as Frodo/Aragorn/Gandalf
 - 🐒 **西游记** - Journey to the West: 9 factions, play as gods/demons/pilgrims
+- 🩲 **内裤超人** - Captain Underpants: 搞怪漫画RPG，屁声震天
 - 🏹 **射雕英雄传** - Legend of the Condor Heroes *(coming soon)*
 
 ---
@@ -225,8 +269,42 @@ Reply: /yumfu lang <1|2>
 
 Then choose your world / 然后选择世界:
 
+**After world + character setup, ask one more onboarding question (MANDATORY):**
+
+**This is a unified YumFu rule across worlds, not a one-off reminder.**
+Daily evolution is always optional, but the system should proactively ask during `/yumfu start` so the player does not need to remember to enable it later.
+
+```text
+Do you want this world to evolve automatically every day, even when you're offline?
+
+1. Yes — send me one daily world update with art
+2. No — only progress when I play
+```
+
+If the player says **Yes**, enable **Daily Evolution Mode** for that save.
+If the player says **No**, keep the default manual-only mode.
+
 **中文 (Available Now):**
 - **笑傲江湖** (Xiaoao Jianghu) - 华山派、武当、少林、江湖恩怨
+- **战国乱世** (Sengoku Chaos) - 日本战国架空乱世、火枪火炮、名将名臣、花街权谋
+
+**战国乱世专用 start 路径（MANDATORY when selected）**
+If the player chooses `战国乱世` / `Sengoku Chaos` during `/yumfu start`, route the setup through:
+```bash
+python3 ~/clawd/skills/yumfu/scripts/start_sengoku_game.py \
+  --user-id {user_id} \
+  --name {player_name} \
+  --role {selected_role_id} \
+  --faction {selected_faction_id} \
+  --scenario {selected_scenario_id} \
+  --language {zh|en} \
+  --daily-evolution {yes|no} \
+  --target {chat_id}
+```
+Then:
+1. generate exactly one opening image from `rendered_opening.image_prompt`
+2. send `rendered_opening.player_opening_message` with that image as the first playable opening scene
+3. let the player answer with one of the rendered first-turn choices
 
 **English (Available Now):**
 - **Harry Potter** - Hogwarts houses, magic, wizarding adventures
@@ -281,6 +359,28 @@ Then choose your world / 然后选择世界:
 **🚨 First-time users:** If you try any command and see "Welcome! You don't have a character yet", use `/yumfu start` to create your character first. The system will auto-detect this and guide you!
 
 #### 📋 `/yumfu continue` Workflow (详细流程)
+
+**Before resuming active play, also check whether a daily evolution sidecar exists:**
+```bash
+python3 ~/clawd/skills/yumfu/scripts/build_reentry_context.py \
+  --user-id {user_id} \
+  --universe {selected_world}
+```
+
+Then render the actual continue-time hook:
+```bash
+python3 ~/clawd/skills/yumfu/scripts/render_continue_reentry.py \
+  --user-id {user_id} \
+  --universe {selected_world}
+```
+
+If a sidecar exists:
+- Use the latest daily evolution summary as a **short re-entry scene hook**
+- Surface only the most relevant pending hook(s)
+- Respect the detected preferred language
+- Do **not** dump the whole evolution history
+- Make it easy for the player to continue with one short reply
+
 
 **When user says `/yumfu continue`:**
 
@@ -544,7 +644,28 @@ memory/yumfu/
   "skills": [...],
   "quests": [...],
   "team_id": null,
-  "in_combat_with": null
+  "in_combat_with": null,
+  "tts": {
+    "enabled": true,
+    "provider": "edge-tts",
+    "delivery": "voice-bubble",
+    "language_voices": {
+      "zh": "zh-CN-XiaoxiaoNeural",
+      "en": "en-GB-SoniaNeural"
+    },
+    "current_voice": "zh-CN-XiaoxiaoNeural",
+    "last_language": "zh",
+    "switch_policy": "keep same voice for same language within one save unless user explicitly asks to change"
+  },
+  "daily_evolution": {
+    "enabled": false,
+    "cadence": "daily",
+    "channel": "telegram",
+    "last_tick_at": null,
+    "next_tick_at": null,
+    "cron_id": null,
+    "last_summary": null
+  }
 }
 ```
 
@@ -556,11 +677,14 @@ memory/yumfu/
 
 #### When to Save:
 1. **Character creation** - 🚨 **IMMEDIATE save after name/faction selection** (HIGHEST PRIORITY)
-2. **Training completion** - New skill learned
-3. **Combat end** - HP/stats changed
-4. **Quest milestone** - Progress updated
-5. **Location change** - Player moved
-6. **Inventory change** - Item gained/used
+2. **Daily evolution preference** - Save immediately after player answers Yes/No
+3. **TTS preference or voice change** - Save immediately after player turns TTS on/off or explicitly changes voice
+4. **Training completion** - New skill learned
+5. **Combat end** - HP/stats changed
+6. **Quest milestone** - Progress updated
+7. **Location change** - Player moved
+8. **Inventory change** - Item gained/used
+9. **Daily evolution tick** - After each offline world update is generated and delivered
 
 **🚨 CRITICAL: Character creation MUST save immediately before any other actions!**
 
@@ -715,6 +839,251 @@ Available worlds:
 8. **生成配图** - 水墨风场景图
 9. **保存状态** - 更新玩家存档和世界状态
 
+#### 🗓️ Daily Evolution Mode (NEW)
+
+**Purpose:** keep the world moving even when the player is offline, so they receive one short daily update with fresh context, image, and meaningful pressure to come back.
+
+### Product decision
+Use a **unified YumFu framework** for this feature, but make the **actual evolution content dynamic at runtime**.
+
+**Fixed / shared across YumFu:**
+- onboarding question at character creation
+- opt-in/opt-out toggle stored in sidecar state
+- daily cron / scheduled turn per player save
+- one daily Telegram update message with image
+- sidecar update after each evolution tick
+- anti-spam rule: max 1 evolution update per day per save
+- save mutation boundaries and safety rules
+
+**Dynamic at runtime (NOT hardcoded event scripts):**
+- read the player's current save first
+- read their chosen world, role, faction, current quest state, location, known NPCs, recent flags, and inventory
+- infer what the surrounding world would plausibly do next
+- generate one in-world update using AI reasoning grounded in that save + world background
+- optionally mutate relevant save fields to reflect the consequences
+
+### Core design principle
+**Do not hardcode daily story content unless absolutely necessary.**
+
+This feature should feel like a living world, not a rotating calendar of canned events.
+The best approach is:
+- **hardcode the engine and guardrails**
+- **generate the content dynamically from the save + world lore**
+
+### Why this is better
+- Different players in the same world may have different roles, alliances, enemies, and unfinished quests
+- A static event table would quickly feel fake or contradictory
+- Dynamic generation lets the world react to the player’s actual position in the story
+- This is especially important for worlds like **Game of Thrones**, where faction alignment and covert relationships matter
+
+### Daily Evolution onboarding rule
+During `/yumfu start`, after world choice and initial character setup, ask:
+- Do you want daily world evolution updates? Yes / No
+- Default should be **No** unless the player explicitly opts in
+
+**Exact onboarding flow for any world:**
+1. Ask the player the Yes/No question after character setup
+2. Pass the result into:
+```bash
+python3 ~/clawd/skills/yumfu/scripts/handle_daily_evolution_choice.py \
+  --user-id {user_id} \
+  --universe {selected_world} \
+  --target {chat_id} \
+  --choice yes|no \
+  --channel telegram \
+  --time 10:00 \
+  --tz America/Los_Angeles
+```
+3. Use the returned `message_zh` / `message_en` as the short confirmation to the player
+4. Do **not** send a separate technical report
+
+This is world-agnostic. Any YumFu world should use the same post-start activation flow.
+
+If the player later disables it:
+- use `~/clawd/skills/yumfu/scripts/disable_daily_evolution_cron.py`
+- keep old sidecar history unless the user explicitly asks to erase it
+
+### Runtime input for each evolution tick
+Before generating the update, load and consider:
+- current save JSON
+- selected world / universe
+- player role, faction, loyalty, reputation, party/team
+- active quests and unresolved hooks
+- current location and nearby regions
+- known NPCs and relationship values
+- recent flags, injuries, resources, inventory, travel state
+- any previous daily evolution summaries
+
+### Daily Evolution output requirements
+Each daily evolution update should include:
+1. **1 short story update** (100-220 words)
+2. **1 generated image** showing the new situation
+3. **1 meaningful state change** (rumor, faction shift, patrol increase, resource loss, NPC movement, political signal, etc.)
+4. **1 hook** that invites the player back into active play
+
+### Re-entry design principle (VERY IMPORTANT)
+The core goal is **not** to generate a long lore report.
+The core goal is to **pull the player back into the current scene naturally and easily**.
+
+Daily evolution should feel like:
+- “while you were away, something moved”
+- “here is the new pressure/context”
+- “here is the easiest natural next move if you want to continue now”
+
+It should **not** feel like:
+- a long news bulletin
+- a disconnected worldbuilding dump
+- a giant state report the player has to study before playing
+
+### Practical writing rule
+Every daily evolution update should end with a **simple re-entry hook** the player can answer naturally.
+Good examples:
+- “A rider is already waiting at the inn. Do you speak to him?”
+- “The red-sealed note is now in another pair of hands. Do you follow?”
+- “Your rival sect moved first. Do you intercept or stay hidden?”
+
+Bad examples:
+- “Here are 8 things that changed in the world today...”
+- “System update: faction matrix +3/-2...”
+- anything that makes the player do homework before playing
+
+### Continuation UX rule
+The update should make it easy for the player to resume with a short natural reply.
+Ideally the player should be able to continue by replying with:
+- one short sentence
+- one choice
+- one action verb
+- or even just a letter option
+
+This feature exists to increase re-engagement, not to increase reading burden.
+
+### Language continuity rule (MANDATORY)
+Daily evolution updates should respect the player's established language, instead of switching arbitrarily.
+
+### TTS continuity rule (MANDATORY)
+Gameplay TTS is **enabled by default** for each save unless the player explicitly turns it off.
+
+TTS rules:
+1. Use **voice-bubble delivery** when the channel supports it.
+2. Choose a voice that matches the active gameplay language:
+   - Chinese gameplay → use a fitting Chinese voice
+   - English gameplay → use a fitting English voice
+3. Keep the **same voice for the same language within the same save**.
+4. If the player switches gameplay language, it is acceptable to switch to the corresponding language voice.
+5. Do **not** randomly change voices mid-campaign for the same language.
+6. Only change voice within the same language if the player explicitly asks to change it.
+7. Persist this state in `save.tts`.
+
+Supporting scripts:
+- `scripts/resolve_tts_voice.py` — resolve stable per-save TTS settings and language-matched voices
+- `scripts/generate_turn_tts.py` — generate one gameplay-turn TTS file using the save's stable current voice
+
+Use this priority order:
+1. **The player's recent actual conversation language** (highest priority)
+2. `save.language` if present
+3. the world's default language
+4. channel/system default only as a last fallback
+
+Examples:
+- If a player is in an English world but has been actively replying in Chinese recently, prefer Chinese unless the game flow clearly depends on staying in-world in English.
+- If the player has consistently been playing the world in English, keep daily evolution in English.
+- Do not randomly alternate between Chinese and English from day to day.
+
+The daily update should feel like a natural continuation of how the player has already been playing.
+### Daily Evolution severity model
+Most days should be **light but meaningful**:
+- 60% minor movement (rumor, patrols, sightings, small supply shift)
+- 30% medium movement (faction pressure, new NPC action, failed delivery, local conflict)
+- 10% major movement (death, betrayal, breakthrough, exposed route, stolen relic, siege step, etc.)
+
+Major movement should be rare, but possible, so the world feels alive.
+
+### Save safety rule (IMPORTANT)
+If there is meaningful risk of corrupting or derailing the player's real save, **do not mutate the main player save at all**.
+
+Preferred design for MVP:
+- keep the player's main save as the canonical active-play state
+- store daily evolution results in a **separate sidecar state file**
+- daily updates must remain **compatible** with the player's save, not overwrite it
+
+This means the daily evolution system should generate:
+- rumor
+n- pressure
+- faction movement
+- off-screen developments
+- investigation hooks
+- regional tension
+
+...without force-changing the player's core location, inventory, quest completion, or irreversible main-story state.
+
+### Sidecar evolution state
+Store daily evolution context in a separate file such as:
+`~/clawd/memory/yumfu/evolution/{universe}/user-{id}.json`
+
+Supporting scripts:
+- `scripts/set_daily_evolution.py` — enable/disable sidecar state
+- `scripts/load_daily_evolution.py` — inspect sidecar state
+- `scripts/detect_recent_language.py` — infer preferred recent player language
+- `scripts/handle_daily_evolution_choice.py` — world-agnostic post-start yes/no activation handler
+- `scripts/daily_evolution_prepare.py` — build dynamic runtime context
+- `scripts/run_daily_evolution_job.py` — generate a daily evolution update
+- `scripts/run_daily_evolution.py` — persist generated result into sidecar
+- `scripts/create_daily_evolution_cron.py` — create per-player daily cron
+- `scripts/disable_daily_evolution_cron.py` — disable per-player daily cron
+- `scripts/build_reentry_context.py` — merge save + sidecar for continue flow
+- `scripts/render_continue_reentry.py` — render a concise continue-time re-entry prompt
+- `scripts/init_sengoku_save.py` — initialize a 战国乱世 / Sengoku Chaos starting save
+- `scripts/start_sengoku_game.py` — initialize Sengoku save + daily evolution choice + opening scene payload
+
+This sidecar can track:
+- last daily summary
+- recent evolution history
+- soft world pressure
+- rumor threads
+- pending hooks for the next active session
+- cron metadata / tick timestamps
+
+### What the next active play session should do
+When the player returns, the game engine may **read both**:
+1. the main save
+2. the evolution sidecar
+
+Then merge them narratively:
+- surface the most relevant daily evolution updates
+- convert compatible hooks into active scene context
+- avoid contradictions with the canonical save
+
+### Main-save mutation policy
+For now, default to:
+- **main save = read-only for daily evolution**
+- **sidecar file = writable**
+
+Only after the system is proven safe should limited main-save mutation be considered.
+### Messaging rule
+If the daily evolution message is already delivered to the intended player/channel, do **not** send a separate “report generated” notification.
+Only send the actual in-world update.
+
+### Compliance note
+Daily evolution adds new sidecar workflows, but it must **not** weaken older YumFu guarantees.
+The following original behaviors remain mandatory unless the user explicitly requests otherwise:
+- every game turn gets an image before narration
+- every game turn is logged for storybook/session replay
+- Telegram story text should stay paired with the image, preferably in the caption
+- active play saves should still persist through the normal save workflow after meaningful state changes
+
+### World grounding rule
+Even though the content is dynamically generated, it must still stay grounded in each world’s canon/setting documents.
+
+Examples of what the AI should infer dynamically:
+- **Game of Thrones**: if the player serves House Martell and has touched covert supply lines, daily changes should involve spies, shipping, banners, captains, watchers, coded messages, political pressure
+- **Xiaoao Jianghu**: sect rumors, stolen manuals, ambushes, disciples disappearing, changing loyalties
+- **Harry Potter**: patrols, prefect scrutiny, forbidden corridor rumors, House tensions, teacher intervention
+- **Warrior Cats**: prey movement, scent changes, border pressure, patrol injuries, rival clan signs
+
+### Important constraint
+Daily evolution should **nudge** the player, not replace the game.
+It must create pressure, intrigue, and hooks — but should not auto-finish the main story without player participation.
+
 ### 叙述风格
 
 **Narrative style adapts to the world:**
@@ -807,11 +1176,17 @@ shuf -i 1-20 -n 1
 
 ### ⚡ Image Generation Policy (UPDATED 2026-04-05)
 
-**🔴 MANDATORY: Generate image for EVERY response**
+**🔴 MANDATORY: Generate image for EVERY game response**
 
 If the user's message is a **game action** (not `/yumfu status`, `/yumfu help`, or meta commands):
 
 ✅ **ALWAYS generate image FIRST, then narrate**
+✅ **Generate exactly ONE primary scene image per game turn**
+
+That means:
+- not zero images
+- not two or more competing images
+- one turn = one main image + one paired narrative response
 
 **Execution order (STRICT):**
 1. 🔍 Parse user action
@@ -825,6 +1200,8 @@ If the user's message is a **game action** (not `/yumfu status`, `/yumfu help`, 
 - ❌ Send text first, image later
 - ❌ Skip images for "minor" scenes
 - ❌ Wait for user to ask "where's the picture?"
+- ❌ Send duplicate scene images for the same turn
+- ❌ Send one image and then a second "replacement" image unless the user explicitly asks for a redo
 
 **Why every turn needs an image:**
 - Maintains visual novel immersion
@@ -837,14 +1214,20 @@ If the user's message is a **game action** (not `/yumfu status`, `/yumfu help`, 
 **🔍 PRE-CHECK before EVERY response:**
 1. Is this a game action? (not just status/help/meta)
 2. If YES → **MUST generate image FIRST!**
-3. If NO (status/help) → Skip image, reply directly
+3. `/yumfu start` counts as a full game opening turn, so it also **MUST** generate an opening image before narration
+4. If NO (status/help) → Skip image, reply directly
 
 **When user takes ANY game action:**
-1. **FIRST**: Generate scene image (location, NPC, action, etc.)
-2. **SECOND**: Write 150-300 word narrative
-3. **THIRD**: Send image + narrative together via message tool
+1. **FIRST**: Generate exactly one scene image (location, NPC, action, etc.)
+2. **SECOND**: Write 150-300 word narrative for that same scene
+3. **THIRD**: Send exactly one image + that paired narrative together via message tool
 4. **FOURTH**: Update save file
 5. **FIFTH**: Log turn to session JSONL
+
+**`/yumfu start` special case:**
+- character creation / world onboarding culminates in a real playable opening scene
+- that opening scene is **not image-exempt**
+- after setup is complete, generate exactly one opening image and send the first playable scene with it
 
 **Image-exempt commands (only these!):**
 - `/yumfu status` / `/yumfu 状态` - Character sheet
@@ -853,6 +1236,18 @@ If the user's message is a **game action** (not `/yumfu status`, `/yumfu help`, 
 - Meta questions ("what can I do?", "explain combat")
 
 **Everything else = Image required!**
+
+### Single-image-per-turn rule
+For active gameplay, the default contract is:
+- **1 turn = 1 image = 1 paired narrative reply**
+
+Only break this when the user explicitly asks for:
+- another angle
+- a redraw / redo
+- extra gallery images
+- a separate portrait after the main scene
+
+If none of those were asked for, do not send a second image for the same turn.
 
 
 **Example Flow:**
@@ -893,6 +1288,11 @@ Hogwarts watercolor illustration style, magical atmosphere, warm candlelight and
 #### 🐱 Warrior Cats
 ```
 Semi-realistic warrior cats art style, forest atmosphere with dappled sunlight, detailed cat anatomy and expressions, natural woodland setting, dramatic lighting through trees, storybook illustration quality,
+```
+
+#### 🐒 Journey to the West（西游记）
+```
+Bright classic Journey to the West fairytale illustration style, colorful and simple mythic Chinese storybook aesthetic, cloud-edged shapes and auspicious 祥云 motifs, clean outlines, vivid but gentle colors, playful heavenly atmosphere, classic children's mythology illustration feeling, not wuxia, not xianxia, not dark realism,
 ```
 
 ### 场景类型与提示词模板
@@ -1097,6 +1497,17 @@ YumFu works across multiple AI platforms with varying feature sets:
 
 **Every single game turn MUST be logged for storybook generation.**
 
+### Storybook Tracking Default Rule (NEW)
+
+- **Default behavior: storybook tracking ON**
+- At the start of a new game / new save, the player may change this preference
+- If the player opts out, disable storybook/session logging for that save
+- If the player does not opt out, keep appending the journey as an evolving illustrated storybook source
+
+Suggested onboarding wording:
+- Chinese: `这局默认会自动记录并整理成可生成 Storybook 的旅程档案；如果你不想记录，我也可以关掉。`
+- English: `This run will be auto-recorded for an illustrated storybook by default; if you don't want that, I can turn it off.`
+
 #### When to Log
 
 **After EVERY player action**, immediately run:
@@ -1120,6 +1531,24 @@ log_turn(
 2. **Generate narrative** → Store `ai_response`
 3. **Generate image (if triggered)** → Store `image` filename
 4. **Before sending reply** → Call `log_turn()` with all 3 components
+5. Create a unique `turn_id` and initialize delivery state with:
+```bash
+python3 ~/clawd/skills/yumfu/scripts/turn_delivery_state.py \
+  --user-id {user_id} \
+  --universe {universe} \
+  --turn-id {turn_id}
+```
+6. **If `save.tts.enabled != false`** → Generate turn TTS with:
+```bash
+python3 ~/clawd/skills/yumfu/scripts/generate_turn_tts.py \
+  --user-id {user_id} \
+  --universe {universe} \
+  --language {active_language} \
+  --text "{final_story_text}"
+```
+7. Send gameplay TTS as a **voice bubble** whenever the channel supports it (`message(..., asVoice=true)`)
+8. Never send a standalone image first if the same turn may still send image+caption later
+9. For official YumFu turns, do **not** use auto-media-return image generation paths; generate to a local file first, then let turn delivery decide how to send it
 
 #### Example Flow
 
@@ -1154,10 +1583,20 @@ if image_filename:
 
 #### What Gets Logged
 
-- ✅ **Player input** - Exact command typed
-- ✅ **AI response** - Complete narrative text
+- ✅ **Player input (raw)** - Exact command / reply typed by player
+- ✅ **Player input (storybook-ready)** - A lightly normalized narrative version of the player's action, suitable for book-style retelling
+- ✅ **AI response (raw)** - Complete narrative text actually delivered
+- ✅ **AI response (storybook-ready)** - A cleaner book-style scene paragraph when needed for later compilation
 - ✅ **Images** - Filename if generated
 - ✅ **Timestamp** - Auto-added by logger
+
+#### Storybook Writing Intent
+
+The storybook should not read like a raw terminal log forever. During logging and later compilation:
+- preserve the **true player action**
+- but also keep / derive a **more literary retelling** for the storybook layer
+- convert ultra-short player replies like `A`, `1`, `go`, `attack him`, `跟上` into clearer narrative intent inside the book version
+- keep major dialogue, choices, and scene transitions readable like an illustrated novella
 
 #### Where Logs Are Stored
 
@@ -1300,6 +1739,42 @@ You pad down to the river. The water flows swiftly, sunlight glinting off the su
 - Player explicitly requests (`/yumfu storybook` or asks for PDF)
 - Session ends (character dies, quest completed)
 - Player hasn't played in 24+ hours (auto-archive)
+- **Player explicitly ends / retires / abandons / terminates a save or story run**
+
+### End-of-Journey Offer Rule (NEW)
+
+When a run reaches a meaningful ending **or** the player explicitly says they want to stop / end / archive / retire that game record:
+
+1. **Ask once** whether they want a storybook of the journey.
+2. Offer it as an **art-rich illustrated storybook** containing:
+   - their journey summary
+   - key player choices
+   - major AI responses / scene narration
+   - generated images from the run
+   - final stats / relationships / achievements when available
+3. Preferred formats:
+   - **HTML first** (canonical, richly styled, easy to preserve)
+   - **PDF if conversion succeeds**
+4. Delivery rule:
+   - If generated, **send it back into chat** as a file/message whenever possible
+   - Also keep the generated file(s) on disk under the YumFu storybook output directory
+5. Do **not** silently generate a final exported storybook every time; ask the player first unless they already requested it.
+6. However, if storybook tracking is enabled, keep the **underlying rolling storybook source** updated by default throughout play.
+
+Suggested prompt to player:
+- Chinese: `这段旅程要不要我给你做成一本带配图的 Storybook？我可以整理成艺术化图文版，发到聊天里给你，也会保存在本地。`
+- English: `Want me to turn this run into an illustrated storybook? I can make an art-rich HTML/PDF version, send it here in chat, and also save it locally.`
+
+### Daily Evolution + Storybook Entry Rule
+
+If daily evolution is enabled and a storybook source already exists for that save:
+- daily evolution **may** mention that the journey archive/storybook has been updated
+- if there is a real user-openable destination, send that entry point
+- if there is **no real public/clickable URL**, do **not** send a fake `file://` or local-path link as if it were usable on chat surfaces
+- instead, prefer one of:
+  - send the HTML file directly
+  - send the PDF directly
+  - send a short message saying the latest storybook can be generated/refreshed on request
 
 ### Agent Instructions for Storybook Generation
 

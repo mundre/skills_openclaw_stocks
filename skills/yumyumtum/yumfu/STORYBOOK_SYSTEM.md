@@ -6,9 +6,11 @@ The YumFu storybook system automatically records every game turn and generates b
 
 ## 🎯 Key Features
 
-- ✅ **Auto-logging** - Every turn automatically saved
+- ✅ **Auto-logging by default** - Every turn automatically saved unless player disables storybook tracking
 - ✅ **Complete conversation** - Full player input + AI response
+- ✅ **Storybook-ready prose layer** - Short/raw player actions can be normalized into cleaner literary retelling for the book version
 - ✅ **Image integration** - All generated art at correct positions
+- ✅ **Share-safe HTML** - Storybook HTML should be a single portable file when sent to chat platforms
 - ✅ **Beautiful PDF** - Professional layout via HTML → PDF
 - ✅ **Session management** - Auto-creates new sessions after 2h inactivity
 
@@ -75,6 +77,11 @@ log_turn(
 
 **Purpose:** Convert session logs → HTML → PDF
 
+**Sharing rule (important):**
+- If the HTML will be sent through Telegram/Discord/other chat platforms, it must not depend on local relative image paths like `images/foo.png`.
+- Prefer a single-file HTML with images embedded as data URLs.
+- PDF export must be generated from a verified storybook page/tab, not from whatever browser tab happens to be active.
+
 **Usage:**
 ```bash
 # Auto-detect latest session
@@ -92,11 +99,16 @@ uv run scripts/generate_storybook_v3.py \
 **Output:**
 ```
 ~/clawd/memory/yumfu/storybooks/{universe}/user-{id}-{timestamp}/
-├── storybook.html
+├── storybook.html        # preferred shareable artifact; may contain embedded image data
 └── images/
     ├── tumpaw-ceremony.png
     └── tumpaw-camp.png
 ```
+
+**Platform note:**
+- Local browser preview can use adjacent files.
+- Chat delivery should assume recipients cannot access the sender's local filesystem.
+- Therefore, `storybook.html` should be treated as the primary portable artifact.
 
 ### 3. Image Generator (`scripts/generate_image.py`)
 
