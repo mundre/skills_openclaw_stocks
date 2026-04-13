@@ -26,16 +26,16 @@ Validate and fix SKILL.md frontmatter issues automatically.
 | `triggers:` | (remove) | Move keywords to description |
 | `<example>` in description | (remove) | `<example>` is agent-only syntax. Remove from skills. |
 
-### Frontmatter 속성 정렬 순서 (Canonical Order)
+### Frontmatter Field Order (Canonical Order)
 
-frontmatter 속성은 다음 순서를 따른다. lint --fix 시 자동 정렬.
+Frontmatter fields follow this order for readability. lint --fix will reorder automatically.
 
 ```yaml
 ---
 name:                      # 1. Required
 depends-on:                # 2. Dependencies
 triggers:                  # 3. Hook triggers
-description:               # 4. Required (마지막 필수 - 길어서 뒤로)
+description:               # 4. Required (last among required - longest)
 allowed-tools:             # 5. Optional
 agent:                     # 6. Optional
 context:                   # 7. Optional
@@ -45,11 +45,11 @@ user-invocable:            # 10. Optional
 ---
 ```
 
-**정렬 검사 규칙:**
-- 필수 필드(name, description)가 선택 필드 사이에 끼어있으면 경고
-- depends-on은 name 바로 다음
-- triggers는 description 바로 앞
-- 선택 필드끼리는 알파벳순
+**Order validation rules:**
+- Warn if required fields (name, description) appear between optional fields
+- depends-on must follow immediately after name
+- triggers must follow immediately after description
+- Optional fields should be in alphabetical order among themselves
 
 ### Valid Optional Fields
 

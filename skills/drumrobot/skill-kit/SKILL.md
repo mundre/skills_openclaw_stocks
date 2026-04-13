@@ -1,195 +1,92 @@
 ---
 name: skill-kit
-description: Claude Code skill management. writer - create new skills [writer.md], lint - validate and fix frontmatter [lint.md], merge - combine related skills [merge.md], dedup - find duplicate skills [dedup.md], convert - convert agents to skills [convert.md], architecture - multi-topic skill structure [architecture.md], upgrade - enhance existing skills, add topics [upgrade.md], route - recommend topic placement [route.md], trigger - declare SKILL.md triggers → auto-generate and register hooks [trigger.md]. Use when "skill writer", "skill lint", "skill merge", "skill dedup", "create skill", "frontmatter fix", "combine skills", "multi-topic skill", "agent to skill", "convert agent", "skill improve", "skill upgrade", "skill fix", "fix skill", "update skill", "add topic", "topic routing", "topic placement", "where to put", "topic route", "trigger compile", "compile triggers", "hook auto register", "trigger list".
+description: Claude Code skill management. writer - create new skills [writer.md], lint - validate and fix frontmatter [lint.md], merge - combine related skills [merge.md], dedup - find duplicate skills [dedup.md], convert - convert agents to skills [convert.md], architecture - multi-topic skill structure [architecture.md], upgrade - enhance existing skills, add topics [upgrade.md], route - recommend topic placement [route.md], trigger - declare SKILL.md triggers - auto-generate and register hooks [trigger.md]. Use when "skill writer", "skill lint", "skill merge", "skill dedup", "create skill", "frontmatter fix", "combine skills", "multi-topic skill", "agent to skill", "convert agent", "skill improve", "skill upgrade", "skill fix", "fix skill", "update skill", "add topic", "topic routing", "topic placement", "where to put", "topic route", "trigger compile", "compile triggers", "hook auto register", "trigger list".
 ---
 
-# Skill Manager
+# Skill-Kit
 
-Comprehensive toolkit for managing Claude Code skills - create, validate, merge, convert, and deduplicate.
+Comprehensive toolkit for creating, managing, and maintaining Claude Code skills.
 
-## Topics
+## Commands
 
-| Topic | Description | Guide |
-|-------|-------------|-------|
-| architecture | Multi-topic skill directory structure and templates | [architecture.md](./architecture.md) |
-| convert | Convert agent (.md) to skill structure | [convert.md](./convert.md) |
-| dedup | Find and clean up duplicate skills between user and plugins | [dedup.md](./dedup.md) |
-| lint | Validate and fix SKILL.md frontmatter issues | [lint.md](./lint.md) |
-| merge | Combine multiple related skills into one | [merge.md](./merge.md) |
-| route | Topic description → scan existing skills → recommend placement | [route.md](./route.md) |
-| trigger | Declare SKILL.md triggers → auto-generate and register hooks | [trigger.md](./trigger.md) |
-| upgrade | Enhance existing skills: add topics, improve frontmatter, restructure scripts | [upgrade.md](./upgrade.md) |
-| writer | Create new Agent Skills with proper structure and frontmatter | [writer.md](./writer.md) |
+| Command | Description | Link |
+| ------- | ----------- | ---- |
+| architecture | Multi-topic skill structure and topics | [architecture.md](./architecture.md) |
+| convert | Convert agents or scripts to skills | [convert.md](./convert.md) |
+| dedup | Identify and merge duplicate skills | [dedup.md](./dedup.md) |
+| lint | Validate and fix SKILL.md frontmatter | [lint.md](./lint.md) |
+| merge | Combine related skills into one | [merge.md](./merge.md) |
+| route | Recommend topic placement within skills | [route.md](./route.md) |
+| trigger | Register triggers and generate hooks | [trigger.md](./trigger.md) |
+| upgrade | Enhance existing skills or add topics | [upgrade.md](./upgrade.md) |
+| writer | Interactive skill creation wizard | [writer.md](./writer.md) |
 
-## Quick Reference
+## Core Workflows
 
-### Writer (Create Skills)
+### Creation (skill-writer)
 
-```bash
-/skill-manager writer              # Interactive skill creation
-```
-
-Key steps:
-1. Determine scope and location
-2. Create directory structure
-3. Write SKILL.md with proper frontmatter
-4. Add supporting files if needed
-5. Validate and test
-
-[Detailed guide](./writer.md)
-
-### Lint (Validate/Fix)
+Always use `writer` to ensure correct frontmatter and structure.
 
 ```bash
-/skill-manager lint                # Scan all skills for issues
-/skill-manager lint --fix          # Auto-fix common issues
+/skill-kit writer                  # Start wizard
 ```
 
-Checks for:
-- Missing `name:` or `description:` fields
-- Invalid fields (`triggers:` → description, `tools:` → `allowed-tools:`)
-- Frontmatter position errors
+### Maintenance (upgrade/lint)
 
-[Detailed guide](./lint.md)
-
-### Merge (Combine Skills)
+Use `upgrade` to add new functionality or topics to an existing skill.
 
 ```bash
-/skill-manager merge skill-a skill-b    # Merge two skills
-```
-
-Creates unified skill with topic files:
-```
-new-skill/
-├── SKILL.md
-├── topic-a.md
-└── topic-b.md
-```
-
-[Detailed guide](./merge.md)
-
-### Dedup (Find Duplicates)
-
-```bash
-/skill-manager dedup               # Find user skills that duplicate plugins
-```
-
-Compares:
-- `~/.claude/skills/` (user skills)
-- `~/.claude/plugins/*/skills/` (plugin skills)
-
-[Detailed guide](./dedup.md)
-
-### Convert (Agent → Skill)
-
-```bash
-/skill-manager convert <agent-name>   # Convert agent to skill
-```
-
-Converts:
-- Agent frontmatter → Skill frontmatter
-- External scripts → `scripts/` folder
-- Removes `-resolver`, `-agent` suffixes
-
-[Detailed guide](./convert.md)
-
-### Upgrade (Enhance Skills)
-
-```bash
-/skill-manager upgrade <skill-name>    # Enhance existing skill
-/skill-manager upgrade                 # Enhance current skill
+/skill-kit upgrade skill-name      # Interactive upgrade
+/skill-kit lint skill-name         # Validation only
 ```
 
 Improvement types:
-- Add new topics
-- Add trigger keywords to frontmatter description
-- Restructure into scripts/ folder
-
-[Detailed guide](./upgrade.md)
+- **Add Topic**: Add documentation for a new sub-feature
+- **Add Script**: Add logic to `scripts/` and reference in SKILL.md
+- **Fix Frontmatter**: Correct `triggers`, `depends-on`, or `description`
 
 ### Trigger (Auto-generate Hooks)
 
 ```bash
-/skill-toolkit trigger compile     # Scan skills → generate dispatcher → register in settings.json
-/skill-toolkit trigger list        # List registered triggers
-/skill-toolkit trigger dry-run     # Preview only
+/skill-kit trigger compile     # Scan skills -> generate dispatcher -> register in settings.json
+/skill-kit trigger list        # List registered triggers
+/skill-kit trigger dry-run     # Preview only
 ```
 
-Declare `triggers` in SKILL.md → auto-generate hook scripts → auto-register in settings.json.
+Declare `triggers` in SKILL.md -> auto-generate hook scripts -> auto-register in settings.json.
 
 [Detailed guide](./trigger.md)
 
-### Route (Topic Placement)
+## Success Case
 
-```bash
-/skill-manager route "Helm chart lint"    # Recommend where to place a topic
-```
+**Scenario (2026-03-09)**:
+- Found 3 openclaw-related functions
+- Proposed 3 options for merging
+- Result: Implementation success, user satisfied
 
-Verdict types:
-- Add topic to existing skill → chains to `upgrade`
-- Add section to existing topic → direct Edit
-- Create new skill → chains to `writer`
+**Key factors**:
+1. Identification of 3 functions
+2. "Merge?" AskUserQuestion
+3. Merging skills using skill-writer (multi-topic)
 
-[Detailed guide](./route.md)
+## Ralph Mode (AskUserQuestion bypass)
 
-### Architecture (Multi-Topic Structure)
+If `.ralph/` directory exists, operate in Ralph Mode.
 
-For skills with multiple related topics:
+**Workflow Change**:
 
-```
-skill-name/
-├── SKILL.md          # Entry point with frontmatter
-├── topic1.md         # Topic content (no frontmatter)
-└── topic2.md
-```
+| Step | User Interaction | Workflow |
+| ---- | ---------------- | -------- |
+| Step 1: Auto-detect | AskUserQuestion (multiSelect) | Summary info to `.ralph/improvements.md` |
+| Step 1.5: Merge logic / Structure | - | improvements.md recording |
+| Step 2: Requirements | AskUserQuestion | Trigger/scope recommendation to improvements.md |
+| Step 3: Type recommendation | Recommend only | improvements.md recording |
+| Step 4: Implementation | Direct action | **PROHIBITED** - Use `[NEEDS_REVIEW]` tag |
+| Step 5: Validation | Validation | **Auto validation** (after changes are complete) |
 
-[Detailed guide](./architecture.md)
+## Self-Improvement
 
-## Skill Locations
+After changes are complete, **Self-improve based on conversation**:
 
-| Location | Purpose |
-|----------|---------|
-| `~/.claude/skills/` | Personal skills |
-| `.claude/skills/` | Project skills (committed to git) |
-| `~/.claude/plugins/*/skills/` | Plugin skills |
-
-## Frontmatter Reference
-
-```yaml
----
-name: skill-name           # Required: lowercase, hyphens, max 64 chars
-description: ...           # Required: what + when + triggers, max 1024 chars
-allowed-tools: [...]       # Optional: restrict tool access
-model: claude-sonnet-4-... # Optional: specific model
-context: fork              # Optional: context handling
----
-```
-
-## Safe Delete (Required Rule)
-
-When removing or replacing skills under `.claude`, **always** move to a root `.bak` folder:
-
-```bash
-mkdir -p ~/.claude/.bak
-mv ~/.claude/skills/{old-skill} ~/.claude/.bak/
-```
-
-**Never** add `.bak` suffix in the same directory:
-```bash
-# Bad — Claude Code loads .bak folders as skills
-mv ~/.claude/skills/old-skill ~/.claude/skills/old-skill.bak
-
-# Good
-mv ~/.claude/skills/old-skill ~/.claude/.bak/
-```
-
-Add timestamp on name conflicts:
-```bash
-mv ~/.claude/skills/{old-skill} ~/.claude/.bak/{old-skill}_$(date +%Y%m%d_%H%M%S)
-```
-
-## Notes
-
-- Always backup before merging: `~/.claude/.bak/` (NOT `skills/.bak/`)
-- Restart Claude Code after skill changes
-- Use `claude --debug` for troubleshooting
+1. Identify failure and workaround patterns
+2. If candidates found, run `/skill-kit upgrade skill-kit`
