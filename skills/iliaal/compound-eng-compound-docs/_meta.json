@@ -3,9 +3,15 @@
   "slug": "compound-eng-compound-docs",
   "displayName": "compound-docs",
   "latest": {
-    "version": "2.53.0",
-    "publishedAt": 1775433120937,
-    "commit": "https://github.com/openclaw/skills/commit/9eac8df2719f7eab1da96660855eb914b4834c15"
+    "version": "2.55.1",
+    "publishedAt": 1776004155473,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.53.0",
+      "publishedAt": 1775433120937,
+      "commit": "https://github.com/openclaw/skills/commit/9eac8df2719f7eab1da96660855eb914b4834c15"
+    }
+  ]
 }
