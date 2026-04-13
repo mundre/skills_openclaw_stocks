@@ -3,9 +3,15 @@
   "slug": "greenhelix-agent-cost-optimization",
   "displayName": "AI Agent Cost Optimization Cookbook: Cut Your Agent Bills by 60% Without Sacrificing Quality",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775629772308,
-    "commit": "https://github.com/openclaw/skills/commit/d129d1f4bd79f33ad513cf2f35a9fe4394727d8c"
+    "version": "1.2.0",
+    "publishedAt": 1776065188662,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775629772308,
+      "commit": "https://github.com/openclaw/skills/commit/d129d1f4bd79f33ad513cf2f35a9fe4394727d8c"
+    }
+  ]
 }

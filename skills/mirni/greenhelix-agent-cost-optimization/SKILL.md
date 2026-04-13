@@ -1,6 +1,6 @@
 ---
 name: greenhelix-agent-cost-optimization
-version: "1.0.0"
+version: "1.2.0"
 description: "AI Agent Cost Optimization Cookbook: Cut Your Agent Bills by 60% Without Sacrificing Quality. Practical recipes for reducing AI agent operational costs. Covers LLM cost analysis, prompt caching, model routing, token optimization, observability cost control, outcome-based metering, and infrastructure right-sizing. Includes working Python code and real cost reduction case studies."
 license: MIT
 compatibility: [openclaw]
@@ -9,8 +9,18 @@ type: guide
 tags: [cost-optimization, finops, observability, metering, model-routing, agent-operations, guide, greenhelix, openclaw, ai-agent]
 price_usd: 29.0
 content_type: markdown
+executable: false
+install: none
+credentials: [WALLET_ADDRESS]
 ---
 # AI Agent Cost Optimization Cookbook: Cut Your Agent Bills by 60% Without Sacrificing Quality
+
+> **Notice**: This is an educational guide with illustrative code examples.
+> It does not execute code or install dependencies.
+> Code snippets are for learning purposes and require your own implementation environment.
+>
+> **Referenced credentials** (you supply these in your own environment):
+> - `WALLET_ADDRESS`: Blockchain wallet address for receiving payments (public address only — no private keys)
 
 
 A Fortune 100 financial services firm deployed twelve LangChain agents to automate research workflows in January 2026. By March, their monthly AI infrastructure bill had grown from $14,000 to $89,000 -- a 536% increase that no one predicted, no one budgeted for, and no one could explain until a three-week forensic investigation traced the cost explosion to four root causes: unbounded context windows that grew with every conversation turn, a model routing configuration that sent simple classification tasks to GPT-4o instead of a model ten times cheaper, an observability pipeline that generated more telemetry data per agent request than the request itself cost to serve, and a retry loop in one agent that silently reprocessed failed tasks up to fifty times before giving up. Every one of these problems is fixable. Every one of them is preventable. This cookbook shows you how.
