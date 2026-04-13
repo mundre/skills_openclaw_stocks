@@ -7,9 +7,16 @@ description: >-
   create an NDA, fill a contract template, or generate a SAFE.
   Can also send agreements for electronic signature via DocuSign.
 license: MIT
+homepage: https://github.com/open-agreements/open-agreements
+compatibility: >-
+  Two execution paths: (1) Remote MCP at openagreements.org (template fill
+  happens server-side, your data is sent to the hosted service); (2) Local
+  CLI via npm (`npm install -g open-agreements@0.7.4`) — template fill is
+  fully local with no third-party data transfer except DocuSign at signing
+  time. Use the CLI path for guaranteed offline behavior.
 metadata:
   author: open-agreements
-  version: "0.2.0"
+  version: "0.2.3"
 ---
 
 # open-agreements
@@ -36,7 +43,7 @@ Use this skill when the user wants to:
 
 If the Open Agreements MCP server is connected (remote or local), use these tools directly. This is the preferred path — no CLI or Node.js needed.
 
-**Remote MCP URL:** `https://openagreements.ai/api/mcp`
+**Remote MCP URL:** `https://openagreements.org/api/mcp`
 
 ### Available MCP Tools
 
@@ -76,7 +83,7 @@ fi
 ```
 
 - **GLOBAL**: Use `open-agreements` directly.
-- **NPX**: Use `npx -y open-agreements@latest` as prefix.
+- **NPX**: Use `npx -y open-agreements@0.7.4` as prefix. **Always pin the version** — never use `@latest` to avoid pulling unexpected updates.
 - **PREVIEW_ONLY**: No Node.js. Generate markdown preview only.
 
 ### Step 2: Discover templates
@@ -103,9 +110,57 @@ Open Agreements is fully open source (MIT license). Review the complete source b
 
 - **GitHub**: https://github.com/open-agreements/open-agreements
 - **npm registry**: https://www.npmjs.com/package/open-agreements
-- **Remote MCP**: https://openagreements.ai/api/mcp
+- **Remote MCP**: https://openagreements.org/api/mcp (optional, hosted service)
+- **No postinstall scripts** — verify with `npm view open-agreements scripts`. The package declares no `postinstall`, `preinstall`, or `install` hooks. The `prepare` script only runs when installing from a git URL, not from the npm registry.
 
 All template field definitions, fill logic, and DocuSign integration code are auditable in the repository.
+
+### A note on versions
+
+The two version numbers in this skill are independent and refer to different things:
+
+- **Skill version** (in this file's frontmatter, currently `0.2.3`) — versions the skill documentation itself.
+- **npm package version** (currently `0.7.4`) — the version of the upstream `open-agreements` npm package this skill recommends pinning. Check `npm view open-agreements version` for the latest.
+
+A newer skill version means the documentation was updated. A newer npm package version means the underlying tool was updated. They are not synchronized.
+
+## Install-Time vs Runtime Network Behavior
+
+Open Agreements has three distinct network postures depending on which execution path you use:
+
+| Path | Install-time network | Runtime network |
+|------|---------------------|----------------|
+| **Pinned global install** (`npm install -g open-agreements@0.7.4`) | One-time fetch from `registry.npmjs.org` | None for `list`/`fill`. DocuSign API only at signing time. |
+| **Pinned npx** (`npx -y open-agreements@0.7.4`) | Fetch from `registry.npmjs.org` on first run, cached afterward | Same as above |
+| **Remote MCP** (`https://openagreements.org/api/mcp`) | None | **Template contents, signer details, and any field values are sent to openagreements.org.** Use only if you accept transmitting these values to the hosted service. |
+| **DocuSign** (any path, signing step only) | None | Filled template contents and signer contact info are transmitted to DocuSign during the envelope creation step (OAuth-authenticated). |
+
+**Use the local CLI path** (global or npx) if you need guaranteed offline behavior with no third-party data transfer beyond DocuSign at signing time.
+
+## Offline / Pinned Installation
+
+For environments where `npx` auto-fetch is unacceptable, install the package globally and pin the version:
+
+```bash
+# Install a specific pinned version globally (one-time)
+npm install -g open-agreements@0.7.4
+
+# Then use the installed binary directly — no npx fetching at runtime
+open-agreements list --json
+open-agreements fill <template-name> -d values.json -o output.docx
+```
+
+Before upgrading, review the changelog: https://github.com/open-agreements/open-agreements/blob/main/CHANGELOG.md
+
+### Pin the version even when using npx
+
+Even with `npx`, always pin the version:
+
+```bash
+npx -y open-agreements@0.7.4 list --json
+```
+
+Never use `@latest` — it pulls a fresh package on every cache miss and can introduce unexpected changes.
 
 ## Notes
 
