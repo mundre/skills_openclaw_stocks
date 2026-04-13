@@ -1,0 +1,11 @@
+{
+  "owner": "shmiss",
+  "slug": "agent-skills-collector",
+  "displayName": "Agent Skills Collector",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775702874421,
+    "commit": null
+  },
+  "history": []
+}
