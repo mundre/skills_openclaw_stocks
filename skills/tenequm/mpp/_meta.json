@@ -1,11 +1,17 @@
 {
   "owner": "tenequm",
   "slug": "mpp",
-  "displayName": "MPP",
+  "displayName": "MPP - Machine Payments Protocol",
   "latest": {
-    "version": "0.5.1",
-    "publishedAt": 1775229780253,
-    "commit": "https://github.com/openclaw/skills/commit/e22a8a339828cffd2b0f12f4e9cf20725cff73c8"
+    "version": "0.5.7",
+    "publishedAt": 1775663226870,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.5.1",
+      "publishedAt": 1775229780253,
+      "commit": "https://github.com/openclaw/skills/commit/e22a8a339828cffd2b0f12f4e9cf20725cff73c8"
+    }
+  ]
 }
