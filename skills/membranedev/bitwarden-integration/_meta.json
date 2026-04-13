@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "bitwarden-integration",
+  "displayName": "Bitwarden",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775477051136,
+    "commit": null
+  },
+  "history": []
+}
