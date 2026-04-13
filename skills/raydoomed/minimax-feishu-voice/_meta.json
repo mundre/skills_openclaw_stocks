@@ -3,9 +3,15 @@
   "slug": "minimax-feishu-voice",
   "displayName": "Minimax Feishu Voice",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775666158249,
-    "commit": "https://github.com/openclaw/skills/commit/3951f7f2a042255cfe48fe4b1f3f5a32971fa30f"
+    "version": "1.0.3",
+    "publishedAt": 1775698903592,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775666158249,
+      "commit": "https://github.com/openclaw/skills/commit/3951f7f2a042255cfe48fe4b1f3f5a32971fa30f"
+    }
+  ]
 }

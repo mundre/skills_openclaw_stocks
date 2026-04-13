@@ -43,7 +43,6 @@ Create `~/.openclaw/workspace/skills/minimax-feishu-voice/voice_config.json`:
 | `qiaopi_mengmei` | 俏皮萌妹 | 俏皮可爱 |
 | `tianxin_xiaoling` | 甜心小玲 | 甜心少女 |
 | `Korean_SweetGirl` | 韩系甜妹 | 异域风情 |
-| `Japanese_ColdQueen` | 日式冷艳御姐 | AV风格 |
 
 默认值：`female-yujie-jingpin`
 
