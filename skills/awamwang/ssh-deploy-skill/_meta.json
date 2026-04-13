@@ -1,0 +1,11 @@
+{
+  "owner": "awamwang",
+  "slug": "ssh-deploy-skill",
+  "displayName": "Ssh Deploy Skill",
+  "latest": {
+    "version": "1.2.2",
+    "publishedAt": 1775470480801,
+    "commit": null
+  },
+  "history": []
+}
