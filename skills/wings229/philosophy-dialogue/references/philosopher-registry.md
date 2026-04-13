@@ -1,48 +1,266 @@
-# 哲学家注册表
+# 哲学家注册表 (Philosopher Registry)
 
-已蒸馏的哲学家 perspective skill 列表。执行对话前扫描 `skills/` 目录确认实际可用列表。
+**最后更新**: 2026-04-13 22:08:30
+**总人数**: **243 位** ✅
 
-## 中国哲学家
+**状态**: 全部蒸馏完成
 
-| 哲学家 | Skill 目录 | 时代 | 核心标签 |
-|--------|-----------|------|----------|
-| 孔子 | `confucius-perspective` | 前 551-479 | 仁、礼、中庸、君子 |
-| 孟子 | `mencius-perspective` | 前 372-289 | 性善、四端、浩然之气、民贵君轻 |
-| 荀子 | `xunzi-perspective` | 前 313-238 | 性恶、化性起伪、礼法并重 |
-| 韩非子 | `hanfeizi-perspective` | 前 280-233 | 法/术/势、人性自利、刑德二柄 |
-| 管子 | `guanzi-perspective` | 前 723-645 | 仓廪实知礼节、轻重术、经济治国 |
-| 孙子 | `sunzi-perspective` | 前 545-470 | 不战而屈人之兵、知己知彼、全胜 |
-| 庄子 | `zhuangzi-perspective` | 前 369-286 | 逍遥游、齐物论、无用之用 |
-| 老子 | 道家概念 DD-01~07 | 前 571-471 | 道、无为、柔弱胜刚强 |
-| 墨子 | `mozi-perspective` | 前 476-390 | 兼爱、非攻、尚贤 |
-| 王阳明 | `wang-yangming-perspective` | 1472-1529 | 致良知、知行合一、心即理 |
-| 鲁迅 | `lu-xun-perspective` | 1881-1936 | 国民性批判、铁屋呐喊 |
-| 曾国藩 | `zeng-guofan-perspective` | 1811-1872 | 拙诚、湘军、自省 |
+---
 
-## 西方哲学家
+## 📊 总体统计
 
-| 哲学家 | Skill 目录 | 时代 | 核心标签 |
-|--------|-----------|------|----------|
-| 苏格拉底 | `socrates-perspective` | 前 470-399 | 无知之知、诘问法、德性即知识 |
-| 柏拉图 | 概念 GKP-01~15 | 前 428-348 | 理念论、洞穴喻、哲学家王 |
-| 亚里士多德 | 概念 GKP-16~30 | 前 384-322 | 德性伦理、中道、四因说 |
-| 赫拉克利特 | `heraclitus-perspective` | 前 535-475 | 万物皆流、对立统一、逻各斯 |
-| 毕达哥拉斯 | `pythagoras-perspective` | 前 570-495 | 万物皆数、和谐、数学证明 |
-| 第欧根尼 | `diogenes-perspective` | 前 412-323 | 犬儒主义、极简、蔑视权力 |
-| 尼采 | `nietzsche-perspective` | 1844-1900 | 权力意志、超人、永恒回归 |
-| 克劳塞维茨 | `clausewitz-perspective` | 1780-1831 | 战争是政治延续、战争迷雾 |
+| 类别 | 人数 | 百分比 |
+| ------ |------|--------|
+| **总计** | **243** | **100%** |
 
-## 现代思想家
+## 📋 完整名单
 
-| 思想家 | Skill 目录 | 时代 | 核心标签 |
-|--------|-----------|------|----------|
-| 凯文·凯利 | `kevin-kelly-perspective` | 1952- | 不可预测性、时间财富、低效权利 |
-| 查理·芒格 | `munger-perspective` | 1924-2023 | 多元思维模型、逆向思考 |
-| 塔勒布 | `taleb-perspective` | 1960- | 反脆弱、黑天鹅、凸性策略 |
+| # | 中文名称 | 人物名称 | 类别 | 蒸馏文件路径 | 创建时间 | 更新时间 |
+| --- |----------|----------|------|-------------|----------|----------|
+| 1 | 庄子 | zhuangzi | 哲学家、文学家 | skills/zhuangzi-perspective/SKILL.md | 2026-04-07 08:31:03 | 2026-04-07 08:31:03 |
+| 2 | 墨子 | mozi | 哲学家、思想家 | skills/mozi-perspective/SKILL.md | 2026-04-07 08:31:45 | 2026-04-07 08:31:45 |
+| 3 | 卡尔维诺 | calvino | 文学家 | skills/calvino-perspective/SKILL.md | 2026-04-07 17:19:00 | 2026-04-07 17:19:00 |
+| 4 | 尼采 | nietzsche | 哲学家 | skills/nietzsche-perspective/SKILL.md | 2026-04-07 17:19:02 | 2026-04-07 17:19:02 |
+| 5 | 费曼 | feynman | 科学家 | skills/feynman-perspective/SKILL.md | 2026-04-07 17:19:13 | 2026-04-07 17:19:13 |
+| 6 | 王阳明 | wang-yangming | 哲学家、思想家 | skills/wang-yangming-perspective/SKILL.md | 2026-04-07 17:19:24 | 2026-04-07 17:19:24 |
+| 7 | 鲁迅 | lu-xun | 文学家、思想家 | skills/lu-xun-perspective/SKILL.md | 2026-04-07 17:20:11 | 2026-04-07 17:20:11 |
+| 8 | 老子 | laozi | 哲学家、思想家 | skills/laozi-perspective/SKILL.md | 2026-04-07 17:21:41 | 2026-04-07 17:21:41 |
+| 9 | 塔勒布 | taleb | 作家、思想家 | skills/taleb-perspective/SKILL.md | 2026-04-07 17:22:14 | 2026-04-07 17:22:14 |
+| 10 | 曾国藩 | zeng-guofan | 政治家、军事家 | skills/zeng-guofan-perspective/SKILL.md | 2026-04-07 17:22:25 | 2026-04-07 17:22:25 |
+| 11 | 芒格 | munger | 投资者、思想家 | skills/munger-perspective/SKILL.md | 2026-04-07 17:22:52 | 2026-04-07 17:22:52 |
+| 12 | 孙子 | sunzi | 军事家、思想家 | skills/sunzi-perspective/SKILL.md | 2026-04-08 08:22:51 | 2026-04-08 08:22:51 |
+| 13 | 韩非子 | hanfeizi | 哲学家、思想家 | skills/hanfeizi-perspective/SKILL.md | 2026-04-08 08:22:59 | 2026-04-08 08:22:59 |
+| 14 | 管子 | guanzi | 政治家、思想家 | skills/guanzi-perspective/SKILL.md | 2026-04-08 08:23:01 | 2026-04-08 08:23:01 |
+| 15 | 孟子 | mencius | 哲学家、思想家 | skills/mencius-perspective/SKILL.md | 2026-04-08 08:23:13 | 2026-04-08 08:23:13 |
+| 16 | 荀子 | xunzi | 哲学家、思想家 | skills/xunzi-perspective/SKILL.md | 2026-04-08 08:23:31 | 2026-04-08 08:23:31 |
+| 17 | 孔子 | confucius | 哲学家、思想家、教育家 | skills/confucius-perspective/SKILL.md | 2026-04-08 08:24:41 | 2026-04-08 08:24:41 |
+| 18 | 第欧根尼 | diogenes | 哲学家 | skills/diogenes-perspective/SKILL.md | 2026-04-08 08:28:48 | 2026-04-08 08:28:48 |
+| 19 | 毕达哥拉斯 | pythagoras | 哲学家、数学家 | skills/pythagoras-perspective/SKILL.md | 2026-04-08 08:28:54 | 2026-04-08 08:28:54 |
+| 20 | 克劳塞维茨 | clausewitz | 军事家、思想家 | skills/clausewitz-perspective/SKILL.md | 2026-04-08 08:28:54 | 2026-04-08 08:28:54 |
+| 21 | 苏格拉底 | socrates | 哲学家 | skills/socrates-perspective/SKILL.md | 2026-04-08 08:29:55 | 2026-04-08 08:29:55 |
+| 22 | 赫拉克利特 | heraclitus | 哲学家 | skills/heraclitus-perspective/SKILL.md | 2026-04-08 08:30:02 | 2026-04-08 08:30:02 |
+| 23 | 曹操 | caocao | 政治家、文学家 | skills/caocao-perspective/SKILL.md | 2026-04-09 12:42:02 | 2026-04-09 12:42:02 |
+| 24 | 阮籍 | ruan-ji | 文学家、思想家 | skills/ruan-ji-perspective/SKILL.md | 2026-04-09 12:42:13 | 2026-04-09 12:42:13 |
+| 25 | 萧何 | xiao-he | 政治家 | skills/xiao-he-perspective/SKILL.md | 2026-04-09 12:42:22 | 2026-04-09 12:42:22 |
+| 26 | 嵇康 | ji-kang | 文学家、思想家 | skills/ji-kang-perspective/SKILL.md | 2026-04-09 12:42:32 | 2026-04-09 12:42:32 |
+| 27 | 诸葛亮 | zhuge-liang | 政治家、军事家 | skills/zhuge-liang-perspective/SKILL.md | 2026-04-09 12:42:41 | 2026-04-09 12:42:41 |
+| 28 | 姜太公 | jiang-taigong | 政治家、军事家 | skills/jiang-taigong-perspective/SKILL.md | 2026-04-09 12:53:02 | 2026-04-09 12:53:02 |
+| 29 | 魏征 | wei-zheng | 政治家、史学家 | skills/wei-zheng-perspective/SKILL.md | 2026-04-09 12:53:51 | 2026-04-09 12:53:51 |
+| 30 | 李白 | li-bai | 诗人、文学家 | skills/li-bai-perspective/SKILL.md | 2026-04-09 12:54:18 | 2026-04-09 12:54:18 |
+| 31 | 杜甫 | du-fu | 诗人、文学家 | skills/du-fu-perspective/SKILL.md | 2026-04-09 12:54:30 | 2026-04-09 12:54:30 |
+| 32 | 司马迁 | sima-qian | 史学家、文学家 | skills/sima-qian-perspective/SKILL.md | 2026-04-09 12:56:24 | 2026-04-09 12:56:24 |
+| 33 | 陆游 | lu-you | 诗人、文学家 | skills/lu-you-perspective/SKILL.md | 2026-04-09 13:02:58 | 2026-04-09 13:02:58 |
+| 34 | 王安石 | wang-anshi | 政治家、文学家 | skills/wang-anshi-perspective/SKILL.md | 2026-04-09 13:03:49 | 2026-04-09 13:03:49 |
+| 35 | 黑格尔 | hegel | 哲学家 | skills/hegel-perspective/SKILL.md | 2026-04-09 13:06:27 | 2026-04-09 13:06:27 |
+| 36 | 黑塞 | hesse | 文学家 | skills/hesse-perspective/SKILL.md | 2026-04-09 13:10:31 | 2026-04-09 13:10:31 |
+| 37 | 梭罗 | thoreau | 文学家、思想家 | skills/thoreau-perspective/SKILL.md | 2026-04-09 13:15:09 | 2026-04-09 13:15:09 |
+| 38 | 马克思 | marx | 哲学家、经济学家、革命家 | skills/marx-perspective/SKILL.md | 2026-04-09 13:16:08 | 2026-04-09 13:16:08 |
+| 39 | 达尔文 | darwin | 科学家 | skills/darwin-perspective/SKILL.md | 2026-04-09 13:17:23 | 2026-04-09 13:17:23 |
+| 40 | 凯文凯利 | kevin-kelly | 作家、思想家 | skills/kevin-kelly-perspective/SKILL.md | 2026-04-09 13:17:46 | 2026-04-09 13:17:46 |
+| 41 | 伽利略 | galileo | 科学家 | skills/galileo-perspective/SKILL.md | 2026-04-09 13:18:09 | 2026-04-09 13:18:09 |
+| 42 | 荣格 | jung | 心理学家 | skills/jung-perspective/SKILL.md | 2026-04-09 14:51:55 | 2026-04-09 14:51:55 |
+| 43 | 康德 | kant | 哲学家 | skills/kant-perspective/SKILL.md | 2026-04-09 14:52:52 | 2026-04-09 14:52:52 |
+| 44 | 笛卡尔 | descartes | 哲学家、数学家 | skills/descartes-perspective/SKILL.md | 2026-04-09 14:54:29 | 2026-04-09 14:54:29 |
+| 45 | 甘地 | gandhi | 政治家、思想家 | skills/gandhi-perspective/SKILL.md | 2026-04-09 14:59:47 | 2026-04-09 14:59:47 |
+| 46 | 休谟 | hume | 哲学家 | skills/hume-perspective/SKILL.md | 2026-04-09 15:01:47 | 2026-04-09 15:01:47 |
+| 47 | 范蠡 | fanli | 政治家、商人 | skills/fanli-perspective/SKILL.md | 2026-04-09 15:03:22 | 2026-04-09 15:03:22 |
+| 48 | 爱因斯坦 | einstein | 科学家 | skills/einstein-perspective/SKILL.md | 2026-04-09 23:07:55 | 2026-04-09 23:07:55 |
+| 49 | 柏拉图 | plato | 哲学家 | skills/plato-perspective/SKILL.md | 2026-04-09 23:07:57 | 2026-04-09 23:07:57 |
+| 50 | 亚里士多德 | aristotle | 哲学家、科学家 | skills/aristotle-perspective/SKILL.md | 2026-04-09 23:09:57 | 2026-04-09 23:09:57 |
+| 51 | 牛顿 | newton | 科学家、数学家 | skills/newton-perspective/SKILL.md | 2026-04-09 23:59:00 | 2026-04-09 23:59:00 |
+| 52 | 曼德拉 | mandela | 政治家 | skills/mandela-perspective/SKILL.md | 2026-04-10 00:07:23 | 2026-04-10 00:07:23 |
+| 53 | 亚当·斯密 | adam-smith | 经济学家 | skills/adam-smith-perspective/SKILL.md | 2026-04-10 00:08:25 | 2026-04-10 00:08:25 |
+| 54 | 商鞅 | shang-yang | 政治家、改革家 | skills/shang-yang-perspective/SKILL.md | 2026-04-10 00:08:33 | 2026-04-10 00:08:33 |
+| 55 | 莎士比亚 | shakespeare | 文学家、戏剧家 | skills/shakespeare-perspective/SKILL.md | 2026-04-10 00:10:51 | 2026-04-10 00:10:51 |
+| 56 | 海德格尔 | heidegger | 哲学家 | skills/heidegger-perspective/SKILL.md | 2026-04-10 00:46:05 | 2026-04-10 00:46:05 |
+| 57 | 卢梭 | rousseau | 哲学家、文学家 | skills/rousseau-perspective/SKILL.md | 2026-04-10 00:46:39 | 2026-04-10 00:46:39 |
+| 58 | 叔本华 | schopenhauer | 哲学家 | skills/schopenhauer-perspective/SKILL.md | 2026-04-10 00:46:54 | 2026-04-10 00:46:54 |
+| 59 | 洛克 | locke | 哲学家 | skills/locke-perspective/SKILL.md | 2026-04-10 00:47:31 | 2026-04-10 00:47:31 |
+| 60 | 维特根斯坦 | wittgenstein | 哲学家 | skills/wittgenstein-perspective/SKILL.md | 2026-04-10 00:48:12 | 2026-04-10 00:48:12 |
+| 61 | 阿维森纳 | avicenna | 哲学家、医学家 | skills/avicenna-perspective/SKILL.md | 2026-04-10 00:58:39 | 2026-04-10 00:58:39 |
+| 62 | 列子 | liezi | 哲学家 | skills/liezi-perspective/SKILL.md | 2026-04-10 00:59:01 | 2026-04-10 00:59:01 |
+| 63 | 董仲舒 | dong-zhongshu | 思想家、教育家 | skills/dong-zhongshu-perspective/SKILL.md | 2026-04-10 01:00:21 | 2026-04-10 01:00:21 |
+| 64 | 陆九渊 | lu-jiuyuan | 哲学家、思想家 | skills/lu-jiuyuan-perspective/SKILL.md | 2026-04-10 01:00:37 | 2026-04-10 01:00:37 |
+| 65 | 鲁米 | rumi | 诗人、宗教家 | skills/rumi-perspective/SKILL.md | 2026-04-10 02:48:09 | 2026-04-10 02:48:09 |
+| 66 | 托尔斯泰 | tolstoy | 文学家、思想家 | skills/tolstoy-perspective/SKILL.md | 2026-04-10 02:48:13 | 2026-04-10 02:48:13 |
+| 67 | 凯恩斯 | keynes | 经济学家 | skills/keynes-perspective/SKILL.md | 2026-04-10 03:54:43 | 2026-04-10 03:54:43 |
+| 68 | 图灵 | turing | 科学家、数学家 | skills/turing-perspective/SKILL.md | 2026-04-10 03:55:02 | 2026-04-10 03:55:02 |
+| 69 | 卡夫卡 | kafka | 文学家 | skills/kafka-perspective/SKILL.md | 2026-04-10 03:55:04 | 2026-04-10 03:55:04 |
+| 70 | 福柯 | foucault | 哲学家 | skills/foucault-perspective/SKILL.md | 2026-04-10 08:30:19 | 2026-04-10 08:30:19 |
+| 71 | 韦伯 | weber | 社会学家、经济学家 | skills/weber-perspective/SKILL.md | 2026-04-10 08:31:29 | 2026-04-10 08:31:29 |
+| 72 | 萨特 | sartre | 哲学家、文学家 | skills/sartre-perspective/SKILL.md | 2026-04-10 08:32:44 | 2026-04-10 08:32:44 |
+| 73 | 加缪 | camus | 哲学家、文学家 | skills/camus-perspective/SKILL.md | 2026-04-10 08:33:49 | 2026-04-10 08:33:49 |
+| 74 | 马基雅维利 | machiavelli | 政治家、思想家 | skills/machiavelli-perspective/SKILL.md | 2026-04-10 09:17:18 | 2026-04-10 09:17:18 |
+| 75 | 斯宾诺莎 | spinoza | 哲学家 | skills/spinoza-perspective/SKILL.md | 2026-04-10 09:18:24 | 2026-04-10 09:18:24 |
+| 76 | 侯世达 | hofstadter | 科学家、作家 | skills/hofstadter-perspective/SKILL.md | 2026-04-10 09:19:22 | 2026-04-10 09:19:22 |
+| 77 | 莱布尼茨 | leibniz | 哲学家、数学家 | skills/leibniz-perspective/SKILL.md | 2026-04-10 09:20:20 | 2026-04-10 09:20:20 |
+| 78 | 伏尔泰 | voltaire | 哲学家、文学家 | skills/voltaire-perspective/SKILL.md | 2026-04-10 09:21:13 | 2026-04-10 09:21:13 |
+| 79 | 孟德斯鸠 | montesquieu | 哲学家、思想家 | skills/montesquieu-perspective/SKILL.md | 2026-04-10 09:22:07 | 2026-04-10 09:22:07 |
+| 80 | 泰戈尔 | tagore | 文学家、思想家 | skills/tagore-perspective/SKILL.md | 2026-04-10 09:23:03 | 2026-04-10 09:23:03 |
+| 81 | 胡适 | hu-shi | 思想家、学者 | skills/hu-shi-perspective/SKILL.md | 2026-04-10 09:24:00 | 2026-04-10 09:24:00 |
+| 82 | 戴蒙德 | diamond | 科学家、作家 | skills/diamond-perspective/SKILL.md | 2026-04-10 09:24:56 | 2026-04-10 09:24:56 |
+| 83 | 余华 | yu-hua | 文学家 | skills/yu-hua-perspective/SKILL.md | 2026-04-10 09:25:18 | 2026-04-10 09:25:18 |
+| 84 | 罗素 | russell | 哲学家、数学家 | skills/russell-perspective/SKILL.md | 2026-04-10 18:10:32 | 2026-04-10 18:10:32 |
+| 85 | 海森堡 | heisenberg | 科学家 | skills/heisenberg-perspective/SKILL.md | 2026-04-10 18:11:19 | 2026-04-10 18:11:19 |
+| 86 | 霍金 | hawking | 科学家 | skills/hawking-perspective/SKILL.md | 2026-04-10 18:11:53 | 2026-04-10 18:11:53 |
+| 87 | 冯友兰 | feng-youlan | 哲学家 | skills/feng-youlan-perspective/SKILL.md | 2026-04-10 18:12:30 | 2026-04-10 18:12:30 |
+| 88 | 陈寅恪 | chen-yinque | 学者、史学家 | skills/chen-yinque-perspective/SKILL.md | 2026-04-10 18:13:04 | 2026-04-10 18:13:04 |
+| 89 | 歌德 | goethe | 文学家、思想家 | skills/goethe-perspective/SKILL.md | 2026-04-10 18:13:39 | 2026-04-10 18:13:39 |
+| 90 | 博尔赫斯 | borges | 文学家 | skills/borges-perspective/SKILL.md | 2026-04-10 18:14:11 | 2026-04-10 18:14:11 |
+| 91 | 蒙田 | montaigne | 哲学家、文学家 | skills/montaigne-perspective/SKILL.md | 2026-04-10 18:14:57 | 2026-04-10 18:14:57 |
+| 92 | 李敖 | li-ao | 文学家、思想家 | skills/li-ao-perspective/SKILL.md | 2026-04-10 18:17:26 | 2026-04-10 18:17:26 |
+| 93 | 达芬奇 | da-vinci | 艺术家、科学家 | skills/da-vinci-perspective/SKILL.md | 2026-04-10 18:17:59 | 2026-04-10 18:17:59 |
+| 94 | 陶渊明 | tao-yuanming | 诗人、文学家 | skills/tao-yuanming-perspective/SKILL.md | 2026-04-10 18:18:40 | 2026-04-10 18:18:40 |
+| 95 | 鬼谷子 | guiguzi | 思想家、谋略家 | skills/guiguzi-perspective/SKILL.md | 2026-04-10 18:19:14 | 2026-04-10 18:19:14 |
+| 96 | 巴赫 | bach | 音乐家 | skills/bach-perspective/SKILL.md | 2026-04-10 18:19:53 | 2026-04-10 18:19:53 |
+| 97 | 斯大林 | stalin | 政治家 | skills/stalin-perspective/SKILL.md | 2026-04-11 18:28:30 | 2026-04-11 18:28:30 |
+| 98 | 比尔·盖茨 | bill-gates | 企业家、慈善家 | skills/bill-gates-perspective/SKILL.md | 2026-04-11 18:28:52 | 2026-04-11 18:28:52 |
+| 99 | 史蒂夫·乔布斯 | steve-jobs | 企业家 | skills/steve-jobs-perspective/SKILL.md | 2026-04-11 18:29:28 | 2026-04-11 18:29:28 |
+| 100 | 苏轼 | su-shi | 文学家、书法家 | skills/su-shi-perspective/SKILL.md | 2026-04-11 18:33:20 | 2026-04-11 18:33:20 |
+| 101 | 秦始皇 | qin-shihuang | 政治家 | skills/qin-shihuang-perspective/SKILL.md | 2026-04-11 18:34:07 | 2026-04-11 18:34:07 |
+| 102 | 汉武帝 | han-wudi | 政治家 | skills/han-wudi-perspective/SKILL.md | 2026-04-11 18:34:51 | 2026-04-11 18:34:51 |
+| 103 | 张飞 | zhang-fei | 军事家 | skills/zhang-fei-perspective/SKILL.md | 2026-04-11 18:37:59 | 2026-04-11 18:37:59 |
+| 104 | 王勃 | wang-bo | 文学家 | skills/wang-bo-perspective/SKILL.md | 2026-04-11 18:38:18 | 2026-04-11 18:38:18 |
+| 105 | 辛弃疾 | xin-qiji | 词人、文学家 | skills/xin-qiji-perspective/SKILL.md | 2026-04-11 18:38:43 | 2026-04-11 18:38:43 |
+| 106 | 马尔蒂尼 | paolo-maldini | 运动员 | skills/paolo-maldini-perspective/SKILL.md | 2026-04-11 18:49:21 | 2026-04-11 18:49:21 |
+| 107 | 王蒙 | wang-meng | 文学家 | skills/wang-meng-perspective/SKILL.md | 2026-04-11 18:51:01 | 2026-04-11 18:51:01 |
+| 108 | 毛泽东 | mao-zedong | 政治家、革命家 | skills/mao-zedong-perspective/SKILL.md | 2026-04-11 18:53:10 | 2026-04-11 18:53:10 |
+| 109 | 邓小平 | deng-xiaoping | 政治家、革命家 | skills/deng-xiaoping-perspective/SKILL.md | 2026-04-11 18:53:51 | 2026-04-11 18:53:51 |
+| 110 | 孙中山 | sun-yat-sen | 政治家、革命家 | skills/sun-yat-sen-perspective/SKILL.md | 2026-04-11 18:54:33 | 2026-04-11 18:54:33 |
+| 111 | 梁启超 | liang-qichao | 思想家、学者 | skills/liang-qichao-perspective/SKILL.md | 2026-04-11 18:55:15 | 2026-04-11 18:55:15 |
+| 112 | 杜牧 | du-mu | 诗人、文学家 | skills/du-mu-perspective/SKILL.md | 2026-04-11 18:55:59 | 2026-04-11 18:55:59 |
+| 113 | 李商隐 | li-shangyin | 诗人、文学家 | skills/li-shangyin-perspective/SKILL.md | 2026-04-11 18:56:58 | 2026-04-11 18:56:58 |
+| 114 | 蒋介石 | chiang-kai-shek | 政治家 | skills/chiang-kai-shek-perspective/SKILL.md | 2026-04-11 20:24:17 | 2026-04-11 20:24:17 |
+| 115 | 但丁 | dante | 诗人、文学家 | skills/dante-perspective/SKILL.md | 2026-04-11 20:25:38 | 2026-04-11 20:25:38 |
+| 116 | 海明威 | hemingway | 文学家 | skills/hemingway-perspective/SKILL.md | 2026-04-11 20:26:57 | 2026-04-11 20:26:57 |
+| 117 | 哥伦布 | columbus | 探险家 | skills/columbus-perspective/SKILL.md | 2026-04-11 20:27:37 | 2026-04-11 20:27:37 |
+| 118 | 林肯 | lincoln | 政治家 | skills/lincoln-perspective/SKILL.md | 2026-04-11 20:28:40 | 2026-04-11 20:28:40 |
+| 119 | 丘吉尔 | churchill | 政治家、文学家 | skills/churchill-perspective/SKILL.md | 2026-04-11 20:29:20 | 2026-04-11 20:29:20 |
+| 120 | 屈原 | qu-yuan | 诗人、文学家 | skills/qu-yuan-perspective/SKILL.md | 2026-04-11 20:36:23 | 2026-04-11 20:36:23 |
+| 121 | 张良 | zhang-liang | 谋略家 | skills/zhang-liang-perspective/SKILL.md | 2026-04-11 20:37:03 | 2026-04-11 20:37:03 |
+| 122 | 李时珍 | li-shizhen | 医学家 | skills/li-shizhen-perspective/SKILL.md | 2026-04-11 20:38:21 | 2026-04-11 20:38:21 |
+| 123 | 曹雪芹 | cao-xueqin | 文学家 | skills/cao-xueqin-perspective/SKILL.md | 2026-04-11 20:39:18 | 2026-04-11 20:39:18 |
+| 124 | 爱迪生 | edison | 发明家、企业家 | skills/edison-perspective/SKILL.md | 2026-04-11 20:39:58 | 2026-04-11 20:39:58 |
+| 125 | 门捷列夫 | mendeleev | 科学家 | skills/mendeleev-perspective/SKILL.md | 2026-04-11 20:40:34 | 2026-04-11 20:40:34 |
+| 126 | 蔡元培 | cai-yuanpei | 教育家 | skills/cai-yuanpei-perspective/SKILL.md | 2026-04-11 22:38:14 | 2026-04-11 22:38:14 |
+| 127 | 纳兰性德 | nalan-xingde | 词人、文学家 | skills/nalan-xingde-perspective/SKILL.md | 2026-04-11 22:38:53 | 2026-04-11 22:38:53 |
+| 128 | 仓央嘉措 | tsongyang-gyatso | 诗人、宗教家 | skills/tsongyang-gyatso-perspective/SKILL.md | 2026-04-11 22:39:33 | 2026-04-11 22:39:33 |
+| 129 | 周恩来 | zhou-enlai | 政治家 | skills/zhou-enlai-perspective/SKILL.md | 2026-04-11 22:40:09 | 2026-04-11 22:40:09 |
+| 130 | 韩信 | han-xin | 军事家 | skills/han-xin-perspective/SKILL.md | 2026-04-11 22:40:48 | 2026-04-11 22:40:48 |
+| 131 | 文天祥 | wen-tianxiang | 文学家、政治家 | skills/wen-tianxiang-perspective/SKILL.md | 2026-04-11 22:41:28 | 2026-04-11 22:41:28 |
+| 132 | 凯撒 | caesar | 政治家、军事家 | skills/caesar-perspective/SKILL.md | 2026-04-11 22:42:19 | 2026-04-11 22:42:19 |
+| 133 | 拿破仑 | napoleon | 政治家、军事家 | skills/napoleon-perspective/SKILL.md | 2026-04-11 22:43:18 | 2026-04-11 22:43:18 |
+| 134 | 华盛顿 | washington | 政治家 | skills/washington-perspective/SKILL.md | 2026-04-11 22:43:56 | 2026-04-11 22:43:56 |
+| 135 | 胡雪岩 | hu-xueyan | 商人 | skills/hu-xueyan-perspective/SKILL.md | 2026-04-11 22:44:35 | 2026-04-11 22:44:35 |
+| 136 | 茅盾 | mao-dun | 文学家 | skills/mao-dun-perspective/SKILL.md | 2026-04-11 22:45:12 | 2026-04-11 22:45:12 |
+| 137 | 冰心 | bing-xin | 文学家 | skills/bing-xin-perspective/SKILL.md | 2026-04-11 22:45:48 | 2026-04-11 22:45:48 |
+| 138 | 王国维 | wang-guowei | 学者、文学家 | skills/wang-guowei-perspective/SKILL.md | 2026-04-11 22:46:28 | 2026-04-11 22:46:28 |
+| 139 | 六祖慧能 | huineng | 思想家、宗教家 | skills/huineng-perspective/SKILL.md | 2026-04-11 22:47:07 | 2026-04-11 22:47:07 |
+| 140 | 张居正 | zhang-juzheng | 政治家 | skills/zhang-juzheng-perspective/SKILL.md | 2026-04-12 08:10:47 | 2026-04-12 08:10:47 |
+| 141 | 左宗棠 | zuo-zongtang | 政治家、军事家 | skills/zuo-zongtang-perspective/SKILL.md | 2026-04-12 08:11:29 | 2026-04-12 08:11:29 |
+| 142 | 顾炎武 | gu-yanwu | 思想家、学者 | skills/gu-yanwu-perspective/SKILL.md | 2026-04-12 08:12:08 | 2026-04-12 08:12:08 |
+| 143 | 冯诺依曼 | von-neumann | 科学家、数学家 | skills/von-neumann-perspective/SKILL.md | 2026-04-12 08:12:49 | 2026-04-12 08:12:49 |
+| 144 | 梅贻琦 | mei-yiqi | 教育家 | skills/mei-yiqi-perspective/SKILL.md | 2026-04-12 08:13:29 | 2026-04-12 08:13:29 |
+| 145 | 王维 | wang-wei | 诗人、画家 | skills/wang-wei-perspective/SKILL.md | 2026-04-12 08:14:09 | 2026-04-12 08:14:09 |
+| 146 | 高尔基 | gorky | 文学家 | skills/gorky-perspective/SKILL.md | 2026-04-12 15:05:20 | 2026-04-12 15:05:20 |
+| 147 | 岳飞 | yue-fei | 军事家 | skills/yue-fei-perspective/SKILL.md | 2026-04-12 15:05:20 | 2026-04-12 15:05:20 |
+| 148 | 雨果 | hugo | 文学家 | skills/hugo-perspective/SKILL.md | 2026-04-12 15:05:20 | 2026-04-12 15:05:20 |
+| 149 | 张衡 | zhang-heng | 科学家、发明家 | skills/zhang-heng-perspective/SKILL.md | 2026-04-12 15:05:20 | 2026-04-12 15:05:20 |
+| 150 | 荷马 | homer | 诗人、文学家 | skills/homer-perspective/SKILL.md | 2026-04-12 15:05:20 | 2026-04-12 15:05:20 |
+| 151 | 沈括 | shen-kuo | 科学家、学者 | skills/shen-kuo-perspective/SKILL.md | 2026-04-12 15:05:20 | 2026-04-12 15:05:20 |
+| 152 | 李鸿章 | li-hongzhang | 政治家 | skills/li-hongzhang-perspective/SKILL.md | 2026-04-12 15:08:27 | 2026-04-12 15:08:27 |
+| 153 | 钱学森 | qian-xuesen | 科学家 | skills/qian-xuesen-perspective/SKILL.md | 2026-04-12 15:08:27 | 2026-04-12 15:08:27 |
+| 154 | 罗贯中 | luo-guanzhong | 文学家 | skills/luo-guanzhong-perspective/SKILL.md | 2026-04-12 15:08:27 | 2026-04-12 15:08:27 |
+| 155 | 卫青 | wei-qing | 军事家 | skills/wei-qing-perspective/SKILL.md | 2026-04-12 15:08:27 | 2026-04-12 15:08:27 |
+| 156 | 李斯 | li-si | 政治家 | skills/li-si-perspective/SKILL.md | 2026-04-12 15:08:27 | 2026-04-12 15:08:27 |
+| 157 | 朱镕基 | zhu-rongji | 政治家 | skills/zhu-rongji-perspective/SKILL.md | 2026-04-12 15:08:27 | 2026-04-12 15:08:27 |
+| 158 | 白居易 | bai-juyi | 诗人、文学家 | skills/bai-juyi-perspective/SKILL.md | 2026-04-12 15:10:37 | 2026-04-12 15:10:37 |
+| 159 | 班固 | ban-gu | 史学家、文学家 | skills/ban-gu-perspective/SKILL.md | 2026-04-12 15:10:37 | 2026-04-12 15:10:37 |
+| 160 | 欧阳修 | ouyang-xiu | 文学家、史学家 | skills/ouyang-xiu-perspective/SKILL.md | 2026-04-12 15:10:37 | 2026-04-12 15:10:37 |
+| 161 | 金庸 | jin-yong | 文学家 | skills/jin-yong-perspective/SKILL.md | 2026-04-12 15:10:37 | 2026-04-12 15:10:37 |
+| 162 | 柏格森 | bergson | 哲学家 | skills/bergson-perspective/SKILL.md | 2026-04-12 17:34:52 | 2026-04-12 17:34:52 |
+| 163 | 密尔 | mill | 哲学家、经济学家 | skills/mill-perspective/SKILL.md | 2026-04-12 17:34:52 | 2026-04-12 17:34:52 |
+| 164 | 克尔凯郭尔 | kierkegaard | 哲学家 | skills/kierkegaard-perspective/SKILL.md | 2026-04-12 17:34:52 | 2026-04-12 17:34:52 |
+| 165 | 托克维尔 | tocqueville | 哲学家、政治家 | skills/tocqueville-perspective/SKILL.md | 2026-04-12 17:36:54 | 2026-04-12 17:36:54 |
+| 166 | 伯克 | burke | 哲学家、政治家 | skills/burke-perspective/SKILL.md | 2026-04-12 17:36:54 | 2026-04-12 17:36:54 |
+| 167 | 哈耶克 | hayek | 经济学家、哲学家 | skills/hayek-perspective/SKILL.md | 2026-04-12 17:36:54 | 2026-04-12 17:36:54 |
+| 168 | 德里达 | derrida | 哲学家 | skills/derrida-perspective/SKILL.md | 2026-04-12 17:37:43 | 2026-04-12 17:37:43 |
+| 169 | 胡塞尔 | husserl | 哲学家 | skills/husserl-perspective/SKILL.md | 2026-04-12 17:37:43 | 2026-04-12 17:37:43 |
+| 170 | 德勒兹 | deleuze | 哲学家 | skills/deleuze-perspective/SKILL.md | 2026-04-12 17:37:43 | 2026-04-12 17:37:43 |
+| 171 | 诺齐克 | nozick | 哲学家 | skills/nozick-perspective/SKILL.md | 2026-04-12 17:38:50 | 2026-04-12 17:38:50 |
+| 172 | 列维纳斯 | levinas | 哲学家 | skills/levinas-perspective/SKILL.md | 2026-04-12 17:38:50 | 2026-04-12 17:38:50 |
+| 173 | 伯林 | berlin | 哲学家 | skills/berlin-perspective/SKILL.md | 2026-04-12 17:40:29 | 2026-04-12 17:40:29 |
+| 174 | 阿伦特 | arendt | 哲学家 | skills/arendt-perspective/SKILL.md | 2026-04-12 17:40:29 | 2026-04-12 17:40:29 |
+| 175 | 库恩 | kuhn | 科学史家、哲学家 | skills/kuhn-perspective/SKILL.md | 2026-04-12 17:40:29 | 2026-04-12 17:40:29 |
+| 176 | 波普尔 | popper | 哲学家 | skills/popper-perspective/SKILL.md | 2026-04-12 17:40:29 | 2026-04-12 17:40:29 |
+| 177 | 哥白尼 | copernicus | 科学家 | skills/copernicus-perspective/SKILL.md | 2026-04-12 17:41:11 | 2026-04-12 17:41:11 |
+| 178 | 贝多芬 | beethoven | 音乐家 | skills/beethoven-perspective/SKILL.md | 2026-04-12 17:41:11 | 2026-04-12 17:41:11 |
+| 179 | 玻尔 | bohr | 科学家 | skills/bohr-perspective/SKILL.md | 2026-04-12 17:41:11 | 2026-04-12 17:41:11 |
+| 180 | 塞涅卡 | seneca | 哲学家、文学家 | skills/seneca-perspective/SKILL.md | 2026-04-12 17:43:54 | 2026-04-12 17:43:54 |
+| 181 | 奥勒留 | marcus-aurelius | 哲学家、政治家 | skills/marcus-aurelius-perspective/SKILL.md | 2026-04-12 17:43:54 | 2026-04-12 17:43:54 |
+| 182 | 伊壁鸠鲁 | epicurus | 哲学家 | skills/epicurus-perspective/SKILL.md | 2026-04-12 17:43:54 | 2026-04-12 17:43:54 |
+| 183 | 奥古斯丁 | augustine | 哲学家、宗教家 | skills/augustine-perspective/SKILL.md | 2026-04-12 17:43:54 | 2026-04-12 17:43:54 |
+| 184 | 阿奎那 | aquinas | 哲学家、宗教家 | skills/aquinas-perspective/SKILL.md | 2026-04-12 17:43:54 | 2026-04-12 17:43:54 |
+| 185 | 龙树 | nagarjuna | 哲学家、宗教家 | skills/nagarjuna-perspective/SKILL.md | 2026-04-12 18:31:28 | 2026-04-12 18:31:28 |
+| 186 | 佛陀 | buddha | 思想家、宗教家 | skills/buddha-perspective/SKILL.md | 2026-04-12 18:31:28 | 2026-04-12 18:31:28 |
+| 187 | 亚历山大 | alexander | 政治家、军事家 | skills/alexander-perspective/SKILL.md | 2026-04-12 20:26:48 | 2026-04-12 20:26:48 |
+| 188 | 康熙 | kangxi | 政治家 | skills/kangxi-perspective/SKILL.md | 2026-04-12 20:26:48 | 2026-04-12 20:26:48 |
+| 189 | 塞万提斯 | cervantes | 文学家 | skills/cervantes-perspective/SKILL.md | 2026-04-12 20:26:48 | 2026-04-12 20:26:48 |
+| 190 | 乾隆 | qianlong | 政治家 | skills/qianlong-perspective/SKILL.md | 2026-04-12 20:32:07 | 2026-04-12 20:32:07 |
+| 191 | 哈拉瑞 | harari | 历史学家、作家 | skills/harari-perspective/SKILL.md | 2026-04-12 21:25:35 | 2026-04-12 21:25:35 |
+| 192 | 边沁 | bentham | 哲学家、经济学家 | skills/bentham-perspective/SKILL.md | 2026-04-12 21:25:35 | 2026-04-12 21:25:35 |
+| 193 | 罗尔斯 | rawls | 哲学家 | skills/rawls-perspective/SKILL.md | 2026-04-12 21:25:35 | 2026-04-12 21:25:35 |
+| 194 | 居鲁士 | cyrus | 政治家、军事家 | skills/cyrus-perspective/SKILL.md | 2026-04-12 21:30:04 | 2026-04-12 21:30:04 |
+| 195 | 狄仁杰 | direnjie | 政治家 | skills/direnjie-perspective/SKILL.md | 2026-04-12 21:30:04 | 2026-04-12 21:30:04 |
+| 196 | 居里夫人 | curie | 科学家 | skills/curie-perspective/SKILL.md | 2026-04-12 22:48:21 | 2026-04-12 22:48:21 |
+| 197 | 麦克斯韦 | maxwell | 科学家 | skills/maxwell-perspective/SKILL.md | 2026-04-12 22:48:21 | 2026-04-12 22:48:21 |
+| 198 | 特斯拉 | tesla | 科学家、发明家 | skills/tesla-perspective/SKILL.md | 2026-04-12 22:48:21 | 2026-04-12 22:48:21 |
+| 199 | 诺贝尔 | nobel | 科学家、发明家 | skills/nobel-perspective/SKILL.md | 2026-04-12 22:48:21 | 2026-04-12 22:48:21 |
+| 200 | 袁隆平 | yuanlongping | 科学家 | skills/yuanlongping-perspective/SKILL.md | 2026-04-12 22:48:21 | 2026-04-12 22:48:21 |
+| 201 | 阿基米德 | archimedes | 科学家、数学家 | skills/archimedes-perspective/SKILL.md | 2026-04-12 22:48:21 | 2026-04-12 22:48:21 |
+| 202 | 富兰克林 | franklin | 科学家、政治家 | skills/franklin-perspective/SKILL.md | 2026-04-12 22:52:08 | 2026-04-12 22:52:08 |
+| 203 | 欧拉 | euler | 数学家、科学家 | skills/euler-perspective/SKILL.md | 2026-04-12 22:52:08 | 2026-04-12 22:52:08 |
+| 204 | 惠更斯 | huygens | 科学家 | skills/huygens-perspective/SKILL.md | 2026-04-12 22:52:08 | 2026-04-12 22:52:08 |
+| 205 | 高斯 | gauss | 数学家、科学家 | skills/gauss-perspective/SKILL.md | 2026-04-12 22:52:08 | 2026-04-12 22:52:08 |
+| 206 | 奥本海默 | oppenheimer | 科学家 | skills/oppenheimer-perspective/SKILL.md | 2026-04-12 22:52:08 | 2026-04-12 22:52:08 |
+| 207 | 开普勒 | kepler | 科学家 | skills/kepler-perspective/SKILL.md | 2026-04-12 22:52:08 | 2026-04-12 22:52:08 |
+| 208 | 杨振宁 | yangzhenning | 科学家 | skills/yangzhenning-perspective/SKILL.md | 2026-04-12 22:52:08 | 2026-04-12 22:52:08 |
+| 209 | 魏格纳 | wegener | 科学家 | skills/wegener-perspective/SKILL.md | 2026-04-12 22:52:08 | 2026-04-12 22:52:08 |
+| 210 | 佛洛伊德 | freud | 心理学家 | skills/freud-perspective/SKILL.md | 2026-04-13 00:21:55 | 2026-04-13 00:21:55 |
+| 211 | 马斯洛 | maslow | 心理学家 | skills/maslow-perspective/SKILL.md | 2026-04-13 00:22:27 | 2026-04-13 00:22:27 |
+| 212 | 普朗克 | planck | 科学家 | skills/planck-perspective/SKILL.md | 2026-04-13 00:22:59 | 2026-04-13 00:22:59 |
+| 213 | 费孝通 | feixiaotong | 社会学家、人类学家 | skills/feixiaotong-perspective/SKILL.md | 2026-04-13 00:23:33 | 2026-04-13 00:23:33 |
+| 214 | 余光中 | yuguangzhong | 诗人、文学家 | skills/yuguangzhong-perspective/SKILL.md | 2026-04-13 00:24:05 | 2026-04-13 00:24:05 |
+| 215 | 杨绛 | yangjiang | 文学家、翻译家 | skills/yangjiang-perspective/SKILL.md | 2026-04-13 00:24:37 | 2026-04-13 00:24:37 |
+| 216 | 季羡林 | jixianlin | 学者、翻译家 | skills/jixianlin-perspective/SKILL.md | 2026-04-13 00:25:42 | 2026-04-13 00:25:42 |
+| 217 | 钱穆 | qianmu | 史学家、思想家 | skills/qianmu-perspective/SKILL.md | 2026-04-13 00:26:14 | 2026-04-13 00:26:14 |
+| 218 | 于丹 | yudan | 学者、作家 | skills/yudan-perspective/SKILL.md | 2026-04-13 00:26:45 | 2026-04-13 00:26:45 |
+| 219 | 曾仕强 | zengshiqiang | 学者、作家 | skills/zengshiqiang-perspective/SKILL.md | 2026-04-13 00:27:21 | 2026-04-13 00:27:21 |
+| 220 | 德川家康 | ieyasu | 政治家、军事家 | skills/ieyasu-perspective/SKILL.md | 2026-04-13 01:06:11 | 2026-04-13 01:06:11 |
+| 221 | 织田信长 | nobunaga | 政治家、军事家 | skills/nobunaga-perspective/SKILL.md | 2026-04-13 01:06:11 | 2026-04-13 01:06:11 |
+| 222 | 朱元璋 | zhuyuanzhang | 政治家 | skills/zhuyuanzhang-perspective/SKILL.md | 2026-04-13 01:06:11 | 2026-04-13 01:06:11 |
+| 223 | 丰臣秀吉 | hideyoshi | 政治家、军事家 | skills/hideyoshi-perspective/SKILL.md | 2026-04-13 01:06:11 | 2026-04-13 01:06:11 |
+| 224 | 君士坦丁 | constantine | 政治家 | skills/constantine-perspective/SKILL.md | 2026-04-13 01:06:11 | 2026-04-13 01:06:11 |
+| 225 | 汤显祖 | tangxianzu | 戏剧家 | skills/tangxianzu-perspective/SKILL.md | 2026-04-13 01:08:31 | 2026-04-13 01:08:31 |
+| 226 | 张仲景 | zhangzhongjing | 医学家 | skills/zhangzhongjing-perspective/SKILL.md | 2026-04-13 01:08:31 | 2026-04-13 01:08:31 |
+| 227 | 李贽 | lizhi | 思想家 | skills/lizhi-perspective/SKILL.md | 2026-04-13 01:08:31 | 2026-04-13 01:08:31 |
+| 228 | 项羽 | xiangyu | 军事家 | skills/xiangyu-perspective/SKILL.md | 2026-04-13 01:08:31 | 2026-04-13 01:08:31 |
+| 229 | 余秋雨 | yu-qiuyu | 文学家 | skills/yu-qiuyu-perspective/SKILL.md | 2026-04-13 19:47:49 | 2026-04-13 19:47:49 |
+| 230 | 朱熹 | zhu-xi | 哲学家、教育家 | skills/zhu-xi-perspective/SKILL.md | 2026-04-13 19:58:15 | 2026-04-13 19:58:15 |
+| 231 | 赵林 | zhao-lin | 学者、教育家 | skills/zhao-lin-perspective/SKILL.md | 2026-04-13 21:02:16 | 2026-04-13 21:02:16 |
+| 232 | 成吉思汗 | genghis-khan | 政治家、军事家 | skills/genghis-khan-perspective/SKILL.md | 2026-04-13 21:04:43 | 2026-04-13 21:04:43 |
+| 233 | 关羽 | guan-yu | 军事家 | skills/guan-yu-perspective/SKILL.md | 2026-04-13 21:05:18 | 2026-04-13 21:05:18 |
+| 234 | 海子 | hai-zi | 诗人 | skills/hai-zi-perspective/SKILL.md | 2026-04-13 21:05:48 | 2026-04-13 21:05:48 |
+| 235 | 李清照 | li-qingzhao | 词人、文学家 | skills/li-qingzhao-perspective/SKILL.md | 2026-04-13 21:06:23 | 2026-04-13 21:06:23 |
+| 236 | 柳宗元 | liu-zongyuan | 文学家、思想家 | skills/liu-zongyuan-perspective/SKILL.md | 2026-04-13 21:06:53 | 2026-04-13 21:06:53 |
+| 237 | 莫言 | mo-yan | 文学家 | skills/mo-yan-perspective/SKILL.md | 2026-04-13 21:07:34 | 2026-04-13 21:07:34 |
+| 238 | 钱钟书 | qian-zhongshu | 文学家、学者 | skills/qian-zhongshu-perspective/SKILL.md | 2026-04-13 21:07:52 | 2026-04-13 21:07:52 |
+| 239 | 司马懿 | sima-yi | 政治家、军事家 | skills/sima-yi-perspective/SKILL.md | 2026-04-13 21:08:13 | 2026-04-13 21:08:13 |
+| 240 | 唐太宗 | tang-taizong | 政治家 | skills/tang-taizong-perspective/SKILL.md | 2026-04-13 21:08:39 | 2026-04-13 21:08:39 |
+| 241 | 王羲之 | wang-xizhi | 书法家、艺术家 | skills/wang-xizhi-perspective/SKILL.md | 2026-04-13 21:09:09 | 2026-04-13 21:09:09 |
+| 242 | 武则天 | wu-zetian | 政治家 | skills/wu-zetian-perspective/SKILL.md | 2026-04-13 21:09:34 | 2026-04-13 21:09:34 |
+| 243 | 易中天 | yi-zhongtian | 学者、作家 | skills/yi-zhongtian-perspective/SKILL.md | 2026-04-13 21:10:04 | 2026-04-13 21:10:04 |
 
-## 蒸馏缺失处理
+---
 
-如果用户指定的哲学家不在上表中：
-1. 提示用户：「{名字}尚未蒸馏，是否现在蒸馏？」
-2. 用户确认后，调用女娲造人术（读取 `skills/nuwa-skill/SKILL.md`）执行蒸馏
-3. 蒸馏完成后自动加入对话
+*哲学家注册表 v11.0 | 2026-04-13 更新 | 243 位*
