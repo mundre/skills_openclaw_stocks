@@ -26,6 +26,9 @@ Use this skill when the user wants a Markdown file or Markdown string converted 
    Otherwise use `--builtin-template`.
 3. Optionally add one or more CSS files with `--css`.
 4. Set output with `--output /abs/path/output.html`.
+5. Optional layout flags:
+   Use `--toc` to render a table of contents panel.
+   Use `--no-body-background` to remove the article card background, border, and shadow.
 
 ## Built-in templates
 
@@ -67,6 +70,10 @@ python3 scripts/markdown_to_html.py \
 - `--template` overrides `--builtin-template`
 - Built-in templates automatically include their matching built-in CSS
 - Extra `--css` files are appended after the built-in CSS, so local overrides win
+- `--number-sections` enables Pandoc heading numbering in the generated HTML
+- When `--number-sections` is enabled, avoid manually writing heading prefixes like `1.`, `2.1`, or `3.2` inside the Markdown heading text, or the output will show duplicated numbering such as `1.2.1 2.1 Title`
+- When `--toc` is omitted, the built-in templates render only the article body and expand it to the full content width
+- `--no-body-background` removes the article panel background, border, and shadow while keeping the overall page theme
 
 ## Bundled files
 
@@ -78,3 +85,4 @@ python3 scripts/markdown_to_html.py \
 
 - This skill expects `pandoc` to be installed and available on `PATH`
 - Custom templates should be valid Pandoc HTML templates and include `$body$`
+- If you want a table of contents without visible heading numbers in the HTML body, use `--toc` without `--number-sections`

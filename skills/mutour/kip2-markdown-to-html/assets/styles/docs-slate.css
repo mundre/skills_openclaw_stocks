@@ -73,6 +73,10 @@ body {
   align-items: start;
 }
 
+.page-main.no-toc {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .toc-panel,
 .content-panel {
   background: rgba(255, 255, 255, 0.82);
@@ -90,6 +94,16 @@ body {
 
 .content-panel {
   padding: 34px clamp(20px, 4vw, 48px) 48px;
+}
+
+.content-panel.plain {
+  background: transparent;
+  backdrop-filter: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 #TOC ul,

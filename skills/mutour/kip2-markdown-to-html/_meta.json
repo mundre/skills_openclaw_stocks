@@ -3,9 +3,15 @@
   "slug": "kip2-markdown-to-html",
   "displayName": "markdown-to-html",
   "latest": {
-    "version": "0.4.0",
-    "publishedAt": 1775576073716,
-    "commit": "https://github.com/openclaw/skills/commit/d329f3d4c394f3d2a8d8933e27f08efe909d3c8e"
+    "version": "0.5.0",
+    "publishedAt": 1775903406895,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.4.0",
+      "publishedAt": 1775576073716,
+      "commit": "https://github.com/openclaw/skills/commit/d329f3d4c394f3d2a8d8933e27f08efe909d3c8e"
+    }
+  ]
 }

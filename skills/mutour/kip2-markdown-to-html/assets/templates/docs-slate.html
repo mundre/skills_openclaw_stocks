@@ -21,14 +21,14 @@ $endif$
         $if(date)$<span>$date$</span>$endif$
       </div>
     </header>
-    <main class="page-main">
+    <main class="page-main$if(toc)$ has-toc$else$ no-toc$endif$">
       $if(toc)$
       <aside class="toc-panel">
         <p class="toc-label">目录</p>
         $table-of-contents$
       </aside>
       $endif$
-      <article class="content-panel">
+      <article class="content-panel$if(plain_content)$ plain$endif$">
         $body$
       </article>
     </main>

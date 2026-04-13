@@ -75,6 +75,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Number document headings in the output.",
     )
     parser.add_argument(
+        "--no-body-background",
+        action="store_true",
+        help="Remove the background, border, and shadow behind the rendered article body.",
+    )
+    parser.add_argument(
         "--embed-assets",
         action="store_true",
         help="Embed CSS, images, and other resources into the final HTML when possible.",
@@ -204,6 +209,8 @@ def build_command(
         command.extend(["--metadata", f"author={args.author}"])
     if args.date:
         command.extend(["--metadata", f"date={args.date}"])
+    if args.no_body_background:
+        command.extend(["--metadata", "plain_content=true"])
     resource_path = base_resource_path(args)
     if resource_path:
         command.extend(["--resource-path", resource_path])

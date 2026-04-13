@@ -92,6 +92,10 @@ body {
   margin-top: 28px;
 }
 
+.midnight-layout.no-toc {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .toc-panel,
 .content-panel {
   background: var(--panel);
@@ -109,6 +113,16 @@ body {
 
 .content-panel {
   padding: 34px clamp(20px, 4vw, 46px) 48px;
+}
+
+.content-panel.plain {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 #TOC ul,
