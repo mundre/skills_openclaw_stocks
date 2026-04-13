@@ -1,11 +1,17 @@
 {
   "owner": "liu-jiapeng",
   "slug": "bidding-search-jianyu",
-  "displayName": "Tender & Bid Data Radar - Jianyu-1.0",
+  "displayName": "招中标信息&招标雷达-剑鱼",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775562229609,
-    "commit": "https://github.com/openclaw/skills/commit/ed3e2c23478e08784dde0aa3d97b9aac45907ff4"
+    "version": "1.0.2",
+    "publishedAt": 1775878496156,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775562229609,
+      "commit": "https://github.com/openclaw/skills/commit/ed3e2c23478e08784dde0aa3d97b9aac45907ff4"
+    }
+  ]
 }
