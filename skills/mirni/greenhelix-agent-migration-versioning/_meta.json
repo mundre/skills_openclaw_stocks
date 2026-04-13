@@ -1,0 +1,11 @@
+{
+  "owner": "mirni",
+  "slug": "greenhelix-agent-migration-versioning",
+  "displayName": "Agent Migration & Versioning: Blue-Green Deployments, Canary Releases, and Rollback Strategies for AI Agent Commerce",
+  "latest": {
+    "version": "1.2.0",
+    "publishedAt": 1776065270807,
+    "commit": null
+  },
+  "history": []
+}
