@@ -1,0 +1,11 @@
+{
+  "owner": "flowzap-xyz",
+  "slug": "flowzap-diagrams",
+  "displayName": "FlowZap Diagram Skill",
+  "latest": {
+    "version": "1.3.6",
+    "publishedAt": 1775695998053,
+    "commit": null
+  },
+  "history": []
+}
