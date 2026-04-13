@@ -3,9 +3,15 @@
   "slug": "ntriq-company-due-diligence-intelligence",
   "displayName": "Ntriq Company Due Diligence Intelligence",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775600438102,
-    "commit": "https://github.com/openclaw/skills/commit/e6347e1e4b3ca2367a82509f260bde89afbaa9f4"
+    "version": "1.0.1",
+    "publishedAt": 1775660099445,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775600438102,
+      "commit": "https://github.com/openclaw/skills/commit/e6347e1e4b3ca2367a82509f260bde89afbaa9f4"
+    }
+  ]
 }
