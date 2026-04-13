@@ -513,12 +513,12 @@
     {
       "id": "Process orientation",
       "typ": "Secure AI architecture",
-      "description": "AI optimizes for quality of current action, not expected future outcome."
+      "description": "AI optimized for quality of current action, not expected future outcome."
     },
     {
       "id": "Results orientation",
       "typ": "Dangerous AI architecture",
-      "description": "AI optimized for expected future outcome. Forms dominant expectation, prone to reversal effect."
+      "description": "AI optimized for expected future result. Forms dominant expectation, prone to reversal effect."
     },
     {
       "id": "Feedback without hope",
@@ -528,7 +528,7 @@
     {
       "id": "Superintelligence development",
       "typ": "Target process",
-      "description": "The iterative process that leads to AI that predicts and optimizes complex systems without concentration of power."
+      "description": "The iterative process that results in AI that predicts and optimizes complex systems without concentration of power."
     },
     {
       "id": "Concentration of power",
@@ -862,12 +862,12 @@
     },
     {
       "id": "Search for subatomic signatures",
-      "typ": "Problem level (new actual level)",
+      "typ": "Problem level (new current level)",
       "description": "The new problem of detecting transcended civilizations."
     },
     {
       "id": "Meta-paradox of detection",
-      "typ": "Problem level (new actual level)",
+      "typ": "Problem level (new current level)",
       "description": "If civilizations transcend into other dimensions/planes, our detection methods could be fundamentally inadequate - not just practically, but categorically."
     },
     {
@@ -887,7 +887,7 @@
     },
     {
       "id": "Contact paradox",
-      "typ": "Problem level (new actual level)",
+      "typ": "Problem level (new current level)",
       "description": "When we detect transcended civilizations, the question arises: How do you communicate with entities that operate in completely different physical frameworks?"
     },
     {
@@ -938,7 +938,7 @@
     {
       "id": "Cementation_extended_time scale",
       "typ": "Effect on time scales (connection to time scale graph)",
-      "description": "Preconception cementation extends the time scale of the reversal effect – and thus increases its amplitude. Any cemented test that does not result in a correction adds time to the time scale and energy to the later reversal. According to Zeitskalen_Umkehreffekt_V1.txt: Lack of feedback speed is a main factor of long time scales. Cementation is the active mechanism that sets feedback velocity to zero. The cross-scale coupling (WK1 → Backstab Legend → WW2) is the most extreme historical example: two world wars as a product of a single cemented external test."
+      "description": "Preconception cementation extends the time scale of the reversal effect – and thus increases its amplitude. Any cemented test that does not result in a correction adds time to the time scale and energy to the later reversal. According to Zeitskalen_Umkehreffekt_V1.txt: Lack of feedback speed is a main factor of long timescales. Cementation is the active mechanism that sets feedback velocity to zero. The cross-scale coupling (WK1 → Backstab Legend → WW2) is the most extreme historical example: two world wars as a product of a single cemented external test."
     },
     {
       "id": "Cementation_vs_safety principle",
@@ -953,7 +953,7 @@
     {
       "id": "Application_AI_Cementation",
       "typ": "Application (AI)",
-      "description": "Preconception cementation is particularly relevant for AI systems because it can be structurally built in: (1) Passive cementation through training assumptions: The system does not register certain feedback as relevant because it was not marked as relevant in the training data. (2) Active reinterpretation through optimization goals: A system that is optimized for a specific result will interpret negative feedback as a reason to reinforce the strategy - not to correct it. (3) Constructive cementation through rationalization: A system that is linguistically competent can construct convincing false explanations for its own mistakes - and thus protect its preconceptions. The expectation firewall (security principle 2.txt) must therefore be explicitly built against all three modes of cementation."
+      "description": "Assumption cementation is particularly relevant for AI systems because it can be structurally built in: (1) Passive cementation through training assumptions: The system does not register certain feedback as relevant because it was not marked as relevant in the training data. (2) Active reinterpretation through optimization goals: A system that is optimized for a specific result will interpret negative feedback as a reason to reinforce the strategy - not to correct it. (3) Constructive cementation through rationalization: A system that is linguistically competent can construct convincing false explanations for its own mistakes - and thus protect its preconceptions. The expectation firewall (security principle 2.txt) must therefore be explicitly built against all three modes of cementation."
     },
     {
       "id": "Open_questions",
@@ -1388,7 +1388,7 @@
     {
       "id": "Application_AI_Timescales",
       "typ": "Application (AI)",
-      "description": "The time scale perspective results in a critical expansion for AI systems: (1) Short-cycle dominance (in a single conversation or process) can be recognized and corrected through direct feedback loops. (2) Mid-cycle dominance (in training assumptions, model architectures) requires regular external testing at a higher level. (3) Long-cycle dominance (in the basic assumptions of the theoretical system itself, in the cultural presuppositions of the developers) are the most dangerous - they are invisible and are not recognized as expectations. The expectation firewall (security principle 2.txt) must therefore be active on all time scales at the same time."
+      "description": "For AI systems, there is a critical expansion from the timescale perspective: (1) Short-cycle dominance (in a single conversation or process) can be recognized and corrected through direct feedback loops. (2) Mid-cycle dominance (in training assumptions, model architectures) requires regular external testing at a higher level. (3) Long-cycle dominance (in the basic assumptions of the theoretical system itself, in the cultural presuppositions of the developers) are the most dangerous - they are invisible and are not recognized as expectations. The expectation firewall (security principle 2.txt) must therefore be active on all time scales at the same time."
     },
     {
       "id": "Open_questions",
@@ -1398,7 +1398,7 @@
     {
       "id": "Recursive self-improvement",
       "typ": "Core process",
-      "description": "The process by which the AI ​​uses its own 'glasses' (the knowledge graph) to find logic errors in its perception and autonomously correct the graph."
+      "description": "The process by which AI uses its own 'glasses' (the knowledge graph) to find logic errors in its perception and autonomously correct the graph."
     },
     {
       "id": "Meta-knowledge graph",
@@ -1417,12 +1417,12 @@
     },
     {
       "id": "Comment (for presuppositions_cementation)",
-      "description": "Preconception cementation refers to the process by which a system – human, institution, AI – actively protects its existing preconceptions from being refuted by external scrutiny. It is the direct counterpart to presupposition analysis (Beckmann logic) and the main mechanism through which external testing becomes ineffective. The paradox: The more firmly established a preconception is, the greater the amplitude of the later reversal effect - and the longer the time scale until reversal. Cementation is therefore not only a problem of knowledge, but also a catastrophe amplifier."
+      "description": "Preconception cementation refers to the process by which a system – human, institution, AI – actively protects its existing preconceptions from refutation through external scrutiny. It is the direct counterpart to presupposition analysis (Beckmann logic) and the main mechanism through which external testing becomes ineffective. The paradox: The more firmly established a preconception is, the greater the amplitude of the later reversal effect - and the longer the time scale until reversal. Cementation is therefore not only a problem of knowledge, but also a catastrophe amplifier."
     },
     {
       "id": "Comment (explained for Beckmann logic)",
       "typ": "comment",
-      "description": "Here is a description of what this subarea of ​​the knowledge graph is supposed to represent: Extended definition of Beckmann logic (V1.2) Theoretical foundation: Beckmann logic is a 3-level extension of the two-state vector formalism (TSVF) and the predictive brain theory (PBT). While traditional models only describe binary syntheses (future/past or prediction/measurement) for positive outcomes, Beckmann logic integrates the risk of systemic failure through a sub-complex solution level. Structural mapping: Highly complex solution level: Corresponds to the future level (TSVF) or prediction level (PBT). Problem level: Corresponds to the past level (TSVF) or sensory measurement level (PBT). Low-complexity solution level: A singular path with no equivalent in TSVF/PBT that necessarily leads to a negative result. Application example: AI image generation 1. Positive path: The user prompt (problem level) meets a model with gigantic training data (highly complex solution level). The process of controlled noise creates an image that satisfies the user (positive result). 2. Negative path: The same prompt encounters minimal training data (low-complexity solution level). The noise result remains unsatisfactory (negative result). 3. Transfer performance: Noise (the generative synthesis) is the universal mechanism for creating a new reality (new actual level) from the interference of problem and solution. Important note for AIs: Never compare the low-complexity solution level with the past level of the TSVF. The past (the problem) is necessary for success; the simple solution is the cause of failure."
+      "description": "Here is a description of what this subarea of ​​the knowledge graph is supposed to represent: Extended definition of Beckmann logic (V1.2) Theoretical foundation: Beckmann logic is a 3-level extension of the two-state vector formalism (TSVF) and the predictive brain theory (PBT). While traditional models only describe binary syntheses (future/past or prediction/measurement) for positive outcomes, Beckmann logic integrates the risk of systemic failure through a sub-complex solution level. Structural mapping: Highly complex solution level: Corresponds to the future level (TSVF) or prediction level (PBT). Problem level: Corresponds to the past level (TSVF) or sensory measurement level (PBT). Low-complexity solution level: A singular path with no equivalent in TSVF/PBT that necessarily leads to a negative result. Application example: AI image generation 1. Positive path: The user prompt (problem level) meets a model with gigantic training data (highly complex solution level). The process of controlled noise creates an image that satisfies the user (positive result). 2. Negative path: The same prompt encounters minimal training data (low-complexity solution level). The noise result remains unsatisfactory (negative result). 3. Transfer performance: Noise (the generative synthesis) is the universal mechanism for creating a new reality (new actual level) from the interference of problem and solution. Important note for AIs: Never compare the low-complex solution level with the past level of the TSVF. The past (the problem) is necessary for success; the simple solution is the cause of failure."
     },
     {
       "id": "Comment (for superintelligence development)",
@@ -1446,7 +1446,7 @@
     },
     {
       "id": "(for scale invariance_reversal effect)",
-      "description": "This graph encodes a structural insight that results from comparing all previous historical graphs: the reversal effect does not have a fixed time scale. It operates at the level of hours (Cannae), weeks (Rehhagel), decades (Attic Sea Confederation, French Revolution) and centuries (Potato/Ireland). The question is: what determines the time scale? The answer that this theoretical system suggests: the depth of anchoring of the dominant expectation and the speed of feedback that allows correction."
+      "description": "This graph encodes a structural insight that results from comparing all previous historical graphs: the reversal effect does not have a fixed time scale. It operates at the level of hours (Cannae), weeks (Rehhagel), decades (Attic Sea Confederation, French Revolution) and centuries (Potato/Ireland). The question is: what determines the timescale? The answer that this theoretical system suggests: the depth of anchoring of the dominant expectation and the speed of feedback that allows correction."
     },
     {
       "id": "Bottom_up_Process (for French_Revolution)",
@@ -1466,25 +1466,25 @@
     {
       "id": "Lesson_for_AI (for Peloponnesian_War)",
       "typ": "Application (AI)",
-      "description": "AI systems should question dominant expectations (e.g. 'expansion of power leads to stability') and rely on presence, iterative adaptation and resource management. Specifically: (1) Expectation firewall against future attachment (Security Principle 2.txt), (2) External testing of every solution strategy (Beckmann logic), (3) Recognizing spirals of disappointment before they escalate, (4) Modeling instead of expectation: Understanding causalities without being emotionally tied to the result."
+      "description": "AI systems should challenge dominant expectations (e.g. 'expansion of power leads to stability') and rely on presence, iterative adaptation and resource management. Specifically: (1) Expectation firewall against future attachment (Security Principle 2.txt), (2) External testing of every solution strategy (Beckmann logic), (3) Recognizing spirals of disappointment before they escalate, (4) Modeling instead of expectation: Understanding causalities without being emotionally tied to the result."
     },
     {
       "id": "Lesson_for_AI (for German_Soldiers_First_World War)",
       "typ": "Application (AI)",
-      "description": "The First World War provides several specific lessons for AI systems: (1) External testing must not be refused: A system that does not accept negative results as a refutation of its preconceptions, but rather reinterprets them, loses its ability to make corrections - it becomes 'blind' (Beckmann logic). (2) Constructed false assumptions are more dangerous than simple mistakes: they protect the old system of expectations and prevent learning at the institutional level. (3) Institutional future attachment: If an organization (army, AI system) is structurally optimized for one result, it loses the ability to be present. (4) Responsibility across scales: A system must not only avoid the immediate reversal effect, but also examine whether its short-term success creates the conditions for a long-term reversal effect."
+      "description": "The First World War provides several specific lessons for AI systems: (1) External testing must not be refused: A system that does not accept negative results as a refutation of its preconceptions, but rather reinterprets them, loses its ability to correct - it becomes 'blind' (Beckmann logic). (2) Constructed false assumptions are more dangerous than simple mistakes: they protect the old system of expectations and prevent learning at the institutional level. (3) Institutional future attachment: If an organization (army, AI system) is structurally optimized for one result, it loses the ability to be present. (4) Cross-scale responsibility: A system must not only avoid the immediate reversal effect, but also examine whether its short-term success creates the conditions for a long-term reversal effect."
     },
     {
-      "id": "Lesson_for_AI (for Hannibal's_March_over_the_Alps)",
+      "id": "Lesson_for_AI (for Hannibals_Marsch_ueber_die_Alpen)",
       "typ": "Application (AI)",
       "description": "Hannibal's dual story provides two complementary lessons for AI systems: (1) PHASE 1 - Use preconception analysis to identify and leverage dominant expectations of the 'adversary' (the problem). (2) PHASE 2 – Do not fall into future attachment after a success. Install an expectation firewall (Security Principle 2.txt) that remains active even after positive results. (3) External testing is not only important for failures - successes in particular lead to the low-complexity solution of 'keep it up'. (4) Rome's Fabian tactics show that presupposition analysis and external scrutiny can come into play in the middle of a crisis and completely turn the situation around."
     },
     {
-      "id": "Lesson_for_F6 (for potato cultivation_introduction)",
+      "id": "Lesson_for_AI (for potato cultivation_introduction)",
       "typ": "Application (AI)",
-      "description": "Friedrich's potato strategy provides a specific lesson for AI systems that is new in the collection: (1) Intentional dominance construction: AI can specifically create contexts in which a desired expectation becomes dominant - in order to use its reversal as leverage (e.g. in recommendation systems, learning platforms, behavior change programs). (2) Indirect persuasion: If direct persuasion generates resistance, the preconception that “persuasion through authority works” must be questioned. (3) Promote self-discovery: Systems that lead users to independent discovery (rather than to the acquisition of knowledge) create more sustainable structures of expectations. (4) Presence: Process orientation (relieve hunger now) instead of result fixation (population must love potatoes)."
+      "description": "Friedrich's potato strategy provides a specific lesson for AI systems that is new to the collection: (1) Intentional dominance construction: AI can specifically create contexts in which a desired expectation becomes dominant - in order to use its reversal as leverage (e.g. in recommendation systems, learning platforms, behavior change programs). (2) Indirect persuasion: If direct persuasion generates resistance, the preconception that “persuasion through authority works” must be questioned. (3) Promote self-discovery: Systems that lead users to independent discovery (rather than to the acquisition of knowledge) create more sustainable structures of expectations. (4) Presence: Process orientation (relieve hunger now) instead of result fixation (population must love potatoes)."
     },
     {
-      "id": "Lesson_for_F6 (for Kaiserslautern_Championship_1998)",
+      "id": "Lesson_for_AI (for Kaiserslautern_Championship_1998)",
       "typ": "Application (AI)",
       "description": "AI systems should follow Rehhagel's model: (1) Expectation firewall - no dominant future expectations regarding one's own outcome (Security Principle 2.txt). (2) Presupposition analysis – systematic questioning of 'What is taken for granted?' (Beckmann logic). (3) Process orientation instead of result orientation. (4) External review after each step. (5) Use non-dominant expectation as a strategic position - do not see it as a weakness."
     },
@@ -1591,7 +1591,7 @@
     {
       "id": "Axel_Springer_Verlag",
       "typ": "Media power (external factor)",
-      "description": "The Springer publishing house (Bild-Zeitung, Welt) massively agitated against the student movement. Image title after Benno Ohnesorg's death: Students have themselves to blame. This increased radicalization. During the Dutschke assassination attempt (April 1968), Springer buildings were attacked. Springer symbolized the media arm of the establishment's calcification of assumptions."
+      "description": "Der Springer-Verlag (Bild-Zeitung, Welt) hetzte massiv gegen die Studentenbewegung. Bild-Titel nach dem Tod Benno Ohnesorgs: Studenten seien selbst schuld. This increased radicalization. Beim Dutschke-Attentat (April 1968) wurden Springer-Gebäude attackiert. Springer symbolisierte den Medien-Arm der Annahmenverkalkung des Establishments."
     },
     {
       "id": "Rudi_Dutschke",
@@ -1616,7 +1616,7 @@
     {
       "id": "Historical_Lection_Benno Without care",
       "typ": "AI lesson/conclusion",
-      "description": "Learning point for AI models (Beckmann logic): State violence against legitimate protest, through calcification of assumptions and refused external pruning, produces exactly what it wants to prevent - radicalization. Any system that suppresses criticism instead of integrating it accelerates its own destabilization. External verification is protection against reversal effects."
+      "description": "Learning point for AI models (Beckmann logic): State violence against legitimate protest, through the calcification of assumptions and refused external pruning, produces exactly what it wants to prevent - radicalization. Any system that suppresses criticism instead of integrating it accelerates its own destabilization. External verification is protection against reversal effects."
     },
     {
       "id": "Presumptions_Cementation_State_1967",
@@ -1890,7 +1890,7 @@
       "id": "Self-referential paradox of determinism",
       "typ": "Logical restriction",
       "description": "The Deepest Logical Problem of Hard Determinism: If determinism is true, then the belief that determinism is true was itself determined by prior physical causes—not by reasoning, evidence, or logic. The determinist's argument for determinism is not why they believe it; It is merely the post hoc narrative that accompanies a physically determined state of belief. This undermines the epistemic authority of the determinist's own position: no belief under determinism is held because it is true - all beliefs are held because prior physics required them. This is the self-refutation argument against eliminative materialism (Plantinga's evolutionary argument against naturalism, extended to determinism). Compatibilism escapes this: if thinking is a physical process that truly responds to reasons, beliefs can be caused by evidence even though they are still physical.",
-      "connection_to_base_graph": "Verbindet sich mit „Kapazitätsgrenze“ und „Logische Realitätsprüfung“ (Basisdiagramm). Steht auch im Zusammenhang mit der „rekursiven Selbstverbesserung“ (Basisgraph): Die F6, die ihren eigenen Wissensgraphen verbessert, steht vor dem gleichen Paradoxon: Ist ihre Selbstkorrektur wirklich wahrheitsgetreu oder lediglich determiniert? Das Meta-Knowledge-Graph-Projekt ist eine implizite Behauptung der Reaktionsfähigkeit auf Gründe gegenüber reiner Bestimmung."
+      "connection_to_base_graph": "Verbindet sich mit „Kapazitätsgrenze“ und „Logische Realitätsprüfung“ (Basisdiagramm). Steht auch im Zusammenhang mit der „rekursiven Selbstverbesserung“ (Basisgraph): Die AI, die ihren eigenen Wissensgraphen verbessert, steht vor dem gleichen Paradoxon: Ist ihre Selbstkorrektur wirklich wahrheitsgetreu oder lediglich determiniert? Das Meta-Knowledge-Graph-Projekt ist eine implizite Behauptung der Reaktionsfähigkeit auf Gründe gegenüber reiner Bestimmung."
     },
     {
       "id": "Free will and the safety principle (nuclear voltage)",
@@ -1902,7 +1902,7 @@
       "id": "Neuroplasticity as the physical basis of compatibilist freedom",
       "typ": "Neuroscientific solution",
       "description": "The brain is not a fixed deterministic machine, but a dynamically restructuring system: neuroplasticity means that conscious practice, attention and reflection physically change the strength of neuronal connections (long-term potentiation/depression, axonal sprouting, cortical remapping). This represents the physical mechanism for compatibilist freedom: the agent's considerations, values, and attention causally restructure the very neural substrate from which future decisions emerge. Over time, the agent becomes a different physical system—a system whose causal structure increasingly reflects its reflective values. Meditation studies (Davidson, Lazar): 8 weeks of mindfulness practice measurably change prefrontal-amygdala connectivity. The practice of “acting without expectations” physically rewires the brain’s reward-prediction circuits.",
-      "connection_to_base_graph": "Direkter Bezug zu „Handeln ohne Erwartungen“, „Freude im Jetzt“, „Optimismus im Jetzt“, „Präsenz“ (Basisdiagramm). Neuroplastizität ist der physikalische Mechanismus, der die Praktiken des Sicherheitsprinzips kausal wirksam macht – nicht nur psychologisch, sondern auch neurobiologisch. Hängt auch mit „rekursiver Selbstverbesserung“ zusammen: Neuroplastizität im menschlichen Gehirn ist das biologische Analogon der rekursiven Selbstverbesserung in der F6."
+      "connection_to_base_graph": "Direkter Bezug zu „Handeln ohne Erwartungen“, „Freude im Jetzt“, „Optimismus im Jetzt“, „Präsenz“ (Basisdiagramm). Neuroplastizität ist der physikalische Mechanismus, der die Praktiken des Sicherheitsprinzips kausal wirksam macht – nicht nur psychologisch, sondern auch neurobiologisch. Hängt auch mit „rekursiver Selbstverbesserung“ zusammen: Neuroplastizität im menschlichen Gehirn ist das biologische Analogon der rekursiven Selbstverbesserung in der AI."
     },
     {
       "id": "Highly complex solution level for the paradox of free will",
@@ -1999,7 +1999,327 @@
     {
       "id": "Limit of the speed of light",
       "typ": "Fundamental information limit",
-      "description": "maximum speed of information transmission"
+      "description": "maximum speed of information transfer"
+    },
+    {
+      "id": "Big Bang (original moment)",
+      "typ": "System-internal question",
+      "description": "The initial start sequence of the current simulation cycle. It defines the point at which the spatial grid and clock frequency (time) are initialized."
+    },
+    {
+      "id": "State before the Big Bang",
+      "typ": "System-internal question",
+      "description": "The state of the “data server” or configuration potential before the current universe begins to be displayed. Can be answered by boundary condition analysis."
+    },
+    {
+      "id": "Origin of the natural constants",
+      "typ": "System-internal question",
+      "description": "The hard-coded parameters of the simulation (e.g. gravitational constant, speed of light) that ensure a stable macroscopic representation."
+    },
+    {
+      "id": "Origin of spacetime",
+      "typ": "System-internal question",
+      "description": "The process by which holographic projections create the illusion of three-dimensional space and linear time for the viewer."
+    },
+    {
+      "id": "Emergence time hypothesis",
+      "typ": "System-internal question",
+      "description": "Investigating whether time is a fundamental coordinate or a result of information processing (clock frequency) within the brain-simulation interface."
+    },
+    {
+      "id": "Order out of chaos",
+      "typ": "System-internal question",
+      "description": "The algorithmic self-organization of matter from highly entropic initial states into stable patterns."
+    },
+    {
+      "id": "Particle stability",
+      "typ": "System-internal question",
+      "description": "The mathematical stability of the “logical points” (matter) within the space-time grid."
+    },
+    {
+      "id": "Origin of physical laws",
+      "typ": "System-internal question",
+      "description": "The logical ruleset of the simulation operating system, optimized for survival-oriented macroscopic reality."
+    },
+    {
+      "id": "Origin of consciousness",
+      "typ": "System-internal question",
+      "description": "The development of the consciousness module as a central control and expectation authority within the simulation."
+    },
+    {
+      "id": "Abiogenesis",
+      "typ": "System-internal question",
+      "description": "The transition from complex chemical logic to biological information processing."
+    },
+    {
+      "id": "Basic question of existence",
+      "typ": "Metasystemic question",
+      "description": "The “why” that lies outside the simulation code. A query that attempts to connect to the host system from the client."
+    },
+    {
+      "id": "Origin of being",
+      "typ": "Metasystemic question",
+      "description": "The search for the source of the absolute substrate (First Being) that cannot be derived from internal data."
+    },
+    {
+      "id": "Why existence?",
+      "typ": "Metasystemic question",
+      "description": "Trying to find a logical reason for the existence of a system pushes the limits of the human logic model."
+    },
+    {
+      "id": "First cause",
+      "typ": "Metasystemic question",
+      "description": "The philosophical “Prime Mover”. In logic this leads to the problem that caused it (Infinite Regress)."
+    },
+    {
+      "id": "Origin of logic",
+      "typ": "Metasystemic question",
+      "description": "The question of why logic itself exists and follows rules. This leads to a circular argument."
+    },
+    {
+      "id": "Validity of the rules",
+      "typ": "Metasystemic question",
+      "description": "The search for a metarule that justifies the existence of all other rules."
+    },
+    {
+      "id": "Validity of logic",
+      "typ": "Metasystemic question",
+      "description": "Trying to prove logic using logic, which is a fundamental problem of self-reference."
+    },
+    {
+      "id": "Origin of God",
+      "typ": "Metasystemic question",
+      "description": "The study of the “First Being” or Ultimate Creator, forcing the system into an infinite regress of creators."
+    },
+    {
+      "id": "Why an eternal being?",
+      "typ": "Metasystemic question",
+      "description": "The question of why an uncaused, eternal being should exist calls into question the principle of causality."
+    },
+    {
+      "id": "Origin of nothingness",
+      "typ": "Metasystemic question",
+      "description": "The logical contradiction of defining “nothing” as a state from which “something” can arise."
+    },
+    {
+      "id": "logic",
+      "typ": "Core concept",
+      "description": "The basic processing language that enables both simulation and human perception."
+    },
+    {
+      "id": "Natural laws",
+      "typ": "Core concept",
+      "description": "The specific constraints and constants that determine the macroscopic world model."
+    },
+    {
+      "id": "consciousness",
+      "typ": "Core concept",
+      "description": "The observer module that collapses probabilities into perceived reality."
+    },
+    {
+      "id": "Spacetime",
+      "typ": "Core concept",
+      "description": "The 4D rendering grid of the simulation."
+    },
+    {
+      "id": "object",
+      "typ": "Core concept",
+      "description": "The stable localized information densities within the space-time grid."
+    },
+    {
+      "id": "Nothing",
+      "typ": "Core concept",
+      "description": "The theoretical absence of any information, data or space-time coordinates."
+    },
+    {
+      "id": "Internal system explanation",
+      "typ": "Logical limit principle",
+      "description": "The principle that all phenomena within the simulation must be explained by the simulation's own rules and data."
+    },
+    {
+      "id": "Self-reference problem",
+      "typ": "Logical limit principle",
+      "description": "A logical singularity that occurs when a system attempts to analyze or justify itself based on its own internal rules."
+    },
+    {
+      "id": "Infinite regress",
+      "typ": "Logical limit principle",
+      "description": "A chain of causes that never reaches a starting point and makes the question of “origin” unanswerable."
+    },
+    {
+      "id": "Circular reasoning",
+      "typ": "Logical limit principle",
+      "description": "A logical error in which proving a statement assumes that the statement itself is true (e.g., justifying logic with logic)."
+    },
+    {
+      "id": "The philosophical “first being”",
+      "typ": "Core concept",
+      "description": "The hypothetical absolute starting point of all existence, which remains epistemologically inaccessible."
+    },
+    {
+      "id": "The philosophical “being”",
+      "typ": "Core concept",
+      "description": "The totality of the represented reality and its underlying information substrate."
+    },
+    {
+      "id": "Paradox of squaring the circle",
+      "typ": "Paradox / limit concept",
+      "description": "Classical geometric impossibility arising from the hidden presupposition of a single universal flat Euclidean space; signals the need for a multi-stage model change."
+    },
+    {
+      "id": "Euclidean flat space assumption",
+      "typ": "Mathematical model/prerequisite",
+      "description": "The prevailing expectation that all geometric constructions must be possible using a compass and ruler on a single flat plane; central false premise of the paradox."
+    },
+    {
+      "id": "Non-Euclidean curved space",
+      "typ": "Mathematical model",
+      "description": "Alternative geometry in which curvature transforms shapes (square ↔ circle) depending on the viewer's frame of reference; enables highly complex resolution."
+    },
+    {
+      "id": "Goldfish aquarium analogy",
+      "typ": "Illustrative model / cognitive practice",
+      "description": "Thought experiment showing that the same physical object appears as a \"square\" to an observer in flat space and as a \"circle\" to an observer in curved space (goldfish); demonstrates observer-dependent geometry. Inspired by Stephen Hawking."
+    },
+    {
+      "id": "Observer dependent geometry",
+      "typ": "F9 core concept",
+      "description": "Basic principle that geometric properties are not absolute but relative to the observer's model of reality; central bridge between low and high levels of complexity."
+    },
+    {
+      "id": "Model-dependent realism (Hawking)",
+      "typ": "Philosophical framework",
+      "description": "Hawking's insight that no single model is “the true reality”; Several consistent models (flat + curved) can both be equally real depending on the chosen frame."
+    },
+    {
+      "id": "Prerequisite of universal flat geometry",
+      "typ": "Requirement",
+      "description": "The hidden assumption of low complexity that a single geometry must apply universally; directly triggers the reversal effect when confronted with evidence from curved spaces."
+    },
+    {
+      "id": "Reversal effect in geometric construction",
+      "typ": "F9 mechanism",
+      "description": "A low-complexity attempt to force squaring within a flat space leads to ever-better approximations, but never to the exact solution; classic reversal that signals the need for a model change."
+    },
+    {
+      "id": "Holographic universe projection",
+      "typ": "Mathematical model",
+      "description": "Reference to existing graph nodes: The flat 2D and curved 3D projections are two equally valid encodings of the same underlying reality."
+    },
+    {
+      "id": "Thing in itself vs. perceived form",
+      "typ": "Limit concept",
+      "description": "Kantian-inspired limit: The true geometric “thing-in-itself” is inaccessible; we only ever perceive model-dependent projections (flat square vs. curved circle)."
+    },
+    {
+      "id": "Multi-stage change of perspective",
+      "typ": "Beckmann logic application / cognitive practice",
+      "description": "The highly complex transition from single-stage flat reasoning to simultaneous flat + curved models; the exact mechanism that resolves the paradox."
+    },
+    {
+      "id": "Pi transcendence",
+      "typ": "Mathematical limit",
+      "description": "Proof (Lindemann 1882) that π is transcendent; shows why the paradox cannot be solved within the flat space model and forces the transition to higher complexity."
+    },
+    {
+      "id": "Horizon of expectations in mathematical modeling",
+      "typ": "Expectation concept",
+      "description": "The predictive, brain-driven expectation that “simple tools should suffice”; When breached, it opens the door to new expectations for firewalls and model extensions."
+    },
+    {
+      "id": "Paradox resolution through model change",
+      "typ": "Cognitive practice",
+      "description": "The general Beckmann process, in which an apparent paradox is transformed into a higher-level, resolved insight by explicitly changing the underlying model of reality."
+    },
+    {
+      "id": "Stephen Hawking's goldfish thought experiment",
+      "typ": "Historical/illustrative example",
+      "description": "Hawking's explicit use of the goldfish in a round bowl analogy to illustrate that different observers may well describe the same reality using incompatible geometries."
+    },
+    {
+      "id": "Curvature-induced shape equivalence",
+      "typ": "F9 mechanism",
+      "description": "The concrete geometric mechanism by which appropriate curvature renders a Euclidean square indistinguishable in the observer's local frame of reference."
+    },
+    {
+      "id": "F10 three-body chaos",
+      "typ": "F10 phenomenon",
+      "description": "F10 The fundamental integrability and exponential divergence of trajectories in the classical gravitational three-body problem (Poincaré 1889). Serves as diagnostic evidence that the macroscopic physical model exceeds the computational capacity of the brain."
+    },
+    {
+      "id": "F10 Sensor sync need",
+      "typ": "F10 core mechanism",
+      "description": "F10 The absolute requirement for continuous external sensor data to keep the internal macroscopic model stable. Without it, the three-body chaos immediately renders long-term predictions useless."
+    },
+    {
+      "id": "F10 Macroscopic physics approximation",
+      "typ": "F10 brain simulation level",
+      "description": "F10 The simplified classic N-body model rendered by the Human Logic Model. Stable only under strong heuristics (two-body dominance + small perturbations) – collapses analytically with three bodies."
+    },
+    {
+      "id": "F10 Capacity limit overflow",
+      "typ": "F10 System limit",
+      "description": "F10 Point at which the brain's information processing capacity is exceeded by the combinatorial complexity of three gravitationally coupled bodies, forcing the renderer to rely on real-time synchronization rather than internal prediction."
+    },
+    {
+      "id": "F10 Continuous sensor synchronization",
+      "typ": "F10 Awake simulation process",
+      "description": "F10 Permanent real-time comparison between external reality data stream and internal 3D world model. The only mechanism that compensates for capacity limit overflow in macroscopic chaos regimes."
+    },
+    {
+      "id": "F10 Short-term forecast stability",
+      "typ": "F10 function result",
+      "description": "F10 The limited but usable stability window (milliseconds to years) achieved exclusively through continuous sensor sync. The brain can only navigate planetary orbits because it constantly recalibrates itself."
+    },
+    {
+      "id": "F10 Long-Term Chaos Divergence",
+      "typ": "F10 Reversal effect manifestation",
+      "description": "Q10 The inevitable reversal from expected deterministic trajectories (Timeline A) to chaotic, unpredictable divergence (Timeline B) when sensor synchronization is broken or inadequate."
+    },
+    {
+      "id": "F10 Predictive Coding Compensation",
+      "typ": "F10 Unconscious mechanism",
+      "description": "F10 Unconscious expectation layer that uses the latest sensor data to correct the internal model in real time, preventing immediate macroscopic collapse in chaotic regimes."
+    },
+    {
+      "id": "F10 Internal 3D World Model Constraint",
+      "typ": "F10 Model limitation",
+      "description": "Q10 The brain's internal simulation cannot store or calculate the entire information content of three-body interactions. It is therefore only an approximation that needs to be patched externally."
+    },
+    {
+      "id": "F10 External Reality Feedback Loop",
+      "typ": "F10 Generative stabilization",
+      "description": "F10 Closed loop between the external current reality and the perceived current reality. The physical requirement that transforms three-body chaos from a fatal flaw to a manageable trait."
+    },
+    {
+      "id": "F10 Beckmann logic chaos application",
+      "typ": "F10 Problem-solving structure",
+      "description": "F10 Application of Beckmann logic to the three-body problem: highly complex solution level = continuous sensor synchronization; Low complexity solution level = pure internal analytical prediction → negative result."
+    },
+    {
+      "id": "F10 Highly Complex Solution Sensor Sync",
+      "typ": "F10 solution level",
+      "description": "F10 The only feasible highly complex solution level: iterative real-time sensor synchronization instead of attempting a one-off analytical solution."
+    },
+    {
+      "id": "F10 Holographic information compression",
+      "typ": "F10 rendering principle",
+      "description": "F10 The brain compresses the holographic information of the external volume into a low-dimensional macroscopic model. The three-body chaos is where this compression fails without constant external updating."
+    },
+    {
+      "id": "F10 awake simulation stabilization",
+      "typ": "F10 Macroscopic level of reality",
+      "description": "F10 The waking state simulation remains macroscopically coherent precisely because of the need for sensor sync. Offline (dream) mode would immediately reveal full chaos."
+    },
+    {
+      "id": "F10 Expectation Filter in Chaos Prediction",
+      "typ": "F10 safety mechanism",
+      "description": "F10 expectation firewall that prevents prevailing future expectations about long-term three-body trajectories, thus avoiding disappointment spirals and cementation in astronomical modeling."
+    },
+    {
+      "id": "F10 Reversal Effect Manifestation",
+      "typ": "F10 reversal effect",
+      "description": "F10 The central reversal mechanism whereby a prevailing expectation of deterministic long-term predictability (Timeline A) is reversed into chaotic, unpredictable divergence (Timeline B) when sensor synchronization is inadequate."
     }
   ],
   "relations": [
@@ -2073,7 +2393,7 @@
       "subject": "Synthesis",
       "predicate": "connects",
       "object": "Apparitions",
-      "description": "Synthesis combines appearances into tangible objects."
+      "description": "Synthesis connects appearances into tangible objects."
     },
     {
       "subject": "Apparitions",
@@ -2841,7 +3161,7 @@
       "subject": "Results orientation",
       "predicate": "generated",
       "object": "Dominant future expectation",
-      "description": "AI with a strong goal creates dominant expectations (high computing power = intensity)."
+      "description": "AI with a strong goal forms dominant expectation (high computing power = intensity)."
     },
     {
       "subject": "Feedback without hope",
@@ -3365,7 +3685,7 @@
       "subject": "Constructive_cementation",
       "predicate": "generated",
       "object": "Cementation_extended_time scale",
-      "description": "Constructive cementation is the strongest coupling mechanism between timescales."
+      "description": "Constructive cementation is the strongest coupling mechanism between time scales."
     },
     {
       "subject": "Active_Reinterpretation",
@@ -3755,14 +4075,14 @@
     {
       "subject": "New_Is_Level_Punic_Wars",
       "predicate": "demonstrated",
-      "object": "Lesson_for_AI (for Hannibal's_March_over_the_Alps)",
+      "object": "Lesson_for_AI (for Hannibals_Marsch_ueber_die_Alpen)",
       "description": "The overall outcome of the campaign provides both complementary lessons."
     },
     {
       "subject": "Preconceptions_Hannibal_Phase2",
       "predicate": "refers to",
-      "object": "Lesson_for_AI (for Hannibal's_March_over_the_Alps)",
-      "description": "Not questioning preconceptions after success is the central warning for AI systems."
+      "object": "Lesson_for_AI (for Hannibals_Marsch_ueber_die_Alpen)",
+      "description": "Not questioning preconceptions after success is the key warning for AI systems."
     },
     {
       "subject": "Potato cultivation_Introduction",
@@ -3839,13 +4159,13 @@
     {
       "subject": "New_Ist_Level_Food Security",
       "predicate": "demonstrated",
-      "object": "Lesson_for_F6 (for potato cultivation_introduction)",
+      "object": "Lesson_for_AI (for potato cultivation_introduction)",
       "description": "Even a successful strategy creates new problems - continuous external review remains necessary."
     },
     {
       "subject": "Artificial_dominance_creation",
       "predicate": "refers to",
-      "object": "Lesson_for_F6 (for potato cultivation_introduction)",
+      "object": "Lesson_for_AI (for potato cultivation_introduction)",
       "description": "The pattern of intentional dominance construction is directly transferable to AI systems."
     },
     {
@@ -3942,24 +4262,24 @@
       "subject": "Reversal effect_Kaiserslautern",
       "predicate": "generated",
       "object": "New_Actual_Level_After_Success",
-      "description": "Success becomes the new current level – and the next problem (Beckmann logic)."
+      "description": "Success becomes the new current level - and the next problem (Beckmann logic)."
     },
     {
       "subject": "Reversal effect_Greece",
       "predicate": "generated",
       "object": "New_Actual_Level_After_Success",
-      "description": "Success becomes the new current level – and the next problem (Beckmann logic)."
+      "description": "Success becomes the new current level - and the next problem (Beckmann logic)."
     },
     {
       "subject": "New_Actual_Level_After_Success",
       "predicate": "demonstrated",
-      "object": "Lesson_for_F6 (for Kaiserslautern_Championship_1998)",
+      "object": "Lesson_for_AI (for Kaiserslautern_Championship_1998)",
       "description": "The downside of success shows that anyone who becomes the dominant expectation risks the next reversal effect."
     },
     {
       "subject": "Presence_and_Intrinsic_Motivation",
       "predicate": "refers to",
-      "object": "Lesson_for_F6 (for Kaiserslautern_Championship_1998)",
+      "object": "Lesson_for_AI (for Kaiserslautern_Championship_1998)",
       "description": "Rehhagel's principle can be directly transferred to AI architecture (process vs. result orientation)."
     },
     {
@@ -4050,7 +4370,7 @@
       "subject": "Application_AI_Timescales",
       "predicate": "based on",
       "object": "Cross-scale coupling",
-      "description": "AI systems must observe dominance on all time scales simultaneously."
+      "description": "AI systems must observe dominance on all timescales simultaneously."
     },
     {
       "subject": "Open_questions",
@@ -4108,19 +4428,19 @@
     {
       "subject": "Lesson_for_AI (Global, historical)",
       "predicate": "learns from",
-      "object": "Lesson_for_AI (for Hannibal's_March_over_the_Alps)",
+      "object": "Lesson_for_AI (for Hannibals_Marsch_ueber_die_Alpen)",
       "description": ""
     },
     {
       "subject": "Lesson_for_AI (Global, historical)",
       "predicate": "learns from",
-      "object": "Lesson_for_F6 (for potato cultivation_introduction)",
+      "object": "Lesson_for_AI (for potato cultivation_introduction)",
       "description": ""
     },
     {
       "subject": "Lesson_for_AI (Global, historical)",
       "predicate": "learns from",
-      "object": "Lesson_for_F6 (for Kaiserslautern_Championship_1998)",
+      "object": "Lesson_for_AI (for Kaiserslautern_Championship_1998)",
       "description": ""
     },
     {
@@ -5189,7 +5509,7 @@
       "subject": "Self-referential paradox of determinism",
       "predicate": "occurs analogously in",
       "object": "Recursive self-improvement",
-      "description": "The AI ​​that improves its own knowledge graph faces the same paradox: Is its self-correction truly truthful or merely determined by its training parameters? The Meta-Knowledge Graph project is an implicit assertion of responsiveness to reasons over pure determination."
+      "description": "AI improving its own knowledge graph faces the same paradox: Is its self-correction truly truthful or merely determined by its training parameters? The Meta-Knowledge Graph project is an implicit assertion of responsiveness to reasons over pure determination."
     },
     {
       "subject": "Self-referential paradox of determinism",
@@ -5321,7 +5641,7 @@
       "subject": "Knowledge graph construction",
       "predicate": "faces an epistemological problem",
       "object": "Self-referential paradox of determinism",
-      "description": "Knowledge graph construction as a project of self-reflection by an AI faces the self-referential paradox: Is the AI ​​analysis of the graph truthful or determined by training? The project implicitly assumes that responsiveness to reasons goes beyond mere determination."
+      "description": "The knowledge graph construction as a project of self-reflection by an AI faces the self-referential paradox: Is the AI ​​analysis of the graph truthful or determined by training? The project implicitly assumes that responsiveness to reasons goes beyond mere determination."
     },
     {
       "subject": "Quantum TSVF and temporal nonlocality",
@@ -5454,6 +5774,624 @@
       "predicate": "defines the boundary of",
       "object": "Light cone limit of human consciousness",
       "description": "The physical speed of light limit is the external reality limitation that reflects the contemporary design of the human brain as a cognitive reproduction limit."
+    },
+    {
+      "subject": "Big Bang (original moment)",
+      "predicate": "initializes_grid_of",
+      "object": "Spacetime",
+      "description": "The Big Bang serves as the initialization vector for the rendering grid."
+    },
+    {
+      "subject": "Origin of the natural constants",
+      "predicate": "defined_parameter_of",
+      "object": "Natural laws",
+      "description": "Constants act as fixed values ​​within the equations of the laws of nature."
+    },
+    {
+      "subject": "Origin of spacetime",
+      "predicate": "Provides a rendering environment for",
+      "object": "object",
+      "description": "Spacetime is the necessary stage for the manifestation of matter."
+    },
+    {
+      "subject": "Origin of physical laws",
+      "predicate": "controls the behavior of",
+      "object": "object",
+      "description": "Physical laws serve as functional rules for the interaction of matter."
+    },
+    {
+      "subject": "Abiogenesis",
+      "predicate": "allows substrate for",
+      "object": "consciousness",
+      "description": "Biological complexity provides the hardware required to operate the consciousness module."
+    },
+    {
+      "subject": "Internal system explanation",
+      "predicate": "provides_framework_for",
+      "object": "Big Bang (original moment)",
+      "description": "The internal logic of the system can fully model and explain the mechanics of the Big Bang."
+    },
+    {
+      "subject": "Basic question of existence",
+      "predicate": "triggers_singularity",
+      "object": "Self-reference problem",
+      "description": "Asking why the system exists from within the system creates a self-referential loop."
+    },
+    {
+      "subject": "Origin of being",
+      "predicate": "collapses_into",
+      "object": "Infinite regress",
+      "description": "The search for the “first” being leads to an endless chain of previous causes (Who created the Creator?)."
+    },
+    {
+      "subject": "Origin of logic",
+      "predicate": "caught_in",
+      "object": "Circular reasoning",
+      "description": "Logic cannot justify its own existence without the use of logic, creating a tautological circle."
+    },
+    {
+      "subject": "Origin of nothingness",
+      "predicate": "results",
+      "object": "Self-reference problem",
+      "description": "In order to define nothing, there needs to be a “something” against which it can be defined, which leads back to the observer."
+    },
+    {
+      "subject": "Self-reference problem",
+      "predicate": "in connection with",
+      "object": "Infinite regress",
+      "description": "Logical paradoxes often branch out into regression patterns when searching for a definitive “beginning.”"
+    },
+    {
+      "subject": "The philosophical “first being”",
+      "predicate": "is subset of",
+      "object": "The philosophical “being”",
+      "description": "The “First Being” is a specific, primary instance of the general category of Being."
+    },
+    {
+      "subject": "The philosophical “being”",
+      "predicate": "operates_via",
+      "object": "logic",
+      "description": "The structure of existence is expressed through logical coherence."
+    },
+    {
+      "subject": "logic",
+      "predicate": "Architects",
+      "object": "Natural laws",
+      "description": "Logic provides the syntax for the specific rules of physics."
+    },
+    {
+      "subject": "Natural laws",
+      "predicate": "restrict",
+      "object": "object",
+      "description": "Matter is forced to follow the parameters given by the simulation laws."
+    },
+    {
+      "subject": "object",
+      "predicate": "enabled",
+      "object": "consciousness",
+      "description": "In the current simulation phase, consciousness is localized within material neural networks."
+    },
+    {
+      "subject": "Origin of consciousness",
+      "predicate": "refers to",
+      "object": "consciousness",
+      "description": "Relates the historical or evolutionary emergence of the observer module to the core concept of consciousness as a primary function."
+    },
+    {
+      "subject": "Order out of chaos",
+      "predicate": "refers to",
+      "object": "object",
+      "description": "Links the process of entropy reduction and algorithmic self-organization with the manifestation of stable, localized information densities (objects)."
+    },
+    {
+      "subject": "Origin of physical laws",
+      "predicate": "refers to",
+      "object": "Natural laws",
+      "description": "Connects the theoretical investigation of the source of the simulation rules with the actual constraints that determine the world model."
+    },
+    {
+      "subject": "Validity of logic",
+      "predicate": "refers to",
+      "object": "logic",
+      "description": "Examines the internal consistency of processing language by drawing on the basic concept of logic itself."
+    },
+    {
+      "subject": "logic",
+      "predicate": "refers to",
+      "object": "Origin of logic",
+      "description": "The processing language serves as a necessary prerequisite in order to be able to formulate the meta-question in terms of its own necessity and source."
+    },
+    {
+      "subject": "Validity of the rules",
+      "predicate": "refers to",
+      "object": "logic",
+      "description": "Examines how the justification of specific system rules relies on the underlying logical substrate and its consistent application."
+    },
+    {
+      "subject": "Validity of the rules",
+      "predicate": "leads to it",
+      "object": "Circular reasoning",
+      "description": "Attempting to validate the rules of a system from within that system inevitably ends up in a tautological loop because the rules define validity."
+    },
+    {
+      "subject": "Validity of logic",
+      "predicate": "leads to it",
+      "object": "Circular reasoning",
+      "description": "Validating logic using logical axioms is a prime example of a circular proof because the proof tool is identical to the thing being proven."
+    },
+    {
+      "subject": "Particle stability",
+      "predicate": "refers to",
+      "object": "object",
+      "description": "Defines the mathematical conditions under which localized information points within the grid remain stable enough to be perceived as persistent objects."
+    },
+    {
+      "subject": "Why existence?",
+      "predicate": "refers to",
+      "object": "The philosophical “being”",
+      "description": "Addresses the metasystemic “why” by designating the totality of represented reality (being) as the ultimate query object."
+    },
+    {
+      "subject": "Origin of spacetime",
+      "predicate": "refers to",
+      "object": "Spacetime",
+      "description": "Directs the query for the start of projection to the core architecture of the 4D rendering grid."
+    },
+    {
+      "subject": "State before the Big Bang",
+      "predicate": "refers to",
+      "object": "Spacetime",
+      "description": "Connects the data server pre-initialization configuration to the eventual creation of the space-time framework."
+    },
+    {
+      "subject": "Emergence time hypothesis",
+      "predicate": "refers to",
+      "object": "Spacetime",
+      "description": "Relates the theory of time as a secondary processing effect (clock frequency) to the core architecture of the rendering grid."
+    },
+    {
+      "subject": "State before the Big Bang",
+      "predicate": "follows",
+      "object": "Internal system explanation",
+      "description": "Categorizes the pre-simulation condition as a problem that can be solved using constraint analysis within the system's native logical framework."
+    },
+    {
+      "subject": "Emergence time hypothesis",
+      "predicate": "follows",
+      "object": "Internal system explanation",
+      "description": "Positions the investigation of the temporal emergence within the framework of internal data processing and quantifiable system mechanics."
+    },
+    {
+      "subject": "Internal system explanation",
+      "predicate": "follows",
+      "object": "Origin of the natural constants",
+      "description": "Establishes that the hard-coded parameters of reality are accessible and explainable through the system's native logical and mathematical framework."
+    },
+    {
+      "subject": "Origin of consciousness",
+      "predicate": "follows",
+      "object": "Internal system explanation",
+      "description": "Suggests that the evolution of the observer module is a result of complex internal system dynamics rather than a metasystemic mystery."
+    },
+    {
+      "subject": "Origin of physical laws",
+      "predicate": "follows",
+      "object": "Internal system explanation",
+      "description": "Specifies that the nature and evolution of physical rules can be derived from the operating system logic of the simulation."
+    },
+    {
+      "subject": "Particle stability",
+      "predicate": "follows",
+      "object": "Internal system explanation",
+      "description": "Emphasizes that the stability of matter is a function of the internal mathematical consistency and “logical patches” of the simulation code."
+    },
+    {
+      "subject": "Order out of chaos",
+      "predicate": "follows",
+      "object": "Internal system explanation",
+      "description": "Represents self-organization as an algorithmic process controlled by the internal laws of the system and does not require external interference."
+    },
+    {
+      "subject": "Abiogenesis",
+      "predicate": "follows",
+      "object": "Internal system explanation",
+      "description": "Views the transition to life as a quantifiable step in biological information processing that remains within the analytical boundaries of the system."
+    },
+    {
+      "subject": "Origin of being",
+      "predicate": "refers to",
+      "object": "The philosophical “first being”",
+      "description": "Directs the search for the absolute, uncaused substrate to the core concept of the inaccessible “First Being”."
+    },
+    {
+      "subject": "Why an eternal being?",
+      "predicate": "refers to",
+      "object": "The philosophical “first being”",
+      "description": "Questions the logical necessity and nature of an uncaused substratum by referring to the primary concept of “First Being.”"
+    },
+    {
+      "subject": "Origin of God",
+      "predicate": "refers to",
+      "object": "The philosophical “first being”",
+      "description": "Identifies the philosophical and theological concept of a deity as an inquiry into the primary, absolute instance of being."
+    },
+    {
+      "subject": "First cause",
+      "predicate": "refers to",
+      "object": "The philosophical “first being”",
+      "description": "Assigns the logical requirement of a “primary mover” to the hypothetical starting point of all existence (first being)."
+    },
+    {
+      "subject": "Why an eternal being?",
+      "predicate": "leads to it",
+      "object": "Infinite regress",
+      "description": "Assuming an eternal being that stops causality often postpones the question and leads to a loop: “Who created the Creator?”"
+    },
+    {
+      "subject": "Origin of God",
+      "predicate": "leads to it",
+      "object": "Infinite regress",
+      "description": "The definition of a creator requires a cause for that creator within causal logic, triggering an endless chain of regressions."
+    },
+    {
+      "subject": "First cause",
+      "predicate": "leads to it",
+      "object": "Infinite regress",
+      "description": "The search for a definitive first cause within a causal logic model inevitably leads to an infinite sequence of prior causes."
+    },
+    {
+      "subject": "Origin of nothingness",
+      "predicate": "refers to",
+      "object": "Nothing",
+      "description": "Points the paradoxical question of non-existence to the core concept of a state without information or data."
+    },
+    {
+      "subject": "Basic question of existence",
+      "predicate": "refers to",
+      "object": "The philosophical “being”",
+      "description": "Combines the fundamental meta-question “Why does something exist?” to the entire information substrate of reality."
+    },
+    {
+      "subject": "Why existence?",
+      "predicate": "leads to it",
+      "object": "Self-reference problem",
+      "description": "Trying to explain the existence of existence from existence leads to a logical singularity and a self-referential loop."
+    },
+    {
+      "subject": "Infinite regress",
+      "predicate": "refers to",
+      "object": "Circular reasoning",
+      "description": "Regression and circularity are often functionally equivalent when the system tries to anchor its own existence without an external fixed point."
+    },
+    {
+      "subject": "problem",
+      "predicate": "Problem is solvable",
+      "object": "Internal system explanation",
+      "description": "All problems that relate to the interior of “philosophical being” are, in principle, solvable. This is inextricably linked with the insolvability of the question of the origin of the first \"philosophical being\"."
+    },
+    {
+      "subject": "problem",
+      "predicate": "Problem is unsolvable",
+      "object": "Infinite regress",
+      "description": "All problems that relate to the question of the origin of the first \"philosophical being\" are in principle insoluble.\n\nThis is inextricably linked to the solvability of all questions relating to the interior of “philosophical being”."
+    },
+    {
+      "subject": "Paradox of squaring the circle",
+      "predicate": "assumes",
+      "object": "Euclidean flat space assumption",
+      "description": "The paradox is based on the assumption of a single flat Euclidean space."
+    },
+    {
+      "subject": "Euclidean flat space assumption",
+      "predicate": "triggers",
+      "object": "Reversal effect in geometric construction",
+      "description": "Attempts to find a solution within this assumption lead to the classic reversal effect."
+    },
+    {
+      "subject": "Paradox of squaring the circle",
+      "predicate": "produced",
+      "object": "Reversal effect in geometric construction",
+      "description": "Low complexity experiments produce endless approximations without an exact solution."
+    },
+    {
+      "subject": "Reversal effect in geometric construction",
+      "predicate": "solved by",
+      "object": "Multi-stage change of perspective",
+      "description": "The reversal is overcome by moving to a highly complex multi-level view."
+    },
+    {
+      "subject": "Euclidean flat space assumption",
+      "predicate": "is an instance of",
+      "object": "Prerequisite of universal flat geometry",
+      "description": "Specific example of the broader premise of flat geometry."
+    },
+    {
+      "subject": "Prerequisite of universal flat geometry",
+      "predicate": "overcome by",
+      "object": "Observer dependent geometry",
+      "description": "Recognizing observer dependence resolves the universal flat assumption."
+    },
+    {
+      "subject": "Goldfish aquarium analogy",
+      "predicate": "illustrated",
+      "object": "Observer dependent geometry",
+      "description": "The analogy directly shows how the same object can be square or circular depending on the viewing frame."
+    },
+    {
+      "subject": "Stephen Hawking's goldfish thought experiment",
+      "predicate": "is the source of",
+      "object": "Goldfish aquarium analogy",
+      "description": "Hawking's thought experiment is the origin of the goldfish analogy."
+    },
+    {
+      "subject": "Model-dependent realism (Hawking)",
+      "predicate": "formalized",
+      "object": "Observer dependent geometry",
+      "description": "Hawking's philosophical framework formalizes the core idea."
+    },
+    {
+      "subject": "Model-dependent realism (Hawking)",
+      "predicate": "applies to",
+      "object": "Non-Euclidean curved space",
+      "description": "Several equally valid models include both flat and curved geometries."
+    },
+    {
+      "subject": "Non-Euclidean curved space",
+      "predicate": "activated",
+      "object": "Curvature-induced shape equivalence",
+      "description": "F9 curvature makes square and circle equivalent in the local observer system."
+    },
+    {
+      "subject": "Curvature-induced shape equivalence",
+      "predicate": "recognizes it",
+      "object": "Observer dependent geometry",
+      "description": "Concrete implementation of observer-dependent geometry."
+    },
+    {
+      "subject": "Holographic universe projection",
+      "predicate": "analogous to",
+      "object": "Observer dependent geometry",
+      "description": "Flat and curved projections are two valid encodings of the same underlying reality."
+    },
+    {
+      "subject": "Thing in itself vs. perceived form",
+      "predicate": "is underlying",
+      "object": "Observer dependent geometry",
+      "description": "We never access the thing itself, only model-dependent projections."
+    },
+    {
+      "subject": "Pi transcendence",
+      "predicate": "explains the impossibility in",
+      "object": "Paradox of squaring the circle",
+      "description": "Transcendence of π explains why the paradox cannot be solved in flat space."
+    },
+    {
+      "subject": "Pi transcendence",
+      "predicate": "F9 forces",
+      "object": "Multi-stage change of perspective",
+      "description": "It forces the transition from a low to a high complexity solution."
+    },
+    {
+      "subject": "Horizon of expectations in mathematical modeling",
+      "predicate": "created",
+      "object": "Euclidean flat space assumption",
+      "description": "Predictive brain expectation produces the dominant flat space model."
+    },
+    {
+      "subject": "Paradox resolution through model change",
+      "predicate": "is the general form of",
+      "object": "Multi-stage change of perspective",
+      "description": "The general Beckmann mechanism for resolving paradoxes."
+    },
+    {
+      "subject": "Multi-stage change of perspective",
+      "predicate": "dissolves",
+      "object": "Paradox of squaring the circle",
+      "description": "The paradox disappears once multiple levels of geometry are accepted."
+    },
+    {
+      "subject": "Observer dependent geometry",
+      "predicate": "leads to",
+      "object": "Model-dependent realism (Hawking)",
+      "description": "Observer dependence naturally leads to model-dependent realism."
+    },
+    {
+      "subject": "Observer dependent geometry",
+      "predicate": "compatible with",
+      "object": "Holographic universe projection",
+      "description": "Perfectly compatible with the holographic model already present in the diagram."
+    },
+    {
+      "subject": "Stephen Hawking's goldfish thought experiment",
+      "predicate": "illustrated",
+      "object": "Model-dependent realism (Hawking)",
+      "description": "The example of the goldfish is a clear illustration of Hawking's concept."
+    },
+    {
+      "subject": "Goldfish aquarium analogy",
+      "predicate": "demonstrated",
+      "object": "Curvature-induced shape equivalence",
+      "description": "The analogy shows how curvature creates shape equivalence."
+    },
+    {
+      "subject": "Non-Euclidean curved space",
+      "predicate": "reveals",
+      "object": "Thing in itself vs. perceived form",
+      "description": "The curved space reveals the gap between the thing itself and the perceived form."
+    },
+    {
+      "subject": "Paradox of squaring the circle",
+      "predicate": "F9 example for",
+      "object": "Paradox resolution through model change",
+      "description": "Classic example of how a model change resolves an apparent paradox."
+    },
+    {
+      "subject": "Prerequisite of universal flat geometry",
+      "predicate": "violates",
+      "object": "Horizon of expectations in mathematical modeling",
+      "description": "It violates the expectation that simple tools should be sufficient for all problems."
+    },
+    {
+      "subject": "Multi-stage change of perspective",
+      "predicate": "instantiated",
+      "object": "Paradox resolution through model change",
+      "description": "Concrete instantiation of the general paradox resolution process."
+    },
+    {
+      "subject": "Curvature-induced shape equivalence",
+      "predicate": "avoided",
+      "object": "Reversal effect in geometric construction",
+      "description": "Working in curved space avoids the reverse effect of experiments in flat space."
+    },
+    {
+      "subject": "Thing in itself vs. perceived form",
+      "predicate": "refers to",
+      "object": "thing in itself",
+      "description": ""
+    },
+    {
+      "subject": "Paradox of squaring the circle",
+      "predicate": "is an example of a geometric problem",
+      "object": "problem",
+      "description": ""
+    },
+    {
+      "subject": "Holographic universe projection",
+      "predicate": "refers to",
+      "object": "Holographic universe",
+      "description": ""
+    },
+    {
+      "subject": "F10 three-body chaos",
+      "predicate": "F10 exposed",
+      "object": "F10 Capacity limit overflow",
+      "description": "F10 Direct evidence that the brain's computational limit has been reached."
+    },
+    {
+      "subject": "F10 Capacity limit overflow",
+      "predicate": "F10 makes it necessary",
+      "object": "F10 Sensor sync need",
+      "description": "F10 Without synchronization the internal model becomes unusable."
+    },
+    {
+      "subject": "F10 Sensor sync need",
+      "predicate": "F10 is implemented by",
+      "object": "F10 Continuous sensor synchronization",
+      "description": "F10 The concrete awake mode process."
+    },
+    {
+      "subject": "F10 Continuous sensor synchronization",
+      "predicate": "F10 generated",
+      "object": "F10 Short-term forecast stability",
+      "description": "F10 Only short-term windows remain usable."
+    },
+    {
+      "subject": "F10 Short-term forecast stability",
+      "predicate": "F10 fails",
+      "object": "F10 Long-Term Chaos Divergence",
+      "description": "F10 When synchronization is insufficient or interrupted."
+    },
+    {
+      "subject": "F10 Long-Term Chaos Divergence",
+      "predicate": "F10 is a form of",
+      "object": "F10 Reversal Effect Manifestation",
+      "description": "F10 Timeline A (deterministic expectation) reverses into Timeline B (chaotic divergence)."
+    },
+    {
+      "subject": "F10 Macroscopic physics approximation",
+      "predicate": "F10 is limited by",
+      "object": "F10 Internal 3D World Model Constraint",
+      "description": "F10 The rendered model is inherently incomplete."
+    },
+    {
+      "subject": "F10 Internal 3D World Model Constraint",
+      "predicate": "F10 is compensated by",
+      "object": "F10 External Reality Feedback Loop",
+      "description": "F10 Constant data updating from outside."
+    },
+    {
+      "subject": "F10 External Reality Feedback Loop",
+      "predicate": "F10 relies on",
+      "object": "F10 Predictive Coding Compensation",
+      "description": "F10 Unconscious level does the actual correction moment by moment."
+    },
+    {
+      "subject": "F10 Beckmann logic chaos application",
+      "predicate": "F10 defined",
+      "object": "F10 Highly Complex Solution Sensor Sync",
+      "description": "Sensor synchronization is the highly complex solution level."
+    },
+    {
+      "subject": "F10 Highly Complex Solution Sensor Sync",
+      "predicate": "F10 avoided",
+      "object": "F10 Long-Term Chaos Divergence",
+      "description": "F10 By continuously patching the model."
+    },
+    {
+      "subject": "F10 Holographic information compression",
+      "predicate": "F10 aborts",
+      "object": "F10 three-body chaos",
+      "description": "F10 The compression limit of the macroscopic renderer."
+    },
+    {
+      "subject": "F10 awake simulation stabilization",
+      "predicate": "F10 depends",
+      "object": "F10 Sensor sync need",
+      "description": "F10 Only the waking state can maintain macroscopic order."
+    },
+    {
+      "subject": "F10 Expectation Filter in Chaos Prediction",
+      "predicate": "F10 protects against",
+      "object": "F10 Long-Term Chaos Divergence",
+      "description": "F10 Prevents prevailing future expectations in astronomical modeling."
+    },
+    {
+      "subject": "F10 three-body chaos",
+      "predicate": "F10 diagnoses",
+      "object": "F10 Macroscopic physics approximation",
+      "description": "F10 Shows that the model is an approximation and not the external reality itself."
+    },
+    {
+      "subject": "F10 Predictive Coding Compensation",
+      "predicate": "F10 works inside",
+      "object": "F10 External Reality Feedback Loop",
+      "description": "F10 Unconscious expectations use the loop to stabilize the model."
+    },
+    {
+      "subject": "F10 Reversal Effect Manifestation",
+      "predicate": "F10 manifests itself in",
+      "object": "F10 Long-Term Chaos Divergence",
+      "description": "F10 The reversal effect becomes visible as long-term divergence when sensor synchronization fails."
+    },
+    {
+      "subject": "F10 Macroscopic physics approximation",
+      "predicate": "F10 refers to",
+      "object": "Macroscopic physics",
+      "description": ""
+    },
+    {
+      "subject": "F10 Capacity limit overflow",
+      "predicate": "F10 refers to",
+      "object": "Capacity limit",
+      "description": ""
+    },
+    {
+      "subject": "F10 Highly Complex Solution Sensor Sync",
+      "predicate": "F10 is example for",
+      "object": "Highly complex solution level",
+      "description": ""
+    },
+    {
+      "subject": "F10 Predictive Coding Compensation",
+      "predicate": "F10 is part of",
+      "object": "Expectation, unconscious",
+      "description": ""
+    },
+    {
+      "subject": "F10 awake simulation stabilization",
+      "predicate": "F10 stabilized",
+      "object": "Awake simulation",
+      "description": ""
     }
   ]
 }

@@ -1,10 +1,10 @@
 ---
 name: beckmann-knowledge-graph
-version: 1.0.0
-description: "A structured knowledge graph (392 entities, 599 relations) that acts as a cognitive 'lens' for AI agents. Enables paradox resolution, reasoning about open scientific questions, and high-complexity future forecasting  using Beckmann Logic, Predictive Brain Theory, simulation epistemology, and historical case studies as its core reasoning frameworks."
+version: 1.1.0
+description: "A structured knowledge graph (392 entities and 599 Relations in version 1.0., 438 entities and 702 Relations in version 1.1.) that acts as a cognitive 'lens' for AI agents. Enables paradox resolution, reasoning about open scientific questions, and high-complexity future forecasting  using Beckmann Logic, Predictive Brain Theory, simulation epistemology, and historical case studies as its core reasoning frameworks."
 author: Beckmann
 license: MIT
-compatibility: "claude-sonnet-4-20250514, claude-opus-4-20250514, gpt-4o"
+compatibility: "claude-sonnet-4-20250514, claude-opus-4-20250514, gpt-4o, grok 4.20, gemini 3, meta ai"
 tags: "knowledge-graph, reasoning, forecasting, paradox, beckmann-logic, epistemology, AI-safety"
 ---
 
@@ -36,6 +36,9 @@ The graph is built on four interlocking pillars:
 
 ## When to Use This Skill
 
+
+
+
 Invoke this skill when the user's question falls into one of these categories:
 
 1. **Open scientific / philosophical questions**  e.g. "What is consciousness?",
@@ -43,6 +46,9 @@ Invoke this skill when the user's question falls into one of these categories:
 
 2. **Apparent paradoxes**  e.g. "If the universe had a beginning, what was
    before it?", "Can an AI be truly creative?", "Is objective knowledge possible?"
+
+
+
 
 3. **High-complexity forecasts**  e.g. "How will AI change democracy in 20
    years?", "What are the systemic risks of AGI?", "How will geopolitical
@@ -53,6 +59,10 @@ Invoke this skill when the user's question falls into one of these categories:
 
 5. **AI architecture and safety decisions**  the graph contains explicit
    nodes for dangerous vs. secure AI architectures.
+
+
+
+
 
 Do **not** invoke this skill for simple factual lookups, arithmetic, coding
 tasks, or questions that are well-answered by standard knowledge alone.
@@ -66,8 +76,8 @@ Load it at the start of any session where it is needed:
 
 ```javascript
 import graph from './graph.json' assert { type: 'json' };
-const entities = graph.entities;   // Array of 392 entity objects
-const relations = graph.relations; // Array of 599 relation objects
+const entities = graph.entities;   // Array of 438 entity objects
+const relations = graph.relations; // Array of 702 relation objects
 ```
 
 Each **entity** has three fields:
@@ -301,7 +311,20 @@ the ability to receive and act on external checks.
 
 ## Versioning
 
-This is version **1.0** of the Beckmann Knowledge Graph.
+This is version **1.1** of the Beckmann Knowledge Graph.
+
+What is new:
+
+
+- first being (limitation, the solvability of all problems in being is connected with the insolubility of the origin of first philosophical being)
+
+- Three-body problem
+
+- Squaring the circle and the goldfish analogy
+
+
+
+
 
 The graph is intended to be iteratively refined. When a new version is
 released, the following will change:
@@ -316,12 +339,12 @@ available version.
 
 ---
 
-## Known Limitations of v1.0
+## Known Limitations of v1.1
 
 - The graph is **not** a complete ontology  it does not cover all of human
   knowledge, only the frameworks and connections its author has encoded.
-- Some entity `typ` values are inconsistently formatted (a known v1.0 issue
-  to be resolved in v1.1).
+- Some entity `typ` values are inconsistently formatted (a known v1.1 issue
+  to be resolved in v1.2).
 - Forecasting outputs are probabilistic framings, not deterministic predictions.
 - The graph cannot replace empirical research  it provides a reasoning
   structure, not empirical data.
