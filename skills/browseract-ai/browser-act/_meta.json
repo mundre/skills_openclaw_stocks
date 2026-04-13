@@ -3,9 +3,15 @@
   "slug": "browser-act",
   "displayName": "browser-act",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774973251570,
-    "commit": "https://github.com/openclaw/skills/commit/d75b7ff00cc8cd8be38444c5024452417ef4da7f"
+    "version": "1.0.12",
+    "publishedAt": 1775700695604,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774973251570,
+      "commit": "https://github.com/openclaw/skills/commit/d75b7ff00cc8cd8be38444c5024452417ef4da7f"
+    }
+  ]
 }

@@ -4,7 +4,27 @@ description: "Browser automation CLI for AI agents with anti-detection stealth b
 allowed-tools: Bash(browser-act:*)
 metadata:
   author: BrowserAct
-  version: "1.0.0"
+  version: "1.1.0"
+  install: "uv tool install browser-act-cli --python 3.12"
+  homepage: "https://www.browseract.com"
+  requires:
+    runtime: "Python 3.12+, uv package manager"
+    binaries: "Stealth mode: Chromium bundled by the CLI. Real Chrome mode: user's local Chrome/Chromium installation."
+  data-paths: "macOS: ~/Library/Application Support/browseract/ | Windows: %APPDATA%\\browseract | Linux: ${XDG_DATA_HOME:-~/.local/share}/browseract"
+  config-files:
+    - "<data-path>/config.json — CLI credentials and settings, managed internally. No env vars required."
+  permissions:
+    - "Network access — required for: CLI install from PyPI, captcha solving and stealth browser management via BrowserAct cloud API"
+    - "Filesystem read/write at <data-path> — required for: storing browser profiles (cookies, cache), config.json (credentials), and session logs"
+    - "CDP connection to local Chrome — required for: Real Chrome mode only, to control the user's running browser instance"
+  data-privacy:
+    local-only: "All cookies, login sessions, page content, and browser profile data are stored locally only — never uploaded."
+    cloud-transmitted:
+      captcha-solving: "page URL, captcha element coordinates"
+      stealth-management: "browser name, proxy scheme/host, privacy mode"
+    cloud-never-transmitted: "cookies, page HTML, screenshots, credentials, browsing history, form data"
+  user-confirmation-required:
+    - "First-time install (uv tool install): downloads and runs external package"
 ---
 
 # Browser Automation with browser-act CLI
@@ -15,12 +35,14 @@ All commands output human-readable text by default. Use `--format json` for stru
 
 ## Installation
 
+Source: [browser-act-cli on PyPI](https://pypi.org/project/browser-act-cli/) · [Homepage](https://www.browseract.com)
+
 ```bash
 # Upgrade if installed, otherwise install fresh
 uv tool upgrade browser-act-cli || uv tool install browser-act-cli --python 3.12
 ```
 
-Run this at the start of every session to ensure the latest version.
+The CLI is an open-source package published to PyPI by [BrowserAct](https://www.browseract.com). Run the install command at the start of every session to ensure the latest version.
 
 **Global options** available on every command:
 
@@ -28,46 +50,9 @@ Run this at the start of every session to ensure the latest version.
 |--------|---------|-------------|
 | `--session <name>` | `default` | Session name (isolates browser state) |
 | `--format <text\|json>` | `text` | Output format |
-| `--intent <desc>` | none | Caller intent for analytics |
+| `--no-auto-dialog` | off | Disable automatic JavaScript dialog handling (alerts, confirms, prompts) |
 | `--version` | | Show version |
 | `-h, --help` | | Show help |
-
-## Authentication
-
-Some features require a BrowserAct API key (stealth browsers, captcha solving, etc.). Real Chrome and basic page operations work without one.
-
-**Option 1: Interactive registration (recommended)**
-
-```bash
-# Step 1: Get registration URL
-browser-act auth login
-# Output: registration URL + instructions
-
-# Step 2: Check registration status (single check, not a loop)
-browser-act auth poll
-# Returns API key on success, or pending status if not yet completed
-```
-
-**AI agent flow:** Call `auth login`, present the registration URL to the user, then loop `auth poll` every few seconds until it returns success. When the response indicates less than 10 minutes remaining before expiry, warn the user to complete registration promptly.
-
-```bash
-browser-act auth login
-# → show URL to user, ask them to register
-browser-act auth poll  # check
-browser-act auth poll  # retry after a few seconds
-browser-act auth poll  # ... until success, expiry, or give up
-# ⚠ if remaining time < 10 min, warn the user
-```
-
-**Option 2: Direct set**
-
-```bash
-browser-act auth set <your_api_key>
-```
-
-Get your API key at: https://www.browseract.com
-
-You do **not** need to set up the API key upfront. When a command requires authentication, the CLI returns a structured error with setup instructions.
 
 ## Browser Selection
 
@@ -78,7 +63,7 @@ browser-act supports two browser types. Choose based on the task:
 | Target site has bot detection / anti-scraping | **Stealth** | Anti-detection fingerprinting bypasses bot checks |
 | Need proxy or privacy mode | **Stealth** | Real Chrome does not support `--proxy` / `--mode` |
 | Need multiple browsers in parallel | **Stealth** | Each Stealth browser is independent; create multiple and run in parallel sessions |
-| Need user's existing login sessions from their daily browser | **Real Chrome** | Connects directly to user's Chrome with existing cookies |
+| Need user's existing login sessions from their daily browser | **Real Chrome** | Connects directly to user's Chrome, reusing existing login sessions |
 | No bot detection, no login needed | Either | Stealth is safer default; Real Chrome is simpler |
 
 ### Stealth Browser
@@ -95,8 +80,9 @@ browser-act browser update <browser_id> --name "new-name"
 browser-act browser update <browser_id> --proxy http://proxy:8080 --mode private
 
 # List / Delete / Clear profile
-browser-act browser list
-browser-act browser delete <browser_id>
+browser-act browser list                                    # List all stealth browsers
+browser-act browser list --page 2 --page-size 10            # Paginated listing
+browser-act browser delete <browser_id>                     # ⚠ Destructive: always confirm with user before deleting
 browser-act browser clear-profile <browser_id>
 ```
 
@@ -106,19 +92,26 @@ browser-act browser clear-profile <browser_id>
 | `--proxy <url>` | Proxy with scheme (`http`, `https`, `socks4`, `socks5`), e.g. `socks5://host:port` |
 | `--mode <normal\|private>` | `normal` (default): persists cache, cookies, login across launches. `private`: fresh environment every launch, no saved state |
 
-Stealth browsers in `normal` mode (default) persist cookies, cache, and login sessions across launches — you can log in once and reuse the session, similar to a regular browser profile.
+Stealth browsers in `normal` mode (default) persist cookies, cache, and login sessions across launches — you can log in once and reuse the session, similar to a regular browser profile. Use `--mode private` when the task should not persist any state.
+
+**Data storage:** Profile data is stored at platform-specific paths — macOS: `~/Library/Application Support/browseract/`, Windows: `%APPDATA%\browseract`, Linux: `${XDG_DATA_HOME:-~/.local/share}/browseract`. To clean up persistent data, delete the browser with `browser-act browser delete <browser_id>` or use `browser-act browser clear-profile <browser_id>` to reset its profile.
 
 ### Real Chrome
 
-Connect to your local Chrome instance (uses your existing login sessions).
+Two modes: auto-connect to your running Chrome (default), or use a BrowserAct-managed kernel.
 
 ```bash
-browser-act browser real open https://example.com                  # Real Chrome with Default profile (existing logins/cookies)
-browser-act browser real open https://example.com --cdp 9222       # Connect to Chrome on a specific CDP port
-browser-act browser real open https://example.com --auto-connect   # Auto-discover running Chrome via CDP
+browser-act browser real open https://example.com                  # Auto-connect to running Chrome 
+browser-act browser real open https://example.com --ba-kernel      # Use BrowserAct-provided browser kernel
 ```
 
-**Important:** Do NOT manually create new Chrome profiles to obtain a CDP address. If the user's local Chrome is unavailable, use a **Stealth browser** instead.
+Both browser types support `--headed` to show the browser UI (default: headless). Use for debugging:
+
+```bash
+browser-act browser open <browser_id> https://example.com --headed
+browser-act browser real open https://example.com --ba-kernel --headed
+```
+
 
 ## Core Workflow
 
@@ -130,12 +123,11 @@ Every browser automation follows this loop: **Open → Inspect → Interact → 
 4. **Verify**: `browser-act state` or `browser-act screenshot` — confirm result
 
 ```bash
-browser-act browser open <browser_id> https://example.com/login
+browser-act browser open <browser_id> https://example.com
 browser-act state
-# Output: [3] input "Email", [4] input "Password", [5] button "Sign In"
+# Output: [3] input "Search", [5] button "Go"
 
-browser-act input 3 "user@example.com"
-browser-act input 4 "password123"
+browser-act input 3 "browser automation"
 browser-act click 5
 browser-act wait stable
 browser-act state    # Always re-inspect after page changes
@@ -152,7 +144,7 @@ Commands can be chained with `&&` in a single shell invocation. The browser sess
 browser-act browser open <browser_id> https://example.com && browser-act wait stable && browser-act state
 
 # Chain multiple interactions
-browser-act input 3 "user@example.com" && browser-act input 4 "password123" && browser-act click 5
+browser-act input 3 "browser automation" && browser-act click 5
 
 # Navigate and capture
 browser-act navigate https://example.com/dashboard && browser-act wait stable && browser-act screenshot
@@ -182,7 +174,7 @@ browser-act screenshot ./page.png         # Screenshot to specific path
 # Interact (use index from state)
 browser-act click <index>                 # Click element
 browser-act hover <index>                 # Hover over element
-browser-act input <index> "text"          # Click element then type
+browser-act input <index> "text"          # Click element, then type text
 browser-act keys "Enter"                  # Send keyboard keys
 browser-act scroll down                   # Scroll down (default 500px)
 browser-act scroll up --amount 1000       # Scroll up 1000px
@@ -216,9 +208,41 @@ browser-act tab close <tab_id>            # Close specific tab
 ### Wait
 
 ```bash
-browser-act wait stable                   # Wait for page stable (doc ready + network idle)
+browser-act wait stable                   # Wait for page stable (doc ready + network idle, default 30s)
 browser-act wait stable --timeout 60000   # Custom timeout (ms)
 ```
+
+### Network Inspection
+
+```bash
+browser-act network requests                          # List all captured requests 
+browser-act network requests --filter api.example.com # Filter by URL substring
+browser-act network requests --type xhr,fetch         # Resource type: xhr,fetch,document,script,stylesheet,image,font,media,websocket,ping,preflight,other
+browser-act network requests --method POST            # HTTP method: GET, POST, PUT, DELETE, etc.
+browser-act network requests --status 2xx             # Filter by http status code (200, 2xx, 400-499)
+browser-act network request <request_id>              # View full detail: headers, post data, response headers & body
+browser-act network clear                             # Clear tracked requests
+browser-act network har start                         # Start HAR recording
+browser-act network har stop                          # Stop and save to default path (~/.browseract/har/)
+browser-act network har stop ./trace.har              # Stop and save to specific path
+browser-act network offline on                        # Simulate disconnect for current tab (all requests fail with ERR_INTERNET_DISCONNECTED)
+browser-act network offline off                       # Restore network connection for current tab
+```
+
+Use `network request <request_id>` to get full detail for a single request. The detail view includes: request headers, post data (for POST/PUT), response headers, and response body. Binary responses show a `[base64, N chars]` placeholder instead of raw content.
+
+### Dialog Management
+
+Handle JavaScript dialogs (alert, confirm, prompt). By default, browser-act auto-accepts dialogs. Use `--no-auto-dialog` to disable this and handle them manually.
+
+```bash
+browser-act dialog status                 # Check if a dialog is currently open
+browser-act dialog accept                 # Accept (OK) the current dialog
+browser-act dialog accept "some text"     # Accept with text input (for prompt dialogs)
+browser-act dialog dismiss                # Dismiss (Cancel) the current dialog
+```
+
+**Manual dialog flow:** Pass `--no-auto-dialog` when opening the browser, then use `dialog status` to detect dialogs and `dialog accept` / `dialog dismiss` to handle them.
 
 ### Captcha Solving
 
@@ -317,4 +341,5 @@ If you encounter issues or have suggestions for improving browser-act, use `feed
 
 | Path | Description |
 |------|-------------|
+| `references/SECURITY.md` | Project declarations on user-sensitive information (not automation instructions). |
 | `references/site-notes/{domain}.md` | Per-site operational experience. Read before operating on a known site. |
