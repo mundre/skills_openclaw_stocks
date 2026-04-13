@@ -1,20 +1,37 @@
 ---
 name: pixcli
-version: 2.2.0
+version: 2.3.3
 description: Creative toolkit for AI agents — generate images, videos, voiceover,
   music, and sound effects, then assemble polished output via Remotion. Uses the
-  pixcli CLI for all generation (auto-classifies tasks, enriches prompts, selects
-  models). Remotion handles video assembly with 6 bundled templates and 30+ rule
-  references. Use when building product videos, social ads, explainers, marketing
-  assets, or any visual/audio content pipeline.
-allowed-tools: Bash(pixcli *), Bash(npx pixcli *), Bash(npx remotion *),
-  Bash(npm *), Bash(node *), Bash(npx *), Bash(mkdir *), Bash(cp *),
-  Bash(cp -r *), Bash(ffmpeg *), Bash(ffprobe *), Read, Write
+  pixcli CLI (published npm package "pixcli") for all generation. Remotion handles
+  video assembly with 6 bundled templates.
+install: npx --yes pixcli --version
+env:
+  - PIXCLI_API_KEY
+allowed-tools:
+  Bash(pixcli *),
+  Bash(npx --yes pixcli *),
+  Bash(npx pixcli *),
+  Bash(npx --yes remotion *),
+  Bash(npx remotion *),
+  Bash(npm install),
+  Bash(npm run verify),
+  Bash(npm run typecheck),
+  Bash(npm run render),
+  Bash(npm run render *),
+  Bash(mkdir *),
+  Bash(cp *),
+  Bash(cp -r *),
+  Bash(ffmpeg *),
+  Bash(ffprobe *),
+  Read,
+  Write
 argument-hint: <command> [options]
 metadata:
   openclaw:
     emoji: 🎨
     primaryEnv: PIXCLI_API_KEY
+    primaryCredential: PIXCLI_API_KEY
     providerEnv:
       - PIXCLI_API_KEY
     requires:
@@ -39,19 +56,44 @@ Creative toolkit for AI agents. Generate images, videos, voiceover, music, and s
 
 **Philosophy:** The CLI handles complexity (task classification, prompt enrichment, model selection). You just describe what you want.
 
+## Requirements
+
+| Requirement | Value | Notes |
+|---|---|---|
+| **Primary credential** | `PIXCLI_API_KEY` | **Required.** Covers all capabilities (image, video, voice, music, SFX). Obtain at https://pixcli.shellbot.sh |
+| **Runtime** | Node.js ≥ 18 | `node` and `npx` must be on PATH |
+| **CLI package** | `pixcli` (npm) | Installed at runtime via `npx --yes pixcli`. Published package: [npmjs.com/package/pixcli](https://www.npmjs.com/package/pixcli). Source: [github.com/shellbot-ai/pixcli](https://github.com/shellbot-ai/pixcli) |
+| **Remotion** (optional) | `remotion` (npm) | Only needed for video assembly from bundled templates. Installed via `npm install` inside template dirs — the templates' `package.json` declares all deps (`remotion`, `react`, `react-dom`, `@remotion/*`). No arbitrary package installs. |
+
+### What runs at runtime and why
+
+- **`npx --yes pixcli <command>`**: Downloads + caches the `pixcli` CLI from npm on first invocation, then runs it. All subsequent calls use the cached binary. The `--yes` flag is required in agent contexts to avoid interactive prompts. `pixcli` is an HTTP client — it sends prompts to the pixcli API (`https://pixcli.shellbot.sh/api/v1/*`), polls for completion, and downloads the resulting files. It does not execute arbitrary code.
+- **`npx --yes remotion <command>`**: Same pattern for the Remotion video renderer. Only used when assembling final videos from generated assets using the bundled templates.
+- **`npm install`** (no arguments): Runs inside a copied template directory to install the dependencies declared in that template's `package.json`. The agent never passes package names to `npm install` — only hydrates declared deps.
+- **`ffmpeg` / `ffprobe`**: Local-only media operations (trim, merge, scale, get info). No network access.
+
+### What does NOT run
+
+- No bare `npx <arbitrary-package>` — only `npx pixcli` and `npx remotion`
+- No `npm install <package-name>` — only bare `npm install`
+- No `node <script>` — the agent never executes arbitrary JavaScript
+- No `npm publish`, `npm config`, or any npm command beyond `install` and `run <script>`
+
 ## Setup
 
-### 1. Install the CLI
+### 1. Use the CLI
+
+AI agents should always run pixcli via `npx --yes pixcli` — it's in the scoped allowlist and requires no global install:
 
 ```bash
-npm install -g pixcli
+npx --yes pixcli image "a red fox in a forest"
 ```
 
-Or use without installing:
+Humans who prefer a global install for interactive terminals can optionally run `npm install -g pixcli` once outside the agent — the agent doesn't need (or have permission for) that command.
 
-```bash
-npx pixcli image "a red fox in a forest"
-```
+> **Important for AI agents:** `npx` prompts for confirmation before installing packages. The `--yes` flag auto-accepts. Without it, the command will hang waiting for input. Always use `npx --yes pixcli` in non-interactive contexts.
+
+> **Always use `--json`:** All commands support `--json` which suppresses spinners and human-readable output, returning only structured JSON to stdout. This minimizes token consumption and gives you machine-parseable results. Alternatively, set `PIXCLI_JSON=1` once to enable JSON mode for all commands without passing the flag each time.
 
 ### 2. Authenticate
 
@@ -68,12 +110,104 @@ pixcli --version
 pixcli image "test: a simple blue circle on white background" -o test.png
 ```
 
+## Agent execution: long-running jobs
+
+Video generation can take **1–10+ minutes** (Seedance, Kling, Veo). This matters for agents because:
+
+- The CLI blocks synchronously while polling for completion
+- Agent tool-call timeouts (typically 2–5 minutes) can kill the process before the video is ready
+- Wasted tokens: spinner updates every 2 seconds don't print in `--json` mode, but the blocking wait wastes wall-clock budget
+
+### The recommended pattern: submit → check (non-blocking)
+
+All generation commands support `--no-wait` which **returns immediately after submission** with the `job_id`. The agent can then check status as often as needed with the non-blocking `pixcli job` command.
+
+```bash
+# 1. ALWAYS set these at the start of your session
+export PIXCLI_JSON=1       # suppress spinners, return only JSON
+export PIXCLI_API_KEY="px_live_..."
+
+# 2. Submit a video job (returns in ~3-10s instead of 5-10 min)
+npx --yes pixcli video "A cinematic product orbit, soft lighting" \
+  --from product.png --no-wait
+# Output: {"job_id":"abc123", "status":"submitted", "check_command":"pixcli job abc123 --json", ...}
+
+# 3. Do other work, then check status (instant, non-blocking)
+npx --yes pixcli job abc123
+# Output: {"status":"processing", "current_step":1, "total_steps":2}
+
+# 4. When ready, wait + download
+npx --yes pixcli job abc123 --wait -o output.mp4
+# Output: {"status":"completed", "files":[...], "cost":150000}
+```
+
+### When to use `--no-wait` vs default (blocking)
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| **Image generation** (~10-30s) | Default (no `--no-wait`) | Fast enough that blocking is fine |
+| **Video generation** (1-10min) | `--no-wait` + poll later | Avoid tool-call timeout, do parallel work |
+| **Music/voice/sfx** (~10-60s) | Default usually fine | Short. Use `--no-wait` if batching many |
+| **Parallel pipeline** (image → video → extend) | `--no-wait` for each video step | Submit all, poll all, download all |
+| **Quick iteration/draft** | Default with `-q draft` | Draft quality is 2-5x faster |
+
+### Token consumption
+
+| Mode | Tokens returned | Blocking time |
+|------|-----------------|---------------|
+| No `--json` | 500-1000+ (spinner updates, human text) | Full wait |
+| `--json` (blocking) | 50-100 (clean JSON only) | Full wait |
+| `--json --no-wait` | 50-80 (submit response only) | 3-10s (submission only) |
+| `pixcli job <id> --json` | 30-60 (status check) | Instant |
+
+**Always** set `PIXCLI_JSON=1` at the start of your agent session. This single environment variable suppresses spinners, human-readable text, and progress updates for ALL pixcli commands — reducing token cost by ~90%.
+
+### Timeout recovery
+
+If a blocking call times out (either the agent's tool timeout or the CLI's internal 10-minute limit), the job is **still running on the server**. The JSON error output includes recovery commands:
+
+```json
+{
+  "job_id": "abc123",
+  "status": "timeout",
+  "error": "CLI poll timeout — job still running on server",
+  "check_command": "pixcli job abc123 --json",
+  "wait_command": "pixcli job abc123 --wait --json"
+}
+```
+
+Parse `check_command` and execute it to recover. The server never loses a job — it runs to completion regardless of whether the CLI is connected.
+
+### Parallel video pipeline example
+
+Generate 3 video clips simultaneously without blocking between them:
+
+```bash
+# Submit all three (each returns in ~5s)
+npx --yes pixcli video "Product hero orbit" --from hero.png --no-wait -o hero.mp4
+npx --yes pixcli video "Lifestyle scene, natural light" --from lifestyle.png --no-wait -o lifestyle.mp4
+npx --yes pixcli video "App demo, smooth scroll" --from demo.png --no-wait -o demo.mp4
+
+# Parse job IDs from each output
+# Then poll all three:
+npx --yes pixcli job $JOB_1
+npx --yes pixcli job $JOB_2
+npx --yes pixcli job $JOB_3
+
+# When all are "completed", download:
+npx --yes pixcli job $JOB_1 --wait -o hero.mp4
+npx --yes pixcli job $JOB_2 --wait -o lifestyle.mp4
+npx --yes pixcli job $JOB_3 --wait -o demo.mp4
+```
+
+This produces 3 videos in the time it takes to render 1 — ~5-8 minutes total instead of ~15-24 minutes sequential.
+
 ## Commands
 
 ### `pixcli image <prompt>` — Generate images
 
 ```bash
-pixcli image "Studio product shot of wireless earbuds, soft lighting, white background"
+pixcli image "Studio product shot of wireless earbuds, soft lighting, white background" --json
 ```
 
 | Option | Default | Description |
@@ -87,14 +221,15 @@ pixcli image "Studio product shot of wireless earbuds, soft lighting, white back
 | `-m, --model <model>` | auto | Specific model ID |
 | `-o, --output <path>` | auto | Output file or directory |
 | `--json` | `false` | Machine-readable JSON output |
+| `--no-wait` | `false` | Submit and return immediately (use `pixcli job <id>` to check later) |
 | `--no-enrich` | — | Skip prompt enrichment |
 
-**Models:** `flux-pro`, `flux-dev`, `seedream-v5`, `nano-banana-pro`, `nano-banana-2`, `imagen-4`, `imagen-4-fast`, `gpt-image-1`
+**Models:** `flux-pro`, `flux-dev`, `seedream-v5`, `nano-banana-pro` (Google Direct), `nano-banana-2` (Google Direct), `nano-banana-pro-fal` / `nano-banana-2-fal` (same models via fal), `nano-banana-pro-or` / `nano-banana-2-or` (via OpenRouter — requires `x-openrouter-key`), `imagen-4`, `imagen-4-fast`, `gpt-image-1` (OpenRouter). Use `pixcli models --type image` for the live list.
 
 ### `pixcli edit <prompt>` — Edit images
 
 ```bash
-pixcli edit "Remove the background" -i product.jpg -o product-nobg.png
+pixcli edit "Remove the background" -i product.jpg -o product-nobg.png --json
 ```
 
 | Option | Default | Description |
@@ -104,6 +239,7 @@ pixcli edit "Remove the background" -i product.jpg -o product-nobg.png
 | `-m, --model <model>` | auto | Specific model ID |
 | `-o, --output <path>` | auto | Output file or directory |
 | `--json` | `false` | Machine-readable JSON output |
+| `--no-wait` | `false` | Submit and return immediately |
 | `--no-enrich` | — | Skip prompt enrichment |
 
 **Models:** `seedream-v5-edit`, `phota-enhance`, `rembg`, `recraft-upscale`, `aura-sr`
@@ -112,13 +248,13 @@ pixcli edit "Remove the background" -i product.jpg -o product-nobg.png
 
 ```bash
 # Image-to-video (recommended: generate still first, then animate)
-pixcli video "Slow camera orbit around the product" --from product.png -o reveal.mp4
+pixcli video "Slow camera orbit around the product" --from product.png -o reveal.mp4 --json
 
 # Text-to-video (generates image automatically, then animates)
-pixcli video "A cat walking through a garden at sunset" -o cat.mp4
+pixcli video "A cat walking through a garden at sunset" -o cat.mp4 --json
 
 # Extend an existing video
-pixcli video "The cat jumps over a fence" --from cat.mp4 --extend -o cat-extended.mp4
+pixcli video "The cat jumps over a fence" --from cat.mp4 --extend -o cat-extended.mp4 --json
 ```
 
 | Option | Default | Description |
@@ -133,30 +269,67 @@ pixcli video "The cat jumps over a fence" --from cat.mp4 --extend -o cat-extende
 | `-m, --model <model>` | auto | Specific model ID |
 | `-o, --output <path>` | auto | Output file (.mp4) |
 | `--json` | `false` | Machine-readable JSON output |
+| `--no-wait` | `false` | Submit and return immediately (recommended for video — avoids 10min blocking) |
 | `--extend` | `false` | Extend the source video instead of I2V |
 
-**Models:** `kling-v3-pro-i2v` (cinematic, best quality), `veo3-i2v` (Google, native audio), `wan-v2-i2v` (cheap, good motion), `minimax-i2v` (fast), `ltx-t2v` (text-to-video, cheap), `veo3-t2v` (text-to-video, premium), `grok-extend-video` (extend), `pixverse-v6-i2v` (I2V with audio, multi-clip, styles, $0.075/sec), `pixverse-v6-t2v` (T2V with audio, multi-clip, styles), `pixverse-v6-transition` (start-to-end frame transition), `pixverse-v6-extend` (video extension with audio)
+**Models — fal backend**: `veo31-lite-i2v` (default I2V, Veo 3.1 Lite), `veo31-lite-t2v` (default T2V, Veo 3.1 Fast), `veo31-lite-transition` (start→end frame), `kling-o3-pro-i2v` (cinematic, best quality), `kling-o3-pro-t2v`, `kling-o3-standard-i2v`, `kling-o3-standard-t2v`, `kling-v3-pro-i2v`, `veo3-i2v` (premium, native audio + lipsync), `veo3-t2v`, `pixverse-v6-i2v` / `-t2v` / `-transition` / `-extend` (stylized, audio, multi-clip), `ltx-t2v` (budget T2V), `ltx-extend-video` (budget extension, native audio), `wan-v2-i2v` (cheap motion), `minimax-i2v` (fast, avoid for faces), `grok-extend-video`
+
+**Models — muapi backend (Seedance 2 family)**: `seedance-2-t2v` / `-fast` / `-480p`, `seedance-2-i2v` / `-fast` / `-480p`, `seedance-2-omni` / `-basic` (multimodal with image/video/audio/character refs), `seedance-2-first-last-frame`, `seedance-2-video-edit`, `seedance-2-extend`. Routing is automatic: mention "seedance" / "bytedance" / "doubao" in the prompt, use the `@image1`/`@video1`/`@character:id` grammar, or pass `--quality draft` to opt in. See `references/seedance-playbook.md` for the full prompt playbook.
 
 **Opinionated approach:** Always generate a still first with `pixcli image`, review it, then animate with `pixcli video --from`. This gives you control over the starting frame.
+
+### Video prompting — the core formula
+
+Every video prompt should follow this structure:
+
+```
+Subject → Action → Environment → Camera → Style → Constraints
+```
+
+**Target 60–100 words.** Shorter = vague. Longer = conflicting instructions that degrade coherence.
+
+| # | Element | Rule | Good example |
+|---|---------|------|--------------|
+| 1 | **Subject** | Describe visual features explicitly | *A woman in her 30s, short black hair, red wool coat* |
+| 2 | **Action** | Concrete verbs + quantify intensity | *walks briskly* — not *walks* |
+| 3 | **Environment** | Lighting + atmosphere + time of day | *rain-slicked Tokyo street at night, neon reflections on wet pavement* |
+| 4 | **Camera** | **One instruction only** — never chain moves | *slow push-in* — never *push then pan then orbit* |
+| 5 | **Style** | Specific aesthetics only | *cinematic, shallow depth of field, film grain* |
+| 6 | **Constraints** | Say what you want, not what you don't | *smooth motion, stable framing* |
+
+**The 10 rules that always apply:**
+
+1. **One camera move per shot. Always.** Combining causes jitter.
+2. **Separate subject motion from camera motion.** ✅ "The dancer spins. Camera holds fixed." ❌ "Spinning camera around a dancing person."
+3. **For I2V, only describe what changes** — the image carries composition and identity. Add `Preserve composition and colors.`
+4. **Use physical verbs** — `melt`, `fracture`, `snap open` > `becomes` / `transforms`.
+5. **Lighting is your biggest quality lever** — always name the light (`golden hour`, `rim light`, `natural window light`, `neon`, `soft diffused`, `dramatic stage lighting`).
+6. **Write on a timeline for 10s+ clips** — break into 3–5 time-coded beats: `[0s–3s]:`, `[3s–7s]:`, etc.
+7. **Every asset gets a job** — if a file has no role, it's noise. Be explicit about what each `--from` / `--to` does.
+8. **Put negatives in `--negative`**, not in the main prompt.
+9. **For video extend, `-d` is the NEW duration**, not the total.
+10. **Draft before hero** — always iterate with `-q draft` (auto-routes to 480p Seedance or ltx-t2v) before burning credits on a full render.
+
+Read `references/seedance-playbook.md` for the complete playbook — camera movement catalog, lighting table, timeline prompting templates, multimodal role assignment, and 10+ ready-to-paste command recipes.
 
 ### `pixcli voice <text>` — Text-to-speech
 
 ```bash
-pixcli voice "Welcome to the future of productivity." -o voiceover.mp3
-pixcli voice "Bienvenidos al futuro." --voice Sarah --language spa -o vo-spanish.mp3
+pixcli voice "Welcome to the future of productivity." -o voiceover.mp3 --json
+pixcli voice "Bienvenidos al futuro." --voice Sarah --language es -o vo-spanish.mp3 --json
 ```
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--voice <name>` | `Rachel` | Voice preset: Rachel, Aria, Roger, Sarah, Laura, Charlie, George, Callum, River, Liam, Charlotte, Alice, Matilda, Will, Jessica, Eric, Chris, Brian, Daniel, Lily, Bill |
-| `--language <code>` | auto | ISO 639-1 language code (eng, spa, fra, deu, jpn, etc.) |
+| `--language <code>` | auto | ISO 639-1 language code (en, es, fr, de, ja, etc.) |
 | `-o, --output <path>` | auto | Output file (.mp3) |
 | `--json` | `false` | Machine-readable JSON output |
 
 ### `pixcli music <prompt>` — Generate music
 
 ```bash
-pixcli music "Subtle ambient electronic, minimal beats, corporate technology feel" -d 45 -o bg-music.mp3
+pixcli music "Subtle ambient electronic, minimal beats, corporate technology feel" -d 45 -o bg-music.mp3 --json
 ```
 
 | Option | Default | Description |
@@ -168,8 +341,8 @@ pixcli music "Subtle ambient electronic, minimal beats, corporate technology fee
 ### `pixcli sfx <prompt>` — Generate sound effects
 
 ```bash
-pixcli sfx "Smooth cinematic whoosh transition" -d 1.5 -o whoosh.mp3
-pixcli sfx "Soft digital click, subtle UI interaction" -d 0.5 -o click.mp3
+pixcli sfx "Smooth cinematic whoosh transition" -d 1.5 -o whoosh.mp3 --json
+pixcli sfx "Soft digital click, subtle UI interaction" -d 0.5 -o click.mp3 --json
 ```
 
 | Option | Default | Description |
@@ -178,14 +351,38 @@ pixcli sfx "Soft digital click, subtle UI interaction" -d 0.5 -o click.mp3
 | `-o, --output <path>` | auto | Output file (.mp3) |
 | `--json` | `false` | Machine-readable JSON output |
 
+### `pixcli models` — List available models
+
+```bash
+# Every model, grouped by type
+pixcli models --json
+
+# Only Seedance
+pixcli models --search seedance --json
+
+# Only video models routed through muapi
+pixcli models --type video --backend muapi --json
+```
+
+| Option | Description |
+|--------|-------------|
+| `-t, --type <kind>` | `image` \| `video` \| `audio` |
+| `-b, --backend <name>` | `fal` \| `muapi` \| `google-direct` \| `openrouter` |
+| `-p, --provider <name>` | Upstream provider: `fal` \| `google` \| `bytedance` \| `elevenlabs` \| `openai` \| `xai` \| `muapi` |
+| `-c, --capability <cap>` | `text-to-video` \| `image-to-video` \| `edit` \| `upscale` \| `bg-removal` \| `lipsync` \| `music` \| `sound-effects` \| `text-to-speech` \| `video-extend` \| `enhance` |
+| `-s, --search <term>` | Substring match on id, name, or strengths |
+| `--json` | Machine-readable JSON output |
+
+Backs onto `GET /api/v1/models?type=...&backend=...&search=...`. Use this to discover model ids before passing them to `-m` on any generation command.
+
 ### `pixcli job <id>` — Check job status and download results
 
 ```bash
 # Check status of a job
-pixcli job abc123
+pixcli job abc123 --json
 
 # Wait for completion and download
-pixcli job abc123 --wait -o output.mp4
+pixcli job abc123 --wait -o output.mp4 --json
 ```
 
 | Option | Default | Description |
@@ -202,6 +399,8 @@ pixcli job abc123 --wait -o output.mp4
 |--------|-------------|
 | `--key <api_key>` | Override `PIXCLI_API_KEY` env var |
 | `--api-url <url>` | Override API URL (default: `https://pixcli.shellbot.sh`) |
+| `--json` | Machine-readable JSON output (or set `PIXCLI_JSON=1` once for all commands) |
+| `--no-wait` | Submit the job and return immediately with the `job_id` — don't poll for completion. Available on: `image`, `edit`, `video`, `voice`, `music`, `sfx` |
 | `--version` | Show CLI version |
 | `--help` | Show help |
 
@@ -374,6 +573,7 @@ Read `references/remotion-playbook.md` for detailed Remotion implementation guid
 - `references/command-reference.md` — Full parameter docs for all pixcli commands
 - `references/creative-guidelines.md` — Quality standards for productions
 - `references/prompt-cookbook.md` — Proven prompt patterns for every task
+- `references/seedance-playbook.md` — Video prompting masterclass (Seedance 2 + all video models): 6-element formula, camera catalog, lighting table, timeline prompting, multimodal role assignment, 10+ ready-to-paste recipes
 - `references/workflow-recipes.md` — End-to-end recipe examples
 - `references/ancillary-assets.md` — Asset generation strategy for Remotion scenes
 

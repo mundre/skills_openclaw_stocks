@@ -140,7 +140,7 @@ Usage: pixcli voice <text> [options]
 |--------|------|---------|-------------|
 | `<text>` | string | **required** | Text to speak (1-5000 chars) |
 | `--voice <name>` | string | `Rachel` | Voice preset |
-| `--language <code>` | string | — | ISO 639-1 language code |
+| `--language <code>` | string | — | ISO 639-1 language code (en, es, fr, de, ja) |
 | `-o, --output <path>` | string | auto | Output .mp3 file |
 | `--json` | flag | `false` | Machine-readable JSON output |
 

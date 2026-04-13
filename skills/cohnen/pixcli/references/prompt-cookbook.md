@@ -156,6 +156,80 @@ pixcli edit "Enhance and clean up" -i raw.jpg -m phota-enhance -o enhanced.jpg
 
 ## Video generation
 
+> **Formula**: Subject → Action → Environment → Camera → Style → Constraints. Target 60–100 words. One camera move per shot. See `seedance-playbook.md` for the full masterclass.
+
+### Text-to-video using the 6-element formula
+```bash
+pixcli video "A woman in her 30s, short black hair, red wool coat, walks briskly through a rain-slicked Tokyo street at night. Neon signs reflect on wet pavement. She glances over her shoulder. Slow push-in. Cinematic, shallow depth of field, film grain, cool blue palette. Smooth motion, stable framing." \
+  -d 8 -r 16:9 -q high -o tokyo.mp4
+```
+
+### Seedance auto-routing via keyword
+```bash
+# Any of these prompts route to Seedance on muapi automatically
+# (no -m flag needed): "seedance", "bytedance", "doubao" in the text
+pixcli video "Seedance cinematic style: a bartender slides a cocktail across a polished bar, ice clinks, amber liquid catches the neon light, camera tracks the glass, moody jazz club, warm tones, shallow DOF." \
+  -d 8 -r 16:9 -q high -o cocktail.mp4
+```
+
+### Seedance explicit product hero (orbit)
+```bash
+pixcli video "A sleek titanium laptop sits open on a marble desk in a minimalist studio. Morning light streams through floor-to-ceiling windows. Camera orbits slowly around the product, 90 degrees. Clean, ultra-sharp, 4K detail, neutral warm palette. Smooth orbit, no jitter." \
+  -m seedance-2-t2v -d 10 -r 16:9 -q high -o product-hero.mp4
+```
+
+### Seedance I2V — portrait come to life
+```bash
+# Describe ONLY the motion. The image carries composition and identity.
+pixcli video "She slowly turns her head toward camera, a subtle smile forming. Eyes blink naturally. Hair moves gently in a light breeze. Camera holds fixed. Soft natural window light. Preserve composition and colors." \
+  --from portrait.png -m seedance-2-i2v -d 5 -r 9:16 -q high -o portrait-alive.mp4
+```
+
+### Seedance first-frame → last-frame transition
+```bash
+pixcli video "Character leaps upward with explosive energy, arms raised, reaching maximum height at the final frame. Natural motion arc. Preserve character appearance." \
+  --from standing.png --to jumping.png \
+  -m seedance-2-first-last-frame -d 5 -r 16:9 -o leap.mp4
+```
+
+### Seedance video extend (new seconds only)
+```bash
+# -d is the NEW seconds to add, not the total.
+pixcli video "Camera tilts upward as the neon sign flickers on. Steam rises from the coffee cup. The door opens. Warm street light spills into the room." \
+  --from scene.mp4 --extend -m seedance-2-extend -d 6 -o scene-extended.mp4
+```
+
+### Seedance video edit (change identity, keep motion)
+```bash
+pixcli video "Keep the original motion and camera work. Change the character's hair to long red hair. Add fog rolling through the background." \
+  --from original.mp4 -m seedance-2-video-edit -d 5 -o edited.mp4
+```
+
+### Draft iteration loop (auto-routes to 480p Seedance)
+```bash
+# --quality draft triggers the 480p Seedance tier — ~6x cheaper.
+# Validate composition + motion before committing to a full render.
+pixcli video "Woman walking through rain, neon reflections, slow push-in, cinematic" \
+  -d 5 -q draft -o test.mp4
+```
+
+### Timeline prompt for a 12s brand story
+```bash
+pixcli video "[Global: warm cinematic, shallow DOF, golden tones, documentary] \
+[0s-3s]: Wide shot, static. Small bakery at dawn, flour dust in morning light, empty tables. \
+[3s-7s]: Medium shot, slow push-in. Baker in white apron shapes dough with practiced hands. \
+[7s-11s]: Close-up, fixed. Hands pressing dough. Texture detail. Quiet focus. \
+[11s-12s]: Wide shot, slow dolly out. Full bakery revealed, warm and alive." \
+  -m seedance-2-t2v -d 12 -r 16:9 -q high -o bakery-story.mp4
+```
+
+### Negative prompt for artifact-prone shots
+```bash
+pixcli video "A dancer spins on a spotlit stage. Camera holds fixed. Dramatic stage lighting, black background." \
+  --negative "jitter, morphing, warped faces, duplicate limbs, unstable framing, jump cuts, text artifacts" \
+  -m seedance-2-t2v -d 6 -r 9:16 -q high -o dancer.mp4
+```
+
 ### Hero product reveal (image first, then animate)
 ```bash
 # Generate the hero still
