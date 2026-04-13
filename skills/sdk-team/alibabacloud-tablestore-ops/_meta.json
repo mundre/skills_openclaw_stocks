@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-tablestore-ops",
+  "displayName": "Alibabacloud Tablestore Ops",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1775715898874,
+    "commit": null
+  },
+  "history": []
+}
