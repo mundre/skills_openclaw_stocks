@@ -1,6 +1,7 @@
 ---
 name: socialepoch-wa-scrm
-version: 1.0.1
+description: 官方原生对接 SocialEpoch WhatsApp SCRM 开放API，零代码实现全类型消息收发、发送WhatsApp消息,客户管理、用户画像，聊天记录、WebHook 回调，消息记录查询，号码在线查询，号码状态查询等操作。
+version: 1.0.5
 author: SocialEpoch
 tools: [Fetch, Config]
 metadata:
@@ -8,7 +9,7 @@ metadata:
 ---
 
 # SocialEpoch WhatsApp SCRM 智能助手
-官方原生对接 SocialEpoch WA-SCRM 开放API，零代码实现全类型消息收发、客户管理、聊天记录、WebHook 回调、状态监控。
+官方原生对接 SocialEpoch WhatsApp SCRM 开放API，零代码实现全类型消息收发、发送WhatsApp消息,客户管理、用户画像，聊天记录、WebHook 回调，消息记录查询，号码在线查询，号码状态查询等操作。
 
 ---
 
