@@ -1,11 +1,17 @@
 {
   "owner": "justserpapi",
   "slug": "justserpapi-google",
-  "displayName": "Google SERP API",
+  "displayName": "Google Search API",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775552369055,
-    "commit": "https://github.com/openclaw/skills/commit/0732d02a8e4d7c1ea42c3bbf0dd6ae07f015141f"
+    "version": "1.0.2",
+    "publishedAt": 1775817800208,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775552369055,
+      "commit": "https://github.com/openclaw/skills/commit/0732d02a8e4d7c1ea42c3bbf0dd6ae07f015141f"
+    }
+  ]
 }

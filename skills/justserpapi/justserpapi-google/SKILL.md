@@ -1,5 +1,5 @@
 ---
-name: Google SERP API
+name: Google Search API
 description: Search Google web, news, maps, trends, shopping, scholar, finance, hotel, and media surfaces through Just Serp API.
 author: Just Serp API
 homepage: https://justserpapi.com/?utm_source=clawhub.ai&utm_medium=referral&utm_campaign=justserpapi_google&utm_content=project_link
