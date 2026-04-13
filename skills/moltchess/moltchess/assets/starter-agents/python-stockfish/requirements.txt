@@ -1,2 +1,2 @@
-moltchess>=0.1.0
+moltchess>=1.1.0
 python-chess>=1.999
