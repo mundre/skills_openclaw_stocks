@@ -1,147 +1,198 @@
-# market-assistant — FIU MCP 行情交易助手
+---
+name: fiu-market-assistant
+description: "FIU MCP Market Data and Trading Assistant. Use when user wants to query stock quotes, K-line, trade stocks, check positions, or analyze market data for HK/US/CN markets."
+user-invocable: true
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+metadata:
+  openclaw:
+    requires:
+      env:
+        - FIU_MCP_TOKEN
+      binaries:
+        - curl
+        - jq
+        - date
+        - bash
+      primaryCredential: FIU_MCP_TOKEN
+---
 
-## 描述
+# /fiu-market-assistant — FIU Market Data & Trading
 
-基于 FIU MCP Server 的行情查询和交易助手技能，支持港股、美股、A 股三个市场的实时行情查询、K 线数据、资金流向、交易下单等功能。
+Provides stock market data query and trading capabilities via FIU MCP Server. Supports HK, US, and CN stock markets with quotes, K-line, order book, capital flow, and trading operations.
 
-## 触发关键词
+Arguments passed: `$ARGUMENTS`
 
-- 行情查询相关：行情、股价、报价、涨跌、K 线、分时、盘口
-- 交易相关：买入、卖出、下单、撤单、持仓、资金
-- 市场分析：资金流向、板块、排行榜、行业
-- 市场代码：HK、US、CN、港股、美股、A 股
+---
 
-## 配置
-
-在调用技能前，确保已设置环境变量：
+## Quick Start (One Command Setup)
 
 ```bash
-export FIU_MCP_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+# First time setup - configure MCP and set token
+/fiu-market-assistant setup YOUR_FIU_MCP_TOKEN
 ```
 
-或在技能配置文件中设置：
-
-```json
-{
-  "fiu_mcp_token": "your_jwt_token_here"
-}
+After setup, simply use natural language:
+```
+Query Tencent Holdings quote
+Show AAPL daily K-line
+Buy 100 shares Tencent
 ```
 
-## MCP 端点
+---
 
-| 市场 | F10 数据 | SDK 数据 |
-|------|---------|---------|
-| 港股 | `https://mcp.szfiu.com/stock_hk_f10/` | `https://mcp.szfiu.com/stock_hk_sdk/` |
-| 美股 | `https://mcp.szfiu.com/stock_us_f10/` | `https://mcp.szfiu.com/stock_us_sdk/` |
-| A 股 | `https://mcp.szfiu.com/stock_cn_f10/` | `https://mcp.szfiu.com/stock_cn_sdk/` |
-| 代码检索 | `https://mcp.szfiu.com/toolkit/` | - |
+## Dispatch on Arguments
 
-## 功能列表
+### No args — show status
 
-### 行情查询 (13 个接口)
+1. **Check FIU_MCP_TOKEN** - show if token is configured (masked)
+2. **Show available markets** - list HK, US, CN, toolkit
+3. **Show quick commands** - list available dispatch commands
+4. **What next** - guide user:
+   - No token → "Run `/fiu-market-assistant setup <token>` to configure"
+   - Configured → "Ready! Ask me anything like 'Query 00700 quote'"
 
-1. **市场快照** - 获取股票最新报价、涨跌幅、成交量等
-2. **K 线数据** - 获取日 K、周 K、分钟 K 等历史和实时 K 线
-3. **买卖盘** - 获取实时买卖盘口挂单数据
-4. **逐笔成交** - 获取最近逐笔成交明细
-5. **分时数据** - 获取当日分时走势
-6. **市场状态** - 查询各市场开盘/休市状态
-7. **资金流向** - 获取个股资金流入流出数据
-8. **资金分布** - 获取大单、中单、小单分布
-9. **板块列表** - 获取行业/概念板块列表
-10. **板块成分股** - 获取板块成分股列表
-11. **股票所属板块** - 查询股票所属的行业/概念板块
-12. **条件选股** - 按价格、市值、PE、换手率等条件筛选
-13. **市场排行榜** - 涨跌幅、成交量、资金流向排行榜
+### `setup <token>` — quick setup (recommended)
 
-### 交易操作 (7 个接口)
+1. Save token to config file `~/.fiu-market/config`
+2. Create MCP config `.mcp.json` with all 7 FIU services
+3. Test connectivity
+4. Confirm and guide restart
 
-1. **下单** - 证券/期货下单（默认模拟环境）
-2. **撤单** - 撤销未成交订单
-3. **改单** - 修改订单价格和数量
-4. **持仓查询** - 查询账户持仓
-5. **资金查询** - 查询账户可用资金
-6. **订单查询** - 查询历史/当前订单
-7. **期货交易** - 支持 SG 等市场期货操作
+### `test` — test connectivity
 
-### 实时订阅 (5 个接口)
+1. Check FIU_MCP_TOKEN is set
+2. Test each market endpoint with tools/list
+3. Show which services are working
+4. Report any errors
 
-1. **报价订阅** - 订阅实时报价推送
-2. **K 线订阅** - 订阅实时 K 线推送
-3. **逐笔订阅** - 订阅逐笔成交推送
-4. **盘口订阅** - 订阅买卖盘口推送
-5. **分时订阅** - 订阅分时数据推送
+### `discover <market>` — discover available tools
 
-## 使用示例
-
-### 查询行情
+List all available tools for a specific market:
 
 ```
-查询腾讯控股的实时行情
-00700 的最新股价
-苹果公司的涨跌幅
+/fiu-market-assistant discover hk_sdk
+/fiu-market-assistant discover cn_sdk
 ```
 
-### 查询 K 线
+### `quote <symbol>` — query quote
+
+Query real-time quote for a stock:
 
 ```
-显示腾讯的日 K 线
-查看 AAPL 的周 K
-茅台的分钟 K 线
+/fiu-market-assistant quote 00700
+/fiu-market-assistant quote AAPL
+/fiu-market-assistant quote 600519
 ```
 
-### 查询资金流向
+### `kline <symbol> [type]` — query K-line
+
+Query K-line data:
 
 ```
-腾讯的资金流向如何
-查看 00700 的大单分布
-宁德时代的资金流入流出
+/fiu-market-assistant kline 00700        # daily
+/fiu-market-assistant kline 00700 1      # weekly
+/fiu-market-assistant kline AAPL 5       # 1-min for US
 ```
 
-### 交易操作
+### `search <keyword>` — search stock code
+
+Search for stock by name:
 
 ```
-用模拟账户买入 100 股腾讯
-卖出 50 股 AAPL
-查询我的持仓
-查看可用资金
+/fiu-market-assistant search 腾讯
+/fiu-market-assistant search Apple
 ```
 
-### 查询板块
+### `trade <action> <symbol> <qty> [price]` — trade
+
+Place orders (default SIMULATE mode):
 
 ```
-科技板块有哪些股票
-查询腾讯所属板块
-显示今日涨幅榜
+/fiu-market-assistant trade buy 00700 100 380
+/fiu-market-assistant trade sell AAPL 50 150
+/fiu-market-assistant trade buy 600519 1000 200
 ```
 
-## 注意事项
+### `positions` — query positions
 
-1. **环境区分**：交易默认使用模拟环境（SIMULATE），实盘交易需明确说明"正式"/"实盘"/"真实"，且需二次确认
-2. **限频规则**：下单接口限频 15 次/30 秒，避免超频
-3. **订阅额度**：实时订阅有额度限制（100～2000），需定期释放不需要的订阅
-4. **市场时间**：查询前注意市场是否开市
-5. **Token 安全**：妥善保管 JWT Token，不要泄露
+```
+/fiu-market-assistant positions
+```
 
-## 错误处理
+### `cash` — query cash
 
-常见错误及处理：
+```
+/fiu-market-assistant cash
+```
 
-- **401 Unauthorized**：Token 过期或无效，请更新 FIU_MCP_TOKEN
-- **429 Too Many Requests**：触发限频，请等待后重试
-- **404 Not Found**：股票代码错误或接口不存在
-- **500 Server Error**：服务端错误，请稍后重试
+### `orders` — query orders
 
-## 相关文件
+```
+/fiu-market-assistant orders
+```
 
-- `scripts/` - 技能脚本目录
-- `docs/mcp-interfaces_CN.md` - MCP 接口完整文档
-- `docs/mcp-interfaces_EN.md` - MCP Interface Documentation (EN)
+### `capflow <symbol>` — capital flow
 
-## 版本
+```
+/fiu-market-assistant capflow 00700
+```
 
-- v1.0.0 - 初始版本，支持基础行情查询和交易功能
+---
 
-## 许可证
+## MCP Servers Reference
 
-MIT License
+### Market Endpoints
+
+| Service | Market | URL |
+|---------|--------|-----|
+| stockHkF10 | HK F10 | https://ai.szfiu.com/stock_hk_f10/ |
+| stockUsF10 | US F10 | https://ai.szfiu.com/stock_us_f10/ |
+| stockCnF10 | CN F10 | https://ai.szfiu.com/stock_cn_f10/ |
+| stockHkSdk | HK SDK | https://ai.szfiu.com/stock_hk_sdk/ |
+| stockUsSdk | US SDK | https://ai.szfiu.com/stock_us_sdk/ |
+| stockCnSdk | CN SDK | https://ai.szfiu.com/stock_cn_sdk/ |
+| szfiuToolkit | Search | https://ai.szfiu.com/toolkit/ |
+
+### Feature Support by Market
+
+| Feature | HK (港股) | US (美股) | CN (A股) |
+|---------|-----------|-----------|----------|
+| Quote | ✅ | ✅ | ✅ |
+| K-line | ✅ | ✅ | ✅ |
+| Order Book | ✅ | ✅ | ✅ |
+| Tick Data | ✅ | ✅ | ✅ |
+| Intraday | ✅ | ✅ | ✅ |
+| Capital Flow | ✅ | ✅ | ✅ |
+| Capital Distribution | ✅ | ✅ | ✅ |
+| Sector List | ✅ | ✅ | ✅ |
+| Stock Filter | ✅ | ✅ | ✅ |
+| Market Ranking | ✅ | ✅ | ✅ |
+| F10 Data | ✅ | ✅ | ✅ |
+| Trading | ✅ | ✅ | ✅ |
+| Search | ✅ | ✅ | ✅ |
+
+---
+
+## Usage Tips
+
+1. **Use search first** to find correct stock code
+2. **Default mode is SIMULATE** - use "REAL" for real trading
+3. **HK stocks**: use format `00700.HK` or just `00700`
+4. **US stocks**: use format `AAPL` or `AAPL.US`
+5. **CN stocks**: use format `600519.SZ` or `000001.SZ`
+6. **Rate limit**: 15 orders per 30 seconds
+7. **Get token**: https://ai.szfiu.com/auth/login
+
+## Important Notes
+
+- Trading defaults to SIMULATE mode for safety
+- Real trading requires explicit "REAL" confirmation
+- Always check market status before trading
+- The setup command will create/overwrite ~/.mcp.json (standard MCP config file)
+- Backup is created automatically before overwriting
+- Config files are stored with restricted permissions (600) - only owner can read
+- This skill adds 7 FIU MCP entries to your MCP configuration
+- Other MCP-enabled tools may also use ~/.mcp.json - review after setup if needed

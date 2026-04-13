@@ -18,7 +18,7 @@ if [ -z "$TOKEN" ]; then
     exit 1
 fi
 
-RESPONSE=$(curl -s -X POST "https://mcp.szfiu.com/stock_hk_sdk/" \
+RESPONSE=$(curl -s -X POST "https://ai.szfiu.com/stock_hk_sdk/" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \

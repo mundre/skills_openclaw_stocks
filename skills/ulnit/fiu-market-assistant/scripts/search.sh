@@ -20,7 +20,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 # 使用港股码表查询
-RESPONSE=$(curl -s -X POST "https://mcp.szfiu.com/stock_hk_sdk/" \
+RESPONSE=$(curl -s -X POST "https://ai.szfiu.com/stock_hk_sdk/" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \

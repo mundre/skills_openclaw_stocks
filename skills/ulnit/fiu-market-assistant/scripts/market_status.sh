@@ -12,7 +12,7 @@ if [ -z "$TOKEN" ]; then
     exit 1
 fi
 
-curl -s -X POST "https://mcp.szfiu.com/toolkit/" \
+curl -s -X POST "https://ai.szfiu.com/toolkit/" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d "{

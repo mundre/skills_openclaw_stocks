@@ -17,15 +17,15 @@ fi
 # 根据市场选择端点和方法名
 case "$MARKET" in
     HK)
-        ENDPOINT="https://mcp.szfiu.com/stock_hk_sdk/"
+        ENDPOINT="https://ai.szfiu.com/stock_hk_sdk/"
         METHOD="post_v3_stock_quote"
         ;;
     US)
-        ENDPOINT="https://mcp.szfiu.com/stock_us_sdk/"
+        ENDPOINT="https://ai.szfiu.com/stock_us_sdk/"
         METHOD="post_v1_stock_quote"
         ;;
     CN)
-        ENDPOINT="https://mcp.szfiu.com/stock_cn_sdk/"
+        ENDPOINT="https://ai.szfiu.com/stock_cn_sdk/"
         METHOD="post_v1_stock_quote"
         ;;
     *)

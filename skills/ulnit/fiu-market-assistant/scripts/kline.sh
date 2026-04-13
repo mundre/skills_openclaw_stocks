@@ -34,7 +34,7 @@ fi
 PAGE_SIZE=100
 PAGE_NUM=$(( (COUNT + PAGE_SIZE - 1) / PAGE_SIZE ))
 
-RESPONSE=$(curl -s -X POST "https://mcp.szfiu.com/stock_hk_sdk/" \
+RESPONSE=$(curl -s -X POST "https://ai.szfiu.com/stock_hk_sdk/" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
