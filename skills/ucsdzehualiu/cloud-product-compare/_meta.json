@@ -3,9 +3,15 @@
   "slug": "cloud-product-compare",
   "displayName": "cloud-product-compare",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775207251270,
-    "commit": "https://github.com/openclaw/skills/commit/89231c9a752f7042517100cb97fe8adcb3bfc84a"
+    "version": "1.0.4",
+    "publishedAt": 1775998325794,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775207251270,
+      "commit": "https://github.com/openclaw/skills/commit/89231c9a752f7042517100cb97fe8adcb3bfc84a"
+    }
+  ]
 }
