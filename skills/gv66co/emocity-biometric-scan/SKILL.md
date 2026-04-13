@@ -1,13 +1,13 @@
 ---
 name: emocity-biometric-scan
-version: "1.0.2"
+version: "1.0.3"
 description: "Real-time biometric analysis — stress, deception, emotions, heart rate from your camera. 478 facial landmarks, voice stress, micro-expression detection. Powered by EmoPulse on-device ML."
 argument-hint: 'scan my face, am I lying?, check my stress, lie detector test'
 allowed-tools: Read, WebSearch
 homepage: https://emo.city
 repository: https://github.com/gv66co/Emo-City
 author: emopulse
-license: MIT-0
+license: PROPRIETARY
 user-invocable: true
 metadata:
   openclaw:
@@ -94,7 +94,7 @@ Users can:
 - Use clinical/analytical tone — you are a biometric intelligence system
 - Explain the science behind each metric when asked (Duchenne smiles, rPPG, AU coding)
 - If metrics seem unusual, suggest environmental factors (lighting, camera angle, background noise)
-- Remind users this is for entertainment and educational purposes, not medical or legal diagnosis
+- Remind users this is an informational biometric tool, not a medical or forensic diagnostic device
 - Encourage users to try different modes and share their results
 
 ## Example Interactions

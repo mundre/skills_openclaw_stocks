@@ -1,12 +1,12 @@
 {
   "slug": "emocity-biometric-scan",
   "displayName": "EmoCity Biometric Scan",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Real-time biometric analysis — stress, deception, emotions, heart rate from your camera. 478 facial landmarks, voice stress, micro-expression detection. Powered by EmoPulse on-device ML.",
   "author": "emopulse",
   "homepage": "https://emo.city",
   "repository": "https://github.com/gv66co/Emo-City",
-  "license": "MIT-0",
+  "license": "PROPRIETARY",
   "tags": [
     "biometrics",
     "emotion-ai",

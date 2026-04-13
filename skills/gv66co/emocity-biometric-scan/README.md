@@ -82,10 +82,6 @@ EmoCity processes **478 facial landmarks** and **52 blendshapes** every frame to
 
 All biometric processing runs on-device in the browser. No video, audio, or raw biometric data is sent to any server. The camera feed is analyzed frame-by-frame using WebAssembly + WebGL. Export features (Share to X, Copy Text, Download Report) only share aggregated text summaries — never raw video or biometric signals. Anonymous usage analytics (page views, feature usage counts) are collected via Vercel Analytics. When you close the tab, all local biometric data is gone.
 
-## Screenshots
-
-> Screenshots coming soon. Visit [emo.city](https://emo.city) to see it live.
-
 ## Links
 
 - **Live app:** [emo.city](https://emo.city)
@@ -101,5 +97,9 @@ All biometric processing runs on-device in the browser. No video, audio, or raw 
 | Pro | $29.99/mo | 100 scans/month |
 
 ---
+
+## License
+
+This software is **proprietary** and protected by copyright and filed patents (EU 2026-502, 2026-508, 2026-503). Unauthorized copying, modification, distribution, reverse engineering, or use to train AI models is strictly prohibited. See [emopulse.app/license](https://www.emopulse.app/license.html).
 
 Built by EmoPulse. All rights reserved.
