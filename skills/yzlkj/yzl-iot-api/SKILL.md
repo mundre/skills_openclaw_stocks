@@ -1,9 +1,16 @@
 ---
 name: yzl-iot-api
-description: 云智联 IoT 设备管理API v1.2.0。一句话说就能获取传感器数据和发送控制指令。激活语：云智联设备，钥匙是xxxxxx，帮我打开开关/获取数据
+description: 云智联 IoT 设备管理API v1.2.2。一句话说就能获取传感器数据和发送控制指令。激活语：云智联设备，钥匙是xxxxxx，帮我打开开关/获取数据
+homepage: https://github.com/openclaw/skills/tree/main/yzl-iot-api
+metadata: { "openclaw": { "requires": { "bins": ["python3"], "env": ["YZLIOT_API_KEY"] } } }
 ---
 
-# 🌱 云智联 IoT 设备管理
+## ⚙️ 运行时要求
+
+- **Python 3.6+** （需要 json, os, sys, urllib, datetime, collections 等标准库）
+- **环境变量 `YZLIOT_API_KEY`** - 必需，在安装后需用户自行配置
+
+## 🌱 云智联 IoT 设备管理
 
 一句话就能获取设备数据和发送控制指令！
 

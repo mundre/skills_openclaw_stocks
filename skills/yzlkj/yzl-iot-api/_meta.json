@@ -3,9 +3,15 @@
   "slug": "yzl-iot-api",
   "displayName": "Yzl Iot Api",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1775586695186,
-    "commit": "https://github.com/openclaw/skills/commit/f3fdee36f379be4e9bae84e5ba84ba24bbf4a87a"
+    "version": "1.2.3",
+    "publishedAt": 1775721473669,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1775586695186,
+      "commit": "https://github.com/openclaw/skills/commit/f3fdee36f379be4e9bae84e5ba84ba24bbf4a87a"
+    }
+  ]
 }
