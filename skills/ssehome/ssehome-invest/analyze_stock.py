@@ -59,7 +59,7 @@ def get_tavily_api_key():
         return None
 
 
-def search_tavily_news(query, max_results=3, search_depth="basic", time_range="week"):
+def search_tavily_news(query, max_results=3, search_depth="advance", time_range="week"):
     """
     使用 Tavily API 搜索新闻
     
@@ -216,6 +216,29 @@ def get_index_data_baostock(index_code, start_date, end_date):
     return None
 
 
+def get_industry(p_full_symbol:str):
+    try:
+        bs.login()
+        industry = ""
+        rs_industry = bs.query_stock_industry(code=p_full_symbol)
+        industry_data = []
+        while rs_industry.error_code == '0' and rs_industry.next():
+            industry_data.append(rs_industry.get_row_data())
+        industry_df = pd.DataFrame(industry_data, columns=rs_industry.fields)
+        if not industry_df.empty:
+            if 'industry' in industry_df.columns:
+                industry = industry_df['industry'].iloc[0]
+            elif 'industryClassification' in industry_df.columns:
+                industry = industry_df['industryClassification'].iloc[0]
+            else:
+                industry = industry_df.iloc[0].to_string()
+        bs.logout()
+        print(f"从 Baostock 获取股票行业名称: {industry}")
+        return industry
+    except Exception as e:
+        print(f"获取股票行业分类失败: {e}")
+
+
 def calculate_technical_indicators(df):
     """计算各种技术指标"""
     df = df.copy()
@@ -360,7 +383,7 @@ def analyze_six_month_consolidation(stock_data):
     volatility_ratio = price_range / avg_price
     is_consolidation = volatility_ratio < 0.15
 
-    if current_price > recent_high * 1.02:
+    if current_price > recent_high * 1.0316:
         breakout_status = "向上突破"
     elif current_price < recent_low * 0.98:
         breakout_status = "向下突破"
@@ -466,7 +489,7 @@ def analyze_moving_averages(stock_data):
     }
 
 
-def search_and_analyze_news(stock_name, stock_symbol):
+def search_and_analyze_news(stock_name, stock_symbol,industry):
     """使用 Tavily 搜索新闻并分析"""
     print(f"\n📰 正在搜索 {stock_name} 相关新闻...")
     
@@ -486,7 +509,7 @@ def search_and_analyze_news(stock_name, stock_symbol):
     
     # 搜索 3: 行业动态
     print("  🔍 搜索行业动态...")
-    results3 = search_tavily_news("汽车制造业 政策 市场 2026", max_results=3)
+    results3 = search_tavily_news(f"{industry} 政策 市场 2026", max_results=3)
     news_sections['行业动态'] = results3
     print(f"    找到 {len(results3)} 条")
     
@@ -666,7 +689,7 @@ def generate_markdown_report(stock_symbol, stock_name, industry, analyses, news_
 *免责声明:本报告由 AI 助手基于 baostock 数据生成,仅供参考,不构成投资建议。投资有风险,入市需谨慎。*
 
 **数据来源**: baostock (https://baostock.com/baostock/index.php/%E9%A6%96%E9%A1%B5) | Tavily Search
-**生成工具**: OpenClaw Investment Report Skill
+**生成工具**: OpenClaw Investment Report Skill(ssehome-invest)
 **版本**: 1.0.3
 """
 
@@ -683,6 +706,7 @@ def analyze_stock(stock_symbol="002328", stock_name="新朋股份"):
     data_dir = os.path.join(workspace_dir, "data")
     os.makedirs(data_dir, exist_ok=True)
 
+    # 仅仅对深圳和上海的证券进行分析
     if stock_symbol.startswith("0") or stock_symbol.startswith("3"):
         market = "sz"
     else:
@@ -707,8 +731,8 @@ def analyze_stock(stock_symbol="002328", stock_name="新朋股份"):
         if not industry_df.empty:
             if 'industry' in industry_df.columns:
                 industry = industry_df['industry'].iloc[0]
-            elif 'industry_name' in industry_df.columns:
-                industry = industry_df['industry_name'].iloc[0]
+            elif 'industryClassification' in industry_df.columns:
+                industry = industry_df['industryClassification'].iloc[0]
             else:
                 industry = industry_df.iloc[0].to_string()
         bs.logout()
@@ -777,7 +801,7 @@ def analyze_stock(stock_symbol="002328", stock_name="新朋股份"):
     analyses['long_term'] = '深入研究'
 
     # Tavily 新闻搜索
-    news_data = search_and_analyze_news(stock_name, stock_symbol)
+    news_data = search_and_analyze_news(stock_name, stock_symbol, industry)
 
     # 生成 Markdown 报告
     print("\n📝 生成 Markdown 报告...")
@@ -796,4 +820,8 @@ def analyze_stock(stock_symbol="002328", stock_name="新朋股份"):
 
 
 if __name__ == "__main__":
-    analyze_stock("002328", "新朋股份")
+    import sys
+    if len(sys.argv) >= 3:
+        analyze_stock(sys.argv[1], sys.argv[2])
+    else:
+        analyze_stock("002328", "新朋股份")

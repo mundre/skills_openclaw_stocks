@@ -1,13 +1,28 @@
-# Investment Report Skill - 投资研究报告技能 v3.0
+---
+name: ssehome-invest
+displayName: 投资研究报告助手
+description: 基于 baostock 金融数据库和 tavily-search 智能搜索的股票投资分析技能，提供完整的多时间框架技术分析、市场热点资讯追踪和投资报告生成功能。
+category: business_tools
+tags:
+  - 投资
+  - 研究
+  - 技术指标
+  - 强弱
+  - 资讯
+tools:
+  - tavily-search
+---
+
+# ssehome-invest Skill - 投资研究报告技能
 
 ## 📋 技能描述
 
-基于 baostock 金融数据库和 tavily-search 智能搜索的专业股票投资分析技能，提供完整的多时间框架技术分析、市场热点资讯追踪和投资报告生成功能。
+基于 baostock 金融数据库和 tavily-search 智能搜索的股票投资分析技能，提供完整的多时间框架技术分析、市场热点资讯追踪和投资报告生成功能。
 
-**版本**: 1.0.3  
-**更新日期**: 2026-04-02  
+**版本**: 1.0.4
+**更新日期**: 2026-04-07
 **作者**: OpenClaw Assistant & haojl@ssehome.com
-**核心特性**: baostock K 线数据 + Tavily AI 新闻搜索 + 全面技术分析
+**核心特性**: baostock K 线数据 + Tavily AI 新闻搜索 + 技术分析
 
 ---
 
@@ -58,6 +73,10 @@ skills/ssehome-invest/
 ---
 
 ## 🔄 更新日志
+
+### v1.0.4 (2026-04-07)
+- 🐛 **修复资讯搜索时行业条件** - 根据代码获取的行业类型(原来固定了行业)
+
 
 ### v1.0.3 (2026-04-02)
 - 🐛 **修复收益率计算** - 涨跌幅 clip(-10, 10) 过滤异常数据
