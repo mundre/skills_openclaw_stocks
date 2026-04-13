@@ -204,6 +204,43 @@ def test_validation_unknown_task():
     print("  ✅ validation_unknown_task PASS")
 
 
+
+
+def test_validation_whitespace_raw_text():
+    # DEF-001: 纯空格字符串应被正确拒绝
+    result = handle(
+        topic="",
+        user_input="",
+        args={
+            "task": "minutes",
+            "meeting_topic": "测试会议",
+            "meeting_date": "2026-03-31",
+            "mode": "executor",
+            "raw_text": "   "  # 纯空格
+        }
+    )
+    assert result["status"] == "error", "纯空格 raw_text 应返回 error"
+    assert "raw_text" in result["message"]
+    print("  ✅ test_validation_whitespace_raw_text PASS")
+
+
+def test_validation_empty_raw_text():
+    # DEF-001: 空字符串应被正确拒绝
+    result = handle(
+        topic="",
+        user_input="",
+        args={
+            "task": "minutes",
+            "meeting_topic": "测试会议",
+            "meeting_date": "2026-03-31",
+            "mode": "executor",
+            "raw_text": ""
+        }
+    )
+    assert result["status"] == "error", "空 raw_text 应返回 error"
+    assert "raw_text" in result["message"]
+    print("  ✅ test_validation_empty_raw_text PASS")
+
 def run_all_tests():
     print("=" * 60)
     print("🧪 Meeting Ops Copilot — 测试套件")
@@ -221,6 +258,8 @@ def run_all_tests():
         ("validation_missing_agenda", test_validation_missing_agenda),
         ("validation_missing_topic", test_validation_missing_topic),
         ("validation_unknown_task", test_validation_unknown_task),
+        ("validation_whitespace_raw_text", test_validation_whitespace_raw_text),
+        ("validation_empty_raw_text", test_validation_empty_raw_text),
     ]
     passed = 0
     failed = 0

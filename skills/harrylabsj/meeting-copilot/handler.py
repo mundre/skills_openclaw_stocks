@@ -143,45 +143,79 @@ def extract_action_items(raw_text: str, decisions: str, participants: str) -> Li
     """
     从原始文本中提取待办事项。
     策略：
-    1. 识别 "X负责Y" / "X做Y" / "X跟进Y" 模式
-    2. 识别 "截止.../deadline..." 模式
-    3. 识别 "高/中/低优先级" 关键词
+    1. 切分为多个短句后识别 "X负责Y" / "X做Y" / "X跟进Y" 等模式
+    2. 识别 "截止.../deadline..." 等时间线索
+    3. 基于关键词判断优先级
     """
+    # 纯空格字符串校验（DEF-001 修复）
+    if not raw_text or not raw_text.strip():
+        return []
     action_items = []
     person_names = split_list(participants, "|") if participants else []
-    # 合并 decisions 中的条目作为决议，尝试从决议反推待办
     decision_list = split_list(decisions, "|") if decisions else []
 
+    # 将原文和决议拼接后按句切分，减少跨句误匹配
+    text_for_search = raw_text
+    clauses = re.split(r'[；;\n\r]+', text_for_search)
+
     # 常见动作关键词（优先级顺序）
-    action_verbs = [
-        r'([^\s]{2,4})负责([^\s，。,.；;]+)',
-        r'([^\s]{2,4})做([^\s，。,.；;]+)',
-        r'([^\s]{2,4})跟进([^\s，。,.；;]+)',
-        r'([^\s]{2,4})完成([^\s，。,.；;]+)',
-        r'([^\s]{2,4})提交([^\s，。,.；;]+)',
-        r'([^\s]{2,4})对接([^\s，。,.；;]+)',
-        r'([^\s]{2,4})协调([^\s，。,.；;]+)',
-        r'([^\s]{2,4})安排([^\s，。,.；;]+)',
-        r'([^\s]{2,4})跟进([^\s，。,.；;]+)',
+    action_patterns = [
+        r'(?P<owner>[\u4e00-\u9fff]{2,5})(?:分头)?(?P<verb>负责)(?P<task>[^，。,;；\n\r]+)',
+        r'(?P<owner>[\u4e00-\u9fff]{2,5})(?:分头)?(?P<verb>做)(?P<task>[^，。,;；\n\r]+)',
+        r'(?P<owner>[\u4e00-\u9fff]{2,5})(?:分头)?(?P<verb>跟进)(?P<task>[^，。,;；\n\r]+)',
+        r'(?P<owner>[\u4e00-\u9fff]{2,5})(?:分头)?(?P<verb>完成)(?P<task>[^，。,;；\n\r]+)',
+        r'(?P<owner>[\u4e00-\u9fff]{2,5})(?:分头)?(?P<verb>提交)(?P<task>[^，。,;；\n\r]+)',
+        r'(?P<owner>[\u4e00-\u9fff]{2,5})(?:分头)?(?P<verb>对接)(?P<task>[^，。,;；\n\r]+)',
+        r'(?P<owner>[\u4e00-\u9fff]{2,5})(?:分头)?(?P<verb>协调)(?P<task>[^，。,;；\n\r]+)',
+        r'(?P<owner>[\u4e00-\u9fff]{2,5})(?:分头)?(?P<verb>安排)(?P<task>[^，。,;；\n\r]+)',
     ]
 
-    text_for_search = raw_text + " " + decisions
+    # 英文名兜底
+    action_patterns.append(
+        r'(?P<owner>[A-Za-z][A-Za-z0-9_\-]{1,20})(?:\s*\(?(?P<modifier>[^)）\s]{0,6})\)?)?(?P<verb>负责|做|跟进|完成|提交|对接|协调|安排)(?P<task>[^，。,;；\n\r]+)'
+    )
 
-    for pattern in action_verbs:
-        for match in re.finditer(pattern, text_for_search):
-            owner = match.group(1).strip()
-            task = match.group(2).strip()
+    for clause in clauses:
+        clause = clause.strip()
+        if not clause:
+            continue
+
+        found_one = False
+        for pattern in action_patterns:
+            # 每个短句优先取第一条可用匹配，避免一个句子内重复匹配造成 owner 误切
+            match = re.search(pattern, clause)
+            if not match:
+                continue
+
+            owner = match.group("owner").strip()
+            task = match.group("task").strip()
+
             # 去掉末尾标点
             task = re.sub(r'[。.．,，；;]+$', '', task)
             if len(task) < 2:
                 continue
+
+            # "分头" 可能被误入 owner 时去掉
+            owner = owner.replace("分头", "")
+            if not owner:
+                continue
+
+            # 与参与者名单对齐，增强名字可信度
+            if person_names and owner not in person_names:
+                # 有参与者信息但不匹配时，仍然保留，避免遗漏；给默认 TBD 标记
+                if len(owner) > 2:
+                    owner = owner
+                else:
+                    owner = "TBD"
+
             # 判断优先级
             priority = "medium"
-            text_around = text_for_search[max(0, match.start()-10):match.end()+20].lower()
-            if any(kw in text_around for kw in ["紧急", "优先", "紧急", "重要", "马上", "尽快", "尽快"]):
+            text_around = clause[max(0, match.start()-10):match.end()+20].lower()
+            if any(kw in text_around for kw in ["紧急", "优先", "重要", "马上", "尽快"]):
                 priority = "high"
             elif any(kw in text_around for kw in ["不急", "缓", "以后", "有空"]):
                 priority = "low"
+
             # 判断截止时间
             deadline = ""
             deadline_patterns = [
@@ -192,19 +226,48 @@ def extract_action_items(raw_text: str, decisions: str, participants: str) -> Li
                 r'下周|下个月|本周|本月|明天|今天|本周内',
             ]
             for dp in deadline_patterns:
-                dm = re.search(dp, text_for_search)
+                dm = re.search(dp, clause)
                 if dm:
-                    deadline = dm.group(1)
+                    if dm.lastindex:
+                        deadline = dm.group(1)
+                    else:
+                        deadline = dm.group(0)
                     break
+
             # 去掉 "X负责" 本身
             task_clean = re.sub(r'^(负责|做|完成|对接|协调|安排|提交|跟进)\s*', '', task)
             if task_clean:
                 action_items.append({
                     "task": task_clean if len(task_clean) > 3 else task,
-                    "owner": owner if owner not in ["负责", "做", "完成", "对接", "协调", "安排", "提交", "跟进"] else "TBD",
+                    "owner": owner if owner not in ["负责", "做", "完成", "对接", "协调", "安排", "提交", "跟进", "TBD", ""] else "TBD",
                     "deadline": deadline,
                     "priority": priority
                 })
+
+            found_one = True
+            break
+
+        if not found_one:
+            continue
+
+    # 决议文本中若有明确人名 + 任务，补充一轮兜底匹配
+    for clause in decision_list:
+        clause = clause.strip()
+        if not clause:
+            continue
+        for pattern in action_patterns[:8]:
+            match = re.search(pattern, clause)
+            if match:
+                owner = match.group("owner").strip().replace("分头", "")
+                task = re.sub(r'[。.．,，；;]+$', '', match.group("task").strip())
+                if task and owner and len(task) >= 2:
+                    action_items.append({
+                        "task": re.sub(r'^(负责|做|完成|对接|协调|安排|提交|跟进)\s*', '', task),
+                        "owner": owner,
+                        "deadline": "",
+                        "priority": "medium"
+                    })
+                    break
 
     # 去重：按 (task, owner) 去重
     seen = set()
@@ -391,6 +454,12 @@ def build_minutes(meeting_topic: str, meeting_date: str,
     生成结构化会议纪要。
     支持 boss / executor 两种 mode（目前 executor 模式输出更详细的待办提取）。
     """
+    # 纯空格 / 空字符串校验（DEF-001 修复）
+    if not raw_text or not raw_text.strip():
+        return {
+            "status": "error",
+            "message": "raw_text 不能为空或纯空格",
+        }
     discussion_points = parse_raw_text_to_points(raw_text)
     decision_list = split_list(decisions, "|") if decisions else []
     participant_list = split_list(participants, "|") if participants else []
@@ -559,7 +628,7 @@ def handle(topic: Optional[str], user_input: Optional[str],
             "disclaimer": DISCLAIMER
         }
 
-    if task == "minutes" and not raw_text:
+    if task == "minutes" and (not raw_text or not raw_text.strip()):
         return {
             "status": "error",
             "message": "minutes 任务需要提供 raw_text（原始讨论文本）",
