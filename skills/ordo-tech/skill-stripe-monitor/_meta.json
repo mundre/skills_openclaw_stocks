@@ -1,0 +1,11 @@
+{
+  "owner": "ordo-tech",
+  "slug": "skill-stripe-monitor",
+  "displayName": "Skill Stripe Monitor",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1775749644533,
+    "commit": null
+  },
+  "history": []
+}
