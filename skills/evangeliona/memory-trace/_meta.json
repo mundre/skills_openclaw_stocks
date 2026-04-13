@@ -3,9 +3,15 @@
   "slug": "memory-trace",
   "displayName": "Memory Trace",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775618713938,
-    "commit": "https://github.com/openclaw/skills/commit/74128b969f3e558a8f4a13e7259e34c7331e9b23"
+    "version": "1.0.2",
+    "publishedAt": 1775986372402,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775618713938,
+      "commit": "https://github.com/openclaw/skills/commit/74128b969f3e558a8f4a13e7259e34c7331e9b23"
+    }
+  ]
 }
