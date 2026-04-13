@@ -1,0 +1,11 @@
+{
+  "owner": "shenzheke",
+  "slug": "ubuntu-wsl-system-cleanup",
+  "displayName": "Ubuntu WSL System Cleanup",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775471770112,
+    "commit": null
+  },
+  "history": []
+}
