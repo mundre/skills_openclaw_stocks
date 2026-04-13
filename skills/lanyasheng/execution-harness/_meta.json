@@ -3,9 +3,15 @@
   "slug": "execution-harness",
   "displayName": "Execution Harness",
   "latest": {
-    "version": "2.0.2",
-    "publishedAt": 1775494033266,
-    "commit": "https://github.com/openclaw/skills/commit/60b4b2cdf1260d268e141e12e9999dc7b534836e"
+    "version": "1.1.0",
+    "publishedAt": 1775711140996,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.2",
+      "publishedAt": 1775494033266,
+      "commit": "https://github.com/openclaw/skills/commit/60b4b2cdf1260d268e141e12e9999dc7b534836e"
+    }
+  ]
 }
