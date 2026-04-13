@@ -1,30 +1,31 @@
 ---
 name: bloomin8
 description: Push images or markdown to a Bloomin8 e-ink photo frame via cloud API (async) or local BLE+LAN (instant). Scan nearby devices, check status, track delivery, change wake schedule, upload directly over WiFi.
-version: 2.2.3
-metadata: {"openclaw":{"requires":{"env":["BLOOMIN8_TOKEN_*"],"bins":["python3","pip"],"pip":["bleak","aiohttp","pillow"]},"primaryEnvPrefix":"BLOOMIN8_TOKEN_","emoji":"🖼️"}}
+version: 2.2.5
+metadata: {"openclaw":{"homepage":"https://github.com/xander887/bloomin8-openclaw-skill","requires":{"env":["BLOOMIN8_TOKEN_*"],"bins":["python3","pip"],"pip":["bleak","aiohttp","pillow"]},"primaryEnvPrefix":"BLOOMIN8_TOKEN_","emoji":"🖼️"}}
 ---
 
 ## Bloomin8 E-ink Device Control
 
 Control Bloomin8 e-ink photo frame devices. Two modes available:
 
-- **Local BLE + LAN** (local, instant) — scan, wake, and upload directly over the local network; image displays immediately. **This is the preferred mode.**
-- **Cloud API** (remote, async) — push content via REST API; device displays on next scheduled wake. Fallback when local is unavailable.
+- **Local BLE + LAN** (local, instant) — scan, wake, and upload directly over the local network; image displays immediately.
+- **Cloud API** (remote, async) — push content via REST API; device displays on next scheduled wake.
 
 **Image sourcing:** This skill handles delivery only. To create images, combine with any available tool — e.g. Puppeteer (HTML → screenshot), AI image generation, or scripted chart rendering — then pass the resulting file or URL to the push/upload commands below.
 
-**Local-first auto-selection:** Always prefer local mode. Pick the mode automatically — do not ask the user unless truly ambiguous:
-1. If you have a device IP (from prior `info`, cache, or user), verify reachability (`curl http://<ip>/whistle`). If reachable → **local mode**.
-2. If no known IP, attempt BLE scan → get IP → local mode.
-3. Only fall back to **cloud API** when local is impossible (no BLE hardware, device out of range, IP unreachable after BLE wake).
-4. Explicit user intent overrides: "push" / "schedule" → cloud; "upload" / "display now" → local.
+**Mode selection:** Prefer local mode when available, but always **confirm with the user before performing BLE scans or probing local network hosts**. Suggested flow:
+1. Ask the user which mode they prefer (local or cloud), or propose one based on context.
+2. If local mode: before scanning, inform the user (e.g. "I'll scan for nearby BLE devices — OK?"). Only proceed with explicit approval.
+3. If you have a device IP (from prior `info`, cache, or user-provided), verify reachability (`curl http://<ip>/whistle`) before uploading. Inform the user of the IP being probed.
+4. Only fall back to **cloud API** when local is impossible (no BLE hardware, device out of range, IP unreachable after BLE wake).
+5. Explicit user intent overrides: "push" / "schedule" → cloud; "upload" / "display now" → local.
 
 ### Device Identity Across Modes
 
-Both modes use the same device name as the primary identifier. When a user says a device name (e.g. "evan"):
-- **Cloud API** → match to env var `BLOOMIN8_TOKEN_EVAN` (uppercase, non-alphanumeric → `_`)
-- **Local BLE** → match via `--name "evan"` (case-insensitive partial match)
+Both modes use the same device name as the primary identifier. When a user says a device name (e.g. "Living Room"):
+- **Cloud API** → match to env var `BLOOMIN8_TOKEN_LIVING_ROOM` (uppercase, non-alphanumeric → `_`)
+- **Local BLE** → match via `--name "Living Room"` (case-insensitive partial match)
 
 The device name is set by the user in the Bloomin8 app and is consistent across BLE advertisement (`local_name`) and cloud (`device.name`). The BLE `info` command also returns the full device serial (`sn`) which matches the cloud `device_id` embedded in the API token — but in practice, name matching is sufficient and preferred.
 
@@ -47,9 +48,9 @@ This returns all endpoints, parameters, and response fields as structured JSON. 
 Token is device-bound. Generated in the Bloomin8 app: **Devices tab → device card → ⋮ menu → API Token**.
 
 - Env var naming: `BLOOMIN8_TOKEN_<DEVICE_NAME>` (uppercase, non-alphanumeric → `_`)
-  - e.g. `BLOOMIN8_TOKEN_KITCHEN`, `BLOOMIN8_TOKEN_BEDROOM`
+  - e.g. `BLOOMIN8_TOKEN_LIVING_ROOM`, `BLOOMIN8_TOKEN_KIDS_BEDROOM`
 - When user mentions a device by name, match it to the corresponding env var
-- If only one `BLOOMIN8_TOKEN_*` exists, use it as default without asking
+- If only one `BLOOMIN8_TOKEN_*` exists, **confirm with the user** before using it (e.g. "I found token BLOOMIN8_TOKEN_KITCHEN — shall I use it?")
 - Pass as: `Authorization: Bearer $BLOOMIN8_TOKEN_<NAME>`
 - Generating a new token invalidates the previous one for that device
 - Token can be generated/revoked regardless of whether remote push is enabled
@@ -168,7 +169,7 @@ All errors return `{ "success": false, "error": "ERROR_CODE", "message": "..." }
 
 Control devices directly over Bluetooth and local WiFi. Images display **immediately** after upload — no waiting for the next wake cycle.
 
-**Device image requirements:** The e-ink hardware only accepts **JPEG baseline** images whose dimensions **exactly match** the screen size (e.g. 480×800 or 1200×1600). The CLI handles format conversion and resize automatically — but screen size must be known (via BLE `info`, cache, or explicit `--resize WxH`).
+**Device image requirements:** The e-ink hardware only accepts **JPEG baseline** images whose dimensions **exactly match** the screen size (e.g. 480×800 or 1200×1600). The Bloomin8 CLI handles format conversion and resize automatically — but screen size must be known (via BLE `info`, cache, or explicit `--resize WxH`).
 
 ### Prerequisites
 
@@ -189,16 +190,16 @@ python3 -c "import bleak, aiohttp, PIL" 2>/dev/null || pip install bleak aiohttp
 > - **Windows** — Requires Windows 10+ (native BLE support via WinRT)
 > - **Linux** — Requires BlueZ 5.43+ and DBus (`sudo apt install bluez`); run with a user in the `bluetooth` group or use `sudo`
 
-The CLI script is bundled at `scripts/eink_cli.py` relative to this skill file.
+The CLI script is bundled at `scripts/bloomin8_cli.py` (the **Bloomin8 CLI**) relative to this skill file.
 
 ### Scan for Devices
 
 Find nearby Bloomin8 devices via BLE advertisement:
 
 ```bash
-python scripts/eink_cli.py scan
-python scripts/eink_cli.py scan --timeout 15
-python scripts/eink_cli.py scan --json
+python scripts/bloomin8_cli.py scan
+python scripts/bloomin8_cli.py scan --timeout 15
+python scripts/bloomin8_cli.py scan --json
 ```
 
 Output is **deduplicated by device ID** — each device appears once with the strongest signal. Raw advertisement count is shown for reference (BLE devices broadcast repeatedly, so raw count >> actual device count).
@@ -211,13 +212,13 @@ Query device details (IP, firmware, screen size, battery) via BLE wake + notific
 
 ```bash
 # By device name (partial match)
-python scripts/eink_cli.py info --name "evan"
+python scripts/bloomin8_cli.py info --name "Living Room"
 
 # By device ID (from BLE manufacturer data)
-python scripts/eink_cli.py info --id "CABBF337"
+python scripts/bloomin8_cli.py info --id "CABBF337"
 
 # JSON output for programmatic use
-python scripts/eink_cli.py info --name "evan" --json
+python scripts/bloomin8_cli.py info --name "Living Room" --json
 ```
 
 **Timing:** The `info` command takes ~20-30 seconds. It first sends a BLE wake command, waits 8 seconds for the device to boot its WiFi stack, then sends up to 5 `getInfo` requests (5s timeout each). This is normal — set user expectations accordingly.
@@ -242,25 +243,25 @@ Upload an image and display it on the device immediately:
 
 ```bash
 # Auto-discover device via BLE, auto-resize to screen size
-python scripts/eink_cli.py upload --name "evan" --file image.jpg
+python scripts/bloomin8_cli.py upload --name "Living Room" --file image.jpg
 
 # Direct IP (skip BLE discovery entirely — fastest path)
-python scripts/eink_cli.py upload --ip 192.168.8.223 --file image.jpg --resize 480x800
+python scripts/bloomin8_cli.py upload --ip 192.168.8.223 --file image.jpg --resize 480x800
 
 # Name + IP combo: skip BLE, use cache for screen size auto-resize
-python scripts/eink_cli.py upload --name "evan" --ip 192.168.8.199 --file image.jpg
+python scripts/bloomin8_cli.py upload --name "Living Room" --ip 192.168.8.199 --file image.jpg
 
 # Explicit screen size (required when no BLE or cache available)
-python scripts/eink_cli.py upload --name "evan" --file image.jpg --resize 480x800
+python scripts/bloomin8_cli.py upload --name "Living Room" --file image.jpg --resize 480x800
 
 # Upload without displaying
-python scripts/eink_cli.py upload --name "evan" --file image.jpg --no-show
+python scripts/bloomin8_cli.py upload --name "Living Room" --file image.jpg --no-show
 
 # Resize modes: cover (default, center crop), contain (fit with white bg), stretch
-python scripts/eink_cli.py upload --name "evan" --file image.jpg --mode contain
+python scripts/bloomin8_cli.py upload --name "Living Room" --file image.jpg --mode contain
 
 # JSON output
-python scripts/eink_cli.py upload --ip 192.168.8.223 --file image.jpg --resize 480x800 --json
+python scripts/bloomin8_cli.py upload --ip 192.168.8.223 --file image.jpg --resize 480x800 --json
 ```
 
 **Auto-resize behavior:**
@@ -278,16 +279,16 @@ Configure the device's cloud pull mechanism. This controls how the device fetche
 
 ```bash
 # View current settings
-python scripts/eink_cli.py upstream --ip 192.168.8.223
+python scripts/bloomin8_cli.py upstream --ip 192.168.8.223
 
 # Enable upstream with token
-python scripts/eink_cli.py upstream --ip 192.168.8.223 --on --token "your-token"
+python scripts/bloomin8_cli.py upstream --ip 192.168.8.223 --on --token "your-token"
 
 # Disable upstream
-python scripts/eink_cli.py upstream --ip 192.168.8.223 --off
+python scripts/bloomin8_cli.py upstream --ip 192.168.8.223 --off
 
 # Set custom upstream URL and cron
-python scripts/eink_cli.py upstream --ip 192.168.8.223 --url "https://custom.server/api" --cron "0 */6 * * *"
+python scripts/bloomin8_cli.py upstream --ip 192.168.8.223 --url "https://custom.server/api" --cron "0 */6 * * *"
 ```
 
 ### Local Mode Limitations
@@ -301,7 +302,7 @@ python scripts/eink_cli.py upstream --ip 192.168.8.223 --url "https://custom.ser
 
 Successful `info` calls cache device data (name, device_id, IP, screen size) to `~/.bloomin8/device_cache.json`. This path is intentionally outside the skill directory — device data persists across skill upgrades/reinstalls and is shared by all Bloomin8 tools. This enables:
 - **BLE failure fallback** — if BLE scan/getInfo times out, the CLI checks cache for a known IP
-- **Fast `--ip` uploads** — use `--name "evan" --ip 192.168.x.x` to skip BLE and still get auto-resize from cached screen size
+- **Fast `--ip` uploads** — use `--name "Living Room" --ip 192.168.x.x` to skip BLE and still get auto-resize from cached screen size
 - Cache entries include a timestamp; IPs may change if the device reconnects to a different network
 
 ### JSON Output (`--json`)
@@ -320,7 +321,7 @@ Upload failed?
 ├─ Check device reachable: curl http://<ip>/whistle
 │  ├─ ✅ Reachable → image format issue. Verify JPEG baseline, exact screen dimensions.
 │  └─ ❌ Unreachable →
-│     ├─ Try BLE wake: python scripts/eink_cli.py info --name "<name>"
+│     ├─ Try BLE wake: python scripts/bloomin8_cli.py info --name "<name>"
 │     │  ├─ ✅ Got new IP → retry upload with new IP
 │     │  └─ ❌ BLE also failed →
 │     │     ├─ Check Bluetooth permissions (macOS: System Settings → Privacy → Bluetooth)
@@ -343,15 +344,24 @@ No devices found?
 ```
 No screen size for resize?
 ├─ Check cache: cat ~/.bloomin8/device_cache.json
-├─ Run info to populate cache: python scripts/eink_cli.py info --name "<name>"
+├─ Run info to populate cache: python scripts/bloomin8_cli.py info --name "<name>"
 ├─ Pass explicit size: --resize 480x800 (standard) or --resize 1200x1600 (large)
-└─ Common sizes: 480×800 (7.5"), 1200×1600 (10.3")
+└─ Common sizes: 480×800 (7.3"), 1200×1600 (10.3")
 ```
+
+### Still Not Working?
+
+If the above troubleshooting steps don't resolve the issue:
+
+1. Visit the **[Bloomin8 Help Center](https://support.bloomin8.com/)** for detailed guides and FAQs
+2. Check the **[Bloomin8 website](https://www.bloomin8.com/)** for the latest product updates and firmware info
+3. Contact Bloomin8 support through the Help Center for further assistance
 
 ---
 
 ## Guardrails
 
+- **Always obtain user consent** before performing BLE scans, probing local network IPs, or using stored API tokens. Never perform these operations silently.
 - Never fabricate device IDs, token values, or image URLs.
 - If a push or upload fails, report the error — do not retry without user confirmation.
 - Do not change the wake interval without explicit user instruction.
