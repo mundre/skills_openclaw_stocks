@@ -271,7 +271,7 @@ Commands:
 
 Configuration:
   ~/.openclaw/credentials/proxmox.json:
-    {"host": "192.168.2.8", "token_id": "...", "token_secret": "..."}
+    {"host": "your-proxmox-ip", "token_id": "...", "token_secret": "..."}
   
   Or ~/.proxmox-credentials:
     PROXMOX_HOST=https://your-proxmox-ip:8006

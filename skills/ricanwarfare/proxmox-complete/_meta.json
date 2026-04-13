@@ -3,9 +3,15 @@
   "slug": "proxmox-complete",
   "displayName": "Proxmox Complete",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775414740660,
-    "commit": "https://github.com/openclaw/skills/commit/6edf41fcd8cfa8c204a989932fe1a07977babd40"
+    "version": "1.1.0",
+    "publishedAt": 1775606486578,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775414740660,
+      "commit": "https://github.com/openclaw/skills/commit/6edf41fcd8cfa8c204a989932fe1a07977babd40"
+    }
+  ]
 }
