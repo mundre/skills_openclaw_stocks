@@ -1,141 +1,156 @@
 ---
 name: stock-price-alert
-description: 对接股票行情接口，监控持仓价格异动，并联动邮件提醒与 Sonos 语音播报。
+description: 股价异动实时提醒技能，支持对接股票行情接口、邮件提醒和Sonos语音播报，实时监控持仓股票价格波动并触发告警
 license: LICENSE-CC-BY-NC-SA 4.0 in LICENSE.txt
-author: OpenClaw Assistant
+author: OpenClaw FinanceOps
+tags: ['stocks', 'finance', 'alert', 'notification', 'trading']
+metadata:
+  {
+    "openclaw":
+      {
+        "requires": { "bins": ["python3", "clawhub"], "pip": ["yfinance", "pandas", "python-dotenv", "google-api-python-client", "google-auth-httplib2", "google-auth-oauthlib"] },
+        "install":
+          [
+            {
+              "id": "deps",
+              "kind": "pip",
+              "packages": ["yfinance", "pandas", "python-dotenv", "google-api-python-client", "google-auth-httplib2", "google-auth-oauthlib"],
+              "label": "Install Python dependencies",
+            },
+          ],
+      },
+  }
 ---
 
-# Stock Price Alert
+# Stock Price Alert Skill
 
-一个用于个人持仓股价异动实时提醒的外部服务集成类技能。
+股价异动实时提醒技能，用于实时监控股票持仓的价格波动，当价格涨跌幅超过预设阈值时触发多渠道告警通知。
 
 ## 使用场景
 
-当用户希望在个人助手工作区中，持续监控股票持仓价格变化，并在达到预设阈值时：
-
-1. 拉取股票行情接口获取最新价格
-2. 判断是否触发异动条件
-3. 通过 Gmail 发送提醒邮件
-4. 通过 Sonos 进行语音播报
-
-应使用此技能。
+- 实时监控持仓股票的异常波动
+- 价格突破支撑位或压力位时的提醒
+- 重要价格点位到达通知
+- 单日涨跌幅超过阈值时的紧急告警
 
 ## 前置条件
 
-- Python 3.10+
-- 已安装依赖：`yfinance`、`pandas`、`python-dotenv`、`google-api-python-client`、`google-auth`、`google-auth-oauthlib`
-- 已配置 Gmail API 授权文件或 token
-- 已可通过 `sonos` CLI 访问目标音箱
-- 已准备持仓配置文件（JSON）
-
-建议环境变量：
-
-- `STOCK_ALERT_PORTFOLIO_PATH`：持仓配置 JSON 路径
-- `STOCK_ALERT_RECIPIENT_EMAIL`：接收提醒的邮箱
-- `STOCK_ALERT_SONOS_SPEAKER`：Sonos 音箱名称
-- `STOCK_ALERT_GMAIL_TOKEN_PATH`：Gmail token 路径，默认 `config/token.json`
-- `STOCK_ALERT_ENABLE_EMAIL`：是否启用邮件，`true/false`
-- `STOCK_ALERT_ENABLE_SONOS`：是否启用 Sonos，`true/false`
+1. Python 3.7+ 环境
+2. yfinance 股票行情接口库
+3. Gmail API 凭证（用于邮件提醒）
+4. Sonos CLI 已配置（用于语音播报）
+5. 在 .env 文件中配置相关参数
 
 ## 工作流
 
-1. 输入接收
-   - 接收持仓配置路径、阈值设置、通知开关等参数
-   - 校验股票代码、阈值和必要凭证是否存在
+### 1. 监控初始化
+- 加载用户配置的持仓股票列表
+- 读取告警阈值配置（默认 ±5%）
+- 初始化行情接口和通知渠道
 
-2. 行情获取
-   - 通过行情接口（默认 `yfinance`）获取最近两日或最近一次可用收盘/最新价格
-   - 计算每个标的的绝对变化与百分比变化
+### 2. 实时行情获取
+- 调用 Yahoo Finance API 获取实时价格
+- 计算涨跌幅和价格变动
+- 与基准价格进行对比
 
-3. 异动判断
-   - 按每个持仓独立阈值判断是否触发
-   - 支持价格涨跌幅阈值、绝对金额阈值
-   - 生成触发清单与摘要
+### 3. 异动检测
+- 检查单只股票涨跌幅是否超过阈值
+- 检测价格是否突破关键点位
+- 验证是否需要去重（避免重复告警）
 
-4. 提醒执行
-   - 若触发：生成 HTML 邮件并发送
-   - 若触发：生成自然语言播报文案并交给 Sonos CLI 播放
-   - 若未触发：输出未触发结果，避免误报
+### 4. 告警触发
+- 生成详细的告警报告
+- 通过 Gmail 发送邮件提醒
+- 通过 Sonos 扬声器进行语音播报
+- 记录告警历史到日志文件
 
-5. 结果输出
-   - 返回结构化 JSON 摘要
-   - 标记每个通知通道是否成功
+### 5. 持续监控
+- 按照设定的时间间隔循环执行
+- 更新告警状态和静默期
+- 生成每日监控汇总报告
 
-## 输入参数
+## 配置参数
 
-推荐输入来源为 JSON 配置文件，格式示例：
-
-```json
-{
-  "portfolio_name": "daily-holdings",
-  "default_threshold_percent": 3.0,
-  "default_threshold_amount": 0,
-  "holdings": [
-    {
-      "ticker": "AAPL",
-      "shares": 15,
-      "threshold_percent": 2.5
-    },
-    {
-      "ticker": "NVDA",
-      "shares": 10,
-      "threshold_percent": 4.0
-    }
-  ]
-}
-```
+| 参数名 | 环境变量 | 默认值 | 说明 |
+|--------|----------|--------|------|
+| 持仓配置 | PORTFOLIO | - | 股票代码和持仓数量字典，如：{"AAPL": 15, "MSFT": 10} |
+| 告警阈值 | ALERT_THRESHOLD | 5.0 | 涨跌幅告警阈值（百分比） |
+| 检查间隔 | CHECK_INTERVAL | 300 | 行情检查间隔（秒） |
+| Sonos音箱 | SONOS_SPEAKER | 'Living Room' | 语音播报的Sonos音箱名称 |
+| 收件邮箱 | RECIPIENT_EMAIL | 'user@example.com' | 告警邮件收件人 |
+| 静默期 | ALERT_COOLDOWN | 3600 | 单只股票重复告警间隔（秒） |
 
 ## 输出格式
 
-脚本输出 JSON，例如：
+### 告警邮件示例
+```
+⚠️ 股价异动告警：AAPL
+时间：2026-04-09 10:30:00
+当前价格：$175.50
+涨跌幅：+6.2%
+变动金额：+$10.25
+告警原因：单日涨幅超过5.0%阈值
+建议：关注成交量变化，考虑止盈
+```
 
-```json
-{
-  "triggered": true,
-  "date": "2026-04-09",
-  "portfolio_name": "daily-holdings",
-  "alerts": [
-    {
-      "ticker": "AAPL",
-      "change_percent": 3.21,
-      "threshold_percent": 2.5
-    }
-  ],
-  "email_sent": true,
-  "sonos_announced": true
-}
+### Sonos语音播报示例
+```
+注意！股价异动提醒：苹果公司当前涨幅已达到百分之六点二，当前价格为一百七十五美元五十分，请您及时关注。
 ```
 
 ## 使用示例
 
-### 1. 执行一次检查
-
+### 基本使用 - 启动实时监控
 ```bash
-python scripts/stock_price_alert.py --config config/stock-price-alert.example.json
+python3 scripts/stock_price_alert.py --monitor
 ```
 
-### 2. 只做检测，不发送通知
-
+### 单次检测并退出
 ```bash
-python scripts/stock_price_alert.py --config config/stock-price-alert.example.json --dry-run
+python3 scripts/stock_price_alert.py --check-once
 ```
 
-### 3. 使用环境变量默认配置
-
+### 指定自定义阈值
 ```bash
-STOCK_ALERT_PORTFOLIO_PATH=config/stock-price-alert.example.json python scripts/stock_price_alert.py
+python3 scripts/stock_price_alert.py --threshold 3.0 --monitor
+```
+
+### 测试告警通知
+```bash
+python3 scripts/stock_price_alert.py --test-alert
+```
+
+### 添加到crontab定时执行
+```bash
+# 每5分钟检查一次
+*/5 * * * * cd /workspace && python3 scripts/stock_price_alert.py --check-once >> /var/log/stock_alert.log 2>&1
 ```
 
 ## 注意事项
 
-- `yfinance` 更适合个人自动化场景，不保证严格低延迟；如需更强实时性，可替换为券商或付费 API。
-- Gmail 与 Sonos 任一通道失败时，不应影响另一个通道执行。
-- 阈值判断应基于用户配置，不应写死在脚本中。
-- 配置与脚本分离：脚本在 `scripts/`，技能定义在 `skills/stock-price-alert/`。
+1. **行情接口限制**：yfinance 免费接口有调用频率限制，建议检查间隔不低于 60 秒
+2. **告警风暴**：合理设置静默期，避免短时间内收到大量重复告警
+3. **时区问题**：注意美股交易时间，非交易时段价格不会更新
+4. **凭证安全**：Gmail token.json 文件请勿提交到公开仓库
+5. **网络依赖**：确保服务器网络稳定，能正常访问 Yahoo Finance 和 Google API
 
 ## 错误处理
 
-- 行情获取失败：返回错误并标记未完成检测
-- 配置文件格式错误：直接报错退出
-- Gmail 认证失败：仅标记邮件失败
-- Sonos 播报失败：仅标记音箱播报失败
+| 错误类型 | 处理方式 |
+|---------|---------|
+| 行情接口调用失败 | 重试 3 次，每次间隔 10 秒，仍失败则跳过本次检查 |
+| Gmail 发送失败 | 记录错误日志，继续执行 Sonos 播报 |
+| Sonos 播报失败 | 记录错误日志，继续执行邮件发送 |
+| 价格数据异常 | 跳过该股票，记录警告日志 |
+
+## 文件结构
+
+```
+stock-price-alert/
+├── SKILL.md                    # 本技能说明文件
+├── README.md                   # 使用说明文档
+├── scripts/
+│   └── stock_price_alert.py    # 主运行脚本
+└── config/
+    └── .env.example            # 配置示例文件
+```
