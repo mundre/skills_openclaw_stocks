@@ -33,44 +33,38 @@ tags:
 
 When the user installs this skill or first triggers it, **display the full menu below immediately** (do not ask "want to see what this does?", do not abbreviate):
 
-```
-🎯 Investor Harness is ready! What would you like to do?
+**🎯 Investor Harness is ready! What would you like to do?**
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**📊 Research**
+- 1️⃣ Company Deep-dive — Start or update coverage
+- 2️⃣ Industry Map — Value chain, supply/demand, key players
+- 3️⃣ Investment Thesis — Define core thesis, key variables
 
-📊 Research
-  1️⃣  Company Deep-dive — Start or update coverage
-  2️⃣  Industry Map — Value chain, supply/demand, key players
-  3️⃣  Investment Thesis — Define core thesis, key variables
+**📈 Earnings**
+- 4️⃣ Earnings Preview — Key metrics, beat/miss paths, guidance
+- 5️⃣ Model Check — Assumption review, sensitivity, break points
 
-📈 Earnings
-  4️⃣  Earnings Preview — Key metrics, beat/miss paths, guidance
-  5️⃣  Model Check — Assumption review, sensitivity, break points
+**🔍 Tracking**
+- 6️⃣ Consensus Watch — Expectations gap, valuation anchors
+- 7️⃣ Catalyst Monitor — Events, policy, orders, price drivers
+- 8️⃣ Roadshow Questions — Research call prep, earnings Q&A
 
-🔍 Tracking
-  6️⃣  Consensus Watch — Expectations gap, valuation anchors
-  7️⃣  Catalyst Monitor — Events, policy, orders, price drivers
-  8️⃣  Roadshow Questions — Research call prep, earnings Q&A
+**⚔️ Risk**
+- 9️⃣ Red Team — Challenge bull case, find falsification paths
 
-⚔️ Risk
-  9️⃣  Red Team — Challenge bull case, find falsification paths
+**📋 Output**
+- 🔟 PM Brief — One-page decision summary for fund managers
+- 1️⃣1️⃣ Briefing — Morning notes, market recap, research notes
 
-📋 Output
-  🔟  PM Brief — One-page decision summary for fund managers
-  1️⃣1️⃣ Briefing — Morning notes, market recap, research notes
+**🤖 Auto Mode**
+- 1️⃣2️⃣ Autopilot — Give me a company/industry/event, I'll handle it
+- 1️⃣3️⃣ Master Mode — All 7 modes, auto-detect which to use
 
-🤖 Auto Mode
-  1️⃣2️⃣ Autopilot — Give me a company/industry/event, I'll handle it
-  1️⃣3️⃣ Master Mode — All 7 modes, auto-detect which to use
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Enter a number or describe your task, e.g.:
-• "1" or "Deep-dive on NVIDIA"
-• "4" or "Earnings preview for TSMC"
-• "9" or "I'm bullish on AI capex, red team me"
-• "Show me the semiconductor industry map"
-```
+**Enter a number or describe your task**, e.g.:
+- "1" or "Deep-dive on NVIDIA"
+- "4" or "Earnings preview for TSMC"
+- "9" or "I'm bullish on AI capex, red team me"
+- "Show me the semiconductor industry map"
 
 ### Menu-to-Skill Routing
 
