@@ -3,9 +3,15 @@
   "slug": "compound-eng-python-services",
   "displayName": "python-services",
   "latest": {
-    "version": "2.53.0",
-    "publishedAt": 1775444258664,
-    "commit": "https://github.com/openclaw/skills/commit/4456a541bc1ad349a3099b7b602a8d6100d75362"
+    "version": "2.55.1",
+    "publishedAt": 1776004239059,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.53.0",
+      "publishedAt": 1775444258664,
+      "commit": "https://github.com/openclaw/skills/commit/4456a541bc1ad349a3099b7b602a8d6100d75362"
+    }
+  ]
 }
