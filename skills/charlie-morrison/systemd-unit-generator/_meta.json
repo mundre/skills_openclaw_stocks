@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "systemd-unit-generator",
+  "displayName": "Systemd Unit Generator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776050576532,
+    "commit": null
+  },
+  "history": []
+}
