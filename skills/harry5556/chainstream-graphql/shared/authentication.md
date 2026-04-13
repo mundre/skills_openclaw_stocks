@@ -87,13 +87,22 @@ npx @chainstream-io/cli verify --otp-id <otpId> --code <code> --email user@examp
 For agents that already have a Base (EVM) or Solana private key and want to use the CLI (no wallet creation, no email):
 
 ```bash
-# Import your existing private key (Base or Solana)
+# Import Base (EVM) private key
 npx @chainstream-io/cli wallet set-raw --chain base
 # Enter private key: <your hex private key>
 
-# Verify address
+# Import Solana private key
+npx @chainstream-io/cli wallet set-raw --chain sol
+# Enter private key: <your base58 private key>
+
+# Verify addresses
 npx @chainstream-io/cli wallet address
-# EVM: 0xYourAddress
+# EVM:    0xYourAddress
+# Solana: YourSolanaAddress
+
+# Set payment chain to match your funded wallet
+npx @chainstream-io/cli config set --key walletChain --value base  # if paying with Base USDC
+npx @chainstream-io/cli config set --key walletChain --value sol    # if paying with Solana USDC
 
 # All commands now use your imported key for auth + x402 payment
 npx @chainstream-io/cli token search --keyword PUMP --chain sol
@@ -134,18 +143,22 @@ const client = new ChainStreamClient("", {
   walletSigner: myWallet,
 });
 
-// ── Step 3: Set up x402 payment (handles 402 → pay → retry) ──
+// ── Step 3: Set up x402 payment (handles 402 → sign → retry) ──
+// ⚠️ x402 payment involves REAL USDC transfer (EIP-3009 signTypedData).
+//    Always present plan options and get user confirmation before purchase.
 const x402 = new x402Client();
-// Base: register with viem-compatible Account (must support signTypedData)
+// Register ONE payment scheme based on your wallet's chain:
+// Base (USDC) — requires signTypedData (EIP-712)
 x402.register("eip155:8453", new ExactEvmScheme(yourViemCompatibleAccount));
-// OR Solana: register with @solana/kit signer
-// x402.register("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", new ExactSvmScheme(solanaSigner));
+// Solana (USDC) — requires @solana/kit signer
+x402.register("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", new ExactSvmScheme(solanaSigner));
 const x402Fetch = wrapFetchWithPayment(fetch, x402);
 
 // ── Step 4: Purchase quota if needed ──
 // First API call may return 402 if no subscription exists.
-// Option A: Let x402Fetch handle it transparently
-await x402Fetch("https://api.chainstream.io/x402/purchase?plan=<PLAN>");
+// Plan name MUST come from user's explicit selection — NEVER hardcode a plan.
+// Option A: x402Fetch automates the 402 → sign → retry flow
+await x402Fetch("https://api.chainstream.io/x402/purchase?plan=<USER_CHOSEN_PLAN>");
 // Option B: SDK calls — catch 402, purchase, retry
 try {
   const tokens = await client.token.search({ q: "PUMP", chains: ["sol"] });
@@ -243,6 +256,65 @@ SDK/CLI automatically caches the token and refreshes before expiry. Agent never 
 ## Auth Priority
 
 Server checks in order: SIWX → API Key → JWT Bearer.
+
+## Check Current Subscription
+
+```bash
+# CLI (auto-detects wallet chain and address from config)
+npx @chainstream-io/cli plan status
+
+# With explicit parameters
+npx @chainstream-io/cli plan status --chain evm --address 0x...
+
+# API (no auth required)
+curl "https://api.chainstream.io/x402/status?chain=evm&address=0x..."
+```
+
+Returns current plan name, quota usage (used/total CU), expiry date, and active status. See [x402-payment.md](x402-payment.md#check-current-subscription) for full response format.
+
+## Address Linking (Cross-Chain SIWX)
+
+When a user has wallets on multiple chains (e.g., EVM + Solana via Turnkey embedded wallet), a single x402 payment only registers SIWX auth for the paying chain. **Address Linking** allows the user to associate additional chain addresses with the same subscription, so SIWX auth works regardless of which chain they sign with.
+
+**How it works:**
+
+- The paying chain's address is the **primary address** that determines the `orgId`
+- After payment, the CLI automatically links all other available wallet addresses to the same `orgId`
+- Each linked address gets its own `x402:access:{chain}:{address}` Redis record pointing to the same `orgId`
+- All addresses share the same subscription quota and expiry
+
+**Automatic linking (CLI):** After a successful x402 purchase, the CLI automatically detects other available wallet addresses (e.g., if payment was via EVM, it finds the Solana address) and calls `POST /x402/link-address` to link them. This is transparent to the user.
+
+**Manual linking:**
+
+```bash
+# Link your Solana address to an existing subscription
+npx @chainstream-io/cli wallet link --chain solana
+
+# Link your EVM address to an existing subscription
+npx @chainstream-io/cli wallet link --chain evm
+```
+
+Requires an active API Key (`chainstream config set --key apiKey --value <key>`).
+
+**API endpoint:** `POST /x402/link-address`
+
+```json
+{
+  "chain": "solana",
+  "address": "53LKjHoRGSi3...",
+  "message": "<SIWX message proving ownership>",
+  "signature": "<signature>"
+}
+```
+
+Header: `X-API-KEY: <your-api-key>`
+
+**Supported chains:** `evm` (all EVM-compatible chains), `solana`. More chains will be added as supported.
+
+**Storage:** Address-to-orgId mappings are stored in both Redis (hot path for auth-service) and PostgreSQL (`x402_address_link` table) for persistence. Redis can be rebuilt from DB if needed.
+
+**API Key is always chain-agnostic.** Once you have an API Key, it works regardless of which chain was used for payment or SIWX. Address linking is specifically for users who rely on SIWX authentication across multiple chains.
 
 ## NEVER Do
 

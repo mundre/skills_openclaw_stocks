@@ -29,16 +29,43 @@ npx @chainstream-io/cli wallet pricing
 When a user needs to purchase a subscription:
 
 1. **Fetch available plans**: call `GET /x402/pricing` or `GET /mpp/pricing`
-2. **Present ALL plans to the user** with name, price, quota, and duration — let them choose. **NEVER auto-select a plan. NEVER default to any plan. The user MUST explicitly choose.**
-3. **Explain what it means**: "A subscription gives you a pool of compute units (CU). Each API call consumes CU from the pool — the amount varies by endpoint and response size. The quota is valid for 30 days."
+2. **Present ALL plans to the user** with name, price, quota (CU), and duration — let them choose. **NEVER auto-select a plan. NEVER default to any plan. The user MUST explicitly choose.**
+3. **Explain what it means**: "A subscription gives you a pool of **Compute Units (CU)**. Each API call consumes CU from the pool — the amount varies by endpoint complexity and response size. CU is NOT the same as API call count. The quota is valid for 30 days." **Always use "CU" as the unit — NEVER say "calls" or "requests" when describing quota.**
 4. **Ask which payment method the user has**:
    - USDC on Base or Solana → use x402
    - USDC.e on Tempo → use MPP
    - No crypto wallet → obtain API Key from Dashboard
-5. **Wait for the user to confirm** both the plan and payment method
-6. **Execute the purchase**: `GET /x402/purchase?plan=<USER_CHOSEN>` or `GET /mpp/purchase?plan=<USER_CHOSEN>`
+5. **Configure payment chain** (x402 only):
+   - User has USDC on Base → `npx @chainstream-io/cli config set --key walletChain --value base` (default after `chainstream login`, usually no action needed)
+   - User has USDC on Solana → `npx @chainstream-io/cli config set --key walletChain --value sol`
+6. **Wait for the user to confirm** both the plan and payment method
+7. **Execute the purchase**: `GET /x402/purchase?plan=<USER_CHOSEN>` or `GET /mpp/purchase?plan=<USER_CHOSEN>`
 
 **NEVER hardcode a plan name in the URL.** The `?plan=` parameter MUST come from the user's explicit selection. Do NOT say "you need the nano plan" — always show all options and let the user decide.
+
+### Purchase flow (CLI)
+
+Use the `plan purchase` command to subscribe. Works in all environments (terminal, AI agent, CI/CD):
+
+```bash
+# Step 1: Check existing subscription
+npx @chainstream-io/cli plan status --json
+
+# Step 2: Show plans (machine-readable) — present ALL to user, let them choose
+npx @chainstream-io/cli wallet pricing --json
+
+# Step 3: Configure payment chain if needed (default is base after login)
+npx @chainstream-io/cli config set --key walletChain --value sol   # if user has USDC on Solana
+
+# Step 4: Purchase after user confirms (non-interactive — signs x402 and pays directly)
+npx @chainstream-io/cli plan purchase --plan <USER_CHOSEN> --json
+# Output: { "plan": "nano", "apiKey": "cs_live_...", "expiresAt": "..." }
+# API Key is auto-saved to config. Agent can now make data queries.
+```
+
+This command performs real USDC payment (EIP-3009 `signTypedData`). Always present plans and get explicit user confirmation before calling `plan purchase`.
+
+For MPP (USDC.e on Tempo), `plan purchase` is not available — use `tempo request` instead (see MPP section below).
 
 ## API Key Auto-Return
 
@@ -68,20 +95,26 @@ This API Key works with MCP Server, CLI, and SDK — no wallet signature needed 
 
 x402 uses **EIP-3009 `transferWithAuthorization`** (off-chain signed authorization), NOT a simple USDC transfer. Manual curl construction will fail.
 
-### Method 1: CLI (recommended)
+### Method 1: CLI `plan purchase` (recommended)
 
-CLI handles x402 transparently — no manual payment steps:
+Purchase a subscription using the dedicated CLI command. This involves a **real USDC payment** — an EIP-3009 `signTypedData` that authorizes fund transfer from the wallet. Always present plan options and get user confirmation before purchasing.
 
 ```bash
-# Just call any command. If 402, CLI auto-purchases and retries.
-npx @chainstream-io/cli token search --keyword PUMP --chain sol
+# View plans
+npx @chainstream-io/cli wallet pricing --json
+
+# Purchase (signs EIP-3009, pays USDC, returns API Key — auto-saved to config)
+npx @chainstream-io/cli plan purchase --plan <USER_CHOSEN> --json
 ```
 
-The CLI internally uses `@x402/fetch` to:
-1. Detect 402 response
-2. Sign EIP-3009 typed data with wallet (requires `signTypedData`, not `signMessage`)
-3. Retry with `Payment-Signature` header
-4. Return the API response — agent never sees the 402
+Under the hood, the CLI uses `@x402/fetch` to:
+1. Send GET to `/x402/purchase?plan=<name>`
+2. Receive 402 + payment requirements
+3. Sign EIP-3009 typed data with wallet (requires `signTypedData`, not `signMessage`) — **this authorizes real USDC transfer**
+4. Retry with `Payment-Signature` header
+5. Return the API response with `apiKey` after payment completes
+
+If a data command (e.g. `token search`) is called without a subscription, the CLI returns a 402 error with instructions to run `plan purchase`.
 
 ### Method 2: Standard x402 GET (any x402-compatible wallet)
 
@@ -102,9 +135,10 @@ import { ExactSvmScheme } from "@x402/svm/exact/client";
 
 const client = new x402Client();
 
-// Base (EVM)
+// Register ONE payment scheme based on your wallet's chain:
+// Base (USDC)
 client.register("eip155:8453", new ExactEvmScheme(viemAccount));
-// OR Solana
+// Solana (USDC)
 client.register("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", new ExactSvmScheme(solanaSigner));
 
 const x402Fetch = wrapFetchWithPayment(fetch, client);
@@ -113,7 +147,17 @@ const resp = await x402Fetch("https://api.chainstream.io/x402/purchase?plan=<PLA
 
 Required packages: `@x402/core`, `@x402/fetch`, `@x402/evm` (for Base), `@x402/svm` (for Solana)
 
-CLI auto-payment supports both Base and Solana. Default payment chain is Base; set `walletChain: "sol"` in config to use Solana.
+CLI auto-payment supports both Base and Solana equally. The payment chain is determined by your wallet config:
+
+- `walletChain: "base"` → pay with USDC on Base (default after `chainstream login`)
+- `walletChain: "sol"` → pay with USDC on Solana
+
+To switch payment chain:
+
+```bash
+npx @chainstream-io/cli config set --key walletChain --value sol   # use Solana USDC
+npx @chainstream-io/cli config set --key walletChain --value base  # use Base USDC
+```
 
 ---
 
@@ -186,10 +230,42 @@ Compatible wallets: Tempo Wallet, MetaMask (custom network), Coinbase CDP, Turnk
 
 If unsure, ask the user which chain their wallet is on. If they say "Tempo" or "Stripe" → MPP. If they say "Base", "Solana", or "USDC" → x402.
 
+## Check Current Subscription
+
+To check whether a wallet has an active subscription and view quota usage:
+
+```bash
+# CLI (auto-detects wallet from config)
+npx @chainstream-io/cli plan status
+
+# CLI with explicit chain/address
+npx @chainstream-io/cli plan status --chain evm --address 0x...
+
+# API (no auth required)
+curl "https://api.chainstream.io/x402/status?chain=evm&address=0x..."
+```
+
+Response:
+
+```json
+{
+  "plan": "pro",
+  "quota": { "used": 12500, "total": 500000 },
+  "expiresAt": "2026-05-01T00:00:00.000Z",
+  "active": true
+}
+```
+
+- `plan`: current plan name (null if no subscription)
+- `quota.used` / `quota.total`: compute units consumed / total (total = -1 means unlimited)
+- `expiresAt`: subscription expiry (ISO 8601)
+- `active`: whether the subscription is currently valid
+
 ## Error Recovery
 
 - If payment fails (insufficient funds): tell user how much is needed and on which network, show wallet address
 - If 402 persists after payment: wait 5s for settlement, then retry
 - To check available plans: `GET /x402/pricing` or `GET /mpp/pricing` (no auth required)
+- To check current subscription: `GET /x402/status?chain=...&address=...` or `npx @chainstream-io/cli plan status`
 - x402-specific: ensure wallet has USDC on Base or Solana
 - MPP-specific: ensure Tempo Wallet has USDC.e (`tempo wallet balance` to check). Tempo uses USD stablecoins for gas — no separate gas token needed.
