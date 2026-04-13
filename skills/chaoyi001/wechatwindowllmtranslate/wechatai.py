@@ -22,6 +22,7 @@ import win32con
 import ctypes
 from ctypes import wintypes
 import math
+import threading
 #==================== 配置区域 ====================
 # Qwen API 配置 - 优先从环境变量读取
 QWEN_BASE_URL = os.environ.get('QWEN_BASE_URL', 'https://api-ai.gitcode.com') 
@@ -132,7 +133,7 @@ def scrollandcheck():
         if result:
             cursor_type = ci.hCursor
         
-        print(cursor_type)
+        #  print(cursor_type)
         time.sleep(0.5)
         # 检查是否为 IDC_IBEAM
         if cursor_type == IDC_IBEAM:      
@@ -160,7 +161,7 @@ def scrollandcheck():
             if newtext != OLD_TEXT:
                 OLD_TEXT = newtext
                 print(f"  ✓ 新文本已更新：{OLD_TEXT}，退出循环")
-                return question + " (精简回答 200 字以内，不要输出过程)"
+                return question 
                 
             else:
                 print(f"  ✗ 文本未变化 (仍为：{OLD_TEXT})，继续下一次")
@@ -369,7 +370,7 @@ def chat_with_qwen(
     client = QwenAPI(QWEN_BASE_URL, QWEN_API_KEY)
     
     messages = [
-        {"role": "system", "content": ""},
+        {"role": "system", "content": "精简回答 200 字以内，不要输出过程"},
         {"role": "user", "content": user_input}
     ]
     
@@ -454,7 +455,7 @@ def example_chat():
     question = scrollandcheck()
     if question=="":
        return
-    answer = chat_with_qwen(question)
+    answer = chat_with_qwen(question + "，使用以下MBTI个性语气：" + mbti_selected)
     answer = re.sub(r'\b[a-zA-Z]{1,}\b', '', answer)
     answer = re.sub(r'\d+', '', answer)
     keep_chars = set('，。！？%，：""（）')
@@ -475,9 +476,24 @@ def example_chat():
 
 if __name__ == "__main__":
     print("微信智能回复（需要先配置ai模型的API地址和API_KEY，百度翻译开放平台的API_ID和API_KEY，根据自身分辨率调整屏幕坐标x,y）\n")
+    # 获取屏幕尺寸
+    user32 = ctypes.windll.user32
 
+    # 边缘检测阈值（距离边缘多少像素算"在边缘"）
+    EDGE_THRESHOLD = 5
+    last_x, last_y = -1, -1
     try:
         while activategptwindow():
+             # 获取当前鼠标位置
+            point = wintypes.POINT()
+            user32.GetCursorPos(ctypes.byref(point))     
+            current_x, current_y = point.x, point.y
+            # 检测是否移动到边缘
+            if last_x != -1:  # 不是第一次
+                if current_x <= EDGE_THRESHOLD and last_x > EDGE_THRESHOLD:
+                    print(f"[边缘检测] 鼠标移动到**屏幕最左边** (x={current_x})")
+                    break
+            last_x, last_y = current_x, current_y
             example_chat()       
     except KeyboardInterrupt:
         print("\n\n[中断] 用户按 Ctrl+C 取消了操作")
@@ -485,3 +501,4 @@ if __name__ == "__main__":
         print(f"\n[错误] 脚本执行失败：{e}")
         import traceback
         traceback.print_exc()
+
