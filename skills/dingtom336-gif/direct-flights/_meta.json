@@ -1,0 +1,11 @@
+{
+  "owner": "dingtom336-gif",
+  "slug": "direct-flights",
+  "displayName": "Direct Flights",
+  "latest": {
+    "version": "3.2.1",
+    "publishedAt": 1775653377591,
+    "commit": null
+  },
+  "history": []
+}
