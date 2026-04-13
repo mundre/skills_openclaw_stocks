@@ -3,11 +3,16 @@
   "slug": "prana-stock-scoring-analysis-v2",
   "displayName": "prana-stock-scoring-analysis-v2",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1775194887747,
-    "commit": "https://github.com/openclaw/skills/commit/0501de3f9378b4ed45636b52842c133f1f65159d"
+    "version": "1.0.13",
+    "publishedAt": 1775645493696,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1775194887747,
+      "commit": "https://github.com/openclaw/skills/commit/0501de3f9378b4ed45636b52842c133f1f65159d"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1775013829971,

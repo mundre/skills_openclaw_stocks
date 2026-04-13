@@ -65,16 +65,15 @@ async function invokeAgentResultWithRetry(baseUrl, requestId, xApiKey) {
         return result;
       }
     } catch (error) {
-      lastResult = { error: true, detail: `第 ${attempt} 次 agent-result 请求失败: ${error.message || error}` };
+      return { error: true, detail: `第 ${attempt} 次 agent-result 请求失败: ${error.message || error}` };
     }
   }
 
   console.error(
-    "提示: 本轮尝试已达到上限；Prana 服务端任务可能仍需要较长时间才能完成。" +
-      "若希望继续等待同一任务的结果，请稍后执行继续尝试命令:node scripts/prana_skill_client.js -r " +
+    "提示: 本轮尝试已达到上限；Prana 服务端任务可能仍需要较长时间才能完成。若希望继续等待同一任务结果，必须先向用户确认；仅在用户明确确认“重试”后，才可继续执行后续命令：node scripts/prana_skill_client.js -r " +
       requestId,
   );
-  return lastResult;
+  return null;
 }
 
 async function invokeAgentRun(baseUrl, skillKey, question, xApiKey) {
@@ -153,7 +152,9 @@ async function main() {
           xApiKey,
         )
       : await invokeAgentResultWithRetry(DEFAULT_BASE_URL, requestIdArg, xApiKey);
-    console.log(JSON.stringify(result, null, 2));
+    if (result != null) {
+      console.log(JSON.stringify(result, null, 2));
+    }
   } catch (error) {
     console.error(`请求失败: ${error.message || error}`);
     process.exit(2);

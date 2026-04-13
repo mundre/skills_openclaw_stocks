@@ -52,5 +52,5 @@
     "env_var": "PRANA_SKILL_API_FLAG",
     "required": true
   },
-  "usage_example": "请对贵州茅台进行多维度深度分析并生成报告、帮我分析宁德时代的基本面和技术面数据"
+  "usage_example": "请对贵州茅台进行多维度深度分析、生成宁德时代最新的股票分析报告"
 }
