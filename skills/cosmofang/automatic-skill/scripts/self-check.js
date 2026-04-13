@@ -66,6 +66,20 @@ DATA FILES CHECK (if any data/ directory exists):
 □ All .json files in data/ are valid JSON
 □ No data file contains real user data (should be empty arrays/objects for a fresh skill)
 
+REQUIRED SECTIONS CHECK — parse SKILL.md body and verify all five sections exist with real content:
+□ "## Purpose & Capability" heading present
+  → body must contain: core concept description + capability list/table + explicit "does not" boundary
+□ "## Instruction Scope" heading present
+  → body must contain: in-scope examples + out-of-scope list + behavior when missing credentials
+□ "## Credentials" heading present
+  → body must contain: Action/Credential/Scope table (or explicit "no credentials required" statement)
+  → must NOT contain: hardcoded token values, personal account IDs, or real API keys
+□ "## Persistence & Privilege" heading present
+  → body must contain: paths-written table + "does not write" list + uninstall instructions
+□ "## Install Mechanism" heading present
+  → body must contain: clawhub install command + verification step + env var examples
+Each section must be > 50 characters (non-empty). Missing or empty section = FAIL.
+
 CROSS-REFERENCE CHECK:
 □ All scripts mentioned in SKILL.md actually exist in the scripts/ directory
 □ All cron commands in SKILL.md reference valid script files
@@ -125,6 +139,20 @@ Slug 一致性检查：
 数据文件检查（如存在 data/ 目录）：
 □ data/ 中所有 .json 文件为合法 JSON
 □ 数据文件不含真实用户数据（新 skill 应为空数组/空对象）
+
+必要章节检查 — 解析 SKILL.md 正文，验证五个必要章节均存在且有真实内容：
+□ "## Purpose & Capability" 标题存在
+  → 正文必须包含：核心概念说明 + 能力列表/表格 + 明确的"不做"边界
+□ "## Instruction Scope" 标题存在
+  → 正文必须包含：在 scope 内示例 + 不在 scope 内列表 + 凭证缺失时的行为
+□ "## Credentials" 标题存在
+  → 正文必须包含：操作/凭证/范围表格（或明确的"无需凭证"声明）
+  → 不得包含：硬编码的 token 值、个人账号 ID、真实 API 密钥
+□ "## Persistence & Privilege" 标题存在
+  → 正文必须包含：写入路径表格 + "不写入"列表 + 卸载方法
+□ "## Install Mechanism" 标题存在
+  → 正文必须包含：clawhub install 命令 + 验证步骤 + env var 配置示例
+每个章节内容必须 > 50 个字符（非空）。章节缺失或为空 = FAIL。
 
 交叉引用检查：
 □ SKILL.md 中提及的所有脚本实际存在于 scripts/ 目录

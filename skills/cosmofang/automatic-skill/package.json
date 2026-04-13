@@ -1,10 +1,11 @@
 {
   "name": "automatic-skill",
-  "version": "1.0.0",
-  "description": "Automatic Skill — 每日自动调研、设计、制作、测试并发布新 Skill 的元技能流水线",
+  "version": "1.4.1",
+  "description": "每日 Skill 自动工厂 — 10阶段流水线自主调研、设计、生成、测试并发布新 skill，支持已有 skill 迭代升级",
+  "homepage": "https://github.com/Cosmofang/automatic-skill",
   "keywords": [
-    "automatic", "skill-factory", "pipeline", "meta-skill", "daily-skill",
-    "自动skill", "技能工厂", "每日skill", "自动化"
+    "automatic-skill", "skill-factory", "pipeline", "meta-skill", "daily-skill",
+    "自动skill", "技能工厂", "每日skill", "自动化", "skill迭代", "clawhub-publish"
   ],
   "author": "jiajiaoy",
   "license": "MIT",
@@ -20,8 +21,8 @@
     "self-check": "node scripts/self-check.js",
     "upload": "node scripts/upload.js",
     "verify": "node scripts/verify-upload.js",
-    "scan": "node scripts/scan-check.js",
-    "scan:fix": "node scripts/scan-fix.js --check-meta",
+    "safety-check": "node scripts/scan-check.js",
+    "safety-rules": "node scripts/scan-fix.js",
     "final-review": "node scripts/final-review.js",
     "status": "node scripts/status.js",
     "status:history": "node scripts/status.js --history",

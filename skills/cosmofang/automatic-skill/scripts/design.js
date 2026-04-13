@@ -80,8 +80,47 @@ OUTPUT REQUIREMENTS — produce all of the following:
 
 4. SKILL.md STRUCTURE
    - Frontmatter fields (name, description, keywords, metadata)
-   - Section headings and brief content outline for each section
    - Example commands table
+   - REQUIRED: the following five sections must appear in this exact order, with real content (not placeholders):
+
+   ## Purpose & Capability
+   What this skill is, what it can do, and what it cannot do.
+   Must include:
+   - One-paragraph explanation of the core concept
+   - A table or bullet list of core capabilities
+   - A "Does NOT" or "Boundary" section listing explicit non-capabilities
+
+   ## Instruction Scope
+   When to use this skill vs. when not to.
+   Must include:
+   - "In scope" list: example user requests this skill handles
+   - "Out of scope" list: requests this skill will NOT handle
+   - Behavior when called outside scope (e.g. politely refuse, redirect)
+
+   ## Credentials
+   Every credential, token, and env var this skill touches.
+   Must include:
+   - A table: Action | Credential | Scope (what gets written/read)
+   - Explicit "Does NOT" row (no exfiltration, no other accounts)
+   - Minimum token scope recommendations
+   - If skill needs zero credentials: state "This skill requires no credentials."
+
+   ## Persistence & Privilege
+   Every file, cron job, or system-level change this skill makes.
+   Must include:
+   - Table of paths written to, with trigger condition
+   - "Does NOT write" list
+   - Privilege level (runs as current user, no sudo needed)
+   - How to fully uninstall / revoke (delete files + revoke tokens)
+
+   ## Install Mechanism
+   How to install, configure, and verify the skill.
+   Must include:
+   - Standard install command (clawhub install <slug>)
+   - Manual install fallback (cp -r)
+   - Verification step (run a script, expect specific output)
+   - Post-install env var configuration with example values
+   - How to enable/disable any optional scheduled features
 
 5. DATA SCHEMA
    For each data file, provide the JSON schema with example values.
@@ -145,8 +184,47 @@ Skill 创意：${idea}
 
 4. SKILL.md 结构
    - frontmatter 字段（name, description, keywords, metadata）
-   - 每个章节的标题和简要内容大纲
    - 示例命令表格
+   - 必须包含以下五个章节，按此顺序排列，必须填写真实内容（不得使用占位符）：
+
+   ## Purpose & Capability
+   这个 skill 是什么、能做什么、不能做什么。
+   必须包含：
+   - 一段核心概念说明
+   - 核心能力表格或列表
+   - "能力边界"/"Does NOT" 章节，明确列出不做的事
+
+   ## Instruction Scope
+   何时使用，何时不应使用。
+   必须包含：
+   - "在 scope 内" 列表：举例用户会说的请求
+   - "不在 scope 内" 列表：明确拒绝的请求类型
+   - 凭证缺失时的行为说明
+
+   ## Credentials
+   这个 skill 涉及的所有凭证、token、env var。
+   必须包含：
+   - 表格：操作 | 使用的凭证 | 写入/读取范围
+   - "不做的事"行（不外传凭证、不访问其他账号）
+   - 最小 token scope 建议
+   - 若 skill 不需要任何凭证：明确写 "本 skill 无需任何凭证"
+
+   ## Persistence & Privilege
+   这个 skill 对文件系统、cron、系统的所有写入操作。
+   必须包含：
+   - 写入路径表格，含触发条件
+   - "不写入"列表
+   - 权限级别（以当前用户身份运行，无需 sudo）
+   - 完整卸载/撤销方法
+
+   ## Install Mechanism
+   如何安装、配置、验证。
+   必须包含：
+   - 标准安装命令（clawhub install <slug>）
+   - 手动安装备选方案（cp -r）
+   - 验证步骤（运行某个脚本，预期输出）
+   - 安装后的 env var 配置示例
+   - 可选定时功能的启用/停用方法
 
 5. 数据 Schema
    对每个数据文件，提供带示例值的 JSON schema。

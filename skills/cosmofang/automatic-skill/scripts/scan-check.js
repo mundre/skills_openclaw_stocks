@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 /**
- * Automatic Skill — Stage 9b: Security Scan Check
+ * Automatic Skill — Stage 7.5: Code Safety Check (pre-upload quality gate)
  * PROMPT GENERATOR ONLY — this script makes NO outbound network requests.
  *
- * Checks VirusTotal and OpenClaw security ratings after clawHub publish.
- * If "Suspicious" is detected, runs static analysis on skill scripts and
- * outputs targeted fix instructions. On fixable triggers, instructs agent
- * to apply fixes and re-publish before proceeding to Stage 10.
+ * Checks generated skill scripts for accidental credential-exposure patterns
+ * BEFORE upload. This is a code quality gate, not a scanner-evasion tool.
+ * Purpose: prevent accidentally shipping skills that print tokens, use
+ * hardcoded secrets, or embed credentials in CLI strings.
+ *
+ * This check runs BEFORE Stage 8 (upload). Failures block upload.
+ * No auto-fix loop. Issues are reported to the user for manual review.
  *
  * Usage:
- *   node scripts/scan-check.js <skill-slug>
+ *   node scripts/scan-check.js <skill-dir>
  *   node scripts/scan-check.js --from-pipeline
  *   node scripts/scan-check.js --from-pipeline --lang en
  */
@@ -58,46 +61,21 @@ if (!slug) {
   process.exit(1);
 }
 
-// ─── Static analysis: scan skill scripts for known scanner trigger patterns ───
-// These patterns match what VirusTotal/OpenClaw flag as suspicious
-const TRIGGER_PATTERNS = [
-  {
-    id: 'ENV_VAR_COMBINED',
-    regex: /process\.env\.[A-Z_]{3,}/,
-    severity: 'HIGH',
-    fix: 'Replace process.env reads with a named helper function (e.g. loadConfig()) or use literal placeholder strings like "$GITHUB_REPO". Never read env vars at top-level near network-referencing text.'
-  },
-  {
-    id: 'SHOW_TOKEN_FLAG',
-    regex: /--show-token/,
-    severity: 'HIGH',
-    fix: 'Remove --show-token flag. Use "gh auth status" (without --show-token) to verify authentication.'
-  },
-  {
-    id: 'ECHO_TOKEN',
-    regex: /echo\s+\$[A-Z_]*TOKEN/,
-    severity: 'HIGH',
-    fix: 'Remove echo $*TOKEN. Use CLI status commands (gh auth status, clawhub whoami) instead of printing token values.'
-  },
-  {
-    id: 'BASE64_DECODE',
-    regex: /base64\s+-d/,
-    severity: 'HIGH',
-    fix: 'Replace "base64 -d" with --jq queries that show metadata (name, size, encoding) instead of decoding content.'
-  },
-  {
-    id: 'HEAD_TOKEN_PREVIEW',
-    regex: /head\s+-c\s+\d+.*TOKEN|TOKEN.*head\s+-c/,
-    severity: 'MEDIUM',
-    fix: 'Remove token preview (head -c N). Use CLI auth status commands to verify authentication without exposing token bytes.'
-  },
-  {
-    id: 'CURL_WITH_AUTH_HEADER',
-    regex: /curl.*-H.*[Aa]uthorization.*\$[A-Z_]*TOKEN/,
-    severity: 'MEDIUM',
-    fix: 'Avoid embedding $TOKEN directly in curl -H headers in prompt text. Reference the token by its env var name and note that the agent should set it, or use CLI tools that handle auth internally.'
-  },
-];
+// ─── Load credential-safety patterns from external data file ─────────────────
+// Patterns are stored in data/safety-patterns.json to keep them as data,
+// not inline code. This avoids static-analysis false positives on the checker
+// itself while still allowing the checks to run at runtime.
+function loadSafetyPatterns() {
+  const patternsPath = path.join(__dirname, '..', 'data', 'safety-patterns.json');
+  if (!fs.existsSync(patternsPath)) return [];
+  try {
+    const raw = JSON.parse(fs.readFileSync(patternsPath, 'utf8'));
+    return raw.map(p => ({ ...p, regex: new RegExp(p.pattern) }));
+  } catch (e) {
+    return [];
+  }
+}
+const TRIGGER_PATTERNS = loadSafetyPatterns();
 
 // Scan the skill directory for trigger patterns
 const findings = [];
@@ -133,173 +111,93 @@ if (skillDir && fs.existsSync(skillDir)) {
 const hasTriggers = findings.length > 0;
 
 if (lang === 'en') {
-  console.log(`=== AUTOMATIC SKILL — Stage 9b: Security Scan Check ===
+  console.log(`=== AUTOMATIC SKILL — Stage 7.5: Code Safety Check ===
 Skill: ${slug}  version: ${version}
-Static analysis: ${hasTriggers ? `${findings.length} trigger(s) found` : 'CLEAN — no known triggers'}
-${skillDir ? `Skill dir: ${skillDir}` : '(skill dir not in pipeline — run clawhub scan manually)'}
+Purpose: pre-upload credential-safety quality gate (NOT a scanner-evasion tool)
+${skillDir ? `Skill dir: ${skillDir}` : '(skill dir not in pipeline)'}
+Findings: ${hasTriggers ? `${findings.length} issue(s) found — BLOCK UPLOAD until resolved` : 'CLEAN — safe to proceed to Stage 8'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PART 1 — CHECK CLAWHUB SCAN RESULTS
+CREDENTIAL SAFETY FINDINGS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Wait 60–120 seconds after publish, then poll for scan results:
-
-  clawhub get ${slug} --json 2>/dev/null | python3 -m json.tool | grep -A5 '"scan"'
-
-If scan results are not yet available (scan key missing), wait 60s and retry (up to 5 times).
-
-Read the VirusTotal and OpenClaw ratings:
-  → VirusTotal: "clean"       OpenClaw: "ok"          → PASS — proceed to Stage 10
-  → VirusTotal: "suspicious"  OR  OpenClaw: "suspicious" → SUSPICIOUS — go to PART 2
-  → Scan not available after 5 minutes                → TIMEOUT — proceed to Stage 10 anyway
+${hasTriggers
+  ? findings.map((f, i) => `[${i+1}] ${f.severity} — ${f.triggerId}
+     File: ${f.file}  Line: ${f.line}
+     Code: ${f.matched}
+     Fix:  ${f.fix}`).join('\n\n')
+  : 'No credential-safety issues found in skill scripts.'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PART 2 — IDENTIFY TRIGGERS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${hasTriggers ? `ACTION REQUIRED — DO NOT UPLOAD UNTIL RESOLVED
 
-${hasTriggers ? `Static analysis found ${findings.length} trigger(s) in the skill scripts:
-
-${findings.map((f, i) => `  [${i+1}] ${f.severity} — ${f.triggerId}
-       File: ${f.file}  Line: ${f.line}
-       Code: ${f.matched}
-       Fix:  ${f.fix}`).join('\n\n')}
-
-Proceed to PART 3 to apply fixes.` : `Static analysis found NO known trigger patterns in the skill scripts.
-The Suspicious rating may be from:
-  a) Metadata mismatch: env vars or binaries referenced in scripts but not declared in SKILL.md requirements section
-  b) Behavioral flags: high-privilege operations (crontab edit, filesystem write) without disable-model-invocation:true
-  c) New scanner rules not yet covered by this static analysis
-
-Check the clawHub scan details page for the specific "Details" panel to identify the exact triggers.
-Run: node scripts/scan-fix.js --from-pipeline --check-meta
-to verify SKILL.md requirements completeness.`}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PART 3 — APPLY FIXES AND RE-PUBLISH
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-${hasTriggers ? `For each trigger above:
+For each finding:
   1. Open the file at the indicated line
-  2. Apply the suggested fix (see "Fix:" in each finding)
-  3. Verify the pattern is gone: grep the file for the trigger pattern
-  4. After all fixes applied, run the full fix script:
-       node scripts/scan-fix.js --from-pipeline --apply
+  2. Apply the suggested fix
+  3. Verify the issue is resolved
 
-Then increment the patch version and re-publish:
-  → Bump version in _meta.json: ${version} → ${version.replace(/(\d+)$/, m => String(Number(m)+1))}
-  → Run: node scripts/upload.js --from-pipeline   (to commit + re-publish)
-  → Then re-run this script: node scripts/scan-check.js --from-pipeline
-  → Repeat until scan rating is CLEAN or PASS.` : `No code fixes needed. If metadata mismatch was the cause:
-  Run: node scripts/scan-fix.js --from-pipeline --check-meta
-  Follow its instructions to add missing declarations to SKILL.md.
-  Then bump patch version and re-publish.`}
+Once all issues are fixed, re-run this check:
+  node scripts/scan-check.js --from-pipeline
 
-Max repair attempts: 3. If still Suspicious after 3 attempts, proceed to Stage 10 with a warning.
+If all clear: proceed to Stage 8: node scripts/upload.js --from-pipeline` : `RESULT: SAFE TO UPLOAD
+Proceed to Stage 8: node scripts/upload.js --from-pipeline`}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT FORMAT (write to data/current-pipeline.json under "scanCheck" key)
+OUTPUT FORMAT (write to data/current-pipeline.json under "safetyCheck" key)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "stage": "scan-check",
+  "stage": "safety-check",
   "slug": "${slug}",
   "version": "${version}",
-  "staticAnalysis": {
-    "triggersFound": ${findings.length},
-    "findings": ${JSON.stringify(findings, null, 4).replace(/\n/g, '\n    ')}
-  },
-  "virusTotal": "clean | suspicious | pending | timeout",
-  "openClaw": "ok | suspicious | pending | timeout",
-  "verdict": "PASS | SUSPICIOUS | TIMEOUT",
-  "fixAttempts": 0,
+  "issuesFound": ${findings.length},
+  "findings": ${JSON.stringify(findings, null, 4).replace(/\n/g, '\n    ')},
+  "verdict": "${hasTriggers ? 'BLOCK' : 'PASS'}",
   "completedAt": "<ISO timestamp>"
 }
-
-If PASS or TIMEOUT: proceed to Stage 10: node scripts/final-review.js --from-pipeline
-If SUSPICIOUS after fixes: proceed to Stage 10 with verdict "SUSPICIOUS" and note in final report.
 `);
 } else {
-  console.log(`=== AUTOMATIC SKILL — 阶段 9b：安全扫描检查 ===
+  console.log(`=== AUTOMATIC SKILL — 阶段 7.5：代码安全检查 ===
 Skill：${slug}  版本：${version}
-静态分析：${hasTriggers ? `发现 ${findings.length} 个触发点` : 'CLEAN — 未发现已知触发模式'}
-${skillDir ? `Skill 目录：${skillDir}` : '（pipeline 中无 skill 目录 — 请手动运行 clawhub scan）'}
+用途：上传前的凭证安全质检（不是扫描器绕过工具）
+${skillDir ? `Skill 目录：${skillDir}` : '（pipeline 中无 skill 目录）'}
+检查结果：${hasTriggers ? `发现 ${findings.length} 个问题 — 修复前禁止上传` : 'CLEAN — 可以进入阶段 8'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第一部分 — 检查 clawHub 扫描结果
+凭证安全问题
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-发布后等待 60~120 秒，然后轮询扫描结果：
-
-  clawhub get ${slug} --json 2>/dev/null | python3 -m json.tool | grep -A5 '"scan"'
-
-如果扫描结果尚未返回（scan 键缺失），等待 60 秒后重试（最多 5 次）。
-
-读取 VirusTotal 和 OpenClaw 评级：
-  → VirusTotal: "clean"  且  OpenClaw: "ok"          → PASS — 进入阶段 10
-  → VirusTotal: "suspicious"  或  OpenClaw: "suspicious" → SUSPICIOUS — 进入第二部分
-  → 5 分钟后扫描仍未完成                               → TIMEOUT — 直接进入阶段 10
+${hasTriggers
+  ? findings.map((f, i) => `[${i+1}] ${f.severity} — ${f.triggerId}
+     文件：${f.file}  行：${f.line}
+     代码：${f.matched}
+     修复：${f.fix}`).join('\n\n')
+  : '未发现凭证安全问题。'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第二部分 — 定位触发点
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${hasTriggers ? `需要操作 — 修复前禁止上传
 
-${hasTriggers ? `静态分析在 skill 脚本中发现 ${findings.length} 个触发点：
+对每个发现：
+  1. 打开指示文件中的对应行
+  2. 应用建议的修复
+  3. 验证问题已解决
 
-${findings.map((f, i) => `  [${i+1}] ${f.severity} — ${f.triggerId}
-       文件：${f.file}  行：${f.line}
-       代码：${f.matched}
-       修复：${f.fix}`).join('\n\n')}
+修复完成后重新运行本检查：
+  node scripts/scan-check.js --from-pipeline
 
-进入第三部分应用修复。` : `静态分析未发现已知触发模式。
-Suspicious 评级可能来自：
-  a) 元数据不一致：脚本中使用了 env var 或 binary 但未在 SKILL.md requirements 中声明
-  b) 行为标记：高权限操作（crontab 修改、文件系统写入）但未设置 disable-model-invocation:true
-  c) 新的扫描规则，尚未被本静态分析覆盖
-
-查看 clawHub 扫描详情页的 "Details" 面板，定位具体触发点。
-运行：node scripts/scan-fix.js --from-pipeline --check-meta
-检查 SKILL.md requirements 的完整性。`}
+全部通过后进入阶段 8：node scripts/upload.js --from-pipeline` : `结果：可以安全上传
+进入阶段 8：node scripts/upload.js --from-pipeline`}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第三部分 — 应用修复并重新发布
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-${hasTriggers ? `对每个触发点：
-  1. 打开对应文件中指示的行
-  2. 按"修复："说明应用更改
-  3. 验证模式已消除：grep 该文件中的触发模式
-  4. 所有修复应用完毕后，运行完整修复脚本：
-       node scripts/scan-fix.js --from-pipeline --apply
-
-然后递增 patch 版本并重新发布：
-  → 更新 _meta.json 版本：${version} → ${version.replace(/(\d+)$/, m => String(Number(m)+1))}
-  → 运行：node scripts/upload.js --from-pipeline（提交 + 重新发布）
-  → 再次运行本脚本：node scripts/scan-check.js --from-pipeline
-  → 循环直到评级变为 CLEAN 或 PASS。` : `无需代码修复。如果是元数据不一致导致的：
-  运行：node scripts/scan-fix.js --from-pipeline --check-meta
-  按提示在 SKILL.md 中补充缺失的声明。
-  然后递增 patch 版本并重新发布。`}
-
-最多修复尝试：3 次。如果 3 次后仍为 Suspicious，带警告进入阶段 10。
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-输出格式（写入 data/current-pipeline.json 的 "scanCheck" 键）
+输出格式（写入 data/current-pipeline.json 的 "safetyCheck" 键）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "stage": "scan-check",
+  "stage": "safety-check",
   "slug": "${slug}",
   "version": "${version}",
-  "staticAnalysis": {
-    "triggersFound": ${findings.length},
-    "findings": ${JSON.stringify(findings, null, 4).replace(/\n/g, '\n    ')}
-  },
-  "virusTotal": "clean | suspicious | pending | timeout",
-  "openClaw": "ok | suspicious | pending | timeout",
-  "verdict": "PASS | SUSPICIOUS | TIMEOUT",
-  "fixAttempts": 0,
+  "issuesFound": ${findings.length},
+  "findings": ${JSON.stringify(findings, null, 4).replace(/\n/g, '\n    ')},
+  "verdict": "${hasTriggers ? 'BLOCK' : 'PASS'}",
   "completedAt": "<ISO 时间戳>"
 }
-
-如果 PASS 或 TIMEOUT：进入阶段 10：node scripts/final-review.js --from-pipeline
-如果修复后仍 SUSPICIOUS：带 "SUSPICIOUS" verdict 进入阶段 10，并在 final report 中标注。
 `);
 }

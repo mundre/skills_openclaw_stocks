@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Automatic Skill — Pipeline Orchestrator (编排器)
- * 输出 Agent 执行 prompt，引导其完整运行全部 9 个阶段的流水线。
+ * 输出 Agent 执行 prompt，引导其完整运行全部 10 个阶段的流水线。
+ * Stage 7.5 (Safety Check) runs BEFORE upload as a credential-safety gate.
  *
  * 用法:
  *   node scripts/pipeline.js                     # 自动选题，全流水线
@@ -55,10 +56,10 @@ const stages = [
   { n: 4,  name: 'Create',       cmd: `node ${scriptDir}/create.js --from-pipeline` },
   { n: 5,  name: 'Review',       cmd: `node ${scriptDir}/review.js --from-pipeline` },
   { n: 6,  name: 'Self-Run',     cmd: `node ${scriptDir}/self-run.js --from-pipeline` },
-  { n: 7,  name: 'Self-Check',   cmd: `node ${scriptDir}/self-check.js --from-pipeline` },
+  { n: 7,   name: 'Self-Check',    cmd: `node ${scriptDir}/self-check.js --from-pipeline` },
+  { n: 7.5, name: 'Safety Check',  cmd: `node ${scriptDir}/scan-check.js --from-pipeline` },
   { n: 8,   name: 'Upload',        cmd: `node ${scriptDir}/upload.js${dryRun ? ' --dry-run' : ''} --from-pipeline` },
   { n: 9,   name: 'Verify',        cmd: `node ${scriptDir}/verify-upload.js --from-pipeline` },
-  { n: 9.5, name: 'Scan Check',    cmd: `node ${scriptDir}/scan-check.js --from-pipeline` },
   { n: 10,  name: 'Final Review',  cmd: `node ${scriptDir}/final-review.js --from-pipeline` },
 ];
 
@@ -107,17 +108,16 @@ Check progress at any time: node scripts/status.js
 
 If a stage produces a FAIL verdict, fix the issues described in the stage output and re-run that stage before proceeding.
 
-FINAL OUTPUT:
-SCAN-FIX LOOP (Stage 9.5):
-Stage 9.5 checks VirusTotal and OpenClaw security ratings after publish.
-If the skill is rated "Suspicious", it will run node scripts/scan-fix.js --from-pipeline --apply
-to identify and fix trigger patterns, then re-publish. This loop repeats up to 3 times.
-Only after a PASS (or TIMEOUT after 5 min) does the pipeline proceed to Stage 10.
+SAFETY CHECK (Stage 7.5):
+Stage 7.5 runs a pre-upload credential-safety check on all generated skill files.
+If any credential-exposure issues are found (e.g. hardcoded tokens, echo $TOKEN patterns),
+the pipeline BLOCKS and reports the issues. You must fix them manually before proceeding
+to Stage 8 (Upload). This is a quality gate, not an auto-fix loop.
 
 After all stages complete, the new skill will be:
 - Available locally in SKILL_OUTPUT_DIR
 - Committed and pushed to GitHub (unless --dry-run)
-- Published on clawHub with a CLEAN security rating (unless --dry-run)
+- Published on clawHub (unless --dry-run)
 - Logged in data/pipeline-log.json
 
 BEGIN with Stage ${fromStage}: run the command listed above for Stage ${fromStage}.
@@ -164,17 +164,17 @@ ${pendingStages.map(s => `阶段 ${s.n} — ${s.name}
 
 如果某阶段返回 FAIL，修复阶段输出中描述的问题，重新运行该阶段后再继续。
 
-扫描修复循环（阶段 9.5）：
-阶段 9.5 在发布后检查 VirusTotal 和 OpenClaw 安全评级。
-如果 skill 被评为 "Suspicious"，运行 node scripts/scan-fix.js --from-pipeline --apply
-识别并修复触发模式，然后重新发布。此循环最多重复 3 次。
-只有在 PASS（或 5 分钟后 TIMEOUT）后才进入阶段 10。
+安全检查（阶段 7.5）：
+阶段 7.5 在上传前对所有生成的 skill 文件做凭证安全检查。
+如果发现凭证暴露问题（如硬编码 token、echo $TOKEN 模式），
+流水线将阻断并报告问题。你必须手动修复后才能进入阶段 8（上传）。
+这是一个质检关卡，不是自动修复循环。
 
 最终输出：
 所有阶段完成后，新 skill 将：
 - 存储在本地 SKILL_OUTPUT_DIR
 - 已提交并推送到 GitHub（除非 --dry-run）
-- 已发布到 clawHub 且安全评级为 CLEAN（除非 --dry-run）
+- 已发布到 clawHub（除非 --dry-run）
 - 已记录在 data/pipeline-log.json
 
 从阶段 ${fromStage} 开始：运行上方阶段 ${fromStage} 对应的命令。
