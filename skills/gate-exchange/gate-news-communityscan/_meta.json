@@ -3,11 +3,16 @@
   "slug": "gate-news-communityscan",
   "displayName": "gate-news-communityscan",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775184887189,
-    "commit": "https://github.com/openclaw/skills/commit/1ed99a894b0328d38dbde4e996be9bc548a850b0"
+    "version": "1.0.2",
+    "publishedAt": 1775558155284,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775184887189,
+      "commit": "https://github.com/openclaw/skills/commit/1ed99a894b0328d38dbde4e996be9bc548a850b0"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775050287464,
