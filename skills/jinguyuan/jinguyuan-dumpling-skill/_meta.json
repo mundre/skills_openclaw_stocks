@@ -3,9 +3,15 @@
   "slug": "jinguyuan-dumpling-skill",
   "displayName": "Jinguyuan Dumpling Skill",
   "latest": {
-    "version": "0.2.0",
-    "publishedAt": 1775618267983,
-    "commit": "https://github.com/openclaw/skills/commit/a567d47351e569e4e4485dc85bcfc4bfe422fac7"
+    "version": "0.3.3",
+    "publishedAt": 1775854623434,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.0",
+      "publishedAt": 1775618267983,
+      "commit": "https://github.com/openclaw/skills/commit/a567d47351e569e4e4485dc85bcfc4bfe422fac7"
+    }
+  ]
 }
