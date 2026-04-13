@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "mozilla-observatory",
+  "displayName": "Mozilla Observatory",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775477228866,
+    "commit": null
+  },
+  "history": []
+}
