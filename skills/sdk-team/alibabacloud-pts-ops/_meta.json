@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-pts-ops",
+  "displayName": "Alibabacloud Pts Ops",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1775715913418,
+    "commit": null
+  },
+  "history": []
+}
