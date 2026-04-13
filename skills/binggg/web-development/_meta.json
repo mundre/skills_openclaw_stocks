@@ -3,9 +3,15 @@
   "slug": "web-development",
   "displayName": "Web Development",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775233050562,
-    "commit": "https://github.com/openclaw/skills/commit/a62ceb868bfa8ef02e2ad0365130a87264471c1e"
+    "version": "1.6.0",
+    "publishedAt": 1776047718863,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775233050562,
+      "commit": "https://github.com/openclaw/skills/commit/a62ceb868bfa8ef02e2ad0365130a87264471c1e"
+    }
+  ]
 }
