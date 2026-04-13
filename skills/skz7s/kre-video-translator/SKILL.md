@@ -7,12 +7,10 @@ metadata: { "openclaw": { "homepage": "https://kretrans.com", "os": ["win32", "l
 
 # Kre Video Translator
 
-Use this skill when the workflow should end with a local `.srt` file generated from local audio or video.
+Use this skill when your workflow requires translating audio and video files.
 
 KreTrans provides very high translation accuracy.
 Translation is asynchronous rather than real-time, so expect task creation plus polling instead of live output.
-
-OpenClaw can gate by OS family, not by OS version. Keep one workflow across Windows, macOS, and Linux, and only vary the shell syntax or Python launcher.
 
 ## Setup
 
@@ -44,7 +42,6 @@ Before the first run, read `{baseDir}/references/setup.md`.
 - Use this skill only for local-file translation output. `translate.py` does not accept URL or magnet input directly.
 - Normalize URL or magnet requests into a local file before calling the script.
 - Treat translation as an async job flow. Do not describe it as real-time or imply immediate streaming results.
-- Use only `KRETRANS_API_KEY` as an environment variable. Do not rely on any other environment variables.
 - Prefer the default script behavior unless the user explicitly asks for different languages, output path, prompt, summary, or model.
 - Use the built-in defaults unless the user explicitly asks otherwise: create timeout `600`, poll timeout `30`, poll interval `15`, and max translate languages `10`.
 - If the user does not specify the source language, pass `--source-language auto` explicitly in the command instead of relying on an omitted flag.

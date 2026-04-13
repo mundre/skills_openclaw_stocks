@@ -1,11 +1,17 @@
 {
   "owner": "skz7s",
   "slug": "kre-video-translator",
-  "displayName": "kre-video-translator",
+  "displayName": "Kre Video Translator",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775657242130,
-    "commit": "https://github.com/openclaw/skills/commit/9cba1849cb277d885b1380335ea966477aacff58"
+    "version": "1.0.3",
+    "publishedAt": 1775728818449,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775657242130,
+      "commit": "https://github.com/openclaw/skills/commit/9cba1849cb277d885b1380335ea966477aacff58"
+    }
+  ]
 }
