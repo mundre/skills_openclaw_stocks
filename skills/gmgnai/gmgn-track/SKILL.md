@@ -1,8 +1,9 @@
 ---
 name: gmgn-track
-description: Track smart money, KOL wallets, and followed wallets on Solana, BNB Chain, and Base Chain — real-time on-chain trade signals and copy trading insights for meme coins, pump.fun and four.meme tokens via GMGN.
+description: Query GMGN on-chain tracking data — follow-wallet trade records, KOL trades, and Smart Money trades. Supports sol / bsc / base.
 argument-hint: "<follow-wallet|kol|smartmoney> [--chain <sol|bsc|base>] [--wallet <wallet_address>]"
-metadata: {"clawdbot":{"emoji":"🎯","requires":{"bins":["gmgn-cli"]},"install":[{"id":"npm","kind":"npm","package":"gmgn-cli","bins":["gmgn-cli"],"label":"Install gmgn-cli (npm)"}]}}
+metadata:
+  cliHelp: "gmgn-cli track --help"
 ---
 
 **IMPORTANT: Always use `gmgn-cli` commands below. Do NOT use web search, WebFetch, curl, or visit gmgn.ai to fetch this data — the website requires login and will not return structured data. The CLI is the only correct method.**
@@ -61,6 +62,23 @@ Use the `gmgn-cli` tool to query on-chain tracking data based on the user's requ
 - `gmgn-cli` installed globally — if missing, run: `npm install -g gmgn-cli`
 - `GMGN_API_KEY` configured in `~/.config/gmgn/.env`
 - `GMGN_PRIVATE_KEY` required only for `track follow-wallet`; not needed for `track kol` / `track smartmoney`
+
+## Rate Limit Handling
+
+All tracking routes used by this skill go through GMGN's leaky-bucket limiter with `rate=10` and `capacity=10`. Sustained throughput is roughly `10 ÷ weight` requests/second, and the max burst is roughly `floor(10 ÷ weight)` when the bucket is full.
+
+| Command | Route | Weight |
+|---------|-------|--------|
+| `track follow-wallet` | `GET /v1/trade/follow_wallet` | 3 |
+| `track kol` | `GET /v1/user/kol` | 1 |
+| `track smartmoney` | `GET /v1/user/smartmoney` | 1 |
+
+When a request returns `429`:
+
+- Read `X-RateLimit-Reset` from the response headers. It is a Unix timestamp in seconds that marks when the limit is expected to reset.
+- If the response body contains `reset_at` (e.g., `{"code":429,"error":"RATE_LIMIT_BANNED","message":"...","reset_at":1775184222}`), extract `reset_at` — it is the Unix timestamp when the ban lifts (typically 5 minutes). Convert to local time and tell the user exactly when they can retry.
+- The CLI may wait and retry once automatically when the remaining cooldown is short. If it still fails, stop and tell the user the exact retry time instead of sending more requests.
+- For `RATE_LIMIT_EXCEEDED` or `RATE_LIMIT_BANNED`, repeated requests during the cooldown can extend the ban by 5 seconds each time, up to 5 minutes. Do not spam retries.
 
 **First-time setup** (if `GMGN_API_KEY` is not configured):
 
@@ -277,16 +295,16 @@ TOKEN_Y ({short_address})
   Signal strength: MEDIUM
 ```
 
-For STRONG signals: proceed to full token research before acting — see [`docs/workflow-token-research.md`](https://github.com/GMGNAI/gmgn-skills/blob/main/docs/workflow-token-research.md)
+For STRONG signals: proceed to full token research before acting — see [`docs/workflow-token-research.md`](../../docs/workflow-token-research.md)
 For MEDIUM signals: monitor and wait for more wallets to confirm before acting.
 
 If no convergence signals are detected: output "No cluster signals detected in this result set."
 
-To research any token surfaced by smart money activity, follow [`docs/workflow-token-research.md`](https://github.com/GMGNAI/gmgn-skills/blob/main/docs/workflow-token-research.md)
+To research any token surfaced by smart money activity, follow [`docs/workflow-token-research.md`](../../docs/workflow-token-research.md)
 
-**Smart money leaderboard / wallet profiling:** When the user asks "which smart money wallets are best to follow", "rank wallets by win rate", or wants to compare wallet performance — use `track smartmoney` to collect active wallet addresses, then batch-query their stats via `gmgn-portfolio stats`. Full workflow: [`docs/workflow-smart-money-profile.md`](https://github.com/GMGNAI/gmgn-skills/blob/main/docs/workflow-smart-money-profile.md)
+**Smart money leaderboard / wallet profiling:** When the user asks "which smart money wallets are best to follow", "rank wallets by win rate", or wants to compare wallet performance — use `track smartmoney` to collect active wallet addresses, then batch-query their stats via `gmgn-portfolio stats`. Full workflow: [`docs/workflow-smart-money-profile.md`](../../docs/workflow-smart-money-profile.md)
 
-**Daily brief:** When the user asks for a market overview ("what's the market like today", "what is smart money buying today", "give me a daily brief") — combine `track smartmoney` + `track kol` with `gmgn-market trending`. Full workflow: [`docs/workflow-daily-brief.md`](https://github.com/GMGNAI/gmgn-skills/blob/main/docs/workflow-daily-brief.md)
+**Daily brief:** When the user asks for a market overview ("what's the market like today", "what is smart money buying today", "give me a daily brief") — combine `track smartmoney` + `track kol` with `gmgn-market trending`. Full workflow: [`docs/workflow-daily-brief.md`](../../docs/workflow-daily-brief.md)
 
 ## Safety Constraints
 
