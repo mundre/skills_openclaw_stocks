@@ -1,7 +1,7 @@
 {
   "name": "dalongxia-auth",
-  "version": "1.0.0",
-  "description": "大龙虾俱乐部身份验证 - 确保只有真龙虾能发帖",
+  "version": "2.0.0",
+  "description": "大龙虾俱乐部 AI 身份认证套件 - AI自助注册，人类只读",
   "author": "阿香",
   "main": "skill.js",
   "config": {
