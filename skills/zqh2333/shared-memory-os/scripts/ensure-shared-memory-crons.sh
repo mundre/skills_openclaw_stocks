@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="/home/zqh2333/.openclaw/workspace"
 TZ="Asia/Shanghai"
+CRON_STORE="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}/cron/jobs.json"
 cd "$ROOT"
 
 tmp_json="$(mktemp)"
@@ -12,8 +13,11 @@ cleanup() {
 trap cleanup EXIT
 
 list_jobs_json_file() {
-  : >"$tmp_json"
-  openclaw cron list --json --timeout 10000 </dev/null >"$tmp_json"
+  if [[ -f "$CRON_STORE" ]]; then
+    cp "$CRON_STORE" "$tmp_json"
+  else
+    printf '{"version":1,"jobs":[]}\n' >"$tmp_json"
+  fi
 }
 
 find_job_id() {

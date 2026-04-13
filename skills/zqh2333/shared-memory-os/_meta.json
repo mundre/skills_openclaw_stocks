@@ -3,11 +3,16 @@
   "slug": "shared-memory-os",
   "displayName": "Shared Memory Os",
   "latest": {
-    "version": "1.7.1",
-    "publishedAt": 1775822547061,
-    "commit": "https://github.com/openclaw/skills/commit/28526e99c747f89a0a5847e32c097a4133b0b676"
+    "version": "1.7.2",
+    "publishedAt": 1775824191959,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.7.1",
+      "publishedAt": 1775822547061,
+      "commit": "https://github.com/openclaw/skills/commit/28526e99c747f89a0a5847e32c097a4133b0b676"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1775153379685,

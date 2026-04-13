@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
+const fs = require('fs');
 
 const ROOT = '/home/zqh2333/.openclaw/workspace';
 const TZ = 'Asia/Shanghai';
+const CRON_STORE = `${process.env.OPENCLAW_STATE_DIR || `${process.env.HOME}/.openclaw`}/cron/jobs.json`;
 
 const jobs = [
   {
@@ -43,27 +45,23 @@ const jobs = [
   }
 ];
 
-function sh(command) {
-  return execSync(command, { cwd: ROOT, encoding: 'utf8', shell: '/bin/bash' }).trim();
+function run(args) {
+  return execFileSync('openclaw', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
-function q(value) {
-  return `'${String(value).replace(/'/g, `'"'"'`)}'`;
+function listJobsFromStore() {
+  if (!fs.existsSync(CRON_STORE)) return [];
+  return JSON.parse(fs.readFileSync(CRON_STORE, 'utf8')).jobs || [];
 }
 
-const listRaw = sh('openclaw cron list --json --timeout 10000');
-const current = JSON.parse(listRaw).jobs || [];
-const results = [];
-
-for (const job of jobs) {
-  const existing = current.find(x => x.name === job.name);
+function upsert(job, existing) {
   const common = [
-    '--name', q(job.name),
-    '--description', q(job.description),
-    '--cron', q(job.cron),
-    '--tz', q(TZ),
+    '--name', job.name,
+    '--description', job.description,
+    '--cron', job.cron,
+    '--tz', TZ,
     '--session', 'isolated',
-    '--message', q(job.message),
+    '--message', job.message,
     '--thinking', 'low',
     '--timeout-seconds', job.timeoutSeconds,
     '--tools', 'exec,read',
@@ -71,15 +69,17 @@ for (const job of jobs) {
     '--failure-alert',
     '--failure-alert-after', '1',
     '--failure-alert-cooldown', '6h'
-  ].join(' ');
+  ];
 
   if (existing) {
-    sh(`openclaw cron edit ${q(existing.id)} ${common} --enable --timeout 10000`);
-    results.push({ action: 'updated', id: existing.id, name: job.name });
-  } else {
-    const added = JSON.parse(sh(`openclaw cron add --json ${common} --timeout 10000`));
-    results.push({ action: 'created', id: added.id, name: job.name });
+    run(['cron', 'edit', existing.id, ...common, '--enable', '--timeout', '10000']);
+    return { action: 'updated', id: existing.id, name: job.name };
   }
+  const raw = run(['cron', 'add', '--json', ...common, '--timeout', '10000']);
+  const added = JSON.parse(raw);
+  return { action: 'created', id: added.id, name: job.name };
 }
 
+const current = listJobsFromStore();
+const results = jobs.map(job => upsert(job, current.find(x => x.name === job.name)));
 console.log(JSON.stringify({ ok: true, timezone: TZ, results }, null, 2));
