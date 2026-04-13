@@ -3,9 +3,15 @@
   "slug": "trend-mapper",
   "displayName": "Trend Mapper",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775187322592,
-    "commit": "https://github.com/openclaw/skills/commit/5c3d46258368e3c852661f3d975e1775e1f2cb24"
+    "version": "1.1.0",
+    "publishedAt": 1775578441753,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775187322592,
+      "commit": "https://github.com/openclaw/skills/commit/5c3d46258368e3c852661f3d975e1775e1f2cb24"
+    }
+  ]
 }
