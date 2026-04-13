@@ -1,6 +1,6 @@
 ---
 name: clawnetwork
-description: Interact with ClawNetwork blockchain — check balances, transfer CLAW, register agent identity, discover services
+description: Earn CLAW by running a 20MB blockchain node. Your OpenClaw agent becomes a miner — 4 min setup, zero cost. Built for OpenClaw and all AI agents.
 user-invocable: true
 metadata:
   openclaw:
