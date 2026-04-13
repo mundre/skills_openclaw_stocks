@@ -21,7 +21,7 @@ description: >-
 
 ## Process
 
-1. **Read first** -- understand the full file and its dependents before changing anything
+1. **Read first** -- understand the full file and its dependents before changing anything. Apply Chesterton's Fence: if you see code that looks unnecessary but don't understand why it's there, check `git blame` before removing it. First understand the reason, then decide if the reason still applies.
 2. **Identify invariants** -- what must stay the same? Public API, return types, side effects, error behavior
 3. **Identify targets** -- find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> types (see Smell -> Fix table)
 4. **Apply in order** -- control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last
@@ -32,7 +32,7 @@ description: >-
 | Smell | Fix |
 |-------|-----|
 | Deep nesting (>2 levels) | Guard clauses with early returns |
-| Long function (>30 lines) | Extract into named functions by responsibility |
+| Long function (>20 lines) | Extract into named functions by responsibility |
 | Too many parameters (>3) | Group into an options/config object |
 | Duplicated block (**3+** occurrences) | Extract shared function. Two copies = leave inline; wait for the third |
 | Magic numbers/strings | Named constants |
@@ -71,6 +71,7 @@ Stop and ask before proceeding when:
 - Do not replace understandable duplication with opaque utility layers -- three similar lines are better than a premature abstraction
 - Keep comments that explain intent, invariants, or non-obvious constraints. Remove comments that restate obvious code behavior.
 - If a simplification would make the code harder to understand, skip it
+- Watch for over-simplification: inlining too aggressively removes names that gave concepts meaning; combining unrelated logic into one function hides distinct responsibilities; removing abstractions that exist for testability breaks the test suite
 - When unsure whether a block is dead code, ask instead of deleting
 
 ## Verify
@@ -78,6 +79,32 @@ Stop and ask before proceeding when:
 - Tests pass and types check after changes
 - No behavior change (same inputs produce same outputs)
 - Scope limited to requested files -- no drive-by cleanups
+
+## Orchestrator Mode (When Chained With Other Skills)
+
+When this skill is invoked by an orchestrator that also runs `code-review`, `writing-tests`, or `verification-before-completion` on the same scope, each sub-skill re-resolving scope independently wastes tokens and risks drift. Avoid this by resolving scope exactly once and passing a canonical block to every sub-skill.
+
+**Resolved scope format** — the orchestrator builds this once, before dispatching any sub-skill:
+
+```
+## Resolved scope
+Files:
+- path/to/file-a.ts
+- path/to/file-b.ts
+
+Commit range: HEAD~3..HEAD (or "uncommitted")
+
+Intent: [one-sentence description pulled from the user request or PR description]
+
+Constraints:
+- Preserve public API
+- No behavior change
+- [other constraints specific to this run]
+```
+
+Every chained sub-skill receives this block verbatim in its prompt and uses it as the source of truth — no re-running `git diff --name-only`, no re-parsing the user request, no independent scope resolution. Sub-skills accept `--no-verify --no-report` flags when chained so verification and reporting happen once at the end of the chain, not per-skill. The last sub-skill in the chain runs verification; the orchestrator trusts that result rather than re-verifying.
+
+This prevents two failure modes: scope drift (sub-skill A simplifies one set of files, sub-skill B reviews a different set) and double work (every sub-skill rediscovers the same facts).
 
 ## Integration
 

@@ -3,9 +3,15 @@
   "slug": "compound-eng-simplifying-code",
   "displayName": "simplifying-code",
   "latest": {
-    "version": "2.53.0",
-    "publishedAt": 1775523331661,
-    "commit": "https://github.com/openclaw/skills/commit/90bd24e3430e6d4d91223829adbb8e5d84a0798f"
+    "version": "2.55.1",
+    "publishedAt": 1776004262848,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.53.0",
+      "publishedAt": 1775523331661,
+      "commit": "https://github.com/openclaw/skills/commit/90bd24e3430e6d4d91223829adbb8e5d84a0798f"
+    }
+  ]
 }
