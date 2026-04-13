@@ -1,11 +1,17 @@
 {
   "owner": "novashang",
   "slug": "bimdown-zh",
-  "displayName": "Agent Skill Zh",
+  "displayName": "BimDown 中文",
   "latest": {
-    "version": "1.1.2",
-    "publishedAt": 1775602746214,
-    "commit": "https://github.com/openclaw/skills/commit/136bd9451a7bf8e84117ccd19e72a3aabe476b9b"
+    "version": "1.4.1",
+    "publishedAt": 1775765192125,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.2",
+      "publishedAt": 1775602746214,
+      "commit": "https://github.com/openclaw/skills/commit/136bd9451a7bf8e84117ccd19e72a3aabe476b9b"
+    }
+  ]
 }
