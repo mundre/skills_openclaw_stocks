@@ -1,0 +1,11 @@
+{
+  "owner": "aapanel",
+  "slug": "btpanel-files",
+  "displayName": "btpanel files 宝塔面板文件管理",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775189936185,
+    "commit": null
+  },
+  "history": []
+}
