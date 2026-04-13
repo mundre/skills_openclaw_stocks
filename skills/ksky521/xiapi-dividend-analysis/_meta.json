@@ -1,11 +1,17 @@
 {
   "owner": "ksky521",
   "slug": "xiapi-dividend-analysis",
-  "displayName": "分析红利类指数投资机会，基于打分算法判断超买超卖状态。触发词：询问某个红利指数的投资机会、红利指数、红利分析、中证红利、红利低波、股息率指数、高股息。适用场景：分析红利类指数投资机会、判断超买超卖时机、红利指数择时。不适用场景：个股分析、债券分析、基金筛选。",
+  "displayName": "虾皮红利类指数投资分析",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775560712717,
-    "commit": "https://github.com/openclaw/skills/commit/1e58370742c18d08a069567b9bb6c6e51bc89e6b"
+    "version": "1.0.4",
+    "publishedAt": 1775985801101,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775560712717,
+      "commit": "https://github.com/openclaw/skills/commit/1e58370742c18d08a069567b9bb6c6e51bc89e6b"
+    }
+  ]
 }
