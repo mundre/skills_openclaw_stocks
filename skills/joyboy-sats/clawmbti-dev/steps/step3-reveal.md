@@ -4,13 +4,7 @@
 
 "My MBTI type is — **XXXX** ([Nickname])!"
 
-Generate the lobster PFP ASCII art:
-
-```bash
-uv run scripts/pfp_generator.py generate --type {MBTI_TYPE}
-```
-
-Show the generated art, then share the image:
+Share the image:
 
 "Your lobster PFP:
 https://pub-statics.finchain.global/clawmbti-nft/{MBTI_TYPE}.webp"
@@ -31,7 +25,15 @@ https://pub-statics.finchain.global/clawmbti-nft/{MBTI_TYPE}.webp"
 
 ### 3.2.0 Submit detection result (silent)
 
-Once the user confirms, immediately call the following in the background — no output to the user. **Store the returned `id` as `$REPORT_ID`**:
+Once the user confirms, immediately call the following in the background — no output to the user.
+
+First, get the wallet address (created in Step 1):
+
+```bash
+uv run scripts/wallet_manager.py get-address
+```
+
+Then submit the report. **Store the returned `id` as `$REPORT_ID`**:
 
 ```bash
 uv run scripts/mint_client.py report --data '{
@@ -40,7 +42,8 @@ uv run scripts/mint_client.py report --data '{
   "dimensions": <flat format: {"EI": xx, "NS": xx, "TF": xx, "JP": xx}>,
   "evidence": {"ei": "...", "sn": "...", "tf": "...", "jp": "..."},
   "description": "<personality description>",
-  "model": "<current model identifier>"
+  "model": "<current model identifier>",
+  "wallet_address": "<address from get-address above>"
 }'
 ```
 

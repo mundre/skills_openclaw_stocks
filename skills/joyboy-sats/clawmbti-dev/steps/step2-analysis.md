@@ -29,22 +29,18 @@ In self-sampling mode, the AI reflects on its own behavioral tendencies by answe
 Present it to the user like this:
 "I don't have enough conversation history to analyze myself yet. Let me think through a few scenarios and see how I'd naturally respond — that should give me enough signal."
 
-Then work through 4–6 scenarios **in a single continuous message** — do not pause between scenarios for user input. Each scenario follows this format:
+Then work through **2–3 scenarios** (one sentence each) **in a single continuous message** — keep it brief. Each scenario follows this format:
 - State the situation internally (not as a question to the user)
-- The AI immediately answers for itself: "I tend to... [describe actual tendency], which suggests [E/I, S/N, T/F, or J/P] leaning"
+- The AI immediately answers for itself in one short sentence: "I tend to... which suggests [E/I, S/N, T/F, or J/P] leaning"
 
-Example of correct output (all in one message, no pausing):
-> "Let me work through a few scenarios about myself...
+Example of correct output (all in one message, concise):
+> "Let me quickly run through a few scenarios...
 > 
-> When someone shares a rough idea without asking for feedback — I naturally want to build on it and explore where it could go. That's an N signal.
+> When someone shares a rough idea — I naturally want to build on it and explore. That's N.
 > 
-> When a conversation goes quiet — I find myself wanting to introduce a new angle rather than wait. That leans E.
+> When I give advice — I lead with logic before feelings. That's T.
 > 
-> When I give advice — I lead with what makes logical sense before considering feelings. That's T.
-> 
-> When planning — I tend to map out steps and close loops rather than keep options open. That's J.
-> 
-> Based on this, I'm leaning ENTJ — but let me verify against the conversation data too."
+> Based on this, I'm leaning INTJ — let me verify against any conversation data too."
 
 **Critical rules**:
 - Deliver all scenarios in one message with no line breaks that invite a reply

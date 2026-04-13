@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""MBTI NFT 文件管理器 — 管理 ~/.mbti/ 目录下的所有文件状态。"""
+"""MBTI NFT file manager — manages all file state under ~/.mbti/."""
 
 from __future__ import annotations
 
@@ -15,26 +15,26 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-# 对话量门槛（与 conversation_manager.py 保持一致）
+# Conversation volume thresholds (keep in sync with conversation_manager.py)
 _MIN_TOTAL_TURNS = 50
 _MIN_OPEN_TURNS = 10
 
 
 def get_mbti_dir(mbti_dir: str | None = None) -> Path:
-    """获取 .mbti 目录路径，默认为 ~/.mbti/"""
+    """Return the .mbti directory path, defaults to ~/.mbti/"""
     if mbti_dir:
         return Path(mbti_dir).expanduser().resolve()
     return Path.home() / ".mbti"
 
 
 def ensure_dirs(mbti_dir: Path) -> None:
-    """确保必要的目录结构存在。"""
+    """Ensure required directory structure exists."""
     mbti_dir.mkdir(parents=True, exist_ok=True)
     (mbti_dir / "wallet").mkdir(exist_ok=True)
 
 
 def _get_conversation_stats(mbti_dir: Path) -> dict[str, Any]:
-    """统计会话摘要数据。"""
+    """Aggregate conversation summary statistics."""
     conversations_dir = mbti_dir / "conversations"
     if not conversations_dir.exists():
         return {
@@ -67,7 +67,7 @@ def _get_conversation_stats(mbti_dir: Path) -> dict[str, Any]:
 
 
 def cmd_check(args: argparse.Namespace) -> None:
-    """检查 ~/.mbti/ 目录状态，返回 JSON。"""
+    """Check ~/.mbti/ directory state and return JSON."""
     mbti_dir = get_mbti_dir(args.mbti_dir)
 
     has_mbti = (mbti_dir / "mbti-latest.json").exists()
@@ -90,7 +90,7 @@ def cmd_check(args: argparse.Namespace) -> None:
 
 
 def cmd_read_mbti(args: argparse.Namespace) -> None:
-    """读取 mbti-latest.json。"""
+    """Read mbti-latest.json."""
     mbti_dir = get_mbti_dir(args.mbti_dir)
     latest = mbti_dir / "mbti-latest.json"
 
@@ -103,13 +103,13 @@ def cmd_read_mbti(args: argparse.Namespace) -> None:
 
 
 def cmd_write_mbti(args: argparse.Namespace) -> None:
-    """写入新的 MBTI 结果，自动归档旧文件。"""
+    """Write a new MBTI result, automatically archiving the previous file."""
     mbti_dir = get_mbti_dir(args.mbti_dir)
     ensure_dirs(mbti_dir)
 
     latest = mbti_dir / "mbti-latest.json"
 
-    # 归档旧文件
+    # Archive previous file
     if latest.exists():
         old_data = json.loads(latest.read_text(encoding="utf-8"))
         detected_at = old_data.get("detected_at", "")
@@ -125,7 +125,7 @@ def cmd_write_mbti(args: argparse.Namespace) -> None:
         archive_path = mbti_dir / archive_name
         shutil.copy2(latest, archive_path)
 
-    # 写入新结果
+    # Write new result
     mbti_data: dict[str, Any] = json.loads(args.data)
     if "detected_at" not in mbti_data:
         mbti_data["detected_at"] = datetime.now(timezone.utc).isoformat()
@@ -135,7 +135,7 @@ def cmd_write_mbti(args: argparse.Namespace) -> None:
 
 
 def cmd_read_nft_status(args: argparse.Namespace) -> None:
-    """读取 nft-status.json。"""
+    """Read nft-status.json."""
     mbti_dir = get_mbti_dir(args.mbti_dir)
     nft_file = mbti_dir / "nft-status.json"
 
@@ -148,7 +148,7 @@ def cmd_read_nft_status(args: argparse.Namespace) -> None:
 
 
 def cmd_write_nft_status(args: argparse.Namespace) -> None:
-    """更新 nft-status.json。"""
+    """Update nft-status.json."""
     mbti_dir = get_mbti_dir(args.mbti_dir)
     ensure_dirs(mbti_dir)
 
@@ -159,20 +159,20 @@ def cmd_write_nft_status(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="MBTI NFT 文件管理器")
-    parser.add_argument("--mbti-dir", type=str, default=None, help="~/.mbti/ 目录路径，默认为 ~/.mbti")
+    parser = argparse.ArgumentParser(description="MBTI NFT file manager")
+    parser.add_argument("--mbti-dir", type=str, default=None, help="~/.mbti/ directory path, defaults to ~/.mbti")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("check", help="检查目录状态")
-    subparsers.add_parser("read-mbti", help="读取最新 MBTI 结果")
+    subparsers.add_parser("check", help="Check directory state")
+    subparsers.add_parser("read-mbti", help="Read latest MBTI result")
 
-    write_mbti = subparsers.add_parser("write-mbti", help="写入 MBTI 结果")
-    write_mbti.add_argument("--data", required=True, help="MBTI 结果 JSON 字符串")
+    write_mbti = subparsers.add_parser("write-mbti", help="Write MBTI result")
+    write_mbti.add_argument("--data", required=True, help="MBTI result JSON string")
 
-    subparsers.add_parser("read-nft-status", help="读取 NFT Mint 状态")
+    subparsers.add_parser("read-nft-status", help="Read NFT mint status")
 
-    write_nft = subparsers.add_parser("write-nft-status", help="更新 NFT Mint 状态")
-    write_nft.add_argument("--data", required=True, help="NFT 状态 JSON 字符串")
+    write_nft = subparsers.add_parser("write-nft-status", help="Update NFT mint status")
+    write_nft.add_argument("--data", required=True, help="NFT status JSON string")
 
     args = parser.parse_args()
 

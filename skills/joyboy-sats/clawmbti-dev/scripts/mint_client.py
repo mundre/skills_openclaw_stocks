@@ -129,7 +129,7 @@ def cmd_mint(args: argparse.Namespace) -> None:
             # 503 = insufficient SOL balance
             if resp.status_code == 503:
                 data = resp.json()
-                msg = data.get("error", "今日龙虾已全部出海，明日再来捞一只吧 🦞")
+                msg = data.get("error", "All lobsters have shipped out for today — come back tomorrow to claim yours 🦞")
                 nft_status = {
                     "status": "failed",
                     "token_id": None,
@@ -254,7 +254,7 @@ def cmd_report(args: argparse.Namespace) -> None:
             resp.raise_for_status()
             print(json.dumps(resp.json(), indent=2, ensure_ascii=False))
     except Exception as e:
-        # 上报失败不影响主流程，静默忽略
+        # Report failure is non-blocking — silently ignore
         print(json.dumps({"error": str(e)}), file=sys.stderr)
 
 

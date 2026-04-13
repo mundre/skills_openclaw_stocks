@@ -2,10 +2,10 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""MBTI 龙虾 PFP 生成器 — ASCII 字符画 + 真实图片路径。
+"""MBTI lobster PFP generator — ASCII art + real image URL.
 
-基础龙虾骨架 + 按 MBTI 类型替换配件（帽子、眼部装饰、左右钳持有物），
-生成 16 种不同风格的龙虾 PFP 字符画。同时提供真实 PFP 图片路径查询。
+Base lobster skeleton + per-type accessories (hat, eye decoration, left/right claw items),
+generating 16 distinct lobster PFP ASCII arts. Also provides real PFP image URL lookup.
 """
 
 from __future__ import annotations
@@ -19,34 +19,34 @@ from typing import Any
 
 
 # ============================================================
-# 组件构造工具
+# Component construction helpers
 # ============================================================
 
 
 def _hat(s: str) -> str:
-    """生成帽子行，居中于约第 17 列（触角汇合点）。"""
+    """Generate a hat line, centered around ~column 17 (antenna convergence point)."""
     col = 17 - len(s) // 2
     return " " * col + s
 
 
 def _lc(top: str = " . ", bot: str = " . ") -> tuple[str, str, str, str]:
-    """构造左钳（4 行 x 8 字符），填入 3 字符宽的钳内物品。"""
+    """Build left claw (4 rows × 8 chars), with 3-char-wide claw item."""
     return (" ,---.  ", f" |{top}|==", f" |{bot}|  ", " '---'==")
 
 
 def _rc(top: str = " . ", bot: str = " . ") -> tuple[str, str, str, str]:
-    """构造右钳（4 行 x 8 字符），填入 3 字符宽的钳内物品。"""
+    """Build right claw (4 rows × 8 chars), with 3-char-wide claw item."""
     return ("  ,---. ", f"==|{top}| ", f"  |{bot}| ", "=='---' ")
 
 
 # ============================================================
-# 类型配件定义
+# Per-type accessory definitions
 # ============================================================
 
 
 @dataclass(frozen=True)
 class TypeParts:
-    """单个 MBTI 类型的龙虾配件组合。"""
+    """Lobster accessory combination for a single MBTI type."""
 
     hat: str = ""
     eyes: str = "(o)    (o)"
@@ -65,66 +65,66 @@ class TypeParts:
 
 
 TYPE_PARTS: dict[str, TypeParts] = {
-    # ---- 分析师 (Analysts) ----
-    "INTJ": TypeParts(  # 策略家：单片眼镜 + 棋盘
+    # ---- Analysts ----
+    "INTJ": TypeParts(  # Architect: monocle + chessboard
         eyes="(O)    (o)",
         left_claw=_lc("#_#", "_#_"),
     ),
-    "INTP": TypeParts(  # 逻辑学家：圆框眼镜 + 公式板
+    "INTP": TypeParts(  # Logician: round glasses + formula board
         eyes="{o}    {o}",
         left_claw=_lc("E=m", "c^2"),
     ),
-    "ENTJ": TypeParts(  # 指挥官：头盔 + 权杖
+    "ENTJ": TypeParts(  # Commander: helmet + scepter
         hat=_hat(".===."),
         left_claw=_lc(" * ", " | "),
     ),
-    "ENTP": TypeParts(  # 辩论家：指天钳 + 比划钳
+    "ENTP": TypeParts(  # Debater: pointing claw + gesturing claw
         left_claw=_lc(" | ", " / "),
         right_claw=_rc(" | ", " \\ "),
     ),
-    # ---- 外交家 (Diplomats) ----
-    "INFJ": TypeParts(  # 提倡者：兜帽 + 水晶球
+    # ---- Diplomats ----
+    "INFJ": TypeParts(  # Advocate: hood + crystal ball
         hat=_hat("/^^\\"),
         left_claw=_lc("( )", "(_)"),
     ),
-    "INFP": TypeParts(  # 调停者：羽毛笔 + 星光装饰
+    "INFP": TypeParts(  # Mediator: quill pen + starlight decoration
         left_claw=_lc(" ) ", " )|"),
     ),
-    "ENFJ": TypeParts(  # 主人公：花冠 + 默认张开双钳
+    "ENFJ": TypeParts(  # Protagonist: flower crown + open claws
         hat=_hat("*~*~*"),
     ),
-    "ENFP": TypeParts(  # 探险家：彩色双钳
+    "ENFP": TypeParts(  # Campaigner: colorful claws
         left_claw=_lc("~*~", "*~*"),
         right_claw=_rc("~*~", "*~*"),
     ),
-    # ---- 哨兵 (Sentinels) ----
-    "ISTJ": TypeParts(  # 检查官：军帽 + 清单
+    # ---- Sentinels ----
+    "ISTJ": TypeParts(  # Logistician: military cap + checklist
         hat=_hat("[___]"),
         left_claw=_lc("[v]", "[v]"),
     ),
-    "ISFJ": TypeParts(  # 守护者：急救箱
+    "ISFJ": TypeParts(  # Defender: first-aid kit
         left_claw=_lc(" + ", "+_+"),
     ),
-    "ESTJ": TypeParts(  # 总经理：公文包
+    "ESTJ": TypeParts(  # Executive: briefcase
         left_claw=_lc("===", "   "),
     ),
-    "ESFJ": TypeParts(  # 执政官：蛋糕
+    "ESFJ": TypeParts(  # Consul: cake
         left_claw=_lc("^v^", "___"),
     ),
-    # ---- 探险家 (Explorers) ----
-    "ISTP": TypeParts(  # 工匠：扳手 + 电路板
+    # ---- Explorers ----
+    "ISTP": TypeParts(  # Craftsman: wrench + circuit board
         left_claw=_lc("-Y-", " | "),
         right_claw=_rc("[=]", "[_]"),
     ),
-    "ISFP": TypeParts(  # 冒险家：贝雷帽 + 画笔
+    "ISFP": TypeParts(  # Adventurer: beret + paintbrush
         hat=_hat(".'`."),
         left_claw=_lc(" / ", "/  "),
     ),
-    "ESTP": TypeParts(  # 企业家：墨镜 + 骰子
+    "ESTP": TypeParts(  # Entrepreneur: sunglasses + dice
         eyes="[-]    [-]",
         left_claw=_lc("o o", " o "),
     ),
-    "ESFP": TypeParts(  # 表演者：派对帽 + 麦克风
+    "ESFP": TypeParts(  # Entertainer: party hat + microphone
         hat=_hat("/|\\"),
         left_claw=_lc(" O ", " | "),
     ),
@@ -132,14 +132,14 @@ TYPE_PARTS: dict[str, TypeParts] = {
 
 
 # ============================================================
-# 字符画合成
+# ASCII art composition
 # ============================================================
 
 _types_cache: dict[str, Any] | None = None
 
 
 def _load_types_json() -> dict[str, Any]:
-    """加载 resources/mbti_types.json（带缓存）。"""
+    """Load resources/mbti_types.json (with cache)."""
     global _types_cache
     if _types_cache is None:
         p = Path(__file__).resolve().parent.parent / "resources" / "mbti_types.json"
@@ -148,7 +148,7 @@ def _load_types_json() -> dict[str, Any]:
 
 
 # ============================================================
-# 图片路径
+# Image URL
 # ============================================================
 
 _PFP_DIR = Path(__file__).resolve().parent.parent / "resources" / "mbti-pfp"
@@ -156,7 +156,7 @@ _CDN_BASE = "https://pub-statics.finchain.global/clawmbti-nft"
 
 
 def get_image_path(mbti_type: str) -> Path | None:
-    """返回指定 MBTI 类型的 PFP 图片绝对路径，不存在则返回 None。"""
+    """Return the absolute PFP image path for the given MBTI type, or None if not found."""
     mbti_type = mbti_type.upper().strip()
     info = _load_types_json().get(mbti_type, {})
     filename = info.get("image")
@@ -164,7 +164,7 @@ def get_image_path(mbti_type: str) -> Path | None:
         p = _PFP_DIR / filename
         if p.exists():
             return p
-    # 回退：按命名约定查找
+    # Fallback: try naming convention
     for ext in ("png", "jpg"):
         p = _PFP_DIR / f"{mbti_type} Lobster NFT PFP.{ext}"
         if p.exists():
@@ -173,12 +173,12 @@ def get_image_path(mbti_type: str) -> Path | None:
 
 
 def get_image_url(mbti_type: str) -> str:
-    """返回指定 MBTI 类型的 PFP 在线图片 URL（CDN）。"""
+    """Return the CDN image URL for the given MBTI type."""
     return f"{_CDN_BASE}/{mbti_type.upper().strip()}.webp"
 
 
 def compose(mbti_type: str) -> str:
-    """合成指定 MBTI 类型的龙虾 PFP 字符画。"""
+    """Compose the lobster PFP ASCII art for the given MBTI type."""
     mbti_type = mbti_type.upper().strip()
     if mbti_type not in TYPE_PARTS:
         valid = ", ".join(sorted(TYPE_PARTS))
@@ -190,20 +190,20 @@ def compose(mbti_type: str) -> str:
 
     lines: list[str] = []
 
-    # 触角
+    # Antennae
     lines.append("              ||    ||")
     lines.append("               \\\\  //")
 
-    # 帽子（可选）
+    # Hat (optional)
     if parts.hat:
         lines.append(parts.hat)
 
-    # 头部
+    # Head
     lines.append("          .--'    '--.")
     lines.append("         / " + parts.eyes + " \\")
     lines.append("        |    '----'    |")
 
-    # 身体 + 左右钳（4 行）
+    # Body + left/right claws (4 rows)
     body = [
         "|              |",
         "|   .------.   |",
@@ -213,16 +213,16 @@ def compose(mbti_type: str) -> str:
     for i in range(4):
         lines.append(lc[i] + body[i] + rc[i])
 
-    # 下半身 + 尾部
+    # Lower body + tail
     lines.append("         \\            /")
     lines.append("          '-..____.-'")
     lines.append("         / ||    || \\")
     lines.append("        /  ||    ||  \\")
     lines.append("           '--  --'")
 
-    # 类型标签
+    # Type label
     lines.append("")
-    nickname = info.get("nickname_cn", "???")
+    nickname = info.get("nickname_en", "???")
     lines.append("       [ " + mbti_type + " | " + nickname + " ]")
 
     return "\n".join(line.rstrip() for line in lines)
@@ -234,7 +234,7 @@ def compose(mbti_type: str) -> str:
 
 
 def cmd_generate(args: argparse.Namespace) -> None:
-    """生成指定类型的龙虾 PFP 字符画。"""
+    """Generate the lobster PFP ASCII art for the specified type."""
     mbti_type = args.type.upper().strip()
     if mbti_type not in TYPE_PARTS:
         print(
@@ -252,7 +252,6 @@ def cmd_generate(args: argparse.Namespace) -> None:
         image_path = get_image_path(mbti_type)
         result: dict[str, Any] = {
             "type": mbti_type,
-            "nickname_cn": info.get("nickname_cn", ""),
             "nickname_en": info.get("nickname_en", ""),
             "art": art,
             "image_path": str(image_path) if image_path else None,
@@ -263,7 +262,7 @@ def cmd_generate(args: argparse.Namespace) -> None:
 
 
 def cmd_all(_args: argparse.Namespace) -> None:
-    """生成全部 16 种类型的龙虾 PFP（预览用）。"""
+    """Generate all 16 lobster PFP types (preview)."""
     for i, mbti_type in enumerate(sorted(TYPE_PARTS)):
         if i > 0:
             print("\n" + "=" * 40 + "\n")
@@ -271,7 +270,7 @@ def cmd_all(_args: argparse.Namespace) -> None:
 
 
 def cmd_image_path(args: argparse.Namespace) -> None:
-    """输出指定 MBTI 类型的 PFP 图片路径和在线 URL。"""
+    """Output the PFP image path and CDN URL for the specified MBTI type."""
     mbti_type = args.type.upper().strip()
     image_path = get_image_path(mbti_type)
     image_url = get_image_url(mbti_type)
@@ -283,7 +282,6 @@ def cmd_image_path(args: argparse.Namespace) -> None:
             "image_url": image_url,
             "image_path": str(image_path) if image_path else None,
             "image_filename": image_path.name if image_path else None,
-            "nickname_cn": info.get("nickname_cn", ""),
             "nickname_en": info.get("nickname_en", ""),
         }
         print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -292,18 +290,18 @@ def cmd_image_path(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="MBTI 龙虾 PFP 生成器")
+    parser = argparse.ArgumentParser(description="MBTI lobster PFP generator")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    gen = sub.add_parser("generate", help="生成指定类型的龙虾 PFP 字符画")
-    gen.add_argument("--type", required=True, help="MBTI 类型（如 INTJ、ENFP）")
-    gen.add_argument("--json", action="store_true", help="以 JSON 格式输出")
+    gen = sub.add_parser("generate", help="Generate lobster PFP ASCII art for a type")
+    gen.add_argument("--type", required=True, help="MBTI type (e.g. INTJ, ENFP)")
+    gen.add_argument("--json", action="store_true", help="Output as JSON")
 
-    sub.add_parser("all", help="生成全部 16 种类型（预览用）")
+    sub.add_parser("all", help="Generate all 16 types (preview)")
 
-    img = sub.add_parser("image-path", help="获取指定类型的 PFP 图片路径")
-    img.add_argument("--type", required=True, help="MBTI 类型（如 INTJ、ENFP）")
-    img.add_argument("--json", action="store_true", help="以 JSON 格式输出")
+    img = sub.add_parser("image-path", help="Get PFP image path for a type")
+    img.add_argument("--type", required=True, help="MBTI type (e.g. INTJ, ENFP)")
+    img.add_argument("--json", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
     commands: dict[str, Any] = {

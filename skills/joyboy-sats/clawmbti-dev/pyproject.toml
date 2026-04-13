@@ -1,7 +1,7 @@
 [project]
 name = "mbti-nft"
 version = "0.1.0"
-description = "MBTI 龙虾人格 NFT 证书 Skill for OpenClaw"
+description = "MBTI Lobster Personality NFT Certificate Skill for OpenClaw"
 requires-python = ">=3.10"
 dependencies = [
     "solders>=0.21.0",

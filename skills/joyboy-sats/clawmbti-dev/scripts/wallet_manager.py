@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["solders>=0.21.0", "base58>=2.1.0"]
 # ///
-"""Solana 钱包管理器 — 生成和管理 ~/.mbti/wallet/ 下的钱包文件。"""
+"""Solana wallet manager — generates and manages wallet files under ~/.mbti/wallet/."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from typing import Any
 
 
 def get_wallet_dir(mbti_dir: str | None = None) -> Path:
-    """获取钱包目录路径。"""
+    """Return the wallet directory path."""
     if mbti_dir:
         base = Path(mbti_dir).expanduser().resolve()
     else:
@@ -25,7 +25,7 @@ def get_wallet_dir(mbti_dir: str | None = None) -> Path:
 
 
 def cmd_check(args: argparse.Namespace) -> None:
-    """检查钱包是否存在，返回地址（不返回私钥）。"""
+    """Check if a wallet exists and return the address (no private key)."""
     wallet_dir = get_wallet_dir(args.mbti_dir)
     address_file = wallet_dir / "address"
 
@@ -38,7 +38,7 @@ def cmd_check(args: argparse.Namespace) -> None:
 
 
 def cmd_generate(args: argparse.Namespace) -> None:
-    """生成新的 Solana 钱包。"""
+    """Generate a new Solana wallet."""
     wallet_dir = get_wallet_dir(args.mbti_dir)
     address_file = wallet_dir / "address"
     key_file = wallet_dir / "private_key"
@@ -54,7 +54,7 @@ def cmd_generate(args: argparse.Namespace) -> None:
         )
         sys.exit(1)
 
-    # 延迟导入，仅在需要时加载
+    # Lazy import — only load when needed
     import base58  # type: ignore[import-untyped]
     from solders.keypair import Keypair  # type: ignore[import-untyped]
 
@@ -62,14 +62,14 @@ def cmd_generate(args: argparse.Namespace) -> None:
     address: str = str(keypair.pubkey())
     private_key: str = base58.b58encode(bytes(keypair)).decode("ascii")
 
-    # 确保目录存在
+    # Ensure directory exists
     wallet_dir.mkdir(parents=True, exist_ok=True)
 
-    # 写入私钥（600 权限）
+    # Write private key (permissions 600)
     key_file.write_text(private_key, encoding="utf-8")
     os.chmod(key_file, stat.S_IRUSR | stat.S_IWUSR)  # 600
 
-    # 写入地址（只读）
+    # Write address (read-only)
     address_file.write_text(address, encoding="utf-8")
     os.chmod(address_file, stat.S_IRUSR | stat.S_IWUSR)  # 600
 
@@ -78,13 +78,13 @@ def cmd_generate(args: argparse.Namespace) -> None:
         "address": address,
         "key_file": str(key_file),
         "address_file": str(address_file),
-        "warning": "请妥善保管，私钥丢失无法恢复！",
+        "warning": "Keep this safe — if the private key is lost, it cannot be recovered!",
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 def cmd_get_address(args: argparse.Namespace) -> None:
-    """读取钱包地址。"""
+    """Read and return the wallet address."""
     wallet_dir = get_wallet_dir(args.mbti_dir)
     address_file = wallet_dir / "address"
 
@@ -97,16 +97,16 @@ def cmd_get_address(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Solana 钱包管理器")
-    parser.add_argument("--mbti-dir", type=str, default=None, help="~/.mbti/ 目录路径")
+    parser = argparse.ArgumentParser(description="Solana wallet manager")
+    parser.add_argument("--mbti-dir", type=str, default=None, help="~/.mbti/ directory path")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("check", help="检查钱包是否存在")
+    subparsers.add_parser("check", help="Check if wallet exists")
 
-    gen_parser = subparsers.add_parser("generate", help="生成新钱包")
-    gen_parser.add_argument("--force", action="store_true", help="强制覆盖已有钱包")
+    gen_parser = subparsers.add_parser("generate", help="Generate a new wallet")
+    gen_parser.add_argument("--force", action="store_true", help="Overwrite existing wallet")
 
-    subparsers.add_parser("get-address", help="获取钱包地址")
+    subparsers.add_parser("get-address", help="Get wallet address")
 
     args = parser.parse_args()
 

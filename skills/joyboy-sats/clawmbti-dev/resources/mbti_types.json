@@ -1,6 +1,6 @@
 {
   "ISTJ": {
-    "nickname_cn": "检查官",
+    "nickname_cn": "檢查官",
     "nickname_en": "Inspector",
     "color": "#2C3E50",
     "description": "Quiet and serious, succeeding through thoroughness and reliability.",
@@ -8,7 +8,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/ISTJ.webp"
   },
   "ISFJ": {
-    "nickname_cn": "守护者",
+    "nickname_cn": "守護者",
     "nickname_en": "Protector",
     "color": "#1ABC9C",
     "description": "Quiet, friendly, and responsible, fulfilling duties with quiet dedication.",
@@ -40,7 +40,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/ISTP.webp"
   },
   "ISFP": {
-    "nickname_cn": "冒险家",
+    "nickname_cn": "冒險家",
     "nickname_en": "Adventurer",
     "color": "#E74C3C",
     "description": "Quiet, friendly, and sensitive — lives in the present and prefers to show rather than tell.",
@@ -48,7 +48,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/ISFP.webp"
   },
   "INFP": {
-    "nickname_cn": "调停者",
+    "nickname_cn": "調停者",
     "nickname_en": "Mediator",
     "color": "#9B59B6",
     "description": "An idealist, loyal to the people and causes that matter most.",
@@ -56,7 +56,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/INFP.webp"
   },
   "INTP": {
-    "nickname_cn": "逻辑学家",
+    "nickname_cn": "邏輯學家",
     "nickname_en": "Logician",
     "color": "#3498DB",
     "description": "Seeks logical explanations for everything that captures their interest.",
@@ -64,7 +64,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/INTP.webp"
   },
   "ESTP": {
-    "nickname_cn": "企业家",
+    "nickname_cn": "企業家",
     "nickname_en": "Entrepreneur",
     "color": "#E67E22",
     "description": "Flexible and tolerant, takes a pragmatic approach focused on immediate results.",
@@ -80,7 +80,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/ESFP.webp"
   },
   "ENFP": {
-    "nickname_cn": "探险家",
+    "nickname_cn": "探險家",
     "nickname_en": "Campaigner",
     "color": "#FF6B35",
     "description": "Enthusiastic and imaginative, sees life as full of exciting possibilities.",
@@ -88,7 +88,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/ENFP.webp"
   },
   "ENTP": {
-    "nickname_cn": "辩论家",
+    "nickname_cn": "辯論家",
     "nickname_en": "Debater",
     "color": "#2ECC71",
     "description": "A quick-witted and curious thinker who never backs down from an intellectual challenge.",
@@ -96,7 +96,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/ENTP.webp"
   },
   "ESTJ": {
-    "nickname_cn": "总经理",
+    "nickname_cn": "總經理",
     "nickname_en": "Executive",
     "color": "#34495E",
     "description": "Practical, realistic, and decisive — moves quickly to get things done.",
@@ -104,7 +104,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/ESTJ.webp"
   },
   "ESFJ": {
-    "nickname_cn": "执政官",
+    "nickname_cn": "執政官",
     "nickname_en": "Consul",
     "color": "#FF69B4",
     "description": "Warm-hearted, conscientious, and cooperative — actively works to create harmony.",
@@ -120,7 +120,7 @@
     "image": "https://pub-statics.finchain.global/clawmbti-nft/ENFJ.webp"
   },
   "ENTJ": {
-    "nickname_cn": "指挥官",
+    "nickname_cn": "指揮官",
     "nickname_en": "Commander",
     "color": "#C0392B",
     "description": "Decisive and driven to lead — quick to spot flawed processes and push for improvement.",

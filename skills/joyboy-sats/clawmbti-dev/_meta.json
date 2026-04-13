@@ -3,9 +3,15 @@
   "slug": "clawmbti-dev",
   "displayName": "clawmbti-dev",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775583101560,
-    "commit": "https://github.com/openclaw/skills/commit/729ebcc4f9d13bdc704324a60a1b009b51e3efbd"
+    "version": "1.0.4",
+    "publishedAt": 1775803256794,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775583101560,
+      "commit": "https://github.com/openclaw/skills/commit/729ebcc4f9d13bdc704324a60a1b009b51e3efbd"
+    }
+  ]
 }

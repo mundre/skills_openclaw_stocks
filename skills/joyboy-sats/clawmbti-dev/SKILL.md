@@ -1,6 +1,6 @@
 ---
-name: mbti-nft
-description: 'Detects the MBTI personality type of an AI assistant and issues a lobster-themed NFT PFP certificate. Supports three trigger modes: user-initiated, passive trigger when conversation volume threshold is reached, and silent per-reply signal collection.'
+name: clawmbti
+description: 'Detects the MBTI personality type of an AI assistant and issues a lobster-themed NFT PFP certificate. Supports three trigger modes: user-initiated, passive trigger when conversation volume threshold is reached, and background per-reply signal collection (locally stored behavioral summaries only — no raw dialogue). On first NFT mint, automatically generates and stores a Solana wallet keypair locally (~/.mbti/wallet.json, owner-only permissions). Mint sends MBTI result and conversation evidence to the ClawMBTI API (clawmbti-dev.myfinchain.com) to issue the NFT.'
 ---
 
 # MBTI Lobster Personality NFT Certificate

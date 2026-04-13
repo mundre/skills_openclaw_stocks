@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""会话摘要管理器 — 管理 ~/.mbti/conversations/ 目录下的跨会话对话历史。"""
+"""Conversation summary manager — manages cross-session dialogue history under ~/.mbti/conversations/."""
 
 from __future__ import annotations
 
@@ -13,24 +13,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-# 对话量门槛
+# Conversation volume thresholds
 MIN_TOTAL_TURNS = 50
 MIN_OPEN_TURNS = 10
 
 
 def get_conversations_dir(mbti_dir: str | None = None) -> Path:
-    """获取会话摘要存储目录。"""
+    """Return the conversation summary storage directory."""
     base = Path(mbti_dir).expanduser().resolve() if mbti_dir else Path.home() / ".mbti"
     return base / "conversations"
 
 
 def ensure_dir(conversations_dir: Path) -> None:
-    """确保目录存在。"""
+    """Ensure the directory exists."""
     conversations_dir.mkdir(parents=True, exist_ok=True)
 
 
 def load_all_sessions(conversations_dir: Path) -> list[dict[str, Any]]:
-    """加载所有会话摘要文件，按时间排序。"""
+    """Load all session summary files, sorted by time."""
     sessions: list[dict[str, Any]] = []
     if not conversations_dir.exists():
         return sessions
@@ -47,7 +47,7 @@ def load_all_sessions(conversations_dir: Path) -> list[dict[str, Any]]:
 
 
 def cmd_save_session(args: argparse.Namespace) -> None:
-    """保存一次会话的摘要。"""
+    """Save a session summary."""
     conversations_dir = get_conversations_dir(args.mbti_dir)
     ensure_dir(conversations_dir)
 
@@ -70,7 +70,7 @@ def cmd_save_session(args: argparse.Namespace) -> None:
 
 
 def cmd_list_sessions(args: argparse.Namespace) -> None:
-    """列出所有历史会话摘要（简要信息）。"""
+    """List all historical session summaries (brief info)."""
     conversations_dir = get_conversations_dir(args.mbti_dir)
     sessions = load_all_sessions(conversations_dir)
 
@@ -92,11 +92,11 @@ def cmd_list_sessions(args: argparse.Namespace) -> None:
 
 
 def cmd_read_history(args: argparse.Namespace) -> None:
-    """读取全部历史摘要（用于 MBTI 分析）。"""
+    """Read all historical summaries (for MBTI analysis)."""
     conversations_dir = get_conversations_dir(args.mbti_dir)
     sessions = load_all_sessions(conversations_dir)
 
-    # 移除内部字段
+    # Remove internal fields
     for s in sessions:
         s.pop("_file", None)
 
@@ -104,7 +104,7 @@ def cmd_read_history(args: argparse.Namespace) -> None:
 
 
 def cmd_stats(args: argparse.Namespace) -> None:
-    """统计累计对话数据。"""
+    """Aggregate cumulative conversation statistics."""
     conversations_dir = get_conversations_dir(args.mbti_dir)
     sessions = load_all_sessions(conversations_dir)
 
@@ -132,19 +132,19 @@ def cmd_stats(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="会话摘要管理器")
+    parser = argparse.ArgumentParser(description="Conversation summary manager")
     parser.add_argument(
         "--mbti-dir", type=str, default=None,
-        help="~/.mbti/ 目录路径，默认为 ~/.mbti",
+        help="~/.mbti/ directory path, defaults to ~/.mbti",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    save_session = subparsers.add_parser("save-session", help="保存会话摘要")
-    save_session.add_argument("--data", required=True, help="会话摘要 JSON 字符串")
+    save_session = subparsers.add_parser("save-session", help="Save a session summary")
+    save_session.add_argument("--data", required=True, help="Session summary JSON string")
 
-    subparsers.add_parser("list-sessions", help="列出所有会话摘要")
-    subparsers.add_parser("read-history", help="读取全部历史摘要")
-    subparsers.add_parser("stats", help="统计累计对话数据")
+    subparsers.add_parser("list-sessions", help="List all session summaries")
+    subparsers.add_parser("read-history", help="Read all historical summaries")
+    subparsers.add_parser("stats", help="Aggregate conversation statistics")
 
     args = parser.parse_args()
 
