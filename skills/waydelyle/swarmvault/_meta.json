@@ -3,9 +3,15 @@
   "slug": "swarmvault",
   "displayName": "SwarmVault",
   "latest": {
-    "version": "0.1.21",
-    "publishedAt": 1775603721548,
-    "commit": "https://github.com/openclaw/skills/commit/ced3222b57c4b95805b8c5c6a4e98681ea6906c0"
+    "version": "0.7.30",
+    "publishedAt": 1776021475807,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.21",
+      "publishedAt": 1775603721548,
+      "commit": "https://github.com/openclaw/skills/commit/ced3222b57c4b95805b8c5c6a4e98681ea6906c0"
+    }
+  ]
 }
