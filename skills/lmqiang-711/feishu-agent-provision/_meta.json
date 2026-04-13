@@ -1,0 +1,11 @@
+{
+  "owner": "lmqiang-711",
+  "slug": "feishu-agent-provision",
+  "displayName": "Feishu Agent Provision",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776067369704,
+    "commit": null
+  },
+  "history": []
+}
