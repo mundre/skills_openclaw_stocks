@@ -1,11 +1,17 @@
 {
   "owner": "shenmeng",
   "slug": "shenmeng-social-sentiment-monitor",
-  "displayName": "Social Sentiment Monitor 社交舆情监控",
+  "displayName": "Social Sentiment Monitor 社媒舆情监控",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775509895456,
-    "commit": "https://github.com/openclaw/skills/commit/4e823bb662d4b139c9ca8abb5e413c1071a126fe"
+    "version": "1.0.2",
+    "publishedAt": 1775989602451,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775509895456,
+      "commit": "https://github.com/openclaw/skills/commit/4e823bb662d4b139c9ca8abb5e413c1071a126fe"
+    }
+  ]
 }
