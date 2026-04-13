@@ -3,9 +3,15 @@
   "slug": "inbox-cleanup-outlook",
   "displayName": "Email Cleanup",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1775617107976,
-    "commit": "https://github.com/openclaw/skills/commit/4d67c63f68cf41d4a889d5454f58b7a420565892"
+    "version": "0.1.4",
+    "publishedAt": 1775691427100,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1775617107976,
+      "commit": "https://github.com/openclaw/skills/commit/4d67c63f68cf41d4a889d5454f58b7a420565892"
+    }
+  ]
 }
