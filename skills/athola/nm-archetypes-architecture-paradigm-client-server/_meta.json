@@ -3,9 +3,15 @@
   "slug": "nm-archetypes-architecture-paradigm-client-server",
   "displayName": "Nm Archetypes Architecture Paradigm Client Server",
   "latest": {
-    "version": "1.8.2",
-    "publishedAt": 1775513204746,
-    "commit": "https://github.com/openclaw/skills/commit/bf08fc18436aeef8aab26cd823fa901afd425fae"
+    "version": "1.8.3",
+    "publishedAt": 1775799926625,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.8.2",
+      "publishedAt": 1775513204746,
+      "commit": "https://github.com/openclaw/skills/commit/bf08fc18436aeef8aab26cd823fa901afd425fae"
+    }
+  ]
 }
