@@ -3,9 +3,15 @@
   "slug": "unclecheng-neko-1",
   "displayName": "猫娘neko",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775543004876,
-    "commit": "https://github.com/openclaw/skills/commit/ef6d7c1780b41d3d125972919d093aef5d539cc6"
+    "version": "1.0.2",
+    "publishedAt": 1775780381203,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775543004876,
+      "commit": "https://github.com/openclaw/skills/commit/ef6d7c1780b41d3d125972919d093aef5d539cc6"
+    }
+  ]
 }
