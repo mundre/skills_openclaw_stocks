@@ -3,9 +3,15 @@
   "slug": "touyanduck-briefing",
   "displayName": "🦆 投研鸭 · 二级市场每日策略简报",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775569971673,
-    "commit": "https://github.com/openclaw/skills/commit/e2234439dea61ef24accedaf4b983b66c59edfaf"
+    "version": "1.0.3",
+    "publishedAt": 1775660854076,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775569971673,
+      "commit": "https://github.com/openclaw/skills/commit/e2234439dea61ef24accedaf4b983b66c59edfaf"
+    }
+  ]
 }
