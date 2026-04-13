@@ -20,7 +20,7 @@
 ### UI Component Library
 | UI Library | Command |
 |-------------|---------|
-| shadcn/ui (推荐) | `npx shadcn@latest init` |
+| shadcn/ui (recommended) | `npx shadcn@latest init` |
 | Chakra UI | `npm i @chakra-ui/react @emotion/react` |
 | Mantine | `npm i @mantine/core @mantine/hooks` |
 | Ant Design | `npm i antd` |
@@ -28,22 +28,22 @@
 ### Icon Library
 | Icon Library | Command / Usage |
 |-------------|-----------------|
-| **Lucide React** (推荐) | `npm install lucide-react` (已内置于 shadcn) |
-| **Iconfont** | `npm install @iconfont/react` + 在 iconfont.cn 创建项目获取 symbol URL |
+| **Lucide React** (recommended) | `npm install lucide-react` (built into shadcn) |
+| **Iconfont** | `npm install @iconfont/react` + create project at iconfont.cn to get symbol URL |
 | **Heroicons** | `npm install @heroicons/react` |
 | **Phosphor Icons** | `npm install @phosphor-icons/react` |
 | **Font Awesome** | `npm install @fortawesome/react-fontawesome` |
 
-### Iconfont 使用方法
+### Iconfont Usage
 
-1. 在 [iconfont.cn](https://iconfont.cn) 创建项目，获取 Symbol URL
-2. 在 `app/layout.tsx` 或 `index.html` 中引入:
+1. Create a project at [iconfont.cn](https://iconfont.cn) to get Symbol URL
+2. Add to `app/layout.tsx` or `index.html`:
 
 ```html
 <script src="https:////at.alicdn.com/t/font_xxx.js"></script>
 ```
 
-3. 使用组件:
+3. Use the component:
 
 ```tsx
 // React
@@ -51,12 +51,12 @@
   <use href="#icon-xxx" />
 </svg>
 
-// 或使用 @iconfont/react
+// Or use @iconfont/react
 import { Icon } from '@iconfont/react'
 <Icon type="xxx" />
 ```
 
-4. 在 tailwind.config.ts 中添加:
+4. Add to tailwind.config.ts:
 
 ```js
 theme: {
@@ -77,8 +77,8 @@ theme: {
 
 ### Default Stack Strategy
 - **Next.js** → shadcn/ui + Tailwind CSS + Lucide React
-- **Astro** → 少量 shadcn islands 或纯 Tailwind + Lucide React
-- **需要国产图标** → Iconfont (阿里巴巴)
+- **Astro** → Minimal shadcn islands or pure Tailwind + Lucide React
+- **Chinese icons needed** → Iconfont (Alibaba)
 
 ---
 
@@ -98,110 +98,110 @@ theme: {
 
 ## 1. ai-tool
 
-**典型产品:** ChatGPT, Claude, Midjourney, AI写作助手
+**Typical products:** ChatGPT, Claude, Midjourney, AI writing assistant
 
 ### Scaffolding
 ```bash
-# 1. 创建项目
+# 1. Create project
 npx create-next-app@latest my-ai-tool --typescript --tailwind --app --src-dir
 
-# 2. 初始化 shadcn/ui
+# 2. Initialize shadcn/ui
 cd my-ai-tool
 npx shadcn@latest init
 
-# 3. 添加基础组件
+# 3. Add base components
 npx shadcn@latest add button input card scroll-area
 
-# 4. 安装 AI 相关依赖
+# 4. Install AI-related dependencies
 npm install ai @ai-sdk/react zustand
 ```
 
 ### Pages
 ```
-/chat          # 主对话页
-/history       # 历史对话
-/settings      # 设置页
-/new           # 新建对话
+/chat          # Main chat page
+/history       # Chat history
+/settings      # Settings page
+/new           # New chat
 ```
 
 ### Core Components
-| 组件 | 说明 |
-|------|------|
-| `ChatInput` | AI输入框, 支持多行 |
-| `ChatMessage` | 消息气泡, user/assistant区分 |
-| `ChatStream` | 流式输出渲染 |
-| `ConversationList` | 侧边栏历史列表 |
-| `ModelSelector` | 模型下拉选择 |
+| Component | Description |
+|-----------|-------------|
+| `ChatInput` | AI input box, multiline support |
+| `ChatMessage` | Message bubble, user/assistant distinction |
+| `ChatStream` | Streaming output rendering |
+| `ConversationList` | Sidebar history list |
+| `ModelSelector` | Model dropdown selector |
 
 ### Design Priority
-- **输入框优先** — 对话区域占主体
-- **流式反馈** — 打字效果
-- **暗色主题** — 大多数AI工具偏好
+- **Input first** — Chat area takes the main space
+- **Streaming feedback** — Typing effect
+- **Dark theme** — Most AI tools prefer dark mode
 
 ---
 
 ## 2. dashboard
 
-**典型产品:** GA分析, Admin后台, 数据看板
+**Typical products:** GA Analytics, Admin panel, Data dashboard
 
 ### Scaffolding
 ```bash
-# 1. 创建项目
+# 1. Create project
 npx create-next-app@latest my-dashboard --typescript --tailwind --app --src-dir
 
-# 2. 初始化 shadcn/ui
+# 2. Initialize shadcn/ui
 cd my-dashboard
 npx shadcn@latest init
 
-# 3. 添加数据相关组件
+# 3. Add data-related components
 npx shadcn@latest add button input card table dropdown-menu chart
 
-# 4. 安装数据可视化
+# 4. Install data visualization
 npm install recharts @tanstack/react-table zustand
 ```
 
 ### Pages
 ```
-/dashboard      # 概览页 (KPI卡片)
-/analytics      # 数据分析 (图表)
-/reports        # 报表 (表格)
-/[table]        # 数据表 (CRUD)
+/dashboard      # Overview page (KPI cards)
+/analytics      # Data analysis (charts)
+/reports        # Reports (tables)
+/[table]        # Data table (CRUD)
 ```
 
 ### Core Components
-| 组件 | 说明 |
-|------|------|
-| `StatsCard` | KPI数值卡片 |
-| `DataTable` | 表格 (筛选/分页/排序) |
-| `Chart` | 图表 (折线/柱状/饼图) |
-| `FilterBar` | 筛选栏 (日期范围) |
-| `Sidebar` | 侧边导航 |
+| Component | Description |
+|-----------|-------------|
+| `StatsCard` | KPI value card |
+| `DataTable` | Table (filter/pagination/sort) |
+| `Chart` | Chart (line/bar/pie) |
+| `FilterBar` | Filter bar (date range) |
+| `Sidebar` | Side navigation |
 
 ### Design Priority
-- **数据密度** — 信息紧凑
-- **表格优先** — 核心交互是表格
-- **图表驱动** — 可解释
+- **Data density** — Compact information
+- **Table first** — Core interaction is table
+- **Chart-driven** — Explainable
 
 ---
 
 ## 3. landing-page
 
-**典型产品:** 产品官网, 活动页, 作品集
+**Typical products:** Product homepage, campaign page, portfolio
 
 ### Scaffolding
 ```bash
-# 1. 创建项目
+# 1. Create project
 npm create astro@latest my-landing --template minimal
 cd my-landing
 npx astro add tailwind
 
-# 2. 纯 Tailwind 或少量 islands
+# 2. Pure Tailwind or minimal islands
 npm install framer-motion clsx tailwind-merge
 ```
 
 ### Pages
 ```
-/               # 单页 (多个Section)
+/               # Single page (multiple sections)
 ```
 
 ### Sections
@@ -210,154 +210,154 @@ Hero → Features → SocialProof → Pricing → FAQ → CTA → Footer
 ```
 
 ### Core Components
-| 组件 | 说明 |
-|------|------|
-| `Hero` | 大标题 + 副标题 + CTA |
-| `FeatureCard` | 特性卡片 |
-| `PricingTable` | 价格表 |
-| `Testimonial` | 用户评价 |
-| `FAQ` | 折叠问答 |
+| Component | Description |
+|-----------|-------------|
+| `Hero` | Large title + subtitle + CTA |
+| `FeatureCard` | Feature card |
+| `PricingTable` | Pricing table |
+| `Testimonial` | User testimonial |
+| `FAQ` | Accordion Q&A |
 
 ### Design Priority
-- **视觉冲击** — 首屏决定转化
-- **CTA清晰** — 每个Section有行动召唤
-- **滚动叙事** — 单页滚动引导
+- **Visual impact** — Above-fold decides conversion
+- **Clear CTA** — Call to action in every section
+- **Scroll narrative** — Single page scroll guide
 
 ---
 
 ## 4. saas-app
 
-**典型产品:** Notion, Linear, Stripe, Slack
+**Typical products:** Notion, Linear, Stripe, Slack
 
 ### Scaffolding
 ```bash
-# 1. 创建项目
+# 1. Create project
 npx create-next-app@latest my-saas --typescript --tailwind --app --src-dir
 
-# 2. 初始化 shadcn/ui
+# 2. Initialize shadcn/ui
 cd my-saas
 npx shadcn@latest init
 
-# 3. 添加 SaaS 常用组件
+# 3. Add common SaaS components
 npx shadcn@latest add button input card dialog dropdown-menu tabs avatar badge separator command
 
-# 4. 安装认证和状态
+# 4. Install auth and state
 npm install @clerk/nextjs zustand @supabase/supabase-js
 ```
 
 ### Pages
 ```
-/dashboard       # 工作区首页
-/[module]        # 模块页 (动态路由)
-/settings        # 设置
+/dashboard       # Workspace home
+/[module]        # Module page (dynamic route)
+/settings        # Settings
 /settings/billing
 /settings/team
-/profile         # 个人资料
+/profile         # Profile
 ```
 
 ### Core Components
-| 组件 | 说明 |
-|------|------|
-| `AppShell` | 整体布局 (Sidebar + Header) |
-| `Sidebar` | 导航侧栏 |
-| `Header` | 顶部栏 (面包屑, 搜索) |
-| `ModuleView` | 模块主视图 |
-| `CommandPalette` | Cmd+K 命令面板 |
+| Component | Description |
+|-----------|-------------|
+| `AppShell` | Overall layout (Sidebar + Header) |
+| `Sidebar` | Navigation sidebar |
+| `Header` | Top bar (breadcrumb, search) |
+| `ModuleView` | Module main view |
+| `CommandPalette` | Cmd+K command palette |
 
 ### Design Priority
-- **一致性** — 跨模块UI统一
-- **效率优先** — 快捷键, 命令面板
-- **信息架构** — 清晰模块划分
+- **Consistency** — Cross-module UI unified
+- **Efficiency first** — Shortcuts, command palette
+- **Information architecture** — Clear module division
 
 ---
 
 ## 5. content-site
 
-**典型产品:** 博客, 文档站, 知识库
+**Typical products:** Blog, documentation site, knowledge base
 
 ### Scaffolding
 ```bash
-# 1. 创建项目
+# 1. Create project
 npx create-next-app@latest my-blog --typescript --tailwind --app --src-dir
 
-# 2. 初始化 shadcn/ui
+# 2. Initialize shadcn/ui
 cd my-blog
 npx shadcn@latest init
 
-# 3. 添加内容相关组件
+# 3. Add content-related components
 npx shadcn@latest add button card badge separator scroll-area
 
-# 4. 安装内容处理
+# 4. Install content processing
 npm install next-mdx-remote gray-matter fuse.js date-fns
 ```
 
 ### Pages
 ```
-/                # 首页 (文章列表)
-/blog            # 博客列表
-/blog/[slug]     # 文章详情
-/docs            # 文档列表
-/docs/[slug]      # 文档页
-/search          # 搜索
-/category/[cat]   # 分类页
+/                # Home (article list)
+/blog            # Blog list
+/blog/[slug]     # Article detail
+/docs            # Docs list
+/docs/[slug]      # Doc page
+/search          # Search
+/category/[cat]   # Category page
 ```
 
 ### Core Components
-| 组件 | 说明 |
-|------|------|
-| `PostCard` | 文章卡片 |
-| `MdxContent` | Markdown渲染 |
-| `TableOfContents` | 文章目录 |
-| `SearchBar` | 搜索框 |
-| `TagList` | 标签列表 |
-| `Pagination` | 分页器 |
+| Component | Description |
+|-----------|-------------|
+| `PostCard` | Article card |
+| `MdxContent` | Markdown rendering |
+| `TableOfContents` | Article TOC |
+| `SearchBar` | Search box |
+| `TagList` | Tag list |
+| `Pagination` | Paginator |
 
 ### Design Priority
-- **可读性** — 舒适行距, 清晰排版
-- **导航** — 面包屑, 侧边目录
+- **Readability** — Comfortable line height, clear typography
+- **Navigation** — Breadcrumb, sidebar TOC
 - **SEO** — meta, sitemap
 
 ---
 
 ## 6. tool
 
-**典型产品:** JSON格式化, 图片压缩, 代码高亮
+**Typical products:** JSON formatter, image compressor, code highlighter
 
 ### Scaffolding
 ```bash
-# 1. 创建项目
+# 1. Create project
 npx create-next-app@latest my-tool --typescript --tailwind --app --src-dir
 
-# 2. 初始化 shadcn/ui
+# 2. Initialize shadcn/ui
 cd my-tool
 npx shadcn@latest init
 
-# 3. 添加工具相关组件
+# 3. Add tool-related components
 npx shadcn@latest add button input card dropdown-menu
 
-# 4. 安装工具类依赖
+# 4. Install tool dependencies
 npm install @uiw/react-codemirror clsx tailwind-merge
 ```
 
 ### Pages
 ```
-/               # 工具首页或唯一页
-/[tool]         # 工具页 (输入 → 输出)
+/               # Tool home page or single page
+/[tool]         # Tool page (input → output)
 ```
 
 ### Core Components
-| 组件 | 说明 |
-|------|------|
-| `ToolInput` | 输入区 (Textarea/Dropzone) |
-| `ToolOutput` | 输出区 (结果展示) |
-| `ToolOptions` | 选项配置 |
-| `CopyButton` | 一键复制 |
-| `FormatSelect` | 格式选择 |
+| Component | Description |
+|-----------|-------------|
+| `ToolInput` | Input area (Textarea/Dropzone) |
+| `ToolOutput` | Output area (result display) |
+| `ToolOptions` | Options config |
+| `CopyButton` | Copy to clipboard |
+| `FormatSelect` | Format selection |
 
 ### Design Priority
-- **输入输出** — 左输入右输出
-- **即时反馈** — 处理完成即显示
-- **简洁** — 无需导航
+- **Input/Output** — Left input, right output
+- **Instant feedback** — Show when processing completes
+- **Minimal** — No navigation needed
 
 ---
 
@@ -396,13 +396,13 @@ npm install @supabase/supabase-js zustand fuse.js
 
 | Category | Components |
 |----------|------------|
-| 基础 | `button`, `input`, `label`, `badge` |
-| 布局 | `card`, `sheet`, `separator`, `scroll-area` |
-| 导航 | `sidebar`, `tabs`, `menu`, `command` |
-| 数据 | `table`, `chart`, `progress` |
-| 反馈 | `dialog`, `alert`, `toast`, `skeleton` |
-| 表单 | `form`, `select`, `checkbox`, `radio-group` |
-| 数据输入 | `textarea`, `switch`, `slider`, `date-picker` |
+| Basic | `button`, `input`, `label`, `badge` |
+| Layout | `card`, `sheet`, `separator`, `scroll-area` |
+| Navigation | `sidebar`, `tabs`, `menu`, `command` |
+| Data | `table`, `chart`, `progress` |
+| Feedback | `dialog`, `alert`, `toast`, `skeleton` |
+| Form | `form`, `select`, `checkbox`, `radio-group` |
+| Data Input | `textarea`, `switch`, `slider`, `date-picker` |
 
 ---
 
@@ -410,33 +410,33 @@ npm install @supabase/supabase-js zustand fuse.js
 
 | Type | Design Priority |
 |------|----------------|
-| ai-tool | 输入框/对话 |
-| dashboard | 数据密度 |
-| landing-page | 视觉冲击 |
-| saas-app | 一致性 |
-| content-site | 可读性 |
-| tool | 简洁高效 |
+| ai-tool | Input/Chat |
+| dashboard | Data density |
+| landing-page | Visual impact |
+| saas-app | Consistency |
+| content-site | Readability |
+| tool | Minimal & efficient |
 
 ---
 
 ## Auto-Inference Examples
 
 ```
-用户: "帮我做个 ChatGPT"
+User: "Build me a ChatGPT clone"
 → Framework: Next.js
 → UI: shadcn/ui
 → Pages: /chat
 → Components: ChatInput, ChatMessage
 → Design: claude
 
-用户: "类似 Notion 的工具"
+User: "Something like Notion"
 → Framework: Next.js
 → UI: shadcn/ui
 → Pages: /dashboard, /[module], /settings
 → Components: AppShell, Sidebar
 → Design: minimal
 
-用户: "数据分析后台"
+User: "Data analytics admin panel"
 → Framework: Next.js
 → UI: shadcn/ui + Recharts
 → Pages: /dashboard, /analytics
