@@ -34,26 +34,61 @@ def parse(file_path: str):
         date_str = dt.strftime("%Y-%m-%d")
 
         messages = []
-        for msg in conv.get("messages", []):
-            # role is user/assistant/system; content can be string or {parts: [...]}
-            role = msg.get("role")
-            raw_content = msg.get("content")
-            if isinstance(raw_content, dict):
-                parts = raw_content.get("parts", [])
-                content = "\n".join(parts)
-            else:
-                content = raw_content or ""
-            # timestamp per message
-            msg_ts = msg.get("create_time") or conv.get("create_time") or 0
-            try:
-                msg_iso = datetime.fromtimestamp(float(msg_ts)).isoformat()
-            except Exception:
-                msg_iso = dt.isoformat()
-            messages.append({
-                "role": role,
-                "content": content.strip(),
-                "timestamp": msg_iso
-            })
+
+        # New export format uses a "mapping" dict (keyed by message ID)
+        mapping = conv.get("mapping", {})
+        if mapping:
+            # Walk the tree in order using parent/children links
+            # Find root node (no parent) then traverse
+            nodes = {k: v for k, v in mapping.items() if v.get("message")}
+            # Sort by create_time if available, else preserve dict order
+            ordered = sorted(
+                nodes.values(),
+                key=lambda n: (n["message"].get("create_time") or 0)
+            )
+            for node in ordered:
+                msg = node["message"]
+                author = msg.get("author", {})
+                role = author.get("role") if isinstance(author, dict) else msg.get("role")
+                if role not in ("user", "assistant", "system"):
+                    continue
+                raw_content = msg.get("content", {})
+                if isinstance(raw_content, dict):
+                    parts = raw_content.get("parts", [])
+                    content = "\n".join(str(p) for p in parts if isinstance(p, str))
+                else:
+                    content = str(raw_content) if raw_content else ""
+                msg_ts = msg.get("create_time") or conv.get("create_time") or 0
+                try:
+                    msg_iso = datetime.fromtimestamp(float(msg_ts)).isoformat()
+                except Exception:
+                    msg_iso = dt.isoformat()
+                if content.strip():
+                    messages.append({
+                        "role": role,
+                        "content": content.strip(),
+                        "timestamp": msg_iso
+                    })
+        else:
+            # Legacy flat "messages" list format
+            for msg in conv.get("messages", []):
+                role = msg.get("role")
+                raw_content = msg.get("content")
+                if isinstance(raw_content, dict):
+                    parts = raw_content.get("parts", [])
+                    content = "\n".join(str(p) for p in parts if isinstance(p, str))
+                else:
+                    content = raw_content or ""
+                msg_ts = msg.get("create_time") or conv.get("create_time") or 0
+                try:
+                    msg_iso = datetime.fromtimestamp(float(msg_ts)).isoformat()
+                except Exception:
+                    msg_iso = dt.isoformat()
+                messages.append({
+                    "role": role,
+                    "content": content.strip(),
+                    "timestamp": msg_iso
+                })
 
         yield {
             "id": chat_id,

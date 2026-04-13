@@ -82,9 +82,11 @@ def main():
     if args.since:
         since_date = datetime.strptime(args.since, "%Y-%m-%d").date()
 
-    json_files = list(base_dir.glob("*.json"))
+    # Only process known conversation files — skip metadata files
+    SKIP_FILES = {"user.json", "user_settings.json", "export_manifest.json", "shared_conversations.json", "message_feedback.json"}
+    json_files = [f for f in base_dir.glob("*.json") if f.name not in SKIP_FILES]
     if not json_files:
-        print(f"No JSON files found in {base_dir}")
+        print(f"No conversation JSON files found in {base_dir}")
         return
 
     total_chats = 0
