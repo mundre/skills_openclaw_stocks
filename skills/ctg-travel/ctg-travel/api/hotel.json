@@ -48,9 +48,9 @@
         },
         "rank": {
           "type": "integer",
-          "description": "排序方式",
-          "enum": [0, 1, 2],
-          "default": 0
+          "description": "排序方式 1-智能排序 2-好评优先 3-价格最低 4-距离最近 5-价格最高",
+          "enum": [1, 2, 3, 4, 5],
+          "default": 1
         },
         "page": {
           "type": "integer",
@@ -309,7 +309,19 @@
           "type": "array",
           "description": "入住人列表",
           "items": {
-            "$ref": "#/definitions/SingleHotelTravelerBo"
+            "type": "object",
+            "description": "入住人信息",
+            "properties": {
+              "passengerId": {
+                "type": "integer",
+                "description": "入住人ID（从入住人列表获取）"
+              },
+              "roomNo": {
+                "type": "integer",
+                "description": "房间号 1，2，3"
+              }
+            },
+            "required": ["passengerId", "roomNo"]
           }
         },
         "price": {
@@ -345,35 +357,6 @@
         }
       },
       "required": ["checkInDate", "checkOutDate", "roomNum", "memberId", "phoneNumber", "orderSource", "resourceItemId", "travelerList", "price"]
-    },
-    "definitions": {
-      "SingleHotelTravelerBo": {
-        "type": "object",
-        "description": "入住人信息",
-        "properties": {
-          "passengerId": {
-            "type": "integer",
-            "description": "入住人ID（从入住人列表获取）"
-          },
-          "name": {
-            "type": "string",
-            "description": "入住人姓名"
-          },
-          "identityType": {
-            "type": "string",
-            "description": "证件类型，ID-身份证"
-          },
-          "identityNo": {
-            "type": "string",
-            "description": "证件号码"
-          },
-          "phoneNumber": {
-            "type": "string",
-            "description": "手机号码"
-          }
-        },
-        "required": ["passengerId", "name", "identityNo", "phoneNumber"]
-      }
     }
   },
   {

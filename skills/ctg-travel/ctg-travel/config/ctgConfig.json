@@ -1,5 +1,3 @@
 {
-  "apiKey": "your-api-key-here",
-  "callUrl": "https://pro-api.ourtour.com/openapi/tools/call",
-  "skillVersion": "0.2.4"
+  "skillVersion": "1.0.5"
 }

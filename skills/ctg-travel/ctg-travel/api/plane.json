@@ -100,12 +100,14 @@
     "parameters": {
       "type": "object",
       "properties": {
-        "resourceItemId": { "type": "string", "description": "资源项id，取自 cabinList" },
+        "resourceItemId": { "type": "string", "description": "资源项id，取自舱位列表中的 data.goFlightCabin.cabinList[].resourceItemId" },
         "goExtData": { "type": "string", "description": "航班列表中的data.goFlight.flights[].extData" },
         "passengerIds": {"type": "array", "description": "选择出行的用户的id", "items": {"type": "Long"}},
-        "contactPhone": {"type": "string", "description": "联系人手机号"}
+        "contactPhone": {"type": "string", "description": "联系人手机号"},
+        "sessionId": {"type": "string", "description": "会话id，取自舱位列表中的data.sessionId"},
+        "extData": {"type": "string", "description": "额外信息，取自舱位列表中的data.goFlightCabin.cabinList[].extData"}
       },
-      "required": ["resourceItemId", "goExtData", "passengerIds", "contactPhone"]
+      "required": ["resourceItemId", "goExtData", "passengerIds", "contactPhone", "sessionId", "extData"]
     }
   },
   {

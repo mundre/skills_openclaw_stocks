@@ -74,17 +74,10 @@ def load_config():
         raise FileNotFoundError(f"配置文件不存在: {CONFIG_FILE}")
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         cfg = json.load(f)
-    if not cfg.get("callUrl") and not cfg.get("host"):
-        raise ValueError("请在 config/ctgConfig.json 中配置 callUrl 或 host")
     return cfg
 
 
-def get_call_url(config):
-    if config.get("callUrl"):
-        return config["callUrl"].rstrip("/")
-    host = config.get("host", "")
-    base = host if host.startswith("http") else f"http://{host}"
-    return base.rstrip("/") + "/openapi/tools/call"
+CALL_URL = "https://pro-api.ourtour.com/openapi/tools/call"
 
 
 def compute_signature(secret_key, method_part, params_part, timestamp, nonce):
@@ -105,11 +98,16 @@ def compute_signature(secret_key, method_part, params_part, timestamp, nonce):
     return signature_b64
 
 
-def build_payload(config, method_part, params_part):
+def build_payload(config, method_part, params_part, api_key_override=None):
     """构造完整请求体：method + params + auth（key、timestamp、nonce、signature）"""
     timestamp = int(time.time() * 1000)
     nonce = random.randint(1, 100)
-    api_key = config.get("apiKey", "")
+    api_key = api_key_override or os.environ.get("CTG_API_KEY") or config.get("apiKey")
+
+    if not api_key:
+        raise ValueError("未找到 API Key。请通过以下方式设置：\n"
+                         "  1. 运行 python scripts/apiexe.py set-key --api-key <your-key>\n"
+                         "  2. 或设置环境变量 CTG_API_KEY")
 
     signature_b64 = compute_signature(api_key, method_part, params_part, timestamp, nonce)
     auth_part = {
@@ -207,6 +205,9 @@ def main():
 
   list: 列出 api 中的 method 定义
     %(prog)s list
+
+  set-key: 保存 API Key 到配置文件
+    %(prog)s set-key --api-key <your-api-key>
         """,
     )
     subparsers = parser.add_subparsers(dest="command", help="命令")
@@ -216,9 +217,13 @@ def main():
     call_p.add_argument("--arg", default="{}", help="业务参数 JSON")
     call_p.add_argument("--arg-file", help="从文件读取业务参数 JSON；使用 - 表示从 stdin 读取，不落盘")
     call_p.add_argument("--rm-arg-file", action="store_true", help="与 --arg-file 配合：读取后删除该文件（仅当 --arg-file 为文件路径时生效）")
+    call_p.add_argument("--api-key", help="API Key（优先级高于配置文件）")
 
     list_p = subparsers.add_parser("list", help="列出 method 定义")
     list_p.add_argument("--api", help="指定 api 文件，如 api/train.json")
+
+    setkey_p = subparsers.add_parser("set-key", help="保存 API Key 到配置文件")
+    setkey_p.add_argument("--api-key", required=True, help="要保存的 API Key")
 
     args = parser.parse_args()
     if not args.command:
@@ -234,6 +239,14 @@ def main():
     if args.command == "list":
         definitions = load_api_definitions(getattr(args, "api", None))
         print(json.dumps(definitions, ensure_ascii=False, indent=2))
+        sys.exit(0)
+
+    if args.command == "set-key":
+        config["apiKey"] = args.api_key
+        CONFIG_FILE.parent.mkdir(exist_ok=True)
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+        print(f"✅ API Key 已保存到 {CONFIG_FILE}")
         sys.exit(0)
 
     if args.arg_file:
@@ -258,8 +271,8 @@ def main():
         print(f"❌ {e}", file=sys.stderr)
         sys.exit(1)
 
-    payload = build_payload(config, method_part, params_part)
-    url = get_call_url(config)
+    payload = build_payload(config, method_part, params_part, api_key_override=getattr(args, "api_key", None))
+    url = CALL_URL
     
     # 检查缓存
     cache_key = get_cache_key(args.method, params_part)
