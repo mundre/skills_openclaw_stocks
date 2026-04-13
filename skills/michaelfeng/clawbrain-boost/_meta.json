@@ -1,11 +1,17 @@
 {
   "owner": "michaelfeng",
   "slug": "clawbrain-boost",
-  "displayName": "Clawbrain Boost",
+  "displayName": "ClawBrain Boost",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775629976394,
-    "commit": "https://github.com/openclaw/skills/commit/fbdc1d370debe5be3b20d824fd6ac45c3e6127da"
+    "version": "1.2.0",
+    "publishedAt": 1775796988039,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775629976394,
+      "commit": "https://github.com/openclaw/skills/commit/fbdc1d370debe5be3b20d824fd6ac45c3e6127da"
+    }
+  ]
 }
