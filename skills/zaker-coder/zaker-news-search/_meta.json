@@ -3,11 +3,16 @@
   "slug": "zaker-news-search",
   "displayName": "ZAKER新闻检索-news search",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1775204883611,
-    "commit": "https://github.com/openclaw/skills/commit/2ea4483c9f313a72034bcf47e35e12a2e1e64196"
+    "version": "1.0.8",
+    "publishedAt": 1775816910258,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1775204883611,
+      "commit": "https://github.com/openclaw/skills/commit/2ea4483c9f313a72034bcf47e35e12a2e1e64196"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1775124869700,
