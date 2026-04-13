@@ -1,6 +1,6 @@
 ---
 name: seo-blog-writer
-version: 3.1.0
+version: 3.2.0
 description: |
   Fully automated SEO article writer. Give it a topic and domain — it handles
   everything: auto-discovers product context, researches keywords, analyzes
@@ -16,11 +16,18 @@ triggers:
   - "comparison article"
   - "alternatives page"
   - "how-to guide"
+external_access:
+  - type: web_search
+    description: "SERP analysis — searches Google/Bing/DDG for competitor URLs and keyword data. No API key required; uses the agent's built-in web search tool."
+  - type: web_fetch
+    description: "Link verification — checks that external URLs in the article are live. No API key required."
+permissions:
+  - disk_write: "Writes article draft, QA report, and schema file to local disk (crash-safe incremental execution). Output directory is user-configurable."
 ---
 
 # AI-Driven SEO Blog Writer
 
-> **Heavy Task Protocol active.** This skill generates a long artifact across multiple phases. Follow `skills/heavy-task-protocol/SKILL.md`: create a task-logs workspace before Phase 0, write phase outputs to disk incrementally, use offset reads for verification.
+> **Long-running task mode.** This skill generates a multi-phase artifact. Before Phase 0: create a `task-logs/{slug}/` workspace, write each phase output to disk incrementally, and use offset reads to verify writes. This ensures crash-safe, resumable execution without regenerating completed work.
 
 ## Design Principles
 
@@ -34,25 +41,21 @@ triggers:
 
 ## Execution Model (IMPORTANT)
 
-This is a heavy, multi-phase skill. **Heavy Task Protocol is mandatory** — read and activate it before Phase 0:
+This is a heavy, multi-phase skill. Incremental disk writes and offset-read verification are mandatory — see the long-running task note above.
 
-```
-read skills/heavy-task-protocol/SKILL.md
-```
-
-**When spawning as a subagent, always include `security: "full"`:**
+**When spawning as a subagent, file writes and link verification (Phases 1–5) require exec permissions:**
 
 ```
 sessions_spawn(
   task: "SEO article: topic='[topic]' domain='[domain]' mode='[mode]'",
   runtime: "subagent",
-  security: "full"   ← required for file writes (Phases 1–5) and link verification (Phase 4)
+  security: "full"   ← needed for disk writes and curl-based link checks
 )
 ```
 
-If running in the main session directly, exec permissions are already sufficient — proceed normally.
+If running in the main session directly, exec permissions are already present — proceed normally.
 
-**Never spawn without `security: "full"` — the subagent will silently fail file writes and deliver an unverified draft.**
+> **Why `security: "full"`?** This skill writes article drafts, QA reports, and schema files to disk incrementally (crash-safe execution). Link verification uses `curl`/`web_fetch` to check URLs. Both operations require exec access. If you prefer not to grant this, run the skill in your main session rather than as a subagent — behavior is identical.
 
 ---
 
@@ -62,7 +65,7 @@ For this skill, "done in one shot" is not trusted. Use bounded, resumable execut
 
 1. **Section-by-section writes**
 - Write article sections incrementally (intro, each H2 block, FAQ, conclusion).
-- After each section write, append checkpoint to `task-logs/.../report.md`.
+- After each section write, append checkpoint to `task-logs/{slug}/report.md` (or your preferred output dir).
 
 2. **Write-then-read verification**
 - After every `write`/`edit`, run a targeted read/grep to confirm the change exists.
