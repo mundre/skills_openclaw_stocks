@@ -3,7 +3,7 @@
 """
 财税政策计算器
 支持增值税、企业所得税、个人所得税等税种的精确计算
-数据来源：国家税务总局政策法规库(fgk.chinatax.gov.cn)
+数据来源：国家税务总局政策法规库
 """
 import argparse
 import sys

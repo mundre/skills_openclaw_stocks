@@ -135,7 +135,7 @@ md5sum "{zip_path.name}"
     package_json = {
         "name": "tax-policy-knowledge",
         "version": version,
-        "description": "基于国家相关官方政策法规库(fgk.chinatax.gov.cn)近三年有效财税政策的专业知识库Skill",
+        "description": "基于国家相关官方政策法规库近三年有效财税政策的专业知识库Skill",
         "main": "SKILL.md",
         "author": "AiPy Team",
         "license": "MIT",
