@@ -1,0 +1,11 @@
+{
+  "owner": "lq434239",
+  "slug": "session-learner",
+  "displayName": "Use when a session reveals stable user preferences, workflow corrections, or project conventions that should be preserved for future sessions. Also use when user explicitly asks to remember rules, update guidance, or summarize learnings.",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775721571243,
+    "commit": null
+  },
+  "history": []
+}
