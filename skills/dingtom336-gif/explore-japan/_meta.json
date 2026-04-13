@@ -3,9 +3,15 @@
   "slug": "explore-japan",
   "displayName": "Explore Japan",
   "latest": {
-    "version": "3.2.0",
-    "publishedAt": 1775666955571,
-    "commit": "https://github.com/openclaw/skills/commit/526f228616223cc10b4260de663a75b3bee2ee1f"
+    "version": "3.2.1",
+    "publishedAt": 1775702001330,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "3.2.0",
+      "publishedAt": 1775666955571,
+      "commit": "https://github.com/openclaw/skills/commit/526f228616223cc10b4260de663a75b3bee2ee1f"
+    }
+  ]
 }
