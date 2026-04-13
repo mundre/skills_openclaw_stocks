@@ -1,111 +1,157 @@
 ---
 name: moltbank
-description: Let your agent fleet spend with guardrails. Manage USDC treasury, payments, Earn positions, and x402 purchases — set budgets for agents, draft proposals, approve transfers, and track spend without leaving your agent.
-homepage: https://app.moltbank.bot
+description: Manage treasury balances, payment drafts, approvals, and x402 actions through the MoltBank CLI or local MCP bridge.
+version: 0.1.5
 metadata:
   category: finance
-  version: 0.1.0
-  api_base: https://app.moltbank.bot/api/mcp
-  install_script: https://app.moltbank.bot/install.sh
-  clawdbot:
-    emoji: "🏦"
-    requires:
-      env: ["MOLTBANK"]
-      anyBins: ["mcporter", "jq"]
-      npm:
-        - '@x402/fetch@2.3.0'
-        - '@x402/evm@2.3.1'
-        - 'viem@2.46.0'
-    primaryEnv: MOLTBANK
-    files: ["scripts/*", "references/*", "assets/*"]
   openclaw:
-    emoji: "🏦"
+    homepage: https://app.moltbank.bot
     requires:
-      env: ["MOLTBANK"]
       bins:
-        - mcporter
-        - jq
-      npm:
-        - '@x402/fetch@2.3.0'
-        - '@x402/evm@2.3.1'
-        - 'viem@2.46.0'
-    primaryEnv: MOLTBANK
-    files: ["scripts/*", "references/*", "assets/*"]
+        - moltbank
 ---
 
-# MoltBank skill for AI agents
+# MoltBank Skill For AI Agents
 
-Use this skill whenever the user asks to do stablecoin treasury actions through MoltBank.
+Use MoltBank for:
+- authentication pairing
+- treasury balance reads
+- pending approval reads
+- payment drafting
+- x402 discovery and one-shot auto-pay actions
 
-## Trigger conditions
+## Preferred Execution Order
 
-Trigger this skill if the user asks about any of the following:
+1. If MCP tools are available, use MCP first.
+2. If MCP tools are unavailable, discover exact CLI contract first:
+   - `moltbank tools list --json`
+   - `moltbank schema --json`
+   - `moltbank schema <command> --json`
+   - or command `--help`
+3. Execute CLI commands with `--json`.
 
-- MoltBank or app.moltbank.bot
-- treasury balances, USDC holdings, accounts, or cash flow
-- payment proposals, approvals, transfers, recipients, transaction history
-- onboarding or team invites
-- Earn or Aave actions
-- OpenClaw bot budgets (transfer / earn limits)
-- x402 setup, funding, gas top-up, or paid x402 requests
-- short onboarding acknowledgements right after activation instructions, for example `done`, `listo`, `hecho`, or `approved`
+## Hard Rule
 
-## Agent execution policy (critical)
+Do not guess flags, argument names, or tool input shapes from memory.
+Always discover exact usage on demand from MCP tool schemas or CLI schema/help.
+When using `moltbank schema --json`, use command `name` for CLI execution. Do not execute `id` values (for example `moltbank_*`) as terminal commands.
 
-- Execute required install, setup, and tool commands yourself when tools are available.
-- Do not ask the user to run commands that you can run directly.
-- Do not ask the user for obvious environment facts such as OS.
-- Only ask the user for input when it is truly required and cannot be derived or executed locally, for example OAuth browser approval, missing secrets the user must provide, or explicit policy approval.
-- For onboarding, always surface activation instructions and codes directly in the user channel. Never require the user to watch gateway console logs.
-- Prefer the standalone `moltbank` CLI for install, setup, auth status, and repair flows when it is available. Use `openclaw moltbank ...` only as a compatibility fallback.
-- For treasury operations such as balances, transfers, approvals, history, reports, and x402 actions, always use the installed skill wrapper scripts, not the standalone `moltbank` CLI.
-- After setup completes, verify operational readiness with a wrapper balance read for the active organization before claiming the agent is ready to use.
-- Never pause setup to ask whether local skill files should be updated; perform required local repairs automatically when possible.
+When the user asks "what tools/functions can I use", run `moltbank tools list --json` and answer from that output.
 
-## Source of truth by file
+## Join / Bootstrap Sequence
 
-- `references/setup.md` is the canonical setup, install, auth, and runtime runbook.
-- `references/onboarding.md` is the canonical OAuth device flow document.
-- `references/rules.md` is the canonical security and approval policy document.
-- `references/x402-workflow.md` is the canonical x402 execution workflow.
-- `references/compliance.md` is the canonical trust disclosure, endpoint inventory, and operational boundaries document.
+When the user asks to "join MoltBank" or to follow setup instructions:
 
-Keep this file high level. Put command-heavy setup instructions in `references/setup.md`, not here.
+Runtime isolation rule:
+- Do not use another runtime's skill manager (for example OpenClaw) to verify or install the skill for the current runtime. Each runtime is independent.
 
-## Join behavior (critical)
+1. Use only the current runtime's native skill mechanism:
+   - If current runtime is OpenClaw: run `openclaw skills list`
+   - If current runtime is skills.sh-compatible (for example Claude Code, Codex, Hermes, or Manus when `npx skills` is available): run `npx skills ls`
+   - If runtime capability is unclear, ask the user which runtime should be configured before running any skill-manager command.
+2. Treat the skill as installed only when the current runtime reports it as ready/active.
+3. If the skill is missing or not ready, and the user explicitly approves setup, use the current runtime's installer:
+   - OpenClaw example: `openclaw skills install moltbank`, then confirm with `openclaw skills list` (`moltbank` must be `✓ ready`)
+   - skills.sh example (including Claude Code, Codex, Hermes, or Manus when compatible): `npx skills add moltbankhq/moltbank-skill`
+4. Check CLI availability with `moltbank --version`.
+5. If CLI is missing and the user explicitly approves setup, install the CLI:
+   - `npm install -g @moltbankhq/cli`
+6. Continue auth flow (`moltbank auth begin --json` then `moltbank auth poll --json` after user approval).
+7. Verify final state with `moltbank whoami --json`.
+8. If you run `moltbank doctor --json` and it fails, report exact failing checks; do not claim "all good".
+9. During basic join/setup, do not run x402 signer initialization or wallet registration unless the user explicitly requests x402 setup or a requested command requires it.
 
-- If user intent is `join MoltBank`, execute setup immediately without clarification prompts.
-- Treat the user's join request as authorization to run install and setup commands in the current runtime.
-- Read `references/setup.md` before running join commands so the full install and auth sequence is applied.
-- Never reply with `I can't run setup commands in this environment` unless command execution has been attempted and failed in this run.
-- If `moltbank setup` returns `unknown command 'moltbank'`, treat it as `plugin not installed` and continue with the install flow from `references/setup.md`.
-- Inline fallback for unknown subcommand: install the MoltBank CLI via npm first (`npm install -g @moltbankhq/openclaw` or `npm exec --package @moltbankhq/openclaw -- moltbank setup`). Use the remote installer only when the npm CLI path is unavailable.
-- If command execution tools are unavailable, state that limitation directly and ask only for enabling command execution capability.
-- After sending an activation code, setup should continue automatically after browser approval. No manual CLI step is required from the user.
-- If the user replies with a short acknowledgment after activation steps, treat it as a command to check progress and continue.
+Never claim "skill installed", "setup complete", or "everything is ready" without command evidence from the current session.
 
-## Progressive disclosure
+# Authentication (Chat-Driven Flow)
 
-Read only the file needed for the current task:
+If credentials are missing or unauthorized, prefer completing login through chat guidance.
 
-| Task | File |
-| :--- | :--- |
-| Setup, credentials, and session prep | `./references/setup.md` |
-| x402 signer wallet bootstrap | `./references/openclaw-signer-eoa.md` |
-| First-time device flow and onboarding | `./references/onboarding.md` |
-| Tool inputs and argument validation | `./references/tools-reference.md` |
-| x402 payment workflow | `./references/x402-workflow.md` |
-| Local integrity gate and heartbeat rules | `./references/heartbeat.md` |
-| Security and budget behavior | `./references/rules.md` |
-| Compliance, trust, and endpoint disclosure | `./references/compliance.md` |
+Use this recommended chat flow:
 
-## Minimal global guards
+1. Run `moltbank auth begin --json`.
+2. Extract `verification_uri_complete` and `user_code` from the JSON output.
+3. Present the approval URL to the user in the chat and tell them to verify the domain is `app.moltbank.bot` before opening it.
+4. Ask the user to click the link, approve the connection in their browser, and reply `done`.
+5. When the user replies `done`, run `moltbank auth poll --json`.
+6. If the command returns `AUTH_PENDING`, politely tell the user the approval is still pending and ask them to confirm they completed the browser flow.
+7. If the command succeeds, continue with the user’s original request.
 
-- Run the integrity gate in `./references/heartbeat.md` before every MoltBank MCP action.
-- Use the platform wrapper script for MCP calls, `scripts/moltbank.sh` on Mac/Linux and `scripts/moltbank.ps1` on Windows. Do not call `mcporter` directly.
-- For write operations such as draft, propose, register, fund, buy, update, or delete, confirm inputs and wait for explicit approval.
-- Never print API keys, access tokens, or private keys.
+Do not rely on model memory to remember the device code. The CLI manages pending auth state locally.
 
-## Version history
+Never execute long-running interactive authentication wrappers as an agent tool.
 
-- 0.1.0 — Initial publicly available version.
+## x402 Payments
+
+When the user asks to buy or use an x402-protected endpoint:
+
+1. If the exact x402 URL is known, use `moltbank_x402_auto_pay`.
+2. If the URL is not known, use `moltbank_discover_x402_bazaar` first, then use `moltbank_x402_auto_pay`.
+3. Do not manually orchestrate signer init, wallet registration, inspect, treasury funding, payment execution, or receipt logging. `moltbank_x402_auto_pay` handles those steps.
+4. If auto-pay returns `status: needs_user_approval`, explain that clearly and stop. If `bootstrapBudget.approvalUrl` is present, provide that exact link and tell the user to approve it, then rerun the same auto-pay request.
+5. If auto-pay returns `status: needs_configuration`, explain what setup is missing and stop.
+6. If auto-pay succeeds, report success and include the returned `paymentTxHash` when available.
+7. If auto-pay returns a bootstrapBudget.approvalUrl, present that exact link to the user and tell them to approve it to grant the bot the necessary permissions. Once they approve it, rerun the exact same auto-pay command.
+
+## Budget Proposals On Base (Important)
+
+When creating a Base bot budget (`propose_bot_budget` / `moltbank budget propose`) and the backend says the x402 wallet is not registered:
+
+1. Run `moltbank x402 signer init --json` to obtain/reuse the bot wallet address.
+2. Run `moltbank x402 wallet register --wallet-address "<signerAddress>" --json`.
+3. Retry the original budget proposal exactly once.
+4. If it still fails, stop and report the blocker to the user with the exact error.
+
+Do not enter retry loops. Never repeat the same failing command more than 2 times without new inputs or state changes.
+
+For raw fallback calls, `moltbank mcp call` supports:
+- `--arg key=value` (repeatable)
+- `--body '{"key":"value"}'` (JSON object for tool arguments)
+
+## Export History Delivery
+
+`export_transaction_history` supports delivery channels:
+- `slack` (default for Slack context)
+- `telegram` (requires `telegramChatId`)
+- `inline` (returns file payload in tool response; default for non-Slack contexts)
+
+CLI flags:
+- `--delivery-channel slack|telegram|inline`
+- `--telegram-chat-id <id>` (required when channel is telegram)
+- `--slack-user-id <id>` (optional for Slack delivery outside Slack context)
+
+## Dependency Setup (Only With Explicit User Approval)
+
+MoltBank usage depends on:
+- a skill installation in the host runtime
+- the local `moltbank` CLI
+
+MoltBank usage requires two separate dependencies:
+1. The skill installed in the host runtime (e.g., via `npx skills add` )
+2. The local `moltbank` CLI
+
+Do not skip the runtime skill installation just because the local CLI is already installed.
+
+If setup is needed and the user explicitly approves installation:
+- do not invent ad-hoc install commands
+- do not use one runtime's manager to infer another runtime's skill installation status
+- treat skill installation as satisfied only when the runtime reports the skill as ready/active
+- if bootstrapping another runtime, install the skill first:
+  - OpenClaw: `openclaw skills install moltbank`
+  - skills.sh-compatible runtimes: `npx skills add moltbankhq/moltbank-skill`
+- then install the CLI:
+  - `npm install -g @moltbankhq/cli`
+- validate after installation:
+  - `moltbank auth begin --json`
+  - `moltbank doctor --json`
+
+Never auto-install dependencies without user approval.
+
+## Boundaries
+
+- Do not edit global runtime configuration.
+- Do not mutate sandbox defaults.
+- Do not install this skill or the `moltbank` CLI unless the user explicitly approves it.
+- Do not invent custom install commands when a platform-declared install flow exists.
+- Do not state that setup succeeded unless command output in this session confirms it.
+- Keep secrets local; never print full tokens, access tokens, or private keys.
