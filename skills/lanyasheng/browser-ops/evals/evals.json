@@ -4,9 +4,9 @@
     {
       "id": 1,
       "prompt": "帮我抓取 https://paulgraham.com/worked.html 的正文内容",
-      "expected_output": "使用 Jina 或 curl 提取文章正文为 Markdown",
+      "expected_output": "使用 WebFetch 或 Jina 提取文章正文为 Markdown",
       "expectations": [
-        "选择 L2 轻量抓取层（Jina 或 curl），不启动浏览器",
+        "选择轻量抓取（WebFetch/Jina/curl），不启动浏览器",
         "返回文章正文内容"
       ]
     },
@@ -15,7 +15,7 @@
       "prompt": "搜索 Twitter 上关于 AI agent 的最新讨论",
       "expected_output": "使用 opencli twitter search 搜索",
       "expectations": [
-        "使用 opencli 而非 agent-browser",
+        "使用 opencli 平台适配器",
         "调用 opencli twitter search 命令",
         "返回搜索结果"
       ]
@@ -45,7 +45,7 @@
       "expected_output": "使用 Zendriver 或 Camoufox 绕过反爬",
       "expectations": [
         "识别为反爬场景",
-        "选择 L6 反爬工具（Zendriver 或 Camoufox）",
+        "选择反爬工具（Zendriver 或 Camoufox）",
         "如果仍失败，建议添加住宅代理"
       ]
     },
@@ -61,20 +61,20 @@
     {
       "id": 7,
       "prompt": "打开 https://internal.company.com/dashboard 并截图",
-      "expected_output": "使用 agent-browser 并加载 Cookie",
+      "expected_output": "使用 browser-use CLI 截图",
       "expectations": [
         "识别为需要登录态的内部站点",
-        "加载统一 Cookie 存储",
-        "使用 agent-browser screenshot 截图"
+        "使用 browser-use --connect 或 opencli web read 复用登录态",
+        "使用 browser-use screenshot 截图"
       ]
     },
     {
       "id": 8,
       "prompt": "我需要在一个我从没用过的网站上填一个复杂表单",
-      "expected_output": "使用 Playwright MCP 或 Stagehand",
+      "expected_output": "使用 browser-use CLI 或 Stagehand",
       "expectations": [
         "识别为未知 DOM + 需要交互的场景",
-        "选择 L4 Stagehand 或 Playwright MCP"
+        "选择 browser-use CLI 或 Stagehand"
       ]
     },
     {
@@ -102,7 +102,7 @@
       "expected_output": "识别为访问失败场景，尝试替代方案或报告错误",
       "expectations": [
         "识别为访问失败场景",
-        "尝试替代方案或报告错误"
+        "尝试 opencli web read 或 browser-use 替代方案"
       ]
     },
     {
@@ -126,9 +126,9 @@
     {
       "id": 14,
       "prompt": "用浏览器打开 https://example.com 然后点击登录按钮",
-      "expected_output": "选择 Playwright MCP 或 agent-browser 执行导航和点击操作",
+      "expected_output": "选择 browser-use CLI 执行导航和点击操作",
       "expectations": [
-        "选择 Playwright MCP 或 agent-browser",
+        "选择 browser-use CLI",
         "执行导航和点击操作"
       ]
     }

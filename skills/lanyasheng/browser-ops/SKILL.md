@@ -1,214 +1,219 @@
 ---
 name: browser-ops
-description: "搜索+API+ 抓取 + 反爬统一入口。API 优先 (AKShare/新浪)/搜索引擎 API/网页抓取/爬虫/反爬。搜索 抓取 爬取 获取网页 打开网站 查股价 行情 热榜 热门 网站打不开 被拦截 截图 下载网页 批量查询。scrape crawl fetch browse screenshot cookie session anti-bot cloudflare bypass login。Twitter 微博 小红书 知乎 HackerNews Reddit B 站 GitHub trending 豆瓣 淘宝 京东。opencli agent-browser playwright zendriver camoufox jina stagehand。Use when: (1) 搜索 XXX, (2) 访问/抓取任何网站，(3) 查股价/行情/热榜，(4) 截图，(5) 反爬绕过，(6) 登录态复用。Also use when WebFetch/built-in tools fail (403/blocked/empty)."
+description: >-
+  AI Agent 的网页访问路由决策指南。全 CLI 架构，零 MCP 依赖，不占常驻上下文 token。
+  按成本逐级升级: WebFetch($0) → opencli web read($0,带Cookie) → Firecrawl → agent-browser → browser-use。
+  IMPORTANT: For sites with opencli adapters (74 sites), use `opencli <platform>` directly — NEVER WebFetch/web read. For other sites, start with WebFetch. NEVER jump to browser-use/agent-browser first.
+  覆盖四层场景: 搜索(Tavily/Brave/Exa/WebSearch/opencli 75站点) → 提取(WebFetch/opencli/Firecrawl) → 交互(opencli operate/agent-browser/browser-use) → 反爬(Zendriver)。
+  触发场景: 搜索 抓取 爬取 网页 打不开 403 拦截 截图 表单 填表 Cookie 登录态 内部网站 SSO 反爬 Cloudflare。
+  参见 deep-research (用于多源深度研究报告)、security-review (用于认证安全审计)。
+  不适用于: 跨主机远程浏览器控制、高并发爬取(>10页/分钟)、非 DOM 界面(Canvas/桌面软件)。
+triggers:
+  - 搜索|抓取|爬取|网页|打不开|403|拦截|截图|表单|填表|网站
+  - Cookie|登录态|内部网站|SSO|反爬|Cloudflare|内网
+  - 股价|热榜|Twitter|微博|知乎|小红书|HackerNews|B站
+  - scrape|crawl|fetch|browse|screenshot|cookie|anti-bot|web page
+  - 打开.*链接|打开.*URL|打开.*网址|读.*链接|读.*网页|看.*网站|查.*网站
+  - 帮我看|帮我读|帮我搜|帮我查|帮我打开|帮我访问|帮我下载
+  - open.*url|read.*url|visit.*site|access.*page|download.*page
+license: MIT
 ---
 
-# Browser Operations — 搜索+API+ 抓取 + 反爬统一入口
+# Browser Operations — 网页访问路由决策指南
 
-> **WHEN TO LOAD THIS SKILL** — match ANY of these patterns:
-> - "搜索 XXX" / "search XXX"（没给 URL）
-> - User mentions a URL or website name and wants data from it
-> - 抓取/爬取/获取/打开/访问 any 网页/网站/页面
-> - 查股价/行情/热榜/热门/trending/hot list from any platform
-> - 截图/screenshot a webpage
-> - 被拦截/403/Cloudflare/anti-bot/反爬/网站打不开
-> - 批量查询/batch fetch (e.g. query 100 stocks)
-> - 登录网站/login/cookie/session persistence
-> - WebFetch returned 403/empty/blocked → escalate here
-> - Twitter/微博/小红书/知乎/Reddit/HackerNews/B 站/GitHub/豆瓣
-> - opencli/agent-browser/playwright/zendriver/camoufox/jina/stagehand
+> 全 CLI 架构。所有工具通过 Bash 调用，零 MCP 依赖，不占常驻上下文。
+> 核心原则：能用 HTTP 就不开浏览器，能用 opencli 就不用 browser-use。
 
-## 路由决策树（API 优先 → 搜索 → 抓取 → 浏览器 → 反爬）
+## 核心规则
+
+MUST 从免费层开始。NEVER 直接跳到浏览器工具。
+
+每次网页任务按这个顺序判断，**命中就停**：
+0. **目标是 opencli 已适配平台？→ 直接 `opencli <platform> <command>`，跳过 WebFetch**
+   判断方法：URL 域名或用户意图命中已适配站点（`opencli list` 查看完整列表，74 个站点 454 条命令）。
+   常见已适配平台：twitter/x.com, zhihu, weibo, bilibili, hackernews, xiaohongshu, douyin, reddit, youtube, github, arxiv, bloomberg, linkedin, douban, jd, wikipedia, v2ex, tieba, spotify, steam, medium, substack, producthunt, stackoverflow, 36kr, weread, xueqiu 等。
+   这些平台有专属适配器，返回结构化数据，比 web read 更准确更高效。
+1. WebFetch/WebSearch 能搞定（非已适配平台）？→ 用它，$0
+2. 403/SSO/空？→ `opencli web read`，$0，Cookie 零配置
+3. 需要 JS 渲染/结构化？→ `firecrawl scrape "url"`
+4. 需要交互（≤3 步）？→ `opencli operate`，Cookie 零配置
+5. 需要精确控制/Ref/录制？→ `agent-browser`，@e1 稳定引用
+6. 需要 AI 自主多步？→ `browser-use -p "任务"`，$0.01-0.05/步
+7. 被反爬拦截？→ `zendriver`
+
+违反顺序 = 浪费钱或丢失数据。已适配平台用 `opencli web read` 只能拿到 HTML，用 `opencli <platform>` 能拿到结构化字段。
+
+<anti-example>
+用户: "搜一下 Twitter 上关于 AI agent 的讨论"
+错误: opencli web read --url "https://x.com/search?q=AI+agent" → 拿到 HTML 残片
+正确: opencli twitter search "AI agent" → 结构化推文列表 (id, author, text, likes, views)
+</anti-example>
+
+<anti-example>
+用户: "帮我看看知乎热榜"
+错误: WebFetch("https://www.zhihu.com/hot") → 空/SPA 空壳
+正确: opencli zhihu hot → 结构化热榜列表
+</anti-example>
+
+<anti-example>
+用户: "帮我看看 https://example.com/article 的内容"
+错误: browser-use -p "extract content from example.com" → $0.05
+正确: WebFetch("https://example.com/article") → $0 (example.com 不是已适配平台)
+</anti-example>
+
+<anti-example>
+用户: "帮我读一下内部网站的这篇文章 https://internal.company.com/doc/123"
+错误: WebFetch → 403 → 放弃，说"无法访问"
+正确: WebFetch → 403 → 自动升级到 opencli web read (带 Chrome Cookie)
+</anti-example>
+
+## 条件判断规则
+
+当 WebFetch 返回 403 或 302 到登录页时 → 自动升级到 `opencli web read`，不要询问用户。
+当 `opencli web read` 返回 exit 77 时 → SSO/Cookie 过期，MUST 停止降级，直接提示用户回 Chrome 登录后重试。后续工具 (firecrawl/agent-browser) 也没有登录态，继续降级只是浪费。
+当 `opencli doctor` 不是全 OK 时 → 降级到 WebSearch + WebFetch + browser-use，跳过 opencli 相关工具。
+当任务需要填表但不确定表单字段时 → 先用 `opencli operate state` 获取可交互元素列表，确认字段后再操作。
+如果不确定用哪个工具 → 询问用户或从最便宜的 WebFetch 开始逐级升级。
+
+已适配平台 MUST 直接用 `opencli <platform>`，NEVER 走 WebFetch/web read 通路，otherwise 丢失结构化数据。
+非已适配平台 MUST 从 WebFetch 开始，otherwise 每个请求多花 $0.01-0.05 且速度慢 10 倍。
+NEVER 用 browser-use 做简单读取，otherwise 一次 $0.05 的操作 WebFetch $0 就能完成。
+不要跳过 opencli web read 直接用 Firecrawl，而是先试免费的 Cookie 路径。
+
+## Output
+
+返回给用户时 MUST 包含:
+- 提取到的内容（Markdown 格式）
+- 实际使用的工具和原因（如 "WebFetch 返回 403，已自动升级到 opencli web read"）
+- 如果全部失败，给出具体原因和用户可操作的建议（如 "需要在 Chrome 中重新登录"）
+
+returns: 网页内容 (Markdown) + 工具链路径 + 失败原因（如有）
+
+## 路由决策树
 
 ```
 收到任务
 │
-├─ 有官方 API / RSS？⭐ 最优先
-│  └─ 是 → L0: API（$0，最稳定）
-│     - 金融行情 → AKShare / 新浪 API
-│     - 财报数据 → 官方 API
-│     - RSS Feed → feedparser
+├─ 0. opencli 可用? → opencli doctor (3 个 OK)
+│     否 → 降级: WebSearch + WebFetch + browser-use
 │
-├─ 要搜索 XXX（没给 URL）？
-│  └─ L1: 搜索引擎 API（$0，多源聚合）
-│     - "搜索 XXX" → Brave/Perplexity API
-│     - 返回链接列表 + 摘要
+├─ 1. 目标是已适配平台? (URL 域名 或 用户意图 命中 opencli list 中的站点)
+│     是 → 直接 opencli <platform> <command>，跳过 WebFetch/web read
+│     例: twitter/x.com → opencli twitter search/timeline/trending
+│         zhihu.com → opencli zhihu hot/search/answer
+│         bilibili.com → opencli bilibili search/hot/subtitle
 │
-├─ 有明确 URL / 站点？
-│  ├─ 任意网页内容（含内部/SSO 站点）？
-│  │  └─ L2a: opencli web read ($0, 复用 Chrome 登录态) ⭐⭐⭐
-│  │     自动输出 Markdown，支持 SSO/内网/任意站点
-│  │
-│  ├─ 只需正文（文章/博客/文档）？
-│  │  ├─ L2b: Jina ($0)
-│  │  └─ 失败 (403/空) → opencli web read
-│  │
-│  ├─ 目标平台有 opencli 适配器？(73 站点)
-│  │  └─ 是 → L2c: opencli <platform> <command> ($0) ⭐⭐
-│  │     twitter/bilibili/xiaohongshu/reddit/zhihu/github...
-│  │
-│  └─ 批量数据拉取（>10 次/分钟）？
-│     ├─ 金融行情 → AKShare/新浪 API（一次批量请求）
-│     ├─ 社交媒体 → 平台官方 API 或 Zendriver+ 代理并发
-│     └─ 通用网页 → asyncio+aiohttp 并发抓取
+├─ 2. 要搜索（没 URL，非已适配平台）?
+│     ├─ WebSearch (内置, 始终可用)
+│     ├─ 深度搜索 → tavily search "query" --search-depth advanced
+│     ├─ 独立索引 → curl brave API
+│     └─ fallback → opencli google search
 │
-├─ 需要交互（点击/填表/滚动）？
-│  ├─ 有 Playwright/Puppeteer MCP？→ L3a: 直接用 MCP 工具 ($0) ⭐
-│  ├─ 固定流程/已知 DOM → L3b: agent-browser ($0)
-│  └─ 动态网站/未知 DOM → L4: Stagehand (~$0.001/任务)
+├─ 3. 有 URL，非已适配平台?
+│     ├─ WebFetch ($0) → 403/SSO? → opencli web read ($0, Cookie 直连)
+│     │     ├─ exit 77 (SSO 过期) → 停止降级，提示用户回 Chrome 登录
+│     │     └─ 其他失败 (JS 不足/内容太短) → 继续降级到 firecrawl
+│     └─ JS 渲染/PDF/结构化 → firecrawl scrape "url"
 │
-├─ 需要截图/渲染？
-│  └─ Playwright MCP screenshot 或 agent-browser screenshot
+├─ 4. 要交互?
+│     ├─ ≤3 步 → opencli operate (Cookie 零配置, 17 个命令)
+│     │   open → state → click/type/select/scroll → screenshot → close
+│     ├─ 需要稳定引用/录制/标注截图 → agent-browser (60+ 命令)
+│     │   open → snapshot -i → click @e1 → screenshot --annotate
+│     ├─ AI 自主多步 → browser-use -p "自然语言任务"
+│     └─ 未知 DOM → Stagehand act("点击登录")
 │
-├─ 大规模并发（>50 页）？
-│  └─ L5: Zyte > Browserless > Hyperbrowser
+├─ 5. 被反爬? → python -c "import zendriver as zd; ..."
 │
-└─ 被反爬拦截（403/Cloudflare 盾）？
-   ├─ L6a: Zendriver (~90% bypass, Nodriver 继任者)
-   └─ L6b: Camoufox (~80% bypass)
+└─ 全失败 → 告知用户具体原因和建议，NEVER 静默失败
 ```
 
-**核心原则**: 
-- API 优先 > 搜索 API > 免浏览器抓取 > 浏览器 > 反爬
-- 任意网页 → `opencli web read`（万能，复用 Chrome 登录态）
-- 已知平台 → `opencli <platform>`（结构化数据）
-- 交互 → Playwright MCP/agent-browser
+## 升级信号
 
-## 升级/回退
+| 当前工具返回 | 升级到 | 命令 |
+|------------|--------|------|
+| WebFetch → 403/302 登录页 | opencli web read | `opencli web read --url "url"` |
+| WebFetch → 空/SPA 空壳 | Firecrawl | `firecrawl scrape "url"` |
+| opencli → exit 77 | 停止降级，提示用户 | SSO 过期，后续工具也没登录态，直接提示用户回 Chrome 登录 |
+| 需要点击/填表 | opencli operate | `opencli operate open "url" && state` |
+| 编号 [N] 不稳定 | agent-browser | `agent-browser snapshot -i` → `click @e1` |
+| 多步复杂任务 | browser-use | `browser-use -p "任务描述"` |
+| Cloudflare 拦截页 | Zendriver | `python3 -c "import zendriver..."` |
 
-| 信号 | 动作 |
-|------|------|
-| L0/L1 无结果 | → L2 抓取 |
-| L2 返回 403/内容空 | → `opencli web read`（万能回退）|
-| 内部站点/SSO 站点 | → `opencli web read`（复用 Chrome 登录态）|
-| opencli exit 77 (需要登录) | → 在 Chrome 中手动登录，再重试 |
-| L3 selector 频繁失效 | → L4 Stagehand (AI 理解 DOM) |
-| L3/L4 被反爬拦截 | → L6 Zendriver/Camoufox |
-| 任务只要正文但用了 L3+ | ← 降回 L2 |
-
-## 工具速查
-
-### L0: API 优先（最优先）
+## 搜索工具
 
 ```bash
-# 金融行情
-python3 -c "import akshare as ak; print(ak.stock_zh_a_spot().head())"
-curl "https://hq.sinajs.cn/list=sh600036,sz000001"
+# 内置 (始终可用)
+WebSearch → Claude Code 内置，直接调用
 
-# RSS
-python3 -c "import feedparser; print(feedparser.parse('https://example.com/feed.xml'))"
+# Tavily — AI 原生搜索，返回 answer + results (免费 1000 次/月)
+tavily search "query"                              # pip install tavily-python
+tavily search "query" --search-depth advanced       # 深度模式
+tavily extract "https://url"                        # URL 内容提取
+
+# Brave — 独立索引，不依赖 Google/Bing
+curl -s "https://api.search.brave.com/res/v1/web/search?q=query" \
+  -H "X-Subscription-Token: $BRAVE_API_KEY"
+
+# Firecrawl — JS 渲染 + Markdown 提取 (免费 500 次)
+firecrawl scrape "https://url"                     # pip install firecrawl
+firecrawl crawl "https://url" --limit 10           # 批量
+firecrawl map "https://url"                        # URL 发现
+
+# 平台搜索 — 75 站点结构化数据
+opencli twitter trending / zhihu hot / hackernews top / xiaohongshu search "旅行"
+opencli list                                       # 查看所有适配器
 ```
 
-### L1: 搜索引擎 API
+## 浏览器交互工具
 
 ```bash
-# 搜索 XXX（没给 URL 时）
-opencli search "GitHub trending Python"  # 返回链接列表 + 摘要
+# opencli operate — 简单交互，Cookie 零配置 (通过 Chrome Extension 直连)
+opencli operate open "url"
+opencli operate state                              # 可交互元素 [1][2][3]
+opencli operate click 5 / type 3 "hello" / select 2 "选项A"
+opencli operate scroll down / keys Enter / wait text "Success"
+opencli operate screenshot /tmp/shot.png / network / close
+
+# agent-browser — 复杂交互，@e1 Ref 引用 (基于 Accessibility Tree，页面重渲染不变)
+agent-browser open "url" && agent-browser snapshot -i
+agent-browser click @e2 / fill @e3 "hello"         # Ref 引用
+agent-browser screenshot --annotate /tmp/a.png     # 标注截图
+agent-browser record start                        # 录制操作
+agent-browser batch "click @e1 && wait 1000 && screenshot"
+agent-browser --auto-connect snapshot              # 连接已运行 Chrome
+# 搭配 Lightpanda 省 token: snapshot ~500 token vs Chrome ~3000 token
+# ./lightpanda serve --port 9222 && agent-browser connect 9222
+
+# browser-use — AI 自主操作 (LLM 决策循环，每步 $0.01-0.05)
+browser-use -p "去 example.com 注册账号"            # 自然语言驱动
+browser-use --connect -p "任务"                     # 连接已运行 Chrome
+browser-use run --remote "任务"                     # 云端执行
 ```
 
-### L2a: opencli web read（万能抓取）
+## opencli operate vs agent-browser
+
+| 维度 | opencli operate | agent-browser |
+|------|----------------|---------------|
+| 场景 | ≤3 步简单操作 | 复杂/精确操作 |
+| 元素定位 | [N] 编号（页面变了会变） | @e1 Ref（稳定，基于 ARIA role+name） |
+| Cookie | Chrome Extension 直连，零配置 | --profile / --auto-connect |
+| 标注截图 | ❌ | ✅ --annotate（给视觉模型用） |
+| 录制回放 | ❌ | ✅ record（固定流程自动化） |
+| 批量/DOM diff | ❌ | ✅ batch / diff |
+| 内核替换 | ❌ | ✅ Lightpanda（省 80% token） |
+| 命令数 | 17 | 60+ |
+| iOS 测试 | ❌ | ✅ -p ios |
+
+## 前置条件
 
 ```bash
-# 任意网页转 Markdown（含内部/SSO 站点）⭐⭐⭐
-opencli web read --url "https://any-site.com/page"        # 输出 Markdown
-opencli web read --url "https://internal.company.com/doc" # SSO 站点也能用
-```
+# 必装
+npm i -g @jackwener/opencli
+# Chrome 装 OpenCLI Browser Bridge: $(npm root -g)/@jackwener/opencli/extension
+opencli doctor  # 3 个 OK 才能用
 
-### L2c: opencli 平台适配器（73 站点）
+# 按需 (全 CLI，不需要配 MCP)
+npm i -g agent-browser               # Ref 引用/录制/标注截图
 
-```bash
-opencli twitter trending                     # Twitter 热门
-opencli xiaohongshu search "旅行"            # 小红书搜索
-opencli zhihu hot                            # 知乎热榜
-opencli github trending                      # GitHub trending
-```
-
-### L2b: Jina（正文提取）
-
-```bash
-curl -s "https://r.jina.ai/https://example.com/article" > article.md
-```
-
-### L3a: Playwright MCP
-
-`browser_navigate` / `browser_click` / `browser_snapshot` / `browser_type` / `browser_take_screenshot`
-
-### L3b: agent-browser
-
-```bash
-agent-browser open <url> / snapshot -i / click @e1 / fill @e2 "text" / screenshot
-```
-
-### L4: Stagehand v3（AI 增强）
-
-```typescript
-const stagehand = new Stagehand({ env: "LOCAL", model: "anthropic/claude-sonnet-4-5" });
-await stagehand.init();
-await stagehand.act("点击登录按钮");
-```
-
-### L6: 反爬
-
-```bash
-python3 -c "import zendriver; ..."  # ~90% bypass
-python3 -c "import camoufox; ..."   # ~80% bypass
-```
-
-## Bootstrap（首次使用自动执行）
-
-```bash
-# 1. 检测已安装的工具
-opencli doctor                                    # 桥接层：复用 Chrome 登录态
-which agent-browser && agent-browser --version    # L3: 命令化浏览器
-node -e "require('@browserbasehq/stagehand')"     # L4: AI 增强浏览器
-python3 -c "import zendriver"                      # L6: 反爬
-
-# 2. 缺失则安装（按优先级）
-npm install -g @jackwener/opencli                  # 必装：桥接层
-npm install -g agent-browser && agent-browser install  # 必装：命令化浏览器
-pip install zendriver                               # 按需：遇到反爬时装
-
-# 3. 初始化统一 Cookie 存储
-mkdir -p ~/.browser-ops/cookie-store ~/.browser-ops/profiles/shared
-```
-
-详细安装和 Chrome 扩展配置见 `references/setup.md`
-
-## 统一 Cookie 存储
-
-**登录一次，所有工具复用。** Cookie 统一存储在 `~/.browser-ops/cookie-store/unified-state.json`。
-
-```bash
-# 首次登录（弹出浏览器窗口，手动登录后按 Enter）
-bash scripts/sync-cookies.sh login https://your-company-sso.example.com
-
-# 查看存储状态
-bash scripts/sync-cookies.sh status
-
-# agent-browser 自动加载统一 Cookie
-bash scripts/sync-cookies.sh import
-agent-browser open https://internal.example.com   # 直接访问内网
-```
-
-各工具复用方式见 `references/state-management.md`
-
-## References
-
-- `references/setup.md` — 工具安装与验证
-- `references/opencli-usage.md` — opencli 桥接层详解
-- `references/architecture.md` — 分层架构详解
-- `references/routing.md` — 路由决策树
-- `references/state-management.md` — Session/Cookie 持久化
-- `references/jina-usage.md` — Jina 正文提取
-- `references/anti-detection.md` — 反爬策略
-
-## Operator Notes
-
-- **必装**: opencli + agent-browser。opencli 需 Chrome 扩展，有适配器的平台优先用（零 LLM 成本）。
-- **按需**: Stagehand 需 Anthropic/OpenAI/Gemini API key。Zendriver/Camoufox 需 Python 3.12+。
-- **搜索需求**: 用 `opencli search` 或 Brave/Perplexity API
-- **API 优先**: 能用 API 绝不用爬虫
-
-## 版本历史
-
-- **2.9.0**: 整合搜索层 + API 优先原则 | **2.8.0**: opencli web read 万能抓取 | **2.7.0**: 准确性修正 | **2.6.0**: 触发率 | **2.4.0**: 批量 API | **1.0**: 初版
+> See references/ for extended content.

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # browser-ops with-skill vs baseline comparison
 # Usage: bash evals/compare_with_baseline.sh
+# NOTE: This script is a reference template. The --skill-file flag requires Claude Code Pro.
 
 set -euo pipefail
 
@@ -41,7 +42,7 @@ for i in "${!QUERIES[@]}"; do
 
   # Run WITH skill (using --skill-file to load SKILL.md)
   echo "  Running with skill..."
-  result=$(timeout 30 claude -p "$query" --allowedTools '' --skill-file "$SKILL_DIR/SKILL.md" 2>/dev/null || echo "TIMEOUT")
+  result=$(timeout 30 env CLAUDE_SKILLS_PATH="$SKILL_DIR" claude -p "$query" --allowedTools '' 2>/dev/null || echo "TIMEOUT")
 
   # Check if expected tool/approach was mentioned
   matched=false

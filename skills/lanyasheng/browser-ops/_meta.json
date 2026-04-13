@@ -1,13 +1,18 @@
 {
   "owner": "lanyasheng",
   "slug": "browser-ops",
-  "displayName": "Browser Ops V2",
+  "displayName": "Browser Ops Publish",
   "latest": {
-    "version": "2.9.0",
-    "publishedAt": 1775150035815,
-    "commit": "https://github.com/openclaw/skills/commit/0afe768cc07c16b4cd81588e0d34023746546765"
+    "version": "3.0.0",
+    "publishedAt": 1775730003922,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.9.0",
+      "publishedAt": 1775150035815,
+      "commit": "https://github.com/openclaw/skills/commit/0afe768cc07c16b4cd81588e0d34023746546765"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775114001940,

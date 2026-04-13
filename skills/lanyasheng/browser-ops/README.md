@@ -1,98 +1,135 @@
 # browser-ops
 
-[![GitHub](https://img.shields.io/github/license/lanyasheng/browser-ops)](LICENSE)
-[![Skill Version](https://img.shields.io/badge/version-2.7.0-blue)](https://github.com/lanyasheng/browser-ops)
+给 AI Agent 的网页访问路由表。全 CLI 架构，零 MCP 依赖，省 75% 上下文 token。
 
-> 浏览器操作的统一入口 Skill —— 拿到 URL 就能用。自动安装工具链、6 层智能路由、Session/Cookie 持久化、反爬绕过。
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](SKILL.md)
 
-## 特性
+```
+WebFetch ($0) → opencli web read ($0) → Firecrawl → agent-browser → browser-use ($0.05/步)
+```
 
-- **自动 Bootstrap** — 首次使用时检测并安装缺失工具
-- **6 层智能路由** — 按成本/复杂度自动选择最优方案
-- **Session 持久化** — Cookie/登录态跨会话保留，支持按站点隔离
-- **反爬绕过** — Zendriver(~90%)/Camoufox(~80%) 通过 Cloudflare 盾
-- **省 token** — 能用 Jina 提取正文就不开浏览器
+能用 HTTP 就不开浏览器，能用 opencli 就不用 browser-use。
 
-## 安装
+## Quick Start
 
 ```bash
-# 手动安装
-git clone https://github.com/lanyasheng/browser-ops.git
+npm i -g @jackwener/opencli
+# Chrome 装 OpenCLI Browser Bridge 扩展
+opencli doctor  # 三个 OK 才能用
 ```
 
-## 快速开始
+```bash
+# 读内网页面（Cookie 零配置，直连 Chrome）
+opencli web read --url "https://internal-site.com"
 
-```
-@browser-ops 帮我抓取 https://example.com/article 的正文内容
+# 75 站点结构化数据
+opencli twitter trending
+opencli zhihu hot
+opencli hackernews top
 ```
 
-Skill 自动选择最优方案：
-1. 先用 Jina AI Reader 提取正文（$0）
-2. 失败则升级到 agent-browser
-3. 遇到反爬则使用 Zendriver
+只需装 opencli。其他工具全部按需。
 
-## 路由决策
+## 四层路由
 
-```
-有 API？ → 直接调用
-只要正文？ → Jina（$0）
-需要交互？ → agent-browser（$0）/ Stagehand（~$0.001）
-需要截图？ → agent-browser screenshot
-被反爬拦截？ → Zendriver / Camoufox
-```
+| 层 | 场景 | 工具 | 费用 |
+|----|------|------|------|
+| **搜索** | 没有 URL，要找信息 | WebSearch → Tavily → Brave API → opencli search | $0-0.008 |
+| **提取** | 有 URL，要内容 | WebFetch → opencli web read → Firecrawl | $0-0.001 |
+| **交互** | 有 URL，要操作页面 | opencli operate → agent-browser → browser-use | $0-0.05 |
+| **反爬** | 被拦截了 | Zendriver | $0 |
+
+每次网页任务从最便宜的开始，命中就停。违反顺序 = 浪费钱。
 
 ## 核心工具
 
-| 工具 | 用途 | 安装 |
-|------|------|------|
-| agent-browser | 命令化浏览器操作 | `npm install -g agent-browser` |
-| Jina AI Reader | 正文提取 | 无需安装（HTTP 调用） |
-| Stagehand v3 | AI 增强浏览器 | `npm install @browserbasehq/stagehand` |
-| Zendriver | 反爬绕过 | `pip install zendriver` |
-| Camoufox | 反爬绕过（Firefox） | `pip install camoufox` |
+### opencli — Cookie 零配置，75 站点
 
-## 已验证能力
+通过 Chrome Extension Bridge 直连浏览器，天然复用 Cookie/登录态。
 
-| 能力 | 状态 | 说明 |
-|------|------|------|
-| opencli | ✅ | 实测通过 (HackerNews 20 items) |
-| agent-browser | ✅ | 实测通过 (导航/snapshot/截图/JS执行) |
-| agent-browser 内网 | ✅ | Cookie 复用访问 ATA 成功 |
-| Zendriver | ✅ | Nodriver 继任者，安装并能运行 (需要指定 Chrome 路径) |
-| Camoufox | ✅ | 安装并能运行 |
-| Stagehand v3 | ✅ | SDK 安装成功，LOCAL 模式可用 (需要 Anthropic/OpenAI API key) |
-| Lightpanda | ✅ | 安装成功，省 60-80% 上下文 token (部分企业网络可能受限) |
-| Cookie 统一存储 | ✅ | 40 cookies, 9 domains |
+```bash
+opencli web read --url "https://internal-site.com"     # 读内网页面
+opencli operate open "url" && opencli operate state    # 浏览器交互
+opencli list                                           # 查看所有 75 站点适配器
+```
 
-## 文档
+### agent-browser — @e1 Ref 引用，录制，标注截图
 
-- [SKILL.md](SKILL.md) — Skill 主文档（路由决策、工具速查、Session 管理）
-- [references/setup.md](references/setup.md) — 工具安装与验证
-- [references/architecture.md](references/architecture.md) — 6 层架构详解
-- [references/routing.md](references/routing.md) — 路由决策树
-- [references/state-management.md](references/state-management.md) — Session/Cookie 持久化
-- [references/jina-usage.md](references/jina-usage.md) — Jina 正文提取
-- [references/anti-detection.md](references/anti-detection.md) — 反爬策略
+元素定位基于 Accessibility Tree，页面重渲染后 `@e1` 引用不变。
 
-## 路线图
+```bash
+agent-browser open "url" && agent-browser snapshot -i  # 打开 + 快照
+agent-browser click @e2 / fill @e3 "hello"             # Ref 操作
+agent-browser screenshot --annotate /tmp/a.png         # 标注截图
+agent-browser record start                            # 录制
+```
 
-- [x] v1.0.0 — 初版，6 层架构 + Jina 验证
-- [x] v2.0.0 — 可执行 Skill（Bootstrap + Session 持久化 + Stagehand v3）
-- [x] v2.1.0 — opencli 桥接层 + 反爬实测
-- [x] v2.2.0 — Zendriver 替代 Nodriver + 住宅代理
-- [x] v2.3.0 — 批量 API vs opencli 路由逻辑
-- [x] v2.4.0 — Playwright MCP 集成 + 内部信息清理
-- [x] v2.5.0 — skill-creator 评测 + frontmatter 标准化
-- [ ] v3.0.0 — 多站点并发 + 状态池管理 + 触发率优化
+### browser-use — AI 自主操作
 
-## 许可证
+自然语言驱动，LLM 自主规划步骤。每步 $0.01-0.05。
 
-MIT License — 详见 [LICENSE](LICENSE)
+```bash
+browser-use -p "去 example.com 注册账号"
+browser-use --connect -p "任务"                        # 连接已运行 Chrome
+```
 
-## Operator Notes
+## 交互工具对比
 
-- This skill is **executable** — it installs tools, runs commands, and persists cookies. It is not just advisory.
-- **opencli + agent-browser** are required core dependencies. Other tools (Zendriver/Camoufox/Stagehand) are installed on demand.
-- **Stagehand** requires an Anthropic/OpenAI/Gemini API key. Compat layers (百炼等) may not support Stagehand's internal endpoints.
-- **Lightpanda** is a lightweight browser (省 token + 快 5x). No screenshot support; some enterprise networks may restrict downloads.
-- **Zendriver/Camoufox** require Python 3.12+.
+| 维度 | opencli operate | agent-browser | browser-use |
+|------|----------------|---------------|-------------|
+| 适合 | ≤3 步简单操作 | 复杂/精确操作 | AI 自主多步 |
+| 元素定位 | [N] 编号 | @e1 Ref (稳定) | LLM 自主识别 |
+| Cookie | Chrome 直连 | --profile | --connect |
+| 标注截图 | — | `--annotate` | — |
+| 录制回放 | — | `record` | — |
+| 命令数 | 17 | 60+ | CLI 模式 |
+| 费用/步 | $0 | $0 | $0.01-0.05 |
+
+## 升级信号
+
+| 当前工具返回 | 升级到 | 命令 |
+|------------|--------|------|
+| WebFetch → 403/302 登录页 | opencli web read | `opencli web read --url "url"` |
+| WebFetch → 空/SPA 空壳 | Firecrawl | `firecrawl scrape "url"` |
+| opencli → exit 77 | 手动登录 | Chrome 里重新登录后重试 |
+| 需要点击/填表 | opencli operate | `opencli operate open "url"` |
+| 编号 [N] 不稳定 | agent-browser | `agent-browser snapshot -i` |
+| 多步复杂任务 | browser-use | `browser-use -p "任务"` |
+| Cloudflare 拦截 | Zendriver | `python3 -c "import zendriver..."` |
+
+## 为什么全 CLI 不用 MCP
+
+MCP 工具定义常驻上下文（每个 ~250 tokens）。Playwright MCP 21 工具 = 5,250 tokens 每轮都占着。CLI 方式命令写在 SKILL.md 里，只在触发时加载。省 75% 上下文。
+
+## Project Structure
+
+```
+browser-ops/
+├── SKILL.md              # AI 路由决策指南（核心）
+├── task_suite.yaml        # 21 个评估任务
+├── scripts/
+│   ├── sync-cookies.sh    # Cookie 同步/导入/导出/健康检查
+│   ├── web-read.sh        # 三层读取回退链
+│   ├── web-search.sh      # 三层搜索回退链
+│   └── web-trending.sh    # 8 平台热榜回退链
+├── references/
+│   ├── routing.md         # 路由决策树详解
+│   ├── setup.md           # 安装与配置
+│   ├── opencli-usage.md   # opencli 三层用法
+│   ├── state-management.md # Cookie 状态管理
+│   └── anti-detection.md  # 反爬策略
+├── evals/                 # 触发匹配评估
+└── tests/                 # 9 个测试模块
+```
+
+## 已知限制
+
+- opencli 依赖 Chrome Extension + Chrome 运行
+- Tavily/Firecrawl 需 API key，未配置时回退 WebSearch/WebFetch
+- agent-browser 和 opencli operate 可以同时运行，但操作同一个 tab 时注意冲突
+- Cookie = 快照，SSO token 过期需回 Chrome 重新登录
+
+## License
+
+[MIT](LICENSE)
