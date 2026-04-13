@@ -1,0 +1,11 @@
+{
+  "owner": "mirni",
+  "slug": "greenhelix-agent-interoperability-bridge",
+  "displayName": "The Agent Interoperability Bridge: Connecting GreenHelix Agents to x402, ACP, A2A, MCP, Visa TAP, Google AP2/UCP, PayPal Agent Ready, and OpenAI ACP Ecosystems",
+  "latest": {
+    "version": "1.2.0",
+    "publishedAt": 1776065248104,
+    "commit": null
+  },
+  "history": []
+}
