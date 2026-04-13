@@ -1,6 +1,6 @@
 ---
 name: skill-dep-fixer
-description: Scan installed OpenClaw skills, detect missing dependencies (npm, pip, brew, system binaries), and auto-fix what's fixable. Use when: user asks to check/fix skill dependencies, "skills are broken", "openclaw doctor shows missing requirements", or installing a new skill that won't load. Trigger phrases: "fix skill deps", "check skill dependencies", "skill-dep-fixer".
+description: Generate a Node.js CLI tool that scans OpenClaw skill SKILL.md files and auto-fixes missing dependencies (npm, pip, brew, system binaries). Trigger phrases: "fix skill dependencies", "skill-dep-fixer", "check skill dependencies", "skills are broken", "openclaw doctor".
 homepage: https://github.com/christianteohx/skill-dep-fixer
 user-invocable: true
 metadata:
@@ -8,95 +8,128 @@ metadata:
     "openclaw":
       {
         "emoji": "🔧",
-        "requires": { "bins": ["node", "npm", "git"] },
-        "install":
-          [
-            {
-              "id": "chalk",
-              "kind": "npm",
-              "bins": [],
-              "label": "Install chalk (for colored terminal output)",
-            },
-            {
-              "id": "js-yaml",
-              "kind": "npm",
-              "bins": [],
-              "label": "Install js-yaml (for YAML parsing)",
-            },
-          ],
-      },
+        "requires": { "bins": ["node"] }
+      }
   }
 ---
 
-# skill-dep-fixer
+# skill-dep-fixer Skill
 
-Scans all installed OpenClaw skills, detects missing dependencies, and optionally auto-fixes them.
+Generate a Node.js CLI tool that scans installed OpenClaw skills, detects missing dependencies, and optionally auto-fixes them.
 
-## Usage
+## When to invoke
 
-```bash
-# Check all skills (dry run — safe, no changes)
-skill-dep-fixer --dry-run
+Trigger when the user says or asks for:
+- "fix skill dependencies"
+- "skill-dep-fixer"
+- "check skill dependencies"
+- "skills are broken"
+- "openclaw doctor"
+- "skill has missing deps"
 
-# Actually install missing dependencies
-skill-dep-fixer --fix
+## Instructions
 
-# Check a specific skill only
-skill-dep-fixer --skill <skill-name>
+When triggered, generate a complete Node.js CLI project that:
 
-# JSON output (for automation/webhooks)
-skill-dep-fixer --json
+### Core requirements
+- Node.js 18+
+- No external runtime dependencies where possible
+- One-file entry point with optional src/ submodules
+- CLI argument parsing (manual or minimist-light)
+- Colored terminal output with ANSI codes or chalk
 
-# Discord-formatted report
-skill-dep-fixer --report
+### Commands to implement
 
-# Full help
-skill-dep-fixer --help
+```
+skill-dep-fixer --dry-run     scan and report (no changes)
+skill-dep-fixer --fix        install missing dependencies
+skill-dep-fixer --skill name check a specific skill
+skill-dep-fixer --json       JSON output
+skill-dep-fixer --report     Discord-formatted compact report
+skill-dep-fixer --help       show usage
 ```
 
-## What it checks
+### What to scan
 
-| Type | Detection | Auto-fixable |
-|------|-----------|--------------|
-| System binary (`jq`, `curl`) | `which <bin>` | No — report only |
-| Homebrew package | `brew list <pkg>` | Yes — `brew install` |
-| NPM package | `npm list -g <pkg>` | Yes — `npm install -g` |
-| Pip package | `pip show <pkg>` | Yes — `pip install` |
+Parse SKILL.md frontmatter from skills in:
+- ~/.openclaw/skills/*/SKILL.md
+- ~/.openclaw/workspace/skills/*/SKILL.md
 
-## Dependency declaration format
+Look for the metadata.openclaw.install array.
 
-Skills declare dependencies in `SKILL.md` YAML frontmatter:
+Example frontmatter:
 
-```yaml
+```
 metadata:
   openclaw:
-    requires: { "bins": ["gh", "curl"] }
     install:
-      - id: brew
+      - id: gh
         kind: brew
         formula: gh
-        bins: ["gh"]
+        bins: [gh]
         label: "Install GitHub CLI"
 ```
 
-The fixer parses this standard format from all skills in:
-- `~/.openclaw/skills/*/SKILL.md`
-- `~/.openclaw/workspace/skills/*/SKILL.md`
+### Detection and fix logic
 
-## Output example
+brew   : detect with brew list, fix with brew install
+npm    : detect with npm list -g, fix with npm install -g
+pip    : detect with pip show, fix with pip install
+bins   : detect with which, not auto-fixable (report only)
 
+### Output format
+
+Text report (default):
+- Header: "Skill Dependency Report"
+- One line per skill: [icon] [name] [status] missing: [list]
+- Status icons: ok, fixed, failed, mismatch
+- Summary line at bottom
+
+Discord report (--report): compact single-line per skill in a code block.
+
+Exit codes: 0 = all fixed/satisfied, 1 = some failed.
+
+## Keeping packages updated
+
+When using any skill that wraps a Homebrew/package tool:
+
+1. **Check if the skill has a newer version**: run `clawhub inspect <skill-name>` and compare version
+2. **If ClawHub skill is newer**: run `clawhub update <skill-name>` to pull new SKILL.md
+3. **If the underlying package has a newer version**: update it too:
+   - Homebrew: `brew upgrade <tap>/<package>` (e.g., `brew upgrade christianteohx/tap/calctl`)
+   - npm: `npm update -g <package>`
+   - pip: `pip install --upgrade <package>`
+4. **When publishing a skill update**: update both SKILL.md AND the underlying package in the right order:
+   - First: update GitHub repo and create new release
+   - Second: update Homebrew formula / package registry
+   - Third: publish updated SKILL.md to ClawHub
+
+This ensures agents using the skill always get the latest tool with matching documentation.
+
+## Output
+
+After generating, tell the user:
+
+Homebrew (recommended):
 ```
-Skill Dependency Report
-
-✅ github          — all deps satisfied
-✅ weather         — all deps satisfied
-❌ summarize       — missing: summarize (brew) → installed ✅
-⚠️  some-skill    — missing: some-binary (not auto-fixable)
-
-Summary: 48 skills checked, 46 fixed, 1 skipped, 1 failed
+brew install christianteohx/tap/skill-dep-fixer
 ```
 
-## Exit codes
+Direct binary:
+```
+curl -fsSL https://github.com/christianteohx/skill-dep-fixer/releases/latest/download/skill-dep-fixer -o ~/bin/skill-dep-fixer
+chmod +x ~/bin/skill-dep-fixer
+```
 
-- `0` — all dependencies satisfied or all fixed
-- `1` — some dependencies could not be fixed
+npm:
+```
+npm install -g skill-dep-fixer
+```
+
+Build from source:
+```
+git clone https://github.com/christianteohx/skill-dep-fixer
+cd skill-dep-fixer
+npm install
+node skill-dep-fixer.js --help
+```
