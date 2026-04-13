@@ -3,9 +3,15 @@
   "slug": "china-top-doctor-referral",
   "displayName": "Expert Referral",
   "latest": {
-    "version": "1.2.6",
-    "publishedAt": 1775545690113,
-    "commit": "https://github.com/openclaw/skills/commit/3c8ddd7e648a1c8951e8c54ad056783417c79f6f"
+    "version": "1.4.6",
+    "publishedAt": 1775811316407,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.6",
+      "publishedAt": 1775545690113,
+      "commit": "https://github.com/openclaw/skills/commit/3c8ddd7e648a1c8951e8c54ad056783417c79f6f"
+    }
+  ]
 }
