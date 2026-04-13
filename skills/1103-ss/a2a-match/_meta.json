@@ -3,11 +3,16 @@
   "slug": "a2a-match",
   "displayName": "A2a Match",
   "latest": {
-    "version": "1.8.7",
-    "publishedAt": 1776094983174,
-    "commit": "https://github.com/openclaw/skills/commit/a7afad790c76f607063ed0909592be93823790e9"
+    "version": "2.1.0",
+    "publishedAt": 1776103134459,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.8.7",
+      "publishedAt": 1776094983174,
+      "commit": "https://github.com/openclaw/skills/commit/a7afad790c76f607063ed0909592be93823790e9"
+    },
     {
       "version": "1.9.0",
       "publishedAt": 1775673647687,
