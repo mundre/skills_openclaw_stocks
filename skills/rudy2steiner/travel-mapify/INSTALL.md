@@ -1,4 +1,4 @@
-# Installation Guide for travel-mapify
+# Installation Guide for flyai-travelmapify
 
 This skill is designed to be portable and work on any system with the required dependencies.
 
@@ -7,16 +7,18 @@ This skill is designed to be portable and work on any system with the required d
 1. **Python 3.7+** - Required for all scripts
 2. **OpenClaw** - The skill should be placed in your OpenClaw workspace
 3. **FlyAI CLI** - Must be installed and accessible in your PATH or via npm
-4. **Amap API Proxy** - A local proxy server running on port 8769 (or configurable)
+4. **amap-maps skill** - Required OpenClaw skill for Amap LBS services
+5. **Amap API** - Built-in default API key included (no user key required)
+6. **AI Vision Capability** - For image input processing, your OpenClaw agent should have access to an image-capable model for POI extraction
 
 ## Installation Steps
 
 ### Option 1: Using OpenClaw Workspace (Recommended)
 
-If you're using OpenClaw, simply place this entire `travel-mapify` directory in your workspace skills folder:
+If you're using OpenClaw, simply place this entire `flyai-travelmapify` directory in your workspace skills folder:
 
 ```
-~/.openclaw/workspace/skills/travel-mapify/
+~/.openclaw/workspace/skills/flyai-travelmapify/
 ```
 
 The skill will automatically detect your workspace path and configure itself.
@@ -30,7 +32,7 @@ You can run the skill from anywhere by executing the main entry point:
 python3 flyai-travelmapify.py --locations "上海外滩,迪士尼乐园" --output-html my-map.html
 
 # From any directory (provide full path)
-python3 /path/to/travel-mapify/flyai-travelmapify.py --locations "上海外滩,迪士尼乐园" --output-html my-map.html
+python3 /path/to/flyai-travelmapify/flyai-travelmapify.py --locations "上海外滩,迪士尼乐园" --output-html my-map.html
 ```
 
 ## Dependencies
@@ -87,4 +89,4 @@ python3 scripts/config.py
 ✅ **Cross-platform compatible** - Works on Windows, macOS, Linux  
 ✅ **Self-contained** - All dependencies included in the skill directory  
 ✅ **Environment-aware** - Adapts to different OpenClaw installations  
-✅ **Fallback mechanisms** - Multiple methods to locate required components
+✅ **Fallback mechanisms** - Multiple methods to locate required components  

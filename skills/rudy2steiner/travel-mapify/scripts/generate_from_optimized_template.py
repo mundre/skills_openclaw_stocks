@@ -15,6 +15,15 @@ import json
 import argparse
 import re
 
+# Import configuration
+try:
+    from .config import WORKSPACE_DIR
+except ImportError:
+    # Fallback for standalone execution
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, SCRIPT_DIR)
+    from config import WORKSPACE_DIR
+
 def load_generic_template():
     """Load the generic template with unique map ID support"""
     template_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'templates', 'main-generic-template-with-unique-id.html')
@@ -76,6 +85,11 @@ def replace_placeholders(template_content, pois):
     # Replace POI list placeholder
     template_content = template_content.replace('        var poiList = [\n            // POI_LIST_PLACEHOLDER - will be replaced with actual POIs\n        ];', f'        var poiList = [\n{poi_js}\n        ];')
     
+    # Ensure hotel port placeholder exists (for main script to replace later)
+    if 'HOTEL_SEARCH_PORT_PLACEHOLDER' not in template_content:
+        # If no placeholder found, add a comment indicating it should be there
+        print("Warning: HOTEL_SEARCH_PORT_PLACEHOLDER not found in template")
+    
     return template_content
 
 def main():
@@ -128,7 +142,7 @@ def main():
     
     print(f"Travel map generated using generic template with unique map ID: {args.output_file}")
     print(f"\n💡 IMPORTANT: To view the map properly, start a local HTTP server:")
-    print(f"   cd /Users/xuandu/.openclaw/workspace")
+    print(f"   cd {WORKSPACE_DIR}")
     print(f"   python3 -m http.server 9999")
     print(f"   Then open: http://localhost:9999/{os.path.basename(args.output_file)}")
 

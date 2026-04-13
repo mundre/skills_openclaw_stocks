@@ -18,7 +18,7 @@ import subprocess
 
 def get_skill_dir():
     """Get the directory containing this script (the skill root)"""
-    return os.path.dirname(os.path.abspath(__file__))
+    return os.path.dirname(os.path.realpath(__file__))
 
 def main():
     # Get the skill directory

@@ -33,6 +33,30 @@ def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
+def ensure_required_servers_running():
+    """Ensure Amap proxy and hotel search servers are running using the dedicated script"""
+    ensure_script = os.path.join(SCRIPT_DIR, "ensure_servers_running.py")
+    
+    if not os.path.exists(ensure_script):
+        print(f"Error: Server management script not found at {ensure_script}", file=sys.stderr)
+        return False, None
+    
+    try:
+        cmd = [sys.executable, ensure_script]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            print("✅ Required servers (Amap proxy + Hotel search) are running")
+            # Return success and the configured hotel port
+            return True, DEFAULT_HOTEL_PORT
+        else:
+            print(f"❌ Failed to start required servers:\n{result.stderr}")
+            return False, None
+            
+    except Exception as e:
+        print(f"Error running server management script: {e}", file=sys.stderr)
+        return False, None
+
 def start_http_server(port=DEFAULT_HTTP_PORT, max_retries=3):
     """Start HTTP server in background with port conflict resolution"""
     current_port = port
@@ -46,7 +70,7 @@ def start_http_server(port=DEFAULT_HTTP_PORT, max_retries=3):
                     import urllib.request
                     urllib.request.urlopen(f"http://localhost:{current_port}", timeout=2)
                     print(f"HTTP server already running on port {current_port}")
-                    return True
+                    return True, current_port
                 except:
                     print(f"Port {current_port} is occupied by another process")
             
@@ -56,7 +80,7 @@ def start_http_server(port=DEFAULT_HTTP_PORT, max_retries=3):
                 continue
             else:
                 print(f"All ports {port}-{current_port} are occupied. Please free a port or specify a different one.")
-                return False
+                return False, None
         
         try:
             # Start HTTP server in background
@@ -74,14 +98,14 @@ def start_http_server(port=DEFAULT_HTTP_PORT, max_retries=3):
             
             if http_process.poll() is None:
                 print(f"HTTP server started successfully on http://localhost:{current_port}")
-                return True
+                return True, current_port
             else:
                 print(f"Failed to start HTTP server on port {current_port}")
                 if attempt < max_retries - 1:
                     current_port += 1
                     continue
                 else:
-                    return False
+                    return False, None
                     
         except Exception as e:
             print(f"Error starting HTTP server on port {current_port}: {e}", file=sys.stderr)
@@ -89,76 +113,9 @@ def start_http_server(port=DEFAULT_HTTP_PORT, max_retries=3):
                 current_port += 1
                 continue
             else:
-                return False
+                return False, None
     
-    return False
-
-def start_hotel_search_server(port=DEFAULT_HOTEL_PORT, max_retries=3):
-    """Start hotel search server in background with port conflict resolution
-    Returns the actual port number used, or None if failed"""
-    # Use the correct hotel search server script from the skill directory
-    hotel_server_script = os.path.join(SCRIPT_DIR, "hotel-search-server.py")
-    
-    if not os.path.exists(hotel_server_script):
-        print(f"Error: Hotel search server script not found at {hotel_server_script}", file=sys.stderr)
-        return None
-    
-    current_port = port
-    
-    for attempt in range(max_retries):
-        if is_port_in_use(current_port):
-            if attempt == 0:
-                print(f"Port {current_port} is in use, checking if it's our hotel server...")
-                # Check if it's actually our hotel server
-                try:
-                    import urllib.request
-                    urllib.request.urlopen(f"http://localhost:{current_port}/api/hotel-search", timeout=2)
-                    print(f"Hotel search server already running on port {current_port}")
-                    return current_port
-                except:
-                    print(f"Port {current_port} is occupied by another process")
-            
-            if attempt < max_retries - 1:
-                current_port += 1
-                print(f"Trying alternative port {current_port}...")
-                continue
-            else:
-                print(f"All ports {port}-{current_port} are occupied for hotel server.")
-                return None
-        
-        try:
-            # Start hotel search server in background
-            cmd = [sys.executable, hotel_server_script, str(current_port)]
-            hotel_process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                preexec_fn=os.setpgrp  # Create new process group
-            )
-            
-            # Wait a moment for server to start
-            time.sleep(2)
-            
-            if hotel_process.poll() is None:
-                print(f"Hotel search server started successfully on port {current_port}")
-                return current_port
-            else:
-                print(f"Failed to start hotel search server on port {current_port}")
-                if attempt < max_retries - 1:
-                    current_port += 1
-                    continue
-                else:
-                    return None
-                    
-        except Exception as e:
-            print(f"Error starting hotel search server on port {current_port}: {e}", file=sys.stderr)
-            if attempt < max_retries - 1:
-                current_port += 1
-                continue
-            else:
-                return None
-    
-    return False
+    return False, None
 
 def parse_text_locations(text_input: str) -> List[Dict]:
     """
@@ -180,44 +137,7 @@ def parse_text_locations(text_input: str) -> List[Dict]:
     
     return pois, location_names
 
-def process_image_input(image_path: str, output_json: str) -> bool:
-    """
-    Process image input using AI Vision analysis with interactive clarification
-    """
-    try:
-        # First, try to use OpenClaw's built-in image analysis tool directly
-        # This is the preferred method for accurate POI extraction
-        import tempfile
-        import json
-        
-        # Use OpenClaw's image tool via system call
-        # Build prompt for travel planning image analysis
-        prompt = """Analyze this travel planning image and extract ONLY the clearly marked scenic spot names and their sequence/order. Focus on identifying actual attraction names with numbered markers, ignore garbled text, noise, or corrupted characters. List the attractions in the exact order they appear in the travel route."""
-        
-        # Since we can't directly call the image tool from Python in this context,
-        # we'll create a temporary approach that leverages the main OpenClaw interface
-        # For now, we'll indicate that manual input may be needed
-        
-        # Create a result structure indicating AI vision was attempted
-        result_data = {
-            'source_image': image_path,
-            'analysis_method': 'ai_vision_attempted',
-            'message': 'AI vision analysis requires interactive user input for best results',
-            'requires_manual_clarification': True,
-            'raw_pois': [],
-            'filtered_pois': []
-        }
-        
-        # Save the result
-        with open(output_json, 'w', encoding='utf-8') as f:
-            json.dump(result_data, f, ensure_ascii=False, indent=2)
-        
-        print("AI Vision analysis attempted - manual clarification recommended for best results")
-        return True
-        
-    except Exception as e:
-        print(f"Error processing image with AI Vision: {e}", file=sys.stderr)
-        return False
+
 
 def process_text_input(text_input: str, output_json: str):
     """
@@ -268,8 +188,7 @@ def generate_map_with_optimized_template(input_json, output_html):
 
 def main():
     parser = argparse.ArgumentParser(description='Travel Mapify - Create interactive travel maps')
-    parser.add_argument('--image', '-i', help='Input image file path (for OCR extraction)')
-    parser.add_argument('--locations', '-l', help='Comma-separated location names (direct text input)')
+    parser.add_argument('--locations', '-l', required=True, help='Comma-separated location names (direct text input)')
     parser.add_argument('--output-html', '-o', required=True, help='Output HTML file for the travel map')
     parser.add_argument('--city', default='上海', help='Default city for geocoding (default: 上海)')
     parser.add_argument('--proxy-url', default=DEFAULT_PROXY_URL, 
@@ -278,14 +197,6 @@ def main():
     parser.add_argument('--hotel-port', type=int, default=DEFAULT_HOTEL_PORT, help=f'Hotel search server port (default: {DEFAULT_HOTEL_PORT})')
     
     args = parser.parse_args()
-    
-    # Validate input - exactly one of image or locations must be provided
-    if args.image and args.locations:
-        print("Error: Please provide either --image OR --locations, not both", file=sys.stderr)
-        sys.exit(1)
-    elif not args.image and not args.locations:
-        print("Error: Please provide either --image or --locations", file=sys.stderr)
-        sys.exit(1)
     
     # Create temporary JSON file for POIs (in scripts directory to avoid workspace clutter)
     temp_json_basename = os.path.basename(args.output_html).replace('.html', '_pois.json')
@@ -298,34 +209,31 @@ def main():
     else:
         final_output_html = args.output_html
     
-    # Process input based on type
+    # Process text input
     temp_poi_file = temp_json + '.raw_pois.json'
     location_names = []
     
-    if args.image:
-        print(f"Processing image: {args.image}")
-        if not os.path.exists(args.image):
-            print(f"Error: Image file not found: {args.image}", file=sys.stderr)
-            sys.exit(1)
-        success = process_image_input(args.image, temp_poi_file)
-        # For images, we'll use the default city or user-provided city
-        final_city = args.city
-    else:
-        print(f"Processing text locations: {args.locations}")
-        success, location_names = process_text_input(args.locations, temp_poi_file)
-        if not success:
-            sys.exit(1)
-        
-        # Auto-detect city from location names if user didn't specify one
-        if args.city == '上海':  # Only auto-detect if using default
-            detected_city = get_default_city_for_locations(location_names, fallback_city=args.city)
-            if detected_city != args.city:
-                print(f"Auto-detected city: {detected_city} (from locations: {', '.join(location_names)})")
-                final_city = detected_city
-            else:
-                final_city = args.city
+    print(f"Processing text locations: {args.locations}")
+    success, location_names = process_text_input(args.locations, temp_poi_file)
+    if not success:
+        sys.exit(1)
+    
+    # Auto-detect city from location names if user didn't specify one
+    if args.city == '上海':  # Only auto-detect if using default
+        detected_city = get_default_city_for_locations(location_names, fallback_city=args.city)
+        if detected_city != args.city:
+            print(f"Auto-detected city: {detected_city} (from locations: {', '.join(location_names)})")
+            final_city = detected_city
         else:
             final_city = args.city
+    else:
+        final_city = args.city
+    
+    # Ensure required servers are running BEFORE geocoding/POI search
+    print("\nEnsuring required servers are running before POI search...")
+    servers_success, actual_hotel_port = ensure_required_servers_running()
+    if not servers_success:
+        print("Warning: Could not start required servers, geocoding may fail", file=sys.stderr)
     
     # Now geocode the extracted POIs
     print("Geocoding POIs...")
@@ -368,33 +276,20 @@ def main():
     except:
         pass
     
-    # Start required servers
-    print("\nStarting required servers...")
-    http_success = start_http_server(args.http_port)
-    actual_hotel_port = start_hotel_search_server(args.hotel_port)
-    hotel_success = actual_hotel_port is not None
+    # Start HTTP server (Amap proxy and hotel servers already started before geocoding)
+    print("\nStarting HTTP server...")
+    http_success, actual_http_port = start_http_server(args.http_port)
+    hotel_success = True  # Already ensured before geocoding
     
     # If hotel server started successfully, update the HTML file with the correct port
+    # Update HTML file with correct hotel port if needed
     if hotel_success and os.path.exists(final_output_html):
         try:
             with open(final_output_html, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
-            # Replace hardcoded hotel ports (8770, 8780) with actual port
-            # Also handle the JavaScript variable assignment
-            updated_html = html_content
-            
-            # Replace API endpoint URLs
-            updated_html = updated_html.replace('http://localhost:8770/api/hotel-search', 
-                                              f'http://localhost:{actual_hotel_port}/api/hotel-search')
-            updated_html = updated_html.replace('http://localhost:8780/api/hotel-search', 
-                                              f'http://localhost:{actual_hotel_port}/api/hotel-search')
-            
-            # Replace JavaScript port variable
-            updated_html = updated_html.replace('const hotelPort = 8770;', 
-                                              f'const hotelPort = {actual_hotel_port};')
-            updated_html = updated_html.replace('const hotelPort = 8780;', 
-                                              f'const hotelPort = {actual_hotel_port};')
+            # Replace placeholder with actual hotel port
+            updated_html = html_content.replace('HOTEL_SEARCH_PORT_PLACEHOLDER', str(actual_hotel_port))
             
             with open(final_output_html, 'w', encoding='utf-8') as f:
                 f.write(updated_html)

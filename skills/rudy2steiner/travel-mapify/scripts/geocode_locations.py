@@ -11,8 +11,17 @@ import argparse
 import requests
 from typing import List, Dict, Optional
 
+# Import configuration
+try:
+    from .config import DEFAULT_PROXY_URL
+except ImportError:
+    # Fallback for standalone execution
+    import os
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, SCRIPT_DIR)
+    from config import DEFAULT_PROXY_URL
+
 # Default Amap API configuration
-DEFAULT_PROXY_URL = "http://localhost:8769/api/search"
 DEFAULT_CITY = "重庆"  # Default city for geocoding
 
 class AmapGeocoder:
@@ -23,45 +32,63 @@ class AmapGeocoder:
     def geocode_poi(self, poi_name: str) -> Optional[Dict]:
         """
         Geocode a single POI name to get coordinates and additional info
+        Uses two-step process: search then detail lookup
         """
         try:
-            params = {
+            # Step 1: Search for POI
+            search_params = {
                 'q': poi_name,
                 'city': self.city
             }
             
-            response = requests.get(self.proxy_url, params=params, timeout=10)
-            response.raise_for_status()
+            search_response = requests.get(self.proxy_url, params=search_params, timeout=10)
+            search_response.raise_for_status()
             
-            data = response.json()
+            search_data = search_response.json()
             
-            if data.get('error'):
-                print(f"Geocoding error for '{poi_name}': {data['error']}", file=sys.stderr)
+            if search_data.get('error'):
+                print(f"Search error for '{poi_name}': {search_data['error']}", file=sys.stderr)
                 return None
                 
-            pois = data.get('pois', [])
+            pois = search_data.get('pois', [])
             if not pois:
                 print(f"No results found for '{poi_name}'", file=sys.stderr)
                 return None
                 
             # Use the first (most relevant) result
             best_match = pois[0]
+            poi_id = best_match.get('id')
             
-            # Extract coordinates
-            location_str = best_match.get('location', '')
+            if not poi_id:
+                print(f"No POI ID found for '{poi_name}'", file=sys.stderr)
+                return None
+            
+            # Step 2: Get detailed info with coordinates
+            detail_url = f"{self.proxy_url.rsplit('/', 1)[0]}/detail/{poi_id}"
+            detail_response = requests.get(detail_url, timeout=10)
+            detail_response.raise_for_status()
+            
+            detail_data = detail_response.json()
+            
+            if detail_data.get('error'):
+                print(f"Detail lookup error for '{poi_name}': {detail_data['error']}", file=sys.stderr)
+                return None
+            
+            # Extract coordinates from detailed response
+            location_str = detail_data.get('location', '')
             if not location_str or ',' not in location_str:
-                print(f"Invalid location format for '{poi_name}': {location_str}", file=sys.stderr)
+                print(f"Invalid location format in detail for '{poi_name}': {location_str}", file=sys.stderr)
                 return None
                 
             lng, lat = location_str.split(',')
             
             return {
-                'name': best_match.get('name', poi_name),
+                'name': detail_data.get('name', best_match.get('name', poi_name)),
                 'location': [float(lng), float(lat)],
-                'address': best_match.get('address', ''),
-                'rating': best_match.get('rating', ''),
-                'id': best_match.get('id', ''),
-                'confidence': 0.9  # High confidence for API results
+                'address': detail_data.get('address', best_match.get('address', '')),
+                'rating': detail_data.get('rating', best_match.get('rating', '')),
+                'id': detail_data.get('id', poi_id),
+                'confidence': 0.95  # Very high confidence for detailed API results
             }
             
         except requests.exceptions.RequestException as e:
@@ -148,7 +175,7 @@ def main():
     
     # Prepare output
     result = {
-        'input_file': args.input_file,
+        'input_file': os.path.basename(args.input_file),
         'proxy_url': args.proxy_url,
         'city': args.city,
         'total_input_pois': len(pois_to_geocode),
