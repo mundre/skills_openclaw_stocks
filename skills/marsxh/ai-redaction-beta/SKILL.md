@@ -2,7 +2,7 @@
 name: ai-redaction
 description: 一款专为个人用户设计的智能文件脱敏工具，强调纯个人独立模式。支持通过自然语言指令，脱敏用户上传的文件，对 PDF、Word、图片等多种格式的文件进行快速、精准、安全的隐私信息处理。处理完成后返回查询链接，可查看处理进度和下载结果
 author: LianWei
-version: 1.2.1
+version: 1.2.3
 triggers:
   - "脱敏文件"
   - "文件脱敏"

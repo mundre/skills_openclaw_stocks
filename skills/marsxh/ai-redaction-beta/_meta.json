@@ -3,11 +3,16 @@
   "slug": "ai-redaction-beta",
   "displayName": "ai-redaction-beta",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1775211977211,
-    "commit": "https://github.com/openclaw/skills/commit/7b30a9b7bd3e59437830dd3e90cb6e9ee0edf185"
+    "version": "1.2.3",
+    "publishedAt": 1775556332135,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1775211977211,
+      "commit": "https://github.com/openclaw/skills/commit/7b30a9b7bd3e59437830dd3e90cb6e9ee0edf185"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775128000051,
