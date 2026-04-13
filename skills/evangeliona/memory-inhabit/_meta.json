@@ -3,9 +3,15 @@
   "slug": "memory-inhabit",
   "displayName": "Memory Inhabit",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775618751141,
-    "commit": "https://github.com/openclaw/skills/commit/937f6c6162014a00d14a3caee6b93a5b83630013"
+    "version": "1.0.2",
+    "publishedAt": 1775986385731,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775618751141,
+      "commit": "https://github.com/openclaw/skills/commit/937f6c6162014a00d14a3caee6b93a5b83630013"
+    }
+  ]
 }
