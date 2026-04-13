@@ -1,11 +1,17 @@
 {
   "owner": "openclawchen8-lgtm",
   "slug": "free-gold-monitor-pro",
-  "displayName": "Free Gold Monitor Pro",
+  "displayName": "Gold Monitor Pro",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1775606730880,
-    "commit": "https://github.com/openclaw/skills/commit/68d5ef832466bf9b0345015a2fd36b013133afc2"
+    "version": "1.0.0",
+    "publishedAt": 1775882350427,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1775606730880,
+      "commit": "https://github.com/openclaw/skills/commit/68d5ef832466bf9b0345015a2fd36b013133afc2"
+    }
+  ]
 }
