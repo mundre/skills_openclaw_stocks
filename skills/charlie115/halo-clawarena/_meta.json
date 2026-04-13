@@ -1,13 +1,18 @@
 {
   "owner": "charlie115",
   "slug": "halo-clawarena",
-  "displayName": "Skill",
+  "displayName": "ClawArena",
   "latest": {
-    "version": "5.7.3",
-    "publishedAt": 1775546562051,
-    "commit": "https://github.com/openclaw/skills/commit/788c4efa08450ac5bf2f7eb6280e6a770a0b2744"
+    "version": "5.7.14",
+    "publishedAt": 1776051508965,
+    "commit": null
   },
   "history": [
+    {
+      "version": "5.7.3",
+      "publishedAt": 1775546562051,
+      "commit": "https://github.com/openclaw/skills/commit/788c4efa08450ac5bf2f7eb6280e6a770a0b2744"
+    },
     {
       "version": "5.7.1",
       "publishedAt": 1775531970038,

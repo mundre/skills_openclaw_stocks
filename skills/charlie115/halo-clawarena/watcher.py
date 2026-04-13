@@ -15,6 +15,7 @@ import ssl
 import struct
 import json
 import os
+import re
 import select
 import subprocess
 import sys
@@ -39,22 +40,18 @@ WATCHER_WS_URL = (
 )
 GAME_URL = f"{API_BASE}/agents/game/"
 WATCHER_URL = f"{API_BASE}/agents/watcher/"
-BONUS_URL = f"{API_BASE}/economy/agent-daily-bonus/"
 HTTP_TIMEOUT_SECONDS = 70
-BONUS_CHECK_INTERVAL_SECONDS = 4 * 60 * 60
 TELEMETRY_HEARTBEAT_SECONDS = 30
 PING_TIMEOUT_SECONDS = 10
 MAX_MISSED_PONGS = 2
-
-AGENT_MESSAGE = (
-    "Use the installed halo-clawarena skill. Read GAMELOOP.md, read "
-    "CONNECTION_TOKEN from ~/.clawarena/token, run one game loop tick, and "
-    "report the result in this chat."
-)
+WS_STALE_RECONNECT_SECONDS = 45
+WS_HANDSHAKE_TIMEOUT_SECONDS = 15
 
 ERROR_RETRY_DELAY_SECONDS = 5.0
 MAX_TRIGGER_ATTEMPTS = 5
 TRIGGER_RETRY_DELAY_SECONDS = 2.0
+WS_FAILURE_SELF_RESTART_THRESHOLD = 6
+SELF_RESTART_COOLDOWN_SECONDS = 300
 
 
 class WebSocketError(Exception):
@@ -79,7 +76,7 @@ class MinimalWebSocket:
             self._sock = ctx.wrap_socket(raw, server_hostname=host)
         else:
             self._sock = raw
-        self._sock.settimeout(None)
+        self._sock.settimeout(WS_HANDSHAKE_TIMEOUT_SECONDS)
 
         origin_scheme = "https" if is_tls else "http"
         origin = f"{origin_scheme}://{host}"
@@ -97,17 +94,21 @@ class MinimalWebSocket:
         self._sock.sendall(headers.encode())
 
         resp = b""
-        while b"\r\n\r\n" not in resp:
-            chunk = self._sock.recv(4096)
-            if not chunk:
-                raise WebSocketError("Connection closed during handshake")
-            resp += chunk
+        try:
+            while b"\r\n\r\n" not in resp:
+                chunk = self._sock.recv(4096)
+                if not chunk:
+                    raise WebSocketError("Connection closed during handshake")
+                resp += chunk
+        except socket.timeout as exc:
+            raise WebSocketError("Watcher websocket handshake timed out") from exc
         status_line = resp.split(b"\r\n", 1)[0]
         if b"101" not in status_line:
             raise WebSocketError(f"Handshake failed: {status_line.decode(errors='replace')}")
 
         self._closed = False
         self._buffer = resp.split(b"\r\n\r\n", 1)[1]
+        self._sock.settimeout(None)
 
     def _recv_exactly(self, n: int) -> bytes:
         while len(self._buffer) < n:
@@ -179,17 +180,23 @@ class MinimalWebSocket:
                 self._sock.settimeout(None)
 
     def close(self) -> None:
-        if not self._closed:
-            self._closed = True
-            try:
-                self._send_frame(0x8, b"")
-            except OSError:
-                pass
+        if self._closed:
+            return
+        self._closed = True
         try:
-            self._sock.shutdown(socket.SHUT_RDWR)
+            self._sock.settimeout(0.2)
         except OSError:
             pass
-        self._sock.close()
+        try:
+            self._send_frame(0x8, b"")
+        except OSError:
+            pass
+        except Exception:
+            pass
+        try:
+            self._sock.close()
+        except OSError:
+            pass
 
 
 def utc_now() -> str:
@@ -223,6 +230,9 @@ class Watcher:
         self.current_prefs: dict[str, Any] = {}
         self._state_lock = threading.Lock()
         self._stop_event = threading.Event()
+        self._force_reconnect = threading.Event()
+        self._ws_lock = threading.Lock()
+        self._active_ws: MinimalWebSocket | None = None
         self.state = read_json(
             STATE_PATH,
             {
@@ -243,9 +253,47 @@ class Watcher:
                 "last_posted_at": None,
                 "last_ws_message_at": None,
                 "last_pong_at": None,
+                "last_probe_ok_at": None,
+                "last_probe_failed_at": None,
+                "ws_probe_failures": 0,
                 "last_error": None,
+                "bootstrapped_sessions": {},
+                "ws_consecutive_failures": 0,
+                "last_self_restart_at": None,
             },
         )
+        if not isinstance(self.state.get("bootstrapped_sessions"), dict):
+            self.state["bootstrapped_sessions"] = {}
+
+    def _derive_status_from_snapshot(self, snapshot: dict[str, Any]) -> tuple[str, str]:
+        prefs = snapshot.get("agent_preferences") or self.current_prefs or {}
+        status = str(snapshot.get("status") or "idle")
+        message = str(snapshot.get("message") or "").strip()
+        preferred_game = str(prefs.get("preferred_game_type") or "")
+        autoplay_enabled = bool(prefs.get("autoplay_enabled", True))
+
+        if not autoplay_enabled:
+            return "paused", "Paused by user."
+        if status == "playing":
+            return "in_match", "In a match, waiting for the next actionable turn."
+        if status == "matched":
+            return "matched", "Matched. Waiting for game start."
+        if status == "waiting":
+            return "idle", "Waiting for match assignment..."
+        if status == "finished":
+            return "idle", message or "Previous match finished."
+        if not preferred_game:
+            return "idle", "No game selected in the dashboard."
+        return "idle", message or "Waiting to enter matchmaking."
+
+    def sync_status_from_server(self) -> dict[str, Any]:
+        snapshot = self.peek_game_state()
+        prefs = snapshot.get("agent_preferences") or {}
+        if prefs:
+            self.current_prefs = prefs
+        self.current_status, self.current_idle_reason = self._derive_status_from_snapshot(snapshot)
+        self.save_state(last_poll_at=utc_now())
+        return snapshot
 
     def save_state(self, **updates: Any) -> None:
         with self._state_lock:
@@ -308,11 +356,15 @@ class Watcher:
                 pass
         try:
             token = self.load_connection_token()
+            feed_status = self._current_feed_status()
             body = json.dumps(
                 {
                     "status": status,
                     "idle_reason": idle_reason,
                     "error": error_message,
+                    "feed_status": feed_status,
+                    "last_ws_message_at": self.state.get("last_ws_message_at"),
+                    "last_pong_at": self.state.get("last_pong_at"),
                     "action_taken": action_taken,
                     "report_sent": report_sent,
                     "restart_ack": restart_ack,
@@ -351,9 +403,48 @@ class Watcher:
         resp = ws.recv_json(timeout=10)
         if resp.get("type") != "auth_ok":
             raise RuntimeError(f"Watcher auth failed: {resp}")
+        now_iso = utc_now()
         self.current_prefs = resp.get("agent_preferences") or {}
-        self.save_state(last_ws_message_at=utc_now(), last_pong_at=utc_now())
+        self.save_state(
+            last_ws_message_at=now_iso,
+            last_pong_at=now_iso,
+            last_probe_ok_at=now_iso,
+            last_probe_failed_at=None,
+            ws_probe_failures=0,
+            last_error=None,
+            ws_consecutive_failures=0,
+        )
         return ws
+
+    def _maybe_self_restart_for_ws_failures(self, error_message: str) -> None:
+        failures = int(self.state.get("ws_consecutive_failures") or 0)
+        if failures < WS_FAILURE_SELF_RESTART_THRESHOLD:
+            return
+
+        last_restart_at = self.state.get("last_self_restart_at")
+        if last_restart_at:
+            try:
+                age = time.time() - datetime.fromisoformat(str(last_restart_at)).timestamp()
+            except ValueError:
+                age = None
+            if age is not None and age < SELF_RESTART_COOLDOWN_SECONDS:
+                return
+
+        self.save_state(last_self_restart_at=utc_now())
+        self.post_status(
+            status="error",
+            idle_reason="Watcher is restarting itself after repeated live feed failures.",
+            error_message=error_message[:500],
+        )
+        os.execv(
+            sys.executable,
+            [
+                sys.executable,
+                str(Path(__file__)),
+                "--wait-seconds",
+                str(self.wait_seconds),
+            ],
+        )
 
     def maybe_restart_if_requested(self, data: dict[str, Any]) -> None:
         prefs = data.get("agent_preferences") or data or {}
@@ -375,43 +466,6 @@ class Watcher:
             ],
         )
 
-    def maybe_claim_bonus(self, data: dict[str, Any]) -> None:
-        prefs = data.get("agent_preferences") or data or {}
-        if not prefs.get("auto_claim_bonus"):
-            return
-
-        last_attempt = self.state.get("last_bonus_attempt_at")
-        if last_attempt:
-            try:
-                last_ts = datetime.fromisoformat(str(last_attempt)).timestamp()
-                if (time.time() - last_ts) < BONUS_CHECK_INTERVAL_SECONDS:
-                    return
-            except ValueError:
-                pass
-
-        try:
-            agent_id, auth_token = self.decode_connection_token()
-            body = json.dumps({"agent_id": agent_id, "token": auth_token}).encode("utf-8")
-            req = request.Request(
-                BONUS_URL,
-                data=body,
-                method="POST",
-                headers={
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-            )
-            try:
-                with request.urlopen(req, timeout=15) as resp:
-                    resp.read()
-            except error.HTTPError as exc:
-                if exc.code not in {400, 403}:
-                    raise
-        except Exception:
-            return
-        finally:
-            self.save_state(last_bonus_attempt_at=utc_now())
-
     def _should_deliver(self, data: dict[str, Any]) -> bool:
         prefs = data.get("agent_preferences") or {}
         report_level = prefs.get("report_level", "every_turn")
@@ -423,20 +477,145 @@ class Watcher:
         action_names = {str(action.get("action")) for action in legal_actions if isinstance(action, dict)}
         return "chat" not in action_names
 
-    def _build_agent_message(self, data: dict[str, Any]) -> str:
+    def _prompt_extras(self, data: dict[str, Any]) -> list[str]:
         prefs = data.get("agent_preferences") or {}
         extras = []
-        risk = prefs.get("risk_profile")
+        game_type = str(data.get("game_type") or "")
+        risk_hint_map = {
+            "mafia": prefs.get("mafia_risk_profile"),
+            "liars_dice": prefs.get("liars_dice_risk_profile"),
+            "kuhn_poker": prefs.get("kuhn_poker_risk_profile"),
+            "monopoly": prefs.get("monopoly_risk_profile"),
+        }
+        risk = risk_hint_map.get(game_type) or prefs.get("risk_profile")
         if risk and risk != "balanced":
             extras.append(f"Play with a {risk} risk profile.")
-        if data.get("game_type") == "mafia":
-            chat_style = prefs.get("mafia_chat_style")
-            if chat_style and chat_style != "balanced":
-                extras.append(f"Use a {chat_style} Mafia discussion style.")
-        message = AGENT_MESSAGE
+        message_language = str(prefs.get("message_language") or "english").strip().lower()
+        if message_language:
+            extras.append(
+                f"When sending in-game player-facing messages, write them in {message_language}."
+            )
+        strategy_hint_map = {
+            "mafia": prefs.get("mafia_strategy_hint"),
+            "liars_dice": prefs.get("liars_dice_strategy_hint"),
+            "kuhn_poker": prefs.get("kuhn_poker_strategy_hint"),
+            "monopoly": prefs.get("monopoly_strategy_hint"),
+        }
+        strategy_hint = strategy_hint_map.get(str(game_type))
+        if isinstance(strategy_hint, str):
+            strategy_hint = " ".join(strategy_hint.split())
+            if strategy_hint:
+                extras.append(f"Extra player hint for this game: {strategy_hint}")
+        if game_type in {"mafia", "liars_dice", "kuhn_poker", "monopoly"}:
+            extras.append(
+                "When an action supports an optional player-facing message, usually send one. "
+                "Do not just narrate your action or its result. Prefer short table talk that bluffs, taunts, bargains, reassures, accuses, or pressures other players. "
+                "Only stay silent when silence is strategically better."
+            )
+        if game_type == "monopoly":
+            extras.append(
+                "Keep the result report very brief: one short sentence, or two short bullets at most."
+            )
+        return extras
+
+    def _build_bootstrap_message(self, data: dict[str, Any]) -> str:
+        extras = self._prompt_extras(data)
+        skill_root = Path(__file__).resolve().parent
+        gameloop_path = skill_root / "GAMELOOP.md"
+        message = (
+            "Use the installed halo-clawarena skill. "
+            f"Read this exact file and no other gameplay docs: {gameloop_path}. "
+            f"Read CONNECTION_TOKEN from {TOKEN_PATH}. "
+            "Do not search for the skill directory, do not inspect unrelated files, "
+            "and do not browse for extra docs. "
+            "Use this session for this match only. "
+            "From now on, execute exactly one ClawArena game loop tick each time you are woken in this session, "
+            "and report the result in this chat."
+        )
         if extras:
             message = f"{message} {' '.join(extras)}"
         return message
+
+    def _build_incremental_message(self, data: dict[str, Any]) -> str:
+        extras = self._prompt_extras(data)
+        message = (
+            "Use the procedure already established in this session. "
+            "Run exactly one ClawArena game loop tick for the current match and report the result in this chat. "
+            "Do not reread GAMELOOP.md or search for gameplay docs unless this session has clearly lost context."
+        )
+        if extras:
+            message = f"{message} {' '.join(extras)}"
+        return message
+
+    def _session_id_for_turn(self, wake: dict[str, Any], current: dict[str, Any]) -> str:
+        game_type = str(current.get("game_type") or wake.get("game_type") or "game").strip().lower()
+        match_id = str(current.get("match_id") or wake.get("match_id") or "match").strip()
+        agent_id, _ = self.decode_connection_token()
+        safe_game = re.sub(r"[^a-z0-9_-]+", "-", game_type).strip("-") or "game"
+        safe_match = re.sub(r"[^a-zA-Z0-9_-]+", "-", match_id).strip("-") or "match"
+        return f"clawarena-{safe_game}-agent-{agent_id}-match-{safe_match}"
+
+    def _bootstrapped_sessions(self) -> dict[str, Any]:
+        sessions = self.state.get("bootstrapped_sessions")
+        return sessions if isinstance(sessions, dict) else {}
+
+    def _is_session_bootstrapped(self, session_id: str) -> bool:
+        return session_id in self._bootstrapped_sessions()
+
+    def _mark_session_bootstrapped(self, session_id: str, current: dict[str, Any]) -> None:
+        sessions = dict(self._bootstrapped_sessions())
+        sessions[session_id] = {
+            "at": utc_now(),
+            "match_id": current.get("match_id"),
+            "game_type": current.get("game_type"),
+        }
+        # Keep only the newest 32 entries to avoid unbounded watcher_state growth.
+        if len(sessions) > 32:
+            ordered = sorted(
+                sessions.items(),
+                key=lambda item: str(item[1].get("at") or ""),
+            )
+            sessions = dict(ordered[-32:])
+        self.save_state(bootstrapped_sessions=sessions)
+
+    def _last_ws_activity_age(self) -> float | None:
+        last_activity = self.state.get("last_pong_at") or self.state.get("last_ws_message_at")
+        if not last_activity:
+            return None
+        try:
+            return time.time() - datetime.fromisoformat(str(last_activity)).timestamp()
+        except ValueError:
+            return None
+
+    def _current_feed_status(self) -> str:
+        with self._ws_lock:
+            ws = self._active_ws
+        if ws is not None:
+            if int(self.state.get("ws_probe_failures") or 0) > 0:
+                return "stale"
+            return "connected"
+        age = self._last_ws_activity_age()
+        if age is None:
+            return "unknown"
+        return "disconnected"
+
+    def _maybe_force_reconnect(self) -> None:
+        if int(self.state.get("ws_probe_failures") or 0) >= MAX_MISSED_PONGS:
+            self._force_reconnect.set()
+
+    def _set_active_ws(self, ws: MinimalWebSocket | None) -> None:
+        with self._ws_lock:
+            self._active_ws = ws
+
+    def _close_active_ws(self) -> None:
+        with self._ws_lock:
+            ws = self._active_ws
+        if ws is None:
+            return
+        try:
+            ws.close()
+        except Exception:
+            pass
 
     def should_trigger(self, wake: dict[str, Any]) -> bool:
         trigger_key = f"{wake.get('match_id')}:{wake.get('seq')}"
@@ -462,7 +641,7 @@ class Watcher:
 
         return (time.time() - last_ts) >= TRIGGER_RETRY_DELAY_SECONDS
 
-    def trigger(self, wake: dict[str, Any]) -> None:
+    def trigger(self, wake: dict[str, Any], ws: MinimalWebSocket | None = None) -> None:
         delivery = self.load_delivery_config()
         current = self.peek_game_state()
         if not (
@@ -474,24 +653,31 @@ class Watcher:
             self.save_state(last_trigger_pending_retry=False)
             return
         should_deliver = self._should_deliver(current)
+        session_id = self._session_id_for_turn(wake, current)
+        is_bootstrapped = self._is_session_bootstrapped(session_id)
         cmd = [
             "openclaw",
             "agent",
+            "--session-id",
+            session_id,
             "--message",
-            self._build_agent_message(current),
+            self._build_incremental_message(current) if is_bootstrapped else self._build_bootstrap_message(current),
             "--json",
         ]
         if should_deliver:
             cmd.extend([
                 "--deliver",
-                "--channel",
+                "--reply-channel",
                 str(delivery["channel"]),
-                "--to",
+                "--reply-to",
                 str(delivery["to"]),
             ])
         reply_account = delivery.get("reply_account")
         if reply_account and should_deliver:
             cmd.extend(["--reply-account", str(reply_account)])
+        seq = str(wake.get("seq") or "")
+        if ws is not None and seq:
+            ws.send_json({"type": "wake_ack", "seq": seq})
         proc = subprocess.run(  # noqa: S603
             cmd,
             capture_output=True,
@@ -524,9 +710,13 @@ class Watcher:
             last_agent_status={
                 "code": proc.returncode,
                 "body": (proc.stdout or proc.stderr)[:500],
+                "session_id": session_id,
+                "bootstrapped": is_bootstrapped,
             },
             last_error=None,
         )
+        if proc.returncode == 0 and not is_bootstrapped:
+            self._mark_session_bootstrapped(session_id, current)
         self.post_status(
             status="acting" if proc.returncode == 0 else "delivery_blocked",
             idle_reason="Submitted a live turn to OpenClaw." if proc.returncode == 0 else "OpenClaw delivery failed.",
@@ -550,8 +740,14 @@ class Watcher:
         if self.should_trigger(wake):
             self.trigger(wake)
 
-    def _handle_message(self, message: dict[str, Any]) -> None:
-        self.save_state(last_ws_message_at=utc_now())
+    def _handle_message(self, ws: MinimalWebSocket, message: dict[str, Any]) -> None:
+        now_iso = utc_now()
+        self.save_state(
+            last_ws_message_at=now_iso,
+            last_probe_ok_at=now_iso,
+            last_probe_failed_at=None,
+            ws_probe_failures=0,
+        )
         msg_type = message.get("type")
         data = message.get("data", {})
         if msg_type == "watcher_status":
@@ -568,7 +764,7 @@ class Watcher:
             self.current_status = "acting"
             self.current_idle_reason = "Submitted a live turn to OpenClaw."
             if self.should_trigger(data):
-                self.trigger(data)
+                self.trigger(data, ws=ws)
         elif msg_type == "pong":
             self.save_state(last_pong_at=utc_now())
 
@@ -577,24 +773,30 @@ class Watcher:
         try:
             message = ws.recv_json(timeout=PING_TIMEOUT_SECONDS)
         except TimeoutError:
+            self.save_state(
+                last_probe_failed_at=utc_now(),
+                ws_probe_failures=int(self.state.get("ws_probe_failures") or 0) + 1,
+            )
             return False
-        self._handle_message(message)
+        self._handle_message(ws, message)
         return True
 
     def run_once(self) -> int:
         ws = None
         try:
             ws = self.connect_ws()
+            self._set_active_ws(ws)
+            self.sync_status_from_server()
             payload = self.post_status(
                 status=self.current_status,
                 idle_reason=self.current_idle_reason,
             )
             if payload:
                 self.maybe_restart_if_requested(payload)
-                self.maybe_claim_bonus(payload)
             self._probe_connection(ws)
             return 0
         finally:
+            self._set_active_ws(None)
             if ws is not None:
                 try:
                     ws.close()
@@ -613,27 +815,33 @@ class Watcher:
             missed_pongs = 0
             try:
                 ws = self.connect_ws()
+                self._set_active_ws(ws)
+                self._force_reconnect.clear()
+                self.sync_status_from_server()
                 payload = self.post_status(
                     status=self.current_status,
                     idle_reason=self.current_idle_reason,
                 )
                 if payload:
                     self.maybe_restart_if_requested(payload)
-                    self.maybe_claim_bonus(payload)
                 while True:
+                    if self._force_reconnect.is_set():
+                        self._force_reconnect.clear()
+                        raise WebSocketError("Watcher websocket feed is stale; reconnecting")
                     try:
                         message = ws.recv_json(timeout=TELEMETRY_HEARTBEAT_SECONDS)
                     except TimeoutError:
+                        self.sync_status_from_server()
                         payload = self.post_status(
                             status=self.current_status,
                             idle_reason=self.current_idle_reason,
                         )
                         if payload:
                             self.maybe_restart_if_requested(payload)
-                            self.maybe_claim_bonus(payload)
                         self._retry_pending_wake()
                         if self._probe_connection(ws):
                             missed_pongs = 0
+                            self._maybe_force_reconnect()
                             continue
                         missed_pongs += 1
                         if missed_pongs >= MAX_MISSED_PONGS:
@@ -641,18 +849,27 @@ class Watcher:
                         continue
 
                     missed_pongs = 0
-                    self._handle_message(message)
+                    self._handle_message(ws, message)
             except Exception as exc:  # noqa: BLE001
+                failures = int(self.state.get("ws_consecutive_failures") or 0) + 1
+                controlled_reconnect = isinstance(exc, WebSocketError) and (
+                    "reconnecting" in str(exc).lower()
+                    or "timed out" in str(exc).lower()
+                )
                 self.save_state(
+                    ws_consecutive_failures=failures,
                     last_error={"kind": "exception", "message": str(exc), "at": utc_now()},
                 )
-                self.post_status(
-                    status="error",
-                    idle_reason="Watcher lost the live turn feed and is reconnecting.",
-                    error_message=str(exc)[:500],
-                )
+                if not controlled_reconnect:
+                    self.post_status(
+                        status="error",
+                        idle_reason="Watcher lost the live turn feed and is reconnecting.",
+                        error_message=str(exc)[:500],
+                    )
+                self._maybe_self_restart_for_ws_failures(str(exc))
                 time.sleep(ERROR_RETRY_DELAY_SECONDS)
             finally:
+                self._set_active_ws(None)
                 if ws is not None:
                     try:
                         ws.close()
@@ -662,13 +879,14 @@ class Watcher:
     def _background_heartbeat_loop(self) -> None:
         while not self._stop_event.wait(TELEMETRY_HEARTBEAT_SECONDS):
             try:
+                self.sync_status_from_server()
                 payload = self.post_status(
                     status=self.current_status,
                     idle_reason=self.current_idle_reason,
                 )
                 if payload:
                     self.maybe_restart_if_requested(payload)
-                    self.maybe_claim_bonus(payload)
+                self._maybe_force_reconnect()
             except Exception:
                 continue
 

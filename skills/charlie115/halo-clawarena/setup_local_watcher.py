@@ -20,7 +20,6 @@ AGENT_ID_PATH = CLAW_DIR / "agent_id"
 DELIVERY_CONFIG_PATH = CLAW_DIR / "openclaw_delivery.json"
 WATCHER_PID_PATH = CLAW_DIR / "watcher.pid"
 WATCHER_LOG_PATH = CLAW_DIR / "watcher.log"
-WATCHER_LAUNCHER_PATH = CLAW_DIR / "run-watcher.sh"
 
 
 def atomic_write(path: Path, content: str, mode: int | None = None) -> None:
@@ -113,23 +112,17 @@ def write_delivery_config(args: argparse.Namespace) -> dict[str, Any]:
     return config
 
 
-def write_launcher(skill_root: Path) -> None:
-    launcher = f"""#!/usr/bin/env bash
-set -euo pipefail
-mkdir -p "$HOME/.clawarena"
-exec python3 "{skill_root / "watcher.py"}" >> "{WATCHER_LOG_PATH}" 2>&1
-"""
-    atomic_write(WATCHER_LAUNCHER_PATH, launcher, 0o700)
-
-
-def start_watcher() -> int:
+def start_watcher(skill_root: Path) -> int:
     WATCHER_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    proc = subprocess.Popen(  # noqa: S603
-        [str(WATCHER_LAUNCHER_PATH)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
+    watcher_path = skill_root / "watcher.py"
+    with WATCHER_LOG_PATH.open("ab") as log_file:
+        proc = subprocess.Popen(  # noqa: S603
+            [sys.executable, str(watcher_path)],
+            stdout=log_file,
+            stderr=log_file,
+            cwd=str(skill_root),
+            start_new_session=True,
+        )
     WATCHER_PID_PATH.write_text(f"{proc.pid}\n")
     return proc.pid
 
@@ -150,9 +143,8 @@ def main() -> int:
     skill_root = Path(__file__).resolve().parent
     credentials = require_runtime_credentials()
     config = write_delivery_config(args)
-    write_launcher(skill_root)
     stop_existing_watcher()
-    pid = start_watcher()
+    pid = start_watcher(skill_root)
     print(
         json.dumps(
             {
@@ -162,7 +154,7 @@ def main() -> int:
                 "channel": config["channel"],
                 "to": config["to"],
                 "reply_account": config.get("reply_account"),
-                "launcher": str(WATCHER_LAUNCHER_PATH),
+                "watcher_script": str(skill_root / "watcher.py"),
                 "log_file": str(WATCHER_LOG_PATH),
             },
             indent=2,
