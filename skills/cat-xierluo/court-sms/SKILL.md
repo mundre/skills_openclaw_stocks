@@ -2,7 +2,7 @@
 name: court-sms
 homepage: https://github.com/cat-xierluo/legal-skills
 author: 杨卫薪律师（微信ywxlaw）
-version: "1.2.1"
+version: "1.4.0"
 license: MIT
 description: 本技能应在用户收到法院短信（文书送达、立案通知、开庭提醒等）时使用，自动提取案号、当事人、下载链接，下载文书并归档到对应案件目录。
 ---
@@ -38,7 +38,7 @@ https://zxfw.court.gov.cn/zxfw/#/pagesAjkj/app/wssd/index?qdbh=xxx&sdbh=xxx&sdsi
 | 立案通知 | 含"已立案"等关键词 | 可能有 | 展示解析结果 |
 | 信息通知 | 无链接，纯信息 | 否 | 展示解析结果 |
 
-**支持的送达平台**：`zxfw.court.gov.cn`（全国）、`sd.gdems.com`（广东）、`jysd.10102368.com`（集约送达）。详见 `references/sms-patterns.json`。
+**支持的送达平台**：`zxfw.court.gov.cn`（全国）、`sd.gdems.com`（广东）、`jysd.10102368.com`（集约送达）、`dzsd.hbfy.gov.cn`（湖北）。详见 `references/sms-patterns.json`。
 
 ---
 
@@ -78,6 +78,13 @@ https://zxfw.court.gov.cn/zxfw/#/pagesAjkj/app/wssd/index?qdbh=xxx&sdbh=xxx&sdsi
 | 全国法院统一送达平台 | `zxfw.court.gov.cn` | curl API 直连 | qdbh, sdbh, sdsin |
 | 广东法院电子送达 | `sd.gdems.com` | 浏览器自动化 | 路径中的送达标识码 |
 | 集约送达平台 | `jysd.10102368.com` | 浏览器自动化 | key |
+| 湖北电子送达 | `dzsd.hbfy.gov.cn` | HTTP API（免账号）/ 浏览器自动化（账号模式） | 免账号：msg；账号模式：账号+密码从正文提取 |
+
+**e) 发送时间提取（P0）**：从送达平台 API 响应中提取发送时间，用于后续上诉期限计算
+- **优先来源**：zxfw API 响应中的 `dt_cjsj` 字段（送达记录创建时间，ISO 8601 格式）
+- 短信网关时间：部分手机短信会显示发送时间，匹配 `发送：YYYY-MM-DD HH:mm` 格式
+- 如果无法提取送达时间，展示"送达时间待确认"，不阻塞后续流程
+- 记录到归档 JSON 的 `document.sent_at` 字段
 
 > **排除列表**：法院名称、法官姓名、地名、法律术语等不应作为当事人提取。详见 `sms-patterns.json` → `party_extraction.exclude_keywords`。
 
@@ -102,6 +109,7 @@ https://zxfw.court.gov.cn/zxfw/#/pagesAjkj/app/wssd/index?qdbh=xxx&sdbh=xxx&sdsi
 > **平台判断**：根据第一步识别的链接域名，选择下载策略。
 > - `zxfw.court.gov.cn` → 方案一（API 直连）→ 方案二 → 方案三
 > - `sd.gdems.com` 或 `jysd.10102368.com` → 跳过方案一，直接方案二 → 方案三
+> - `dzsd.hbfy.gov.cn` → 湖北专属流程（见下方）
 > - 未知域名 → 提示用户提供链接信息
 >
 > **⛔ 降级铁律**：严格串行，禁止并行。当前方案成功即停止，绝不降级。禁止"双保险"并行尝试多个方案。
@@ -194,6 +202,48 @@ node scripts/download_court_docs.mjs --url "{短信链接}" --output /tmp/court-
 5. 等待下载完成，保存到临时目录
 ```
 
+#### 湖北平台下载流程（`dzsd.hbfy.gov.cn`）
+
+湖北电子送达平台有两种链路，根据 URL 格式自动选择：
+
+**链路一：免账号模式**（URL 含 `/hb/msg=xxx`）
+
+1. 从 URL 提取 `msg` 参数值
+2. 尝试 HTTP API 直连：
+
+```bash
+msg="从URL提取的msg值"
+mkdir -p /tmp/court-sms-staging/
+
+# 查询文书信息
+resp=$(curl -s -X POST "http://dzsd.hbfy.gov.cn/delimobile/tDeliSms/findSmsInfo?t=$(date +%s%3N)" \
+  -H "Content-Type: application/json" \
+  -H "Referer: http://dzsd.hbfy.gov.cn/deli-mobile-ui/" \
+  -d "{\"msg\":\"$msg\"}")
+
+# 检查是否需要验证码（data.isNeedCaptcha == "Y"）
+# 如需验证码或无可下载文书，降级到 Playwright MCP
+
+# 逐个下载文书
+echo "$resp" | jq -r '.data.docList[] | "\(.docName)\t\(.downloadPath)"' | while IFS=$'\t' read -r name path; do
+  if [ -n "$path" ]; then
+    curl -sL -o "/tmp/court-sms-staging/${name}.pdf" "http://dzsd.hbfy.gov.cn/delimobile${path}"
+  fi
+done
+```
+
+3. 如需验证码或 HTTP 失败，降级到 Playwright MCP（方案三）
+
+**链路二：账号模式**（URL 含 `/sfsddz`）
+
+1. 从短信正文提取凭证：
+   - 账号：匹配 `账号\s*(\d{15,20})`
+   - 默认密码：匹配 `默认密码[：:]\s*([0-9A-Za-z]+)`
+2. 需要浏览器自动化（Playwright MCP），登录页包含验证码
+3. 登录后遍历待签收/已签收/已过期文书列表，逐个下载
+
+> **提示**：湖北平台两种模式都可能遇到验证码。免账号模式优先尝试 HTTP API，账号模式建议引导用户手动打开链接或使用 Playwright MCP。
+
 #### 失败兜底
 
 当三级均失败时：
@@ -211,9 +261,9 @@ node scripts/download_court_docs.mjs --url "{短信链接}" --output /tmp/court-
 
 1. **确定目标目录**：根据当前项目环境自动判断，不询问用户
    - 扫描当前项目目录，匹配与案号或当事人相关的案件目录
-   - 如找到匹配案件目录，查找法院文书子目录（如 `08*`、`法院送达`、`court` 等）
-   - **如未找到匹配案件，自动在当前项目下新建**：`{案号} {当事人与案由}/08 - 🏛️ 法院送达/`
-   - 如目标子目录不存在，自动创建
+   - 如找到匹配案件目录，优先查找法院文书子目录（如 `08*`、`法院送达`、`court` 等）；如无子目录则直接归档到案件根目录
+   - **如未找到匹配案件，自动在当前项目下新建**：`{案号} {当事人与案由}/`
+   - 如目标目录不存在，自动创建
 2. **获取当前日期**：`date "+%Y%m%d"`
 3. **确定文书标题**：
    - 优先使用 API 返回的标题
@@ -229,15 +279,34 @@ node scripts/download_court_docs.mjs --url "{短信链接}" --output /tmp/court-
    - **传票**：提取开庭时间、地点、法庭、案号，向用户高亮提醒
    - **通知书/告知书**：提取缴费期限、举证期限等关键日期
    - **起诉状/答辩状**：提取案由、当事人、诉讼请求概要
+   - **判决书**：识别为一审判决书，记录文书类型，触发上诉期限计算（P1）
    - **其他文书**：展示文书标题和法院名称
    - 如一次下载多份文书，逐一解析，汇总为一份报告
 
    > 深度分析（如判决书解读、合同审查）不在此技能范围内，请使用专用分析技能处理。
 
-8. **向用户汇报**：按 [`references/report-format.md`](references/report-format.md) 输出结构化报告
+8. **上诉期限计算（P1）**：当识别到判决书/裁定书时自动计算
+   - **适用条件**：文书类型为判决书/裁定书（包括一审判决书、民事判决书、裁定书等）
+   - **不同案件类型的上诉期限**（详见 `sms-patterns.json` → `appeal_calculation`）：
+     | 案件类型 | 上诉期限 |
+     |---------|---------|
+     | 民事一审判决 | 送达后15天 |
+     | 民事裁定 | 送达后10天 |
+     | 行政判决 | 送达后15天 |
+     | 刑事判决 | 送达后10天 |
+     | 刑事裁定 | 送达后5天 |
+   - **计算公式**：`上诉截止日期 = 送达日期 + 上诉期限天数`
+   - **送达日期来源**：
+     - 优先使用 zxfw API 响应的 `dt_cjsj` 字段（送达记录创建时间）
+     - 次选使用短信接收时间 `received_at`
+     - 无法确定时，展示"送达时间待确认"
+   - **归档 JSON 字段**：写入 `document.appeal_deadline` 和 `document.appeal_days_remaining`
+
+9. **向用户汇报**：按 [`references/report-format.md`](references/report-format.md) 输出结构化报告
    - 先确认归档完成（案号、法院、当事人、案由、文件数、位置）
    - 列出所有已归档的文书清单
    - 如含传票，⚠️ 高亮提醒开庭时间、地点、审理程序
+   - 如含判决书，⏰ 展示上诉期限信息
    - 如部分失败，列出失败文书和原始链接
 
 ### 第五步：PDF 后处理（可选）
@@ -410,6 +479,23 @@ https://zxfw.court.gov.cn/zxfw/#/pagesAjkj/app/wssd/index?qdbh=DEMO1&sdbh=DEMO2&
 ```text
 【xx市xx区人民法院】提醒：您有（2025）苏0508民初567号案件，
 定于2025年3月15日上午9:30在第3法庭开庭，请准时到庭。
+```
+
+### 湖北电子送达短信（免账号）
+
+```text
+【xx人民法院】您有案件文书待查收，请点击链接查收：
+http://dzsd.hbfy.gov.cn/hb/msg=XXXXXXX
+如有疑问请联系法院。
+```
+
+### 湖北电子送达短信（账号模式）
+
+```text
+【xx人民法院】您有（2025）鄂xxxx民初xxxx号案件文书送达。
+账号 420xxxxxxxxxxxxx
+默认密码：xxxxxx
+请登录 http://dzsd.hbfy.gov.cn/sfsddz 查收。
 ```
 
 ---

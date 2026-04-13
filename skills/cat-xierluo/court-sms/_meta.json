@@ -1,11 +1,17 @@
 {
   "owner": "cat-xierluo",
   "slug": "court-sms",
-  "displayName": "Court SMS",
+  "displayName": "法院短信识别与文书下载",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1775382694662,
-    "commit": "https://github.com/openclaw/skills/commit/1009d4c554923f9cb4e83117081b714eed13ecb8"
+    "version": "1.4.0",
+    "publishedAt": 1775815252195,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1775382694662,
+      "commit": "https://github.com/openclaw/skills/commit/1009d4c554923f9cb4e83117081b714eed13ecb8"
+    }
+  ]
 }

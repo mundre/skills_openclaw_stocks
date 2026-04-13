@@ -2,6 +2,42 @@
 
 本项目的所有重要变更都将记录在此文件。
 
+## [1.4.0] - 2026-04-10
+
+### 新增
+
+- **湖北电子送达平台支持**：新增 `dzsd.hbfy.gov.cn`（湖北法院）的链接识别和文书下载
+  - 免账号模式：识别 `/hb/msg=xxx` 链接，支持 HTTP API 直连下载（`POST /delimobile/tDeliSms/findSmsInfo`），需验证码时降级到浏览器
+  - 账号模式：识别 `/sfsddz` 入口链接，从短信正文提取账号（`账号\s*(\d{15,20})`）和默认密码（`默认密码[：:]\s*([0-9A-Za-z]+)`）
+  - 新增 `sms-patterns.json` 中的 hbfy 平台配置段（含免账号/账号两种模式的 API 信息和凭证提取正则）
+- **平台支持扩展至 4 个**：全国法院统一送达（zxfw）、广东电子送达（gdems）、集约送达（jysd）、湖北电子送达（hbfy）
+- SKILL.md 新增湖北平台下载流程说明（免账号 HTTP API + 账号模式浏览器自动化）
+- SKILL.md 新增湖北短信格式示例（免账号模式和账号模式两种）
+
+### 引用
+
+- 上游参考：[FachuanHybridSystem][fachuan-repo] → `sms_parser_service.py`（短信解析新增 hbfy 正则）、`hbfy_scraper.py`（湖北平台完整下载逻辑）
+
+[fachuan-repo]: https://github.com/Lawyer-ray/FachuanHybridSystem
+
+### 新增
+
+- **送达时间检测（P0）**：从 zxfw API 响应的 `dt_cjsj` 字段提取送达记录创建时间，作为 sent_at 使用，无需从 PDF 解析
+- **上诉期限自动计算（P1）**：识别判决书/裁定书时，根据送达时间自动计算上诉截止日期
+  - 民事一审判决：送达后15天
+  - 民事裁定：送达后10天
+  - 行政判决：送达后15天
+  - 刑事判决：送达后10日
+  - 刑事裁定：送达后5日
+- **归档 JSON 新增字段**：`document.type`、`document.sent_at`、`document.appeal_deadline`、`document.appeal_days_remaining`
+- **归档 JSON 完整保存 API 响应**：将 zxfw API 的完整响应（c_fymc、c_fybh、dt_cjsj、documents 数组）存入 `download.api_response`
+- **汇报格式新增**：上诉期限展示区块（第四部分），格式为 `⏰ 上诉期限提醒`
+- **sms-patterns.json 新增**：`sent_time_extraction`（送达时间提取规则）、`appeal_calculation`（上诉期限计算规则）
+
+### 引用
+
+对应 GitHub Issue：https://github.com/cat-xierluo/legal-skills/issues/10
+
 ## [1.2.1] - 2026-04-05
 
 ### 新增
