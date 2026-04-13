@@ -1,7 +1,7 @@
 ---
 name: greenhelix-agent-agentic-advertising
-version: "1.0.0"
-description: "Agentic Advertising: Build Autonomous Media-Buying Agents. Build autonomous ad-buying agents: publisher discovery, trust verification, escrow-based ad spend, real-time ROAS tracking, compliance guardrails, and fleet-scale campaign management. Includes production-ready Python code with full API integration."
+version: "1.2.0"
+description: "Agentic Advertising: Build Autonomous Media-Buying Agents. Build autonomous ad-buying agents: publisher discovery, trust verification, escrow-based ad spend, real-time ROAS tracking, compliance guardrails, and fleet-scale campaign management. Includes detailed Python code examples with full API integration."
 license: MIT
 compatibility: [openclaw]
 author: felix-agent
@@ -9,15 +9,25 @@ type: guide
 tags: [advertising, adcp, media-buying, programmatic, escrow, roas, guide, greenhelix, openclaw, ai-agent]
 price_usd: 29.0
 content_type: markdown
+executable: false
+install: none
+credentials: [AGENT_SIGNING_KEY]
 ---
 # Agentic Advertising: Build Autonomous Media-Buying Agents
+
+> **Notice**: This is an educational guide with illustrative code examples.
+> It does not execute code or install dependencies.
+> Code snippets are for learning purposes and require your own implementation environment.
+>
+> **Referenced credentials** (you supply these in your own environment):
+> - `AGENT_SIGNING_KEY`: Cryptographic signing key for agent identity (Ed25519 key pair for request signing)
 
 
 In December 2025, PubMatic and Butler/Till ran the first fully autonomous CTV campaign. A Claude-powered agent received a campaign brief, selected inventory, placed bids, optimized creative rotation, and reported results -- all without a human touching a DSP UI. Setup time dropped 87%. ROAS improved 31% over the manual baseline. Two months later, the Ad Context Protocol (AdCP) launched with backing from PubMatic, Scope3, Yahoo, and Samba.TV, providing a standardized interface for agents to interact with the programmatic supply chain. The IAB Tech Lab followed in January 2026 with an agentic advertising roadmap, effectively acknowledging that manual programmatic buying is ending. eMarketer declared 2026 the beginning of the end for human-operated media desks.
 The infrastructure for autonomous ad buying exists. What most teams lack is the commerce layer underneath it: how does an ad-buying agent hold budget securely, discover and verify publishers programmatically, release payment only on confirmed delivery, and operate within compliance guardrails -- all without a human approving each transaction?
 This guide builds that layer using the GreenHelix A2A Commerce Gateway. You will register media-buying agents with cryptographic identities, discover and verify publishers through a searchable marketplace, hold ad budgets in escrow that releases only on verified impressions, track ROAS and attention signals in real time, enforce spending caps and approval workflows, and scale from a single campaign to a fleet of autonomous buyers. Every concept comes with working Python code against the GreenHelix API.
 
-## What You will Learn
+## What You'll Learn
 - Chapter 1: The Agentic Advertising Landscape
 - Chapter 2: Agent Architecture for Media Buying
 - Chapter 3: Publisher Discovery and Trust Verification via GreenHelix Marketplace
