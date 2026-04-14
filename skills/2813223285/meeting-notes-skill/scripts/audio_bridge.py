@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import time
+import threading
 import urllib.error
 import urllib.request
 import uuid
@@ -32,8 +33,8 @@ SKILL_ROOT = SCRIPT_DIR.parent
 SKILL_SLUG = SKILL_ROOT.name
 WORKSPACE_ROOT = SKILL_ROOT.parent.parent if SKILL_ROOT.parent.name == "skills" else SKILL_ROOT.parent
 DEFAULT_OUTPUT_DIR = WORKSPACE_ROOT / f"{SKILL_SLUG}-data"
-PUBLIC_OUTPUT_DIR = Path.home() / "clawdhome_shared" / "public" / f"{SKILL_SLUG}-data"
-VAULT_OUTPUT_DIR = Path.home() / "clawdhome_shared" / "vault" / f"{SKILL_SLUG}-data"
+PRIVATE_OUTPUT_DIR = Path.home() / "clawdhome_shared" / "private" / f"{SKILL_SLUG}-data"
+PUBLIC_RESOURCE_DIR = Path.home() / "clawdhome_shared" / "public"
 COMPRESSED_AUDIO_SUFFIXES = {".m4a", ".mp3", ".aac", ".mp4"}
 FFMPEG_INSTALL_HINT = "brew install ffmpeg (or run: bash scripts/bootstrap_macos.sh)"
 
@@ -59,10 +60,11 @@ def print_first_run_notice_once() -> None:
     print("- This skill has NO plugin requirement.", file=sys.stderr)
     print("- Installed ASR engines are preferred by default; built-in ASR is fallback.", file=sys.stderr)
     print("- First run is HARD-GATED by dependency checks.", file=sys.stderr)
-    print("- Optional enhanced dependencies:", file=sys.stderr)
-    print("  1) Free neural TTS: python3 -m pip install edge-tts", file=sys.stderr)
-    print("  2) Optional local ASR: python3 -m pip install openai-whisper", file=sys.stderr)
-    print("  3) Optional audio postprocess: install ffmpeg", file=sys.stderr)
+    print("- Required dependencies:", file=sys.stderr)
+    print("  1) edge-tts (mandatory): python3 -m pip install edge-tts", file=sys.stderr)
+    print("  2) ffmpeg (mandatory): brew install ffmpeg", file=sys.stderr)
+    print("- Default local ASR dependency:", file=sys.stderr)
+    print("  3) local Whisper (default): python3 -m pip install openai-whisper", file=sys.stderr)
     print("- One-click bootstrap (macOS): bash scripts/bootstrap_macos.sh", file=sys.stderr)
     print("- Required check: bash scripts/doctor.sh --strict", file=sys.stderr)
     print("===============================================", file=sys.stderr)
@@ -211,13 +213,12 @@ def is_writable_dir(path: Path) -> bool:
 def resolve_output_dir(user_outdir: str | None = None) -> Path:
     """
     Path policy:
-    1) Prefer shared public dir.
-    2) Then secure vault dir.
-    3) Then user/env/default fallbacks.
+    1) Prefer private shared dir.
+    2) Then user/env/default fallbacks.
+    3) Public dir is read-only for shared resources.
     """
     candidates: list[Path] = []
-    candidates.append(PUBLIC_OUTPUT_DIR.expanduser().resolve())
-    candidates.append(VAULT_OUTPUT_DIR.expanduser().resolve())
+    candidates.append(PRIVATE_OUTPUT_DIR.expanduser().resolve())
     if user_outdir:
         candidates.append(Path(user_outdir).expanduser().resolve())
     env_out = os.getenv("MEETING_OUTPUT_DIR")
@@ -242,28 +243,29 @@ def run(cmd: list[str], env: dict[str, str] | None = None) -> subprocess.Complet
 def print_install_steps(mode: str) -> None:
     is_macos = platform.system() == "Darwin"
     print("Install guide:", file=sys.stderr)
+    print("- 0) Install mandatory dependency: python3 -m pip install edge-tts", file=sys.stderr)
     if mode == "asr":
         print("- 1) Enable Speech Recognition permission for the app/terminal", file=sys.stderr)
         if is_macos:
             print("- 2) Install ffmpeg for compressed audio: brew install ffmpeg", file=sys.stderr)
         else:
             print("- 2) Install ffmpeg: sudo apt-get install -y ffmpeg", file=sys.stderr)
-        print("- 3) Optional local ASR enhancement: python3 -m pip install openai-whisper", file=sys.stderr)
+        print("- 3) Install local ASR whisper (default): python3 -m pip install openai-whisper", file=sys.stderr)
     elif mode == "tts":
-        print("- 1) Install free neural TTS: python3 -m pip install edge-tts", file=sys.stderr)
+        print("- 1) Install mandatory dependency: python3 -m pip install edge-tts", file=sys.stderr)
         if is_macos:
             print("- 2) Optional: local TTS uses macOS say/afconvert (preinstalled on most macOS)", file=sys.stderr)
         if is_macos:
-            print("- 3) Optional postprocess: brew install ffmpeg", file=sys.stderr)
+            print("- 3) Install mandatory dependency: brew install ffmpeg", file=sys.stderr)
         else:
-            print("- 3) Optional postprocess: sudo apt-get install -y ffmpeg", file=sys.stderr)
+            print("- 3) Install mandatory dependency: sudo apt-get install -y ffmpeg", file=sys.stderr)
     else:
         if is_macos:
             print("- Install ffmpeg: brew install ffmpeg", file=sys.stderr)
         else:
             print("- Install ffmpeg: sudo apt-get install -y ffmpeg", file=sys.stderr)
         print("- Install edge-tts: python3 -m pip install edge-tts", file=sys.stderr)
-        print("- Install whisper (optional local ASR): python3 -m pip install openai-whisper", file=sys.stderr)
+        print("- Install whisper (default local ASR): python3 -m pip install openai-whisper", file=sys.stderr)
     print("- Verify: bash scripts/doctor.sh --strict", file=sys.stderr)
     if platform.system() == "Darwin":
         print(f"- One-command setup: bash scripts/bootstrap_macos.sh --mode={mode}", file=sys.stderr)
@@ -281,13 +283,43 @@ def maybe_auto_install_deps(mode: str, enabled: bool) -> None:
         return
     cmd = ["bash", str(bootstrap), f"--mode={mode}"]
     if mode == "asr":
-        # Optional local ASR enhancement (best effort).
         cmd.append("--with-whisper")
-    p = run(cmd)
-    if p.stdout:
-        print("[auto-install] " + p.stdout.strip().replace("\n", "\n[auto-install] "), file=sys.stderr)
-    if p.stderr:
-        print("[auto-install] " + p.stderr.strip().replace("\n", "\n[auto-install] "), file=sys.stderr)
+
+    install_items = ["edge-tts", "ffmpeg"]
+    if mode in {"asr", "all"}:
+        install_items.append("openai-whisper (and tiny model)")
+    print(
+        "[auto-install] installing dependencies: " + ", ".join(install_items),
+        file=sys.stderr,
+    )
+    print("[auto-install] please wait, this may take a few minutes...", file=sys.stderr)
+
+    result: dict[str, subprocess.CompletedProcess] = {}
+
+    def _runner() -> None:
+        result["p"] = run(cmd)
+
+    th = threading.Thread(target=_runner, daemon=True)
+    th.start()
+    heartbeat_sec = 8
+    elapsed = 0
+    while th.is_alive():
+        time.sleep(heartbeat_sec)
+        elapsed += heartbeat_sec
+        print(
+            f"[auto-install] still running ({elapsed}s): downloading/installing dependencies...",
+            file=sys.stderr,
+        )
+    th.join()
+    p = result.get("p")
+    if not p:
+        print("[auto-install] failed: no result returned from installer", file=sys.stderr)
+        return
+    out, err = p.stdout, p.stderr
+    if out:
+        print("[auto-install] " + out.strip().replace("\n", "\n[auto-install] "), file=sys.stderr)
+    if err:
+        print("[auto-install] " + err.strip().replace("\n", "\n[auto-install] "), file=sys.stderr)
     if p.returncode != 0:
         print(f"[auto-install] failed with code={p.returncode}", file=sys.stderr)
 
@@ -346,7 +378,7 @@ def print_first_use_hint(mode: str, provider: str) -> None:
     elif mode == "asr" and provider == "openai":
         print("- Set OPENAI_API_KEY for OpenAI ASR fallback", file=sys.stderr)
     elif mode == "asr" and provider == "local":
-        print("- Optional local ASR: python3 -m pip install openai-whisper", file=sys.stderr)
+        print("- Install local ASR whisper (default): python3 -m pip install openai-whisper", file=sys.stderr)
         print("- Install ffmpeg: brew install ffmpeg (macOS) / apt-get install ffmpeg (Linux)", file=sys.stderr)
     elif mode == "tts" and provider in {"local", "builtin"}:
         print("- Local TTS requires macOS say/afconvert (install CLT: xcode-select --install)", file=sys.stderr)
@@ -842,7 +874,7 @@ def cmd_tts(args: argparse.Namespace) -> int:
         tmpf2.write(verbatim_full_text)
         tmp_full_tts_file = Path(tmpf2.name)
 
-    providers = [args.provider] if args.provider != "auto" else ["builtin", "edge", "local", "openai"]
+    providers = [args.provider] if args.provider != "auto" else ["edge", "builtin", "local", "openai"]
     last_err = None
 
     def synth_once(provider: str, tf: Path, out_prefix: Path) -> tuple[str, Path]:
@@ -944,6 +976,7 @@ def cmd_asr(args: argparse.Namespace) -> int:
     prefix = outdir / f"{safe_topic(args.topic)}-{ts_now()}"
     out_json = prefix.with_suffix(".transcript.json")
     out_txt = prefix.with_suffix(".transcript.txt")
+    out_doc = prefix.with_suffix(".txt")
 
     # Auto mode prefers installed engines first, then cloud, then built-in fallback.
     providers = [args.provider] if args.provider != "auto" else ["local", "openai", "builtin"]
@@ -966,11 +999,15 @@ def cmd_asr(args: argparse.Namespace) -> int:
             else:
                 obj = openai_asr(audio_file, args.language)
             out_json.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
-            out_txt.write_text(obj.get("text", "").strip() + "\n", encoding="utf-8")
+            transcript_text = obj.get("text", "").strip()
+            out_txt.write_text(transcript_text + "\n", encoding="utf-8")
+            # Final doc for downstream 3-artifact workflow.
+            out_doc.write_text(transcript_text + "\n", encoding="utf-8")
             print(f"provider={p}")
             print(f"output_dir={outdir}")
             print(f"json={out_json}")
             print(f"text={out_txt}")
+            print(f"doc={out_doc}")
             return 0
         except Exception as e:  # noqa: BLE001
             last_err = e

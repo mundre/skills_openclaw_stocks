@@ -27,10 +27,10 @@ if [[ ! -f "$BRIDGE" ]]; then
 fi
 
 # Output path policy:
-# 1) ~/clawdhome_shared/public/<skill-slug>-data (preferred shared folder)
-# 2) ~/clawdhome_shared/vault/<skill-slug>-data (secure fallback)
-# 3) MEETING_OUTPUT_DIR (if provided)
-# 4) workspace fallback: <workspace>/<skill-slug>-data
+# 1) ~/clawdhome_shared/private/<skill-slug>-data (preferred private folder)
+# 2) MEETING_OUTPUT_DIR (if provided)
+# 3) workspace fallback: <workspace>/<skill-slug>-data
+# Public folder is read-only for shared resources.
 TOPIC="$ARG2"
 SKILL_SLUG="$(basename "$ROOT_DIR")"
 PARENT_DIR="$(dirname "$ROOT_DIR")"
@@ -39,12 +39,9 @@ if [[ "$(basename "$PARENT_DIR")" == "skills" ]]; then
 else
   WORKSPACE_ROOT="$PARENT_DIR"
 fi
-PUBLIC_OUTDIR="$HOME/clawdhome_shared/public/${SKILL_SLUG}-data"
-VAULT_OUTDIR="$HOME/clawdhome_shared/vault/${SKILL_SLUG}-data"
-if mkdir -p "$PUBLIC_OUTDIR" >/dev/null 2>&1; then
-  OUTDIR="$PUBLIC_OUTDIR"
-elif mkdir -p "$VAULT_OUTDIR" >/dev/null 2>&1; then
-  OUTDIR="$VAULT_OUTDIR"
+PRIVATE_OUTDIR="$HOME/clawdhome_shared/private/${SKILL_SLUG}-data"
+if mkdir -p "$PRIVATE_OUTDIR" >/dev/null 2>&1; then
+  OUTDIR="$PRIVATE_OUTDIR"
 elif [[ -n "${MEETING_OUTPUT_DIR:-}" ]]; then
   OUTDIR="${MEETING_OUTPUT_DIR}"
 else

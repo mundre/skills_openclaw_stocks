@@ -58,12 +58,24 @@ has_py_mod() {
 echo "== Base =="
 check_cmd python3 || true
 check_cmd bash || true
+if ! has_py_mod edge_tts; then
+  warn "mandatory dependency missing: python module edge_tts"
+  HARD_FAIL=1
+fi
+if ! has_cmd ffmpeg; then
+  warn "mandatory dependency missing: ffmpeg"
+  HARD_FAIL=1
+fi
 
 if [[ "$MODE" == "all" || "$MODE" == "asr" ]]; then
   echo
   echo "== ASR =="
   check_py_mod whisper || true
   check_cmd ffmpeg || true
+  if ! has_py_mod whisper; then
+    warn "mandatory dependency missing for ASR: python module whisper"
+    HARD_FAIL=1
+  fi
   if [[ "$OS" == "Darwin" ]] && (has_cmd swift || has_cmd xcrun); then
     ok "ASR built-in path available: macOS Speech + swift"
   elif has_py_mod whisper && has_cmd ffmpeg; then
@@ -78,7 +90,7 @@ if [[ "$MODE" == "all" || "$MODE" == "asr" ]]; then
   echo "ASR install hints:"
   echo "  - Preferred: macOS built-in Speech Recognition (grant system permission)"
   echo "  - Cloud fallback: set OPENAI_API_KEY"
-  echo "  - Optional local Whisper (not default): python3 -m pip install openai-whisper"
+  echo "  - Default local Whisper install: python3 -m pip install openai-whisper"
   if [[ "$OS" == "Darwin" ]]; then
     echo "  - ffmpeg (macOS): brew install ffmpeg"
     echo "  - One-click bootstrap: bash scripts/bootstrap_macos.sh"
@@ -124,12 +136,12 @@ else
   if [[ "$OS" == "Darwin" ]]; then
     echo "  1) Install ffmpeg: brew install ffmpeg"
     echo "  2) Install edge-tts: python3 -m pip install edge-tts"
-    echo "  3) (Optional) Install local ASR whisper: python3 -m pip install openai-whisper"
+    echo "  3) Install local ASR whisper (default): python3 -m pip install openai-whisper"
     echo "  4) Re-run check: bash scripts/doctor.sh --strict"
   else
     echo "  1) Install ffmpeg: sudo apt-get install -y ffmpeg"
     echo "  2) Install edge-tts: python3 -m pip install edge-tts"
-    echo "  3) (Optional) Install local ASR whisper: python3 -m pip install openai-whisper"
+    echo "  3) Install local ASR whisper (default): python3 -m pip install openai-whisper"
     echo "  4) Re-run check: bash scripts/doctor.sh --strict"
   fi
 fi

@@ -2,13 +2,14 @@
 set -euo pipefail
 
 MODE="all"      # all|asr|tts
-WITH_WHISPER=0
+WITH_WHISPER=1
 for arg in "$@"; do
   case "$arg" in
     --mode=asr) MODE="asr" ;;
     --mode=tts) MODE="tts" ;;
     --mode=all) MODE="all" ;;
     --with-whisper) WITH_WHISPER=1 ;;
+    --without-whisper) WITH_WHISPER=0 ;;
   esac
 done
 
@@ -40,7 +41,7 @@ else
   echo "[OK] ffmpeg already installed."
 fi
 
-if [[ "$MODE" == "all" || "$MODE" == "tts" ]]; then
+if [[ "$MODE" == "all" || "$MODE" == "tts" || "$MODE" == "asr" ]]; then
   if ! python3 -c "import edge_tts" >/dev/null 2>&1; then
     echo "[ACTION] Installing edge-tts..."
     python3 -m pip install edge-tts || {
@@ -54,13 +55,24 @@ fi
 
 if [[ "$WITH_WHISPER" -eq 1 ]] && [[ "$MODE" == "all" || "$MODE" == "asr" ]]; then
   if ! python3 -c "import whisper" >/dev/null 2>&1; then
-    echo "[ACTION] Installing whisper (optional local ASR enhancement)..."
+    echo "[ACTION] Installing whisper (default local ASR dependency)..."
     python3 -m pip install openai-whisper || {
-      echo "[WARN] whisper install failed. You can retry manually:"
+      echo "[ERROR] whisper install failed."
+      echo "Retry manually:"
       echo "  python3 -m pip install openai-whisper"
+      exit 3
     }
   else
     echo "[OK] whisper already installed."
+  fi
+
+  if python3 -c "import whisper" >/dev/null 2>&1; then
+    echo "[ACTION] Pre-downloading local whisper model: tiny"
+    python3 -c "import whisper; whisper.load_model('tiny')" || {
+      echo "[ERROR] whisper tiny model pre-download failed (network/cache issue)."
+      echo "Please fix network/cache and rerun bootstrap."
+      exit 4
+    }
   fi
 fi
 
