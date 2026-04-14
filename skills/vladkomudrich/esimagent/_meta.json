@@ -1,0 +1,11 @@
+{
+  "owner": "vladkomudrich",
+  "slug": "esimagent",
+  "displayName": "eSIM Agent",
+  "latest": {
+    "version": "1.5.0",
+    "publishedAt": 1775924309089,
+    "commit": null
+  },
+  "history": []
+}
