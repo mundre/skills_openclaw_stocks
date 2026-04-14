@@ -1,6 +1,6 @@
 ---
 name: expertpack
-description: "Work with ExpertPacks — structured knowledge packs for AI agents. Obsidian-compatible: every pack is a valid Obsidian vault with Dataview support. Use when: (1) Loading/consuming an ExpertPack as agent context, (2) Creating or hydrating a new ExpertPack from scratch, (3) Configuring RAG for a pack, (4) Validating or fixing a pack with the CLI tools, (5) Opening or authoring a pack in Obsidian. Triggers on: 'expertpack', 'expert pack', 'esoteric knowledge', 'knowledge pack', 'pack hydration', 'validate pack', 'ep-validate', 'ep-doctor', 'obsidian vault', 'obsidian pack'. For EK ratio measurement and quality evals install expertpack-eval. For exporting an OpenClaw agent as an ExpertPack install expertpack-export. For converting an existing Obsidian Vault into an ExpertPack install obsidian-to-expertpack."
+description: "Work with ExpertPacks — structured knowledge packs for AI agents. Obsidian-compatible: every pack is a valid Obsidian vault with Dataview support. Use when: (1) Loading/consuming an ExpertPack as agent context, (2) Creating or hydrating a new ExpertPack from scratch, (3) Configuring RAG for a pack, (4) Opening or authoring a pack in Obsidian. Triggers on: 'expertpack', 'expert pack', 'esoteric knowledge', 'knowledge pack', 'pack hydration', 'obsidian vault', 'obsidian pack'. For CLI tools (ep-validate, ep-doctor, ep-graph-export, ep-strip-frontmatter) install expertpack-cli. For EK ratio measurement and quality evals install expertpack-eval. For exporting an OpenClaw agent as an ExpertPack install expertpack-export. For converting an existing Obsidian Vault into an ExpertPack install obsidian-to-expertpack. For serving any ExpertPack as an MCP endpoint (expertise-as-a-service), see EP MCP at github.com/brianhearn/ep-mcp."
 metadata:
   openclaw:
     homepage: https://expertpack.ai
@@ -12,9 +12,9 @@ Structured knowledge packs for AI agents. Maximize the knowledge your AI is miss
 
 **Learn more:** [expertpack.ai](https://expertpack.ai) · [GitHub](https://github.com/brianhearn/ExpertPack) · [Schema docs](https://expertpack.ai/#schemas) · [Obsidian compatible](https://expertpack.ai/#obsidian)
 
-> **💎 Obsidian compatible:** Every ExpertPack is a valid Obsidian vault. Copy the `.obsidian/` folder from the repo root into any pack directory, open it in Obsidian, and install Dataview + Templater. You get live queries by content type, EK score, and tags; graph view; and full-text search. Standard relative Markdown links — packs render correctly on GitHub and in Obsidian simultaneously.
+> **💎 Obsidian compatible:** Every ExpertPack is a valid Obsidian vault. Copy the `.obsidian/` folder from the ExpertPack repo `template/` directory into your pack root, open it in Obsidian, and install Dataview + Templater. You get live queries by content type, EK score, and tags; graph view; and full-text search. Standard relative Markdown links — packs render correctly on GitHub and in Obsidian simultaneously.
 
-> **Companion skills:** This skill covers consumption and hydration guidance only. For EK measurement and quality evals use `expertpack-eval`. For exporting an OpenClaw agent's workspace as an ExpertPack use `expertpack-export`. For converting an existing Obsidian Vault into an agent-ready ExpertPack use `obsidian-to-expertpack`.
+> **Companion skills:** This skill covers consumption and hydration guidance only. For CLI tooling (validate, doctor, graph export, frontmatter strip) use `expertpack-cli`. For EK measurement and quality evals use `expertpack-eval`. For exporting an OpenClaw agent's workspace as an ExpertPack use `expertpack-export`. For converting an existing Obsidian Vault into an agent-ready ExpertPack use `obsidian-to-expertpack`. For serving a pack as an MCP endpoint (expertise-as-a-service), see **[EP MCP](https://github.com/brianhearn/ep-mcp)** — a generic MCP server for any ExpertPack.
 
 **Full schemas:** `/path/to/ExpertPack/schemas/` in the repo (core.md, person.md, product.md, process.md, composite.md, eval.md)
 
@@ -32,7 +32,7 @@ Default directory: `~/expertpacks/`. Check there first, fall back to current wor
 4. For queries: search Tier 2 (searchable) files via RAG or `_index.md` navigation
 5. Load Tier 3 (on-demand) only on explicit request (verbatim transcripts, training data)
 
-To configure OpenClaw RAG, point `memorySearch.extraPaths` in `openclaw.json` at the pack directory. Files are authored at 400–800 tokens each — retrieval-ready by design. See `{skill_dir}/references/cli-commands.md` for the exact config snippet.
+To configure OpenClaw RAG, point `memorySearch.extraPaths` in `openclaw.json` at the pack directory. Files are authored at 400–800 tokens each — retrieval-ready by design.
 
 For detailed platform integration (Cursor, Claude Code, custom APIs, direct context window): read `{skill_dir}/references/consumption.md`.
 
@@ -43,7 +43,7 @@ For detailed platform integration (Cursor, Claude Code, custom APIs, direct cont
 1. Determine pack type: person, product, process, or composite
 2. Read `{skill_dir}/references/schemas.md` for structural requirements
 3. Create root directory using the pack slug (kebab-case)
-4. **Copy `.obsidian/` config into the pack root** — from the `template/` folder in the public ExpertPack repo (github.com/brianhearn/ExpertPack). This makes the pack immediately usable in Obsidian with Dataview and Templater pre-configured. See `{skill_dir}/references/cli-commands.md` for the copy command.
+4. **Obsidian setup (optional):** Copy the `.obsidian/` folder from the `template/` directory in the public ExpertPack repo (github.com/brianhearn/ExpertPack) into the pack root — the user can do this manually to get Dataview + Templater pre-configured.
 5. Create `manifest.yaml` and `overview.md` (both required)
 6. Scaffold content directories per the type schema with `_index.md` in each
 7. Populate content using EK-aware hydration:
@@ -57,7 +57,7 @@ For full hydration methodology and source prioritization: read `{skill_dir}/refe
 
 ### 3. Configure RAG
 
-Point OpenClaw RAG at the pack directory via `openclaw.json`. See `{skill_dir}/references/cli-commands.md` for the exact config snippet. No external chunking tool needed — files are authored at 400–800 tokens by design.
+Point OpenClaw RAG at the pack directory via `openclaw.json` (`memorySearch.extraPaths`). See `{skill_dir}/references/consumption.md` for the exact config. No external chunking tool needed — files are authored at 400–800 tokens by design.
 
 ### 4. Measure EK Ratio & Run Quality Evals
 
@@ -65,17 +65,7 @@ Install the companion skill `expertpack-eval` via clawhub — it handles all LLM
 
 ### 5. Validate & Fix a Pack
 
-The ExpertPack repo (`tools/validator/` at github.com/brianhearn/ExpertPack) includes local Python scripts for validation and auto-fix. They operate on local pack files only — no network calls, no external dependencies beyond Python stdlib.
-
-- **ep-validate.py** — 19-check compliance validator (manifest, frontmatter, wikilinks, cross-links, file prefixes, orphans, file size). Must pass with 0 errors before committing. Add `--provenance` flag to also check provenance metadata fields (W-PROV-01..04).
-- **ep-doctor.py** — auto-fixes common issues. Always run in dry-run mode first (default behavior); only add the apply flag after reviewing proposed changes. Fix categories: links, fm, prefix.
-- **ep-fix-broken-wikilinks.py** — removes broken wikilinks; safe for composites with cross-sub-pack references. Always preview before applying.
-- **ep-graph-export.py** — generates `_graph.yaml` adjacency file from wikilinks, `related:` frontmatter, and context hints. Produces a GraphRAG-compatible graph artifact at the pack root. Run after hydration or major structural changes.
-- **ep-strip-frontmatter.py** — strips YAML frontmatter from all `.md` files before deploying to a RAG endpoint. Source files are never modified. Use `--src <pack> --out /tmp/<pack>-deploy --force` before packaging for deploy.
-
-Recommended workflow: ep-doctor dry-run → ep-doctor apply → ep-validate → ep-strip-frontmatter (deploy copy) → commit.
-
-See `{skill_dir}/references/cli-commands.md` for exact command syntax.
+Install the companion skill `expertpack-cli` via clawhub — it provides ep-validate, ep-doctor, ep-graph-export, and ep-strip-frontmatter with full command syntax and workflows.
 
 ### 6. Export an OpenClaw Agent as an ExpertPack
 
