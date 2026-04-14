@@ -1,0 +1,11 @@
+{
+  "owner": "openlark",
+  "slug": "apache-echarts",
+  "displayName": "Apache Echarts",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775878775101,
+    "commit": null
+  },
+  "history": []
+}
