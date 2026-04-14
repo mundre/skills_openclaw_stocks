@@ -1,0 +1,11 @@
+{
+  "owner": "wu-uk",
+  "slug": "adaptive-cruise-control-vehicle-dynamics",
+  "displayName": "vehicle-dynamics",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775945991905,
+    "commit": null
+  },
+  "history": []
+}
