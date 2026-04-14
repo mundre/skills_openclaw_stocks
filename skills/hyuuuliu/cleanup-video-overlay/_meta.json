@@ -1,0 +1,11 @@
+{
+  "owner": "hyuuuliu",
+  "slug": "cleanup-video-overlay",
+  "displayName": "video-overlay-cleanup-agent",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775987060801,
+    "commit": null
+  },
+  "history": []
+}
