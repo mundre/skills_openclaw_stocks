@@ -1,0 +1,11 @@
+{
+  "owner": "tencent-mpaas-skills",
+  "slug": "tencent-vod-aigc-code-helper",
+  "displayName": "Tencent VOD AIGC code helper",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776013251617,
+    "commit": null
+  },
+  "history": []
+}
