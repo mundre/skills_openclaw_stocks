@@ -1,0 +1,5 @@
+{
+  "prompt_template": "A dynamic, high-quality photograph of a cartoon {token_name} character launching into space on a rocket, cinematic lighting, trending on ArtStation",
+  "size": "2K",
+  "_comment": "Image generation prompt template. {token_name} will be replaced with actual token name."
+}
