@@ -2,11 +2,11 @@
 name: prisma-config
 description: Generate Prisma Access configurations for Strata Cloud Manager (SCM). Use when creating security policies, NAT rules, decryption policies, URL filtering profiles, GlobalProtect configs, or any SCM configuration objects.
 argument-hint: "[config-type] [details]"
-version: 1.0.0
+version: 1.1.0
 metadata:
   openclaw:
     emoji: "\U0001F6E1\uFE0F"
-    homepage: https://github.com/rali/prismaaccess-skill
+    homepage: https://github.com/leesandao/prismaaccess-skill
 ---
 
 # Prisma Access Configuration Generator
