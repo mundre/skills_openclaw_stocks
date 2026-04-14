@@ -1,0 +1,11 @@
+{
+  "owner": "mikehe123",
+  "slug": "opentable-reservations",
+  "displayName": "OpenTable Reservations",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1775953666456,
+    "commit": null
+  },
+  "history": []
+}
