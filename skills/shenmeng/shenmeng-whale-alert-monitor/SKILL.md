@@ -1,6 +1,6 @@
 ---
 name: whale-alert-monitor
-version: 1000000.1.0
+version: 2026.4.19
 description: |
   追踪加密货币巨鲸动向、大额转账预警、交易所资金流向分析。
   当你想追踪聪明钱的每一步，监测大户交易行为时使用此技能。
