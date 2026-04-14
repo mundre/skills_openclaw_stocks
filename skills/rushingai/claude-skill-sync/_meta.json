@@ -1,0 +1,11 @@
+{
+  "owner": "rushingai",
+  "slug": "claude-skill-sync",
+  "displayName": "Claude Code ↔ OpenClaw Skill Sync",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775804638760,
+    "commit": null
+  },
+  "history": []
+}
