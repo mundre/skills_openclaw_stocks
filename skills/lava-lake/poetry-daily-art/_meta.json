@@ -1,0 +1,11 @@
+{
+  "owner": "lava-lake",
+  "slug": "poetry-daily-art",
+  "displayName": "Poetry Daily Art",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776010832993,
+    "commit": null
+  },
+  "history": []
+}
