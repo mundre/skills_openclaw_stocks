@@ -1,0 +1,11 @@
+{
+  "owner": "goog",
+  "slug": "cornell-notes",
+  "displayName": "cornell note tool",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775876181621,
+    "commit": null
+  },
+  "history": []
+}
