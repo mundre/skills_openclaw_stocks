@@ -1,0 +1,11 @@
+{
+  "owner": "orahub-ora",
+  "slug": "orahub-skills",
+  "displayName": "OraHub Skills",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1775826329642,
+    "commit": null
+  },
+  "history": []
+}
