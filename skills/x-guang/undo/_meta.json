@@ -1,0 +1,11 @@
+{
+  "owner": "x-guang",
+  "slug": "undo",
+  "displayName": "Undo",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1775921837457,
+    "commit": null
+  },
+  "history": []
+}
