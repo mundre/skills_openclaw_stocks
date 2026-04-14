@@ -1,0 +1,16 @@
+{
+  "name": "browser-automation-agent",
+  "version": "1.0.0",
+  "description": "Browser Automation Agent - Playwright/Puppeteer intelligent scraping",
+  "author": "SKY-lv",
+  "license": "MIT",
+  "keywords": [
+    "browser-automation",
+    "playwright",
+    "scraping",
+    "openclaw",
+    "skill"
+  ],
+  "repository": "https://github.com/SKY-lv/browser-automation-agent",
+  "main": "SKILL.md"
+}
