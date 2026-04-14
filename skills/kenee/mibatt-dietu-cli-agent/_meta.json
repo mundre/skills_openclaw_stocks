@@ -1,0 +1,11 @@
+{
+  "owner": "kenee",
+  "slug": "mibatt-dietu-cli-agent",
+  "displayName": "Dietu CLI Agent",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775742787559,
+    "commit": null
+  },
+  "history": []
+}
