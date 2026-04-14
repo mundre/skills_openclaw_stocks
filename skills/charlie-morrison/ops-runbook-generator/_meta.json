@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "ops-runbook-generator",
+  "displayName": "runbook-generator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775875984919,
+    "commit": null
+  },
+  "history": []
+}
