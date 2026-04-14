@@ -1,13 +1,18 @@
 {
   "owner": "ciklopentan",
   "slug": "dual-thinking",
-  "displayName": "Dual Thinking",
+  "displayName": "dual-thinking",
   "latest": {
-    "version": "8.5.11",
-    "publishedAt": 1776060671411,
-    "commit": "https://github.com/openclaw/skills/commit/74967d3d26565fcb67400349e9a2273454a83d37"
+    "version": "8.5.15",
+    "publishedAt": 1776157286997,
+    "commit": null
   },
   "history": [
+    {
+      "version": "8.5.11",
+      "publishedAt": 1776060671411,
+      "commit": "https://github.com/openclaw/skills/commit/74967d3d26565fcb67400349e9a2273454a83d37"
+    },
     {
       "version": "7.3.1",
       "publishedAt": 1775776415134,

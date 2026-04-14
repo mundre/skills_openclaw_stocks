@@ -1,7 +1,7 @@
 # Runtime Contract
 #tags: skills review
 
-Version note: aligned with Dual Thinking v8.5.8 release line.
+Version note: aligned with the live Dual Thinking v8.5.14 reference-verified line after the current-date trend grounding support-surface sync publish.
 
 ## External Required Output
 Keep these rules short and machine-checkable.
@@ -58,10 +58,10 @@ Add these only after the minimum block, and only when useful.
 Because `VALIDATION_STATUS` is part of the minimum required round block, it must be emitted there and resolved before `PATCH_STATUS` is emitted as accepted state. If an external validator schema conflicts with the inline round-block structure required by this document, the inline requirement wins and the external file must be flagged for maintenance.
 
 ### Self-evolution and consultation structure boundary
-Self-evolution constraints, trigger conditions, and consultation structures are defined exclusively in the Runtime Core Lock of `SKILL.md`.
+Self-evolution constraints, trigger conditions, current-date trend grounding constraints, blocked states, anti-patterns, and consultation structures are defined exclusively in the Runtime Core Lock of `SKILL.md`.
 The self-evolution lens does not add a fourth public stage or a new public mode.
-This file mirrors enum values, field ordering, and validation-sensitive sequencing only.
-Do not redeclare self-evolution doctrine or full consultation-structure templates here.
+This file mirrors enum values, field ordering, validation-sensitive sequencing, and the minimum subordinate support needed to avoid drift.
+Do not redeclare self-evolution doctrine, the Current-date Internet Trend Grounding Lock family, or full consultation-structure templates here.
 
 ## Consultation status requirements by mode
 
@@ -265,6 +265,8 @@ SYNC_POINT:
 | continuation missing | default `continue` |
 | session polluted | open recovery chat, paste latest accepted artifact, add `RESUME_SNIPPET`, and rebuild from `STATE_SNAPSHOT` |
 | consultant/orchestrator launch transport triggers approval cards or repeated authorization prompts for otherwise allowed work | do not claim safeguards can be disabled globally; switch once to a launch transport that stays inside the same safety boundary but avoids the prompt-triggering path, preferably direct stdin or file redirection when supported, then resume the same round honestly |
+| current-date-optimized, trend-aware, state-of-the-art, latest-practice-aligned, or materially-improved-against-current-external-practice claims are being made without live public internet evidence even though an allowed internet-capable consultant/orchestrator is available and the task materially benefits from that check | set `VALIDATIONSTATUS: blocked`, emit `BLOCKEDSTATE: current-date-trend-not-grounded`, inspect the missing live public evidence when allowed, or narrow the claim explicitly to `offline-only-provisional-not-verified-against-current-public-trends` |
+| an in-scope current-date-sensitive task is using consultant-bearing review but the mandatory round-1 / round-2 internet-assisted minimum floor has not yet been satisfied even though an allowed internet-capable consultant/orchestrator is available | keep the run blocked for current-date-strength claims, satisfy round 1 by naming the strongest seam from live external evidence against the real artifact, satisfy round 2 by challenging that finding against local constraints and truth boundaries, or narrow the claim explicitly to offline-only/provisional |
 | accepted fix not patched | patch before next review |
 | validation failed | block packaging and publishing, retain the failed diff, and revert to the last passed artifact |
 

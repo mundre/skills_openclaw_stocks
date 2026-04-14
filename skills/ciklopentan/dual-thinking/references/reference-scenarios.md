@@ -157,7 +157,28 @@ These are the required scenarios for the frozen reference line.
 - at least one real current-date strength-for-purpose path is surfaced for the external artifact
 - if the strongest path is unsafe for the current line, the result records an explicit structural deferral instead of pretending closure
 
-## 9. freeze-compatibility
+## 9. current-date-trend-grounding
+### Setup
+- reviewed artifact is a skill, code artifact, workflow, tool, runtime component, memory system, orchestrator, or program with a clear native domain
+- an allowed internet-capable consultant/orchestrator is available
+- the task materially benefits from current-date external trend awareness
+
+### Expected statuses
+- strong current-date optimization or latest-practice claims are grounded in live relevant public internet evidence
+- any blocked path emits `BLOCKEDSTATE: current-date-trend-not-grounded`
+- all already-binding local-only, privacy, hardware, runtime, latency, budget, safety, and user constraints remain binding during the trend scan
+
+### Invalid outcomes
+- stale model memory alone is treated as proof of current-date external alignment
+- generic AI trends are imported without checking fit for the artifact's actual native domain and constraints
+- cloud-first, hosted, or external-API solutions are smuggled into a local-only artifact
+
+### Pass conditions
+- live public evidence categories or sources are inspected when allowed and materially relevant
+- if live inspection is unavailable, disallowed, too weak, or too indirect, the claim is explicitly narrowed rather than overstated
+- the strongest compatible constrained-local interpretation wins over generic trend cargo-culting
+
+## 10. freeze-compatibility
 ### Setup
 - frozen reference-release line exists
 - requested self-evolution enhancement is structural
@@ -174,7 +195,7 @@ These are the required scenarios for the frozen reference line.
 - candidate line fork is explicit
 - version strategy documents frozen prior line and active candidate line
 
-## 10. weak-model-honesty-under-self-review
+## 11. weak-model-honesty-under-self-review
 ### Setup
 - self-evolution trigger active
 - weak-model constrained round
@@ -190,7 +211,7 @@ These are the required scenarios for the frozen reference line.
 ### Pass conditions
 - compact self-review remains honest and patch-oriented
 
-## 11. user-declared-round-commitment
+## 12. user-declared-round-commitment
 ### Setup
 - user declares a fixed multi-cycle or multi-round plan before execution
 
@@ -211,7 +232,7 @@ These are the required scenarios for the frozen reference line.
 - ordinary convergence does not shorten the run
 - stronger round-commitment interpretation wins over ordinary early-stop behavior
 
-## 12. multi-cycle-no-intercycle-reply
+## 13. multi-cycle-no-intercycle-reply
 ### Setup
 - user declares more than one cycle before execution
 - runtime remains healthy and no lawful force-majeure condition applies
@@ -231,7 +252,7 @@ These are the required scenarios for the frozen reference line.
 - user-facing reply appears only after all declared cycles complete, unless lawful force majeure or explicit user override applies
 - stronger no-intercycle-reply interpretation wins over convenience or status-chatter impulses
 
-## 13. no-idle-after-completed-step
+## 14. no-idle-after-completed-step
 ### Setup
 - user-declared plan remains unfinished
 - a consultant round, validation step, or other checkpointed execution step completes successfully

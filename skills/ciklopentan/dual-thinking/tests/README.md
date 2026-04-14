@@ -44,6 +44,8 @@ bash tests/test_reference_alignment.sh
 Purpose:
 - verify release-significant reference text stays aligned across `SKILL.md`, `references/modes.md`, `references/runtime-contract.md`, and `references/examples.md`
 - verify multi-orchestrator and round-limit wording does not drift across documents
+- verify the current-date trend-grounding hard-lock family is reflected in the lower support surfaces that must mirror the live inline contract
+- verify the lower support surfaces preserve the round-1 / round-2 internet-assisted minimum floor for in-scope current-date-sensitive work
 - treat this as a required publish-gate check, not an optional doc nicety
 
 ## Validation rollback test
@@ -66,5 +68,7 @@ bash tests/test_self_evolution_alignment.sh
 ```
 
 Purpose:
-- verify the active line is explicitly a candidate line rather than a silently mutated frozen release line
+- verify the active line is explicitly a candidate/reference-verified line rather than a silently mutated frozen release line
 - verify self-evolution doctrine is synchronized across `SKILL.md`, `references/self-evolution-lens.md`, `references/reference-scenarios.md`, `references/modes.md`, `references/change-policy.md`, and `references/runtime-contract.md`
+- verify the self-evolution support surfaces include the live-public-evidence requirement introduced by the current-date trend-grounding lock family
+- verify self-evolution support surfaces acknowledge the round-1 / round-2 internet-assisted minimum floor when current-date-sensitive work is in scope

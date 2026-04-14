@@ -20,8 +20,21 @@
 | continuation missing | mark `CONTINUATION_SIGNAL: missing`, default `continue` |
 | session polluted or context-degraded | first try to resume the intended persistent same-topic chat; if it is unusable because it is broken, polluted, or the consultant is clearly degrading under context load, open a recovery chat, paste latest accepted artifact, add `RESUME_SNIPPET`, and rebuild from the latest `STATE_SNAPSHOT` |
 | consultant/orchestrator launch path keeps triggering approval cards or repeated authorization prompts for otherwise allowed work | do not claim safeguards can be disabled globally; switch once to a launch path that keeps the same safety boundary but avoids the prompt-triggering transport, preferably direct stdin or file redirection when supported, then resume the same round and log the transport change honestly |
+| current-date-optimized, trend-aware, state-of-the-art, latest-practice-aligned, or materially improved against current external practice is being claimed without live inspection of relevant public internet evidence even though an allowed internet-capable consultant/orchestrator is available and the task materially benefits from that check | set `VALIDATIONSTATUS: blocked`, emit `BLOCKEDSTATE: current-date-trend-not-grounded`, inspect the missing live public evidence when allowed, or narrow the claim explicitly to `offline-only-provisional-not-verified-against-current-public-trends` |
+| an in-scope current-date-sensitive task enters consultant-bearing review without satisfying the mandatory round-1 / round-2 internet-assisted minimum floor even though an allowed internet-capable consultant/orchestrator is available | keep current-date-strength claims blocked until round 1 names the strongest seam from live external evidence against the real artifact and round 2 challenges that finding against local truth boundaries and constraints, or narrow the claim explicitly to offline-only/provisional |
 | accepted fix not patched | patch before next review |
 | validation failed | block packaging and publishing, retain the failed diff, and revert to the last passed artifact |
+
+## Current-date trend grounding blocked state
+If strong current-date optimization, latest-practice, state-of-the-art, trend-aware, or materially-improved-against-current-external-practice claims are being made for a skill, code artifact, workflow, tool, runtime component, memory system, orchestrator, or program without live public internet inspection even though an allowed internet-capable consultant/orchestrator is available and the task materially benefits from that check:
+- set `VALIDATIONSTATUS: blocked`
+- emit `BLOCKEDSTATE: current-date-trend-not-grounded`
+- inspect the missing live public evidence when allowed
+- preserve all already-binding local-only, privacy, hardware, runtime, budget, latency, safety, and user-defined constraints while translating that evidence into the strongest compatible solution
+- if live inspection is unavailable, disallowed, too weak, or too indirect, narrow the claim explicitly to `offline-only-provisional-not-verified-against-current-public-trends`
+- do not import cloud-first, hosted, or external-API designs into a local-only artifact merely because that trend is fashionable
+- if the task is in-scope current-date-sensitive work, do not exit the blocked state until the round-1 / round-2 internet-assisted minimum floor is satisfied or the claim is honestly narrowed
+- the minimum floor means: round 1 names the strongest seam from live external evidence against the real artifact; round 2 challenges that finding against local truth boundaries, runtime limits, weak-model safety, and operator constraints
 
 ## Shallow consultant response
 If the consultant only praises the artifact, gives generic advice, or ignores the real text, do not count the round as meaningful.

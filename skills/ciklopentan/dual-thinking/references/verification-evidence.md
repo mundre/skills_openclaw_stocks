@@ -1,61 +1,49 @@
 # Verification Evidence
 #tags: skills review
 
-- validation_datetime: 2026-04-13T14:07:00+08:00
-- validated_version: `v8.5.11`
-- validation_scope: full fresh 8-round alternating rerun on top of the published `v8.5.9` baseline using AI Orchestrator and Qwen Orchestrator, followed by final validation-pack reruns and publish-gate preparation
+- validation_datetime: 2026-04-14T16:55:00+08:00
+- validated_version: `v8.5.15`
+- validation_scope: current-date trend-grounding ratchet-rule strengthening on top of the live inline contract, including the round-1 / round-2 internet-assisted minimum floor plus release/evidence/test synchronization
 - frozen_prior_line: `v8.5.9 reference-release`
 - frozen_current_baseline: `v8.5.9 reference-release`
 - active_line_state: `reference-candidate`
 - change_summary:
-  - accepted round 1: added explicit removal/clearing handling for `support_surfaces_synchronized` during accepted-state transitions
-  - accepted round 2: bound the visible version/release label to accepted patched state when `PATCH_MANIFEST.version_bump` is not `none`, unless justified deferral is recorded
-  - accepted recovered round 4: clarified that rollback refresh from the reverted artifact includes `support_surfaces_synchronized` and related support-surface tracking fields
-  - rounds 3, 5, 6-recovery, 7, and 8 converged honestly on `none-material`
+  - live inline contract now includes a stability-critical round-1 / round-2 internet-assisted minimum floor for in-scope current-date-sensitive tasks
+  - round 1 must use live external evidence to name the strongest current-date seam in the real local artifact when internet-capable consultation is available and relevant
+  - round 2 must challenge the applicability of round 1's external finding against local truth boundaries, runtime limits, weak-model safety, and operator constraints
+  - subordinate support/reference/test surfaces were synchronized so they support, not shadow, the strengthened current-date trend-grounding hard-lock family
+  - release/checklist/evidence/test surfaces now explicitly cover the current-date trend-grounding ratchet floor and its anti-ritual boundary
 - consultant_session_notes:
-  - DeepSeek handled rounds 1, 3, 5, and 7 in one stable persistent session
-  - Qwen handled round 2 in its first session
-  - Qwen round 4 required recovery because a stale session repeated an already-fixed seam
-  - Qwen round 6 first stalled after submit and was discarded as non-meaningful; a fresh recovery session returned a meaningful result
-  - no architecture rewrite, new public mode, or new public stage was introduced
-  - the surviving changes remain within continuity/recovery/publish-honesty clarification scope
+  - this pass is a subordinate support-surface sync for the already-live inline current-date trend-grounding doctrine
+  - no new public mode or runtime stage was introduced
+  - the surviving changes remain in hard-lock support, recovery-honesty, evidence synchronization, and release-surface truthfulness scope
 
 ## Accepted changes in this pass
-1. Added an explicit rule for removal/clearing transitions of `support_surfaces_synchronized` so disappearance is handled as honestly as appearance.
-2. Added an explicit rule binding the artifact's visible version/release label to accepted patched state when `PATCH_MANIFEST.version_bump` is not `none`, unless a justified deferral is recorded.
-3. Added an explicit rollback clarification requiring refresh of `support_surfaces_synchronized` and related support-surface tracking fields from the reverted accepted state.
+1. Strengthened the inline `Current-date Internet Trend Grounding Lock` so in-scope current-date-sensitive work now has a binding two-round internet-assisted minimum floor when an allowed internet-capable consultant/orchestrator is available.
+2. Made the round responsibilities explicit: round 1 finds the strongest current-date seam from live external evidence against the real artifact; round 2 attacks applicability against local truth boundaries, runtime limits, weak-model safety, and operator constraints.
+3. Locked that two-round minimum floor as stability-critical so later revisions may clarify or strengthen it but may not weaken it without the user's explicit personal instruction.
+4. Added anti-pattern coverage against both stale-memory-only review and ritual repeated web-search churn after the minimum floor is already satisfied.
+5. Updated release/checklist/governance/evidence/test surfaces so they describe the active `v8.5.15` line honestly and cover the new ratchet requirement.
 
 ## Rejected / narrowed interpretations in this pass
-- stale Qwen repeat of the already-fixed version-label seam: rejected as session pollution and recovered with a fresh session
-- stalled Qwen round-6 attempt after successful submit: rejected as non-meaningful runtime failure and rerun in a fresh recovery session
-- interpretive note about who performs local skill-corpus inspection under context isolation: rejected as non-operational because existing isolation rules already constrain execution correctly
+- treating the current-date trend grounding doctrine as reference-only or subordinate prose: rejected because the rule must remain inline in the Runtime Core authority zone
+- letting subordinate support surfaces omit the new blocked state or self-evolution live-public-evidence requirement while still claiming alignment: rejected as inline-authority drift
+- treating generic cloud-first trends as acceptable imports into constrained local artifacts: rejected because the live hard lock requires constraint-preserving interpretation
 
 ## Support-surface sync work in this pass
-- synced `SKILL.md` and `CHANGELOG.md` to `v8.5.11`
-- synced `GOVERNANCE.md`, `references/reference-freeze.md`, `references/reference-release-checklist.md`, `references/reference-test-log.md`, and this file to the active `v8.5.11` candidate line
-- `_meta.json` prepared for `v8.5.11` publication
-- `references/package-tree.sha256` will be regenerated in the final publish gate
+- synced `CHANGELOG.md`, `GOVERNANCE.md`, and `PACKAGING_CHECKLIST.md` to the live `v8.5.15` line and the strengthened current-date trend-grounding release scope
+- synced `references/runtime-contract.md`, `references/self-evolution-lens.md`, `references/failure-handling.md`, `references/reference-scenarios.md`, `references/reference-release-checklist.md`, `references/validator-schema.md`, `references/reference-test-log.md`, and this file to the live inline current-date trend-grounding ratchet family
+- synced `tests/test_reference_alignment.sh`, `tests/test_self_evolution_alignment.sh`, and `tests/README.md` so validation surfaces now cover the strengthened floor and anti-ritual boundary
 
 ## Validation commands executed for this line
 ```text
-python3 /home/irtual/.openclaw/workspace/skills/skill-creator-canonical/scripts/quick_validate.py /home/irtual/.openclaw/workspace/skills/dual-thinking
-python3 /home/irtual/.openclaw/workspace/skills/skill-creator-canonical/scripts/validate_weak_models.py /home/irtual/.openclaw/workspace/skills/dual-thinking
-bash skills/dual-thinking/tests/test_round_flow.sh skills/dual-thinking/tests/fixtures/sample-round-block.txt
-bash skills/dual-thinking/tests/test_weak_model_shortcut.sh
 bash skills/dual-thinking/tests/test_reference_alignment.sh
-bash skills/dual-thinking/tests/test_multi_alternation.sh
-bash skills/dual-thinking/tests/test_rollback_on_validation_failure.sh
 bash skills/dual-thinking/tests/test_self_evolution_alignment.sh
 ```
 
 ## Observed success signals
-- round 1 DeepSeek returned a real accepted-state support-surface clearing seam
-- round 2 Qwen returned a real version/release truthfulness seam
-- recovered round 4 Qwen returned a real rollback support-surface refresh seam
-- later meaningful rounds converged honestly on `none-material`
-- `[OK] round flow fixture passed`
-- `[OK] weak-model shortcut fixture passed`
 - `[OK] reference alignment passed`
-- `[OK] multi alternation contract passed`
-- `[OK] rollback-on-validation-failure contract passed`
 - `[OK] self-evolution alignment passed`
+- lower-stack support surfaces now explicitly cover `BLOCKEDSTATE: current-date-trend-not-grounded`
+- self-evolution support surfaces now explicitly cover live public trend, architecture, implementation, benchmark, and maintainer evidence
+- release/checklist/evidence metadata now describe the active `v8.5.15` line honestly instead of an older release step

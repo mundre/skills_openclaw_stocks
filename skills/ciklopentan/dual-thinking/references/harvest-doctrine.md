@@ -30,7 +30,6 @@ If a previously harvested pattern proves weak, redundant, or wrongly generalized
 - importing a one-fix-one-verify rule from `node-connect` to reduce speculative recovery loops
 - importing installed-vs-packaged split awareness from `openclaw-memory-canonical` to avoid false live-behavior claims
 - importing exact symptom-to-command recovery routing from the orchestrator skills to reduce fuzzy repair prose
-- importing checkpoint / halt discipline from `context-guardian` when continuity failure is a real operational seam
 
 ## Anti-patterns
 - scanning the local corpus and then proposing nothing specific

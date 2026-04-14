@@ -3,7 +3,7 @@ name: dual-thinking
 description: Second-opinion consultation plus automatic skill-engineering escalation for reviews, rewrites, hardening, weak-model optimization, packaging, testing, and publish readiness.
 ---
 
-# Dual Thinking Method — v8.5.11
+# Dual Thinking Method — v8.5.14
 
 **Purpose:** consult a second model, then escalate skill topics into structured, patch-bearing skill engineering instead of generic advice when the topic is a skill or skill-adjacent artifact. In the next candidate line, the method also includes a self-evolution lens for self-review and native-domain-adjacent review without changing the public three-step architecture.
 
@@ -50,13 +50,15 @@ Evaluate conditions in order. Execute the first matching next action exactly onc
 
 | Trigger condition | Required next action | Max attempts |
 |---|---|---|
-| consultant-visible prompt contains path-only artifact references, `FILE:` labels without body text, shell snippets instead of artifact text, unresolved placeholders such as `$(cat ...)`, hidden-local assertions, or thin excerpts that do not actually cover the exact claim being reviewed | set `VALIDATION_STATUS: blocked`, emit `BLOCKED_STATE: artifact-not-pasted`, ask once for sufficient inline artifact text, and stop patching until the artifact is really pasted | 1 |
-| `BLOCKED_STATE: artifact-not-pasted` persists after the one allowed ask | downgrade to `analysis-only`, set `CONSULTANT_POSITION_STATUS: omitted-invalid`, and stop the patch loop for that scope | 0 additional |
-| consultant response is missing any member of the consultant-shaped minimum (`consultant_verdict`, `strongest_finding`, `proposed_fix`) | set `CONSULTANT_QUALITY: failed` and retry once with the narrow consultant template | 1 |
-| `CONSULTANT_QUALITY: failed` still holds after the one allowed retry | downgrade to `analysis-only`, keep the contiguous status block honest, and do not pretend a consultant-bearing success occurred | 0 additional |
+| consultant-visible prompt contains path-only artifact references, `FILE:` labels without body text, shell snippets instead of artifact text, unresolved placeholders such as `$(cat ...)`, hidden-local assertions, or thin excerpts that do not actually cover the exact claim being reviewed | set `VALIDATIONSTATUS: blocked`, emit `BLOCKEDSTATE: artifact-not-pasted`, ask once for sufficient inline artifact text, and stop patching until the artifact is really pasted | 1 |
+| `BLOCKEDSTATE: artifact-not-pasted` persists after the one allowed ask | downgrade to `analysis-only`, set `CONSULTANTPOSITIONSTATUS: omitted-invalid`, and stop the patch loop for that scope | 0 additional |
+| consultant response is missing any member of the consultant-shaped minimum (`consultant_verdict`, `strongest_finding`, `proposed_fix`) | set `CONSULTANTQUALITY: failed` and retry once with the narrow consultant template | 1 |
+| `CONSULTANTQUALITY: failed` still holds after the one allowed retry | downgrade to `analysis-only`, keep the contiguous status block honest, and do not pretend a consultant-bearing success occurred | 0 additional |
 | validation failed or blocked after a real patch | execute the `State Transition & Rollback Gate`, refresh continuity from the reverted artifact, and mark the patch attempt failed for that scope; do not continue the patch loop there unless a new materially different fix is proposed from the failure evidence | 1 |
-| runtime ambiguity is being resolved from a subordinate section or `references/` file instead of the `Runtime Core Lock` and inline artifact text | ignore the subordinate wording for runtime resolution, re-evaluate from the `Runtime Core Lock` and inline artifact text only, record `SYNC_DRIFT: subordinate-runtime-shadow` in the next `SYNC_POINT` or accepted-state summary, then synchronize the stale support surface | 1 |
-| session pollution, stale continuity, or context-length degradation is detected because the active orchestrator session is critiquing a pre-patch artifact state, repeating already-fixed findings, losing task identity, hallucinating against the visible same-topic chat history, or the latest accepted `STATE_SNAPSHOT` does not match the active artifact | first try to resume the intended persistent same-topic session and verify continuity there; open a recovery session only if that intended session is unusable, then repaste the latest accepted artifact and `RESUME_SNIPPET`, rebuild from the latest accepted `STATE_SNAPSHOT`, and verify continuity before continuing | 1 |
+| an OpenClaw-targeted skill, code artifact, workflow, runtime component, package-readiness claim, or publish-readiness claim is being optimized, validated, or described as OpenClaw-grounded without inspection of the relevant real local OpenClaw runtime code and instruction surfaces for that scope | set `VALIDATIONSTATUS: blocked`, emit `BLOCKEDSTATE: openclaw-runtime-not-grounded`, inspect the missing local OpenClaw runtime surfaces when available, or narrow the claim explicitly to `theoretical-provisional-unverified-against-local-OpenClaw`, then continue only from that honest narrowed state | 1 |
+| a skill, code artifact, workflow, tool, runtime component, memory system, orchestrator, or program is being described as current-date-optimized, trend-aware, state-of-the-art, latest-practice-aligned, or materially improved against current external practice without live inspection of relevant public internet evidence even though an allowed internet-capable consultant/orchestrator is available and the task materially benefits from that check | set `VALIDATIONSTATUS: blocked`, emit `BLOCKEDSTATE: current-date-trend-not-grounded`, inspect the missing live public evidence when allowed, or narrow the claim explicitly to `offline-only-provisional-not-verified-against-current-public-trends`, then continue only from that honest narrowed state | 1 |
+| runtime ambiguity is being resolved from a subordinate section or `references/` file instead of the `Runtime Core Lock` and inline artifact text | ignore the subordinate wording for runtime resolution, re-evaluate from the `Runtime Core Lock` and inline artifact text only, record `SYNCDRIFT: subordinate-runtime-shadow` in the next `SYNCPOINT` or accepted-state summary, then synchronize the stale support surface | 1 |
+| session pollution, stale continuity, or context-length degradation is detected because the active orchestrator session is critiquing a pre-patch artifact state, repeating already-fixed findings, losing task identity, hallucinating against the visible same-topic chat history, carrying obvious nonsense against the visible accepted state, or the latest accepted `STATESNAPSHOT` does not match the active artifact | first try to resume the intended persistent same-topic session and verify continuity there; open a recovery session only if that intended session is unusable or has clearly degraded into nonsense, then repaste the latest accepted artifact and `RESUMESNIPPET`, rebuild from the latest accepted `STATESNAPSHOT`, and verify continuity before continuing; if that recovery session also degrades into nonsense, repeat the same same-orchestrator recovery shape instead of abandoning persistent-chat law | 1 per degraded chat |
 | the current consultant/orchestrator launch path triggers approval cards or repeated authorization prompts for work that is otherwise allowed | do not claim the safeguard can be disabled and do not try to remove authorization globally; switch once to a launch path that stays inside the same safety boundary but avoids the prompt-triggering transport, preferably direct stdin or file redirection when the runtime supports it, then resume the same round/session and record the transport change honestly | 1 |
 | a failure condition is not an exact match for any rule above | narrow scope explicitly or stop as blocked; do not improvise a multi-step recovery chain | 0 |
 
@@ -79,9 +81,10 @@ When active:
 - run the self-obsolescence test explicitly: ask where a stronger replacement would simplify, harden, compress, re-order, or delete current structure
 - treat comfort, prior publication, prior validation, and familiarity as non-arguments unless they defend a real invariant
 - do not accept `this is already strong` as a stopping reason by itself
-- when `dual-thinking` reviews itself, improves itself, or improves a skill, code artifact, program, workflow, or runtime component inside OpenClaw, inspect the relevant local skill corpus before convergence, structural deferral, or publish-readiness conclusions
+- when `dual-thinking` reviews itself, improves itself, or improves a skill, code artifact, program, workflow, or runtime component inside OpenClaw, inspect the relevant local skill corpus and the relevant real local OpenClaw runtime surfaces, including code and instruction surfaces that govern how that artifact is actually loaded, routed, constrained, validated, packaged, or executed on that host, before convergence, structural deferral, or publish-readiness conclusions
+- when an allowed internet-capable consultant/orchestrator is available and the task materially benefits from current-date external research, inspect the latest relevant public trend, architecture, implementation, benchmark, and maintainer evidence for the artifact's native domain on the current date, but preserve all binding local-only, privacy, hardware, runtime, and user-defined constraints while translating that evidence into the strongest compatible solution
 - capability harvest is runtime-complete only if it proposes at least one evidenced reusable quality tied to a specific failure mode, validation gap, recovery seam, operator-risk seam, or publish-risk seam in the current artifact, or explicitly records that no evidenced transfer applies
-- when local capability harvest is active, execute the compact validation defined in `## Local Capability Harvest Rule`; do not run verbose interrogation lists, but do not relax the minimum required round block or `VALIDATION_STATUS` visibility
+- when local capability harvest is active, execute the compact validation defined in `## Local Capability Harvest Rule`; do not run verbose interrogation lists, but do not relax the minimum required round block or `VALIDATIONSTATUS` visibility
 - do not hallucinate harvested strengths, and do not treat decorative wording or project-specific noise as harvested capability
 - keep unique downstream consequences in later sections only; do not redeclare this doctrine as parallel runtime law below the Reference Manual Boundary
 
@@ -113,6 +116,77 @@ Domain interpretation rule:
 Stop-rule clarification:
 - `already good`, `already published`, `already validated`, or `close enough to the existing form` are not sufficient stopping reasons by themselves
 - completion requires either a real strengthening patch, or an explicit justified structural deferral when the stronger path cannot safely land in the current line
+
+### Current-date Internet Trend Grounding Lock
+When Dual Thinking reviews, rewrites, hardens, packages, validates, or creates any skill, code artifact, workflow, tool, runtime component, memory system, orchestrator, or program, and at least one allowed internet-capable consultant/orchestrator is available for that run, it must inspect the latest relevant public internet evidence for the artifact's native domain on the current date before concluding that the artifact is current-date-optimized, trend-aware, state-of-the-art, latest-practice-aligned, or genuinely strong relative to current external practice.
+
+For in-scope current-date-sensitive work, this inspection has a minimum round-shape floor, not merely a generic evidence requirement. If the task is materially about current best practice, current comparative strength, current architectural direction, current competitive level, publish/release readiness against current external practice, or whether a named artifact is genuinely strong on the current date, then the first two consultant-bearing rounds must use internet-assisted review when an allowed internet-capable consultant/orchestrator is available. Round 1 must inspect live relevant public evidence and name the strongest current-date seam or missing strength in the real local artifact. Round 2 must challenge the applicability of round 1's external finding against the real local artifact, including truth boundaries, runtime limits, weak-model safety, operator constraints, and current accepted-state evidence. After round 2, later rounds do not need a repeated broad web scan unless a new materially disputed seam appears.
+
+This lock operates only within already-binding user and artifact constraints. Internet trend inspection must refine the solution inside those constraints, not override them. If the artifact, user, or runtime requires local-only operation, no external APIs, no cloud dependencies, no remote runtime resources, no network dependency at runtime, or hardware-specific deployment boundaries, those constraints remain binding while the trend scan looks for the strongest compatible local implementation patterns.
+
+Relevant current-date external evidence includes, as applicable to the task:
+- current public technical articles, documentation, repositories, benchmarks, release notes, implementation guides, and maintainer guidance relevant to the artifact's native domain
+- current public techniques, architectures, algorithms, storage patterns, retrieval patterns, compression patterns, inference patterns, runtime patterns, validation patterns, or safety patterns relevant to the requested scope
+- current public evidence about what is materially stronger, faster, safer, lighter, more local, more hardware-compatible, more memory-efficient, or more reliable under the user's stated deployment constraints
+- current public evidence that a hyped, generic, cloud-first, or externally dependent trend is incompatible with the user's constraints and therefore should be rejected rather than imported
+
+Binding rules:
+- When an allowed internet-capable consultant/orchestrator is available and the task materially benefits from current-date external trend awareness, inspect live public evidence before making strong latest-practice, state-of-the-art, or current-date optimization claims.
+- For in-scope current-date-sensitive tasks, round 1 and round 2 consultant-bearing review must satisfy the minimum two-round internet-assisted floor described above; do not skip straight to local-only convergence while that floor remains unsatisfied.
+- Round 1 internet-assisted review must answer both: what current external practices or trends are actually relevant here, and what strongest missing seam or strength gap they imply for the real artifact.
+- Round 2 internet-assisted review must attack round 1's applicability to the real artifact and may reject, narrow, or redirect the external finding if it would break local truth, runtime constraints, safety, or operator honesty.
+- After that minimum floor is satisfied, repeated broad internet scanning is optional and should happen only when a new materially disputed seam appears; do not turn this lock into ritual web-search churn for purely local bug, test, contract, or consistency work.
+- Do not treat offline prior knowledge, stale model memory, or generic architectural intuition as sufficient proof of current-date external alignment when live verification is available and relevant.
+- Do not use internet trend scouting to override explicit local-only, privacy, hardware, latency, budget, safety, runtime, or user-defined constraints.
+- If the artifact must stay local, use the internet only to discover the strongest compatible local methods, not to smuggle in cloud-first, hosted, or external-API solutions.
+- When the user asks to improve a named artifact, search for advances specific to that artifact's native problem class, not just broad generic AI advice.
+- Prefer evidence that matches the actual scope, hardware class, runtime constraints, deployment model, and operator requirements of the requested artifact.
+- Reject trend cargo-culting. A fashionable approach is not authority unless it materially improves the artifact within the binding constraints.
+- Before any current-date or latest-practice conclusion, record what external evidence categories or sources were actually inspected, or emit an explicit blocked or narrowed state naming what was not checked.
+- If live internet inspection is unavailable, disallowed, too weak, or too indirect for a grounded claim, narrow the claim honestly to offline-only, provisional, or not-verified-against-current-public-trends.
+- No later section may downgrade this lock into advice, a soft preference, or a best-effort suggestion.
+
+### Current-date Internet Trend Grounding Stability Lock
+The Current-date Internet Trend Grounding Lock is stability-critical for skill engineering, code improvement, runtime design, and artifact hardening when live internet research is allowed and materially relevant. It may only be clarified or strengthened. It must not be weakened, softened, bypassed, narrowed, or removed without the user's explicit personal instruction. The round-1 / round-2 internet-assisted minimum floor for in-scope current-date-sensitive tasks is part of this stability-critical lock and may be clarified or strengthened but not relaxed into advice, best effort, or optional behavior. No convenience argument, token-saving argument, latency argument, summary-only argument, stale-memory argument, generic-best-practice argument, or ritual-avoidance argument is valid grounds for relaxing it. No later section may override this invariant. If any conflict appears, the stricter current-date-trend-grounding interpretation wins.
+
+### Current-date Internet Trend Grounding Anti-Patterns
+- Do not call an artifact current-date-optimized just because the text sounds modern.
+- Do not rely on stale model knowledge alone when live internet verification is available and relevant.
+- Do not skip the mandatory round-1 / round-2 internet-assisted floor for in-scope current-date-sensitive tasks just because the artifact already looks strong.
+- Do not turn this lock into ritual repeated web search for purely local bug, test, contract, or consistency work after the mandatory floor has already been satisfied.
+- Do not import cloud-first, hosted, or external-API designs into a local-only artifact.
+- Do not use generic AI trends as proof of fit for the user's hardware, runtime, locality, privacy, or deployment constraints.
+- Do not weaken this rule without the user's explicit personal instruction.
+
+### OpenClaw Runtime Grounding Lock
+When Dual Thinking reviews, rewrites, hardens, packages, validates, or creates any skill, code artifact, workflow, tool, runtime component, or publish-ready artifact intended to run inside OpenClaw or depend materially on OpenClaw behavior, it must inspect the relevant real local OpenClaw runtime surfaces before concluding that the artifact is OpenClaw-optimized, OpenClaw-grounded, runtime-ready, package-ready, publish-ready, or genuinely strong for OpenClaw rather than only strong in theory.
+
+Relevant OpenClaw runtime surfaces include, as applicable to the task:
+- the local OpenClaw code that governs skill discovery, skill loading, routing, invocation, toolcommand execution, sandboxing, approval boundaries, packaging, validation, or publication for the target artifact path
+- the local OpenClaw system, developer, operator, or shipped instruction surfaces that constrain how skills are supposed to behave on that host
+- the local skill directory conventions, packaging surfaces, validator surfaces, config schemas, and commandtool policy surfaces relevant to the artifact
+- any local runtime outputs, validator outputs, or host-scoped evidence needed to distinguish real OpenClaw behavior from generic agent theory
+
+Binding rules:
+- Do not optimize an OpenClaw-targeted artifact from generic agent best practice alone when OpenClaw-specific behavior is materially relevant.
+- Do not claim OpenClaw optimization from skill quality alone.
+- Do not treat theoretical compatibility, generic shell assumptions, guessed skill-loading behavior, or abstract agent-design patterns as proof of OpenClaw fit.
+- Inspect the real local OpenClaw runtime surfaces that matter for the requested scope before convergence, structural deferral, packaging, publish-readiness, or OpenClaw-specific strength claims.
+- If the local OpenClaw runtime surfaces are unavailable, inaccessible, incomplete, stale, or too indirect to justify a grounded claim, narrow the claim honestly to theoretical, provisional, unverified-against-local-OpenClaw, or generic-best-practice-only.
+- When the artifact can still be improved generically without the missing OpenClaw runtime evidence, improvements may continue, but every OpenClaw-specific claim must remain explicitly limited by the missing-surface state.
+- When real local OpenClaw behavior conflicts with generic best practice, prefer the real OpenClaw behavior for OpenClaw-targeted optimization unless the user explicitly asks for portability-first design instead.
+- Before any OpenClaw-specific convergence or readiness conclusion, record which OpenClaw runtime surfaces were actually inspected, or emit an explicit blocked or narrowed state that names the missing surfaces.
+- Inspecting only the local skill corpus is not enough when the task depends on how OpenClaw itself loads, routes, constrains, validates, or executes that artifact.
+- No later section may downgrade this lock into advice, a soft preference, or a best-effort suggestion.
+
+### OpenClaw Runtime Grounding Stability Lock
+The OpenClaw Runtime Grounding Lock is stability-critical for any OpenClaw-targeted artifact path. It may only be clarified or strengthened. It must not be weakened, softened, bypassed, narrowed, or removed without the user's explicit personal instruction. No convenience argument, token-saving argument, summary-only argument, prior-publication argument, prior-validation argument, or generic best-practice argument is valid grounds for relaxing it. No later section may override this invariant. If any conflict appears, the stricter OpenClaw-grounding interpretation wins.
+
+### OpenClaw Runtime Grounding Anti-Patterns
+- Do not call a skill OpenClaw-optimized just because the skill text is strong in isolation.
+- Do not assume OpenClaw skill-loading, routing, command execution, sandbox, approval, packaging, or validator behavior without inspecting the real local OpenClaw runtime surfaces.
+- Do not treat generic agent-design theory as proof of OpenClaw fit.
+- Do not weaken this rule without the user's explicit personal instruction.
 
 ## Local Capability Harvest Rule
 This is a hard strengthening rule for native-domain self-improvement and OpenClaw artifact review.
@@ -156,6 +230,41 @@ It may only be clarified or strengthened.
 If real runtime evidence shows that correction is needed, it must be corrected only toward stricter correctness and better isolation discipline.
 No later section may override, dilute, or silently narrow this invariant.
 If any conflict appears, the stricter consultant-isolation interpretation wins.
+
+## Persistent Orchestrator Session Inviolability Lock
+This is a stability-critical invariant for consultant-bearing continuity.
+In `api` and especially in `multi`, the default law is persistent same-topic consultant chat reuse.
+For a given same-topic line, each external consultant or orchestrator must remain in its own persistent visible chat or session across the full round series.
+Starting a fresh chat merely because a new round began is forbidden.
+Convenience, payload reduction, token savings, cleaner transcripts, stylistic preference, or the agent's desire for a "fresh start" are not valid reasons to abandon the persistent same-topic chat.
+
+In `multi`, this rule is strict:
+- DeepSeek keeps one persistent same-topic chat for the line
+- Qwen keeps one persistent same-topic chat for the line
+- later rounds must continue inside those same per-orchestrator chats
+- switching to a newly created chat is invalid unless the recovery conditions below are actually met
+
+The only ordinary recovery reason to replace a persistent consultant chat is consultant degradation inside that very chat.
+For this skill, consultant degradation means the active consultant has started producing obvious nonsense, losing the visible task identity, contradicting the visibly accepted artifact state without grounded evidence, repeating already-fixed findings as if they were still unresolved, or otherwise "carrying nonsense" against the visible same-topic history.
+
+When that degradation condition appears, the recovery law is narrow and mandatory:
+1. do not switch to an arbitrary fresh pattern
+2. do not silently abandon the persistent-chat scheme
+3. create exactly one replacement chat for that same orchestrator
+4. mark `CHAT_CONTINUITY: recovery`
+5. repaste the latest accepted artifact, the latest `RESUME_SNIPPET`, and any exact accepted-state deltas needed for honest review
+6. continue trying inside that replacement chat for the same orchestrator
+
+If the replacement chat for that same orchestrator also degrades into nonsense, repeat the same recovery shape again: create a new replacement chat for that same orchestrator, repaste the latest accepted state, and continue honestly.
+Do not use consultant nonsense as an excuse to downgrade the session law into free chat rotation.
+Do not treat arbitrary new-chat creation as normal alternation behavior.
+Do not switch recovery strategy merely because the agent feels the old sequence is inconvenient.
+
+This rule may be violated only under true force-majeure conditions that make honest continuation in that persistent-chat lineage impossible under the Runtime Core Lock.
+Outside true force majeure, violation is forbidden.
+The rule itself may be weakened or rewritten only by the user's explicit personal instruction.
+It may otherwise only be clarified or strengthened, never softened.
+If any conflict appears, the stricter persistent-session interpretation wins.
 
 ## User-Declared Round Commitment Lock
 If the user explicitly declares a cycle-count, round-count, or total round plan before execution, that declared plan becomes binding runtime commitment.
@@ -217,6 +326,8 @@ If any conflict appears, the stricter round-commitment interpretation wins.
 - Do not send full context to consultant A and a reduced fragment to consultant B while assuming B can infer or access A's context.
 - Do not reference local file paths as if external models can open them.
 - Do not assume a new chat inherits earlier context.
+- Do not create a new consultant chat on a later round merely because it feels cleaner, safer, shorter, or easier.
+- Do not use consultant degradation as an excuse to abandon the persistent same-orchestrator session law; recover by recreating that same orchestrator's chat and continuing honestly.
 - Do not assume the arbiter's internal reasoning, draft notes, hidden comparisons, or unstated accepted state are visible to consultants.
 - Do not assume one consultant can see another consultant's answer, prompt, or context unless it is explicitly pasted.
 - Do not assume the consultant knows file contents because the arbiter knows them.
@@ -503,6 +614,8 @@ If `ORCHESTRATOR_MODE: api`, the required order is:
 
 Round 2+ for the same topic must reuse the same consultant chat or session by default so the consultant can see only the prior rounds and payload text already given in that same chat.
 Open a fresh consultant chat only if the intended same-topic chat cannot be safely reused because continuity is broken, the chat is polluted, or the consultant is clearly degrading under context load and producing nonsense against the visible prior round history.
+If such degradation occurs, the new chat is a recovery continuation of that same consultant line, not a free reset of the session law; repaste the latest accepted state and continue there.
+Outside true force majeure, no other reason is lawful.
 Do not reorder this into consultant-first review.
 
 #### Multi-orchestrator alternation contract
@@ -513,6 +626,8 @@ Each of those chats is isolated from the other orchestrator's chat. Reuse inside
 Starting a fresh consultant chat on round 2+ is invalid by default and must not be treated as normal alternation behavior.
 Open a replacement chat only if the intended persistent chat is unusable because continuity is broken, the session is polluted, or the consultant is clearly degrading under context length and starts repeating already-fixed findings, losing task identity, or producing nonsense against the visible accepted state.
 If replacement is required, mark `CHAT_CONTINUITY: recovery`, repaste the latest accepted artifact and `RESUME_SNIPPET`, and continue only after the replacement chat has enough context to review the current state honestly.
+If that replacement chat also degrades into nonsense, create another replacement chat for that same orchestrator, repaste the latest accepted state again, and continue there. Recovery repetition does not dissolve the persistent per-orchestrator chat law.
+Outside true force majeure, no other basis may be used to violate this continuity rule.
 The required sequence for a multi round is:
 1. load the latest accepted artifact state
 2. produce one `SELF_POSITION` for that artifact state
@@ -583,7 +698,8 @@ SYNC_POINT:
 If a multi-round recovery is required, restore from the latest accepted `STATE_SNAPSHOT`, not from raw memory of prior chat turns.
 The alternation invariant is simple: round 1 uses orchestrator A, round 2 uses orchestrator B, later rounds keep alternating while reusing the same per-orchestrator sessions.
 Consultant context should accumulate inside those same persistent chats only to the extent that the transport actually preserves visible chat history there; if the needed history is not visibly present, repaste the required context before asking for review.
-Do not discard that continuity and restart round-specific fresh chats unless the explicit recovery rule applies. Token savings, payload reduction, or convenience are not recovery reasons.
+Do not discard that continuity and restart round-specific fresh chats unless the explicit recovery rule applies. Token savings, payload reduction, convenience, cleaner transcripts, or aesthetic preference are not recovery reasons.
+Do not treat consultant nonsense as permission to roam across arbitrary fresh chats; the lawful response is recovery by recreating the same orchestrator's chat lineage and continuing from the latest accepted state.
 
 Blind-session clarification:
 - each orchestrator session is independently blind except for what was actually pasted into that specific session

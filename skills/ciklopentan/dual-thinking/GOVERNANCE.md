@@ -7,7 +7,9 @@ It does not override the executable runtime law in `SKILL.md`.
 
 ```text
 `v8.5.9` is the frozen prior reference-release line.
-`v8.5.11` is the active candidate line undergoing final release sync after a completed fresh 8-round alternating rerun on top of the published `v8.5.9` baseline.
+`v8.5.15` is the active candidate line for the strengthened current-date trend-grounding ratchet release.
+Historical accepted checkpoint: `v8.5.13` is the prior published reference-release line before the support-surface sync publish.
+Historical accepted checkpoint: `v8.5.11` is the older frozen prior reference-release line.
 Historical accepted checkpoint: `v8.5.8` is the older frozen prior reference-release line.
 Historical compatibility marker: `v8.5.7` is the frozen prior reference-release line.
 
@@ -16,7 +18,8 @@ Freeze rules:
 - Do not expand the public runtime contract only because a formulation could be more elegant.
 - Do not merge backlog ideas into the reference line without a concrete failing scenario, validation gap, or publish blocker.
 - Treat wording-only, formatting-only, and consistency-only edits as non-architectural maintenance.
-- Treat any change that modifies flow order, required round structure, validation semantics, mode behavior, or consultant roles as a structural change.
+- Treat subordinate support-surface sync work that only aligns reference/test/evidence/governance surfaces to already-live inline hard locks as non-architectural maintenance.
+- Treat any change that modifies flow order, required round structure, validation semantics, mode behavior, consultant roles, or the inline hard-lock family itself as a structural change.
 
 Allowed changes in the frozen reference line:
 - wording clarification
@@ -49,6 +52,7 @@ The current line may be promoted from `reference-candidate` to `reference-releas
 - no unresolved contradiction remains between weak-model shortcut and normal consultant-bearing flow
 - no unresolved contradiction remains between mode-specific execution and the shared closing tail
 - no unresolved contradiction remains in publish/readiness semantics for the current scope
+- no unresolved contradiction remains between the live inline current-date trend grounding lock family and the subordinate reference/evidence/test surfaces
 ```
 
 ## Reference validation status

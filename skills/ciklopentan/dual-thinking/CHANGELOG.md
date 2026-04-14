@@ -1,5 +1,30 @@
 # Changelog
 
+## 8.5.15 - 2026-04-14
+- Strengthened the inline `Current-date Internet Trend Grounding Lock` with a ratchet-rule minimum floor for in-scope current-date-sensitive tasks.
+- Bound round 1 and round 2 consultant-bearing review to internet-assisted inspection when an allowed internet-capable consultant/orchestrator is available and the task is materially about current best practice, current comparative strength, current architectural direction, or publish/release readiness against current external practice.
+- Made the two-round floor explicit: round 1 must name the strongest current-date seam from live external evidence against the real artifact; round 2 must challenge the applicability of that external finding against local truth boundaries, runtime limits, weak-model safety, and operator constraints.
+- Locked that two-round floor as stability-critical so future revisions may clarify or strengthen it but may not weaken it without the user's explicit personal instruction.
+- Added explicit anti-pattern coverage so the lock cannot collapse into either stale-memory-only review or ritual repeated web search after the minimum floor is already satisfied.
+- Synced package/evidence/reference/test surfaces to the new `v8.5.15` line.
+
+## 8.5.14 - 2026-04-14
+- Published the current-date trend-grounding support-surface sync as the next version after the already-published `8.5.13` line.
+- Kept the inline runtime authority unchanged while synchronizing subordinate governance, checklist, validator, evidence, and test surfaces to the live current-date trend-grounding hard-lock family.
+- Added lower-stack coverage for `BLOCKEDSTATE: current-date-trend-not-grounded`, the matching recovery branch, and the self-evolution live-public-evidence requirement.
+
+## 8.5.13 - 2026-04-14
+- Added an inline OpenClaw Runtime Grounding Lock, its Stability Lock, and matching anti-patterns above the Reference Manual Boundary so OpenClaw-targeted work cannot honestly claim OpenClaw optimization without inspecting the real local OpenClaw runtime surfaces.
+- Extended the Recovery Decision Tree with the `openclaw-runtime-not-grounded` blocked state and strengthened the self-evolution rule so OpenClaw self/workflow reviews require both local skill-corpus inspection and relevant real local OpenClaw runtime surface inspection.
+- Added the `Current-date Internet Trend Grounding Lock`, `Current-date Internet Trend Grounding Stability Lock`, and `Current-date Internet Trend Grounding Anti-Patterns` inline above the Reference Manual Boundary.
+- Extended the Recovery Decision Tree with `BLOCKEDSTATE: current-date-trend-not-grounded` and strengthened self-evolution so materially relevant current-date external claims require live public trend, architecture, implementation, benchmark, and maintainer evidence when an allowed internet-capable consultant/orchestrator is available.
+- Synced governance, validator, checklist, evidence, reference, and test surfaces so the lower stack supports the live inline current-date trend-grounding hard-lock family instead of shadowing it.
+
+## 8.5.12 - 2026-04-13
+- Strengthened the persistent orchestrator session law so violating the same-topic per-orchestrator chat scheme is lawful only under true force majeure.
+- Made explicit that consultant degradation/nonsense permits only same-orchestrator recovery-chat continuation, not free rotation across arbitrary fresh chats.
+- Locked the rule so it may otherwise only be clarified or strengthened, and may be weakened only by the user's explicit personal instruction.
+
 ## 8.5.11 - 2026-04-13
 - Continued the fresh 8-round alternating self-rerun on top of the `v8.5.10` candidate line.
 - Clarified rollback refresh so reverting to the last passed artifact must also refresh `support_surfaces_synchronized` and related support-surface tracking fields from the reverted accepted state.
