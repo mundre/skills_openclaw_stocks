@@ -1,0 +1,11 @@
+{
+  "owner": "cloudnet-skills",
+  "slug": "cloudnet-ai-diagnosis",
+  "displayName": "Cloudnet AI Diagnostics",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1776132727376,
+    "commit": null
+  },
+  "history": []
+}
