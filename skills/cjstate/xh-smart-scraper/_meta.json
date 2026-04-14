@@ -1,0 +1,11 @@
+{
+  "owner": "cjstate",
+  "slug": "xh-smart-scraper",
+  "displayName": "智能网页爬虫",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775893134055,
+    "commit": null
+  },
+  "history": []
+}
