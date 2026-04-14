@@ -1,0 +1,11 @@
+{
+  "owner": "charllesvale",
+  "slug": "mikrotik-routeros-isp",
+  "displayName": "Mikrotik Routeros",
+  "latest": {
+    "version": "2.0.4",
+    "publishedAt": 1776023266494,
+    "commit": null
+  },
+  "history": []
+}
