@@ -1,0 +1,11 @@
+{
+  "owner": "cellinlab",
+  "slug": "cell-xhs-title-selector",
+  "displayName": "小红书标题策略",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775827068337,
+    "commit": null
+  },
+  "history": []
+}
