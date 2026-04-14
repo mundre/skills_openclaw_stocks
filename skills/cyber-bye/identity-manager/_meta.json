@@ -1,0 +1,11 @@
+{
+  "owner": "cyber-bye",
+  "slug": "identity-manager",
+  "displayName": "Identity Manager",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775887706173,
+    "commit": null
+  },
+  "history": []
+}
