@@ -1,0 +1,11 @@
+{
+  "owner": "mirni",
+  "slug": "greenhelix-signal-verification-network",
+  "displayName": "Signal Verification Network: Cryptographic Proof for Trading Signals",
+  "latest": {
+    "version": "1.3.0",
+    "publishedAt": 1776133700578,
+    "commit": null
+  },
+  "history": []
+}
