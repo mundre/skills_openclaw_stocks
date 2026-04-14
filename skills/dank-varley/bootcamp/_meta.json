@@ -1,0 +1,11 @@
+{
+  "owner": "dank-varley",
+  "slug": "bootcamp",
+  "displayName": "OpenClaw Boot Camp",
+  "latest": {
+    "version": "1.2.0",
+    "publishedAt": 1775755049909,
+    "commit": null
+  },
+  "history": []
+}
