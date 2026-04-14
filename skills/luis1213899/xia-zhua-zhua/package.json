@@ -1,0 +1,9 @@
+{
+  "name": "xia-zhua-zhua",
+  "version": "1.0.0",
+  "description": "网页转 Markdown CLI 工具",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "turndown": "^7.1.2"
+  }
+}
