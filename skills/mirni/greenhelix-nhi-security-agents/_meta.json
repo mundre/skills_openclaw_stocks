@@ -1,0 +1,11 @@
+{
+  "owner": "mirni",
+  "slug": "greenhelix-nhi-security-agents",
+  "displayName": "Non-Human Identity Security for AI Agents",
+  "latest": {
+    "version": "1.3.0",
+    "publishedAt": 1776133685181,
+    "commit": null
+  },
+  "history": []
+}
