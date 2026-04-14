@@ -1,0 +1,11 @@
+{
+  "owner": "trips-ai",
+  "slug": "tripai-skill",
+  "displayName": "TripAI",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1775810849401,
+    "commit": null
+  },
+  "history": []
+}
