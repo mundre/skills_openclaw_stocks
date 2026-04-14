@@ -1,0 +1,11 @@
+{
+  "owner": "freedompixels",
+  "slug": "security-health-check",
+  "displayName": "个人数字安全体检",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1776034280464,
+    "commit": null
+  },
+  "history": []
+}
