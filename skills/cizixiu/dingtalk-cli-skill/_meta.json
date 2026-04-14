@@ -1,0 +1,11 @@
+{
+  "owner": "cizixiu",
+  "slug": "dingtalk-cli-skill",
+  "displayName": "Dingtalk CLI SKILL",
+  "latest": {
+    "version": "1.0.13",
+    "publishedAt": 1775809545504,
+    "commit": null
+  },
+  "history": []
+}
