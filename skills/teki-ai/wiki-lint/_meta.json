@@ -1,0 +1,11 @@
+{
+  "owner": "teki-ai",
+  "slug": "wiki-lint",
+  "displayName": "Wiki Lint",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776020349707,
+    "commit": null
+  },
+  "history": []
+}
