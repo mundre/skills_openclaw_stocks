@@ -1,11 +1,17 @@
 {
   "owner": "azazlf09",
   "slug": "universal-expert",
-  "displayName": "百变专家 · Universal Expert Engine",
+  "displayName": "Universal Expert",
   "latest": {
-    "version": "5.2.0",
-    "publishedAt": 1775821555721,
-    "commit": "https://github.com/openclaw/skills/commit/7a388f0d530dee7814f7ff98112a5805f315bac9"
+    "version": "5.3.3",
+    "publishedAt": 1776077306969,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "5.2.0",
+      "publishedAt": 1775821555721,
+      "commit": "https://github.com/openclaw/skills/commit/7a388f0d530dee7814f7ff98112a5805f315bac9"
+    }
+  ]
 }
