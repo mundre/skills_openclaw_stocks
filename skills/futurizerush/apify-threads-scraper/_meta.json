@@ -1,0 +1,11 @@
+{
+  "owner": "futurizerush",
+  "slug": "apify-threads-scraper",
+  "displayName": "Apify Threads Scraper",
+  "latest": {
+    "version": "0.2.1",
+    "publishedAt": 1775894571435,
+    "commit": null
+  },
+  "history": []
+}
