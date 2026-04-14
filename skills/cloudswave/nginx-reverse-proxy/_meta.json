@@ -1,0 +1,11 @@
+{
+  "owner": "cloudswave",
+  "slug": "nginx-reverse-proxy",
+  "displayName": "Nginx Reverse Proxy",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775915870373,
+    "commit": null
+  },
+  "history": []
+}
