@@ -1,0 +1,11 @@
+{
+  "owner": "scnet-sugon",
+  "slug": "social-security-card-ocr",
+  "displayName": "Social Security Card Ocr",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776073094825,
+    "commit": null
+  },
+  "history": []
+}
