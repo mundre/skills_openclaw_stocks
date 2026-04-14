@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "facebook-messenger",
+  "displayName": "Facebook Messenger",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775729093246,
+    "commit": null
+  },
+  "history": []
+}
