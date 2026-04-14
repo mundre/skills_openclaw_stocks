@@ -1,0 +1,11 @@
+{
+  "owner": "nerasse",
+  "slug": "forgejo-fj-api",
+  "displayName": "Forgejo Workflow",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1775762136982,
+    "commit": null
+  },
+  "history": []
+}
