@@ -1,0 +1,11 @@
+{
+  "owner": "seriallazer",
+  "slug": "moviefetch",
+  "displayName": "MovieFetch",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1775734428333,
+    "commit": null
+  },
+  "history": []
+}
