@@ -1,0 +1,11 @@
+{
+  "owner": "futurizerush",
+  "slug": "apify-youtube-email",
+  "displayName": "Apify YouTube Email Scraper",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1775894581029,
+    "commit": null
+  },
+  "history": []
+}
