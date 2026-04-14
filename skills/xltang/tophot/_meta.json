@@ -1,0 +1,11 @@
+{
+  "owner": "xltang",
+  "slug": "tophot",
+  "displayName": "今日热点",
+  "latest": {
+    "version": "0.1.2",
+    "publishedAt": 1776074963336,
+    "commit": null
+  },
+  "history": []
+}
