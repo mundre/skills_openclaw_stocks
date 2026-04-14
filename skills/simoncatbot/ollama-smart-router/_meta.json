@@ -1,0 +1,11 @@
+{
+  "owner": "simoncatbot",
+  "slug": "ollama-smart-router",
+  "displayName": "Smart Router for Ollama",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775985551885,
+    "commit": null
+  },
+  "history": []
+}
