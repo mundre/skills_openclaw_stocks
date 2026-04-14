@@ -1,0 +1,11 @@
+{
+  "owner": "vccv2rndrv-cyber",
+  "slug": "fortune-daily",
+  "displayName": "运势日报",
+  "latest": {
+    "version": "2.0.1",
+    "publishedAt": 1776051342735,
+    "commit": null
+  },
+  "history": []
+}
