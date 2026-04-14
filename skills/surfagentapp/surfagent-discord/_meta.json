@@ -1,0 +1,11 @@
+{
+  "owner": "surfagentapp",
+  "slug": "surfagent-discord",
+  "displayName": "SurfAgent Discord",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775798891955,
+    "commit": null
+  },
+  "history": []
+}
