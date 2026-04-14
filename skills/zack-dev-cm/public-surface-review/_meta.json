@@ -1,0 +1,11 @@
+{
+  "owner": "zack-dev-cm",
+  "slug": "public-surface-review",
+  "displayName": "Publish Guard",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1775820737760,
+    "commit": null
+  },
+  "history": []
+}
