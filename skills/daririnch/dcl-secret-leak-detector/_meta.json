@@ -1,0 +1,11 @@
+{
+  "owner": "daririnch",
+  "slug": "dcl-secret-leak-detector",
+  "displayName": "DCL Secret Leak Detector",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776052816277,
+    "commit": null
+  },
+  "history": []
+}
