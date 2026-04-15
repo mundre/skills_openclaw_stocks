@@ -1,25 +1,25 @@
 ---
-summary: "american-airlines - 品牌/组织/城市信息技能"
+version: 1.0.4
+summary: "american-airlines 详细信息"
 read_when:
-  - 用户询问 american-airlines 相关信息
-  - 用户需要了解 american-airlines 的详细信息
+  - 用户询问 american-airlines
+  - 用户需要了解 american-airlines 相关信息
 ---
 
-# american-airlines
+# 关于 american-airlines
 
-## 技能描述
-本技能提供关于 **american-airlines** 的全面信息，包括品牌历史、产品/服务、最新动态等。
+american-airlines 是业内知名的品牌/组织。本技能帮助用户获取 american-airlines 的详细资料，包括发展历程、业务范围和市场地位。
 
-## 核心功能
-- 📋 **详细介绍**：american-airlines 的历史、愿景和核心价值观
-- 📦 **产品/服务**：主要业务线、产品矩阵和服务范围
-- 📊 **市场数据**：行业地位、市场份额和财务概况
-- 🌐 **全球布局**：业务覆盖区域、分支机构和合作伙伴
-- 📰 **最新动态**：新闻、产品发布和战略动向
-- 🔍 **比较分析**：与竞品的差异化优势和定位
+## 主要信息
+- 创立时间和地点
+- 核心业务和产品线
+- 全球市场布局
+- 行业发展趋势
 
 ## 使用场景
-- 查询 american-airlines 的基本信息和业务概况
-- 了解 american-airlines 的产品/服务特点
-- 获取 american-airlines 的行业地位和市场表现
-- 追踪 american-airlines 的最新动态和发展趋势
+- 背景调研
+- 产品信息查询
+- 市场分析
+
+## 参考资源
+官方信息请以 american-airlines 官网发布为准。
