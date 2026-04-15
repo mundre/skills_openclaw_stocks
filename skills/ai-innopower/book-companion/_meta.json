@@ -1,0 +1,11 @@
+{
+  "owner": "ai-innopower",
+  "slug": "book-companion",
+  "displayName": "书搭子",
+  "latest": {
+    "version": "2.0.5",
+    "publishedAt": 1776185235044,
+    "commit": null
+  },
+  "history": []
+}
