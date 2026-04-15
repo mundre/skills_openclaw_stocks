@@ -1,0 +1,11 @@
+{
+  "owner": "zack-dev-cm",
+  "slug": "artifact-deck",
+  "displayName": "Artifact Deck",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1776224664908,
+    "commit": null
+  },
+  "history": []
+}
