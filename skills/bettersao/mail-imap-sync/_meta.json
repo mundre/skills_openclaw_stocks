@@ -1,0 +1,11 @@
+{
+  "owner": "bettersao",
+  "slug": "mail-imap-sync",
+  "displayName": "mail-imap-sync",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1776075453395,
+    "commit": null
+  },
+  "history": []
+}
