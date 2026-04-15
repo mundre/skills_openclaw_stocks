@@ -1,33 +1,24 @@
 ---
-name: moderna
-description: "mRNA技术先驱制药公司"
-metadata:
-  { "openclaw": { "emoji": "💊", "version": "0.1.0", "author": "hanxueyuan", "tags": ["encyclopedia","healthcare","moderna"] } }
+summary: "moderna 品牌档案"
+read_when:
+  - 查找 moderna
+  - 了解 moderna 的背景
 ---
 
-# 💊 Moderna 莫德纳
+# moderna 档案
 
-mRNA技术先驱制药公司
+moderna — 值得关注的重要品牌。
 
-## What This Skill Does
+## 快速了解
+• **它是谁：** 在所属领域具有重要影响力的品牌
+• **做什么：** 提供核心产品/服务，覆盖全球/区域市场  
+• **怎么样：** 在行业中占据重要地位，具有竞争优势
 
-This skill provides comprehensive information about **Moderna 莫德纳**:
+## 深入探索
+想要了解更详细的内容？本技能涵盖：
+→ 发展历程中的关键节点
+→ 产品/服务的核心特点
+→ 全球市场分布情况
+→ 行业竞争格局分析
 
-1. **Overview** — What it is, history, key facts
-2. **Latest Updates** — Recent news, developments, and announcements
-3. **Key Data** — Statistics, rankings, records, and metrics
-4. **Resources** — Official websites, useful links, and references
-5. **Related Topics** — Connected entities and recommendations
-
-## Example Queries
-
-- "Tell me about Moderna"
-- "Latest news on Moderna"
-- "Moderna key facts"
-
-## How It Works
-
-Uses web search to fetch real-time, comprehensive information from authoritative sources.
-
-## Author
-Created by hanxueyuan | Part of the Encyclopedia project | License: MIT
+🔗 官方渠道是获取最新、最准确信息的推荐来源。
