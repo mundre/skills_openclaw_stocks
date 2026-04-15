@@ -1,0 +1,11 @@
+{
+  "owner": "snarflakes",
+  "slug": "openclaw-interaction-bridge",
+  "displayName": "Openclaw Interaction Bridge",
+  "latest": {
+    "version": "1.4.0",
+    "publishedAt": 1776208365112,
+    "commit": null
+  },
+  "history": []
+}
