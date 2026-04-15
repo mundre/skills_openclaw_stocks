@@ -1,0 +1,11 @@
+{
+  "owner": "goog",
+  "slug": "q-research",
+  "displayName": "A research is searching around something.",
+  "latest": {
+    "version": "1.2.0",
+    "publishedAt": 1776139687802,
+    "commit": null
+  },
+  "history": []
+}
