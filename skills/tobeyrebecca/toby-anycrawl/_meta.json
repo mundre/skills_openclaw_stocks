@@ -3,9 +3,15 @@
   "slug": "toby-anycrawl",
   "displayName": "anycrawl",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776229550298,
-    "commit": "https://github.com/openclaw/skills/commit/682ec6869d0257969634f31b1d6e548b3e8b8069"
+    "version": "1.0.2",
+    "publishedAt": 1776230207707,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776229550298,
+      "commit": "https://github.com/openclaw/skills/commit/682ec6869d0257969634f31b1d6e548b3e8b8069"
+    }
+  ]
 }
