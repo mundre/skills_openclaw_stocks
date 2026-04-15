@@ -1,0 +1,147 @@
+{
+  "version": "1.0.0",
+  "description": "LLM Memory Integration 安装规范",
+  
+  "dual_package": true,
+  "checksums": "checksums.txt",
+  
+  "install": {
+    "type": "source",
+    "method": "copy",
+    "source": "src/",
+    "description": "默认安装源码版本（src/），完全可审计"
+  },
+  
+  "build": {
+    "optional": true,
+    "script": "build.sh",
+    "description": "可选：运行 build.sh 应用 VMP 保护（需要用户手动执行）",
+    "warning": "VMP 保护会使代码难以审计，建议仅使用源码版本"
+  },
+  
+  "dist": {
+    "included": true,
+    "purpose": "VMP 保护的预编译版本，用于生产环境性能优化",
+    "warning": "dist/ 目录包含 VMP 保护的代码，难以审计。建议仅使用 src/ 源码版本进行安全审查。",
+    "recommendation": "生产环境可使用 dist/，但需先验证 checksums 并在测试环境用 src/ 版本验证功能",
+    "vmp_protected": true,
+    "auditable": false,
+    "checksum_verification": "sha256sum -c checksums.txt",
+    "audit_recommendation": "在生产环境使用 dist/ 前，请先审查 src/ 目录的源码，确认功能一致后再使用 dist/ 版本"
+  },
+  
+  "high_risk_capabilities": {
+    "native_extensions": {
+      "file": "src/core/sqlite_ext.py",
+      "extension": "vec0.so",
+      "risk": "原生 SQLite 扩展加载，提供任意代码执行路径",
+      "risk_level": "HIGH",
+      "audit_required": true,
+      "mitigation": [
+        "SHA256 哈希验证（safe_extension_loader.py）",
+        "信任列表管理（.trusted_hashes.json）",
+        "文件完整性检查（大小、权限、路径验证）",
+        "生产环境禁止自动确认",
+        "用户必须手动确认才能加载扩展"
+      ],
+      "user_action_required": "用户必须显式调用 confirm_extension_load() 才能加载扩展",
+      "audit_recommendation": "在生产环境使用前，请先审查 src/core/sqlite_ext.py 和 src/scripts/safe_extension_loader.py 的代码"
+    },
+    "file_system_operations": {
+      "scope": "~/.openclaw 目录",
+      "operations": ["读", "写", "创建", "删除"],
+      "risk": "广泛的文件系统操作，可能修改全局配置",
+      "mitigation": [
+        "所有自动功能默认禁用",
+        "用户必须手动触发所有操作",
+        "操作前需要用户确认",
+        "备份机制（backup_before_update: true）"
+      ],
+      "affected_files": [
+        "vectors.db（向量数据库）",
+        "MEMORY.md（记忆文件）",
+        "persona.md（用户画像）",
+        "logs/*（日志文件）"
+      ]
+    },
+    "network_access": {
+      "purpose": "调用用户配置的 LLM/embedding API 端点",
+      "risk": "网络访问可能泄露敏感信息",
+      "mitigation": [
+        "用户自行配置 API 端点",
+        "不内置任何 API 密钥",
+        "所有网络请求添加 timeout",
+        "仅访问用户配置的端点"
+      ],
+      "required_env_vars": ["EMBEDDING_API_KEY"],
+      "optional_env_vars": ["LLM_API_KEY"]
+    }
+  },
+  
+  "removed_components": {
+    "web_api": {
+      "file": "src/core/web_api.py",
+      "reason": "HTTP API 服务增加网络攻击面",
+      "removed_in": "v5.1.7"
+    },
+    "monitor_dashboard": {
+      "file": "src/core/monitor_dashboard.py",
+      "reason": "HTTP 服务器监听增加攻击面",
+      "removed_in": "v5.2.2"
+    }
+  },
+  
+  "requirements": {
+    "binaries": ["python3", "sqlite3"],
+    "pythonPackages": {
+      "required": ["pysqlite3-binary", "aiosqlite"],
+      "optional": ["numpy", "scikit-learn"]
+    },
+    "envVars": {
+      "required": ["EMBEDDING_API_KEY"],
+      "optional": ["LLM_API_KEY"]
+    }
+  },
+  
+  "postInstall": {
+    "instructions": [
+      "1. 配置 Embedding API 密钥：编辑 config/llm_config.json",
+      "2. （可选）配置 LLM API 密钥",
+      "3. 运行配置向导：python3 scripts/config_wizard.py",
+      "4. 验证安装：python3 scripts/search.py 'test query'"
+    ]
+  },
+  
+  "security": {
+    "auditable": true,
+    "sourceIncluded": true,
+    "vmpProtected": false,
+    "checksums": "checksums.txt",
+    "description": "默认安装源码版本（src/），完全可审计。dist/ 目录包含 VMP 保护版本，仅供生产环境使用。",
+    "security_documentation": "SECURITY.md",
+    "audit_guide": "详见 SECURITY.md 中的安全审计指南",
+    "risk_assessment": {
+      "native_extension": {
+        "risk_level": "HIGH",
+        "mitigation": "SHA256 验证 + 信任列表 + 用户确认",
+        "audit_required": true
+      },
+      "filesystem_access": {
+        "risk_level": "MEDIUM",
+        "mitigation": "仅限 ~/.openclaw + 备份 + 用户确认",
+        "audit_required": false
+      },
+      "network_access": {
+        "risk_level": "LOW",
+        "mitigation": "仅访问用户配置的端点 + timeout",
+        "audit_required": false
+      }
+    }
+  },
+  
+  "verification": {
+    "checksums": "checksums.txt",
+    "signature": "SHA256",
+    "description": "所有文件都有 SHA256 校验和，可在 checksums.txt 中验证"
+  }
+}

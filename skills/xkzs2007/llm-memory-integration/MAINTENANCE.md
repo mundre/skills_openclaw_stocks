@@ -1,31 +1,33 @@
 # 维护指南
 
-## 维护任务
+## 手动维护任务
 
-### 每周任务
+**重要提示**：所有维护任务都需要用户手动执行，没有自动定时任务。
 
-| 任务 | 时间 | 脚本 |
+### 维护任务列表
+
+| 任务 | 说明 | 脚本 |
 |------|------|------|
-| 完整维护 | 周一 03:00 | `run_maintenance.py` |
-| FTS 重建 | 周日 02:00 | `rebuild_fts.py` |
-
-### 每日任务
-
-| 任务 | 时间 | 脚本 |
-|------|------|------|
-| 覆盖率检查 | 06:00 | `check_coverage.py` |
+| 完整维护 | 检查覆盖率、清理孤立向量、优化数据库 | `run_maintenance.py` |
+| 覆盖率检查 | 检查向量覆盖率 | `check_coverage.py` |
+| FTS 重建 | 重建全文搜索索引 | `rebuild_fts.py` |
+| 向量优化 | VACUUM、重建索引、清理孤立向量 | `vector_system_optimizer.py` |
 
 ## 手动执行
 
 ```bash
-# 完整维护
+# 完整维护（推荐每周执行一次）
 python3 ~/.openclaw/workspace/skills/llm-memory-integration/scripts/run_maintenance.py
 
-# 检查覆盖率
+# 检查覆盖率（推荐每日执行一次）
 python3 ~/.openclaw/workspace/skills/llm-memory-integration/scripts/check_coverage.py
 
-# 重建 FTS
+# 重建 FTS（当搜索失效时执行）
 python3 ~/.openclaw/workspace/skills/llm-memory-integration/scripts/rebuild_fts.py
+
+# 向量系统优化（当数据库过大时执行）
+python3 ~/.openclaw/workspace/skills/llm-memory-integration/src/scripts/vector_system_optimizer.py status
+python3 ~/.openclaw/workspace/skills/llm-memory-integration/src/scripts/vector_system_optimizer.py run
 ```
 
 ## 监控阈值
@@ -58,3 +60,9 @@ python3 ~/.openclaw/workspace/skills/llm-memory-integration/scripts/rebuild_fts.
 1. 运行 `rebuild_fts.py` 重建索引
 2. 检查 FTS 表是否存在
 3. 验证分词器配置
+
+## ⚠️ 重要声明
+
+- **无自动定时任务**：所有维护任务都需要用户手动执行
+- **无后台守护进程**：没有自动运行的后台进程
+- **无自动修复**：所有修复操作都需要用户确认

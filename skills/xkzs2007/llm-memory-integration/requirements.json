@@ -1,12 +1,18 @@
 {
   "name": "llm-memory-integration",
-  "version": "2.1.4",
+  "version": "3.5.1",
   "license": "MIT-0",
   "author": "xkzs2007",
   "homepage": "https://clawhub.ai/skill/llm-memory-integration",
   "binaries": {
     "required": ["python3", "sqlite3"],
     "description": "Python 3 for running scripts, SQLite 3 for vector database"
+  },
+  "pythonDependencies": {
+    "required": ["pysqlite3-binary", "aiosqlite"],
+    "optional": ["numpy", "scikit-learn"],
+    "description": "Python packages for SQLite vector operations and async support",
+    "install": "pip install pysqlite3-binary aiosqlite"
   },
   "envVars": {
     "required": ["EMBEDDING_API_KEY"],
@@ -38,7 +44,8 @@
     "sqlite": ["vec0"],
     "description": "SQLite vector extension for semantic search",
     "source": "~/.openclaw/extensions/memory-tencentdb/node_modules/sqlite-vec-linux-x64/vec0.so",
-    "warning": "Loads native SQLite extension - verify source before use"
+    "warning": "Loads native SQLite extension - verify source before use",
+    "security": "SHA256 hash verification implemented in safe_extension_loader.py"
   },
   "cron": {
     "autoInstall": false,

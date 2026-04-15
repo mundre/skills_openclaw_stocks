@@ -12,6 +12,7 @@
       "配置"
     ]
   },
-  "auto_upgrade": true,
-  "upgrade_interval": 86400
+  "auto_upgrade": false,
+  "upgrade_interval": 86400,
+  "_comment": "⚠️ auto_upgrade 默认禁用，与 SKILL.md 声明一致"
 }

@@ -1,6 +1,6 @@
 {
   "name": "llm-memory-integration",
-  "version": "2.1.4",
+  "version": "3.5.1",
   "description": "LLM + 向量模型集成方案。支持任意 LLM + Embedding 模型，用户自行配置。支持混合检索、智能路由、渐进式启用、用户画像自动更新。",
   "license": "MIT-0",
   "author": "xkzs2007",
@@ -21,6 +21,13 @@
       "endpoints": "user-configured",
       "description": "Calls to user-configured LLM and embedding API endpoints"
     }
+  },
+  "security": {
+    "auto_update_disabled": true,
+    "sync_disabled": true,
+    "require_confirmation": true,
+    "backup_before_update": true,
+    "description": "All auto-update and sync features disabled by default for security"
   },
   "repository": {
     "type": "git",
