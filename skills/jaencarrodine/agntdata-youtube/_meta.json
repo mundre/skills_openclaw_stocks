@@ -1,0 +1,11 @@
+{
+  "owner": "jaencarrodine",
+  "slug": "agntdata-youtube",
+  "displayName": "YouTube API",
+  "latest": {
+    "version": "1.0.11",
+    "publishedAt": 1776188224836,
+    "commit": null
+  },
+  "history": []
+}
