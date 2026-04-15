@@ -1,0 +1,11 @@
+{
+  "owner": "freedompixels",
+  "slug": "cn-stock-brief",
+  "displayName": "A股每日简报",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1776206977593,
+    "commit": null
+  },
+  "history": []
+}
