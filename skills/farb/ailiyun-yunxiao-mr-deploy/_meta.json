@@ -1,0 +1,11 @@
+{
+  "owner": "farb",
+  "slug": "ailiyun-yunxiao-mr-deploy",
+  "displayName": "阿里云云效创建MR+发布+通知（全可配置）",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776067463401,
+    "commit": null
+  },
+  "history": []
+}
