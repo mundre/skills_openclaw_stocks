@@ -1,0 +1,11 @@
+{
+  "owner": "cantonbio-skill",
+  "slug": "hcp-data-process",
+  "displayName": "HCP data process assist",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776144453828,
+    "commit": null
+  },
+  "history": []
+}
