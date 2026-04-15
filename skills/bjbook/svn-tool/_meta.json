@@ -1,0 +1,11 @@
+{
+  "owner": "bjbook",
+  "slug": "svn-tool",
+  "displayName": "Svn Tool",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776082683090,
+    "commit": null
+  },
+  "history": []
+}
