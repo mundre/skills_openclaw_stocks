@@ -1,0 +1,11 @@
+{
+  "owner": "sipingme",
+  "slug": "web-publisher",
+  "displayName": "Web Publisher Skill",
+  "latest": {
+    "version": "0.2.3",
+    "publishedAt": 1776221829454,
+    "commit": null
+  },
+  "history": []
+}
