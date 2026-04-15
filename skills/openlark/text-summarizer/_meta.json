@@ -1,0 +1,11 @@
+{
+  "owner": "openlark",
+  "slug": "text-summarizer",
+  "displayName": "Text Summarizer",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776219059734,
+    "commit": null
+  },
+  "history": []
+}
