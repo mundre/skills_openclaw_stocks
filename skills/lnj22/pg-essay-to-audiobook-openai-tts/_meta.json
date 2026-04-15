@@ -1,0 +1,11 @@
+{
+  "owner": "lnj22",
+  "slug": "pg-essay-to-audiobook-openai-tts",
+  "displayName": "openai-tts",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776263934568,
+    "commit": null
+  },
+  "history": []
+}
