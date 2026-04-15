@@ -1,0 +1,11 @@
+{
+  "owner": "maikimolto",
+  "slug": "proxmox-multi-control",
+  "displayName": "Proxmox Multi Control",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776242036819,
+    "commit": null
+  },
+  "history": []
+}
