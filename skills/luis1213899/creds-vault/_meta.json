@@ -1,0 +1,11 @@
+{
+  "owner": "luis1213899",
+  "slug": "creds-vault",
+  "displayName": "令牌管理中心",
+  "latest": {
+    "version": "2.1.1",
+    "publishedAt": 1776263758553,
+    "commit": null
+  },
+  "history": []
+}
