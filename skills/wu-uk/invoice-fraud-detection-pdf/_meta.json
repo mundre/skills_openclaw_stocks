@@ -1,0 +1,11 @@
+{
+  "owner": "wu-uk",
+  "slug": "invoice-fraud-detection-pdf",
+  "displayName": "pdf",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776252655383,
+    "commit": null
+  },
+  "history": []
+}
