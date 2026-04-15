@@ -3,11 +3,16 @@
   "slug": "neural-memory",
   "displayName": "Neural Memory",
   "latest": {
-    "version": "4.40.0",
-    "publishedAt": 1775666006679,
-    "commit": "https://github.com/openclaw/skills/commit/adc4fb908335e5679e05c366282ab4842579a029"
+    "version": "4.48.0",
+    "publishedAt": 1776231788145,
+    "commit": null
   },
   "history": [
+    {
+      "version": "4.40.0",
+      "publishedAt": 1775666006679,
+      "commit": "https://github.com/openclaw/skills/commit/adc4fb908335e5679e05c366282ab4842579a029"
+    },
     {
       "version": "4.27.1",
       "publishedAt": 1775114094547,
