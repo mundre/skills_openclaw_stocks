@@ -1,0 +1,11 @@
+{
+  "owner": "ventaozzz",
+  "slug": "arxiv-daily-pusher",
+  "displayName": "arXiv Daily Paper Pusher",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776150739180,
+    "commit": null
+  },
+  "history": []
+}
