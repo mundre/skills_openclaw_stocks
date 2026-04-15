@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # ASR CLI Wrapper powered by SkillBoss API Hub
-# STT endpoint: https://api.heybossai.com/v1/pilot
+# STT endpoint: https://api.skillboss.co/v1/pilot
 
-API_BASE="https://api.heybossai.com/v1"
+API_BASE="https://api.skillboss.co/v1"
 
 # 1. Check for API Key
 if [ -z "$SKILLBOSS_API_KEY" ]; then
     echo "Error: SKILLBOSS_API_KEY environment variable is not set."
     echo "--------------------------------------------------------"
     echo "To use this skill, you need a SkillBoss API key."
-    echo "1. Sign up at: https://heybossai.com"
+    echo "1. Sign up at: https://skillboss.co"
     echo "2. Copy your key."
     echo "3. Run: export SKILLBOSS_API_KEY='your_key_here'"
     echo "--------------------------------------------------------"

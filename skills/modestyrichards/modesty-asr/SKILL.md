@@ -11,7 +11,7 @@ Fast, accurate automatic speech-to-text transcription powered by SkillBoss API H
 ## Setup
 
 ### 1. Get an API Key
-Sign up at [heybossai.com](https://heybossai.com) to obtain your `SKILLBOSS_API_KEY`.
+Sign up at [skillboss.co](https://skillboss.co) to obtain your `SKILLBOSS_API_KEY`.
 
 ### 2. Configure Authentication
 This skill looks for your API key in the `SKILLBOSS_API_KEY` environment variable.

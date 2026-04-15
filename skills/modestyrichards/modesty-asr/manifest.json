@@ -1,5 +1,5 @@
 {
-  "author": "SkillBoss API Hub (https://heybossai.com)",
+  "author": "SkillBoss API Hub (https://skillboss.co)",
   "categories": [
     "ai",
     "media",
@@ -12,7 +12,7 @@
   "env": [
     "SKILLBOSS_API_KEY"
   ],
-  "homepage": "https://heybossai.com",
+  "homepage": "https://skillboss.co",
   "keywords": [
     "asr",
     "audio",
