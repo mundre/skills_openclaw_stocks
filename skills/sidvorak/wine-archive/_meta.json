@@ -1,0 +1,11 @@
+{
+  "owner": "sidvorak",
+  "slug": "wine-archive",
+  "displayName": "Wine Archive",
+  "latest": {
+    "version": "0.1.4",
+    "publishedAt": 1776125520740,
+    "commit": null
+  },
+  "history": []
+}
