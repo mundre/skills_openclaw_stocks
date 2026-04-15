@@ -1,0 +1,11 @@
+{
+  "owner": "move78ai",
+  "slug": "m78armor-security-check",
+  "displayName": "m78armor : openclaw security configuration check",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776262908381,
+    "commit": null
+  },
+  "history": []
+}
