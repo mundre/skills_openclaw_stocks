@@ -3,9 +3,15 @@
   "slug": "asos",
   "displayName": "Asos",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1776231420937,
-    "commit": "https://github.com/openclaw/skills/commit/f9231d620fb7c93ea336132af3e4faaef629dde1"
+    "version": "1.0.3",
+    "publishedAt": 1776232871898,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1776231420937,
+      "commit": "https://github.com/openclaw/skills/commit/f9231d620fb7c93ea336132af3e4faaef629dde1"
+    }
+  ]
 }

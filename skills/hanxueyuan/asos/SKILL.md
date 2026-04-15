@@ -1,4 +1,5 @@
 ---
+version: 1.0.4
 summary: "asos 详细信息"
 read_when:
   - 用户询问 asos
