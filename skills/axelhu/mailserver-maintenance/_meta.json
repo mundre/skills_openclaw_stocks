@@ -1,0 +1,11 @@
+{
+  "owner": "axelhu",
+  "slug": "mailserver-maintenance",
+  "displayName": "Mailserver Maintenance",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1776166532398,
+    "commit": null
+  },
+  "history": []
+}
