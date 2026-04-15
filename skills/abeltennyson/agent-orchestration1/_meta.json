@@ -1,0 +1,11 @@
+{
+  "owner": "abeltennyson",
+  "slug": "agent-orchestration1",
+  "displayName": "agent-orchestration",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776042823142,
+    "commit": null
+  },
+  "history": []
+}
