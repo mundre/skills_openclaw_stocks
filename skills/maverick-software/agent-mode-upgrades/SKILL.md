@@ -22,7 +22,7 @@ A comprehensive upgrade to OpenClaw's agentic capabilities with persistent state
 | Enabled by default | ❌ No — explicit opt-in required |
 | Approval gates default | ✅ On for high/critical risk operations |
 
-## Status: ✅ Active (v2.3.0)
+## Status: ✅ Active (v2.4.0)
 
 All components are integrated and working.
 
@@ -37,8 +37,10 @@ All components are integrated and working.
 | Confidence Gates | ✅ Working |
 | Error Recovery | ✅ Working |
 | Checkpointing | ✅ Working |
-| Memory Auto-Inject | ✅ Working (v2) |
+| Memory Auto-Inject | ✅ Working (v2.4) |
+| Memory Status Events | ✅ Working (v2.4) |
 | Discord Plan Rendering | ✅ Working (v2) |
+| Webchat History Plan Rendering | ✅ Working (v2.4) |
 
 ## Features
 
@@ -371,6 +373,14 @@ ui/
 ```
 
 ## Changelog
+
+### v2.4.0
+- **Memory auto-injection hardening**: `surrealdb-memory.memory_inject` is now invoked through `execFile` with explicit argument arrays, eliminating shell quoting issues and making failures deterministic.
+- **Robust MCP output parsing**: The hook now extracts JSON from noisy stdout, cleanly reports tool errors, and treats empty context as a non-fatal success path.
+- **Memory status events for UI/debugging**: Added compact `stream: "memory"` agent events carrying success/failure metadata without exposing the full injected prompt context.
+- **Runtime env caveat documented**: Added explicit guidance that `${OPENAI_API_KEY}` for `surrealdb-memory` resolves from runtime environment, so a stale exported env var can override a corrected vault secret until the process environment is fixed and restarted.
+- **Persisted webchat plan rendering**: The webchat history renderer now parses saved `:::plan` blocks into structured plan cards, matching the streaming experience instead of showing raw JSON in chat history.
+- **Files changed**: host OpenClaw integration now relies on updates in `src/agents/enhanced-loop-hook.ts`, `ui/src/ui/app-tool-stream.ts`, `ui/src/ui/chat/message-extract.ts`, and `ui/src/ui/chat/grouped-render.ts`; skill docs updated in `SKILL.md`, `README.md`, `SECURITY.md`, and `INSTRUCTIONS.md`.
 
 ### v2.3.0
 - **Re-wired orchestrator into agent runner**: The `tryLoadEnhancedLoop()` / `wrapRun()` integration with `run.ts` was lost during a prior upstream merge. Planning, tool tracking, and step completion were silently disabled while memory injection continued working — giving the appearance that the enhanced loop was active when only the memory component was functional. The full orchestrator pipeline is now restored.

@@ -188,6 +188,13 @@ To disable the enhanced loop:
 ### Plan not showing?
 - Ensure Enhanced Loop is enabled in Mode dashboard
 - Check that the task is complex enough to trigger planning
+- If streaming plan cards work but saved chat history shows raw JSON, upgrade the host OpenClaw UI to a build that includes the persisted `:::plan` parser in `ui/src/ui/chat/message-extract.ts` / `grouped-render.ts`
+
+### Memory auto-injection failing?
+- Confirm `surrealdb-memory` is registered in `config/mcporter.json`
+- Verify `mcporter call surrealdb-memory.memory_inject ...` succeeds from the OpenClaw workspace
+- If `${OPENAI_API_KEY}` is used, make sure the gateway/runtime environment exports the correct key; a corrected vault secret will not help until the launcher environment is updated and restarted
+- Expect a compact `stream: "memory"` status event in supported UIs rather than the full injected memory body
 
 ### Too many tokens?
 - Select a smaller/cheaper orchestrator model via the Mode dashboard (the dropdown lists all models from the OpenClaw catalog)
@@ -202,4 +209,4 @@ To disable the enhanced loop:
 
 ## Version
 
-v2.1.0 - Enhanced agentic loop with memory auto-injection and channel-aware plan rendering
+v2.4.0 - Enhanced agentic loop with hardened memory auto-injection, memory status events, and structured webchat plan rendering for both streaming and persisted chat history

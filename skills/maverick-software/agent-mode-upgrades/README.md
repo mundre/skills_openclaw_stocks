@@ -174,6 +174,7 @@ See [SECURITY.md](./SECURITY.md) for the full audit document.
 - **Token overhead**: Planning and reflection use additional tokens (configurable via orchestrator model selection)
 - **Easy rollback**: One click to switch back to Core Loop
 - **Checkpoints**: Long tasks can be resumed if interrupted
+- **Runtime env matters for memory**: If `surrealdb-memory` uses `${OPENAI_API_KEY}`, the gateway/runtime environment must export the correct key. A corrected vault file alone is not enough until the launching environment is updated and restarted.
 
 ## 📚 Documentation
 
@@ -181,6 +182,19 @@ See [SECURITY.md](./SECURITY.md) for the full audit document.
 - [SECURITY.md](./SECURITY.md) - Security & trust audit document
 - [INSTRUCTIONS.md](./INSTRUCTIONS.md) - Integration guide for agents
 - [references/](./references/) - Component documentation
+
+## 🔗 Links
+
+- [OpenClaw](https://github.com/openclaw/openclaw)
+- [Source Code](https://github.com/openclaw/skill-agentic-loop-upgrade)
+- [ClawHub](https://clawhub.com/skills/agentic-loop-upgrade)
+- [Documentation](https://docs.openclaw.ai)
+- [Discord](https://discord.com/invite/clawd)
+
+## 📄 License
+
+MIT
+(./references/) - Component documentation
 
 ## 🔗 Links
 

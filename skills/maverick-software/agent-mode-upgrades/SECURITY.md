@@ -92,6 +92,9 @@ The `memory.autoInject` feature reads from a SurrealDB knowledge graph if config
 - Is opt-in (disabled by default)
 - Silently skips if SurrealDB is not configured
 - Performs read-only queries only
+- Emits compact `stream: "memory"` status metadata for UI/debug visibility without exposing the full injected prompt body
+
+**Runtime environment caveat:** If the `surrealdb-memory` MCP server is configured with `${OPENAI_API_KEY}`, that value is resolved from the process environment that launches `mcporter` / the gateway. A stale exported env var can override a corrected vault secret until the launching environment is updated and restarted.
 
 ---
 

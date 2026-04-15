@@ -1,8 +1,11 @@
 /**
- * Lightweight LLM Caller
+ * Provider-aware lightweight LLM caller
  *
- * Makes API calls to Anthropic for plan generation and reflection.
- * Uses fetch directly to avoid heavy SDK dependencies.
+ * Supports the providers currently used by the enhanced-loop orchestrator:
+ * - Anthropic
+ * - OpenAI Codex / OpenAI Responses-style transports
+ *
+ * This stays lightweight, but stops assuming every provider is Anthropic-shaped.
  */
 export interface LLMMessage {
     role: "user" | "assistant" | "system";
@@ -26,24 +29,24 @@ export interface LLMCallerConfig {
     model?: string;
     maxTokens?: number;
     baseUrl?: string;
+    provider?: string;
 }
 export declare class LLMCaller {
     private apiKey;
     private model;
     private maxTokens;
     private baseUrl;
+    private provider;
     constructor(config?: LLMCallerConfig);
-    /**
-     * Check if the caller is configured with an API key
-     */
     isConfigured(): boolean;
-    /**
-     * Make an LLM call
-     */
     call(options: LLMCallOptions): Promise<LLMResponse>;
+    private callAnthropic;
+    private callOpenAIResponses;
     /**
-     * Convenience method matching the LLMCaller type expected by orchestrator
+     * Consume a streaming SSE response from the Codex backend.
+     * Collects output_text deltas and extracts usage from the response.completed event.
      */
+    private consumeCodexStream;
     invoke(options: {
         messages: Array<{
             role: string;

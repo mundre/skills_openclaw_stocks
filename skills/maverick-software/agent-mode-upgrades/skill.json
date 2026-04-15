@@ -1,6 +1,6 @@
 {
   "name": "agentic-loop-upgrade",
-  "version": "2.3.0",
+  "version": "2.4.1",
   "description": "Enhanced agentic loop with planning, parallel execution, confidence gates, semantic error recovery, and observable state machine. Includes Mode dashboard UI for easy configuration.",
   "author": "OpenClaw",
   "license": "MIT",
@@ -50,7 +50,9 @@
       "state-machine",
       "mode-dashboard",
       "memory-auto-inject",
-      "discord-plan-rendering"
+      "discord-plan-rendering",
+      "memory-status-events",
+      "webchat-history-plan-rendering"
     ],
     "credentials": {
       "note": "Reuses the host OpenClaw agent's existing auth profiles via resolveApiKeyForProvider. No additional API keys required beyond what the agent already has configured. The orchestrator model is dynamically selected from the OpenClaw model catalog (models.list) \u2014 any provider/model the agent can access is available.",
@@ -138,5 +140,8 @@
     "scripts/"
   ],
   "main": "src/index.ts",
-  "types": "src/types.ts"
+  "types": "src/types.ts",
+  "changelog": {
+    "2.4.1": "Memory auto-injection hardening: secret-like facts filtered at retrieval and prompt-side via sanitizeInjectedMemoryContext(). Robust MCP output parsing with JSON extraction from noisy stdout. Auth-profile-aware child env for mcporter (OAuth > token > api_key). Persisted webchat plan rendering: stripAllPlanBlocks handles concatenated delivery-mirror blocks; parsePlanBlock finds the last (most recent) plan. Runtime env documented: stale exported env vars can override vault secrets until process restart. (re-publish with dist files)"
+  }
 }

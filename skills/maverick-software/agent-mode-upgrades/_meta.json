@@ -1,13 +1,18 @@
 {
   "owner": "maverick-software",
   "slug": "agent-mode-upgrades",
-  "displayName": "Agentic Mode Upgrades",
+  "displayName": "Agentic Loop Upgrade",
   "latest": {
-    "version": "2.3.1",
-    "publishedAt": 1772360192678,
-    "commit": "https://github.com/openclaw/skills/commit/7c78392837f56d14fce4890a1eb6070fe8f743eb"
+    "version": "2.4.1",
+    "publishedAt": 1776290865323,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.1",
+      "publishedAt": 1772360192678,
+      "commit": "https://github.com/openclaw/skills/commit/7c78392837f56d14fce4890a1eb6070fe8f743eb"
+    },
     {
       "version": "2.0.2",
       "publishedAt": 1771569041271,
