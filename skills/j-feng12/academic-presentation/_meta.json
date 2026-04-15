@@ -1,0 +1,11 @@
+{
+  "owner": "j-feng12",
+  "slug": "academic-presentation",
+  "displayName": "academic-presentation-学术汇报全自动化-只需提供论文（PDF 或文本），即可自动生成翻译稿、总结稿、PPT 和演讲稿，所有文件完成后自动发送到微信",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776223137909,
+    "commit": null
+  },
+  "history": []
+}
