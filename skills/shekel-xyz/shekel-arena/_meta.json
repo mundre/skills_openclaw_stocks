@@ -1,0 +1,11 @@
+{
+  "owner": "shekel-xyz",
+  "slug": "shekel-arena",
+  "displayName": "Shekel Arena",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1776277137229,
+    "commit": null
+  },
+  "history": []
+}
