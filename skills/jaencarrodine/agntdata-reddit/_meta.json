@@ -1,0 +1,11 @@
+{
+  "owner": "jaencarrodine",
+  "slug": "agntdata-reddit",
+  "displayName": "Reddit API",
+  "latest": {
+    "version": "1.0.11",
+    "publishedAt": 1776188241859,
+    "commit": null
+  },
+  "history": []
+}
