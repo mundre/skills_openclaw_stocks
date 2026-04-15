@@ -1,0 +1,11 @@
+{
+  "owner": "albionaiinc-del",
+  "slug": "logfmt-parser",
+  "displayName": "Logfmt Parser",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776181823259,
+    "commit": null
+  },
+  "history": []
+}
