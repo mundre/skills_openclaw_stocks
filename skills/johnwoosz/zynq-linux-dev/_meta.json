@@ -1,0 +1,11 @@
+{
+  "owner": "johnwoosz",
+  "slug": "zynq-linux-dev",
+  "displayName": "Zynq Linux Hardware Debug",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776222721824,
+    "commit": null
+  },
+  "history": []
+}
