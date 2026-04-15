@@ -1,0 +1,11 @@
+{
+  "owner": "scnet-sugon",
+  "slug": "medical-invoice-ocr",
+  "displayName": "Medical Invoice Ocr",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776073360510,
+    "commit": null
+  },
+  "history": []
+}
