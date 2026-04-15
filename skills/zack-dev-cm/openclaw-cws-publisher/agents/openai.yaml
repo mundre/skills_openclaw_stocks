@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenClaw CWS Publisher"
+  short_description: "Package Chrome extensions, scan tracked files, and render GitHub or ClawHub release commands with explicit tags"
+  default_prompt: "Use $openclaw-cws-publisher to package the target extension directory, scan tracked files for public-surface leaks, generate launch metadata for the target repo, and render GitHub or ClawHub publish commands with explicit topics and tags."

@@ -1,0 +1,11 @@
+{
+  "owner": "zack-dev-cm",
+  "slug": "openclaw-cws-publisher",
+  "displayName": "OpenClaw CWS Publisher",
+  "latest": {
+    "version": "0.2.0",
+    "publishedAt": 1776273156167,
+    "commit": null
+  },
+  "history": []
+}
