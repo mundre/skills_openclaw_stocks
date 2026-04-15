@@ -3,9 +3,15 @@
   "slug": "airbus",
   "displayName": "Airbus",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776087256164,
-    "commit": "https://github.com/openclaw/skills/commit/6ddb256d961d6ab23217b5413b197d46add3db06"
+    "version": "1.0.1",
+    "publishedAt": 1776230257705,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776087256164,
+      "commit": "https://github.com/openclaw/skills/commit/6ddb256d961d6ab23217b5413b197d46add3db06"
+    }
+  ]
 }
