@@ -1,0 +1,11 @@
+{
+  "owner": "apps-debug",
+  "slug": "qoris-memory-mcp",
+  "displayName": "Qoris Memory — Persistent Agent Memory",
+  "latest": {
+    "version": "1.0.5",
+    "publishedAt": 1776255408069,
+    "commit": null
+  },
+  "history": []
+}
