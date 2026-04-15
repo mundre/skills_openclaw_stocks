@@ -1,0 +1,11 @@
+{
+  "owner": "freedompixels",
+  "slug": "cn-qrcode-generator",
+  "displayName": "中文二维码生成器",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776205940325,
+    "commit": null
+  },
+  "history": []
+}
