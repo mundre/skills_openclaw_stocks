@@ -1,0 +1,11 @@
+{
+  "owner": "bill-lib",
+  "slug": "a-stock-analysis-pro",
+  "displayName": "CN Stock Analysis Pro",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776076410393,
+    "commit": null
+  },
+  "history": []
+}
