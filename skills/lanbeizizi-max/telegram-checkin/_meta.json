@@ -1,0 +1,11 @@
+{
+  "owner": "lanbeizizi-max",
+  "slug": "telegram-checkin",
+  "displayName": "Telegram 自动签到",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776241618680,
+    "commit": null
+  },
+  "history": []
+}
