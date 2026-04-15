@@ -3,9 +3,15 @@
   "slug": "arm-holdings",
   "displayName": "Arm Holdings",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1776231408898,
-    "commit": "https://github.com/openclaw/skills/commit/4abb7be340cb2c5ce5819311dad1b7d030b2c0ba"
+    "version": "1.0.3",
+    "publishedAt": 1776232826907,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1776231408898,
+      "commit": "https://github.com/openclaw/skills/commit/4abb7be340cb2c5ce5819311dad1b7d030b2c0ba"
+    }
+  ]
 }
