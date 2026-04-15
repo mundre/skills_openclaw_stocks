@@ -1,0 +1,11 @@
+{
+  "owner": "litmedia-ai",
+  "slug": "litmedia",
+  "displayName": "Litmedia",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776073458728,
+    "commit": null
+  },
+  "history": []
+}
