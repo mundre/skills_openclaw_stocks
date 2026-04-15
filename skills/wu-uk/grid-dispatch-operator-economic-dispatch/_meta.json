@@ -1,0 +1,11 @@
+{
+  "owner": "wu-uk",
+  "slug": "grid-dispatch-operator-economic-dispatch",
+  "displayName": "economic-dispatch",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776248819196,
+    "commit": null
+  },
+  "history": []
+}
