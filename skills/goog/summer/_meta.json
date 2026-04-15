@@ -1,0 +1,11 @@
+{
+  "owner": "goog",
+  "slug": "summer",
+  "displayName": "summer countdown",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1776248380331,
+    "commit": null
+  },
+  "history": []
+}
