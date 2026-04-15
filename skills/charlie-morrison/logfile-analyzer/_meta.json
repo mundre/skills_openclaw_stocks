@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "logfile-analyzer",
+  "displayName": "Logfile Analyzer",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776127989970,
+    "commit": null
+  },
+  "history": []
+}
