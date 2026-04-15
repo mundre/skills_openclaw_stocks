@@ -1,0 +1,11 @@
+{
+  "owner": "joeytbuilds",
+  "slug": "nightly-self-improvement",
+  "displayName": "Nightly Build",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776225727252,
+    "commit": null
+  },
+  "history": []
+}
