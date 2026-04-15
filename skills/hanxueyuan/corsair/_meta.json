@@ -3,9 +3,15 @@
   "slug": "corsair",
   "displayName": "Corsair",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776005002777,
-    "commit": "https://github.com/openclaw/skills/commit/2bb1e31534442190e469f6e74c3aad0f03384421"
+    "version": "1.0.4",
+    "publishedAt": 1776237123609,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776005002777,
+      "commit": "https://github.com/openclaw/skills/commit/2bb1e31534442190e469f6e74c3aad0f03384421"
+    }
+  ]
 }
