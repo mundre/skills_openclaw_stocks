@@ -1,0 +1,11 @@
+{
+  "owner": "cprite",
+  "slug": "dropmail",
+  "displayName": "DropMail – disposable email manager",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776174113539,
+    "commit": null
+  },
+  "history": []
+}
