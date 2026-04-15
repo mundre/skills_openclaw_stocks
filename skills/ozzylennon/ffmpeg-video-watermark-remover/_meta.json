@@ -1,0 +1,11 @@
+{
+  "owner": "ozzylennon",
+  "slug": "ffmpeg-video-watermark-remover",
+  "displayName": "FFmpeg Video Watermark Remover",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776262333700,
+    "commit": null
+  },
+  "history": []
+}
