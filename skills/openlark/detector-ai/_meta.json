@@ -1,0 +1,11 @@
+{
+  "owner": "openlark",
+  "slug": "detector-ai",
+  "displayName": "Detector AI",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776046534942,
+    "commit": null
+  },
+  "history": []
+}
