@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "jsonpath-query",
+  "displayName": "Jsonpath Query",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776042704789,
+    "commit": null
+  },
+  "history": []
+}
