@@ -1,0 +1,11 @@
+{
+  "owner": "onlynet-dev",
+  "slug": "onlyvpn-client",
+  "displayName": "Only VPN",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776048607564,
+    "commit": null
+  },
+  "history": []
+}
