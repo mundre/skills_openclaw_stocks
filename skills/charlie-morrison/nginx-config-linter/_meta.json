@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "nginx-config-linter",
+  "displayName": "Nginx Config Linter",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776046627146,
+    "commit": null
+  },
+  "history": []
+}
