@@ -1,0 +1,11 @@
+{
+  "owner": "ucloud-security",
+  "slug": "skills-auditor",
+  "displayName": "Skill Auditor",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1776075075410,
+    "commit": null
+  },
+  "history": []
+}
