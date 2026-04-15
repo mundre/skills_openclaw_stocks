@@ -1,0 +1,11 @@
+{
+  "owner": "sparkleming",
+  "slug": "aipose-openapi-skill",
+  "displayName": "AI Pose Generator – API-powered",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776146678214,
+    "commit": null
+  },
+  "history": []
+}
