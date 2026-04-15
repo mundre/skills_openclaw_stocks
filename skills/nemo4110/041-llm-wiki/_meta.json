@@ -1,0 +1,11 @@
+{
+  "owner": "nemo4110",
+  "slug": "041-llm-wiki",
+  "displayName": "llm-wiki SKILL inspired by Karpathy",
+  "latest": {
+    "version": "1.0.4",
+    "publishedAt": 1776140081697,
+    "commit": null
+  },
+  "history": []
+}
