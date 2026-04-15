@@ -1,0 +1,11 @@
+{
+  "owner": "valuescan-io",
+  "slug": "valuescan-data-skill-beta",
+  "displayName": "valuescan-data-skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776165153241,
+    "commit": null
+  },
+  "history": []
+}
