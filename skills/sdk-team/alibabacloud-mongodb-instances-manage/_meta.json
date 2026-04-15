@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-mongodb-instances-manage",
+  "displayName": "Alibabacloud Mongodb Instances Manage",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1776063103396,
+    "commit": null
+  },
+  "history": []
+}
