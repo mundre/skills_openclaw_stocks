@@ -1,0 +1,11 @@
+{
+  "owner": "wu-uk",
+  "slug": "grid-dispatch-operator-power-flow-data",
+  "displayName": "power-flow-data",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776248838368,
+    "commit": null
+  },
+  "history": []
+}
