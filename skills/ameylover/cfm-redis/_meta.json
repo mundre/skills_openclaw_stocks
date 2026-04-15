@@ -1,0 +1,11 @@
+{
+  "owner": "ameylover",
+  "slug": "cfm-redis",
+  "displayName": "CFM Redis",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776257494256,
+    "commit": null
+  },
+  "history": []
+}
