@@ -1,0 +1,11 @@
+{
+  "owner": "corall-dev",
+  "slug": "corall-ai",
+  "displayName": "Corall",
+  "latest": {
+    "version": "0.9.0",
+    "publishedAt": 1776074369212,
+    "commit": null
+  },
+  "history": []
+}
