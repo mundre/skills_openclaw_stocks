@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-sysom-diagnosis",
+  "displayName": "Alibabacloud Sysom Diagnosis",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1776234838244,
+    "commit": null
+  },
+  "history": []
+}
