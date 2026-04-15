@@ -1,0 +1,11 @@
+{
+  "owner": "meituan-open-platform",
+  "slug": "meituan-coupon-traffic",
+  "displayName": "美团出行红包",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776147039178,
+    "commit": null
+  },
+  "history": []
+}
