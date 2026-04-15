@@ -3,9 +3,15 @@
   "slug": "accesslint",
   "displayName": "accesslint",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776179041448,
-    "commit": "https://github.com/openclaw/skills/commit/e67a9cbb47e7c1310e73ad53bacb96ad38ddfa50"
+    "version": "1.0.2",
+    "publishedAt": 1776179915874,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776179041448,
+      "commit": "https://github.com/openclaw/skills/commit/e67a9cbb47e7c1310e73ad53bacb96ad38ddfa50"
+    }
+  ]
 }

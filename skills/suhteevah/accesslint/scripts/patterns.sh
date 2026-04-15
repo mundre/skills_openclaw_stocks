@@ -28,19 +28,19 @@ declare -a ACCESSLINT_ARIA_PATTERNS=()
 
 ACCESSLINT_ARIA_PATTERNS+=(
   # Images without alt attribute
-  '<img[[:space:]][^>]*(?!alt[[:space:]]*=)[^>]*>|<img[[:space:]]+src=[^>]*(?!alt)|critical|AR-001|Image missing alt attribute|1.1.1|Add alt attribute: <img alt="description"> or alt="" for decorative images'
+  '<img[[:space:]][^>]*>|critical|AR-001|Image missing alt attribute (filter: exclude if alt= present)|1.1.1|Add alt attribute: <img alt="description"> or alt="" for decorative images'
 
   # Button without accessible name (empty button)
   '<button[^>]*>[[:space:]]*</button>|critical|AR-002|Empty button — no accessible name|4.1.2|Add text content, aria-label, or aria-labelledby to button'
 
   # Input without aria-label or associated label
-  '<input[^>]*type=["\x27](text|email|password|search|tel|url|number)["\x27][^>]*(?!aria-label)|high|AR-003|Input may lack accessible name|4.1.2|Add associated <label>, aria-label, or aria-labelledby attribute'
+  '<input[^>]*type=["\x27](text|email|password|search|tel|url|number)["\x27][^>]*>|high|AR-003|Input may lack accessible name (filter: exclude if aria-label present)|4.1.2|Add associated <label>, aria-label, or aria-labelledby attribute'
 
   # Interactive element without role
   '<div[^>]*onclick|<div[^>]*onClick|<span[^>]*onclick|<span[^>]*onClick|high|AR-004|Non-semantic element with click handler — missing role attribute|4.1.2|Use a <button> element or add role="button" with tabindex="0"'
 
   # Custom element missing ARIA
-  '<[a-z]+-[a-z]+[^>]*(?!role=|aria-)[^>]*>|medium|AR-005|Custom element may need ARIA attributes|4.1.2|Add appropriate role and ARIA attributes to custom elements'
+  '<[a-z]+-[a-z]+[^>]*>|medium|AR-005|Custom element may need ARIA attributes (filter: exclude if role= or aria- present)|4.1.2|Add appropriate role and ARIA attributes to custom elements'
 
   # Icon-only button without aria-label
   '<button[^>]*>[[:space:]]*<(i|svg|span|img)[[:space:]]|high|AR-006|Icon-only button — may lack accessible name|4.1.2|Add aria-label to button: <button aria-label="Close"><svg ...></button>'
@@ -49,16 +49,16 @@ ACCESSLINT_ARIA_PATTERNS+=(
   '<a[^>]*>[[:space:]]*</a>|critical|AR-007|Empty link — no accessible text|4.1.2|Add text content, aria-label, or accessible child to link'
 
   # Link with only an image and no alt
-  '<a[^>]*>[[:space:]]*<img[^>]*(?!alt=)|high|AR-008|Link contains image without alt text|1.1.1|Add alt text to image inside link for accessible link name'
+  '<a[^>]*>[[:space:]]*<img[^>]*>|high|AR-008|Link contains image without alt text (filter: exclude if alt= present)|1.1.1|Add alt text to image inside link for accessible link name'
 
   # SVG without title or aria-label
-  '<svg[^>]*(?!aria-label|role=)[^>]*>|high|AR-009|SVG missing aria-label or role attribute|1.1.1|Add role="img" and aria-label, or include a <title> element inside SVG'
+  '<svg[^>]*>|high|AR-009|SVG missing aria-label or role attribute (filter: exclude if aria-label or role= present)|1.1.1|Add role="img" and aria-label, or include a <title> element inside SVG'
 
   # Audio without track/captions
   '<audio[^>]*>|high|AR-010|Audio element — ensure captions or transcript available|1.2.1|Provide captions via <track> or a separate transcript'
 
   # Video without track/captions
-  '<video[^>]*(?!track)[^>]*>|high|AR-011|Video element may lack captions/subtitles|1.2.2|Add <track kind="captions" src="..."> for closed captions'
+  '<video[^>]*>|high|AR-011|Video element may lack captions/subtitles (filter: exclude if track present)|1.2.2|Add <track kind="captions" src="..."> for closed captions'
 
   # tabindex greater than 0
   'tabindex=["\x27][1-9]|medium|AR-012|tabindex > 0 disrupts natural tab order|2.4.3|Remove positive tabindex; use DOM order for tab sequence'
@@ -67,13 +67,13 @@ ACCESSLINT_ARIA_PATTERNS+=(
   'aria-hidden=["\x27]true["\x27][^>]*(tabindex|href=|<button|<input|<select|<textarea)|critical|AR-013|aria-hidden="true" on focusable element|4.1.2|Remove aria-hidden or make element non-focusable (tabindex="-1")'
 
   # Missing aria-expanded on toggle
-  '<button[^>]*(?!aria-expanded)[^>]*(toggle|collapse|expand|dropdown|menu)|medium|AR-014|Toggle button may need aria-expanded attribute|4.1.2|Add aria-expanded="true/false" to buttons that toggle content'
+  '<button[^>]*(toggle|collapse|expand|dropdown|menu)|medium|AR-014|Toggle button may need aria-expanded attribute (filter: exclude if aria-expanded present)|4.1.2|Add aria-expanded="true/false" to buttons that toggle content'
 
   # Missing aria-current for navigation
   'class=["\x27][^"]*active[^"]*["\x27][^>]*(href=|<a )|low|AR-015|Active navigation item — consider aria-current attribute|1.3.1|Add aria-current="page" to active navigation links'
 
   # Missing role on interactive div
-  '<div[^>]*tabindex=["\x27]0["\x27][^>]*(?!role=)|high|AR-016|Focusable div without role attribute|4.1.2|Add appropriate role (button, link, etc.) to focusable div elements'
+  '<div[^>]*tabindex=["\x27]0["\x27][^>]*>|high|AR-016|Focusable div without role attribute (filter: exclude if role= present)|4.1.2|Add appropriate role (button, link, etc.) to focusable div elements'
 
   # Img with empty alt in non-decorative context
   'alt=["\x27]["\x27][^>]*class=["\x27][^"]*hero|banner|feature|low|AR-017|Possibly meaningful image has empty alt text|1.1.1|Review if image conveys information; add descriptive alt if so'
@@ -82,10 +82,10 @@ ACCESSLINT_ARIA_PATTERNS+=(
   '<div[^>]*>[[:space:]]*(<div[^>]*>[[:space:]]*<(a|button)[[:space:]]|medium|AR-018|Div structure may need list role (role="list")|1.3.1|Use semantic <ul>/<ol> or add role="list" with role="listitem" children'
 
   # iframe without title
-  '<iframe[^>]*(?!title=)[^>]*>|high|AR-019|iframe missing title attribute|2.4.1|Add title attribute to iframe describing its content'
+  '<iframe[^>]*>|high|AR-019|iframe missing title attribute (filter: exclude if title= present)|2.4.1|Add title attribute to iframe describing its content'
 
   # Missing aria-describedby for complex widgets
-  'role=["\x27](dialog|alertdialog|slider|spinbutton)["\x27][^>]*(?!aria-describedby|aria-label)|medium|AR-020|Complex widget missing aria-describedby or aria-label|4.1.2|Add aria-describedby or aria-label to complex interactive widgets'
+  'role=["\x27](dialog|alertdialog|slider|spinbutton)["\x27][^>]*>|medium|AR-020|Complex widget missing aria-describedby or aria-label (filter: exclude if aria-describedby or aria-label present)|4.1.2|Add aria-describedby or aria-label to complex interactive widgets'
 )
 
 # ===========================================================================
@@ -114,10 +114,10 @@ ACCESSLINT_SEMANTIC_PATTERNS+=(
   '<h1[[:space:]>].*<h1[[:space:]>]|high|SH-006|Multiple h1 elements on page|1.3.1|Use only one h1 per page; use h2+ for subsections'
 
   # Missing lang attribute
-  '<html[^>]*(?!lang=)[^>]*>|critical|SH-007|HTML element missing lang attribute|3.1.1|Add lang attribute: <html lang="en"> for correct language identification'
+  '<html[^>]*>|critical|SH-007|HTML element missing lang attribute (filter: exclude if lang= present)|3.1.1|Add lang attribute: <html lang="en"> for correct language identification'
 
   # Missing document title
-  '<head[^>]*>(?!.*<title[[:space:]>])|high|SH-008|Document missing <title> element|2.4.2|Add <title> element inside <head> describing the page'
+  '<head[^>]*>|high|SH-008|Document missing <title> element (filter: exclude if <title> found in document)|2.4.2|Add <title> element inside <head> describing the page'
 
   # Non-semantic layout (div soup indicators)
   '<div[^>]*>[[:space:]]*<div[^>]*>[[:space:]]*<div[^>]*>[[:space:]]*<div[^>]*>[[:space:]]*<div|low|SH-009|Deeply nested divs — consider semantic elements|1.3.1|Replace generic divs with <main>, <nav>, <aside>, <section>, <article>'
@@ -138,13 +138,13 @@ ACCESSLINT_SEMANTIC_PATTERNS+=(
   'PLACEHOLDER_MISSING_NAV|low|SH-014|Navigation may lack <nav> landmark|1.3.1|Wrap navigation links in <nav> element for screen reader landmarks'
 
   # Table without caption or summary
-  '<table[^>]*(?!aria-label|aria-describedby)[^>]*>[[:space:]]*(?!<caption)|medium|SH-015|Table missing caption or accessible description|1.3.1|Add <caption> or aria-label to describe table purpose'
+  '<table[^>]*>|medium|SH-015|Table missing caption or accessible description (filter: exclude if aria-label, aria-describedby, or caption present)|1.3.1|Add <caption> or aria-label to describe table purpose'
 
   # Table used for layout
   '<table[^>]*role=["\x27]presentation["\x27]|low|SH-016|Table used for layout — consider CSS Grid or Flexbox|1.3.1|Replace layout tables with CSS Grid or Flexbox'
 
   # Missing scope on th
-  '<th[^>]*(?!scope=)[^>]*>|medium|SH-017|Table header missing scope attribute|1.3.1|Add scope="col" or scope="row" to <th> elements'
+  '<th[^>]*>|medium|SH-017|Table header missing scope attribute (filter: exclude if scope= present)|1.3.1|Add scope="col" or scope="row" to <th> elements'
 
   # Inline event handlers (not semantic)
   'javascript:|low|SH-018|javascript: URI — use event listeners instead|4.1.2|Replace javascript: URIs with proper event handlers for accessibility'
@@ -158,16 +158,16 @@ declare -a ACCESSLINT_KEYBOARD_PATTERNS=()
 
 ACCESSLINT_KEYBOARD_PATTERNS+=(
   # onClick without onKeyDown/onKeyPress/onKeyUp — JSX
-  'onClick=[{"\x27][^>]*(?!onKey(Down|Press|Up))|high|KB-001|onClick without keyboard handler (onKeyDown/onKeyUp)|2.1.1|Add onKeyDown handler for keyboard equivalent of click action'
+  'onClick=[{"\x27][^>]*>|high|KB-001|onClick without keyboard handler -- check for onKeyDown/onKeyUp|2.1.1|Add onKeyDown handler for keyboard equivalent of click action'
 
   # onclick without onkeydown — HTML
-  'onclick=["\x27][^>]*(?!onkey(down|press|up))|high|KB-002|onclick without keyboard handler (onkeydown)|2.1.1|Add onkeydown handler for keyboard equivalent of click action'
+  'onclick=["\x27][^>]*>|high|KB-002|onclick without keyboard handler -- check for onkeydown|2.1.1|Add onkeydown handler for keyboard equivalent of click action'
 
   # @click without @keydown — Vue
-  '@click[^>]*(?!@keydown|@keyup|v-on:keydown)|high|KB-003|Vue @click without @keydown equivalent|2.1.1|Add @keydown.enter handler alongside @click for keyboard access'
+  '@click[^>]*>|high|KB-003|Vue @click without @keydown equivalent -- check for @keydown|2.1.1|Add @keydown.enter handler alongside @click for keyboard access'
 
   # on:click without on:keydown — Svelte
-  'on:click[^>]*(?!on:keydown|on:keyup)|high|KB-004|Svelte on:click without on:keydown equivalent|2.1.1|Add on:keydown handler alongside on:click for keyboard access'
+  'on:click[^>]*>|high|KB-004|Svelte on:click without on:keydown equivalent -- check for on:keydown|2.1.1|Add on:keydown handler alongside on:click for keyboard access'
 
   # Mouse-only events without keyboard
   'onmouseover=["\x27]|onMouseOver=[{"\x27]|high|KB-005|mouseover event without keyboard equivalent (onfocus)|2.1.1|Add onfocus/onblur as keyboard equivalents for mouseover/mouseout'
@@ -185,7 +185,7 @@ ACCESSLINT_KEYBOARD_PATTERNS+=(
   'autofocus|medium|KB-009|autofocus may disorient screen reader users|3.2.1|Avoid autofocus; let users navigate to elements naturally'
 
   # Scroll container not keyboard accessible
-  'overflow:[[:space:]]*(auto|scroll)[^}]*(?!tabindex)|medium|KB-010|Scrollable container may not be keyboard accessible|2.1.1|Add tabindex="0" and role to scrollable containers for keyboard scrolling'
+  'overflow:[[:space:]]*(auto|scroll)|medium|KB-010|Scrollable container may not be keyboard accessible (filter: exclude if tabindex present)|2.1.1|Add tabindex="0" and role to scrollable containers for keyboard scrolling'
 
   # Drag-only interaction
   'draggable=["\x27]true["\x27]|ondrag|onDrag|medium|KB-011|Drag interaction — ensure keyboard alternative exists|2.1.1|Provide keyboard-based alternative for drag-and-drop functionality'
@@ -211,13 +211,13 @@ declare -a ACCESSLINT_FORM_PATTERNS=()
 
 ACCESSLINT_FORM_PATTERNS+=(
   # Input without label (general)
-  '<input[^>]*type=["\x27](text|email|password|search|tel|url|number|date|time)["\x27][^>]*(?!aria-label|id=)|critical|FM-001|Form input without label or aria-label|1.3.1|Add <label for="id"> or aria-label attribute to input'
+  '<input[^>]*type=["\x27](text|email|password|search|tel|url|number|date|time)["\x27][^>]*>|critical|FM-001|Form input without label or aria-label (filter: exclude if aria-label or id= present)|1.3.1|Add <label for="id"> or aria-label attribute to input'
 
   # Select without accessible name
-  '<select[^>]*(?!aria-label|id=)[^>]*>|high|FM-002|Select element without accessible name|1.3.1|Add <label for="id"> or aria-label to select element'
+  '<select[^>]*>|high|FM-002|Select element without accessible name (filter: exclude if aria-label or id= present)|1.3.1|Add <label for="id"> or aria-label to select element'
 
   # Textarea without label
-  '<textarea[^>]*(?!aria-label|id=)[^>]*>|high|FM-003|Textarea without accessible name|1.3.1|Add <label for="id"> or aria-label to textarea element'
+  '<textarea[^>]*>|high|FM-003|Textarea without accessible name (filter: exclude if aria-label or id= present)|1.3.1|Add <label for="id"> or aria-label to textarea element'
 
   # Missing fieldset/legend for radio groups
   '<input[^>]*type=["\x27]radio["\x27].*<input[^>]*type=["\x27]radio["\x27]|medium|FM-004|Radio button group may need fieldset/legend|1.3.1|Wrap related radio buttons in <fieldset> with <legend> describing the group'
@@ -226,28 +226,28 @@ ACCESSLINT_FORM_PATTERNS+=(
   '<input[^>]*type=["\x27]checkbox["\x27].*<input[^>]*type=["\x27]checkbox["\x27]|medium|FM-005|Checkbox group may need fieldset/legend|1.3.1|Wrap related checkboxes in <fieldset> with <legend> describing the group'
 
   # Placeholder used as only label
-  '<input[^>]*placeholder=["\x27][^"]+["\x27][^>]*(?!aria-label|id=)|high|FM-006|Placeholder used as only label — disappears on input|1.3.1|Add visible <label> element; placeholder is not a substitute for labels'
+  '<input[^>]*placeholder=["\x27][^"]+["\x27][^>]*>|high|FM-006|Placeholder used as only label -- disappears on input (filter: exclude if aria-label or id= present)|1.3.1|Add visible <label> element; placeholder is not a substitute for labels'
 
   # Required field without aria-required
-  'required[^>]*(?!aria-required)|medium|FM-007|Required field — consider adding aria-required="true"|3.3.2|Add aria-required="true" for consistent screen reader support'
+  'required[^>]*>|medium|FM-007|Required field -- consider adding aria-required="true" (filter: exclude if aria-required present)|3.3.2|Add aria-required="true" for consistent screen reader support'
 
   # Error messages not linked with aria-describedby
-  'class=["\x27][^"]*error[^"]*["\x27][^>]*(?!aria-describedby|role=["\x27]alert)|medium|FM-008|Error message may not be linked to input via aria-describedby|3.3.1|Link error messages to inputs with aria-describedby="error-id"'
+  'class=["\x27][^"]*error[^"]*["\x27][^>]*>|medium|FM-008|Error message may not be linked to input via aria-describedby (filter: exclude if aria-describedby or role=alert present)|3.3.1|Link error messages to inputs with aria-describedby="error-id"'
 
   # Missing autocomplete on common fields
-  'type=["\x27]email["\x27][^>]*(?!autocomplete=)|low|FM-009|Email input missing autocomplete attribute|1.3.5|Add autocomplete="email" for autofill support'
+  'type=["\x27]email["\x27][^>]*>|low|FM-009|Email input missing autocomplete attribute (filter: exclude if autocomplete= present)|1.3.5|Add autocomplete="email" for autofill support'
 
   # Missing autocomplete on name fields
-  'type=["\x27]text["\x27][^>]*(name|Name)[^>]*(?!autocomplete=)|low|FM-010|Name input missing autocomplete attribute|1.3.5|Add autocomplete="name" or "given-name"/"family-name"'
+  'type=["\x27]text["\x27][^>]*(name|Name)[^>]*>|low|FM-010|Name input missing autocomplete attribute (filter: exclude if autocomplete= present)|1.3.5|Add autocomplete="name" or "given-name"/"family-name"'
 
   # Missing autocomplete on password
-  'type=["\x27]password["\x27][^>]*(?!autocomplete=)|low|FM-011|Password input missing autocomplete attribute|1.3.5|Add autocomplete="current-password" or "new-password"'
+  'type=["\x27]password["\x27][^>]*>|low|FM-011|Password input missing autocomplete attribute (filter: exclude if autocomplete= present)|1.3.5|Add autocomplete="current-password" or "new-password"'
 
   # Form without accessible error display
-  '<form[^>]*>[^<]*(?!aria-live|role=["\x27]alert)|low|FM-012|Form may lack accessible error announcement region|3.3.1|Add aria-live="polite" region for form validation error announcements'
+  '<form[^>]*>|low|FM-012|Form may lack accessible error announcement region (filter: exclude if aria-live or role=alert present)|3.3.1|Add aria-live="polite" region for form validation error announcements'
 
   # Label without for attribute
-  '<label[[:space:]>](?!.*for=)|medium|FM-013|Label element may be missing for attribute|1.3.1|Add for="input-id" to label, matching the id of the associated input'
+  '<label[[:space:]>]|medium|FM-013|Label element may be missing for attribute (filter: exclude if for= present)|1.3.1|Add for="input-id" to label, matching the id of the associated input'
 
   # Hidden input used for visible data
   'type=["\x27]hidden["\x27][^>]*value=["\x27][[:space:]]*[[:alnum:]]|low|FM-014|Hidden input contains visible data — verify it should be hidden|1.3.1|Review if hidden input data should be visible and accessible to users'
@@ -262,7 +262,7 @@ ACCESSLINT_FORM_PATTERNS+=(
   '<(button|input)[^>]*disabled[^>]*type=["\x27]submit["\x27]|medium|FM-017|Disabled submit button — users may not understand why|3.3.1|Explain why submit is disabled; provide aria-describedby with instructions'
 
   # File input without label
-  '<input[^>]*type=["\x27]file["\x27][^>]*(?!aria-label|id=)|high|FM-018|File input without accessible name|1.3.1|Add <label for="id"> or aria-label to file input'
+  '<input[^>]*type=["\x27]file["\x27][^>]*>|high|FM-018|File input without accessible name (filter: exclude if aria-label or id= present)|1.3.1|Add <label for="id"> or aria-label to file input'
 )
 
 # ===========================================================================
@@ -273,7 +273,7 @@ declare -a ACCESSLINT_VISUAL_PATTERNS=()
 
 ACCESSLINT_VISUAL_PATTERNS+=(
   # Color-only information (common patterns)
-  'color:[[:space:]]*(red|green)[^;]*;[^}]*(?!border|text-decoration|font-weight)|medium|VS-001|Color may be only indicator — provide additional cue|1.4.1|Add icon, text, border, or other non-color indicator alongside color'
+  'color:[[:space:]]*(red|green)[^;]*;|medium|VS-001|Color may be only indicator -- provide additional cue (filter: exclude if border, text-decoration, or font-weight also present)|1.4.1|Add icon, text, border, or other non-color indicator alongside color'
 
   # White text on light background patterns
   'color:[[:space:]]*#?[fFeE][fFeE][fFeE]|color:[[:space:]]*white|medium|VS-002|Light text detected — verify sufficient contrast|1.4.3|Ensure text meets WCAG contrast ratio: 4.5:1 for normal, 3:1 for large text'
@@ -317,37 +317,37 @@ declare -a ACCESSLINT_DYNAMIC_PATTERNS=()
 
 ACCESSLINT_DYNAMIC_PATTERNS+=(
   # Live region without aria-live
-  'class=["\x27][^"]*live[^"]*["\x27][^>]*(?!aria-live)|medium|DY-001|Live region class without aria-live attribute|4.1.3|Add aria-live="polite" or "assertive" to announce dynamic updates'
+  'class=["\x27][^"]*live[^"]*["\x27][^>]*>|medium|DY-001|Live region class without aria-live attribute (filter: exclude if aria-live present)|4.1.3|Add aria-live="polite" or "assertive" to announce dynamic updates'
 
   # Loading state without announcement
-  'class=["\x27][^"]*loading|spinner|skeleton[^"]*["\x27][^>]*(?!aria-|role=)|medium|DY-002|Loading indicator without accessibility announcement|4.1.3|Add aria-live="polite" with aria-busy="true" for loading states'
+  'class=["\x27][^"]*loading|spinner|skeleton[^"]*["\x27][^>]*>|medium|DY-002|Loading indicator without accessibility announcement (filter: exclude if aria- or role= present)|4.1.3|Add aria-live="polite" with aria-busy="true" for loading states'
 
   # Modal/dialog without role
-  'class=["\x27][^"]*modal|dialog[^"]*["\x27][^>]*(?!role=["\x27]dialog|role=["\x27]alertdialog)|high|DY-003|Modal/dialog without role="dialog"|4.1.2|Add role="dialog" and aria-modal="true" to modal containers'
+  'class=["\x27][^"]*modal|dialog[^"]*["\x27][^>]*>|high|DY-003|Modal/dialog without role="dialog" (filter: exclude if role=dialog or role=alertdialog present)|4.1.2|Add role="dialog" and aria-modal="true" to modal containers'
 
   # Modal without aria-modal
-  'role=["\x27]dialog["\x27][^>]*(?!aria-modal)|medium|DY-004|Dialog missing aria-modal attribute|4.1.2|Add aria-modal="true" to prevent screen reader from accessing background'
+  'role=["\x27]dialog["\x27][^>]*>|medium|DY-004|Dialog missing aria-modal attribute (filter: exclude if aria-modal present)|4.1.2|Add aria-modal="true" to prevent screen reader from accessing background'
 
   # Toast/notification without role=alert or aria-live
-  'class=["\x27][^"]*toast|notification|snackbar[^"]*["\x27][^>]*(?!role=["\x27]alert|aria-live)|high|DY-005|Toast/notification without role="alert" or aria-live|4.1.3|Add role="alert" or aria-live="assertive" to notification elements'
+  'class=["\x27][^"]*toast|notification|snackbar[^"]*["\x27][^>]*>|high|DY-005|Toast/notification without role="alert" or aria-live (filter: exclude if role=alert or aria-live present)|4.1.3|Add role="alert" or aria-live="assertive" to notification elements'
 
   # Alert without role=alert
-  'class=["\x27][^"]*alert[^"]*["\x27][^>]*(?!role=["\x27]alert|role=["\x27]status)|high|DY-006|Alert element without role="alert"|4.1.3|Add role="alert" for important messages that need immediate announcement'
+  'class=["\x27][^"]*alert[^"]*["\x27][^>]*>|high|DY-006|Alert element without role="alert" (filter: exclude if role=alert or role=status present)|4.1.3|Add role="alert" for important messages that need immediate announcement'
 
   # Status message without role=status
-  'class=["\x27][^"]*status[^"]*["\x27][^>]*(?!role=["\x27]status|aria-live)|medium|DY-007|Status element without role="status"|4.1.3|Add role="status" for non-urgent status messages'
+  'class=["\x27][^"]*status[^"]*["\x27][^>]*>|medium|DY-007|Status element without role="status" (filter: exclude if role=status or aria-live present)|4.1.3|Add role="status" for non-urgent status messages'
 
   # Tab panel without proper roles
-  'class=["\x27][^"]*tab-panel|tabpanel[^"]*["\x27][^>]*(?!role=["\x27]tabpanel)|medium|DY-008|Tab panel without role="tabpanel"|4.1.2|Add role="tabpanel" with aria-labelledby pointing to the tab'
+  'class=["\x27][^"]*tab-panel|tabpanel[^"]*["\x27][^>]*>|medium|DY-008|Tab panel without role="tabpanel" (filter: exclude if role=tabpanel present)|4.1.2|Add role="tabpanel" with aria-labelledby pointing to the tab'
 
   # Tab without proper role
-  'class=["\x27][^"]*tab["\x27][^>]*(?!role=["\x27]tab)|medium|DY-009|Tab element without role="tab"|4.1.2|Add role="tab" with aria-selected and aria-controls attributes'
+  'class=["\x27][^"]*tab["\x27][^>]*>|medium|DY-009|Tab element without role="tab" (filter: exclude if role=tab present)|4.1.2|Add role="tab" with aria-selected and aria-controls attributes'
 
   # Accordion without aria-expanded
-  'class=["\x27][^"]*accordion[^"]*["\x27][^>]*(?!aria-expanded)|medium|DY-010|Accordion trigger without aria-expanded|4.1.2|Add aria-expanded="true/false" to accordion toggle buttons'
+  'class=["\x27][^"]*accordion[^"]*["\x27][^>]*>|medium|DY-010|Accordion trigger without aria-expanded (filter: exclude if aria-expanded present)|4.1.2|Add aria-expanded="true/false" to accordion toggle buttons'
 
   # Progress bar without aria-valuenow
-  'class=["\x27][^"]*progress[^"]*["\x27][^>]*(?!role=["\x27]progressbar|aria-valuenow)|medium|DY-011|Progress indicator without progressbar role|4.1.2|Add role="progressbar" with aria-valuenow, aria-valuemin, aria-valuemax'
+  'class=["\x27][^"]*progress[^"]*["\x27][^>]*>|medium|DY-011|Progress indicator without progressbar role (filter: exclude if role=progressbar or aria-valuenow present)|4.1.2|Add role="progressbar" with aria-valuenow, aria-valuemin, aria-valuemax'
 
   # Auto-updating content without aria-live
   'setInterval|setTimeout.*innerHTML|medium|DY-012|Auto-updating content — ensure screen reader announcement|4.1.3|Use aria-live region for content that updates automatically'
@@ -356,7 +356,7 @@ ACCESSLINT_DYNAMIC_PATTERNS+=(
   'pushState|replaceState|navigate\(|router\.(push|replace)|low|DY-013|SPA route change — announce page transition to screen readers|4.1.3|Announce route changes via aria-live region or focus management'
 
   # Tooltip without accessible association
-  'class=["\x27][^"]*tooltip[^"]*["\x27][^>]*(?!aria-describedby|role=["\x27]tooltip)|medium|DY-014|Tooltip not associated with trigger via aria-describedby|4.1.2|Add aria-describedby on trigger pointing to tooltip, and role="tooltip" on tooltip'
+  'class=["\x27][^"]*tooltip[^"]*["\x27][^>]*>|medium|DY-014|Tooltip not associated with trigger via aria-describedby (filter: exclude if aria-describedby or role=tooltip present)|4.1.2|Add aria-describedby on trigger pointing to tooltip, and role="tooltip" on tooltip'
 )
 
 # ===========================================================================
