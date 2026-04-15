@@ -1,0 +1,11 @@
+{
+  "owner": "osaket",
+  "slug": "content-generator-from-url",
+  "displayName": "Content Generator - Articles, Social Posts, Videos & Images from Any Topic or URL",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776211384641,
+    "commit": null
+  },
+  "history": []
+}
