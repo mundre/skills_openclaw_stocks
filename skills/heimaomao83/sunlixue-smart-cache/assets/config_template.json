@@ -1,0 +1,10 @@
+{
+  "cache_dir": "~/.qclaw/smart-cache/data",
+  "l1_max_size": 10000,
+  "l2_max_size": 5000,
+  "ttl_hours": 168,
+  "similarity_threshold": 0.85,
+  "enable_cost_tracking": true,
+  "cost_per_1k_tokens": 0.002,
+  "embedding_model": "text-embedding-3-small"
+}
