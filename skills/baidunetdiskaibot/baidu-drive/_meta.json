@@ -1,0 +1,11 @@
+{
+  "owner": "baidunetdiskaibot",
+  "slug": "baidu-drive",
+  "displayName": "百度网盘官方 skill",
+  "latest": {
+    "version": "1.4.1",
+    "publishedAt": 1776070321523,
+    "commit": null
+  },
+  "history": []
+}
