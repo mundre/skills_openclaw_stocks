@@ -1,0 +1,11 @@
+{
+  "owner": "wu-uk",
+  "slug": "dapt-intrusion-detection-pcap-analysis",
+  "displayName": "pcap-analysis",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776194203919,
+    "commit": null
+  },
+  "history": []
+}
