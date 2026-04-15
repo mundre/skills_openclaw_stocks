@@ -1,0 +1,11 @@
+{
+  "owner": "amd5",
+  "slug": "team-shared-memory",
+  "displayName": "Team Shared Memory",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776153171429,
+    "commit": null
+  },
+  "history": []
+}
