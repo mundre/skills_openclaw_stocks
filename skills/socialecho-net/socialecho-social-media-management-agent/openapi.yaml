@@ -1,0 +1,616 @@
+openapi: 3.0.3
+info:
+  title: SocialEcho External API
+  version: 1.1.0
+  description: |
+    SocialEcho 对外 API（面向自动化平台与 Agent 集成）。
+
+    典型场景：
+    - 在 n8n / Zapier / Dify / Agent CLI 中拉取团队、账号、贴文与报表数据。
+    - 通过 Team API Key 做服务间调用（无登录态 Cookie）。
+
+    成功判定（建议 LLM / Agent 统一遵循）：
+    1. HTTP 状态码必须为 200
+    2. 响应 JSON 的 `code` 必须为 200
+    3. 其余情况都视为失败并进入重试/告警分支
+
+    频率限制：
+    - 单个 API Key：最多 120 次请求 / 分钟
+    - 建议在工作流中增加节流与指数退避（例如 1s, 2s, 4s）
+
+servers:
+  - url: https://api.socialecho.net
+    description: Production
+  - url: https://api-dev.socialecho.net
+    description: Development
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Team
+    description: 团队基础信息
+  - name: Account
+    description: 社媒账号列表
+  - name: Article
+    description: 贴文列表
+  - name: Report
+    description: 数据报表
+
+paths:
+  /v1/team:
+    get:
+      tags: [Team]
+      operationId: getTeamInfo
+      summary: 获取当前 API Key 可访问的团队信息
+      description: |
+        返回当前 Team API Key 对应团队的基础信息。
+
+        LLM 调用建议：
+        - 如果请求头里传了 `X-Team-Id`，优先按该团队上下文返回。
+        - 如果不传 `X-Team-Id`，由服务端按 API Key 默认团队处理。
+      parameters:
+        - $ref: '#/components/parameters/XLang'
+        - $ref: '#/components/parameters/XTeamId'
+      responses:
+        '200':
+          description: 成功（业务成功时 `code=200`）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeam'
+              examples:
+                ok:
+                  value:
+                    code: 200
+                    message: success
+                    data:
+                      id: 1024
+                      code: TEAM_ABC123
+                      title: SocialEcho QA Team
+                      timezone: Asia/Shanghai
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v1/account:
+    get:
+      tags: [Account]
+      operationId: listAccounts
+      summary: 获取社媒账号列表
+      description: |
+        返回账号列表（支持分页），用于发布、监控、互动等模块的账号选择器。
+
+        参数语义：
+        - `type=1`：自有账号（已授权账号）
+        - `type=2`：竞品账号
+      parameters:
+        - $ref: '#/components/parameters/XLang'
+        - $ref: '#/components/parameters/XTeamId'
+        - name: page
+          in: query
+          description: 页码，从 1 开始
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: type
+          in: query
+          description: 账号类型。1=自有账号，2=竞品账号
+          schema:
+            type: integer
+            enum: [1, 2]
+            default: 1
+          example: 1
+      responses:
+        '200':
+          description: 成功（业务成功时 `code=200`）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAccountList'
+              examples:
+                ok:
+                  value:
+                    code: 200
+                    message: success
+                    data:
+                      page: 1
+                      per_page: 10
+                      total: 2
+                      list:
+                        - id: 163751
+                          title: esprit.vert.medic
+                          app: Instagram
+                          type: 1
+                          status: normal
+                          account: "@esprit.vert.medic"
+                          authorization_at: '2026-03-30 09:34:44'
+                        - id: 163956
+                          title: TestEnv-TestPag2
+                          app: Facebook
+                          type: 1
+                          status: normal
+                          account: TestEnv-TestPag2
+                          authorization_at: '2026-03-30 09:35:10'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v1/article:
+    get:
+      tags: [Article]
+      operationId: listArticles
+      summary: 获取贴文列表
+      description: |
+        按团队与账号范围返回贴文列表（支持分页）。
+
+        参数语义：
+        - `account_ids`：用于筛选账号范围。
+        - 推荐传 CSV（例如 `163956,163955,28`），便于各类工作流工具拼装。
+        - 若你的 HTTP 客户端习惯数组，也可尝试 `account_ids[]=163956&account_ids[]=163955`。
+      parameters:
+        - $ref: '#/components/parameters/XLang'
+        - $ref: '#/components/parameters/XTeamId'
+        - name: page
+          in: query
+          description: 页码，从 1 开始
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: account_ids
+          in: query
+          description: 账号 ID 列表（CSV 格式，逗号分隔）
+          schema:
+            type: string
+          example: '163956,163955,28'
+      responses:
+        '200':
+          description: 成功（业务成功时 `code=200`）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseArticleList'
+              examples:
+                ok:
+                  value:
+                    code: 200
+                    message: success
+                    data:
+                      page: 1
+                      per_page: 10
+                      total: 1
+                      list:
+                        - id: 987654
+                          uuid: tE-9LwdHfNk
+                          app: YouTube
+                          account_id: 163751
+                          content: Example article content
+                          created_at: '2026-03-24 10:05:01'
+                          url: https://www.youtube.com/watch?v=tE-9LwdHfNk
+                          reports:
+                            exposure: 1021
+                            like: 40
+                            comment: 14
+                            share: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v1/report:
+    get:
+      tags: [Report]
+      operationId: getReport
+      summary: 获取报表数据
+      description: |
+        在指定时间范围内返回报表统计结果（可按 day / app / account 聚合）。
+
+        参数语义（核心）：
+        - `start_date` / `end_date`：查询窗口，格式 `YYYY-MM-DD`。
+        - `time_type`：
+          - `1` = 仅统计日期范围内新增贴文的数据
+          - `2` = 统计日期范围内可见的历史全部贴文数据
+        - `group`：
+          - 不传/空字符串 = 汇总总量
+          - `day` = 按天
+          - `app` = 按平台
+          - `account` = 按账号
+      parameters:
+        - $ref: '#/components/parameters/XLang'
+        - $ref: '#/components/parameters/XTeamId'
+        - name: start_date
+          in: query
+          required: true
+          description: 开始日期，格式 `YYYY-MM-DD`
+          schema:
+            type: string
+            format: date
+          example: '2026-01-01'
+        - name: end_date
+          in: query
+          required: true
+          description: 结束日期，格式 `YYYY-MM-DD`
+          schema:
+            type: string
+            format: date
+          example: '2026-03-24'
+        - name: account_ids
+          in: query
+          description: 账号 ID 列表（CSV 格式，逗号分隔）
+          schema:
+            type: string
+          example: '163956,163955,28'
+        - name: time_type
+          in: query
+          description: 时间口径。1=新增贴文，2=历史全量贴文
+          schema:
+            type: integer
+            enum: [1, 2]
+            default: 1
+          example: 1
+        - name: group
+          in: query
+          description: 聚合维度（空=总量，day/app/account=分组）
+          schema:
+            type: string
+            enum: ['', day, app, account]
+            default: ''
+          example: day
+      responses:
+        '200':
+          description: 成功（业务成功时 `code=200`）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseReport'
+              examples:
+                total:
+                  value:
+                    code: 200
+                    message: success
+                    data:
+                      scope:
+                        start_date: '2026-01-01'
+                        end_date: '2026-03-24'
+                        time_type: 1
+                        group: ''
+                      totals:
+                        exposure: 120345
+                        like: 4512
+                        comment: 893
+                        share: 326
+                grouped_by_day:
+                  value:
+                    code: 200
+                    message: success
+                    data:
+                      scope:
+                        start_date: '2026-01-01'
+                        end_date: '2026-01-03'
+                        time_type: 1
+                        group: day
+                      rows:
+                        - key: '2026-01-01'
+                          exposure: 1200
+                          like: 50
+                          comment: 20
+                          share: 8
+                        - key: '2026-01-02'
+                          exposure: 1100
+                          like: 45
+                          comment: 18
+                          share: 7
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+      description: |
+        Team API Key（示例：`Authorization: Bearer se_xxx`）。
+        先在 SocialEcho 团队管理中创建 API Key，再用于服务端调用。
+
+  parameters:
+    XLang:
+      name: X-Lang
+      in: header
+      required: false
+      description: 返回语言。`zh_CN` 或 `en`。默认 `zh_CN`
+      schema:
+        type: string
+        enum: [zh_CN, en]
+        default: zh_CN
+      example: zh_CN
+    XTeamId:
+      name: X-Team-Id
+      in: header
+      required: false
+      description: 目标团队 ID。多团队账号建议显式传入，避免上下文歧义
+      schema:
+        type: integer
+      example: 1024
+
+  responses:
+    BadRequest:
+      description: 参数错误（HTTP 400）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            code: 400
+            message: Invalid request parameters
+            data: null
+    Unauthorized:
+      description: 鉴权失败（HTTP 401）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            code: 401
+            message: Unauthorized
+            data: null
+    TooManyRequests:
+      description: 超过频率限制（HTTP 429）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            code: 429
+            message: Too many requests
+            data: null
+
+  schemas:
+    ApiErrorResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          description: 业务状态码。失败时通常不等于 200
+        message:
+          type: string
+          description: 可读错误描述
+        data:
+          nullable: true
+          description: 失败时通常为 null
+
+    TeamInfo:
+      type: object
+      description: 团队基础信息（字段可能随版本扩展）
+      properties:
+        id:
+          type: integer
+          description: 团队 ID
+        code:
+          type: string
+          description: 团队编码
+        title:
+          type: string
+          description: 团队名称
+        timezone:
+          type: string
+          description: 团队时区（如 `Asia/Shanghai`）
+      additionalProperties: true
+
+    AccountItem:
+      type: object
+      description: 社媒账号条目
+      properties:
+        id:
+          type: integer
+          description: 账号 ID（后续接口常用）
+        title:
+          type: string
+          description: 账号显示名
+        account:
+          type: string
+          description: 平台账号（如 @username）
+        app:
+          type: string
+          description: 平台名称（如 X/Instagram/Facebook/YouTube/Tiktok）
+        type:
+          type: integer
+          description: 账号类型（1=自有，2=竞品）
+        status:
+          type: string
+          description: 账号状态（如 normal/invalid/expired）
+        authorization_at:
+          type: string
+          description: 最近授权时间
+      additionalProperties: true
+
+    AccountListData:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: 当前页
+        per_page:
+          type: integer
+          description: 每页数量
+        total:
+          type: integer
+          description: 总条数
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountItem'
+      additionalProperties: true
+
+    ArticleMetrics:
+      type: object
+      description: 贴文统计指标
+      properties:
+        exposure:
+          type: integer
+          description: 曝光/浏览量
+        like:
+          type: integer
+          description: 点赞量
+        comment:
+          type: integer
+          description: 评论量
+        share:
+          type: integer
+          description: 分享量
+      additionalProperties: true
+
+    ArticleItem:
+      type: object
+      description: 贴文条目
+      properties:
+        id:
+          type: integer
+          description: 贴文 ID（系统内）
+        uuid:
+          type: string
+          description: 平台侧唯一 ID
+        app:
+          type: string
+          description: 平台名称
+        account_id:
+          type: integer
+          description: 所属账号 ID
+        content:
+          type: string
+          description: 贴文正文
+        created_at:
+          type: string
+          description: 贴文创建时间
+        url:
+          type: string
+          format: uri
+          description: 贴文链接
+        reports:
+          $ref: '#/components/schemas/ArticleMetrics'
+      additionalProperties: true
+
+    ArticleListData:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleItem'
+      additionalProperties: true
+
+    ReportScope:
+      type: object
+      description: 报表查询上下文
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        time_type:
+          type: integer
+          enum: [1, 2]
+        group:
+          type: string
+          description: "group value: empty string, day, app, account"
+      additionalProperties: true
+
+    ReportRow:
+      type: object
+      description: 分组报表行
+      properties:
+        key:
+          type: string
+          description: 分组键（日期、平台名或账号标识）
+        exposure:
+          type: integer
+        like:
+          type: integer
+        comment:
+          type: integer
+        share:
+          type: integer
+      additionalProperties: true
+
+    ReportData:
+      type: object
+      properties:
+        scope:
+          $ref: '#/components/schemas/ReportScope'
+        totals:
+          $ref: '#/components/schemas/ArticleMetrics'
+        rows:
+          type: array
+          description: 按 group 返回的明细行；不分组时可为空
+          items:
+            $ref: '#/components/schemas/ReportRow'
+      additionalProperties: true
+
+    ApiResponseTeam:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          description: 业务状态码（成功=200）
+        message:
+          type: string
+          description: 业务消息
+        data:
+          $ref: '#/components/schemas/TeamInfo'
+
+    ApiResponseAccountList:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AccountListData'
+
+    ApiResponseArticleList:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ArticleListData'
+
+    ApiResponseReport:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ReportData'

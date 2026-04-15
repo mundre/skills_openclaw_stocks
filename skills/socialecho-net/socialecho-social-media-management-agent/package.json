@@ -1,0 +1,36 @@
+{
+  "name": "socialecho-social-media-management-agent",
+  "version": "1.0.3",
+  "type": "module",
+  "description": "CLI helpers for SocialEcho social media management external APIs",
+  "author": "SocialEcho Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "socialecho-team": "./team.js",
+    "socialecho-account": "./account.js",
+    "socialecho-article": "./article.js",
+    "socialecho-report": "./report.js"
+  },
+  "files": [
+    "SKILL.md",
+    "_meta.json",
+    "openapi.yaml",
+    "openapi.json",
+    "client.js",
+    "team.js",
+    "account.js",
+    "article.js",
+    "report.js",
+    ".env.example"
+  ],
+  "scripts": {
+    "team": "node ./team.js",
+    "account": "node ./account.js",
+    "article": "node ./article.js",
+    "report": "node ./report.js"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,11 @@
+{
+  "owner": "socialecho-net",
+  "slug": "socialecho-social-media-management-agent",
+  "displayName": "Social media autopilot",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1776076618946,
+    "commit": null
+  },
+  "history": []
+}
