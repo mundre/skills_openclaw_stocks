@@ -3,9 +3,15 @@
   "slug": "ubisoft",
   "displayName": "Ubisoft",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775917680910,
-    "commit": "https://github.com/openclaw/skills/commit/90adaf204118819cfc86cf15d51e026f8394a735"
+    "version": "1.0.1",
+    "publishedAt": 1776295664829,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775917680910,
+      "commit": "https://github.com/openclaw/skills/commit/90adaf204118819cfc86cf15d51e026f8394a735"
+    }
+  ]
 }
