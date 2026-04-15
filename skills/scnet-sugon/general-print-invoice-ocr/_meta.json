@@ -1,0 +1,11 @@
+{
+  "owner": "scnet-sugon",
+  "slug": "general-print-invoice-ocr",
+  "displayName": "General Print Invoice Ocr",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776073477771,
+    "commit": null
+  },
+  "history": []
+}
