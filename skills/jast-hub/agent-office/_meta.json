@@ -1,0 +1,11 @@
+{
+  "owner": "jast-hub",
+  "slug": "agent-office",
+  "displayName": "Agent Office",
+  "latest": {
+    "version": "1.4.2",
+    "publishedAt": 1776122725486,
+    "commit": null
+  },
+  "history": []
+}
