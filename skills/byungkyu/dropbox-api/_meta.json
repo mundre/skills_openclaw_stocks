@@ -3,11 +3,16 @@
   "slug": "dropbox-api",
   "displayName": "Dropbox",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770755031056,
-    "commit": "https://github.com/openclaw/skills/commit/88348757bc9607d69f5f4978c6b02b620bdcde09"
+    "version": "1.0.4",
+    "publishedAt": 1776212759276,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770755031056,
+      "commit": "https://github.com/openclaw/skills/commit/88348757bc9607d69f5f4978c6b02b620bdcde09"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770689692647,

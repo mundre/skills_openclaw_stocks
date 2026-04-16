@@ -10,6 +10,7 @@ metadata:
   version: "1.0"
   clawdbot:
     emoji: 🧠
+    homepage: "https://maton.ai"
     requires:
       env:
         - MATON_API_KEY
@@ -39,9 +40,11 @@ EOF
 https://gateway.maton.ai/dropbox/2/{endpoint}
 ```
 
-The gateway proxies requests to `api.dropboxapi.com` and automatically injects your OAuth token.
+The gateway proxies requests to `api.dropboxapi.com` (for most endpoints) or `content.dropboxapi.com` (for upload/download endpoints) and automatically injects your OAuth token. The routing is handled automatically based on the endpoint path.
 
 **Important:** Dropbox API v2 uses POST for all endpoints with JSON request bodies.
+
+**Content Endpoints:** Upload and download endpoints use a different request format where file content is sent as the raw request body and parameters are passed in the `Dropbox-API-Arg` header as JSON. The gateway handles routing to the correct Dropbox host automatically.
 
 ## Authentication
 
@@ -106,7 +109,7 @@ EOF
 ```json
 {
   "connection": {
-    "connection_id": "1efbb655-88e9-4a23-ad3b-f3e19cbff279",
+    "connection_id": "{connection_id}",
     "status": "ACTIVE",
     "creation_time": "2026-02-09T23:34:49.818074Z",
     "last_updated_time": "2026-02-09T23:37:09.697559Z",
@@ -141,7 +144,7 @@ data = json.dumps({"path": ""}).encode()
 req = urllib.request.Request('https://gateway.maton.ai/dropbox/2/files/list_folder', data=data, method='POST')
 req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
 req.add_header('Content-Type', 'application/json')
-req.add_header('Maton-Connection', '1efbb655-88e9-4a23-ad3b-f3e19cbff279')
+req.add_header('Maton-Connection', '{connection_id}')
 print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
 EOF
 ```
@@ -433,6 +436,223 @@ Content-Type: application/json
 ```
 
 The link is valid for 4 hours.
+
+### File Upload
+
+**Note:** Upload endpoints use a different request format. File content is sent as the raw request body, and parameters are passed in the `Dropbox-API-Arg` header as JSON. The gateway automatically routes these to `content.dropboxapi.com`.
+
+#### Upload File (up to 150 MB)
+
+```bash
+POST /dropbox/2/files/upload
+Content-Type: application/octet-stream
+Dropbox-API-Arg: {"path": "/test.txt", "mode": "add", "autorename": true, "mute": false}
+
+<file contents>
+```
+
+**Parameters (in Dropbox-API-Arg header):**
+- `path` (required) - Path in Dropbox where the file will be saved
+- `mode` - Write mode: `add` (default), `overwrite`, or `update` with rev
+- `autorename` - If true, rename file if there's a conflict (default: false)
+- `mute` - If true, don't notify desktop app (default: false)
+- `strict_conflict` - If true, be more strict about conflicts (default: false)
+
+**Response:**
+```json
+{
+  "name": "test.txt",
+  "path_lower": "/test.txt",
+  "path_display": "/test.txt",
+  "id": "id:Awe3Av8A8YYAAAAAAAAABw",
+  "client_modified": "2026-04-14T10:00:00Z",
+  "server_modified": "2026-04-14T10:00:01Z",
+  "rev": "016311c063b4f8700000002caa704e4",
+  "size": 1024,
+  "is_downloadable": true,
+  "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
+```
+
+#### Upload Large Files (Upload Session)
+
+For files larger than 150 MB, use upload sessions. Files can be up to 350 GB.
+
+**Step 1: Start Session**
+
+```bash
+POST /dropbox/2/files/upload_session/start
+Content-Type: application/octet-stream
+Dropbox-API-Arg: {"close": false}
+
+<first chunk of file content>
+```
+
+**Response:**
+```json
+{
+  "session_id": "AAAAAAAAAAFxxxxxxxxxxxxxxx"
+}
+```
+
+**Step 2: Append Data (repeat as needed)**
+
+```bash
+POST /dropbox/2/files/upload_session/append_v2
+Content-Type: application/octet-stream
+Dropbox-API-Arg: {"cursor": {"session_id": "AAAAAAAAAAFxxxxxxxxxxxxxxx", "offset": 10000000}, "close": false}
+
+<next chunk of file content>
+```
+
+The `offset` must match the total bytes uploaded so far.
+
+**Step 3: Finish Session**
+
+```bash
+POST /dropbox/2/files/upload_session/finish
+Content-Type: application/octet-stream
+Dropbox-API-Arg: {"cursor": {"session_id": "AAAAAAAAAAFxxxxxxxxxxxxxxx", "offset": 50000000}, "commit": {"path": "/large_file.zip", "mode": "add", "autorename": true}}
+
+<final chunk of file content, can be empty>
+```
+
+**Response:** Same as regular upload endpoint.
+
+#### Finish Multiple Upload Sessions (Batch)
+
+Complete multiple upload sessions in one call:
+
+```bash
+POST /dropbox/2/files/upload_session/finish_batch
+Content-Type: application/json
+
+{
+  "entries": [
+    {
+      "cursor": {
+        "session_id": "AAAAAAAAAAFxxxxxxxxxxxxxxx",
+        "offset": 50000000
+      },
+      "commit": {
+        "path": "/file1.zip",
+        "mode": "add",
+        "autorename": true
+      }
+    },
+    {
+      "cursor": {
+        "session_id": "AAAAAAAAAAFyyyyyyyyyyyyyyy",
+        "offset": 30000000
+      },
+      "commit": {
+        "path": "/file2.zip",
+        "mode": "add",
+        "autorename": true
+      }
+    }
+  ]
+}
+```
+
+**Response (async job):**
+```json
+{
+  ".tag": "async_job_id",
+  "async_job_id": "dbjid:AAAAAAAAAA..."
+}
+```
+
+Check status with `/files/upload_session/finish_batch/check`.
+
+#### Check Batch Status
+
+```bash
+POST /dropbox/2/files/upload_session/finish_batch/check
+Content-Type: application/json
+
+{
+  "async_job_id": "dbjid:AAAAAAAAAA..."
+}
+```
+
+**Response (in progress):**
+```json
+{
+  ".tag": "in_progress"
+}
+```
+
+**Response (complete):**
+```json
+{
+  ".tag": "complete",
+  "entries": [
+    {
+      ".tag": "success",
+      "name": "file1.zip",
+      "path_lower": "/file1.zip",
+      "path_display": "/file1.zip",
+      "id": "id:Awe3Av8A8YYAAAAAAAAABw"
+    },
+    {
+      ".tag": "success",
+      "name": "file2.zip",
+      "path_lower": "/file2.zip",
+      "path_display": "/file2.zip",
+      "id": "id:Awe3Av8A8YYAAAAAAAAABx"
+    }
+  ]
+}
+```
+
+### File Download
+
+#### Download File
+
+```bash
+POST /dropbox/2/files/download
+Dropbox-API-Arg: {"path": "/document.pdf"}
+```
+
+**Response:** Raw file contents with metadata in `Dropbox-API-Result` response header.
+
+#### Download Folder as ZIP
+
+```bash
+POST /dropbox/2/files/download_zip
+Dropbox-API-Arg: {"path": "/folder"}
+```
+
+**Response:** ZIP file contents. Note: folders larger than 20 GB or with more than 10,000 files cannot be downloaded as ZIP.
+
+#### Export File
+
+Export a file from Dropbox (e.g., Paper docs to markdown):
+
+```bash
+POST /dropbox/2/files/export
+Dropbox-API-Arg: {"path": "/document.paper"}
+```
+
+#### Get Preview
+
+```bash
+POST /dropbox/2/files/get_preview
+Dropbox-API-Arg: {"path": "/document.docx"}
+```
+
+**Response:** PDF preview of the file.
+
+#### Get Thumbnail
+
+```bash
+POST /dropbox/2/files/get_thumbnail_v2
+Dropbox-API-Arg: {"resource": {".tag": "path", "path": "/photo.jpg"}, "format": "jpeg", "size": "w128h128"}
+```
+
+**Thumbnail Sizes:**
+- `w32h32`, `w64h64`, `w128h128`, `w256h256`, `w480h320`, `w640h480`, `w960h640`, `w1024h768`, `w2048h1536`
 
 ### Search
 
@@ -752,16 +972,120 @@ results = response.json()
 print(f"Found {len(results['matches'])} matches")
 ```
 
+### Python (Upload File)
+
+```python
+import os
+import json
+import requests
+
+# Upload a small file (up to 150 MB)
+file_path = '/path/to/local/file.txt'
+dropbox_path = '/uploaded_file.txt'
+
+with open(file_path, 'rb') as f:
+    response = requests.post(
+        'https://gateway.maton.ai/dropbox/2/files/upload',
+        headers={
+            'Authorization': f'Bearer {os.environ["MATON_API_KEY"]}',
+            'Content-Type': 'application/octet-stream',
+            'Dropbox-API-Arg': json.dumps({
+                'path': dropbox_path,
+                'mode': 'add',
+                'autorename': True
+            })
+        },
+        data=f
+    )
+result = response.json()
+print(f"Uploaded: {result['path_display']} ({result['size']} bytes)")
+```
+
+### Python (Upload Large File with Session)
+
+```python
+import os
+import json
+import requests
+
+CHUNK_SIZE = 4 * 1024 * 1024  # 4 MB chunks
+file_path = '/path/to/large/file.zip'
+dropbox_path = '/large_file.zip'
+
+with open(file_path, 'rb') as f:
+    file_size = os.path.getsize(file_path)
+    
+    # Start session
+    chunk = f.read(CHUNK_SIZE)
+    response = requests.post(
+        'https://gateway.maton.ai/dropbox/2/files/upload_session/start',
+        headers={
+            'Authorization': f'Bearer {os.environ["MATON_API_KEY"]}',
+            'Content-Type': 'application/octet-stream',
+            'Dropbox-API-Arg': json.dumps({'close': False})
+        },
+        data=chunk
+    )
+    session_id = response.json()['session_id']
+    offset = len(chunk)
+    
+    # Append remaining chunks
+    while True:
+        chunk = f.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        
+        if offset + len(chunk) < file_size:
+            # More chunks to come
+            requests.post(
+                'https://gateway.maton.ai/dropbox/2/files/upload_session/append_v2',
+                headers={
+                    'Authorization': f'Bearer {os.environ["MATON_API_KEY"]}',
+                    'Content-Type': 'application/octet-stream',
+                    'Dropbox-API-Arg': json.dumps({
+                        'cursor': {'session_id': session_id, 'offset': offset},
+                        'close': False
+                    })
+                },
+                data=chunk
+            )
+            offset += len(chunk)
+        else:
+            # Final chunk - finish session
+            response = requests.post(
+                'https://gateway.maton.ai/dropbox/2/files/upload_session/finish',
+                headers={
+                    'Authorization': f'Bearer {os.environ["MATON_API_KEY"]}',
+                    'Content-Type': 'application/octet-stream',
+                    'Dropbox-API-Arg': json.dumps({
+                        'cursor': {'session_id': session_id, 'offset': offset},
+                        'commit': {
+                            'path': dropbox_path,
+                            'mode': 'add',
+                            'autorename': True
+                        }
+                    })
+                },
+                data=chunk
+            )
+            result = response.json()
+            print(f"Uploaded: {result['path_display']} ({result['size']} bytes)")
+            break
+```
+
 ## Notes
 
 - All Dropbox API v2 endpoints use HTTP POST method
-- Request bodies are JSON (not form-urlencoded)
+- Most endpoints use JSON request bodies (Content-Type: application/json)
+- Upload/download endpoints use binary content (Content-Type: application/octet-stream) with parameters in `Dropbox-API-Arg` header
+- The gateway automatically routes content endpoints to `content.dropboxapi.com`
 - Use empty string `""` for the root folder path
 - Paths are case-insensitive but case-preserving
 - File IDs (e.g., `id:Awe3Av8A8YYAAAAAAAAABQ`) persist even when files are moved or renamed
 - Tag text must match pattern `[\w]+` (alphanumeric and underscores only)
 - Temporary download links expire after 4 hours
 - Rate limits are generous and per-user
+- Maximum file size for single upload: 150 MB (use upload sessions for larger files up to 350 GB)
 - IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments
 
 ## Error Handling
