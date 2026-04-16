@@ -3,11 +3,16 @@
   "slug": "nonprofit-rbm-logic-model",
   "displayName": "Nonprofit Impact Orchestra",
   "latest": {
-    "version": "1.0.13",
-    "publishedAt": 1773919195462,
-    "commit": "https://github.com/openclaw/skills/commit/d6b0b6a2e85e189fd47b66aff4c5f9e5fb1fbb7e"
+    "version": "1.0.15",
+    "publishedAt": 1775970911402,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.13",
+      "publishedAt": 1773919195462,
+      "commit": "https://github.com/openclaw/skills/commit/d6b0b6a2e85e189fd47b66aff4c5f9e5fb1fbb7e"
+    },
     {
       "version": "1.0.10",
       "publishedAt": 1773806046291,

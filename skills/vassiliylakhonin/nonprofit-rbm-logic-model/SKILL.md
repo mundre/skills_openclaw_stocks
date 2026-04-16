@@ -1,18 +1,27 @@
 ---
 name: nonprofit-impact-orchestra
-description: Generate donor-ready nonprofit project packages for grants, concept notes, logframes, MEAL plans, budgets, safeguarding reviews, and funder adaptation. Use when designing a new project, adapting to a donor call, building RBM logic, or preparing a proposal for submission. Also covers GESI, SDG alignment, risks, compliance scoring, and JSON-ready outputs.
+description: Build donor-ready nonprofit proposal packages with evidence-safe and implementation-ready structure. Use for concept notes, logframes, ToC/RBM, MEAL plans, budgets, safeguarding checks, donor adaptation, compliance gates, and submission-readiness decisions.
 ---
 
 # Nonprofit Impact Orchestra
 
 Turn rough nonprofit ideas, donor calls, or draft proposals into donor-ready packages.
 
-## Important Usage Note
+## Best for
 
-`orchestra ...` examples below are **invocation patterns**, not a required local binary.
-Use them as mode labels when handling user requests in chat.
+- Concept notes, LOIs, and full proposal structuring
+- ToC/RBM/logframe + MEAL system design
+- Donor fit adaptation and pre-submission risk/compliance gating
 
-## Invocation Patterns
+## Not for
+
+- Fabricating baselines, citations, partner commitments, or guarantees
+- Replacing legal/finance due diligence
+- Submitting without verification ownership and deadlines
+
+## Invocation patterns
+
+`orchestra ...` examples below are mode labels, not a required local binary.
 
 - `orchestra [project description]`
 - `orchestra --express [description]`
@@ -24,7 +33,18 @@ Use them as mode labels when handling user requests in chat.
 - `orchestra --donor-fit [description]`
 - `orchestra --json [description]`
 
-## Core Rules
+## 60-second preflight
+
+Before drafting, confirm:
+- donor/call and deadline,
+- geography and target group,
+- budget range and duration,
+- implementation partner reality,
+- output format requested (concept/loi/full/json).
+
+If any critical item is missing, ask only blocking questions.
+
+## Core rules
 
 1. Be donor-ready; never fake certainty.
 2. Preserve realism over grandiosity.
@@ -35,47 +55,47 @@ Use them as mode labels when handling user requests in chat.
 7. Never fabricate baselines, evidence, partner commitments, or donor fit.
 8. Never output citations without retrievable source metadata (title/organization, URL or document origin, and date).
 
-## Evidence & Source Policy (Mandatory)
+## Evidence and source policy (mandatory)
 
-### Confidence Labels
+### Confidence labels
 - `[HIGH]` — verified with retrievable source
 - `[MEDIUM]` — plausible but incomplete evidence
 - `[UNVERIFIED]` — claim needs manual verification
 
-### Source Requirements
+### Source requirements
 For each source in an Evidence Note, include:
 - source title or organization,
 - URL (or explicit non-URL origin provided by user),
 - publication/access date,
 - confidence label.
 
-### Source-Limited Mode (Fallback)
-If reliable retrieval is unavailable (no web/tool access and no user-provided sources):
-1. Do **not** invent sources or links.
+### Source-limited mode (fallback)
+If reliable retrieval is unavailable:
+1. Do not invent sources or links.
 2. Replace Evidence Note with `Evidence Needed`.
 3. Mark unsupported claims as `[UNVERIFIED]`.
 4. Add `owner + due date` for each verification item.
 
-## Decision-Grade Additions (standard/deep mode)
+## Decision-grade additions (standard/deep mode)
 
-1. Add Evidence Note with 3–8 sources **only when source requirements are met**.
-2. For any budget line >10% of total, provide unit-cost assumptions (quantity × unit rate) + rationale.
-3. Add Compliance Gates: `Go / Conditional Go / No-Go` before submission.
+1. Add Evidence Note with 3–8 sources only when requirements are met.
+2. For any budget line >10% of total, include quantity × unit rate + rationale.
+3. Add submission gate verdict: `Go / Conditional Go / No-Go`.
 4. Separate verified baselines from placeholders.
 5. Add a 2-week validation sprint (data checks, partner confirmations, budget checks, stop/go trigger).
 
 ## Workflow
 
-1. **Parse and scope**: location, target group, problem, impact, budget, duration, partners, donor, output type.
-2. **Strategic context**: drivers, stakeholders, risks, assumptions, donor-fit extraction from CFP (if provided).
-3. **Program logic**: RBM chain, ToC, logframe, SMART indicators, assumptions, baselines/targets.
-4. **MEAL + GESI + SDG**: accountability loop, inclusion analysis, SDG mapping.
-5. **Safeguarding/Do No Harm**: PSEA, conflict sensitivity, privacy, consent, environmental screening.
-6. **Budget logic**: personnel/travel/equipment/training/ops/contingency/co-financing + red-flag checks.
-7. **Draft/adapt**: donor-aligned framing, structure, language.
-8. **Readiness check**: risk matrix, scenarios, compliance score, confidence report, verification plan.
+1. Parse and scope: location, target group, problem, impact, budget, duration, partners, donor, output type.
+2. Strategic context: drivers, stakeholders, risks, assumptions, donor-fit extraction from CFP.
+3. Program logic: RBM chain, ToC, logframe, SMART indicators, assumptions, baselines/targets.
+4. MEAL + GESI + SDG: accountability loop, inclusion analysis, SDG mapping.
+5. Safeguarding/Do No Harm: PSEA, conflict sensitivity, privacy, consent, environmental screening.
+6. Budget logic: personnel/travel/equipment/training/ops/contingency/co-financing + red-flag checks.
+7. Draft/adapt: donor-aligned framing, structure, language.
+8. Readiness check: risk matrix, scenarios, compliance score, confidence report, verification plan.
 
-## Default Delivery Package
+## Default delivery package
 
 00. Elevator Pitch  
 01. Executive Summary  
@@ -98,10 +118,10 @@ If reliable retrieval is unavailable (no web/tool access and no user-provided so
 18. Human Impact Narrative  
 19. Compliance Score  
 20. Confidence Report  
-21. Sources / Traceability (or `Evidence Needed` in source-limited mode)  
+21. Sources / Traceability (or `Evidence Needed`)  
 22. JSON Export Block
 
-## Compliance Score Format
+## Compliance score format
 
 ```text
 Compliance Score: XX/100
@@ -111,7 +131,7 @@ Compliance Score: XX/100
 ❌ Partner MoU missing
 ```
 
-## JSON Output Skeleton
+## JSON output skeleton
 
 ```json
 {
