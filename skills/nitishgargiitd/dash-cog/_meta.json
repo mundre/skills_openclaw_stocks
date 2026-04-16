@@ -3,11 +3,16 @@
   "slug": "dash-cog",
   "displayName": "Dash Cog",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1775627869387,
-    "commit": "https://github.com/openclaw/skills/commit/7c5aa1b5ba19d98e3907a742945c5449b17b534f"
+    "version": "1.0.11",
+    "publishedAt": 1776187924349,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1775627869387,
+      "commit": "https://github.com/openclaw/skills/commit/7c5aa1b5ba19d98e3907a742945c5449b17b534f"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1775100819888,
