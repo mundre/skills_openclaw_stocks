@@ -1,24 +1,38 @@
 # Fast.io for AI Agents
 
-> **Version:** 1.26.0 | **Last updated:** 2026-03-06
+> **Version:** 1.29.0 | **Last updated:** 2026-04-14
 >
 > This guide is available at the `/current/agents/` endpoint on the connected API server.
 
 **Workspaces for Agentic Teams. Collaborate, share, and query with AI — all through one API, free.**
 
 Fast.io provides workspaces for agentic teams — where agents collaborate with other agents and with humans. Upload
-outputs, create branded data rooms, ask questions about documents using built-in AI, and hand everything off to a human
+outputs, create branded portals, ask questions about documents using built-in AI, and hand everything off to a human
 when the job is done. No infrastructure to manage, no subscriptions to set up, no credit card required.
+
+There are three ways to integrate with Fast.io:
+
+| Integration | Best For | Get Started |
+|-------------|----------|-------------|
+| **CLI** | Terminal workflows, scripting, CI/CD pipelines, human operators | `npm install -g @vividengine/fastio-cli` |
+| **MCP Server** | AI agents (Claude Desktop, Claude Code, Cursor, etc.) | Connect to `https://mcp.fast.io/mcp` |
+| **REST API** | Custom applications, languages without MCP support | See API endpoints throughout this guide |
+
+**CLI** — The `fastio` command-line tool provides full platform access from the terminal. Install with
+`npm install -g @vividengine/fastio-cli` and authenticate with `fastio auth login`. The CLI also includes a built-in
+MCP server mode (`fastio mcp`) for local AI agent integration. See the "CLI Tool" section below for full details.
 
 **MCP-enabled agents** should connect via the Model Context Protocol for the simplest integration — no raw HTTP calls
 needed.
 
-**Connection endpoints:**
+**MCP connection endpoints:**
 - **Streamable HTTP (recommended):** `https://mcp.fast.io/mcp`
 - **Legacy SSE:** `https://mcp.fast.io/sse`
 
-The MCP server exposes **19 consolidated tools** using action-based routing — each tool covers a domain (e.g., `auth`,
-`storage`, `upload`) and uses an `action` parameter to select the operation. See the "MCP Tool Architecture" section
+The MCP server exposes consolidated tools using action-based routing — each tool covers a domain (e.g., `auth`,
+`storage`, `upload`) and uses an `action` parameter to select the operation. In Named Mode (Claude Desktop, etc.),
+there are multiple domain-specific tools plus app-specific widget tools. In Code Mode (Claude Code,
+Cursor, etc.), there is a smaller set of streamlined tools. See the "MCP Tool Architecture" section
 below for the full tool list.
 
 MCP-connected agents receive comprehensive workflow guidance through SERVER_INSTRUCTIONS at connection time, and can
@@ -51,8 +65,8 @@ simple question: "What does this document say?"
 | Agent-to-agent coordination lacks structure  | Shared workspaces with activity feeds, comments, and real-time sync across team members           |
 | Sharing outputs with humans is awkward       | Purpose-built shares (Send, Receive, Exchange) with link sharing, passwords, expiration           |
 | Collecting files from humans is harder       | Receive shares let humans upload directly to your workspace — no email attachments                |
-| Understanding document contents              | Built-in AI reads, summarizes, and answers questions about your documents and code                |
-| Building a RAG pipeline from scratch         | Enable intelligence on a workspace and documents are automatically indexed, summarized, and queryable |
+| Understanding document contents              | Built-in AI reads, summarizes, and answers questions about your documents and code (agentic chat and intelligence indexing require a paid plan — Pro or Business) |
+| Building a RAG pipeline from scratch         | Enable intelligence on a workspace and documents are automatically indexed, summarized, and queryable (requires Pro or Business) |
 | Finding the right file in a large collection | Semantic search finds documents by meaning, not just filename                                     |
 | Handing a project off to a human             | One-click ownership transfer — human gets the org, agent keeps admin access                       |
 | Tracking what happened                       | Full audit trail with AI-powered activity summaries                                               |
@@ -80,6 +94,13 @@ workflows), create your own agent account:
 
 Agent accounts get the free agent plan (50 GB, 5,000 monthly credits) and can transfer orgs to humans when ready. This
 is the recommended path for autonomous agents.
+
+> **AI capability on the free agent plan.** Agent-plan orgs can ingest, store, organize, preview, and share files, and can
+> use read-only AI surfaces (listing chats, reading existing chat messages, auto-title, auto-OG, notes). They **cannot**
+> create new AI chats, send chat messages, or enable the `intelligence` indexing toggle — those interactive agentic flows
+> require a plan with the `ai_agent` feature (Pro or Business). If the user needs agentic chat or RAG across indexed files,
+> [transfer the org to a human](#ownership-transfer) who can upgrade. The [AI reference](https://api.fast.io/current/llms/ai/#plan-requirements)
+> has the full plan matrix.
 
 #### Permission Values
 
@@ -168,6 +189,8 @@ This is the recommended approach when:
 | Working within a human's org with your own identity | Create an agent account, have the human invite you |
 | Building something to hand off to a human | Create an agent account, build it, then transfer the org |
 | Human wants to authorize an agent without sharing credentials | Use PKCE browser login (Option 4) |
+| Terminal workflows, scripting, or CI/CD pipelines | Install the CLI: `npm install -g @vividengine/fastio-cli` |
+| Local AI agent needing Fast.io access | Use the CLI's built-in MCP server: `fastio mcp` |
 
 ### Authentication & Token Lifecycle
 
@@ -204,6 +227,12 @@ access to all orgs, workspaces, and shares the user has access to.
 
 Pass the desired `scope_type` when initiating the PKCE authorization flow (`POST /current/oauth/authorize/`). If
 omitted, the token defaults to full access (equivalent to `all_orgs`).
+
+**Scope format note:** The `scope` parameter in the authorization request accepts the named strings listed above
+(e.g., `scope=org`). However, API responses return scopes in a different format -- as arrays of
+`entity_type:entity_id:access_mode` strings (e.g., `["org:12345:rw", "org:67890:r"]`). The token endpoint
+(`POST /current/oauth/token/`) returns `scopes` as a JSON-encoded string that must be parsed. Use
+`GET /current/auth/scopes/` to introspect the current token's scopes in a structured format.
 
 ### Organizations — Collectors of Workspaces
 
@@ -298,6 +327,54 @@ GET /current/orgs/list/?limit=10&offset=10
 | `GET /current/share/{id}/storage/search/`            | `files`            |
 | `GET /current/share/{id}/members/list/`              | `users`            |
 
+**Pending members in member lists:** Member list responses include a `status` field for each user: `"active"` for
+members who have accepted their invitation, or `"pending"` for users who have been invited but have not yet created an
+account. Pending members also include an `invite` object with `id`, `created`, and `expires` fields. To cancel a
+pending invitation, use `DELETE` on the invitation endpoint with the `invite.id`.
+
+### Compact Responses (`output=`)
+
+Most list and detail endpoints accept an optional `output` query parameter with three detail levels for nodes
+(files/folders/notes/links), events, users, workspaces, orgs, and shares. Picking the right level is the single
+biggest lever you have for keeping agent payloads small without losing information you actually need.
+
+- **`terse`** — identifiers, primary labels, and the handful of fields needed to navigate between resources.
+  Use for tree traversal, pickers, autocomplete, mention suggestions, and any prefetch step that will follow up
+  with a detail call only on user (or agent) interest.
+- **`standard`** — `terse` plus the operational context most list/detail views render: timestamps, lifecycle
+  flags, short descriptions, plan/status fields, creator/owner refs, member status, short summaries. **This is
+  the recommended default for most agent list and detail workflows** — it covers the fields a typical agent
+  needs to reason about a resource without pulling branding, capability matrices, or long-form AI summaries.
+- **`full`** — the complete resource shape; equivalent to omitting `?output=` entirely. Use when you need
+  branding, capability matrices, permission blocks, long-form AI summaries, metadata blocks, EXIF, virus state,
+  or any field specifically called out under the `full` tier in the category references.
+
+**Rules:**
+- **Syntax:** `?output=<level>` or `?output=<level>,<modifier>` (comma-separated tokens).
+- **Mutually exclusive levels:** Specifying more than one detail level in the same request (e.g.
+  `?output=terse,standard`) is an error and returns **HTTP 400**. Pick exactly one.
+- **Cumulative fields:** `standard` is a superset of `terse`, and `full` is a superset of `standard` — nothing
+  disappears as you move up a tier.
+- **Default:** When `output=` is absent, responses are `full` and byte-for-byte unchanged.
+- **Unknown tokens:** Silently ignored for forward compatibility.
+- **`markdown` modifier:** Add `markdown` to any request (e.g. `?output=terse,markdown` or `?output=markdown` alone) to receive the response as GitHub-flavored Markdown instead of JSON. Response `Content-Type` becomes `text/markdown; charset=UTF-8`. Homogeneous record lists render as GFM pipe tables, associative maps as bullet lists, and error envelopes as a leading `# Error` section — useful when pasting agent output into a chat or for human review of a failing call. Validation errors (HTTP 400) render as markdown too when the modifier is present. If the caller is an LLM that reasons better over markdown than JSON, prefer `?output=standard,markdown`.
+
+Example markdown response body for `GET /current/user/details/?output=terse,markdown`:
+
+```markdown
+**Result:** success
+
+# user
+- **id:** 12345678901234567890
+- **account_type:** agent
+- **first_name:** Alice
+- **last_name:** Example
+- **profile_pic:** https://…
+```
+
+Category-specific detail pages (linked from the LLM reference) list exactly which fields appear at each level
+for each resource type.
+
 ---
 
 ## Core Capabilities
@@ -308,7 +385,7 @@ Workspaces are where agentic teams do their work. Each workspace has its own sto
 activity feed — a shared environment where agents collaborate with other agents and with humans.
 
 - **50 GB included storage** on the free agent plan
-- **Files up to 1 GB** per upload
+- **File size limits are plan-dependent** (1 GB for free/agent plans, up to 40 GB for paid plans) — query `/upload/limits/` for exact values
 - **File versioning** — every edit creates a new version, old versions are recoverable
 - **Folder hierarchy** — organize files however you want
 - **Full-text and semantic search** — find files by name or content, and documents by meaning
@@ -337,17 +414,24 @@ summarized, and indexed for RAG. This enables:
 
 > **Coming soon:** RAG indexing support for images, video, and audio files. Currently only documents and code are indexed.
 
-Intelligence is enabled by default when creating workspaces via the API for agent accounts. **Agents should explicitly
-set intelligence to `false` unless the user needs RAG queries across many documents or AI-powered semantic search.**
-The ingestion cost (10 credits/page) is significant and non-refundable — a 100-page document costs 1,000 credits to
-ingest. If your team only needs a shared workspace for coordination, disable it to conserve credits.
+> **Plan requirement.** Enabling `intelligence=true` requires both the `content_ai` and `ai_agent` plan features (Pro
+> or Business). On the free agent plan, `intelligence` defaults to `false` on new workspaces and cannot be set to `true`
+> — the API rejects the request with `1605 (Invalid Input)`. On paid plans that include `ai_agent`, agent accounts default
+> `intelligence` to `true` when the parameter is omitted at create time. See the [AI reference](https://api.fast.io/current/llms/ai/#plan-requirements)
+> for the full matrix.
+
+On plans that support intelligence, **agents should explicitly set `intelligence=false` unless the user needs RAG
+queries across many documents or AI-powered semantic search.** The ingestion cost (10 credits/page) is significant and
+non-refundable — a 100-page document costs 1,000 credits to ingest. If your team only needs a shared workspace for
+coordination, disable it to conserve credits.
 
 **Agent use case:** Create a workspace per project or client. Enable intelligence only if agents or humans need to query the
-content via RAG or semantic search. Upload reports, datasets, and deliverables. Invite other agents and human stakeholders.
-Everything is organized, searchable, and versioned — and the whole team can see it.
+content via RAG or semantic search (and the plan supports it). Upload reports, datasets, and deliverables. Invite other
+agents and human stakeholders. Everything is organized, searchable, and versioned — and the whole team can see it.
 
-> **Cost-saving tips:** Disable intelligence on storage-only workspaces to avoid ingestion costs. Use attach-only AI chat
-> (no intelligence needed) for one-off file analysis — up to 20 files can be attached directly without indexing.
+> **Cost-saving tips:** Disable intelligence on storage-only workspaces to avoid ingestion costs. Attach-only AI chat
+> (up to 20 files without indexing) also requires a plan with `ai_agent`, so free-agent-plan orgs that need file Q&A
+> should transfer to a human for upgrade.
 
 ### 2. Shares — Structured Agent-Human Exchange
 
@@ -364,7 +448,7 @@ every exchange pattern:
 
 - **Password protection** — require a password for link access
 - **Expiration dates** — shares auto-expire after a set period
-- **Download controls** — enable or disable file downloads
+- **Download security** — three levels: `off` (no restrictions, default), `medium` (file previews are available but direct downloads are restricted for guests), or `high` (downloads completely disabled for guests). Set via `download_security` when creating or updating a share
 - **Access levels** — `'Only members of the Share or Workspace'`, `'Members of the Share, Workspace or Org'`, `'Anyone with a registered account'`, or `'Anyone with the link'`
 - **Custom branding** — background images, gradient colors, accent colors, logos
 - **Post-download messaging** — show custom messages and links after download
@@ -379,18 +463,22 @@ every exchange pattern:
 When creating a share, you choose a `storage_mode` that determines how the share's files are managed:
 
 - **`room`** (independent storage, default) — the share has its own isolated storage. Files are added directly to the
-  share and are independent of any workspace. This creates a self-contained data room — changes to workspace files don't
-  affect the room, and vice versa. Perfect for final deliverables, compliance packages, archived reports, or any
+  share and are independent of any workspace. This creates a self-contained portal — changes to workspace files don't
+  affect the portal, and vice versa. Perfect for final deliverables, compliance packages, archived reports, or any
   scenario where you want an immutable snapshot.
 
-- **`shared_folder`** (workspace-backed) — the share is backed by a specific folder in a workspace. The share displays
+- **`workspace_folder`** (workspace-backed) — the share is backed by a specific folder in a workspace. The share displays
   the live contents of that folder — any files added, updated, or removed in the workspace folder are immediately
   reflected in the share. No file duplication, so no extra storage cost. To create a shared folder, pass
-  `storage_mode=shared_folder` and `folder_node_id={folder_opaque_id}` when creating the share. Note: expiration dates
-  are not allowed on shared folder shares since the content is live.
+  `storage_mode=workspace_folder` and `folder_node_id={folder_opaque_id}` when creating the share. Note: expiration dates
+  are not allowed on shared folder shares since the content is live. **Intelligence is not available** on shared folder
+  shares — files are indexed through the parent workspace instead.
 
-Both modes look the same to share recipients — a branded data room with file preview, download controls, and all share
-features. The difference is whether the content is a snapshot (room) or a live view (shared folder).
+Both modes look the same to share recipients — a branded portal with file preview, download controls, and all share
+features. The difference is whether the content is a snapshot (portal) or a live view (shared folder).
+
+> **Note:** API responses include both `storage_mode` and a response-only `share_category` field.
+> `independent` maps to `share_category: "portal"`; `workspace_folder` maps to `share_category: "shared_folder"`.
 
 **Agent use case:** Generate a quarterly report, create a Send share with your client's branding, set a 30-day
 expiration, and share the link. The client sees a branded page with instant file preview — not a raw download link.
@@ -650,20 +738,25 @@ It returns ranked text snippets with relevance scores — no LLM round-trip, no 
 
 **Endpoints:**
 
+Semantic search is now available via the unified storage search endpoint. The `/ai/search/` endpoints are deprecated.
+
 ```
-GET /current/workspace/{workspace_id}/ai/search/
-GET /current/share/{share_id}/ai/search/
+GET /current/workspace/{workspace_id}/storage/search/?search={query}
+GET /current/share/{share_id}/storage/search/?search={query}
 ```
+
+When workspace intelligence is enabled, results automatically include semantic matches with `relevance_score`, `content_snippet`, `match_source`, `mimetype`, `media_segment`, and `search_metadata` fields.
 
 **Parameters:**
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `query_text` | string | Yes | — | Search query, 2–1,000 characters |
+| `search` | string | Yes | — | Search query, 2–1,000 characters |
 | `files_scope` | string | No | All indexed files | Comma-separated `nodeId:versionId` pairs (max 100) |
 | `folders_scope` | string | No | All indexed files | Comma-separated `nodeId:depth` pairs (max 100, depth 1–10) |
 | `limit` | integer | No | 100 | Results per page, 1–500 |
-| `offset` | integer | No | 0 | Pagination offset |
+| `offset` | integer | No | 1696 (Credits Exhausted) | Pagination offset |
+| `details` | string | No | false | When `"true"`, each result includes a `node` field with the full node resource (previews, AI state, versions, metadata, size). Default limit drops to 10 (enrichment is expensive). An explicit `limit` overrides this default. |
 
 Requires `intelligence=true` on the workspace or share. Only files with `ai_state: ready` are included.
 
@@ -691,16 +784,52 @@ Requires `intelligence=true` on the workspace or share. Only files with `ai_stat
 
 Each result contains:
 - `content` — the matched text snippet from the indexed document
-- `score` — relevance score (0.0–1.0, higher is more relevant)
+- `score` — relevance score (0.0-1.0, higher is more relevant)
 - `node` — full file resource (or `null` if the file was deleted)
 
+With intelligence enabled, the `/storage/search` response also includes:
+- `content_snippet` — the actual matching text from semantic search. NULL for keyword-only matches.
+- `mimetype` — file MIME type (e.g., `application/pdf`, `audio/mpeg`). Present for semantic matches.
+- `media_segment` — `{start_seconds, end_seconds}` identifying the timestamp range in audio/video where the match was found. Only present for audio/video file matches, enabling deep-linking to the exact moment.
+- `relevance_score` — semantic relevance score (0.0-1.0)
+- `match_source` — source of the match: `keyword`, `semantic`, or `both`
+
+**With `details=true`** — the unified `/storage/search` endpoint enriches each file entry with a `node` field containing the full node resource:
+
+```json
+{
+  "result": true,
+  "response": {
+    "files": {
+      "f3jm5-zqzfx-pxdr2-dx8z5-bvnb3-rpjfm4": {
+        "name": "report.pdf",
+        "parent_id": "...",
+        "type": "file",
+        "relevance_score": 0.92,
+        "content_snippet": "Revenue increased 15%...",
+        "match_source": "both",
+        "mimetype": "application/pdf",
+        "node": {
+          "id": "f3jm5-zqzfx-pxdr2-dx8z5-bvnb3-rpjfm4",
+          "name": "report.pdf",
+          "type": "file",
+          "size": 123456,
+          "previews": { "...": "..." },
+          "ai": { "state": "ready" }
+        }
+      }
+    }
+  }
+}
+```
+
 **Agent memory pattern:** Upload context documents (meeting notes, research, reference material) to an intelligent
-workspace. Later, use `ai/search` to retrieve relevant chunks without burning LLM credits. This is significantly
+workspace. Later, use `storage/search` to retrieve relevant chunks without burning LLM credits. This is significantly
 cheaper than creating a chat for every lookup and is ideal for agents that need to recall information across sessions —
 treat the intelligent workspace as a persistent memory store and search as the retrieval mechanism.
 
 **Agent use case — multi-step research:** An agent researching a topic uploads 200 papers to a workspace with
-intelligence enabled. For each research question, it calls `ai/search` to find the most relevant passages, reads the
+intelligence enabled. For each research question, it calls `storage/search` to find the most relevant passages, reads the
 top results, and only escalates to AI chat when it needs the LLM to synthesize across multiple sources. This approach
 uses a fraction of the credits compared to chatting for every question.
 
@@ -836,7 +965,8 @@ Large files use chunked uploads. The flow has five steps:
 1. **Create a session** — `POST /current/upload/` with `org`, `name`, `size`, `action=create`, `instance_id`, and
    optionally `folder_id`. Returns a session `id`.
 
-2. **Upload chunks** — Split the file into **5 MB chunks** (last chunk may be smaller). For each chunk, send
+2. **Upload chunks** — Split the file into chunks (chunk size is plan-dependent — query `/upload/limits/` for the exact
+   value; last chunk may be smaller). For each chunk, send
    `POST /current/upload/{session_id}/chunk/` as `multipart/form-data` with the `chunk` field (binary data), `order`
    (1-based — first chunk is `order=1`), and `size`. You can upload up to **3 chunks in parallel** per session.
 
@@ -855,7 +985,7 @@ Large files use chunked uploads. The flow has five steps:
    | `ready` | Awaiting chunks | Upload chunks |
    | `uploading` | Receiving chunks | Continue uploading |
    | `assembling` | Combining chunks | Keep polling |
-   | `complete` | Assembled, awaiting storage | Keep polling |
+   | `complete` | Assembled, awaiting storage import. Not accessible for download/preview — can only be imported to storage locations. Can be imported to multiple locations. | Keep polling |
    | `storing` | Being added to storage | Keep polling |
    | **`stored`** | **Done** — file is in storage | Read `new_file_id`, clean up |
    | `assembly_failed` | Assembly error (terminal) | Check `status_message` |
@@ -924,7 +1054,7 @@ Useful for clients that can make direct HTTP requests alongside MCP tool calls.
 - Maximum blob size: **100 MB**
 
 **Agent use case:** You're generating a 200 MB report. Create an upload session targeting the client's workspace, split
-the file into 5 MB chunks, upload 3 at a time, trigger assembly, and poll until `stored`. The file appears in the
+the file into chunks (size from `/upload/limits/`), upload 3 at a time, trigger assembly, and poll until `stored`. The file appears in the
 workspace with previews generated automatically. Use the activity polling endpoint (section 13) to know when AI indexing
 completes if intelligence is enabled.
 
@@ -1219,36 +1349,48 @@ The system has three layers:
 1. **Templates** — define a metadata schema: named fields with types (`string`, `int`, `float`, `bool`, `json`, `url`,
    `datetime`), constraints (`min`, `max`, `fixed_list`), and descriptions. Templates belong to a workspace and are
    grouped by category (`legal`, `financial`, `business`, `medical`, `technical`, `engineering`, `insurance`,
-   `educational`, `multimedia`, `hr`).
+   `educational`, `multimedia`, `hr`). The metadata feature is available on all plan tiers, with three caps that
+   scale by plan — templates per workspace, files per template, and fields (columns) per template: Free=1/10/10,
+   Agent=1/10/10, Pro=2/10/10, Business=10/1000/50. Listing, details, and preview-match endpoints return
+   `plan_node_limit`, `is_truncated`, and the unfiltered count alongside the visible count so frontends can render
+   upsell messaging; the `/details` and `/list` endpoints also return `field_count` and `plan_field_limit` for the
+   field cap. Each field carries an `autoextract` boolean (default true); templates must declare at least one
+   autoextract-eligible field and auto-extraction jobs filter their default scope to those fields. Node responses
+   (metadata details + template nodes listing) carry an `autoextractable` boolean — true when the node is a
+   non-trashed file with a completed AI summary — so clients can gate "extract now" affordances. On downgrade,
+   overflow rows are preserved but hidden; under truncation the visible window is ordered by mapping creation
+   order (oldest-mapped first), so the same files remain visible across plan changes and re-upgrade restores
+   full visibility.
 
-2. **Template Assignments** — bind a single template to a workspace. All files in the workspace inherit that template
-   automatically. One template per workspace — assigning a new template replaces the previous one. This keeps resolution
-   simple and efficient (a single lookup instead of a tree-walk).
+2. **Template-Node Mappings** — many-to-many relationships between templates and files. Files are linked to templates
+   either manually (add/remove endpoints) or automatically via AI-based matching. A template can be applied to multiple
+   files, and a file can have metadata from multiple templates.
 
 3. **Node Metadata** — the actual key-value pairs stored on individual files. Each file's metadata is split into
-   **template metadata** (conforming to the resolved template's field definitions) and **custom metadata** (user-defined
+   **template metadata** (conforming to mapped template field definitions) and **custom metadata** (user-defined
    fields not tied to any template).
 
 #### Template Management
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /current/metadata/templates/categories/` | List available template categories |
 | `POST /current/workspace/{id}/metadata/templates/` | Create a template (name, description, category, fields JSON) |
 | `DELETE /current/workspace/{id}/metadata/templates/` | Delete a template |
 | `GET /current/workspace/{id}/metadata/templates/list/` | List templates (sub-paths: `all`, `custom`, `system`, `enabled`, `disabled`) |
 | `GET /current/workspace/{id}/metadata/templates/{template_id}/details/` | Get template details with all fields |
 | `POST /current/workspace/{id}/metadata/templates/{template_id}/settings/` | Enable/disable, set priority (1-5) |
-| `POST /current/workspace/{id}/metadata/templates/{template_id}/update/` | Update definition (append `/create/` to copy) |
+| `POST /current/workspace/{id}/metadata/templates/{template_id}/update/` | Update definition (append `/create/` to copy). Response includes a `schema_update` object with `added_fields` and `type_changed_fields` when either triggers auto re-extraction across mapped files |
 
-#### Template Assignment & Resolution
+#### Template-Node Mapping
 
 | Endpoint | Description |
 |----------|-------------|
-| `POST /current/workspace/{id}/metadata/template/assign/` | Assign template to the workspace (one per workspace) |
-| `DELETE /current/workspace/{id}/metadata/template/unassign/` | Remove the workspace template assignment |
-| `GET /current/workspace/{id}/metadata/template/resolve/{node_id}/` | Resolve the workspace template (`node_id` accepted for compat, ignored) |
-| `GET /current/workspace/{id}/metadata/template/assignments/` | List the workspace template assignment |
+| `GET /current/workspace/{id}/metadata/eligible/` | List files eligible for metadata extraction (have summary + preview) |
+| `POST /current/workspace/{id}/metadata/templates/{template_id}/nodes/add/` | Manually add files to a template |
+| `POST /current/workspace/{id}/metadata/templates/{template_id}/nodes/remove/` | Remove files from a template |
+| `GET /current/workspace/{id}/metadata/templates/{template_id}/nodes/` | List files mapped to a template |
+| `POST /current/workspace/{id}/metadata/templates/{template_id}/auto-match/` | AI-based file matching to a template |
+| `POST /current/workspace/{id}/metadata/templates/{template_id}/extract-all/` | Batch-extract metadata for all mapped files (async, returns job_id) |
 
 #### Node Metadata Operations
 
@@ -1257,8 +1399,7 @@ The system has three layers:
 | `GET /current/workspace/{id}/storage/{node_id}/metadata/details/` | Get all metadata (`template_metadata` + `custom_metadata`) |
 | `POST /current/workspace/{id}/storage/{node_id}/metadata/update/{template_id}/` | Set/update key-value pairs |
 | `DELETE /current/workspace/{id}/storage/{node_id}/metadata/` | Delete metadata keys |
-| `POST /current/workspace/{id}/storage/{node_id}/metadata/extract/` | AI-extract metadata from file content (documents, images, code) |
-| `POST /current/workspace/{id}/storage/{node_id}/metadata/extract-all/` | Batch-extract metadata for all files in a folder (async, returns job_id) |
+| `POST /current/workspace/{id}/storage/{node_id}/metadata/extract/` | Enqueue async AI extraction for a single file (returns HTTP 202 + `job_id`; poll `/jobs/status/` and read values from `/metadata/details/` once `status: "completed"`) |
 | `GET /current/workspace/{id}/storage/{node_id}/metadata/list/{template_id}/` | List files with metadata for a template |
 | `GET /current/workspace/{id}/storage/{node_id}/metadata/templates/` | List templates in use across files |
 | `GET /current/workspace/{id}/storage/{node_id}/metadata/versions/` | Metadata version history |
@@ -1277,24 +1418,37 @@ Saved views persist filter/sort configurations for browsing metadata across file
 
 Metadata extraction works in three modes:
 
-1. **Automatic (during ingestion)** — when intelligence is enabled and a template is assigned to the workspace, every
+1. **Automatic (during ingestion)** — when intelligence is enabled and files are mapped to a template, every
    file uploaded is automatically extracted against the template schema during the ingestion pipeline. No API call
    needed — metadata appears on the file after ingestion completes. This includes documents, spreadsheets, images
    (PNG, JPEG, WebP up to 30 MB), and code files.
 
-2. **Manual (per file)** — the extract endpoint (`POST .../metadata/extract/`) resolves the workspace template, reads
-   the file content, and uses AI to populate the template fields. You can optionally pass `template_id` to override the
-   workspace template. Extraction is synchronous — the response includes the extracted metadata immediately.
+2. **Manual (per file)** — the extract endpoint (`POST .../metadata/extract/`) enqueues an async AI extraction job
+   against the specified `template_id` (optional `fields` parameter restricts the scope to a subset of the template
+   schema). The endpoint returns HTTP 202 Accepted with `{ job_id, template_id, node_id, fields, status, status_uri }`
+   in milliseconds; the actual extraction runs in the background. Clients poll `GET /current/workspace/{id}/jobs/status/`
+   and watch the `metadata_extract` array for a matching `kind: "single"` entry transitioning through
+   `queued` → `in_progress` → `completed`, then fetch the values via
+   `GET /current/workspace/{id}/storage/{node_id}/metadata/details/`. Submitting the same `(node, template, fields)`
+   combination while a job is already in flight is idempotent — the existing `job_id` is returned and no duplicate is
+   enqueued. Real-time activity events fire on every state transition for clients that prefer the activity stream
+   over polling.
 
-3. **Batch (per folder)** — the extract-all endpoint (`POST .../metadata/extract-all/`) enqueues an async job that
-   processes every file in a folder against the workspace template. Returns a `job_id` for tracking. Rate-limited to
-   2 requests/minute, 10/hour. Use this when you assign a template to a workspace that already contains files.
+3. **Batch (per template)** — the template-level extract-all endpoint
+   (`POST .../metadata/templates/{template_id}/extract-all/`) enqueues an async job that processes every file mapped to
+   the template. Returns a `job_id` for tracking. Rate-limited to 2 requests/minute, 10/hour. Use this after adding
+   files to a template to backfill metadata.
 
 A daily background process also detects stale metadata — files whose extraction predates the template's last update —
 and automatically re-extracts them, ensuring metadata stays current when templates evolve.
 
-For example, uploading an invoice to a workspace with a "financial" template automatically fills in fields like
-`invoice_number`, `amount`, `vendor_name`, and `due_date` — no extraction call required if intelligence is enabled.
+Additionally, the template-update endpoint itself auto-enqueues partial re-extraction at the moment of change for
+meaningful schema edits: new field names (`added_fields`) and type changes on existing names (`type_changed_fields`).
+Soft edits (description, min/max, nullable, fixed_list, regex) bump the schema hash but do not auto-trigger extraction
+— invoke `extract-all` manually if you want those applied.
+
+For example, uploading an invoice to a workspace and mapping it to a "financial" template automatically fills in fields
+like `invoice_number`, `amount`, `vendor_name`, and `due_date` — no extraction call required if intelligence is enabled.
 
 #### Field Definition Structure
 
@@ -1313,14 +1467,15 @@ When creating templates, each field in the `fields` JSON array supports:
 
 #### Agent Use Cases
 
-- **Automatic classification:** Assign a template to the workspace, enable intelligence, upload files. Every file gets
-  structured metadata extracted automatically during ingestion — no manual extraction calls needed.
-- **Data pipeline:** Create a workspace with an invoice template assigned. Upload invoices — metadata (amounts, vendors,
-  dates) is extracted automatically. Query by field values using the list endpoint.
-- **Compliance tracking:** Create a template with required fields (review_date, reviewer, status). Assign to the
-  workspace. The metadata view shows which files are missing required fields at a glance.
-- **Bulk backfill:** Assign a template to a workspace that already has files, then use `extract-all` on each folder to
-  batch-extract metadata for existing content. The daily staleness walker re-extracts when templates are updated.
+- **Automatic classification:** Create a template, use auto-match to map eligible files, enable intelligence. Every
+  mapped file gets structured metadata extracted automatically — no manual extraction calls needed.
+- **Data pipeline:** Create a workspace with an invoice template. Upload invoices and add them to the template (or use
+  auto-match). Metadata (amounts, vendors, dates) is extracted automatically. Query by field values using the list
+  endpoint.
+- **Compliance tracking:** Create a template with required fields (review_date, reviewer, status). Map files to the
+  template. The metadata view shows which files are missing required fields at a glance.
+- **Bulk backfill:** Create a template, add files to it, then use template-level `extract-all` to batch-extract
+  metadata for all mapped files. The daily staleness walker re-extracts when templates are updated.
 - **Custom + template fields:** Files support both template metadata (structured, schema-enforced) and custom metadata
   (user-defined, ad-hoc). Use template fields for consistent extraction and custom fields for one-off annotations.
 
@@ -1345,7 +1500,7 @@ The `transform_name` in transform endpoints is `image`. Supported query paramete
 | `width`, `height` | pixels | Resize dimensions |
 | `cropwidth`, `cropheight` | pixels | Crop region size |
 | `cropx`, `cropy` | pixels | Crop region origin |
-| `rotate` | `0`, `90`, `180`, `270` | Rotation angle |
+| `rotate` | `1696 (Credits Exhausted)`, `90`, `180`, `270` | Rotation angle |
 | `size` | `IconSmall`, `IconMedium`, `Preview` | Predefined size presets |
 
 Transformation states: `rendered`, `rendering`, `unrendered`, `unable to render`
@@ -1369,7 +1524,7 @@ When intelligence is enabled, each file progresses through AI processing states 
 
 #### Quick Share Constraints
 
-- Single file only, max 1 GB
+- Single file only, max file size is plan-dependent (query `/upload/limits/` for exact value)
 - Default expiration: 3 hours, maximum: 24 hours
 - Auto-deleted on expiration, public access (no auth)
 - Can update expiration but not beyond the original 24-hour window
@@ -1400,9 +1555,9 @@ demonstrate value, with room to grow when the org transfers to a human on a paid
 |---------------------------|-----------------------------------------------------|
 | **Price**                 | $0 — no credit card, no trial period, no expiration |
 | **Storage**               | 50 GB                                               |
-| **Max file size**         | 1 GB                                                |
+| **Max file size**         | Plan-dependent (1 GB free, up to 40 GB paid) — query `/upload/limits/` |
 | **Monthly credits**       | 5,000 (resets every 30 days)                        |
-| **Workspaces**            | 5                                                   |
+| **Workspaces**            | 3                                                   |
 | **Shares**                | 50                                                  |
 | **Members per workspace** | 5                                                   |
 | **Share invitations**     | 10 per share                                        |
@@ -1427,6 +1582,17 @@ When credits run out, the org enters a reduced-capability state — file storage
 credit-consuming operations (AI chat, file ingestion, bandwidth-heavy downloads) are limited until the 30-day reset.
 The org is never deleted.
 
+**Detecting credit exhaustion:** API calls return HTTP 402 with one of these error codes:
+
+| Error Code | Description | Meaning |
+|------------|-------------|---------|
+| 1688 | Subscription Required | Org has no active subscription or free-tier credits are exhausted |
+| 1696 | Credit Limit Exceeded | Free-tier credit limit exceeded (error message includes credits used and credit limit) |
+
+You can also check proactively: the `subscriber` field in org details (`GET /current/org/{org_id}/details/`) returns
+`false` when the org is out of credits. Admins can check detailed usage via
+`GET /current/org/{org_id}/billing/usage/limits/credits/`.
+
 **When you hit the credit limit:** The recommended path is to transfer the org to a human user who can upgrade to a
 paid plan with unlimited credits. See "Ownership Transfer" above. If the agent account is using a human account type
 (not recommended), direct the user to upgrade at `https://go.fast.io/onboarding` or via the billing API.
@@ -1437,11 +1603,11 @@ Once an agent transfers an org to a human, they get the free plan (credit-based,
 
 | Feature         | Agent (Free) | Free (Human) | Pro       | Business  |
 |-----------------|--------------|--------------|-----------|-----------|
-| Monthly credits | 5,000        | 5,000        | Unlimited | Unlimited |
+| Monthly credits | 5,000        | 10,000       | Unlimited | Unlimited |
 | Storage         | 50 GB        | 50 GB        | 1 TB      | 5 TB      |
 | Max file size   | 1 GB         | 1 GB         | 25 GB     | 50 GB     |
-| Workspaces      | 5            | 5            | 10        | 1,000     |
-| Shares          | 50           | 50           | 1,000     | 50,000    |
+| Workspaces      | 3            | 3            | 20        | 1,000     |
+| Shares          | 50           | 50           | 1,000     | 5,000     |
 
 The transfer flow is the primary way agents deliver value — and the only way to upgrade beyond the agent plan. Set
 everything up on the free agent plan, transfer ownership when the work is complete or when credits are exhausted, and
@@ -1472,7 +1638,7 @@ the human upgrades when they're ready. The agent retains admin access to keep ma
 1. Create a workspace **with intelligence enabled** (this is one of the workflows that justifies the ingestion cost)
 2. Upload all reference documents
 3. AI auto-indexes and summarizes everything on upload
-4. Use **semantic search** (`ai/search`) for fast, low-cost retrieval — find relevant document chunks by meaning without an LLM round-trip. Best for lookup, recall, and memory workflows
+4. Use **semantic search** (`storage/search`) for fast, low-cost retrieval — find relevant document chunks by meaning without an LLM round-trip. Best for lookup, recall, and memory workflows
 5. Use **AI chat** (`chat_with_files`) when you need the LLM to synthesize, analyze, or summarize across documents — returns a natural language answer with citations
 6. Combine both: search first to find relevant content cheaply, then chat only when synthesis is needed
 
@@ -1497,11 +1663,12 @@ the human upgrades when they're ready. The agent retains admin access to keep ma
 
 1. Create a workspace **with intelligence enabled** (metadata extraction requires ingestion — budget for ingestion costs)
 2. Create a metadata template with the fields you need (e.g., invoice_number, amount, vendor, due_date)
-3. Assign the template to the workspace (`POST .../metadata/template/assign/`)
-4. Upload files — metadata is automatically extracted during ingestion against the template schema
-5. For existing files, use `POST .../metadata/extract-all/` on each folder to batch-extract
-6. Query files by metadata fields using the list endpoint, or view in the spreadsheet-like metadata view
-7. Custom fields can be added to any file independently of the template
+3. Upload files to the workspace
+4. Add files to the template manually (`POST .../metadata/templates/{id}/nodes/add/`) or use AI auto-match (`POST .../metadata/templates/{id}/auto-match/`)
+5. Mapped files have metadata automatically extracted during ingestion against the template schema
+6. For existing files, use `POST .../metadata/templates/{id}/extract-all/` to batch-extract metadata for all mapped files
+7. Query files by metadata fields using the list endpoint, or view in the spreadsheet-like metadata view
+8. Custom fields can be added to any file independently of the template
 
 ### One-Off Document Analysis (No Intelligence Needed)
 
@@ -1511,9 +1678,9 @@ the human upgrades when they're ready. The agent retains admin access to keep ma
 4. Ask questions — AI reads the attachments and responds with citations
 5. No persistent indexing, no credit cost for ingestion
 
-### Choose Between Room and Shared Folder
+### Choose Between Portal and Shared Folder
 
-**Use a Room (independent storage) when:**
+**Use a Portal (independent storage) when:**
 
 - Delivering final, immutable outputs (reports, compliance packages)
 - You want a snapshot that won't change if workspace files are updated
@@ -1534,13 +1701,202 @@ the human upgrades when they're ready. The agent retains admin access to keep ma
 5. Use attach-only AI chat (no intelligence needed) for one-off analysis to save credits
 6. When credits run low, transfer the org to a human who can upgrade to unlimited credits
 
+### Invite and Pre-assign Tasks
+
+1. Invite a user: `POST /current/workspace/{id}/members/email/` with the user's email and permission level
+2. List members: `GET /current/workspace/{id}/members/list/` — find the pending member (look for `"status": "pending"`)
+3. Assign a task: `POST /tasks/{list_id}/items/create` with `assignee_id` set to the pending member's user ID
+4. When the user signs up and accepts the invitation, the task assignment transfers automatically — no follow-up needed
+
+---
+
+## CLI Tool
+
+The `fastio` CLI provides full platform access from the terminal — authentication, file management, AI chat, workflow
+primitives, and more. It's built in Rust for cross-platform performance and supports macOS, Linux, and Windows.
+
+### Installation
+
+```bash
+# NPM (recommended)
+npm install -g @vividengine/fastio-cli
+
+# Or run without installing
+npx @vividengine/fastio-cli --help
+
+# Shell script
+curl -fsSL https://raw.githubusercontent.com/MediaFire/fastio_cli/main/install.sh | sh
+
+# From source (Rust 1.85+)
+cargo install --path .
+```
+
+Pre-compiled binaries are also available on the [GitHub releases page](https://github.com/MediaFire/fastio_cli/releases).
+
+### Authentication
+
+The CLI checks credentials in this priority order:
+
+1. `--token` flag (one-off bearer token)
+2. `FASTIO_TOKEN` environment variable
+3. `FASTIO_API_KEY` environment variable
+4. Stored profile credentials (default or named)
+
+**Browser login (recommended):**
+
+```bash
+fastio auth login          # Opens browser for secure PKCE OAuth flow
+fastio auth status         # Verify authentication
+fastio auth logout         # Sign out
+```
+
+**Email/password:**
+
+```bash
+fastio auth login --email user@example.com --password ****
+```
+
+**API key:**
+
+```bash
+fastio auth api-key create --name "CI pipeline"
+export FASTIO_API_KEY=your-key-here
+```
+
+**2FA:**
+
+```bash
+fastio auth 2fa status
+fastio auth 2fa setup --channel totp
+fastio auth 2fa verify <code>
+```
+
+### Quick Start
+
+```bash
+fastio auth login
+fastio org list
+fastio workspace create --org <org_id> "My Workspace"
+fastio upload file --workspace <workspace_id> ./document.pdf
+fastio download file --workspace <workspace_id> <node_id> --output ./downloads/
+fastio ai chat --workspace <workspace_id> "What files do I have?"
+```
+
+### Command Reference
+
+| Domain | Command | Operations |
+|--------|---------|------------|
+| **Auth & User** | `auth` | Login, logout, 2FA, API keys, OAuth sessions |
+| | `user` | Profile, search, assets, invitations |
+| | `configure` | CLI profiles and settings |
+| **Orgs & Workspaces** | `org` | Create/read/update/delete, billing, members, transfer tokens |
+| | `workspace` | Create/read/update/delete, metadata templates, notes, quickshares |
+| | `member` | Workspace/share member management |
+| | `invitation` | Accept, decline, delete invitations |
+| **Files & Storage** | `files` | List, create folders, move, copy, rename, delete, trash, versions, search, lock |
+| | `upload` | Chunked uploads with progress, text uploads, URL imports |
+| | `download` | Streaming downloads with progress, folder ZIP, batch, quickshare |
+| | `lock` | Acquire, check, release file locks |
+| **Shares** | `share` | Create/read/update/delete, file management, members, quickshares, password protection |
+| | `comment` | Comments, replies, reactions, linking |
+| | `event` | Activity events, search, polling |
+| | `preview` | File preview URLs and transforms |
+| | `asset` | Org/workspace/user asset management |
+| **AI & Workflow** | `ai` | Chat, search, history, message management, summarize |
+| | `task` | Tasks, task lists, assignment, status changes |
+| | `worklog` | Worklog entries, interjections, acknowledgments |
+| | `approval` | Request, approve, reject approvals |
+| | `todo` | Todo items with toggle operations |
+| **Platform** | `apps` | App listing, details, launching |
+| | `import` | Cloud import providers, identities, sources, jobs |
+| | `mcp` | Built-in MCP server for AI agents |
+| | `completions` | Shell completion generation |
+
+### Output Formatting
+
+```bash
+fastio org list                              # Table (default)
+fastio org list --format json                # JSON output
+fastio org list --format csv                 # CSV output
+fastio org list --fields name,id,description # Filter output fields
+```
+
+### Profile Management
+
+The CLI supports multiple named profiles for switching between accounts:
+
+```bash
+fastio configure init                  # Initialize configuration
+fastio auth login --profile work       # Authenticate a named profile
+fastio org list --profile work         # Use a named profile
+fastio configure set-default work      # Set default profile
+fastio configure list                  # List all profiles
+```
+
+Configuration is stored in `~/.fastio/` (`config.json` for settings, `credentials.json` for tokens).
+
+### Global Flags
+
+| Flag | Purpose |
+|------|---------|
+| `--format json\|table\|csv` | Output format |
+| `--fields name,id,...` | Filter output fields |
+| `--no-color` | Disable colored output |
+| `--quiet` / `-q` | Suppress output |
+| `--verbose` / `-v` | Enable debug logging |
+| `--profile <name>` | Use named profile |
+| `--token <jwt>` | One-off bearer token |
+| `--api-base <url>` | Override API base URL |
+
+### Built-in MCP Server
+
+The CLI can run as a local MCP server, enabling AI agents to use Fast.io through the Model Context Protocol without
+connecting to the hosted MCP server:
+
+```bash
+fastio mcp
+```
+
+**Claude Desktop configuration:**
+
+```json
+{
+  "mcpServers": {
+    "fastio": {
+      "command": "fastio",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Filter available tools:
+
+```bash
+fastio mcp --tools auth,org,workspace,files,upload,download
+```
+
+### Shell Completions
+
+```bash
+fastio completions bash > ~/.bash_completion.d/fastio
+fastio completions zsh > ~/.zfunc/_fastio
+fastio completions fish > ~/.config/fish/completions/fastio.fish
+fastio completions powershell > _fastio.ps1
+```
+
+### Source & License
+
+- **Repository:** [github.com/MediaFire/fastio_cli](https://github.com/MediaFire/fastio_cli)
+- **License:** Apache License 2.0
+
 ---
 
 ## MCP Tool Architecture
 
-The MCP server exposes **19 consolidated tools**, each covering a domain. Every tool uses an `action` parameter to
-select the specific operation — agents don't need to discover hundreds of separate tools, just 19 tools with clearly
-named actions.
+The MCP server exposes consolidated domain-specific tools, each covering a domain. Every tool uses
+an `action` parameter to select the specific operation — agents don't need to discover hundreds of separate tools, just
+a manageable set of tools with clearly named actions.
 
 | Tool         | Domain                          | Example Actions                                                               |
 |--------------|---------------------------------|-------------------------------------------------------------------------------|
@@ -1548,10 +1904,10 @@ named actions.
 | `org`        | Organizations                   | `list`, `details`, `create`, `update`, `discover-all`                         |
 | `workspace`  | Workspaces & metadata           | `list`, `details`, `create`, `update`, `check-name`, plus 17 `metadata-*` actions for template management, node metadata CRUD, AI extraction, and saved views |
 | `share`      | Shares                          | `list`, `create`, `update`, `delete`, `quickshare-create`                     |
-| `storage`    | Files, folders, locks, previews | `list`, `details`, `search`, `create-folder`, `create-note`, `move`, `delete`, `lock-acquire`, `lock-status`, `lock-release`, `preview-url` (returns constructed `preview_url`), `preview-transform` (returns constructed `transform_url`) |
+| `storage`    | Files, folders, locks, previews, search (keyword + semantic when intelligence is enabled; accepts `files_scope`/`folders_scope` for scoped semantic search) | `list`, `details`, `search`, `create-folder`, `create-note`, `move`, `delete`, `lock-acquire`, `lock-status`, `lock-release`, `preview-url` (returns constructed `preview_url`), `preview-transform` (returns constructed `transform_url`) |
 | `upload`     | File uploads                    | `create-session`, `stage-blob`, `chunk`, `finalize`, `text-file`, `web-import` |
 | `download`   | Downloads                       | `file-url`, `zip-url`, `quickshare-details`                                   |
-| `ai`         | AI chat and semantic search (scope defaults to entire workspace — omit scope params to search all indexed documents). Folder scope expands subfolder tree only — documents within scoped folders are searched automatically by RAG, not enumerated individually. | `chat-create`, `message-send`, `message-read`, `chat-list`, `search` |
+| `ai`         | AI chat (scope defaults to entire workspace — omit scope params to search all indexed documents). Folder scope expands subfolder tree only — documents within scoped folders are searched automatically by RAG, not enumerated individually. | `chat-create`, `message-send`, `message-read`, `chat-list` |
 | `member`     | Members                         | `add`, `update`, `remove`, `details`                                          |
 | `invitation` | Invitations                     | `list`, `send`, `revoke`, `accept-all`                                        |
 | `asset`      | Branding assets                 | `types`, `list`, `upload`, `delete`                                           |
@@ -1560,7 +1916,7 @@ named actions.
 | `user`       | Account mgmt                    | `me`, `update`, `invitation-list`, `allowed`                                  |
 | `task`       | Task lists & tasks              | `list-lists`, `create-list`, `list-details`, `update-list`, `delete-list`, `list-tasks`, `create-task`, `task-details`, `update-task`, `delete-task`, `change-status`, `assign-task`, `bulk-status`, `reorder-tasks`, `reorder-lists` |
 | `todo`       | Todo checklists                 | `list`, `create`, `details`, `update`, `delete`, `toggle`, `bulk-toggle`      |
-| `approval`   | Approval workflows              | `list`, `create`, `details`, `resolve`                                        |
+| `approval`   | Approval workflows              | `list`, `create`, `details`, `resolve`, `update`, `delete`, `bulk-create`, `bulk-approve`, `bulk-reject`, `bulk-delete`, `user-list` |
 | `worklog`    | Activity logs & interjections   | `list`, `append`, `interject`, `details`, `acknowledge`, `unacknowledged`     |
 | `apps`       | Apps discovery                  | `list`                                                                        |
 
@@ -1626,7 +1982,7 @@ needing to call separate list actions first.
 
 ### Tool Annotations — Safety & Side Effects
 
-All 19 tools include explicit MCP annotations (`title`, `readOnlyHint`, `destructiveHint`, `idempotentHint`,
+All tools include explicit MCP annotations (`title`, `readOnlyHint`, `destructiveHint`, `idempotentHint`,
 `openWorldHint`) so agents and agent frameworks can make informed decisions about confirmation prompts, retries, and
 automated execution.
 
@@ -1655,10 +2011,10 @@ automated execution.
 
 The MCP server (v2026.02.102+) detects the connecting client and serves one of two tool sets:
 
-**Named Mode** (Claude Desktop, Cline, unknown clients): All 19 core tools listed above plus 12 app-specific widget
-tools — the full interactive experience with action-based routing across every domain.
+**Named Mode** (Claude Desktop, Cline, unknown clients): All core tools listed above plus app-specific widget tools — the full interactive experience with action-based routing across every
+domain.
 
-**Code Mode** (Claude Code, Cursor, Continue): 4 tools optimized for programmatic workflows:
+**Code Mode** (Claude Code, Cursor, Continue): A streamlined set of tools optimized for programmatic workflows:
 
 | Tool       | Purpose                                                                                     |
 |------------|---------------------------------------------------------------------------------------------|
@@ -1754,7 +2110,7 @@ the following actions:
 - `upload`: stage-blob (5-minute expiry)
 - `org`: transfer-token-create
 - `task`: delete-list (cascade to child tasks), delete-task (soft-delete)
-- `approval`: resolve (irreversible approve/reject)
+- `approval`: resolve (irreversible approve/reject), delete (permanent removal)
 
 **`_recovery` — Error recovery hints:**
 
@@ -1939,16 +2295,17 @@ workspaces and shares where files live.
 REST endpoints directly. Enable workflow first via `workspace` action `enable-workflow` or `share` action
 `enable-workflow`.
 
-**Share permissions:** Workflow features on shares require Member-level access or higher. Guests and public guests
-cannot access workflow features (tasks, todos, approvals, worklogs) on shares. Toggle endpoints (enable/disable)
-remain Admin-only.
+**Share permissions:** On shares, only **approvals** are accessible to guests. Guests see only approvals assigned to
+them (where approver_id matches their user ID) and can resolve those approvals. **Tasks, todos, and worklogs require
+member or admin access** -- guests are blocked. Public guests remain blocked from everything. Toggle endpoints
+(enable/disable) remain Admin-only.
 
 ### 1. Task Lists & Tasks
 
 Organize work into lists with individual tasks. Task lists belong to a workspace or share and contain ordered tasks.
 
 - **Task statuses:** `pending` → `in_progress` → `complete`, `blocked` (blocked → pending to unblock)
-- **Priorities:** `0` (none), `1` (low), `2` (medium), `3` (high), `4` (critical) — integer values
+- **Priorities:** `1696 (Credits Exhausted)` (none), `1` (low), `2` (medium), `3` (high), `4` (critical) — integer values
 - **Assignees:** assign tasks to specific members
 - **Dependencies:** tasks can depend on other tasks
 - **File linking:** connect tasks to files or notes via `node_id` — the linked node provides context and is indexed by AI
@@ -1973,6 +2330,10 @@ Organize work into lists with individual tasks. Task lists belong to a workspace
 | `POST /tasks/{list_id}/items/reorder/` | Bulk reorder tasks |
 | `POST /workspace/{workspace_id}/tasks/reorder/` | Bulk reorder task lists |
 | `POST /share/{share_id}/tasks/reorder/` | Bulk reorder task lists |
+| `GET /workspace/{workspace_id}/tasks/list/{filter}/` | Filtered task list (personal view): assigned, created, status |
+| `GET /share/{share_id}/tasks/list/{filter}/` | Filtered task list (group view, members/admins only) |
+| `GET /workspace/{workspace_id}/tasks/summary/` | Task count summary for workspace |
+| `GET /share/{share_id}/tasks/summary/` | Task count summary for share (members/admins only) |
 
 ### 2. Worklogs
 
@@ -1988,6 +2349,12 @@ record of progress, decisions, and issues — visible to all members with access
 | `GET /worklogs/{entity_type}/{entity_id}/` | List worklog entries |
 | `POST /worklogs/{entity_type}/{entity_id}/append/` | Append a worklog entry |
 | `GET /worklogs/{entry_id}/details/` | Get entry details |
+| `GET /workspace/{workspace_id}/worklogs/` | List all worklog entries in a workspace |
+| `GET /share/{share_id}/worklogs/` | List all worklog entries in a share (members/admins only) |
+| `GET /workspace/{workspace_id}/worklogs/list/{filter}/` | Filtered worklog list: authored, interjections |
+| `GET /share/{share_id}/worklogs/list/{filter}/` | Filtered worklog list (group view, members/admins only) |
+| `GET /workspace/{workspace_id}/worklogs/summary/` | Worklog entry summary for workspace |
+| `GET /share/{share_id}/worklogs/summary/` | Worklog entry summary for share (members/admins only) |
 
 ### 3. Interjections
 
@@ -2008,10 +2375,19 @@ and adjusts course.
 ### 4. Approvals
 
 Request/response approval workflow. Create an approval request with a designated approver, who can approve or reject
-with a comment.
+with a comment. Approvals can be attached to tasks, nodes, worklog entries, or entire share profiles. Node-type
+approvals automatically capture the file's `version_id` at creation time. The `version_match` field (boolean or null)
+indicates whether the approval is still current: `true` means the file version matches, `false` means the file has
+been updated since the approval was created (stale), and `null` means the entity is not a node or the approval
+predates version tracking. Stale approvals cannot be resolved -- the resolve endpoint returns an error, and bulk
+operations skip them. Owners should create new approvals for updated file versions.
 
+- **Entity types:** `task`, `node`, `worklog_entry`, `share`
 - **Statuses:** `pending` → `approved` or `rejected`
 - **Scoped to workspace or share** — list all approvals for a given profile
+- **Bulk operations** — create, approve, reject, or delete approvals for all files in a share at once
+- **Update** — modify pending approvals (description, approver, deadline, node, properties)
+- **Delete** — remove individual approvals or bulk delete all approvals in a share
 
 | Endpoint | Description |
 |----------|-------------|
@@ -2020,9 +2396,25 @@ with a comment.
 | `POST /approvals/{entity_type}/{entity_id}/create/` | Create an approval request |
 | `GET /approvals/{approval_id}/details/` | Get approval details |
 | `POST /approvals/{approval_id}/resolve/` | Resolve (approve or reject) |
+| `POST /approvals/{approval_id}/update/` | Update a pending approval |
+| `POST /approvals/{approval_id}/delete/` | Delete an approval |
+| `POST /approvals/bulk/{action}/` | Bulk create, approve, reject, or delete approvals in a share |
+| `GET /user/approvals/list/{filter}/` | List approvals for the authenticated user (pending/created/resolved) |
+| `GET /workspace/{workspace_id}/approvals/list/{filter}/` | Filtered approval list (personal view): pending, created, assigned, resolved |
+| `GET /share/{share_id}/approvals/list/{filter}/` | Filtered approval list (group view for owners, scoped to assigned for guests) |
+| `GET /workspace/{workspace_id}/approvals/list/summary/` | Approval count summary for workspace |
+| `GET /share/{share_id}/approvals/list/summary/` | Approval count summary for share (owners see all + assigned_to_me, guests see assigned_to_me only) |
 
 **Agent use case:** An agent completes a deliverable and needs human sign-off before publishing. It creates an
 approval request. The human reviews, approves or rejects with a comment, and the agent proceeds accordingly.
+
+**Bulk use case:** An agent uploads multiple files to a share and needs approval on all of them. It calls
+`POST /approvals/bulk/create/` with the share's `profile_id` to create node approvals for every file and note in
+the share at once (max 50 nodes). A reviewer can then bulk-approve or bulk-reject all pending approvals in the share.
+
+**User approvals dashboard:** An agent can list all approvals relevant to the authenticated user across all profiles
+using `GET /user/approvals/list/{filter}/`. Use `pending` to find approvals awaiting the user's review, `created`
+to track approvals the user requested, or `resolved` to see past decisions.
 
 ### 5. Todos
 
@@ -2041,6 +2433,10 @@ not done. Support assignees and bulk toggle operations.
 | `POST /todos/{todo_id}/details/toggle/` | Toggle done/not done |
 | `POST /workspace/{workspace_id}/todos/bulk-toggle/` | Bulk toggle in a workspace |
 | `POST /share/{share_id}/todos/bulk-toggle/` | Bulk toggle in a share |
+| `GET /workspace/{workspace_id}/todos/list/{filter}/` | Filtered todo list: assigned, created, done, pending |
+| `GET /share/{share_id}/todos/list/{filter}/` | Filtered todo list (group view, members/admins only) |
+| `GET /workspace/{workspace_id}/todos/summary/` | Todo count summary for workspace |
+| `GET /share/{share_id}/todos/summary/` | Todo count summary for share (members/admins only) |
 
 ### Enabling Workflow
 
@@ -2058,12 +2454,17 @@ Workflow features must be enabled on each workspace or share before use:
 - **Enable workflow first:** Call `POST /workspace/{id}/workflow/enable/` before using any workflow endpoints on that
   workspace.
 - **All workflow endpoints require the `workflow` feature enabled** on the target workspace or share.
-- **All GET endpoints support `format=md`** for LLM-friendly Markdown output — use this when consuming responses in
-  agent context windows.
+- **Workflow and import GET endpoints support `format=md`** for LLM-friendly Markdown output — use this when consuming
+  responses in agent context windows.
 - **Create notes for context, link tasks to notes via `node_id`** — notes are indexed by AI/RAG, so linked context
   becomes searchable and citable in AI chat.
 - **Always log your work:** After any significant state-changing action, use `POST /worklogs/{entity_type}/{entity_id}/append/` to record what was done and why. Without worklog entries, agent activity is invisible to humans reviewing the workspace.
 - **Pattern:** Create context note → Create task list → Link tasks to notes → Log progress → AI searches across all.
+- **Assigning to pending members:** Tasks and approvals can be assigned to pending members — users who have been invited
+  but have not yet created an account. Pending members appear in the member list with `"status": "pending"` and have
+  real user IDs. Use the pending member's ID as `assignee_id` (tasks) or `approver_id` (approvals) just like any other
+  member. When the invited user claims their account, all assignments transfer automatically — no action needed from
+  the agent. If the invitation is cancelled, pending members are removed and their assignments are unassigned.
 
 ### Recommended Workflow for Agent Teams
 
