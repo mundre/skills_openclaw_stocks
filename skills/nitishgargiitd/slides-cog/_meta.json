@@ -3,11 +3,16 @@
   "slug": "slides-cog",
   "displayName": "Slides Cog",
   "latest": {
-    "version": "1.0.12",
-    "publishedAt": 1775627930003,
-    "commit": "https://github.com/openclaw/skills/commit/6c8f3efca47658751423fbeda3fb0ae06397a09f"
+    "version": "1.0.15",
+    "publishedAt": 1776187990517,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.12",
+      "publishedAt": 1775627930003,
+      "commit": "https://github.com/openclaw/skills/commit/6c8f3efca47658751423fbeda3fb0ae06397a09f"
+    },
     {
       "version": "1.0.8",
       "publishedAt": 1775100858064,

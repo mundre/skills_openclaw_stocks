@@ -1,6 +1,6 @@
 ---
 name: slides-cog
-description: "AI presentation and slide deck generation powered by CellCog. Create pitch decks, keynotes, business presentations, educational slides, investor decks — PDF or native PPTX. Deep research fills content from minimal prompts. #1 on DeepResearch Bench (Apr 2026). Professional slide design, charts, and layouts."
+description: "AI presentation and slide deck generation powered by CellCog. Pitch decks, keynotes, business presentations, educational slides, investor decks — PDF or native PPTX. Research-backed content with professional slide design, charts, and layouts."
 metadata:
   openclaw:
     emoji: "📽️"
@@ -9,48 +9,41 @@ author: CellCog
 homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
-
 # Slides Cog - Content Worth Presenting, Design Worth Looking At
 
 **Great slides need two things: content worth presenting and design worth looking at.** CellCog takes both seriously.
 
-- **Content:** #1 on DeepResearch Bench (Apr 2026) — your prompt can be minimal and CellCog will research and fill in the substance mindfully, not just pad slides with filler
-- **Design:** State-of-the-art presentation generation — PDF slides or native PPTX, with layouts, typography, and visuals you can present as-is
+- **Content:** Your prompt can be minimal — CellCog researches and fills in substance, not filler
+- **Design:** PDF slides or native PPTX, with layouts, typography, and visuals you can present as-is
 
 Pitch decks, keynotes, board presentations, image slideshows — ready to present, not ready to fix.
 
----
+## How to Use
 
-## Prerequisites
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
 
-This skill requires the `cellcog` skill for SDK setup and API calls.
-
-```bash
-clawhub install cellcog
-```
-
-**Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
-
-**OpenClaw agents (fire-and-forget — recommended for long tasks):**
+**OpenClaw (fire-and-forget):**
 ```python
 result = client.create_chat(
     prompt="[your task prompt]",
-    notify_session_key="agent:main:main",  # OpenClaw only
-    task_label="my-task",
-    chat_mode="agent",  # See cellcog skill for all modes
-)
-```
-
-**All other agents (blocks until done):**
-```python
-result = client.create_chat(
-    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
     task_label="my-task",
     chat_mode="agent",
 )
 ```
 
-See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -239,3 +232,10 @@ CellCog presentations can include:
 
 6. **Choose your format**: PDF is the default for polished output. Request PPTX when your team needs to edit or customize the slides.
 
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
