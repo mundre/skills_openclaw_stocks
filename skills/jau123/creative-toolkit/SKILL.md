@@ -1,7 +1,7 @@
 ---
 name: "AI Image Generation & Editor — Nanobanana, GPT Image, ComfyUI"
-description: Generate images from text with multi-provider routing — supports Nanobanana 2, Seedream 5.0, GPT Image, Midjourney Niji 7 (anime/illustration only), and local ComfyUI workflows. Includes 1,300+ curated prompts and style-aware prompt enhancement. Use when users want to create images, design assets, enhance prompts, or manage AI art workflows.
-version: 1.0.22
+description: Generate images from text with multi-provider routing — supports Nanobanana 2, Seedream 5.0, GPT Image, Midjourney V7 (photorealistic), Midjourney Niji 7 (anime/illustration only), and local ComfyUI workflows. Includes 1,300+ curated prompts and style-aware prompt enhancement. Use when users want to create images, design assets, enhance prompts, or manage AI art workflows.
+version: 1.0.24
 homepage: https://github.com/jau123/MeiGen-AI-Design-MCP
 metadata: {"clawdbot":{"emoji":"🎨","requires":{"bins":["mcporter","npx","node"]}}}
 ---
@@ -19,7 +19,7 @@ Add the MCP server to your mcporter config (`~/.config/mcporter/config.json`):
   "mcpServers": {
     "creative-toolkit": {
       "command": "npx",
-      "args": ["-y", "meigen@1.2.7"]
+      "args": ["-y", "meigen@1.2.8"]
     }
   }
 }
@@ -58,7 +58,7 @@ Set credentials in `~/.clawdbot/.env`, `~/.config/meigen/config.json`, or add an
 | Tool | What it does |
 |------|-------------|
 | `generate_image` | Generate an image from a text prompt. Routes to the best available provider. Supports aspect ratio, seed, and reference images. |
-| `generate_image` (with local paths) | Pass local file paths directly in `referenceImages` — images are auto-compressed (max 2MB, 2048px) and uploaded when needed. ComfyUI passes local files directly to the workflow. |
+| `generate_image` (with local paths) | Pass local file paths directly in `referenceImages` — images are auto-compressed locally (max 2MB, 2048px) and prepared for the selected provider. ComfyUI handles local files entirely within the local workflow. |
 | `comfyui_workflow` | List, view, import, modify, and delete ComfyUI workflow templates. Adjust steps, CFG scale, sampler, and checkpoint without editing JSON. |
 | `manage_preferences` | Save and load user preferences (default style, aspect ratio, style notes, favorite prompts). |
 
@@ -80,9 +80,12 @@ Do NOT write creative commentary about what the image "looks like".
 
 Do NOT pass `model` or `provider` to `generate_image` unless the user explicitly asks. The server auto-selects the best available provider and model.
 
-### Midjourney Niji 7 is anime-only
+### Midjourney V7 vs Niji 7
 
-Niji 7 is exclusively designed for anime and illustration styles. Do NOT use it for photorealistic, product photography, or non-anime content — use Nanobanana 2 or Seedream instead. When enhancing prompts for Niji 7, always pass `style: 'anime'` to `enhance_prompt` (the default `realistic` produces prompts poorly suited for anime models). Raw mode is OFF by default to maximize anime style quality — do not enable it unless the user specifically requests less stylized output. Note: Niji 7 returns 4 candidate images per generation (other models return 1).
+Both cost 15 credits, take ~60s, accept 1 reference image, and return 4 candidate images per generation. Advanced params (stylize/chaos/weird/raw/iw/sw/sv) run with fixed server-side defaults and cannot be tuned from MCP — the only exception is `sref`, settable via `--sref <code>` at the end of the prompt (Midjourney style codes only, e.g. `3799554500`; no URLs or local paths). They differ in content focus and prompt enhancement style:
+
+- **Midjourney V7** (`model: "midjourney-v7"`) — general / photorealistic. Use for product photography, portraits, landscapes, cinematic and editorial shots. When enhancing, use `style: 'realistic'` (the default).
+- **Midjourney Niji 7** (`model: "midjourney-niji7"`) — anime / illustration ONLY. Do NOT use for photorealistic, product, or non-anime content — use Nanobanana 2 or Seedream instead. The server auto-appends `anime illustration style` if your prompt lacks anime keywords. When enhancing, ALWAYS pass `style: 'anime'` to `enhance_prompt` — the default `realistic` produces prompts poorly suited for anime models.
 
 ### Always confirm before generating multiple images
 
@@ -104,7 +107,9 @@ For brief ideas (under ~30 words, lacking visual details), enhance first:
 1. enhance_prompt brief="futuristic city" style="realistic"
    -> Returns detailed prompt with camera lens, lighting, atmospheric effects
 
-2. generate_image prompt="<enhanced prompt>" aspectRatio="16:9"
+2. generate_image prompt="<enhanced prompt>"
+   -> Omit aspectRatio to let MeiGen auto-infer (recommended). Pass an explicit
+      value like aspectRatio="16:9" only when the user asked for that ratio.
 ```
 
 ### Mode 3: Parallel Generation (2+ images)
@@ -153,7 +158,7 @@ Use an existing image to guide visual style. Pass URLs or local file paths direc
 
 ```
 generate_image prompt="coffee mug mockup with this logo" referenceImages=["~/Desktop/my-logo.png"]
-   -> Local files are auto-compressed (max 2MB, 2048px) and uploaded
+   -> Local files are auto-compressed (max 2MB, 2048px) and prepared for the selected provider
 ```
 
 Reference image sources: gallery URLs, previous generation URLs, or local file paths. All providers accept local paths — they are automatically handled.
