@@ -1,13 +1,18 @@
 {
   "owner": "aaron-he-zhu",
   "slug": "content-refresher",
-  "displayName": "SEO Content Refresher & Ranking Recovery",
+  "displayName": "Content Refresher",
   "latest": {
-    "version": "7.2.0",
-    "publishedAt": 1775475033668,
-    "commit": "https://github.com/openclaw/skills/commit/0ee697403c83238da42f67da06a7b610977104c1"
+    "version": "8.0.0",
+    "publishedAt": 1776184676948,
+    "commit": null
   },
   "history": [
+    {
+      "version": "7.2.0",
+      "publishedAt": 1775475033668,
+      "commit": "https://github.com/openclaw/skills/commit/0ee697403c83238da42f67da06a7b610977104c1"
+    },
     {
       "version": "6.2.0",
       "publishedAt": 1775113070327,

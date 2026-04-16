@@ -1,7 +1,7 @@
 ---
 name: content-refresher
-description: 'SEO content refresher: update outdated posts with current statistics, new sections, and freshness signals to recover lost rankings and traffic. Part of a 20-skill SEO & GEO workflow suite. 内容更新/排名恢复/内容翻新/旧文优化/流量提升'
-version: "6.0.0"
+description: 'Refresh outdated posts with current stats, new sections, freshness signals to restore rankings. 内容更新/排名恢复'
+version: "8.0.0"
 license: Apache-2.0
 compatibility: "Claude Code ≥1.0, skills.sh marketplace, ClawHub marketplace, Vercel Labs skills ecosystem. No system packages required. Optional: MCP network access for SEO tool integrations."
 homepage: "https://github.com/aaron-he-zhu/seo-geo-claude-skills"
@@ -9,7 +9,7 @@ when_to_use: "Use when updating outdated content, refreshing old articles, impro
 argument-hint: "<URL of outdated content>"
 metadata:
   author: aaron-he-zhu
-  version: "6.0.0"
+  version: "8.0.0"
   geo-relevance: "medium"
   tags:
     - seo
@@ -80,13 +80,14 @@ metadata:
 
 # Content Refresher
 
-**Recover lost organic rankings by revitalizing outdated content** — this skill identifies which pages are decaying, pinpoints exactly what to update (statistics, sections, internal links, GEO signals), and generates a complete refresh plan to outrank competitors with fresher, more comprehensive content.
-
-**How to start**: `Refresh this article for [current year]: [URL]` or `Find content on [domain] that needs refreshing`
-
-**System role**: Optimization layer skill. It turns weak pages, structures, and technical issues into prioritized repair work.
 
 > **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
+> **System Mode**: This optimization skill follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
+
+
+This skill helps identify and revitalize outdated content to reclaim lost rankings and traffic. It analyzes content freshness, identifies update opportunities, and guides the refresh process for maximum SEO and GEO impact.
+
+**System role**: Optimization layer skill. It turns weak pages, structures, and technical issues into prioritized repair work.
 
 ## When This Must Trigger
 
@@ -393,15 +394,3 @@ If any veto-level issue was found (CORE-EEAT T04, C01, R10 or CITE T03, T05, T09
 ## Next Best Skill
 
 - **Primary**: [content-quality-auditor](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/cross-cutting/content-quality-auditor/SKILL.md) — re-score the refreshed content before shipping.
-
-## Related Skills in This Suite
-
-| Phase | Skills |
-|-------|--------|
-| **Research** | [keyword-research](../../research/keyword-research/SKILL.md), [competitor-analysis](../../research/competitor-analysis/SKILL.md), [serp-analysis](../../research/serp-analysis/SKILL.md), [content-gap-analysis](../../research/content-gap-analysis/SKILL.md) |
-| **Build** | [seo-content-writer](../../build/seo-content-writer/SKILL.md), [geo-content-optimizer](../../build/geo-content-optimizer/SKILL.md), [meta-tags-optimizer](../../build/meta-tags-optimizer/SKILL.md), [schema-markup-generator](../../build/schema-markup-generator/SKILL.md) |
-| **Optimize** | [on-page-seo-auditor](../on-page-seo-auditor/SKILL.md), [technical-seo-checker](../technical-seo-checker/SKILL.md), [internal-linking-optimizer](../internal-linking-optimizer/SKILL.md), [content-refresher](../content-refresher/SKILL.md) |
-| **Monitor** | [rank-tracker](../../monitor/rank-tracker/SKILL.md), [backlink-analyzer](../../monitor/backlink-analyzer/SKILL.md), [performance-reporter](../../monitor/performance-reporter/SKILL.md), [alert-manager](../../monitor/alert-manager/SKILL.md) |
-| **Cross-cutting** | [content-quality-auditor](../../cross-cutting/content-quality-auditor/SKILL.md), [domain-authority-auditor](../../cross-cutting/domain-authority-auditor/SKILL.md), [entity-optimizer](../../cross-cutting/entity-optimizer/SKILL.md), [memory-management](../../cross-cutting/memory-management/SKILL.md) |
-
-> **Install the full suite**: See [README](https://github.com/aaron-he-zhu/seo-geo-claude-skills) for one-command install of all 20 skills.
