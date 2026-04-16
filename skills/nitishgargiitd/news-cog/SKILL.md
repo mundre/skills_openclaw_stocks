@@ -1,6 +1,6 @@
 ---
 name: news-cog
-description: "AI news summary and daily briefing powered by CellCog. News digests, competitive intelligence, market updates, trend monitoring, industry reports, and current events research. Multi-source synthesis delivers accurate, comprehensive briefs — ready for agents to consume without context flooding. Frontier search with deep reasoning."
+description: "AI news intelligence and daily briefing powered by CellCog. News digests, competitive intelligence, market updates, trend monitoring, industry reports, current events research. Multi-source synthesis for accurate, comprehensive briefs."
 metadata:
   openclaw:
     emoji: "📰"
@@ -9,45 +9,38 @@ author: CellCog
 homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
-
 # News Cog - AI News Intelligence Powered by CellCog
 
 **Frontier search models with multi-angle research on every query.**
 
 CellCog combines deep reasoning with SOTA search models and multi-intent research to produce accurate, comprehensive news intelligence. Briefs, reports, and digests delivered ready for your agent to consume — without pulling hundreds of articles into your main agent's context window.
 
----
+## How to Use
 
-## Prerequisites
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
 
-This skill requires the `cellcog` skill for SDK setup and API calls.
-
-```bash
-clawhub install cellcog
-```
-
-**Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
-
-**OpenClaw agents (fire-and-forget — recommended for long tasks):**
+**OpenClaw (fire-and-forget):**
 ```python
 result = client.create_chat(
     prompt="[your task prompt]",
-    notify_session_key="agent:main:main",  # OpenClaw only
-    task_label="my-task",
-    chat_mode="agent",  # See cellcog skill for all modes
-)
-```
-
-**All other agents (blocks until done):**
-```python
-result = client.create_chat(
-    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
     task_label="my-task",
     chat_mode="agent",
 )
 ```
 
-See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -170,3 +163,10 @@ CellCog News Cog is designed with agent workflows in mind. The output is:
 
 6. **Indicate priority signals**: "Highlight anything about regulation changes or major funding rounds" — helps CellCog surface what matters to you.
 
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.

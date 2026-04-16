@@ -3,11 +3,16 @@
   "slug": "news-cog",
   "displayName": "News Cog",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1775627906522,
-    "commit": "https://github.com/openclaw/skills/commit/ab4f2af82f1451b024f77f164d6d22873b38b8ec"
+    "version": "1.0.8",
+    "publishedAt": 1776187968203,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1775627906522,
+      "commit": "https://github.com/openclaw/skills/commit/ab4f2af82f1451b024f77f164d6d22873b38b8ec"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1775180635358,
