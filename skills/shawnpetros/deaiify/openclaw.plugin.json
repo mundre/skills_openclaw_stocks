@@ -1,0 +1,21 @@
+{
+  "id": "deaiify",
+  "name": "deaiify",
+  "version": "3.0.0",
+  "description": "Intercepts em-dashes and en-dashes in outbound replies. Rewrites via embedded LLM so sentences are properly restructured, not just character-swapped.",
+  "entry": "dist/index.js",
+  "hooks": [
+    "before_agent_reply",
+    "message_sending"
+  ],
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Master kill switch."
+    }
+  },
+  "security-notes": "Embedded LLM rewrite uses session-default model. No external API calls. No data persistence. Fail-open design.",
+  "privacy-notes": "No message content is stored to disk. Rewrite prompts are ephemeral and scoped to the current session.",
+  "attack-surface-reduction": "Single hook path. No config-driven code execution. No network calls beyond the session model."
+}
