@@ -3,9 +3,15 @@
   "slug": "clawsec-clawhub-checker",
   "displayName": "clawsec-clawhub-checker",
   "latest": {
-    "version": "0.0.1",
-    "publishedAt": 1771270109006,
-    "commit": "https://github.com/openclaw/skills/commit/4b6c530325a8baeb9c54d9debf3003f3e8bb71c5"
+    "version": "0.0.2",
+    "publishedAt": 1776172104822,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.1",
+      "publishedAt": 1771270109006,
+      "commit": "https://github.com/openclaw/skills/commit/4b6c530325a8baeb9c54d9debf3003f3e8bb71c5"
+    }
+  ]
 }
