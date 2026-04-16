@@ -3,9 +3,15 @@
   "slug": "react-email-skills",
   "displayName": "React Email Skills",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1769564963221,
-    "commit": "https://github.com/clawdbot/skills/commit/fce001bc9e49ecb7511c8d92094523a7e08f16ee"
+    "version": "1.1.0",
+    "publishedAt": 1775870101872,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1769564963221,
+      "commit": "https://github.com/clawdbot/skills/commit/fce001bc9e49ecb7511c8d92094523a7e08f16ee"
+    }
+  ]
 }
