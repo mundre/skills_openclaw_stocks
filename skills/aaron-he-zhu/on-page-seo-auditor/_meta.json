@@ -1,13 +1,18 @@
 {
   "owner": "aaron-he-zhu",
   "slug": "on-page-seo-auditor",
-  "displayName": "On-Page SEO Auditor & EEAT Scorer",
+  "displayName": "On Page Seo Auditor",
   "latest": {
-    "version": "7.2.0",
-    "publishedAt": 1775475019817,
-    "commit": "https://github.com/openclaw/skills/commit/38604ac1dcc909c4f95ffe2495d67907877edbd2"
+    "version": "8.0.0",
+    "publishedAt": 1776184664603,
+    "commit": null
   },
   "history": [
+    {
+      "version": "7.2.0",
+      "publishedAt": 1775475019817,
+      "commit": "https://github.com/openclaw/skills/commit/38604ac1dcc909c4f95ffe2495d67907877edbd2"
+    },
     {
       "version": "6.2.0",
       "publishedAt": 1775113059467,
