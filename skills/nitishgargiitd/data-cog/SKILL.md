@@ -1,6 +1,6 @@
 ---
 name: data-cog
-description: "AI data analysis and visualization powered by CellCog. Upload CSVs and get charts, dashboards, statistical reports, and clean data back. Data cleaning, exploratory analysis, hypothesis testing, ML model evaluation, dataset profiling, and data visualization. Full Python access. #1 on DeepResearch Bench (Apr 2026). Analyzes everything, presents it beautifully."
+description: "AI data analysis and visualization powered by CellCog. Data cleaning, exploratory analysis, hypothesis testing, statistical reports, ML model evaluation, dataset profiling, charts, dashboards. Upload CSVs and get analysis back with full Python access."
 metadata:
   openclaw:
     emoji: "🔢"
@@ -9,45 +9,38 @@ author: CellCog
 homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
-
 # Data Cog - Your Data Has Answers, CellCog Finds Them
 
-**Your data has answers. CellCog asks the right questions.** #1 on DeepResearch Bench (Apr 2026) + frontier coding agent.
+Data analysis and visualization from uploaded files.
 
 Most AI tools return code when you ask about data. CellCog returns answers — actual charts, clean datasets, statistical reports, and visual dashboards. Upload messy CSVs with a minimal prompt, and CellCog's coding agent explores your data, finds the patterns, and presents them beautifully. Full Python access for everything from data cleaning to ML model evaluation.
 
----
+## How to Use
 
-## Prerequisites
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
 
-This skill requires the `cellcog` skill for SDK setup and API calls.
-
-```bash
-clawhub install cellcog
-```
-
-**Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
-
-**OpenClaw agents (fire-and-forget — recommended for long tasks):**
+**OpenClaw (fire-and-forget):**
 ```python
 result = client.create_chat(
     prompt="[your task prompt]",
-    notify_session_key="agent:main:main",  # OpenClaw only
-    task_label="my-task",
-    chat_mode="agent",  # See cellcog skill for all modes
-)
-```
-
-**All other agents (blocks until done):**
-```python
-result = client.create_chat(
-    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
     task_label="my-task",
     chat_mode="agent",
 )
 ```
 
-See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -260,3 +253,10 @@ That's it. CellCog's coding agent will profile the data, run exploratory analysi
 
 6. **Iterate**: Upload data → get initial analysis → ask follow-up questions → go deeper. CellCog maintains context across messages.
 
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
