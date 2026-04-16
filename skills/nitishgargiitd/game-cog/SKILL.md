@@ -1,6 +1,6 @@
 ---
 name: game-cog
-description: "Other tools generate sprites. CellCog builds game worlds. #1 on DeepResearch Bench (Apr 2026) for deep game design reasoning — character-consistent art, sprites, tilesets, music, UI, 3D models, GDDs, level design, and game prototypes, all cohesive across every asset."
+description: "AI game development powered by CellCog. Character-consistent art, sprites, tilesets, music, UI, 3D models, GDDs, level design, game prototypes. Cohesive game assets across every modality from a single prompt."
 metadata:
   openclaw:
     emoji: "🎮"
@@ -9,45 +9,38 @@ author: CellCog
 homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
-
 # Game Cog - Build Game Worlds, Not Just Sprites
 
-**Other tools generate sprites. CellCog builds game worlds.** #1 on DeepResearch Bench (Apr 2026) for deep game design reasoning.
+Game development assets and prototypes with character consistency across all assets.
 
 Game development is a multi-discipline problem — mechanics, art, music, UI, and level design all need to feel unified. CellCog reasons deeply about your game's vision first, then produces character-consistent art, tilesets, music, sound effects, UI elements, 3D models, and full game design documents — all cohesive from a single brief.
 
----
+## How to Use
 
-## Prerequisites
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
 
-This skill requires the `cellcog` skill for SDK setup and API calls.
-
-```bash
-clawhub install cellcog
-```
-
-**Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
-
-**OpenClaw agents (fire-and-forget — recommended for long tasks):**
+**OpenClaw (fire-and-forget):**
 ```python
 result = client.create_chat(
     prompt="[your task prompt]",
-    notify_session_key="agent:main:main",  # OpenClaw only
-    task_label="my-task",
-    chat_mode="agent",  # See cellcog skill for all modes
-)
-```
-
-**All other agents (blocks until done):**
-```python
-result = client.create_chat(
-    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
     task_label="my-task",
     chat_mode="agent",
 )
 ```
 
-See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -252,3 +245,10 @@ Make your game feel polished:
 
 6. **Consider your scope**: Start with placeholder assets and iterate. Perfect is the enemy of shipped.
 
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
