@@ -1,7 +1,7 @@
 ---
 name: entity-optimizer
-description: 'SEO entity optimizer: build brand presence in Google Knowledge Graph, Wikidata, and AI systems for entity recognition, citations, and authority signals. Part of a 20-skill SEO & GEO suite. 实体优化/知识图谱/品牌SEO/谷歌知识面板/品牌权威'
-version: "6.0.0"
+description: 'Build entity presence in Knowledge Graph, Wikidata, AI systems for brand recognition and citations. 实体优化/知识图谱'
+version: "8.0.0"
 license: Apache-2.0
 compatibility: "Claude Code ≥1.0, skills.sh marketplace, ClawHub marketplace, Vercel Labs skills ecosystem. No system packages required. Optional: MCP network access for SEO tool integrations."
 homepage: "https://github.com/aaron-he-zhu/seo-geo-claude-skills"
@@ -9,7 +9,7 @@ when_to_use: "Use when optimizing entity presence for Knowledge Graph, Wikidata,
 argument-hint: "<entity name or brand>"
 metadata:
   author: aaron-he-zhu
-  version: "6.0.0"
+  version: "8.0.0"
   geo-relevance: "high"
   tags:
     - seo
@@ -78,7 +78,7 @@ metadata:
 > **System Mode**: This cross-cutting skill is part of the protocol layer and follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
 
 
-Make search engines and AI systems recognize your brand as a distinct entity — so they can cite it. This skill audits, builds, and maintains entity identity across Google Knowledge Graph, Wikidata, and AI engines, turning an invisible brand into one that earns Knowledge Panels, rich results, and AI citations. Use it when Google does not know your brand or when AI systems confuse you with a competitor.
+Audits, builds, and maintains entity identity across search engines and AI systems. Entities — the people, organizations, products, and concepts that search engines and AI systems recognize as distinct things — are the foundation of how both Google and LLMs decide *what a brand is* and *whether to cite it*.
 
 **Why entities matter for SEO + GEO:**
 
@@ -374,14 +374,3 @@ Detailed guides for entity optimization:
 ## Next Best Skill
 
 - **Primary**: [schema-markup-generator](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/build/schema-markup-generator/SKILL.md) — turn entity truth into machine-readable implementation.
-
-## Related Skills
-
-> Part of the [SEO & GEO Skills Suite](https://github.com/aaron-he-zhu/seo-geo-claude-skills) — 20 specialized skills for search optimization.
-
-| Need | Skill |
-|------|-------|
-| Generate JSON-LD schema from entity profile | `schema-markup-generator` |
-| Audit domain-level trust and identity signals | `domain-authority-auditor` |
-| Optimize content for AI engine citations | `geo-content-optimizer` |
-| Persist entity profiles across sessions | `memory-management` |
