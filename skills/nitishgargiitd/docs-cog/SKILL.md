@@ -1,6 +1,6 @@
 ---
 name: docs-cog
-description: "AI document generation powered by CellCog — PDF by default, native DOCX when you need it. Create resumes, contracts, reports, proposals, invoices, certificates, NDAs, letters, brochures, and any professional document. Beautiful design with accurate, researched content. #1 on DeepResearch Bench (Apr 2026)."
+description: "AI document generation powered by CellCog — PDF and DOCX. Resumes, contracts, reports, proposals, invoices, certificates, NDAs, letters, brochures, legal documents, cover letters, and professional documents. Research-backed content with professional design."
 metadata:
   openclaw:
     emoji: "📄"
@@ -9,45 +9,38 @@ author: CellCog
 homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
-
 # Docs Cog - Professional Documents Powered by CellCog
 
 **Deep reasoning. Accurate data. Beautiful design.** The three things every great document needs — and most AI gets wrong.
 
-CellCog gets them right: **#1 on DeepResearch Bench (Apr 2026)** for deep reasoning, **SOTA search models** for factually grounded content, and **state-of-the-art document generation** — PDF or native DOCX, both rivaling professional design studios. Resumes, contracts, reports, proposals — delivered in minutes, looking like they took days.
+Professional document generation — PDF by default, native DOCX on request. Deep research fills content from minimal prompts. Resumes, contracts, reports, proposals — delivered in minutes.
 
----
+## How to Use
 
-## Prerequisites
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
 
-This skill requires the `cellcog` skill for SDK setup and API calls.
-
-```bash
-clawhub install cellcog
-```
-
-**Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
-
-**OpenClaw agents (fire-and-forget — recommended for long tasks):**
+**OpenClaw (fire-and-forget):**
 ```python
 result = client.create_chat(
     prompt="[your task prompt]",
-    notify_session_key="agent:main:main",  # OpenClaw only
-    task_label="my-task",
-    chat_mode="agent",  # See cellcog skill for all modes
-)
-```
-
-**All other agents (blocks until done):**
-```python
-result = client.create_chat(
-    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
     task_label="my-task",
     chat_mode="agent",
 )
 ```
 
-See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -240,3 +233,10 @@ Official documents:
 
 6. **Choose your format**: PDF is the default for polished output. Request DOCX when your team needs to edit or customize the document.
 
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
