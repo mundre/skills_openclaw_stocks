@@ -1,13 +1,18 @@
 {
   "owner": "aaron-he-zhu",
   "slug": "content-quality-auditor",
-  "displayName": "SEO Content Quality Auditor — CORE-EEAT Gate",
+  "displayName": "Content Quality Auditor",
   "latest": {
-    "version": "7.2.0",
-    "publishedAt": 1775475057965,
-    "commit": "https://github.com/openclaw/skills/commit/2291919f49af0a7b4942b00603920cceb5f72cde"
+    "version": "8.0.0",
+    "publishedAt": 1776184695254,
+    "commit": null
   },
   "history": [
+    {
+      "version": "7.2.0",
+      "publishedAt": 1775475057965,
+      "commit": "https://github.com/openclaw/skills/commit/2291919f49af0a7b4942b00603920cceb5f72cde"
+    },
     {
       "version": "6.2.0",
       "publishedAt": 1775113087122,
