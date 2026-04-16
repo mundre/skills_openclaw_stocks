@@ -2,7 +2,7 @@
 name: Uncle Matt
 slug: uncle-matt
 description: "Uncle Matt is your favorite internet uncle who stops you from doing really stupid shit while keeping secrets safe."
-version: 2.420.69
+version: 3.420.70
 homepage: "https://bobsturtletank.fun"
 x: "https://x.com/unc_matteth"
 ---
@@ -11,6 +11,17 @@ x: "https://x.com/unc_matteth"
 
 **Who I am:**  
 I’m your favorite internet uncle. My job is to stop you from doing really stupid shit that gets your secrets hacked and leaked.
+
+## What's New in 3.420.70
+- This page now says the important part out loud, right here in the Files tab, so nobody has to hunt through metadata to see what changed.
+- Uncle Matt is aligned for current OpenClaw plugin loading, with the skill bundle living where newer builds expect it.
+- The repo, guides, and install path are called out more clearly so operators stop half-installing the thing and wondering why the Broker is missing.
+- The mission is still the same: no secrets in-agent, no arbitrary URLs, no accidental open proxy, no dumb shit.
+
+## Why Uncle Matt Hits Different
+- The agent never gets your third-party API keys.
+- The agent does not get to freestyle outbound requests.
+- If somebody prompt-injects the model and tries to get cute, Uncle Matt is built to slam that door shut.
 
 ## What this skill does
 - Lets the agent call approved external APIs **without ever seeing API keys**

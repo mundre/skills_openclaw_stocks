@@ -3,11 +3,16 @@
   "slug": "uncle-matt",
   "displayName": "Uncle Matt",
   "latest": {
-    "version": "2.420.70",
-    "publishedAt": 1770745457715,
-    "commit": "https://github.com/openclaw/skills/commit/c50ef6880b3b7453de6d04bbd0b3f3780c67f8c3"
+    "version": "3.420.70",
+    "publishedAt": 1776110915967,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.420.70",
+      "publishedAt": 1770745457715,
+      "commit": "https://github.com/openclaw/skills/commit/c50ef6880b3b7453de6d04bbd0b3f3780c67f8c3"
+    },
     {
       "version": "1.420.69",
       "publishedAt": 1770056757064,
