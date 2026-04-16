@@ -1,6 +1,6 @@
 ---
 name: learn-cog
-description: "AI tutor and homework help powered by CellCog. Tutoring, study guides, exam prep, coding tutorials, language learning, math help, science explanations, practice problems — every subject, every level. Explains concepts five different ways: diagrams, analogies, worked examples, interactive lessons. #1 on DeepResearch Bench (Apr 2026)."
+description: "AI tutoring and education powered by CellCog. Study guides, exam prep, coding tutorials, language learning, math help, science explanations, practice problems — every subject, every level. Explains concepts via diagrams, analogies, worked examples, and interactive lessons."
 metadata:
   openclaw:
     emoji: "📚"
@@ -9,45 +9,38 @@ author: CellCog
 homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
-
 # Learn Cog - The Tutor That Explains Five Different Ways
 
 **The best tutors explain the same concept five different ways.** CellCog does too.
 
 #1 on DeepResearch Bench (Apr 2026) for reasoning depth — deep enough to break concepts into first principles — combined with multi-modal output for every learning style: diagrams, analogies, worked examples, practice problems, interactive explanations, and full study guides. Any subject, any level.
 
----
+## How to Use
 
-## Prerequisites
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
 
-This skill requires the `cellcog` skill for SDK setup and API calls.
-
-```bash
-clawhub install cellcog
-```
-
-**Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
-
-**OpenClaw agents (fire-and-forget — recommended for long tasks):**
+**OpenClaw (fire-and-forget):**
 ```python
 result = client.create_chat(
     prompt="[your task prompt]",
-    notify_session_key="agent:main:main",  # OpenClaw only
-    task_label="my-task",
-    chat_mode="agent",  # See cellcog skill for all modes
-)
-```
-
-**All other agents (blocks until done):**
-```python
-result = client.create_chat(
-    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
     task_label="my-task",
     chat_mode="agent",
 )
 ```
 
-See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -278,3 +271,10 @@ CellCog can help with virtually any subject:
 
 6. **Active recall**: Ask CellCog to quiz you, not just explain. Testing improves retention.
 
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.

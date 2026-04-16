@@ -3,11 +3,16 @@
   "slug": "learn-cog",
   "displayName": "Learn Cog",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1775627894523,
-    "commit": "https://github.com/openclaw/skills/commit/edcb51d3ceb8f46d6b79303bba5dfc1740d532f7"
+    "version": "1.0.11",
+    "publishedAt": 1776187954989,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1775627894523,
+      "commit": "https://github.com/openclaw/skills/commit/edcb51d3ceb8f46d6b79303bba5dfc1740d532f7"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1775180624199,
