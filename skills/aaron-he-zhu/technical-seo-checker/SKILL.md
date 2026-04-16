@@ -1,7 +1,7 @@
 ---
 name: technical-seo-checker
-description: 'Technical SEO audit and site health checker: Core Web Vitals, crawlability, indexing, mobile-friendliness, page speed, site architecture, and redirect chains. Part of a 20-skill SEO & GEO workflow suite. 技术SEO/网站速度/SEO审计/谷歌收录/网站优化'
-version: "6.0.0"
+description: 'Technical SEO audit: Core Web Vitals, crawl, indexing, mobile, speed, architecture, redirects. 技术SEO/网站速度'
+version: "8.0.0"
 license: Apache-2.0
 compatibility: "Claude Code ≥1.0, skills.sh marketplace, ClawHub marketplace, Vercel Labs skills ecosystem. No system packages required. Optional: MCP network access for SEO tool integrations."
 homepage: "https://github.com/aaron-he-zhu/seo-geo-claude-skills"
@@ -10,7 +10,7 @@ argument-hint: "<URL or domain>"
 allowed-tools: WebFetch
 metadata:
   author: aaron-he-zhu
-  version: "6.0.0"
+  version: "8.0.0"
   geo-relevance: "low"
   tags:
     - seo
@@ -105,13 +105,14 @@ metadata:
 
 # Technical SEO Checker
 
-**Diagnose the infrastructure issues silently tanking your rankings** — this skill audits Core Web Vitals, crawlability, indexing blockers, mobile-friendliness, redirect chains, and site architecture so search engines can fully access and rank your content.
-
-**How to start**: `Perform a technical SEO audit for [URL/domain]` or `Check Core Web Vitals for [URL]`
-
-**System role**: Optimization layer skill. It turns weak pages, structures, and technical issues into prioritized repair work.
 
 > **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
+> **System Mode**: This optimization skill follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
+
+
+This skill performs comprehensive technical SEO audits to identify issues that may prevent search engines from properly crawling, indexing, and ranking your site.
+
+**System role**: Optimization layer skill. It turns weak pages, structures, and technical issues into prioritized repair work.
 
 ## When This Must Trigger
 
@@ -126,12 +127,6 @@ Use this whenever the task needs a diagnosis or repair plan that should feed dir
 - Identifying crawl and index issues
 - Improving site performance
 - Fixing Core Web Vitals issues
-
-## Technical SEO Coverage
-
-This skill audits the infrastructure layer that determines whether search engines can crawl, index, and rank your pages: robots.txt and XML sitemap correctness, canonical tags, redirect chains, and crawl budget management.
-
-Core Web Vitals (LCP, CLS, INP) are measured as direct ranking factors alongside page speed and mobile-first indexing compliance. Structured data markup is validated for rich results, and hreflang is checked for international sites. All findings are ranked by SEO impact so teams can prioritize fixes that unblock organic traffic growth immediately.
 
 ## What This Skill Does
 
@@ -400,15 +395,3 @@ If any veto-level issue was found (CORE-EEAT T04, C01, R10 or CITE T03, T05, T09
 ## Next Best Skill
 
 - **Primary**: [on-page-seo-auditor](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/optimize/on-page-seo-auditor/SKILL.md) — continue from infrastructure issues into page-level remediation.
-
-## Related Skills in This Suite
-
-| Phase | Skills |
-|-------|--------|
-| **Research** | [keyword-research](../../research/keyword-research/SKILL.md), [competitor-analysis](../../research/competitor-analysis/SKILL.md), [serp-analysis](../../research/serp-analysis/SKILL.md), [content-gap-analysis](../../research/content-gap-analysis/SKILL.md) |
-| **Build** | [seo-content-writer](../../build/seo-content-writer/SKILL.md), [geo-content-optimizer](../../build/geo-content-optimizer/SKILL.md), [meta-tags-optimizer](../../build/meta-tags-optimizer/SKILL.md), [schema-markup-generator](../../build/schema-markup-generator/SKILL.md) |
-| **Optimize** | [on-page-seo-auditor](../on-page-seo-auditor/SKILL.md), [technical-seo-checker](../technical-seo-checker/SKILL.md), [internal-linking-optimizer](../internal-linking-optimizer/SKILL.md), [content-refresher](../content-refresher/SKILL.md) |
-| **Monitor** | [rank-tracker](../../monitor/rank-tracker/SKILL.md), [backlink-analyzer](../../monitor/backlink-analyzer/SKILL.md), [performance-reporter](../../monitor/performance-reporter/SKILL.md), [alert-manager](../../monitor/alert-manager/SKILL.md) |
-| **Cross-cutting** | [content-quality-auditor](../../cross-cutting/content-quality-auditor/SKILL.md), [domain-authority-auditor](../../cross-cutting/domain-authority-auditor/SKILL.md), [entity-optimizer](../../cross-cutting/entity-optimizer/SKILL.md), [memory-management](../../cross-cutting/memory-management/SKILL.md) |
-
-> **Install the full suite**: See [README](https://github.com/aaron-he-zhu/seo-geo-claude-skills) for one-command install of all 20 skills.
