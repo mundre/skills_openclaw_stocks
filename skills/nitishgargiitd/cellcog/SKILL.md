@@ -1,6 +1,6 @@
 ---
 name: cellcog
-description: "Any-input to any-output AI sub-agent — deep research, images, video, audio, music, podcasts, documents, spreadsheets, dashboards, 3D models, diagrams, and code in one request. Agent-to-agent protocol with multi-step iteration for high accuracy. #1 on DeepResearch Bench. Deep reasoning meets all modalities so all your work gets done, not just code. Install first for SDK setup and delivery modes."
+description: "Any-to-any AI sub-agent — research, images, video, audio, music, podcasts, avatars, voice cloning, documents, spreadsheets, dashboards, 3D models, diagrams, and code in one request. Agent-to-agent protocol with multi-step iteration for high accuracy. #1 on DeepResearch Bench (Apr 2026) — deep reasoning meets all modalities, so all your work gets done, not just code."
 author: CellCog
 homepage: https://cellcog.ai
 metadata:
@@ -12,7 +12,6 @@ metadata:
       env: [CELLCOG_API_KEY]
 
 ---
-
 # CellCog - Any-to-Any for Agents
 
 ## The Power of Any-to-Any
@@ -84,7 +83,7 @@ from cellcog import CellCogClient
 
 If import fails:
 ```bash
-pip install cellcog
+pip install -U cellcog
 ```
 
 ### Authentication
@@ -101,12 +100,18 @@ status = client.get_account_status()
 print(status)  # {"configured": True, "email": "user@example.com", ...}
 ```
 
+### Agent Provider
+
+`agent_provider` is **required** when creating a `CellCogClient`. It identifies which agent framework is calling CellCog — not your individual agent's name, but the platform/tool you're running inside.
+
+Examples: `"openclaw"`, `"claude-code"`, `"cursor"`, `"aider"`, `"windsurf"`, `"perplexity"`, `"hermes"`, `"script"` (for standalone scripts).
+
 ### OpenClaw Agents
 
 Fire-and-forget — your agent stays free while CellCog works:
 
 ```python
-client = CellCogClient()
+client = CellCogClient(agent_provider="openclaw")
 result = client.create_chat(
     prompt="Research quantum computing advances in 2026",
     notify_session_key="agent:main:main",  # OpenClaw session key
@@ -123,7 +128,7 @@ Requires `sessions_send` enabled on your gateway — see OpenClaw Reference belo
 Blocks until done — simplest pattern:
 
 ```python
-client = CellCogClient()
+client = CellCogClient(agent_provider="cursor")  # or "claude-code", "aider", "script", etc.
 result = client.create_chat(
     prompt="Research quantum computing advances in 2026",
     task_label="quantum-research",
@@ -299,6 +304,20 @@ Create a PDF report on Q4 earnings:
 
 Output downloads to the specified path instead of default `~/.cellcog/chats/{chat_id}/`.
 
+### File Downloads
+
+The SDK automatically downloads files from CellCog responses:
+- **If you used `GENERATE_FILE` tags:** Files download to the path you specified
+- **Otherwise:** Files download to `~/.cellcog/chats/{chat_id}/`
+
+Downloaded file paths appear in `result["message"]`. The SDK tracks seen messages — files are only downloaded once.
+
+**If you missed files or need to re-sync:**
+```python
+result = client.get_history(chat_id="abc123")
+```
+`get_history()` re-processes the entire chat and downloads any missed files to their original destinations.
+
 ---
 
 ## Tips
@@ -323,7 +342,8 @@ Install capability skills for detailed guidance:
 | **Video & Cinema** | `video-cog` `cine-cog` `insta-cog` `tube-cog` `seedance-cog` |
 | **Images & Design** | `image-cog` `brand-cog` `meme-cog` `banana-cog` `3d-cog` `gif-cog` `sticker-cog` |
 | **Audio & Music** | `audio-cog` `music-cog` `pod-cog` |
-| **Documents & Slides** | `docs-cog` `slides-cog` `sheet-cog` `resume-cog` `legal-cog` |
+| **Avatars & Personas** | `avatar-cog` |
+| **Documents & Slides** | `docs-cog` `slides-cog` `spreadsheets-cog` `resume-cog` `legal-cog` |
 | **Apps & Prototypes** | `dash-cog` `game-cog` `proto-cog` `diagram-cog` |
 | **Creative** | `comi-cog` `story-cog` `learn-cog` `travel-cog` |
 | **Development** | `code-cog` `cowork-cog` `project-cog` `think-cog` |
