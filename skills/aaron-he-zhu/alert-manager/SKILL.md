@@ -1,7 +1,7 @@
 ---
 name: alert-manager
-description: 'SEO alert manager: configure monitoring alerts for ranking drops, traffic changes, technical SEO issues, and competitor movements with severity thresholds. Part of a 20-skill SEO & GEO workflow suite. SEO预警/排名监控/流量异常/SEO工具/网站监控'
-version: "6.0.0"
+description: 'Configure SEO alerts for ranking drops, traffic changes, technical issues, competitor movements. SEO预警/排名监控'
+version: "8.0.0"
 license: Apache-2.0
 compatibility: "Claude Code ≥1.0, skills.sh marketplace, ClawHub marketplace, Vercel Labs skills ecosystem. No system packages required. Optional: MCP network access for SEO tool integrations."
 homepage: "https://github.com/aaron-he-zhu/seo-geo-claude-skills"
@@ -9,7 +9,7 @@ when_to_use: "Use when setting up monitoring alerts for rankings, traffic, backl
 argument-hint: "<domain> [metric]"
 metadata:
   author: aaron-he-zhu
-  version: "6.0.0"
+  version: "8.0.0"
   geo-relevance: "low"
   tags:
     - seo
@@ -68,13 +68,14 @@ metadata:
 
 # Alert Manager
 
-**Never be blindsided by a ranking drop or traffic crash again** — this skill configures the full SEO alert stack: ranking thresholds, traffic anomaly detection, technical health monitors, competitor movement alerts, and AI visibility watchers, each with a ready-made response plan.
-
-**How to start**: `Set up SEO monitoring alerts for [domain]` or `Create ranking drop alerts for my top 20 keywords`
-
-**System role**: Monitoring layer skill. It turns performance changes into deltas, alerts, and next actions.
 
 > **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
+> **System Mode**: This monitoring skill follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
+
+
+Sets up proactive monitoring alerts for critical SEO and GEO metrics. Triggers notifications when rankings drop, traffic changes significantly, technical issues occur, or competitors make moves.
+
+**System role**: Monitoring layer skill. It turns performance changes into deltas, alerts, and next actions.
 
 ## When This Must Trigger
 
@@ -334,15 +335,3 @@ If any findings should influence ongoing strategy, recommend promoting key concl
 ## Next Best Skill
 
 - **Primary**: [rank-tracker](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/monitor/rank-tracker/SKILL.md) — pair alerts with a baseline measurement workflow.
-
-## Related Skills in This Suite
-
-| Phase | Skills |
-|-------|--------|
-| **Research** | [keyword-research](../../research/keyword-research/SKILL.md), [competitor-analysis](../../research/competitor-analysis/SKILL.md), [serp-analysis](../../research/serp-analysis/SKILL.md), [content-gap-analysis](../../research/content-gap-analysis/SKILL.md) |
-| **Build** | [seo-content-writer](../../build/seo-content-writer/SKILL.md), [geo-content-optimizer](../../build/geo-content-optimizer/SKILL.md), [meta-tags-optimizer](../../build/meta-tags-optimizer/SKILL.md), [schema-markup-generator](../../build/schema-markup-generator/SKILL.md) |
-| **Optimize** | [on-page-seo-auditor](../../optimize/on-page-seo-auditor/SKILL.md), [technical-seo-checker](../../optimize/technical-seo-checker/SKILL.md), [internal-linking-optimizer](../../optimize/internal-linking-optimizer/SKILL.md), [content-refresher](../../optimize/content-refresher/SKILL.md) |
-| **Monitor** | [rank-tracker](../rank-tracker/SKILL.md), [backlink-analyzer](../backlink-analyzer/SKILL.md), [performance-reporter](../performance-reporter/SKILL.md), [alert-manager](../alert-manager/SKILL.md) |
-| **Cross-cutting** | [content-quality-auditor](../../cross-cutting/content-quality-auditor/SKILL.md), [domain-authority-auditor](../../cross-cutting/domain-authority-auditor/SKILL.md), [entity-optimizer](../../cross-cutting/entity-optimizer/SKILL.md), [memory-management](../../cross-cutting/memory-management/SKILL.md) |
-
-> **Install the full suite**: See [README](https://github.com/aaron-he-zhu/seo-geo-claude-skills) for one-command install of all 20 skills.
