@@ -1,6 +1,6 @@
 ---
 name: resume-cog
-description: "AI resume builder and cover letter writer powered by CellCog. Create ATS-optimized resumes, CVs, cover letters, LinkedIn profiles, and career documents — PDF or DOCX. Research-first approach: analyzes target roles before writing. Professional, personalized design — not template-stuffed. #1 on DeepResearch Bench (Apr 2026)."
+description: "AI resume and cover letter generation powered by CellCog. ATS-optimized resumes, CVs, cover letters, LinkedIn profiles, career documents — PDF or DOCX. Research-first approach that analyzes target roles before writing."
 metadata:
   openclaw:
     emoji: "📝"
@@ -9,45 +9,38 @@ author: CellCog
 homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
-
 # Resume Cog - AI Resume Builder Powered by CellCog
 
 **7 seconds.** That's how long the average recruiter spends on your resume. CellCog makes every second count.
 
 #1 on DeepResearch Bench (Apr 2026) — CellCog researches your target role, understands what hiring managers look for, optimizes for ATS systems, and generates beautifully designed resumes — PDF for polished presentation or DOCX when ATS systems require Word format. Not another template filler — a research-first resume engine.
 
----
+## How to Use
 
-## Prerequisites
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
 
-This skill requires the `cellcog` skill for SDK setup and API calls.
-
-```bash
-clawhub install cellcog
-```
-
-**Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
-
-**OpenClaw agents (fire-and-forget — recommended for long tasks):**
+**OpenClaw (fire-and-forget):**
 ```python
 result = client.create_chat(
     prompt="[your task prompt]",
-    notify_session_key="agent:main:main",  # OpenClaw only
-    task_label="my-task",
-    chat_mode="agent",  # See cellcog skill for all modes
-)
-```
-
-**All other agents (blocks until done):**
-```python
-result = client.create_chat(
-    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
     task_label="my-task",
     chat_mode="agent",
 )
 ```
 
-See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -154,3 +147,10 @@ Showcase your work:
 
 5. **Choose your format**: PDF is the default for polished, presentation-ready resumes. Request DOCX when you need to edit or when ATS systems require Word format.
 
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
