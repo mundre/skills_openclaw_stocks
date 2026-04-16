@@ -196,7 +196,9 @@ See [examples/cross-platform-post.json](examples/cross-platform-post.json) for a
 2. PUT video to signed URL
 3. Create post with `instagramPublishType: "REEL"`
 
-See [examples/instagram-reel.json](examples/instagram-reel.json) for the request body.
+Optional: add a custom cover image by uploading a JPEG (max 8MB) via the same 3-step flow, then set `coverImageKey` in the media item. You can also set `coverTimestamp` (milliseconds) as a fallback frame.
+
+See [examples/instagram-reel.json](examples/instagram-reel.json) for the basic request, or [examples/instagram-reel-cover.json](examples/instagram-reel-cover.json) for a Reel with a custom cover image.
 
 ### Pattern 3: TikTok video with privacy settings
 
@@ -424,6 +426,9 @@ Check `X-RateLimit-Remaining-*` headers. 429 = rate limited, check `Retry-After-
 21. **GBP EVENT/OFFER posts require dates** — `gbpEventStartDate` and `gbpEventEndDate` are required when `gbpTopicType` is `EVENT` or `OFFER`.
 22. **GBP content limit is 1,500 characters** — Shorter than most platforms.
 23. **GBP posts expire** — Standard posts auto-expire after 6 months. Event/Offer posts expire at their end date.
+24. **`coverTimestamp` is milliseconds** — e.g., `"5000"` = 5 seconds into the video. Not seconds.
+25. **`coverImageKey` platform limits** — Instagram Reels: JPEG only, max 8MB. Facebook Reels: any format, max 10MB. Pinterest video: JPEG/PNG. NOT supported on TikTok (use `coverTimestamp`) or YouTube (use `youtubeThumbnailKey`).
+26. **Facebook Reels don't support `coverTimestamp`** — Only `coverImageKey` works for FB Reel covers. `coverTimestamp` is ignored.
 
 ## Troubleshooting
 
@@ -468,13 +473,14 @@ You've hit the per-workspace rate limit. Check the `Retry-After-Minute`, `Retry-
 - [references/upload-flow.md](references/upload-flow.md) — Detailed media upload walkthrough
 
 **Ready-to-use examples:**
-- [examples/EXAMPLES.md](examples/EXAMPLES.md) — Index of all 21 examples
+- [examples/EXAMPLES.md](examples/EXAMPLES.md) — Index of all examples
 - [examples/cross-platform-post.json](examples/cross-platform-post.json) — Multi-platform posting
 - [examples/tiktok-video.json](examples/tiktok-video.json) — TikTok with privacy settings
 - [examples/tiktok-carousel.json](examples/tiktok-carousel.json) — TikTok image carousel
 - [examples/tiktok-aigc-video.json](examples/tiktok-aigc-video.json) — TikTok AI-generated video with AIGC label
 - [examples/tiktok-draft.json](examples/tiktok-draft.json) — TikTok saved as draft
 - [examples/instagram-reel.json](examples/instagram-reel.json) — Instagram Reel
+- [examples/instagram-reel-cover.json](examples/instagram-reel-cover.json) — Instagram Reel with custom cover image
 - [examples/instagram-story.json](examples/instagram-story.json) — Instagram Story
 - [examples/instagram-carousel.json](examples/instagram-carousel.json) — Instagram carousel
 - [examples/instagram-trial-reel.json](examples/instagram-trial-reel.json) — Instagram trial reel (non-followers first)
@@ -545,7 +551,7 @@ POST /social-media/connect-link  { expiryDays?, sendEmail?, email? }
 - Pinterest always requires `pinterestBoardId` — fetch boards first.
 - LinkedIn documents use `linkedinAttachmentKey` instead of `mediaItems`.
 - For carousels, include multiple items in `mediaItems` with sequential `sortOrder`.
-- TikTok video thumbnails: set `coverTimestamp` (seconds) in `mediaItems`.
+- Video cover images: use `coverImageKey` in `mediaItems` for IG Reels, FB Reels, Pinterest video. Use `coverTimestamp` (milliseconds) for TikTok. YouTube uses `youtubeThumbnailKey` in controls.
 - When cross-posting, adjust content length for each platform's limits (X: 280, Bluesky: 300, TikTok: 2200, GBP: 1500).
 - If the user doesn't specify a time, suggest tomorrow at 9:00 AM in their timezone.
 - Batch up to 15 posts per API call for efficiency.

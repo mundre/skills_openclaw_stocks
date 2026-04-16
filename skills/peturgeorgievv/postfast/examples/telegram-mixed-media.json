@@ -1,7 +1,7 @@
 {
   "posts": [
     {
-      "content": "New feature drop! 🚀\n\nWe just shipped cross-platform scheduling for Telegram channels and groups.\n\nNow you can schedule to all 10 platforms from one dashboard:\n✅ TikTok\n✅ Instagram\n✅ Facebook\n✅ X (Twitter)\n✅ YouTube\n✅ LinkedIn\n✅ Threads\n✅ Bluesky\n✅ Pinterest\n✅ Telegram\n\nTry it free: https://postfa.st",
+      "content": "New feature drop! 🚀\n\nWe just shipped cross-platform scheduling for Telegram channels and groups.\n\nNow you can schedule to all 11 platforms from one dashboard:\n✅ TikTok\n✅ Instagram\n✅ Facebook\n✅ X (Twitter)\n✅ YouTube\n✅ LinkedIn\n✅ Threads\n✅ Bluesky\n✅ Pinterest\n✅ Telegram\n✅ Google Business Profile\n\nTry it free: https://postfa.st",
       "mediaItems": [
         { "key": "image/YOUR_UPLOAD_KEY_1.png", "type": "IMAGE", "sortOrder": 0 },
         { "key": "image/YOUR_UPLOAD_KEY_2.png", "type": "IMAGE", "sortOrder": 1 }

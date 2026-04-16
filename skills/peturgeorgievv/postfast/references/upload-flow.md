@@ -109,9 +109,19 @@ Documents use a different flow — `linkedinAttachmentKey` instead of `mediaItem
 }
 ```
 
-## TikTok Video Thumbnail
+## Custom Cover Image for Video Posts
 
-Set `coverTimestamp` in the media item to pick a frame as the thumbnail:
+Upload a separate image to use as the video's cover/thumbnail. This is a 2-step addition on top of the normal video upload:
+
+1. Get a signed URL for the cover image:
+```bash
+curl -X POST https://api.postfa.st/file/get-signed-upload-urls \
+  -H "pf-api-key: $POSTFAST_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "contentType": "image/jpeg", "count": 1 }'
+```
+
+2. PUT the cover image to the signed URL, then include `coverImageKey` in the media item:
 
 ```json
 {
@@ -119,9 +129,38 @@ Set `coverTimestamp` in the media item to pick a frame as the thumbnail:
     "key": "video/uuid.mp4",
     "type": "VIDEO",
     "sortOrder": 0,
-    "coverTimestamp": "3"
+    "coverImageKey": "image/cover-uuid.jpg"
   }]
 }
 ```
 
-The value is in seconds (e.g., `"3"` = 3 seconds into the video).
+**Platform support for `coverImageKey`:**
+
+| Platform | Supported | Image Requirements |
+|---|---|---|
+| Instagram Reels | Yes | JPEG only, max 8MB |
+| Facebook Reels | Yes | Any format, max 10MB |
+| Pinterest (video) | Yes | JPEG/PNG |
+| TikTok | No | Use `coverTimestamp` instead |
+| YouTube | No | Use `controls.youtubeThumbnailKey` instead |
+
+## Video Thumbnail via Timestamp
+
+Set `coverTimestamp` in the media item to extract a frame from the video as the thumbnail:
+
+```json
+{
+  "mediaItems": [{
+    "key": "video/uuid.mp4",
+    "type": "VIDEO",
+    "sortOrder": 0,
+    "coverTimestamp": "5000"
+  }]
+}
+```
+
+The value is in **milliseconds** (e.g., `"5000"` = 5 seconds into the video).
+
+**Platform support for `coverTimestamp`:** Instagram Reels, TikTok, Pinterest video. NOT supported on Facebook Reels or YouTube.
+
+**Priority:** If both `coverImageKey` and `coverTimestamp` are provided, the custom image takes priority and `coverTimestamp` acts as fallback.

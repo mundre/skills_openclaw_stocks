@@ -12,10 +12,11 @@ Ready-to-use request bodies for common social media scheduling scenarios.
 | [tiktok-aigc-video.json](tiktok-aigc-video.json) | TikTok AI-generated video with AIGC label and follower-only privacy |
 | [tiktok-draft.json](tiktok-draft.json) | TikTok video saved as draft |
 | [instagram-reel.json](instagram-reel.json) | Instagram Reel with collaborators |
+| [instagram-reel-cover.json](instagram-reel-cover.json) | Instagram Reel with custom cover image |
 | [instagram-story.json](instagram-story.json) | Instagram Story (video) |
 | [instagram-carousel.json](instagram-carousel.json) | Instagram carousel (up to 10 images) |
 | [instagram-trial-reel.json](instagram-trial-reel.json) | Instagram trial reel (shown to non-followers first) |
-| [facebook-reel.json](facebook-reel.json) | Facebook Reel with cover timestamp |
+| [facebook-reel.json](facebook-reel.json) | Facebook Reel with custom cover image |
 | [facebook-story.json](facebook-story.json) | Facebook Story (image) |
 | [youtube-short.json](youtube-short.json) | YouTube Short with tags and playlist |
 | [youtube-video-thumbnail.json](youtube-video-thumbnail.json) | YouTube video with custom thumbnail image |

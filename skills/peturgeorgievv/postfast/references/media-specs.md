@@ -22,6 +22,7 @@
 - **Carousels**: 2-35 images (photo slideshows)
 - **Caption**: max 2,200 characters
 - **No standalone images** — images only in carousels
+- **Cover**: `coverTimestamp` only (milliseconds). No custom cover image upload
 
 ### Instagram
 - **Images**: JPEG/PNG, recommended 1080×1080 (1:1) or 1080×1350 (4:5)
@@ -29,6 +30,7 @@
 - **Stories**: Image or video, 9:16
 - **Carousels**: Up to 10 images or videos
 - **Caption**: max 2,200 characters
+- **Reel cover**: `coverImageKey` (JPEG only, max 8MB) or `coverTimestamp` (milliseconds, fallback)
 
 ### Facebook
 - **Images**: JPG/PNG, ≤30MB each, up to 10 per post
@@ -36,6 +38,7 @@
 - **Reels**: Vertical video
 - **Cannot mix** images and videos in same post
 - **Caption**: max 63,206 characters
+- **Reel cover**: `coverImageKey` (any format, max 10MB). `coverTimestamp` NOT supported
 
 ### YouTube
 - **Shorts**: ≤3min, 9:16 or 1:1
@@ -62,6 +65,7 @@
 - **Carousels**: 2-5 static images (no video in carousels)
 - **Title**: max 100 characters (first line of content)
 - **Description**: max 800 characters
+- **Video cover**: `coverImageKey` (JPEG/PNG) or `coverTimestamp` (milliseconds, fallback)
 
 ### Bluesky
 - **Images**: Up to 4

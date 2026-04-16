@@ -19,7 +19,7 @@ All controls are passed in the `controls` object of `POST /social-posts`.
 **Media notes:**
 - Video: MP4/MOV, H.264, ≤250MB, 3s-10min. Best: 15-30s, 1080×1920 (9:16)
 - Carousels: 2-35 images (photo slideshows)
-- `coverTimestamp` in mediaItems: seconds into video for thumbnail (e.g., `"3"`)
+- `coverTimestamp` in mediaItems: milliseconds into video for thumbnail (e.g., `"5000"` = 5 seconds). No custom cover image upload for TikTok
 - Caption: max 2,200 characters
 
 ## Instagram
@@ -39,6 +39,7 @@ All controls are passed in the `controls` object of `POST /social-posts`.
 **Media notes:**
 - Video: ≤1GB for Reels
 - Carousels: up to 10 images or videos
+- **Cover images for Reels**: Use `coverImageKey` in mediaItems to set a custom cover (JPEG only, max 8MB). Upload the image via the standard 3-step flow first. `coverTimestamp` (milliseconds) works as fallback
 
 ## Facebook
 
@@ -55,6 +56,7 @@ All controls are passed in the `controls` object of `POST /social-posts`.
 **Media notes:**
 - Images: JPG/PNG, ≤30MB each, up to 10 per post
 - Cannot mix images and videos in same post
+- **Cover images for Reels**: Use `coverImageKey` in mediaItems to set a custom cover (any format, max 10MB). Upload the image via the standard 3-step flow first. `coverTimestamp` is NOT supported for Facebook Reels
 
 ## YouTube
 
@@ -123,6 +125,7 @@ All controls are passed in the `controls` object of `POST /social-posts`.
 **Media notes:**
 - Ideal aspect ratio: 2:3 (1000×1500)
 - Carousels: 2-5 static images only (no video in carousels)
+- **Cover images for video pins**: Use `coverImageKey` in mediaItems to set a custom cover (JPEG/PNG). `coverTimestamp` (milliseconds) works as fallback
 
 ## Google Business Profile
 

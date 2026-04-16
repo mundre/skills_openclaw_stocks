@@ -105,7 +105,7 @@ Sorting is fixed to `scheduledAt` ascending. Platform and status values are case
       "status": "DRAFT | SCHEDULED | PUBLISHED | FAILED",
       "approvalStatus": "PENDING_APPROVAL | IN_PROGRESS | APPROVED | REJECTED | NEEDS_WORK",
       "socialMediaId": "account-uuid",
-      "mediaItems": [{ "key": "image/...", "type": "IMAGE", "url": "https://...", "sortOrder": 0 }],
+      "mediaItems": [{ "key": "image/...", "type": "IMAGE", "url": "https://...", "sortOrder": 0, "coverImageKey": "image/... | null", "coverTimestamp": "5000 | null", "coverImageUrl": "https://... | null", "coverImageUpdatedUrl": "https://... | null" }],
       "scheduledAt": "2026-06-15T10:00:00.000Z",
       "publishedAt": "2026-06-15T10:00:05.000Z | null",
       "failedAt": "... | null",
@@ -167,7 +167,10 @@ Create/schedule one or more posts. Up to 15 posts per request. Rate limit: 350/d
 - `controls` (object): Platform-specific settings. See platform-controls.md for all options
 
 **mediaItems extra fields:**
-- `coverTimestamp` (string): Video thumbnail timestamp in seconds (e.g., `"3"`)
+- `coverImageKey` (string, optional): S3 key of a custom cover/thumbnail image for video posts. Upload the image first via `POST /file/get-signed-upload-urls`, then include the key here. Supported on: Instagram Reels (JPEG only, max 8MB), Facebook Reels (any format, max 10MB), Pinterest video (JPEG/PNG). NOT supported on TikTok or YouTube (use `coverTimestamp` for TikTok, `youtubeThumbnailKey` in controls for YouTube)
+- `coverTimestamp` (string, optional): Milliseconds into the video to extract a frame as cover (e.g., `"5000"` = 5 seconds). Acts as fallback when `coverImageKey` is also provided. Supported on: Instagram Reels, TikTok, Pinterest video. NOT supported on Facebook Reels or YouTube
+
+**Cover image priority:** 1) `coverImageKey` if provided, 2) `coverTimestamp` as fallback, 3) platform auto-selects if neither is set
 
 **Controls extra notes:**
 - `youtubeThumbnailKey` (string): S3 key for custom YouTube thumbnail (from upload flow). JPEG/PNG recommended, max 2MB, 1280x720 (16:9). Requires phone-verified channel. If thumbnail upload fails, video still publishes without it

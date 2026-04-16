@@ -7,7 +7,7 @@
           "key": "video/YOUR_UPLOAD_KEY.mp4",
           "type": "VIDEO",
           "sortOrder": 0,
-          "coverTimestamp": "2"
+          "coverImageKey": "image/YOUR_COVER_KEY.jpg"
         }
       ],
       "scheduledAt": "2026-06-15T10:00:00.000Z",
