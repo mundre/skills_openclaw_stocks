@@ -1,7 +1,7 @@
 ---
 name: content-gap-analysis
-description: 'SEO content gap analysis: find topics and keywords competitors rank for that you don''t, with prioritized editorial calendar and opportunity scoring. Part of a 20-skill SEO & GEO suite. 内容差距分析/选题规划/内容机会/内容策略/竞品内容'
-version: "6.0.0"
+description: 'Find content gaps: topics and keywords competitors cover that you don''t, with editorial calendar. 内容缺口/选题规划'
+version: "8.0.0"
 license: Apache-2.0
 compatibility: "Claude Code ≥1.0, skills.sh marketplace, ClawHub marketplace, Vercel Labs skills ecosystem. No system packages required. Optional: MCP network access for SEO tool integrations."
 homepage: "https://github.com/aaron-he-zhu/seo-geo-claude-skills"
@@ -9,7 +9,7 @@ when_to_use: "Use when finding content gaps between two domains, discovering mis
 argument-hint: "<your domain> <competitor domain>"
 metadata:
   author: aaron-he-zhu
-  version: "6.0.0"
+  version: "8.0.0"
   geo-relevance: "medium"
   tags:
     - seo
@@ -68,13 +68,14 @@ metadata:
 
 # Content Gap Analysis
 
-**See every topic your competitors rank for that you don't** — this skill compares your content inventory against 3–5 rivals, scores each gap by traffic potential and effort, and delivers a prioritized editorial calendar you can act on immediately.
 
-**Quick example**: `Find content gaps between myblog.com and hubspot.com, drift.com` → get a Tier 1 quick-win list, a Tier 2 strategic build plan, and a 90-day content calendar sorted by ROI.
+> **[SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
+> **System Mode**: This research skill follows the shared [Skill Contract](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/skill-contract.md) and [State Model](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/references/state-model.md).
+
+
+Identifies content opportunities by analyzing gaps between a site's content and competitors'. Surfaces missing topics, untapped keywords, and content formats worth creating.
 
 **System role**: Research layer skill. It turns market signals into reusable strategic inputs for the rest of the library.
-
-> **Part of the [SEO & GEO Skills Library](https://github.com/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills · [ClawHub](https://clawhub.ai/u/aaron-he-zhu) · [skills.sh](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)
 
 ## When This Must Trigger
 
@@ -284,15 +285,3 @@ If any findings should influence ongoing strategy, recommend promoting key concl
 ## Next Best Skill
 
 - **Primary**: [seo-content-writer](https://github.com/aaron-he-zhu/seo-geo-claude-skills/blob/main/build/seo-content-writer/SKILL.md) — turn missing topics into a draft or content roadmap.
-
-## Related Skills in This Suite
-
-| Phase | Skills |
-|-------|--------|
-| **Research** | [keyword-research](../keyword-research/SKILL.md), [competitor-analysis](../competitor-analysis/SKILL.md), [serp-analysis](../serp-analysis/SKILL.md), [content-gap-analysis](../content-gap-analysis/SKILL.md) |
-| **Build** | [seo-content-writer](../../build/seo-content-writer/SKILL.md), [geo-content-optimizer](../../build/geo-content-optimizer/SKILL.md), [meta-tags-optimizer](../../build/meta-tags-optimizer/SKILL.md), [schema-markup-generator](../../build/schema-markup-generator/SKILL.md) |
-| **Optimize** | [on-page-seo-auditor](../../optimize/on-page-seo-auditor/SKILL.md), [technical-seo-checker](../../optimize/technical-seo-checker/SKILL.md), [internal-linking-optimizer](../../optimize/internal-linking-optimizer/SKILL.md), [content-refresher](../../optimize/content-refresher/SKILL.md) |
-| **Monitor** | [rank-tracker](../../monitor/rank-tracker/SKILL.md), [backlink-analyzer](../../monitor/backlink-analyzer/SKILL.md), [performance-reporter](../../monitor/performance-reporter/SKILL.md), [alert-manager](../../monitor/alert-manager/SKILL.md) |
-| **Cross-cutting** | [content-quality-auditor](../../cross-cutting/content-quality-auditor/SKILL.md), [domain-authority-auditor](../../cross-cutting/domain-authority-auditor/SKILL.md), [entity-optimizer](../../cross-cutting/entity-optimizer/SKILL.md), [memory-management](../../cross-cutting/memory-management/SKILL.md) |
-
-> **Install the full suite**: See [README](https://github.com/aaron-he-zhu/seo-geo-claude-skills) for one-command install of all 20 skills.
