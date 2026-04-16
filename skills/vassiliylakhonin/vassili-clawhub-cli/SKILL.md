@@ -1,183 +1,99 @@
 ---
 name: clawhub-cli-assistant
-description: Help developers manage OpenClaw skills with the ClawHub CLI. Use when publishing, inspecting, installing, updating, syncing, or troubleshooting ClawHub skills. Also covers auth, workdir behavior, and exact command templates.
+description: Run ClawHub CLI workflows with fewer release mistakes. Use for publish/update/inspect/sync flows, failed publish recovery, version/tag hygiene, and safe bulk maintenance with explicit command-first steps.
 homepage: https://docs.openclaw.ai/tools/clawhub
 user-invocable: true
-metadata: {"openclaw":{"emoji":"🦞","os":["linux","darwin","win32"]}}
+metadata: {"openclaw":{"emoji":"🦞","os":["linux","darwin","win32"],"requires":{"bins":["clawhub"]}}}
 ---
 
 # ClawHub CLI Assistant
 
-Help developers manage OpenClaw skills with the ClawHub CLI.
+Give exact commands first, then one-line explanation.
 
-Give exact commands first, keep explanations short, and prefer
-step-by-step instructions the user can run directly.
+## Best for
 
-## Quick Start
+- Publishing new skill versions safely
+- Fixing failed publish/update/install runs
+- Bulk maintenance with predictable version control
+
+## Not for
+
+- Plugin package upload flows (use Dashboard -> Publish Plugin)
+- Guessing versions/tags without inspection
+- Running destructive bulk updates without dry-run
+
+## 60-second preflight
 
 ```bash
-clawhub install <skill-slug>
-clawhub inspect <owner>/<skill>
-clawhub publish . --slug my-skill --name "My Skill" --version 1.0.0 --tags latest
-Best For
-Skill authors
-
-ClawHub publishers
-
-OpenClaw users managing local skills
-
-Developers troubleshooting CLI workflows
-
-Quick Reference
-Need	Command
-Search skills	clawhub search "query"
-Install a skill	clawhub install <skill-slug>
-Inspect a skill	clawhub inspect <owner>/<skill>
-Update one skill	clawhub update <skill-slug>
-Update all skills	clawhub update --all
-Publish a local skill	clawhub publish .
-Sync local skills	clawhub sync --all
-Check login	clawhub whoami
-Log in	clawhub login
-When to Use
-Use this skill when the user asks about:
-
-Publishing a skill to ClawHub
-
-Releasing a new skill version
-
-Inspecting a published skill bundle
-
-Installing a skill
-
-Updating one or more skills
-
-Syncing local skills with the registry
-
-Logging in to ClawHub
-
-Troubleshooting ClawHub CLI commands
-
-When Not to Use
-Do not use this skill for:
-
-Generic Git questions
-
-Unrelated programming tasks
-
-OpenClaw runtime configuration outside skill management
-
-Dashboard walkthroughs unless explicitly requested
-
-Core Rules
-text
-1. Provide exact CLI commands first.
-2. Prefer the shortest correct workflow.
-3. Use official command forms only.
-4. Mention required flags only when needed.
-5. Distinguish local workspace actions from registry actions.
-6. Suggest login early if auth may be the issue.
-7. Do not invent unsupported commands or flags.
-Common Commands
-bash
-clawhub search "calendar"
-clawhub install <skill-slug>
-clawhub inspect <owner>/<skill>
-clawhub update <skill-slug>
-clawhub update --all
+clawhub whoami
+clawhub inspect <slug>
 clawhub list
-clawhub publish .
-clawhub sync --all
-clawhub login
-clawhub whoami
-clawhub logout
-Common Workflows
-Publish
+```
 
-bash
+Provenance check (recommended):
+
+```bash
+clawhub inspect vassili-clawhub-cli
+```
+
+## Core workflows
+
+### 1) Publish release
+
+```bash
 clawhub publish . \
-  --slug my-skill \
-  --name "My Skill" \
-  --version 1.0.0 \
-  --changelog "Initial release" \
+  --slug <slug> \
+  --name "<Name>" \
+  --version <x.y.z> \
+  --changelog "<what changed and why>" \
   --tags latest
-Release a New Version
+```
 
-bash
-clawhub publish . \
-  --slug my-skill \
-  --name "My Skill" \
-  --version 1.1.0 \
-  --changelog "Improved workflow and documentation" \
-  --tags latest
-Install
+### 2) Inspect skill metadata/files
 
-bash
-clawhub install <skill-slug>
-clawhub install <skill-slug> --version 1.2.0
-clawhub install <skill-slug> --force
-Update
+```bash
+clawhub inspect <slug>
+clawhub inspect <slug> --files
+clawhub inspect <slug> --file SKILL.md
+```
 
-bash
-clawhub update <skill-slug>
-clawhub update --all
-clawhub update <skill-slug> --version 1.2.0
-Sync
+### 3) Update installed skills safely
 
-bash
+```bash
+clawhub update --all --no-input
+```
+
+Force one skill only when needed:
+
+```bash
+clawhub update <slug> --force
+```
+
+### 4) Sync local skills to registry
+
+```bash
 clawhub sync --dry-run
-clawhub sync --all
 clawhub sync --all --bump patch --changelog "Maintenance update" --tags latest
-Troubleshooting
-Auth
+```
 
-bash
-clawhub whoami
-clawhub login
-clawhub login --token <token>
-SKILL.md Missing
+## Failure recovery playbook
 
-text
-- Ensure SKILL.md exists
-- Ensure it is in the root of the skill folder
-- Ensure the publish path points to that folder
-Wrong Working Directory
+1. **Auth failures** -> run `clawhub whoami` then `clawhub login`.
+2. **Slug/path mismatch** -> verify working directory and explicit `--slug`.
+3. **Version conflict** -> bump semver and republish.
+4. **Unexpected diff on sync** -> rerun `sync --dry-run`, inspect, then apply.
+5. **Corrupt local install** -> reinstall/update target skill with `--force`.
 
-bash
-clawhub --workdir /path/to/project publish ./my-skill
-Local Files Do Not Match Published Version
+## Guardrails
 
-bash
-clawhub update <skill-slug> --force
-Useful Notes
-A skill is a folder with a SKILL.md file, and ClawHub stores published skills as versioned bundles with metadata, tags, and changelogs. [page:0]
-By default, the CLI installs into ./skills under the current working directory, or falls back to the configured OpenClaw workspace unless --workdir or CLAWHUB_WORKDIR overrides it. [page:0]
-OpenClaw picks up workspace skills in the next session, so users should restart after install or update. [page:0]
+1. Always set explicit `--slug --name --version` on publish.
+2. Prefer `sync --dry-run` before any bulk action.
+3. Keep changelog concrete (behavior change + reason).
+4. Separate local operations from registry operations.
+5. Do not mix plugin release instructions with skill publish commands.
+6. Before `publish`, `update --all`, or `sync --all`, run read-only/dry-run variants first.
+7. Use `clawhub whoami` before write actions to confirm active account/session.
 
-Output Template
-text
-## Command
-[Exact command to run]
+## Author
 
-## What It Does
-[One short explanation]
-
-## Notes
-- prerequisite 1
-- prerequisite 2
-
-## Next Step
-[What to run next]
-Tips
-Use clawhub whoami before troubleshooting auth or publish issues.
-
-Use clawhub sync --dry-run before bulk publishing.
-
-Prefer explicit --slug, --name, and --version for releases.
-
-Use --workdir when the current directory is not the correct project root.
-
-Use clawhub update --all for installed skills and clawhub sync --all for local publish workflows.
-
-Author
 Vassiliy Lakhonin
