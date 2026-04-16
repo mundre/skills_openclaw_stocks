@@ -3,11 +3,16 @@
   "slug": "insta-cog",
   "displayName": "Insta Cog",
   "latest": {
-    "version": "1.0.9",
-    "publishedAt": 1775627891306,
-    "commit": "https://github.com/openclaw/skills/commit/b39952d9aca2c067643c592ce6dc1b5b22862222"
+    "version": "1.0.12",
+    "publishedAt": 1776187952315,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.9",
+      "publishedAt": 1775627891306,
+      "commit": "https://github.com/openclaw/skills/commit/b39952d9aca2c067643c592ce6dc1b5b22862222"
+    },
     {
       "version": "1.0.7",
       "publishedAt": 1775180621171,

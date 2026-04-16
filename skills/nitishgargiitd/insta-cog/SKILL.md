@@ -1,6 +1,6 @@
 ---
 name: insta-cog
-description: "AI social media video and content creation powered by CellCog. Instagram Reels, TikTok videos, Stories, carousels, and social posts. Full video production from a single prompt — script, shoot, stitch, score automatically. 30s to 4-minute videos with consistent characters. Powered by #1 on DeepResearch Bench (Apr 2026)."
+description: "AI social media video and content creation powered by CellCog. Instagram Reels, TikTok videos, Stories, carousels, social posts. Full video production from a single prompt — scripted, shot, stitched, and scored automatically."
 metadata:
   openclaw:
     emoji: "📸"
@@ -9,45 +9,38 @@ author: CellCog
 homepage: https://cellcog.ai
 dependencies: [cellcog]
 ---
-
 # Insta Cog - Full Video Production From a Single Prompt
 
 **Script, shoot, stitch, score — automatically.** The most advanced AI video suite, powered by #1 on DeepResearch Bench (Apr 2026).
 
 No other AI platform generates multi-scene, production-ready Reels and TikToks from a single prompt. CellCog handles the entire pipeline: coherent script, scene-by-scene generation with consistent characters, background music, and automatic editing — 30 seconds to 4 minutes, ready to post. Plus carousels, Stories, and static posts.
 
----
+## How to Use
 
-## Prerequisites
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
 
-This skill requires the `cellcog` skill for SDK setup and API calls.
-
-```bash
-clawhub install cellcog
-```
-
-**Read the cellcog skill first** for SDK setup. This skill shows you what's possible.
-
-**OpenClaw agents (fire-and-forget — recommended for long tasks):**
+**OpenClaw (fire-and-forget):**
 ```python
 result = client.create_chat(
     prompt="[your task prompt]",
-    notify_session_key="agent:main:main",  # OpenClaw only
-    task_label="my-task",
-    chat_mode="agent",  # See cellcog skill for all modes
-)
-```
-
-**All other agents (blocks until done):**
-```python
-result = client.create_chat(
-    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
     task_label="my-task",
     chat_mode="agent",
 )
 ```
 
-See the **cellcog** mothership skill for complete SDK API reference — delivery modes, timeouts, file handling, and more.
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -224,3 +217,10 @@ There is a real learning curve to generating videos with CellCog. It takes time,
 
 6. **Think mobile-first**: All content will be viewed on phones. Bold text, clear visuals, vertical format.
 
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
