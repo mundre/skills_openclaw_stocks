@@ -3,11 +3,16 @@
   "slug": "linux-kernel-crash-debug",
   "displayName": "Linux Kernel Crash Debug",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1774696648014,
-    "commit": "https://github.com/openclaw/skills/commit/007390f0456916fed4174d5d3c36f32c30b6c587"
+    "version": "1.0.4",
+    "publishedAt": 1775871370608,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1774696648014,
+      "commit": "https://github.com/openclaw/skills/commit/007390f0456916fed4174d5d3c36f32c30b6c587"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1773572702791,

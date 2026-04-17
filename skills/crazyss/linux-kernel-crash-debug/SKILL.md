@@ -1,12 +1,16 @@
 ---
 name: linux-kernel-crash-debug
 description: Debug Linux kernel crashes using the crash utility and memory debugging tools. Use when users mention kernel crash, kernel panic, vmcore analysis, kernel dump debugging, crash utility, kernel oops debugging, analyzing kernel crash dump files, using crash commands, locating root causes of kernel issues, KASAN, Kprobes, Kmemleak, memory corruption, out-of-bounds access, use-after-free, memory leak detection.
-requires:
-  - crash
-  - gdb
-  - readelf
-  - objdump
-  - makedumpfile
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - crash
+        - gdb
+        - readelf
+        - objdump
+        - makedumpfile
+    homepage: https://github.com/crazyss/linux-kernel-crash-debug
 ---
 
 # Linux Kernel Crash Debugging
@@ -54,6 +58,17 @@ crash vmlinux ddr.bin --ram_start=0x80000000
 4. crash> struct <type>    # Inspect data structures
 5. crash> kmem <addr>      # Memory analysis
 ```
+
+## 🤖 Agent Execution Directives
+If you are an AI/Agent using this skill, **do not invoke `crash` interactively** as it will block your subshell.
+1. Use the bundled wrapper `./scripts/agent-crash.sh` which maps precisely to the workflows below but safely truncates outputs:
+   - `./scripts/agent-crash.sh -k vmlinux -c vmcore triage` - Safely runs initial `sys`, `log`, and `bt`.
+   - `./scripts/agent-crash.sh -k vmlinux -c vmcore flow-oom` - Top 15 memory checks.
+   - `./scripts/agent-crash.sh -k vmlinux -c vmcore flow-deadlock` - Pulls UN task stacks.
+   - `./scripts/agent-crash.sh -k vmlinux -c vmcore dis-regs <func> <pid>` - Assembly regression.
+   - `./scripts/agent-crash.sh -k vmlinux -c vmcore check-poison <addr>` - Pattern match memory poisons.
+2. **Fallback Strategy**: If macros don't solve the issue, fall back to basic primitives manually: `./scripts/agent-crash.sh -k vmlinux -c vmcore run "rd ffff880123456780"`.
+3. Check `references/agentic-heuristics.md` for extended expert methodologies.
 
 ## Prerequisites
 
