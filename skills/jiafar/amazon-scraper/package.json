@@ -13,7 +13,7 @@
     "alpha",
     "openclaw"
   ],
-  "author": "Joseph",
+  "author": "jiafar",
   "license": "MIT",
   "dependencies": {
     "crawlee": "^3.0.0",

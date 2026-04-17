@@ -171,7 +171,7 @@ const crawler = new PlaywrightCrawler({
                     document.querySelectorAll('[data-component-type="s-search-result"]').forEach(card => {
                         try {
                             const asin = card.getAttribute('data-asin');
-                            const titleEl = card.querySelector('h2 a span');
+                            const titleEl = card.querySelector('.a-text-normal') || card.querySelector('h2 a span');
                             const priceEl = card.querySelector('.a-price .a-offscreen');
                             const ratingEl = card.querySelector('.a-icon-alt');
                             const reviewEl = card.querySelector('[class*="s-link-style"] .a-size-base');
