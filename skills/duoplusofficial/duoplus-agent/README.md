@@ -12,13 +12,13 @@ clawhub install duoplus/duoplus-agent
 ### Local Install (Testing)
 ```bash
 # 复制到 OpenClaw 的 skills 目录
-cp -r android-rpa ~/.openclaw/skills/duoplus-agent
+cp -r duoplus-agent ~/.openclaw/skills/duoplus-agent
 ```
 
 Or use workspace-level:
 ```bash
 mkdir -p ./skills
-cp -r android-rpa ./skills/duoplus-agent
+cp -r duoplus-agent ./skills/duoplus-agent
 ```
 
 ## Prerequisites
