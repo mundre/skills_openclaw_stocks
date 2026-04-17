@@ -3,11 +3,16 @@
   "slug": "cantian-bazi",
   "displayName": "Awesome Bazi Calculator - Cantian AI",
   "latest": {
-    "version": "0.0.7",
-    "publishedAt": 1773630301969,
-    "commit": "https://github.com/openclaw/skills/commit/f0b2ef2ef4129ef1652d2cdedad430be40e3e17a"
+    "version": "0.0.8",
+    "publishedAt": 1776069179825,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.0.7",
+      "publishedAt": 1773630301969,
+      "commit": "https://github.com/openclaw/skills/commit/f0b2ef2ef4129ef1652d2cdedad430be40e3e17a"
+    },
     {
       "version": "0.0.5",
       "publishedAt": 1773032053324,
