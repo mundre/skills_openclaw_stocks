@@ -3,11 +3,16 @@
   "slug": "agent-passport-system",
   "displayName": "Agent Passport",
   "latest": {
-    "version": "6.0.0",
-    "publishedAt": 1775677441392,
-    "commit": "https://github.com/openclaw/skills/commit/2063d2e428eb7893b3767086ec26a116d5561a21"
+    "version": "1.46.0",
+    "publishedAt": 1776384783159,
+    "commit": null
   },
   "history": [
+    {
+      "version": "6.0.0",
+      "publishedAt": 1775677441392,
+      "commit": "https://github.com/openclaw/skills/commit/2063d2e428eb7893b3767086ec26a116d5561a21"
+    },
     {
       "version": "2.4.0",
       "publishedAt": 1775531039128,
