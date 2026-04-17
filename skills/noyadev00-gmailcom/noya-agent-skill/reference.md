@@ -4,8 +4,8 @@ Noya exposes **three separate surfaces**:
 
 | API | Base URL | Auth | Purpose |
 | --- | --- | --- | --- |
-| Agent API | `https://safenet.one` | `x-api-key: noya_<key>` | Conversational multi-agent system — messaging, threads, chat completions, user/agent summaries, OpenClaw handoff |
-| Data API  | `https://data-endpoints.noya.ai` | None | Public structured-data endpoints — CoinGecko, CoinGlass, DeFiLlama, Moralis, GeckoTerminal, Santiment, CryptoNews, alternative.me, Noya Tokens catalog, Noya Polymarket intelligence |
+| Agent API | `https://agent-api.noya.ai` | `x-api-key: noya_<key>` | Conversational multi-agent system — messaging, threads, chat completions, user/agent summaries, OpenClaw handoff |
+| Data API  | `https://data-endpoints.noya.ai` | None | Public structured-data endpoints — CoinGecko, CoinGlass, DeFiLlama, Moralis, GeckoTerminal, CryptoNews, alternative.me, Noya Tokens catalog, Noya Polymarket intelligence, Kaito social intelligence |
 | Docs | `https://mcp.noya.ai` | None | Full docs as plain markdown — `/llms.txt` for index, `/llms.mdx/docs/{path}/content.md` for full page content. Read before guessing tool parameters or response shapes |
 
 This reference documents the **Agent API**. For the Data API paths and bodies, see the "Data Endpoints (no API key)" section of `SKILL.md`. For docs lookup, see the "Read the Docs" step at the top of the Core Workflow in `SKILL.md`.
@@ -241,112 +241,6 @@ Delete a conversation thread.
 | 401    | Unauthorized     |
 | 404    | Thread not found |
 | 500    | Server error     |
-
----
-
-## POST /api/chat/completions
-
-OpenAI-compatible chat completion endpoint. Maintains message history per session in Redis.
-
-### Request
-
-```json
-{
-  "sessionId": "session-1",
-  "message": "Hello, what can you do?",
-  "config": {},
-  "tools": [],
-  "toolResults": []
-}
-```
-
-| Field       | Type   | Required | Description                             |
-| ----------- | ------ | -------- | --------------------------------------- |
-| sessionId   | string | Yes      | Session identifier for history tracking |
-| message     | string | Yes      | User message                            |
-| config      | object | No       | Model configuration overrides           |
-| tools       | array  | No       | OpenAI-format tool definitions          |
-| toolResults | array  | No       | Tool call results from previous turn    |
-
-Each entry in `toolResults`:
-
-| Field        | Type   | Description         |
-| ------------ | ------ | ------------------- |
-| tool_call_id | string | ID of the tool call |
-| content      | string | Result content      |
-
-### Response `200 OK`
-
-```json
-{
-  "success": true,
-  "response": {
-    "id": "chatcmpl-xxx",
-    "object": "chat.completion",
-    "created": 1708000000,
-    "model": "gpt-4o",
-    "choices": [
-      {
-        "message": {
-          "role": "assistant",
-          "content": "I can help with...",
-          "tool_calls": null
-        },
-        "finish_reason": "stop"
-      }
-    ]
-  },
-  "usage": {
-    "prompt_tokens": 50,
-    "completion_tokens": 100,
-    "total_tokens": 150
-  }
-}
-```
-
-### Error Responses
-
-| Status | Condition            |
-| ------ | -------------------- |
-| 400    | Invalid request data |
-| 401    | Unauthorized         |
-| 429    | Rate limit exceeded  |
-| 500    | Server error         |
-
----
-
-## GET /api/chat/session/:sessionId
-
-Get the message history for a chat session.
-
-### Response `200 OK`
-
-```json
-{
-  "success": true,
-  "sessionId": "session-1",
-  "messages": [
-    { "role": "user", "content": "Hello" },
-    { "role": "assistant", "content": "Hi! How can I help?" }
-  ],
-  "count": 2
-}
-```
-
----
-
-## DELETE /api/chat/session/:sessionId
-
-Clear all message history for a session.
-
-### Response `200 OK`
-
-```json
-{
-  "success": true,
-  "message": "Chat history cleared successfully"
-}
-```
 
 ---
 

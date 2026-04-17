@@ -19,7 +19,7 @@ USAGE
 
 MESSAGE="$1"
 THREAD_ID="$2"
-BASE_URL="https://safenet.one"
+BASE_URL="https://agent-api.noya.ai"
 if [[ -f /etc/timezone ]]; then
   TIMEZONE=$(cat /etc/timezone)
 elif [[ -L /etc/localtime ]]; then
