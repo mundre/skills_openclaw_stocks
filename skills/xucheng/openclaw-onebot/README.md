@@ -6,9 +6,6 @@
 
 ## 中文
 
-> ⚠️ **ClawHub 安全扫描说明**：本 skill 在 ClawHub 上可能被标记为 "Suspicious"，这是因为 `.ts` (TypeScript) 文件的扩展名被自动识别为 `video/mp2t` (MPEG-2 视频流) MIME 类型触发了误报。所有源码均为标准 TypeScript，可在 [GitHub](https://github.com/xucheng/openclaw-onebot) 审查。
-
-
 OpenClaw 的 **OneBot 11 协议通道插件**，让 QQ 成为 OpenClaw 一等消息通道。
 
 支持 [NapCat](https://github.com/NapNeko/NapCatQQ)、[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 等所有兼容 OneBot 11 协议的 QQ 机器人框架。
@@ -18,6 +15,7 @@ OpenClaw 的 **OneBot 11 协议通道插件**，让 QQ 成为 OpenClaw 一等消
 - 通道 `id` 仍然是 `onebot`
 - 因此 `plugins.allow` / `plugins.entries` / `plugins.installs` 使用 `openclaw-onebot`
 - `channels.onebot` 保持不变
+- 当前版本对齐 OpenClaw `2026.4.9` / plugin-sdk `2026.4.9`，并声明 `setupEntry`
 
 ### 功能
 
@@ -30,29 +28,12 @@ OpenClaw 的 **OneBot 11 协议通道插件**，让 QQ 成为 OpenClaw 一等消
 - 🎤 **语音完整链路** — QQ 语音 (SILK/AMR) → MP3 → STT → TTS → 发送 QQ 语音
 - 📦 **消息聚合** — 连续多条消息 1.5s 内自动合并（类似 Telegram 风格）
 - 🖼️ 图片、语音、文件附件发送
+- 🛠️ 通用 `sendMedia` 出站适配，delivery recovery / mirror / message tool 等通路都能发送图片、语音、文件
 - 🔄 WebSocket 自动重连（指数退避）
 - 🔒 可选 access token 鉴权
 - 🎯 `allowFrom` 消息来源过滤（私聊/群聊/用户级别）
-- ✅ 93 个测试用例全部通过
-- 📈 Coverage 已通过仓库阈值（lines/statements >= 85%，branches >= 80%，functions >= 85%）
-
-### 与其他方案对比
-
-| | **openclaw-onebot** (本项目) | **方案 A** | **方案 B** |
-|---|---|---|---|
-| **协议** | OneBot 11 (NapCat/go-cqhttp) | QQ 官方 Bot API | OneBot 11 (NapCat) |
-| **集成方式** | ✅ **ChannelPlugin 原生集成** | ❌ 独立 Python 脚本 + 文件队列 | ❌ 独立 Python 脚本 |
-| **消息路由** | OpenClaw 自动路由，`message` tool 直接用 | 文件队列读写，需手动桥接 | 手动调 Python API |
-| **Reaction** | ✅ 群聊支持，私聊不保证 | ❌ 无 | ❌ 无 |
-| **流式回复** | ✅ Block streaming 多段消息 | ❌ 无 | ❌ 无 |
-| **语音支持** | ✅ SILK/AMR → MP3 → STT/TTS 全自动 | ❌ 无 | ❌ 无 |
-| **消息聚合** | ✅ 1.5s 智能合并 | ❌ 无 | ❌ 无 |
-| **自动重连** | ✅ WebSocket 指数退避 | daemon 脚本重启 | ❌ 无 |
-| **测试** | ✅ 93 tests | ❌ 无 | ❌ 无 |
-| **语言** | TypeScript | Python | Python |
-| **需要额外进程** | ❌ 随 gateway 启动 | ✅ 需独立运行 daemon | ✅ 需独立运行 listener |
-
-**核心区别**：本项目是 OpenClaw **原生通道插件**，安装后 QQ 就和 Discord / Telegram 一样使用，不需要额外的桥接脚本或消息队列。其他方案都是外挂式的独立进程，需要自己处理消息路由和会话管理。
+- ✅ 116 个测试用例全部通过
+- 📈 覆盖率可通过 `npm run coverage` 复核
 
 ### 架构
 
@@ -82,10 +63,14 @@ OpenClaw Gateway (统一消息管线)
 # 自动安装
 bash scripts/install.sh
 
-# 或手动
-cp -r src index.ts package.json package-lock.json openclaw.plugin.json tsconfig.json ~/.openclaw/plugins/onebot/
-cd ~/.openclaw/plugins/onebot && npm install && npm run build
+# 或手动（先在仓库根目录准备发布包）
+npm install && npm run prepare:clawhub:plugin
+mkdir -p ~/.openclaw/plugins/onebot
+cp -r .clawhub-plugin/openclaw-onebot-plugin/* ~/.openclaw/plugins/onebot/
+cd ~/.openclaw/plugins/onebot && npm install --omit=dev --omit=peer --no-package-lock --no-audit --no-fund
 ```
+
+`scripts/install.sh` 会先在源码仓库生成 `.clawhub-plugin/openclaw-onebot-plugin` 精简发布包，再把这份运行时 payload 安装到 OpenClaw 目录，并自动尝试执行 `scripts/sync-openclaw-cli.mjs`，把 `--shared-dir` / `--container-shared-dir` 接到本机 OpenClaw CLI。
 
 #### 2. 配置
 
@@ -106,6 +91,9 @@ cd ~/.openclaw/plugins/onebot && npm install && npm run build
       "enabled": true,
       "wsUrl": "ws://your-host:3001",
       "httpUrl": "http://your-host:3001",
+      "accessToken": "your_token",
+      "sharedDir": "/Users/you/napcat/shared",
+      "containerSharedDir": "/shared",
       "groupAutoReact": true,
       "groupAutoReactEmojiId": 1
     }
@@ -126,6 +114,11 @@ ONEBOT_HTTP_URL=http://your-host:3001
 ONEBOT_ACCESS_TOKEN=your_token  # 可选
 ```
 
+OneBot `setup` 也支持：
+- `--token wsUrl,httpUrl[,accessToken[,sharedDir[,containerSharedDir]]]`
+- 或 `openclaw channels add --channel onebot --shared-dir <hostPath> --container-shared-dir /shared`
+- 如果 OpenClaw 升级后覆盖了 CLI dist，可在插件目录执行 `npm run sync:openclaw-cli` 重新同步参数接线
+
 #### 3. 重启 Gateway
 
 ```bash
@@ -142,6 +135,8 @@ openclaw gateway restart
       "wsUrl": "ws://your-host:3001",
       "httpUrl": "http://your-host:3001",
       "accessToken": "your_token",
+      "sharedDir": "/Users/you/napcat/shared",
+      "containerSharedDir": "/shared",
       "allowFrom": ["private:12345", "group:67890"],
       "groupAutoReact": true,
       "groupAutoReactEmojiId": 1
@@ -154,6 +149,8 @@ openclaw gateway restart
 |------|------|
 | `allowFrom` | 消息来源白名单 — `private:<QQ号>`、`group:<群号>`、或 `*`（允许所有） |
 | `accessToken` | HTTP API 用 Bearer token，WebSocket 用 query 参数 |
+| `sharedDir` | 宿主机共享目录；默认 `~/napcat/shared`，用于把语音/图片 stage 给 NapCat |
+| `containerSharedDir` | 容器内共享目录；默认 `/shared`，与 `sharedDir` 对应 |
 | `groupAutoReact` | 是否对入站群消息自动添加 reaction，默认 `true` |
 | `groupAutoReactEmojiId` | 群聊自动 reaction 使用的 QQ emoji id，默认 `1` |
 
@@ -254,17 +251,30 @@ services:
 
 ```bash
 npm install
-npm test          # 93 tests
+npm test          # 116 tests
 npm run build     # 编译 TypeScript
-npm run coverage  # 覆盖率报告（已达阈值）
+npm run coverage  # 覆盖率报告
+npm run sync:openclaw-cli  # 重新同步 OpenClaw CLI 的 shared-dir 参数
 ```
+
+### 发布准备
+
+```bash
+npm ci --ignore-scripts
+npm run release:check
+npm publish
+git tag v<package-version>
+git push origin main --tags
+```
+
+说明：
+- `npm run release:check` 会串行执行 `build`、全量 `vitest`、`npm pack --dry-run`、`prepare:clawhub:plugin`
+- ClawHub 发布产物输出到 `.clawhub-plugin/openclaw-onebot-plugin/`
+- GitHub Release 建议直接复用同一个 `v<package-version>` tag
 
 ---
 
 ## English
-
-> ⚠️ **ClawHub Security Note**: This skill may be flagged as "Suspicious" on ClawHub because `.ts` (TypeScript) files are auto-detected as `video/mp2t` (MPEG-2 Transport Stream) MIME type, triggering a false positive. All source code is standard TypeScript — review it on [GitHub](https://github.com/xucheng/openclaw-onebot).
-
 
 An [OpenClaw](https://github.com/openclaw/openclaw) **native channel plugin** that connects to [NapCat](https://github.com/NapNeko/NapCatQQ), [go-cqhttp](https://github.com/Mrs4s/go-cqhttp), or any OneBot 11 compatible QQ bot framework.
 
@@ -273,6 +283,7 @@ Note:
 - Channel `id`: `onebot`
 - Use `openclaw-onebot` in `plugins.allow` / `plugins.entries` / `plugins.installs`
 - Keep `channels.onebot` unchanged
+- This release targets OpenClaw `2026.4.9` / plugin-sdk `2026.4.9` and declares `setupEntry`
 
 ### Features
 
@@ -284,38 +295,30 @@ Note:
 - 🎤 **Full voice pipeline** — QQ voice (SILK/AMR) → MP3 → STT → TTS → send QQ voice
 - 📦 **Message batching** — auto-merge rapid messages within 1.5s (Telegram-style)
 - 🖼️ Image, audio, and file attachments
+- 🛠️ Generic `sendMedia` outbound adapter so delivery recovery, mirror, and message-tool paths can all send images, audio, and files
 - 🔄 WebSocket auto-reconnect with exponential backoff
 - 🔒 Optional access token authentication
 - 🎯 `allowFrom` filtering (private/group/user-level)
 - 🧭 Full OpenClaw text-command passthrough (`/status`, `/help`, `/commands`, `/model`, `/new`, `/reset`, etc.)
-- ✅ 93 tests passing
-- 📈 Coverage thresholds passing
-
-### Comparison with Alternatives
-
-| | **openclaw-onebot** (this) | **方案 A** | **方案 B** |
-|---|---|---|---|
-| **Protocol** | OneBot 11 (NapCat/go-cqhttp) | QQ Official Bot API | OneBot 11 |
-| **Integration** | ✅ **Native ChannelPlugin** | ❌ Standalone Python + file queue | ❌ Standalone Python scripts |
-| **Message routing** | Auto via OpenClaw `message` tool | Manual file I/O bridge | Manual Python API calls |
-| **Reactions** | ✅ Group chats only; private chats not reliable | ❌ None | ❌ None |
-| **Streaming replies** | ✅ Block-streamed multi-message replies | ❌ None | ❌ None |
-| **Voice** | ✅ SILK/AMR → MP3 → STT/TTS auto | ❌ None | ❌ None |
-| **Batching** | ✅ 1.5s smart merge | ❌ None | ❌ None |
-| **Auto-reconnect** | ✅ Exponential backoff | Daemon restart | ❌ None |
-| **Tests** | ✅ 93 tests | ❌ None | ❌ None |
-| **Language** | TypeScript | Python | Python |
-| **Extra process** | ❌ Runs with gateway | ✅ Separate daemon | ✅ Separate listener |
-
-**Key difference**: This is a **native OpenClaw channel plugin** — once installed, QQ works just like Discord or Telegram. No bridge scripts, no message queues, no extra processes.
+- ✅ 116 tests passing
+- 📈 Coverage can be re-generated with `npm run coverage`
 
 ### Quick Start
 
 #### 1. Install
 
 ```bash
+# Auto install
 bash scripts/install.sh
+
+# Or manual (prepare the release payload from the repo root first)
+npm install && npm run prepare:clawhub:plugin
+mkdir -p ~/.openclaw/plugins/onebot
+cp -r .clawhub-plugin/openclaw-onebot-plugin/* ~/.openclaw/plugins/onebot/
+cd ~/.openclaw/plugins/onebot && npm install --omit=dev --omit=peer --no-package-lock --no-audit --no-fund
 ```
+
+`scripts/install.sh` prepares `.clawhub-plugin/openclaw-onebot-plugin` in the source repo first, installs that trimmed runtime payload, and then runs `scripts/sync-openclaw-cli.mjs` so the local OpenClaw CLI keeps the OneBot `--shared-dir` / `--container-shared-dir` flags wired in after install.
 
 #### 2. Configure
 
@@ -355,6 +358,11 @@ ONEBOT_WS_URL=ws://your-host:3001
 ONEBOT_HTTP_URL=http://your-host:3001
 ONEBOT_ACCESS_TOKEN=your_token  # optional
 ```
+
+OneBot setup also supports:
+- `--token wsUrl,httpUrl[,accessToken[,sharedDir[,containerSharedDir]]]`
+- or `openclaw channels add --channel onebot --shared-dir <hostPath> --container-shared-dir /shared`
+- if an OpenClaw upgrade overwrites the installed CLI dist, run `npm run sync:openclaw-cli` from the plugin directory to re-apply the flags
 
 #### 3. Restart Gateway
 
@@ -433,6 +441,8 @@ npm run react-test -- --message-id <message_id> --emoji 76
 |--------|-------------|
 | `allowFrom` | Whitelist — `private:<qq>`, `group:<id>`, or `*` (allow all) |
 | `accessToken` | Bearer token for HTTP, query param for WebSocket |
+| `sharedDir` | Host-side shared directory; defaults to `~/napcat/shared` for staging outbound media |
+| `containerSharedDir` | Container-side mount path; defaults to `/shared` and should map to `sharedDir` |
 | `groupAutoReact` | Whether to auto-react to inbound group messages; defaults to `true` |
 | `groupAutoReactEmojiId` | QQ emoji id used for automatic group reactions; defaults to `1` |
 
@@ -446,10 +456,26 @@ npm run react-test -- --message-id <message_id> --emoji 76
 
 ```bash
 npm install
-npm test          # Run 93 tests
+npm test          # Run 116 tests
 npm run build     # Compile TypeScript
-npm run coverage  # Coverage report (thresholds passing)
+npm run coverage  # Coverage report
+npm run sync:openclaw-cli  # Re-apply shared-dir CLI wiring after OpenClaw upgrades
 ```
+
+### Release Prep
+
+```bash
+npm ci --ignore-scripts
+npm run release:check
+npm publish
+git tag v<package-version>
+git push origin main --tags
+```
+
+Notes:
+- `npm run release:check` runs `build`, the full `vitest` suite, `npm pack --dry-run`, and `prepare:clawhub:plugin`
+- The ClawHub payload is written to `.clawhub-plugin/openclaw-onebot-plugin/`
+- Reuse the same `v<package-version>` tag when drafting the GitHub Release
 
 ## License
 

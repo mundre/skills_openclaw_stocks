@@ -1,10 +1,50 @@
-import type { ChannelPlugin } from "clawdbot/plugin-sdk";
+import { homedir } from "node:os";
+import { basename, extname, isAbsolute, join, resolve as resolvePath } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { ChannelPlugin } from "openclaw/plugin-sdk/core";
 import type { ResolvedOneBotAccount } from "./types.js";
 import { listOneBotAccountIds, resolveOneBotAccount, applyOneBotAccountConfig } from "./config.js";
-import { reactToMessage, sendText } from "./outbound.js";
+import { reactToMessage, sendImage, sendRecord, sendText, uploadFile } from "./outbound.js";
 import { startGateway } from "./gateway.js";
 
 const DEFAULT_ACCOUNT_ID = "default";
+const ONEBOT_MESSAGE_ACTIONS = ["react"] as const;
+const DEFAULT_SHARED_DIR = process.env.ONEBOT_SHARED_DIR ?? join(homedir(), "napcat", "shared");
+const DEFAULT_CONTAINER_SHARED_DIR = process.env.ONEBOT_CONTAINER_SHARED_DIR ?? "/shared";
+const IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".heic", ".heif"]);
+const AUDIO_EXTS = new Set([".mp3", ".ogg", ".wav", ".m4a", ".aac", ".flac", ".amr", ".silk", ".opus"]);
+
+function createActionResult<TDetails>(text: string, details: TDetails) {
+  return {
+    content: [{ type: "text" as const, text }],
+    details,
+  };
+}
+
+function parseTarget(to: string): { type: "private" | "group"; id: number } {
+  const normalized = to.replace(/^onebot:/i, "");
+
+  if (normalized.startsWith("private:")) {
+    return { type: "private", id: Number(normalized.slice(8)) };
+  }
+  if (normalized.startsWith("group:")) {
+    return { type: "group", id: Number(normalized.slice(6)) };
+  }
+  return { type: "private", id: Number(normalized) };
+}
+
+function resolveLocalMediaPath(mediaUrl: string): string {
+  if (!mediaUrl || !mediaUrl.trim()) {
+    throw new Error("OneBot sendMedia requires mediaUrl");
+  }
+  if (mediaUrl.startsWith("http://") || mediaUrl.startsWith("https://")) {
+    throw new Error("OneBot sendMedia currently supports local file paths only");
+  }
+  if (mediaUrl.startsWith("file://")) {
+    return fileURLToPath(mediaUrl);
+  }
+  return isAbsolute(mediaUrl) ? mediaUrl : resolvePath(mediaUrl);
+}
 
 export const onebotPlugin: ChannelPlugin<ResolvedOneBotAccount> = {
   id: "onebot",
@@ -59,7 +99,7 @@ export const onebotPlugin: ChannelPlugin<ResolvedOneBotAccount> = {
   setup: {
     validateInput: ({ input }) => {
       if (!input.token && !input.useEnv) {
-        return "OneBot requires --token (format: wsUrl,httpUrl[,accessToken]) or --use-env (ONEBOT_WS_URL, ONEBOT_HTTP_URL)";
+        return "OneBot requires --token (format: wsUrl,httpUrl[,accessToken[,sharedDir[,containerSharedDir]]]) or --use-env (ONEBOT_WS_URL, ONEBOT_HTTP_URL)";
       }
       return null;
     },
@@ -67,18 +107,34 @@ export const onebotPlugin: ChannelPlugin<ResolvedOneBotAccount> = {
       let wsUrl = "";
       let httpUrl = "";
       let accessToken: string | undefined;
+      const raw = input as Record<string, unknown>;
+      let sharedDir = typeof raw.sharedDir === "string" && raw.sharedDir.trim()
+        ? raw.sharedDir.trim()
+        : undefined;
+      let containerSharedDir = typeof raw.containerSharedDir === "string" && raw.containerSharedDir.trim()
+        ? raw.containerSharedDir.trim()
+        : undefined;
 
       if (input.token) {
         const parts = input.token.split(",");
-        wsUrl = parts[0] ?? "";
-        httpUrl = parts[1] ?? "";
-        accessToken = parts[2];
+        wsUrl = parts[0]?.trim() ?? "";
+        httpUrl = parts[1]?.trim() ?? "";
+        accessToken = parts[2]?.trim() || undefined;
+        sharedDir ??= parts[3]?.trim() || undefined;
+        containerSharedDir ??= parts[4]?.trim() || undefined;
+      }
+
+      if (!input.useEnv) {
+        sharedDir ??= DEFAULT_SHARED_DIR;
+        containerSharedDir ??= DEFAULT_CONTAINER_SHARED_DIR;
       }
 
       return applyOneBotAccountConfig(cfg, accountId, {
         wsUrl,
         httpUrl,
         accessToken,
+        sharedDir,
+        containerSharedDir,
         name: input.name,
       });
     },
@@ -89,23 +145,71 @@ export const onebotPlugin: ChannelPlugin<ResolvedOneBotAccount> = {
     sendText: async ({ to, text, accountId, replyToId, cfg }) => {
       const account = resolveOneBotAccount(cfg, accountId);
       const result = await sendText({ to, text, accountId, replyToId, account });
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      if (!result.messageId) {
+        throw new Error("OneBot sendText did not return a messageId");
+      }
       return {
         channel: "onebot",
         messageId: result.messageId,
-        error: result.error ? new Error(result.error) : undefined,
+      };
+    },
+    sendMedia: async ({ to, text, mediaUrl, accountId, cfg }) => {
+      const account = resolveOneBotAccount(cfg, accountId);
+      const target = parseTarget(to);
+      const mediaPath = resolveLocalMediaPath(mediaUrl ?? "");
+      const ext = extname(mediaPath).toLowerCase();
+
+      let mediaResult;
+      if (AUDIO_EXTS.has(ext)) {
+        mediaResult = await sendRecord(account, target.type, target.id, mediaPath);
+      } else if (IMAGE_EXTS.has(ext)) {
+        mediaResult = await sendImage(account, target.type, target.id, mediaPath);
+      } else {
+        mediaResult = await uploadFile(account, target.type, target.id, mediaPath, basename(mediaPath));
+      }
+
+      let textMessageId: string | undefined;
+      if ((text ?? "").trim()) {
+        const textResult = await sendText({ to, text, accountId, account });
+        if (textResult.error) {
+          throw new Error(textResult.error);
+        }
+        textMessageId = textResult.messageId;
+      }
+
+      const mediaMessageId =
+        mediaResult?.data && typeof mediaResult.data === "object" && "message_id" in mediaResult.data
+          ? String(mediaResult.data.message_id)
+          : undefined;
+
+      return {
+        channel: "onebot",
+        messageId: mediaMessageId ?? textMessageId ?? `${Date.now()}`,
       };
     },
   },
   actions: {
-    listActions: () => ["react"],
+    describeMessageTool: ({ cfg }) => {
+      const account = resolveOneBotAccount(cfg);
+      if (!account.enabled || !account.wsUrl || !account.httpUrl) {
+        return null;
+      }
+      return {
+        actions: [...ONEBOT_MESSAGE_ACTIONS],
+      };
+    },
     supportsAction: ({ action }) => action === "react",
     handleAction: async ({ action, cfg, params, accountId, toolContext }) => {
       if (action !== "react") {
-        return {
+        return createActionResult(`Unsupported OneBot action: ${action}`, {
           ok: false,
+          channel: "onebot",
+          action,
           error: `Unsupported OneBot action: ${action}`,
-          content: [{ type: "text", text: `Unsupported OneBot action: ${action}` }],
-        };
+        });
       }
 
       const messageId =
@@ -120,40 +224,36 @@ export const onebotPlugin: ChannelPlugin<ResolvedOneBotAccount> = {
         params.reaction;
 
       if (messageId == null || emojiId == null || String(emojiId).trim() === "") {
-        return {
-          ok: false,
-          error: "OneBot react requires `emoji` and `message_id` (or current message context).",
-          content: [
-            {
-              type: "text",
-              text: "OneBot react requires `emoji` and `message_id` (or current message context).",
-            },
-          ],
-        };
+        return createActionResult(
+          "OneBot react requires `emoji` and `message_id` (or current message context).",
+          {
+            ok: false,
+            channel: "onebot",
+            action,
+            error: "OneBot react requires `emoji` and `message_id` (or current message context).",
+          },
+        );
       }
 
       const account = resolveOneBotAccount(cfg, accountId);
       const result = await reactToMessage(account, messageId as string | number, emojiId as string | number);
 
       if (!result.ok) {
-        return {
+        return createActionResult(result.error ?? "OneBot reaction failed", {
           ok: false,
+          channel: "onebot",
+          action,
           error: result.error ?? "OneBot reaction failed",
-          content: [{ type: "text", text: result.error ?? "OneBot reaction failed" }],
           data: result,
-        };
+        });
       }
 
-      return {
+      return createActionResult(`Reacted with ${String(emojiId)} to message ${String(messageId)}.`, {
         ok: true,
+        channel: "onebot",
+        action,
         data: result,
-        content: [
-          {
-            type: "text",
-            text: `Reacted with ${String(emojiId)} to message ${String(messageId)}.`,
-          },
-        ],
-      };
+      });
     },
   },
   gateway: {

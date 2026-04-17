@@ -1,10 +1,11 @@
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { onebotPlugin } from '../src/channel.js';
 
-// Note: ChannelPlugin is type-only in src, so runtime import doesn't require clawdbot/plugin-sdk.
-
 describe('channel plugin shape', () => {
   const oldFetch = globalThis.fetch;
+  const defaultSharedDir = process.env.ONEBOT_SHARED_DIR ?? join(homedir(), 'napcat', 'shared');
 
   beforeEach(() => {
     globalThis.fetch = vi.fn();
@@ -31,10 +32,17 @@ describe('channel plugin shape', () => {
     });
   });
 
-  it('normalizeTarget strips onebot: prefix', () => {
+  it('normalizeTarget strips onebot: prefix and returns string', () => {
     const res = onebotPlugin.messaging!.normalizeTarget('onebot:private:123');
-    expect(res.ok).toBe(true);
-    expect(res.to).toBe('private:123');
+    expect(res).toBe('private:123');
+  });
+
+  it('normalizeTarget passes through non-prefixed target', () => {
+    expect(onebotPlugin.messaging!.normalizeTarget('group:456')).toBe('group:456');
+  });
+
+  it('normalizeTarget is case-insensitive for prefix', () => {
+    expect(onebotPlugin.messaging!.normalizeTarget('OneBot:group:789')).toBe('group:789');
   });
 
   it('looksLikeId recognizes valid ids', () => {
@@ -83,9 +91,42 @@ describe('channel plugin shape', () => {
     const apply = onebotPlugin.setup!.applyAccountConfig!;
     const res1 = apply({ cfg: {}, accountId: 'default', input: { token: 'ws://a,http://b' } } as any);
     expect((res1 as any).channels.onebot.wsUrl).toBe('ws://a');
+    expect((res1 as any).channels.onebot.sharedDir).toBe(defaultSharedDir);
+    expect((res1 as any).channels.onebot.containerSharedDir).toBe('/shared');
     const res2 = apply({ cfg: {}, accountId: 'default', input: { token: 'ws://a,http://b,TOKEN123', name: 'QQBot' } } as any);
     expect((res2 as any).channels.onebot.accessToken).toBe('TOKEN123');
     expect((res2 as any).channels.onebot.name).toBe('QQBot');
+  });
+
+  it('setup.applyAccountConfig accepts explicit shared-dir inputs', () => {
+    const apply = onebotPlugin.setup!.applyAccountConfig!;
+    const res = apply({
+      cfg: {},
+      accountId: 'default',
+      input: {
+        token: 'ws://a,http://b',
+        sharedDir: '/tmp/napcat-shared',
+        containerSharedDir: '/napcat-shared',
+      },
+    } as any);
+
+    expect((res as any).channels.onebot.sharedDir).toBe('/tmp/napcat-shared');
+    expect((res as any).channels.onebot.containerSharedDir).toBe('/napcat-shared');
+  });
+
+  it('setup.applyAccountConfig accepts shared-dir values in token format', () => {
+    const apply = onebotPlugin.setup!.applyAccountConfig!;
+    const res = apply({
+      cfg: {},
+      accountId: 'default',
+      input: {
+        token: 'ws://a,http://b,TOKEN123,/tmp/napcat-shared,/napcat-shared',
+      },
+    } as any);
+
+    expect((res as any).channels.onebot.accessToken).toBe('TOKEN123');
+    expect((res as any).channels.onebot.sharedDir).toBe('/tmp/napcat-shared');
+    expect((res as any).channels.onebot.containerSharedDir).toBe('/napcat-shared');
   });
 
   it('actions.react sends set_msg_emoji_like using current message context', async () => {
@@ -110,7 +151,7 @@ describe('channel plugin shape', () => {
       toolContext: { currentMessageId: '5566' },
     } as any);
 
-    expect(result.ok).toBe(true);
+    expect(result.details).toMatchObject({ ok: true, channel: 'onebot', action: 'react' });
     const [url, init] = (globalThis.fetch as any).mock.calls[0];
     expect(String(url)).toMatch(/set_msg_emoji_like$/);
     const body = JSON.parse(init.body);
@@ -126,7 +167,7 @@ describe('channel plugin shape', () => {
       toolContext: {},
     } as any);
 
-    expect(result.ok).toBe(false);
-    expect(String(result.error)).toMatch(/emoji/);
+    expect(result.details).toMatchObject({ ok: false, channel: 'onebot', action: 'react' });
+    expect(String((result.details as any).error)).toMatch(/emoji/);
   });
 });
