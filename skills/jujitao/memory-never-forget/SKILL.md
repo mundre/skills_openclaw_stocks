@@ -1,94 +1,95 @@
 ---
 name: memory-never-forget
-description: "Memory system v3.2: Atkinson-Shiffrin temporal layering + 4-type taxonomy (User/Feedback/Project/Reference) + auto-extract + Dream consolidation + memory drift handling + Memory Sublimation System. Merges cognitive psychology with Claude Code's memory architecture."
+description: "Memory system v4.12: Active Memory + Memory Palace + Dual-Layer Dream Verification. The strongest memory system for OpenClaw agents."
 metadata: { "openclaw": { "emoji": "🧠" } }
 ---
 
-# 🧠 Memory Never Forget v3.2
+# 🧠 Memory Never Forget v4.12
 
-Two orthogonal dimensions working together:
+A full-featured memory system for OpenClaw, integrating Active Memory retrieval, Memory Palace structured views, and a Dual-Layer Dream Verification mechanism — delivering "proactive memory + global view + verifiable consolidation."
 
-| Dimension | Framework | Purpose |
-|-----------|-----------|---------|
-| **Temporal** (how long) | Atkinson-Shiffrin 3-stage model | Decay management — what to keep vs. prune |
-| **Content** (what kind) | 4-type taxonomy (Claude Code) | Classification — where to store for retrieval |
+**Core Logic: Active Memory = Memory Butler, Memory Palace = Knowledge Palace, Dual-Layer Dream = Verification & Consolidation Expert**
 
-## How It Works: The Memory Flow
-
-```
-New Information
-    │
-    ▼
-┌─────────────────────────┐
-│  Sensory Memory          │  ~0.25 sec — instant filter
-│  (Current Context)       │  What deserves attention?
-└────────┬────────────────┘
-         │ worth remembering
-         ▼
-┌─────────────────────────┐
-│  Short-Term Memory       │  ~10 turns — context window
-│  (Conversation)          │  Pass through working filter
-└────────┬────────────────┘
-         │ survives
-         ▼
-┌─────────────────────────┐
-│  Working Memory           │  ~7 days — daily logs
-│  (memory/YYYY-MM-DD.md)  │  Raw signal, unclassified
-└────────┬────────────────┘
-         │
-    ┌────▼────┐  every day at 12:30
-    │ DREAM   │  The Gateway:
-    │         │  1. Scan recent daily logs
-    │  ⚙️    │  2. Identify long-term signal
-    │  ⚙️    │  3. ★ Classify into 4 types  ← Temporal → Content
-    │  ⚙️    │  4. Write to classified file
-    │  ⚙️    │  5. Update MEMORY.md index
-    │         │  6. Let old logs decay naturally
-    └────┬────┘
-         │ promoted
-         ▼
-┌─────────────────────────┐
-│  Long-Term Memory        │  Permanent — classified
-│  (4 types + index)       │  User / Feedback / Project / Reference
-└─────────────────────────┘
-```
-
-**In one sentence:** Memory is first filtered by time (when to save, when to let decay), then transformed by Dream into classified content (where to store, how to retrieve).
+License: MIT-0 | Updated: 2026-04-15 | v4.12 adds Dual-Layer Verification
 
 ---
 
-## Dimension 1: Temporal Layering (Atkinson-Shiffrin)
+## Overview (v4.12)
 
-| Stage | Human Equivalent | Implementation | TTL | Action |
-|-------|-----------------|----------------|-----|--------|
-| **Sensory** | ~0.25 sec perception | Current input context | Instant | Filter immediately — what deserves attention? |
-| **Short-term** | Recent 10 turns | Model context window | 10 turns | Pass through working filters |
-| **Working** | Recent ~7 days | `memory/YYYY-MM-DD.md` daily logs | 7 days | Extract signal → promote to long-term or let decay |
-| **Long-term** | Permanent | `MEMORY.md` (index) + classified files | Permanent | Periodic review, prune when stale |
+This skill turns your OpenClaw agent into a truly "knowing" assistant by managing memory across **two orthogonal dimensions**:
 
-**The memory flow:**
-```
-Input → Sensory (filter) → Short-term (hold) → Working (consolidate) → Long-term (index)
-                                                                      ↕
-                                                              Daily Dream review
-                                                              (promote or prune)
-```
+1. **Temporal** (Atkinson-Shiffrin 3-stage model) — what to keep vs. what to prune
+2. **Content** (4-type taxonomy from Claude Code) — where to store for fast retrieval
+
+A **Dual-Layer Dream Verification** architecture ensures your agent's memories are reliable, hallucination-free, and continuously validated.
 
 ---
 
-## Dimension 2: Content Classification (4 Types)
+## Core Components
 
-| Type | Directory | Content | Example |
-|------|-----------|---------|---------|
-| **user** | `memory/user/` | User profile (role, preferences, knowledge, goals) | "User is a data analyst, prefers concise replies" |
-| **feedback** | `memory/feedback/` | Lessons (corrections, confirmations, style) | "Don't use Markdown tables, use lists" |
-| **project** | `memory/project/` | Project state (work, decisions, reasoning) | "Project X adopted Y because it reduces cost" |
-| **reference** | `memory/reference/` | External resources (links, tools, locations) | "Project docs are in /docs/api/" |
+### 1. Active Memory — Proactive Retrieval
 
-**How the two dimensions interact:**
-- Working layer (`memory/*.md` daily logs) captures raw signal without classification
-- Long-term layer stores classified memories (4 types), each with indexed content
-- Dream consolidation moves Working → Long-term (classify + promote) OR prunes (decay)
+Before each response, Active Memory automatically retrieves and injects relevant memories into context.
+
+**Retrieval Modes:**
+- `message` — current message only
+- `recent` — recent conversation
+- `full` — full history (recommended)
+
+**Capabilities:**
+- Automatic preference learning
+- Context inheritance (project background, historical conclusions)
+- Real-time memory injection
+
+### 2. Memory Palace — Structured Views
+
+Provides multi-dimensional views of your agent's long-term memory:
+- **Timeline** — chronological view of work progress
+- **Projects** — aggregated by project
+- **Technology** — organized by tech domain
+- **Custom** — user-defined dimensions
+
+### 3. Dual-Layer Dream Verification (Core v4.12 Innovation)
+
+**Two independent but cross-verifying layers:**
+
+> **Official Dream (12:30)** — Promotes short-term signals to long-term memory (MEMORY.md)
+> ↓ outputs: DREAMS.md, memory/dreaming/deep/, etc.
+> ↓
+> **Refined Verify (13:00)** — Reads official outputs and cross-checks with independent judgment
+> → Detects conflicts, hallucinations, stale entries → writes verify/ report
+> → Supplements missed promotions
+
+**Why verification matters:**
+- AI memory systems suffer from **hallucination** (inventing facts) and **drift** (memory diverging from reality)
+- Two independent systems checking each other = **verifiable, auditable, reliable**
+
+---
+
+## Two Orthogonal Dimensions
+
+|Dimension|Framework|Purpose|
+|---|---|---|
+|Temporal (how long)|Atkinson-Shiffrin 3-stage model|Decay management — what to keep vs. prune|
+|Content (what kind)|4-type taxonomy (Claude Code)|Classification — where to store for retrieval|
+
+### Dimension 1: Temporal Layering
+
+|Stage|Human Equivalent|Implementation|TTL|Action|
+|---|---|---|---|---|
+|Sensory|~0.25 sec perception|Current input context|Instant|Filter immediately — what deserves attention?|
+|Short-term|Recent|Model context window 10 turns|10 turns|Pass through working filters|
+|Working|Recent ~7 days|memory/YYYY-MM-DD.md + Active Memory|7 days|Extract signal → promote to long-term or let decay|
+|Long-term|Permanent|MEMORY.md (index) + classified files|Permanent|Periodic review, prune when stale|
+
+### Dimension 2: Content Classification (4 Types)
+
+|Type|Directory|Content Example|
+|---|---|---|
+|user|memory/user/|User profile (role, preferences, knowledge, goals)|
+|feedback|memory/feedback/|Lessons (corrections, confirmations, style)|
+|project|memory/project/|Project state (work, decisions, reasoning)|
+|reference|memory/reference/|External resources (links, tools, locations)|
 
 ---
 
@@ -105,12 +106,10 @@ Input → Sensory (filter) → Short-term (hold) → Working (consolidate) → L
 ### ❌ Don't Save
 - ❌ Code patterns, architecture, file paths (derivable from codebase)
 - ❌ Git history (`git log` is the authoritative source)
-- ❌ Debugging solutions (the fix is in the code; commit messages have context)
+- ❌ Debugging solutions (the fix is in the code)
 - ❌ Anything already documented elsewhere
 - ❌ Ephemeral task state (write to `todos.md` instead)
 - ❌ Raw conversation content
-
-> ⚠️ **Even if the user explicitly asks** — if asked to save a PR list or activity summary, ask what was *surprising* or *non-obvious* about it — that's the part worth keeping.
 
 ---
 
@@ -120,23 +119,6 @@ MEMORY.md is the **index of long-term memories only**, never content. Format:
 ```
 - [Title](path) — one-line description (<150 chars)
 ```
-
-Example:
-```markdown
-## User Memory
-- [user-profile](user/profile.md) — user role and preferences
-
-## Feedback Memory
-- [no-tables](feedback/no-tables.md) — prefer lists over markdown tables
-
-## Project Memory
-- [model-switch](project/model-decision.md) — why project switched model
-
-## Reference
-- [project-docs](reference/docs-path.md) — where project docs live
-```
-
----
 
 ## Memory File Format
 
@@ -171,52 +153,9 @@ Memories can become stale. Rules:
 3. **Update or delete**: When a memory is outdated, fix or remove it immediately
 4. **Absolute dates**: Convert relative dates ("yesterday", "last week") to absolute dates
 
-> "The memory says X exists" ≠ "X exists now"
-
 ---
 
-## Directory Structure
-
-```
-memory/
-├── memory-types.md       ← this file
-├── user/                 ← long-term user memories
-├── feedback/             ← long-term feedback
-├── project/              ← long-term project memories
-├── reference/            ← long-term references
-└── 2026-XX-XX.md        ← working memory (daily logs, 7-day TTL)
-```
-
----
-
-## Retrieval Flow (by question type)
-
-### Memory Questions ("what happened before", "what did we talk about")
-→ `memory_search` across MEMORY.md + memory/*.md
-
-→ If not found in memory layer → proactively search daily logs (working memory)
-
-### Knowledge Questions ("look this up", "check that file")
-1. Find index in MEMORY.md first
-2. Read detailed content from classified file or knowledge layer
-
-### Temporal Questions ("what did I do last Tuesday")
-→ Go directly to daily logs (working memory): `memory/YYYY-MM-DD.md`
-
----
-
-## Feedback Rules
-
-- **Record failures AND successes**: only saving corrections makes you overly cautious
-- Corrections are easy to notice; confirmations are quieter — watch for them
-- Always include **why** to judge edge cases later
-
-## Project Rules
-
-- Project memories decay fast, so **why** helps future-you judge if the memory is still load-bearing
-- Always convert relative dates to absolute dates
-
-## Memory → Knowledge Sublimation (升华)
+## Memory → Knowledge Sublimation
 
 Not all mature memories should decay. Some **evolve into knowledge**.
 
@@ -229,57 +168,67 @@ Not all mature memories should decay. Some **evolve into knowledge**.
 | **User depth** | User memory accumulates role, preferences, habits over time | Expand to `knowledge/user-playbook.md` |
 | **Periodic review** | Dream detects high density of related memories in one category | Suggest: "Found 5 related feedback entries → merge into knowledge?" |
 
-### Sublimation vs Pruning
+---
 
-| Decision | Criteria | Action |
-|----------|----------|--------|
-| **Prune (forget)** | No longer relevant, isolated, no connections | Remove from MEMORY.md index |
-| **Sublimate (promote)** | Still relevant, mature, interconnected, frequently referenced | Create detailed document in `knowledge/` |
+## Dual-Layer Dream Architecture
 
-### Sublimation Flow
+### Layer 1: Official Dream (12:30)
+
+Triggered via cron `30 12 * * *` (your timezone). Produces:
+
+| File/Directory | Contents | Read by Refined Verify? |
+|---|---|---|
+| `MEMORY.md` | Promoted long-term entries | ✅ |
+| `DREAMS.md` | Human-readable Dream diary | ✅ |
+| `memory/dreaming/deep/YYYY-MM-DD.md` | Deep phase report | ✅ |
+| `memory/dreaming/light/YYYY-MM-DD.md` | Light phase output | ✅ |
+| `memory/dreaming/rem/YYYY-MM-DD.md` | REM reflections | ✅ |
+| `memory/.dreams/` | Internal machine data (program use only) | ❌ |
+
+**Phases:**
+1. **Light** — Sort and stage recent short-term material, dedupe
+2. **Deep** — Score and promote durable candidates (6 weighted signals) to MEMORY.md
+3. **REM** — Extract themes and reflection summaries
+
+### Layer 2: Refined Verify (13:00)
+
+Triggered via cron `0 13 * * *` (your timezone). Acts as the **verification layer**:
+
+**Verification Dimensions:**
+| Check | Content | On Conflict |
+|---|---|---|
+| Project status | Official Dream says "Project X done" but diary shows still in progress | ⚠️ Flag conflict |
+| Decision conclusions | Recorded decision has since changed in reality | ⚠️ Flag stale |
+| User preferences | Does Dream's user profile match USER.md? | ⚠️ Flag for review |
+| Dates | Were relative dates converted to absolute? | ✅/❌ |
+| Decay decisions | Is Dream's decision to let an entry decay reasonable? | ⚠️ Flag suspicious |
+
+**Verification Report** (written to `memory/dreaming/verify/YYYY-MM-DD.md`):
+```markdown
+# Verification Report - YYYY-MM-DD
+
+## Official Dream Status
+- Entries promoted: X
+- Top entry: X (score X)
+- Disputed entries: X
+
+## Conflict Log (⚠️)
+| Entry | Official Dream | Refined Verify | Difference |
+|---|---|---|---|
+| ... | ... | ... | ... |
+
+## Supplement Suggestions
+- Additional promotions: X (missed by Official Dream)
+- Needs user confirmation: X
+
+## Verification Conclusion
+- Consistency score: X/10
+- Memory reliability: ✅ Reliable / ⚠️ Uncertain
 ```
-memory/project/task-A.md         │
-memory/project/task-B.md         │
-memory/project/task-C.md         │  ← Project complete, 3+ related
-    ↓ ── Dream detects pattern ──┤
-knowledge/project-A-postmortem.md  │  ← Sublimated: detailed lessons
-    ↓                             │
-MEMORY.md index updated           │  ← Points to knowledge document
-
-Original memories PRESERVED (first-hand records) + knowledge/ (detailed version)
-```
-
-### Sublimation Rules
-- **Always preserve original memories** (they are first-hand records)
-- Create the knowledge document in `knowledge/`
-- Update MEMORY.md to point to the knowledge document
-- Log the sublimation (when and why)
-- After sublimation, update the **knowledge document** going forward (not the individual memories)
 
 ---
 
-## Dream Consolidation (Periodic, Automated)
-
-Triggered daily via cron. Acts as the **Working → Long-term promotion + Sublimation detection gateway**.
-
-### Phases
-1. **Orient** — browse existing memory files and index
-2. **Gather** — scan working memory (daily logs) for new signal
-3. **Consolidate** — promote to classified long-term (4 types), merge, deduplicate
-4. **Prune** — remove outdated entries, update index, let daily logs decay naturally
-5. **★ Sublimate** — detect maturation patterns and promote memory → knowledge
-
-### Rules
-- Merge new signal into existing files, not near-duplicates
-- Relative dates → absolute dates
-- Delete contradicted facts
-- Keep MEMORY.md under 5KB
-- Remove stale pointers
-- Shorten overly long index entries (<150 chars each)
-
----
-
-## Session Lifecycle (Atkinson-Shiffrin in Practice)
+## Session Lifecycle
 
 ### Session Start
 ```
@@ -317,12 +266,22 @@ workspace/
 ├── todos.md               # task tracking
 ├── HEARTBEAT.md           # daily reminders
 ├── memory/
-│   ├── memory-types.md    # this file
+│   ├── memory-types.md    # this file (or link to SKILL.md)
 │   ├── user/              # long-term user memories
 │   ├── feedback/          # long-term feedback
 │   ├── project/           # long-term project memories
 │   ├── reference/         # long-term references
-│   └── 2026-XX-XX.md     # working memory (daily logs)
+│   ├── palace/            # Memory Palace views
+│   │   ├── timeline.md
+│   │   ├── projects.md
+│   │   ├── technology.md
+│   │   └── custom.md
+│   ├── dreaming/
+│   │   ├── deep/          # Deep phase reports
+│   │   ├── light/          # Light phase output
+│   │   ├── rem/           # REM reflections
+│   │   └── verify/        # Verification reports (v4.12)
+│   └── YYYY-MM-DD.md     # working memory (daily logs)
 └── knowledge/             # knowledge layer (detailed content)
 ```
 
@@ -357,7 +316,38 @@ workspace/
 - Claude Code `memoryTypes.ts` — 4-type taxonomy
 - Claude Code `extractMemories.ts` — auto-extraction system
 - Claude Code `autoDream.ts` — background consolidation system
+- OpenClaw `dreaming.md` — Dreaming experimental documentation
 
 ---
 
-*Version: v3.2 | Updated: 2026-04-07 | Merges Atkinson-Shiffrin temporal layering with Claude Code 4-type taxonomy + Memory Sublimation System*
+## OpenClaw Commands
+
+```bash
+# Check Active Memory status
+openclaw plugins list | grep active-memory
+
+# Check Memory Palace status
+openclaw memory palace status
+
+# Test Active Memory
+openclaw memory test active
+
+# Manually trigger Dream Consolidation
+openclaw memory dream
+```
+
+---
+
+## Changelog
+
+| Version | Changes |
+|---|---|
+| v4.12 | Dual-Layer Dream Verification: Official Dream (12:30) + Refined Verify (13:00) cross-checking. Verification reports in memory/dreaming/verify/. Hallucination and drift prevention. |
+| v4.11 | Full integration with OpenClaw 4.11 ecosystem, Active Memory + Memory Palace + Dream Consolidation |
+| v3.2 | Memory sublimation system, 5-phase consolidation |
+| v2.2 | Memory-Knowledge layering + Atkinson-Shiffrin integration |
+| v1.0 | Initial release — Atkinson-Shiffrin three-stage model |
+
+---
+
+*Version: v4.12 | Updated: 2026-04-15 | Dual-Layer Dream Verification prevents hallucination and memory drift*

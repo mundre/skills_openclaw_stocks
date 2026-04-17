@@ -3,11 +3,16 @@
   "slug": "memory-never-forget",
   "displayName": "🧠 Memory  Never Forget 🧠",
   "latest": {
-    "version": "3.2.1",
-    "publishedAt": 1775552626240,
-    "commit": "https://github.com/openclaw/skills/commit/68a7f689e5318c5a7061b1c7b17f42b457f4e7a2"
+    "version": "4.1.2",
+    "publishedAt": 1776238944955,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.2.1",
+      "publishedAt": 1775552626240,
+      "commit": "https://github.com/openclaw/skills/commit/68a7f689e5318c5a7061b1c7b17f42b457f4e7a2"
+    },
     {
       "version": "3.1.1",
       "publishedAt": 1775205160175,
