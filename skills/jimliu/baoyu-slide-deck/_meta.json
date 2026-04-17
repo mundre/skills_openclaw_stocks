@@ -3,11 +3,16 @@
   "slug": "baoyu-slide-deck",
   "displayName": "Baoyu Slide Deck",
   "latest": {
-    "version": "1.60.1",
-    "publishedAt": 1775752180164,
-    "commit": "https://github.com/openclaw/skills/commit/3fb3a5dc303ad7938cc14f808cb1532a30c56010"
+    "version": "1.103.1",
+    "publishedAt": 1776097070696,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.60.1",
+      "publishedAt": 1775752180164,
+      "commit": "https://github.com/openclaw/skills/commit/3fb3a5dc303ad7938cc14f808cb1532a30c56010"
+    },
     {
       "version": "1.60.0",
       "publishedAt": 1773287487555,
