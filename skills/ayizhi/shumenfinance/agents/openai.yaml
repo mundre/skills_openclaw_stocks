@@ -1,4 +1,0 @@
-interface:
-  display_name: "枢门财经"
-  short_description: "A股个股、板块、异动、财务与新闻"
-  default_prompt: "Use $shumen_finance for mainland China A-share stock snapshot, finance analysis, unusual movement analysis, sector analysis, or market news lookup."
