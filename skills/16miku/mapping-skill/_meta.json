@@ -1,13 +1,18 @@
 {
   "owner": "16miku",
   "slug": "mapping-skill",
-  "displayName": "奇绩Mapping爬论文与人才触达工作流",
+  "displayName": "爬论文与人才触达工作流",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1773887670677,
-    "commit": "https://github.com/openclaw/skills/commit/cfb6d2f4456382d06af2cb4d0c88d38933f2eeb4"
+    "version": "2.0.1",
+    "publishedAt": 1776032966234,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1773887670677,
+      "commit": "https://github.com/openclaw/skills/commit/cfb6d2f4456382d06af2cb4d0c88d38933f2eeb4"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772638048642,
