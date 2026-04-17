@@ -3,11 +3,16 @@
   "slug": "baoyu-comic",
   "displayName": "Baoyu Comic",
   "latest": {
-    "version": "1.91.0",
-    "publishedAt": 1775543599126,
-    "commit": "https://github.com/openclaw/skills/commit/9039ba2dd81e5b2ebefd3b6eab73f248ba0b1d6c"
+    "version": "1.103.1",
+    "publishedAt": 1776096846732,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.91.0",
+      "publishedAt": 1775543599126,
+      "commit": "https://github.com/openclaw/skills/commit/9039ba2dd81e5b2ebefd3b6eab73f248ba0b1d6c"
+    },
     {
       "version": "1.60.1",
       "publishedAt": 1774474265583,
