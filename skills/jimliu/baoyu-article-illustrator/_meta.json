@@ -3,11 +3,16 @@
   "slug": "baoyu-article-illustrator",
   "displayName": "Baoyu Article Illustrator",
   "latest": {
-    "version": "1.60.3",
-    "publishedAt": 1775751953849,
-    "commit": "https://github.com/openclaw/skills/commit/91156dc15dbafd95244c00c3cc43b7a16ace8c5e"
+    "version": "1.103.1",
+    "publishedAt": 1776096833664,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.60.3",
+      "publishedAt": 1775751953849,
+      "commit": "https://github.com/openclaw/skills/commit/91156dc15dbafd95244c00c3cc43b7a16ace8c5e"
+    },
     {
       "version": "1.60.2",
       "publishedAt": 1774474253358,
