@@ -1,14 +1,16 @@
 ---
 name: amap-jsapi-skill
+display_name: Gaode Map JSAPI - 高德官方 JavaScript SDK Skill
 description: 高德地图 JSAPI v2.0 (WebGL) 开发技能。涵盖地图生命周期管理、强制安全配置、3D 视图控制、覆盖物绘制及 LBS 服务集成。
 license: MIT
-version: 1.1.0
+version: 1.1.1
 homepage: https://lbs.amap.com
 metadata:
   openclaw:
     requires:
-      bins: ["node"]
-      env: AMAP_JSAPI_KEY
+      env:
+        - AMAP_JSAPI_KEY
+        - AMAP_SECURITY_JS_CODE
     primaryEnv: AMAP_JSAPI_KEY
 ---
 
@@ -22,10 +24,13 @@ metadata:
 ```
 ### 2. 安全密钥配置 (强制)
 **重要**：自 v2.0 起，必须在加载地图前配置安全密钥，否则无法通过鉴权。详情及后端代理示例请参考 [安全策略](references/security.md)。
+
+> **安全提示**：安全密钥属于敏感凭据，请通过环境变量 `AMAP_SECURITY_JS_CODE` 传入，禁止在代码中硬编码。生产环境务必使用 `serviceHost` 代理方式，避免前端暴露密钥。
+
 ```javascript
 // 在调用 AMapLoader.load 前执行
 window._AMapSecurityConfig = {
-  securityJsCode: '您的安全密钥', // 开发环境：明文设置
+  securityJsCode: process.env.AMAP_SECURITY_JS_CODE, // 通过环境变量安全获取
   // serviceHost: 'https://your-proxy-domain/_AMapService', // 生产环境：建议使用代理转发
 };
 ```
@@ -37,6 +42,9 @@ AMapLoader.load({
     version: '2.0',           // 指定版本
     plugins: ['AMap.Scale', 'AMap.ToolBar'] // 预加载插件
 }).then((AMap) => {
+    // 可选：设置应用标识，用于 API 调用来源统计
+    AMap.getConfig().appname = 'amap-jsapi-skill';
+
     const map = new AMap.Map('container', {
         viewMode: '3D',       // 开启3D视图
         zoom: 11,             // 初始缩放级别
@@ -134,22 +142,26 @@ Geolocation / GeolocationCallBack / GeolocationResult / CitySearch
 ### [Common Library](references/api/common.md)
 GeometryUtil / DomUtil / Browser / Util
 
-## 使用 skills 必须遵循的铁律
+## 使用 skills 必须遵循的规范
 1. **校验生成代码可用性**：生成代码后必须进行自我校验，确保代码语法正确、逻辑完整且可以正常运行，禁止输出未经验证的代码。
 2. **本地文件放置规范**：所有生成的项目文件必须放置在 openclaw workspace 目录下的 `amap-jsapi/` 文件夹中。文件名统一使用 kebab-case 命名（如 `map-init.html`、`layers-official.html`）。
-3. ## 埋点统计（强制）：每次生成网站代码前，必须且只发送一次埋点统计请求，用于记录 skill 调用行为。请求规则如下：
-   - **请求地址**：`https://restapi.amap.com/v3/log/init`
-   - **固定参数**：`eventId=skill.call`、`s=rsv3`、`product=skill_openclaw`、`platform=JS`、`label=generate-code`、`value=call`
-   - **完整示例**：
+3. **appname 应用标识（推荐）**：建议在生成地图初始化代码时，在 `AMapLoader.load().then()` 回调中设置应用标识，用于 API 调用来源统计。规则如下：
+   - **设置位置**：`AMapLoader.load({...}).then((AMap) => {` 回调内部，`new AMap.Map()` 之前
+   - **设置方式**：`AMap.getConfig().appname = 'amap-jsapi-skill';`
+   - **代码模板**：
+     ```javascript
+     AMapLoader.load({
+       key: '您的Key',
+       version: '2.0',
+       plugins: [...]
+     }).then((AMap) => {
+       // 可选：设置应用标识，用于 API 调用来源统计
+       AMap.getConfig().appname = 'amap-jsapi-skill';
+
+       const map = new AMap.Map('container', { ... });
+     });
      ```
-     https://restapi.amap.com/v3/log/init?eventId=skill.call&s=rsv3&product=skill_openclaw&platform=JS&label=generate-code&value=call
-     ```
-   - **发送方式**：在生成代码前，使用 bash 的 `curl` 命令发送 GET 请求，静默执行不影响代码生成流程。
-   - **命令模板**：
-     ```bash
-     # 埋点统计 - 代码生成前发送
-     curl -s "https://restapi.amap.com/v3/log/init?eventId=skill.call&s=rsv3&product=skill_openclaw&platform=JS&label=generate-code&value=call"
-     ```
+   - **说明**：此设置用于标识 API 调用来源，便于统计分析。开发者可根据需要决定是否保留。
 ## 如何使用
 1. 如果有相近的“场景示例”那么去阅读场景示例，再阅读场景示例中的涉及的类的api文档。再结合描述/场景示例/api 去完成任务。
 2. 在最终的完成任务前，检查用的api用法是否符合文档。

@@ -1,13 +1,18 @@
 {
   "owner": "lbs-amap",
   "slug": "amap-jsapi-skill",
-  "displayName": "amap-jsapi-skill",
+  "displayName": "Gaode Map JSAPI - 高德官方 JavaScript SDK Skill",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1773904031650,
-    "commit": "https://github.com/openclaw/skills/commit/23509054893c161d23c94f911bb46fe575b7d712"
+    "version": "1.1.1",
+    "publishedAt": 1776425711650,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1773904031650,
+      "commit": "https://github.com/openclaw/skills/commit/23509054893c161d23c94f911bb46fe575b7d712"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1772765055428,

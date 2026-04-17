@@ -11,14 +11,16 @@
 
 ## 配置方式
 
-### 方式一：明文设置（仅限开发环境）
+### 方式一：通过环境变量设置（开发环境推荐）
 
-在开发阶段，为方便调试，可以直接在前端代码中设置 `securityJsCode`。
+在开发阶段，建议通过环境变量 `AMAP_SECURITY_JS_CODE` 传入安全密钥，避免在代码中硬编码敏感信息。
 **注意：请确保在调用 `AMapLoader.load` 之前设置。**
+
+> **安全警告**：禁止在代码中硬编码安全密钥，也不要将密钥提交到版本控制系统。请始终通过环境变量或后端代理的方式安全传递密钥。
 
 ```javascript
 window._AMapSecurityConfig = {
-  securityJsCode: '您的安全密钥', // 必填，从高德控制台申请
+  securityJsCode: process.env.AMAP_SECURITY_JS_CODE, // 通过环境变量安全获取
 };
 ```
 
