@@ -25,7 +25,7 @@ cd /usr/local/bin && sha256sum -c /tmp/pastewatch-cli.sha256
 chmod +x /usr/local/bin/pastewatch-cli
 ```
 
-Verify: `pastewatch-cli version` (expect 0.23.0+)
+Verify: `pastewatch-cli version` (expect 0.24.1+)
 
 ## MCP Server Setup
 
@@ -63,12 +63,19 @@ pastewatch-cli setup cursor         # MCP + advisory
 
 Catches secrets from sub-agents that bypass hooks and MCP. Sits between your agent and the LLM provider, scanning all outbound requests.
 
+**v0.24.0+: Alert injection** — when secrets are redacted, a `[PASTEWATCH]` alert is prepended to the API response so the agent gets immediate feedback. Disable with `--no-alert`.
+
 ```bash
 pastewatch-cli proxy                    # scans all outbound API requests
 pastewatch-cli proxy --port 9998 --upstream https://api.anthropic.com
+pastewatch-cli proxy --port 9998 --upstream https://api.anthropic.com --no-alert  # silent redaction
 pastewatch-cli proxy --forward-proxy http://corporate:8080  # chain with corporate proxy
 pastewatch-cli proxy --severity medium --audit-log /var/log/pastewatch-proxy.log
 ```
+
+### Detected Secret Types (36)
+
+Includes: AWS, Anthropic, OpenAI, Groq, Perplexity, Hugging Face, **Workledger (`wl_sk_`)**, Oracul (`vc_*_`), npm, PyPI, RubyGems, GitLab, Telegram Bot, SendGrid, Shopify, DigitalOcean, Slack/Discord webhooks, Azure connections, GCP service accounts, SSH keys, JWTs, JDBC URLs, XML credentials, DB connections, emails, IPs, cards, and more.
 
 ### Proxy + Chainwatch Chain (recommended for OpenClaw)
 
