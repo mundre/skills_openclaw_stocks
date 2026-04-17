@@ -1,27 +1,31 @@
 ---
 name: vmware-monitor
 description: >
-  VMware vCenter/ESXi read-only monitoring skill. Code-level enforced safety —
-  zero destructive operations in the codebase. Query inventory (VMs, hosts,
-  datastores, clusters), check health/alarms/events, view VM details and snapshots.
-  Use when user asks to "list VMs", "check alarms", "show host status",
-  "get VM info", "what events happened", "monitor vSphere", or needs
-  read-only VMware/vSphere/ESXi information. For VM operations use vmware-aiops,
-  for storage use vmware-storage, for Kubernetes use vmware-vks.
+  Use this skill for safe, risk-free queries of VMware infrastructure — code-level enforced safety means no destructive operations exist in the codebase.
+  Directly handles: list VMs/hosts/datastores/clusters, check active alarms with remediation hints, view recent events, get VM details (CPU/memory/disks/NICs/snapshots).
+  Always use vmware-monitor when the user asks to "list VMs", "check vSphere alarms", "show host status", "get VM details", "what vSphere events happened", or needs read-only VMware information before making changes.
+  Do NOT use for any write operations — this skill is code-level read-only and cannot modify, create, or delete any resource.
+  For VM modifications use vmware-aiops, for networking use vmware-nsx, for metrics/capacity use vmware-aria. For load balancing/AVI/AKO use vmware-avi.
 installer:
   kind: uv
   package: vmware-monitor
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_MONITOR_CONFIG"],"bins":["vmware-monitor"],"config":["~/.vmware-monitor/config.yaml"]},"primaryEnv":"VMWARE_MONITOR_CONFIG","homepage":"https://github.com/zw008/VMware-Monitor","emoji":"📊","os":["macos","linux"]}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_MONITOR_CONFIG"],"bins":["vmware-monitor"],"config":["~/.vmware-monitor/config.yaml","~/.vmware-monitor/.env"]},"optional":{"env":["VMWARE_TARGET_PASSWORD","SLACK_WEBHOOK_URL","DISCORD_WEBHOOK_URL"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_MONITOR_CONFIG","homepage":"https://github.com/zw008/VMware-Monitor","emoji":"📊","os":["macos","linux"]}}
+compatibility: >
+  vmware-policy auto-installed as Python dependency (provides @vmware_tool decorator and audit logging). All operations audited to ~/.vmware/audit.db.
+  Credentials: Each vCenter/ESXi target requires a per-target password env var in ~/.vmware-monitor/.env following the pattern VMWARE_<TARGET_NAME_UPPER>_PASSWORD (e.g., target "vcenter-prod" → VMWARE_VCENTER_PROD_PASSWORD). SLACK_WEBHOOK_URL and DISCORD_WEBHOOK_URL are optional — disabled by default, user-configured only, used solely by the opt-in daemon scanner. Daemon: the background scanner (vmware-monitor daemon start) is user-initiated only, never auto-started. Webhook payloads contain only aggregated alert metadata (alarm counts, event types) — no credentials, IPs, or PII.
 ---
 
 # VMware Monitor (Read-Only)
 
+> **Disclaimer**: This is a community-maintained open-source project and is **not affiliated with, endorsed by, or sponsored by VMware, Inc. or Broadcom Inc.** "VMware" and "vSphere" are trademarks of Broadcom. Source code is publicly auditable at [github.com/zw008/VMware-Monitor](https://github.com/zw008/VMware-Monitor) under the MIT license.
+
 Read-only VMware vCenter/ESXi monitoring — 8 MCP tools, zero destructive code.
 
 > **Code-level safety**: This skill contains NO power, create, delete, snapshot, or modify operations. Not disabled — they don't exist in the codebase.
-> **Companion skills**: [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-storage](https://github.com/zw008/VMware-Storage) (iSCSI/vSAN), [vmware-vks](https://github.com/zw008/VMware-VKS) (Tanzu Kubernetes), [vmware-nsx](https://github.com/zw008/VMware-NSX) (NSX networking), [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aria](https://github.com/zw008/VMware-Aria) (metrics/alerts/capacity).
+> **Companion skills**: [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-storage](https://github.com/zw008/VMware-Storage) (iSCSI/vSAN), [vmware-vks](https://github.com/zw008/VMware-VKS) (Tanzu Kubernetes), [vmware-nsx](https://github.com/zw008/VMware-NSX) (NSX networking), [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aria](https://github.com/zw008/VMware-Aria) (metrics/alerts/capacity), [vmware-avi](https://github.com/zw008/VMware-AVI) (AVI/ALB/AKO).
+> | [vmware-pilot](../vmware-pilot/SKILL.md) (workflow orchestration) | [vmware-policy](../vmware-policy/SKILL.md) (audit/policy)
 
 ## What This Skill Does
 
@@ -47,10 +51,29 @@ vmware-monitor doctor
 - Set up scheduled monitoring with webhook alerts
 - Any read-only VMware query where safety is paramount
 
+### Alarm/Event Output: `suggested_actions` Field
+
+`get_alarms` and `get_events` results include a `suggested_actions` list.
+Each item is a ready-to-use hint pointing to the correct companion skill and tool:
+
+```json
+{
+  "alarm_name": "VM CPU Ready High",
+  "entity_name": "prod-db-01",
+  "suggested_actions": [
+    "vmware-aiops: acknowledge_vcenter_alarm(entity_name='prod-db-01', alarm_name='VM CPU Ready High')",
+    "vmware-aiops: reset_vcenter_alarm(entity_name='prod-db-01', alarm_name='VM CPU Ready High')"
+  ]
+}
+```
+
+AI agents (especially smaller local models) can read these hints directly to determine which skill and tool to call next, without needing to reason about skill routing themselves.
+
 **Use companion skills for**:
 - Power on/off, deploy, clone, migrate --> `vmware-aiops`
 - iSCSI, vSAN, datastore management --> `vmware-storage`
 - Tanzu Kubernetes clusters --> `vmware-vks`
+- Load balancing, AVI/ALB, AKO, Ingress --> `vmware-avi`
 
 ## Related Skills — Skill Routing
 
@@ -63,6 +86,9 @@ vmware-monitor doctor
 | NSX networking: segments, gateways, NAT | **vmware-nsx** |
 | NSX security: DFW rules, security groups | **vmware-nsx-security** |
 | Aria Ops: metrics, alerts, capacity planning | **vmware-aria** |
+| Multi-step workflows with approval | **vmware-pilot** |
+| Load balancer, AVI, ALB, AKO, Ingress | **vmware-avi** (`uv tool install vmware-avi`) |
+| Audit log query | **vmware-policy** (`vmware-audit` CLI) |
 
 ## Common Workflows
 
@@ -70,18 +96,28 @@ vmware-monitor doctor
 1. Check alarms --> `vmware-monitor health alarms --target prod-vcenter`
 2. Review recent events --> `vmware-monitor health events --hours 24 --severity warning`
 3. List hosts --> `vmware-monitor inventory hosts` --> check connection state and memory usage
+4. **If connection fails** --> run `vmware-monitor doctor` to diagnose config/network issues
 
 ### Investigate a Specific VM
 1. Find the VM --> `vmware-monitor inventory vms --power-state poweredOff`
 2. Get details --> `vmware-monitor vm info problem-vm`
 3. Check related events --> `vmware-monitor health events --hours 48`
+4. **If VM not found** --> verify VM name with `vmware-monitor inventory vms --limit 100` or check target with `--target <other-vcenter>`
 
 ### Set Up Continuous Monitoring
 1. Configure webhook in `~/.vmware-monitor/config.yaml`
 2. Start daemon --> `vmware-monitor daemon start`
 3. Daemon scans every 15 min, sends alerts to Slack/Discord
 
-## MCP Tools (8)
+## Usage Mode
+
+| Scenario | Recommended | Why |
+|----------|:-----------:|-----|
+| Local/small models (Ollama, Qwen) | **CLI** | ~2K tokens vs ~8K for MCP |
+| Cloud models (Claude, GPT-4o) | Either | MCP gives structured JSON I/O |
+| Automated pipelines | **MCP** | Type-safe parameters, structured output |
+
+## MCP Tools (8 — all read-only)
 
 | Tool | Description |
 |------|------------|
@@ -89,8 +125,8 @@ vmware-monitor doctor
 | `list_esxi_hosts` | ESXi hosts with CPU, memory, version, uptime |
 | `list_all_datastores` | Datastores with capacity, free space, type |
 | `list_all_clusters` | Clusters with host count, DRS/HA status |
-| `get_alarms` | All active/triggered alarms |
-| `get_events` | Recent events filtered by severity and time |
+| `get_alarms` | All active/triggered alarms — includes `suggested_actions` remediation hints |
+| `get_events` | Recent events filtered by severity and time — includes `suggested_actions` hints |
 | `vm_info` | Detailed VM info (CPU, memory, disks, NICs, snapshots) |
 
 All tools are **read-only**. No tool can modify, create, or delete any resource.
@@ -140,7 +176,20 @@ vmware-monitor init
 chmod 600 ~/.vmware-monitor/.env  # if using webhooks
 ```
 
+> All tools are automatically audited via vmware-policy. Audit logs: `vmware-audit log --last 20`
+
 > Full setup guide, security details, and AI platform compatibility: see `references/setup-guide.md`
+
+## Audit & Safety
+
+All operations are automatically audited via vmware-policy (`@vmware_tool` decorator):
+- Every tool call logged to `~/.vmware/audit.db` (SQLite, framework-agnostic)
+- Policy rules enforced via `~/.vmware/rules.yaml` (deny rules, maintenance windows, risk levels)
+- Risk classification: each tool tagged as low/medium/high/critical
+- View recent operations: `vmware-audit log --last 20`
+- View denied operations: `vmware-audit log --status denied`
+
+vmware-policy is automatically installed as a dependency — no manual setup needed.
 
 ## License
 
