@@ -3,11 +3,16 @@
   "slug": "here-now",
   "displayName": "here.now",
   "latest": {
-    "version": "1.12.1",
-    "publishedAt": 1775531725532,
-    "commit": "https://github.com/openclaw/skills/commit/60b673ee8e9cb415af6dc8edb0e0effb4cf4e891"
+    "version": "1.13.0",
+    "publishedAt": 1776316465359,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.12.1",
+      "publishedAt": 1775531725532,
+      "commit": "https://github.com/openclaw/skills/commit/60b673ee8e9cb415af6dc8edb0e0effb4cf4e891"
+    },
     {
       "version": "1.11.0",
       "publishedAt": 1774987371145,

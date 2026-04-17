@@ -12,7 +12,7 @@ description: >
 
 # here.now
 
-**Skill version: 1.12.1**
+**Skill version: 1.13.0**
 
 Create a live URL from any file or folder. Static hosting with optional proxy routes for calling external APIs server-side.
 
@@ -424,16 +424,12 @@ curl -sS https://here.now/api/v1/domains \
   -d '{"domain": "example.com"}'
 ```
 
-The response includes `is_apex`, DNS instructions, and (for apex domains) an `ownership_verification` object with TXT record details.
+The response includes `is_apex` and `dns_instructions` (each with `type`, `host`, and `value` fields) with the DNS records to add. For apex domains, we automatically set up both `example.com` and `www.example.com`.
 
 **DNS setup by domain type:**
 
-- **Subdomains** (e.g. `docs.example.com`): Add a **CNAME** record pointing to `fallback.here.now`.
-- **Apex domains** (e.g. `example.com`):
-  1. Add an **ALIAS** record pointing to `fallback.here.now`. (Your DNS provider may call this ANAME or CNAME flattening.)
-  2. Add a **TXT** record using the `name` and `value` from the `ownership_verification` field in the response.
-
-**Tip:** Not all DNS providers support ALIAS records for apex domains. If yours doesn't, use `www.example.com` with a CNAME instead, then set up a redirect from the apex to `www` at your registrar.
+- **Subdomains** (e.g. `docs.example.com`): Add a **CNAME** record. The `host` field shows the subdomain part (e.g. `docs`), and the `value` is `fallback.here.now`.
+- **Apex domains** (e.g. `example.com`): Add the records from `dns_instructions` at the DNS provider. The `host` field uses `@` to mean the root domain (some providers use a blank field instead). Typically this is two **A** records with `host: "@"`, plus a **CNAME** with `host: "www"` pointing to `fallback.here.now`. Visitors to `www.example.com` are automatically redirected to `example.com`.
 
 SSL is provisioned automatically once DNS is verified.
 
@@ -444,7 +440,7 @@ curl -sS https://here.now/api/v1/domains/example.com \
   -H "Authorization: Bearer {API_KEY}"
 ```
 
-Status is `pending` until DNS is verified and SSL is active, then becomes `active`. For apex domains, the response includes `ownership_verification` with the TXT record details and may include `verification_errors` if there are issues.
+Status is `pending` until DNS is verified and SSL is active, then becomes `active`.
 
 ### List custom domains
 
