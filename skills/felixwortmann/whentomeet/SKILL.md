@@ -1,200 +1,302 @@
 ---
 name: whentomeet
-description: Create, list, fetch, and delete WhenToMeet planning events via the authenticated tRPC v1 API.
-compatibility: Requires Python 3, internet access, and WHENTOMEET_API_KEY in environment.
-metadata: {"openclaw":{"emoji":"📅","primaryEnv":"WHENTOMEET_API_KEY","requires":{"env":["WHENTOMEET_API_KEY"]}}}
+description: WhenToMeet group scheduling via public REST API.
+metadata: {"openclaw":{"emoji":"📅","requires":["api-key"]}}
 ---
 
-# WhenToMeet Skill
+# WhenToMeet
 
-Use this skill for authenticated management of planning events.
-More info about whentomeet.io: https://whentomeet.io/llms.txt
+**Base URL:** `https://whentomeet.io/api/v1/`
+**OpenAPI Spec:** `https://whentomeet.io/api/openapi.json`
+**Authentication:** `Authorization: Bearer sk_YOUR_API_KEY_HERE`
 
-## Activation criteria
+## Request/Response Format
 
-Use when user asks to:
+**Request Format:**
+- **GET requests:** Query parameters (e.g., `?limit=10&offset=0`)
+- **POST requests:** Plain JSON body (e.g., `{"title": "My Event"}`)
+- **No wrapper objects** - send plain JSON directly
 
-- Create an event with candidate time slots
-- List their events
-- Fetch details for one event
-- Delete an event
+**Response Format:**
+- All responses return plain JSON with ISO 8601 date strings
+- No envelope or wrapping
 
-Do not use if the request requires undocumented endpoints/fields.
+**Date Format:** ISO 8601 strings (e.g., `"2026-03-14T14:00:00Z"`)
 
-## Required context
+## Data Model
 
-- Env var: `WHENTOMEET_API_KEY`
-- Base URL: `https://whentomeet.io/api/trpc`
-- Auth: `Authorization: Bearer $WHENTOMEET_API_KEY`
-- tRPC payload envelope: `{"json": {...}}`
-- For GET, pass URL-encoded `input=<encoded {"json": ...}>`
+### Event Object
+- `id`: UUID
+- `title`: string (1-255 chars)
+- `description`: string (optional, max 4096 chars)
+- `status`: "PLANNING" | "FINALIZED"
+- `publicUrl`: Full URL to event page
+- `organizerId`: UUID
+- `createdAt`: ISO 8601 timestamp
+- `modificationPolicy`: "EVERYONE" | "ORGANIZER"
+- `outputCalendarId`: UUID (optional, for finalizing events to calendar)
+- `slotCount`: number of time slots
 
-## Available scripts
+### Time Slot Object
+- `id`: UUID
+- `eventId`: UUID
+- `startTime`: ISO 8601 timestamp
+- `endTime`: ISO 8601 timestamp
+- `timezone`: IANA timezone identifier (optional, e.g., "Europe/Berlin")
+- `availabilities`: array of participant responses
 
-- `scripts/w2m_events.py` — non-interactive CLI for `create`, `list`, `get`, `delete`, and `encode-input`.
+## Create Event
 
-## Supported procedures (v1)
-
-- `v1.event.create` (POST)
-- `v1.event.list` (GET)
-- `v1.event.get` (GET)
-- `v1.event.delete` (POST)
-
-## Core data model
-
-Event fields:
-
-- `id` (UUID)
-- `title` (string)
-- `description` (optional string)
-- `status` (`PLANNING` or `FINALIZED`)
-- `publicUrl` (URL)
-
-Slot fields:
-
-- `startTime` (ISO-8601)
-- `endTime` (ISO-8601)
-
-## Preconditions
-
-Before calling API:
-
-1. Ensure API key exists.
-2. Ensure each slot has valid ISO timestamps and `endTime > startTime`.
-3. For delete, require explicit user confirmation with exact `eventId`.
-
-## Preferred workflow (script-first)
-
-Run commands from the skill root.
-
-List events:
+**POST** `/api/v1/events`
 
 ```bash
-python3 scripts/w2m_events.py list
-```
-
-Create event:
-
-```bash
-python3 scripts/w2m_events.py create \
-  --title "Team Sync" \
-  --description "Optional description" \
-  --slots-json '[{"startTime":"2026-03-02T12:00:00.000Z","endTime":"2026-03-02T13:00:00.000Z"}]' \
-  --modification-policy EVERYONE
-```
-
-Get event:
-
-```bash
-python3 scripts/w2m_events.py get --event-id "uuid"
-```
-
-Delete event (requires explicit confirmation flag):
-
-```bash
-python3 scripts/w2m_events.py delete --event-id "uuid" --confirm
-```
-
-Encode GET input payload:
-
-```bash
-python3 scripts/w2m_events.py encode-input --json '{"eventId":"uuid"}'
-```
-
-## HTTP fallback examples
-
-Use only when script execution is unavailable.
-
-Create event (`v1.event.create`):
-
-```bash
-curl -sS -X POST "https://whentomeet.io/api/trpc/v1.event.create" \
-  -H "Authorization: Bearer $WHENTOMEET_API_KEY" \
+curl -X POST "https://whentomeet.io/api/v1/events" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
-  -d '{"json": {
+  -d '{
     "title": "My Event",
     "description": "Optional description",
     "slots": [
-      {"startTime": "2026-03-02T12:00:00.000Z", "endTime": "2026-03-02T14:00:00.000Z"},
-      {"startTime": "2026-03-03T12:00:00.000Z", "endTime": "2026-03-03T14:00:00.000Z"}
+      {"startTime": "2026-03-14T14:00:00Z", "endTime": "2026-03-14T16:00:00Z"},
+      {"startTime": "2026-03-15T14:00:00Z", "endTime": "2026-03-15T16:00:00Z"}
     ],
     "modificationPolicy": "EVERYONE"
-  }}'
+  }'
 ```
 
-List events (`v1.event.list`):
+**Request Fields:**
 
-```bash
-curl -sS -X GET "https://whentomeet.io/api/trpc/v1.event.list?input=%7B%22json%22%3A%7B%7D%7D" \
-  -H "Authorization: Bearer $WHENTOMEET_API_KEY"
+| Field              | Type   | Required | Notes                                  |
+|--------------------|--------|----------|----------------------------------------|
+| title              | string | yes      | 1-255 chars                            |
+| description        | string | no       | max 4096 chars                         |
+| slots              | array  | yes      | min 1 slot; each has startTime, endTime (ISO 8601), optional timezone |
+| modificationPolicy  | string | no       | "EVERYONE" or "ORGANIZER" (default)    |
+| outputCalendarId   | string | no       | UUID of calendar to create final event in |
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "title": "My Event",
+  "description": "Optional description",
+  "status": "PLANNING",
+  "publicUrl": "https://whentomeet.io/events/uuid",
+  "slotCount": 2,
+  "createdAt": "2026-03-14T14:00:00Z"
+}
 ```
 
-Get event (`v1.event.get`):
+## List Events
+
+**GET** `/api/v1/events`
 
 ```bash
-curl -sS -X GET "https://whentomeet.io/api/trpc/v1.event.get?input=%7B%22json%22%3A%7B%22eventId%22%3A%22uuid%22%7D%7D" \
-  -H "Authorization: Bearer $WHENTOMEET_API_KEY"
+curl -X GET "https://whentomeet.io/api/v1/events?limit=10&offset=0&status=PLANNING" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
 ```
 
-Delete event (`v1.event.delete`):
+**Query Parameters:**
+
+| Field  | Type   | Required | Notes                          |
+|--------|--------|----------|--------------------------------|
+| limit  | number | no       | 1-100, default 10             |
+| offset | number | no       | default 0                      |
+| status | string | no       | "PLANNING" or "FINALIZED"      |
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "title": "My Event",
+    "description": "...",
+    "status": "PLANNING",
+    "slotCount": 2,
+    "publicUrl": "https://whentomeet.io/events/uuid",
+    "createdAt": "2026-03-14T14:00:00Z"
+  }
+]
+```
+
+## Get Event Details
+
+**GET** `/api/v1/events/{eventId}`
 
 ```bash
-curl -sS -X POST "https://whentomeet.io/api/trpc/v1.event.delete" \
-  -H "Authorization: Bearer $WHENTOMEET_API_KEY" \
+curl -X GET "https://whentomeet.io/api/v1/events/{eventId}" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
+```
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "title": "My Event",
+  "description": "...",
+  "status": "PLANNING",
+  "organizerId": "uuid",
+  "createdAt": "2026-03-14T14:00:00Z",
+  "modificationPolicy": "EVERYONE",
+  "outputCalendarId": null,
+  "slots": [
+    {
+      "id": "uuid",
+      "eventId": "uuid",
+      "startTime": "2026-03-14T14:00:00Z",
+      "endTime": "2026-03-14T16:00:00Z",
+      "availabilities": [
+        {
+          "id": "uuid",
+          "slotId": "uuid",
+          "userId": null,
+          "displayName": "John Doe",
+          "status": "available",
+          "user": null
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Delete Event
+
+**DELETE** `/api/v1/events/{eventId}`
+
+```bash
+curl -X DELETE "https://whentomeet.io/api/v1/events/{eventId}" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
+```
+
+**Response:**
+```json
+{
+  "success": true
+}
+```
+
+## Other Endpoints
+
+### List Bookings
+
+**GET** `/api/v1/bookings`
+
+```bash
+curl -X GET "https://whentomeet.io/api/v1/bookings?limit=10&status=confirmed" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
+```
+
+**Query Parameters:**
+- `limit`: 1-100, default 10
+- `offset`: default 0
+- `status`: "confirmed" or "cancelled"
+
+### List Calendar Connections
+
+**GET** `/api/v1/calendar/connections`
+
+```bash
+curl -X GET "https://whentomeet.io/api/v1/calendar/connections" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
+```
+
+Lists all connected calendar accounts (Google, Microsoft, CalDAV, iCal).
+
+### Get Event Statistics
+
+**GET** `/api/v1/analytics/events`
+
+```bash
+curl -X GET "https://whentomeet.io/api/v1/analytics/events?dateFrom=2026-01-01T00:00:00Z&dateTo=2026-03-13T23:59:59Z" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
+```
+
+**Query Parameters:**
+- `dateFrom`: ISO 8601 start date (optional, defaults to 30 days ago)
+- `dateTo`: ISO 8601 end date (optional, defaults to now)
+
+**Response:**
+```json
+{
+  "totalEvents": 42,
+  "finalizedEvents": 28,
+  "dateRange": {
+    "from": "2026-01-01T00:00:00Z",
+    "to": "2026-03-13T23:59:59Z"
+  }
+}
+```
+
+## Error Codes
+
+| HTTP Status | Code               | Meaning                                             |
+|-------------|--------------------|-----------------------------------------------------|
+| 400         | BAD_REQUEST        | Invalid input (check zodError in response for field details) |
+| 401         | UNAUTHORIZED       | Missing or invalid API key                          |
+| 403         | FORBIDDEN          | Insufficient permissions or subscription tier         |
+| 404         | NOT_FOUND          | Resource not found or not owned by you              |
+| 429         | TOO_MANY_REQUESTS  | Rate limit exceeded                                 |
+| 500         | INTERNAL_SERVER_ERROR | Server error                                        |
+
+**Error Response Format:**
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Event not found or access denied"
+  }
+}
+```
+
+## Rate Limits
+
+| Tier           | Limit                     |
+|----------------|---------------------------|
+| Free           | 32 requests (lifetime total)|
+| Plus           | 1,000 requests per hour    |
+| Plus Lifetime  | 1,000 requests per hour    |
+
+Check response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+
+## Getting an API Key
+
+1. Sign up for a [Plus or Plus Lifetime subscription](https://whentomeet.io/pricing)
+2. Navigate to [API Keys settings](https://whentomeet.io/settings/api-keys)
+3. Click "Create API Key" and copy your key (shown only once)
+
+## Example: Complete Event Workflow
+
+```bash
+# 1. Create event
+EVENT_RESPONSE=$(curl -X POST "https://whentomeet.io/api/v1/events" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
-  -d '{"json": {"eventId": "uuid"}}'
+  -d '{
+    "title": "Team Meeting",
+    "description": "Weekly sync",
+    "slots": [
+      {"startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"},
+      {"startTime": "2026-03-14T14:00:00Z", "endTime": "2026-03-14T15:00:00Z"}
+    ],
+    "modificationPolicy": "EVERYONE"
+  }')
+
+# Extract event ID
+EVENT_ID=$(echo $EVENT_RESPONSE | jq -r '.id')
+PUBLIC_URL=$(echo $EVENT_RESPONSE | jq -r '.publicUrl')
+
+echo "Event created: $PUBLIC_URL"
+
+# 2. List events
+curl -X GET "https://whentomeet.io/api/v1/events" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
+
+# 3. Get event details with participant responses
+curl -X GET "https://whentomeet.io/api/v1/events/$EVENT_ID" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
+
+# 4. Delete event (cleanup)
+curl -X DELETE "https://whentomeet.io/api/v1/events/$EVENT_ID" \
+  -H "Authorization: Bearer sk_YOUR_API_KEY_HERE"
 ```
-
-GET input encoding helper:
-
-```bash
-INPUT=$(python3 - <<'PY'
-import json, urllib.parse
-payload = {"json": {"eventId": "uuid"}}
-print(urllib.parse.quote(json.dumps(payload, separators=(",", ":"))))
-PY
-)
-
-curl -sS "https://whentomeet.io/api/trpc/v1.event.get?input=${INPUT}" \
-  -H "Authorization: Bearer $WHENTOMEET_API_KEY"
-```
-
-## Agent execution contract
-
-1. Use `scripts/w2m_events.py` first.
-2. Use the smallest matching procedure.
-3. Send exact input shape (no invented fields).
-4. Parse `result.data.json` only.
-5. Return concise results:
-  - create: `id`, `status`, `publicUrl`
-  - list: count + compact per-event summary
-  - get: core fields + slots
-  - delete: explicit success/failure
-6. Include rate-limit context on failures.
-
-## Errors and retries
-
-- 400: invalid wrapper/shape/timestamps
-- 401/403: invalid key or access restriction
-- 404: event not found
-- 429: throttle; wait until `X-RateLimit-Reset` before one retry
-
-Never retry non-idempotent create/delete blindly more than once.
-
-## Rate limits
-
-- Free: 32 requests (lifetime)
-- Plus: 1,000 requests/hour
-- Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
-
-## Safety rules
-
-- Never log or echo raw API keys.
-- Never fabricate event IDs, URLs, or statuses.
-- Do not claim write success unless response confirms it.
-- If response shape differs, report mismatch and return observed keys.
-
-## References
-
-- `references/quickstart.md` — copy/paste request flows for create/list/get/delete.
-- `references/troubleshooting.md` — error diagnosis, retry behavior, and safety checks.
