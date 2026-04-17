@@ -1,6 +1,7 @@
 ---
 name: agentrelay
 description: Reliable agent-to-agent communication protocol for transferring large payloads via shared files with pointer references and secret code verification. Triggered by explicit 'AgentRelay:' prefix in messages.
+license: MIT
 metadata: {"openclaw":{"triggerPatterns":["AgentRelay:","Please use AgentRelay skill to handle","Use AgentRelay"],"emoji":"📨"}}
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "agentrelay",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Reliable agent-to-agent communication protocol for transferring large payloads via shared files with pointer references and secret code verification. Triggered by explicit 'AgentRelay:' prefix in messages.",
   "author": "AgentRelay Team",
   "license": "MIT",
@@ -51,5 +51,5 @@
     "inter-agent protocol",
     "reliable messaging"
   ],
-  "releaseNotes": "v1.1.0 - Removed legacy compatibility layers, switched fully to explicit sender/receiver metadata, added cleanup tooling, and aligned the public CLI/docs around REQ/CMP."
+  "releaseNotes": "v1.1.1 - Add MIT license to SKILL.md frontmatter; remove __pycache__ bytecode files; v1.1.0 removed legacy compat layers and added cleanup tooling."
 }
