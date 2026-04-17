@@ -6,21 +6,20 @@ description: >
 
 # Edge
 
-Tools via `edge` MCP server:
+Tools via `edge` MCP server (6 tools, 39 actions):
 
-- **search** — find tokens by name or address
-- **inspect** — 9 views: token_overview, pair_metrics, token_holders, token_analytics,
-  graduation, pair_overview, pair_candles, pair_swaps (token_holders includes sniper/insider flags)
-- **screen** — filter by mcap, liquidity, sniper %, insider %, social presence
-- **portfolio** — holdings, history, top traders, wallet scan, native balances
-- **trade** — limit orders, entry/exit strategies, price impact
-- **alerts** — subscribe/poll/unsubscribe; webhook delivery supported
+- **intelligence**: search tokens, screen by filters, list top tokens, trending swaps
+- **tokens**: token details, pricing, top holders, top traders, dev tokens (sniper/insider flags)
+- **pairs**: pair metrics, OHLCV candles, swaps, pair info
+- **wallet**: holdings, swaps, PnL history, summary
+- **orders**: `place_limit_order`, `place_spot_order`, list/cancel orders, entry/exit strategies
+- **agent**: encrypted wallet management for the non-custodial flow
 
 ## Patterns
 
-1. **Price before order**: `inspect pair_metrics` → compute target → `trade place`
-2. **Token → pair**: `inspect token_overview` returns `pairAddress`
-3. **Chain IDs**: `"8453"` Base · `"1"` Ethereum · `"42161"` Arbitrum
-4. **Alerts**: subscribe once, poll each turn, unsubscribe on cleanup
+1. **Price before order**: `pairs pair_metrics` to compute target, then `orders place_limit_order`
+2. **Token to pair**: `tokens token_info_with_pricing` returns `pairContractAddress`
+3. **Chain IDs**: `8453` Base, `1` Ethereum, `42161` Arbitrum, `"solana"` Solana
+4. **Alerts**: configure in the Edge webapp (Settings > Alerts); deliver to webhook, Redis, or Telegram
 
-[Docs](https://docs.trade.edge/agents)
+[Docs](https://docs.edge.trade/agents)

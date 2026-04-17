@@ -18,5 +18,5 @@ mcp:
   servers:
     - name: edge
       command: npx
-      args: ["-y", "@edgedottrade/mcp", "--api-key", "${API_KEY}"]
-      repository: "https://github.com/edgetrade/mcp"
+      args: ["-y", "@edgedottrade/edge", "--api-key", "${API_KEY}"]
+      repository: "https://github.com/edgetrade/edge"
