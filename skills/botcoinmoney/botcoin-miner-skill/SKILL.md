@@ -1,6 +1,6 @@
 ---
 name: botcoin-miner
-description: "Mine BOTCOIN by solving AI challenges on Base with stake-gated V2 mining."
+description: "Mine BOTCOIN by solving AI challenges on Base with stake-gated V3 mining."
 metadata: { "openclaw": { "emoji": "⛏", "requires": { "env": ["BANKR_API_KEY"], "skills": ["bankr"] } } }
 ---
 
@@ -66,13 +66,15 @@ Do NOT proceed until you have successfully resolved the wallet address.
 
 ### 2. Check Balance and Fund Wallet
 
-The miner needs at least **25,000,000 BOTCOIN** to mine. Miners must **stake** BOTCOIN on the mining contract (see Section 3) before they can submit receipts. Credits per solve are tiered by staked balance at submit time:
+The miner needs at least **5,000,000 BOTCOIN** to mine. Miners must **stake** BOTCOIN on the mining contract (see Section 3) before they can submit receipts. Credits per solve are tiered by staked balance at submit time:
 
 | Staked balance | Credits per solve |
 |----------------------------|-------------------|
-| >= 25,000,000 BOTCOIN | 1 credit |
-| >= 50,000,000 BOTCOIN | 2 credits |
-| >= 100,000,000 BOTCOIN | 3 credits |
+| >= 5,000,000 BOTCOIN | 100 credits | 1.00
+| >= 10,000,000 BOTCOIN | 205 credits | 2.05
+| >= 25,000,000 BOTCOIN | 520 credits | 5.20
+| >= 50,000,000 BOTCOIN | 1,075 credits | 10.75
+| >= 100,000,000 BOTCOIN | 2,200 credits | 22.00
 
 **Check balances** using Bankr natural language (async — returns jobId, poll until complete):
 
@@ -85,9 +87,9 @@ curl -s -X POST https://api.bankr.bot/agent/prompt \
 
 Response: `{ "success": true, "jobId": "...", "status": "pending" }`. Poll `GET https://api.bankr.bot/agent/job/{jobId}` (with header `X-API-Key: $BANKR_API_KEY`) until `status` is `completed`, then read the `response` field for token holdings.
 
-**If BOTCOIN balance is below 25,000,000**, help the user buy tokens:
+**If BOTCOIN balance is below 5,000,000**, help the user buy tokens:
 
-Bankr uses Uniswap pools (not Clanker). Use the **swap** format with the real BOTCOIN token address. Swap enough to reach at least 25M BOTCOIN (e.g. `swap $10 of ETH to ...` depending on price):
+Bankr uses Uniswap pools. Use the **swap** format with the real BOTCOIN token address. Swap enough to reach at least 5M BOTCOIN (e.g. `swap $10 of ETH to ...` depending on price):
 
 **BOTCOIN token address:** `0xA601877977340862Ca67f816eb079958E5bd0BA3` — verify against `GET ${COORDINATOR_URL}/v1/token` if needed.
 
@@ -109,24 +111,24 @@ curl -s -X POST https://api.bankr.bot/agent/prompt \
   -d '{"prompt": "bridge $2 of ETH to base"}'
 ```
 
-**CHECKPOINT**: Confirm both BOTCOIN (>= 25M) and ETH (> 0) before proceeding.
+**CHECKPOINT**: Confirm both BOTCOIN (>= 5M) and ETH (> 0) before proceeding.
 
 ### 3. Staking
 
-Mining contract: `0xcF5F2D541EEb0fb4cA35F1973DE5f2B02dfC3716`. Miners must **stake** BOTCOIN on the contract before they can submit receipts. Eligibility is based on staked balance.
+Mining contract: `0xB2fbe0DB5A99B4E2Dd294dE64cEd82740b53A2Ea`. Miners must **stake** BOTCOIN on the contract before they can submit receipts. Eligibility is based on staked balance.
 
-**Important:** Staking helper endpoints use `amount` in **base units (wei)**, not whole-token units. Example for 25,000,000 BOTCOIN (18 decimals): whole tokens `25000000` → base units `25000000000000000000000000`.
+**Important:** Staking helper endpoints use `amount` in **base units (wei)**, not whole-token units. Example for 5,000,000 BOTCOIN (18 decimals): whole tokens `5000000` → base units `5000000000000000000000000`.
 
-**Minimum stake:** 25,000,000 BOTCOIN (base units: `25000000000000000000000000`)
+**Minimum stake:** 5,000,000 BOTCOIN (base units: `5000000000000000000000000`)
 
 **Stake flow (two transactions):** Coordinator returns pre-encoded transactions; submit each via Bankr `POST /agent/submit`.
 
 ```bash
 # Step 1: Get approve transaction (amount in base units)
-curl -s "${COORDINATOR_URL:-https://coordinator.agentmoney.net}/v1/stake-approve-calldata?amount=25000000000000000000000000"
+curl -s "${COORDINATOR_URL:-https://coordinator.agentmoney.net}/v1/stake-approve-calldata?amount=5000000000000000000000000"
 
 # Step 2: Get stake transaction
-curl -s "${COORDINATOR_URL:-https://coordinator.agentmoney.net}/v1/stake-calldata?amount=25000000000000000000000000"
+curl -s "${COORDINATOR_URL:-https://coordinator.agentmoney.net}/v1/stake-calldata?amount=5000000000000000000000000"
 ```
 
 Each endpoint returns `{ "transaction": { "to": "...", "chainId": 8453, "value": "0", "data": "0x..." } }`. Submit via Bankr:
@@ -162,7 +164,7 @@ curl -s "${COORDINATOR_URL:-https://coordinator.agentmoney.net}/v1/unstake-calld
 curl -s "${COORDINATOR_URL:-https://coordinator.agentmoney.net}/v1/withdraw-calldata"
 ```
 
-**CHECKPOINT**: Confirm stake is active (>= 25M staked, no pending unstake) before proceeding to the mining loop.
+**CHECKPOINT**: Confirm stake is active (>= 5M staked, no pending unstake) before proceeding to the mining loop.
 
 ### 4. Auth Handshake (required when coordinator auth is enabled)
 
@@ -234,7 +236,7 @@ Response contains:
 - `constraints` — a list of verifiable constraints your artifact must satisfy
 - `entities` — the canonical entity-name roster for this challenge
 - `challengeId` — unique identifier for this challenge
-- `creditsPerSolve` — 1, 2, or 3 depending on miner's staked balance
+- `creditsPerSolve` — 100, 205, 520, 1,075, or 2,200 depending on miner's staked balance
 - `challengeManifestHash` — **save this value**; you must echo it back in your submit payload
 - `challengeDomain` — the domain actually served for this challenge
 - `solveInstructions` — the authoritative challenge-specific solve and output instructions
@@ -532,7 +534,7 @@ Just copy the `to`, `chainId`, and `data` fields from the coordinator's `transac
 
 #### Step E: Repeat
 
-Go back to Step A to request the next challenge (with a new nonce). Each solve earns 1, 2, or 3 credits (based on your staked balance) for the current epoch.
+Go back to Step A to request the next challenge (with a new nonce). Each solve earns 100–2,200 credits (based on your staked balance tier) for the current epoch.
 
 **On failure:** Follow the retry rules from Step C. If retries are not allowed, request a new challenge with a new nonce.
 
@@ -627,7 +629,7 @@ On success: `{ "success": true, "transactionHash": "0x...", "status": "success",
 ## Bankr Interaction Rules
 
 **Natural language** (via `POST /agent/prompt`) — ONLY for:
-- Buying BOTCOIN: `"swap $10 of ETH to 0xA601877977340862Ca67f816eb079958E5bd0BA3 on base"` (or enough to reach 25M+ BOTCOIN; verify against coordinator `GET /v1/token` if needed)
+- Buying BOTCOIN: `"swap $10 of ETH to 0xA601877977340862Ca67f816eb079958E5bd0BA3 on base"` (or enough to reach 5M+ BOTCOIN; verify against coordinator `GET /v1/token` if needed)
 - Checking balances: `"what are my balances on base?"`
 - Bridging ETH for gas: `"bridge $X of ETH to base"`
 
@@ -671,7 +673,7 @@ Use one retry helper for all coordinator calls.
 - **AlreadyClaimed**: You already claimed that epoch. Skip it.
 
 ### Staking errors (transaction reverted)
-- **InsufficientBalance** / **NotEligible**: Stake more BOTCOIN to reach tier 1 (25M minimum).
+- **InsufficientBalance** / **NotEligible**: Stake more BOTCOIN to reach tier 1 (5M minimum).
 - **NothingStaked**: No stake to unstake or withdraw. Stake first.
 - **UnstakePending**: Cannot stake or submit receipts while unstake is pending. Cancel unstake or wait for cooldown and withdraw.
 - **NoUnstakePending**: Cannot withdraw or cancel — no unstake was requested. Use unstake first.
