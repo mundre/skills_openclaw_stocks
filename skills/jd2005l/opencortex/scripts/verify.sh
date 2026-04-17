@@ -54,8 +54,19 @@ echo ""
 
 # --- Voice profile ---
 echo "🎙️ Voice profile:"
+FLAGS_FILE="$WORKSPACE/.opencortex-flags"
+VOICE_FLAG=""
+if [ -f "$FLAGS_FILE" ]; then
+  VOICE_FLAG=$(grep -E '^VOICE_PROFILE=' "$FLAGS_FILE" 2>/dev/null | head -1 | cut -d'=' -f2 | tr -d '[:space:]' || true)
+fi
+VOICE_ENV="${OPENCORTEX_VOICE_PROFILE:-}"
 if [ -f "$WORKSPACE/memory/VOICE.md" ]; then
   check "VOICE.md exists (voice profiling enabled)" "ok"
+  if [ "$VOICE_FLAG" = "1" ] || [ "$VOICE_ENV" = "1" ]; then
+    check "Voice profiling runtime gate is enabled (flag/env)" "ok"
+  else
+    check "VOICE.md exists but runtime voice gate is OFF (set VOICE_PROFILE=1 in .opencortex-flags or OPENCORTEX_VOICE_PROFILE=1)" "warn"
+  fi
 else
   check "VOICE.md not found (voice profiling not enabled — this is fine if you skipped it)" "warn"
 fi
@@ -78,6 +89,48 @@ if command -v openclaw &>/dev/null; then
   # Check for problematic model overrides (models that don't exist)
   CRON_JSON=$(openclaw cron list --json 2>/dev/null || echo "")
   if [ -n "$CRON_JSON" ]; then
+    # Check distillation/weekly prompts are not empty
+    if command -v python3 &>/dev/null; then
+      DISTILL_MSG=$(echo "$CRON_JSON" | python3 -c "
+import sys, json
+try:
+  data = json.load(sys.stdin)
+  jobs = data.get('jobs', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+  for c in jobs:
+    n = (c.get('name') or '').lower()
+    if 'distill' in n:
+      payload = c.get('payload') or {}
+      msg = c.get('message') or payload.get('message') or ''
+      print(msg.strip())
+      break
+except: pass
+" 2>/dev/null || echo "")
+      WEEKLY_MSG=$(echo "$CRON_JSON" | python3 -c "
+import sys, json
+try:
+  data = json.load(sys.stdin)
+  jobs = data.get('jobs', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+  for c in jobs:
+    n = (c.get('name') or '').lower()
+    if 'synth' in n:
+      payload = c.get('payload') or {}
+      msg = c.get('message') or payload.get('message') or ''
+      print(msg.strip())
+      break
+except: pass
+" 2>/dev/null || echo "")
+      if [ -n "$DISTILL_MSG" ]; then
+        check "Distillation cron prompt is set" "ok"
+      else
+        check "Distillation cron prompt is empty (distillation will no-op)" "warn"
+      fi
+      if [ -n "$WEEKLY_MSG" ]; then
+        check "Weekly synthesis cron prompt is set" "ok"
+      else
+        check "Weekly synthesis cron prompt is empty (synthesis will no-op)" "warn"
+      fi
+    fi
+
     BAD_MODELS=$(echo "$CRON_JSON" | grep -o '"model":\s*"[^"]*"' | grep -iE '"(anthropic/default|default)"' || true)
     if [ -n "$BAD_MODELS" ]; then
       check "Cron jobs have invalid model overrides (e.g. 'default' is not a real model)" "warn"

@@ -3,11 +3,30 @@
 # Safe to re-run: won't overwrite existing files.
 set -euo pipefail
 
-OPENCORTEX_VERSION="3.6.3"
+OPENCORTEX_VERSION="3.6.7"
 
 # --- Version check: detect existing install and offer update ---
 WORKSPACE="${CLAWD_WORKSPACE:-$(pwd)}"
 VERSION_FILE="$WORKSPACE/.opencortex-version"
+FLAGS_FILE="$WORKSPACE/.opencortex-flags"
+
+set_feature_flag() {
+  local key="$1"
+  local value="$2"
+
+  if [ "$DRY_RUN" = "true" ]; then
+    echo "   [DRY RUN] Would set feature flag: ${key}=${value} in $FLAGS_FILE"
+    return 0
+  fi
+
+  touch "$FLAGS_FILE"
+  if grep -q "^${key}=" "$FLAGS_FILE" 2>/dev/null; then
+    sed -i "s/^${key}=.*/${key}=${value}/" "$FLAGS_FILE"
+  else
+    echo "${key}=${value}" >> "$FLAGS_FILE"
+  fi
+  chmod 600 "$FLAGS_FILE" 2>/dev/null || true
+}
 
 # Detect existing install: version file OR core files present
 INSTALLED_VERSION=""
@@ -224,6 +243,19 @@ if ask_yn "📊 Enable daily metrics tracking? Tracks knowledge growth over time
   ENABLE_METRICS="y"
 else
   ENABLE_METRICS="n"
+fi
+
+# Persist feature flags so isolated cron runs can reliably detect opt-in settings
+if [ "$ENABLE_VOICE" = "y" ]; then
+  set_feature_flag "VOICE_PROFILE" "1"
+else
+  set_feature_flag "VOICE_PROFILE" "0"
+fi
+
+if [ "$ENABLE_INFRA" = "y" ]; then
+  set_feature_flag "INFRA_COLLECT" "1"
+else
+  set_feature_flag "INFRA_COLLECT" "0"
 fi
 
 echo ""
@@ -917,24 +949,24 @@ echo "🔑 Opt-in feature environment variables:"
 echo ""
 if [ "$ENABLE_VOICE" = "y" ]; then
   echo "   Voice profiling is enabled in the cron (you said yes)."
-  echo "   To activate it at runtime, set this in your OpenClaw environment:"
-  echo "     export OPENCORTEX_VOICE_PROFILE=1"
-  echo "   Without this variable, the nightly distillation will skip voice profiling."
+  echo "   Runtime detection uses .opencortex-flags (VOICE_PROFILE=1) by default."
+  echo "   Optional override: export OPENCORTEX_VOICE_PROFILE=1"
   echo ""
 else
   echo "   Voice profiling: OFF (not requested)"
-  echo "   To enable later: set OPENCORTEX_VOICE_PROFILE=1 in your OpenClaw environment."
+  echo "   To enable later: set VOICE_PROFILE=1 in .opencortex-flags"
+  echo "   Optional override: export OPENCORTEX_VOICE_PROFILE=1"
   echo ""
 fi
 if [ "$ENABLE_INFRA" = "y" ]; then
   echo "   Infrastructure auto-collection is enabled in the cron (you said yes)."
-  echo "   To activate it at runtime, set this in your OpenClaw environment:"
-  echo "     export OPENCORTEX_INFRA_COLLECT=1"
-  echo "   Without this variable, the nightly distillation will skip writing to INFRA.md."
+  echo "   Runtime detection uses .opencortex-flags (INFRA_COLLECT=1) by default."
+  echo "   Optional override: export OPENCORTEX_INFRA_COLLECT=1"
   echo ""
 else
   echo "   Infrastructure auto-collection: OFF (not requested)"
-  echo "   To enable later: set OPENCORTEX_INFRA_COLLECT=1 in your OpenClaw environment."
+  echo "   To enable later: set INFRA_COLLECT=1 in .opencortex-flags"
+  echo "   Optional override: export OPENCORTEX_INFRA_COLLECT=1"
   echo ""
 fi
 echo "   All other optional features (git push, scrub-all, file passphrase):"

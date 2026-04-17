@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-OPENCORTEX_VERSION="3.6.3"
+OPENCORTEX_VERSION="3.6.7"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Flags
@@ -83,6 +83,25 @@ ask_mrk() {
 
 WORKSPACE="${CLAWD_WORKSPACE:-$(pwd)}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+FLAGS_FILE="$WORKSPACE/.opencortex-flags"
+
+set_feature_flag() {
+  local key="$1"
+  local value="$2"
+
+  if [ "$DRY_RUN" = "true" ]; then
+    echo "   [DRY RUN] Would set ${key}=${value} in $FLAGS_FILE"
+    return 0
+  fi
+
+  touch "$FLAGS_FILE"
+  if grep -q "^${key}=" "$FLAGS_FILE" 2>/dev/null; then
+    sed -i "s/^${key}=.*/${key}=${value}/" "$FLAGS_FILE"
+  else
+    echo "${key}=${value}" >> "$FLAGS_FILE"
+  fi
+  chmod 600 "$FLAGS_FILE" 2>/dev/null || true
+}
 
 echo "🔄 OpenCortex Update v${OPENCORTEX_VERSION}"
 echo "   Workspace: $WORKSPACE"
@@ -183,6 +202,42 @@ if command -v openclaw &>/dev/null; then
   fi
 else
   echo "   ⚠️  openclaw CLI not found — skipping cron updates"
+  SKIPPED=$((SKIPPED + 1))
+fi
+echo ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Part 1.5: Feature flags file for isolated cron runtime gates
+# ─────────────────────────────────────────────────────────────────────────────
+echo "🏷️  Ensuring feature flags are persisted..."
+
+# Voice profiling: infer enabled if VOICE.md exists
+if [ -f "$WORKSPACE/memory/VOICE.md" ]; then
+  set_feature_flag "VOICE_PROFILE" "1"
+  echo "   ✅ VOICE_PROFILE=1 (memory/VOICE.md exists)"
+  UPDATED=$((UPDATED + 1))
+else
+  set_feature_flag "VOICE_PROFILE" "0"
+  echo "   ⏭️  VOICE_PROFILE=0 (memory/VOICE.md not found)"
+  SKIPPED=$((SKIPPED + 1))
+fi
+
+# Infrastructure collection: preserve existing value if present, else infer from env, else default 0
+INFRA_CURRENT=""
+if [ -f "$FLAGS_FILE" ]; then
+  INFRA_CURRENT=$(grep -E '^INFRA_COLLECT=' "$FLAGS_FILE" 2>/dev/null | head -1 | cut -d'=' -f2 | tr -d '[:space:]' || true)
+fi
+if [ -n "$INFRA_CURRENT" ]; then
+  set_feature_flag "INFRA_COLLECT" "$INFRA_CURRENT"
+  echo "   ⏭️  INFRA_COLLECT=$INFRA_CURRENT (kept existing value)"
+  SKIPPED=$((SKIPPED + 1))
+elif [ "${OPENCORTEX_INFRA_COLLECT:-}" = "1" ]; then
+  set_feature_flag "INFRA_COLLECT" "1"
+  echo "   ✅ INFRA_COLLECT=1 (from environment)"
+  UPDATED=$((UPDATED + 1))
+else
+  set_feature_flag "INFRA_COLLECT" "0"
+  echo "   ⏭️  INFRA_COLLECT=0 (default)"
   SKIPPED=$((SKIPPED + 1))
 fi
 echo ""
