@@ -1,32 +1,18 @@
 {
-  "name": "js-eyes",
-  "version": "1.4.3",
+  "name": "js-eyes-skill-bundle",
+  "version": "2.3.0",
   "private": true,
-  "description": "JS Eyes - Browser Extension for JavaScript debugging",
-  "scripts": {
-    "dev": "npx serve src",
-    "build": "node build/build.js",
-    "build:site": "node cli/cli.js build site --clean",
-    "build:chrome": "node cli/cli.js build chrome",
-    "build:firefox": "node cli/cli.js build firefox",
-    "build:firefox:dev": "node cli/cli.js build firefox --no-sign",
-    "preview": "npx serve docs -l 3000",
-    "cli": "node cli/cli.js",
-    "bump": "node cli/cli.js bump",
-    "commit": "node cli/cli.js commit",
-    "sync": "node cli/cli.js sync",
-    "release": "node cli/cli.js release",
-    "setup:gh-pages": "node cli/cli.js setup-github-pages",
-    "setup:cloudflare": "node cli/cli.js setup-cloudflare",
-    "test": "node --test test/ws-handler.test.js test/utils.test.js test/js-eyes-client.test.js",
-    "test:server": "node --test test/ws-handler.test.js",
-    "test:extension": "node --test test/utils.test.js",
-    "test:client": "node --test test/js-eyes-client.test.js",
-    "server": "node server/index.js",
-    "server:install": "cd server && npm install"
-  },
+  "description": "Installable JS Eyes skill bundle for OpenClaw",
+  "workspaces": [
+    "packages/*"
+  ],
   "dependencies": {
-    "archiver": "^7.0.1",
-    "ws": "^8.19.0"
-  }
+    "@js-eyes/client-sdk": "2.3.0",
+    "@js-eyes/protocol": "2.3.0",
+    "@js-eyes/server-core": "2.3.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "license": "MIT"
 }
