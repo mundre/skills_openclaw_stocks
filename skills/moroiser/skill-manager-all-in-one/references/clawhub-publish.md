@@ -2,7 +2,9 @@
 
 ## Two-step publishing workflow | 两步发布工作流
 
-### Step 1: Pre-publish checks | 第一步：发布前检查
+**无论改动多小、无论第几次修改，两步验证不可跳过。**
+
+### 第一步（AI 内部执行，不输出给用户）
 
 **A. Run full checklist | 完整清单核对**
 Verify all items in the "Skill creation/modification checklist" section of SKILL.md:
@@ -32,12 +34,17 @@ If the directory **exceeds 50MB**, the upload will fail.
 如果目录**超过 50MB**，上传会失败。立即报告用户，等待明确指示后再操作。
 
 **D. Draft changelog | 拟定 changelog**
+
+⚠️ **Changelog 不写在 SKILL.md 里！** Changelog 是 ClawHub 网站上的发布说明，在 `clawhub publish` 时通过 `--changelog` 参数传入。SKILL.md 模板中不应包含"更新日志"章节（除非是永久保留的完整更新历史）。
+
 - English first, Chinese after.
   英文在前,中文在后。
 - Formal release-note tone only.
   仅使用正式发布说明语气。
 
 **Changelog format | changelog 格式：**
+Changelog 内容通过 `--changelog "..."` 参数传递给 `clawhub publish` 命令，显示在 ClawHub 网站的版本历史中。格式为英文在前、中文在后的数字序号列表。
+
 Use plain numbered list (1. 2. 3.) with English first, Chinese after for each point.
 使用纯数字序号分点，每点英文在前、中文在后。
 
@@ -63,9 +70,10 @@ Use plain numbered list (1. 2. 3.) with English first, Chinese after for each po
 - private debugging notes / 私人调试记录
 - jokes, self-deprecation, apology-style wording / 玩笑、自嘲、道歉式表述
 
-### Step 2: Detailed report → Wait for second confirmation | 第二步：详细汇报 → 等待用户再次确认
+### 第二步（输出给用户，等待明确确认）
 
-Report the following to user. **Do NOT upload until user explicitly confirms.**
+Report the following to user. **⚠️ Do NOT run `clawhub publish` until user explicitly confirms.**
+**发布类操作（clawhub publish / git push / gh release create / 推广发帖等）必须经过两步验证，不可跳过。**
 
 | Item | 内容 |
 |---|---|
@@ -90,7 +98,10 @@ Each user modification request → restart from Step 1.
 ## CLI commands | CLI 命令
 
 ```bash
-clawhub publish <path> --slug <slug> --name "<name>" --version <version> --changelog "<text>"
+# 发布（--slug --name 可省略，从 _meta.json 读取）
+clawhub publish <path> --version <version> --changelog "<text>"
+
+# 管理
 clawhub delete <slug> --yes
 clawhub hide <slug> --yes
 clawhub unhide <slug> --yes
@@ -102,3 +113,15 @@ clawhub sync
 
 If publish fails with `Version already exists`, bump the version and republish only after confirming with the user.
 如果发布失败并提示 `Version already exists`，应先与用户确认，再升版本号重新发布。
+
+## 查看安全扫描结果 | View Security Scan Results
+
+发布后查看完整 Assessment 步骤：
+
+1. 打开 ClawHub 技能页面（如 `https://clawhub.ai/skills/<slug>`）
+2. 找到 **Security Scan** 区域
+3. 找到 **OpenClaw Benign/Suspicious** 徽章旁边的 **Details ▾** 按钮
+4. **点击 Details ▾ 展开** 才能看到完整的 Assessment 内容
+5. Assessment 是 ClawHub 对技能的详细安全分析，包含 Purpose、Install Mechanism、Credentials 等项目的逐一评估
+
+⚠️ **注意**：Summary 只是一句话概括，**必须展开 Details 才能看到完整 Assessment**。

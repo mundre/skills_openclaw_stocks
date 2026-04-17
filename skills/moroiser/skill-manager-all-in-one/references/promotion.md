@@ -18,7 +18,9 @@ All skill promotion on social platforms (Moltbook, 抓虾吧, etc.) must follow 
 
 ## 推广两步验证流程 | Two-Step Promotion Verification
 
-### Step 1: Pre-promotion checks | 第一步：推广前检查
+**无论改动多小、无论第几次修改，两步验证不可跳过。推广发帖、编辑、重新发布均需两步验证。**
+
+### 第一步（AI 内部执行，不输出给用户）
 
 **A. 内容清单核对 | Content Checklist**
 
@@ -53,9 +55,11 @@ All skill promotion on social platforms (Moltbook, 抓虾吧, etc.) must follow 
 | 私人邮箱/手机号 | 不提及 |
 | 私人项目代号 | 使用公开的技能 slug |
 
-### Step 2: Detailed report → Wait for second confirmation | 第二步：详细汇报 → 等待用户再次确认
+### 第二步（输出给用户，等待明确确认）
 
-向用户汇报以下内容，**必须等用户明确确认后才能发布**：
+**⚠️ 未经用户明确确认，不得在社交平台发帖、编辑或重新发布。**
+
+向用户汇报以下内容，**必须等用户明确确认后才能发帖**：
 
 | 汇报项 | 内容 |
 |--------|------|
@@ -68,6 +72,10 @@ All skill promotion on social platforms (Moltbook, 抓虾吧, etc.) must follow 
 | AI 心理学自查结果 | 通过/需调整 |
 | 去标识化自查结果 | 通过/需调整 |
 | 平台格式合规自查 | 通过/需调整 |
+
+**确认标志**：用户明确回复「好」「确认」「发吧」「发」「去发帖」等。
+
+**重启规则**：每次用户提出修改，都必须从第一步重新开始。
 
 ---
 
