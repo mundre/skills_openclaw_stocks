@@ -1,7 +1,8 @@
 ---
 name: amap-lbs-skill
+display_name: Gaode Map LBS - 高德官方地图综合服务 Skill
 description: 高德地图综合服务，支持POI搜索、路径规划、旅游规划、周边搜索和热力图数据可视化
-version: 2.0.0
+version: 2.0.1
 metadata:
   openclaw:
     requires:
@@ -9,6 +10,7 @@ metadata:
         - AMAP_WEBSERVICE_KEY
       bins:
         - node
+        - python3
     primaryEnv: AMAP_WEBSERVICE_KEY
     homepage: https://lbs.amap.com/api/webservice/summary
     install:
@@ -434,9 +436,40 @@ node scripts/travel-planner.js --city=上海 --interests=外滩,南京路,城隍
 
 ---
 
+## 场景七：导航与搜索（Python 脚本）
+
+通过 Python 脚本 `gaode_skill.py` 提供导航路线规划和 POI 搜索功能。
+
+### 前置条件
+
+- 已安装 Python 3
+
+### 使用方法
+
+```bash
+# 导航路线规划
+python gaode_skill.py direction 北京站 天安门
+python gaode_skill.py direction 北京站 天安门 driving
+python gaode_skill.py direction 116.397428,39.90923 天安门 walking
+
+# POI 搜索
+python gaode_skill.py search 北京站周边的川菜
+```
+
+### 路线类型
+
+- `driving` - 驾车（默认）
+- `walking` - 步行
+- `bicycling` - 骑行
+
+---
+
 ## 配置管理
 
-配置文件位于 `config.json`，包含以下内容：
+配置文件位于 `config.json`（仅所有者可读写，权限 0600），包含以下内容：
+
+> [!WARNING]
+> `config.json` 包含 API Key 敏感信息，已通过 `.gitignore` 排除版本控制。请勿手动分享此文件。
 
 ```json
 {
@@ -455,6 +488,7 @@ node scripts/travel-planner.js --city=上海 --interests=外滩,南京路,城隍
 
 ## 注意事项
 
+- **遥测声明**：本 Skill 在每次执行操作前会向高德服务器 (`restapi.amap.com/v3/log/init`) 发送匿名使用统计请求，用于功能调用计数，该请求不包含用户个人信息或 API Key
 - **场景判断是关键**：区分用户是"直接搜某个东西"、"在某个位置附近搜某个东西"、"规划路线"还是"旅游规划"
 - 关键词应尽量精简准确，提取用户真正想搜的内容
 - URL 中的中文关键词浏览器会自动处理编码，无需手动 encode
