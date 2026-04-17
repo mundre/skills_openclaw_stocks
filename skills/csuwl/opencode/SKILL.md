@@ -2,524 +2,229 @@
 name: opencode
 description: "OpenCode AI - AI-driven code editor/IDE (CLI/TUI version of Cursor/Windsurf). Use when: (1) AI-assisted coding tasks, (2) Code refactoring with AI, (3) GitHub PR review/fixes, (4) Multi-file edits requiring context, (5) Running AI agents on codebases. NOT for: simple one-line edits (use edit tool), reading files (use read tool)."
 metadata:
-  {
-    "openclaw": { "emoji": "🤖", "requires": { "bins": ["opencode"] } },
-  }
+  openclaw:
+    emoji: "🤖"
+    requires:
+      bins:
+        - opencode
 ---
 
 # OpenCode AI - AI Code Editor
 
-OpenCode is an **AI-native code editor** that runs in your terminal. Think of it as Cursor or Windsurf, but as a CLI/TUI tool.
+OpenCode is an AI-native code editor that runs in your terminal (CLI/TUI). Think Cursor/Windsurf but in the terminal.
 
-**Version**: 1.2.10 (Homebrew)
-**Platform**: macOS Darwin x64
+**Version**: 1.3.9 | **Platform**: macOS Darwin x64
 
 ## Prerequisites
 
-**CRITICAL**: OpenCode requires `sysctl` to detect system architecture. Ensure `/usr/sbin` is in your PATH:
+OpenCode requires `sysctl` for architecture detection. Ensure `/usr/sbin` is in PATH:
 
 ```bash
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
-```
-
-If missing, OpenCode will fail with:
-```
-Executable not found in $PATH: "sysctl"
-```
-
-Add this to `~/.zshrc` permanently:
-```bash
-echo 'export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+# Add to ~/.zshrc for permanence
 ```
 
 ---
 
-## When to Use OpenCode
+## When to Use
 
-✅ **Use for:**
-- Complex refactoring across multiple files
-- AI-assisted feature implementation
-- GitHub PR review and automated fixes
-- Exploring and understanding unfamiliar codebases
-- Running multi-step coding tasks with context
-- Session-based coding (continue previous work)
-
-❌ **Don't use for:**
-- Simple one-line edits (use `edit` tool)
-- Reading file contents (use `read` tool)
-- Non-coding tasks
-
----
-
-## Core Operations (TUI Slash Commands)
-
-When running OpenCode in **TUI mode** (`opencode`), you can use these slash commands to control the AI workflow:
-
-### /sessions - Session Management
-```
-/sessions
-```
-- Opens session selector
-- Choose to continue an existing session
-- Create a new session (with user approval)
-- Recommended: Select existing session for current project
-
-### /agents - Agent (Mode) Control
-```
-/agents
-```
-Available agents:
-- **plan** - Planning mode (analyze and design)
-- **build** - Build mode (implement and code)
-- **explore** - Exploration mode (understand codebase)
-- **general** - General assistance
-
-**Best Practice**: Always select **plan** first, then switch to **build** after approval.
-
-### /models - Model Selection
-```
-/models
-```
-- Opens model selector
-- Filter by provider (OpenAI, Anthropic, Google, Z.AI, etc.)
-- Select preferred model for the task
-- If authentication required, follow the login link provided
-
-### Agent Workflow
-
-#### Plan Agent Behavior
-- Ask OpenCode to analyze the task
-- Request a clear step-by-step plan
-- Allow OpenCode to ask clarification questions
-- Review the plan carefully
-- If plan is incomplete, ask for revision
-- **Do not allow code generation in Plan mode**
-
-#### Build Agent Behavior
-- Switch to Build using `/agents`
-- Ask OpenCode to implement the approved plan
-- If OpenCode asks questions, switch back to Plan
-- Answer and confirm the plan, then switch back to Build
-
-#### Plan → Build Loop
-1. Select **plan** agent with `/agents`
-2. Describe the task
-3. Review and approve the plan
-4. Switch to **build** agent with `/agents`
-5. Implement the plan
-6. Repeat until satisfied
-
-**Key Rules**:
-- Never skip Plan
-- Never answer questions in Build mode (switch to Plan first)
-- Always show slash commands explicitly in output
-
-### Other Useful Commands
-- **/title** - Change session title
-- **/summary** - Generate session summary
-- **/compaction** - Compact conversation history
+✅ **Use for:** Complex refactoring, AI-assisted features, PR review/fixes, codebase exploration, multi-file edits, session-based coding
+❌ **Don't use for:** Simple one-line edits (use `edit` tool), reading files (use `read` tool)
 
 ---
 
 ## Core Commands
 
-### 1. Quick Tasks (One-Shot)
+### Quick Tasks (One-Shot)
 
 ```bash
-# Run a single AI command on a project
+# Run a single task
 opencode run "Add input validation to the login form"
-
-# With specific directory
-opencode run --dir ~/path/to/project "Refactor this code to use async/await"
-
-# With specific model
-opencode run -m openai/gpt-4o "Optimize the database queries"
+opencode run --dir ~/project "Refactor to use async/await"
+opencode run -m anthropic/claude-sonnet-4 "Optimize queries"
 
 # Attach files for context
-opencode run -f src/auth.js -f src/database.js "Fix the authentication bug"
+opencode run -f src/auth.js -f src/db.js "Fix the auth bug"
 
-# Continue last session
+# Continue previous session
 opencode run --continue
-
-# Continue specific session
 opencode run --session abc123 --fork
+
+# Share session (creates shareable link)
+opencode run --share "Implement feature X"
+
+# Model variant (reasoning effort)
+opencode run --variant high "Solve this complex problem"
 ```
 
-### 2. Interactive TUI Mode
-
-```bash
-# Start TUI in current directory
-opencode
-
-# Start TUI in specific project
-opencode ~/path/to/project
-
-# Start with specific model
-opencode -m anthropic/claude-sonnet-4
-```
-
-### 3. Authentication
-
-```bash
-# List configured providers
-opencode auth list
-
-# Login to a provider (e.g., OpenCode, OpenAI, Anthropic)
-opencode auth login [url]
-
-# Logout
-opencode auth logout
-```
-
-### 4. Model Management
-
-```bash
-# List all available models
-opencode models
-
-# List models for specific provider
-opencode models openai
-
-# List with cost metadata
-opencode models --verbose
-
-# Refresh model cache
-opencode models --refresh
-```
-
-### 5. Session Management
-
-```bash
-# List all sessions
-opencode session list
-
-# Delete a session
-opencode session delete <sessionID>
-
-# Export session data
-opencode export [sessionID]
-
-# Import session from file
-opencode import <file>
-```
-
-### 6. GitHub Integration
-
-```bash
-# Fetch and checkout a PR, then run OpenCode
-opencode pr 123
-
-# Manage GitHub agent
-opencode github --help
-```
-
-### 7. MCP Servers (Model Context Protocol)
-
-```bash
-# List MCP servers
-opencode mcp list
-
-# Add an MCP server
-opencode mcp add
-
-# Authenticate with OAuth MCP server
-opencode mcp auth [name]
-
-# Debug OAuth connection
-opencode mcp debug <name>
-```
-
-### 8. Agent Management
-
-```bash
-# List all agents
-opencode agent list
-
-# Create a new agent
-opencode agent create
-```
-
-### 9. Server Mode
-
-```bash
-# Start headless server
-opencode serve
-
-# Start server and open web interface
-opencode web
-
-# Start ACP (Agent Client Protocol) server
-opencode acp
-```
-
-### 10. Statistics
-
-```bash
-# Show token usage and costs
-opencode stats
-```
-
----
-
-## Key Options (Global)
+### Key Options
 
 | Option | Description |
 |--------|-------------|
-| `-m, --model` | Model to use (format: `provider/model`) |
+| `-m, --model` | Model (`provider/model`, e.g. `anthropic/claude-sonnet-4`) |
 | `-c, --continue` | Continue last session |
 | `-s, --session` | Continue specific session |
 | `--fork` | Fork session when continuing |
+| `--share` | Share the session |
+| `-f, --file` | Attach files to message |
 | `--agent` | Use specific agent |
 | `--dir` | Directory to run in |
 | `--format` | Output format: `default` or `json` |
+| `--variant` | Reasoning effort: `high`, `max`, `minimal` |
 | `--thinking` | Show thinking blocks |
-| `--variant` | Model reasoning effort (`high`, `max`, `minimal`) |
+| `--title` | Set session title |
+| `--attach` | Attach to running server (e.g. `http://localhost:4096`) |
+| `--pure` | Run without external plugins |
+| `--command` | Run a specific command (use message for args) |
+| `-p, --password` | Basic auth password for server mode |
+
+### Interactive TUI
+
+```bash
+opencode              # Start in current directory
+opencode ~/project    # Start in specific project
+```
+
+#### TUI Slash Commands
+
+- `/sessions` — Session selector (continue existing or create new)
+- `/agents` — Switch agent (see agents below)
+- `/models` — Model selector
+- `/title` — Change session title
+- `/summary` — Generate session summary
+- `/compaction` — Compact conversation history
+
+#### Available Agents
+
+| Agent | Type | Purpose |
+|-------|------|---------|
+| **plan** | primary | Analyze & design (no code edits) |
+| **build** | primary | Implement & code |
+| **explore** | subagent | Understand codebase, read-only exploration |
+| **general** | subagent | General assistance |
+| **compaction** | primary | Compress/summarize session context |
+| **summary** | primary | Generate session summaries |
+| **title** | primary | Generate session titles |
+| **memory-automation** | subagent | Automated memory management |
+| **memory-consolidate** | subagent | Consolidate memory entries |
+
+> ⚠️ `--agent` flag in `opencode run` always falls back to default agent. Agent switching only works in TUI via `/agents` slash command.
+
+#### Recommended Workflow: Plan → Build
+
+1. Select **plan** agent (`/agents`)
+2. Describe task → review/approve the plan
+3. Switch to **build** agent (`/agents`)
+4. Implement → iterate
 
 ---
 
-## Common Patterns
-
-### Pattern 1: Refactor Code
+## Other Commands
 
 ```bash
-opencode run "Refactor this function to be more readable and add error handling"
-```
+# Providers & Auth
+opencode providers              # Manage AI providers/credentials (alias: auth)
+opencode providers login [url] # Login to a provider
 
-### Pattern 2: Add Features
+# Models
+opencode models                 # List all models
+opencode models --verbose       # With cost info
+opencode models --refresh       # Refresh cache
 
-```bash
-opencode run "Add a new API endpoint for user registration with email verification"
-```
+# Sessions
+opencode session list            # List sessions
+opencode export [sessionID]      # Export as JSON
+opencode import <file>           # Import session
 
-### Pattern 3: Fix Bugs
+# GitHub
+opencode pr 123                  # Checkout PR + run OpenCode
+opencode github --help           # GitHub agent options
 
-```bash
-opencode run -f error.log -f src/auth.js "Fix the authentication bug described in the error log"
-```
+# MCP Servers
+opencode mcp list                # List MCP servers
+opencode mcp add                 # Add MCP server
+opencode mcp auth [name]         # OAuth for MCP server
 
-### Pattern 4: Review Code
+# Agents
+opencode agent list              # List agents
+opencode agent create            # Create custom agent
 
-```bash
-opencode run "Review this code for security vulnerabilities and suggest improvements"
-```
+# Plugins
+opencode plugin <module>        # Install plugin (alias: plug)
 
-### Pattern 5: GitHub PR Workflow
+# Server Mode
+opencode serve                   # Headless server
+opencode web                     # Server + open browser
 
-```bash
-# Auto-fix a PR
-opencode pr 123
-```
+# ACP (Agent Client Protocol)
+opencode acp                     # Start ACP server
 
-### Pattern 6: Continue Previous Work
+# Attach to Remote
+opencode attach <url>            # Attach to running instance
 
-```bash
-# Continue last session
-opencode run --continue
-
-# Fork and continue (keeps original intact)
-opencode run --continue --fork
-```
-
----
-
-## Session-Based Work
-
-OpenCode maintains **sessions** that preserve context across runs:
-
-```bash
-# Start a new session
-opencode run "Implement user authentication"
-
-# Continue it later
-opencode run --continue
-
-# Or continue a specific session
-opencode run --session session-abc123
-```
-
-### Session Lifecycle
-
-1. **Create**: Run `opencode run "prompt"` or `opencode`
-2. **Continue**: Use `--continue` or `--session <id>`
-3. **Fork**: Use `--fork` to branch from a session
-4. **Export**: Save session data as JSON
-5. **Delete**: Remove old sessions
-
----
-
-## Model Selection
-
-### Format
-
-```
-provider/model
-```
-
-Examples:
-- `openai/gpt-4o`
-- `anthropic/claude-sonnet-4`
-- `opencode/gpt-4o`
-- `google/gemini-2.5-pro`
-
-### List Available Models
-
-```bash
-# All models
-opencode models
-
-# Provider-specific
-opencode models openai
-opencode models anthropic
-```
-
-### Model Variants (Reasoning Effort)
-
-Some models support reasoning effort levels:
-
-```bash
-opencode run --variant high "Solve this complex algorithm problem"
-opencode run --variant max "Architect a distributed system"
-opencode run --variant minimal "Quick code review"
-```
-
----
-
-## JSON Mode (For Automation)
-
-Use `--format json` for machine-readable output:
-
-```bash
-opencode run --format json "Refactor this code" | jq .
-```
-
-Useful for:
-- CI/CD integration
-- Scripting
-- Parsing results programmatically
-
----
-
-## Web Interface
-
-For a GUI experience:
-
-```bash
-# Start server + open browser
-opencode web
-
-# Custom port
-opencode web --port 8080
-
-# Custom hostname
-opencode web --hostname 0.0.0.0
-```
-
----
-
-## Troubleshooting
-
-### "sysctl not found" Error
-
-**Problem**: OpenCode can't find `sysctl` command
-**Solution**:
-```bash
-export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
-```
-
-Add to `~/.zshrc` to make permanent.
-
-### "Failed to change directory" Error
-
-**Problem**: OpenCode treats arguments as directory paths
-**Solution**: Use flags like `--version`, `--help`, or `run` explicitly:
-```bash
-# Wrong
-opencode version
-
-# Right
-opencode --version
-```
-
-### OpenCode hangs or freezes
-
-**Problem**: Interactive TUI waiting for input
-**Solution**: Press `Ctrl+C` to exit, or use `run` mode for non-interactive tasks.
-
-### Permission issues
-
-**Problem**: Can't write to files
-**Solution**: Ensure file/directory permissions allow your user to write:
-```bash
-chmod +w ./path/to/file
+# Utilities
+opencode stats                   # Token usage & costs
+opencode debug                   # Debug/troubleshooting tools
+opencode upgrade [target]       # Upgrade opencode
+opencode uninstall               # Remove opencode
+opencode db                      # Database tools
 ```
 
 ---
 
 ## Integration with OpenClaw
 
-### Use via exec tool
+**You are the orchestrator. OpenCode is your worker.**
+
+### When to Delegate
+- Multi-file refactoring
+- Complex feature implementation
+- PR review and fixes
+- Code exploration requiring sustained context
+
+### When to Do It Yourself
+- Simple one-line edits
+- Reading files
+- Quick commands
+
+### Pattern: Delegate via exec
 
 ```bash
-# For simple tasks
-bash command:"opencode run 'Add error handling'"
+# Simple task (foreground, wait for result)
+opencode run "Add error handling to auth module"
 
-# For longer tasks (background)
-bash background:true command:"opencode run 'Refactor entire codebase'"
+# Complex task (background, check later)
+# Use exec with background:true
+
+# With file context
+opencode run -f src/auth.js -f src/db.js "Fix the auth bug"
+
+# Continue previous work
+opencode run --continue
 ```
 
-### Check current sessions
+### Multi-Agent Pattern
 
 ```bash
-bash command:"opencode session list"
+# Agent 1: Analyze
+opencode run --session analyze "Explore codebase structure"
+# Agent 2: Implement
+opencode run --session implement "Implement feature based on analysis"
+# Agent 3: Test
+opencode run --session test "Write tests for the implementation"
 ```
 
-### View stats
+---
 
-```bash
-bash command:"opencode stats"
-```
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `sysctl not found` | `export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"` |
+| `Failed to change directory` | Use `--version` or `run` subcommand explicitly |
+| Freezes/hangs | `Ctrl+C` to exit; use `run` mode for non-interactive tasks |
+| Permission denied | `chmod +w ./path/to/file` |
 
 ---
 
-## Tips & Best Practices
-
-1. **Be specific**: Clear prompts produce better results
-2. **Use files**: Attach relevant files with `-f` for context
-3. **Iterate**: Use `--continue` to build on previous work
-4. **Fork experiments**: Use `--fork` to try variations safely
-5. **Choose models wisely**: Different models excel at different tasks
-6. **Monitor costs**: Use `opencode stats` to track token usage
-7. **Leverage sessions**: Sessions maintain context across interactions
-
----
-
-## Comparison to Other Tools
-
-| Feature | OpenCode | Cursor | Windsurf | Claude Code |
-|---------|----------|--------|----------|-------------|
-| Interface | CLI/TUI | GUI | GUI | CLI |
-| Terminal-native | ✅ | ❌ | ❌ | ✅ |
-| Session management | ✅ | ✅ | ✅ | ✅ |
-| GitHub PR integration | ✅ | ✅ | ✅ | ✅ |
-| Model support | Multi | Multi | Multi | Anthropic |
-| MCP support | ✅ | ❌ | ❌ | ❌ |
-
-**Choose OpenCode when**:
-- You prefer terminal workflows
-- Need CI/CD integration
-- Want headless/server mode
-- Require MCP protocol support
-
----
-
-## Documentation & Resources
-
-- **Version**: `opencode --version`
-- **Help**: `opencode --help` or `opencode <command> --help`
-- **Models**: `opencode models --verbose`
-- **Sessions**: `opencode session list`
-
----
-
-*Last updated: 2026-02-25*
+*Last updated: 2026-04-16 | OpenCode v1.3.9*
