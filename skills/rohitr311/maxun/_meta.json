@@ -3,11 +3,16 @@
   "slug": "maxun",
   "displayName": "Maxun",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773411792021,
-    "commit": "https://github.com/openclaw/skills/commit/748d367263d54baf1c0aea90468519e24a1c7ee3"
+    "version": "1.0.2",
+    "publishedAt": 1775842457129,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773411792021,
+      "commit": "https://github.com/openclaw/skills/commit/748d367263d54baf1c0aea90468519e24a1c7ee3"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772192208037,

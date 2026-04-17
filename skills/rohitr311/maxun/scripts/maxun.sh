@@ -12,6 +12,12 @@
 
 set -euo pipefail
 
+if [ -f .env ]; then
+  set -a
+  source .env
+  set +a
+fi
+
 BASE_URL="${MAXUN_BASE_URL:-https://app.maxun.dev}"
 API_KEY="${MAXUN_API_KEY:-}"
 
@@ -166,6 +172,7 @@ print(json.dumps(data, indent=2))
     echo ""
     echo "Environment:"
     echo "  MAXUN_API_KEY    Required. Your Maxun API key."
+    echo "  MAXUN_BASE_URL   Optional. Default: https://app.maxun.dev"
     exit 1
     ;;
 esac
