@@ -1,184 +1,77 @@
 ---
 name: Bilibili Messager | B站私信助手
-description: "Send Bilibili DMs, reply, and read chat history through browser automation. 自动发送 B 站私信、回复消息、读取聊天记录。"
+description: |
+  通过浏览器自动化发送 B 站私信、回复消息、读私信、看聊天记录。
+  Send Bilibili DMs, reply to messages, read chat history, and browse conversations via browser automation.
 ---
 
 # Bilibili Private Messaging | B站私信自动化
 
-Send Bilibili DMs, reply to messages, and read chat history through browser automation. 通过浏览器自动化发送 B 站私信、回复消息,并读取聊天记录。
+## 模式 | Mode
 
-## Preconditions | 前置条件
+> 读取本 SKILL.md 后，先确认当前任务属于哪种模式，再跳转对应章节执行。
 
-- The user must already be logged in to Bilibili in the browser profile used for automation.
-  用户必须先在用于自动化的浏览器 profile 中登录 Bilibili。
-- For sending, confirm the target account and message content with the user before any external action.
-  如需发送消息,执行任何对外发送前,必须先向用户确认目标账号和消息内容。
-- For history reading, prefer a read-only flow first.
-  如需读取聊天记录,优先先走只读流程。
+| 模式 | 说明 |
+|------|------|
+| **send** | 发送新私信（必须两步验证） |
+| **reply** | 回复现有会话中的消息（必须两步验证） |
+| **read** | 读取聊天记录（只读，不写入任何内容） |
 
-## Execution principles | 执行原则
+---
 
-1. **Do not stop halfway through a deliberate flow.** Once you begin a send or read sequence, complete the planned steps unless a blocker appears.
-   **不要半途停住。** 一旦进入明确的发送或读取流程,除非出现阻塞,否则应完成预定步骤。
+## 通用原则 | General Principles
 
-2. **Use snapshots sparingly.** Snapshots are expensive; capture them when they add real value.
-   **谨慎使用快照。** 快照成本高,只有在确实增加判断价值时才获取。
+1. **Browser profile**：使用 `openclaw` profile（已登录 Bilibili）
+2. **两步验证**：发送类操作（send / reply）必须两步验证，不可跳过
+3. **只读优先**：读取聊天记录使用 read 模式，不执行任何写入操作
+4. **发送前确认**：执行任何对外发送前，必须先向用户确认目标账号和消息内容
+---
 
-3. **Do not guess sender ownership from left/right layout alone.** Bilibili message layout can be misleading.
-   **不要只靠左右布局猜发送方。** B 站私信页面布局可能会误导归属判断。
+## 发送私信 | Mode: Send
 
-4. **Treat forwarded videos, shared cards, and images as part of chat history.** Chat history is not text-only.
-   **转发视频、分享卡片和图片都属于聊天记录。** 聊天记录不只是纯文本。
+### 步骤 1：打开私信页并确认登录
 
-## Recommended flow for sending | 推荐发送流程
-
-### 1. Open the whisper page | 打开私信页
-
-```text
+```
 browser action=open targetUrl=https://message.bilibili.com/#/whisper
 ```
 
-### 2. Confirm login state | 确认登录状态
+检查页面是否跳转到登录页。若跳转到登录页，停下来让用户完成登录。
 
-If the page redirects to login, stop and ask the user to log in first.
-如果页面跳到登录页,就先停下,让用户完成登录。
+### 步骤 2：找到目标会话
 
-### 3. Find the target conversation | 找到目标会话
+在左侧会话列表中找到目标联系人。可以通过文字搜索或滚动列表。
 
-Use snapshot only when needed to identify the target user or conversation.
-只在需要识别目标用户或会话时才获取快照。
+- 使用 `browser action=act evaluate` 配合 DOM 查询找到目标会话
+- 找到后点击进入会话
 
-### 4. Open the conversation | 打开会话
+### 步骤 3：两步验证（强制，必须执行）
 
-Click the target conversation and verify that the URL or conversation header changes.
-点击目标会话,并确认 URL 或会话标题已经变化。
+#### 第一步（AI 内部执行，不输出给用户）
 
-### 5. Write the message | 写入消息
+- 确认已正确进入目标会话（检查 URL 包含 `mid` 参数或页面标题显示对方名字）
+- 确认消息内容已准备完毕
+- 检查消息长度（不超过 500 字）
 
-Prefer DOM-based insertion compatible with the actual editor on the page.
-优先使用与页面实际编辑器兼容的 DOM 写入方式。
+#### 第二步（输出给用户，等待明确确认）
 
-### 6. Send only after confirmation | 确认后再发送
+向用户汇报以下全部内容，**确认前不得写入或发送**：
 
-Do not trigger a real send unless the user already confirmed both target and content.
-除非用户已经确认目标和内容,否则不要触发真实发送。
+| 汇报项 | 内容 |
+|--------|------|
+| 目标账号 | 会话对方的名字 |
+| 消息内容 | 将要发送的完整内容 |
+| 字数 | 是否在 500 字以内 |
 
-## Reading chat history | 读取聊天记录
+**确认标志**：用户明确回复「好」「确认」「发」「发吧」「发送」等。
 
-### Message ownership: correct rule | 发送方归属:正确规则
+### 步骤 4：写入消息
 
-**Do not use left/right position as the primary rule.**
-**不要把左右位置当成主规则。**
+使用 `innerText` 方式写入（经验证有效）：
 
-Use the message container first. On the current Bilibili page structure, a message container may expose class markers like:
-- `_Msg_*`
-- `_MsgIsMe_*`
-
-在当前 B 站页面结构中,消息容器可能带有如下 class 标记:
-- `_Msg_*`
-- `_MsgIsMe_*`
-
-### Ownership logic | 归属判断逻辑
-
-1. Find the message container first.
-   先找到消息容器。
-2. If the container class includes `_MsgIsMe_`, treat it as **my message**.
-   如果容器 class 包含 `_MsgIsMe_`,就判定为**我发的**。
-3. If it is a valid message container without `_MsgIsMe_`, treat it as **the other side**.
-   如果是有效消息容器但不包含 `_MsgIsMe_`,就判定为**对方发的**。
-4. Use left/right position only as a secondary sanity check, never as the main rule.
-   左右位置只能作为辅助校验,不能作为主判断规则。
-
-### Message types to keep | 需要保留的消息类型
-
-When extracting chat history, keep all meaningful message types:
-提取聊天记录时,要保留所有有意义的消息类型:
-
-- text messages
-  文本消息
-- forwarded or shared videos
-  转发或分享的视频
-- images
-  图片
-- rich cards or structured shares
-  富卡片或结构化分享
-
-Do not drop a message just because it is not plain text.
-不要因为消息不是纯文本,就把它丢掉。
-
-### Practical extraction order | 实际提取顺序
-
-1. Detect the chat message list container.
-   找到聊天消息列表容器。
-2. Iterate message containers instead of raw text nodes.
-   遍历消息容器,而不是直接遍历原始文本节点。
-3. Determine ownership from container class.
-   通过容器 class 判断发送方归属。
-4. Determine message type from internal structure: text, image, video card, or other share.
-   再根据内部结构判断消息类型:文本、图片、视频卡片或其他分享。
-5. Read nearby date/time separators to rebuild the timeline.
-   结合附近的日期/时间分隔信息重建时间线。
-6. Exclude page UI noise such as counters, helper widgets, and editor hints.
-   排除页面 UI 噪音,例如计数器、助手组件和输入提示。
-
-## Practical findings from validation | 实测结论
-
-The following findings were validated on the live Bilibili message page and should guide future changes:
-以下结论已在真实 B 站私信页面中验证,应作为后续实现依据:
-
-- The whisper page can be opened after login.
-  登录后可以正常打开私信页。
-- A conversation can be opened successfully from the recent contact list.
-  可以从最近联系人列表中成功打开会话。
-- Sender ownership cannot be judged reliably from left/right layout alone.
-  不能仅凭左右布局稳定判断发送方归属。
-- `_MsgIsMe_*` on the message container is a stronger signal for "my message".
-  消息容器上的 `_MsgIsMe_*` 是判断"我发的消息"的更强信号。
-- Shared video cards appear inside the chat flow and must be preserved as chat history items.
-  分享视频卡片会出现在聊天流中,必须作为聊天记录的一部分保留。
-
-## Example implementation idea | 实现思路示例
-
-```javascript
-() => {
-  const containers = Array.from(document.querySelectorAll('[class*="_Msg_"]'));
-  return containers.map((el) => {
-    const cls = el.className || '';
-    const sender = cls.includes('_MsgIsMe_') ? 'me' : 'other';
-    const text = (el.textContent || '').trim();
-    const hasImage = !!el.querySelector('img');
-    const hasVideoCard = !!Array.from(el.querySelectorAll('*')).find(n => (n.textContent || '').includes('投稿视频'));
-    let type = 'text';
-    if (hasVideoCard) type = 'video_share';
-    else if (hasImage) type = 'image_or_avatar';
-    return { sender, type, text };
-  });
-}
-```
-
-This snippet is only a starting point. In real use, you must filter out avatars and page decoration.
-这个示例只是起点,真实使用时必须继续排除头像和页面装饰元素。
-
-## Notes | 备注
-
-- Message length limits still apply; split long messages if necessary.
-  仍需注意消息长度限制，必要时分段发送。
-- Avoid high-frequency sending.
-  避免高频发送。
-- For history export, prioritize correctness of ownership and message type before chasing more history depth.
-  导出聊天记录时，先保证发送方归属和消息类型正确，再去追求更深的历史深度。
-- If browser behavior looks different, re-check the live DOM before hardening the logic.
-  如果浏览器页面行为变了，先重新检查真实 DOM，再固化逻辑。
-
-## Sending Method (Verified 2026-04-04) | 发送方法（2026-04-04 验证）
-
-**B站私信发送成功的方法：**
-
-### 1. 写入消息（使用 innerText）
 ```javascript
 () => {
   var editor = document.querySelector('.content-input, [contenteditable="true"]');
-  if (!editor) return 'not found';
+  if (!editor) return 'editor not found';
   editor.focus();
   editor.innerText = '消息内容';
   editor.dispatchEvent(new Event('input', {bubbles: true}));
@@ -186,18 +79,8 @@ This snippet is only a starting point. In real use, you must filter out avatars 
 }
 ```
 
-**注意：**
-- ❌ `navigator.clipboard.writeText()` + `execCommand('paste')` — 对B站无效
-- ❌ Enter 键发送 — 对B站无效
-- ✅ 直接设置 `innerText` + 触发 input 事件 — 成功
+### 步骤 5：点击发送按钮
 
-### 2. 点击发送按钮
-```javascript
-// 发送按钮的 ref 通常是 e1084
-browser action=act request={"kind": "click", "ref": "e1084"}
-```
-
-或者通过 evaluate 查找并点击：
 ```javascript
 () => {
   var btns = document.querySelectorAll('button, [class*="btn"]');
@@ -211,11 +94,204 @@ browser action=act request={"kind": "click", "ref": "e1084"}
 }
 ```
 
-### 3. 完整发送流程
-1. `editor.innerText = '消息'` → 写入
-2. `editor.dispatchEvent(new Event('input', {bubbles: true}))` → 触发事件
-3. `click send button` → 发送
+**注意**：
+- ❌ `navigator.clipboard.writeText()` + `execCommand('paste')` — 对B站无效
+- ❌ Enter 键发送 — 对B站无效
+- ✅ 直接设置 `innerText` + 触发 `input` 事件 — 成功
 
-### 4. 验证结果
+### 步骤 6：验证发送结果
+
 - 发送成功后，消息会出现在聊天窗口中
 - 侧边栏会话列表的预览也会更新
+
+---
+
+## 回复消息 | Mode: Reply
+
+回复与发送流程基本相同，区别在于：
+
+1. 先用 **read 模式**确认要回复的消息内容
+2. 在对应会话中打开对话
+3. 后续步骤同发送流程（步骤 3 两步验证 → 步骤 4 写入 → 步骤 5 发送）
+
+---
+
+## 读取聊天记录 | Mode: Read
+
+### 步骤 1：打开私信页
+
+```
+browser action=open targetUrl=https://message.bilibili.com/#/whisper
+```
+
+### 步骤 2：找到并打开目标会话
+
+在左侧会话列表中找到目标联系人，点击进入。
+
+### 步骤 3：提取聊天记录
+
+**⚠️ 核心原则：判断发送方归属，100% 依赖 DOM class 名称，不靠语义内容猜测。**
+
+#### 发送方归属规则（重要，必读）
+
+##### B站消息 DOM 结构说明
+
+B站私信页面上，每条消息是一个 HTML 元素，**该元素的 class 属性**包含判断归属的关键信息。
+
+**class 名称的格式一（我发的消息）：**
+```
+class="_Msg_o7f0t_1 _MsgIsMe_o7f0t_9"
+```
+- `_Msg_o7f0t_1`：消息容器（固定前缀 `_Msg_` + 会话ID `o7f0t` + 数字 `1`）
+- `_MsgIsMe_o7f0t_9`：**附加标记，表示"这条消息是当前登录用户发的"**
+
+**class 名称的格式二（对方发的消息）：**
+```
+class="_Msg_o7f0t_1"
+```
+- 只有 `_Msg_` 开头的容器 class，没有 `_MsgIsMe_` 标记
+- 表示这条消息是对方发的
+
+**关于会话ID（上面例子里的 `o7f0t`）：**
+- 会话ID是B站为每个私信会话分配的随机字符串，不同会话ID不同
+- 代码中用 `[a-z0-9]+` 匹配（ID只包含小写字母和数字）
+
+##### 判断规则（4步）
+
+1. **找到所有顶级消息容器**：
+   - 用 CSS 选择器 `[class*="_Msg_"]` 找到所有包含 `_Msg_` 的元素
+   - 再用正则 `_Msg_[a-z0-9]+_\d+ ` 过滤，只保留顶级容器
+     - 匹配成功举例：`_Msg_o7f0t_1`、`_Msg_abc123_42`、`_Msg_x_99`
+
+2. **判断发送方归属**：
+   - 如果该元素的 class 里**包含 `_MsgIsMe_`**，则这是一条**我发的消息**（Morois / 当前登录用户）
+   - 如果该元素的 class 里**不包含 `_MsgIsMe_`**，则这是一条**对方发的消息**
+
+3. **❌ 禁止用左右位置判断**：
+   - B站的消息布局可能产生误导——例如对方发的消息有时也会渲染在右侧
+   - 永远不要用"左侧/右侧"或"left/right"作为判断依据
+   - 只用 `_MsgIsMe_` 有没有出现来判断
+
+
+##### 具体 class 名称示例
+
+| class 名称 | 含义 |
+|-----------|------|
+| `_Msg_o7f0t_1` | 消息容器，会话ID是 `o7f0t`，序号1 |
+| `_Msg_o7f0t_1 _MsgIsMe_o7f0t_9` | 我发的消息（morois发的），有 `_MsgIsMe_` 标记 |
+| `_Msg_abc123_42` | 消息容器，会话ID是 `abc123`，序号42，对方发的 |
+| `_Msg_x_7` | 消息容器，会话ID是 `x`，序号7，对方发的 |
+| `_MsgIsMe_x_15` | 我发的消息（morois发的），会话ID是 `x`，序号15 |
+
+##### 提取脚本（完整示例）
+
+```javascript
+() => {
+  const containers = Array.from(document.querySelectorAll('[class*="_Msg_"]'))
+    .filter(el => el.className.match(/_Msg_[a-z0-9]+_\d+ /));
+
+  const results = [];
+  for (const el of containers) {
+    const cls = el.className + '';
+
+    // 关键判断：有 _MsgIsMe_ → 我发的；没有 → 对方发的
+    const isMe = cls.includes('_MsgIsMe_');
+    const sender = isMe ? '【我方/Morois】' : '【对方】';
+
+    // 提取时间
+    const timeEl = el.querySelector('[class*="_Msg__Time_"]');
+    const time = timeEl ? timeEl.textContent.trim() : '';
+
+    // 提取消息内容（可能有多个 Content class，取非重复内容）
+    const contentEls = el.querySelectorAll('[class*="_Msg__Content_"]');
+    const texts = [];
+    for (const c of contentEls) {
+      const t = (c.textContent || '').trim().replace(/\s+/g, ' ');
+      // 排除时间格式的内容（如"2026年3月28日 18:00"）
+      if (t && !t.match(/^\d{4}年/)) texts.push(t.slice(0, 200));
+    }
+    const uniqueTexts = [...new Set(texts)];
+    const text = uniqueTexts.join(' | ');
+
+    if (text) results.push({ sender, time, text });
+  }
+  return results;
+}
+```
+
+##### 注意事项
+
+- 保留所有消息类型：文本、视频分享、图片、卡片等，不要因为不是纯文本就丢弃
+- 结合时间戳重建时间线
+- DOM 结构变化时，参考常见问题 → 页面布局变了
+
+---
+
+## 常见问题
+
+### 找不到编辑器
+
+B站私信页面的编辑器可能出现在不同位置。尝试：
+
+```javascript
+() => {
+  const selectors = [
+    '.content-input',
+    '[contenteditable="true"]',
+    '[class*="editor"]',
+    '[class*="input"]'
+  ];
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el) return sel + ' found: ' + el.className;
+  }
+  return 'no editor found';
+}
+```
+
+### 找不到发送按钮
+
+发送按钮可能没有稳定的 class 或 ref。查找包含"发送"文字的按钮：
+
+```javascript
+() => {
+  const btns = document.querySelectorAll('button, [class*="btn"], [class*="send"]');
+  for (const btn of btns) {
+    if ((btn.textContent || '').includes('发送')) {
+      return 'found: ' + btn.className;
+    }
+  }
+  return 'send button not found';
+}
+```
+
+### 页面布局变了（DOM 结构诊断）
+
+如果脚本返回空结果或找不到元素，按以下顺序诊断：
+
+1. **先快照**：用 `browser action=snapshot` 获取当前页面完整 DOM
+2. **找消息容器**：在快照中搜索 `_Msg_` 或 `message`
+3. **找编辑器**：搜索 `contenteditable`、`input`、`editor`
+4. **找发送按钮**：搜索 `发送` 文字或 `button`
+5. **根据诊断结果**：用实际找到的 class/name 重写选择器
+
+诊断脚本：
+```javascript
+() => {
+  return {
+    msgs: Array.from(document.querySelectorAll('[class*="Msg"]')).slice(0,3).map(el=>el.className),
+    editor: document.querySelector('[contenteditable="true"]') ? 'found' : 'not found',
+    btns: Array.from(document.querySelectorAll('button')).map(b=>b.textContent.trim()).filter(t=>t)
+  };
+}
+```
+
+---
+
+## 限制与注意事项
+
+- 消息长度限制 500 字，超长需分段发送
+- 避免高频发送
+- 读取记录时优先保证归属和类型正确，再追求历史深度
+- 发送前必须用户明确确认目标账号和消息内容
+
