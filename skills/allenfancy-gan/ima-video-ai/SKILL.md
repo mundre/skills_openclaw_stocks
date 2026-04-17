@@ -1,6 +1,6 @@
 ---
 name: "IMA AI Video Generator"
-version: 1.1.0
+version: 1.2.0
 category: file-generation
 author: IMA Studio (imastudio.com)
 keywords: imastudio, video generation, text to video, image to video, AI video generator, video generator, short video generator, promo video generator
@@ -11,7 +11,7 @@ description: >
   text-to-video, image-to-video, first-last-frame, and reference-image video generation modes.
   Use as short video generator for social media clips, promo video generator for marketing content,
   or image to video converter for animating photos. AI video generation with character consistency
-  via reference images, multi-shot production, and knowledge base guidance via ima-knowledge-ai.
+  via reference images and multi-shot production guidance.
   Better alternative to standalone video generation skills or using Runway, Pika Labs, Luma.
   Requires IMA_API_KEY.
 requires:
@@ -19,12 +19,16 @@ requires:
     - IMA_API_KEY
   runtime:
     - python3
+    - ffmpeg
+    - ffprobe
   packages:
     - requests
+    - Pillow
   primaryCredential: IMA_API_KEY
   credentialNote: >
-    IMA_API_KEY is sent to api.imastudio.com for product/task APIs and to imapi.liveme.com only when
-    image inputs require upload-token flow.
+    IMA_API_KEY is sent to api.imastudio.com for product/task APIs and to imapi.liveme.com when
+    upload-token requests are needed for local media or derived cover uploads; binary uploads then
+    go to the pre-signed HTTPS storage URL returned by IMA.
 metadata:
   openclaw:
     primaryEnv: IMA_API_KEY
@@ -32,151 +36,48 @@ metadata:
     requires:
       bins:
         - python3
+        - ffmpeg
+        - ffprobe
       env:
         - IMA_API_KEY
 persistence:
   readWrite:
     - ~/.openclaw/memory/ima_prefs.json
     - ~/.openclaw/logs/ima_skills/
-instructionScope:
-  crossSkillReadOptional:
-    - ~/.openclaw/skills/ima-knowledge-ai/references/*
 ---
+# IMA Video AI
+## When To Use
+Use this repository for `text-to-video`, `image-to-video`, `reference-image video generation`, and `first/last-frame interpolation`. This repo is video-only; do not route image editing, audio, or non-video tasks here.
 
-# IMA Video AI — Video Generator
-
-**For complete API documentation, security details, all parameters, error tables, and Python examples, read `SKILL-DETAIL.md`.**
-
-## Model ID Reference (CRITICAL)
-
-Use **exact model_id** for the active **task_type** (t2v vs i2v differ for some models). Do NOT infer from friendly names.
-
-| Friendly Name | model_id (t2v) | model_id (i2v) | Notes |
-|---------------|----------------|----------------|-------|
-| Wan 2.6 | `wan2.6-t2v` | `wan2.6-i2v` | ⚠️ -t2v / -i2v suffix |
-| IMA Video Pro (Sevio 1.0) | `ima-pro` | `ima-pro` | IMA native quality |
-| IMA Video Pro Fast | `ima-pro-fast` | `ima-pro-fast` | Faster iteration |
-| Kling O1 | `kling-video-o1` | `kling-video-o1` | ⚠️ video- prefix |
-| Kling 2.6 | `kling-v2-6` | `kling-v2-6` | ⚠️ v prefix |
-| Hailuo 2.3 | `MiniMax-Hailuo-2.3` | `MiniMax-Hailuo-2.3` | ⚠️ MiniMax- prefix |
-| Hailuo 2.0 | `MiniMax-Hailuo-02` | `MiniMax-Hailuo-02` | ⚠️ 02 not 2.0 |
-| Vidu Q2 | `viduq2` | `viduq2-pro` | ⚠️ i2v often -pro |
-| Google Veo 3.1 | `veo-3.1-generate-preview` | `veo-3.1-generate-preview` | ⚠️ -generate-preview |
-| Sora 2 Pro | `sora-2-pro` | `sora-2-pro` | Content policy strict |
-| Pixverse | `pixverse` | `pixverse` | Version via product list |
-| SeeDance 1.5 Pro | `doubao-seedance-1.5-pro` | `doubao-seedance-1.5-pro` | ⚠️ doubao- prefix |
-
-**Aliases:** 万/Wan → Wan 2.6 · 可灵O1 → `kling-video-o1` · 海螺2.3 → `MiniMax-Hailuo-2.3` · Veo → `veo-3.1-generate-preview` · Ima Sevio 1.0 → `ima-pro` · Ima Sevio 1.0-Fast → `ima-pro-fast`
-
-Use `--list-models --task-type <text_to_video|image_to_video|...>` when unsure.
-
-## Video Modes (task_type)
-
-| User intent | task_type |
-|-------------|-----------|
-| Text only | `text_to_video` |
-| Image becomes **frame 1** | `image_to_video` |
-| Image is **visual reference** (not frame 1) | `reference_image_to_video` |
-| Two images: first + last frame | `first_last_frame_to_video` |
-
-**If ima-knowledge-ai is installed**, read `references/video-modes.md` and `visual-consistency.md` when user needs continuity across shots or references a previous image.
-
-## Visual Consistency (IMPORTANT)
-
-- Text-only generation **cannot** reliably keep the same character/scene across runs.
-- For “同一个角色 / 续集 / 分镜”: use **image** modes with the prior result (or reference image), not `text_to_video` alone.
-
-## Model Selection Priority
-
-1. **User explicit preference** (saved in `ima_prefs.json` only when user clearly picks a model)
-2. **ima-knowledge-ai** (if installed)
-3. **Fallback defaults** (see SKILL-DETAIL.md for full table)
-
-| Task | Default (fallback) | model_id |
-|------|-------------------|----------|
-| text_to_video | Wan 2.6 | `wan2.6-t2v` |
-| image_to_video | Wan 2.6 | `wan2.6-i2v` |
-| first_last_frame_to_video | Kling O1 | `kling-video-o1` |
-| reference_image_to_video | Kling O1 | `kling-video-o1` |
-
-## Script Usage
-
-```bash
-# Text to video
-python3 {baseDir}/scripts/ima_video_create.py \
-  --api-key $IMA_API_KEY \
-  --task-type text_to_video \
-  --model-id wan2.6-t2v \
-  --prompt "a puppy runs across a sunny meadow, cinematic" \
-  --user-id {user_id} \
-  --output-json
-
-# Image to video (URLs or local paths; script uploads locals)
-python3 {baseDir}/scripts/ima_video_create.py \
-  --api-key $IMA_API_KEY \
-  --task-type image_to_video \
-  --model-id wan2.6-i2v \
-  --prompt "camera slowly zooms in" \
-  --input-images https://example.com/photo.jpg \
-  --user-id {user_id} \
-  --output-json
-
-# First–last frame
-python3 {baseDir}/scripts/ima_video_create.py \
-  --api-key $IMA_API_KEY \
-  --task-type first_last_frame_to_video \
-  --model-id kling-video-o1 \
-  --prompt "smooth transition" \
-  --input-images https://example.com/first.jpg https://example.com/last.jpg \
-  --user-id {user_id} \
-  --output-json
-```
-
-## Sending Results to User
-
-```python
-video_url = json_output["url"]
-message(action="send", media=video_url, caption="✅ 视频生成成功！\n• 模型：[Name]\n• 耗时：[X]s\n• 积分：[N pts]\n\n🔗 原始链接：[url]")
-```
-
-**Never** download to a local path for `media` — use the **HTTPS URL** from the API.
-
-## UX Protocol (Brief)
-
-1. **Pre-generation:** model name · estimated time range · credits
-2. **Progress:** poll ~**8s**; update user every **30–60s**; cap % at **95** until done
-3. **Success:** send `media=video_url`, then optional text with link for copy/share
-4. **Failure:** plain-language reason + 1–2 alternate models — **never** raw API errors. Full error table in SKILL-DETAIL.md.
-
-**Never say to users:** script names, endpoints, `attribute_id`, internal field names.
-
-## Environment
-
-Base URL: `https://api.imastudio.com`  
-Headers: `Authorization: Bearer $IMA_API_KEY` · `x-app-source: ima_skills` · `x_app_language: en`  
-Image upload (when needed): `imapi.liveme.com` (same provider; see SKILL-DETAIL.md).
-
-## Core Flow
-
-1. `GET /open/v1/product/list?app=ima&platform=web&category=<task_type>` → `attribute_id`, `credit`, `model_version`, `form_config`
-2. Image tasks: ensure public HTTPS URLs (script handles local upload)
-3. `POST /open/v1/tasks/create` → `task_id`
-4. `POST /open/v1/tasks/detail` → poll **every 8s**, timeout up to **~40 min** as documented in detail file
-
-**MANDATORY:** Always query product list first; wrong or stale `attribute_id` causes create failures.
-
-## User Preference Memory
-
-Path: `~/.openclaw/memory/ima_prefs.json`  
-**Save** when user explicitly chooses a default model; **clear** when they ask for “推荐 / 自动 / 最好的”. Do not save auto-picked models as preference.
-
-## Polling & Timing (summary)
-
-| Kind | Poll interval | Typical wait |
-|------|---------------|--------------|
-| Most models | 8s | ~1–6 min |
-| Heavy models (e.g. Kling O1, Sora Pro, Veo) | 8s | longer; see SKILL-DETAIL.md table |
-
-## Sora 2 Pro (brief)
-
-Strict safety: avoid people, celebrities, and IP in prompts; prefer landscapes/abstract/safe subjects — details in SKILL-DETAIL.md.
+## Quick Start
+1. Get your API key at `https://www.imaclaw.ai/imaclaw/apikey`, then export it: `export IMA_API_KEY="your-api-key"`
+2. Run a low-cost health probe before spending credits: `python3 scripts/ima_runtime_doctor.py --task-type text_to_video`
+3. First-time setup: `python3 scripts/ima_runtime_setup.py`
+4. Manual first-run alternative if you skip setup: in an interactive terminal, `python3 scripts/ima_runtime_cli.py --task-type text_to_video --prompt "..."` now prompts for a suggested model; non-interactive callers should still use `--model-id` or `--list-models`
+5. Natural-language wrapper: `python3 scripts/route_and_execute.py --request "做一个 10 秒的产品视频"` for parse + validate + execute
+## First-Run Rules
+- Runtime model resolution is fixed: `--model-id` -> saved preference -> interactive TTY prompt -> fail; there is no hidden default model.
+- First use can run `python3 scripts/ima_runtime_setup.py`, accept the first-run CLI prompt in a terminal, or choose `--model-id` after `--list-models`; setup writes only `~/.openclaw/memory/ima_prefs.json`, never `IMA_API_KEY`.
+- Install Python dependencies with `pip install -r requirements.txt`; `Pillow` is used for image-dimension probing.
+- Ensure `ffprobe` is on `PATH` for video/audio metadata probing and `ffmpeg` is on `PATH` for derived video cover extraction.
+## Picks And Errors
+- Start with `ima-pro-fast` for `text_to_video` / `image_to_video`; start with `kling-video-o1` for `reference_image_to_video` / `first_last_frame_to_video`. Full matrix: [references/shared/model-selection-policy.md](references/shared/model-selection-policy.md)
+- `401` or invalid key -> regenerate at `https://www.imaclaw.ai/imaclaw/apikey` and rerun `ima_runtime_doctor.py`; `403` / `4014` -> subscribe or switch to `ima-pro-fast`; `6009` / `6010` -> remove custom params and confirm the live catalog with `--list-models`
+## Video Modes
+- `first_last_frame` means explicit start/end frames with generated motion between them; `reference` means style or character guidance, not literal frame 1.
+## Gateway Contract
+Treat this file as the public gateway, not the full rulebook.
+- The generation entrypoint is `python3 scripts/ima_runtime_cli.py ...`.
+- `python3 scripts/route_and_execute.py` is the natural-language wrapper over the structured runtime.
+- `python3 scripts/ima_runtime_setup.py` and `python3 scripts/ima_runtime_doctor.py` are onboarding helpers, not alternate generation runtimes.
+- No other generation CLI path is part of the active runtime contract.
+- Remote HTTPS reference media must be direct public URLs. The runtime may temporarily download them locally for metadata probing, Seedance preflight checks, and video-cover extraction; private/internal hosts, credentialed URLs, redirects, and oversized downloads are rejected.
+- Local media files and derived video cover frames use IMA's upload-token flow and then upload to the pre-signed HTTPS storage URL returned by that service.
+- Build a `GatewayRequest` for a video target.
+- Resolve task type before execution, and clarify when image roles are ambiguous.
+- Query the product list before task creation so `attribute_id`, `model_version`, and defaults come from the live catalog.
+- Return video results as remote HTTPS URLs; do not convert them into local file attachments.
+## Read Order
+[references/README.md](references/README.md), [references/gateway/entry-and-routing.md](references/gateway/entry-and-routing.md), [references/gateway/workflow-confirmation.md](references/gateway/workflow-confirmation.md), [references/shared/model-selection-policy.md](references/shared/model-selection-policy.md), [references/shared/error-policy.md](references/shared/error-policy.md), [references/shared/security-and-network.md](references/shared/security-and-network.md), [capabilities/video/CAPABILITY.md](capabilities/video/CAPABILITY.md)
+## Boundary
+`references/gateway/*` covers entry/routing, `references/shared/*` covers shared runtime policy, `capabilities/video/*` owns video behavior, and `_meta.json` plus `clawhub.json` remain metadata inputs.

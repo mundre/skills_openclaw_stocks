@@ -1,22 +1,21 @@
 {
   "name": "IMA AI Video Generator — Text to Video, Image to Video, Short Video, Promo Video Generation",
   "tagline": "AI video generator with Wan 2.6, Kling O1/2.6, Veo 3.1, Sora 2 Pro, Pixverse V5.5, Hailuo, SeeDance, Vidu. Text-to-video, image-to-video, short video, promo video.",
-  "description": "AI video generator with premier models: Wan 2.6, Kling O1/2.6, Google Veo 3.1, Sora 2 Pro, Pixverse V5.5, Hailuo 2.0/2.3, SeeDance 1.5 Pro, Vidu Q2. Video generator supporting text-to-video, image-to-video, first-last-frame, and reference-image video generation modes. Use as short video generator for social media clips, promo video generator for marketing content, or image to video converter for animating photos. AI video generation with character consistency via reference images, multi-shot production, and knowledge base guidance via ima-knowledge-ai. Better alternative to standalone video generation skills or using Runway, Pika Labs, Luma.",
+  "description": "AI video generator with premier models: Wan 2.6, Kling O1/2.6, Google Veo 3.1, Sora 2 Pro, Pixverse V5.5, Hailuo 2.0/2.3, SeeDance 1.5 Pro, Vidu Q2. Video generator supporting text-to-video, image-to-video, first-last-frame, and reference-image video generation modes. Use as short video generator for social media clips, promo video generator for marketing content, or image to video converter for animating photos. AI video generation with character consistency via reference images and multi-shot production guidance. Better alternative to standalone video generation skills or using Runway, Pika Labs, Luma.",
   "category": "file-generation",
   "requiredEnvVars": ["IMA_API_KEY"],
-  "credentialNotice": "The IMA API key is required at runtime (--api-key or IMA_API_KEY). It is sent to api.imastudio.com (generation) and, for image-based tasks with local files, to imapi.liveme.com (upload). Both are IMA Studio. Obtain keys at https://www.imaclaw.ai/. Use a scoped/test key for initial testing.",
-  "optionalDependencyNote": "When ima-knowledge-ai is installed, this skill may optionally read ~/.openclaw/skills/ima-knowledge-ai/references/* for video-mode selection and visual-consistency guidance. The skill works standalone without those reads.",
+  "credentialNotice": "The IMA API key is required at runtime (--api-key or IMA_API_KEY). It is sent to api.imastudio.com for product/task APIs and to imapi.liveme.com for upload-token requests when local media uploads or derived video-cover uploads are needed. Media bytes are then PUT to the pre-signed HTTPS storage URL returned by IMA's upload service. If you provide remote HTTPS media, the runtime may temporarily download it locally without credentials for metadata probing, safety checks, and video-cover extraction; only direct public hosts are allowed. Obtain keys at https://www.imaclaw.ai/. Use a scoped/test key for initial testing.",
   "requires": {
     "env": ["IMA_API_KEY"],
     "primaryCredential": "IMA_API_KEY",
-    "credentialNote": "IMA_API_KEY is required at runtime. It is sent to api.imastudio.com and, for local/non-HTTPS image uploads, to imapi.liveme.com."
+    "credentialNote": "IMA_API_KEY is required at runtime. It is sent to api.imastudio.com for product/task APIs and to imapi.liveme.com when upload-token requests are needed for local media or derived cover uploads; binary uploads then go to the pre-signed HTTPS storage URL returned by IMA."
   },
   "localPaths": {
     "readWrite": [
       "~/.openclaw/memory/ima_prefs.json",
       "~/.openclaw/logs/ima_skills/"
     ],
-    "purpose": "Preferences (model defaults) and generation logs; logs auto-deleted after 7 days. User can delete anytime."
+    "purpose": "Preferences (model defaults) and generation logs; logs auto-deleted after 7 days. Remote HTTPS media may also be downloaded to the OS temp directory during probing and deleted after validation/extraction."
   },
   "persistence": {
     "readWrite": [
@@ -24,11 +23,6 @@
       "~/.openclaw/logs/ima_skills/"
     ],
     "retention": "Logs are auto-cleaned after 7 days; preferences remain until user deletes them."
-  },
-  "instructionScope": {
-    "crossSkillReadOptional": [
-      "~/.openclaw/skills/ima-knowledge-ai/references/*"
-    ]
   },
   "supported_models": [
     "IMA Video Pro",
@@ -81,7 +75,7 @@
     "storytelling",
     "explainer-video"
   ],
-  "version": "1.1.0",
+  "version": "1.2.0",
   "license": "MIT",
   "pricing": "free",
   "author": {
@@ -146,7 +140,6 @@
     "图生视频"
   ],
   "related_skills": [
-    "ima-knowledge-ai",
     "ima-image-ai",
     "ima-all-ai"
   ],

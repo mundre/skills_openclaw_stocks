@@ -1,45 +1,16 @@
 # Security Disclosure: ima-video-ai
 
-## Purpose
+The detailed security policy lives in the layered references, but the release-facing summary is:
 
-This document explains endpoint usage, credential flow, and local data behavior for `ima-video-ai`.
+- `api.imastudio.com` handles product lookup, task creation, and polling.
+- `imapi.liveme.com` handles upload-token requests when local media or derived cover uploads are needed.
+- Binary uploads go to the pre-signed HTTPS storage URL returned by the upload-token API.
+- User-supplied remote media is limited to direct public HTTPS URLs and may be downloaded locally into the OS temp directory for probing, validation, and video-cover extraction before the temp files are deleted.
 
-## Network Endpoints
+Further details:
 
-| Domain | Used For | Trigger |
-|---|---|---|
-| `api.imastudio.com` | Product list, task create, task detail polling | All requests |
-| `imapi.liveme.com` | Image upload token + binary upload | Only for image tasks with local/non-HTTPS image inputs |
+- Network endpoints, credential flow, temp-file behavior, and privacy notes: `references/shared/security-and-network.md`
+- API failure translation and user-visible error handling: `references/shared/error-policy.md`
+- Task create and polling contract: `references/operations/api-contract-and-errors.md`
 
-For image tasks that already use HTTPS image URLs, the script does not call the secondary upload domain.
-
-## Credential Flow
-
-| Credential | Where Sent | Why |
-|---|---|---|
-| `IMA_API_KEY` | `api.imastudio.com` | Open API auth (`Authorization: Bearer ...`) |
-| `IMA_API_KEY` | `imapi.liveme.com` | Upload-token auth for local/non-HTTPS image uploads |
-
-The script validates `task_type` and image count before task creation to reduce accidental credential/domain usage.
-
-## Upload Signing Constants
-
-`APP_ID` and `APP_KEY` in script source are request-signing constants for upload APIs (not repository secrets).
-
-## Cross-Skill Reads
-
-This skill is self-contained for core API execution.
-If `ima-knowledge-ai` is installed, the agent may optionally read:
-
-- `~/.openclaw/skills/ima-knowledge-ai/references/*`
-
-for mode-selection and visual-consistency guidance only.
-
-## Local Data
-
-| Path | Content | Retention |
-|---|---|---|
-| `~/.openclaw/memory/ima_prefs.json` | Per-user model preference cache | Until manually removed |
-| `~/.openclaw/logs/ima_skills/` | Operational logs | Auto-cleaned by script after 7 days |
-
-No API key is written into repository files.
+This repo remains video-only. No additional capability-specific security surface is documented outside those files.
