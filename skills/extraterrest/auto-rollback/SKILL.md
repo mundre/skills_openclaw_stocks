@@ -1,6 +1,7 @@
 ---
 name: auto-rollback
 description: Timed rollback safety net for edits to ~/.openclaw/openclaw.json on macOS. Use when changing Gateway config, restarting Gateway after config edits, or needing backup + auto-restore protection via launchd and BOOT.md health-check cancellation.
+license: MIT
 metadata:
   {
     "openclaw":

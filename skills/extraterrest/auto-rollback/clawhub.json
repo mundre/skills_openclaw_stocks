@@ -1,6 +1,6 @@
 {
   "name": "auto-rollback",
-  "version": "1.2.0-alpha.1",
+  "version": "1.2.0-alpha.2",
   "description": "Safe config-change safety net for openclaw.json (backup + timed rollback + health-check auto-cancel)",
   "author": "Bagel",
   "license": "MIT",
@@ -42,5 +42,5 @@
     "openclaw.json",
     "health check"
   ],
-  "releaseNotes": "v1.2.0 - CRITICAL FIX: (1) auto-rollback.sh now checks Gateway health before executing rollback, preventing false rollbacks; (2) BOOT.md improved to wait 30s for Gateway health check before cancelling rollback; (3) Added curl requirement for health endpoint checks; (4) Documented correct restart methods (openclaw gateway restart or gateway.config.apply, NOT gateway.restart SIGUSR1)"
+  "releaseNotes": "v1.2.0-alpha.2 - Add MIT license to SKILL.md frontmatter; v1.2.0-alpha.1 fixed rollback health checks and documented correct restart methods."
 }
