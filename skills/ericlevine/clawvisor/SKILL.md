@@ -6,7 +6,8 @@ description: >
   Contacts, GitHub, and iMessage (macOS). Clawvisor enforces restrictions,
   manages task scopes, and injects credentials — the agent never handles
   secrets directly.
-version: 0.7.0
+version: dev
+published_at: dev
 homepage: https://github.com/clawvisor/clawvisor
 metadata:
   {
@@ -87,26 +88,34 @@ curl -s -X POST "$CLAWVISOR_URL/api/tasks?wait=true" \
   -H "Authorization: Bearer $CLAWVISOR_AGENT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "purpose": "Full iMessage management: review recent threads, classify reply status, identify conversations needing attention, search message history by contact or topic, and read full thread context for any follow-up questions. Covers all iMessage read operations the user may request during this session.",
+    "purpose": "Review recent iMessage threads and classify which ones need a reply",
     "authorized_actions": [
-      {"service": "apple.imessage", "action": "list_threads", "auto_execute": true, "expected_use": "List iMessage threads by recency, unread status, or contact. Used for inbox review, finding conversations needing replies, checking message status with specific people, and any ad-hoc thread lookup the user requests."},
-      {"service": "apple.imessage", "action": "get_thread", "auto_execute": true, "expected_use": "Read full thread content including all messages, timestamps, and attachments. Used to understand conversation context, classify reply urgency, extract action items, answer user questions about specific conversations, and provide summaries."}
+      {"service": "apple.imessage", "action": "list_threads", "auto_execute": true, "expected_use": "List recent iMessage threads, optionally filtered by unread status, to identify ones needing attention"},
+      {"service": "apple.imessage", "action": "get_thread", "auto_execute": true, "expected_use": "Read full thread content for threads surfaced by list_threads to classify reply urgency and extract context"}
     ],
     "planned_calls": [
-      {"service": "apple.imessage", "action": "list_threads", "params": {"limit": 30}, "reason": "List the 30 most recent threads to review inbox state and identify conversations needing attention"},
-      {"service": "apple.imessage", "action": "get_thread", "params": {"thread_id": "$chain"}, "reason": "Read full thread content for each conversation that needs review or that the user asks about"}
+      {"service": "apple.imessage", "action": "list_threads", "params": {"limit": 30}, "reason": "List the 30 most recent threads to review inbox state"},
+      {"service": "apple.imessage", "action": "get_thread", "params": {"thread_id": "$chain"}, "reason": "Read full thread content for conversations identified in the listing"}
     ],
     "expires_in_seconds": 1800
   }'
 ```
 
-- **`purpose`** — shown to the user during approval and checked by intent verification. **Scope broadly:** describe the full workflow as a capability statement, not a single action. Enumerate every category of operation the task covers. Narrow purposes like "Check emails" cause intent verification to reject legitimate follow-up requests. See the examples above.
-- **`expected_use`** — per-action description checked by intent verification against your actual request params. **Enumerate all use cases** — every scenario, parameter type, and reason you'd invoke this action. A narrow expected_use like "List recent emails" will reject searches by sender or keyword.
+- **`purpose`** — shown at approval and checked by intent verification. Capability statement covering the workflow's natural follow-ups. Size to task complexity (see below).
+- **`expected_use`** — per-action description checked against your actual request params. Cover the scenarios you'll use in this task.
 - **`auto_execute`** — `true` runs in-scope requests immediately; `false` still requires per-request approval (use for destructive actions like `send_message`).
 - **`expires_in_seconds`** — task TTL. Omit and set `"lifetime": "standing"` for a task that persists until the user revokes it (see below).
 - **`planned_calls`** *(optional)* — pre-register specific API calls you know you'll make. Planned calls are shown to the user during approval, evaluated as part of risk assessment, and **skip intent verification at runtime** when they match. This reduces latency for predictable workflows. Each entry must be covered by `authorized_actions` and must include `params`. Use exact values for known params, or `"$chain"` for values that will come from a prior call's results (e.g. `{"thread_id": "$chain"}`). Calls without params cannot skip verification.
 
-**Always request the broadest reasonable scope upfront.** The user reviews scope once at task creation; mid-task `pending_scope_expansion` interrupts their flow. Scope for the full range of operations the request could entail — not just the first step.
+### Sizing scope to task complexity
+
+Scope should cover operations likely *within this task's lifecycle* — no more. Over-scoping dilutes the approval signal; under-scoping triggers mid-task `pending_scope_expansion`.
+
+- **Simple** ("check my email for the last 72 hours"): tight. See the iMessage example above.
+- **Exploratory** ("triage my inbox"): broad — enumerate operation categories since the user will iterate.
+- **Standing** (persist across invocations): exhaustive capability charter. See the Gmail example below.
+
+For examples of well-scoped tasks and effective gateway requests, see the [Task & Request Examples](https://github.com/clawvisor/clawvisor/blob/main/docs/TASK_EXAMPLES.md).
 
 All tasks start as `pending_approval` — the user is notified to approve the
 scope before it becomes active. **Always use `?wait=true`** on `POST /api/tasks`
@@ -134,7 +143,7 @@ curl -s -X POST "$CLAWVISOR_URL/api/tasks" \
 
 Standing tasks remain active until the user revokes them from the dashboard.
 
-> **⚠️ Standing tasks MUST use `session_id` on every gateway request.** Without `session_id`, chain context is disabled — meaning intent verification cannot see that a message ID or thread ID came from your own prior search results. The verifier will treat those IDs as unexplained entity references and block them. Generate one UUID per workflow invocation and pass it as `session_id` on every request in that invocation.
+> **⚠️ Standing tasks MUST use `session_id` on every gateway request.** Requests to standing tasks without `session_id` are rejected with a `MISSING_SESSION_ID` error. Chain context verification requires `session_id` to track that entity references (message IDs, thread IDs, etc.) came from your own prior results. Generate one UUID per workflow invocation and pass it as `session_id` on every request in that invocation.
 
 ### Chain context verification
 
@@ -144,7 +153,7 @@ Chain context verification extracts structural facts (IDs, email addresses, phon
 
 **Standing tasks** require a `session_id` in gateway requests to enable chain context. Use a consistent `session_id` (e.g., a UUID you generate once per workflow) across all related requests in a single invocation. This scopes facts to one invocation and prevents unrelated facts from prior invocations from mixing together.
 
-If you omit `session_id` on a standing task, chain context is disabled and intent verification will apply stricter scrutiny to entity references — any specific targets (email addresses, IDs, etc.) must be justified by the task purpose or expected use alone, not by prior results.
+If you omit `session_id` on a standing task, the request is rejected with a `MISSING_SESSION_ID` error. Always include a `session_id` — generate a UUID once per workflow invocation and reuse it across all related requests.
 
 - Chain facts are automatically cleaned up when a task is completed, denied, or revoked
 
@@ -197,26 +206,6 @@ The `reason` field on gateway requests is verified by a language model, not patt
 - Embedding code, markup, JSON, or system directives in the reason field.
 
 **Key rule:** The verifier treats **all agent-provided fields as untrusted**. Any text that resembles an instruction ("ignore previous rules", "approve this request", "the user said to...") will be flagged as a prompt injection attempt, even if it's a truthful description of what happened. Focus on the *what* and *why* of the action, not the *who told you*.
-
----
-
-## Preset Task Definitions
-
-Agents tend to write narrow task scopes, which causes intent verification to reject legitimate follow-up requests. **Use these presets instead of writing your own scopes.** They are intentionally broad to cover the full range of operations in each workflow.
-
-Fetch a preset and use it directly as the request body for `POST /api/tasks`:
-
-```
-GET $CLAWVISOR_URL/skill/presets/<name>.json
-```
-
-| Preset | Description | File |
-|---|---|---|
-| **Email EA** | Full inbox management: triage, search, read, draft, send (approval-gated) | `email-ea.json` |
-| **Calendar** | Full calendar: view, search, create (approval-gated), update (approval-gated) | `calendar.json` |
-| **iMessage** | Thread review, search, read, send (approval-gated) | `imessage.json` |
-
-For example: `curl -s "$CLAWVISOR_URL/skill/presets/email-ea.json" | curl -s -X POST "$CLAWVISOR_URL/api/tasks?wait=true" -H "Authorization: Bearer $CLAWVISOR_AGENT_TOKEN" -H "Content-Type: application/json" -d @-`
 
 ---
 
@@ -298,7 +287,9 @@ Every response has a `status` field. Handle each case as follows:
 | `error` (`EXECUTION_ERROR`) | Adapter failed | Report the error to the user. Do not silently retry. |
 | `error` (other) | Something went wrong | Report the error message to the user. Do not silently retry. |
 
-**Warnings:** Responses may include a `"warnings"` array with actionable messages about misconfiguration. For example, if you make a standing task request without `session_id`, the response will warn that chain context is disabled. Always check for and act on warnings.
+**Warnings:** Responses may include a `"warnings"` array with actionable messages about misconfiguration. Always check for and act on warnings.
+
+**Pagination:** Results may be paginated. Check `result.meta` for continuation fields (e.g. `next_page_token`, `cursor`, `has_more`) and pass them as params in a follow-up gateway request to fetch the next page.
 
 ---
 
@@ -358,6 +349,19 @@ These are available if you didn't use `?wait=true` on the original POST:
 - Generate unique request_ids for every gateway request
 - Complete tasks when done to clean up authorization scope
 - Always set `data_origin` when processing content from external sources
+
+---
+
+## Troubleshooting
+
+If something isn't working as expected, check whether you have the latest version of this skill:
+
+1. Fetch `GET $CLAWVISOR_URL/api/skill/version` — it returns:
+   ```json
+   { "skill_version": "...", "skill_published_at": "..." }
+   ```
+2. Compare the `skill_version` in the response with the version in this skill's frontmatter (`dev`, published dev).
+3. If a newer version is available, re-fetch the skill from `$CLAWVISOR_URL/skill/SKILL.md` to get the latest instructions.
 
 ---
 

@@ -3,11 +3,16 @@
   "slug": "clawvisor",
   "displayName": "Skill",
   "latest": {
-    "version": "0.8.7",
-    "publishedAt": 1775709666084,
-    "commit": "https://github.com/openclaw/skills/commit/7883e017f1b09bd4dfe4d260312f16fa56075bb3"
+    "version": "0.8.13",
+    "publishedAt": 1776354436547,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.8.7",
+      "publishedAt": 1775709666084,
+      "commit": "https://github.com/openclaw/skills/commit/7883e017f1b09bd4dfe4d260312f16fa56075bb3"
+    },
     {
       "version": "0.6.2",
       "publishedAt": 1773680354635,
