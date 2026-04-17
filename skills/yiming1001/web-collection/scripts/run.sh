@@ -2,9 +2,8 @@
 set -euo pipefail
 
 # Unified entry for local/cloud deployment.
-# - local: run the bundled closed loop against the local bridge
-# - cloud: dispatch through the cloud connector API to a connected local connector
-# - remote: legacy path; if WEB_COLLECTION_REMOTE_SSH is set, run on collector host via SSH
+# - local: run the local send-command script
+# - cloud: run the cloud send-command script
 
 PLATFORM="douyin"
 METHOD=""
@@ -34,8 +33,6 @@ CLOUD_DEVICE_ID="${WEB_COLLECTION_CLOUD_DEVICE_ID:-}"
 CLOUD_TOKEN="${WEB_COLLECTION_CLOUD_TOKEN:-}"
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
-REMOTE_SSH="${WEB_COLLECTION_REMOTE_SSH:-}"
-REMOTE_WORKDIR="${WEB_COLLECTION_REMOTE_WORKDIR:-/Users/zhym/coding/web_pluging/web_collection}"
 HAS_CONNECTION_MODE_ARG="false"
 HAS_PLATFORM_ARG="false"
 HAS_MAX_ITEMS_ARG="false"
@@ -97,8 +94,6 @@ Env:
   WEB_COLLECTION_CLOUD_DEVICE_ID  optional, target connector device_id
   WEB_COLLECTION_CLOUD_TOKEN      optional, bearer token for cloud dispatch
   WEB_COLLECTION_BRIDGE_CMD       optional bridge start command
-  WEB_COLLECTION_REMOTE_SSH       optional, e.g. user@collector-host
-  WEB_COLLECTION_REMOTE_WORKDIR   default: /Users/zhym/coding/web_pluging/web_collection
 EOF
 }
 
@@ -356,6 +351,20 @@ ensure_cloud_preferences() {
   [[ -n "$CLOUD_TOKEN" ]] || die "cloud mode requires cloud token (set defaultCloudToken or pass --cloud-token)"
 }
 
+apply_cloud_strict_defaults() {
+  if [[ "$CONNECTION_MODE" != "cloud" ]]; then
+    return 0
+  fi
+
+  # Cloud mode uses a strict template to avoid silently dropping fields when values are empty.
+  [[ -n "$MAX_ITEMS" ]] || MAX_ITEMS="20"
+  [[ -n "$FEATURE" ]] || FEATURE="video"
+  [[ -n "$MODE" ]] || MODE="search"
+  [[ -n "$INTERVAL_VAL" ]] || INTERVAL_VAL="300"
+  [[ -n "$FETCH_DETAIL" ]] || FETCH_DETAIL="true"
+  [[ -n "$DETAIL_SPEED" ]] || DETAIL_SPEED="fast"
+}
+
 route_config_rows() {
   cat <<'EOF'
 douyin|videoKeyword|keywords|video|search|300|true|fast
@@ -529,6 +538,58 @@ process.stdout.write(JSON.stringify(out));
 '
 }
 
+build_preflight_config_json() {
+  local keywords_json links_json
+  keywords_json="$(json_array_from_lines "${KEYWORDS[@]-}")"
+  links_json="$(json_array_from_lines "${LINKS[@]-}")"
+
+  export CONNECTION_MODE PLATFORM METHOD MAX_ITEMS FETCH_DETAIL DETAIL_SPEED EXPORT_TARGET BRIDGE_URL CLOUD_BASE_URL CLOUD_DEVICE_ID CLOUD_TOKEN keywords_json links_json
+  node -e '
+const config = {};
+
+const parseJSON = (value, fallback) => {
+  if (!value) return fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+};
+
+const set = (key, value) => {
+  if (value === "" || value === undefined || value === null) return;
+  config[key] = value;
+};
+
+set("connectionMode", process.env.CONNECTION_MODE);
+set("platform", process.env.PLATFORM);
+set("method", process.env.METHOD);
+const keywords = parseJSON(process.env.keywords_json, []);
+const links = parseJSON(process.env.links_json, []);
+if (Array.isArray(keywords) && keywords.length > 0) config.keywords = keywords;
+if (Array.isArray(links) && links.length > 0) config.links = links;
+set("defaultMaxItems", process.env.MAX_ITEMS ? Number(process.env.MAX_ITEMS) : "");
+set("defaultFetchDetail", process.env.FETCH_DETAIL);
+set("defaultDetailSpeed", process.env.DETAIL_SPEED);
+set("defaultBridgeUrl", process.env.BRIDGE_URL);
+set("defaultCloudBaseUrl", process.env.CLOUD_BASE_URL);
+set("defaultCloudDeviceId", process.env.CLOUD_DEVICE_ID);
+set("defaultCloudToken", process.env.CLOUD_TOKEN);
+set("exportTarget", process.env.EXPORT_TARGET);
+
+process.stdout.write(JSON.stringify(config));
+'
+}
+
+run_preflight_check() {
+  local preflight_script config_json
+  preflight_script="$SKILL_DIR/scripts/preflight_check.sh"
+  [[ -x "$preflight_script" ]] || die "missing preflight helper: $preflight_script"
+  config_json="$(build_preflight_config_json)"
+  "$preflight_script" \
+    --config-json "$config_json" \
+    --mode "$CONNECTION_MODE" \
+    --format json \
+    --quiet-success >/dev/null
+  echo "[web-collection] preflight ok" >&2
+}
+
 default_bridge_cmd() {
   local source_server="/Users/zhym/coding/web_pluging/web_collection/bridge/bridge-server.js"
   if command -v node >/dev/null 2>&1 && [[ -f "$source_server" ]]; then
@@ -546,15 +607,7 @@ default_bridge_cmd() {
 }
 
 resolve_loop_script() {
-  local connector_loop="$REMOTE_WORKDIR/bridge/collect_and_export_loop.sh"
-  local bundled_loop="$SKILL_DIR/scripts/collect_and_export_loop.sh"
-
-  if [[ -f "$connector_loop" ]]; then
-    printf '%s\n' "$connector_loop"
-    return 0
-  fi
-
-  printf '%s\n' "$bundled_loop"
+  printf '%s\n' "$SKILL_DIR/scripts/collect_and_export_loop.sh"
 }
 
 resolve_cloud_loop_script() {
@@ -567,6 +620,7 @@ fi
 
 apply_stored_preferences
 CONNECTION_MODE="$(normalize_connection_mode "$CONNECTION_MODE")"
+run_preflight_check
 
 if [[ -n "$EXPORT_TARGET" ]]; then
   apply_export_target "$EXPORT_TARGET"
@@ -581,6 +635,7 @@ fi
 ensure_required_preferences
 
 resolve_defaults
+apply_cloud_strict_defaults
 validate_inputs
 PAYLOAD_JSON="$(build_payload_json)"
 
@@ -625,39 +680,6 @@ if [[ "$CONNECTION_MODE" == "cloud" ]]; then
   ensure_cloud_preferences
   echo "[web-collection] mode=cloud base=$CLOUD_BASE_URL device=$CLOUD_DEVICE_ID" >&2
   run_collect_cloud "$CLOUD_BASE_URL" "$CLOUD_DEVICE_ID" "$CLOUD_TOKEN" "$PAYLOAD_JSON"
-elif [[ -n "$REMOTE_SSH" ]]; then
-  echo "[web-collection] mode=remote host=$REMOTE_SSH bridge=$BRIDGE_URL" >&2
-  PAYLOAD_JSON_B64="$(printf '%s' "$PAYLOAD_JSON" | base64)"
-  ssh "$REMOTE_SSH" \
-    BRIDGE_URL="$BRIDGE_URL" \
-    REMOTE_WORKDIR="$REMOTE_WORKDIR" \
-    ENSURE_BRIDGE="$ENSURE_BRIDGE" \
-    BRIDGE_CMD="$BRIDGE_CMD" \
-    PAYLOAD_JSON_B64="$PAYLOAD_JSON_B64" \
-    'bash -s' <<'EOF'
-set -euo pipefail
-cd "$REMOTE_WORKDIR"
-
-payload_file="$(mktemp)"
-node -e 'const fs=require("fs"); fs.writeFileSync(process.argv[1], Buffer.from(process.env.PAYLOAD_JSON_B64 || "", "base64").toString("utf8"));' "$payload_file"
-
-cmd=(
-  bash ./bridge/collect_and_export_loop.sh
-  --payload-file "$payload_file"
-  --force-stop-before-start
-  --base-url "$BRIDGE_URL"
-)
-
-if [[ "$ENSURE_BRIDGE" == "true" ]]; then
-  cmd+=(--ensure-bridge)
-  if [[ -n "$BRIDGE_CMD" ]]; then
-    cmd+=(--bridge-cmd "$BRIDGE_CMD")
-  fi
-fi
-
-"${cmd[@]}"
-rm -f "$payload_file"
-EOF
 else
   echo "[web-collection] mode=local bridge=$BRIDGE_URL" >&2
   run_collect_local "$BRIDGE_URL" "$PAYLOAD_JSON"

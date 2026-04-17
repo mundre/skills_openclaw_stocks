@@ -306,9 +306,18 @@ const read = (filePath) => {
 };
 
 const data = read(prefPath) ?? read(legacyPath) ?? {};
-const mode = typeof data.defaultConnectionMode === "string" && data.defaultConnectionMode
+const envMode = typeof process.env.WEB_COLLECTION_CONNECTION_MODE === "string" && process.env.WEB_COLLECTION_CONNECTION_MODE
+  ? process.env.WEB_COLLECTION_CONNECTION_MODE
+  : "";
+const mode = envMode || (typeof data.defaultConnectionMode === "string" && data.defaultConnectionMode
   ? data.defaultConnectionMode
-  : "local";
+  : "local");
+const envCloudDeviceId = typeof process.env.WEB_COLLECTION_CLOUD_DEVICE_ID === "string"
+  ? process.env.WEB_COLLECTION_CLOUD_DEVICE_ID
+  : "";
+const envCloudToken = typeof process.env.WEB_COLLECTION_CLOUD_TOKEN === "string"
+  ? process.env.WEB_COLLECTION_CLOUD_TOKEN
+  : "";
 const redactedPreferences = { ...data };
 if (typeof redactedPreferences.defaultCloudToken === "string" && redactedPreferences.defaultCloudToken) {
   const token = redactedPreferences.defaultCloudToken;
@@ -321,7 +330,12 @@ const required = [
   "defaultDetailSpeed",
 ];
 if (mode === "cloud") {
-  required.push("defaultCloudDeviceId", "defaultCloudToken");
+  if (!(typeof data.defaultCloudDeviceId === "string" && data.defaultCloudDeviceId) && !envCloudDeviceId) {
+    required.push("defaultCloudDeviceId");
+  }
+  if (!(typeof data.defaultCloudToken === "string" && data.defaultCloudToken) && !envCloudToken) {
+    required.push("defaultCloudToken");
+  }
 }
 
 const missing = required.filter((key) => data[key] === undefined || data[key] === null || data[key] === "");
@@ -329,6 +343,10 @@ const result = {
   complete: missing.length === 0,
   mode,
   missing,
+  envConfig: {
+    cloudDeviceIdPresent: Boolean(envCloudDeviceId),
+    cloudTokenPresent: Boolean(envCloudToken),
+  },
   preferences: redactedPreferences,
 };
 

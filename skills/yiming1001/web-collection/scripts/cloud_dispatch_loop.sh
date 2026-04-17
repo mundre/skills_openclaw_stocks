@@ -242,7 +242,7 @@ node -e 'JSON.parse(process.argv[1]);' "$PAYLOAD_JSON" >/dev/null
 
 encoded_device_id="$(urlencode "$DEVICE_ID")"
 status_json="$(api_get "/api/v1/connector/cloud/status?device_id=$encoded_device_id")"
-online_hint="$(json_get_string "$status_json" 'data?.online ?? data?.connected ?? online ?? connected ?? status ?? data?.status ?? ""')"
+online_hint="$(json_get_string "$status_json" 'data?.data?.online ?? data?.data?.connected ?? data?.online ?? data?.connected ?? data?.data?.status ?? data?.status ?? ""')"
 if [[ -n "$online_hint" ]]; then
   log "cloud status=$online_hint device=$DEVICE_ID"
 else

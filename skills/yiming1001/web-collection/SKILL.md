@@ -1,7 +1,6 @@
 ---
 name: web-collection
 description: Browser plugin data collection via a local bridge or cloud dispatch to a connected local connector, in strict synchronous closed-loop mode. Cloud mode includes async command-result querying. Use for Douyin, TikTok, Xiaohongshu, Amazon, and Bilibili collection tasks.
-metadata: { "openclaw": { "emoji": "🕸️", "requires": { "bins": ["curl", "node"] } } }
 ---
 
 # Web Collection
@@ -22,16 +21,21 @@ This skill is implementation-oriented. For end-user onboarding and step-by-step 
 
 When the user asks "how to use it" or needs UI-level operation guidance, prefer this tutorial and keep the response aligned with its wording.
 
+For complex or ambiguous requests, read [references/learning-guide.md](references/learning-guide.md) before deciding what to ask or run.
+
 ## Core Rules
 
 1. Use the user's normal Chrome environment, not the isolated `openclaw` browser profile.
 2. Prefer the connector flow over generic browser tooling.
-3. Default to synchronous closed-loop execution.
-4. Do not reply before the collection script finishes.
-5. Choose one execution mode first:
-   - `local`: talk to the local bridge directly
-   - `cloud`: call the cloud connector dispatch API, which forwards to the user's connected local connector
-6. In `cloud` mode, do not rewrite the collection payload. Only wrap it in:
+3. Never ask for configuration that is already present in environment variables.
+4. Local and cloud use the same recommended defaults and overall collection flow.
+5. Cloud adds only two extra required values: `id` and `token`.
+6. Default to synchronous closed-loop execution.
+7. Do not reply before the collection script finishes.
+8. Choose one execution mode first:
+   - `local`: talk to the local bridge directly and only run the local send-command script
+   - `cloud`: call the cloud connector dispatch API and only run the cloud send-command script
+9. In `cloud` mode, do not rewrite the collection payload. Only wrap it in:
    - `device_id`
    - `action`
    - `payload`
@@ -71,8 +75,8 @@ Mode-specific defaults:
   - no extra required key if the default local bridge URL works
 - `cloud`
   - cloud base URL is fixed to `https://i-sync.cn` by default
-  - `defaultCloudDeviceId`
-  - `defaultCloudToken`
+  - `defaultCloudDeviceId` only when it is not already provided by environment variables
+  - `defaultCloudToken` only when it is not already provided by environment variables
 
 `run.sh` enforces this. If these are incomplete, collection must not start.
 
@@ -80,13 +84,10 @@ Mode-specific defaults:
 
 On first use:
 
-1. Determine the execution mode first:
-   - `local`
-   - `cloud`
-2. If the mode is `cloud`, collect these values first:
+1. Determine the execution mode first.
+2. If the mode is `cloud`, collect these values only when they are not already available from environment variables or stored preferences:
    - `defaultCloudDeviceId`
    - `defaultCloudToken`
-   - cloud URL is fixed and does not need user input
 3. Then handle the common defaults:
    - 导出方式
    - 默认采集条数
@@ -103,16 +104,6 @@ On first use:
 
 6. If the user chooses `自己配置`, ask for all four values in one message, not one by one.
 7. Only continue when `check` passes.
-
-Preferred mode prompt:
-
-```text
-第一次使用网页采集，需要先确认运行环境。
-请选择：
-- 本地
-- 云端
-[[quick_replies: 本地, 云端]]
-```
 
 Preferred cloud prompt:
 
@@ -172,6 +163,8 @@ Cloud responsibilities:
 - authenticate with `Authorization: Bearer <user_api_key>`
 - include `device_id`
 - keep the collection body unchanged inside `payload`
+- enforce a strict cloud payload template before dispatch to avoid missing fields
+  - default fallback when missing: `maxItems=20`, `mode=search`, `interval=300`, `fetchDetail=true`, `detailSpeed=fast`
 - poll `/api/v1/connector/cloud/commands/{command_id}` for final status and result
 - if single-command query is unavailable, fallback to `/api/v1/connector/cloud/commands?device_id=...`
 - treat `result` + `task_updates` as the source of completion snapshot
@@ -181,6 +174,45 @@ Do not:
 - call the user's local `19820` port from the cloud path
 - rewrite `payload` semantics
 - mix local admin token logic into cloud requests
+
+## Connector Command Ladder
+
+When collection fails, parameters look incomplete, or status is unclear, run connector checks in this order instead of guessing.
+
+Layer 1: capability
+
+- `GET /api/help`
+- `GET /api/routes`
+- `GET /api/filters` (or platform/method scoped)
+
+Layer 2: diagnostics
+
+- `GET /api/status`
+- `GET /api/platform-state`
+- `GET /api/cloud/status`
+- `POST /api/preflight` with the final request body
+
+Layer 3: execution and tracking
+
+- `POST /api/collect`
+- `GET /api/tasks/:id` (local mode)
+- `GET /api/v1/connector/cloud/commands/{command_id}` (cloud mode, preferred)
+- `GET /api/v1/connector/cloud/commands?device_id=...` (cloud fallback)
+- `POST /api/stop` or `POST /api/reset` when stuck
+
+Local command template (admin token required):
+
+```bash
+TOKEN="$(cat ~/.meixi-connector/bridge-admin-token.txt)"
+curl -s -H "x-connector-admin-token: $TOKEN" "http://127.0.0.1:19820/api/status"
+```
+
+Cloud command template (async result):
+
+```bash
+curl -s -H "Authorization: Bearer <token_or_api_key>" \
+  "https://i-sync.cn/api/v1/connector/cloud/commands/<command_id>"
+```
 
 ## Export Behavior
 
@@ -201,11 +233,30 @@ bash {baseDir}/scripts/run.sh ...
 
 The wrapper:
 
+- runs `scripts/preflight_check.sh` first
 - applies stored preferences
 - enforces required setup
 - runs either local bridge mode or cloud dispatch mode
-- prefers the connector repo's real local bridge loop when available
-- falls back to the bundled local loop only if needed
+- local mode dispatches only through `scripts/collect_and_export_loop.sh`
+- cloud mode dispatches only through `scripts/cloud_dispatch_loop.sh`
+- never mixes the local and cloud send-command scripts
+
+## Bundled Resources
+
+- `scripts/preflight_check.sh`
+  - validates required defaults before dispatch
+  - treats environment-variable configuration as already satisfied and never asks for it
+- `scripts/run.sh`
+  - chooses exactly one dispatch path based on `connection-mode`
+  - never mixes local and cloud send-command scripts
+- `scripts/collect_and_export_loop.sh`
+  - local-only send-command script
+- `scripts/cloud_dispatch_loop.sh`
+  - cloud-only send-command script
+- `scripts/export_preference.sh`
+  - stores reusable defaults and masks cloud token in human-readable output
+- `references/learning-guide.md`
+  - compact guidance for complex requests and asking rules
 
 ## Common Commands
 
