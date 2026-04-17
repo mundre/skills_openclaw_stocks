@@ -111,15 +111,26 @@ Returns `{ "dismissed_count": N, "failures": [...], "failed_count": N }`.
 
 ### notification-action
 ```bash
-agent-desktop notification-action 1 --action "Reply"
-agent-desktop notification-action 2 --action "Mark as Read"
+agent-desktop notification-action 1 "Reply"
+agent-desktop notification-action 2 "Mark as Read" --expected-app Slack --expected-title "#general"
 ```
 Clicks a named action button on a notification by its 1-based index.
 
+`--expected-app` and `--expected-title` pin the call to the notification
+you observed in `list-notifications`. Notification Center reorders
+entries between listings, so without a fingerprint an arriving or
+dismissed notification can shift the target at `INDEX` and cause the
+action to press the wrong row. When either flag is set and the row at
+`INDEX` no longer matches, the call fails with `NOTIFICATION_NOT_FOUND`
+instead of pressing. Both flags omitted preserves the legacy
+index-only behavior for callers that reconcile themselves.
+
 | Flag | Default | Description |
 |------|---------|-------------|
-| (positional) | | 1-based notification index (required) |
-| `--action` | | Action button name to click (required) |
+| `INDEX` (positional) | | 1-based notification index (required) |
+| `ACTION` (positional) | | Action button name to click (required) |
+| `--expected-app` | | Fingerprint app name (from `list-notifications`) |
+| `--expected-title` | | Fingerprint title (from `list-notifications`) |
 
 ### wait --notification
 ```bash
@@ -216,6 +227,16 @@ Execute multiple commands in sequence from a JSON array. Each entry has `command
   { "command": "type", "args": { "ref_id": "@e2", "text": "hello" } }
 ]
 ```
+
+**Progressive snapshot in batch** — use `skeleton` and `root` fields inside `snapshot` args:
+```json
+[
+  { "command": "snapshot", "args": { "app": "Slack", "skeleton": true, "interactive_only": true } },
+  { "command": "snapshot", "args": { "app": "Slack", "root": "@e3", "interactive_only": true } }
+]
+```
+
+`skeleton: true` clamps depth to 3 and tags truncated containers with `children_count`. `root: "@eN"` starts traversal from that ref instead of the window root; it cannot be combined with `surface`.
 
 ## System Health
 

@@ -3,9 +3,15 @@
   "slug": "agent-desktop",
   "displayName": "Agent Desktop",
   "latest": {
-    "version": "0.1.8",
-    "publishedAt": 1772546939310,
-    "commit": "https://github.com/openclaw/skills/commit/3a94a7ff180e3a302147de0ccfa9645a28219655"
+    "version": "0.1.10",
+    "publishedAt": 1776423728353,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.8",
+      "publishedAt": 1772546939310,
+      "commit": "https://github.com/openclaw/skills/commit/3a94a7ff180e3a302147de0ccfa9645a28219655"
+    }
+  ]
 }
