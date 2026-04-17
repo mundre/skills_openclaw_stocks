@@ -17,6 +17,11 @@ Preferred:
 export MODELLIX_API_KEY="your_api_key"
 ```
 
+Session-first policy:
+- Default to session-only usage for safety.
+- Persist to user-level environment only when the user explicitly requests persistence.
+- Do not write system-level environment variables or other agent config files.
+
 PowerShell:
 
 ```powershell
@@ -30,6 +35,41 @@ modellix-cli ... --api-key <your_api_key>
 ```
 
 ## Core Command Flow
+
+Command-first policy:
+- Treat the CLI as a two-command workflow: `model invoke` then `task get`.
+- Do not guess parameters from memory (for example, do not add deprecated `--model-type`).
+- Use `--help` as an assistive fallback when command behavior is unclear:
+  - `modellix-cli --help`
+  - `modellix-cli model invoke --help`
+  - `modellix-cli task get --help`
+
+### PowerShell reliable payload patterns
+
+Use one of these patterns to avoid quote escaping issues in PowerShell.
+
+`--body` with object-to-JSON conversion:
+
+```powershell
+$payload = @{
+  prompt = "A beautiful Mother's Day poster design with elegant typography."
+  aspectRatio = "3:4"
+} | ConvertTo-Json -Compress
+
+modellix-cli model invoke --model-slug google/nano-banana --body $payload
+```
+
+`--body-file` for complex prompts (recommended on Windows):
+
+```powershell
+$payload = @{
+  prompt = "A beautiful Mother's Day poster design with elegant typography."
+  aspectRatio = "3:4"
+}
+
+$payload | ConvertTo-Json -Depth 10 | Set-Content -Path ".\poster_body.json" -Encoding UTF8
+modellix-cli model invoke --model-slug google/nano-banana --body-file ".\poster_body.json"
+```
 
 1) Invoke async task:
 
@@ -66,6 +106,10 @@ The response includes a `get_result` section with the polling endpoint:
 ```bash
 modellix-cli task get <task_id>
 ```
+
+If `modellix-cli` is missing:
+- Ask user whether to install CLI with `npm i -g modellix-cli`.
+- If user declines or installation fails, use the REST playbook fallback.
 
 ## Polling Guidance
 

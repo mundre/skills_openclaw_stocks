@@ -3,11 +3,16 @@
   "slug": "modellix",
   "displayName": "Modellix",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1775733775605,
-    "commit": "https://github.com/openclaw/skills/commit/61fa68904ca60f2988313eb1d07419f2b845d711"
+    "version": "1.0.11",
+    "publishedAt": 1776274904106,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1775733775605,
+      "commit": "https://github.com/openclaw/skills/commit/61fa68904ca60f2988313eb1d07419f2b845d711"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1773303001113,

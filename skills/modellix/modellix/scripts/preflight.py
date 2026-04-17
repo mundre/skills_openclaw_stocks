@@ -19,7 +19,7 @@ def main() -> int:
     notes: list[str] = []
     cli_available = shutil.which("modellix-cli") is not None
     if not cli_available:
-        notes.append("modellix-cli not found. Install with: npm install -g modellix-cli")
+        notes.append("modellix-cli not found. Optional install (with user consent): npm i -g modellix-cli")
 
     api_key_available = bool((os.getenv("MODELLIX_API_KEY") or "").strip())
     if not api_key_available:
@@ -28,14 +28,15 @@ def main() -> int:
     recommended_mode = "rest"
     if cli_available and api_key_available:
         recommended_mode = "cli"
-        notes.append("CLI path is available. Use modellix-cli as primary path.")
+        notes.append("CLI path is available. Canonical commands: model invoke -> task get.")
     elif api_key_available:
-        notes.append("REST fallback is available because API key exists.")
+        notes.append("REST fallback is available because API key exists (supported path).")
     else:
         notes.append("Neither CLI-auth nor REST-auth is ready. Configure API key first.")
 
     result = {
         "cli_available": cli_available,
+        "cli_missing": not cli_available,
         "api_key_available": api_key_available,
         "recommended_mode": recommended_mode,
         "notes": notes,

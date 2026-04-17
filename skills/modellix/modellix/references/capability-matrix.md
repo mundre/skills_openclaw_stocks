@@ -8,6 +8,12 @@ Use this matrix to switch between CLI and REST without changing task semantics.
 | Poll task status/result | `modellix-cli task get <task_id>` | `GET /api/v1/tasks/{task_id}` | Same status lifecycle: `pending` / `processing` / `success` / `failed` |
 | API key auth | `MODELLIX_API_KEY` or `--api-key` | `Authorization: Bearer <key>` | Prefer env var for both |
 
+CLI command policy:
+- Use the two-command pair above as canonical CLI flow.
+- Do not use deprecated guessed flags (for example `--model-type`).
+- Use command help only when behavior is unclear.
+- Python wrappers are optional helpers and must not block CLI execution.
+
 ## Slug Mapping
 
 - `model-slug` uses `provider/model` format for both CLI and REST.
@@ -21,5 +27,7 @@ Use REST when any condition is true:
 - `modellix-cli` not installed
 - CLI auth unavailable
 - CLI command surface does not expose required behavior
+
+If CLI is not installed, you may offer install (`npm i -g modellix-cli`) with explicit user consent first.
 
 Otherwise use CLI-first.

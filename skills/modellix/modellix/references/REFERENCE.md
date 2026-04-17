@@ -2,6 +2,7 @@
 
 ## Docs
 
+- [SKILL](https://docs.modellix.ai/.qwen/skills/mintlify/SKILL.md): Build and maintain documentation sites with Mintlify. Use when creating docs pages, configuring navigation, adding components, or setting up API references.
 - [Qwen Image](https://docs.modellix.ai/alibaba/qwen-image.md): Qwen-image excels in text rendering, especially Chinese. qwen-image-plus and qwen-image share the same capabilities, but qwen-image-plus is more cost-effective.
 - [Qwen Image Edit](https://docs.modellix.ai/alibaba/qwen-image-edit.md): Qwen-image-edit supports bilingual text editing, color adjustment, style transfer, object addition/removal, and other complex image editing operations.
 - [Qwen Image Edit Plus](https://docs.modellix.ai/alibaba/qwen-image-edit-plus.md): Qwen-image-edit supports bilingual text editing, color adjustment, style transfer, object addition/removal, and other complex image editing operations.
@@ -37,10 +38,16 @@
 - [Seedance 1.0 Pro T2V](https://docs.modellix.ai/bytedance/seedance-1-0-pro-t2v.md): ByteDance's flagship text-to-video model with multi-shot narrative, superior semantic understanding, and cinematic 1080P output in diverse styles.
 - [Seedance 1.5 Pro I2V](https://docs.modellix.ai/bytedance/seedance-1-5-pro-i2v.md): Seedance 1.5 Pro supports audio-visual co-generation with multi-shot narrative, start/end frame control, and integrated audio output (voice, music, SFX).
 - [Seedance 1.5 Pro T2V](https://docs.modellix.ai/bytedance/seedance-1-5-pro-t2v.md): Seedance 1.5 Pro supports audio-visual co-generation with multi-shot narrative, start/end frame control, and integrated audio output (voice, music, SFX).
+- [Seedance 2.0 Fast I2V](https://docs.modellix.ai/bytedance/seedance-2-0-fast-i2v.md): Dreamina Seedance 2.0 Fast multimodal image-to-video: requires prompt, image (1-9), and audio (1-3). Same request shape as Seedance 2.0 I2V.
+- [Seedance 2.0 Fast V2V](https://docs.modellix.ai/bytedance/seedance-2-0-fast-v2v.md): Same request schema as Seedance 2.0 V2V; differs only by downstream model id.
+- [Seedance 2.0 I2V](https://docs.modellix.ai/bytedance/seedance-2-0-i2v.md): Dreamina Seedance 2.0 multimodal image-to-video: requires prompt, image (1-9), and audio (1-3). No service_tier or frames.
+- [Seedance 2.0 V2V](https://docs.modellix.ai/bytedance/seedance-2-0-v2v.md): Dreamina Seedance 2.0 video-to-video: required prompt, image (1-9), video (1-3 reference_video), audio (1-3). Same optional scalars as 2.0 I2V; no service_tier or frames.
 - [Seedream 4.0 I2I](https://docs.modellix.ai/bytedance/seedream-4-0-i2i.md): SOTA multimodal image model supporting text, single-image, and multi-image inputs for subject-consistent fusion, image editing, and group generation.
 - [Seedream 4.0 T2I](https://docs.modellix.ai/bytedance/seedream-4-0-t2i.md): SOTA multimodal image model supporting text, single-image, and multi-image inputs for subject-consistent fusion, image editing, and group generation.
 - [Seedream 4.5 I2I](https://docs.modellix.ai/bytedance/seedream-4-5-i2i.md): ByteDance's latest image model with improved editing consistency, portrait refinement, small-text rendering, and enhanced multi-image composition.
 - [Seedream 4.5 T2I](https://docs.modellix.ai/bytedance/seedream-4-5-t2i.md): ByteDance's latest image model with improved editing consistency, portrait refinement, small-text rendering, and enhanced multi-image composition.
+- [Seedream 5.0 Lite](https://docs.modellix.ai/bytedance/seedream-5-0-lite.md): ByteDance Seedream 5.0 Lite text-to-image model with 2K/3K custom resolutions and configurable output format.
+- [Seedream 5.0 Lite Edit](https://docs.modellix.ai/bytedance/seedream-5-0-lite-edit.md): ByteDance Seedream 5.0 Lite Edit image-to-image model supporting single-image editing, multi-image fusion, and configurable output format.
 - [New Models](https://docs.modellix.ai/changelog/new-models.md): The model integration updates and announcements.
 - [Product Updates](https://docs.modellix.ai/changelog/product-updates.md): The product updates and announcements.
 - [Overview](https://docs.modellix.ai/get-started/index.md): Welcome to Modellix.
@@ -113,6 +120,7 @@
 - [MiniMax S2V-01](https://docs.modellix.ai/minimax/minimax-s2v-01.md): S2V-01 generates videos with highly consistent character identity across frames using a single reference photo, at significantly lower computational cost.
 - [MiniMax T2V-01](https://docs.modellix.ai/minimax/minimax-t2v-01.md): MiniMax T2V-01 delivers professional camera movement control, transforming text prompts into cinematic video clips with dynamic shots.
 - [MiniMax T2V-01-Director](https://docs.modellix.ai/minimax/minimax-t2v-01-director.md): T2V-01-Director offers precise camera control for creating professional video clips with cinematic movements through a variety of lens instructions.
+- [SKILL](https://docs.modellix.ai/skills/mintlify/SKILL.md): Build and maintain documentation sites with Mintlify. Use when creating docs pages, configuring navigation, adding components, or setting up API references.
 - [REST API](https://docs.modellix.ai/ways-to-use/api.md): The steps to use the Modellix models API, including how to get an API key, how to use the API, and how to get the result.
 - [CLI](https://docs.modellix.ai/ways-to-use/cli.md): Use Modellix from terminal to create model tasks and fetch results.
 - [MCP](https://docs.modellix.ai/ways-to-use/mcp.md): Modellix Docs MCP Server allows you to search the Modellix documentation in your MCP clients.
@@ -120,14 +128,20 @@
 
 ## OpenAPI Specs
 
-- [google-t2v](https://docs.modellix.ai/model-api/google/google-t2v.json)
-- [google-i2v](https://docs.modellix.ai/model-api/google/google-i2v.json)
-- [google-t2i](https://docs.modellix.ai/model-api/google/google-t2i.json)
-- [google-i2i](https://docs.modellix.ai/model-api/google/google-i2i.json)
-- [kling-i2i](https://docs.modellix.ai/model-api/kling/kling-i2i.json)
+- [bytedance-v2v](https://docs.modellix.ai/model-api/bytedance/bytedance-v2v.json)
 - [bytedance-t2v](https://docs.modellix.ai/model-api/bytedance/bytedance-t2v.json)
-- [alibaba-t2v](https://docs.modellix.ai/model-api/alibaba/alibaba-t2v.json)
+- [bytedance-i2v](https://docs.modellix.ai/model-api/bytedance/bytedance-i2v.json)
+- [alibaba-v2v](https://docs.modellix.ai/model-api/alibaba/alibaba-v2v.json)
 - [alibaba-t2i](https://docs.modellix.ai/model-api/alibaba/alibaba-t2i.json)
+- [alibaba-i2i](https://docs.modellix.ai/model-api/alibaba/alibaba-i2i.json)
+- [query-task-result](https://docs.modellix.ai/common-api/query-task-result.json)
+- [bytedance-i2i](https://docs.modellix.ai/model-api/bytedance/bytedance-i2i.json)
+- [google-t2v 2](https://docs.modellix.ai/model-api/google/google-t2v 2.json)
+- [google-t2i 2](https://docs.modellix.ai/model-api/google/google-t2i 2.json)
+- [google-i2v 2](https://docs.modellix.ai/model-api/google/google-i2v 2.json)
+- [google-i2i 2](https://docs.modellix.ai/model-api/google/google-i2i 2.json)
+- [google-i2i](https://docs.modellix.ai/model-api/google/google-i2i.json)
+- [bytedance-t2i](https://docs.modellix.ai/model-api/bytedance/bytedance-t2i.json)
 - [minimax-t2v](https://docs.modellix.ai/model-api/minimax/minimax-t2v.json)
 - [minimax-t2i](https://docs.modellix.ai/model-api/minimax/minimax-t2i.json)
 - [minimax-i2v](https://docs.modellix.ai/model-api/minimax/minimax-i2v.json)
@@ -135,18 +149,16 @@
 - [kling-t2v](https://docs.modellix.ai/model-api/kling/kling-t2v.json)
 - [kling-t2i](https://docs.modellix.ai/model-api/kling/kling-t2i.json)
 - [kling-i2v](https://docs.modellix.ai/model-api/kling/kling-i2v.json)
-- [bytedance-t2i](https://docs.modellix.ai/model-api/bytedance/bytedance-t2i.json)
-- [bytedance-i2v](https://docs.modellix.ai/model-api/bytedance/bytedance-i2v.json)
-- [bytedance-i2i](https://docs.modellix.ai/model-api/bytedance/bytedance-i2i.json)
+- [kling-i2i](https://docs.modellix.ai/model-api/kling/kling-i2i.json)
+- [google-t2v](https://docs.modellix.ai/model-api/google/google-t2v.json)
+- [google-t2i](https://docs.modellix.ai/model-api/google/google-t2i.json)
+- [google-i2v](https://docs.modellix.ai/model-api/google/google-i2v.json)
+- [alibaba-t2v](https://docs.modellix.ai/model-api/alibaba/alibaba-t2v.json)
 - [alibaba-i2v](https://docs.modellix.ai/model-api/alibaba/alibaba-i2v.json)
-- [alibaba-i2i](https://docs.modellix.ai/model-api/alibaba/alibaba-i2i.json)
-- [query-task-result](https://docs.modellix.ai/common-api/query-task-result.json)
 - [openapi](https://docs.modellix.ai/api-reference/openapi.json)
 
 ## Optional
 
 - [Support](mailto:support@modellix.ai)
 - [Community](https://discord.gg/N2FbcB2cZT)
-
-
-Built with [Mintlify](https://mintlify.com).
+- [Blog](https://www.modellix.ai/blog)
