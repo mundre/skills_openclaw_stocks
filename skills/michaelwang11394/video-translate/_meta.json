@@ -3,11 +3,16 @@
   "slug": "video-translate",
   "displayName": "Video Translate",
   "latest": {
-    "version": "2.22.0",
-    "publishedAt": 1775415276023,
-    "commit": "https://github.com/openclaw/skills/commit/3afbbe2a135034649bcb6b42dda697e533a8bb61"
+    "version": "2.23.0",
+    "publishedAt": 1776103936485,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.22.0",
+      "publishedAt": 1775415276023,
+      "commit": "https://github.com/openclaw/skills/commit/3afbbe2a135034649bcb6b42dda697e533a8bb61"
+    },
     {
       "version": "2.21.0",
       "publishedAt": 1773618144619,
