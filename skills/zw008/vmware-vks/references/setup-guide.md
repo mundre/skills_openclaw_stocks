@@ -99,6 +99,8 @@ Choose the best mode based on your environment:
 
 ## Security
 
+> **Disclaimer**: This is a community-maintained open-source project and is **not affiliated with, endorsed by, or sponsored by VMware, Inc. or Broadcom Inc.** "VMware" and "vSphere" are trademarks of Broadcom.
+
 This skill follows a defense-in-depth approach with six security properties:
 
 1. **Source Code** -- MIT-licensed, fully auditable. No obfuscated logic. Source at [github.com/zw008/VMware-VKS](https://github.com/zw008/VMware-VKS). The `uv` installer fetches the `vmware-vks` package from PyPI, which is built from this GitHub repository.
