@@ -2,12 +2,10 @@
 name: rss-to-social
 description: Automatically monitor RSS feeds and post to social media. Schedule content, generate posts with AI, and publish to Twitter/LinkedIn.
 author: fly3094
-version: 1.0.2
-tags: [rss, social-media, automation, twitter, linkedin, scheduling, content]
+version: 1.1.0
+tags: [rss, social-media, automation, twitter, linkedin, scheduling, content, podcast, youtube, dedup, ai-summary]
 support: 
   paypal: 492227637@qq.com
-  wechat: "请扫码打赏（微信支付）"
-  alipay: "请扫码打赏（支付宝）"
   email: 492227637@qq.com
 metadata:
   clawdbot:
@@ -296,11 +294,7 @@ Contact: PayPal 492227637@qq.com
 如果你觉得这个技能有用，请考虑打赏支持：
 
 - **PayPal**: 492227637@qq.com
-- **微信支付**: 请扫码打赏
-- **支付宝**: 请扫码打赏
 - **邮箱**: 492227637@qq.com
 
 你的支持是我持续改进的动力！
 
-![微信支付收款码](../assets/wechat-qr.png)
-![支付宝收款码](../assets/alipay-qr.png)
