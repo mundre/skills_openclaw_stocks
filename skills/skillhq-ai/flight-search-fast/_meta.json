@@ -3,9 +3,15 @@
   "slug": "flight-search-fast",
   "displayName": "Google Flights",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772618491615,
-    "commit": "https://github.com/openclaw/skills/commit/9671d9f31fa09fa943ac8f4f6c5b4e53fc3f84f2"
+    "version": "1.0.2",
+    "publishedAt": 1776044197440,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772618491615,
+      "commit": "https://github.com/openclaw/skills/commit/9671d9f31fa09fa943ac8f4f6c5b4e53fc3f84f2"
+    }
+  ]
 }
