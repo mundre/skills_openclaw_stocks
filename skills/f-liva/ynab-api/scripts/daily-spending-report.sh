@@ -88,7 +88,7 @@ echo ""
 # Yesterday's expenses grouped by category with payees
 YESTERDAY_DATA=$(echo "$TRANSACTIONS" | jq -r --arg date "$YESTERDAY" '
   .data.transactions[]
-  | select(.date == $date and .amount < 0 and .deleted == false)
+  | select(.date == $date and .amount < 0 and .deleted == false and .transfer_account_id == null and .category_name != "Tasse")
   | if .category_name == "Split" then
       .subtransactions[] | select(.amount < 0)
     else . end
@@ -142,7 +142,7 @@ fi
 # Monthly progress
 MONTH_SPENT=$(echo "$TRANSACTIONS" | jq --arg start "$MONTH_START" '
   [.data.transactions[]
-    | select(.date >= $start and .amount < 0 and .deleted == false)
+    | select(.date >= $start and .amount < 0 and .deleted == false and .transfer_account_id == null and .category_name != "Tasse")
     | if .category_name == "Split" then
         .subtransactions[] | select(.amount < 0) | .amount
       else .amount end
@@ -171,7 +171,7 @@ echo ""
 echo "TOP CATEGORIES THIS MONTH"
 echo "$TRANSACTIONS" | jq -r --arg start "$MONTH_START" '
   [.data.transactions[]
-    | select(.date >= $start and .amount < 0 and .deleted == false)
+    | select(.date >= $start and .amount < 0 and .deleted == false and .transfer_account_id == null and .category_name != "Tasse")
     | if .category_name == "Split" then
         .subtransactions[] | select(.amount < 0)
         | {category: (.category_name // "Uncategorized"), amount: (.amount / -1000)}

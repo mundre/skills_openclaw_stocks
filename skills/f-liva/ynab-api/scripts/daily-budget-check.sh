@@ -8,7 +8,7 @@ if [ -n "${YNAB_API_KEY:-}" ] && [ -n "${YNAB_BUDGET_ID:-}" ]; then
   BUDGET_ID="$YNAB_BUDGET_ID"
 elif [ -f "${YNAB_CONFIG:-$HOME/.config/ynab/config.json}" ]; then
   API_KEY=$(jq -r .api_key "${YNAB_CONFIG:-$HOME/.config/ynab/config.json}")
-  BUDGET_ID=$(jq -r ".budget_id // "last-used"" "${YNAB_CONFIG:-$HOME/.config/ynab/config.json}")
+  BUDGET_ID=$(jq -r '.budget_id // "last-used"' "${YNAB_CONFIG:-$HOME/.config/ynab/config.json}")
 else
   echo "Error: YNAB config not found. Set YNAB_API_KEY+YNAB_BUDGET_ID or create ~/.config/ynab/config.json" >&2
   exit 1

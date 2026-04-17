@@ -10,7 +10,7 @@ if [ -n "${YNAB_API_KEY:-}" ] && [ -n "${YNAB_BUDGET_ID:-}" ]; then
   BUDGET_ID="$YNAB_BUDGET_ID"
 elif [ -f "${YNAB_CONFIG:-$HOME/.config/ynab/config.json}" ]; then
   API_KEY=$(jq -r .api_key "${YNAB_CONFIG:-$HOME/.config/ynab/config.json}")
-  BUDGET_ID=$(jq -r ".budget_id // "last-used"" "${YNAB_CONFIG:-$HOME/.config/ynab/config.json}")
+  BUDGET_ID=$(jq -r '.budget_id // "last-used"' "${YNAB_CONFIG:-$HOME/.config/ynab/config.json}")
 else
   echo "Error: YNAB config not found. Set YNAB_API_KEY+YNAB_BUDGET_ID or create ~/.config/ynab/config.json" >&2
   exit 1
@@ -38,17 +38,19 @@ echo ""
 
 # Process categories with goals
 echo "$MONTH_DATA" | jq -r '
-.data.month.categories[] 
+[.data.month.categories[]
 | select(.goal_type != null and .deleted == false)
-| . as $cat
-| ($cat.activity / -1000) as $spent
-| ($cat.goal_target / 1000) as $target
-| if $target > 0 then ($spent / $target * 100) else 0 end as $pct
-| if $pct > 100 then "🔴" elif $pct > 80 then "⚠️" elif $pct > 50 then "🟡" else "🟢" end as $icon
-| ($pct / 10 | floor) as $filled
-| (["█","█","█","█","█","█","█","█","█","█"] | .[0:$filled] | join("")) as $bar_filled
-| (["░","░","░","░","░","░","░","░","░","░"] | .[$filled:10] | join("")) as $bar_empty
-| "\($cat.name):\n  \($bar_filled)\($bar_empty) \($pct | floor)% (€\($spent | floor)/€\($target)) \($icon)\n"
+| {
+    name: .name,
+    spent: (.activity / -1000),
+    target: ((.goal_target // 0) / 1000)
+  }
+| .pct = (if .target > 0 then (.spent / .target * 100) else 0 end)
+| .icon = (if .pct > 100 then "🔴" elif .pct > 80 then "⚠️" elif .pct > 50 then "🟡" else "🟢" end)
+| .filled = ((.pct / 10) | floor | if . > 10 then 10 elif . < 0 then 0 else . end)
+| .bar = ((([range(.filled)] | map("█") | join("")) + ([range(10 - .filled)] | map("░") | join(""))))
+| "\(.name):\n  \(.bar) \(.pct | floor)% (€\(.spent | floor)/€\(.target)) \(.icon)\n"]
+| join("")
 ' | head -100
 
 # Summary

@@ -1,10 +1,3 @@
----
-name: ynab-api
-description: "YNAB (You Need A Budget) budget management via API. Add transactions, track goals, monitor spending, create transfers, and generate budget reports. Use this skill whenever the user mentions YNAB, budget tracking, spending analysis, budget goals, Age of Money, or wants to manage their personal finances -- even if they just say 'add an expense', 'how much did I spend', 'check my budget', or 'upcoming bills' without naming YNAB explicitly. Also use for automated budget reports and financial summaries."
-user-invocable: true
-metadata: {"requiredEnv": ["YNAB_API_KEY", "YNAB_BUDGET_ID"]}
----
-
 # YNAB Budget Management
 
 Manage your YNAB budget via the API with ready-to-use bash scripts. Requires `curl` and `jq`.
@@ -79,17 +72,16 @@ For the complete transfer guide, monthly spending calculation, and account ID ma
 
 - Always categorize at transaction creation time -- searching past transactions for the same payee is the best way to find the right category.
 - For transfers, always use `transfer_payee_id` from the destination account. Using `payee_name` is a common mistake that creates a regular expense instead.
-- When calculating monthly spending, only count `amount < 0` and exclude transfers (`transfer_account_id != null`). Transfers are internal money movements, not expenses.
-- Rate limit is ~200 requests/hour. Cache account and category data when doing bulk operations. **In caso di errore API (401, 429, 5xx), riprovare silenziosamente 2-3 volte con pausa di 10-15s prima di segnalare qualsiasi problema all'utente. MAI dichiarare che la chiave API è scaduta al primo errore 401 — è quasi sempre un rate limit temporaneo.**
+- When calculating monthly spending, only count `amount < 0` and consider excluding non-discretionary categories (taxes, transfers).
+- Rate limit is ~200 requests/hour. Cache account and category data when doing bulk operations.
 - Never log or display full API keys in output.
 - When running `daily-spending-report.sh`, the script outputs an "ANALYSIS DATA" section with raw metrics. Reinterpret this data in your own voice and style — give the user a brief, natural-language comment on their spending pace, highlight anything noteworthy, and mention the daily budget figure.
 
 ## Troubleshooting
 
-- **401 Unauthorized**: ⚠️ **NON assumere subito che la chiave sia scaduta!** Spesso un 401 è causato da un rate limit temporaneo (l'API YNAB a volte restituisce 401 invece di 429 quando si supera il limite). **Prima azione:** aspettare 10-15 secondi e riprovare. Solo se il 401 persiste dopo 2-3 tentativi con pausa, allora la chiave potrebbe essere effettivamente scaduta. Mai dire all'utente di rigenerare il token come prima risposta.
+- **401 Unauthorized**: Token invalid or expired -- regenerate at https://app.ynab.com/settings/developer
 - **404 Not Found**: Budget ID wrong -- check the YNAB URL
-- **429 Too Many Requests**: Rate limit -- add delays between bulk calls. Aspettare 15-30 secondi prima di riprovare.
+- **429 Too Many Requests**: Rate limit -- add delays between bulk calls
 - **Transfer not linking**: Using `payee_name` instead of `transfer_payee_id`
-- **Errori HTTP intermittenti**: In caso di qualsiasi errore API, riprovare almeno 2 volte con pausa di 10s prima di segnalare il problema all'utente.
 
 API docs: https://api.ynab.com
