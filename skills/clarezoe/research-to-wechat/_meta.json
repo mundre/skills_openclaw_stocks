@@ -3,11 +3,16 @@
   "slug": "research-to-wechat",
   "displayName": "Research To Wechat",
   "latest": {
-    "version": "0.4.2",
-    "publishedAt": 1772801501363,
-    "commit": "https://github.com/openclaw/skills/commit/471d8813df5d87aeb8dfc57dce4f84ebb7c454e1"
+    "version": "0.5.5",
+    "publishedAt": 1776419468626,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.4.2",
+      "publishedAt": 1772801501363,
+      "commit": "https://github.com/openclaw/skills/commit/471d8813df5d87aeb8dfc57dce4f84ebb7c454e1"
+    },
     {
       "version": "0.4.0",
       "publishedAt": 1772582315128,

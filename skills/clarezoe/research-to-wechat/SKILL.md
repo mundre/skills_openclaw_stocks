@@ -1,6 +1,6 @@
 ---
 name: research-to-wechat
-description: A research-first content pipeline that turns a topic, notes, article, URL, or transcript into a sourced article with an evidence ledger, routed structure, polished Markdown, inline visuals, cover image, WeChat-ready HTML, browser-saved draft, and optional multi-platform distribution (小红书、即刻、播客、朋友圈). Use when the user wants 深度研究、改写成公众号、写作、排版、配图、HTML 转换、公众号草稿生成、多平台分发.
+description: A native research-first pipeline that turns a topic, notes, article, URL, or transcript into a sourced article with an evidence ledger, polished Markdown, inline visuals, cover image, WeChat-ready HTML, browser/API-ready draft assets, and optional multi-platform distribution. Use when the user wants 深度研究、改写成公众号、写作、排版、配图、HTML 转换、公众号草稿生成、多平台分发.
 metadata:
   openclaw:
     emoji: "🔬"
@@ -8,35 +8,35 @@ metadata:
     requires:
       anyBins: ["python3"]
     primaryEnv: "WECHAT_APPID"
-  version: "0.4.2"
+  version: "0.5.4"
   category: "content-generation"
   author: "Skill Genie"
   license: "MIT"
 ---
 
 # Research to WeChat
+<!-- // TODO: split SKILL.md into smaller modules/components -->
 
-Use this skill as a research-first control plane. Do not duplicate downstream skill wording.
+Use this skill as a native, research-first article system. It does not route execution to external skills.
 
 ## Core Rules
 
 - Match the user's language.
 - Ask one question at a time.
-- Ask only when the answer changes source interpretation, structural frame, style fidelity, or draft publishing behavior.
+- Ask only when the answer changes source interpretation, structure frame, style fidelity, or draft delivery behavior.
 - Keep Markdown as the canonical article asset until the HTML handoff.
 - Save a draft only. Never publish live.
 - Separate verified fact, working inference, and open question.
-- Every major claim must be traceable to a source. Collect source URLs during research.
+- Every major claim must be traceable to a source.
 - Every article must end with a "## 参考链接" or "## References" section listing all sources.
-- Apply the full normalization checklist to every article before refinement. Source artifacts, broken formatting, and LaTeX fragments must not survive into the final draft.
-- Every inline image must pass a two-tier evaluation: first eliminate disqualifying defects, then verify content match to the surrounding text.
+- Apply the full normalization checklist before HTML rendering.
+- Every inline image must pass a two-tier evaluation: eliminate defects first, then verify content match.
+- the renderer converts `[text](url)` into `text (url)` because WeChat forbids clickable links.
 - Never pretend the workflow did interviews, long field research, team debate, or hands-on testing when it did not.
-- Prefer visible disclosure of AI assistance and source scope. Refuse human-only framing that would misrepresent the process.
+- Prefer visible disclosure of AI assistance and source scope.
 - Treat source capture as a runtime boundary: preserve title, author, description, body text, and image list before rewriting.
 
 ## Operating Paths
-
-Route the request into one of two paths:
 
 - `Path A: research-first article`
   use for: topic, keyword, question, notes, transcript, subtitle file
@@ -50,20 +50,6 @@ Default routing:
 - procedural or tool-teaching material -> `tutorial`
 - thesis, trend, strategy, critique, case material -> `deep-analysis`
 - multi-topic roundup -> `newsletter`
-
-## Capability Aliases
-
-Resolve capabilities through internal aliases, not vendor-style names:
-- `source-ingest`
-- `markdown-polish`
-- `inline-visuals`
-- `cover-art`
-- `article-design`
-- `wechat-render`
-- `wechat-draft`
-- `multi-platform-distribute` (loaded only when Phase 7 is triggered)
-
-Use the current alias map in [capability-map.md](references/capability-map.md).
 
 ## Accepted Inputs
 
@@ -79,14 +65,14 @@ Use the current alias map in [capability-map.md](references/capability-map.md).
 - subtitle file that can be expanded into a full transcript
 
 PDF policy:
-- when the source is a PDF paper or report, extract all figures, charts, tables, and diagrams as image assets
-- save extracted figures to `imgs/source-fig-*.png` with captions and page numbers recorded in `source.md`
-- source figures carry higher credibility than AI-generated images and must be preferred in the final article
+- extract all figures, charts, tables, and diagrams as image assets
+- save extracted figures to `imgs/source-fig-*.png`
+- record captions and page numbers in `source.md`
+- prefer source figures over generated visuals when they support the claim
 
 Video policy:
 - a video source is valid only when the workflow can obtain the full spoken transcript
 - first attempt transcript recovery from the page, captions, or subtitle assets
-- if the page exposes only metadata, description, or chapter markers, do not start article generation
 - if no full transcript is obtainable, ask for the transcript or subtitle file and wait
 
 ## Output
@@ -116,15 +102,23 @@ Required frontmatter in final markdown:
 - `structureFrame`
 - `disclosure`
 
-Required records outside the article:
-- `brief.md`
-  must capture: target reader, thesis, must-cover points, frame choice, and what cannot be dropped
-- `research.md`
-  must capture: verified facts, working inferences, open questions, and source notes
-- `manifest.json`
-  must capture: `pathMode`, `styleMode`, `structureFrame`, `sourceType`, `confidence`, `draftStatus`, and output paths
-  `manifest.json.outputs.wechat` must include: `markdown`, `html`, `cover_image`, `title`, `author`, `digest`, and `images`
-  optional platform fields (`xiaohongshu`, `jike`, `xiaoyuzhou`, `moments`) are added when Phase 8 runs
+`manifest.json` must capture:
+- `pathMode`
+- `styleMode`
+- `structureFrame`
+- `sourceType`
+- `confidence`
+- `draftStatus`
+- output paths
+
+`manifest.json.outputs.wechat` must include:
+- `markdown`
+- `html`
+- `cover_image`
+- `title`
+- `author`
+- `digest`
+- `images`
 
 ## Script Directory
 
@@ -132,30 +126,41 @@ Determine this SKILL.md directory as `SKILL_DIR`, then use `${SKILL_DIR}/scripts
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/fetch_wechat_article.py` | WeChat article fetch (Python, simulates WeChat mobile UA) |
-| `scripts/install-openclaw.sh` | OpenClaw skill installer (copies to `~/.openclaw/skills/`) |
+| `scripts/fetch_wechat_article.py` | WeChat article fetch (mobile UA) |
+| `scripts/wechat_delivery.py` | Native WeChat delivery entrypoint (`check`, `design-catalog`, `render`, `upload-images`, `save-draft`) |
+| `scripts/install-openclaw.sh` | OpenClaw skill installer |
 
-## Provenance Contract
+## Native Capability Contract
 
-The workflow must keep a compact evidence ledger throughout the run:
-- what came from the user
-- what came from fetched source material
-- what was added as supporting context
-- what remains uncertain
+This skill executes every stage itself:
+- source ingest via bundled fetch script, browser tools, and PDF inspection
+- markdown polish via normalization rules in this skill
+- inline visual planning and cover direction via native article analysis
+- design catalog compile via `python3 "${SKILL_DIR}/scripts/wechat_delivery.py" design-catalog`
+- WeChat HTML rendering via `python3 "${SKILL_DIR}/scripts/wechat_delivery.py" render`
+- image upload via `python3 "${SKILL_DIR}/scripts/wechat_delivery.py" upload-images`
+- draft save via `python3 "${SKILL_DIR}/scripts/wechat_delivery.py" save-draft`
+- multi-platform distribution via native browser/API steps when Phase 8 is requested
 
-Default article disclosure should state:
-- what AI did
-- what the human provided or reviewed, if known
-- what the evidence base was
-- what confidence limit remains, if the source packet is thin
+Use the internal contract in [capability-map.md](references/capability-map.md).
 
 ## Delivery Ladder
 
 Resolve WeChat draft delivery in this order:
-1. API draft when credentials and converter tooling are ready
-2. automated browser draft when the worker can drive the editor safely
-3. assisted browser draft when login or selectors need user help
-4. manual handoff with exact file paths when automation fails
+1. `L0 official-http`: `WECHAT_APPID` and `WECHAT_SECRET` are ready, so bundled scripts call the official media and draft APIs directly
+2. `L1 assisted-browser`: only use a browser when the account setup or draft inspection needs human help
+3. `L2 manual-handoff`: stop with exact file paths and required API fields when official delivery cannot proceed
+
+
+## Author Config (EXTEND.md)
+
+The renderer reads an optional `EXTEND.md` for author-specific CTA content and preferences. This keeps the skill generic — CTA text, QR codes, and blog URLs belong to the author, not the skill.
+
+Lookup order: project dir → `~/.config/research-to-wechat/` → `~/.research-to-wechat/`
+
+See [author-config.md](references/author-config.md) for the full format and field reference.
+
+When `EXTEND.md` is present with a `cta` section, the renderer appends a styled CTA block after the article body. When absent, no CTA is rendered.
 
 ## Style Resolution
 
@@ -167,22 +172,86 @@ Resolve style in this order:
 
 Use the full style system in [style-engine.md](references/style-engine.md).
 
+Visual rendering is decided by:
+- `styleMode`
+- `structureFrame`
+- `light` or `dark` output mode
+
 ## Execution
 
 Run the article through these phases:
 1. intake and route selection
 2. source packet, brief, and strategic clarification
-3. research architecture with structured question lattice (32+ questions across 4 cognitive layers)
+3. research architecture with structured question lattice
 4. research merge and evidence ledger
-5. frame-routed master draft with full normalization checklist and writing framework self-check
-6. refinement, image strategy, visual evaluation, and design selection
-7. WeChat HTML rendering, draft upload, and manifest
-8. (optional) multi-platform content generation and distribution
+5. frame-routed master draft with normalization checklist, writing self-check, and **machine-verified Chinese de-AI scan** (Phase 5 must not proceed without running these):
+   ```bash
+   # negation-contrast patterns (must be 0 hits)
+   grep -n '不是.*而是\|不仅.*而且\|不只.*更\|不再.*而是\|已经不是' article-formatted.md
+   # em-dash count (≤5 in body)
+   grep -c '——' article-formatted.md
+   # exclamation marks (must be 0)
+   grep -c '！' article-formatted.md
+   ```
+6. **微信敏感词合规检查**（⛔ 必须通过才能继续）：用 `wechat-compliance-check` 扫描 `article-formatted.md`，有命中则改写后重新扫描，直到零违规。
+7. refinement, visual strategy, and image evaluation
 
-Phase 8 only executes when the user explicitly requests it (e.g., "多平台分发", "转小红书", "转即刻", "写朋友圈文案", "做播客脚本").
+   **⛔ Pre-delivery compliance gate (BLOCKING — must execute before Phase 8):**
+   Long sessions cause attention decay on early-loaded rules. Before proceeding to HTML rendering and draft save, you MUST:
+   1. **Re-read the project's AGENTS file** (`cat` the file, do not rely on memory). For WeChat projects this is `../AGENTS-wechat.md` or the path specified in `AGENTS.md`.
+   2. **Walk every rule in the AGENTS file line by line** and verify the current article/HTML against it. Check file location, typography, HTML constraints, CTA, image rules — every single one.
+   3. Output a checklist to the terminal with ✅/❌ per rule. Any ❌ must be fixed before continuing.
+   This step exists because context-window attention decay will cause you to forget rules loaded at session start. Do not skip it. Do not check from memory.
+
+8. native WeChat HTML rendering via `wechat_delivery.py render`, image upload, draft save, and manifest.
+
+   **Image upload rules:**
+   - If `imgs/cdn-urls.json` already exists from a previous upload, **skip re-uploading unchanged images**. Only upload new or modified files (compare filename + file size/mtime).
+   - `wechatqr.png` (CTA QR code) must reuse the existing CDN URL from project-level `images/wechatqr.png` or a previous `cdn-urls.json`. Never re-upload the same QR code per article.
+   - After upload, always merge new CDN URLs into the existing `cdn-urls.json` (not overwrite).
+
+   **Draft save rules:**
+   - If `manifest.json` already contains a `media_id`, pass `--media-id` to `save-draft` to **update the existing draft**. Never create a duplicate.
+   - If a duplicate draft was accidentally created, delete it via API (`draft/delete`) immediately and keep only the original `media_id`.
+   - `manifest.json` is the single source of truth for `media_id`.
+
+   **Before draft save, run HTML compliance check** (must all pass):
+   ```bash
+   grep -c 'class=' article.html          # must be 0
+   grep -c '<style' article.html          # must be 0
+   grep -c '<a href' article.html         # must be 0
+   # outermost <section> must have background
+   python3 -c "import re;h=open('article.html').read();m=re.search(r'<section[^>]*>',h);print('OK' if m and 'background' in m.group() else 'FAIL')"
+   ```
+
+   **Known issue: `render` collapses newlines inside `<code>` blocks.**
+   The renderer converts markdown fenced code blocks into single-line `<code>` content, stripping all `\n` characters. Multi-line code will display as one long line.
+   Detection: `python3 -c "import re;h=open('article.html').read();codes=[c for c in re.findall(r'<code>(.*?)</code>',h,re.DOTALL) if len(c)>80 and '<br' not in c];print(f'{len(codes)} collapsed code blocks' if codes else 'OK')"` 
+   Fix: extract code blocks from the source markdown (which preserves newlines), HTML-escape them, replace `\n` with `<br/>`, and substitute back into the rendered HTML. **WeChat ignores literal `\n` in HTML — only `<br/>` produces visible line breaks.** This must run after `render` and before `save-draft`.
+
+   **Known issue: `render` outputs `<thead>` without dark background.**
+   In dark mode, table headers render with browser-default white/transparent background, making header text invisible. Fix: add `background:#1E293B` (or the design's surface color) to `<tr>` and `<th>` inside `<thead>`. Also ensure `<td>` has explicit `background` matching the page background.
+
+   **Known issue: `render` duplicates ordered list numbering.**
+   Markdown `1. 2. 3.` becomes `<ol><li>1. text</li>` — the `<ol>` auto-numbers AND the literal `1.` prefix remains. Fix: strip the leading `N. ` from each `<li>` content.
+
+   **Known issue: `render` keeps the H1/H2 title in the HTML body.**
+   WeChat article titles are set via the draft API `title` field, not in the HTML body. The renderer copies the markdown `# title` into an `<h2>`. Per WeChat typography rules, this must be removed. Fix: delete the `<section>` containing the `<h2>` that matches the draft title.
+
+   **Known issue: `--upload-map` may not replace all image paths.**
+   After rendering with `--upload-map`, verify that zero `src="imgs/"` local paths remain. If any survive, do a string replace pass in post-processing. Detection: `grep -c 'src="imgs/' article.html` must be 0.
+
+   **Known issue: reference link section has oversized letter-spacing on mobile.**
+   The body `line-height:1.9` and `font-size:15px` cause long URLs in the reference section to spread out on mobile. Fix: override the reference section `<p>` tags with `font-size:13px;line-height:1.6;word-break:break-all;text-align:left`.
+
+   **File path rule: always follow the project's AGENTS file for output directory.**
+   This skill defaults to `research-to-wechat/YYYY-MM-DD-<slug>/`. If the project AGENTS specifies a different convention (e.g. `YYYY-MM-DD-<slug>/` at project root), the project rule overrides this skill's default. Check the project AGENTS before creating the workspace directory.
+
+9. optional multi-platform content generation and distribution
+
+Phase 9 only executes when the user explicitly requests it.
 
 Use the execution contract in [execution-contract.md](references/execution-contract.md).
-Use the design guide in [design-guide.md](references/design-guide.md) for article design selection.
 Use the platform copy specs in [platform-copy.md](references/platform-copy.md) for Phase 8.
 
 ## Done Condition
@@ -195,9 +264,12 @@ The skill is complete only when all of these hold:
 - the evidence ledger clearly separates fact from interpretation
 - every visual adds narrative or explanatory value
 - the normalization checklist has been applied: no citation artifacts, no LaTeX, no broken tables, no scraped UI remnants
-- every image placeholder was evaluated against placement criteria before generation, and every generated image passed the two-tier quality check
+- every image placeholder was evaluated against placement criteria before generation
+- every generated or selected image passed the two-tier quality check
 - markdown and HTML agree on title, summary, cover, and image paths
+- HTML contains zero `class=` attributes, zero `<style>` tags, zero `<a href>` links, and outermost `<section>` has explicit `background`
 - `manifest.json` agrees with the actual output set and draft state
 - the article does not overclaim research effort or authorship
+- `wechat-compliance-check` returned zero violations on the final markdown
 - the workflow can stop safely at the highest-quality completed artifact if a later handoff fails
-- if Phase 8 was triggered, platform copies follow [platform-copy.md](references/platform-copy.md) specs and manifest includes their output entries
+- if Phase 8 was triggered, platform copies follow [platform-copy.md](references/platform-copy.md) and manifest includes their output entries
