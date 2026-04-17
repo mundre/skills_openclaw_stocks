@@ -2,12 +2,10 @@
 name: social-insights
 description: Social media analytics and performance tracking. Track engagement, optimal posting times, competitor analysis, AI-powered insights, auto-generated charts, and weekly/monthly reports.
 author: fly3094
-version: 1.1.1
-tags: [analytics, social-media, twitter, linkedin, reporting, data, insights, charts]
+version: 1.2.0
+tags: [analytics, social-media, twitter, linkedin, tiktok, youtube, instagram, reporting, data, insights, charts, ai-predictions]
 support: 
   paypal: 492227637@qq.com
-  wechat: "请扫码打赏（微信支付）"
-  alipay: "请扫码打赏（支付宝）"
   email: 492227637@qq.com
 metadata:
   clawdbot:
@@ -308,11 +306,7 @@ Contact: PayPal 492227637@qq.com
 如果你觉得这个技能有用，请考虑打赏支持：
 
 - **PayPal**: 492227637@qq.com
-- **微信支付**: 请扫码打赏
-- **支付宝**: 请扫码打赏
 - **邮箱**: 492227637@qq.com
 
 你的支持是我持续改进的动力！
 
-![微信支付收款码](../assets/wechat-qr.png)
-![支付宝收款码](../assets/alipay-qr.png)
