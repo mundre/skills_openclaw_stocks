@@ -1,7 +1,7 @@
 ---
 name: humanos
 description: Require verifiable human approval before high-risk agent actions.
-version: 0.1.1
+version: 1.0.0
 homepage: https://github.com/Humanos-App/humanos-openclaw
 user-invocable: true
 metadata:
@@ -14,6 +14,7 @@ metadata:
         - curl
         - jq
         - openssl
+        - node
     os:
       - darwin
       - linux
@@ -435,8 +436,10 @@ Default base URL is `https://api.humanos.id` when `VIA_API_URL` is not set.
 
 ## Security and Privacy
 
-- API keys are read from environment variables, never hardcoded
-- All requests are signed with HMAC-SHA256
+- API keys are read from environment variables at runtime, never hardcoded in scripts
+- When using OpenClaw, credentials are managed by the OpenClaw runtime via `~/.openclaw/openclaw.json` (set secure file permissions: `chmod 600`)
+- All requests are signed with HMAC-SHA256 to prevent tampering
 - Credentials contain W3C Verifiable Credential proofs (EdDSA)
 - User contact information (email/phone) is sent to the VIA API for OTP delivery
-- No data is stored locally by this skill
+- No application data is stored locally by this skill
+- The optional guard hook (handler.ts) requires Node.js 18+ for native fetch and crypto support

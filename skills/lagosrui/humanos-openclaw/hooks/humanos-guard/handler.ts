@@ -1,5 +1,4 @@
 import { createHmac } from "crypto";
-import { execSync } from "child_process";
 
 interface HookEvent {
   type: string;
@@ -85,20 +84,33 @@ async function _checkMandateViaApi(
 
   try {
     const timestamp = Date.now().toString();
-    const queryBody = "";
-    const signature = _signRequest(queryBody, timestamp);
+    const signature = _signRequest("", timestamp);
 
     const encodedScope = encodeURIComponent(scope);
-    const result = execSync(
-      `curl -s -X GET "${apiUrl}/v1/via/mandates?scope=${encodedScope}&toolName=${encodeURIComponent(toolName)}" ` +
-        `-H "Authorization: Bearer ${apiKey}" ` +
-        `-H "X-Timestamp: ${timestamp}" ` +
-        `-H "X-Signature: ${signature}" ` +
-        `-H "Content-Type: application/json"`,
-      { timeout: 5000, encoding: "utf-8" }
-    );
+    const encodedTool = encodeURIComponent(toolName);
+    const url = `${apiUrl}/v1/via/mandates?scope=${encodedScope}&toolName=${encodedTool}`;
 
-    const data = JSON.parse(result);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "X-Timestamp": timestamp,
+        "X-Signature": signature,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return { valid: false, reason: `API returned ${response.status}` };
+    }
+
+    const data = await response.json();
 
     if (data && Array.isArray(data) && data.length > 0) {
       const mandate = data[0];
