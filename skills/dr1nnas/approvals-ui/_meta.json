@@ -1,0 +1,11 @@
+{
+  "owner": "dr1nnas",
+  "slug": "approvals-ui",
+  "displayName": "Approve new channels, and connections to openclaw ui and terminal",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1771715635587,
+    "commit": null
+  },
+  "history": []
+}
