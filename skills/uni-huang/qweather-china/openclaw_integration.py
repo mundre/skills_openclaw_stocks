@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 OpenClaw集成模块
 将QWeather天气服务集成到OpenClaw中

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 智能地点处理模块
 支持城市名、经纬度、locationId自动识别

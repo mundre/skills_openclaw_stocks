@@ -2,8 +2,8 @@
 # 基于中国气象局数据的完整天气服务
 
 name: qweather-china
-version: 1.0.0
-description: 基于和风天气V7 API的完整天气服务，覆盖中国3000+市县区和海外20万个城市。提供实时天气、多日预报、生活指数、空气质量、天气预警、天文数据等全方位天气信息。
+version: 1.2.2
+description: 基于中国气象局数据的完整天气服务，提供实时天气、预报、生活指数、空气质量等全方位天气信息。支持智能地点处理、自然语言理解和跨平台兼容。
 
 # 技能元数据
 metadata:
@@ -24,18 +24,18 @@ requirements:
     - python3
     - curl
 
-# 配置参数 - 从skill.yaml的config字段注入
+# 配置参数
 config:
   qweather:
-    api_host: "${QWEATHER_API_HOST}"
+    api_host: "p54up4xhmm.re.qweatherapi.com"
     jwt:
-      kid: "${QWEATHER_KID}"
-      sub: "${QWEATHER_SUB}"
-      private_key_path: "${QWEATHER_PRIVATE_KEY_PATH}"
+      kid: "CGWFM979C7"
+      sub: "4FKRV2BREH"
+      private_key_path: "C:\\Users\\uni_h\\.openclaw\\ed25519-private.pem"
     
   cache:
     enabled: true
-    directory: "${QWEATHER_CACHE_DIR:~/.openclaw/cache/qweather}"
+    directory: "C:\\Users\\uni_h\\.openclaw\\cache\\qweather"
     ttl:
       now: 600        # 10分钟
       forecast: 3600  # 1小时
@@ -43,6 +43,7 @@ config:
       air: 1800       # 30分钟
   
   default_city: "beijing"
+  default_location: "beijing"  # 支持 QWEATHER_DEFAULT_LOCATION 环境变量
   
   cities:
     beijing: "101010100"

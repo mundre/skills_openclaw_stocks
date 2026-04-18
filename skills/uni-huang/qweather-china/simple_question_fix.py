@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 简单问题修复：确保所有含义相同的简单问题都得到简洁回答
 """

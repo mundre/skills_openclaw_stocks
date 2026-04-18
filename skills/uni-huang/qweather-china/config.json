@@ -1,11 +1,12 @@
 {
+  "_comment": "QWeather China Skill 配置文件 - 请替换占位符为实际值",
   "qweather": {
     "enabled": true,
-    "api_host": "YOUR_API_HOST_HERE.re.qweatherapi.com",
+    "api_host": "your-api-host.re.qweatherapi.com",
     "jwt": {
-      "kid": "YOUR_CREDENTIALS_ID_HERE",
-      "sub": "YOUR_PROJECT_ID_HERE",
-      "private_key_path": "PATH_TO_YOUR_PRIVATE_KEY.pem"
+      "kid": "YOUR_CREDENTIALS_ID",
+      "sub": "YOUR_PROJECT_ID",
+      "private_key_path": "~/.config/qweather/private.pem"
     },
     "cache": {
       "enabled": true,
