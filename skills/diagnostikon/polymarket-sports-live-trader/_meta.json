@@ -3,11 +3,16 @@
   "slug": "polymarket-sports-live-trader",
   "displayName": "Polymarket Sports Live Trader",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775317350301,
-    "commit": "https://github.com/openclaw/skills/commit/71c0e8cd2662f56651d89020af4a55851acab4a5"
+    "version": "1.0.3",
+    "publishedAt": 1775989011550,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775317350301,
+      "commit": "https://github.com/openclaw/skills/commit/71c0e8cd2662f56651d89020af4a55851acab4a5"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773781611528,
