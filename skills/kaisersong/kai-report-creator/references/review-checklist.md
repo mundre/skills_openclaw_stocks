@@ -17,6 +17,34 @@ The system has **8 checkpoints**:
 - **Category 1: Hard Rules (5)** — auto-apply when violated
 - **Category 2: AI-Advised Rules (3)** — apply only when confidence is high
 
+## Category 0: Visual Hard Rules (auto-apply during `--generate` silent pass)
+
+These are structural checks from `references/design-quality.md` §7 (Pre-Output Self-Check). Fix automatically before writing HTML.
+
+### 0.1 KPI Value Length
+
+**Trigger:** Every `.kpi-value` element and `report-summary` JSON `kpis[].value` field.
+
+**Detection:** If any KPI value contains a sentence or paragraph longer than 8 Chinese characters or 3 English words, it fails.
+
+**Auto-fix:** Extract the key number/phrase for the KPI value. Move the explanation to adjacent prose, a callout, or a table cell.
+
+### 0.2 Badge Coverage
+
+**Trigger:** Every report.
+
+**Detection:** Count `.badge` elements in the HTML. If fewer than 2 distinct locations contain badges, it fails.
+
+**Auto-fix:** Add badges at appropriate locations — section headers (category tags), KPI labels (status), table cells (progress), or timeline items (milestones). See `references/rendering-rules.md` for badge generation rules.
+
+### 0.3 Timeline Content Validity
+
+**Trigger:** Every `:::timeline` / `.timeline` component.
+
+**Detection:** If timeline items use generic labels instead of actual dates/timestamps (e.g. "真诚服务" as a date), it fails. If items could be reordered without changing meaning, they are not timeline content.
+
+**Auto-fix:** Convert to `:::list` or prose with `:::callout`. Preserve the content, change the component type.
+
 ## Category 1: Hard Rules
 
 These rules are deterministic enough to apply automatically.
@@ -63,14 +91,14 @@ Bad patterns:
 
 **Detection:** Flag headings such as:
 
-- `Overview`
-- `Background`
-- `Key Findings`
-- `Summary`
-- `Next Steps`
+- `Overview` / `概述` / `简介` / `背景`
+- `Background` / `背景`
+- `Key Findings` / `关键发现`
+- `Summary` / `总结` / `结论`
+- `Next Steps` / `下一步` / `展望`
+- `身份定位` / `核心能力` / `核心原则` / `使用场景` / `方法论`
 - `问题分析`
-- `关键发现`
-- `总结`
+- Any heading that is a generic label without content-specific information
 
 when they do not carry section-specific information.
 
@@ -177,6 +205,7 @@ These ideas were considered and intentionally excluded from the automated system
 
 Run the review in this order:
 
+0. **Visual Hard Rules** (KPI Value Length, Badge Coverage, Timeline Content Validity)
 1. BLUF Opening
 2. Heading Stack Logic
 3. Anti-Template Section Headings

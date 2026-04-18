@@ -3,6 +3,7 @@
 When generating the final HTML report, produce a complete self-contained HTML file using this structure. Replace all `[...]` placeholders with actual content.
 
     <!DOCTYPE html>
+    <!-- kai-report-creator v[version] -->
     <html lang="[lang]">
     <head>
       <meta charset="UTF-8">
@@ -28,6 +29,11 @@ When generating the final HTML report, produce a complete self-contained HTML fi
         .report-wrapper { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem; }
         @media (min-width: 1100px) { .report-wrapper { padding: 2.5rem 3rem; } }
         .report-meta { color: var(--text-muted); font-size: .9rem; margin-top: -.5rem; margin-bottom: 1.5rem; }
+
+        /* Watermark footer */
+        .report-footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--report-border, var(--border)); text-align: center; color: var(--text-muted); font-size: .7rem; opacity: .5; letter-spacing: .03em; }
+        @media print { .report-footer { display: none; } }
+        @media (max-width: 768px) { .report-footer { margin-top: 1.5rem; } }
 
         /* KPI */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; margin: 1.1rem 0; }
@@ -77,6 +83,9 @@ When generating the final HTML report, produce a complete self-contained HTML fi
         .callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .05rem; }
         .callout-body { flex: 1; min-width: 0; line-height: 1.6; font-size: .93rem; }
 
+        /* Semantic highlight extraction — from design-quality.md §6 */
+        .highlight-sentence { font-size: 1.15rem; font-weight: 700; color: var(--primary); border-left: 3px solid var(--primary); padding-left: 1rem; margin: 1.5rem 0; line-height: 1.5; }
+
         /* Timeline */
         .timeline { position: relative; padding-left: 2rem; margin: 1.1rem 0; }
         .timeline::before { content: ''; position: absolute; left: .45rem; top: 0; bottom: 0; width: 2px; background: var(--border); }
@@ -110,7 +119,7 @@ When generating the final HTML report, produce a complete self-contained HTML fi
         /* Chart */
         [data-component="chart"] { margin: 1.1rem 0; }
 
-        /* Animations */
+        /* Animations — all easing uses cubic-bezier(0.22,1,0.36,1) (ease-out-expo). Never use bounce (overshoot >1) or elastic (spring oscillation) easing — they read as dated and tacky. */
         .fade-in-up { opacity: 0; transform: translateY(18px); transition: opacity .5s cubic-bezier(0.22,1,0.36,1), transform .5s cubic-bezier(0.22,1,0.36,1); }
         .fade-in-up.visible { opacity: 1; transform: translateY(0); }
         body.no-animations .fade-in-up { opacity: 1; transform: none; transition: none; }
@@ -183,6 +192,8 @@ When generating the final HTML report, produce a complete self-contained HTML fi
         @media (max-width: 768px) {
           .report-wrapper { padding: 1.5rem 1rem; }
         }
+        /* Responsive rule: never hide critical functionality (export, edit toggle, KPI values, charts) on mobile.
+           Only decorative/progressive-enhancement elements (animations, TOC overlay) may be suppressed. */
         body.no-toc .toc-sidebar, body.no-toc .toc-toggle { display: none; }
         body.no-toc .main-with-toc { margin-left: 0; }
 
@@ -344,6 +355,8 @@ When generating the final HTML report, produce a complete self-contained HTML fi
           <!-- </section> -->
 
           [All rendered section content here]
+
+          <div class="report-footer">By kai-report-creator v[version]</div>
 
         </div>
       </div>
