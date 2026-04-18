@@ -1,285 +1,333 @@
 #!/usr/bin/env python3
-import os
-import sys
-import shutil
+"""
+Recursive Archive Extractor — Zero local-dependency edition
+============================================================
+Works on Windows, Linux, macOS with any Python 3.8+.
+Does NOT call 7-Zip, unrar, or any other system executable.
+
+Backends (all pure-Python):
+  stdlib  : zip, tar, tar.gz, tar.bz2, tar.xz, tgz, gz, bz2, xz
+  rarfile : .rar  (pip install rarfile  — pure-Python RAR parser)
+  py7zr   : .7z   (pip install py7zr   — pure-Python 7-Zip reader)
+
+Auto-installs rarfile / py7zr on first use; no other network calls.
+"""
+
+from __future__ import annotations
+
 import argparse
+import bz2
+import gzip
+import glob
+import importlib
+import logging
+import lzma
+import os
+import shutil
+import subprocess
+import sys
 import tarfile
 import zipfile
-import gzip
-import logging
-import subprocess
-import importlib.util
 from pathlib import Path
 
-# ================= 配置日志 =================
+# ─── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - [%(levelname)s] - %(message)s',
-    datefmt='%H:%M:%S'
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
-# ================= 自动依赖安装 =================
-def install_and_import(package_name, import_name=None):
-    """
-    尝试导入库，如果失败则自动通过 pip 安装并重新导入。
-    """
-    if import_name is None:
-        import_name = package_name
-    
-    if importlib.util.find_spec(import_name) is None:
-        logger.warning(f"Library '{package_name}' not found. Installing automatically...")
-        try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
-            logger.info(f"Successfully installed '{package_name}'.")
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to install '{package_name}'. Rar/7z support may be limited. Error: {e}")
-            return None
-    
+# ─── Pure-Python optional backends ────────────────────────────────────────────
+
+def _pip_install(package: str) -> bool:
+    """Install *package* into the current interpreter's site-packages."""
+    logger.info("Installing %s ...", package)
     try:
-        module = importlib.import_module(import_name)
-        return module
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "--quiet", package],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+        importlib.invalidate_caches()
+        return True
+    except subprocess.CalledProcessError as exc:
+        logger.warning("pip install %s failed: %s", package,
+                       getattr(exc, "stderr", b"").decode(errors="replace").strip())
+        return False
+
+
+def _import_optional(import_name: str, pip_name: str):
+    """Try to import *import_name*; auto-install via pip if missing. Returns module or None."""
+    try:
+        return importlib.import_module(import_name)
     except ImportError:
-        logger.error(f"Failed to import '{import_name}' even after installation.")
-        return None
+        pass
+    if _pip_install(pip_name):
+        importlib.invalidate_caches()
+        try:
+            return importlib.import_module(import_name)
+        except ImportError:
+            pass
+    logger.warning("Could not load '%s' even after installing '%s'.", import_name, pip_name)
+    return None
 
-# 尝试加载 patoolib
-patoolib = install_and_import("patool")
-PATOOL_AVAILABLE = patoolib is not None
 
-# ================= 配置与常量 =================
+# Lazy-load: only triggered when the format is actually encountered.
+_rarfile_mod = None   # pip: rarfile
+_py7zr_mod   = None   # pip: py7zr
+
+def _get_rarfile():
+    global _rarfile_mod
+    if _rarfile_mod is None:
+        _rarfile_mod = _import_optional("rarfile", "rarfile")
+        if _rarfile_mod is not None:
+            # Tell rarfile NOT to call unrar (pure-Python mode)
+            _rarfile_mod.UNRAR_TOOL = None
+            _rarfile_mod.ALT_TOOL   = None
+    return _rarfile_mod
+
+def _get_py7zr():
+    global _py7zr_mod
+    if _py7zr_mod is None:
+        _py7zr_mod = _import_optional("py7zr", "py7zr")
+    return _py7zr_mod
+
+# ─── Constants ─────────────────────────────────────────────────────────────────
 MARKER_FILE = ".extracted_success"
+MAX_DEPTH   = 20
 
-# 支持的扩展名映射
-# 键为后缀，值为内部处理类型
-# 注意：字典序在 Python 3.7+ 是保留插入顺序的，但为了稳健，我们在使用时会显式按长度排序
-SUPPORTED_EXTS = {
-    # 复合后缀 (必须优先匹配)
-    ".tar.gz": "tar",
-    ".tar.bz2": "tar",
-    ".tar.xz": "tar",
-    ".tgz": "tar",
-    ".tbz": "tar",
-    # 单后缀
-    ".zip": "zip",
-    ".tar": "tar",
-    ".gz": "gzip",   # 新增 gzip 支持
-    ".rar": "patool",
-    ".7z": "patool",
-}
+# (suffix, handler_key)  — longest suffix first so ".tar.gz" wins over ".gz"
+SUPPORTED_EXTS: list[tuple[str, str]] = [
+    (".tar.gz",  "tar"),
+    (".tar.bz2", "tar"),
+    (".tar.xz",  "tar"),
+    (".tgz",     "tar"),
+    (".tbz2",    "tar"),
+    (".tbz",     "tar"),
+    (".tar",     "tar"),
+    (".zip",     "zip"),
+    (".rar",     "rar"),
+    (".7z",      "7z"),
+    (".gz",      "gz"),
+    (".bz2",     "bz2"),
+    (".xz",      "xz"),
+]
 
-# ================= 核心逻辑 =================
+# ─── Archive detection ─────────────────────────────────────────────────────────
 
-def get_archive_type_and_stem(path: Path):
-    """
-    判断文件类型并获取解压后的目标目录名（Stem）。
-    逻辑：按后缀长度降序匹配，确保 .tar.gz 优先于 .gz
-    """
-    name_lower = path.name.lower()
-    # 关键：按后缀长度倒序排列，防止 .tar.gz 被 .gz 截胡
-    sorted_exts = sorted(SUPPORTED_EXTS.items(), key=lambda x: len(x[0]), reverse=True)
-    
-    for ext, type_name in sorted_exts:
+def _match_ext(name_lower: str) -> tuple[str | None, str | None]:
+    """Return (handler_key, stem) or (None, None)."""
+    for ext, handler in SUPPORTED_EXTS:
         if name_lower.endswith(ext):
-            # 获取去除后缀后的文件名作为目录名
-            # 例如 data.tar.gz -> data
-            # 例如 file.txt.gz -> file.txt
-            stem_name = path.name[:-len(ext)]
-            
-            # 边界情况：如果文件名就是 .tar.gz (虽然少见)，stem 为空
-            if not stem_name:
-                stem_name = path.name + "_extracted"
-                
-            return type_name, stem_name
+            stem = name_lower[: -len(ext)]
+            return handler, (stem or name_lower + "_extracted")
     return None, None
+
 
 def is_archive(path: Path) -> bool:
     if not path.is_file():
         return False
-    typ, _ = get_archive_type_and_stem(path)
-    return typ is not None
+    handler, _ = _match_ext(path.name.lower())
+    return handler is not None
 
-def safe_tar_extract(tar: tarfile.TarFile, path: Path):
-    """兼容 Python 3.12+ 的 tarfile 安全解压"""
-    if hasattr(tarfile, 'data_filter'):
+# ─── Extraction helpers ────────────────────────────────────────────────────────
+
+def _safe_tar_extract(tf: tarfile.TarFile, dest: Path) -> None:
+    """Use 'data' filter on Python 3.12+ for security; fall back gracefully."""
+    if hasattr(tarfile, "data_filter"):
         try:
-            tar.extractall(path, filter='data')
+            tf.extractall(dest, filter="data")
+            return
         except TypeError:
-            # 部分旧版本即使有属性也可能行为不一致，回退
-            tar.extractall(path)
-    else:
-        tar.extractall(path)
+            pass
+    tf.extractall(dest)
 
-def extract_gzip_file(archive_path: Path, dest_dir: Path, stem_name: Path):
+
+def _extract_single_compressed(src: Path, dest_dir: Path, stem: str,
+                                open_fn) -> None:
+    """Generic single-file decompressor (.gz / .bz2 / .xz)."""
+    out = dest_dir / stem
+    with open_fn(src, "rb") as fin, open(out, "wb") as fout:
+        shutil.copyfileobj(fin, fout)
+
+
+def _extract_zip(src: Path, dest_dir: Path) -> None:
+    if not zipfile.is_zipfile(src):
+        raise ValueError(f"Not a valid ZIP file: {src.name}")
+    with zipfile.ZipFile(src, "r") as zf:
+        zf.extractall(dest_dir)
+
+
+def _extract_tar(src: Path, dest_dir: Path) -> None:
+    if not tarfile.is_tarfile(src):
+        raise ValueError(f"Not a valid TAR file: {src.name}")
+    with tarfile.open(src, "r:*") as tf:
+        _safe_tar_extract(tf, dest_dir)
+
+
+def _extract_rar(src: Path, dest_dir: Path) -> None:
+    rf = _get_rarfile()
+    if rf is None:
+        raise RuntimeError(
+            "rarfile not available — cannot extract .rar files. "
+            "Run: pip install rarfile"
+        )
+    # rarfile pure-Python mode requires no external binary
+    with rf.RarFile(str(src)) as archive:
+        archive.extractall(str(dest_dir))
+
+
+def _extract_7z(src: Path, dest_dir: Path) -> None:
+    p7 = _get_py7zr()
+    if p7 is None:
+        raise RuntimeError(
+            "py7zr not available — cannot extract .7z files. "
+            "Run: pip install py7zr"
+        )
+    with p7.SevenZipFile(str(src), mode="r") as archive:
+        archive.extractall(str(dest_dir))
+
+# ─── Core extraction ───────────────────────────────────────────────────────────
+
+def extract_archive(archive: Path, dest_parent: Path, force: bool) -> Path | None:
     """
-    处理单文件 .gz 解压
-    注意：gzip 解压出来是单文件流，没有文件名信息，通常取掉 .gz 后缀作为文件名
+    Extract *archive* into a subdirectory of *dest_parent*.
+    Returns the output directory on success, None on failure.
     """
-    # 目标文件路径：dest_dir/stem_name
-    # 例如：archive_path = /tmp/log.txt.gz
-    # dest_dir = /tmp/log.txt/ (由 extract_archive 创建)
-    # stem_name = log.txt
-    # 最终解压为 = /tmp/log.txt/log.txt
-    target_file = dest_dir / stem_name
-    
-    with gzip.open(archive_path, 'rb') as f_in:
-        with open(target_file, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-    return target_file
-
-def extract_archive(archive_path: Path, dest_parent: Path, force: bool):
-    """
-    执行解压动作
-    :return: 解压成功的目录 Path对象，失败返回 None
-    """
-    archive_type, stem_name = get_archive_type_and_stem(archive_path)
-    
-    # 构造专属解压目录，防止文件散落
-    final_out_dir = dest_parent / stem_name
-    marker = final_out_dir / MARKER_FILE
-
-    # --- 状态检查 ---
-    if final_out_dir.exists():
-        if not force and marker.exists():
-            logger.info(f"[SKIP] Already extracted: {archive_path.name}")
-            return final_out_dir
-        
-        if force:
-            logger.info(f"[FORCE] Re-extracting: {archive_path.name}")
-            try:
-                shutil.rmtree(final_out_dir)
-            except OSError as e:
-                logger.error(f"Cannot clean directory {final_out_dir}: {e}")
-                return None
-        elif not marker.exists():
-             logger.info(f"[RESUME] Found incomplete extraction: {archive_path.name}")
-
-    final_out_dir.mkdir(parents=True, exist_ok=True)
-
-    # --- 解压过程 ---
-    logger.info(f"[EXTRACT] {archive_path.name} -> {final_out_dir.name}/")
-    try:
-        if archive_type == "zip":
-            if not zipfile.is_zipfile(archive_path):
-                raise ValueError("Not a valid zip file")
-            with zipfile.ZipFile(archive_path, "r") as z:
-                z.extractall(final_out_dir)
-                
-        elif archive_type == "tar":
-            if not tarfile.is_tarfile(archive_path):
-                raise ValueError("Not a valid tar file")
-            with tarfile.open(archive_path, "r:*") as t:
-                safe_tar_extract(t, final_out_dir)
-
-        elif archive_type == "gzip":
-            # 单文件 gzip 处理
-            extract_gzip_file(archive_path, final_out_dir, stem_name)
-
-        elif archive_type == "patool":
-            if not PATOOL_AVAILABLE:
-                logger.error(f"Skipping {archive_path}: patool not installed/loadable.")
-                return None
-            # Patool 通常需要外部命令(unrar, 7z)支持，这里只负责调用
-            patoolib.extract_archive(str(archive_path), outdir=str(final_out_dir), verbosity=-1)
-        
-        else:
-            logger.warning(f"Unknown type for {archive_path}")
-            return None
-
-        # --- 标记成功 ---
-        marker.touch()
-        return final_out_dir
-
-    except Exception as e:
-        logger.error(f"Failed to extract {archive_path.name}: {e}")
-        # 失败时尝试清理半成品目录
-        if final_out_dir.exists():
-            shutil.rmtree(final_out_dir, ignore_errors=True)
+    handler, stem = _match_ext(archive.name.lower())
+    if handler is None:
         return None
 
-def process_recursively(current_path: Path, force: bool, level=0):
-    """
-    深度优先递归处理
-    """
-    if level > 20: 
-        logger.warning(f"Recursion depth limit reached at {current_path}")
+    out_dir = dest_parent / stem
+    marker  = out_dir / MARKER_FILE
+
+    # ── Idempotency ──
+    if out_dir.exists():
+        if not force and marker.exists():
+            logger.info("[SKIP]   %s (already extracted)", archive.name)
+            return out_dir
+        if force:
+            logger.info("[FORCE]  Cleaning %s", out_dir)
+            shutil.rmtree(out_dir, ignore_errors=True)
+        else:
+            logger.info("[RESUME] Incomplete extraction: %s", archive.name)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("[EXTRACT] %s  →  %s/", archive.name, out_dir.name)
+
+    try:
+        if handler == "zip":
+            _extract_zip(archive, out_dir)
+
+        elif handler == "tar":
+            _extract_tar(archive, out_dir)
+
+        elif handler == "rar":
+            _extract_rar(archive, out_dir)
+
+        elif handler == "7z":
+            _extract_7z(archive, out_dir)
+
+        elif handler == "gz":
+            _extract_single_compressed(archive, out_dir, stem,
+                                        lambda p, m: gzip.open(p, m))
+
+        elif handler == "bz2":
+            _extract_single_compressed(archive, out_dir, stem,
+                                        lambda p, m: bz2.open(p, m))
+
+        elif handler == "xz":
+            _extract_single_compressed(archive, out_dir, stem,
+                                        lambda p, m: lzma.open(p, m))
+
+        else:
+            logger.warning("Unknown handler '%s' for %s", handler, archive.name)
+            return None
+
+        marker.touch()
+        logger.info("[OK]     %s", out_dir.name)
+        return out_dir
+
+    except Exception as exc:
+        logger.error("[FAIL]   %s: %s", archive.name, exc)
+        shutil.rmtree(out_dir, ignore_errors=True)
+        return None
+
+# ─── Recursive scanner ─────────────────────────────────────────────────────────
+
+def process_dir(directory: Path, force: bool, depth: int = 0) -> None:
+    """DFS: extract every archive, then recurse into extracted output."""
+    if depth > MAX_DEPTH:
+        logger.warning("Max recursion depth (%d) reached at %s", MAX_DEPTH, directory)
         return
 
     try:
-        # 获取当前目录下所有条目，排序以保证确定性
-        items = sorted(list(current_path.iterdir()))
+        items = sorted(directory.iterdir())
     except (PermissionError, NotADirectoryError):
         return
 
-    for p in items:
-        if p.name == MARKER_FILE:
+    for item in items:
+        if item.name == MARKER_FILE:
             continue
+        if item.is_dir():
+            process_dir(item, force, depth)
+        elif item.is_file() and is_archive(item):
+            out = extract_archive(item, item.parent, force)
+            if out:
+                process_dir(out, force, depth + 1)
 
-        if p.is_dir():
-            # 递归目录
-            process_recursively(p, force, level)
-            
-        elif p.is_file() and is_archive(p):
-            # 发现压缩包 -> 原地解压到同名文件夹
-            # 这里的 p.parent 就是 current_path
-            extracted_dir = extract_archive(p, p.parent, force)
-            
-            if extracted_dir:
-                # 立即递归扫描新生成的目录
-                process_recursively(extracted_dir, force, level + 1)
+# ─── Entry point ───────────────────────────────────────────────────────────────
 
-# ================= 主程序入口 =================
-
-def main():
-    parser = argparse.ArgumentParser(description="Auto Recursive Extractor with Dependency Management")
-    parser.add_argument("path", help="File pattern (glob) or directory to scan")
-    parser.add_argument("-f", "--force", action="store_true", help="Force re-extraction even if success marker exists")
-    parser.add_argument("-d", "--dest", help="Optional output directory (default: extract alongside original)")
-    
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Recursive archive extractor — zero local-software dependency.\n"
+            "Supports: zip, tar, tar.gz, tar.bz2, tar.xz, tgz, rar, 7z, gz, bz2, xz"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("path",
+                        help="File, directory, or glob pattern (e.g. 'downloads/', '*.rar')")
+    parser.add_argument("-f", "--force", action="store_true",
+                        help="Re-extract even when a success marker exists")
+    parser.add_argument("-d", "--dest", metavar="DIR",
+                        help="Root output directory (default: alongside source file)")
     args = parser.parse_args()
-    
-    # 路径解析逻辑
-    import glob
-    targets = []
-    
-    # 1. 尝试 Glob 匹配
-    if any(char in args.path for char in "*?[]"):
-        # recursive=True 需要 Python 3.5+
-        files = glob.glob(args.path, recursive=True)
-        targets = [Path(f) for f in files]
+
+    # ── Resolve targets ──
+    if any(c in args.path for c in "*?[]"):
+        targets = [Path(p) for p in glob.glob(args.path, recursive=True)]
     else:
-        # 2. 普通路径处理
-        input_path = Path(args.path)
-        if input_path.is_dir():
-            # 如果是目录，将目录本身作为起始点进行递归扫描
-            # 注意：process_recursively 会遍历目录内容
-            targets = [input_path] 
-        elif input_path.exists():
-            targets = [input_path]
-        else:
-            logger.error(f"Path not found: {args.path}")
+        p = Path(args.path)
+        if not p.exists():
+            logger.error("Path not found: %s", args.path)
             sys.exit(1)
+        targets = [p]
 
     if not targets:
-        logger.warning("No targets found.")
+        logger.warning("No matching targets for: %s", args.path)
         sys.exit(0)
 
-    logger.info(f"Starting processing on {len(targets)} targets...")
+    logger.info("Found %d target(s).", len(targets))
+
+    dest_root = Path(args.dest) if args.dest else None
+    if dest_root:
+        dest_root.mkdir(parents=True, exist_ok=True)
 
     for target in targets:
-        if target.is_file() and is_archive(target):
-            # 如果目标直接是一个文件
-            parent = Path(args.dest) if args.dest else target.parent
-            if args.dest:
-                parent.mkdir(parents=True, exist_ok=True)
-                
-            out_dir = extract_archive(target, parent, args.force)
-            if out_dir:
-                process_recursively(out_dir, args.force)
-                
-        elif target.is_dir():
-            # 如果目标是目录，开始递归扫描
-            process_recursively(target, args.force)
+        if target.is_dir():
+            process_dir(target, args.force)
+        elif target.is_file() and is_archive(target):
+            parent = dest_root or target.parent
+            out = extract_archive(target, parent, args.force)
+            if out:
+                process_dir(out, args.force)
+        else:
+            logger.warning("Skipping non-archive: %s", target.name)
+
+    logger.info("Done.")
+
 
 if __name__ == "__main__":
     main()

@@ -1,72 +1,73 @@
-
 ---
-name: smart-archive-extractor
+name: archive-extractor
 description: |
-  A robust tool for recursively extracting various archive formats (zip, tar, tar.gz, rar, 7z, gz). 
-  Use this skill when the user wants to "unzip", "unpack", or "extract" files, especially when dealing with nested archives, bulk extraction, or when operation stability (idempotency) is required.
-  It automatically handles dependency installation (patool) and prevents redundant extractions via marker files.
-
-version: 1.0.1
+  Recursively extract archive files from a file or directory.
+  Supports zip, tar, tar.gz, tar.bz2, tar.xz, tgz, rar, 7z, gz, bz2, xz.
+  Works on Windows, Linux, macOS — requires only Python 3.8+, no local software.
+  Use when the user wants to "unzip", "unpack", "extract", or "decompress" archives,
+  especially for bulk extraction, nested archives, or when idempotent re-runs are needed.
 ---
 
-# Smart Archive Extractor
+# Archive Extractor
 
-This skill provides a reliable way to recursively extract archives. It supports complex logic like avoiding re-extraction of already processed files and handling nested archives (e.g., a zip containing a tar.gz).
+Extracts archives recursively using `scripts/extract.py`.
 
-## Capabilities
+**Zero local-software dependency** — works on any machine with Python 3.8+.  
+`.rar` and `.7z` formats use pure-Python libraries (`rarfile`, `py7zr`) that are
+auto-installed on first use via pip. No 7-Zip, WinRAR, or unrar binary needed.
 
-- **Recursive Extraction**: Automatically detects archives inside extracted folders and extracts them (up to 20 levels deep).
-- **Idempotency**: Skips extraction if a success marker (`.extracted_success`) is found, unless forced.
-- **Smart Format Support**: Handles standard formats (`.zip`, `.tar`) and complex ones (`.rar`, `.7z`) by auto-installing dependencies.
-- **Gzip Handling**: Special handling for single `.gz` files (e.g., `data.txt.gz` -> `data.txt/data.txt`).
+## How to run
 
-## Usage
-
-Run the python script located in `scripts/extract.py`.
-
-### Command Syntax
-
-```
-python3 scripts/extract.py <PATH> [OPTIONS]
+```bash
+python scripts/extract.py <PATH> [OPTIONS]
 ```
 
-### Arguments
+**Always use the absolute path to the script** when calling from a different working directory:
 
-- `<PATH>`: The target file or directory pattern to process.
-  - Examples: `data.zip`, `downloads/`, `"*.tar.gz"` (glob patterns supported).
+```bash
+# Windows
+python "C:\Users\<user>\.workbuddy\skills\archive-extractor\scripts\extract.py" "<PATH>"
+
+# Linux / macOS
+python ~/.workbuddy/skills/archive-extractor/scripts/extract.py "<PATH>"
+```
 
 ### Options
 
-- `-f, --force`: Force re-extraction even if the success marker exists. Use this if the user says "retry", "overwrite", or "force".
-- `-d, --dest <DIR>`: Specify a root output directory. If omitted, archives are extracted alongside the source files.
+| Flag | Description |
+|------|-------------|
+| `-f` / `--force` | Re-extract even if a `.extracted_success` marker already exists |
+| `-d DIR` / `--dest DIR` | Write all output under a custom root directory |
+
+## Supported formats
+
+| Format | Backend |
+|--------|---------|
+| `.zip` | Python stdlib `zipfile` |
+| `.tar` `.tar.gz` `.tar.bz2` `.tar.xz` `.tgz` `.tbz2` | Python stdlib `tarfile` |
+| `.gz` `.bz2` `.xz` (single-file) | Python stdlib `gzip` / `bz2` / `lzma` |
+| `.rar` | `rarfile` (pure-Python, auto-installed) |
+| `.7z` | `py7zr` (pure-Python, auto-installed) |
+
+## Key behaviours
+
+- **Idempotent**: skips archives that already have a `.extracted_success` marker; use `-f` to override.
+- **Recursive**: after extracting an archive, immediately scans the output for nested archives (up to 20 levels deep).
+- **Auto-deps**: `rarfile` and `py7zr` are installed automatically via pip on first use — no manual setup needed.
+- **Fault-tolerant**: corrupted or unsupported archives are logged as `[FAIL]` and skipped; remaining archives continue.
 
 ## Examples
 
-### 1. Basic Extraction
-Extract a single file or a directory of archives.
-
 ```bash
-python3 scripts/extract.py downloads/archive.zip
-# OR for a directory
-python3 scripts/extract.py downloads/
+# Extract everything in a directory (including sub-archives)
+python extract.py "D:\jira\TICKET-123"
+
+# Force clean re-extraction of a single file
+python extract.py report.zip -f
+
+# Extract to a separate output folder
+python extract.py "D:\jira\TICKET-123" -d "D:\extracted"
+
+# Glob pattern — extract all zips in current directory
+python extract.py "*.zip"
 ```
-
-### 2. Force Re-extraction
-Use when the user suspects corruption or explicitly requests a clean start.
-
-```bash
-python3 scripts/extract.py downloads/archive.zip -f
-```
-
-### 3. Extract to Specific Folder
-Use when the user wants to organize output in a separate location.
-
-```bash
-python3 scripts/extract.py downloads/ -d ./extracted_output
-```
-
-## Error Handling
-
-- If `patool` is missing, the script will attempt to `pip install` it automatically.
-- If an archive is corrupt, it will be skipped, and the error will be logged without crashing the entire process.
-- If recursion depth exceeds 20, it will stop digging deeper to prevent infinite loops.
