@@ -40,6 +40,7 @@ Expected behavior after `openclaw gateway restart`:
 - the viewer should not say local-only mode
 - `/echo-memory whoami` should succeed
 - `/echo-memory sync` should be able to upload markdown memories
+- the setup sidebar should still show version and update information for packaged installs
 
 ## Local mode
 
@@ -73,6 +74,7 @@ Expected behavior after `openclaw gateway restart`:
 - the local UI still starts
 - localhost browsing works
 - cloud sync and cloud identity checks are unavailable by design
+- the local UI can still show the version badge and update panel, but linked or local-checkout installs should not be treated as packaged-update targets
 
 ## Config precedence
 

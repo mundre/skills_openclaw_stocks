@@ -16,7 +16,7 @@ Use this reference for everyday EchoMemory requests after setup is already worki
 
 ## Natural-language routing
 
-Use onboarding when the user asks how to install, configure, authenticate, sign up, get an API key, or troubleshoot the plugin.
+Use onboarding when the user asks how to install, configure, authenticate, connect with email, sign up, use the manual API key fallback, or troubleshoot the plugin.
 
 Use the local UI when the user asks to:
 
@@ -24,6 +24,8 @@ Use the local UI when the user asks to:
 - browse markdown memories
 - launch the localhost viewer
 - get the local workspace URL
+- check the installed plugin version in the UI
+- check whether a packaged install has an update available
 
 Use search when the user asks to:
 
@@ -59,6 +61,7 @@ Do not confuse local UI with cloud sync either:
 - local UI can show the wider OpenClaw workspace markdown structure
 - cloud retrieval depends on what was actually imported from `memoryDir`
 - a file being browsable locally does not guarantee it will appear in cloud search
+- packaged installs can also expose plugin version and update controls in the setup sidebar
 
 Common local file expectations:
 
@@ -74,3 +77,11 @@ Common local file expectations:
 - `echo_memory_status`: local sync summary plus backend import status
 - `echo_memory_sync`: push local markdown memories into EchoMemory cloud
 - `echo_memory_graph_link`: private graph login link or public memories link
+
+## Update-panel guidance
+
+When users ask about the new `Plugin updates` section:
+
+- treat packaged installs as the intended update target
+- treat linked repos and local checkouts as development installs
+- if the update panel shows route `404` errors or mismatched version behavior, verify which active plugin copy OpenClaw is actually loading

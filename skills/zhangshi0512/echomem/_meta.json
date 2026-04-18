@@ -3,9 +3,15 @@
   "slug": "echomem",
   "displayName": "EchoMemory",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1773792719605,
-    "commit": "https://github.com/openclaw/skills/commit/7ef0a936c6e428f6d4117fa6517d1c20e431349b"
+    "version": "0.2.6",
+    "publishedAt": 1775773317769,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1773792719605,
+      "commit": "https://github.com/openclaw/skills/commit/7ef0a936c6e428f6d4117fa6517d1c20e431349b"
+    }
+  ]
 }

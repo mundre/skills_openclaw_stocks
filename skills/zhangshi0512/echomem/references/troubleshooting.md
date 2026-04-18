@@ -21,6 +21,7 @@ Likely causes:
 - the gateway was not restarted after install
 - the package was installed globally, but not where OpenClaw discovers plugins
 - the OpenClaw version is older than the plugin discovery target
+- the active install is under `~/.openclaw/extensions`, but someone is only checking `node_modules`
 
 Preferred fix:
 
@@ -63,6 +64,26 @@ If the issue involves local UI behavior, prefer a clean reinstall before debuggi
 - stale frontend assets
 - copied install versus linked install confusion
 - old package contents still present under OpenClaw's extension path
+- multiple active plugin copies under `~/.openclaw/extensions` and `~/.openclaw/node_modules`
+
+## Local UI update panel shows `404`, `Unknown`, or mismatched version info
+
+Likely cause:
+
+- the frontend came from one plugin copy, but the running gateway is serving backend routes from another copy
+
+Checks:
+
+1. verify which active plugin path OpenClaw is actually loading
+2. do not assume the runtime copy is under `~/.openclaw/node_modules`
+3. check `~/.openclaw/extensions` for an older active plugin copy
+4. check for duplicate gateway processes
+5. confirm the active backend exposes `/api/plugin-update-status`
+
+Interpretation:
+
+- if the update panel renders but `plugin-update-status` returns `404`, the visible frontend is newer than the active backend
+- if the install source is wrong, the gateway is likely serving a different plugin copy than the one the user expects
 
 ## Local UI does not open on gateway restart
 
@@ -83,6 +104,12 @@ Manual fallback:
 ```powershell
 node .\echo-memory\scripts\start-local-ui.mjs
 ```
+
+If the user restarted the gateway and the localhost UI server still does not return on `127.0.0.1:17823`, also check:
+
+- whether the plugin is active from the expected install source
+- whether the gateway fully restarted or left duplicate processes behind
+- whether `/echo-memory view` brings the local server back up cleanly
 
 ## Local UI shows local-only mode unexpectedly
 
