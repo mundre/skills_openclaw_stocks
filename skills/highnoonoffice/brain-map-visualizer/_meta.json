@@ -3,11 +3,16 @@
   "slug": "brain-map-visualizer",
   "displayName": "Brain Map Visualizer",
   "latest": {
-    "version": "3.2.1",
-    "publishedAt": 1775705504978,
-    "commit": "https://github.com/openclaw/skills/commit/180ec68793a6a00c6b56a5a992f0865a0cb6b4f0"
+    "version": "3.3.4",
+    "publishedAt": 1776408932730,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.2.1",
+      "publishedAt": 1775705504978,
+      "commit": "https://github.com/openclaw/skills/commit/180ec68793a6a00c6b56a5a992f0865a0cb6b4f0"
+    },
     {
       "version": "3.1.7",
       "publishedAt": 1774358345093,
