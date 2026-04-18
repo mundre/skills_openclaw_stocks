@@ -3,11 +3,16 @@
   "slug": "agent-creator-skill",
   "displayName": "agent-creator-skill",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1774322976992,
-    "commit": "https://github.com/openclaw/skills/commit/da512f368a33d30c5ae3531ce9ad4e8c7c6771cc"
+    "version": "1.0.6",
+    "publishedAt": 1776416337851,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1774322976992,
+      "commit": "https://github.com/openclaw/skills/commit/da512f368a33d30c5ae3531ce9ad4e8c7c6771cc"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1774013735965,

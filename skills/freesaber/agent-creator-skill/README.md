@@ -4,9 +4,9 @@ A lightweight skill for OpenClaw. Once installed, you can use natural language t
 
 ## 💡 How It Works
 1. **Command:** The Main Agent receives a natural language instruction (e.g., "Use agent-creator to create an agent expert in Python web scraping").
-2. **Design:** The Main Agent consults the specifications in `SKILL.md`, automatically formats the name (e.g., `python_spider_expert`), and creatively writes a detailed, multi-hundred-word system prompt for the new expert.
-3. **Execution:** The Main Agent automatically calls the terminal tool in the background: `bash create_agent.sh "python_spider_expert" "You are a senior..."`.
-4. **Initialization:** The shell script executes `openclaw agents add` and `openclaw agent --message`, instantly completing the environment setup and memory injection for the new Agent.
+2. **Design:** The Main Agent consults the specifications in `SKILL.md`, automatically formats the agent ID (e.g., `python_spider_expert`), creates a friendly display name, and writes a detailed system prompt in the same language as the user's request unless another language is explicitly requested.
+3. **Execution:** The Main Agent automatically calls the matching script for the current system, such as `bash create_agent.sh "python_spider_expert" "Python Web Scraping Expert" "You are a senior..."` on Linux/macOS/WSL/Git Bash, or `powershell -ExecutionPolicy Bypass -File create_agent.ps1 -AgentId "python_spider_expert" -DisplayName "Python Web Scraping Expert" -IdentityPrompt "You are a senior..."` on native Windows PowerShell.
+4. **Initialization:** The selected script executes `openclaw agents add` and `openclaw agent --message`, instantly completing the environment setup and memory injection for the new Agent.
 
 ## 🚀 Installation
 
@@ -18,8 +18,8 @@ The Main Agent will automatically pull the code, configure it, and enable the sk
 
 ### Option 2: Manual Offline Installation
 If you are developing or debugging locally:
-1. Place this folder into the `~/.openclaw/workspace/skills/` directory.
-2. Enter the directory in your terminal and ensure the script has execution permissions: `chmod +x create_agent.sh`
+1. Place this folder into the `~/.openclaw/workspace/skills/` directory. On native Windows, the equivalent path is usually `%USERPROFILE%\.openclaw\workspace\skills\`.
+2. On Linux/macOS/WSL/Git Bash, enter the directory and ensure the shell script has execution permissions: `chmod +x create_agent.sh`. On native Windows PowerShell, use `create_agent.ps1`; no chmod step is required.
 3. Restart OpenClaw or wait for the Main Agent to reload its skills.
 
 ## 💬 Usage Examples & Notes

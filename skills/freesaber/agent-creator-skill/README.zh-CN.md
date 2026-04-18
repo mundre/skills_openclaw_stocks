@@ -4,9 +4,9 @@
 
 ## 💡 工作原理
 1. 主 Agent 接收到自然语言指令（例："使用 agent-creator 创建一个精通Python爬虫的代理"）。
-2. 主 Agent 查阅 `SKILL.md` 的规范，自动将名字翻译为 `python_spider_expert`，并自动发挥创意撰写数百字的“Python爬虫专家”专属身份提示词。
-3. 主 Agent 在后台自动调用终端工具执行：`bash create_agent.sh "python_spider_expert" "你是一个资深..."`。
-4. Shell 脚本自动执行 `openclaw agents add` 和 `openclaw agent --message`，瞬间完成新 Agent 的环境创建和记忆注入。
+2. 主 Agent 查阅 `SKILL.md` 的规范，自动将 Agent ID 翻译为 `python_spider_expert`，生成友好的显示名称，并根据用户请求的语言撰写详细的专属身份提示词；除非用户明确指定其他语言。
+3. 主 Agent 会根据当前系统自动调用对应脚本。例如 Linux/macOS/WSL/Git Bash 使用：`bash create_agent.sh "python_spider_expert" "Python爬虫专家" "你是一个资深..."`；原生 Windows PowerShell 使用：`powershell -ExecutionPolicy Bypass -File create_agent.ps1 -AgentId "python_spider_expert" -DisplayName "Python爬虫专家" -IdentityPrompt "你是一个资深..."`。
+4. 选中的系统脚本会自动执行 `openclaw agents add` 和 `openclaw agent --message`，瞬间完成新 Agent 的环境创建和记忆注入。
 
 ## 🚀 安装方式
 
@@ -17,8 +17,8 @@
 
 ### 方式二：手动离线安装
 如果你在本地开发调试：
-1. 将此文件夹放入 `~/.openclaw/workspace/skills/` 目录下。
-2. 在终端进入该目录，确保脚本有执行权限：`chmod +x create_agent.sh`
+1. 将此文件夹放入 `~/.openclaw/workspace/skills/` 目录下。原生 Windows 通常对应 `%USERPROFILE%\.openclaw\workspace\skills\`。
+2. 如果是 Linux/macOS/WSL/Git Bash，在终端进入该目录，确保 shell 脚本有执行权限：`chmod +x create_agent.sh`。如果是原生 Windows PowerShell，使用 `create_agent.ps1`，不需要执行 chmod。
 3. 重启 OpenClaw 或等待主 Agent 重新加载技能。
 
 ## 💬 使用示例与注意事项
