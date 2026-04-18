@@ -3,11 +3,16 @@
   "slug": "polymarket-catastrophe-trader",
   "displayName": "Polymarket Catastrophe Trader",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775317081818,
-    "commit": "https://github.com/openclaw/skills/commit/57a48f040e7376ecf31243bb6a75999681d9fe82"
+    "version": "0.0.2",
+    "publishedAt": 1776513264262,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775317081818,
+      "commit": "https://github.com/openclaw/skills/commit/57a48f040e7376ecf31243bb6a75999681d9fe82"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773868307330,
