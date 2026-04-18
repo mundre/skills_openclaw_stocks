@@ -1,0 +1,8 @@
+interface:
+  display_name: "Agent Travel"
+  short_description: "Background research with isolated advisory hints"
+  default_prompt: "Use $agent-travel to research an unresolved issue in the background and save only cross-validated advisory hints for a future task."
+
+policy:
+  allow_implicit_invocation: true
+
