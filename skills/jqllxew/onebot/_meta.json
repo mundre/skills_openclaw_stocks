@@ -3,9 +3,15 @@
   "slug": "onebot",
   "displayName": "onebot",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773786750992,
-    "commit": "https://github.com/openclaw/skills/commit/0b90c546a20624c4576bf0697353e5e9bba2e1d7"
+    "version": "1.0.3",
+    "publishedAt": 1775943502211,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773786750992,
+      "commit": "https://github.com/openclaw/skills/commit/0b90c546a20624c4576bf0697353e5e9bba2e1d7"
+    }
+  ]
 }
