@@ -3,11 +3,16 @@
   "slug": "mx-macro-data",
   "displayName": "Global Macro Database Assistant",
   "latest": {
-    "version": "1.0.11",
-    "publishedAt": 1775210126730,
-    "commit": "https://github.com/openclaw/skills/commit/3c12f596cf799f69d63920223ce7d3271dd9f63c"
+    "version": "1.0.12",
+    "publishedAt": 1776424761300,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.11",
+      "publishedAt": 1775210126730,
+      "commit": "https://github.com/openclaw/skills/commit/3c12f596cf799f69d63920223ce7d3271dd9f63c"
+    },
     {
       "version": "1.0.10",
       "publishedAt": 1774606802101,
