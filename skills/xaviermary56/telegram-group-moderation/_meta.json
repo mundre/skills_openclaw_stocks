@@ -3,9 +3,15 @@
   "slug": "telegram-group-moderation",
   "displayName": "Telegram Group Moderation",
   "latest": {
-    "version": "0.1.3",
-    "publishedAt": 1773942302440,
-    "commit": "https://github.com/openclaw/skills/commit/5cb4b61b0fac83b65d7e57428d8678030ae08bcf"
+    "version": "0.9.0",
+    "publishedAt": 1776273468510,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.3",
+      "publishedAt": 1773942302440,
+      "commit": "https://github.com/openclaw/skills/commit/5cb4b61b0fac83b65d7e57428d8678030ae08bcf"
+    }
+  ]
 }

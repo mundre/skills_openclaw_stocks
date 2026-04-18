@@ -1,6 +1,16 @@
 ---
 name: telegram-group-moderation
+version: 0.9.0
 description: Moderate Telegram groups with a bot by receiving message/webhook events, extracting text/caption/media context, applying anti-advertising and anti-contact policies, and deciding whether to pass, delete, warn, mute, ban, or send for manual review. Use when connecting Telegram groups or channels to an existing moderation system, especially when reusing post-content-moderation as the policy core.
+emoji: 📱
+homepage: https://github.com/XavierMary56/OmniPublish
+requires:
+  - post-content-moderation
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - python3
 ---
 
 # Telegram Group Moderation
