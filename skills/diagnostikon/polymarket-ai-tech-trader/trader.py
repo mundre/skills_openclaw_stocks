@@ -20,15 +20,15 @@ KEYWORDS = ['AI', 'GPT', 'Claude', 'Gemini', 'OpenAI', 'Anthropic', 'benchmark',
 # Risk parameters — declared as tunables in clawhub.json, tunable from Simmer UI.
 # Named SIMMER_* so apply_skill_config() can load automaton-managed overrides.
 MAX_POSITION   = float(os.environ.get("SIMMER_MAX_POSITION",  "40"))
-MIN_VOLUME     = float(os.environ.get("SIMMER_MIN_VOLUME",    "10000"))
+MIN_VOLUME     = float(os.environ.get("SIMMER_MIN_VOLUME",    "1000"))
 MAX_SPREAD     = float(os.environ.get("SIMMER_MAX_SPREAD",    "0.06"))
-MIN_DAYS       = int(os.environ.get(  "SIMMER_MIN_DAYS",      "5"))
+MIN_DAYS       = int(os.environ.get(  "SIMMER_MIN_DAYS",      "0"))
 MAX_POSITIONS  = int(os.environ.get(  "SIMMER_MAX_POSITIONS", "10"))
 # Signal thresholds — buy YES below YES_THRESHOLD, sell NO above NO_THRESHOLD.
 # Position size scales linearly with conviction: full MAX_POSITION at p=0 (or p=1),
 # MIN_TRADE at the threshold boundary.
-YES_THRESHOLD  = float(os.environ.get("SIMMER_YES_THRESHOLD", "0.38"))
-NO_THRESHOLD   = float(os.environ.get("SIMMER_NO_THRESHOLD",  "0.62"))
+YES_THRESHOLD  = float(os.environ.get("SIMMER_YES_THRESHOLD", "0.42"))
+NO_THRESHOLD   = float(os.environ.get("SIMMER_NO_THRESHOLD",  "0.58"))
 MIN_TRADE      = float(os.environ.get("SIMMER_MIN_TRADE",     "5"))
 
 _client: SimmerClient | None = None
@@ -66,6 +66,18 @@ def get_client(live: bool = False) -> SimmerClient:
 def find_markets(client: SimmerClient) -> list:
     """Find active markets matching strategy keywords, deduplicated."""
     seen, unique = set(), []
+
+    # Fast markets (may not exist in older SDK)
+    try:
+        for m in client.get_fast_markets():
+            q = getattr(m, "question", "").lower()
+            if m.id not in seen and any(w in q for w in ("ai ", "gpt", "claude", "openai", "google ai", "model", "artificial intelligence")):
+                seen.add(m.id)
+                unique.append(m)
+    except (AttributeError, Exception):
+        pass
+
+    # Keyword search
     for kw in KEYWORDS:
         try:
             for m in client.find_markets(query=kw):
@@ -74,6 +86,17 @@ def find_markets(client: SimmerClient) -> list:
                     unique.append(m)
         except Exception as e:
             print(f"[search] {kw!r}: {e}")
+
+    # Bulk scan fallback
+    try:
+        for m in client.get_markets(limit=200):
+            q = getattr(m, "question", "").lower()
+            if m.id not in seen and any(w in q for w in ("ai ", "gpt", "claude", "openai", "google ai", "model", "artificial intelligence")):
+                seen.add(m.id)
+                unique.append(m)
+    except Exception:
+        pass
+
     return unique
 
 
