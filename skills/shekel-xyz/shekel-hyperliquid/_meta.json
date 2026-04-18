@@ -1,0 +1,11 @@
+{
+  "owner": "shekel-xyz",
+  "slug": "shekel-hyperliquid",
+  "displayName": "Shekel Hyperliquid Trading",
+  "latest": {
+    "version": "1.14.0",
+    "publishedAt": 1775591332029,
+    "commit": null
+  },
+  "history": []
+}
