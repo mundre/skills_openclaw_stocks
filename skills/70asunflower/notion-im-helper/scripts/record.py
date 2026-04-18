@@ -8,21 +8,61 @@ from datetime import datetime, timezone, timedelta
 
 sys.stdout.reconfigure(encoding='utf-8')
 sys.path.insert(0, os.path.dirname(__file__))
-from notion_client import api_request, append_blocks, PAGE_ID, get_children, delete_last_block
+from notion_client import api_request, append_blocks, PAGE_ID, get_children, delete_last_block, upload_file
+
+
+# ---- Rich text helpers ----
+
+RICH_TEXT_CHUNK_SIZE = 1900  # Notion API limit: 2000 chars per rich_text object
+
+def split_rich_text(text, chunk_size=RICH_TEXT_CHUNK_SIZE):
+    """Split text into multiple rich_text objects to avoid Notion's 2000-char limit.
+
+    Notion API allows up to 100 rich_text objects per block,
+    each with a max of 2000 chars in text.content.
+    We use chunk_size=1900 to leave a safety margin.
+    """
+    if len(text) <= chunk_size:
+        return [{"type": "text", "text": {"content": text}}]
+    chunks = []
+    for i in range(0, len(text), chunk_size):
+        chunks.append({"type": "text", "text": {"content": text[i:i + chunk_size]}})
+    return chunks
 
 
 # ---- Block builders ----
 
-def build_callout(emoji, text, color="default"):
+def build_paragraph(text):
+    """Build a paragraph block with rich_text."""
     return {
+        "object": "block",
+        "type": "paragraph",
+        "paragraph": {
+            "rich_text": split_rich_text(text),
+            "color": "default",
+        },
+    }
+
+
+def build_callout(emoji, text, color="default", children=None):
+    """Build a callout block with optional children for multi-paragraph content.
+
+    Notion API ignores \\n in rich_text content. To display multi-line text
+    properly inside a callout, we put the first line/paragraph in the callout's
+    own rich_text, and subsequent paragraphs as children paragraph blocks.
+    """
+    block = {
         "object": "block",
         "type": "callout",
         "callout": {
             "icon": {"type": "emoji", "emoji": emoji},
-            "rich_text": [{"type": "text", "text": {"content": text}}],
+            "rich_text": split_rich_text(text),
             "color": color,
         },
     }
+    if children:
+        block["callout"]["children"] = children
+    return block
 
 
 def build_todo(text, checked=False):
@@ -30,7 +70,7 @@ def build_todo(text, checked=False):
         "object": "block",
         "type": "to_do",
         "to_do": {
-            "rich_text": [{"type": "text", "text": {"content": text}}],
+            "rich_text": split_rich_text(text),
             "checked": checked,
             "color": "default",
         },
@@ -41,7 +81,7 @@ def build_bookmark(url):
     return {
         "object": "block",
         "type": "bookmark",
-        "bookmark": {"url": url, "rich_text": [{"type": "text", "text": {"content": url}}]},
+        "bookmark": {"url": url, "rich_text": split_rich_text(url)},
     }
 
 
@@ -50,7 +90,7 @@ def build_heading(level, text):
         "object": "block",
         "type": f"heading_{level}",
         f"heading_{level}": {
-            "rich_text": [{"type": "text", "text": {"content": text}}],
+            "rich_text": split_rich_text(text),
             "color": "default",
         },
     }
@@ -60,7 +100,7 @@ def build_quote_block(text):
     return {
         "object": "block",
         "type": "quote",
-        "quote": {"rich_text": [{"type": "text", "text": {"content": text}}], "color": "default"},
+        "quote": {"rich_text": split_rich_text(text), "color": "default"},
     }
 
 
@@ -72,7 +112,7 @@ def build_bullet(text):
     return {
         "object": "block",
         "type": "bulleted_list_item",
-        "bulleted_list_item": {"rich_text": [{"type": "text", "text": {"content": text}}], "color": "default"},
+        "bulleted_list_item": {"rich_text": split_rich_text(text), "color": "default"},
     }
 
 
@@ -80,7 +120,7 @@ def build_numbered(text):
     return {
         "object": "block",
         "type": "numbered_list_item",
-        "numbered_list_item": {"rich_text": [{"type": "text", "text": {"content": text}}], "color": "default"},
+        "numbered_list_item": {"rich_text": split_rich_text(text), "color": "default"},
     }
 
 
@@ -89,13 +129,47 @@ def build_toggle(text, children=None):
         "object": "block",
         "type": "toggle",
         "toggle": {
-            "rich_text": [{"type": "text", "text": {"content": text}}],
+            "rich_text": split_rich_text(text),
             "color": "default",
         },
     }
     if children:
         block["toggle"]["children"] = children
     return block
+
+
+def build_image_block(file_upload_id, caption=None):
+    """Build an image block using a file_upload ID from Notion's File Upload API.
+
+    After uploading a file via notion-upload, the returned file_id is used
+    with type "file_upload" to attach the image to a block.
+    """
+    image_data = {
+        "type": "file_upload",
+        "file_upload": {"id": file_upload_id},
+    }
+    if caption:
+        image_data["caption"] = split_rich_text(caption)
+    return {
+        "object": "block",
+        "type": "image",
+        "image": image_data,
+    }
+
+
+def build_image_block_external(url, caption=None):
+    """Build an image block referencing an external URL."""
+    image_data = {
+        "type": "external",
+        "external": {"url": url},
+    }
+    if caption:
+        image_data["caption"] = split_rich_text(caption)
+    return {
+        "object": "block",
+        "type": "image",
+        "image": image_data,
+    }
 
 
 # ---- Type configs ----
@@ -109,6 +183,7 @@ TYPE_CONFIG = {
     "question": {"emoji": "❓", "color": "purple", "label": "问题"},
     "quote": {"emoji": "📖", "color": "green", "label": "摘抄"},
     "link": {"emoji": "🔗", "color": "default", "label": "链接"},
+    "image": {"emoji": "🖼️", "color": "default", "label": "图片"},
 }
 
 
@@ -172,6 +247,27 @@ def check_need_day_separator():
     return False
 
 
+def is_local_file_path(s):
+    """Check if string looks like a local file path."""
+    # Windows: C:\... or D:\... etc., or forward slash paths, or relative paths with extensions
+    if re.match(r'^[A-Za-z]:[/\\]', s):
+        return True
+    if s.startswith('./') or s.startswith('../') or s.startswith('~'):
+        return True
+    # Check if it's a path with a common image extension
+    if os.path.isfile(s):
+        return True
+    return False
+
+
+def is_image_url(s):
+    """Check if string is an HTTP URL pointing to an image."""
+    if not s.startswith("http"):
+        return False
+    image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg')
+    return s.lower().split('?')[0].endswith(image_extensions)
+
+
 def build_blocks_for_type(record_type, content):
     """Build Notion blocks for a given type and content."""
     cfg = TYPE_CONFIG.get(record_type, TYPE_CONFIG["idea"])
@@ -202,42 +298,115 @@ def build_blocks_for_type(record_type, content):
             url = f"https://{url}"
         return [build_bookmark(url)]
 
+    if record_type == "image":
+        path = content.strip()
+        if is_image_url(path):
+            return [build_image_block_external(path)]
+        if is_local_file_path(path):
+            # Expand ~ to home directory
+            path = os.path.expanduser(path)
+            if not os.path.isfile(path):
+                print(f"ERROR| 文件不存在: {path}")
+                return []
+            file_id = upload_file(path)
+            if not file_id:
+                print("ERROR| 图片上传失败")
+                return []
+            return [build_image_block(file_id)]
+        # Fallback: treat as external URL
+        if not path.startswith("http"):
+            path = f"https://{path}"
+        return [build_image_block_external(path)]
+
     if record_type in ("idea", "diary", "note", "question", "quote"):
         clean_text, tags, project = parse_metadata(content)
 
-        # Header line: YYYY-MM-DD HH:mm (emoji is from callout icon, don't duplicate)
+        # Header line: YYYY-MM-DD HH:mm
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-        header = now_str
 
-        # Build content lines
-        body_parts = [header, clean_text]
-
+        # Build metadata line
         meta_parts_list = []
         if tags:
             meta_parts_list.append(f"#标签：{' '.join('#' + t for t in tags)}")
         if project:
             meta_parts_list.append(f"/项目：{project}")
+        meta_line = " | ".join(meta_parts_list) if meta_parts_list else ""
 
-        if meta_parts_list:
-            body_parts.append(" | ".join(meta_parts_list))
+        # Split content into paragraphs by \n
+        # Notion API ignores \n in rich_text, so each paragraph must be a separate block
+        lines = clean_text.split("\n")
+        paragraphs = [line for line in lines if line.strip()]  # skip blank lines
 
-        full_text = "\n".join(body_parts)
-        return [build_callout(cfg["emoji"], full_text, cfg["color"])]
+        if len(paragraphs) <= 1:
+            # Single paragraph: put everything in callout rich_text (compact view)
+            callout_text = now_str
+            if paragraphs:
+                callout_text += " " + paragraphs[0]
+            if meta_line:
+                callout_text += " | " + meta_line
+            return [build_callout(cfg["emoji"], callout_text, cfg["color"])]
+        else:
+            # Multiple paragraphs: timestamp in callout, paragraphs as children
+            children = [build_paragraph(p) for p in paragraphs]
+            if meta_line:
+                children.append(build_paragraph(meta_line))
+            return [build_callout(cfg["emoji"], now_str, cfg["color"], children=children)]
 
     return []
 
 
 # ---- Main dispatch ----
 
+def parse_format_line(line):
+    """Check if a line is a format pattern, return block or None."""
+    if line.startswith("* ") and not line.startswith("** ") and not line.startswith("*** "):
+        return build_heading(1, line[2:])
+    if line.startswith("** ") and not line.startswith("*** "):
+        return build_heading(2, line[3:])
+    if line.startswith("*** "):
+        return build_heading(3, line[4:])
+    if line.startswith("> "):
+        return build_quote_block(line[2:])
+    if line.strip() == "---":
+        return build_divider()
+    if line.startswith("- "):
+        return build_bullet(line[2:])
+    # Numbered list: "1. text" or "1) text"
+    stripped = line.lstrip()
+    if stripped and stripped[0].isdigit():
+        m = re.match(r"^(\d+[.)])\s+(.*)", stripped)
+        if m:
+            return build_numbered(m.group(2))
+    return None
+
+
 def cmd_record(args):
     cfg = TYPE_CONFIG.get(args.type, TYPE_CONFIG["idea"])
+    full_content = " ".join(args.content)
     blocks = []
 
     # Check if we need a day separator
     if check_need_day_separator():
         blocks.append(build_divider())
 
-    blocks.extend(build_blocks_for_type(args.type, " ".join(args.content)))
+    # Multi-line: check each line for format patterns first
+    lines = full_content.split("\n")
+    content_lines = []
+    for line in lines:
+        fmt_block = parse_format_line(line)
+        if fmt_block is not None:
+            # Flush any accumulated content lines as a callout first
+            if content_lines:
+                content_text = "\n".join(content_lines)
+                blocks.extend(build_blocks_for_type(args.type, content_text))
+                content_lines = []
+            blocks.append(fmt_block)
+        else:
+            content_lines.append(line)
+
+    # Remaining content lines
+    if content_lines:
+        blocks.extend(build_blocks_for_type(args.type, "\n".join(content_lines)))
 
     if not blocks:
         print("OK|没有内容可记录")
@@ -249,7 +418,7 @@ def cmd_record(args):
         count = len([b for b in blocks if b.get("type") == "to_do"])
         print(f"OK|已记录到 Notion，共 {count} 条{type_label}")
     else:
-        print("OK|已记录到 Notion ✅")
+        print(f"OK|已记录到 Notion，共 {len(blocks)} 条 ✅")
 
 
 def cmd_heading(args):
@@ -283,6 +452,37 @@ def cmd_toggle(args):
     blocks = [build_toggle(data["title"], data.get("children"))]
     append_blocks(blocks, silent=True)
     print("OK|已记录到 Notion ✅")
+
+
+def cmd_image(args):
+    """Upload an image and append to Notion page."""
+    path = " ".join(args.path)
+    blocks = []
+
+    if check_need_day_separator():
+        blocks.append(build_divider())
+
+    if is_image_url(path):
+        blocks.append(build_image_block_external(path, caption=args.caption))
+    elif is_local_file_path(path):
+        path = os.path.expanduser(path)
+        if not os.path.isfile(path):
+            print(f"ERROR| 文件不存在: {path}")
+            return
+        file_id = upload_file(path)
+        if not file_id:
+            print("ERROR| 图片上传失败")
+            return
+        blocks.append(build_image_block(file_id, caption=args.caption))
+    else:
+        # Try as URL
+        if not path.startswith("http"):
+            path = f"https://{path}"
+        blocks.append(build_image_block_external(path, caption=args.caption))
+
+    if blocks:
+        append_blocks(blocks, silent=True)
+        print("OK|已记录图片到 Notion ✅")
 
 
 def cmd_undo(_args):
@@ -319,6 +519,12 @@ def main():
     p = sub.add_parser("toggle")
     p.add_argument("content", nargs="*")
     p.set_defaults(func=cmd_toggle)
+
+    # image command
+    p = sub.add_parser("image")
+    p.add_argument("--caption", default=None, help="Optional caption for the image")
+    p.add_argument("path", nargs="+", help="Local file path or URL of the image")
+    p.set_defaults(func=cmd_image)
 
     # undo command
     p = sub.add_parser("undo")

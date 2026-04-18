@@ -16,11 +16,12 @@ Check the user message against these patterns:
 - `日记:` or `今天:` or starts with `riji:` → `diary`
 - `笔记:` or `学习:` or starts with `note:` → `note`
 - `待办:` or starts with `todo:` → `todo`
-- starts with `done:` or `完成:` or starts with `√` → `done`
+- starts with `done:` or `完成:` or starts with `√ ` → `done`
 - `想法:` or `灵感:` or starts with `idea:` → `idea`
 - `问题:` or `疑问:` or starts with `q:` → `question`
 - `摘抄:` or starts with `quote:` or starts with `qu:` → `quote`
 - starts with `链接:` or `link:` or `url:` → `link`
+- `图片:` or `photo:` or `img:` → `image`
 
 ### Shortcut Keys (single letter prefix followed by space)
 - `d ` at start → `diary`
@@ -31,14 +32,14 @@ Check the user message against these patterns:
 - `q ` at start → `question`
 - `z ` at start → `quote`
 - `l ` at start → `link`
+- `p ` at start → `image`
 
 ### Command Patterns (match entire line)
-- `日报` / `daily` / `今日` / `today` → daily summary
-- `周报` / `weekly` → weekly report
+- `月报` / `monthly` → extract current month records for agent to summarize
 - `摘抄` / `随机摘抄` → random quote
 - `搜: xxx` / `search: xxx` → search (pass xxx as argument to scripts/search_notes.py)
-- `撤回` / `undo` → delete last block
-- `notion` (standalone) → check_config.py first, then process next message
+- `撤回` / `undo` → delete last block batch (within 5 min window)
+- `配置检查` / `check config` → verify config
 
 ### Format Patterns
 - Line starts with `* text` → heading H1
@@ -52,6 +53,7 @@ Check the user message against these patterns:
 
 ### Smart Detection (no prefix matched → AI infers)
 - If line is a pure URL (starts with http:// or https://) → link
+- If line is a local file path pointing to an image file (e.g., `C:\Users\...\photo.jpg`) → image
 - If line starts with YYYY-MM-DD or `今天` → diary
 - If line contains `[ ]` or `【 】` → todo
 - Otherwise → idea

@@ -32,18 +32,17 @@ metadata:
         - quote
         - 链接
         - link
+        - 图片
+        - photo
+        - img
         - flash
         - 闪念
-        - 日报
-        - 周报
-        - daily
-        - weekly
+        - 月报
+        - monthly
         - 撤回
         - undo
         - 搜索
         - search
-        - 今日
-        - today
         - notion
         - riji
       prefixPatterns:
@@ -65,20 +64,20 @@ metadata:
         - "^quote:"
         - "^链接:"
         - "^link:"
+        - "^图片:"
+        - "^photo:"
+        - "^img:"
         - "^flash:"
         - "^闪念:"
         - "^done:"
         - "^完成:"
-        - "^日报"
-        - "^周报"
-        - "^daily"
-        - "^weekly"
+        - "^月报"
+        - "^monthly"
         - "^撤回"
         - "^undo"
         - "^搜:"
         - "^search:"
         - "^今日"
-        - "^today"
       shortcutKeys:
         d: diary
         n: note
@@ -87,4 +86,5 @@ metadata:
         q: question
         z: quote
         l: link
+        p: image
 ---

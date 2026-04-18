@@ -3,11 +3,16 @@
   "slug": "notion-im-helper",
   "displayName": "Notion IM Helper",
   "latest": {
-    "version": "1.5.1",
-    "publishedAt": 1775216013797,
-    "commit": "https://github.com/openclaw/skills/commit/3364b7663500bcbece996677b573cb9c2f378c4b"
+    "version": "1.7.0",
+    "publishedAt": 1775983466698,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.1",
+      "publishedAt": 1775216013797,
+      "commit": "https://github.com/openclaw/skills/commit/3364b7663500bcbece996677b573cb9c2f378c4b"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1773979438839,
