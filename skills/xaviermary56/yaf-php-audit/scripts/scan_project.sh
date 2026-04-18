@@ -54,6 +54,11 @@ collect_raw() {
   print_hits "payment keywords" '(pay|order|refund|charge)'
   print_hits "task and cron keywords" '(cron|task|queue|worker)'
   print_hits "php 7.4+ syntax suspects" '(match[[:space:]]*\(|fn[[:space:]]*\(|\?->|readonly|enum[[:space:]]+|public[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=)'
+  print_hits "hardcoded credentials suspects" '(password|passwd|pwd|api_key|secret|token)\s*=\s*['"'"'"][^'"'"'"]{4,}'
+  print_hits "login and auth keywords" '(login|logout|session|token|auth|permission|role|privilege)'
+  print_hits "curl without explicit timeout check" 'curl_init\s*\('
+  print_hits "static array cache antipattern" 'static\s+\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*(array\s*\(|\[)'
+  print_hits "loop with db suspects" '(foreach|for\s*\(|while\s*\()[^{]*\{[^}]*(->find|->where|->query|->select|->first|->get|->fetch)'
 }
 
 count_hits() {
@@ -84,10 +89,11 @@ calc_risk() {
   local payment="$4"
   local task="$5"
   local phpnew="$6"
+  local hardcoded="$7"
 
-  if [ "$dangerous" -ge 5 ] || { [ "$callback" -ge 10 ] && [ "$payment" -ge 10 ]; } || [ "$task" -ge 15 ]; then
+  if [ "$dangerous" -ge 5 ] || { [ "$callback" -ge 10 ] && [ "$payment" -ge 10 ]; } || [ "$task" -ge 15 ] || [ "$hardcoded" -ge 3 ]; then
     echo "high"
-  elif [ "$dangerous" -ge 1 ] || [ "$callback" -ge 3 ] || [ "$payment" -ge 3 ] || [ "$raw" -ge 20 ] || [ "$phpnew" -ge 1 ]; then
+  elif [ "$dangerous" -ge 1 ] || [ "$callback" -ge 3 ] || [ "$payment" -ge 3 ] || [ "$raw" -ge 20 ] || [ "$phpnew" -ge 1 ] || [ "$hardcoded" -ge 1 ]; then
     echo "medium"
   else
     echo "low"
@@ -124,7 +130,12 @@ callback="$(count_hits "$tmp_report" "callback and notify keywords")"
 payment="$(count_hits "$tmp_report" "payment keywords")"
 task="$(count_hits "$tmp_report" "task and cron keywords")"
 phpnew="$(count_hits "$tmp_report" "php 7.4+ syntax suspects")"
-risk="$(calc_risk "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew")"
+hardcoded="$(count_hits "$tmp_report" "hardcoded credentials suspects")"
+authkw="$(count_hits "$tmp_report" "login and auth keywords")"
+curlinit="$(count_hits "$tmp_report" "curl without explicit timeout check")"
+staticcache="$(count_hits "$tmp_report" "static array cache antipattern")"
+loopdb="$(count_hits "$tmp_report" "loop with db suspects")"
+risk="$(calc_risk "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew" "$hardcoded")"
 summary_note="$(report_note "$risk" "$callback" "$payment" "$task" "$dangerous")"
 
 generate_report() {
@@ -156,6 +167,11 @@ generate_report() {
   echo "- payment keywords：$payment"
   echo "- task and cron keywords：$task"
   echo "- php 7.4+/8.x syntax suspects：$phpnew"
+  echo "- hardcoded credentials suspects：$hardcoded"
+  echo "- login and auth keywords：$authkw"
+  echo "- curl without explicit timeout check：$curlinit"
+  echo "- static array cache antipattern：$staticcache"
+  echo "- loop with db suspects：$loopdb"
   echo
   echo "## 6. 风险明细"
   echo
@@ -188,6 +204,21 @@ generate_report() {
   echo
   echo "### 6.10 php 7.4+ syntax suspects"
   print_section "$tmp_report" "php 7.4+ syntax suspects"
+  echo
+  echo "### 6.11 hardcoded credentials suspects"
+  print_section "$tmp_report" "hardcoded credentials suspects"
+  echo
+  echo "### 6.12 login and auth keywords"
+  print_section "$tmp_report" "login and auth keywords"
+  echo
+  echo "### 6.13 curl without explicit timeout check"
+  print_section "$tmp_report" "curl without explicit timeout check"
+  echo
+  echo "### 6.14 static array cache antipattern"
+  print_section "$tmp_report" "static array cache antipattern"
+  echo
+  echo "### 6.15 loop with db suspects"
+  print_section "$tmp_report" "loop with db suspects"
   echo
   echo "## 7. 审计建议"
   echo "- 建议优先人工复核支付、回调、登录态、任务链路。"

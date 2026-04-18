@@ -1,6 +1,17 @@
 ---
 name: yaf-php-audit
-description: Audit legacy PHP projects, especially Yaf-based PHP 7.3 codebases, for architecture issues, security risks, performance problems, compatibility risks, and maintainability concerns. Use when reviewing a PHP/Yaf project, producing a structured code audit report, or triaging many similar projects with consistent audit dimensions.
+version: 1.1.0
+description: Audit legacy PHP projects, especially Yaf-based PHP 7.3 codebases, for architecture issues, security risks, performance problems, compatibility risks, and maintainability concerns. Works best with Yaf-style projects, but is also useful for first-pass triage of many traditional PHP codebases with similar structure. Use when reviewing a PHP/Yaf project, producing a structured code audit report, or triaging many similar projects with consistent audit dimensions.
+emoji: 🔍
+user-invocable: true
+homepage: https://github.com/XavierMary56/OmniPublish
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - bash
+        - grep
+        - find
 ---
 
 # Yaf PHP Audit

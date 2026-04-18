@@ -48,6 +48,8 @@ Look for:
 - callback signature or source verification weaknesses
 - auth/permission checks that appear easy to bypass
 - secrets or credentials committed to config/code
+- hardcoded passwords / api_key / token literal strings (`password = 'value'`, `api_key = "value"`)
+- login, logout, session, auth, permission, role, privilege keyword clusters (confirm auth coverage)
 
 ## 5. Performance Checks
 
@@ -60,6 +62,8 @@ Look for:
 - Redis anti-patterns
 - blocked external calls on request path
 - no timeout / connect_timeout on HTTP requests
+- `foreach` / `for` / `while` containing direct model or DB call (N+1 pattern)
+- `static $cache = []` or `static $var = array()` used as in-process cache antipattern
 
 ## 6. Reliability Checks
 
@@ -105,6 +109,7 @@ Review with extra care:
 - payment/callback/login state inconsistency
 - clear data corruption or major reliability risk
 - obvious full-scan / N+1 / blocking external dependency on critical path
+- hardcoded credential (password, api_key, secret) confirmed in source code
 
 ### Medium
 

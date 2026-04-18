@@ -27,7 +27,7 @@ summary_csv="$output_dir/summary.csv"
 summary_md="$output_dir/summary.md"
 high_risk_txt="$output_dir/high-risk.txt"
 
-echo 'project,risk_level,dangerous_hits,raw_input_hits,callback_hits,payment_hits,task_hits,php_new_syntax_hits,notes' > "$summary_csv"
+echo 'project,risk_level,dangerous_hits,raw_input_hits,callback_hits,payment_hits,task_hits,php_new_syntax_hits,hardcoded_hits,loopdb_hits,staticcache_hits,notes' > "$summary_csv"
 : > "$high_risk_txt"
 
 {
@@ -36,8 +36,8 @@ echo 'project,risk_level,dangerous_hits,raw_input_hits,callback_hits,payment_hit
   echo "- workspace: $workspace_root"
   echo "- generated_at: $(date '+%Y-%m-%d %H:%M:%S %z')"
   echo
-  echo "| project | risk | dangerous | raw input | callback | payment | task | php 7.4+/8.x | notes |"
-  echo "|---|---:|---:|---:|---:|---:|---:|---:|---|"
+  echo "| project | risk | dangerous | raw input | callback | payment | task | php 7.4+/8.x | hardcoded | loop+db | static-cache | notes |"
+  echo "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"
 } > "$summary_md"
 
 count_hits() {
@@ -58,10 +58,11 @@ risk_level() {
   local payment="$4"
   local task="$5"
   local phpnew="$6"
+  local hardcoded="$7"
 
-  if [ "$dangerous" -ge 5 ] || { [ "$callback" -ge 10 ] && [ "$payment" -ge 10 ]; } || [ "$task" -ge 15 ]; then
+  if [ "$dangerous" -ge 5 ] || { [ "$callback" -ge 10 ] && [ "$payment" -ge 10 ]; } || [ "$task" -ge 15 ] || [ "$hardcoded" -ge 3 ]; then
     echo "high"
-  elif [ "$dangerous" -ge 1 ] || [ "$callback" -ge 3 ] || [ "$payment" -ge 3 ] || [ "$raw" -ge 20 ] || [ "$phpnew" -ge 1 ]; then
+  elif [ "$dangerous" -ge 1 ] || [ "$callback" -ge 3 ] || [ "$payment" -ge 3 ] || [ "$raw" -ge 20 ] || [ "$phpnew" -ge 1 ] || [ "$hardcoded" -ge 1 ]; then
     echo "medium"
   else
     echo "low"
@@ -74,6 +75,9 @@ project_notes() {
   local payment="$3"
   local task="$4"
   local raw="$5"
+  local hardcoded="$6"
+  local loopdb="$7"
+  local staticcache="$8"
   local notes=()
 
   [ "$dangerous" -ge 1 ] && notes+=("dangerous-fns")
@@ -81,6 +85,9 @@ project_notes() {
   [ "$payment" -ge 3 ] && notes+=("payment-heavy")
   [ "$task" -ge 5 ] && notes+=("task-heavy")
   [ "$raw" -ge 20 ] && notes+=("raw-input-heavy")
+  [ "$hardcoded" -ge 1 ] && notes+=("hardcoded-creds")
+  [ "$loopdb" -ge 1 ] && notes+=("loop-db-risk")
+  [ "$staticcache" -ge 1 ] && notes+=("static-cache")
 
   if [ "${#notes[@]}" -eq 0 ]; then
     echo "general-review"
@@ -102,8 +109,8 @@ find "$workspace_root" -mindepth 1 -maxdepth 1 -type d | sort | while read -r pr
   report_file="$output_dir/projects/${project_name}.txt"
   if ! bash "$project_scan" "$project_dir" "$report_file" >/dev/null 2>&1; then
     echo "[WARN] scan failed: $project_name" >&2
-    echo "$project_name,scan_failed,0,0,0,0,0,0,scan-failed" >> "$summary_csv"
-    echo "| $project_name | scan_failed | 0 | 0 | 0 | 0 | 0 | 0 | scan-failed |" >> "$summary_md"
+    echo "$project_name,scan_failed,0,0,0,0,0,0,0,0,0,scan-failed" >> "$summary_csv"
+    echo "| $project_name | scan_failed | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | scan-failed |" >> "$summary_md"
     continue
   fi
 
@@ -113,18 +120,24 @@ find "$workspace_root" -mindepth 1 -maxdepth 1 -type d | sort | while read -r pr
   payment="$(count_hits "$report_file" "payment keywords")"
   task="$(count_hits "$report_file" "task and cron keywords")"
   phpnew="$(count_hits "$report_file" "php 7.4+ syntax suspects")"
-  risk="$(risk_level "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew")"
-  notes="$(project_notes "$dangerous" "$callback" "$payment" "$task" "$raw")"
+  hardcoded="$(count_hits "$report_file" "hardcoded credentials suspects")"
+  loopdb="$(count_hits "$report_file" "loop with db suspects")"
+  staticcache="$(count_hits "$report_file" "static array cache antipattern")"
+  risk="$(risk_level "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew" "$hardcoded")"
+  notes="$(project_notes "$dangerous" "$callback" "$payment" "$task" "$raw" "$hardcoded" "$loopdb" "$staticcache")"
 
-  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
-    "$project_name" "$risk" "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew" "$notes" >> "$summary_csv"
+  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
+    "$project_name" "$risk" "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew" \
+    "$hardcoded" "$loopdb" "$staticcache" "$notes" >> "$summary_csv"
 
-  printf '| %s | %s | %s | %s | %s | %s | %s | %s | %s |\n' \
-    "$project_name" "$risk" "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew" "$notes" >> "$summary_md"
+  printf '| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n' \
+    "$project_name" "$risk" "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew" \
+    "$hardcoded" "$loopdb" "$staticcache" "$notes" >> "$summary_md"
 
   if [ "$risk" = "high" ]; then
-    printf '%s | dangerous=%s raw=%s callback=%s payment=%s task=%s phpnew=%s | %s\n' \
-      "$project_name" "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew" "$notes" >> "$high_risk_txt"
+    printf '%s | dangerous=%s raw=%s callback=%s payment=%s task=%s phpnew=%s hardcoded=%s loopdb=%s staticcache=%s | %s\n' \
+      "$project_name" "$dangerous" "$raw" "$callback" "$payment" "$task" "$phpnew" \
+      "$hardcoded" "$loopdb" "$staticcache" "$notes" >> "$high_risk_txt"
   fi
 done
 
