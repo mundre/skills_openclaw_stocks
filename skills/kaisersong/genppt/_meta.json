@@ -1,13 +1,18 @@
 {
   "owner": "kaisersong",
   "slug": "genppt",
-  "displayName": "Genppt",
+  "displayName": "kai-slide-creator",
   "latest": {
-    "version": "2.3.1",
-    "publishedAt": 1773809059873,
-    "commit": "https://github.com/openclaw/skills/commit/eb1f62886199d7332c3c2145b2879152554aa879"
+    "version": "2.14.0",
+    "publishedAt": 1776087632842,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.1",
+      "publishedAt": 1773809059873,
+      "commit": "https://github.com/openclaw/skills/commit/eb1f62886199d7332c3c2145b2879152554aa879"
+    },
     {
       "version": "2.2.0",
       "publishedAt": 1773721832420,
