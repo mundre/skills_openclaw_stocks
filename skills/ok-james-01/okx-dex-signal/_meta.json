@@ -3,11 +3,16 @@
   "slug": "okx-dex-signal",
   "displayName": "Okx Dex Signal",
   "latest": {
-    "version": "2.2.7",
-    "publishedAt": 1775722860209,
-    "commit": "https://github.com/openclaw/skills/commit/681e3a848f8406b15e44dbab527355d72248463c"
+    "version": "2.2.10",
+    "publishedAt": 1776333329207,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.7",
+      "publishedAt": 1775722860209,
+      "commit": "https://github.com/openclaw/skills/commit/681e3a848f8406b15e44dbab527355d72248463c"
+    },
     {
       "version": "2.0.0",
       "publishedAt": 1773843816820,
