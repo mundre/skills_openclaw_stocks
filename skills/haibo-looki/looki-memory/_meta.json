@@ -3,9 +3,15 @@
   "slug": "looki-memory",
   "displayName": "Looki Memory",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773298854105,
-    "commit": "https://github.com/openclaw/skills/commit/ab24dea439385955596b38dcc5bcf4d21ee8e580"
+    "version": "1.0.2",
+    "publishedAt": 1776420478369,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773298854105,
+      "commit": "https://github.com/openclaw/skills/commit/ab24dea439385955596b38dcc5bcf4d21ee8e580"
+    }
+  ]
 }

@@ -32,10 +32,13 @@ You must request the **API Key** and **Base URL** from the user if they are not 
 
 ```json
 {
-    "base_url": "https://open.looki.ai/api/v1",
-    "api_key": "lk-xxx"
+    "base_url": "<YOUR_BASE_URL>",
+    "api_key": "<YOUR_API_KEY>"
 }
 ```
+
+- `base_url` — The API endpoint URL provided by the user (e.g. `https://<domain>/api/v1`). Do not assume a default; always ask the user if not already saved.
+- `api_key` — The user's Looki API key, starting with `lk-`.
 
 This way you can always find your credentials later. You can also save them to your memory, environment variables (`LOOKI_BASE_URL`, `LOOKI_API_KEY`), or wherever you store secrets.
 
