@@ -1,28 +1,14 @@
 ---
 name: volcengine-ai-mediakit
 description: "火山引擎 AI MediaKit 音视频处理 Skill。当用户需要对音视频进行加工处理时触发。处理完成后自动查询任务状态并返回产物播放链接。核心能力分为七类：1. 视频处理：多片段拼接、片段裁剪、画面翻转、视频播放调速、音频播放调速、图片合成视频、音画合成、提取音轨、音频混音; 2. 音频处理：人声/伴奏分离、音频降噪; 3. 视频增强：综合画质修复、AI 超分、智能插帧; 4. 字幕处理：语音转字幕(ASR)、画面文字提取(OCR)、硬字幕擦除、添加内嵌字幕; 5. 智能分析：智能场景切分、人像抠图、绿幕抠图; 6. AI 创作：AI 视频翻译(声影智译)、短剧高光剪辑、AI 剧本还原、AI 解说视频生成、AI 漫剧转绘。 7. 媒资查询：获取媒资信息及播放地址（支持批量）。触发关键词：视频拼接、视频裁剪、视频剪辑、视频变速、视频翻转、图片转视频、音视频合成、提取音频、混音、人声分离、背景音分离、音频降噪、去噪、AI超分、超分辨率、画质修复、画质增强、智能补帧、视频插帧、提高帧率、语音转字幕、语音识别、ASR、OCR、文字提取、字幕擦除、去字幕、添加字幕、内嵌字幕、SRT字幕、智能切片、场景切分、镜头分割、人像抠图、抠人像、绿幕抠图、抠绿幕、视频抠图、视频翻译、AI翻译、声影智译、字幕翻译、语音翻译、面容翻译、多语言翻译、视频本地化、高光剪辑、高光提取、短剧剪辑、集锦、宣传片、剧本还原、AI剧本、视频转剧本、剧情提取、解说视频、AI解说、二创解说、短剧解说、漫剧转绘、漫画风格、3D卡通、视频转绘、风格转换、获取媒资信息、查询视频信息、获取播放地址、批量查询Vid。不适用场景：纯文本生成、实时流媒体处理、AI 生成式视频创作（无源素材输入）。"
-version: 1.0.2
-env:
-  - name: VOLCENGINE_ACCESS_KEY
-    description: 火山引擎 AccessKey
-    required: true
-    secret: true
-    default: ''
-  - name: VOLCENGINE_SECRET_KEY
-    description: 火山引擎 SecretKey
-    required: true
-    secret: true
-    default: ''
-  - name: VOD_SPACE_NAME
-    description: 点播空间名称
-    required: true
-    secret: false
-    default: ''
-  - name: REQUEST_HOST
-    description: 请求域名
-    required: false
-    secret: false
-    default: ''
+version: 1.0.5
+metadata:
+  openclaw:
+    requires:
+      env:
+        - VOLCENGINE_ACCESS_KEY
+        - VOLCENGINE_SECRET_KEY
+        - VOD_SPACE_NAME
 ---
 
 # Volcengine AI MediaKit

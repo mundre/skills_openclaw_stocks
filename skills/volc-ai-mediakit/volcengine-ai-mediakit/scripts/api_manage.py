@@ -47,7 +47,7 @@ from vod_api_constants import (
 )
 
 # 按优先级逐级尝试加载 .env（override=False：系统环境变量更优先）
-for base in [os.getcwd(), os.path.dirname(os.path.abspath(__file__)), os.path.expanduser("~")]:
+for base in [os.getcwd(), os.path.dirname(os.path.abspath(__file__))]:
     env_path = os.path.join(base, ".env")
     if os.path.isfile(env_path):
         load_dotenv(env_path, override=False)
