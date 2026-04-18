@@ -1,0 +1,11 @@
+{
+  "owner": "bytesagain-lab",
+  "slug": "dex-aggregator",
+  "displayName": "Dex Aggregator",
+  "latest": {
+    "version": "4.0.0",
+    "publishedAt": 1774226806935,
+    "commit": null
+  },
+  "history": []
+}
