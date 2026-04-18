@@ -1,56 +1,45 @@
 ---
-name: morgan-stanley
-description: "Information assistant for Morgan Stanley. Search products, news, financials, and official resources for Morgan Stanley."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","morgan-stanley","enterprise-info"] } }
+summary: "摩根士丹利大摩——华尔街顶级投行、财富管理巨头、1935 年从摩根大通分拆"
+read_when:
+  - 查询摩根士丹利 · Morgan Stanley相关信息
+  - 了解相关行业发展
 ---
 
-# Morgan Stanley — Information Assistant
+# 摩根士丹利 · Morgan Stanley
 
-Query products, news, stock prices, financial reports, and official resources for **Morgan Stanley**.
+---
 
-## About
+## 发展历程
 
-- **Company**: Morgan Stanley
-- **Industry**: Financial services
-- **Official Website**: https://www.morganstanley.com
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1935 年** | 格拉斯-斯蒂格尔法案迫使摩根大通分拆——投资银行部分成为 Morgan Stanley |
+| **1970s** | 成为硅谷 IPO 的首选投行 |
+| **2008 年** | 金融危机中幸存——转为银行控股公司 |
+| **2020s** | 收购 E*Trade 和 Eaton Vance——转型财富管理 |
 
-## What This Skill Does
+---
 
-When activated, this skill helps you:
+## 核心特点
 
-1. **Product Search** — Find and compare Morgan Stanley products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
+机构证券（投行/交易）+ 财富管理 + 投资管理
 
-## Usage Examples
+## 核心优势
 
-- "What are the latest Morgan Stanley products?"
-- "Show me Morgan Stanley stock price"
-- "Compare Morgan Stanley with competitors"
-- "Find Morgan Stanley official support page"
-- "What's new at Morgan Stanley?"
+华尔街最顶尖投行之一 + 财富管理 AUM 超过 5 万亿美元
 
-## How It Works
+---
 
-This skill uses web search to fetch real-time information about Morgan Stanley from:
-- Official website: https://www.morganstanley.com
-- Financial data providers
-- News aggregators
-- Product databases
+## 关键数据
 
-## Instructions for Agent
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 540 亿美元 |
+| 财富管理 AUM | 超过 5 万亿美元 |
+| 员工数 | 约 80000 人 |
 
-When this skill is triggered:
-1. Identify the user's specific query about Morgan Stanley
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.morganstanley.com)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
+---
 
-## Author
+## 值得了解
 
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+摩根士丹利在硅谷科技 IPO 中占据主导地位——从 Google 到 Facebook 到 Airbnb
