@@ -14,13 +14,13 @@ mma post --method analyzeVideoFile --data-file <filePath>
 
 ```json
 {
-  "filepath": "C:\\path\\to\\video.mp4"
+  "filepath": "C:/path/to/video.mp4"
 }
 ```
 
 ## 参数说明
 
-- `filepath` (字符串, 必填): 视频文件的完整路径
+- `filepath` (字符串, 必填): 视频文件的完整路径，支持中文路径，无需转义
 
 ## 前置条件
 

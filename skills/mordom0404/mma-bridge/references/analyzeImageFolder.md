@@ -14,13 +14,13 @@ mma post --method analyzeImageFolder --data-file <filePath>
 
 ```json
 {
-  "folderpath": "C:\\path\\to\\images"
+  "folderpath": "C:/path/to/images"
 }
 ```
 
 ## 参数说明
 
-- `folderpath` (字符串, 必填): 图片文件夹的完整路径
+- `folderpath` (字符串, 必填): 图片文件夹的完整路径，支持中文路径，无需转义
 
 ## 前置条件
 

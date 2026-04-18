@@ -7,22 +7,17 @@
 ## 命令
 
 ```bash
-mma post --method getFilterList --data-file <filePath>
+mma post --method getFilterList
 ```
-
-**注意：** 必须传递一个文件，即使是空对象 `{}` 也需要先写入文件。
 
 ## 示例
 
 ```bash
-# 创建数据文件
-echo '{}' > data.json
-
 # 使用默认端口
-mma post --method getFilterList --data-file data.json
+mma post --method getFilterList
 
 # 指定端口
-mma post --method getFilterList --port 9000 --data-file data.json
+mma post --method getFilterList --port 9000
 ```
 
 ## 响应格式
