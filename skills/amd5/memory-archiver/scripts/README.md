@@ -2,7 +2,7 @@
 
 ## 📚 功能说明
 
-三层记忆架构：**每天 → 每周 → 长期**
+三层记忆架构：**每天 → 每周 → 长期** + **记忆巩固**（原 auto-dream）
 
 ## 🔧 脚本列表
 
@@ -63,15 +63,6 @@ bash ~/.openclaw/workspace/skills/memory-archiver/scripts/memory-refresh.sh
 3. 如果最近 10 分钟内更新过 → 重新加载全部记忆
 4. 否则 → 跳过刷新（避免无效刷新）
 
-**使用场景**:
-- ✅ 记忆及时写入 cron 任务完成后（**自动触发**）
-- 手动更新记忆文件后
-- 确保缓存与文件同步
-
-**自动化**:
-- 每 10 分钟的记忆及时写入任务完成后，自动调用刷新脚本
-- 智能判断：无更新时跳过，节省资源
-
 ---
 
 ### 4. memory-dedup.sh - 长期记忆自动去重
@@ -88,18 +79,74 @@ bash scripts/memory-dedup.sh
    - ❌ 重复的上下文
    - ❌ 毫无意义的日常（无事发生）
    - ❌ 重复的任务进度提示
-   - ❌ 相似段落
 3. 保留唯一有价值内容
-4. 显示去重统计
 
-**使用场景**:
-- ✅ 每周记忆总结完成后（**自动触发**）
-- 手动整理长期记忆后
-- 定期维护（建议每周一次）
+---
 
-**自动化**:
-- 每周日 22:00 记忆总结后自动调用
-- 自动备份，可恢复
+### 5. memory-aging.js - 记忆老化与数量限制检查
+
+检查并清理过期和超限的记忆文件。
+
+```bash
+node scripts/memory-aging.js           # 执行清理
+node scripts/memory-aging.js --dry-run # 只报告不删除
+```
+
+**功能**:
+- 老化检查：标记超过 30 天的记忆文件
+- 数量限制：每类型最多 50 条，超出清理最旧的
+- 类型：user / feedback / project / reference
+
+---
+
+### 6. dream-consolidate.js - 记忆巩固主程序（原 auto-dream）
+
+定期整理、合并、去重、老化记忆的总控脚本。
+
+```bash
+node scripts/dream-consolidate.js            # 检查闸门后执行巩固
+node scripts/dream-consolidate.js --force    # 强制执行
+node scripts/dream-consolidate.js --status   # 查看巩固状态
+```
+
+**闸门条件**:
+- 时间闸门：距离上次巩固 ≥ 24 小时
+- 会话闸门：≥ 5 个新会话
+
+**巩固流程**:
+1. 老化检查 → 标记超过 30 天的记忆
+2. 数量限制 → 每类型最多 50 条
+3. 索引更新 → 重建 MEMORY.md 底部记忆索引
+4. 去重 → 调用 memory-dedup.sh
+
+**文件锁**: 使用 `dream-lock.sh` 防止并发运行
+
+---
+
+### 7. dream-lock.sh - 巩固文件锁
+
+防止多个巩固任务同时运行。
+
+```bash
+bash scripts/dream-lock.sh /path/to/memory acquire  # 获取锁
+bash scripts/dream-lock.sh /path/to/memory release  # 释放锁
+bash scripts/dream-lock.sh /path/to/memory check    # 检查锁状态
+bash scripts/dream-lock.sh /path/to/memory force    # 强制获取锁
+```
+
+**特性**:
+- PID 检测：同一进程重复获取返回已有锁
+- mtime 超时保护：30 分钟后自动释放过期锁
+
+---
+
+### 8. auto-memory-search.sh - 自动触发搜索
+
+被 Hook 调用，自动检测用户消息并搜索记忆。
+
+```bash
+bash scripts/auto-memory-search.sh "用户消息"
+```
 
 ---
 
@@ -117,11 +164,11 @@ bash scripts/memory-dedup.sh
 ```
 → 运行 `memory-search.sh "CSS 框架"`
 
-### 刷新记忆
+### 查看巩固状态
 ```
-刷新记忆
+巩固状态
 ```
-→ 运行 `memory-refresh.sh`
+→ 运行 `dream-consolidate.js --status`
 
 ---
 
@@ -134,71 +181,34 @@ bash scripts/memory-dedup.sh
 │   ├── memory-search.sh          # 搜索记忆
 │   ├── memory-refresh.sh         # 智能刷新
 │   ├── memory-dedup.sh           # 自动去重
+│   ├── memory-aging.js           # 老化与数量限制
+│   ├── dream-consolidate.js      # 记忆巩固主程序
+│   ├── dream-lock.sh             # 文件锁
 │   ├── auto-memory-search.sh     # 自动触发搜索
 │   └── README.md                 # 本文件
 ├── SESSION-STATE.md              # 记忆缓存（自动生成）
 ├── MEMORY.md                     # 长期记忆
 └── memory/
     ├── daily/                    # 每日记忆
-    └── weekly/                   # 每周记忆
+    ├── weekly/                   # 每周记忆
+    ├── auto/                     # 自动分类 (user/feedback/project/reference)
+    ├── .dream-state.json         # 巩固状态
+    └── .dream.lock               # 巩固文件锁
 ```
 
 ---
 
 ## 🔄 自动化
 
-### Cron 任务集成
+### Cron 任务
 
-在记忆及时写入任务后添加刷新：
-
-```bash
-# 记忆及时写入后刷新缓存
-bash ~/.openclaw/workspace/scripts/memory-refresh.sh
-```
-
----
-
-*最后更新：2026-03-20*
-`memory-search.sh "CSS 框架"`
-
-### 刷新记忆
-```
-刷新记忆
-```
-→ 运行 `memory-refresh.sh`
+| 任务 | 频率 | 脚本 |
+|------|------|------|
+| 记忆巩固 | 每 6 小时 | dream-consolidate.js |
+| 记忆及时写入 | 每 10 分钟 | (agent 执行) |
+| 记忆归档-Daily | 每天 23:00 | (agent 执行) |
+| 记忆总结-Weekly | 每周日 22:00 | (agent 执行) |
 
 ---
 
-## 📊 文件结构
-
-```
-~/.openclaw/workspace/
-├── scripts/
-│   ├── memory-loader.sh      # 加载记忆
-│   ├── memory-search.sh      # 搜索记忆
-│   ├── memory-refresh.sh     # 智能刷新
-│   ├── memory-dedup.sh       # 自动去重
-│   └── README.md             # 本文件
-├── SESSION-STATE.md          # 记忆缓存（自动生成）
-├── MEMORY.md                 # 长期记忆
-└── memory/
-    ├── daily/                # 每日记忆
-    └── weekly/               # 每周记忆
-```
-
----
-
-## 🔄 自动化
-
-### Cron 任务集成
-
-在记忆及时写入任务后添加刷新：
-
-```bash
-# 记忆及时写入后刷新缓存
-bash ~/.openclaw/workspace/scripts/memory-refresh.sh
-```
-
----
-
-*最后更新：2026-03-20*
+*最后更新：2026-04-14*
