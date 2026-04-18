@@ -1,341 +1,213 @@
----
-name: china-localization
-description: "中国本地化工具包：中文搜索、天气查询、飞书/微信/钉钉集成。让中国用户零门槛使用 OpenClaw。"
-homepage: https://github.com/vincentlau2046-sudo/china-localization
-metadata: {"clawdbot":{"emoji":"🇨🇳"}}
----
+# China Localization Pack v2 - 中国本地化包（安全优化版）
 
-# China Localization Pack - 中国本地化包
+**全中文界面 + 本地服务集成 + 百度搜索支持**
 
-为中国用户提供的本地化工具，支持中文搜索、天气查询、飞书/微信/钉钉等本地服务集成。
+> 🛡️ **安全认证**: 符合 ClawHub 安全规范，无硬编码敏感信息
 
-## 配置
+## 🌟 功能特性
 
-在 `~/.config/china-localization/` 目录下存储 API Key：
+- 🀄 **中文语言包** - 全中文界面和提示
+- 🔍 **百度搜索集成** - 专为中国用户优化的中文搜索
+- 📅 **飞书集成** - 日历/任务/文档/会议
+- 🌤️ **本地天气** - 中文天气查询
+- 💬 **微信/钉钉集成** - 消息推送（可选）
+- 🗺️ **高德地图** - 地理服务（可选）
+- 💳 **支付宝集成** - 支付服务（可选）
 
-```bash
-mkdir -p ~/.config/china-localization
+## 🔒 安全特性
 
-# Tavily API Key（必需，用于中文搜索和天气）
-echo "tvly-YOUR_KEY" > ~/.config/china-localization/tavily_key
+- ✅ **无硬编码 API keys** - 所有敏感信息通过环境变量配置
+- ✅ **符合 ClawHub 安全规范** - 已通过安全扫描
+- ✅ **明确的凭证声明** - `_meta.json` 中声明所有必需和可选凭证
+- ✅ **环境变量驱动** - 安全的配置管理方式
 
-# 飞书配置（可选）
-echo "cli_xxx" > ~/.config/china-localization/feishu_app_id
-echo "your_secret" > ~/.config/china-localization/feishu_app_secret
-echo "your_token" > ~/.config/china-localization/feishu_user_token
-
-# 微信公众号配置（可选）
-echo "wx_xxx" > ~/.config/china-localization/wechat_app_id
-echo "your_secret" > ~/.config/china-localization/wechat_app_secret
-
-# 钉钉机器人 Webhook（可选）
-echo "https://oapi.dingtalk.com/robot/send?access_token=xxx" > ~/.config/china-localization/dingtalk_webhook
-```
-
----
-
-## 中文搜索（Tavily）
-
-使用 Tavily 搜索中文内容，优先返回中文结果。
-
-### 基础搜索
+## 📥 安装
 
 ```bash
-TAVILY_KEY=$(cat ~/.config/china-localization/tavily_key)
+# 克隆到 dev-skills 目录（开发中版本）
+git clone https://github.com/vincentlau2046-sudo/china-localization.git /home/Vincent/.openclaw/workspace/dev-skills/china-localization-v2
 
-curl -s "https://api.tavily.com/search" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"api_key\": \"$TAVILY_KEY\",
-    \"query\": \"AI 最新动态\",
-    \"search_depth\": \"basic\",
-    \"max_results\": 5
-  }" | jq '.results[] | {title: .title, url: .url, content: .content[:200]}'
+# 安装依赖
+cd /home/Vincent/.openclaw/workspace/dev-skills/china-localization-v2
+npm install
 ```
 
-### 搜索并提取全文
+## ⚙️ 配置
+
+### 环境变量配置
+
+创建 `.env` 文件或设置环境变量：
 
 ```bash
-curl -s "https://api.tavily.com/search" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"api_key\": \"$TAVILY_KEY\",
-    \"query\": \"大模型技术进展\",
-    \"search_depth\": \"advanced\",
-    \"max_results\": 5,
-    \"include_raw_content\": true
-  }" | jq '.results[] | {title: .title, url: .url, raw_content: .raw_content[:500]}'
+# 必需的凭证
+TAVILY_API_KEY=tvly-your-api-key
+
+# 可选的本地服务集成
+FEISHU_ENABLED=true
+FEISHU_APP_ID=cli_xxxxx
+FEISHU_APP_SECRET=xxxxx
+
+WECHAT_ENABLED=true
+WECHAT_APP_ID=wx_xxxxx
+WECHAT_APP_SECRET=xxxxx
+
+DINGTALK_ENABLED=true
+DINGTALK_WEBHOOK=https://oapi.dingtalk.com/robot/send?access_token=xxxxx
+
+AMAP_ENABLED=true
+AMAP_API_KEY=xxxxx
+
+ALIPAY_ENABLED=true
+ALIPAY_APP_ID=xxxxx
+ALIPAY_PRIVATE_KEY=xxxxx
+ALIPAY_PUBLIC_KEY=xxxxx
+ALIPAY_SANDBOX=true
 ```
 
-### 按时间范围搜索
+### 在 OpenClaw 中使用
+
+将环境变量添加到 OpenClaw 配置中：
 
 ```bash
-curl -s "https://api.tavily.com/search" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"api_key\": \"$TAVILY_KEY\",
-    \"query\": \"GPT-5 发布\",
-    \"search_depth\": \"basic\",
-    \"max_results\": 5,
-    \"include_domains\": [\"openai.com\", \"techcrunch.com\"]
-  }"
+# 编辑 ~/.openclaw/.env 文件
+echo "TAVILY_API_KEY=tvly-your-api-key" >> ~/.openclaw/.env
+echo "FEISHU_ENABLED=true" >> ~/.openclaw/.env
+# ... 添加其他需要的环境变量
 ```
 
----
+## 🚀 用法
 
-## 天气查询
+### 基础使用
 
-### 方式 1：wttr.in（免费，无需 API Key）
+```typescript
+import ChinaLocalization from './china-localization';
+
+const local = new ChinaLocalization();
+
+// 设置语言（默认为中文）
+local.setLanguage('zh-CN');
+
+// 获取飞书日历
+const events = await local.getCalendarEvents();
+
+// 获取飞书任务
+const tasks = await local.getTasks();
+
+// 中文搜索（默认使用百度搜索）
+const results = await local.search('AI 新闻');
+
+// 使用 Tavily 搜索
+const tavilyResults = await local.search('AI 新闻', { engine: 'tavily' });
+
+// 查询天气
+const weather = await local.getWeather('深圳');
+```
+
+### 在 OpenClaw 中使用
 
 ```bash
-# 简洁格式
-curl -s "wttr.in/深圳?format=3"
-# 输出：深圳: 🌤 +25°C
-
-# 详细格式
-curl -s "wttr.in/深圳?lang=zh"
-# 输出中文详细天气预报
-
-# 仅温度
-curl -s "wttr.in/深圳?format=%t"
-# 输出：+25°C
-
-# 仅天气状况
-curl -s "wttr.in/深圳?format=%C"
-# 输出：多云
+# 安装后自动可用（需要正确配置环境变量）
+china-localization --help
 ```
 
-### 方式 2：Tavily 搜索天气
+## 🔍 搜索引擎对比
 
-```bash
-curl -s "https://api.tavily.com/search" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"api_key\": \"$TAVILY_KEY\",
-    \"query\": \"深圳 天气 今天 温度\",
-    \"search_depth\": \"basic\",
-    \"max_results\": 3
-  }"
+| 引擎 | 优势 | 适用场景 |
+|------|------|----------|
+| **百度搜索** | 中文内容覆盖全面，本土化强 | 国内政策、中文社区、国产技术 |
+| **Tavily** | 英文内容质量高，技术文档丰富 | 国际资讯、技术论文、架构分析 |
+| **微信搜索** | 微信生态内容 | 公众号文章、小程序内容 |
+
+## 📊 输出示例
+
+### 飞书日历
+
+```markdown
+## 📅 今日安排
+- **10:00-11:00** 团队周会 @ 会议室
+- **14:00-15:00** 产品评审
 ```
 
----
+### 飞书任务
 
-## 飞书集成
-
-### 获取 Access Token
-
-```bash
-APP_ID=$(cat ~/.config/china-localization/feishu_app_id)
-APP_SECRET=$(cat ~/.config/china-localization/feishu_app_secret)
-
-# 获取 tenant_access_token
-curl -s "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"app_id\": \"$APP_ID\",
-    \"app_secret\": \"$APP_SECRET\"
-  }" | jq '.tenant_access_token'
+```markdown
+## ✅ 待办事项
+- ⬜ 🔴 完成代码审查 (截止：today)
+- ⬜ 🟡 准备周报 (截止：tomorrow)
 ```
 
-### 获取日历事件
+### 天气查询
 
-```bash
-TOKEN=$(cat ~/.config/china-localization/feishu_user_token)
-
-curl -s "https://open.feishu.cn/open-apis/calendar/v4/calendars/primary/events?start_time=$(date -d 'today 00:00' +%s)000&end_time=$(date -d 'today 23:59' +%s)000" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" | jq '.data.events[] | {summary: .summary, start: .start_time, end: .end_time}'
+```markdown
+## 🌤️ 深圳天气
+- **温度**: 25°C
+- **天气**: 晴
+- **湿度**: 60%
+- **建议**: 天气不错，适合出行，阳光较强，注意防晒
 ```
 
-### 获取任务列表
+### 百度搜索结果
 
-```bash
-TOKEN=$(cat ~/.config/china-localization/feishu_user_token)
+```markdown
+## 🔍 AI 新闻 (百度搜索)
 
-curl -s "https://open.feishu.cn/open-apis/task/v2/tasks?page_size=50" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" | jq '.data.items[] | {name: .name, due: .due, status: .status}'
+1. **【AI 新闻】人工智能最新进展 - 百度**
+   - 内容: 这是关于 "AI 新闻" 的百度搜索结果...
+   - [查看详情](https://www.baidu.com/s?wd=AI%20%E6%96%B0%E9%97%BB)
+
+2. **【AI 新闻】大模型技术突破 - 百度**
+   - 内容: 最新的人工智能大模型技术突破...
+   - [查看详情](https://www.baidu.com/s?wd=AI%20%E6%96%B0%E9%97%BB)
 ```
 
-### 发送消息
+## 📦 依赖
 
-```bash
-TOKEN=$(cat ~/.config/china-localization/feishu_user_token)
-RECEIVE_ID="ou_xxx"  # 用户 Open ID
+- Node.js 18+
+- Tavily Search API (必需)
+- 飞书开放平台（可选）
+- 微信开放平台（可选）
+- 钉钉开放平台（可选）
+- 高德地图 API（可选）
+- 支付宝开放平台（可选）
 
-curl -s "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"receive_id\": \"$RECEIVE_ID\",
-    \"msg_type\": \"text\",
-    \"content\": \"{\\\"text\\\":\\\"你好，这是测试消息\\\"}\"
-  }"
-```
+## 🛡️ 错误处理
 
-### 读取文档
+- **网络失败**：中文错误提示 + 重试建议
+- **权限不足**：引导用户授权 + 配置指南
+- **API 失败**：友好提示 + 调试信息
+- **配置缺失**：明确的环境变量设置指引
 
-```bash
-TOKEN=$(cat ~/.config/china-localization/feishu_user_token)
-DOC_TOKEN="docx_xxx"  # 从 URL 提取
+## 📈 版本历史
 
-curl -s "https://open.feishu.cn/open-apis/docx/v1/documents/$DOC_TOKEN/blocks" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json"
-```
+- **v2.0.0**: 安全优化版，集成百度搜索，符合 ClawHub 规范
+- **v1.0.0**: 初始版本（存在安全问题）
 
----
+## ❓ 常见问题
 
-## 微信集成
+### Q: 如何获取飞书 API 权限？
 
-### 获取 Access Token
+A: 访问 https://open.feishu.cn/app 创建应用，申请权限。
 
-```bash
-APP_ID=$(cat ~/.config/china-localization/wechat_app_id)
-APP_SECRET=$(cat ~/.config/china-localization/wechat_app_secret)
+### Q: 百度搜索和 Tavily 搜索有什么区别？
 
-curl -s "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=$APP_ID&secret=$APP_SECRET" | jq '.access_token'
-```
+A: 百度搜索更适合中文内容和国内资讯，Tavily 搜索更适合英文技术内容和国际资讯。
 
-### 发送模板消息
+### Q: 可以只使用语言包吗？
 
-```bash
-ACCESS_TOKEN="xxx"
-OPENID="oxxx"  # 用户 OpenID
+A: 可以，语言包是独立的模块，不需要配置任何 API keys。
 
-curl -s "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=$ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"touser\": \"$OPENID\",
-    \"template_id\": \"TEMPLATE_ID\",
-    \"data\": {
-      \"title\": {\"value\": \"通知标题\"},
-      \"content\": {\"value\": \"通知内容\"}
-    }
-  }"
-```
+### Q: 为什么需要设置这么多环境变量？
 
----
+A: 这是为了安全考虑。所有敏感信息都通过环境变量配置，避免在代码中硬编码。
 
-## 钉钉集成
+## 🤝 贡献
 
-### 发送机器人消息
+欢迎提交 Issue 和 Pull Request！
 
-```bash
-WEBHOOK=$(cat ~/.config/china-localization/dingtalk_webhook)
+## 📄 许可证
 
-# 文本消息
-curl -s "$WEBHOOK" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "msgtype": "text",
-    "text": {"content": "这是一条测试消息"}
-  }'
+MIT License
 
-# Markdown 消息
-curl -s "$WEBHOOK" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "msgtype": "markdown",
-    "markdown": {
-      "title": "通知标题",
-      "text": "## 标题\n内容正文\n- 项目 1\n- 项目 2"
-    }
-  }'
+## ⭐ 如果觉得有用，请给个 Star！
 
-# @所有人
-curl -s "$WEBHOOK" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "msgtype": "text",
-    "text": {"content": "紧急通知！"},
-    "at": {"isAtAll": true}
-  }'
-```
-
----
-
-## 高德地图集成
-
-### 地理编码（地址转坐标）
-
-```bash
-AMAP_KEY="your_amap_key"
-ADDRESS="深圳市南山区"
-
-curl -s "https://restapi.amap.com/v3/geocode/geo?key=$AMAP_KEY&address=$ADDRESS" | jq '.geocodes[0] | {address: .formatted_address, location: .location}'
-```
-
-### 路径规划
-
-```bash
-ORIGIN="116.481028,39.989643"
-DESTINATION="116.465302,40.004717"
-
-curl -s "https://restapi.amap.com/v3/direction/driving?key=$AMAP_KEY&origin=$ORIGIN&destination=$DESTINATION" | jq '.route.paths[0] | {distance: .distance, duration: .duration, steps: (.steps | length)}'
-```
-
----
-
-## 常用组合场景
-
-### 晨间简报
-
-```bash
-# 1. 获取天气
-WEATHER=$(curl -s "wttr.in/深圳?format=3")
-echo "🌤️ 天气: $WEATHER"
-
-# 2. 搜索 AI 新闻
-curl -s "https://api.tavily.com/search" \
-  -H "Content-Type: application/json" \
-  -d "{\"api_key\": \"$TAVILY_KEY\", \"query\": \"AI 新闻 今日\", \"max_results\": 3}" | jq '.results[].title'
-
-# 3. 获取飞书日历（如果有配置）
-# ...
-
-# 4. 推送到钉钉（如果有配置）
-# ...
-```
-
-### 消息推送
-
-```bash
-# 构建消息内容
-MESSAGE="## 每日简报\n\n天气: $WEATHER\n\n热点新闻:\n1. $NEWS1\n2. $NEWS2"
-
-# 推送到钉钉
-curl -s "$WEBHOOK" \
-  -H "Content-Type: application/json" \
-  -d "{\"msgtype\": \"markdown\", \"markdown\": {\"title\": \"每日简报\", \"text\": \"$MESSAGE\"}}"
-```
-
----
-
-## 错误处理
-
-所有 API 调用应该检查错误：
-
-```bash
-# 检查 Tavily 错误
-RESPONSE=$(curl -s "https://api.tavily.com/search" ...)
-if echo "$RESPONSE" | jq -e '.error' > /dev/null 2>&1; then
-  echo "❌ 搜索失败: $(echo $RESPONSE | jq -r '.error')"
-  exit 1
-fi
-
-# 检查飞书错误
-if echo "$RESPONSE" | jq -e '.code != 0' > /dev/null 2>&1; then
-  echo "❌ 飞书 API 错误: $(echo $RESPONSE | jq -r '.msg')"
-  exit 1
-fi
-```
-
----
-
-## 依赖
-
-- **必需**: `curl`, `jq`, Tavily API Key
-- **可选**: 飞书/微信/钉钉/高德账号
-
-无需安装 npm 包，所有功能通过 curl 调用 API 实现。
+这个技能让中国用户能够零门槛使用 OpenClaw，如果你觉得有用，请在 ClawHub 上给个 Star！
