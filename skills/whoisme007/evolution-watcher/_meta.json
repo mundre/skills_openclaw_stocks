@@ -3,9 +3,15 @@
   "slug": "evolution-watcher",
   "displayName": "Evolution Watcher",
   "latest": {
-    "version": "0.6.1",
-    "publishedAt": 1773811893931,
-    "commit": "https://github.com/openclaw/skills/commit/df447d89c82173ac4e5e11e2e927dca433ef2531"
+    "version": "0.6.2",
+    "publishedAt": 1773980674031,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.6.1",
+      "publishedAt": 1773811893931,
+      "commit": "https://github.com/openclaw/skills/commit/df447d89c82173ac4e5e11e2e927dca433ef2531"
+    }
+  ]
 }
