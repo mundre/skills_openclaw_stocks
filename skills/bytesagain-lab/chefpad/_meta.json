@@ -1,0 +1,11 @@
+{
+  "owner": "bytesagain-lab",
+  "slug": "chefpad",
+  "displayName": "Chefpad",
+  "latest": {
+    "version": "2.0.1",
+    "publishedAt": 1773830245193,
+    "commit": null
+  },
+  "history": []
+}
