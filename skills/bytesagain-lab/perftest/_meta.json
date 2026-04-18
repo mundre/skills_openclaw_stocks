@@ -1,0 +1,11 @@
+{
+  "owner": "bytesagain-lab",
+  "slug": "perftest",
+  "displayName": "Perftest",
+  "latest": {
+    "version": "3.0.0",
+    "publishedAt": 1773930145314,
+    "commit": null
+  },
+  "history": []
+}
