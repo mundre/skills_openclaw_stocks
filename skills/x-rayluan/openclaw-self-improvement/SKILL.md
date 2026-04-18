@@ -1,6 +1,17 @@
 ---
 name: openclaw-self-improvement
-description: "OpenClaw Self-Improvement: EN=learn/log/repeat-failures, capture feature gaps, improve workflows, and run eval loops; 中文=记录学习/重复错误/功能缺口并持续改进流程，执行验证闭环。 日本語=学習・繰返しエラー・機能不足を記録し、ワークフロー改善と検証ループを回す。 한국어=학습·반복 오류·기능 누락을 기록하고 워크플로우 개선 및 검증 루프를 운영한다. ES=Registra aprendizajes, errores repetidos, brechas y ejecuta bucles de evaluación"
+description: A reusable operator-guided workflow improvement skill for OpenClaw and ClawLite that turns repeated failures into logged learnings, binary eval loops, SOPs, checklists, and proof-based operational improvements.
+metadata:
+  {
+    "openclaw":
+      {
+        "requires": { "bins": ["node"] },
+        "writes": [".learnings/", "AGENTS.md", "TOOLS.md", "SOUL.md"],
+        "env": ["WORKSPACE", "OBSIDIAN_LEARNINGS_DIR"],
+        "network": false,
+        "notes": "Local-file workflow only. Promotion writes should be reviewed and can be previewed with --dry-run."
+      }
+  }
 ---
 
 # OpenClaw / ClawLite Self-Improvement
@@ -33,7 +44,13 @@ Use this skill when the user asks:
 - `.learnings/ERRORS.md`
 - `.learnings/FEATURE_REQUESTS.md`
 - `.learnings/EXPERIMENTS.md`
-- Obsidian vault note under `ClawLite/Operations/Learnings/`
+- Optional export under `.learnings/exports/obsidian/` by default, or `OBSIDIAN_LEARNINGS_DIR` if explicitly configured
+
+## Safety boundaries
+- Local-file workflow only, no network I/O
+- Promotion can append to `AGENTS.md`, `TOOLS.md`, or `SOUL.md`
+- Always review promotion targets first, or run `scripts/promote-learning.mjs ... --dry-run`
+- `OBSIDIAN_LEARNINGS_DIR` should only point at a path you intend to modify
 
 ## Command examples
 ```bash
@@ -110,8 +127,6 @@ A good use of this skill should produce one of:
 - Logging is not the same as fixing.
 - Do not treat a learning entry as closure for a broken deliverable.
 - Use this skill to reduce repeated mistakes, not to excuse them.
-- This skill is local-only: it does not read credentials, does not modify system services, and does not make network requests.
-- Promotion writes are limited to workspace files (`AGENTS.md`, `TOOLS.md`, `SOUL.md`) unless `OBSIDIAN_LEARNINGS_DIR` is explicitly set.
 
 ## References
 - `{baseDir}/references/schema.md`

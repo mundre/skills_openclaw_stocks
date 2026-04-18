@@ -24,3 +24,13 @@ Examples:
 
 ## Promote to Obsidian
 When the learning should become reusable operator material, marketing proof, or an operations note outside transient chat.
+
+By default, Obsidian-style exports go to the local safe fallback:
+- `.learnings/exports/obsidian/`
+
+If you want a real vault destination, set `OBSIDIAN_LEARNINGS_DIR` explicitly before running the promotion script.
+Always confirm the printed target path first, or use `--dry-run`.
+
+Example:
+- `node scripts/promote-learning.mjs obsidian "Reusable learning" --dry-run`
+- then rerun without `--dry-run` after confirming the path
