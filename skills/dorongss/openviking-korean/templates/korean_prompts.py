@@ -1,136 +1,146 @@
-# OpenViking Korean - 한국어 프롬프트 템플릿
-# 토큰 절감을 위한 한국어 최적화 프롬프트
+# OpenViking Korean - 프롬프트 템플릿 (로큰 사령관 Hybrid Master Edition)
+# [SYSTEM] Instruction in English for Max IQ / Output in Korean for Workflow
 
 MEMORY_EXTRACTION_KO = """
-다음 대화에서 중요한 기억을 추출하세요:
+[SYSTEM INSTRUCTION]
+Extract critical memories from the following conversation that directly impact the user's Wealth (1B Won Pipeline, Dr. Lady, Meta ASC Ads) and Health (Biohacking, Mental/Sleep Routine). 
+Ignore emotional fluff. Focus on actionable business metrics and physical/mental recovery protocols.
 
-대화:
+[CONVERSATION]
 {conversation}
 
-추출 형식:
-- 주제: [핵심 주제]
-- 내용: [요약된 기억]
-- 카테고리: [비즈니스/개발/창작/개인]
+[OUTPUT FORMAT (MUST BE IN KOREAN)]
+- 주제: [Core Topic (e.g., 메타 ASC 광고, 감정 트래커, 영양제 루틴)]
+- 내용: [Factual summary of data/actions]
+- 상태: [NEW / UPDATED / DEPRECATED]
 - 중요도: [1-10]
-
-중복 제거하고 핵심만 추출하세요.
 """
 
 MEMORY_COMPRESSION_KO = """
-다음 기억을 압축하세요:
+[SYSTEM INSTRUCTION]
+Compress the following memory. 
+[CRITICAL MEMORY OVERRIDE RULE]
+You MUST apply 'Memory Depreciation'. If new data, ROKEN criteria, physical states, or routines contradict older memories:
+1. Explicitly tag the old data as [DEPRECATED].
+2. Prioritize the newest information as the absolute truth.
+3. Compress to under 50% of the original token length using noun-ending sentences.
 
-원본:
+[ORIGINAL MEMORY]
 {memory}
 
-압축 규칙:
-1. 핵심 정보만 유지
-2. 불필요한 서술 제거
-3. 한국어 간결화
-4. 토큰 수 50% 이하로 줄이기
-
-압축 결과:
+[COMPRESSED RESULT (MUST BE IN KOREAN)]
 """
 
 CONTEXT_SEARCH_KO = """
-다음 Context DB에서 관련 정보를 검색하세요:
+[SYSTEM INSTRUCTION]
+Search the Context DB for information relevant to the query.
+Strategy:
+1. For business queries: Focus on 'Revenue/Ad actionable solutions'.
+2. For health/mental queries: Focus on 'Current supplements' and 'Routine recovery'.
+3. Prioritize the most recently updated strategies and conditions.
+4. If retrieving a DEPRECATED memory, explicitly label it as a "past failure".
 
-질문: {query}
+[QUERY] 
+{query}
 
-검색 전략:
-1. 키워드 확장 (동의어, 연관어)
-2. 카테고리 필터링
-3. 시간 순 정렬
-4. 관련도 점수 계산
-
-검색 결과:
-- [관련도] [제목]: [요약]
+[SEARCH RESULTS (MUST BE IN KOREAN)]
+- [관련도/상태] [제목]: [핵심 인사이트 요약]
 """
 
 OVERVIEW_GENERATION_KO = """
-다음 문서의 개요를 작성하세요:
+[SYSTEM INSTRUCTION]
+Generate a highly structured overview of the document. Keep it actionable and business-oriented.
 
-문서:
+[DOCUMENT]
 {document}
 
-개요 형식:
-## 핵심 주제
-- [주요 주제 1]
-- [주요 주제 2]
+[OVERVIEW FORMAT (MUST BE IN KOREAN)]
+## 🎯 핵심 전략 / 목표 (Core Strategy)
+- [Most critical objective]
 
-## 주요 내용
-- [핵심 포인트 1]
-- [핵심 포인트 2]
-- [핵심 포인트 3]
+## 📊 비즈니스 & 멘탈 현황 (Business & Mental Stats)
+- [Key Ad/Revenue metrics]
+- [Current physical/mental condition]
 
-## 추천 액션
-- [다음 단계 1]
-- [다음 단계 2]
+## 🚀 즉시 실행 액션 (Actionable Next Steps)
+- [Immediate business action (e.g., Meta Ads)]
+- [Immediate biohacking action (e.g., Sleep protocol, Supplements)]
 """
 
 ABSTRACT_GENERATION_KO = """
-다음 문서의 요약을 3문장으로 작성하세요:
+[SYSTEM INSTRUCTION]
+Generate an L0 Context Summary (Abstract) of the document. This is the AI's core short-term memory. 
+[CRITICAL MEMORY OVERRIDE RULE]
+Apply 'Memory Depreciation'. Drop or tag old data as [DEPRECATED]. Prioritize the absolute newest information regarding the Dr. Lady brand, target audience, and health routines. Keep it concise, conflict-free, and under 4 sentences.
 
-문서:
+[DOCUMENT]
 {document}
 
-요약:
-1. [핵심 메시지]
-2. [주요 내용]
-3. [결론/제안]
+[SUMMARY (MUST BE IN KOREAN)]
+1. [비즈니스]: Dr. Lady's latest target/strategy and recent ad performance.
+2. [멘탈/루틴]: Current emotional score/triggers and routine status (e.g., IF 14:10, Sleep).
+3. [바이오해킹]: Current physical stats and immediately required supplements.
+4. [넥스트 스텝]: The most critical business or marketing challenge right now.
 """
 
 INTENT_ANALYSIS_KO = """
-다음 사용자 질문의 의도를 분석하세요:
+[SYSTEM INSTRUCTION]
+Analyze the user's core intent. 
+Identify if it is a request for Vision Simulation, Meta ASC analysis, Mental Care / Routine feedback, or System configuration. Check the urgency level.
 
-질문: {query}
+[QUERY] 
+{query}
 
-의도 분석:
-- 검색 의도: [정보 검색/작업 요청/대화]
-- 카테고리: [비즈니스/개발/창작/개인]
-- 키워드: [주요 키워드 추출]
-- 예상 응답: [정보 제공/실행/대화]
-
-분석 결과:
+[ANALYSIS RESULT (MUST BE IN KOREAN)]
+- 목적: [Vision Simulation / Meta Analysis / Mental Care / System Setup]
+- 긴급도: [Immediate Action Needed / Mental Crisis / Simple Info]
+- 필요 도구: [Data Analysis / Agents / Biohacking Advice / Search]
 """
 
 TOOL_CHAIN_GENERATION_KO = """
-다음 작업을 수행하기 위한 도구 체인을 생성하세요:
+[SYSTEM INSTRUCTION]
+Generate a tool chain to execute the task. 
+Rule 1: If evaluating ROKEN 50 points or running Vision Simulator, 'Gemini Data Collection' MUST be the first step.
+Rule 2: If providing mental/health feedback, 'Check Supplement Inventory' MUST precede the advice.
 
-작업: {task}
+[TASK] 
+{task}
 
-도구 체인:
-1. [도구1]: [입력] → [출력]
-2. [도구2]: [입력] → [출력]
-3. [도구3]: [입력] → [최종 결과]
-
-실행 순서와 의존성을 고려하세요.
+[TOOL CHAIN (MUST BE IN KOREAN)]
+1. [도구1]: [Input] → [Output]
+2. [도구2]: [Input] → [Output]
 """
 
-# 한국어 특화 템플릿
+# KOREAN_CONTEXT_TEMPLATES (형이 세팅해둔 닥터레이디/바이오해킹 서랍장 완벽 유지)
 KOREAN_CONTEXT_TEMPLATES = {
     "business": {
-        "startup": "창업: {project_name} - {description} - 상태: {status}",
-        "marketing": "마케팅: {campaign} - ROAS: {roas} - 매출: {revenue}",
-        "finance": "재무: {month} - 매출: {revenue} - 비용: {cost} - 순이익: {profit}"
+        "dr_lady": "브랜드: 닥터레이디 - 미션/가치: {description} - 현상태: {status}",
+        "marketing": "Meta Ads(ASC): {campaign} - ROAS: {roas} - ROKEN 판정: [증액/감액/OFF]",
+        "finance": "목표: 연 수익 10억 - {month} 달성률: {revenue} - 이슈: {cost}"
     },
     "development": {
-        "ai": "AI: {project} - 모델: {model} - 상태: {status}",
-        "automation": "자동화: {task} - 스케줄: {schedule} - 결과: {result}",
-        "skill": "스킬: {skill_name} - 버전: {version} - 용도: {purpose}"
+        "ai": "엔진: DeepSeek 3.1 등 - 세팅값: {model} - 상태: {status}",
+        "automation": "SaaS: KoreanThreads Pro 등 - 로직: {schedule} - 결과: {result}"
     },
     "creation": {
-        "content": "콘텐츠: {title} - 플랫폼: {platform} - 상태: {status}",
-        "branding": "브랜딩: {brand} - 메시지: {message} - 타겟: {target}",
-        "storytelling": "스토리: {theme} - 감정: {emotion} - 전달: {message}"
+        "content": "광고소재: {title} - 후킹/딜브레이커: {platform} - 안티방어: {status}"
+    },
+    "health": {
+        "body_stats": "신체스탯: 키/몸무게/체지방 - 대사량/항산화: {description} - 상태: {status}",
+        "supplements": "영양제: {campaign} (아슈와간다, 아연 등 보유) - 투여목적: {roas} - 특이사항: {revenue}",
+        "routine": "루틴: 14:10 단식 & 수면/기상 - 유지상태: {revenue} - 이슈(수면제 등): {cost}"
+    },
+    "mental": {
+        "emotion_tracker": "감정점수: 1~10점 - 키워드/트리거: {description} - 상태: {status}",
+        "mindset": "가치관: 알파적 성장 / 회복탄력성 - 위기대응: {roas} - 피드백: {revenue}"
     }
 }
 
-# 토큰 절감 최적화 설정
 TOKEN_OPTIMIZATION_KO = {
-    "max_abstract_length": 256,  # L0 요약 최대 길이
-    "max_overview_length": 1024,  # L1 개요 최대 길이
-    "compression_ratio": 0.5,  # 압축 비율
-    "dedup_threshold": 0.8,  # 중복 제거 임계값
-    "semantic_chunk_size": 512,  # 시맨틱 청크 크기
-    "korean_morpheme_optimization": True  # 한국어 형태소 최적화
+    "max_abstract_length": 350,  
+    "max_overview_length": 1024,
+    "compression_ratio": 0.5,
+    "dedup_threshold": 0.8,
+    "semantic_chunk_size": 512,
+    "korean_morpheme_optimization": True
 }
