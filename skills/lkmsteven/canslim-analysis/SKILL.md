@@ -29,18 +29,20 @@ Use this skill when the user asks to:
 
 ## Required files
 
-Expected local files:
+Expected local files (located in `Scripts/` directory):
 
-- `quantitative_analyzer.py`
-- `final_process.py`
-- `requirements.txt`
+- `Scripts/quantitative_analyzer.py`
+- `Scripts/final_process.py`
+- `Scripts/pdf_report_generator.py`
+- `Scripts/requirements.txt`
 
-Expected generated files:
+Expected generated files (in `Scripts/` directory):
 
-- `intermediate_canslim.json`
-- `enriched_canslim.json`
-- `final_canslim_report.json`
-- `canslim_analysis.log`
+- `Scripts/intermediate_canslim.json`
+- `Scripts/enriched_canslim.json`
+- `Scripts/final_canslim_report.json`
+- `Scripts/canslim_analysis.log`
+- `Scripts/out/canslim_report_{date}.pdf` (PDF report with formatted analysis)
 
 ## Canonical JSON contract
 
@@ -139,7 +141,7 @@ The enriched schema must be the same as the intermediate schema, plus AI_Qualita
 ## Execution rules
 Follow this checklist exactly:
 
-1. Verify files: Confirm quantitative_analyzer.py, final_process.py, and requirements.txt exist.
+1. Verify files: Confirm Scripts/quantitative_analyzer.py, Scripts/final_process.py, Scripts/pdf_report_generator.py, and Scripts/requirements.txt exist.
 
 2. Create environment:
 ```bash
@@ -150,17 +152,17 @@ canslim_analysis\Scripts\activate  # Windows
 
 3. Install dependencies:
 ```bash
-pip install --no-cache-dir -r requirements.txt
+pip install --no-cache-dir -r Scripts/requirements.txt
 ```
 4. Run quantitative analysis:
 ```bash
-python quantitative_analyzer.py
+python Scripts/quantitative_analyzer.py
 ```
 
-5. Verify intermediate output: Confirm intermediate_canslim.json exists and contains Metadata, Stocks, Quantitative_Metrics, and AI_Qualitative_Checks_Pending.
+5. Verify intermediate output: Confirm Scripts/intermediate_canslim.json exists and contains Metadata, Stocks, Quantitative_Metrics, and AI_Qualitative_Checks_Pending.
 
 6. Run OpenClaw AI enrichment:
-- Read intermediate_canslim.json.
+- Read Scripts/intermediate_canslim.json.
 
 - For each stock, preserve Ticker, Company_Name, and the entire Quantitative_Metrics object unchanged.
 
@@ -173,19 +175,28 @@ python quantitative_analyzer.py
    - I_Institutional_Quality
    - I_Institutional_Details
 
-7. Write enriched output: enriched_canslim.json
+7. Write enriched output: Scripts/enriched_canslim.json
 
 8. Run final processing:
 ```bash
-python final_process.py
+python Scripts/final_process.py
 ```
+This will automatically generate both the JSON report and the PDF report.
 
-9. Display results: Read final_canslim_report.json and present the ranked list of stocks, CANSLIM scores, met criteria, missed criteria, price, RS rating, and catalyst note.
+9. Display results: Read Scripts/final_canslim_report.json and present the ranked list of stocks, CANSLIM scores, met criteria, missed criteria, price, RS rating, and catalyst note.
 
-10. Cleanup:
+10. PDF Report: The PDF report is generated in `Scripts/out/canslim_report_{date}.pdf` with professional formatting including:
+    - Report header with metadata and score distribution
+    - Individual stock sections with grades and CANSLIM criteria status
+    - Key metrics tables (RS Rating, EPS growth, institutional ownership)
+    - Detailed analysis for each criterion (C, A, N, S, L, I, M)
+
+11. Delivery: Always attach the CANSLIM report PDF to the user-facing response when the analysis completes successfully.
+
+12. Cleanup:
 ```bash
 deactivate
-```   
+```
 
 ## Scoring contract
 Use this exact final scoring model:
