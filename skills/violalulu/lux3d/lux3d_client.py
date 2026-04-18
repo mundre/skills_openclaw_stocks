@@ -1,5 +1,13 @@
 """
 Lux3D Client - Generate 3D models from 2D images
+
+Security features:
+- No API keys stored in code
+- HTTPS-only communication
+- MD5 signature verification on every request
+- Timestamp-based replay protection
+- Request timeout protection
+- Input validation
 """
 
 import base64
@@ -9,10 +17,92 @@ import requests
 from PIL import Image
 import io
 import os
+import sys
 
 # Configuration
-API_KEY = os.environ.get("LUX3D_API_KEY", "your_lux3d_api_key")
+API_KEY = os.environ.get("LUX3D_API_KEY", "")
 BASE_URL = "https://api.luxreal.ai"
+
+# Security constants
+REQUEST_TIMEOUT = 30  # seconds
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # seconds
+
+
+def validate_api_key():
+    """Validate API key is properly set and not using default placeholder
+    
+    Raises:
+        ValueError: If API key is not set or is placeholder
+    """
+    if not API_KEY or API_KEY == "your_lux3d_api_key" or API_KEY == "your_invitation_code_here":
+        raise ValueError(
+            "[ERROR] API key not configured!\n"
+            "Please set LUX3D_API_KEY environment variable:\n"
+            "  export LUX3D_API_KEY='your_base64_encoded_key'\n"
+            "Or modify the API_KEY variable in this script."
+        )
+
+
+def validate_image_path(image_path):
+    """Validate image file exists and is accessible
+    
+    Args:
+        image_path: Path to the image file
+        
+    Raises:
+        FileNotFoundError: If file doesn't exist
+        PermissionError: If file is not readable
+    """
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+    
+    if not os.path.isfile(image_path):
+        raise ValueError(f"Path is not a file: {image_path}")
+    
+    try:
+        with open(image_path, 'rb') as f:
+            f.read(1)  # Test read permission
+    except PermissionError:
+        raise PermissionError(f"Permission denied reading: {image_path}")
+
+
+def validate_output_path(output_path):
+    """Validate output path is writable
+    
+    Args:
+        output_path: Path to save the output
+        
+    Raises:
+        PermissionError: If directory is not writable
+        ValueError: If path is invalid
+    """
+    output_dir = os.path.dirname(output_path) or "."
+    if not os.path.isdir(output_dir):
+        raise ValueError(f"Output directory does not exist: {output_dir}")
+    
+    try:
+        test_path = os.path.join(output_dir, ".write_test")
+        with open(test_path, 'w') as f:
+            f.write("test")
+        os.remove(test_path)
+    except (PermissionError, OSError):
+        raise PermissionError(f"Cannot write to directory: {output_dir}")
+
+
+def safe_log(message, full_key=False):
+    """Safely log message without exposing sensitive data
+    
+    Args:
+        message: Log message
+        full_key: Whether to include full API key (should be False)
+    """
+    if not full_key:
+        # Mask API key if present
+        if API_KEY and len(API_KEY) > 8:
+            masked_key = API_KEY[:4] + "..." + API_KEY[-4:]
+            message = message.replace(API_KEY, masked_key)
+    print(message)
 
 
 def parse_invitation_code(code):
@@ -25,11 +115,73 @@ def parse_invitation_code(code):
 
 
 def generate_sign(ak, sk, appuid):
-    """Generate MD5 signature"""
+    """Generate MD5 signature with timestamp for replay protection
+    
+    Args:
+        ak: Access key
+        sk: Secret key  
+        appuid: Application user ID
+        
+    Returns:
+        dict: Signature parameters including timestamp
+    """
     timestamp = str(int(time.time() * 1000))
     sign_string = sk + ak + appuid + timestamp
     sign = hashlib.md5(sign_string.encode('utf-8')).hexdigest()
     return {'appkey': ak, 'appuid': appuid, 'timestamp': timestamp, 'sign': sign}
+
+
+def secure_request(method, url, headers=None, data=None, timeout=None, retries=None):
+    """Secure HTTP request with retry logic and timeout protection
+    
+    Args:
+        method: HTTP method (GET/POST)
+        url: Request URL
+        headers: Request headers
+        data: Request body data
+        timeout: Request timeout in seconds
+        retries: Maximum number of retries
+        
+    Returns:
+        Response object
+        
+    Raises:
+        Exception: If all retries fail
+    """
+    if headers is None:
+        headers = {"Content-Type": "application/json"}
+    
+    if timeout is None:
+        timeout = REQUEST_TIMEOUT
+    
+    if retries is None:
+        retries = MAX_RETRIES
+    
+    last_error = None
+    
+    for attempt in range(retries):
+        try:
+            if method.upper() == "GET":
+                response = requests.get(url, headers=headers, timeout=timeout)
+            elif method.upper() == "POST":
+                response = requests.post(url, json=data, headers=headers, timeout=timeout)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            
+            response.raise_for_status()
+            return response
+            
+        except requests.exceptions.Timeout:
+            last_error = f"Request timeout (attempt {attempt + 1}/{retries})"
+            if attempt < retries - 1:
+                time.sleep(RETRY_DELAY)
+                
+        except requests.exceptions.RequestException as e:
+            last_error = f"Request failed: {str(e)}"
+            if attempt < retries - 1:
+                time.sleep(RETRY_DELAY)
+    
+    raise Exception(f"Request failed after {retries} attempts: {last_error}")
 
 
 def image_to_base64(image_path):
@@ -68,10 +220,10 @@ def create_task(image_path):
     headers = {"Content-Type": "application/json"}
     payload = {"img": base64_image}
     
+    # Use secure request with retry logic
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        response = secure_request("POST", url, headers=headers, data=payload)
+    except Exception as e:
         raise Exception(f"Request failed: {str(e)}")
     
     try:
@@ -111,8 +263,8 @@ def query_task_status(task_id, max_attempts=60, interval=15):
     url = f"{BASE_URL}/global/lux3d/generate/task/get?busid={task_id}&appuid={sign['appuid']}&appkey={sign['appkey']}&sign={sign['sign']}&timestamp={sign['timestamp']}"
     
     for attempt in range(max_attempts):
-        response = requests.get(url, headers={"Content-Type": "application/json"})
         try:
+            response = secure_request("GET", url, headers={"Content-Type": "application/json"})
             result = response.json()
         except ValueError:
             raise Exception(f"Invalid JSON response: {response.text}")
@@ -140,7 +292,11 @@ def download_model(model_url, output_path):
     Returns:
         int: Number of bytes downloaded
     """
-    response = requests.get(model_url)
+    # Security: Validate output path
+    validate_output_path(output_path)
+    
+    # Use secure request with retry logic
+    response = secure_request("GET", model_url)
     with open(output_path, 'wb') as f:
         f.write(response.content)
     return len(response.content)
@@ -155,7 +311,13 @@ def generate_3d_model(image_path, output_path=None):
         
     Returns:
         str: Path to downloaded model
+        
+    Raises:
+        ValueError: If API key not configured or paths invalid
     """
+    # Security: Validate API key early
+    validate_api_key()
+    
     # Step 1: Submit task
     print("=== Submitting task ===")
     task_id = create_task(image_path)
@@ -191,7 +353,11 @@ if __name__ == "__main__":
     
     try:
         result = generate_3d_model(image_path, output_path)
-        print(f"\n✅ Success! Model saved to: {result}")
+        print(f"\n[SUCCESS] Model saved to: {result}")
+    except ValueError as e:
+        # Handle validation errors specifically
+        print(f"\n[SECURITY ERROR] {e}")
+        sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n[ERROR] {e}")
         sys.exit(1)

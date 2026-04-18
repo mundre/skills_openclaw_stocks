@@ -1,13 +1,18 @@
 {
   "owner": "violalulu",
   "slug": "lux3d",
-  "displayName": "Lux3d",
+  "displayName": "Lux3D 3D Model Generator",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775114219531,
-    "commit": "https://github.com/openclaw/skills/commit/6e6d70b1d3baf442e17255b5d0f66c7d72b56dab"
+    "version": "1.1.0",
+    "publishedAt": 1776077851618,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775114219531,
+      "commit": "https://github.com/openclaw/skills/commit/6e6d70b1d3baf442e17255b5d0f66c7d72b56dab"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773391690275,
