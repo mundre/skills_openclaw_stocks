@@ -3,11 +3,16 @@
   "slug": "clawvitals",
   "displayName": "ClawVitals",
   "latest": {
-    "version": "1.4.4",
-    "publishedAt": 1776295419725,
-    "commit": "https://github.com/openclaw/skills/commit/ca7b126342e2478341fb6a998b72acc83827b876"
+    "version": "1.4.8",
+    "publishedAt": 1776347087054,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.4.4",
+      "publishedAt": 1776295419725,
+      "commit": "https://github.com/openclaw/skills/commit/ca7b126342e2478341fb6a998b72acc83827b876"
+    },
     {
       "version": "1.3.2",
       "publishedAt": 1774141802510,
