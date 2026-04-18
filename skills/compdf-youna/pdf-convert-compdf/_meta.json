@@ -1,0 +1,11 @@
+{
+  "owner": "compdf-youna",
+  "slug": "pdf-convert-compdf",
+  "displayName": "PDF Converter",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1773831640412,
+    "commit": null
+  },
+  "history": []
+}
