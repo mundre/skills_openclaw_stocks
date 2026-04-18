@@ -1,0 +1,11 @@
+{
+  "owner": "bytesagain-lab",
+  "slug": "fridge",
+  "displayName": "Fridge",
+  "latest": {
+    "version": "2.0.1",
+    "publishedAt": 1773798389665,
+    "commit": null
+  },
+  "history": []
+}
