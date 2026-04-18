@@ -1,6 +1,6 @@
 ---
 name: tencentcloud-tione-skill
-description: "腾讯云 TI-ONE 训练平台运维技能工具。当用户需要管理TI-ONE平台训练任务、推理服务、在线服务、Notebook、开发机、资源组、模型版本、数据集、训练日志、服务事件等资源，应当使用此技能。"
+description: "腾讯云 TI-ONE 训推平台查询工具集，支持训练任务、在线服务、开发机、资源组、模型仓库、数据集、日志、事件等模块的查询操作。"
 metadata:
   {
     "openclaw":
@@ -41,7 +41,7 @@ tags: [tencent-cloud, tione, devops, automation]
 
 # 腾讯云 TI-ONE 平台查询工具
 
-腾讯云 TI-ONE 训练平台查询工具集，支持训练任务、在线服务、Notebook、资源组、计费、模型、数据集、日志、事件等模块的查询操作。
+腾讯云 TI-ONE 训推平台查询工具集，支持训练任务、在线服务、开发机、资源组、模型仓库、数据集、日志、事件等模块的查询操作。
 
 ## 技术架构
 
