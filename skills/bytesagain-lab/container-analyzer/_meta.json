@@ -1,0 +1,11 @@
+{
+  "owner": "bytesagain-lab",
+  "slug": "container-analyzer",
+  "displayName": "Container Analyzer",
+  "latest": {
+    "version": "2.0.3",
+    "publishedAt": 1774314789801,
+    "commit": null
+  },
+  "history": []
+}
