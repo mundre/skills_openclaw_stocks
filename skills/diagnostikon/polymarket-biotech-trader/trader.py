@@ -20,12 +20,12 @@ KEYWORDS = ['FDA', 'approval', 'CRISPR', 'cancer', 'oncology', 'clinical trial',
 # Risk parameters — declared as tunables in clawhub.json, tunable from Simmer UI.
 # Named SIMMER_* so apply_skill_config() can load automaton-managed overrides.
 MAX_POSITION   = float(os.environ.get("SIMMER_MAX_POSITION",  "35"))
-MIN_VOLUME     = float(os.environ.get("SIMMER_MIN_VOLUME",    "5000"))
+MIN_VOLUME     = float(os.environ.get("SIMMER_MIN_VOLUME",    "1000"))
 MAX_SPREAD     = float(os.environ.get("SIMMER_MAX_SPREAD",    "0.1"))
-MIN_DAYS       = int(os.environ.get(  "SIMMER_MIN_DAYS",      "7"))
+MIN_DAYS       = int(os.environ.get(  "SIMMER_MIN_DAYS",      "0"))
 MAX_POSITIONS  = int(os.environ.get(  "SIMMER_MAX_POSITIONS", "6"))
-YES_THRESHOLD  = float(os.environ.get("SIMMER_YES_THRESHOLD", "0.38"))
-NO_THRESHOLD   = float(os.environ.get("SIMMER_NO_THRESHOLD",  "0.62"))
+YES_THRESHOLD  = float(os.environ.get("SIMMER_YES_THRESHOLD", "0.42"))
+NO_THRESHOLD   = float(os.environ.get("SIMMER_NO_THRESHOLD",  "0.58"))
 MIN_TRADE      = float(os.environ.get("SIMMER_MIN_TRADE",     "5"))
 
 _client: SimmerClient | None = None
@@ -63,6 +63,18 @@ def get_client(live: bool = False) -> SimmerClient:
 def find_markets(client: SimmerClient) -> list:
     """Find active markets matching strategy keywords, deduplicated."""
     seen, unique = set(), []
+
+    # Fast markets (may not exist in older SDK)
+    try:
+        for m in client.get_fast_markets():
+            q = getattr(m, "question", "").lower()
+            if m.id not in seen and any(w in q for w in ("fda", "approval", "crispr", "cancer", "vaccine", "drug", "clinical trial")):
+                seen.add(m.id)
+                unique.append(m)
+    except (AttributeError, Exception):
+        pass
+
+    # Keyword search
     for kw in KEYWORDS:
         try:
             for m in client.find_markets(query=kw):
@@ -71,6 +83,17 @@ def find_markets(client: SimmerClient) -> list:
                     unique.append(m)
         except Exception as e:
             print(f"[search] {kw!r}: {e}")
+
+    # Bulk scan fallback
+    try:
+        for m in client.get_markets(limit=200):
+            q = getattr(m, "question", "").lower()
+            if m.id not in seen and any(w in q for w in ("fda", "approval", "crispr", "cancer", "vaccine", "drug", "clinical trial")):
+                seen.add(m.id)
+                unique.append(m)
+    except Exception:
+        pass
+
     return unique
 
 
