@@ -1,6 +1,6 @@
 ---
 name: "Wine"
-description: "Wine makes food & cooking simple. Use when you need wine."
+description: "Record, search, and analyze your wine collection and tasting notes. Use when logging tastings, searching vintages, comparing ratings, or tracking inventory."
 version: "2.0.0"
 author: "BytesAgain"
 homepage: https://bytesagain.com
