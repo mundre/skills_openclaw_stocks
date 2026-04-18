@@ -3,11 +3,16 @@
   "slug": "agent-bom-compliance",
   "displayName": "agent-bom compliance",
   "latest": {
-    "version": "0.76.2",
-    "publishedAt": 1775787208753,
-    "commit": "https://github.com/openclaw/skills/commit/0b3d394bd373c79db7ee7f14ce1925a8ecee5e98"
+    "version": "0.76.4",
+    "publishedAt": 1776058961772,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.76.2",
+      "publishedAt": 1775787208753,
+      "commit": "https://github.com/openclaw/skills/commit/0b3d394bd373c79db7ee7f14ce1925a8ecee5e98"
+    },
     {
       "version": "0.75.14",
       "publishedAt": 1775273261184,
