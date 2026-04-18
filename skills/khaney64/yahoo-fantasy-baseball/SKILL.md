@@ -149,8 +149,8 @@ python3 /home/claw/.openclaw/workspace/skills/yahoo-fantasy-baseball/yahoo-fanta
 ```
 
 Three analysis categories:
-1. **Lineup changes** — optimal batter assignment via constraint solver (position-aware, fills restrictive slots before UTIL). Outputs grouped swap instructions showing who starts, who gets benched, and any intermediate position reshuffles needed (e.g., a UTIL player sliding to 1B to make room). Also checks confirmed MLB batting lineups — players confirmed not in their team's lineup are treated as unavailable (score 0) and will be moved to bench. Players whose games have already started are locked in place (Yahoo locks roster slots at first pitch) and excluded from the solver.
-2. **Pitcher rotation** — probable starters on bench, active pitchers on off days. Only alerts for games that haven't started yet.
+1. **Lineup changes** — optimal batter assignment via constraint solver (position-aware, fills restrictive slots before UTIL). Outputs grouped swap instructions showing who starts (from bench), who gets benched, and any intermediate position reshuffles needed within that chain (e.g., a UTIL player sliding to 1B to make room). Pure position shuffles among active slots (without bench involvement) are omitted. Also checks confirmed MLB batting lineups — players confirmed not in their team's lineup are treated as unavailable (score 0) and will be moved to bench. Players whose games have already started are locked in place (Yahoo locks roster slots at first pitch) and excluded from the solver.
+2. **Pitcher rotation** — priority-based pitcher slot optimization with swap suggestions. Relief pitchers whose teams are playing today are prioritized over non-starting SPs or pitchers whose teams are off. Probable starters get highest priority. Outputs grouped swap instructions (same format as batter swaps). Locked games are excluded.
 3. **IL management** — players with IL designations (IL, IL10, IL15, IL60) not in IL slots, cleared players still in IL. DTD players are excluded since Yahoo does not allow moving them to IL.
 
 Each move includes team, opponent, and score context. Moves to BN may include a `reason` indicator:
@@ -286,8 +286,12 @@ Roster Optimization Suggestions
       ▼ Bench Tyler Fitzgerald (SF, score: 12.0)
         📅  team off today
 
-  PITCHER ROTATION (1 alerts)
-    Gerrit Cole (NYY) is a probable starter today but is on the bench.
+  PITCHER ROTATION (1 swap)
+
+    Swap 1 — P
+      ▶ Start Gerrit Cole (NYY vs BOS, score: 42.1) — probable starter today
+      ▼ Bench Nathan Eovaldi (TEX vs SEA, score: 39.0)
+        💡  not starting today
 
   IL MANAGEMENT (1 suggested)
     Move Zack Wheeler (IL-60) from SP slot to IL to free a roster spot.

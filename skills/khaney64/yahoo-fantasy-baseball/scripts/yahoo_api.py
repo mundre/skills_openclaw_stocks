@@ -182,11 +182,46 @@ def _get_oauth():
     try:
         from yahoo_oauth import OAuth2
         sc = OAuth2(None, None, from_file=str(OAUTH_FILE))
-        return sc
     except Exception as e:
         print(f"Error loading OAuth credentials: {e}", file=sys.stderr)
         print("Try running 'auth' again.", file=sys.stderr)
         sys.exit(1)
+
+    if not sc.token_is_valid():
+        try:
+            sc.refresh_access_token()
+        except Exception as e:
+            print(
+                "Error: Yahoo refresh token is no longer valid. "
+                f"Run 'auth' to re-authenticate. ({e})",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+    return sc
+
+
+def _call_with_refresh(sc, fn, *args, **kwargs):
+    """Call a Yahoo API function; on invalid-cookie errors, refresh once and retry."""
+    try:
+        return fn(*args, **kwargs)
+    except RuntimeError as e:
+        msg = str(e)
+        if (
+            "Invalid cookie" in msg
+            or "token_expired" in msg
+            or "please log in again" in msg
+        ):
+            try:
+                sc.refresh_access_token()
+            except Exception as refresh_err:
+                print(
+                    "Error: Yahoo refresh token is no longer valid. "
+                    f"Run 'auth' to re-authenticate. ({refresh_err})",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            return fn(*args, **kwargs)
+        raise
 
 
 def get_game(season=None):
@@ -218,26 +253,30 @@ def get_league(league_id, season=None):
 
     # Build the full league key: {game_key}.l.{league_id}
     if season is not None:
-        league_ids = gm.league_ids(seasons=[str(season)])
-        # Find the one matching our league_id
-        for lid in league_ids:
-            if lid.endswith(f".l.{league_id}"):
-                return gm.to_league(lid)
+        try:
+            league_ids = _call_with_refresh(sc, gm.league_ids, seasons=[str(season)])
+            for lid in league_ids:
+                if lid.endswith(f".l.{league_id}"):
+                    return gm.to_league(lid)
+        except Exception:
+            # Yahoo may return 403 "Forbidden access" if the user has no
+            # leagues matching the season filter; fall through to manual key.
+            pass
         # If not found in user's leagues, construct the key manually
-        game_id = gm.game_id()
+        game_id = _call_with_refresh(sc, gm.game_id)
         league_key = f"{game_id}.l.{league_id}"
         return gm.to_league(league_key)
     else:
         # Current season — try user's leagues first
         try:
-            league_ids = gm.league_ids()
+            league_ids = _call_with_refresh(sc, gm.league_ids)
             for lid in league_ids:
                 if lid.endswith(f".l.{league_id}"):
                     return gm.to_league(lid)
         except Exception:
             pass
         # Construct key with current game_id
-        game_id = gm.game_id()
+        game_id = _call_with_refresh(sc, gm.game_id)
         league_key = f"{game_id}.l.{league_id}"
         return gm.to_league(league_key)
 

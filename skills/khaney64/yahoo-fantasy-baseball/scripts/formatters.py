@@ -1011,15 +1011,39 @@ def format_optimize(suggestions, fmt="text"):
     else:
         lines.append("    No lineup changes needed — lineup looks good.")
 
-    # Pitcher rotation
+    # Pitcher rotation (swap groups + alerts)
+    pitcher_swap_groups = suggestions.get("pitcher_swap_groups", [])
     pitcher_alerts = suggestions.get("pitcher_alerts", [])
+    p_swap_label = "swap" if len(pitcher_swap_groups) == 1 else "swaps"
     lines.append("")
-    lines.append(f"  PITCHER ROTATION ({len(pitcher_alerts)} alerts)")
+    lines.append(f"  PITCHER ROTATION ({len(pitcher_swap_groups)} {p_swap_label})")
+    if pitcher_swap_groups:
+        for i, group in enumerate(pitcher_swap_groups, 1):
+            lines.append("")
+            lines.append(f"    Swap {i} — {group['label']}")
+            for m in group.get("start", []):
+                opp_str = f" vs {m['opponent']}" if m.get("opponent") else ""
+                slot_note = f" at {m['to_slot']}" if group.get("reshuffle") else ""
+                reason_str = f" — {m['reason']}" if m.get("reason") else ""
+                lines.append(f"      ▶ Start {m['player']}{slot_note} ({m['team']}{opp_str}, score: {m['score']}){reason_str}")
+            for m in group.get("reshuffle", []):
+                lines.append(f"      ↔ Move {m['player']} from {m['from_slot']} → {m['to_slot']}")
+            for m in group.get("bench", []):
+                opp_str = f" vs {m['opponent']}" if m.get("opponent") else ""
+                lines.append(f"      ▼ Bench {m['player']} ({m['team']}{opp_str}, score: {m['score']})")
+                reason = m.get("reason", "")
+                if reason:
+                    if "off today" in reason.lower():
+                        lines.append(f"        📅  {reason}")
+                    elif "not starting" in reason.lower():
+                        lines.append(f"        💡  {reason}")
+                    else:
+                        lines.append(f"        💡  {reason}")
     if pitcher_alerts:
         for a in pitcher_alerts:
-            lines.append(f"    {a['message']}")
-    else:
-        lines.append("    No pitcher rotation issues.")
+            lines.append(f"    ⚠  {a['message']}")
+    if not pitcher_swap_groups and not pitcher_alerts:
+        lines.append("    No pitcher rotation changes needed.")
 
     # IL moves
     il_moves = suggestions.get("il_moves", [])
@@ -1032,7 +1056,7 @@ def format_optimize(suggestions, fmt="text"):
         lines.append("    No IL moves needed.")
 
     lines.append("")
-    total = len(swap_groups) + len(pitcher_alerts) + len(il_moves)
+    total = len(swap_groups) + len(pitcher_swap_groups) + len(pitcher_alerts) + len(il_moves)
     lines.append(f"Total: {total} suggestion(s)")
 
     if fmt == "discord":
