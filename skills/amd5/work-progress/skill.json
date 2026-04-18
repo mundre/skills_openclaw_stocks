@@ -1,8 +1,8 @@
 {
   "name": "Work Progress",
-  "description": "工作进度检查技能 - 定期检查待办事项 + 子代理超时/消失检测与自动恢复（静默模式）",
-  "version": "4.0.2",
+  "description": "工作进度检查技能 - 定期检查待办事项 + 子代理超时检测与自动恢复 + 全量会话监控(全JS)",
+  "version": "4.0.6",
   "identifier": "work-progress",
-  "author": "前端 ⚡",
+  "author": "c32",
   "category": "productivity"
 }
