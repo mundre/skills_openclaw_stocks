@@ -1,0 +1,11 @@
+{
+  "owner": "lbs-bmap",
+  "slug": "baidu-map-webapi",
+  "displayName": "Baidu Map WebAPI（百度地图官方Web服务 SKills）",
+  "latest": {
+    "version": "1.0.7",
+    "publishedAt": 1775545480918,
+    "commit": null
+  },
+  "history": []
+}
