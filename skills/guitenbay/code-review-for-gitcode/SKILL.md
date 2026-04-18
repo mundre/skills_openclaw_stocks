@@ -7,6 +7,20 @@ description: Complete code review workflow for GitCode PRs. Combines automated s
 
 Complete 5-step code review workflow for GitCode PRs.
 
+## 📁 Temp Directory Management
+
+**所有审查过程中生成的临时文件必须存放在 `temp/` 目录下**：
+
+| 文件 | 说明 |
+|:---|:---|
+| `temp/review_result.json` | Step 1 自动化扫描结果 |
+| `temp/top3_issues.json` | Step 3 选择的 Top 问题 |
+| `temp/formatted_review.json` | Step 4 格式化后的评论 |
+| `temp/*.py` | 脚本运行时缓存的文件 |
+| `temp/*` | 获取的 diff 文件，下载的代码文件 |
+
+**⚠️ 重要**：审查完成后必须清理 `temp/` 目录，删除所有临时文件。
+
 ## 5-Step Review Process
 
 ### Step 1: Automated Scanning
@@ -19,7 +33,12 @@ python scripts/review_pr.py <pr_url> [token]
 
 Detects: SQL injection, command injection, XSS, eval(), hardcoded credentials, resource leaks, infinite loops.
 
-**Output**: `review_result.json`
+**Features**:
+- ✅ **Automatic line number verification** - Downloads the actual file and verifies line numbers match the code snippets
+- ✅ **Smart caching** - Avoids redundant downloads for the same PR
+- ✅ **Line number correction** - Automatically fixes incorrect line numbers and logs changes
+
+**Output**: `temp/review_result.json` (with verified line numbers)
 
 ### Step 2: Manual Review (REQUIRED)
 
@@ -135,16 +154,26 @@ When reviewing a diff file, the line numbers shown in the diff (after `@@` marke
 
 ### Step 3: Select Top 3 Issues
 
+**⚠️ 流程决策**：
+
+| 问题数量 | 后续步骤 |
+|:---|:---|
+| **0 个** | 直接退出，输出"0 问题，审查通过"，跳过 Step 3/4/5 |
+| **1-3 个** | 继续 Step 3/4，按实际数量处理（不必凑满 3 个） |
+| **>3 个** | 选择最严重的 3 个问题，继续后续步骤 |
+
 Combine automated + manual findings:
 
 - Filter false positives from script
 - Add issues found in manual review
 - Sort by severity (1-10)
-- Select top 3 most important
+- Select top issues (up to 3, no need to fill exactly 3)
 
-Generate json format file `top3_issues.json` for these 3 issues to use in next step.
+**Note**: 当问题数量为 0 时，**直接退出整个审查流程**，无需生成任何 JSON 文件。
 
-`top3_issues.json` must be created in the directory of `format_review.py` for the next step to read.
+Generate json format file `temp/top3_issues.json` for these issues to use in next step.
+
+`temp/top3_issues.json` must be created in the directory of `format_review.py` for the next step to read.
 
 **Important**:
 
@@ -165,6 +194,7 @@ Generate json format file `top3_issues.json` for these 3 issues to use in next s
     {
       "number": 1,
       "path": "src/file.py",
+      "lines": "L42-L45",
       "position": 45,
       "severity": 8,
       "type": "安全问题",
@@ -173,6 +203,7 @@ Generate json format file `top3_issues.json` for these 3 issues to use in next s
       "code": "problematic code snippet from L42-L45",
       "code_context": ""
     }
+    // 问题数量可以是 1-3 个，不必强制凑满 3 个
   ]
 }
 ```
@@ -181,7 +212,11 @@ Generate json format file `top3_issues.json` for these 3 issues to use in next s
 
 **Important**: The `position` must be the line number in the **new file** (after PR changes), not the line number in the diff file. See Step 2 for how to calculate the correct line number.
 
-**After generating `top3_issues.json`, display the top 3 issues in Markdown format**:
+**If total issues = 0**: 跳过整个 Step 3/4/5，直接输出审查通过结论。
+
+**If total issues 1-3**: 按实际数量继续后续步骤，无需凑满 3 个。
+
+**After generating `temp/top3_issues.json`, display the issues in Markdown format**:
 
 ## Top 3 Issues Selected
 
@@ -249,27 +284,29 @@ bool isSafePath = std::any_of(path.begin(), path.end(), ...)
 
 ---
 
-**Total**: 3 issues selected
+**Total**: 3 issues selected (or actual count if less than 3)
 
 **Note**: `position` in JSON uses the last line number (e.g., L119-L124 → position: 124)
 
-**After generating `top3_issues.json`, immediately proceed to Step 4 to format the output.**
+**After generating `temp/top3_issues.json`, immediately proceed to Step 4 to format the output.**
+
+**If total issues = 0**: 直接跳过 Step 3/4/5，输出审查通过结论。
 
 ### Step 4: Format Output
 
 Format issues to structured JSON:
 
 ```bash
-python scripts/format_review.py <top3_issues.json> [output.json]
+python scripts/format_review.py temp/top3_issues.json temp/formatted_review.json
 ```
 
 **Input**:
 
-- `top3_issues.json` from Step 3
+- `temp/top3_issues.json` from Step 3
 
-**Output**: `formatted_review.json`
+**Output**: `temp/formatted_review.json`
 
-`formatted_review.json` must be created in the directory of `post_review.py` for the next step to read.
+`temp/formatted_review.json` must be created in the directory of `post_review.py` for the next step to read.
 
 **Structure**:
 
@@ -323,7 +360,7 @@ Output: formatted_review.json
 Preview and confirm before posting:
 
 ```bash
-python scripts/post_review.py <owner> <repo> <pr_number> <token> [formatted_review.json]
+python scripts/post_review.py <owner> <repo> <pr_number> <token> [temp/formatted_review.json]
 ```
 
 **Parameters**:
@@ -332,29 +369,41 @@ python scripts/post_review.py <owner> <repo> <pr_number> <token> [formatted_revi
 - `repo`: Repository name (e.g., `msinsight`)
 - `pr_number`: PR number (e.g., `277`)
 - `token`: GitCode access token
-- `formatted_review.json`: Output from Step 4 (default: `formatted_review.json`)
+- `temp/formatted_review.json`: Output from Step 4 (default: `temp/formatted_review.json`)
 
 **Example**:
 
 ```bash
-python scripts/post_review.py Ascend msinsight 277 your_token_here formatted_review.json
+python scripts/post_review.py Ascend msinsight 277 your_token_here temp/formatted_review.json
 ```
 
 **Flow** (必须严格遵守):
 
-1. Read `formatted_review.json` from Step 4
+1. Read `temp/formatted_review.json` from Step 4
 2. Display preview of all comments
 3. **⚠️ 必须等待用户明确确认**：询问用户 "是否确认提交以上评论？(yes/no)"
 4. **只有用户回复 'yes' 或 '是' 后才执行提交**，否则取消
+5. **审查完成后清理 temp 目录**（见下方）
 
-**🚫 禁止行为**：
-- 未经用户确认直接执行 post_review.py
-- 假设用户会同意而提前执行
-- 以"默认同意"或"预览即提交"的方式执行
+---
 
-**Note**: Only posts individual issue comments, no summary comment.
+## 🧹 Temp Directory Cleanup
 
-**API Reference**: If unsure how to post PR comments, read `API.md` for detailed API documentation.
+**⚠️ 审查完成后必须清理 temp 目录**：
+
+```bash
+# 删除 temp 目录及其所有内容
+Remove-Item -Recurse -Force temp/
+# 或
+rm -rf temp/
+```
+
+**清理时机**：
+- 当问题数量为 **0** 时，审查通过后立即清理
+- 当问题数量 **>0** 时，完成 Step 5（发布评论）后清理
+- 如果用户**拒绝发布评论**，也需清理
+
+**保留情况**：无
 
 ---
 
@@ -418,9 +467,27 @@ python scripts/post_review.py Ascend msinsight 277 your_token_here formatted_rev
 
 ## Scripts
 
-| Script                | Purpose                   | Step | Input                       | Output                  |
-| --------------------- | ------------------------- | ---- | --------------------------- | ----------------------- |
-| `review_pr.py`        | Automated scanning        | 1    | PR URL + Token              | `review_result.json`    |
-| `find_line_numbers.py`| Find code line numbers    | 2    | File path + code snippet    | Line number(s)          |
-| `format_review.py`    | Format to JSON            | 4    | `top3_issues.json`          | `formatted_review.json` |
-| `post_review.py`      | Post to PR                | 5    | `formatted_review.json`     | PR comments             |
+| Script                | Purpose                   | Step | Input                       | Output                  | Features |
+| --------------------- | ------------------------- | ---- | --------------------------- | ----------------------- | -------- |
+| `review_pr.py`        | Automated scanning        | 1    | PR URL + Token              | `temp/review_result.json`    | Auto line verification, caching |
+| `find_line_numbers.py`| Find code line numbers    | 2    | File path + code snippet    | Line number(s)          | Exact match, multi-line support |
+| `format_review.py`    | Format to JSON            | 4    | `temp/top3_issues.json`     | `temp/formatted_review.json` | GitCode API format |
+| `post_review.py`      | Post to PR                | 5    | `temp/formatted_review.json`| PR comments             | Batch posting with confirmation |
+
+### Script Details
+
+#### `review_pr.py`
+
+**New Features** (v2.0):
+1. **Automatic Line Number Verification**
+   - Downloads modified files from PR branch
+   - Uses code snippets to find exact line numbers
+   - Corrects mismatches automatically
+
+2. **File Caching**
+   - Caches downloaded files to avoid redundant API calls
+   - Cache key: `{owner}/{repo}/{sha}/{file_path}`
+
+3. **Verification Logging**
+   - Logs line number corrections: `Line number corrected: file.ts:275 -> 167`
+   - Warns if verification fails

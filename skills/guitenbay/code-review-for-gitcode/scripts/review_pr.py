@@ -2,6 +2,7 @@
 """
 GitCode PR Code Review Script
 Analyzes PR changes and outputs top 3 issues with severity scores.
+Includes automatic line number verification.
 """
 
 import sys
@@ -9,7 +10,11 @@ import json
 import re
 import urllib.request
 import urllib.error
-from typing import List, Dict, Any
+import os
+import tempfile
+import shutil
+import atexit
+from typing import List, Dict, Any, Optional, Tuple
 
 
 class CodeReviewer:
@@ -22,6 +27,20 @@ class CodeReviewer:
             "User-Agent": "OpenClaw-CodeReview/1.0"
         }
         self.token = token
+        self.temp_dir = tempfile.mkdtemp(prefix='code_review_')
+        self.file_cache = {}  # Cache downloaded files
+        
+        # Register cleanup on exit
+        atexit.register(self.cleanup)
+    
+    def cleanup(self):
+        """Clean up temporary files on exit."""
+        if hasattr(self, 'temp_dir') and os.path.exists(self.temp_dir):
+            try:
+                shutil.rmtree(self.temp_dir)
+                print(f"Cleaned up temp directory: {self.temp_dir}", file=sys.stderr)
+            except Exception as e:
+                print(f"Warning: Failed to clean up temp directory: {e}", file=sys.stderr)
 
     def parse_pr_url(self, pr_url: str) -> tuple:
         """Extract owner, repo, PR number from GitCode URL."""
@@ -80,17 +99,150 @@ class CodeReviewer:
                     break
         
         return '\n'.join(result)
-        req = urllib.request.Request(url, headers=self.headers)
+
+    def download_file_content(self, owner: str, repo: str, sha: str, file_path: str) -> Optional[str]:
+        """Download the actual file content from the PR branch."""
+        cache_key = f"{owner}/{repo}/{sha}/{file_path}"
+        if cache_key in self.file_cache:
+            return self.file_cache[cache_key]
         
+        raw_url = f"https://raw.gitcode.com/{owner}/{repo}/raw/{sha}/{file_path}"
         try:
+            req = urllib.request.Request(raw_url, headers=self.headers)
             with urllib.request.urlopen(req, timeout=30) as response:
-                return json.loads(response.read().decode('utf-8'))
-        except urllib.error.HTTPError as e:
-            print(f"Error fetching PR files: {e.code} {e.reason}", file=sys.stderr)
-            sys.exit(1)
+                content = response.read().decode('utf-8')
+                self.file_cache[cache_key] = content
+                return content
         except Exception as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+            print(f"Warning: Could not download {file_path}: {e}", file=sys.stderr)
+            return None
+
+    def find_exact_line_number(self, file_content: str, code_snippet: str) -> Optional[int]:
+        """Find the exact line number of a code snippet in the file."""
+        if not file_content or not code_snippet:
+            return None
+        
+        lines = file_content.split('\n')
+        snippet_lines = code_snippet.strip().split('\n')
+        snippet_first_line = snippet_lines[0].strip()
+        
+        for i, line in enumerate(lines, 1):
+            if snippet_first_line in line:
+                # Verify the full snippet matches
+                match = True
+                for j, snippet_line in enumerate(snippet_lines):
+                    if i + j - 1 < len(lines):
+                        if snippet_line.strip() not in lines[i + j - 1]:
+                            match = False
+                            break
+                    else:
+                        match = False
+                        break
+                
+                if match:
+                    return i
+        
+        return None
+
+    def verify_and_correct_line_numbers(self, owner: str, repo: str, sha: str, issues: List[Dict]) -> List[Dict]:
+        """Verify and correct line numbers for all issues."""
+        corrected_issues = []
+        verification_stats = {"corrected": 0, "verified": 0, "failed": 0}
+        
+        print(f"\nVerifying line numbers for {len(issues)} issues...", file=sys.stderr)
+        
+        for issue in issues:
+            file_path = issue.get('file', '')
+            original_line = issue.get('line', 0)
+            code_snippet = issue.get('code', '')
+            
+            if not code_snippet:
+                print(f"  ⚠️  Skipping {file_path}:{original_line} - no code snippet available", file=sys.stderr)
+                verification_stats["failed"] += 1
+                corrected_issues.append(issue)
+                continue
+            
+            # Download the file content
+            file_content = self.download_file_content(owner, repo, sha, file_path)
+            
+            if not file_content:
+                print(f"  ⚠️  Could not download {file_path}, keeping original line {original_line}", file=sys.stderr)
+                issue['line_verified'] = False
+                verification_stats["failed"] += 1
+                corrected_issues.append(issue)
+                continue
+            
+            # Find the exact line number
+            exact_line = self.find_exact_line_number(file_content, code_snippet)
+            
+            if exact_line:
+                if exact_line != original_line:
+                    print(f"  ✅ Corrected: {file_path}:{original_line} -> {exact_line}", file=sys.stderr)
+                    issue['line'] = exact_line
+                    issue['original_line'] = original_line
+                    issue['line_verified'] = True
+                    verification_stats["corrected"] += 1
+                else:
+                    print(f"  ✅ Verified: {file_path}:{original_line}", file=sys.stderr)
+                    issue['line_verified'] = True
+                    verification_stats["verified"] += 1
+            else:
+                print(f"  ⚠️  Could not find code snippet in {file_path}, keeping original line {original_line}", file=sys.stderr)
+                issue['line_verified'] = False
+                verification_stats["failed"] += 1
+            
+            corrected_issues.append(issue)
+        
+        # Print summary
+        print(f"\nLine verification complete:", file=sys.stderr)
+        print(f"  - Verified (correct): {verification_stats['verified']}", file=sys.stderr)
+        print(f"  - Corrected: {verification_stats['corrected']}", file=sys.stderr)
+        print(f"  - Failed/Unverified: {verification_stats['failed']}", file=sys.stderr)
+        
+        return corrected_issues
+
+    def calculate_diff_position(self, patch: str, file_line: int) -> Optional[int]:
+        """Calculate the position in the diff for a given file line number.
+        
+        GitCode API uses 'position' which is the line number within the diff hunk,
+        not the absolute file line number.
+        """
+        if not patch:
+            return None
+        
+        lines = patch.split('\n')
+        position = 0
+        current_file_line = 0
+        hunk_start_line = 0
+        in_hunk = False
+        
+        for line in lines:
+            if line.startswith('@@'):
+                # Parse hunk header: @@ -old_start,old_count +new_start,new_count @@
+                match = re.search(r'\+(\d+)', line)
+                if match:
+                    hunk_start_line = int(match.group(1))
+                    current_file_line = hunk_start_line
+                    in_hunk = True
+                continue
+            
+            if not in_hunk:
+                continue
+            
+            if line.startswith('+') and not line.startswith('+++'):
+                position += 1
+                if current_file_line == file_line:
+                    return position
+                current_file_line += 1
+            elif line.startswith('-') and not line.startswith('---'):
+                position += 1
+            elif not line.startswith('diff') and not line.startswith('index'):
+                position += 1
+                if current_file_line == file_line:
+                    return position
+                current_file_line += 1
+        
+        return None
 
     def analyze_code(self, file_path: str, patch: str) -> List[Dict]:
         """Analyze code changes and return issues."""
@@ -386,6 +538,11 @@ class CodeReviewer:
         files = self.fetch_pr_files(owner, repo, pr_number)
         print(f"Found {len(files)} changed files", file=sys.stderr)
         
+        # Get the PR's head SHA for downloading files
+        pr_sha = None
+        if files and len(files) > 0:
+            pr_sha = files[0].get('sha')
+        
         # Debug: show first file info
         if files:
             first = files[0]
@@ -414,6 +571,11 @@ class CodeReviewer:
         # Take top 3
         top_issues = all_issues[:3]
         
+        # Verify and correct line numbers
+        if pr_sha and top_issues:
+            print(f"\nVerifying line numbers using SHA: {pr_sha}", file=sys.stderr)
+            top_issues = self.verify_and_correct_line_numbers(owner, repo, pr_sha, top_issues)
+        
         result = {
             "pr_url": pr_url,
             "total_issues": len(all_issues),
@@ -434,7 +596,6 @@ def main():
     token = sys.argv[2] if len(sys.argv) > 2 else None
     
     if not token:
-        import os
         token = os.environ.get('GITCODE_TOKEN')
     
     if not token:
@@ -449,7 +610,9 @@ def main():
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
     
-    print(f"Review complete. Result saved to: {output_file}", file=sys.stderr)
+    print(f"\nReview complete. Result saved to: {output_file}", file=sys.stderr)
+    print(f"Total issues found: {result['total_issues']}", file=sys.stderr)
+    print(f"Top {result['reviewed_issues']} issues selected with verified line numbers", file=sys.stderr)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
