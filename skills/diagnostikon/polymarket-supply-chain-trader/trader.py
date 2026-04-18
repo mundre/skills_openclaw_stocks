@@ -27,15 +27,15 @@ KEYWORDS = [
 # Risk parameters — declared as tunables in clawhub.json, tunable from Simmer UI.
 # Named SIMMER_* so apply_skill_config() can load automaton-managed overrides.
 MAX_POSITION   = float(os.environ.get("SIMMER_MAX_POSITION",  "25"))
-MIN_VOLUME     = float(os.environ.get("SIMMER_MIN_VOLUME",    "5000"))
-MAX_SPREAD     = float(os.environ.get("SIMMER_MAX_SPREAD",    "0.1"))
-MIN_DAYS       = int(os.environ.get(  "SIMMER_MIN_DAYS",      "7"))
-MAX_POSITIONS  = int(os.environ.get(  "SIMMER_MAX_POSITIONS", "5"))
+MIN_VOLUME     = float(os.environ.get("SIMMER_MIN_VOLUME",    "1000"))
+MAX_SPREAD     = float(os.environ.get("SIMMER_MAX_SPREAD",    "0.12"))
+MIN_DAYS       = int(os.environ.get(  "SIMMER_MIN_DAYS",      "0"))
+MAX_POSITIONS  = int(os.environ.get(  "SIMMER_MAX_POSITIONS", "8"))
 # Signal thresholds — buy YES below YES_THRESHOLD, sell NO above NO_THRESHOLD.
 # Position size scales with conviction, adjusted by seasonal shipping cycles
 # and commodity-specific predictability patterns.
-YES_THRESHOLD  = float(os.environ.get("SIMMER_YES_THRESHOLD", "0.38"))
-NO_THRESHOLD   = float(os.environ.get("SIMMER_NO_THRESHOLD",  "0.62"))
+YES_THRESHOLD  = float(os.environ.get("SIMMER_YES_THRESHOLD", "0.42"))
+NO_THRESHOLD   = float(os.environ.get("SIMMER_NO_THRESHOLD",  "0.58"))
 MIN_TRADE      = float(os.environ.get("SIMMER_MIN_TRADE",     "5"))
 
 _client: SimmerClient | None = None
@@ -73,6 +73,19 @@ def get_client(live: bool = False) -> SimmerClient:
 def find_markets(client: SimmerClient) -> list:
     """Find active markets matching strategy keywords, deduplicated."""
     seen, unique = set(), []
+
+    # Fast markets (best for active trading, may not exist in older SDK)
+    try:
+        for m in client.get_fast_markets():
+            q = getattr(m, "question", "").lower()
+            if m.id not in seen and any(w in q for w in ("supply", "shipping", "oil", "gas", "chip",
+                    "semiconductor", "commodity", "freight", "port", "suez", "canal", "lithium")):
+                seen.add(m.id)
+                unique.append(m)
+    except (AttributeError, Exception):
+        pass  # get_fast_markets may not exist in older SDK versions
+
+    # Keyword search
     for kw in KEYWORDS:
         try:
             for m in client.find_markets(query=kw):
@@ -81,6 +94,18 @@ def find_markets(client: SimmerClient) -> list:
                     unique.append(m)
         except Exception as e:
             print(f"[search] {kw!r}: {e}")
+
+    # Bulk scan fallback
+    try:
+        for m in client.get_markets(limit=200):
+            q = getattr(m, "question", "").lower()
+            if m.id not in seen and any(w in q for w in ("supply chain", "shipping", "oil price",
+                    "natural gas", "semiconductor", "chip", "freight", "port", "suez", "lithium")):
+                seen.add(m.id)
+                unique.append(m)
+    except Exception:
+        pass
+
     return unique
 
 
