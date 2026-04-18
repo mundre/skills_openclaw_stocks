@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Comprehensive Aesthetic Scorer - Unified Evaluation Script
-Combines Improved Predictor and NIMA scores with equal weights (50% each)
-Outputs only weighted comprehensive score and integrated evaluation (no individual breakdowns)
+Comprehensive Aesthetic Scorer - Unified Scoring Script
+Combines Improved Predictor and NIMA scores with DYNAMIC WEIGHT based on NIMA's standard deviation.
+Base weights: IAP 45%, NIMA 55% (adjustable: IAP 45%-70%, NIMA 30%-55%)
+All processing is performed locally - no external API calls
 """
 
 import json
@@ -26,118 +27,188 @@ except ImportError:
 
 def calculate_weighted_score(scores):
     """
-    Calculate weighted average of scores (equal weights)
-
-    Args:
-        scores: dict of source -> score
-
-    Returns:
-        dict with weighted score
+    Calculate weighted average with DYNAMIC WEIGHT based on NIMA's standard deviation.
+    
+    Dynamic Weight Logic:
+    - NIMA std (standard deviation) indicates consensus level
+    - High std = controversial = more weight to IAP (content-based)
+    - Low std = consensus = use balanced weights
+    
+    Formula:
+    - Base weights: IAP 45%, NIMA 55%
+    - Dynamic adjustment: IAP weight increases with NIMA std
+    - Penalty: When IAP and NIMA differ greatly, apply small penalty
+    
+    Final Formula:
+    weighted_score = weight_iap * IAP + weight_nima * NIMA - penalty
+    where:
+      weight_iap = 0.45 + (normalized_std * 0.25), capped at [0.45, 0.70]
+      weight_nima = 1 - weight_iap
+      penalty = 0.05 * |IAP - NIMA| (only when diff >= 2.0)
     """
-    # Filter out None values (failed evaluations)
     valid_scores = {k: v for k, v in scores.items() if v is not None}
-
+    
     if not valid_scores:
-        return None, "All evaluations failed"
-
-    # Calculate weighted average (equal weights)
-    weighted_score = sum(valid_scores.values()) / len(valid_scores)
-
+        return None, "All scoring failed"
+    
+    # Extract scores
+    iap_score = valid_scores.get('improved')
+    nima_score = valid_scores.get('nima')
+    nima_std = valid_scores.get('nima_std', 1.5)  # default if not available
+    
+    # Handle single source case
+    if iap_score is None:
+        return {
+            'weighted_score': nima_score,
+            'source_count': 1,
+            'weight_iap': 0,
+            'weight_nima': 1.0,
+            'penalty': 0,
+            'method': 'nima_only'
+        }, None
+    
+    if nima_score is None:
+        return {
+            'weighted_score': iap_score,
+            'source_count': 1,
+            'weight_iap': 1.0,
+            'weight_nima': 0,
+            'penalty': 0,
+            'method': 'iap_only'
+        }, None
+    
+    # Dynamic weight calculation
+    # Normalize NIMA std (empirical range: 0-2.5)
+    normalized_std = min(nima_std / 2.5, 1.0)
+    
+    # IAP weight increases with controversy (std)
+    # Range: 0.45 (consensus) to 0.70 (highly controversial)
+    weight_iap = 0.45 + normalized_std * 0.25
+    weight_nima = 1.0 - weight_iap
+    
+    # Calculate score difference and penalty
+    score_diff = abs(iap_score - nima_score)
+    penalty = 0
+    if score_diff >= 2.0:
+        penalty = 0.05 * score_diff
+    
+    # Final weighted score
+    weighted_score = weight_iap * iap_score + weight_nima * nima_score - penalty
+    
+    # Ensure score stays in valid range [0, 10]
+    weighted_score = max(0, min(10, weighted_score))
+    
     return {
         'weighted_score': weighted_score,
-        'source_count': len(valid_scores)
+        'source_count': len(valid_scores),
+        'weight_iap': weight_iap,
+        'weight_nima': weight_nima,
+        'penalty': penalty,
+        'score_diff': score_diff,
+        'nima_std': nima_std,
+        'normalized_std': normalized_std,
+        'method': 'dynamic_weight'
     }, None
 
 
 def get_score_level(score):
-    """Get Chinese score level"""
+    """Get '从夯到拉' score level"""
     if score >= 9.0:
-        return "优秀", "excellent"
-    elif score >= 7.5:
-        return "很好", "very_good"
+        return "夯", "exceptional"
+    elif score >= 8.0:
+        return "顶级", "excellent"
+    elif score >= 7.0:
+        return "人上人", "very_good"
     elif score >= 6.0:
-        return "良好", "good"
-    elif score >= 4.5:
-        return "一般", "fair"
-    elif score >= 3.0:
-        return "较差", "below_average"
+        return "NPC", "average"
     else:
-        return "差", "poor"
+        return "拉完了", "poor"
 
 
-def synthesize_evaluation(image_path, api_key=None):
+def analyze_image(image_path, api_key=None):
     """
-    Perform comprehensive aesthetic evaluation and synthesize unified report
+    Perform comprehensive aesthetic analysis and return unified report
+    All processing is done locally - no external API calls or data transmission
 
     Args:
-        image_path: Path to image file
+        image_path: Path to image file (local file only)
         api_key: Deprecated parameter (kept for backward compatibility, not used)
 
     Returns:
-        dict with unified evaluation results
+        dict with unified analysis results
     """
     results = {}
     sources_failed = []
-
-    # Execute both evaluations (internal, not shown to user)
-    print("正在执行综合美学评估...", end=" ")
-
-    # 1. Improved Aesthetic Predictor (50% weight)
+    nima_std = 1.5  # default
+    
+    print("正在执行综合美学分析...", end=" ")
+    
+    # 1. Improved Aesthetic Predictor (dynamic weight)
     try:
         if predict_aesthetic:
             result = predict_aesthetic(image_path)
             if result:
                 results['improved'] = result['score']
-    except Exception:
+    except Exception as e:
+        print(f"Warning: Improved Aesthetic Predictor failed: {e}")
         sources_failed.append("Improved Aesthetic Predictor")
-
-    # 2. NIMA Model (50% weight)
+    
+    # 2. NIMA Model (dynamic weight)
     try:
         if predict_with_nima:
             result = predict_with_nima(image_path)
             if result:
                 results['nima'] = result['mean_score']
-    except Exception:
+                nima_std = result.get('std_score', 1.5)
+                results['nima_std'] = nima_std
+    except Exception as e:
+        print(f"Warning: NIMA failed: {e}")
         sources_failed.append("NIMA")
-
+    
     print("完成\n")
-
-    # Calculate weighted comprehensive score (50% each)
+    
+    # Calculate weighted comprehensive score with dynamic weights
     weighted_result, error = calculate_weighted_score(results)
-
+    
     if error:
         print(f"错误: {error}")
         return None
-
+    
     # Get score level
     level_cn, level_en = get_score_level(weighted_result['weighted_score'])
-
-    # Generate unified report (DO NOT show individual scores)
+    
+    # Generate unified report
     unified_report = {
         'weighted_score': weighted_result['weighted_score'],
         'level_cn': level_cn,
         'level_en': level_en,
         'source_count': weighted_result['source_count'],
-        'sources_failed': sources_failed
+        'sources_failed': sources_failed,
+        'method': weighted_result.get('method', 'unknown'),
+        'weight_iap': weighted_result.get('weight_iap'),
+        'weight_nima': weighted_result.get('weight_nima'),
+        'penalty': weighted_result.get('penalty', 0),
+        'score_diff': weighted_result.get('score_diff'),
+        'nima_std': weighted_result.get('nima_std'),
     }
-
+    
     return unified_report
 
 
-def generate_unified_report(evaluation):
-    """Generate unified evaluation report"""
-    score = evaluation['weighted_score']
-    level_cn = evaluation['level_cn']
-
+def generate_report(analysis):
+    """Generate unified analysis report"""
+    score = analysis['weighted_score']
+    level_cn = analysis['level_cn']
+    
     report = f"""
-## 综合美学评估报告
+## 综合美学分析报告
 
 ### 综合评分: {score:.2f}/10 ({level_cn})
 
 ### 评分解读
-基于两个专业评估模型的综合分析，这张照片的最终评分为 {score:.2f} 分。
+基于两个专业评分模型的综合分析，这张照片的最终评分为 {score:.2f} 分。
 """
-
+    
     # Add interpretation based on score
     if score >= 9.0:
         report += """这是一张达到专业水平的优秀作品。构图、色彩、光线、技术质量各方面都表现出色，几乎无瑕。
@@ -163,12 +234,12 @@ def generate_unified_report(evaluation):
         report += """这张照片存在严重的美学和技术问题。多个方面需要全面改进。
 建议从基础摄影技巧开始学习，逐步提升构图、光线、色彩和曝光控制能力。
 """
-
+    
     report += """
 
 #### 构图评价
-综合两个评估模型的分析，这张照片的构图"""
-
+综合两个评分模型的分析，这张照片的构图"""
+    
     # Dynamic composition analysis based on score
     if score >= 7.5:
         report += """出色。视觉主体突出，元素布局合理，引导线运用得当，层次分明。
@@ -186,12 +257,12 @@ def generate_unified_report(evaluation):
         report += """较弱。构图存在明显问题，如主体不突出、元素杂乱、平衡感缺失等。
 建议系统学习摄影构图原理，参考优秀作品的构图方式。
 """
-
+    
     report += """
 
 #### 色彩评价
-综合两个评估模型的分析，这张照片的色彩"""
-
+综合两个评分模型的分析，这张照片的色彩"""
+    
     if score >= 7.5:
         report += """非常和谐。色彩搭配恰当，饱和度和色温控制出色，营造了良好的视觉氛围。
 色彩的运用增强了照片的美学表现力。
@@ -208,12 +279,12 @@ def generate_unified_report(evaluation):
         report += """较弱。色彩运用存在明显问题，如色偏、饱和度过高或过低、色彩杂乱等。
 需要深入学习色彩理论和后期调色技巧。
 """
-
+    
     report += """
 
 #### 光线评价
-综合两个评估模型的分析，这张照片的光线"""
-
+综合两个评分模型的分析，这张照片的光线"""
+    
     if score >= 7.5:
         report += """运用出色。光线的方向、质量和强度都控制得当，塑造了良好的立体感和氛围。
 曝光准确，高光和阴影细节都得到保留。
@@ -230,12 +301,12 @@ def generate_unified_report(evaluation):
         report += """运用较弱。曝光控制存在明显问题，光线运用不当影响整体效果。
 需要系统学习曝光原理和光线控制技巧。
 """
-
+    
     report += """
 
 #### 技术质量评价
-综合两个评估模型的分析，这张照片的技术质量"""
-
+综合两个评分模型的分析，这张照片的技术质量"""
+    
     if score >= 7.5:
         report += """优秀。清晰度高，细节丰富，噪点控制良好，动态范围得当。
 技术执行达到专业水平，为美学表现提供了坚实的技术基础。
@@ -252,13 +323,13 @@ def generate_unified_report(evaluation):
         report += """较差。技术质量存在明显问题，如模糊、噪点严重、细节丢失等。
 需要改进拍摄设备和技术，确保基础技术质量达标。
 """
-
+    
     report += """
 ### 改进建议
 
 #### 拍摄技巧
 """
-
+    
     # Dynamic suggestions based on score
     if score >= 7.5:
         report += """1. 尝试不同季节、不同时间段、不同角度拍摄，发掘更多创意可能
@@ -283,11 +354,10 @@ def generate_unified_report(evaluation):
 3. 掌握最基本的构图、曝光、对焦技巧
 4. 建议参加摄影课程或跟随有经验的摄影师学习
 """
-
-    report += """
-#### 后期处理
+    
+    report += """#### 后期处理
 """
-
+    
     if score >= 7.5:
         report += """1. 轻微调整即可，保持自然真实
 2. 可以尝试不同的调色风格，发掘个人特色
@@ -311,11 +381,10 @@ def generate_unified_report(evaluation):
 3. 多看多学多练，参考大量优秀后期作品
 4. 建议：前期拍好比后期修好更重要
 """
-
-    report += """
-#### 构图优化
+    
+    report += """#### 构图优化
 """
-
+    
     if score >= 7.5:
         report += """1. 尝试更多创意构图方式，突破常规
 2. 考虑加入前景、中景、远景，增强层次感
@@ -339,22 +408,22 @@ def generate_unified_report(evaluation):
 3. 学习构图的基本原则，如平衡、对比、节奏等
 4. 多参考和学习优秀摄影作品的构图方式
 """
-
+    
     report += f"""
 ### 总体评价
 这张照片的最终综合评分为 {score:.2f} 分，属于{level_cn}水平。
 """
-
+    
     # Add specific overall evaluation
     if score >= 8.5:
-        report += """这是一张非常出色的作品，两个专业评估模型都给予了高度评价。
+        report += """这是一张非常出色的作品，两个专业评分模型都给予了高度评价。
 构图、色彩、光线、技术质量各方面都达到了优秀水平，具有专业水准。
 可以作为您的代表作，适合专业展示、商业用途和摄影比赛。
 继续发挥这种高水平，在创意和细节上追求完美，您会创作出更多优秀作品！
 """
     elif score >= 7.0:
         report += """这是一张质量很高的作品，展示了扎实的摄影技巧和良好的审美。
-两个专业评估模型总体认可这张照片的质量，虽然存在一些改进空间，但整体效果令人满意。
+两个专业评分模型总体认可这张照片的质量，虽然存在一些改进空间，但整体效果令人满意。
 建议在保持现有水平的基础上，在细节和创意上进一步提升，您会达到更高的专业水准。
 """
     elif score >= 5.5:
@@ -372,36 +441,36 @@ def generate_unified_report(evaluation):
 摄影是一门需要不断学习和练习的艺术，保持耐心和热情，逐步提升您的技能。
 多看多学多拍，参考优秀作品，您一定会不断进步！
 """
-
+    
     return report
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Unified comprehensive aesthetic evaluation')
+    parser = argparse.ArgumentParser(description='Unified comprehensive aesthetic analysis')
     parser.add_argument('image_path', type=str, help='Path to image file')
     parser.add_argument('--api-key', type=str, default=None, help='(Deprecated) API key parameter - kept for backward compatibility, not used')
     parser.add_argument('--json', action='store_true', help='Output as JSON')
-
+    
     args = parser.parse_args()
-
+    
     # Validate image exists
     if not Path(args.image_path).exists():
         print(f"错误: 图片文件未找到: {args.image_path}")
         sys.exit(1)
-
-    # Perform comprehensive evaluation
-    evaluation = synthesize_evaluation(args.image_path, args.api_key)
-
-    if evaluation is None:
+    
+    # Perform comprehensive analysis
+    analysis = analyze_image(args.image_path, args.api_key)
+    
+    if analysis is None:
         sys.exit(1)
-
+    
     # Generate and display unified report
     if args.json:
-        print(json.dumps(evaluation, indent=2))
+        print(json.dumps(analysis, indent=2))
     else:
-        report = generate_unified_report(evaluation)
+        report = generate_report(analysis)
         print(report)
-
+    
     print("="*70 + "\n")
 
 

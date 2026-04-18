@@ -1,24 +1,48 @@
 {
   "skill_name": "aesthetic-scorer",
-  "version": "1.4.4",
+  "version": "1.7.0",
+  "environment_variables": {
+    "AESTHETIC_SCORER_MODEL_DIR": "Override IAP model directory (default: F:\\software\\skill\\aesthetic-scorer\\models\\improved-aesthetic-predictor)",
+    "AESTHETIC_SCORER_NIMA_DIR": "Override NIMA model directory (default: F:\\software\\skill\\aesthetic-scorer\\models\\neural-image-assessment)"
+  },
   "models": {
     "improved_predictor": {
       "enabled": true,
-      "model_path": "improved-aesthetic-predictor/model.pth",
+      "model_dir": "F:\\software\\skill\\aesthetic-scorer\\models\\improved-aesthetic-predictor",
+      "model_path": "F:\\software\\skill\\aesthetic-scorer\\models\\improved-aesthetic-predictor\\sac+logos+ava1-l14-linearMSE.pth",
       "model_size_mb": 50,
       "response_time": "<1s",
       "offline": true,
-      "weight": 0.5
+      "base_weight": 0.45,
+      "weight_range": [0.45, 0.70],
+      "description": "CLIP ViT-L/14 + MLP for content-level aesthetic scoring"
     },
     "nima": {
       "enabled": true,
-      "model_path": "neural-image-assessment/resnet_nima.pth",
+      "model_dir": "F:\\software\\skill\\aesthetic-scorer\\models\\neural-image-assessment",
+      "model_path": "F:\\software\\skill\\aesthetic-scorer\\models\\neural-image-assessment\\weights\\mobilenet_weights.h5",
+      "backbone": "mobilenet",
       "model_size_mb": 200,
       "response_time": "2-5s",
       "offline": true,
-      "default_device": "auto",
-      "weight": 0.5
+      "default_device": "cpu",
+      "base_weight": 0.55,
+      "weight_range": [0.30, 0.55],
+      "description": "MobileNet for technical quality scoring, provides std for dynamic weighting"
     }
+  },
+  "dynamic_weight": {
+    "enabled": true,
+    "normalization_factor": 2.5,
+    "base_weight_iap": 0.45,
+    "adjustment_range": 0.25,
+    "divergence_threshold": 2.0,
+    "penalty_coefficient": 0.05,
+    "description": "Dynamic weights based on NIMA standard deviation - higher controversy = more weight to IAP"
+  },
+  "dependencies": {
+    "required": ["torch>=2.0.0", "torchvision>=0.15.0", "transformers>=4.30.0", "tensorflow>=2.12.0", "tf_keras>=2.12.0", "pillow>=10.0.0", "numpy>=1.23.0"],
+    "install_command": "pip install -r requirements.txt"
   },
   "defaults": {
     "analysis_mode": "comprehensive",
@@ -38,14 +62,14 @@
           "english": "Exceptional, top-tier, perfect"
         },
         "8.0-8.9": {
-          "level": "人上人",
-          "description": "极好,超越常人",
-          "english": "Excellent, above average, outstanding"
+          "level": "顶级",
+          "description": "极好,专业水准",
+          "english": "Excellent, professional level"
         },
         "7.0-7.9": {
-          "level": "顶级",
-          "description": "很好,专业水准",
-          "english": "Very good, professional level"
+          "level": "人上人",
+          "description": "很好,超越常人",
+          "english": "Very good, above average, outstanding"
         },
         "6.0-6.9": {
           "level": "NPC",
@@ -67,32 +91,17 @@
     "optimal_resolution": [512, 512]
   },
   "tags": [
-    "latest",
-    "image",
-    "图片",
-    "vision",
-    "视觉",
-    "aesthetic",
-    "美学",
-    "photography",
-    "摄影",
-    "scoring",
-    "评分",
-    "evaluation",
-    "评估",
-    "offline",
-    "离线",
-    "ai-powered",
-    "AI驱动",
-    "bilingual",
-    "双语",
-    "chinese",
-    "中文",
-    "english",
-    "英文",
-    "photo-analysis",
+    "照片评分",
     "照片分析",
-    "deep-learning",
-    "深度学习"
+    "美学评分",
+    "摄影评分",
+    "图片评分",
+    "视觉评分",
+    "photo-scoring",
+    "aesthetic-scoring",
+    "photography",
+    "image",
+    "vision",
+    "offline"
   ]
 }
