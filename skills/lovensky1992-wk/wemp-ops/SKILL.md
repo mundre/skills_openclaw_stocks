@@ -182,9 +182,9 @@ node scripts/setup.mjs
 
 设计指南见 `references/cover-image-guide.md`。三种方案按优先级：
 
-**方案 A（优先）：idealab Image API**
-- `<WORKSPACE>/scripts/generate-image.sh --prompt "prompt" --filename output.jpg --size 2560x1440`
-- 默认模型 `Imagen3Fast`，团队 AK 无额度限制
+**方案 A（优先）：idealab Chat API**
+- `<WORKSPACE>/scripts/generate-image.sh --prompt "prompt" --filename output.jpg`
+- 默认模型 `gemini-3.1-flash-image-preview`，团队 AK 免费，走 /chat/completions 接口
 - 2.35:1 裁剪：生成后 `sips -c 1090 2560 output.jpg`
 - 超时/报错时脚本自动降级到 Gemini Key 轮换
 - ⚠️ 不用 emoji（浏览器截图会变色块），用纯文字 + 几何图形
@@ -229,7 +229,7 @@ node scripts/setup.mjs
 **路径 A：AI 生图**（视觉美感优先，适合大部分场景）
 - **优先级**：idealab Image API → Seedream 5.0 Lite → Gemini 生图 → ComfyUI
   - idealab（首选）: `<WORKSPACE>/scripts/generate-image.sh --prompt "prompt" --filename output.jpg --size 2560x1440`
-    - 默认模型 `Imagen3Fast`，团队AK无额度限制；超时/报错自动降级到 Gemini
+    - 默认模型 `gemini-3.1-flash-image-preview`，团队AK免费；超时/报错自动降级到 Gemini
   - Seedream（降级）: `<WORKSPACE>/scripts/seedream-generate.sh "prompt" output.jpg "2560x1440"`
   - 正文插图 16:9 `2560x1440`
 - **Prompt 按 LDSCS-R 六层结构构造**：Layout → Data → Semantics → Characters → Style → Ratio
