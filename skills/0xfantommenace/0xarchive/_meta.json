@@ -3,11 +3,16 @@
   "slug": "0xarchive",
   "displayName": "0xArchive",
   "latest": {
-    "version": "1.6.0",
-    "publishedAt": 1775325006292,
-    "commit": "https://github.com/openclaw/skills/commit/73d0814ede24754c5f283fb7f4a66f3f6ba1b722"
+    "version": "1.7.0",
+    "publishedAt": 1776470444970,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.6.0",
+      "publishedAt": 1775325006292,
+      "commit": "https://github.com/openclaw/skills/commit/73d0814ede24754c5f283fb7f4a66f3f6ba1b722"
+    },
     {
       "version": "1.5.0",
       "publishedAt": 1773856811886,

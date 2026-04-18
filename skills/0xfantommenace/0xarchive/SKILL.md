@@ -1,6 +1,6 @@
 ---
 name: 0xarchive
-version: 1.6.0
+version: 1.7.0
 description: >
   Query historical crypto market data from 0xArchive across Hyperliquid, Lighter.xyz, and HIP-3.
   Covers orderbooks, trades, candles, funding rates, open interest, liquidations, and data quality.
@@ -93,14 +93,14 @@ Every response follows this shape:
 
 ### HIP-3 (`/v1/hyperliquid/hip3`)
 
-Coin names are **case-sensitive** (e.g., `km:US500`). Orderbook requires Pro+ tier.
+Coin names are **case-sensitive** (e.g., `km:US500`). Free tier includes km:US500 for orderbook and orderbook history; Build+ unlocks all HIP-3 symbols.
 
 | Endpoint | Params | Notes |
 |----------|--------|-------|
 | `GET /instruments` | -- | List HIP-3 instruments |
 | `GET /instruments/{coin}` | -- | Single instrument |
-| `GET /orderbook/{coin}` | `timestamp`, `depth` | Requires Pro+ tier |
-| `GET /orderbook/{coin}/history` | `start`, `end`, `limit`, `cursor`, `depth` | Requires Pro+ tier |
+| `GET /orderbook/{coin}` | `timestamp`, `depth` | Free: km:US500 only. Build+: all HIP-3 symbols. |
+| `GET /orderbook/{coin}/history` | `start`, `end`, `limit`, `cursor`, `depth` | Free: km:US500 only. Build+: all HIP-3 symbols. |
 | `GET /trades/{coin}` | `start`, `end`, `limit`, `cursor` | Trade history |
 | `GET /trades/{coin}/recent` | `limit` | Recent trades (no time range needed) |
 | `GET /candles/{coin}` | `start`, `end`, `limit`, `cursor`, `interval` | OHLCV candles |
@@ -238,6 +238,35 @@ DAY_AGO=$(( NOW - 86400000 ))
 
 For candles with no explicit range, default to a range that makes sense for the interval (e.g., last 7 days for 4h candles, last 30 days for 1d candles).
 
+## Trade Response Fields
+
+Each trade/fill record includes:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `coin` / `symbol` | string | Trading pair symbol |
+| `side` | string | `B` (buy) or `A`/`S` (sell) |
+| `price` | string | Execution price |
+| `size` | string | Trade size |
+| `timestamp` | string | ISO 8601 timestamp |
+| `trade_id` | integer | Unique trade ID |
+| `order_id` | integer | Associated order ID |
+| `crossed` | boolean | `true` = taker, `false` = maker |
+| `fee` | string | Base trading fee |
+| `fee_token` | string | Fee denomination (e.g., USDC) |
+| `closed_pnl` | string | Realized PnL if closing position |
+| `direction` | string | `Open Long`, `Close Short`, `Long > Short`, etc. |
+| `start_position` | string | Position size before trade |
+| `user_address` | string | User's wallet address |
+| `builder_address` | string | Builder address that routed this order. Only present when the order was placed through a builder. |
+| `builder_fee` | string | Builder fee charged on this fill, paid to the builder (quote currency, typically USDC). Only present when `builder_address` is set. |
+| `deployer_fee` | string | HIP-3 deployer fee share (quote currency). Negative for the maker side (rebate), positive for the taker side. HIP-3 only. |
+| `priority_gas` | number | Priority fee **burned in HYPE** (not USDC) for write priority on the Hyperliquid validator queue. Independent of `builder_fee` and `deployer_fee` — paid to the network, not to a builder or deployer. Only present when the order paid for priority. |
+| `cloid` | string | Client order ID |
+| `twap_id` | integer | TWAP execution ID |
+
+`builder_address`, `builder_fee`, `deployer_fee`, `priority_gas`, `cloid`, and `twap_id` are optional — only present when non-zero/non-empty. `deployer_fee` is specific to HIP-3. `priority_gas` appears on any order that paid for write priority (most common on HIP-3 IOC orders).
+
 ## Pagination
 
 When `meta.next_cursor` is present in the response, more data is available. Append `&cursor=VALUE` to fetch the next page:
@@ -257,8 +286,8 @@ curl -s -H "x-api-key: $OXARCHIVE_API_KEY" \
 | Tier | Price | Coins | Orderbook Depth | Lighter Granularity | Historical Depth | Rate Limit |
 |------|-------|-------|-----------------|---------------------|------------------|------------|
 | Free | $0 | BTC only (HIP-3: km:US500 only) | 20 levels | -- | 30 days | 15 RPS |
-| Build | $49/mo | All | 50 levels | checkpoint, 30s, 10s | 1 year | 50 RPS |
-| Pro | $199/mo | All | 100 levels | + 1s | Full history | 150 RPS |
+| Build | $49/mo | All | 200 levels | checkpoint, 30s, 10s | 1 year | 50 RPS |
+| Pro | $199/mo | All | Full depth | + 1s | Full history | 150 RPS |
 | Enterprise | Custom | All | Full depth | + tick | Full history | Custom |
 
 ## Error Handling
@@ -307,6 +336,15 @@ curl -s -H "x-api-key: $OXARCHIVE_API_KEY" \
 NOW=$(( $(date +%s) * 1000 )); MONTH_AGO=$(( NOW - 2592000000 ))
 curl -s -H "x-api-key: $OXARCHIVE_API_KEY" \
   "https://api.0xarchive.io/v1/hyperliquid/funding/ETH?start=$MONTH_AGO&end=$NOW&interval=4h" | jq '.data'
+
+# HIP-3 km:US500 current orderbook (Free tier safe)
+curl -s -H "x-api-key: $OXARCHIVE_API_KEY" \
+  "https://api.0xarchive.io/v1/hyperliquid/hip3/orderbook/km:US500" | jq '.data'
+
+# HIP-3 km:US500 orderbook history (Free tier safe)
+NOW=$(( $(date +%s) * 1000 )); HOUR_AGO=$(( NOW - 3600000 ))
+curl -s -H "x-api-key: $OXARCHIVE_API_KEY" \
+  "https://api.0xarchive.io/v1/hyperliquid/hip3/orderbook/km:US500/history?start=$HOUR_AGO&end=$NOW&limit=10" | jq '.data'
 
 # HIP-3 km:US500 candles (last 24h, 1h interval)
 NOW=$(( $(date +%s) * 1000 )); DAY_AGO=$(( NOW - 86400000 ))
