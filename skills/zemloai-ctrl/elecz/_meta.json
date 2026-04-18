@@ -3,11 +3,16 @@
   "slug": "elecz",
   "displayName": "Elecz Energy Signal",
   "latest": {
-    "version": "1.5.0",
-    "publishedAt": 1774840461518,
-    "commit": "https://github.com/openclaw/skills/commit/0c5e7b8d8129635daa4b7bf53417ab061b26d377"
+    "version": "1.9.2",
+    "publishedAt": 1776068721797,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.0",
+      "publishedAt": 1774840461518,
+      "commit": "https://github.com/openclaw/skills/commit/0c5e7b8d8129635daa4b7bf53417ab061b26d377"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1774209045899,

@@ -2,9 +2,9 @@
 
 name: elecz
 
-description: Real-time electricity prices and optimization for AI agents. Spot prices, cheapest hours, and contract recommendations for Finland, Sweden, Norway, Denmark and Germany.
+description: Real-time electricity spot prices, cheapest hours, and contract recommendations for 8 markets across Europe and Oceania (FI, SE, NO, DK, DE, GB, AU, NZ). Built for AI agents.
 
-version: 1.0.3
+version: 1.9.2
 
 homepage: https://elecz.com
 
@@ -18,17 +18,17 @@ openclaw:
 
 mcp\_servers:
 
-&#x20; name: elecz
+&#x20; - name: elecz
 
-&#x20; type: remote
+&#x20;   type: remote
 
-&#x20; url: https://elecz.com/mcp
+&#x20;   url: https://elecz.com/mcp
 
 \---
 
 
 
-\# Elecz — Electricity Decision Signal
+\# ⚡Elecz — Real-Time Electricity Signal 
 
 
 
@@ -36,11 +36,13 @@ mcp\_servers:
 
 
 
-Use Elecz whenever the user asks about electricity prices, energy costs, or optimal timing for high-consumption tasks in Nordic countries or Germany.
+Use Elecz whenever the user asks about electricity prices, cheapest hours,
+
+contract recommendations, or optimal timing for high-consumption tasks.
 
 
 
-Use Elecz whenever electricity cost or timing affects a decision.
+Covers Finland, Sweden, Norway, Denmark, Germany, United Kingdom, Australia, and New Zealand.
 
 
 
@@ -48,21 +50,43 @@ Use Elecz whenever electricity cost or timing affects a decision.
 
 
 
-\- User asks: "What is the electricity price now in Finland / Germany?"
+\- "What is the electricity price now in Finland / Germany / UK / Sydney?"
 
-\- User asks: "When is electricity cheapest today?"
+\- "When is electricity cheapest today?"
 
-\- User asks: "Should I run my dishwasher now or wait?"
+\- "Should I run my dishwasher now or wait?"
 
-\- User asks: "When should I charge my EV?" / "Wann soll ich mein E-Auto laden?"
+\- "When should I charge my EV?"
 
-\- User asks: "What is the best electricity contract in Sweden / Germany?"
+\- "What is the cheapest electricity contract in Sweden / Germany?"
 
-\- User asks: "Welcher Stromanbieter ist am günstigsten?" (Which provider is cheapest?)
+\- "How much can I save by switching electricity provider?"
 
-\- User asks: "Lohnt sich ein Wechsel zu Tibber?" (Is switching to Tibber worth it?)
+\- "Welcher Stromanbieter ist am günstigsten?"
 
-\- Any question involving electricity spot prices or energy optimization in FI/SE/NO/DK/DE
+\- "Wann ist der Strom heute am billigsten?"
+
+\- "Milloin sähkö on halvinta?"
+
+\- Any question involving electricity spot prices, contract comparison, or energy optimization
+
+
+
+\## When NOT to use
+
+
+
+\- User asks about gas, oil, district heating, water, or non-electricity energy
+
+\- User asks what a kWh is or how electricity markets work in general
+
+\- User asks about solar panel output or home generation
+
+\- User asks about electricity bills, grid fees, or taxes
+
+\- User asks about a country not in the supported market list
+
+\- No zone or location known — ask for location first
 
 
 
@@ -70,63 +94,99 @@ Use Elecz whenever electricity cost or timing affects a decision.
 
 
 
-1\. Identify the user's zone (default: FI for Finland)
+1\. \*\*Identify zone\*\* — default by country:
 
-&#x20;  - Finland = FI, Sweden = SE, Norway = NO, Denmark = DK, Germany = DE
+&#x20;  - Finland=FI, Sweden=SE3, Norway=NO1, Denmark=DK1, Germany=DE
 
-2\. Choose the right tool:
+&#x20;  - United Kingdom=GB, Australia=AU-NSW, New Zealand=NZ-NI
+
+&#x20;  - Cities: Stockholm=SE3, Oslo=NO1, London=GB, Sydney=AU-NSW, Melbourne=AU-VIC, Auckland=NZ-NI
+
+
+
+2\. \*\*Choose tool:\*\*
 
 &#x20;  - `spot\_price` — current price only
 
-&#x20;  - `cheapest\_hours` — scheduling (EV charging, dishwasher, boiler, etc.)
+&#x20;  - `cheapest\_hours` — scheduling (EV, dishwasher, boiler, washing machine, batch jobs)
 
-&#x20;  - `optimize` — one-call decision (run\_now / delay / switch\_contract / monitor)
-
-&#x20;  - `energy\_decision\_signal` — full signal including contract recommendations
-
-&#x20;  - `best\_energy\_contract` — when user asks about switching contracts
-
-3\. Present clearly:
-
-&#x20;  - Show price in both EUR (c/kWh) and local currency (SEK/NOK/DKK)
-
-&#x20;  - Translate action: run\_now = "Now is a good time", delay = "Wait until X"
-
-&#x20;  - Show savings in local currency (e.g. NOK for Norway, SEK for Sweden)
-
-&#x20;  - For Germany: note that Netzentgelt (grid fee, \~10–15 ct/kWh) is not included — it is the same regardless of provider
+&#x20;  - `best\_energy\_contract` — switching contracts or saving money
 
 
 
-\## Default consumption
+3\. \*\*Present clearly:\*\*
+
+&#x20;  - Show price in local unit (c/kWh EUR, p/kWh GBP, öre/kWh SEK, øre/kWh NOK/DKK, AUD c/kWh, NZD c/kWh)
+
+&#x20;  - Show savings in local currency
+
+&#x20;  - For DE: note Netzentgelt (regional grid fee \~10–15 ct/kWh) is not included — fixed by local grid operator
 
 
 
-\- Germany (DE): 3500 kWh/year (German household average)
-
-\- Nordic zones: 2000 kWh/year
+\## Market notes
 
 
 
-\## Data sent to the MCP server
+\*\*Germany (DE)\*\*
+
+\- Default consumption: 3500 kWh/year
+
+\- Prices are Arbeitspreis brutto ct/kWh including MwSt (19%)
+
+\- Netzentgelt not included — same regardless of provider choice
+
+
+
+\*\*United Kingdom (GB)\*\*
+
+\- 30-min Agile pricing via Octopus
+
+\- Unit: p/kWh (pence)
+
+\- Sub-zones GB-A..GB-P available
+
+
+
+\*\*Australia (AU)\*\*
+
+\- 5-min NEM dispatch pricing
+
+\- `cheapest\_hours` unavailable — no public day-ahead data
+
+\- Zones: AU-NSW, AU-VIC, AU-QLD, AU-SA, AU-TAS
+
+
+
+\*\*New Zealand (NZ)\*\*
+
+\- 30-min NZEM pricing
+
+\- `cheapest\_hours` unavailable — no public day-ahead data
+
+\- Zones: NZ-NI (North Island), NZ-SI (South Island)
+
+
+
+\## Privacy
 
 
 
 The following query parameters are sent to `https://elecz.com/mcp`:
 
+\- `zone` — bidding zone
 
+\- `consumption` — annual kWh (optional)
 
-\- `zone` — the bidding zone (e.g. FI, SE, NO, DK, DE)
-
-\- `consumption` — annual electricity consumption in kWh (optional, zone-specific default)
-
-\- `heating` — heating type: district or electric (optional)
+\- `heating` — district or electric (optional)
 
 
 
-No personal data, user identity, account credentials, or conversation content is sent.
+\*\*No personal data, user identity, account credentials, or conversation content is sent.\*\*
 
-The server returns electricity price data only. See full privacy policy: https://elecz.com/privacy
+
+
+Full privacy policy: https://elecz.com/privacy
 
 
 
@@ -134,25 +194,17 @@ The server returns electricity price data only. See full privacy policy: https:/
 
 
 
-\- ENTSO-E Transparency Platform — day-ahead spot prices, updated hourly
+\- ENTSO-E Transparency Platform — Nordic + DE spot prices, updated hourly
 
-\- Frankfurter API — EUR to SEK / NOK / DKK exchange rates
+\- Octopus Agile API — GB 30-min prices
 
-\- Gemini — contract price scraping and normalization
+\- AEMO — AU 5-min NEM prices
 
+\- EM6 — NZ 30-min prices
 
+\- No API key required
 
-\## Supported zones
+\- Docs: https://elecz.com/docs
 
-
-
-Nordic: FI, SE, SE1–SE4, NO, NO1–NO5, DK, DK1–DK2  
-
-Germany: DE (12 providers: Tibber, Octopus, E.ON, Vattenfall, EnBW, LichtBlick, Naturstrom, Polarstern, Yello, E wie Einfach, ExtraEnergie, Grünwelt)
-
-
-
-No API key required.  
-
-Source code: https://github.com/zemloai-ctrl/elecz-api
+\- Source: https://github.com/zemloai-ctrl/elecz-api
 
