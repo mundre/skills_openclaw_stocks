@@ -21,11 +21,143 @@ import base64
 import json
 import os
 import re
+import shutil
 import sys
 import time
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
+
+
+# ---------------------------------------------------------------------------
+# 环境检查
+# ---------------------------------------------------------------------------
+
+def check_uv():
+    """检查 uv 是否安装，未安装则给出安装提示"""
+    if shutil.which("uv") is None:
+        print("错误：未找到 uv 命令。", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("uv 是运行本技能必需的 Python 包管理器。", file=sys.stderr)
+        print("安装方式：", file=sys.stderr)
+        print("  curl -LsSf https://astral.sh/uv/install.sh | sh", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("或使用包管理器：", file=sys.stderr)
+        print("  brew install uv      # macOS", file=sys.stderr)
+        print("  pip install uv       # 有 pip 时", file=sys.stderr)
+        sys.exit(1)
+
+
+# 检查 uv 是否存在
+check_uv()
+
+# 加载 .env 文件（在导入其他模块之前）
+def load_env_files(verbose: bool = False) -> list[Path]:
+    """
+    从多个位置加载 .env 文件，优先级从低到高：
+    1. /workspace/.env (沙箱环境)
+    2. ~/.openclaw/.env (全局配置)
+    3. 技能目录下的 .env (技能本地配置)
+
+    返回实际加载的 .env 文件路径列表
+    """
+    # 获取技能目录路径（脚本所在目录的父目录）
+    script_dir = Path(__file__).parent.resolve()
+    skill_dir = script_dir.parent
+
+    # 按优先级顺序收集（后加载的覆盖先加载的）
+    env_paths: list[Path] = []
+    loaded_paths: list[Path] = []
+
+    # 1. 沙箱环境 /workspace/.env
+    sandbox_env = Path("/workspace/.env")
+    if sandbox_env.exists():
+        env_paths.append(sandbox_env)
+
+    # 2. 全局配置 ~/.openclaw/.env
+    home = Path.home()
+    global_env = home / ".openclaw" / ".env"
+    if global_env.exists():
+        env_paths.append(global_env)
+
+    # 3. 技能目录下的 .env（最高优先级）
+    skill_env = skill_dir / ".env"
+    if skill_env.exists():
+        env_paths.append(skill_env)
+
+    # 手动解析 .env 文件（不依赖 python-dotenv）
+    for env_path in env_paths:
+        try:
+            with open(env_path, 'r', encoding='utf-8') as f:
+                loaded_count = 0
+                for line_num, line in enumerate(f, 1):
+                    original_line = line.rstrip('\n\r')
+                    line = original_line.strip()
+
+                    # 跳过空行
+                    if not line:
+                        continue
+
+                    # 跳过注释行（以 # 开头）
+                    if line.startswith('#'):
+                        continue
+
+                    # 跳过行内注释（KEY=VALUE # comment）
+                    # 但保留引号内的 # 字符
+                    if '#' in line:
+                        # 简单处理：如果不在引号内，则截断
+                        in_quote = None
+                        comment_pos = -1
+                        for i, char in enumerate(line):
+                            if char in '"\'':
+                                if in_quote is None:
+                                    in_quote = char
+                                elif in_quote == char:
+                                    in_quote = None
+                            elif char == '#' and in_quote is None:
+                                comment_pos = i
+                                break
+                        if comment_pos >= 0:
+                            line = line[:comment_pos].rstrip()
+
+                    # 解析 KEY=VALUE 格式
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        key = key.strip()
+                        value = value.strip()
+
+                        # 跳过空键
+                        if not key:
+                            continue
+
+                        # 移除首尾引号（支持单引号、双引号）
+                        if len(value) >= 2:
+                            if (value[0] == value[-1]) and value[0] in '"\'':
+                                value = value[1:-1]
+
+                        # 处理转义字符（简单支持 \\n, \\t, \\" 等）
+                        value = value.replace('\\n', '\n').replace('\\t', '\t')
+                        value = value.replace('\\"', '"').replace("\\'", "'")
+                        value = value.replace('\\\\', '\\')
+
+                        # 设置环境变量（后加载的覆盖先加载的）
+                        os.environ[key] = value
+                        loaded_count += 1
+
+                if loaded_count > 0:
+                    loaded_paths.append(env_path)
+                    if verbose:
+                        print(f"[env] 已加载: {env_path} ({loaded_count} 个变量)", file=sys.stderr)
+
+        except Exception as e:
+            if verbose:
+                print(f"[env] 加载失败 {env_path}: {e}", file=sys.stderr)
+
+    return loaded_paths
+
+
+# 在模块导入时立即加载 .env 文件（非 verbose 模式）
+_loaded_env_files = load_env_files(verbose=False)
 
 MAX_RETRIES = 3
 RETRY_DELAYS = [10, 20, 40]  # 秒
@@ -280,6 +412,18 @@ def generate_openai(config: dict, prompt: str, input_images: list[bytes],
     sys.exit(1)
 
 
+def _safe_b64decode(data: str) -> bytes | None:
+    """安全地解码 base64 数据，处理填充问题"""
+    try:
+        # 自动处理填充
+        padding_needed = 4 - len(data) % 4
+        if padding_needed != 4:
+            data += '=' * padding_needed
+        return base64.b64decode(data)
+    except Exception:
+        return None
+
+
 def _extract_image(data: dict) -> tuple:
     """从多种 OpenAI 兼容响应格式中提取图片数据，返回 (image_bytes, image_url, error_msg)"""
     text_parts: list[str] = []
@@ -296,9 +440,13 @@ def _extract_image(data: dict) -> tuple:
                 url = img.get("image_url", {}).get("url", "")
                 if url.startswith("data:"):
                     b64 = url.split(",", 1)[1]
-                    return base64.b64decode(b64), None, None
+                    decoded = _safe_b64decode(b64)
+                    if decoded:
+                        return decoded, None, None
             if "base64" in img:
-                return base64.b64decode(img["base64"]), None, None
+                decoded = _safe_b64decode(img["base64"])
+                if decoded:
+                    return decoded, None, None
             if "url" in img:
                 return None, img["url"], None
 
@@ -312,12 +460,16 @@ def _extract_image(data: dict) -> tuple:
                 url = part.get("image_url", {}).get("url", "")
                 if url.startswith("data:"):
                     b64 = url.split(",", 1)[1]
-                    return base64.b64decode(b64), None, None
+                    decoded = _safe_b64decode(b64)
+                    if decoded:
+                        return decoded, None, None
 
             if ptype == "image":
                 img = part.get("image", {})
                 if "base64" in img:
-                    return base64.b64decode(img["base64"]), None, None
+                    decoded = _safe_b64decode(img["base64"])
+                    if decoded:
+                        return decoded, None, None
                 if "url" in img:
                     return None, img["url"], None
 
@@ -330,19 +482,25 @@ def _extract_image(data: dict) -> tuple:
         # 直接是 data:image URL
         if content.startswith("data:image"):
             b64 = content.split(",", 1)[1]
-            return base64.b64decode(b64), None, None
+            decoded = _safe_b64decode(b64)
+            if decoded:
+                return decoded, None, None
         # Markdown 格式: ![image](data:image/png;base64,...)
         markdown_match = re.search(r'!\[.*?\]\((data:image/[^;]+;base64,([A-Za-z0-9+/=]+))\)', content)
         if markdown_match:
             b64 = markdown_match.group(2)
-            return base64.b64decode(b64), None, None
+            decoded = _safe_b64decode(b64)
+            if decoded:
+                return decoded, None, None
         text_parts.append(content)
 
     # --- 格式 D: data[].b64_json (DALL-E) ---
     try:
         for item in data.get("data", []):
             if "b64_json" in item:
-                return base64.b64decode(item["b64_json"]), None, None
+                decoded = _safe_b64decode(item["b64_json"])
+                if decoded:
+                    return decoded, None, None
             if "url" in item:
                 return None, item["url"], None
     except (KeyError, IndexError):
@@ -472,40 +630,51 @@ def save_image(image_data: bytes, output_path: Path):
     """将图片数据保存为 PNG 或 JPEG（根据文件后缀）"""
     from PIL import Image as PILImage
 
-    fmt = get_save_format(output_path.name)
-    image = PILImage.open(BytesIO(image_data))
+    try:
+        fmt = get_save_format(output_path.name)
+        image = PILImage.open(BytesIO(image_data))
 
-    if fmt == "JPEG":
-        # JPEG 不支持 alpha 通道
-        if image.mode in ("RGBA", "LA", "P"):
-            rgb = PILImage.new("RGB", image.size, (255, 255, 255))
-            if image.mode == "P":
-                image = image.convert("RGBA")
-            rgb.paste(image, mask=image.split()[-1] if "A" in image.mode else None)
-            image = rgb
-        elif image.mode != "RGB":
-            image = image.convert("RGB")
-        image.save(str(output_path), "JPEG", quality=95)
-    else:
-        if image.mode == "RGBA":
-            rgb = PILImage.new("RGB", image.size, (255, 255, 255))
-            rgb.paste(image, mask=image.split()[3])
-            rgb.save(str(output_path), "PNG")
-        elif image.mode == "RGB":
-            image.save(str(output_path), "PNG")
+        if fmt == "JPEG":
+            # JPEG 不支持 alpha 通道
+            if image.mode in ("RGBA", "LA", "P"):
+                rgb = PILImage.new("RGB", image.size, (255, 255, 255))
+                if image.mode == "P":
+                    image = image.convert("RGBA")
+                rgb.paste(image, mask=image.split()[-1] if "A" in image.mode else None)
+                image = rgb
+            elif image.mode != "RGB":
+                image = image.convert("RGB")
+            image.save(str(output_path), "JPEG", quality=95)
         else:
-            image.convert("RGB").save(str(output_path), "PNG")
+            if image.mode == "RGBA":
+                rgb = PILImage.new("RGB", image.size, (255, 255, 255))
+                rgb.paste(image, mask=image.split()[3])
+                rgb.save(str(output_path), "PNG")
+            elif image.mode == "RGB":
+                image.save(str(output_path), "PNG")
+            else:
+                image.convert("RGB").save(str(output_path), "PNG")
+    except Exception as e:
+        print(f"错误：保存图片失败: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def download_and_save(url: str, output_path: Path, timeout: int):
     """从 URL 下载图片并保存"""
     import httpx
 
-    resp = httpx.get(url, timeout=timeout, follow_redirects=True)
-    if resp.status_code != 200:
-        print(f"错误：下载图片失败 ({resp.status_code})", file=sys.stderr)
+    try:
+        resp = httpx.get(url, timeout=timeout, follow_redirects=True)
+        if resp.status_code != 200:
+            print(f"错误：下载图片失败 ({resp.status_code})", file=sys.stderr)
+            sys.exit(1)
+        save_image(resp.content, output_path)
+    except httpx.TimeoutException:
+        print(f"错误：下载图片超时（{timeout}s）", file=sys.stderr)
         sys.exit(1)
-    save_image(resp.content, output_path)
+    except httpx.RequestError as e:
+        print(f"错误：下载图片请求失败: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 # ---------------------------------------------------------------------------
@@ -555,14 +724,22 @@ def main():
     # ---- 校验 ----
     if not config["api_key"]:
         print("错误：未提供 API 密钥。", file=sys.stderr)
-        print("配置方式：", file=sys.stderr)
+        print("配置方式（按优先级）：", file=sys.stderr)
         print("  1. --api-key 参数", file=sys.stderr)
         print("  2. GEMINI_API_KEY 环境变量", file=sys.stderr)
+        print("  3. 技能目录/.env 文件", file=sys.stderr)
+        print("  4. ~/.openclaw/.env 文件", file=sys.stderr)
+        print("  5. /workspace/.env 文件（沙箱环境）", file=sys.stderr)
         sys.exit(1)
 
     if not config["base_url"]:
         print("错误：未提供 API 端点 URL。", file=sys.stderr)
-        print("配置方式：--base-url / GEMINI_BASE_URL", file=sys.stderr)
+        print("配置方式（按优先级）：", file=sys.stderr)
+        print("  1. --base-url 参数", file=sys.stderr)
+        print("  2. GEMINI_BASE_URL 环境变量", file=sys.stderr)
+        print("  3. 技能目录/.env 文件", file=sys.stderr)
+        print("  4. ~/.openclaw/.env 文件", file=sys.stderr)
+        print("  5. /workspace/.env 文件（沙箱环境）", file=sys.stderr)
         sys.exit(1)
 
     from PIL import Image as PILImage
@@ -650,8 +827,18 @@ def main():
             print("提示：使用 --verbose 查看详细响应内容。", file=sys.stderr)
             sys.exit(1)
 
-    print(f"\n图片已保存：{output_path}")
-    print(f"MEDIA: {output_path}")
+    # 输出图片路径供 agent 提取后用 message 工具发送
+    resolved_path = output_path.resolve()
+    print(f"IMAGE_PATH: {resolved_path}")
+    print(f"图片已保存：{resolved_path}")
+
+    # ---- 清理资源 ----
+    # 关闭所有打开的 PIL Image 对象
+    for img in input_images_pil:
+        try:
+            img.close()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

@@ -3,9 +3,15 @@
   "slug": "wangyan-gemini-image-gen",
   "displayName": "Gemini Image Generator",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773466789551,
-    "commit": "https://github.com/openclaw/skills/commit/b3c3cbad5a1f49b7e0ea47ca95a66b80f94c0d16"
+    "version": "1.0.2",
+    "publishedAt": 1776178291267,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773466789551,
+      "commit": "https://github.com/openclaw/skills/commit/b3c3cbad5a1f49b7e0ea47ca95a66b80f94c0d16"
+    }
+  ]
 }
