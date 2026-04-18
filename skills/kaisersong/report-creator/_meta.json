@@ -3,11 +3,16 @@
   "slug": "report-creator",
   "displayName": "Report Creator",
   "latest": {
-    "version": "1.12.0",
-    "publishedAt": 1775897475323,
-    "commit": "https://github.com/openclaw/skills/commit/c36f54dd4e79fcce0328e239b001d54496b451ff"
+    "version": "1.14.0",
+    "publishedAt": 1776099057452,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.12.0",
+      "publishedAt": 1775897475323,
+      "commit": "https://github.com/openclaw/skills/commit/c36f54dd4e79fcce0328e239b001d54496b451ff"
+    },
     {
       "version": "1.8.3",
       "publishedAt": 1775302530499,
