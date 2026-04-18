@@ -3,11 +3,16 @@
   "slug": "polymarket-btc-weekend-volatility-trader",
   "displayName": "Polymarket Btc Weekend Volatility Trader",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1775319197670,
-    "commit": "https://github.com/openclaw/skills/commit/9384c22a4898fc0130cad92deee3c3043ece8cc1"
+    "version": "0.0.2",
+    "publishedAt": 1776513125148,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1775319197670,
+      "commit": "https://github.com/openclaw/skills/commit/9384c22a4898fc0130cad92deee3c3043ece8cc1"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773870277587,
