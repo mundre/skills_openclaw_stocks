@@ -3,11 +3,16 @@
   "slug": "agent-stock",
   "displayName": "agent-stock",
   "latest": {
-    "version": "0.1.8",
-    "publishedAt": 1775642338266,
-    "commit": "https://github.com/openclaw/skills/commit/1961c77616e0446eac083fc5e90c9152b284f07c"
+    "version": "0.2.0",
+    "publishedAt": 1776167155408,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.8",
+      "publishedAt": 1775642338266,
+      "commit": "https://github.com/openclaw/skills/commit/1961c77616e0446eac083fc5e90c9152b284f07c"
+    },
     {
       "version": "0.1.6",
       "publishedAt": 1774949229553,
