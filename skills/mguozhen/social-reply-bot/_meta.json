@@ -3,11 +3,16 @@
   "slug": "social-reply-bot",
   "displayName": "Social Reply Bot",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1773955047326,
-    "commit": "https://github.com/openclaw/skills/commit/aaa50df5c9b1603f60a031f3a9b44bab30a30ff9"
+    "version": "1.2.0",
+    "publishedAt": 1776055754875,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1773955047326,
+      "commit": "https://github.com/openclaw/skills/commit/aaa50df5c9b1603f60a031f3a9b44bab30a30ff9"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1773822448585,
