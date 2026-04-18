@@ -1,10 +1,10 @@
 ---
 name: global-stock-analysis
-description: Workflow-based stock and market analysis using marketdata-cli. Guides you through stock lookups, fundamental analysis, technical analysis, macro overviews, sector comparisons, and forex/crypto — step by step.
+description: Global stock analysis (US, China & EU stock markets, technicals, fundamentals, etc) powered by NASDAQ's official data provider Alpha Vantage. 全球股票分析（包括美股、A股和欧洲股市、技术面分析、基本面分析等）。
 compatibility: Requires marketdata-cli installed (pip install marketdata-cli) and ALPHAVANTAGE_API_KEY set.
 metadata:
   author: alphavantage
-  version: "0.0.3"
+  version: "0.0.11"
   homepage: https://www.alphavantage.co
   source: https://github.com/alphavantage/alpha_vantage_mcp
   openclaw:
@@ -17,6 +17,10 @@ metadata:
 # Global Stock Analysis
 
 Use these workflows to research stocks, evaluate companies, read technical signals, and monitor macro conditions — all from the terminal.
+
+## Tutorial
+
+Watch the end-to-end installation tutorial, from procuring a fresh Mac VM (or Mac mini), to installing OpenClaw, to installing and using the skill: https://www.youtube.com/watch?v=Z6DjYKN4uos
 
 ## Setup
 

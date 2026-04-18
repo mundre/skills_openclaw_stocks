@@ -3,9 +3,15 @@
   "slug": "global-stock-analysis",
   "displayName": "Global Stock Analysis",
   "latest": {
-    "version": "0.0.3",
-    "publishedAt": 1773715132019,
-    "commit": "https://github.com/openclaw/skills/commit/1e3e2666f517bc885a2aa7d36e386342e0632d64"
+    "version": "0.0.11",
+    "publishedAt": 1776405352342,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.3",
+      "publishedAt": 1773715132019,
+      "commit": "https://github.com/openclaw/skills/commit/1e3e2666f517bc885a2aa7d36e386342e0632d64"
+    }
+  ]
 }
