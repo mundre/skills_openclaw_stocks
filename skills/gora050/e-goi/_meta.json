@@ -3,9 +3,15 @@
   "slug": "e-goi",
   "displayName": "E Goi",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773640963496,
-    "commit": "https://github.com/openclaw/skills/commit/acc4e77a1a6a1fc65c7e63b83758bf8569a64f20"
+    "version": "1.0.2",
+    "publishedAt": 1775164303495,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773640963496,
+      "commit": "https://github.com/openclaw/skills/commit/acc4e77a1a6a1fc65c7e63b83758bf8569a64f20"
+    }
+  ]
 }
