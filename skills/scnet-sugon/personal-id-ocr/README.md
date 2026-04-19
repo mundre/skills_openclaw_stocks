@@ -1,4 +1,4 @@
-# sugon-scnet-ocr
+# personal_id_ocr
 
 
 

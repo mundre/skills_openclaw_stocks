@@ -2,7 +2,7 @@
 
 根据 ocrType 不同，返回的 `elements` 对象包含以下字段：
 
-## ID_CARD (大陆身份证)
+## ID_CARD (身份证)
 - `name`: 姓名
 - `gender`: 性别
 - `nation`: 民族

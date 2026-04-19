@@ -16,22 +16,38 @@
 ## 响应结构
 ```json
 {
-  "code": "0",          // 应答码，0 表示成功
-  "msg": "success",     // 应答信息
-  "data": [             // 应答数据体
-    {
-      "result": [        // 票据识别结果数组
+    "code": "0",
+    "msg": "success",
+    "data": [
         {
-          "confidence": "0.98",
-          "coordinate": [3,584,3,1,412,1,412,584],
-          "elements": { ... },  // 核心识别字段，因类型而异
-          "isCopy": "0",
-          "page": 0,
-          "printOffset": "0"
+            "traceId": "202604010000002",
+            "originalFilename": "身份证示例.jpg",
+            "cosPath": "/ocr/202604/01/身份证示例.jpg",
+            "result": [
+                {
+                    "status": 200,
+                    "originFilename": "身份证示例.jpg",
+                    "cosPath": "/ocr/202604/01/身份证示例.jpg",
+                    "fileIndex": 1,
+                    "cutIndex": 0,
+                    "coordinate": [],
+                    "classifyCode": "ID_CARD",
+                    "confidence": 0.998,
+                    "elements": {
+                        "name": "张示例",
+                        "gender": "男",
+                        "nation": "汉",
+                        "bornDate": "1990年9月4日",
+                        "address": "湖南省衡东县霞流镇白村村1组11号",
+                        "IDNumber": "430024199009042311",
+                        "issueInstitution": "沂源县公安局",
+                        "validityPeriod": "2013.11.16-2023.11.16"
+                    },
+                    "stamps": []
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
 ```
 ## 错误码
