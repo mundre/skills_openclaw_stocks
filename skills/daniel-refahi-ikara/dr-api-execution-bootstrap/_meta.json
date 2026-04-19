@@ -1,11 +1,17 @@
 {
   "owner": "daniel-refahi-ikara",
   "slug": "dr-api-execution-bootstrap",
-  "displayName": "DR. API Execution Bootstrap",
+  "displayName": "dr-api-execution-bootstrap",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774080800145,
-    "commit": "https://github.com/openclaw/skills/commit/66b1ade2c64352ec83d77cbc5e187f7ae440deee"
+    "version": "1.1.1",
+    "publishedAt": 1776385830718,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774080800145,
+      "commit": "https://github.com/openclaw/skills/commit/66b1ade2c64352ec83d77cbc5e187f7ae440deee"
+    }
+  ]
 }
