@@ -3,11 +3,16 @@
   "slug": "polymarket-coffee-trader",
   "displayName": "Polymarket Coffee Trader",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775333526964,
-    "commit": "https://github.com/openclaw/skills/commit/f35e49836e8c0f3fb37b18393a34ab1d8f75d7f0"
+    "version": "0.0.2",
+    "publishedAt": 1776513290248,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775333526964,
+      "commit": "https://github.com/openclaw/skills/commit/f35e49836e8c0f3fb37b18393a34ab1d8f75d7f0"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774183015335,
