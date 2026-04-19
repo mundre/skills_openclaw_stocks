@@ -6,8 +6,12 @@ metadata:
   {
     "openclaw":
       {
-        "emoji": "🚂",
-        "requires": { "bins": ["rail"] },
+        "emoji": "🚆",
+        "requires":
+          {
+            "bins": ["rail"],
+            "env": ["DARWIN_ACCESS_TOKEN"],
+          },
         "primaryEnv": "DARWIN_ACCESS_TOKEN",
         "install":
           [

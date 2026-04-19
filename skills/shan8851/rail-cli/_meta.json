@@ -1,11 +1,17 @@
 {
   "owner": "shan8851",
   "slug": "rail-cli",
-  "displayName": "rail-cli",
+  "displayName": "Rail CLI",
   "latest": {
-    "version": "0.2.1",
-    "publishedAt": 1774465995255,
-    "commit": "https://github.com/openclaw/skills/commit/6505ed0ac20f2e46f3bcab172efa0363595f7f09"
+    "version": "0.2.2",
+    "publishedAt": 1776553733973,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.1",
+      "publishedAt": 1774465995255,
+      "commit": "https://github.com/openclaw/skills/commit/6505ed0ac20f2e46f3bcab172efa0363595f7f09"
+    }
+  ]
 }
