@@ -564,6 +564,8 @@ def get_client(live: bool = False) -> SimmerClient:
             api_key=os.environ["SIMMER_API_KEY"],
             venue=venue,
         )
+        if live:
+            _client.live = True
         MAX_POSITION  = float(os.environ.get("SIMMER_MAX_POSITION",  str(MAX_POSITION)))
         MIN_VOLUME    = float(os.environ.get("SIMMER_MIN_VOLUME",    str(MIN_VOLUME)))
         MAX_SPREAD    = float(os.environ.get("SIMMER_MAX_SPREAD",    str(MAX_SPREAD)))
