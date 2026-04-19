@@ -3,9 +3,15 @@
   "slug": "byted-las-video-resize",
   "displayName": "Byted Las Video Resize",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774447259675,
-    "commit": "https://github.com/openclaw/skills/commit/5c526224e25218fcb450240ded4c0c62a780caff"
+    "version": "1.0.1",
+    "publishedAt": 1776411005582,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774447259675,
+      "commit": "https://github.com/openclaw/skills/commit/5c526224e25218fcb450240ded4c0c62a780caff"
+    }
+  ]
 }

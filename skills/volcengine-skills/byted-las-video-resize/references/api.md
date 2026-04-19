@@ -1,63 +1,57 @@
 ---
-title: las_audio_convert API 参考
+title: las_video_resize API 参考
 ---
 
-# `las_audio_convert` API 参考
+# `las_video_resize` API 参考
+
+`las_video_resize` 为异步算子：先 `submit` 获取 `task_id`，再 `poll` 轮询直到 `COMPLETED/FAILED`。
 
 ## Base / Region
 
-- Endpoint: `https://operator.las.cn-beijing.volces.com/api/v1/process`
-- Method: POST
+- API Base: `https://operator.las.<region>.volces.com/api/v1`
+- Region:
+  - `cn-beijing`
+  - `cn-shanghai`
+- 鉴权：`Authorization: Bearer $LAS_API_KEY`
 
-鉴权：`Authorization: Bearer $LAS_API_KEY`
-
-## 请求体定义
-
-| 字段名 | 类型 | 是否必选 | 说明 |
-| :--- | :--- | :--- | :--- |
-| operator_id | string | 是 | 固定为 `las_audio_convert` |
-| operator_version | string | 是 | 固定为 `v1` |
-| data | AudioConvertReqParams | 是 | 参数详情见下表 |
-
-### AudioConvertReqParams
+## Submit 请求体
 
 | 字段名 | 类型 | 是否必选 | 说明 |
 | :--- | :--- | :--- | :--- |
-| input_path | string | 是 | 待转换音频文件的 TOS 地址 (tos://bucket/key) |
-| output_path | string | 是 | 转换后音频文件的 TOS 地址 (tos://bucket/key) |
-| output_format | string | 否 | 转换目标格式。支持 wav, mp3, flac，默认 wav |
-| extra_params | List<string> | 否 | 额外 ffmpeg 参数列表，如 `["-ar", "44100"]` |
+| operator_id | string | 是 | 固定为 `las_video_resize`（CLI 自动填充） |
+| operator_version | string | 是 | 固定为 `v1`（CLI 自动填充） |
+| data | VideoResizeReqParams | 是 | **`data.json` 的内容对应此字段**，详情见下 |
 
-## 响应体定义
+### VideoResizeReqParams
+
+| 字段名 | 类型 | 是否必选 | 说明 |
+| :--- | :--- | :--- | :--- |
+| video_path | string | 是 | 输入视频 TOS 路径或可下载 URL（`tos://bucket/key` 或 `http/https`） |
+| output_tos_dir | string | 是 | 输出目录（`tos://bucket/prefix/`） |
+| output_file_name | string | 是 | 输出文件名（同名会覆盖） |
+| min_width | integer | 是 | 最小宽度（像素） |
+| max_width | integer | 是 | 最大宽度（像素） |
+| min_height | integer | 是 | 最小高度（像素） |
+| max_height | integer | 是 | 最大高度（像素） |
+| force_original_aspect_ratio_type | string | 否 | `disable/increase/decrease`，默认 `increase` |
+| force_divisible_by | integer | 否 | 像素对齐步长，默认 2 |
+| cq | integer | 否 | NVENC 质量参数（0-51，0=自动） |
+| rc | string | 否 | NVENC 码率模式（`constqp/vbr/cbr`，默认 `vbr`） |
+
+## Poll 请求体
+
+| 字段名 | 类型 | 是否必选 | 说明 |
+| :--- | :--- | :--- | :--- |
+| operator_id | string | 是 | 固定为 `las_video_resize`（CLI 自动填充） |
+| operator_version | string | 是 | 固定为 `v1`（CLI 自动填充） |
+| task_id | string | 是 | submit 返回的任务 ID（CLI 自动填充） |
+
+## Poll 响应体（摘要）
 
 | 字段名 | 类型 | 备注 |
 | :--- | :--- | :--- |
-| metadata | metadata | 请求元信息，包含 status, business_code, request_id 等 |
-| data | AudioConvertResponse | 返回数据（可能是 JSON 对象或 JSON 字符串） |
-
-### AudioConvertResponse
-
-| 字段名 | 类型 | 备注 |
-| :--- | :--- | :--- |
-| audios | list<Audio> | 转换结果列表 |
-
-### Audio
-
-| 名称 | 类型 | 描述 |
-| :--- | :--- | :--- |
-| input_path | string | 输入路径 |
-| output_path | string | 输出路径 |
-| duration | float | 音频时长 |
-| status | string | 转换状态 (success/failed) |
-
-## 业务码
-
-| 业务码 | 含义 |
-| :--- | :--- |
-| 0 | 正常返回 |
-| 1001 | 通用请求端异常 |
-| 1002 | 缺失鉴权请求头 |
-| 1003 | API Key 无效 |
-| 1004 | 指定的 Operator 无效 |
-| 1006 | 请求入参格式有误 |
-| 2001 | 通用服务端异常 |
+| metadata.task_status | string | `ACCEPTED/RUNNING/COMPLETED/FAILED` |
+| data.output_path | string | 输出视频 TOS 路径 |
+| data.width | integer | 输出宽度 |
+| data.height | integer | 输出高度 |
+| data.duration | float | 视频时长 |
