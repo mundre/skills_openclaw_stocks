@@ -3,9 +3,15 @@
   "slug": "openclaw-contract-review",
   "displayName": "OpenClaw Contract Review",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774505177298,
-    "commit": "https://github.com/openclaw/skills/commit/8712b40aca729e3d086b1c39c06997f17ac31527"
+    "version": "1.0.1",
+    "publishedAt": 1776145026679,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774505177298,
+      "commit": "https://github.com/openclaw/skills/commit/8712b40aca729e3d086b1c39c06997f17ac31527"
+    }
+  ]
 }
