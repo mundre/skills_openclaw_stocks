@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "oppo",
-  "displayName": "oppo",
+  "displayName": "Oppo",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774661990329,
-    "commit": "https://github.com/openclaw/skills/commit/aba5a4364fe261aa934e853e472cafcc3972f2ba"
+    "version": "0.1.3",
+    "publishedAt": 1776533906143,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774661990329,
+      "commit": "https://github.com/openclaw/skills/commit/aba5a4364fe261aa934e853e472cafcc3972f2ba"
+    }
+  ]
 }

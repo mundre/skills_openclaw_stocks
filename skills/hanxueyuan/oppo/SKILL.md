@@ -1,56 +1,45 @@
 ---
-name: oppo
-description: "Information assistant for OPPO. Search products, news, financials, and official resources for OPPO."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","oppo","enterprise-info"] } }
+summary: "OPPO——中国智能手机巨头、快充技术领先者、全球第四大手机品牌"
+read_when:
+  - 查询OPPO相关信息
+  - 了解相关行业发展
 ---
 
-# OPPO — Information Assistant
+# OPPO
 
-Query products, news, stock prices, financial reports, and official resources for **OPPO**.
+---
 
-## About
+## 发展历程
 
-- **Company**: OPPO
-- **Industry**: Smartphones
-- **Official Website**: https://www.oppo.com
+| 时期 | 关键事件 |
+|:----:|--------|
+| **2004 年** | 陈明永在广东东莞创立 |
+| **2008 年** | 推出第一款手机 |
+| **2010s** | VOOC 闪充技术——'充电 5 分钟，通话 2 小时' |
+| **2020s** | 折叠屏和 AI 手机布局 |
 
-## What This Skill Does
+---
 
-When activated, this skill helps you:
+## 核心特点
 
-1. **Product Search** — Find and compare OPPO products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
+智能手机 + IoT + AI
 
-## Usage Examples
+## 核心优势
 
-- "What are the latest OPPO products?"
-- "Show me OPPO stock price"
-- "Compare OPPO with competitors"
-- "Find OPPO official support page"
-- "What's new at OPPO?"
+快充技术领先 + 线下渠道覆盖中国三四线城市 + 影像技术积累
 
-## How It Works
+---
 
-This skill uses web search to fetch real-time information about OPPO from:
-- Official website: https://www.oppo.com
-- Financial data providers
-- News aggregators
-- Product databases
+## 关键数据
 
-## Instructions for Agent
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 350 亿美元 |
+| 手机市占 | 全球第四 |
+| 员工数 | 约 40000 人 |
 
-When this skill is triggered:
-1. Identify the user's specific query about OPPO
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.oppo.com)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
+---
 
-## Author
+## 值得了解
 
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+OPPO 和 vivo 是兄弟公司——都源自步步高
