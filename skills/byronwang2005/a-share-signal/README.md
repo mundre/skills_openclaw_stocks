@@ -1,37 +1,35 @@
-# A-Share Signal
+# A股信号 `a-share-signal`
 
-`a-share-signal` 是一个用于分析A股交易机会的 Skill。本Skill中涉及的理论方法，完全来自一名作者线下认识的一线游资，其在妖股捕捉方面有极强的实战经验。
+[![ClawHub downloads](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fclawhub.ai%2Fapi%2Fv1%2Fskills%2Fa-share-signal&query=%24.skill.stats.downloads&label=ClawHub%20downloads&color=0A66C2)](https://clawhub.ai/byronwang2005/a-share-signal)
+
+`a-share-signal`是一个用于分析A股结构状态的 Skill，聚焦结构化分析结论、关键证据与风险提示。本 Skill 中涉及的理论方法，主要用于研究交流与技术框架复盘。
 
 > 相关内容仅用于研究交流与策略参考，不构成任何投资建议。
 
 ## 功能简介
 
-- 基于筹码分布、三周期共振、优化 KDJ、威科夫与缠论等框架分析 A 股
-- 结合用户自定义评分规则，输出结构化判断、参与条件、缠论+威科夫约束下的目标价与应对方案
-- 默认采用 `mx-skills -> AkShare/BaoShare` 的数据获取优先级
-- 限流视为常见现象，同一数据源内至少换 3 种方法尝试后，才能回退到下一个数据源
-- 输出结果必须标注数据来源；任何未获取或不完整的数据都需要明确警告用户
-- 适合把近期行情数据快速转成更清晰的交易决策参考
+- 基于筹码分布、三周期共振、优化KDJ、威科夫与缠论等框架分析A股
+- 适合将近期行情数据快速整理为更清晰的结构分析参考
 
-## 数据源建议
+## 适用场景
 
-推荐优先安装并配置 `mx-skills`，这样可以更方便地获取个股行情、财务、公告、研报等数据。若用户尚未安装 `mx-skills`，应在实际取数前先建议其去官网获取并配置 key。
+- 判断当前结构是否具备持续观察价值
+- 检查多周期结构是否共振
+- 评估突破、放量、金叉等信号质量
+- 识别筹码结构、主力洗盘 / 出货倾向与阶段状态
+- 在结构成立前提下给出条件性目标价与风险前提
 
-- 下载地址: [ai.eastmoney.com/mxClaw](https://ai.eastmoney.com/mxClaw)
-- 使用顺序: `mx-skills` 优先，若未安装或无法覆盖所需字段，再回退到 `AkShare/BaoShare`
+## 数据来源
 
-## 同步与开源
+默认优先使用用户明确提供或当前会话中已知可用的新版 `mx-skills`，以便获取个股行情、财务、公告、研报等数据。路由上优先以 `mx-financial-assistant` 作为单票综合分析入口，再按需补 `mx-finance-data`、`mx-finance-search`、`mx-stocks-screener` 与 `mx-macro-data`。所有 `mx-skills` 请求都要求严格串行执行，不论是不同 skills 之间的切换，还是对单个 skill 的多次补数，都必须等待上一请求完成后再继续，以降低限流、超时和口径漂移风险。`akshare`、`baoshare` 仍保留为额外回退，但仅在用户明确同意后启用；如缺少完成当前任务所需的 `mx-skills`，会先向用户说明缺口、展示将访问的来源 URL，并在获得明确同意后再引导其前往 [ClawHub](https://clawhub.ai/u/financial-ai-analyst) 或 [mx-skills 官网](https://ai.eastmoney.com/mxClaw) 安装或更新。
 
-本仓库会随本人真实使用的skills库持续实时更新，并同步开源发布在：
-
-- GitHub: [byronwang2005/a-share-signal](https://github.com/byronwang2005/a-share-signal)
-- ClawHub: [clawhub.ai/byronwang2005/a-share-signal](https://clawhub.ai/byronwang2005/a-share-signal)
+> [mx-skills官网](https://ai.eastmoney.com/mxClaw)
 
 ## 兼容性
 
-本Skill兼容主流 Agent / Coding Agent 生态，包括但不限于：
+本Skill兼容主流Agent生态，包括但不限于：
 
-- OpenClaw
+- OpenClaw (ClawHub: [byronwang2005/a-share-signal](https://clawhub.ai/byronwang2005/a-share-signal)，同步可能滞后)
 - Claude Code
 - Codex
 - OpenCode
