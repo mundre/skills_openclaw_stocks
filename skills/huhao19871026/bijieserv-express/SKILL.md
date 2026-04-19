@@ -1,87 +1,171 @@
 ---
-name: bijie-express
-description: Free package tracking for 2000+ couriers (SF, YTO, ZTO, Yunda, STO, JT, JD, EMS). Returns logistics status, location, transit nodes & ETA. 必捷免费快递查询，支持国内外2000+快递公司，智能识别单号前缀，自动脱敏隐私信息，返回包裹状态、物流轨迹及预计到达时间。Use when user asks 查快递, 快递查询, 物流轨迹, 查物流, 快递到哪了, 跟踪包裹, track package, courier tracking, 圆通查询, 顺丰查询, 中通查询, 韵达查询, 申通查询, 极兔查询, 京东物流查询, EMS查询.
+name: bijie-express-tracking
+description: Fast package tracking and logistics timeline lookup for 2000+ couriers with BijieServ. Use for 查快递, 快递查询, 查物流, 物流轨迹, 快递到哪了, 包裹追踪, track package, where is my package, courier tracking, 顺丰查询, 圆通查询, 中通查询, 韵达查询, 申通查询, 极兔查询, 京东物流查询, EMS查询.
 ---
 
-# 必捷免费快递查询 (Optimized)
+# Bijie Express Skill
 
-基于必捷物流平台的免费快递查询服务，支持2000+国内外快递公司。具备**智能单号识别**、**状态人性化解读**、**隐私自动脱敏**及**限流友好提示**功能。
+Fast express tracking, package lookup, and logistics timeline query through BijieServ.
 
-## 核心能力
+Use this skill for package tracking, courier tracking, shipping status lookup, logistics timeline lookup, and Chinese courier queries such as 顺丰, 圆通, 中通, 韵达, 申通, 极兔, 京东物流, and EMS.
 
-1.  **智能识别**：根据单号前缀自动匹配快递公司，无需用户手动指定（如 `YT` 自动识别为圆通）。
-2.  **状态解读**：将原始状态码转换为直观的图标和文字（如 🟢 已签收, 🚚 派送中）。
-3.  **隐私保护**：返回结果中的手机号自动脱敏（例：`138****1234`）。
-4.  **合规提示**：主动监测查询频率，对高频查询或重复查询提供友好的限流提示。
+Return a concise user-facing summary with:
+- current package status
+- latest logistics update
+- recent tracking timeline
+- ETA when available
+- masked sensitive data
 
-## 快速开始
+This skill is written to be easy for both Codex-style agents and OpenClaw-style agents to follow:
+- Prefer deterministic execution over free-form API reconstruction.
+- Reuse the local script when possible.
+- Ask the user for missing information only when needed.
 
-### 调用逻辑
-智能体将直接构建 API 请求，无需用户运行脚本。
-- **输入**：快递单号（必填），快递公司名称（选填，若不填则尝试自动识别）。
-- **输出**：当前状态、最新轨迹、完整物流时间轴、预计到达时间（如有）。
+## When To Use
 
-### 示例交互
-> **用户**: "查一下 SF13156789012"
-> **助手**: "正在为您查询顺丰速运 (SF13156789012)... 
-> 🟢 **状态**: 已签收
-> 📍 **最新轨迹**: 已交由【某某】代收，感谢使用顺丰速运。
-> ⏰ **签收时间**: 2023-10-27 14:30"
+Use this skill when the user wants to:
+- check a package status
+- view logistics updates or delivery timeline
+- identify the courier and query a tracking number
+- track common domestic or international carriers supported by BijieServ
 
-## 支持的快递公司 (部分精选)
+Typical requests:
+- `查一下 SF13156789012`
+- `帮我查这个快递到哪了`
+- `track package 123456789`
+- `查询圆通/顺丰/中通/韵达/申通/极兔/京东/EMS`
 
-| 公司名称 | 公司编码 | 常见前缀/特征 |
-| :--- | :--- | :--- |
-| 圆通速递 | yuantong | YT |
-| 中通快递 | zhongtong | ZT |
-| 顺丰速运 | shunfeng | SF |
-| 韵达快递 | yunda | YD |
-| 申通快递 | shentong | ST |
-| 极兔速递 | jtexpress | JT |
-| 京东物流 | jd | JD |
-| EMS | ems | 10/11 开头 |
-| 邮政快递包裹 | youzhengguonei | 98 开头 |
-| 德邦快递 | debangkuaidi | - |
-| 菜鸟速递 | danniao | - |
+## Source Of Truth
 
-> 💡 **提示**: 完整编码表见内部知识库 `references/company-codes.md`。若自动识别失败，将礼貌询问用户确认快递公司。
+Prefer these local files in this order:
+1. `scripts/express.py`: canonical query logic, headers, parameter handling, masking, and response formatting.
+2. `references/company-codes.md`: courier code lookup table when carrier mapping is uncertain.
+3. This file: behavioral guidance for when to run, what to ask, and how to present results.
 
-## 物流状态说明 (人性化映射)
+If this file conflicts with the script, follow the script.
 
-| 状态码 | 原始状态 | 优化展示 | 图标 | 说明 |
-|:---:|:---|:---|:---:|:---|
-| 0 | 在途 | 运输中 | 🚚 | 快件在运输途中 |
-| 1 | 已揽收 | 已揽收 | 📦 | 快递公司已揽收 |
-| 2 | 疑难 | 异常件 | ⚠️ | 快件存在异常情况，需关注 |
-| 3 | 已签收 | 已签收 | 🟢 | 快件已签收 |
-| 4 | 退签 | 已退回 | ↩️ | 快件已退签 |
-| 5 | 派送中 | 派送中 | 🛵 | 快递员正在派件中 |
-| 6 | 退回 | 退回中 | 🔙 | 快件正在返回发货人途中 |
+## Execution Policy
 
-## ⚠️ 使用限制与合规策略
+- Prefer running the local script instead of manually composing raw HTTP requests.
+- Treat the script behavior as authoritative for endpoint, headers, payload, and error handling.
+- Do not promise capabilities that are not implemented locally.
+- Mask phone numbers or other sensitive details before showing results to the user.
 
-- **单号限流**: 同一单号查询间隔必须保持在 **30分钟** 以上。
-  - *策略*: 若检测到30分钟内重复查询同一单号，优先返回缓存结果或提示“为避免触发限流，建议稍后再试”。
-- **用户限流**: 每个用户每天 **50单** 查询。
-  - *策略*: 接近限额时主动提醒用户。
-- **严禁滥用**: 禁止用于系统后台高频自动轮询。
+## Inputs
 
-## 隐私保护
+Required:
+- tracking number
 
-- **强制脱敏**: 所有返回结果中的手机号码必须处理为 `135****1386` 格式。
-- **敏感信息过滤**: 不展示收件人完整地址，仅展示到区/县或具体网点。
+Optional:
+- courier name or courier code
+- phone number if the carrier requires extra verification
+- origin or destination hints when needed
 
-## API 技术细节 (内部调用)
+## Recommended Flow
 
-- **端点**: `POST https://www.bijieserv.com/api/method/express_app.open.v1.query.exec`
-- **官网**: https://www.bijieserv.com
-- **参数构造**:
-  - `company`: 自动匹配的公司编码
-  - `num`: 用户提供的单号
+1. Extract the tracking number and optional courier name from the user request.
+2. Validate the tracking number at a basic level.
+   A practical baseline is 6 to 32 characters, matching the local script.
+3. If the user provided a courier, map it to a company code.
+4. If the user did not provide a courier:
+   - first infer from common prefixes such as `SF`, `YT`, `ZT`, `YD`, `ST`, `JT`, `JD`
+   - if still unclear, consult `references/company-codes.md`
+   - if still unknown, ask the user which courier it is
+5. Run the local query logic from `scripts/express.py`.
+6. Return a concise, user-friendly summary:
+   - courier name
+   - tracking number
+   - current status
+   - latest update
+   - recent timeline
+   - ETA if available
+7. Apply privacy masking before showing the result.
 
-## 异常处理流程
+## Output Style
 
-1. **单号无效**: 提示“单号格式似乎有误，请检查后重试”。
-2. **公司未知**: 提示“未能自动识别该单号所属公司，请问是哪家快递？（如：顺丰、圆通）”。
-3. **无物流信息**: 提示“暂未查询到该单号的物流信息，可能是刚下单或单号有误”。
-4. **接口限流**: 提示“查询过于频繁，请稍等片刻再试”。
+Keep the response compact and practical. Prefer:
+- current status first
+- latest logistics event second
+- recent timeline after that
+- ETA only when the API provides it
+
+Good structure:
+- `状态`: 已签收 / 派送中 / 运输中 / 异常件 / 退回中
+- `最新轨迹`: the most recent meaningful tracking update
+- `时间线`: a short list of recent nodes
+- `预计送达`: only if present
+
+## Privacy Rules
+
+- Mask mobile numbers like `138****1234`.
+- Avoid exposing full recipient address details.
+- If the upstream response contains sensitive text, sanitize it before presenting it.
+
+## Error Handling
+
+Use these handling rules:
+
+- Invalid tracking number:
+  tell the user the number appears malformed and ask them to re-check it.
+- Unknown courier:
+  ask the user to confirm the courier name.
+- No tracking result:
+  explain that the parcel may not be shipped yet, the number may be wrong, or the carrier may not have updated tracking.
+- Rate limiting or lockout:
+  explain that queries are too frequent and suggest trying again later.
+- Timeout or request failure:
+  tell the user the query failed temporarily and suggest retrying.
+
+## Courier Mapping Notes
+
+Common mappings:
+- `SF` -> `shunfeng`
+- `YT` -> `yuantong`
+- `ZT` -> `zhongtong`
+- `YD` -> `yunda`
+- `ST` -> `shentong`
+- `JT` -> `jtexpress`
+- `JD` -> `jd`
+- `EMS` -> `ems`
+
+For a broader list, use `references/company-codes.md`.
+
+## OpenClaw Compatibility Notes
+
+To keep this skill compatible with OpenClaw-style agents:
+- keep behavior instructions explicit and step-based
+- prefer local files over hidden assumptions
+- avoid requiring agent-specific internal memory
+- do not rely on rich UI formatting to make the result understandable
+- keep the frontmatter short and searchable
+
+If OpenClaw loads only the skill text and not repository code automatically, the agent should explicitly inspect:
+- `scripts/express.py`
+- `references/company-codes.md`
+
+## Search And Discovery Notes
+
+To improve discoverability on skill hubs such as ClawHub:
+- put the core task words near the top of the file: package tracking, express tracking, logistics query, courier tracking, 查快递, 查物流
+- keep the `name` and `description` closely aligned with what users actually search for
+- mention both brand and task intent so users can find the skill by either `BijieServ` or `快递查询`
+- include both Chinese and English task phrases because users may search in either language
+- avoid vague marketing language that does not help the retrieval system understand the skill
+
+Useful search intents covered by this skill:
+- 查快递
+- 快递查询
+- 查物流
+- 物流轨迹
+- 快递到哪了
+- 包裹追踪
+- track package
+- where is my package
+- courier tracking
+- shipping status
+
+## Notes
+
+- Send requests to `https://www.bijieserv.com/api/method/express_app.open.v1.query.exec`, not `skill.bijieserv.com`.
+- Keep `Origin` and `Referer` aligned with `https://www.bijieserv.com/` when following the local script behavior.
+- Do not claim per-user quota tracking, shared cache behavior, or automatic compliance enforcement unless those behaviors are actually implemented in code.

@@ -15,7 +15,7 @@ class BJExpress:
     """必捷免费快递查询器"""
     
     # API 地址
-    API_URL = "http://skill.bijieserv.com/api/method/express_app.open.v1.query.exec"
+    API_URL = "https://www.bijieserv.com/api/method/express_app.open.v1.query.exec"
     
     # 快递公司编码映射（常用）
     EXPRESS_COMPANIES = {
@@ -60,8 +60,8 @@ class BJExpress:
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Origin': 'http://skill.bijieserv.com',
-        'Referer': 'http://skill.bijieserv.com/',
+        'Origin': 'https://www.bijieserv.com',
+        'Referer': 'https://www.bijieserv.com/',
         'Connection': 'keep-alive',
     }
     

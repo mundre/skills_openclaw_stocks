@@ -1,11 +1,17 @@
 {
   "owner": "huhao19871026",
   "slug": "bijieserv-express",
-  "displayName": "必捷快递查询 Bijie Express",
+  "displayName": "Bijie Express Tracking",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774367423768,
-    "commit": "https://github.com/openclaw/skills/commit/237b2020918de825794d6f427ae096aff6018fad"
+    "version": "1.1.0",
+    "publishedAt": 1775608711897,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774367423768,
+      "commit": "https://github.com/openclaw/skills/commit/237b2020918de825794d6f427ae096aff6018fad"
+    }
+  ]
 }
