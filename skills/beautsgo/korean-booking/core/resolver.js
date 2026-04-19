@@ -11,9 +11,6 @@ const STOP_WORDS = [
 
 const PINYIN_STOP = ['pifuke', 'pfk']
 
-// Words that appear as sub-tokens in many pinyin_abbr values and must not drive a match alone
-const ABBR_STOP = new Set(['pfk', 'pifuke', 'yy', 'yyuan', 'zx', 'zxwk'])
-
 function filterName(name) {
   let result = name.replace(/[（(][^）)]*[）)]/g, '')
   const sorted = [...STOP_WORDS].sort((a, b) => b.length - a.length)
@@ -37,21 +34,13 @@ function generateSearchKeywords(hospital) {
     .replace(/\bhospital\b/gi, '')
     .trim()
 
-  // 优先使用数据库带来的 pinyin / pinyin_abbr 字段（原始值，不做 stop word 过滤）
-  // 降级：实时用 pinyin-pro 计算（仅对纯中文字符，需过滤通用词）
-  let py, abbr
-  if (hospital.pinyin) {
-    py   = hospital.pinyin.trim()
-    abbr = hospital.pinyin_abbr ? hospital.pinyin_abbr.trim() : ''
-  } else {
-    const chineseForPinyin = cnName ? extractChineseOnly(cnName) : ''
-    py = chineseForPinyin
-      ? filterPinyin(pinyin(chineseForPinyin, { toneType: 'none', separator: '', type: 'string' }))
-      : ''
-    abbr = chineseForPinyin
-      ? filterPinyin(pinyin(chineseForPinyin, { toneType: 'none', separator: '', type: 'string', pattern: 'first' }))
-      : ''
-  }
+  const chineseForPinyin = cnName ? extractChineseOnly(cnName) : ''
+  const py = chineseForPinyin
+    ? filterPinyin(pinyin(chineseForPinyin, { toneType: 'none', separator: '', type: 'string' }))
+    : ''
+  const abbr = chineseForPinyin
+    ? filterPinyin(pinyin(chineseForPinyin, { toneType: 'none', separator: '', type: 'string', pattern: 'first' }))
+    : ''
 
   const parts = [['中文名', cnName], ['英文名', enName], ['拼音', py], ['首字母', abbr]]
   const seen = new Set()
@@ -97,19 +86,14 @@ const MIN_ALIAS_MATCH_LEN = 2
 function matchHospital(query, hospitals) {
   const q = query.toLowerCase()
 
-  // Strategy 1: exact match on name / en_name / alias / aliases
-  let found = hospitals.find(h => {
-    if ([h.name, h.en_name, h.alias].some(v => v && v.toLowerCase() === q)) return true
-    if (h.aliases && h.aliases.some(a => a && a.toLowerCase() === q)) return true
-    return false
-  })
+  // Strategy 1: exact match on name / en_name / alias
+  let found = hospitals.find(h =>
+    [h.name, h.en_name, h.alias].some(v => v && v.toLowerCase() === q)
+  )
   if (found) return found
 
-  // Strategy 2: exact pinyin / pinyin_abbr (prefer DB field, fall back to dynamic)
+  // Strategy 2: exact dynamic pinyin / pinyin abbreviation (no manual field required)
   found = hospitals.find(h => {
-    const dbPy   = h.pinyin   ? h.pinyin.trim().toLowerCase()   : ''
-    const dbAbbr = h.pinyin_abbr ? h.pinyin_abbr.trim().toLowerCase() : ''
-    if ((dbPy && dbPy === q) || (dbAbbr && dbAbbr === q)) return true
     const { py, abbr } = getDynamicPinyin(h)
     return (py && py.toLowerCase() === q) || (abbr && abbr.toLowerCase() === q)
   })
@@ -121,38 +105,15 @@ function matchHospital(query, hospitals) {
     if (found) return found
   }
 
-  // Strategy 3b: token split match — split query into [a-z0-9]+ and CJK chars, require all tokens
-  // appear in the hospital name. Handles inputs like "cnp狎鸥亭" → ["cnp","狎","鸥","亭"]
-  if (q.length >= MIN_ALIAS_MATCH_LEN) {
-    const tokens = q.match(/[a-z0-9]+|[\u4e00-\u9fff]/g) || []
-    if (tokens.length >= 2) {
-      found = hospitals.find(h => {
-        const nameLow = (h.name || '').toLowerCase()
-        return tokens.every(t => nameLow.includes(t))
-      })
-      if (found) return found
-    }
-  }
-
   // Strategy 4: other fields fuzzy + aliases bidirectional
   if (q.length >= MIN_ALIAS_MATCH_LEN) {
     found = hospitals.find(h => {
       const { py, abbr } = getDynamicPinyin(h)
-      const dbPy   = h.pinyin   ? h.pinyin.trim().toLowerCase()   : ''
-      const dbAbbr = h.pinyin_abbr ? h.pinyin_abbr.trim().toLowerCase() : ''
-      // en_name / alias: substring match
-      const enName = h.en_name ? h.en_name.toLowerCase() : ''
-      const alias  = h.alias   ? h.alias.toLowerCase()   : ''
-      if (enName && enName.includes(q)) return true
-      if (alias  && alias.includes(q))  return true
-      // pinyin full: substring match
-      if ((py && py.includes(q)) || (dbPy && dbPy.includes(q))) return true
-      // pinyin_abbr: includes match, but skip if query is a generic stop token
-      if (!ABBR_STOP.has(q)) {
-        if ((abbr && abbr.includes(q)) || (dbAbbr && dbAbbr.includes(q))) return true
-      }
+      const fields = [h.en_name, h.alias, py, abbr]
+      if (fields.some(v => v && v.toLowerCase().includes(q))) return true
       if (h.aliases && h.aliases.some(a => {
         const al = a.toLowerCase()
+        // Guard against very short tokens causing false positives
         if (al.length < MIN_ALIAS_MATCH_LEN || q.length < MIN_ALIAS_MATCH_LEN) return false
         return q.includes(al) || al.includes(q)
       })) return true
