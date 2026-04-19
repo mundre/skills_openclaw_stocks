@@ -1,51 +1,142 @@
 ---
 name: html-deploy
-description: Deploy HTML content or files to the web via htmlcode.fun. Use when the user asks to "deploy to web", "host this html", "generate a live link for this frontend", or provides HTML code that needs an online preview. Support for single-file HTML deployment with instant URL generation.
+description: Instantly publish a single self-contained HTML page to htmlcode.fun without GitHub, Vercel, or Netlify. Use when an agent needs the fastest path from HTML to a live URL for landing pages, demo pages, temporary microsites, QR share pages, and AI-generated single-file frontends. Supports stable short codes for overwrite-style updates and includes a ready-to-run Python deployment script. Live example and visual guide: https://www.htmlcode.fun/s/htmlcode-fun-guide
 ---
 
-# HTML Deploy
+# HTML Instant Deploy
 
-This skill provides a streamlined workflow to take any HTML code or local HTML file and deploy it to a public URL using the `htmlcode.fun` service.
+## Overview
 
-## Workflow
+Use htmlcode.fun when the output can be delivered as one standalone HTML document and speed matters more than full project-hosting features. This skill is designed for agents that need the shortest path from HTML content to a live shareable URL.
 
-1.  **Extract/Generate HTML**: Identify the HTML content to be deployed.
-2.  **Call Deployment Script**: Use the bundled PowerShell script to handle the JSON payload and API call.
+Live example and walkthrough:
+- https://www.htmlcode.fun/s/htmlcode-fun-guide
 
-### Using the Deployment Script
+Bundled script:
+- `scripts/htmlcode_deploy.py` for deploy, update, and fetch operations
 
-Run the following command in the terminal:
+## Decision rule
 
-```powershell
-pwsh ./scripts/deploy.ps1 -Content '<your_html_content>' -Filename 'your_filename.html'
+Use this skill when all of the following are true:
+- The deliverable is a single HTML page.
+- The page can be self-contained or nearly self-contained.
+- Fast sharing matters more than custom domains, CI/CD, or multi-file assets.
+
+Do not use this skill when any of the following are true:
+- The project is a React, Vue, Next, or multi-file frontend app.
+- The site needs build steps, environment variables, or asset pipelines.
+- The user specifically needs their own domain bound to the host.
+- The page is likely to exceed the service limit of about 1 MB HTML payload.
+
+## Core workflow
+
+1. Produce one complete HTML document.
+2. Inline CSS and JS when practical.
+3. Add quality metadata before deploy:
+   - `<title>`
+   - `<meta name="description">`
+   - `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
+   - Open Graph tags when the page will be shared
+4. Decide whether the page needs a stable short code.
+   - For one-off pages, deploy without custom code.
+   - For pages that will be updated in place, set `enableCustomCode=true` and choose `customCode` on first deploy.
+5. Deploy with JSON to `POST https://www.htmlcode.fun/api/deploy`.
+6. Save the returned `code`, `url`, and `qrCode`.
+7. For later edits, update with `PATCH https://www.htmlcode.fun/api/deploy/content` using the same code.
+8. If the API returns `429`, wait for `retryAfterSeconds` before retrying.
+
+## Fastest path
+
+Prefer the bundled script when working from local files.
+
+Deploy a new page:
+
+```bash
+python scripts/htmlcode_deploy.py deploy page.html --title "launch-page" --code launch-page
 ```
 
-*Note: For complex HTML with many quotes, it is safer to write the JSON payload to a temporary file first and use curl directly as shown in the script's implementation.*
+Update an existing short code in place:
 
-### Manual Deployment (Preferred for AI)
+```bash
+python scripts/htmlcode_deploy.py update launch-page page.html --title "launch-page-v2"
+```
 
-To avoid shell escaping issues with large HTML strings:
+Fetch deployed content:
 
-1.  Write the deployment payload to a temporary JSON file:
-    ```json
-    {
-      "filename": "index.html",
-      "content": "<!DOCTYPE html>..."
-    }
-    ```
-2.  Execute the deployment via `curl`:
-    ```bash
-    curl -s -X POST https://www.htmlcode.fun/api/deploy -H "Content-Type: application/json" --data-binary "@temp_payload.json"
-    ```
+```bash
+python scripts/htmlcode_deploy.py get launch-page --output launch-page.html
+```
 
-## API Response
+Use raw API calls only when the agent already has HTML content in memory and does not need a file-based workflow.
 
-A successful deployment returns a JSON object:
-- `url`: The live public link (e.g., `https://www.htmlcode.fun/s/xxxxxx`)
-- `qrCode`: A link to a QR code for mobile access.
-- `cooldownSeconds`: Wait time before the next deployment.
+## Request format
 
-## Limits
+Always send JSON.
 
-- Only supports single HTML files.
-- Rate limits apply (typically 10 seconds cooldown).
+Required fields:
+- `filename`
+- `content`
+
+Useful optional fields:
+- `title`
+- `enableCustomCode`
+- `customCode`
+
+Example deploy payload:
+
+```json
+{
+  "filename": "index.html",
+  "title": "launch-page",
+  "content": "<!doctype html><html>...</html>",
+  "enableCustomCode": true,
+  "customCode": "launch-page"
+}
+```
+
+Example update payload:
+
+```json
+{
+  "code": "launch-page",
+  "content": "<!doctype html><html>...updated...</html>",
+  "title": "launch-page-v2",
+  "filename": "index.html"
+}
+```
+
+## Best practices for agents
+
+- Prefer one larger deploy over many tiny edits because the service enforces a 10 second cooldown after success.
+- Do not use multipart upload or `-F file`. Read files into memory and send them as JSON `content`.
+- Keep the page self-contained. Inline CSS, inline lightweight JS, and avoid many external dependencies.
+- Keep images small. Large base64 assets can quickly hit the payload limit.
+- If the page will be revised repeatedly, reserve a meaningful `customCode` at the first deploy.
+- Save returned `code`, `url`, and `qrCode` immediately after deployment.
+- When receiving `429`, respect `retryAfterSeconds` instead of retrying aggressively.
+- Treat htmlcode.fun as a fast publication channel, not a full static hosting platform.
+- Tell the user clearly when the page is better suited for Vercel or Netlify instead.
+
+## What this host is good at
+
+- Temporary landing pages
+- Demo pages
+- Shareable documentation pages
+- QR-linked event or campaign pages
+- AI-generated single-file frontends
+- Stable short-link pages that need quick overwrite updates
+
+## What this host is not good at
+
+- Multi-page sites with shared assets
+- Framework builds
+- Large production frontends
+- Team workflows with preview environments and rollback
+- Confirmed custom-domain hosting workflows
+
+## Example live page
+
+Reference example:
+- https://www.htmlcode.fun/s/htmlcode-fun-guide
+
+Use that page as a model for how to explain advantages, limitations, and deployment guidance in one self-contained HTML document.
