@@ -3,11 +3,16 @@
   "slug": "cc-soul",
   "displayName": "Clawhub Skill",
   "latest": {
-    "version": "2.7.4",
-    "publishedAt": 1774870531474,
-    "commit": "https://github.com/openclaw/skills/commit/703e39caa6831d3d83860669373915fcae9656f8"
+    "version": "3.2.5",
+    "publishedAt": 1776175587427,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.7.4",
+      "publishedAt": 1774870531474,
+      "commit": "https://github.com/openclaw/skills/commit/703e39caa6831d3d83860669373915fcae9656f8"
+    },
     {
       "version": "2.5.0",
       "publishedAt": 1774824449099,

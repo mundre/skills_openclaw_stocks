@@ -1,10 +1,8 @@
 /**
- * sqlite-store.ts — SQLite storage layer with optional vector search
+ * sqlite-store.ts — SQLite storage layer
  *
  * Uses Node 22 built-in node:sqlite (zero dependencies).
- * sqlite-vec loaded from OpenClaw's node_modules if available.
- * Embedding powered by embedder.ts (optional onnxruntime-node).
- * Falls back gracefully: vec search → tag search → keyword search.
+ * Recall via tag/keyword search; semantic recall handled by activation-field.ts (NAM).
  */
 
 import { resolve } from 'path'
@@ -12,12 +10,17 @@ import { existsSync, readFileSync } from 'fs'
 import { homedir } from 'os'
 import { createRequire } from 'module'
 import { DATA_DIR, MEMORIES_PATH, REMINDERS_PATH, GRAPH_PATH } from './persistence.ts'
-import type { Memory, Entity, Relation } from './types.ts'
-import { embed, isEmbedderReady, getEmbedDim } from './embedder.ts'
+import type { Memory, Entity, Relation, StructuredFact } from './types.ts'
+// embedder.ts removed — vector search retired, activation field handles all recall
 
-// Use OpenClaw's official memory.db — single source of truth
-const OFFICIAL_DB = resolve(homedir(), '.openclaw/data/memory.db')
-const DB_PATH = existsSync(OFFICIAL_DB) ? OFFICIAL_DB : resolve(DATA_DIR, 'soul.db')
+// Database path: 始终使用 cc-soul 自己的独立数据库
+// 学 Mem0/Zep/Letta：记忆系统有自己的数据库，不依赖宿主平台
+const DB_PATH = resolve(DATA_DIR, 'soul.db')
+
+// SQLite 工厂函数：测试时传 ':memory:' 隔离数据
+let _overrideDbPath: string | null = null
+export function setDbPath(path: string): void { _overrideDbPath = path }
+export function getDbPath(): string { return _overrideDbPath ?? DB_PATH }
 
 // Use globalThis to share db across multiple jiti module instances
 const _g = globalThis as any
@@ -87,52 +90,31 @@ export function initSQLite(): boolean {
   }
 
   try {
-    db = new DatabaseSyncCtor(DB_PATH, { allowExtension: true })
+    db = new DatabaseSyncCtor(getDbPath(), { allowExtension: true })
   } catch (e: any) {
     console.error(`[cc-soul][sqlite] failed to open ${DB_PATH}: ${e.message}`)
     return false
   }
 
-  // Try loading sqlite-vec for vector search
-  // Method 1: require() the npm module
-  const _req = typeof require !== 'undefined' ? require : null
-  const vecModulePaths = [
-    'sqlite-vec',
-    resolve(process.execPath, '../../lib/node_modules/openclaw/node_modules/sqlite-vec'),
-  ]
-  for (const p of vecModulePaths) {
-    if (!_req) break
-    try {
-      const sqliteVec = _req(p)
-      sqliteVec.load(db)
-      hasVec = true
-      console.log(`[cc-soul][sqlite] sqlite-vec loaded via require: ${p}`)
-      break
-    } catch { /* try next */ }
-  }
-  // Method 2: loadExtension() with direct .dylib path (works when require fails)
-  if (!hasVec) {
-    const dylibPaths = [
-      resolve(process.execPath, '../../lib/node_modules/openclaw/node_modules/sqlite-vec-darwin-arm64/vec0.dylib'),
-      resolve(homedir(), '.nvm/versions/node/v22.22.1/lib/node_modules/openclaw/node_modules/sqlite-vec-darwin-arm64/vec0.dylib'),
-    ]
-    for (const p of dylibPaths) {
-      try {
-        db.loadExtension(p)
-        hasVec = true
-        console.log(`[cc-soul][sqlite] sqlite-vec loaded via dylib: ${p}`)
-        break
-      } catch { /* try next */ }
-    }
-  }
+  // sqlite-vec removed — activation field (NAM) handles all semantic recall
 
-  if (!hasVec) {
-    console.log(`[cc-soul][sqlite] running without sqlite-vec (tag-based fallback)`)
-  }
+  // Schema — 独立数据库：先建 memories 表，再加扩展列
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS memories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      scope TEXT DEFAULT 'fact',
+      content TEXT NOT NULL,
+      created_at TEXT,
+      raw_line TEXT,
+      access_count INTEGER DEFAULT 0,
+      last_accessed TEXT
+    )
+  `)
+  // 实体和关系表（graph.ts 用）
+  db.exec(`CREATE TABLE IF NOT EXISTS entities (name TEXT PRIMARY KEY, type TEXT DEFAULT 'entity')`)
+  db.exec(`CREATE TABLE IF NOT EXISTS relations (source TEXT, target TEXT, type TEXT, PRIMARY KEY(source, target, type))`)
 
-  // Schema — use official memories table, add cc-soul columns if missing
-  // Official table already has: id, scope, content, created_at, raw_line, access_count, last_accessed
-  // We ADD cc-soul specific columns (ALTER TABLE ADD COLUMN is safe — ignores if exists via try/catch)
+  // cc-soul 扩展列（ALTER TABLE ADD COLUMN 安全——已存在则忽略）
   const ccSoulColumns: [string, string][] = [
     ['ts', 'INTEGER'],
     ['emotion', "TEXT DEFAULT 'neutral'"],
@@ -147,6 +129,8 @@ export function initSQLite(): boolean {
     ['lastRecalled', 'INTEGER'],
     ['validFrom', 'INTEGER'],
     ['validUntil', 'INTEGER'],
+    ['prospectiveTags', "TEXT DEFAULT '[]'"],
+    ['_entityIds', "TEXT DEFAULT '[]'"],
   ]
   for (const [col, def] of ccSoulColumns) {
     try { db.exec(`ALTER TABLE memories ADD COLUMN ${col} ${def}`) } catch { /* already exists */ }
@@ -155,6 +139,29 @@ export function initSQLite(): boolean {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_mem_ts ON memories(ts)') } catch { /* ok */ }
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_mem_vis ON memories(visibility)') } catch { /* ok */ }
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_mem_user ON memories(userId)') } catch { /* ok */ }
+  // Composite indexes for 100K+ memory performance
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_mem_scope_ts ON memories(scope, ts)') } catch { /* ok */ }
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_mem_user_scope ON memories(userId, scope)') } catch { /* ok */ }
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_mem_user_ts ON memories(userId, ts)') } catch { /* ok */ }
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_mem_tier ON memories(tier)') } catch { /* ok */ }
+
+  // Structured facts table (Mem0-style triples, replaces structured_facts.json)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS structured_facts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      subject TEXT NOT NULL,
+      predicate TEXT NOT NULL,
+      object TEXT NOT NULL,
+      confidence REAL DEFAULT 0.7,
+      source TEXT DEFAULT 'ai_observed',
+      ts INTEGER NOT NULL,
+      validUntil INTEGER DEFAULT 0,
+      memoryRef TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_fact_subj ON structured_facts(subject);
+    CREATE INDEX IF NOT EXISTS idx_fact_subj_pred ON structured_facts(subject, predicate);
+    CREATE INDEX IF NOT EXISTS idx_fact_valid ON structured_facts(validUntil);
+  `)
 
   // Chat history table
   db.exec(`
@@ -167,36 +174,8 @@ export function initSQLite(): boolean {
     CREATE INDEX IF NOT EXISTS idx_chat_ts ON chat_history(ts);
   `)
 
-  // Vector table (only if sqlite-vec available)
-  if (hasVec) {
-    try {
-      db.exec(`CREATE VIRTUAL TABLE IF NOT EXISTS mem_vec USING vec0(
-        memory_id INTEGER PRIMARY KEY,
-        embedding float[${getEmbedDim()}]
-      )`)
-      console.log(`[cc-soul][sqlite] vector table ready (${getEmbedDim()} dimensions)`)
-    } catch (e: any) {
-      console.error(`[cc-soul][sqlite] vec table failed: ${e.message}`)
-      hasVec = false
-    }
-  }
-
   sqliteReady = true
   _syncState() // Share db connection across jiti module instances
-
-  // Trigger embedding backfill if embedder + vec available (delayed, non-blocking)
-  if (hasVec) {
-    setTimeout(() => {
-      if (isEmbedderReady()) {
-        backfillEmbeddings(200).catch(() => {})
-      } else {
-        // Embedder may init later — retry once after 5s
-        setTimeout(() => {
-          if (isEmbedderReady()) backfillEmbeddings(200).catch(() => {})
-        }, 5000)
-      }
-    }, 2000)
-  }
 
   // ── Entity graph: ALTER TABLE to add cc-soul columns ──
   const entityColumns: [string, string][] = [
@@ -213,17 +192,140 @@ export function initSQLite(): boolean {
     ['ts', 'INTEGER'],
     ['valid_at', 'INTEGER DEFAULT 0'],
     ['invalid_at', 'INTEGER'],
+    ['weight', 'REAL DEFAULT 1.0'],
+    ['confidence', 'REAL DEFAULT 0.7'],
   ]
   for (const [col, def] of relationColumns) {
     try { db.exec(`ALTER TABLE relations ADD COLUMN ${col} ${def}`) } catch { /* already exists */ }
   }
 
+  // ── P0-P3: 新增列和表 ──
+
+  // P1a: Memory 表加 injection engagement 列
+  const p1aColumns: [string, string][] = [
+    ['injectionEngagement', 'INTEGER DEFAULT 0'],
+    ['injectionMiss', 'INTEGER DEFAULT 0'],
+  ]
+  for (const [col, def] of p1aColumns) {
+    try { db.exec(`ALTER TABLE memories ADD COLUMN ${col} ${def}`) } catch {}
+  }
+
+  // MemRL: utility score column
+  try { db.exec(`ALTER TABLE memories ADD COLUMN utility REAL DEFAULT 0`) } catch {}
+
+  // P0a: Graveyard 元数据列
+  const p0aColumns: [string, string][] = [
+    ['_graveyardOriginalScope', 'TEXT'],
+    ['_graveyardTs', 'INTEGER'],
+    ['_needsVerification', 'INTEGER DEFAULT 0'],
+    ['bayesAlpha', 'REAL DEFAULT 2'],
+    ['bayesBeta', 'REAL DEFAULT 1'],
+  ]
+  for (const [col, def] of p0aColumns) {
+    try { db.exec(`ALTER TABLE memories ADD COLUMN ${col} ${def}`) } catch {}
+  }
+
+  // P0c: 决策日志表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS decision_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      key TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      ts INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_decision_ts ON decision_log(ts);
+    CREATE INDEX IF NOT EXISTS idx_decision_action ON decision_log(action);
+  `)
+
+  // P0b: Topic nodes 表（替代 topic_nodes.json）
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS topic_nodes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      topic TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      sourceCount INTEGER DEFAULT 0,
+      lastUpdated INTEGER NOT NULL,
+      userId TEXT,
+      hitCount INTEGER DEFAULT 0,
+      missCount INTEGER DEFAULT 0,
+      lastHitTs INTEGER DEFAULT 0,
+      stale INTEGER DEFAULT 0,
+      confidence REAL DEFAULT 0.5
+    );
+    CREATE INDEX IF NOT EXISTS idx_topic_user ON topic_nodes(userId);
+  `)
+
+  // P1c: Mental models 表（替代 mental_models.json）
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS mental_models (
+      userId TEXT PRIMARY KEY,
+      model TEXT NOT NULL,
+      topics TEXT DEFAULT '[]',
+      lastUpdated INTEGER NOT NULL,
+      version INTEGER DEFAULT 1,
+      section_identity TEXT DEFAULT '',
+      section_style TEXT DEFAULT '',
+      section_facts TEXT DEFAULT '',
+      section_dynamics TEXT DEFAULT '',
+      sectionUpdated_identity INTEGER DEFAULT 0,
+      sectionUpdated_style INTEGER DEFAULT 0,
+      sectionUpdated_facts INTEGER DEFAULT 0,
+      sectionUpdated_dynamics INTEGER DEFAULT 0
+    );
+  `)
+
+  // P2c: 蒸馏溢出队列表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pending_distill (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contents TEXT NOT NULL,
+      clusteredAt INTEGER NOT NULL
+    );
+  `)
+
+  // 蒸馏状态表（替代 distill_state.json）
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS distill_state (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `)
+
+  // FSRS 训练数据表（替代 fsrs_training.json）
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS fsrs_training (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      elapsedDays REAL NOT NULL,
+      stability REAL NOT NULL,
+      recalled INTEGER NOT NULL,
+      ts INTEGER NOT NULL
+    );
+  `)
+
+  // 衰减参数表（替代 decay_params.json）
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS decay_params (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `)
+
+  // Augment 反馈表（替代 augment_feedback.json）
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS augment_feedback (
+      augmentType TEXT PRIMARY KEY,
+      useful INTEGER DEFAULT 0,
+      ignored INTEGER DEFAULT 0,
+      totalScore REAL DEFAULT 0,
+      count INTEGER DEFAULT 0,
+      recentScores TEXT DEFAULT '[]'
+    );
+  `)
+
   // Auto-migrate cc-soul data from JSON to official DB on first connect
   migrateFromJSON()
-  migrateHabitsFromJSON()
-  migrateGoalsFromJSON()
-  migrateRemindersFromJSON()
-  migrateGraphFromJSON()
+  // habits/goals/reminders migration removed — life features deleted
 
   const count = (db.prepare('SELECT COUNT(*) as c FROM memories').get() as any)?.c || 0
   console.log(`[cc-soul][sqlite] database ready: ${count} memories, vec: ${hasVec}, db: ${DB_PATH}`)
@@ -250,8 +352,8 @@ export function migrateFromJSON() {
     console.log(`[cc-soul][sqlite] migrating ${memories.length} memories from JSON...`)
 
     const insert = db.prepare(`
-      INSERT OR IGNORE INTO memories (content, scope, ts, created_at, raw_line, emotion, userId, visibility, channelId, tags, confidence, lastAccessed, access_count, tier, recallCount, lastRecalled, validFrom, validUntil)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO memories (content, scope, ts, created_at, raw_line, emotion, userId, visibility, channelId, tags, confidence, lastAccessed, access_count, tier, recallCount, lastRecalled, validFrom, validUntil, prospectiveTags, _entityIds)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 
     db.exec('BEGIN')
@@ -278,6 +380,8 @@ export function migrateFromJSON() {
           m.lastRecalled || null,
           m.validFrom || null,
           m.validUntil || null,
+          JSON.stringify(m.prospectiveTags || []),
+          JSON.stringify(m._entityIds || []),
         )
       }
       db.exec('COMMIT')
@@ -336,8 +440,8 @@ export function sqliteAddMemory(mem: Omit<Memory, 'relevance'>): number {
   const now = Date.now()
   const tsVal = mem.ts || now
   const result = db.prepare(`
-    INSERT OR IGNORE INTO memories (content, scope, ts, created_at, raw_line, emotion, userId, visibility, channelId, tags, confidence, lastAccessed, access_count, tier, recallCount, validFrom, validUntil)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT OR IGNORE INTO memories (content, scope, ts, created_at, raw_line, emotion, userId, visibility, channelId, tags, confidence, lastAccessed, access_count, tier, recallCount, validFrom, validUntil, prospectiveTags, _entityIds)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     mem.content,
     mem.scope,
@@ -356,13 +460,10 @@ export function sqliteAddMemory(mem: Omit<Memory, 'relevance'>): number {
     mem.recallCount || 0,
     mem.validFrom || null,
     mem.validUntil || null,
+    JSON.stringify(mem.prospectiveTags || []),
+    JSON.stringify(mem._entityIds || []),
   )
   const id = Number(result.lastInsertRowid)
-
-  // Async: generate and store embedding if embedder is ready
-  if (hasVec && isEmbedderReady()) {
-    storeEmbeddingAsync(id, mem.content)
-  }
 
   return id
 }
@@ -381,14 +482,11 @@ export function sqliteUpdateMemory(id: number, updates: Partial<Memory>) {
   if (updates.recallCount !== undefined) { sets.push('recallCount = ?'); values.push(updates.recallCount) }
   if (updates.lastRecalled !== undefined) { sets.push('lastRecalled = ?'); values.push(updates.lastRecalled) }
   if (updates.validUntil !== undefined) { sets.push('validUntil = ?'); values.push(updates.validUntil) }
+  if (updates.utility !== undefined) { sets.push('utility = ?'); values.push(updates.utility) }
   if (sets.length === 0) return
   values.push(id)
   db.prepare(`UPDATE memories SET ${sets.join(', ')} WHERE id = ?`).run(...values)
 
-  // Re-embed if content changed
-  if (updates.content && hasVec && isEmbedderReady()) {
-    storeEmbeddingAsync(id, updates.content)
-  }
 }
 
 /**
@@ -397,18 +495,6 @@ export function sqliteUpdateMemory(id: number, updates: Partial<Memory>) {
 export function sqliteUpdateRawLine(id: number, rawLine: string): void {
   if (!db) return
   db.prepare('UPDATE memories SET raw_line = ? WHERE id = ?').run(rawLine, id)
-}
-
-export function sqliteExpireMemory(keyword: string): number {
-  if (!db) return 0
-  const result = db.prepare(`UPDATE memories SET scope = 'expired' WHERE content LIKE ? AND scope != 'expired'`).run(`%${keyword}%`)
-  return result.changes
-}
-
-export function sqliteGetByScope(scope: string, limit = 100): Memory[] {
-  if (!db) return []
-  const rows = db.prepare('SELECT * FROM memories WHERE scope = ? ORDER BY ts DESC LIMIT ?').all(scope, limit) as any[]
-  return rows.map(rowToMemory)
 }
 
 export function sqliteGetAll(excludeExpired = true): Memory[] {
@@ -432,40 +518,25 @@ export function sqliteFindByContent(content: string): { id: number; memory: Memo
   return { id: row.id, memory: rowToMemory(row) }
 }
 
-/**
- * Find memories similar to content using LIKE (for trigram-style matching).
- * Returns up to `limit` results.
- */
-export function sqliteSearchContent(keywords: string[], limit = 20): { id: number; memory: Memory }[] {
-  if (!db || keywords.length === 0) return []
-  // Build WHERE with OR for each keyword
-  const conditions = keywords.map(() => 'content LIKE ?').join(' OR ')
-  const params = keywords.map(k => `%${k}%`)
-  const rows = db.prepare(
-    `SELECT * FROM memories WHERE (${conditions}) AND scope != 'expired' ORDER BY ts DESC LIMIT ?`
-  ).all(...params, limit) as any[]
-  return rows.map(row => ({ id: row.id, memory: rowToMemory(row) }))
+// ═══════════════════════════════════════════════════════════════════════════════
+// RECALL — vector search (primary when available) + tag/keyword fallback
+// ── Weibull recency (unified with smart-forget.ts model, inlined to avoid circular import) ──
+const WEIBULL_K = 1.5
+const WEIBULL_LAMBDA: Record<string, number> = { fact: 30, preference: 90, correction: Infinity, episode: 14, emotion: 7 }
+function weibullRecency(ageDays: number, scope?: string): number {
+  const lambda = WEIBULL_LAMBDA[scope || 'fact'] ?? 30
+  if (!isFinite(lambda)) return 1.0
+  if (ageDays <= 0) return 1.0
+  return Math.exp(-Math.pow(ageDays / lambda, WEIBULL_K))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// RECALL — vector search (primary when available) + tag/keyword fallback
-// ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Recall memories relevant to msg. Uses vector search if available, falls back to tag/keyword.
+ * Recall memories relevant to msg. Tag/keyword search (activation field handles semantic recall).
  */
 export async function sqliteRecall(msg: string, topN = 3, userId?: string, channelId?: string): Promise<Memory[]> {
   if (!db) return []
-
-  // Try vector search first
-  if (hasVec && isEmbedderReady()) {
-    const vecResults = await vectorRecall(msg, topN * 3, userId, channelId) // over-fetch for re-ranking
-    if (vecResults.length > 0) {
-      return vecResults.slice(0, topN)
-    }
-  }
-
-  // Fallback: tag/keyword search (synchronous)
   return tagRecall(msg, topN, userId, channelId)
 }
 
@@ -478,7 +549,7 @@ export function tagRecall(msg: string, topN = 3, userId?: string, channelId?: st
   const queryWords = (msg.match(/[\u4e00-\u9fff]{2,}|[a-z]{3,}/gi) || []).map(w => w.toLowerCase())
   if (queryWords.length === 0) return []
 
-  let visWhere = "AND scope != 'expired'"
+  let visWhere = "AND scope NOT IN ('expired','archived')"
   const params: any[] = []
   if (channelId) {
     visWhere += ` AND (visibility = 'global' OR (visibility = 'channel' AND channelId = ?))`
@@ -519,7 +590,7 @@ export function tagRecall(msg: string, topN = 3, userId?: string, channelId?: st
     if (sim < 0.05) continue
 
     const ageDays = (Date.now() - mem.ts) / 86400000
-    const recency = Math.exp(-ageDays * 0.02)
+    const recency = weibullRecency(ageDays, mem.scope)
     const scopeBoost = (mem.scope === 'preference' || mem.scope === 'fact') ? 1.3
       : (mem.scope === 'correction') ? 1.5
       : (mem.scope === 'consolidated') ? 1.5
@@ -549,150 +620,128 @@ export function tagRecall(msg: string, topN = 3, userId?: string, channelId?: st
   return scored.slice(0, topN)
 }
 
-/**
- * Vector-based recall using sqlite-vec + embedder.
- */
-async function vectorRecall(msg: string, topN: number, userId?: string, channelId?: string): Promise<Memory[]> {
-  const queryVec = await embed(msg)
-  if (!queryVec) return []
-
-  try {
-    // sqlite-vec KNN query
-    const vecRows = db.prepare(`
-      SELECT memory_id, distance
-      FROM mem_vec
-      WHERE embedding MATCH ?
-      ORDER BY distance
-      LIMIT ?
-    `).all(Buffer.from(queryVec.buffer), topN * 2) as any[]
-
-    if (vecRows.length === 0) return []
-
-    // Fetch full memory rows
-    const ids = vecRows.map((r: any) => r.memory_id)
-    const distMap = new Map(vecRows.map((r: any) => [r.memory_id, r.distance]))
-
-    const placeholders = ids.map(() => '?').join(',')
-    let visWhere = `AND scope != 'expired'`
-    const params: any[] = [...ids]
-    if (channelId) {
-      visWhere += ` AND (visibility = 'global' OR (visibility = 'channel' AND channelId = ?))`
-      params.push(channelId)
-    }
-    if (userId) {
-      visWhere += ` AND (visibility != 'private' OR userId = ?)`
-      params.push(userId)
-    }
-
-    const rows = db.prepare(
-      `SELECT * FROM memories WHERE id IN (${placeholders}) ${visWhere}`
-    ).all(...params) as any[]
-
-    // Score: combine vector similarity with recency/scope/emotion boosts
-    const scored: (Memory & { score: number })[] = []
-    for (const row of rows) {
-      const mem = rowToMemory(row)
-      const dist = distMap.get(row.id) || 1.0
-      const vecSim = 1.0 - dist // cosine distance → similarity
-
-      if (vecSim < 0.3) continue // too dissimilar
-
-      const ageDays = (Date.now() - mem.ts) / 86400000
-      const recency = Math.exp(-ageDays * 0.02)
-      const scopeBoost = (mem.scope === 'correction') ? 1.5
-        : (mem.scope === 'preference' || mem.scope === 'fact' || mem.scope === 'consolidated') ? 1.3
-        : 1.0
-      const emotionBoost = mem.emotion === 'important' ? 1.4
-        : mem.emotion === 'painful' ? 1.3
-        : 1.0
-      const confidenceWeight = mem.confidence ?? 0.7
-      // DAG archive: archived memories participate with reduced weight
-      const archiveWeight = mem.scope === 'archived' ? 0.3 : 1.0
-
-      scored.push({ ...mem, score: vecSim * recency * scopeBoost * emotionBoost * confidenceWeight * archiveWeight })
-    }
-
-    scored.sort((a, b) => b.score - a.score)
-    return scored
-  } catch (e: any) {
-    console.error(`[cc-soul][sqlite] vector recall failed: ${e.message}`)
-    return []
-  }
-}
+// vectorRecall, storeEmbeddingAsync, backfillEmbeddings removed — vector search retired
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// EMBEDDING MANAGEMENT
+// TIME-BASED RECALL — uses (scope, ts) composite index for O(log n) queries
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Store embedding for a memory (async, fire-and-forget).
+ * Time-range recall via SQLite. Uses idx_mem_scope_ts composite index.
+ * Returns memories between `from` and `to` (ms timestamps), excluding expired/decayed.
  */
-function storeEmbeddingAsync(memoryId: number, content: string) {
-  embed(content).then(vec => {
-    if (!vec || !db || !hasVec) return
-    try { db.exec('SELECT 1') } catch { return } // db may have been closed
-    try {
-      // Upsert: delete old if exists, then insert — wrapped in transaction for atomicity
-      db.exec('BEGIN')
-      try {
-        db.prepare('DELETE FROM mem_vec WHERE memory_id = ?').run(memoryId)
-        db.prepare('INSERT INTO mem_vec (memory_id, embedding) VALUES (CAST(? AS INTEGER), ?)').run(
-          memoryId,
-          Buffer.from(vec.buffer),
-        )
-        db.exec('COMMIT')
-      } catch (innerErr) {
-        db.exec('ROLLBACK')
-        throw innerErr
-      }
-    } catch (e: any) {
-      console.error(`[cc-soul][sqlite] embed store failed for id=${memoryId}: ${e.message}`)
-    }
-  }).catch(() => { /* silent */ })
-}
-
-/**
- * Backfill embeddings for memories that don't have vectors yet.
- * Called from heartbeat. Processes a small batch each time.
- */
-export async function backfillEmbeddings(batchSize = 200) {
+export function sqliteRecallByTime(opts: {
+  from: number; to: number; scope?: string; userId?: string; topN?: number
+}): Memory[] {
   const _db = ensureDb()
-  _loadState()
-  if (!_db || !hasVec || !isEmbedderReady()) {
-    console.log(`[cc-soul][sqlite] backfill skipped: db=${!!_db} hasVec=${hasVec} embedderReady=${isEmbedderReady()}`)
-    return
-  }
+  if (!_db) return []
+  const topN = opts.topN ?? 20
+  const conditions: string[] = ["scope NOT IN ('expired','decayed')", 'ts >= ?', 'ts <= ?']
+  const params: any[] = [opts.from, opts.to]
+  if (opts.scope) { conditions.push('scope = ?'); params.push(opts.scope) }
+  if (opts.userId) { conditions.push('userId = ?'); params.push(opts.userId) }
+  params.push(topN)
+  const rows = _db.prepare(
+    `SELECT * FROM memories WHERE ${conditions.join(' AND ')} ORDER BY ts DESC LIMIT ?`
+  ).all(...params) as any[]
+  return rows.map(rowToMemory)
+}
 
-  try {
-    const rows = _db.prepare(`
-      SELECT m.id, m.content FROM memories m
-      LEFT JOIN mem_vec v ON m.id = v.memory_id
-      WHERE v.memory_id IS NULL AND m.scope != 'expired'
-      LIMIT ?
-    `).all(batchSize) as any[]
+// ═══════════════════════════════════════════════════════════════════════════════
+// STRUCTURED FACTS CRUD — replaces JSON filter with indexed SQL queries
+// ═══════════════════════════════════════════════════════════════════════════════
 
-    if (rows.length === 0) return
+/**
+ * Add a structured fact to SQLite. Returns the row id.
+ */
+export function sqliteAddFact(fact: StructuredFact): number {
+  const _db = ensureDb()
+  if (!_db) return -1
+  const result = _db.prepare(`
+    INSERT INTO structured_facts (subject, predicate, object, confidence, source, ts, validUntil, memoryRef)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    fact.subject, fact.predicate, fact.object,
+    fact.confidence, fact.source, fact.ts,
+    fact.validUntil ?? 0, fact.memoryRef || null,
+  )
+  return Number(result.lastInsertRowid)
+}
 
-    let stored = 0
-    for (const row of rows) {
-      const vec = await embed(row.content)
-      if (!vec) continue
-      try {
-        _db.prepare('DELETE FROM mem_vec WHERE memory_id = ?').run(row.id)
-        _db.prepare('INSERT INTO mem_vec (memory_id, embedding) VALUES (CAST(? AS INTEGER), ?)').run(
-          row.id,
-          Buffer.from(vec.buffer),
-        )
-        stored++
-      } catch { /* skip */ }
-    }
+/**
+ * Query facts by subject/predicate/object. Uses idx_fact_subj_pred index.
+ * Only returns valid (non-expired) facts.
+ */
+export function sqliteQueryFacts(opts: { subject?: string; predicate?: string; object?: string }): StructuredFact[] {
+  const _db = ensureDb()
+  if (!_db) return []
+  const conditions: string[] = ['validUntil = 0']
+  const params: any[] = []
+  if (opts.subject) { conditions.push('subject = ?'); params.push(opts.subject) }
+  if (opts.predicate) { conditions.push('predicate = ?'); params.push(opts.predicate) }
+  if (opts.object) { conditions.push('object LIKE ?'); params.push(`%${opts.object}%`) }
+  const rows = _db.prepare(
+    `SELECT * FROM structured_facts WHERE ${conditions.join(' AND ')} ORDER BY ts DESC`
+  ).all(...params) as any[]
+  return rows.map(r => ({
+    subject: r.subject, predicate: r.predicate, object: r.object,
+    confidence: r.confidence, source: r.source, ts: r.ts,
+    validUntil: r.validUntil, memoryRef: r.memoryRef || undefined,
+  }))
+}
 
-    if (stored > 0) {
-      console.log(`[cc-soul][sqlite] backfilled ${stored}/${rows.length} embeddings`)
-    }
-  } catch (e: any) {
-    console.error(`[cc-soul][sqlite] backfill failed: ${e.message}`)
-  }
+/**
+ * Invalidate conflicting facts (same subject+predicate, different object).
+ */
+export function sqliteInvalidateFacts(subject: string, predicate: string, exceptObject: string): number {
+  const _db = ensureDb()
+  if (!_db) return 0
+  const result = _db.prepare(
+    `UPDATE structured_facts SET validUntil = ? WHERE subject = ? AND predicate = ? AND object != ? AND validUntil = 0`
+  ).run(Date.now(), subject, predicate, exceptObject)
+  return result.changes
+}
+
+/**
+ * Get all valid facts count.
+ */
+export function sqliteFactCount(): number {
+  const _db = ensureDb()
+  if (!_db) return 0
+  return (_db.prepare('SELECT COUNT(*) as c FROM structured_facts WHERE validUntil = 0').get() as any)?.c || 0
+}
+
+/**
+ * Get all valid facts for a subject (for summary generation).
+ */
+export function sqliteGetFactsBySubject(subject: string): StructuredFact[] {
+  const _db = ensureDb()
+  if (!_db) return []
+  const rows = _db.prepare(
+    'SELECT * FROM structured_facts WHERE subject = ? AND validUntil = 0 ORDER BY ts DESC'
+  ).all(subject) as any[]
+  return rows.map(r => ({
+    subject: r.subject, predicate: r.predicate, object: r.object,
+    confidence: r.confidence, source: r.source, ts: r.ts,
+    validUntil: r.validUntil, memoryRef: r.memoryRef || undefined,
+  }))
+}
+
+/**
+ * Load ALL facts from SQLite (including expired ones with validUntil > 0).
+ * Used by fact-store.ts initialization to replace JSON loading.
+ */
+export function sqliteLoadAllFacts(): StructuredFact[] {
+  const _db = ensureDb()
+  if (!_db) return []
+  const rows = _db.prepare(
+    'SELECT * FROM structured_facts ORDER BY ts DESC'
+  ).all() as any[]
+  return rows.map(r => ({
+    subject: r.subject, predicate: r.predicate, object: r.object,
+    confidence: r.confidence, source: r.source, ts: r.ts,
+    validUntil: r.validUntil, memoryRef: r.memoryRef || undefined,
+  }))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -748,15 +797,6 @@ export function sqliteCleanupExpired() {
   }
 }
 
-export function sqliteVacuum() {
-  if (!db) return
-  try { db.exec('VACUUM') } catch { /* ignore */ }
-}
-
-export function hasVectorSearch(): boolean {
-  return hasVec && isEmbedderReady()
-}
-
 export function isSQLiteReady(): boolean {
   return sqliteReady
 }
@@ -787,193 +827,45 @@ function rowToMemory(row: any): Memory {
     lastRecalled: row.lastRecalled || undefined,
     validFrom: row.validFrom || undefined,
     validUntil: row.validUntil || undefined,
+    prospectiveTags: row.prospectiveTags ? (() => { try { const p = JSON.parse(row.prospectiveTags); return p.length > 0 ? p : undefined } catch { return undefined } })() : undefined,
+    _entityIds: row._entityIds ? (() => { try { const e = JSON.parse(row._entityIds); return e.length > 0 ? e : undefined } catch { return undefined } })() : undefined,
   }
 }
 
-/** Ensure db is initialized, return the connection. Retries if previous attempt failed. */
+/** Ensure db is initialized, return the connection. Retries once if previous attempt failed. */
+let _dbFailed = false
 function ensureDb(): any {
   _loadState()
   if (db) return db
+  if (_dbFailed) return null
   if (!sqliteReady) {
-    try { initSQLite() } catch { /* init failed, db stays null */ }
+    try { initSQLite() } catch { _dbFailed = true; /* init failed, db stays null */ }
     _loadState() // check if another context succeeded
+    if (!db) _dbFailed = true
   }
   return db
 }
 
 export function getDb() { return ensureDb() }
 
+// habits/goals/reminders CRUD removed — life features deleted
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// HABITS CRUD — uses official habits + habit_logs tables
+// DUE REMINDERS — time-based reminders queried by heartbeat
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function dbGetHabits(chatId?: string): { id: number; name: string; streak: number; total: number; lastDate: string }[] {
+export function dbGetDueReminders(): { id: number; msg: string }[] {
   const _db = ensureDb(); if (!_db) return []
-  const rows = _db.prepare(`
-    SELECT h.id, h.name, h.description,
-      (SELECT COUNT(*) FROM habit_logs WHERE habit_id = h.id) as total,
-      (SELECT MAX(date) FROM habit_logs WHERE habit_id = h.id) as lastDate
-    FROM habits h WHERE h.archived = 0
-    ORDER BY h.name
-  `).all() as any[]
-  return rows.map(r => {
-    // Calculate streak from habit_logs
-    let streak = 0
-    const logs = _db.prepare('SELECT date FROM habit_logs WHERE habit_id = ? ORDER BY date DESC').all(r.id) as any[]
-    const today = new Date().toISOString().slice(0, 10)
-    let checkDate = today
-    for (const l of logs) {
-      if (l.date === checkDate || l.date === prevDay(checkDate)) {
-        streak++
-        checkDate = l.date
-      } else break
-    }
-    return { id: r.id, name: r.name, streak, total: r.total || 0, lastDate: r.lastDate || '' }
-  })
-}
-
-function prevDay(dateStr: string): string {
-  const d = new Date(dateStr)
-  d.setDate(d.getDate() - 1)
-  return d.toISOString().slice(0, 10)
-}
-
-export function dbCheckin(habitName: string, chatId?: string): { streak: number; total: number; isNew: boolean } {
-  let _db = ensureDb()
-  // If db not ready yet (concurrent init), retry once after reloading state
-  if (!_db) {
-    _loadState()
-    _db = ensureDb()
-  }
-  if (!_db) return { streak: 0, total: 0, isNew: false }
-  const today = new Date().toISOString().slice(0, 10)
   const now = new Date().toISOString()
-
-  // Find or create habit
-  let habit = _db.prepare('SELECT id FROM habits WHERE name = ? AND archived = 0').get(habitName) as any
-  let isNew = false
-  if (!habit) {
-    _db.prepare('INSERT INTO habits (name, frequency, chat_id, created_at) VALUES (?, ?, ?, ?)').run(habitName, 'daily', chatId || '', now)
-    habit = _db.prepare('SELECT id FROM habits WHERE name = ? AND archived = 0').get(habitName) as any
-    isNew = true
-  }
-
-  // Check if already checked in today
-  const existing = _db.prepare('SELECT id FROM habit_logs WHERE habit_id = ? AND date = ?').get(habit.id, today) as any
-  if (!existing) {
-    _db.prepare('INSERT INTO habit_logs (habit_id, date, value, created_at) VALUES (?, ?, 1, ?)').run(habit.id, today, now)
-  }
-
-  // Calculate streak + total
-  const total = (_db.prepare('SELECT COUNT(*) as c FROM habit_logs WHERE habit_id = ?').get(habit.id) as any)?.c || 0
-  const logs = _db.prepare('SELECT date FROM habit_logs WHERE habit_id = ? ORDER BY date DESC LIMIT 60').all(habit.id) as any[]
-  let streak = 0
-  let checkDate = today
-  for (const l of logs) {
-    if (l.date === checkDate) { streak++; checkDate = prevDay(checkDate) }
-    else if (l.date === prevDay(checkDate)) { streak++; checkDate = prevDay(l.date) }
-    else break
-  }
-
-  return { streak, total, isNew }
+  const rows = _db.prepare(
+    "SELECT id, content FROM reminders WHERE status = 'pending' AND repeat_type != 'context' AND remind_at <= ?"
+  ).all(now) as any[]
+  return rows.map(r => ({ id: r.id, msg: r.content || '' }))
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// GOALS CRUD — uses official goals + goal_updates tables
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export function dbGetGoals(chatId?: string): { id: number; name: string; progress: number; milestones: number; created: number }[] {
-  const _db = ensureDb(); if (!_db) return []
-  const rows = _db.prepare(`
-    SELECT g.id, g.title, g.progress, g.created_at,
-      (SELECT COUNT(*) FROM key_results WHERE goal_id = g.id) as milestones
-    FROM goals g WHERE g.status != 'completed'
-    ORDER BY g.created_at DESC
-  `).all() as any[]
-  return rows.map(r => ({
-    id: r.id,
-    name: r.title,
-    progress: r.progress || 0,
-    milestones: r.milestones || 0,
-    created: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
-  }))
-}
-
-export function dbAddGoal(name: string, chatId?: string): number {
-  const _db = ensureDb(); if (!_db) return -1
-  const now = new Date().toISOString()
-  const result = _db.prepare('INSERT INTO goals (title, status, progress, chat_id, created_at) VALUES (?, ?, 0, ?, ?)').run(name, 'active', chatId || '', now)
-  return Number(result.lastInsertRowid)
-}
-
-export function dbUpdateGoalProgress(goalId: number, progress: number, note?: string) {
+export function dbMarkReminderFired(id: number): void {
   const _db = ensureDb(); if (!_db) return
-  _db.prepare('UPDATE goals SET progress = ? WHERE id = ?').run(progress, goalId)
-  if (note) {
-    _db.prepare('INSERT INTO goal_updates (goal_id, content, progress_delta, created_at) VALUES (?, ?, ?, ?)').run(goalId, note, progress, new Date().toISOString())
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// REMINDERS CRUD — uses official reminders table
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export function dbGetReminders(userId?: string): { id: number; msg: string; hour: number; minute: number; repeat: boolean; userId: string }[] {
-  const _db = ensureDb(); if (!_db) return []
-  const rows = _db.prepare("SELECT * FROM reminders WHERE status = 'pending' ORDER BY remind_at ASC").all() as any[]
-  return rows
-    .filter(r => !userId || !r.chat_id || r.chat_id === userId)
-    .map(r => {
-      // Parse remind_at (stored as "HH:MM" or ISO datetime)
-      let hour = 0, minute = 0
-      const timeStr = r.remind_at || ''
-      const hm = timeStr.match(/(\d{1,2}):(\d{2})/)
-      if (hm) { hour = parseInt(hm[1]); minute = parseInt(hm[2]) }
-      return {
-        id: r.id,
-        msg: r.content,
-        hour, minute,
-        repeat: r.repeat_type === 'daily',
-        userId: r.chat_id || '',
-      }
-    })
-}
-
-export function dbAddReminder(msg: string, hour: number, minute: number, userId?: string): number {
-  const _db = ensureDb(); if (!_db) return -1
-  const now = new Date().toISOString()
-  const remindAt = `${hour}:${String(minute).padStart(2, '0')}`
-  const result = _db.prepare("INSERT INTO reminders (chat_id, content, remind_at, repeat_type, status, created_at) VALUES (?, ?, ?, 'daily', 'pending', ?)").run(userId || '', msg, remindAt, now)
-  return Number(result.lastInsertRowid)
-}
-
-export function dbDeleteReminder(id: number) {
-  const _db = ensureDb(); if (!_db) return
-  _db.prepare("UPDATE reminders SET status = 'cancelled' WHERE id = ?").run(id)
-}
-
-export function dbGetDueReminders(): { id: number; msg: string; userId: string; lastFired: string | null }[] {
-  const _db = ensureDb(); if (!_db) return []
-  const now = new Date()
-  const h = now.getHours(), m = now.getMinutes()
-  const rows = _db.prepare("SELECT * FROM reminders WHERE status = 'pending'").all() as any[]
-  const due: any[] = []
-  for (const r of rows) {
-    const hm = (r.remind_at || '').match(/(\d{1,2}):(\d{2})/)
-    if (!hm) continue
-    const rh = parseInt(hm[1]), rm = parseInt(hm[2])
-    const diffMin = Math.abs((rh * 60 + rm) - (h * 60 + m))
-    if (diffMin <= 15 || diffMin >= (24 * 60 - 15)) {
-      if (r.last_fired && Date.now() - new Date(r.last_fired).getTime() < 25 * 60000) continue
-      due.push({ id: r.id, msg: r.content, userId: r.chat_id || '', lastFired: r.last_fired })
-    }
-  }
-  return due
-}
-
-export function dbMarkReminderFired(id: number) {
-  const _db = ensureDb(); if (!_db) return
-  _db.prepare("UPDATE reminders SET last_fired = ?, fired_count = COALESCE(fired_count, 0) + 1 WHERE id = ?").run(new Date().toISOString(), id)
+  _db.prepare("UPDATE reminders SET status = 'fired' WHERE id = ?").run(id)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1003,88 +895,7 @@ export function dbGetContextReminders(userId?: string): { id: number; keyword: s
     }))
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MIGRATE habits/goals/reminders from JSON
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export function migrateHabitsFromJSON() {
-  const _db = ensureDb(); if (!_db) return
-  const habitsPath = resolve(DATA_DIR, 'habits.json')
-  if (!existsSync(habitsPath)) return
-  const existing = (_db.prepare('SELECT COUNT(*) as c FROM habits').get() as any)?.c || 0
-  if (existing > 0) return
-  try {
-    const raw = JSON.parse(readFileSync(habitsPath, 'utf-8'))
-    const now = new Date().toISOString()
-    _db.exec('BEGIN')
-    for (const [name, data] of Object.entries(raw) as [string, any][]) {
-      _db.prepare('INSERT OR IGNORE INTO habits (name, frequency, created_at) VALUES (?, ?, ?)').run(name, 'daily', now)
-      const habit = _db.prepare('SELECT id FROM habits WHERE name = ?').get(name) as any
-      if (habit && data.checkins) {
-        for (const dateStr of (data.checkins || [])) {
-          _db.prepare('INSERT OR IGNORE INTO habit_logs (habit_id, date, value, created_at) VALUES (?, ?, 1, ?)').run(habit.id, dateStr, now)
-        }
-      }
-    }
-    _db.exec('COMMIT')
-    console.log(`[cc-soul][sqlite] migrated habits from JSON`)
-  } catch (e: any) {
-    try { _db.exec('ROLLBACK') } catch {}
-    console.error(`[cc-soul][sqlite] habits migration failed: ${e.message}`)
-  }
-}
-
-export function migrateGoalsFromJSON() {
-  const _db = ensureDb(); if (!_db) return
-  const goalsPath = resolve(DATA_DIR, 'user-goals.json')
-  if (!existsSync(goalsPath)) return
-  const existing = (_db.prepare('SELECT COUNT(*) as c FROM goals').get() as any)?.c || 0
-  if (existing > 0) return
-  try {
-    const raw = JSON.parse(readFileSync(goalsPath, 'utf-8'))
-    if (!Array.isArray(raw)) return
-    _db.exec('BEGIN')
-    for (const g of raw) {
-      const created = g.created ? new Date(g.created).toISOString() : new Date().toISOString()
-      const insertResult = _db.prepare('INSERT INTO goals (title, status, progress, created_at) VALUES (?, ?, ?, ?)').run(g.name || '未命名', 'active', g.progress || 0, created)
-      if (g.milestones && Array.isArray(g.milestones)) {
-        const goalId = Number(insertResult.lastInsertRowid)
-        for (const m of g.milestones) {
-          _db.prepare('INSERT INTO key_results (goal_id, title, current_value, target_value, created_at) VALUES (?, ?, ?, 1, ?)').run(goalId, m.text || m, m.done ? 1 : 0, created)
-        }
-      }
-    }
-    _db.exec('COMMIT')
-    console.log(`[cc-soul][sqlite] migrated goals from JSON`)
-  } catch (e: any) {
-    try { _db.exec('ROLLBACK') } catch {}
-    console.error(`[cc-soul][sqlite] goals migration failed: ${e.message}`)
-  }
-}
-
-export function migrateRemindersFromJSON() {
-  const _db = ensureDb(); if (!_db) return
-  if (!existsSync(REMINDERS_PATH)) return
-  const existing = (_db.prepare("SELECT COUNT(*) as c FROM reminders WHERE status = 'pending'").get() as any)?.c || 0
-  if (existing > 0) return
-  try {
-    const raw = JSON.parse(readFileSync(REMINDERS_PATH, 'utf-8'))
-    if (!Array.isArray(raw) || raw.length === 0) return
-    const now = new Date().toISOString()
-    _db.exec('BEGIN')
-    for (const r of raw) {
-      const remindAt = `${r.hour}:${String(r.minute).padStart(2, '0')}`
-      _db.prepare("INSERT INTO reminders (chat_id, content, remind_at, repeat_type, status, created_at) VALUES (?, ?, ?, ?, 'pending', ?)").run(
-        r.userId || '', r.msg, remindAt, r.repeat ? 'daily' : 'once', now
-      )
-    }
-    _db.exec('COMMIT')
-    console.log(`[cc-soul][sqlite] migrated ${raw.length} reminders from JSON`)
-  } catch (e: any) {
-    try { _db.exec('ROLLBACK') } catch {}
-    console.error(`[cc-soul][sqlite] reminders migration failed: ${e.message}`)
-  }
-}
+// habits/goals/reminders JSON migration removed — life features deleted
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ENTITY GRAPH CRUD — uses official entities + relations tables
@@ -1101,16 +912,16 @@ export function dbAddEntity(name: string, type: string, attrs: string[] = []): v
   const now = Date.now()
   const nowIso = new Date(now).toISOString()
   // Upsert: try INSERT first, on conflict update mentions
-  const existing = db.prepare('SELECT id, mentions, attrs FROM entities WHERE name = ?').get(name) as any
+  const existing = db.prepare('SELECT name, mentions, attrs FROM entities WHERE name = ?').get(name) as any
   if (existing) {
     const oldAttrs: string[] = (() => { try { return JSON.parse(existing.attrs || '[]') } catch { return [] } })()
     for (const a of attrs) { if (!oldAttrs.includes(a)) oldAttrs.push(a) }
-    db.prepare('UPDATE entities SET mentions = ?, attrs = ?, invalid_at = NULL WHERE id = ?')
-      .run((existing.mentions || 0) + 1, JSON.stringify(oldAttrs), existing.id)
+    db.prepare('UPDATE entities SET mentions = ?, attrs = ?, invalid_at = NULL WHERE name = ?')
+      .run((existing.mentions || 0) + 1, JSON.stringify(oldAttrs), name)
   } else {
-    db.prepare(`INSERT INTO entities (name, type, metadata, chat_id, created_at, mentions, firstSeen, attrs, valid_at, invalid_at)
-      VALUES (?, ?, '{}', '', ?, 1, ?, ?, ?, NULL)`)
-      .run(name, type, nowIso, now, JSON.stringify(attrs), now)
+    db.prepare(`INSERT INTO entities (name, type, mentions, firstSeen, attrs, valid_at, invalid_at)
+      VALUES (?, ?, 1, ?, ?, ?, NULL)`)
+      .run(name, type, now, JSON.stringify(attrs), now)
   }
 }
 
@@ -1135,55 +946,57 @@ export function dbGetRelations(): Relation[] {
   return rows.map(rowToRelation)
 }
 
-export function dbAddRelation(source: string, target: string, type: string): void {
+export function dbAddRelation(source: string, target: string, type: string, weight = 1.0, confidence = 0.7): void {
   if (!ensureDb() || !source || !target) return
   const now = Date.now()
   const nowIso = new Date(now).toISOString()
   // Check for existing active relation
   const existing = db.prepare(
-    'SELECT id FROM relations WHERE src = ? AND dst = ? AND relation = ? AND invalid_at IS NULL'
+    'SELECT source FROM relations WHERE source = ? AND target = ? AND type = ? AND invalid_at IS NULL'
   ).get(source, target, type) as any
   if (existing) return
-  db.prepare(`INSERT INTO relations (src, relation, dst, chat_id, created_at, ts, valid_at, invalid_at)
-    VALUES (?, ?, ?, '', ?, ?, ?, NULL)`)
-    .run(source, type, target, nowIso, now, now)
-}
-
-export function dbGetEntityRelations(entityName: string): Relation[] {
-  if (!ensureDb()) return []
-  const rows = db.prepare(
-    'SELECT * FROM relations WHERE (src = ? OR dst = ?) AND invalid_at IS NULL ORDER BY ts DESC'
-  ).all(entityName, entityName) as any[]
-  return rows.map(rowToRelation)
+  db.prepare(`INSERT INTO relations (source, target, type, ts, valid_at, invalid_at, weight, confidence)
+    VALUES (?, ?, ?, ?, ?, NULL, ?, ?)`)
+    .run(source, target, type, now, now, weight, confidence)
 }
 
 export function dbInvalidateEntity(name: string): void {
   if (!ensureDb()) return
   const now = Date.now()
   db.prepare('UPDATE entities SET invalid_at = ? WHERE name = ? AND invalid_at IS NULL').run(now, name)
-  db.prepare('UPDATE relations SET invalid_at = ? WHERE (src = ? OR dst = ?) AND invalid_at IS NULL').run(now, name, name)
+  db.prepare('UPDATE relations SET invalid_at = ? WHERE (source = ? OR target = ?) AND invalid_at IS NULL').run(now, name, name)
 }
 
-export function dbTrimEntities(maxKeep = 400): void {
+export function dbInvalidateStaleRelations(thresholdMs: number): number {
+  if (!ensureDb()) return 0
+  const now = Date.now()
+  const cutoff = now - thresholdMs
+  const result = db.prepare(
+    'UPDATE relations SET invalid_at = ? WHERE invalid_at IS NULL AND COALESCE(valid_at, ts, 0) < ?'
+  ).run(now, cutoff)
+  return (result as any).changes || 0
+}
+
+export function dbTrimEntities(maxKeep = 800): void {
   if (!ensureDb()) return
   const count = (db.prepare('SELECT COUNT(*) as c FROM entities').get() as any)?.c || 0
-  if (count <= 500) return
-  // Keep top entities by: valid first, then by mentions desc
-  // Delete overflow: invalid first, then lowest mentions
-  db.prepare(`DELETE FROM entities WHERE id IN (
-    SELECT id FROM entities ORDER BY
+  if (count <= maxKeep + 100) return
+  // Smart eviction: score = mentions * recency * validity
+  // Invalid entities evicted first, then lowest composite score
+  db.prepare(`DELETE FROM entities WHERE name IN (
+    SELECT name FROM entities ORDER BY
       CASE WHEN invalid_at IS NOT NULL THEN 0 ELSE 1 END ASC,
-      mentions ASC
+      (COALESCE(mentions, 0) + 1) * (1.0 / (1.0 + (? - COALESCE(valid_at, firstSeen, 0)) / 86400000.0 / 30.0)) ASC
     LIMIT ?
-  )`).run(count - maxKeep)
+  )`).run(Date.now(), count - maxKeep)
 }
 
 export function dbTrimRelations(maxKeep = 800): void {
   if (!ensureDb()) return
   const count = (db.prepare('SELECT COUNT(*) as c FROM relations').get() as any)?.c || 0
   if (count <= 1000) return
-  db.prepare(`DELETE FROM relations WHERE id IN (
-    SELECT id FROM relations ORDER BY
+  db.prepare(`DELETE FROM relations WHERE rowid IN (
+    SELECT rowid FROM relations ORDER BY
       CASE WHEN invalid_at IS NOT NULL THEN 0 ELSE 1 END ASC,
       ts ASC
     LIMIT ?
@@ -1204,53 +1017,175 @@ function rowToEntity(row: any): Entity {
 
 function rowToRelation(row: any): Relation {
   return {
-    source: row.src,
-    target: row.dst,
-    type: row.relation,
+    source: row.source || row.src,
+    target: row.target || row.dst,
+    type: row.type || row.relation,
     ts: row.ts || (row.created_at ? new Date(row.created_at).getTime() : 0),
     valid_at: row.valid_at || 0,
     invalid_at: row.invalid_at ?? null,
+    weight: row.weight ?? 1.0,
+    confidence: row.confidence ?? 0.7,
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MIGRATE graph from JSON
+// P0-P3: NEW TABLE CRUD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function migrateGraphFromJSON() {
-  if (!ensureDb()) return
-  if (!existsSync(GRAPH_PATH)) return
-  // Check if cc-soul entity data already exists
-  const existing = (db.prepare('SELECT COUNT(*) as c FROM entities WHERE mentions > 0').get() as any)?.c || 0
-  if (existing > 0) return
-  try {
-    const raw = JSON.parse(readFileSync(GRAPH_PATH, 'utf-8'))
-    const entities: any[] = raw.entities || []
-    const relations: any[] = raw.relations || []
-    if (entities.length === 0 && relations.length === 0) return
-    console.log(`[cc-soul][sqlite] migrating ${entities.length} entities + ${relations.length} relations from JSON...`)
-    db.exec('BEGIN')
-    try {
-      for (const e of entities) {
-        const created = e.firstSeen ? new Date(e.firstSeen).toISOString() : new Date().toISOString()
-        db.prepare(`INSERT OR IGNORE INTO entities (name, type, metadata, chat_id, created_at, mentions, firstSeen, attrs, valid_at, invalid_at)
-          VALUES (?, ?, '{}', '', ?, ?, ?, ?, ?, ?)`)
-          .run(e.name, e.type || 'unknown', created, e.mentions || 0, e.firstSeen || 0,
-            JSON.stringify(e.attrs || []), e.valid_at || e.firstSeen || 0, e.invalid_at ?? null)
-      }
-      for (const r of relations) {
-        const created = r.ts ? new Date(r.ts).toISOString() : new Date().toISOString()
-        db.prepare(`INSERT OR IGNORE INTO relations (src, relation, dst, chat_id, created_at, ts, valid_at, invalid_at)
-          VALUES (?, ?, ?, '', ?, ?, ?, ?)`)
-          .run(r.source, r.type, r.target, created, r.ts || 0, r.valid_at || r.ts || 0, r.invalid_at ?? null)
-      }
-      db.exec('COMMIT')
-      console.log(`[cc-soul][sqlite] migrated graph data to SQLite`)
-    } catch (e) {
-      db.exec('ROLLBACK')
-      throw e
-    }
-  } catch (e: any) {
-    console.error(`[cc-soul][sqlite] graph migration failed: ${e.message}`)
+// ── Decision Log (P0c) ──
+
+export function dbLogDecision(action: string, key: string, reason: string): void {
+  if (!db) return
+  db.prepare('INSERT INTO decision_log (action, key, reason, ts) VALUES (?, ?, ?, ?)').run(action, key, reason, Date.now())
+  // Ringbuffer: keep last 200
+  try { db.exec('DELETE FROM decision_log WHERE id NOT IN (SELECT id FROM decision_log ORDER BY id DESC LIMIT 200)') } catch {}
+}
+
+export function dbGetDecisions(filter?: string, limit = 200): Array<{ action: string; key: string; reason: string; ts: number }> {
+  if (!db) return []
+  if (filter) {
+    return db.prepare('SELECT action, key, reason, ts FROM decision_log WHERE action LIKE ? OR key LIKE ? OR reason LIKE ? ORDER BY ts DESC LIMIT ?')
+      .all(`%${filter}%`, `%${filter}%`, `%${filter}%`, limit) as any[]
   }
+  return db.prepare('SELECT action, key, reason, ts FROM decision_log ORDER BY ts DESC LIMIT ?').all(limit) as any[]
+}
+
+// ── Topic Nodes (P0b) ──
+
+export function dbSaveTopicNode(node: any): void {
+  if (!db) return
+  const existing = db.prepare('SELECT id FROM topic_nodes WHERE topic = ? AND (userId = ? OR (userId IS NULL AND ? IS NULL))').get(node.topic, node.userId ?? null, node.userId ?? null)
+  if (existing) {
+    db.prepare(`UPDATE topic_nodes SET summary=?, sourceCount=?, lastUpdated=?, hitCount=?, missCount=?, lastHitTs=?, stale=?, confidence=? WHERE id=?`)
+      .run(node.summary, node.sourceCount, node.lastUpdated, node.hitCount ?? 0, node.missCount ?? 0, node.lastHitTs ?? 0, node.stale ? 1 : 0, node.confidence ?? 0.5, (existing as any).id)
+  } else {
+    db.prepare(`INSERT INTO topic_nodes (topic, summary, sourceCount, lastUpdated, userId, hitCount, missCount, lastHitTs, stale, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(node.topic, node.summary, node.sourceCount, node.lastUpdated, node.userId ?? null, node.hitCount ?? 0, node.missCount ?? 0, node.lastHitTs ?? 0, node.stale ? 1 : 0, node.confidence ?? 0.5)
+  }
+}
+
+export function dbLoadTopicNodes(): any[] {
+  if (!db) return []
+  return (db.prepare('SELECT * FROM topic_nodes ORDER BY lastUpdated DESC').all() as any[]).map(row => ({
+    ...row, stale: !!row.stale, userId: row.userId ?? undefined,
+  }))
+}
+
+// dbDeleteTopicNode removed — unused
+
+// ── Mental Models (P1c) ──
+
+export function dbSaveMentalModel(model: any): void {
+  if (!db) return
+  db.prepare(`INSERT OR REPLACE INTO mental_models (userId, model, topics, lastUpdated, version, section_identity, section_style, section_facts, section_dynamics, sectionUpdated_identity, sectionUpdated_style, sectionUpdated_facts, sectionUpdated_dynamics) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(
+      model.userId,
+      model.model,
+      JSON.stringify(model.topics ?? []),
+      model.lastUpdated,
+      model.version ?? 1,
+      model.sections?.identity ?? '',
+      model.sections?.style ?? '',
+      model.sections?.facts ?? '',
+      model.sections?.dynamics ?? '',
+      model.sectionUpdated?.identity ?? 0,
+      model.sectionUpdated?.style ?? 0,
+      model.sectionUpdated?.facts ?? 0,
+      model.sectionUpdated?.dynamics ?? 0,
+    )
+}
+
+export function dbLoadMentalModels(): Map<string, any> {
+  if (!db) return new Map()
+  const rows = db.prepare('SELECT * FROM mental_models').all() as any[]
+  const map = new Map<string, any>()
+  for (const row of rows) {
+    map.set(row.userId, {
+      userId: row.userId,
+      model: row.model,
+      topics: JSON.parse(row.topics || '[]'),
+      lastUpdated: row.lastUpdated,
+      version: row.version,
+      sections: {
+        identity: row.section_identity || '',
+        style: row.section_style || '',
+        facts: row.section_facts || '',
+        dynamics: row.section_dynamics || '',
+      },
+      sectionUpdated: {
+        identity: row.sectionUpdated_identity || 0,
+        style: row.sectionUpdated_style || 0,
+        facts: row.sectionUpdated_facts || 0,
+        dynamics: row.sectionUpdated_dynamics || 0,
+      },
+    })
+  }
+  return map
+}
+
+// ── Distill State (replaces distill_state.json) ──
+
+export function dbSaveDistillState(state: any): void {
+  if (!db) return
+  db.prepare('INSERT OR REPLACE INTO distill_state (key, value) VALUES (?, ?)').run('state', JSON.stringify(state))
+}
+
+export function dbLoadDistillState(fallback: any): any {
+  if (!db) return fallback
+  const row = db.prepare('SELECT value FROM distill_state WHERE key = ?').get('state') as any
+  if (!row) return fallback
+  try { return JSON.parse(row.value) } catch { return fallback }
+}
+
+// pending_distill queue removed — sync path used instead
+
+// ── FSRS Training (replaces fsrs_training.json) ──
+
+export function dbAddFSRSTraining(elapsedDays: number, stability: number, recalled: boolean): void {
+  if (!db) return
+  db.prepare('INSERT INTO fsrs_training (elapsedDays, stability, recalled, ts) VALUES (?, ?, ?, ?)').run(elapsedDays, stability, recalled ? 1 : 0, Date.now())
+  // Keep last 500
+  try { db.exec('DELETE FROM fsrs_training WHERE id NOT IN (SELECT id FROM fsrs_training ORDER BY id DESC LIMIT 500)') } catch {}
+}
+
+export function dbLoadFSRSTraining(): Array<{ elapsedDays: number; stability: number; recalled: boolean }> {
+  if (!db) return []
+  return (db.prepare('SELECT elapsedDays, stability, recalled FROM fsrs_training ORDER BY ts DESC LIMIT 500').all() as any[])
+    .map(r => ({ ...r, recalled: !!r.recalled }))
+}
+
+// ── Decay Params (replaces decay_params.json) ──
+
+export function dbSaveDecayParams(params: any): void {
+  if (!db) return
+  db.prepare('INSERT OR REPLACE INTO decay_params (key, value) VALUES (?, ?)').run('params', JSON.stringify(params))
+}
+
+export function dbLoadDecayParams(fallback: any): any {
+  if (!db) return fallback
+  const row = db.prepare('SELECT value FROM decay_params WHERE key = ?').get('params') as any
+  if (!row) return fallback
+  try { return JSON.parse(row.value) } catch { return fallback }
+}
+
+// ── Augment Feedback (replaces augment_feedback.json) ──
+
+export function dbSaveAugmentFeedback(type: string, data: { useful: number; ignored: number; totalScore: number; count: number; recentScores: number[] }): void {
+  if (!db) return
+  db.prepare('INSERT OR REPLACE INTO augment_feedback (augmentType, useful, ignored, totalScore, count, recentScores) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(type, data.useful, data.ignored, data.totalScore, data.count, JSON.stringify(data.recentScores))
+}
+
+export function dbLoadAugmentFeedback(): Record<string, { useful: number; ignored: number; totalScore: number; count: number; recentScores: number[] }> {
+  if (!db) return {}
+  const rows = db.prepare('SELECT * FROM augment_feedback').all() as any[]
+  const result: any = {}
+  for (const r of rows) {
+    result[r.augmentType] = {
+      useful: r.useful, ignored: r.ignored,
+      totalScore: r.totalScore, count: r.count,
+      recentScores: JSON.parse(r.recentScores || '[]'),
+    }
+  }
+  return result
 }

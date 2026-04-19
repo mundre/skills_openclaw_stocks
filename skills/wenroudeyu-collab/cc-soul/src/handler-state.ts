@@ -106,7 +106,6 @@ export function loadStats() {
   } else {
     stats.firstSeen = Date.now()
   }
-  ;(globalThis as any).__ccSoulStats = stats
 }
 
 export function saveStats() {
@@ -142,9 +141,25 @@ export interface SessionState {
   lastAccessed: number  // P0-4: LRU timestamp for eviction
   turnCount: number     // turns since last session reset
   lastTopicKeywords: string[]  // keywords from last turn for topic-shift detection
+  lastQualityScore: number  // previous turn quality score (0-10), for feedback loop
   _pendingCorrectionVerify?: boolean
   _lastAnalyzedPrompt?: string
   _skipNextMemory?: boolean
+  _rawUserMsg?: string  // clean user message before augment injection
+  startMood?: number    // 会话首条消息时的 mood，用于情绪弧线匹配
+}
+
+// ── Soul Mode: when enabled, all replies come from avatar (灵魂模式) ──
+let soulMode = false
+let soulModeSpeaker = ''  // who is currently talking to the soul
+
+export function getSoulMode(): { active: boolean; speaker: string } {
+  return { active: soulMode, speaker: soulModeSpeaker }
+}
+export function setSoulMode(active: boolean, speaker?: string) {
+  soulMode = active
+  soulModeSpeaker = speaker || ''
+  console.log(`[cc-soul][soul-mode] ${active ? `ON (speaker: ${soulModeSpeaker})` : 'OFF'}`)
 }
 const sessionStates = new Map<string, SessionState>()
 const MAX_SESSIONS = 20
@@ -152,24 +167,18 @@ const MAX_SESSIONS = 20
 export function getSessionState(sessionKey: string): SessionState {
   let state = sessionStates.get(sessionKey)
   if (!state) {
-    state = { lastPrompt: '', lastResponseContent: '', lastSenderId: '', lastChannelId: '', lastAugmentsUsed: [], lastRecalledContents: [], lastMatchedRuleTexts: [], lastAccessed: Date.now(), turnCount: 0, lastTopicKeywords: [] }
+    state = { lastPrompt: '', lastResponseContent: '', lastSenderId: '', lastChannelId: '', lastAugmentsUsed: [], lastRecalledContents: [], lastMatchedRuleTexts: [], lastAccessed: Date.now(), turnCount: 0, lastTopicKeywords: [], lastQualityScore: -1 }
     sessionStates.set(sessionKey, state)
-    // P0-4: Evict least-recently-used session (not FIFO)
-    // Guard: re-check size after iteration to avoid race with concurrent async callers
+    // LRU evict: Map front = least recently used (oldest insertion/re-set order)
     if (sessionStates.size > MAX_SESSIONS) {
-      let lruKey: string | undefined
-      let lruTime = Infinity
-      for (const [k, v] of sessionStates) {
-        if (k === sessionKey) continue // never evict the session we just created
-        if (v.lastAccessed < lruTime) {
-          lruTime = v.lastAccessed
-          lruKey = k
-        }
-      }
-      if (lruKey && sessionStates.size > MAX_SESSIONS) sessionStates.delete(lruKey)
+      const oldestKey = sessionStates.keys().next().value
+      if (oldestKey !== undefined && oldestKey !== sessionKey) sessionStates.delete(oldestKey)
     }
   } else {
+    // LRU: move to end of Map insertion order
+    sessionStates.delete(sessionKey)
     state.lastAccessed = Date.now()
+    sessionStates.set(sessionKey, state)
   }
   return state
 }
@@ -236,10 +245,10 @@ export function detectTopicShiftAndReset(session: SessionState, userMsg: string,
  * Clear the Claude CLI session ID from openclaw's session store,
  * forcing openclaw to start a fresh claude session on next call.
  */
-function resetCliSession(sessionKey: string): void {
+async function resetCliSession(sessionKey: string): Promise<void> {
   try {
-    const { readFileSync, writeFileSync } = require('fs')
-    const { resolve } = require('path')
+    const { readFileSync, writeFileSync } = await import('fs')
+    const { resolve } = await import('path')
     const home = process.env.HOME || process.env.USERPROFILE || ''
     // Derive agent ID from sessionKey (format: "agent:<agentId>:<alias>")
     const parts = sessionKey.split(':')
@@ -294,7 +303,7 @@ export function setPrivacyMode(v: boolean) {
   privacyMode = v
   try {
     if (v) _writeFileSync(_privacyLockPath, '1', 'utf-8')
-    else try { const { unlinkSync } = require('fs'); unlinkSync(_privacyLockPath) } catch {}
+    else try { import('fs').then(({ unlinkSync }) => unlinkSync(_privacyLockPath)).catch(() => {}) } catch {} // intentionally silent — file cleanup
   } catch {}
 }
 
