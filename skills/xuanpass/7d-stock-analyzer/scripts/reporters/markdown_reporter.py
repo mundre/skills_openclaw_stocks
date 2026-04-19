@@ -126,8 +126,11 @@ class MarkdownReporter:
             lines.append(f"**评分**: {score}/100")
             lines.append("")
 
-        # 显示详情
-        if 'details' in result:
+        # 显示详情 - 对技术面分析做特殊处理
+        if name == '技术面分析' and 'details' in result:
+            details = result['details']
+            lines.extend(self._render_technical_details(details))
+        elif 'details' in result:
             details = result['details']
             for section_name, section_data in details.items():
                 lines.append(f"### {section_name.replace('_', ' ').title()}")
@@ -143,6 +146,97 @@ class MarkdownReporter:
             lines.append("")
             for error in result['errors']:
                 lines.append(f"- {error}")
+            lines.append("")
+
+        return lines
+
+    def _render_technical_details(self, details: Dict[str, Any]) -> list:
+        """渲染技术面分析详情"""
+        lines = []
+
+        # 趋势分析
+        if 'trend' in details:
+            trend = details['trend']
+            lines.append("### 📈 趋势分析")
+            lines.append("")
+            lines.append(f"- **趋势方向**: {trend.get('direction', '未知')}")
+            lines.append(f"- **趋势强度**: {trend.get('strength', '未知')}")
+            lines.append(f"- **评级**: {trend.get('rating', '未知')}")
+            if trend.get('change_5d') is not None:
+                lines.append(f"- **5日涨跌幅**: {'+' if trend['change_5d'] > 0 else ''}{trend['change_5d']}%")
+            if trend.get('change_20d') is not None:
+                lines.append(f"- **20日涨跌幅**: {'+' if trend['change_20d'] > 0 else ''}{trend['change_20d']}%")
+            if trend.get('change_60d') is not None:
+                lines.append(f"- **60日涨跌幅**: {'+' if trend['change_60d'] > 0 else ''}{trend['change_60d']}%")
+            lines.append("")
+
+        # 均线系统
+        if 'moving_average' in details:
+            ma = details['moving_average']
+            lines.append("### 🎯 均线系统 (5/10/20/60)")
+            lines.append("")
+            lines.append(f"- **当前价格**: {ma.get('current_price', 'N/A'):.2f}")
+            lines.append(f"- **MA5**: {ma.get('MA5', 'N/A'):.2f}")
+            lines.append(f"- **MA10**: {ma.get('MA10', 'N/A'):.2f}")
+            lines.append(f"- **MA20**: {ma.get('MA20', 'N/A'):.2f}")
+            lines.append(f"- **MA60**: {ma.get('MA60', 'N/A'):.2f}")
+            lines.append(f"- **排列形态**: {ma.get('arrangement', '未知')}")
+            lines.append(f"- **趋势强度**: {ma.get('trend_strength', '未知')}")
+            lines.append("")
+
+        # 支撑压力位
+        if 'support_resistance' in details:
+            sr = details['support_resistance']
+            lines.append("### 🧱 支撑位与压力位")
+            lines.append("")
+            supports = sr.get('support_levels', [])
+            resistances = sr.get('resistance_levels', [])
+            if supports:
+                lines.append(f"- **支撑位**: {', '.join([f'{s:.2f}' for s in supports])}")
+            if resistances:
+                lines.append(f"- **压力位**: {', '.join([f'{r:.2f}' for r in resistances])}")
+            lines.append(f"- **近期低点**: {sr.get('recent_low', 'N/A'):.2f}")
+            lines.append(f"- **近期高点**: {sr.get('recent_high', 'N/A'):.2f}")
+            lines.append("")
+
+        # 技术指标
+        lines.append("### 📊 技术指标")
+        lines.append("")
+        
+        if 'kdj' in details:
+            kdj = details['kdj']
+            lines.append(f"**KDJ (9,3,3):**")
+            lines.append(f"- K: {kdj.get('K', 'N/A'):.2f}  D: {kdj.get('D', 'N/A'):.2f}  J: {kdj.get('J', 'N/A'):.2f}")
+            lines.append("")
+        
+        if 'rsi' in details:
+            rsi = details['rsi']
+            lines.append(f"**RSI (14):**")
+            lines.append(f"- RSI(14): {rsi.get('RSI14', 'N/A'):.2f}")
+            lines.append("")
+        
+        if 'macd' in details:
+            macd = details['macd']
+            lines.append(f"**MACD (12,26,9):**")
+            lines.append(f"- DIF: {macd.get('DIF', 'N/A'):.3f}  DEA: {macd.get('DEA', 'N/A'):.3f}  MACD: {macd.get('MACD', 'N/A'):.3f}")
+            lines.append("")
+
+        # 指标信号
+        if 'indicators' in details:
+            indicators = details['indicators']
+            lines.append("### 📶 指标综合信号")
+            lines.append("")
+            lines.append(f"- **KDJ信号**: {indicators.get('kdj_signal', '未知')}")
+            lines.append(f"- **RSI信号**: {indicators.get('rsi_signal', '未知')}")
+            lines.append(f"- **MACD信号**: {indicators.get('macd_signal', '未知')}")
+            lines.append(f"- **整体研判**: {indicators.get('overall', '未知')}")
+            lines.append("")
+
+        # 资金流向
+        if 'fund_flow' in details:
+            ff = details['fund_flow']
+            lines.append("### 💸 资金流向")
+            lines.append(f"- {ff.get('rating', '暂无数据')}")
             lines.append("")
 
         return lines
