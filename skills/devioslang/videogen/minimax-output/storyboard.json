@@ -1,14 +1,14 @@
 {
   "mode": "A",
-  "topic": "AI将取代哪些职业",
+  "topic": "Cloud Code源码泄露：最强编码Agent的Harness工程实现",
   "panels": [
     {
       "panel_number": 1,
       "scene_type": "过渡页",
       "shot_type": "远景/建立景",
       "camera_move": "固定镜头",
-      "description": "大字标题：AI将取代哪些职业，深色背景，简洁大气",
-      "video_prompt": "establishing shot, wide angle, static camera, 大字标题：AI将取代哪些职业，深色背景，简洁大气, subtle motion, elegant transition, clean movement, modern minimalist style, clean presentation, tech aesthetic, 9:16 vertical video",
+      "description": "大字标题：Cloud Code源码泄露：最强编码Agent的Harne，深色背景，简洁大气",
+      "video_prompt": "establishing shot, wide angle, static camera, 大字标题：Cloud Code源码泄露：最强编码Agent的Harne，深色背景，简洁大气, subtle motion, elegant transition, clean movement, modern minimalist style, clean presentation, tech aesthetic, 9:16 vertical video",
       "narration": "",
       "duration": 3,
       "transition": "淡入淡出"

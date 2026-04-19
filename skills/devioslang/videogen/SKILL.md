@@ -333,17 +333,74 @@ ffmpeg -y -i out/video_raw.mp4 -i voiceover.mp3 \
        -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k -shortest video_final.mp4
 ```
 
-### 竖屏字号规范（9:16 · 1080×1920）
+### 竖屏字号规范（视频号 · 9:16 · 1080×1920）
 
-| 元素 | 字号范围 | 备注 |
-|------|---------|------|
-| 标题/金句 | 96-144px | 约 2.5-3.7cm 实际宽度 |
-| 正文/旁白 | 48-72px | 约 1.2-1.8cm |
-| 底部字幕 | 40-48px | |
-| 代码/终端 | 32-40px | |
-| 副标题/注释 | 24-32px | |
+> ⚠️ **视频号竖屏字体最小底线 20px**。14-16px 在手机上看基本不可读。
 
-> ⚠️ **竖屏字号规范**：竖屏用户近距离看手机，需比横屏大 2-3 倍。所有 `fontSize` 应使用 `Math.round(N * scale)`，基准为 1920 宽设计。
+#### 固定字号标准
+
+| 元素 | 字号 | 字重 | 说明 |
+|------|------|------|------|
+| **主标题** | 72px | Semibold (600) | 前三秒抓眼球 |
+| **二级标题/节点** | 32px | Medium (500) | 竖屏最佳阅读尺寸 |
+| **注释/标签/来源** | 20px | Regular (400) | 视频号最小可读底线 |
+
+#### 配色标准（Apple 高级科技风）
+
+| 用途 | 色值 | 说明 |
+|------|------|------|
+| 背景 | `#111111 → #1c1c1e` | 深空黑渐变 |
+| 主文字 | `#FFFFFF` | 纯白 |
+| 强调色 | `#007AFF` | Apple 蓝（唯一强调色） |
+| 次要文字 | `#8E8E93` | 浅灰 |
+| 边框/卡片 | `#3a3a3c` / `#2c2c2e` | — |
+
+> ⚠️ 只用黑白+一个强调色，科技类最忌颜色杂乱。
+
+#### 安全区规范
+
+```
+上下左右各留 60px，避免被账号头像、进度条遮挡
+```
+
+#### 布局常量
+
+```tsx
+export const SAFE = {
+  top: 60,
+  bottom: 60,
+  left: 60,
+  right: 60,
+  titleTop: 80,     // 主标题 top
+  contentTop: 280,  // 内容区 top
+  bottomPos: 0.88,  // 底部标签位置
+};
+```
+
+#### 字号配置（固定值，不缩放）
+
+```tsx
+// 主标题：72px Semibold
+<div style={{ fontSize: 72, fontWeight: 600, ... }}>标题</div>
+
+// 二级标题/节点：32px Medium
+<div style={{ fontSize: 32, fontWeight: 500, ... }}>节点</div>
+
+// 注释/标签：20px Regular
+<div style={{ fontSize: 20, fontWeight: 400, color: "#8E8E93", ... }}>标签</div>
+```
+
+### Apple 风格模板
+
+技术干货/源码解读类内容推荐使用 Apple 风格模板，已内置可复用组件：
+
+```
+templates/apple/
+├── AppleShared.tsx   # Apple 风格组件库（含 13 个组件）
+└── README.md         # 使用文档
+```
+
+详见 [templates/apple/README.md](templates/apple/README.md)。
 
 ### 竖屏安全布局规范
 
@@ -373,6 +430,128 @@ const stackTop = safeTop + Math.max(0, (availableH - TOTAL_H) / 2);
 1. **固定高度**：每张卡片用固定 `height`，不用 padding 撑开，防止内容溢出
 2. **统一宽度**：同一场景所有卡片用同一 `width`，视觉更整洁
 3. **垂直居中**：`stackTop` = `safeTop + (availableH - TOTAL_H) / 2`，内容始终在屏幕中央
+
+### Apple 风格设计规范（推荐）
+
+适用于**技术干货/源码解读/知识科普**类内容，参考 Apple 发布会的视觉风格。
+
+#### Apple 设计 Token（精简版）
+
+```tsx
+// 背景：深空黑渐变
+const bg = "linear-gradient(180deg, #111111 0%, #1c1c1e 100%)";
+
+// 精简色板（只有一种强调色）
+const ACCENT = "#007AFF";   // Apple 蓝（唯一强调色）
+const TEXT   = "#FFFFFF";  // 主文字
+const MUTED  = "#8E8E93"; // 次要文字
+const BORDER = "#3a3a3c"; // 边框
+const CARD   = "#2c2c2e"; // 卡片背景
+
+// 字体：Inter + -apple-system fallback
+const font = "Inter, -apple-system, sans-serif";
+```
+
+#### Apple 风格动画规范
+
+```tsx
+// 所有动画必须用 useCurrentFrame() 驱动，禁止 CSS transition/animation
+import { useCurrentFrame, interpolate } from "remotion";
+
+// fade-up（主标题）
+const opacity = interpolate(frame, [start, start + 14], [0, 1], { extrapolateRight: "clamp" });
+const translateY = interpolate(frame, [start, start + 14], [30, 0], { extrapolateRight: "clamp" });
+
+// scale（节点出现）
+const scale = interpolate(frame, [start, start + 16], [0.4, 1], { extrapolateRight: "clamp" });
+
+// translateX（列表项依次出现）
+const tx = interpolate(frame, [start + i * 12, start + i * 12 + 12], [-24, 0]);
+
+// stagger：每项 delay += 12~16 帧
+```
+
+#### Apple 风格图表组件（内置于 `AppleShared.tsx`）
+
+| 组件 | 用途 | 关键参数 |
+|------|------|---------|
+| `AppleBg` | 深空黑渐变背景 | — |
+| `SceneTag` | 左上角场景标签 | text, startFrame, color |
+| `HeroTitle` | 页面大标题 | text, startFrame, size, color |
+| `LayerStack` | 分层堆栈（四层框架） | layers[{label, sub, color}], startFrame |
+| `FlowNode` | 流程图节点圆 | label, x, y, color, startFrame, size |
+| `ArrowSVG` | 箭头连接线 | x1, y1, x2, y2, color, startFrame |
+| `NineGrid` | 九宫格 | items[], startFrame |
+| `PipelineFlow` | 横向管线流 | steps[{label, sub, color}], startFrame |
+| `FuseSteps` | 熔断器步骤列表 | startFrame |
+| `ToolGrid` | 工具网格 | tools[], startFrame |
+| `EngineSpin` | 引擎旋转 SVG | startFrame |
+| `TagGroup` | 标签组 | tags[{text, color}], startFrame |
+| `TagPill` | 单个标签 | text, color |
+
+#### Apple 风格布局模板
+
+```tsx
+import React from "react";
+import { AbsoluteFill } from "remotion";
+import {
+  AppleBg, HeroTitle, SceneTag, TagGroup,
+  LayerStack, FlowNode, ArrowSVG, NineGrid,
+  PipelineFlow, FuseSteps, ToolGrid, EngineSpin
+} from "../components/AppleShared";
+
+// 示例：双路径对比（微压缩）
+export const 微压缩: React.FC = () => (
+  <AppleBg>
+    <SceneTag text="第一层 · 微压缩" startFrame={0} color="#0A84FF" />
+
+    {/* 标题区 */}
+    <div style={{ position: "absolute", top: "8%", left: 0, right: 0, textAlign: "center" }}>
+      <HeroTitle text="两条路径处理 Prompt Cache" startFrame={5} size={28} />
+    </div>
+
+    {/* 左路径：卡片堆叠 */}
+    <div style={{ position: "absolute", top: "26%", left: "5%", right: "52%" }}>
+      {/* 节点1 */}
+      <NodeCard label="连续对话" sub="Cache 有效" color="#0A84FF" startFrame={10} />
+      <ArrowDown color="#0A84FF" startFrame={18} />
+      {/* 节点2 */}
+      <NodeCard label="Cached Micro Compact" sub="精细清理" color="#0A84FF" startFrame={22} />
+    </div>
+
+    {/* 中间分割线 */}
+    <div style={{ position: "absolute", top: "20%", bottom: "20%", left: "50%", width: 1,
+      background: "linear-gradient(180deg, transparent, #2C2C2E, transparent)" }} />
+
+    {/* 右路径 */}
+    <div style={{ position: "absolute", top: "26%", left: "53%", right: "5%" }}>
+      {/* 类似结构 */}
+    </div>
+
+    {/* 底部标签 */}
+    <div style={{ position: "absolute", bottom: "10%", left: 0, right: 0 }}>
+      <TagGroup startFrame={48} tags={[{text:"主线程隔离",color:"#48484A"},...]} />
+    </div>
+  </AppleBg>
+);
+```
+
+#### 竖屏布局安全区参考
+
+```
+┌────────────────────────────────────┐
+│ ██ 顶部 UI 遮挡区 (~120px) ██       │  ← SceneTag 放这里
+├────────────────────────────────────┤
+│         top: 8%  页面大标题          │
+│                                    │
+│        top: 24-26%  主体内容         │
+│        （图表/卡片/架构图）           │
+│                                    │
+│        bottom: 10-12%  标签组       │
+├────────────────────────────────────┤
+│ ██ 底部 UI 遮挡区 (~100px) ██      │
+└────────────────────────────────────┘
+```
 
 ### 列表类场景设计模式：全部可见 + 当前高亮
 
@@ -510,3 +689,27 @@ ffmpeg -y -i input.mp4 \
 | 多模式结构 | `SKILL.md` Mode A/B/C | 自动切换内容风格 |
 
 ---
+
+---
+
+## 七、v3 更新记录
+
+### 已安装依赖 skills
+- `remotion-video-toolkit` — Remotion 完整工具手册
+- `animations` — Web 动画规范（GPU 加速属性、timing functions）
+
+### 模板文件
+- `templates/apple/AppleShared.tsx` — Apple 风格可复用组件库（13个组件）
+- `templates/apple/README.md` — Apple 模板使用文档
+
+### 本次优化改动
+| 改动 | 文件 | 说明 |
+|------|------|------|
+| TTS 合并 bug 修复 | `scripts/v2/tts_harness.py` | shutil/os 移到文件顶部统一导入 |
+| Apple 风格模板 | `templates/apple/` | 深空黑渐变 + Apple 色板 + 大字标题 |
+| 竖屏字体规范更新 | `SKILL.md` | 节点标题 22-28px / 标签 14-16px |
+| Apple 设计规范 | `SKILL.md` | 设计 Token + 动画规范 + 图表组件 |
+| 竖屏安全布局 | `SKILL.md` | top:8% 标题 / top:24% 内容 / bottom:10% 标签 |
+
+### Apple 风格组件（13个）
+`AppleBg` · `SceneTag` · `HeroTitle` · `LayerStack` · `FlowNode` · `ArrowSVG` · `NineGrid` · `PipelineFlow` · `FuseSteps` · `ToolGrid` · `EngineSpin` · `TagGroup` · `TagPill`

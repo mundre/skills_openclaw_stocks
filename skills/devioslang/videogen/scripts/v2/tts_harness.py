@@ -20,6 +20,7 @@ videogen v2 — TTS Harness
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -863,7 +864,6 @@ def merge_chunks(chunks: list[Chunk], output_path: str):
         if r.returncode != 0:
             print(f"  ⚠️  转码失败 chunk_{chunk.chunk_id}: {r.stderr[-100:]}")
             # fallback: 直接复制原始文件（不推荐，但保证有输出）
-            import shutil
             shutil.copy2(chunk.audio_path, aac_path)
         aac_files.append(str(aac_path))
 
@@ -890,7 +890,6 @@ def merge_chunks(chunks: list[Chunk], output_path: str):
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         if result.returncode == 0:
             # 验证输出 bitrate（128kbps AAC 应该 ≥ 10KB for 8s chunk）
-            import os
             size = os.path.getsize(output_path)
             duration = get_audio_duration(output_path)
             bitrate = size * 8 / duration if duration > 0 else 0
