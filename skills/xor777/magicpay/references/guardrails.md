@@ -5,7 +5,9 @@
 - Attach to a prepared browser page.
 - Start or continue the workflow session for that page.
 - Discover the supported protected form.
-- Request approval, poll, and fill the protected values safely.
+- Resolve protected form targets through MagicPay request paths and fill them
+  safely.
+- Run protected capabilities through `run-action`.
 - Retry submit only when the guarded fill path explicitly leaves work undone.
 
 ## Readiness Rules
@@ -19,17 +21,23 @@
 ## Protected-Form Rules
 
 - Start from a current `find-form` result, not from stale assumptions.
-- Do not call `request-secret` without a matching `fillRef` and
-  `storedSecretRef`.
-- Treat `poll-secret` as a state check, not as payload delivery.
-- Run `fill-secret` only when the request is ready and the page still matches
-  the approved request context.
+- Do not call `resolve-form` on a stale `fillRef`.
+- Use `--item-ref` only when you intentionally want one specific vault item.
 - Treat `submit-form` as manual recovery, not as the default next step.
-- Never reuse a claimed request.
+- If `resolve-form` reports stale bindings or no live submit control, refresh
+  the page state before retrying.
+
+## Protected-Action Rules
+
+- Start `run-action` only when an active workflow session exists.
+- Provide structured JSON params to `run-action`; do not smuggle protected
+  values through ad-hoc strings or prompts.
+- Use `run-action` for protected capabilities instead of inventing a manual
+  form-fill equivalent.
 
 ## Secrecy And Safety
 
-- Never type, log, summarize, or echo protected values manually.
+- Never type, print, summarize, or log protected values manually.
 - Base progress claims on the visible form state.
 - After page-level changes, rerun `find-form` before acting on old bindings.
 

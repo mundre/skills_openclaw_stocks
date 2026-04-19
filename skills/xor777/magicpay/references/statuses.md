@@ -1,4 +1,4 @@
-# MagicPay Request And Submit States
+# MagicPay Resolution And Action States
 
 ## Protected-Form Discovery
 
@@ -11,14 +11,28 @@
   Several supported forms match. Surface the ambiguity and ask the user to
   choose.
 
-## Secret Request States
+## Request Paths
 
-- `pending`
-  Approval is still outstanding. Keep polling.
-- `fulfilled`
-  The one-time payload is ready. Continue with `magicpay fill-secret`.
-- terminal `denied`, `expired`, `failed`, or `canceled`
-  Stop the protected-fill path and report the exact state.
+- `auto`
+  MagicPay resolved the request without waiting for a new user decision.
+- `confirm`
+  MagicPay paused for explicit approval before using the protected data or
+  action path.
+- `provide`
+  MagicPay paused because the user needed to provide missing data or select the
+  right item.
+- terminal `denied`, `expired`, `failed`, `canceled`, or `timeout`
+  Stop the protected path and report the exact state.
+
+### `session_stop`
+
+A special variant of `canceled`: the whole workflow session was terminated
+mid-flow by the user, a trust rule, or the backend. The result includes
+`session_stop` details with a `code` and a human-readable `message`.
+
+Do not retry the same request inside the same session. End the session
+with `magicpay end-session`, then start a new one if the user wants to
+continue.
 
 ## Fill And Submit Results
 
@@ -27,7 +41,7 @@
   Inspect the refreshed page state before deciding the next manual step.
 - `submitted`
   Form submission produced an observable progress signal. This can come from
-  the guarded auto-submit inside `fill-secret` or from an explicit
+  the guarded auto-submit inside `resolve-form` or from an explicit
   `submit-form` retry.
 - `validation_blocked`
   The form stayed blocked by client-side validation.
@@ -35,3 +49,9 @@
   The saved submit binding is no longer live on the page.
 - `no_observable_progress`
   The submit attempt produced no defensible progress signal.
+
+## Protected Actions
+
+- `artifact`
+  `run-action` completed and returned the request artifact for the protected
+  capability.
