@@ -3,11 +3,16 @@
   "slug": "upkuajing-trade-company-search",
   "displayName": "UpKuaJing Customs Trade Company Search",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1775815989769,
-    "commit": "https://github.com/openclaw/skills/commit/daad598a910d76c7c777cfd4f0b0568207372a7d"
+    "version": "1.0.6",
+    "publishedAt": 1776426384654,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1775815989769,
+      "commit": "https://github.com/openclaw/skills/commit/daad598a910d76c7c777cfd4f0b0568207372a7d"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1774840143610,
