@@ -1,6 +1,6 @@
 ---
-name: gingiris-user-interview
-description: User Interview Playbook — Battle-tested framework from HeyGen's 937 interviews to PMF. Complete methodology for user screening, interview execution, question frameworks, and post-interview analysis.
+name: "User Interview Playbook"
+description: Find product-market fit faster through user interviews — the same framework HeyGen used across 937 interviews to reach PMF. Includes ready-to-use question banks, JTBD templates, churn interview scripts, and NPS follow-up processes. For PMs, UX researchers, and founders who need signal, not noise.
 ---
 
 # User Interview Playbook
