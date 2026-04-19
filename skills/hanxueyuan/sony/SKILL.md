@@ -1,48 +1,47 @@
 ---
-name: sony
-description: "Sony products, PlayStation, cameras, audio, movies, and music. Specs, pricing, reviews, and latest announcements."
-metadata:
-  { "openclaw": { "emoji": "🎮", "version": "0.1.0", "author": "hanxueyuan", "tags": ["tech","electronics","sony"] } }
+summary: "索尼 Sony——日本电子巨头、PlayStation 创造者、从 Walkman 到娱乐帝国"
+read_when:
+  - 查询索尼 · Sony相关信息
+  - 了解相关行业发展
 ---
 
-# Sony
+# 索尼 · Sony
 
-Your comprehensive guide to Sony — the Japanese tech and entertainment conglomerate.
+---
 
-## Product Lines
+## 发展历程
 
-### PlayStation
-- **PS5 / PS5 Pro** — Console specs, pricing, availability
-- **Game catalog** — Exclusives, PS Plus lineup, upcoming titles
-- **PSVR2** — VR headset specs and game library
-- **PS Portal** — Remote play handheld device
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1946 年** | 盛田昭夫和井深大在东京创立东京通信工业 |
+| **1958 年** | 更名为 Sony |
+| **1979 年** | **Walkman** 发布——改变人们听音乐的方式 |
+| **1994 年** | **PlayStation** 发布——游戏产业革命 |
+| **2006 年** | 收购 MGM——进军影视 |
+| **2020s** | PlayStation 5 全球销量超过 5000 万台 |
 
-### Cameras & Imaging
-- **Alpha mirrorless** — A7 IV, A7R V, A9 III, A1 (full-frame)
-- **ZV series** — Vlogging cameras (ZV-1 II, ZV-E10 II)
-- **Cinema Line** — FX3, FX6, FX9, Venice 2
-- **Lenses** — G Master, G series, and third-party compatibility
+---
 
-### Audio
-- **Headphones** — WH-1000XM5, WF-1000XM5 (noise cancelling)
-- **Speakers** — SRS-XB series, home theater systems
-- **Walkman** — Hi-res portable audio players
+## 核心特点
 
-### Entertainment
-- **Sony Pictures** — Movie releases, Spider-Man, Bond franchise
-- **Sony Music** — Labels, artists, streaming partnerships
-- **Anime** — Crunchyroll, Aniplex (Demon Slayer, Sword Art Online)
+游戏（PlayStation）+ 电子（电视/相机/音频）+ 娱乐（音乐/电影/动画）+ 金融服务
 
-## What You Can Ask
-- "PS5 Pro specs vs PS5"
-- "Best Sony camera for video"
-- "Sony WH-1000XM5 vs AirPods Max"
-- "Upcoming PlayStation exclusives"
-- "Sony stock price"
+## 核心优势
 
-## Data Sources
-- Official: https://www.sony.com
-- PlayStation Blog, Alpha Universe, Sony Newsroom
+PlayStation 全球市占率第一 + 图像传感器全球第一 + 音乐/影视 IP 丰富
 
-## Author
-Created by hanxueyuan | License: MIT
+---
+
+## 关键数据
+
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 12 万亿日元 |
+| PS5 销量 | 超过 5000 万台 |
+| 员工数 | 约 110000 人 |
+
+---
+
+## 值得了解
+
+Sony 的图像传感器占据了全球智能手机相机市场的约 50% 份额
