@@ -1,0 +1,11 @@
+{
+  "owner": "peand-rover",
+  "slug": "text-to-video-h2h",
+  "displayName": "Text To Video H2h",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776621605568,
+    "commit": null
+  },
+  "history": []
+}
