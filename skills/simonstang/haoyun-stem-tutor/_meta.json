@@ -1,13 +1,18 @@
 {
   "owner": "simonstang",
   "slug": "haoyun-stem-tutor",
-  "displayName": "Haoyun Stem Tutor",
+  "displayName": "浩云学长理科辅导",
   "latest": {
-    "version": "3.0.6",
-    "publishedAt": 1775524378856,
-    "commit": "https://github.com/openclaw/skills/commit/7347c5dc9b73e4922a500d5c94cde4e5ab067c7a"
+    "version": "3.5.0",
+    "publishedAt": 1776307339393,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.6",
+      "publishedAt": 1775524378856,
+      "commit": "https://github.com/openclaw/skills/commit/7347c5dc9b73e4922a500d5c94cde4e5ab067c7a"
+    },
     {
       "version": "3.0.4",
       "publishedAt": 1774520713180,
