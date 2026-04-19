@@ -4,7 +4,7 @@ download_model.py — Download Qwen3-ASR-0.6B-fp16-ov from ModelScope.
 Run once from a terminal (NOT inside OpenClaw):
     python download_model.py
 
-- Downloads ~2 GB to your local {USERNAME}_openvino\asr\ directory
+- Downloads ~2 GB to your local {USERNAME}_openvino\\asr\\ directory
 - Resume supported: safe to Ctrl+C and re-run, will continue from where it stopped
 - Run setup.py first if you haven't already
 """
@@ -82,7 +82,7 @@ print(f"\n  Model dir: {model_dir}")
 
 if model_complete():
     gb = get_size_gb(model_dir)
-    print(f"\n  Model already complete ({gb:.2f} GB) ✅")
+    print(f"\n  Model already complete ({gb:.2f} GB) [OK]")
     print("  You can use the skill right away.")
     sys.exit(0)
 
@@ -139,7 +139,7 @@ try:
     if model_complete():
         gb = get_size_gb(model_dir)
         print(f"\n{'='*55}")
-        print(f"  Download complete! ({gb:.2f} GB) ✅")
+        print(f"  Download complete! ({gb:.2f} GB) [OK]")
         print(f"  You can now use the ASR skill in OpenClaw.")
         print(f"{'='*55}")
     else:

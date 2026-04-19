@@ -14,8 +14,18 @@ After this, run:
     python download_model.py
 """
 
-import json, os, shutil, string, subprocess, sys
+import json, os, re, shutil, subprocess, sys
 from pathlib import Path
+
+
+def _read_skill_version():
+    """Read SKILL_VERSION from SKILL.md — single source of truth for all deployed files."""
+    try:
+        md = Path(__file__).parent / "SKILL.md"
+        m = re.search(r"\*\*SKILL_VERSION\*\*[^'\"]*['\"]([^'\"]+)['\"]", md.read_text(encoding='utf-8'))
+        return m.group(1) if m else "unknown"
+    except Exception:
+        return "unknown"
 
 QWEN_ASR_REPO   = "https://github.com/QwenLM/Qwen3-ASR.git"
 QWEN_ASR_COMMIT = "c17a131fe028b2e428b6e80a33d30bb4fa57b8df"
@@ -23,6 +33,7 @@ QWEN_ASR_COMMIT = "c17a131fe028b2e428b6e80a33d30bb4fa57b8df"
 PACKAGES = [
     "openvino>=2025.4",
     "numpy<2.0",
+    "librosa",
     "transformers",
     "huggingface_hub",
     "accelerate",
@@ -39,7 +50,7 @@ print("=" * 55)
 # ── Locate root directory ──────────────────────────────────
 username  = os.environ.get("USERNAME", "user").lower()
 root_name = f"{username}_openvino"
-drives    = [f"{d}:\\" for d in string.ascii_uppercase if Path(f"{d}:\\").exists()]
+drives    = [f"{d}:\\" for d in ("C", "D") if Path(f"{d}:\\").exists()]
 
 root = next(
     (Path(d) / root_name for d in drives if (Path(d) / root_name).exists()),
@@ -81,7 +92,7 @@ if not venv_ok:
     subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
     venv_py = venv_dir / "Scripts" / "python.exe"
     r = subprocess.run([str(venv_py), "--version"], capture_output=True)
-    print(f"  Venv created: {r.stdout.decode().strip()} ✅")
+    print(f"  Venv created: {r.stdout.decode().strip()} [OK]")
 
 def venv_run(args, **kw):
     return subprocess.run([str(venv_py)] + args, **kw)
@@ -103,25 +114,25 @@ for pkg in PACKAGES:
 if missing:
     print(f"  Installing: {missing}")
     venv_run(["-m", "pip", "install", "--quiet"] + missing, check=True)
-    print("  Packages installed ✅")
+    print("  Packages installed [OK]")
 else:
-    print("  All packages already present ✅")
+    print("  All packages already present [OK]")
 
 # ── Clone Qwen3-ASR repo ───────────────────────────────────
 print("\n[4/4] Qwen3-ASR repo...")
 
 repo = asr_dir / "Qwen3-ASR"
 if repo.exists():
-    print(f"  Repo already exists: {repo} ✅")
+    print(f"  Repo already exists: {repo} [OK]")
 else:
     print(f"  Cloning from {QWEN_ASR_REPO}...")
     subprocess.run(["git", "clone", QWEN_ASR_REPO, str(repo)], check=True)
     subprocess.run(["git", "-C", str(repo), "checkout", QWEN_ASR_COMMIT], check=True)
-    print("  Cloned ✅")
+    print("  Cloned [OK]")
 
 print("  Installing qwen_asr package...")
 venv_run(["-m", "pip", "install", "-q", "-e", str(repo)], check=True)
-print("  qwen_asr installed ✅")
+print("  qwen_asr installed [OK]")
 
 # ── Write state.json ───────────────────────────────────────
 state = {
@@ -133,23 +144,14 @@ state = {
 }
 state_file = asr_dir / "state.json"
 state_file.write_text(json.dumps(state, indent=2), encoding="utf-8")
-print(f"\n  state.json written: {state_file} ✅")
+print(f"\n  state.json written: {state_file} [OK]")
 
 # ── Write asr_engine.py ────────────────────────────────────
-ENGINE_VERSION = "v1.0"
+SKILL_VERSION = _read_skill_version()  # pulled from SKILL.md — single source of truth
 engine_file = asr_dir / "asr_engine.py"
 
-# Check if already up to date
-needs_write = True
-if engine_file.exists():
-    import re
-    m = re.search(r'ENGINE_VERSION\s*=\s*["\'](.+?)["\']', engine_file.read_text(encoding="utf-8", errors="ignore"))
-    if m and m.group(1) == ENGINE_VERSION:
-        needs_write = False
-
-if needs_write:
-    print(f"\n  Writing asr_engine.py {ENGINE_VERSION}...")
-    engine_code = r'''ENGINE_VERSION = "v1.0"
+# Build the engine payload and redeploy whenever the skill version changes.
+engine_code = r'''SKILL_VERSION = "v1.0"
 """
 asr_engine.py — OpenVINO inference engine for Qwen3-ASR.
 Inference only — no model conversion.
@@ -247,7 +249,7 @@ class OVQwen3ASRPipeline:
         self.lm_input_names = {k.get_any_name(): i for i, k in enumerate(lm.inputs)}
         self._pos_ndim = len(lm.input("position_ids").get_partial_shape())
         self.lm_req = core.compile_model(lm, device).create_infer_request()
-        print("All models loaded ✅")
+        print("All models loaded [OK]")
 
     def _audio_tower(self, feats, feat_len):
         cs = self.n_window * 2
@@ -341,38 +343,51 @@ class OVQwen3ASRPipeline:
 
 
 class OVQwen3ASRModel:
-    def __init__(self, model_dir, device="CPU", max_new_tokens=512):
+    def __init__(self, model_dir, device="CPU", max_new_tokens=4096, max_inference_batch_size=32):
         self.max_new_tokens = max_new_tokens
+        self.max_inference_batch_size = max(1, int(max_inference_batch_size))
         self.pipeline = OVQwen3ASRPipeline(str(model_dir), device=device)
         self.processor = None
         try:
             self.processor = Qwen3ASRProcessor.from_pretrained(str(model_dir))
-            print("Processor loaded ✅")
+            print("Processor loaded [OK]")
         except Exception as e:
             print(f"[WARN] Processor load failed: {e}")
-        print("OVQwen3ASRModel ready ✅")
+        print(f"OVQwen3ASRModel ready [OK] batch={self.max_inference_batch_size}")
 
     @classmethod
-    def from_pretrained(cls, model_dir, device="CPU", max_new_tokens=512, **kw):
-        return cls(model_dir=model_dir, device=device, max_new_tokens=max_new_tokens)
+    def from_pretrained(cls, model_dir, device="CPU", max_new_tokens=4096, max_inference_batch_size=32, **kw):
+        return cls(
+            model_dir=model_dir,
+            device=device,
+            max_new_tokens=max_new_tokens,
+            max_inference_batch_size=max_inference_batch_size,
+        )
 
     def get_supported_languages(self): return list(SUPPORTED_LANGUAGES)
 
     def transcribe(self, audio, language=None, **kw):
         if self.processor is None: raise RuntimeError("Processor not loaded")
         wavs = normalize_audios(audio) if INFERENCE_UTILS_AVAILABLE else [self._to_wav(a) for a in (audio if isinstance(audio, list) else [audio])]
-        all_chunks = []
-        for i, wav in enumerate(wavs):
-            if INFERENCE_UTILS_AVAILABLE:
-                for cwav, _ in split_audio_into_chunks(wav, sr=SAMPLE_RATE, max_chunk_sec=MAX_ASR_INPUT_SECONDS):
-                    all_chunks.append((i, cwav))
-            else:
-                all_chunks.append((i, wav))
         out_l = [[] for _ in range(len(wavs))]
         out_t = [[] for _ in range(len(wavs))]
-        for oi, cwav in all_chunks:
-            r = self.pipeline.transcribe_audio(cwav, self.processor, self.max_new_tokens)
-            out_l[oi].append(r["language"]); out_t[oi].append(r["text"])
+        for i, wav in enumerate(wavs):
+            chunk_buffer = []
+            if INFERENCE_UTILS_AVAILABLE:
+                chunk_iter = split_audio_into_chunks(wav, sr=SAMPLE_RATE, max_chunk_sec=MAX_ASR_INPUT_SECONDS)
+                for cwav, _ in chunk_iter:
+                    chunk_buffer.append(cwav)
+                    if len(chunk_buffer) >= self.max_inference_batch_size:
+                        for buffered_wav in chunk_buffer:
+                            r = self.pipeline.transcribe_audio(buffered_wav, self.processor, self.max_new_tokens)
+                            out_l[i].append(r["language"]); out_t[i].append(r["text"])
+                        chunk_buffer.clear()
+            else:
+                chunk_buffer.append(wav)
+
+            for buffered_wav in chunk_buffer:
+                r = self.pipeline.transcribe_audio(buffered_wav, self.processor, self.max_new_tokens)
+                out_l[i].append(r["language"]); out_t[i].append(r["text"])
         return [
             ASRTranscription(
                 language=merge_languages(out_l[i]) if INFERENCE_UTILS_AVAILABLE else (out_l[i][0] if out_l[i] else "unknown"),
@@ -393,31 +408,48 @@ class OVQwen3ASRModel:
         if isinstance(a, np.ndarray): return a.astype(np.float32)
         raise ValueError(f"Unsupported type: {type(a)}")
 '''
-    engine_file.write_text(engine_code.strip(), encoding="utf-8")
-    print(f"  asr_engine.py written ✅")
+engine_payload = engine_code.strip().replace('SKILL_VERSION = "v1.0"', f'SKILL_VERSION = "{SKILL_VERSION}"', 1)
+
+needs_write = True
+if engine_file.exists():
+    m = re.search(r'SKILL_VERSION\s*=\s*["\'](.+?)["\']', engine_file.read_text(encoding="utf-8", errors="ignore"))
+    if m and m.group(1) == SKILL_VERSION:
+        needs_write = False
+
+if needs_write:
+    print(f"\n  Writing asr_engine.py {SKILL_VERSION}...")
+    engine_file.write_text(engine_payload, encoding="utf-8")
+    print(f"  asr_engine.py written [OK]")
 else:
-    print(f"\n  asr_engine.py already at {ENGINE_VERSION} ✅")
+    print(f"\n  asr_engine.py already at {SKILL_VERSION} [OK]")
 
 # ── Deploy transcribe.py ──────────────────────────────────
-import re as _re, shutil as _shutil
-TRANSCRIBE_VERSION = "v1.1.0"
 transcribe_dst = asr_dir / "transcribe.py"
 transcribe_src = Path(__file__).parent / "transcribe.py"
 
+# patch __SKILL_VERSION__ placeholder with the actual version from SKILL.md
+_content = transcribe_src.read_text(encoding="utf-8")
+_content = re.sub(
+    r'(SKILL_VERSION\s*=\s*["\'])([^"\']+)(["\'])',
+    rf'\g<1>{SKILL_VERSION}\g<3>',
+    _content,
+    count=1,
+)
+
 _needs_deploy = True
 if transcribe_dst.exists():
-    _m = _re.search(
+    _m = re.search(
         r'SKILL_VERSION\s*=\s*["\'](.+?)["\']',
         transcribe_dst.read_text(encoding="utf-8", errors="ignore"),
     )
-    if _m and _m.group(1) == TRANSCRIBE_VERSION:
+    if _m and _m.group(1) == SKILL_VERSION:
         _needs_deploy = False
 
 if _needs_deploy:
-    _shutil.copy2(str(transcribe_src), str(transcribe_dst))
-    print(f"\n  transcribe.py {TRANSCRIBE_VERSION} deployed ✅")
+    transcribe_dst.write_text(_content, encoding="utf-8")
+    print(f"\n  transcribe.py {SKILL_VERSION} deployed [OK]")
 else:
-    print(f"\n  transcribe.py already at {TRANSCRIBE_VERSION} ✅")
+    print(f"\n  transcribe.py already at {SKILL_VERSION} [OK]")
 
 # ── Verify ─────────────────────────────────────────────────
 print("\n[Verify] Checking installation...")
@@ -425,7 +457,7 @@ print("\n[Verify] Checking installation...")
 verify_script = f"""
 results = {{}}
 for pkg, imp in [
-    ("openvino","openvino"), ("numpy","numpy"), ("transformers","transformers"),
+    ("openvino","openvino"), ("numpy","numpy"), ("librosa","librosa"), ("transformers","transformers"),
     ("huggingface_hub","huggingface_hub"), ("accelerate","accelerate"),
     ("soundfile","soundfile"), ("scipy","scipy"), ("modelscope","modelscope"),
 ]:

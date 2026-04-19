@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Acoustic Pipeline - 增强的ASR处理管道
+Acoustic Pipeline - Enhanced ASR processing pipeline
 
-基于原有的 Qwen3-ASR 技能，提供：
-1. 视频音轨自动提取
-2. 多格式支持（MP4、MP3、WAV等）
-3. 自动化处理（文件夹监听或批量）
-4. LLM直接调用接口
+Built on top of the Qwen3-ASR skill:
+1. Automatic audio extraction from video
+2. Multi-format support (MP4, MP3, WAV, etc.)
+3. Automated processing (folder watch or batch)
+4. Direct LLM callable API
 
-用法：
+Usage:
   python acoustic_pipeline.py --file "audio.mp4" --language Chinese
   python acoustic_pipeline.py --watch "C:\\inbox"
   python acoustic_pipeline.py --batch "C:\\audio\\library"
@@ -20,34 +20,48 @@ import subprocess
 import sys
 import argparse
 import os
+import importlib.util
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
 
 
+TRANSCRIBE_SUBPROCESS_TIMEOUT = 3600
+
+
 class AcousticPipeline:
-    """音视频转录管道"""
+    """Audio/video transcription pipeline."""
     
-    # 支持的格式
+    # Supported formats
     AUDIO_FORMATS = {'.wav', '.mp3', '.flac', '.m4a', '.ogg', '.aac', '.wma', '.opus'}
     VIDEO_FORMATS = {'.mp4', '.mkv', '.webm', '.flv', '.mov', '.avi', '.mts', '.m2ts', '.ts', '.m3u8'}
     ALL_FORMATS = AUDIO_FORMATS | VIDEO_FORMATS
     
+    # Class-level cache to avoid repeated environment checks
+    _cached_state = None
+    _cached_venv_py = None
+    _cache_timestamp = 0
+    # Class-level cache for the transcribe module so _MODEL_CACHE survives across instances
+    _transcribe_module = None
+    _transcribe_module_path = None
+    
     def __init__(self, asr_skill_dir: Optional[str] = None, auto_bootstrap: bool = False):
         """
-        初始化管道
+        Initialize the pipeline.
 
         Args:
-            asr_skill_dir: 原始ASR技能的目录（默认为自动检测 *_openvino/asr）
-            auto_bootstrap: 当未初始化ASR环境时是否自动执行 setup.py/download_model.py
+            asr_skill_dir: ASR skill directory (default: auto-detect *_openvino/asr)
+            auto_bootstrap: run setup.py + download_model.py automatically when env is missing
         """
         if asr_skill_dir:
             self.asr_dir = Path(asr_skill_dir)
         else:
-            # 自动扫描盘符查找 *_openvino/asr 目录
+            # auto-scan all drives for *_openvino/asr
             self.asr_dir = self._find_openvino_asr_dir() or Path.cwd()
-        self.state_file = self._find_state_json()
-        self.venv_py = self._find_venv_python()
+        
+        # use cache or locate state file
+        self.state_file = self._find_state_json_cached()
+        self.venv_py = self._find_venv_python_cached()
 
         self.runtime_asr_dir = self.asr_dir
         if self.state_file:
@@ -67,6 +81,7 @@ class AcousticPipeline:
 
         if not self.transcribe_py.exists() and auto_bootstrap:
             self._bootstrap_asr_skill()
+            # re-locate after bootstrap (state.json may now exist)
             self.state_file = self._find_state_json()
             self.venv_py = self._find_venv_python()
 
@@ -83,39 +98,124 @@ class AcousticPipeline:
 
         if not self.transcribe_py.exists():
             raise FileNotFoundError(
-                "找不到 transcribe.py。请确保ASR已初始化，或使用 --auto-bootstrap 自动初始化。\n"
-                f"检查路径: {self.runtime_asr_dir / 'transcribe.py'}"
+                "transcribe.py not found. Ensure ASR is initialized or use --auto-bootstrap.\n"
+                f"Checked: {self.runtime_asr_dir / 'transcribe.py'}"
             )
+
+        # prefer in-process call to avoid subprocess overhead
+        self._transcribe_fn = self._load_transcribe_callable()
+
+    def _load_transcribe_callable(self):
+        """Load the transcribe() function from transcribe.py.
+        Module is cached at class level so _MODEL_CACHE survives across instances.
+        Returns None on failure; caller falls back to subprocess.
+        """
+        transcribe_path = str(self.transcribe_py)
+        # reuse cached module (preserves _MODEL_CACHE in its globals)
+        if (AcousticPipeline._transcribe_module is not None and
+                AcousticPipeline._transcribe_module_path == transcribe_path):
+            fn = getattr(AcousticPipeline._transcribe_module, "transcribe", None)
+            return fn if callable(fn) else None
+        try:
+            module_name = f"local_transcribe_{abs(hash(transcribe_path))}"
+            spec = importlib.util.spec_from_file_location(module_name, transcribe_path)
+            if spec is None or spec.loader is None:
+                return None
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            AcousticPipeline._transcribe_module = module
+            AcousticPipeline._transcribe_module_path = transcribe_path
+            fn = getattr(module, "transcribe", None)
+            return fn if callable(fn) else None
+        except Exception as e:
+            print(f"[DEBUG] Direct transcribe load failed, fallback to subprocess: {e}", file=sys.stderr)
+            return None
+    
+    def _find_venv_python_cached(self) -> Path:
+        """Find venv Python with 5-minute cache."""
+        import time
+        current_time = time.time()
+        
+        # use cache if fresh (< 5 min)
+        if (self._cached_venv_py and 
+            current_time - self._cache_timestamp < 300):
+            return self._cached_venv_py
+        
+        result = self._find_venv_python()
+        self._cached_venv_py = result
+        self._cache_timestamp = current_time
+        return result
+    
+    def _find_state_json_cached(self) -> Optional[Path]:
+        """Find state.json with 5-minute cache."""
+        import time
+        current_time = time.time()
+        
+        # sentinel 'NOT_FOUND' means we already checked and found nothing
+        if (self._cached_state is not None and 
+            current_time - self._cache_timestamp < 300):
+            return self._cached_state if self._cached_state != 'NOT_FOUND' else None
+        
+        result = self._find_state_json()
+        self._cached_state = result if result else 'NOT_FOUND'
+        self._cache_timestamp = current_time
+        return result
     
     def _find_venv_python(self) -> Path:
-        """查找虚拟环境的Python"""
-        # 从state.json查找
+        """Locate the venv Python executable."""
+        # strategy 1: read from state.json
         state_file = self._find_state_json()
         if state_file:
             try:
-                state = json.loads(state_file.read_text())
-                venv_py = Path(state.get('VENV_PY', ''))
-                if venv_py.exists():
-                    return venv_py
-            except:
-                pass
+                state = json.loads(state_file.read_text(encoding="utf-8"))
+                venv_py_str = state.get('VENV_PY', '')
+                if venv_py_str:
+                    venv_py = Path(venv_py_str)
+                    if venv_py.exists():
+                        return venv_py
+                    else:
+                        # path may be stale, try next strategy
+                        print(f"[DEBUG] VENV_PY from state.json not found: {venv_py_str}", file=sys.stderr)
+            except Exception as e:
+                print(f"[DEBUG] Failed to read state.json: {e}", file=sys.stderr)
         
-        # 降级：尝试常见位置
+        # strategy 2: common locations
         username = os.environ.get('USERNAME', 'user').lower()
         common_paths = [
+            # user's *_openvino directory
             Path.home() / f"{username}_openvino" / "venv" / "Scripts" / "python.exe",
+            Path(f"C:\\{username}_openvino\\venv\\Scripts\\python.exe"),
+            # current ASR directory
             self.asr_dir / "venv" / "Scripts" / "python.exe",
-            Path(sys.executable)  # 最后用系统Python
         ]
         
         for path in common_paths:
             if path.exists():
+                print(f"[DEBUG] Found python.exe at: {path}", file=sys.stderr)
                 return path
         
+        # strategy 3: scan all drives for *_openvino/venv
+        import string
+        for drive in string.ascii_uppercase:
+            base_path = Path(f"{drive}:\\")
+            if not base_path.exists():
+                continue
+            try:
+                for item in base_path.iterdir():
+                    if item.is_dir() and "_openvino" in item.name:
+                        venv_py = item / "venv" / "Scripts" / "python.exe"
+                        if venv_py.exists():
+                            print(f"[DEBUG] Found python.exe in {item.name}: {venv_py}")
+                            return venv_py
+            except PermissionError:
+                continue
+        
+        # fallback: system Python
+        print(f"[DEBUG] Falling back to system python.exe: {sys.executable}")
         return Path(sys.executable)
     
     def _find_openvino_asr_dir(self) -> Optional[Path]:
-        """自动扫描盘符查找 *_openvino/asr 目录"""
+        """Scan all drives for a *_openvino/asr directory."""
         import string
 
         for drive in string.ascii_uppercase:
@@ -123,7 +223,7 @@ class AcousticPipeline:
             if not base_path.exists():
                 continue
             
-            # 扫描该盘下的 *_openvino/asr 目录
+            # look for *_openvino/asr under this drive
             try:
                 for item in base_path.iterdir():
                     if item.is_dir() and "_openvino" in item.name:
@@ -136,7 +236,7 @@ class AcousticPipeline:
         return None
 
     def _find_state_json(self) -> Optional[Path]:
-        """查找state.json"""
+        """Locate state.json."""
         import string
 
         username = os.environ.get('USERNAME', 'user').lower()
@@ -153,30 +253,31 @@ class AcousticPipeline:
         return None
 
     def _run_bootstrap_script(self, script_name: str):
-        """执行初始化脚本"""
+        """Run a bootstrap script (setup.py or download_model.py)."""
         script_path = self.asr_dir / script_name
         if not script_path.exists():
-            raise FileNotFoundError(f"缺少初始化脚本: {script_path}")
+            raise FileNotFoundError(f"Bootstrap script not found: {script_path}")
 
         cmd = [str(Path(sys.executable)), str(script_path)]
-        # 在ASR目录下执行脚本，确保生成的文件在正确的位置
+        # run in the ASR directory so generated files land in the right place
         result = subprocess.run(
             cmd, 
             capture_output=True, 
-            text=True, 
+            text=True,
+            encoding='utf-8',
             timeout=1800,
-            cwd=str(self.asr_dir)  # 在ASR目录下执行
+            cwd=str(self.asr_dir)  # run inside ASR dir
         )
         if result.returncode != 0:
             raise RuntimeError(
-                f"执行 {script_name} 失败:\n{result.stderr or result.stdout}"
+                f"{script_name} failed:\n{result.stderr or result.stdout}"
             )
 
     def _bootstrap_asr_skill(self):
-        """当客户未安装ASR时，自动初始化环境和模型"""
-        print("⚙️ 检测到ASR未初始化，开始自动执行 setup.py ...")
+        """Auto-initialize ASR environment and model when not yet set up."""
+        print("[INFO] ASR not initialized - running setup.py ...")
         self._run_bootstrap_script("setup.py")
-        print("⚙️ 开始自动执行 download_model.py ...")
+        print("[INFO] Running download_model.py ...")
         self._run_bootstrap_script("download_model.py")
 
     def _archive_transcript(
@@ -186,7 +287,7 @@ class AcousticPipeline:
         archive_mode: str = "none",
         archive_dir: Optional[str] = None,
     ) -> Dict[str, str]:
-        """按指定格式保存转写结果"""
+        """Save transcript in the requested format(s)."""
         if archive_mode == "none":
             return {}
 
@@ -213,68 +314,68 @@ class AcousticPipeline:
         return saved
 
     def _is_video(self, file_path: Path) -> bool:
-        """检查是否是视频文件"""
+        """Return True if file_path is a supported video format."""
         return file_path.suffix.lower() in self.VIDEO_FORMATS
     
     def _is_audio(self, file_path: Path) -> bool:
-        """检查是否是音频文件"""
+        """Return True if file_path is a supported audio format."""
         return file_path.suffix.lower() in self.AUDIO_FORMATS
     
     def _extract_audio_from_video(self, video_path: Path, output_wav: Optional[Path] = None) -> Path:
         """
-        从视频文件提取音频
-        
+        Extract audio track from a video file.
+
         Args:
-            video_path: 视频文件路径
-            output_wav: 输出WAV文件路径（如果为None自动生成）
-        
+            video_path: path to the video file
+            output_wav: output WAV path (auto-generated if None)
+
         Returns:
-            输出WAV文件路径
+            path to the extracted WAV file
         """
         if output_wav is None:
             output_wav = video_path.parent / f"{video_path.stem}_audio.wav"
         
-        print(f"  📹 提取音频: {video_path.name}...")
+        print(f"  [VIDEO] Extracting audio: {video_path.name}...")
         
-        # 尝试使用ffmpeg（最可靠）
+        # try ffmpeg first (most reliable)
         try:
             cmd = [
                 'ffmpeg',
                 '-i', str(video_path),
                 '-q:a', '9',
-                '-n',  # 不覆盖
+                '-n',  # do not overwrite
                 str(output_wav)
             ]
             result = subprocess.run(cmd, capture_output=True, timeout=300)
             
             if result.returncode == 0 and output_wav.exists():
-                print(f"  ✅ 音频已提取: {output_wav.name}")
+                print(f"  [OK] Audio extracted: {output_wav.name}")
                 return output_wav
         except:
             pass
         
-        # 降级：使用moviepy（较慢但可靠）
+        # fallback: moviepy (slower but reliable)
         try:
             from moviepy.editor import VideoFileClip
             
-            print(f"  🎬 使用moviepy提取（可能较慢）...")
+            print(f"  [INFO] Using moviepy (may be slower)...")
             clip = VideoFileClip(str(video_path))
             if clip.audio is None:
-                raise ValueError("视频没有音频轨道")
+                raise ValueError("Video has no audio track")
             
             clip.audio.write_audiofile(str(output_wav), verbose=False, logger=None)
             clip.close()
             
-            print(f"  ✅ 音频已提取: {output_wav.name}")
+            print(f"  [OK] Audio extracted: {output_wav.name}")
             return output_wav
         except ImportError:
             raise RuntimeError(
-                "需要ffmpeg或moviepy来提取视频音频\n"
-                "安装: pip install moviepy\n"
-                "或下载ffmpeg: https://ffmpeg.org/download.html"
+                "ffmpeg or moviepy required for video audio extraction.\n"
+                "Install: pip install moviepy\n"
+                "Or download ffmpeg: https://ffmpeg.org/download.html"
             )
         except Exception as e:
-            raise RuntimeError(f"音频提取失败: {e}")
+            raise RuntimeError(f"Audio extraction failed: {e}")
     
     def transcribe(
         self,
@@ -285,64 +386,74 @@ class AcousticPipeline:
         archive_dir: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        转录音视频文件
-        
+        Transcribe an audio or video file.
+
         Args:
-            file_path: 文件路径
-            language: 语言（默认自动检测）
-            keep_extracted: 是否保留提取的WAV文件
-            archive_mode: 存档格式（none/txt/json/both）
-            archive_dir: 存档目录（默认 source_file 同目录下 transcripts）
-        
+            file_path: path to the file
+            language: language hint (default: auto-detect)
+            keep_extracted: keep the extracted WAV when input is video
+            archive_mode: save format (none/txt/json/both)
+            archive_dir: output directory for saved transcripts (default: transcripts/ beside source)
+
         Returns:
-            转录结果
+            transcription result dict
         """
         file_path = Path(file_path)
         
         if not file_path.exists():
-            raise FileNotFoundError(f"文件不存在: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
         
-        print(f"\n🎙️  开始转录: {file_path.name}")
+        print(f"\n[ASR] Transcribing: {file_path.name}")
         
-        # 准备音频文件
+        # prepare audio file
         audio_file = file_path
         if self._is_video(file_path):
             audio_file = self._extract_audio_from_video(file_path)
         elif not self._is_audio(file_path):
-            raise ValueError(f"不支持的文件格式: {file_path.suffix}")
+            raise ValueError(f"Unsupported file format: {file_path.suffix}")
         
-        # 调用原始的transcribe.py
-        print(f"  🔄 转录中...")
-        
-        cmd = [
-            str(self.venv_py),
-            str(self.transcribe_py),
-            '--audio', str(audio_file),
-            '--language', language
-        ]
+        # prefer in-process call to reduce startup overhead
+        print(f"  [INFO] Transcribing...")
+
+        transcription = None
         
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+            if self._transcribe_fn is not None:
+                raw = self._transcribe_fn(str(audio_file), language, "", None)
+                if isinstance(raw, dict):
+                    transcription = raw
+                elif isinstance(raw, str):
+                    transcription = json.loads(raw)
+                else:
+                    raise RuntimeError(f"transcribe returned unsupported type: {type(raw).__name__}")
+
+            if transcription is None:
+                cmd = [
+                    str(self.venv_py),
+                    str(self.transcribe_py),
+                    '--audio', str(audio_file),
+                    '--language', language
+                ]
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    encoding='utf-8',
+                    timeout=TRANSCRIBE_SUBPROCESS_TIMEOUT,
+                )
+
+                if result.returncode != 0:
+                    print(f"[DEBUG] stderr: {result.stderr}", file=sys.stderr)
+                    raise RuntimeError(f"Transcription failed: {result.stderr}")
+
+                stdout_content = result.stdout.strip()
+                transcription = json.loads(stdout_content)
             
-            if result.returncode != 0:
-                raise RuntimeError(f"转录失败: {result.stderr}")
-            
-            # 尝试解析JSON输出
-            try:
-                transcription = json.loads(result.stdout)
-            except:
-                # 如果不是JSON，就把输出当作文本
-                transcription = {
-                    "text": result.stdout.strip(),
-                    "language": language,
-                    "confidence": None
-                }
-            
-            # 补充元数据
+            # append metadata
             transcription['source_file'] = str(file_path)
             transcription['source_format'] = file_path.suffix
 
-            # 存档输出（给客户保留转写记录）
+            # archive output when requested
             archived = self._archive_transcript(
                 source_file=file_path,
                 result=transcription,
@@ -351,22 +462,23 @@ class AcousticPipeline:
             )
             if archived:
                 transcription['archive_files'] = archived
+                print(f"  [SAVED] Saved to: {', '.join(archived.values())}")
 
-            # 清理临时文件
+            # clean up temporary extracted audio
             if not keep_extracted and audio_file != file_path:
                 try:
                     audio_file.unlink()
                 except:
                     pass
             
-            print(f"  ✅ 转录完成")
+            print(f"  [OK] Done")
             
             return transcription
             
         except subprocess.TimeoutExpired:
-            raise RuntimeError("转录超时（文件太大或系统繁忙）")
+            raise RuntimeError("Transcription timed out (file too large or system busy)")
         except Exception as e:
-            raise RuntimeError(f"转录过程出错: {e}")
+            raise RuntimeError(f"Transcription error: {e}")
     
     def batch_transcribe(
         self,
@@ -376,11 +488,11 @@ class AcousticPipeline:
         archive_dir: Optional[str] = None,
     ):
         """
-        批量转录文件夹中的所有音视频文件
-        
+        Batch-transcribe all audio/video files in a folder.
+
         Args:
-            folder_path: 文件夹路径
-            language: 语言
+            folder_path: path to the folder
+            language: language hint
         """
         folder = Path(folder_path)
         files = []
@@ -389,7 +501,7 @@ class AcousticPipeline:
             files.extend(folder.rglob(f'*{ext}'))
             files.extend(folder.rglob(f'*{ext.upper()}'))
         
-        print(f"\n📁 发现 {len(set(files))} 个音视频文件")
+        print(f"\n[INFO] Found {len(set(files))} audio/video files")
         
         for idx, file_path in enumerate(sorted(set(files)), 1):
             print(f"\n[{idx}/{len(set(files))}]", end=" ")
@@ -400,9 +512,9 @@ class AcousticPipeline:
                     archive_mode=archive_mode,
                     archive_dir=archive_dir,
                 )
-                print(f"转录: {result['text'][:50]}...")
+                print(f"Transcribed: {result['text'][:50]}...")
             except Exception as e:
-                print(f"❌ 错误: {e}")
+                print(f"[ERROR] {e}")
     
     def watch_folder(
         self,
@@ -412,17 +524,17 @@ class AcousticPipeline:
         archive_dir: Optional[str] = None,
     ):
         """
-        监听文件夹，自动转录新文件
-        
+        Watch a folder and auto-transcribe new files.
+
         Args:
-            folder_path: 要监听的文件夹
-            language: 语言
+            folder_path: folder to watch
+            language: language hint
         """
         try:
             from watchdog.observers import Observer
             from watchdog.events import FileSystemEventHandler, FileCreatedEvent
         except ImportError:
-            raise RuntimeError("需要watchdog: pip install watchdog")
+            raise RuntimeError("watchdog required: pip install watchdog")
         
         folder = Path(folder_path)
         processed = set()
@@ -438,7 +550,7 @@ class AcousticPipeline:
                 if file_path.suffix.lower() not in supported_formats:
                     return
                 
-                # 简单的文件完成检测
+                # simple file-completion wait
                 import time
                 time.sleep(1)
                 
@@ -455,12 +567,12 @@ class AcousticPipeline:
                         archive_mode=archive_mode,
                         archive_dir=archive_dir,
                     )
-                    print(f"转录: {result.get('text', '')[:80]}...")
+                    print(f"Transcribed: {result.get('text', '')[:80]}...")
                 except Exception as e:
-                    print(f"❌ 错误: {e}")
+                    print(f"[ERROR] {e}")
         
-        print(f"🎙️  监听中: {folder}")
-        print("按 Ctrl+C 停止")
+        print(f"[ASR] Watching: {folder}")
+        print("Press Ctrl+C to stop")
         
         handler = AudioHandler()
         observer = Observer()
@@ -472,33 +584,33 @@ class AcousticPipeline:
                 import time
                 time.sleep(1)
         except KeyboardInterrupt:
-            print("\n停止监听")
+            print("\nStopping watcher")
             observer.stop()
             observer.join()
 
 
 def main():
-    """命令行入口"""
+    """CLI entry point."""
     parser = argparse.ArgumentParser(
-        description='音视频自动转录管道',
+        description='Audio/video transcription pipeline',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
-示例:
+Examples:
   python acoustic_pipeline.py --file meeting.mp4 --language Chinese
   python acoustic_pipeline.py --watch "C:\\inbox"
   python acoustic_pipeline.py --batch "C:\\audio"
         '''
     )
     
-    parser.add_argument('--file', help='转录单个文件')
-    parser.add_argument('--watch', help='监听文件夹并自动转录')
-    parser.add_argument('--batch', help='批量转录文件夹')
-    parser.add_argument('--language', default='auto', help='语言（默认自动检测）')
-    parser.add_argument('--dir', help='ASR技能目录（默认为当前目录）')
-    parser.add_argument('--keep-audio', action='store_true', help='保留提取的音频文件')
-    parser.add_argument('--archive', choices=['none', 'txt', 'json', 'both'], default='none', help='转写存档格式')
-    parser.add_argument('--archive-dir', help='转写存档目录（默认源文件目录下 transcripts）')
-    parser.add_argument('--auto-bootstrap', action='store_true', help='未安装ASR时自动执行 setup.py + download_model.py')
+    parser.add_argument('--file', help='transcribe a single file')
+    parser.add_argument('--watch', help='watch a folder and auto-transcribe new files')
+    parser.add_argument('--batch', help='batch-transcribe all files in a folder')
+    parser.add_argument('--language', default='auto', help='language (default: auto-detect)')
+    parser.add_argument('--dir', help='ASR skill directory (default: auto-detect)')
+    parser.add_argument('--keep-audio', action='store_true', help='keep extracted audio file')
+    parser.add_argument('--archive', choices=['none', 'txt', 'json', 'both'], default='none', help='transcript archive format')
+    parser.add_argument('--archive-dir', help='archive directory (default: transcripts/ beside source)')
+    parser.add_argument('--auto-bootstrap', action='store_true', help='auto-run setup.py + download_model.py when env is missing')
     
     args = parser.parse_args()
     
@@ -513,9 +625,9 @@ def main():
                 archive_mode=args.archive,
                 archive_dir=args.archive_dir,
             )
-            print("\n📝 转录结果:")
+            print("\n[RESULT] Transcription:")
             print(result['text'])
-            print(f"\nℹ️  元数据: {json.dumps({k: v for k, v in result.items() if k != 'text'}, ensure_ascii=False, indent=2)}")
+            print(f"\n[INFO] Metadata: {json.dumps({k: v for k, v in result.items() if k != 'text'}, ensure_ascii=False, indent=2)}")
             
         elif args.watch:
             pipeline.watch_folder(
@@ -537,7 +649,7 @@ def main():
             parser.print_help()
             
     except Exception as e:
-        print(f"❌ 错误: {e}", file=sys.stderr)
+        print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
 
 
