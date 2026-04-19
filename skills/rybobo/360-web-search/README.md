@@ -10,14 +10,14 @@ Purpose-built for LLMs and AI Agents.
 - **50% cheaper than Baidu** — from ¥12 / 1,000 queries
 - **Content-filtered and safe** — clean, curated output
 - **News updated within minutes** — no caching delay
-- **¥50 free credit** for new users on registration
+- **¥50 free credit** for new users on registration（新注册用户获赠 **50 元体验金**，可直接用于360搜索服务）
 
 ## Pricing
 
 | Plan | ID | Price |
 |------|----|-------|
 | Smart Search PRO | `aiso-pro` | ¥18 / 1,000 queries |
-| Smart Search MAX | `iso-max` | ¥30 / 1,000 queries |
+| Smart Search MAX | `aiso-max` | ¥30 / 1,000 queries |
 | AI Search | `aisearch` | ¥30 / 1,000 queries |
 | News Smart Search | `aiso-news` | ¥12 / 1,000 queries |
 | Image Search | `image-search` | ¥12 / 1,000 queries |
@@ -48,7 +48,7 @@ Restart QClaw / OpenClaw after copying.
 
 ### Step 1 — Get your API key
 
-1. Visit https://ai.360.com/platform and sign in (new users receive ¥50 free credit)
+1. Visit https://ai.360.com/platform and sign in (new users receive ¥50 free credit（新用户注册即获赠 50 元体验金）)
 2. Go to **Open Platform → API Key Management**
 3. Create an application and copy the key string
 

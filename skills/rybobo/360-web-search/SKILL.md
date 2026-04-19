@@ -55,7 +55,7 @@ environment variables. Setup instructions are in README.md.
 | Plan ID | Name | Price |
 |---------|------|-------|
 | `aiso-pro` | Smart Search PRO | ¥18 / 1,000 queries |
-| `iso-max` | Smart Search MAX | ¥30 / 1,000 queries |
+| `aiso-max` | Smart Search MAX | ¥30 / 1,000 queries |
 | `aisearch` | AI Search | ¥30 / 1,000 queries |
 | `aiso-news` | News Smart Search | ¥12 / 1,000 queries |
 | `image-search` | Image Search | ¥12 / 1,000 queries |
