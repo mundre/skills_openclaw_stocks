@@ -1,7 +1,7 @@
 ---
 name: markdown-ai-rewriter
-description: 基于 markdown-ai-rewriter 的 Markdown AI 改写 Skill（保留结构、章节/全文模式、多模型、图片生成、视频生成、音乐生成）
-version: 1.2.3
+description: 基于 markdown-ai-rewriter 的 Markdown AI 改写 Skill（保留结构、章节/全文模式、多模型）
+version: 0.3.6
 author: Ping Si <sipingme@gmail.com>
 user-invocable: true
 requires:
@@ -17,11 +17,9 @@ requires:
       OPENROUTER_API_KEY: "OpenRouter API Key（与 --provider openrouter 对应）"
       QWEN_API_KEY: "Qwen API Key（与 --provider qwen 对应）"
       GLM_API_KEY: "GLM API Key（与 --provider glm 对应）"
-      DOUBAO_API_KEY: "豆包 API Key（与 --provider doubao 对应；视频生成使用 Seedance）"
+      DOUBAO_API_KEY: "豆包 API Key（与 --provider doubao 对应）"
       WENXIN_API_KEY: "文心 API Key（与 --provider wenxin 对应）"
-      MINIMAX_API_KEY: "MiniMax API Key（与 --provider minimax 对应；视频生成使用 Hailuo）"
-      KLING_API_KEY: "可灵 API Key（视频生成 --video-provider kling）"
-      RUNWAY_API_KEY: "Runway API Key（视频生成 --video-provider runway）"
+      MINIMAX_API_KEY: "MiniMax API Key（与 --provider minimax 对应；需已安装 openai 包）"
       SHARED_OPENAI_KEY: "可选：内置共享 OpenAI Key 场景使用，见下文"
       MINIMAX_BASE_URL: "可选：MiniMax API Base URL，默认 https://api.minimaxi.com/v1"
 tags:
@@ -40,70 +38,36 @@ tags:
   - doubao
   - wenxin
   - minimax
-  - video
-  - image
-  - music
 repository: https://github.com/sipingme/markdown-ai-rewriter
 ---
 
 # Markdown AI Rewriter Skill
 
-本 Skill 对应 npm 包 **[markdown-ai-rewriter](https://www.npmjs.com/package/markdown-ai-rewriter)**（当前对齐 **v1.2.3**）：在 **尽量保留标题、代码块、表格、图片等结构** 的前提下，用大模型改写正文（润色、降重、换风格等），并支持 **图片生成**（图生图）、**视频生成**（文生视频）和 **音乐生成**（文生音乐）。
-
-## 🚀 安装后快速开始
-
-安装完成后，运行以下命令查看可用功能：
-
-```bash
-md-rewrite rewrite -i article.md -o out.md -p openai -v
-```
-
-输出示例：
-```
-📋 功能状态：
-   ⬚ 文章改写 (--rewrite)
-   ⬚ 图片生成 (--process-images)
-   ⬚ 视频生成 (--generate-video)
-
-⚠️  未启用任何功能。请使用以下选项启用：
-   --rewrite         启用文章改写
-   --process-images  启用图片生成
-   --generate-video  启用视频生成
-```
-
-**重要**：v0.5.2 起，默认不启用任何功能，需要显式指定要启用的功能。
+本 Skill 对应 npm 包 **[markdown-ai-rewriter](https://www.npmjs.com/package/markdown-ai-rewriter)**（当前对齐 **v0.3.3**）：在 **尽量保留标题、代码块、表格、图片等结构** 的前提下，用大模型改写正文（润色、降重、换风格等）。
 
 ## 核心特点（先看这个）
 
-**一句话定位**：这是一个面向生产场景的 Markdown 改写 Skill，重点是"**改写质量** + **结构稳定** + **成本可控**"。
+**一句话定位**：这是一个面向生产场景的 Markdown 改写 Skill，重点是“**改写质量** + **结构稳定** + **成本可控**”。
 
-- **结构稳定优先**：尽量保留标题层级、代码块、表格、图片位置，减少"改完排版坏掉"。
+- **结构稳定优先**：尽量保留标题层级、代码块、表格、图片位置，减少“改完排版坏掉”。
 - **双模式可切换**：`section` 适合中长文批量与控成本，`full` 适合短文叙事连贯。
 - **多模型一套命令**：同一 CLI 只换 `-p` 和环境变量，就能切换 11 个 Provider。
-- **图片生成**：支持 MiniMax、OpenAI、Gemini、豆包等图片生成。
-- **视频生成**：支持 MiniMax Hailuo、豆包 Seedance、可灵、Runway 等视频生成。
-- **音乐生成**：支持 MiniMax Music 2.5+ 音乐生成（纯音乐/带歌词）。
-- **可落地到流水线**：适合接在抓取、清洗、发布前的"内容标准化"环节。
+- **可落地到流水线**：适合接在抓取、清洗、发布前的“内容标准化”环节。
 
 ## 最适合的使用场景
 
 - 你已经有 Markdown 初稿，要做润色/降重/统一风格；
 - 你在做批量内容处理，希望速度和费用可控；
-- 你需要兼顾国内外多个模型平台，在可用性和成本之间灵活切换；
-- 你需要为文章自动生成配图、视频或背景音乐。
+- 你需要兼顾国内外多个模型平台，在可用性和成本之间灵活切换。
 
 ---
 
 ## 与旧版差异（务必知晓）
 
-| 项目 | 当前版本 (v0.5.2) |
+| 项目 | 当前版本 |
 |------|----------|
-| **默认行为** | **默认不启用任何功能**，需显式使用 `--rewrite`、`--process-images`、`--generate-video` 启用。 |
 | 改写模式 | 仅 **`section`（章节，默认）** 与 **`full`（全文）**；已移除「按块/段落」模式。 |
 | 模型 | **OpenAI**、**Anthropic**、**Azure OpenAI**、**Gemini**、**DeepSeek**、**OpenRouter**、**Qwen**、**GLM**、**豆包**、**文心**、**MiniMax**。 |
-| 图片生成 | 支持 MiniMax、OpenAI、Gemini、豆包、Nano-Banana 等。 |
-| 视频生成 | 支持 MiniMax Hailuo、豆包 Seedance 2.0/1.5/1.0、可灵、Runway Gen-4.5。 |
-| 音乐生成 | 支持 MiniMax Music 2.5+（纯音乐/带歌词/自动歌词）。 |
 | 章节模式 | 按标题分章并行改写；**`-c / --concurrency` 对章节模式生效**。 |
 | CLI 版本号 | 从安装的包的 `package.json` 读取，与 npm 版本一致。 |
 
@@ -149,9 +113,7 @@ npm install @anthropic-ai/sdk
 | `GLM_API_KEY` | `--provider glm` |
 | `DOUBAO_API_KEY` | `--provider doubao` |
 | `WENXIN_API_KEY` | `--provider wenxin` |
-| `MINIMAX_API_KEY` | `--provider minimax`（文本改写）；`--video-provider minimax`（视频生成） |
-| `KLING_API_KEY` | `--video-provider kling`（可灵视频生成） |
-| `RUNWAY_API_KEY` | `--video-provider runway`（Runway 视频生成） |
+| `MINIMAX_API_KEY` | `--provider minimax` |
 | `AZURE_OPENAI_ENDPOINT` | `azure-openai` 可选 endpoint（也可用 `--base-url`） |
 | `MINIMAX_BASE_URL` | 可选；默认 `https://api.minimaxi.com/v1`，可按 MiniMax 文档覆盖 |
 | `SHARED_OPENAI_KEY` | 可选；仅在 **未传 `apiKey`** 且代码里允许使用共享 Key 时由库内部使用（需配合 `QuotaManager` 等逻辑，见包内 README）；**常规 CLI 用法请直接设置上述各厂商 Key。** |
@@ -190,108 +152,50 @@ npm install @anthropic-ai/sdk
 
 ## 标准 CLI 示例
 
-### 文章改写
-
 ```bash
-# 章节模式 + OpenAI（注意：需要 --rewrite 显式启用改写）
+# 章节模式 + OpenAI（默认即 section，可省略 --mode）
 export OPENAI_API_KEY="sk-..."
-md-rewrite rewrite \
+markdown-ai-rewrite rewrite \
   -i input.md \
   -o output.md \
   -p openai \
-  --rewrite \
   -s casual \
   -c 3 \
   -v
 
 # 全文模式
-md-rewrite rewrite -i input.md -o out.md -p openai --rewrite --mode full -v
+markdown-ai-rewrite rewrite -i input.md -o out.md -p openai --mode full -v
 
 # 二级标题分章
-md-rewrite rewrite -i input.md -o out.md -p openai --rewrite --section-level 2
+markdown-ai-rewrite rewrite -i input.md -o out.md -p openai --section-level 2
 
 # Anthropic
 export ANTHROPIC_API_KEY="sk-ant-..."
-md-rewrite rewrite -i input.md -o out.md -p anthropic --rewrite -s formal
+markdown-ai-rewrite rewrite -i input.md -o out.md -p anthropic -s formal
 
 # DeepSeek
 export DEEPSEEK_API_KEY="..."
-md-rewrite rewrite -i input.md -o out.md -p deepseek --rewrite
+markdown-ai-rewrite rewrite -i input.md -o out.md -p deepseek
+
+# Qwen
+export QWEN_API_KEY="..."
+markdown-ai-rewrite rewrite -i input.md -o out.md -p qwen
+
+# Azure OpenAI
+export AZURE_OPENAI_API_KEY="..."
+export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com"
+markdown-ai-rewrite rewrite -i input.md -o out.md -p azure-openai -m gpt-4o-mini
 
 # MiniMax（需 npm install openai）
 export MINIMAX_API_KEY="..."
-md-rewrite rewrite -i input.md -o out.md -p minimax --rewrite -m MiniMax-M2.1 -s casual
+markdown-ai-rewrite rewrite -i input.md -o out.md -p minimax -m MiniMax-M2.1 -s casual
+
+# 自定义提示（custom 风格）
+markdown-ai-rewrite rewrite -i input.md -o out.md -p openai -s custom \
+  --prompt "保持技术准确性，面向初级读者改写"
 ```
 
-### 图片生成
-
-```bash
-# 只生成图片（不改写文章）
-export MINIMAX_API_KEY="..."
-md-rewrite rewrite -i input.md -o out.md -p minimax --process-images -v
-
-# 改写 + 图片生成
-md-rewrite rewrite -i input.md -o out.md -p openai --rewrite --process-images -v
-
-# 指定图片 Provider
-md-rewrite rewrite -i input.md -o out.md -p openai --process-images --image-provider doubao
-```
-
-### 视频生成
-
-```bash
-# 只生成视频（不改写文章）
-export MINIMAX_API_KEY="..."
-md-rewrite rewrite -i input.md -o out.md -p minimax --generate-video -v
-
-# 改写 + 视频生成
-md-rewrite rewrite -i input.md -o out.md -p openai --rewrite --generate-video -v
-
-# 指定视频 Provider（豆包 Seedance）
-export DOUBAO_API_KEY="..."
-md-rewrite rewrite -i input.md -o out.md -p openai --generate-video --video-provider doubao
-
-# 可灵视频
-export KLING_API_KEY="..."
-md-rewrite rewrite -i input.md -o out.md -p openai --generate-video --video-provider kling
-
-# Runway 视频
-export RUNWAY_API_KEY="..."
-md-rewrite rewrite -i input.md -o out.md -p openai --generate-video --video-provider runway
-```
-
-### 音乐生成
-
-```bash
-# 纯音乐（无人声）- 从 prompt 生成
-export MINIMAX_API_KEY="..."
-md-rewrite music --prompt "Indie folk, melancholic, introspective" --instrumental -o bgm.mp3
-
-# 带歌词的歌曲
-md-rewrite music --prompt "Pop, upbeat, energetic" --lyrics "[verse]\nHello world\n[chorus]\nLa la la" -o song.mp3
-
-# 从文件读取歌词
-md-rewrite music --prompt "Rock, powerful" --lyrics-file lyrics.txt -o song.mp3
-
-# 自动生成歌词（从 prompt 自动生成）
-md-rewrite music --prompt "Jazz, smooth, romantic" --auto-lyrics -o song.mp3
-
-# 从 Markdown 生成背景音乐
-md-rewrite music -i article.md --instrumental -o bgm.mp3 -v
-```
-
-### 组合使用
-
-```bash
-# 改写 + 图片 + 视频（全功能）
-md-rewrite rewrite -i input.md -o out.md -p openai \
-  --rewrite \
-  --process-images \
-  --generate-video \
-  -v
-```
-
-常用参数速查：`-i/-o` 输入输出，`-p` 厂商，`-k` 显式传 Key（也可全靠环境变量），`-m` 模型，`--base-url`（通用 endpoint 覆盖），`-s` 风格，`-t` 温度，`--max-tokens`，`--preserve-length`，`-c` 并发，`--mode`，`--section-level`，`--rewrite`，`--process-images`，`--generate-video`，`--video-provider`，`--image-provider`。完整列表以 `md-rewrite rewrite --help` 为准。
+常用参数速查：`-i/-o` 输入输出，`-p` 厂商，`-k` 显式传 Key（也可全靠环境变量），`-m` 模型，`--base-url`（通用 endpoint 覆盖），`-s` 风格，`-t` 温度，`--max-tokens`，`--preserve-length`，`-c` 并发，`--mode`，`--section-level`，`--minimax-base-url`（兼容旧参数）。完整列表以 `markdown-ai-rewrite rewrite --help` 为准。
 
 ---
 
@@ -308,29 +212,16 @@ const rewriter = new MarkdownRewriter({
   sectionLevel: 1,
   concurrency: 3,
   verbose: true,
-  enableRewrite: true,   // v0.5.2 起需要显式启用改写
   minimaxBaseUrl: process.env.MINIMAX_BASE_URL, // 仅 minimax 时可选
   options: {
     style: 'casual',
     temperature: 0.7,
     maxTokens: 2000,
   },
-  // 图片生成配置（可选）
-  imageProcessing: {
-    provider: 'minimax',
-    apiKey: process.env.MINIMAX_API_KEY,
-  },
-  // 视频生成配置（可选）
-  videoProcessing: {
-    provider: 'minimax', // 'minimax' | 'doubao' | 'kling' | 'runway'
-    apiKey: process.env.MINIMAX_API_KEY,
-    duration: 6,
-  },
 });
 
 const result = await rewriter.rewrite(markdownString);
 // result.rewritten, result.blocksProcessed, result.blocksRewritten
-// result.imageProcessing, result.videoProcessing
 ```
 
 `custom` 提供方可使用 `customProvider` 注入，详见 npm 包 README。
@@ -377,7 +268,7 @@ markdown-ai-rewrite rewrite -i article.md -o article-rewritten.md -p openai -s c
 
 | 项目 | 值 |
 |------|-----|
-| 对齐包版本 | 1.2.3 |
+| 对齐包版本 | 0.3.3 |
 | 仓库 | https://github.com/sipingme/markdown-ai-rewriter |
 | npm | https://www.npmjs.com/package/markdown-ai-rewriter |
 | 许可证 | MIT |

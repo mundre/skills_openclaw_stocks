@@ -1,25 +1,20 @@
 {
   "skill": {
     "name": "markdown-ai-rewriter",
-    "version": "1.2.3",
+    "version": "0.3.6",
     "enabled": true,
     "autoInvoke": true
   },
   "commands": {
     "rewrite": {
-      "script": "./scripts/run.js",
+      "script": "./scripts/rewrite.js",
       "args": ["rewrite"],
       "description": "重写 Markdown 文件"
     },
     "check-quota": {
-      "script": "./scripts/run.js",
+      "script": "./scripts/rewrite.js",
       "args": ["check-quota"],
       "description": "检查剩余配额"
-    },
-    "help": {
-      "script": "./scripts/postinstall.js",
-      "args": [],
-      "description": "显示使用帮助和 API 配置方式"
     }
   },
   "environment": {
@@ -38,41 +33,13 @@
       "GLM_API_KEY",
       "DOUBAO_API_KEY",
       "WENXIN_API_KEY",
-      "MINIMAX_API_KEY",
-      "KLING_API_KEY",
-      "RUNWAY_API_KEY"
+      "MINIMAX_API_KEY"
     ]
-  },
-  "install": {
-    "type": "npm-global",
-    "package": "markdown-ai-rewriter",
-    "version": "1.2.3",
-    "command": "npm install -g markdown-ai-rewriter@1.2.3",
-    "binary": "md-rewrite",
-    "global": true,
-    "autoInstall": false,
-    "autoUpdate": false,
-    "riskLevel": "low",
-    "riskReason": "通过 npm 全局安装第三方包。安装前请审计源码。",
-    "requiresApproval": true,
-    "source": {
-      "type": "npm",
-      "registry": "https://registry.npmjs.org",
-      "package": "markdown-ai-rewriter",
-      "repository": "https://github.com/sipingme/markdown-ai-rewriter",
-      "license": "MIT",
-      "audit": "https://github.com/sipingme/markdown-ai-rewriter/blob/main/src/index.ts"
-    },
-    "verification": {
-      "command": "md-rewrite --version",
-      "expectedOutput": "1.2.3"
-    }
   },
   "dependencies": {
     "npm": [
-      "markdown-ai-rewriter@1.2.3"
-    ],
-    "note": "Package is installed globally via npm. Binary: md-rewrite"
+      "markdown-ai-rewriter@^0.3.3"
+    ]
   },
   "permissions": {
     "filesystem": {
@@ -81,7 +48,6 @@
     },
     "network": {
       "domains": [
-        "registry.npmjs.org",
         "api.openai.com",
         "api.anthropic.com",
         "*.openai.azure.com",

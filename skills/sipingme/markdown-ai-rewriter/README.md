@@ -1,6 +1,6 @@
 # Markdown AI Rewriter Skill
 
-面向 **Claw Hub** 等环境的 Skill 封装，底层使用 npm 包 **[markdown-ai-rewriter](https://www.npmjs.com/package/markdown-ai-rewriter)**（当前对齐 **v1.2.3**）：在 **尽量保留标题、代码块、表格、图片等结构** 的前提下，对 Markdown 正文做润色、降重或换表述，并支持图片、视频、音乐生成。
+面向 **Claw Hub** 等环境的 Skill 封装，底层使用 npm 包 **[markdown-ai-rewriter](https://www.npmjs.com/package/markdown-ai-rewriter)**（当前对齐 **v0.3.3**）：在 **尽量保留标题、代码块、表格、图片等结构** 的前提下，对 Markdown 正文做润色、降重或换表述。
 
 ## 为什么用这个 Skill
 
@@ -39,7 +39,6 @@ git clone https://github.com/sipingme/markdown-ai-rewriter.git
 |------|------|
 | **改写模式** | **`section`（章节，默认）**：按标题分章并行；**`full`（全文）**：整篇一次，语气更连贯。已移除旧的「按段落块」模式。 |
 | **模型提供商** | **OpenAI**、**Anthropic**、**Azure OpenAI**、**Gemini**、**DeepSeek**、**OpenRouter**、**Qwen**、**GLM**、**豆包**、**文心**、**MiniMax**。 |
-| **多媒体生成** | 图片生成、视频生成、音乐生成（MiniMax Music 2.5+）。 |
 | **风格** | `casual` / `formal` / `technical` / `creative` / `custom`（`custom` 常配合自定义 `--prompt`）。 |
 | **结构** | 解析与重组逻辑尽量保留版式；全文模式下对图片有占位符保护机制（详见包文档）。 |
 | **并发** | 章节模式下 **`--concurrency`（`-c`）** 控制并行请求数。 |
