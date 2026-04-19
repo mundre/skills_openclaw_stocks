@@ -10,9 +10,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Optional
-
-from .dag import detect_file_encoding
+from typing import Iterable, Optional
 
 
 def _normalize_system_prompt(system) -> Optional[str]:
@@ -59,11 +57,28 @@ def get_cache_trace_path() -> str:
     return os.path.join(state_dir, "logs", "cache-trace.jsonl")
 
 
-def build_session_system_prompt_index(cache_trace_path: str) -> dict[str, str]:
+def build_session_system_prompt_index(
+    cache_trace_path: str,
+    target_session_ids: Optional[Iterable[str]] = None,
+) -> dict[str, str]:
     """Build a mapping of sessionId → system prompt from cache-trace.jsonl.
 
     For each session, takes the last occurrence of a system prompt
     (from stages that include the system field), which is the most complete.
+
+    The file is streamed line by line and assumed to be UTF-8 (it is
+    written by OpenClaw's own logger as JSON, always UTF-8). We do NOT
+    run encoding detection here because that requires reading a sample
+    of the file and, on long-running hosts, this file can grow to GB
+    scale — cheap to stream, fatal to slurp.
+
+    Args:
+        cache_trace_path: Path to cache-trace.jsonl.
+        target_session_ids: Optional iterable of session IDs to limit the
+            index to. When provided, only entries for these sessions are
+            kept, which drastically reduces peak memory when the caller
+            already knows which sessions it needs (e.g. single-session
+            explicit mode).
 
     Returns:
         Dict mapping sessionId to system prompt string.
@@ -73,8 +88,14 @@ def build_session_system_prompt_index(cache_trace_path: str) -> dict[str, str]:
     if not os.path.isfile(cache_trace_path):
         return index
 
+    target_set: Optional[set[str]] = (
+        set(target_session_ids) if target_session_ids is not None else None
+    )
+    if target_set is not None and not target_set:
+        return index
+
     try:
-        with open(cache_trace_path, "r", encoding=detect_file_encoding(cache_trace_path), errors="replace") as f:
+        with open(cache_trace_path, "r", encoding="utf-8", errors="replace") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -85,13 +106,19 @@ def build_session_system_prompt_index(cache_trace_path: str) -> dict[str, str]:
                     continue
 
                 session_id = obj.get("sessionId")
-                system = obj.get("system")
+                if not session_id:
+                    continue
+                if target_set is not None and session_id not in target_set:
+                    continue
 
-                if session_id and system:
-                    normalized = _normalize_system_prompt(system)
-                    if normalized:
-                        # Keep updating — last entry wins (most complete)
-                        index[session_id] = normalized
+                system = obj.get("system")
+                if not system:
+                    continue
+
+                normalized = _normalize_system_prompt(system)
+                if normalized:
+                    # Keep updating — last entry wins (most complete)
+                    index[session_id] = normalized
     except OSError:
         pass
 
@@ -112,7 +139,7 @@ def get_system_prompt_for_session(
         return None
 
     try:
-        with open(cache_trace_path, "r", encoding=detect_file_encoding(cache_trace_path), errors="replace") as f:
+        with open(cache_trace_path, "r", encoding="utf-8", errors="replace") as f:
             for line in f:
                 line = line.strip()
                 if not line:

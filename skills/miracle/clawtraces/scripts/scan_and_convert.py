@@ -725,9 +725,15 @@ def scan_and_convert(
             print(f"Limiting to {limit} most recent session(s) out of {len(all_qualifying)}.", file=sys.stderr)
             all_qualifying = all_qualifying[:limit]
 
-    # Build cache-trace system prompt index
+    # Build cache-trace system prompt index.
+    # Only index sessions we are about to process — cache-trace.jsonl accumulates
+    # system prompts for every OpenClaw session ever, and on long-running hosts
+    # can reach GB scale. Building an index of everything would OOM on 2GB VMs.
     cache_trace_path = get_cache_trace_path()
-    system_prompt_index = build_session_system_prompt_index(cache_trace_path)
+    target_ids = {s["session_id"] for s in all_qualifying}
+    system_prompt_index = build_session_system_prompt_index(
+        cache_trace_path, target_session_ids=target_ids
+    )
     if system_prompt_index:
         print(f"Loaded system prompts for {len(system_prompt_index)} session(s) from cache-trace.", file=sys.stderr)
 

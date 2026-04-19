@@ -19,26 +19,41 @@ from typing import Optional
 from .metadata_stripper import is_system_startup_message, strip_metadata_prefix
 
 
-def detect_file_encoding(file_path: str) -> str:
-    """Detect file encoding: try UTF-8 strict first, fall back to GBK.
+def detect_file_encoding(file_path: str, sample_bytes: int = 64 * 1024) -> str:
+    """Detect file encoding by sampling the head of the file.
 
     On Chinese Windows, OpenClaw may write .jsonl files in GBK encoding.
     Reading GBK as UTF-8 with errors='replace' destroys Chinese text
-    irreversibly (replaces bytes with U+FFFD). Instead, we detect the
+    irreversibly (replaces bytes with U+FFFD). Instead, we probe the
     actual encoding and read with the correct one.
+
+    Only a head sample (default 64KB) is read to avoid OOM on huge files
+    like cache-trace.jsonl on low-memory hosts. For multibyte-safe probing,
+    we use an incremental decoder so a UTF-8 code point cut in half at the
+    sample boundary does not cause a false negative.
     """
+    import codecs
+
     with open(file_path, "rb") as f:
-        raw = f.read()
+        raw = f.read(sample_bytes)
+
+    if not raw:
+        return "utf-8"
+
+    utf8_decoder = codecs.getincrementaldecoder("utf-8")(errors="strict")
     try:
-        raw.decode("utf-8")
+        utf8_decoder.decode(raw, final=False)
         return "utf-8"
     except UnicodeDecodeError:
         pass
+
+    gbk_decoder = codecs.getincrementaldecoder("gbk")(errors="strict")
     try:
-        raw.decode("gbk")
+        gbk_decoder.decode(raw, final=False)
         return "gbk"
     except UnicodeDecodeError:
         pass
+
     return "utf-8"  # fallback, will use errors="replace"
 
 
