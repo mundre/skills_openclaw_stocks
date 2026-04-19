@@ -58,10 +58,10 @@ description: 教授新 agent 掌握工作室基础能力的技能。触发时机
 
 | 分类 | 技能 | 安装 |
 |------|------|------|
-| **搜索** | multi-search-engine, duckduckgo-search | clawhub 安装 |
+| **搜索** | mmx-cli, multi-search-engine | mmx-cli 优先，mcporter 备选 |
 | **浏览器** | browser | 内置需启用 |
 | **外部服务** | mcporter | 需配置key |
-| **视觉** | canvas | 内置 |
+| **视觉** | canvas, image, mmx-cli | image 理解用内置工具，生图用 mmx-cli |
 | **技能开发** | skill-creator, clawhub | 部分内置部分安装 |
 
 详见 `references/phase-2-advanced.md`

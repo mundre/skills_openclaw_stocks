@@ -52,7 +52,7 @@
 **需要记住的内容**：
 - 新术语 → `memory/glossary.md`
 - 新人物 → `memory/people/{name}/`
-- 新项目 → `memory/projects/{name}/`
+- 新项目 → 各自项目目录
 - 今日事件 → `memory/daily/YYYY-MM-DD.md`
 - 错误/教训 → `memory/post-mortems.md`
 
@@ -102,15 +102,6 @@
 - 明日计划
 
 **禁止**：只写"完成工作"这种流水账，要记录过程和思考。
-
-### ✅ 项目关闭必须走完流程
-
-**规则**：项目状态变更（开始/完成/暂停/放弃）时，必须：
-1. 更新 `memory/projects/{name}/items.json`
-2. 更新/创建 `summary.md`
-3. 更新 `MEMORY.md` Projects 表
-
-**缺少任何步骤 = 项目未关闭。**
 
 ---
 

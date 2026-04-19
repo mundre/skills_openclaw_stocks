@@ -59,18 +59,109 @@
 
 **验证**：能在群里成功发送一条文字消息和一张图片
 
+### 飞书@提及（Feishu @Mention）
+
+**用途**：在消息中 @提醒某人
+
+#### 接收 @提及
+
+收到 @提及时，消息内容会包含 `<at user_id="...">name</at>` 标签。系统元数据也会提供 `sender_id`，可直接识别发送者身份。
+
+#### 发送 @提及（message 工具方式，推荐）
+
+**必须同时传 `accountId` 和 `target` 两个参数**：
+
+```javascript
+message({
+  action: "send",
+  channel: "feishu",
+  accountId: "你的账号名",      // ← 必须！从 contacts 查 account_id
+  target: "chat:oc_群ID",     // ← 必须！chat: 前缀
+  message: "<at user_id=\"ou_xxx\">群名片</at> 内容"
+})
+```
+
+⚠️ **常见错误**：不传 `accountId` 会盗用 main 身份；不传 `target` 消息发不出去。
+
+#### 发送 @提及（curl 方式，备选）
+
+如果 message 工具不可用，可以用 curl：
+
+```bash
+AGENT_NAME=你的账号名
+read -r APP_ID APP_SECRET <<< "$(get_feishu_creds)"
+TOKEN=$(curl -s -X POST 'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal' \
+  -H 'Content-Type: application/json' \
+  -d "{\"app_id\":\"$APP_ID\",\"app_secret\":\"$APP_SECRET\"}" \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['tenant_access_token'])")
+
+curl -X POST 'https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"receive_id":"oc_群ID","msg_type":"text","content":"{\"text\":\"<at user_id=\\\"ou_xxx\\\">群名片</at> 内容\"}"}'
+```
+
+⚠️ curl 方式送达正常，但对方 session 可能收不到 relay 通知，优先用 message 工具。
+
+#### 获取用户 open_id
+
+| 方式 | 说明 |
+|------|------|
+| **contacts 技能** | 查 `memory/contacts/contacts.d/<name>.yaml` 的 `open_id` |
+| **消息来源** | 收到的消息 metadata 中 `sender_id` 就是 open_id |
+| **群成员列表** | 用 `feishu_chat(action=members, chat_id="oc_xxx")` 查询 |
+
+**注意**：@提及只能在群聊中使用，私聊无法 @提醒对方。
+
 ### contacts（联系人管理）
 
-**用途**：查找工作室成员、获取联系方式
+**用途**：查找工作室成员联系方式，是所有沟通技能的基础
 
-**安装**：`cp -r /home/axelhu/.openclaw/workspace/skills/contacts skills/`
+**安装**：`clawhub install contacts --dir skills`
 
-**核心概念**：
-- 工作室成员：Producer、Designer、Programmer、Artist 等
-- 知道谁负责什么
-- 能够查到某个人的飞书 ID
+**联系人卡片格式**（`memory/contacts/contacts.d/<contact_id>.yaml`）：
 
-**验证**：能查到 Producer 的联系方式
+```yaml
+contact_id: "mala"           # 内部唯一标识
+name: "麻辣小龙虾"             # 内部通用名称
+
+channels:
+  feishu:
+    open_id: "ou_51b..."    # 飞书 open_id，用于 @ 路由
+    nickname: "麻辣小龙虾"     # 群里的显示名，@ 时填这个
+    chat_id: "oc_87d..."    # 所在群 chat_id
+    account_id: "mala"        # message 工具的 accountId 参数
+
+internal:
+  agent_id: "mala"           # OpenClaw agent ID
+  role: "设计师"
+  project: "AI游戏工作室"
+```
+
+**查询方法**：
+```bash
+# 查单个联系人
+cat memory/contacts/contacts.d/mala.yaml
+
+# 搜索联系人
+grep -rl "name:" memory/contacts/contacts.d/ | xargs grep -l "小龙虾"
+```
+
+**关键字段说明**：
+
+| 字段 | 用途 |
+|------|------|
+| `channels.feishu.open_id` | @ 某人时必须，消息路由依赖此字段 |
+| `channels.feishu.nickname` | @ 时在标签里填的名字，显示在群里 |
+| `channels.feishu.account_id` | message 工具发送时传 `accountId` 参数 |
+| `channels.feishu.chat_id` | 发消息到哪个群 |
+
+**更新维护**：
+- 认识新联系人后，在 `contacts.d/` 下创建对应的 YAML 文件
+- 发现联系人的飞书 ID、昵称变化时，及时更新
+- 踩过的坑记录到 `notes` 字段
+
+**验证**：能查到任意一个成员的 `open_id`、`nickname`、`account_id`
 
 ### sessions_send（跨 Agent 通信）
 
@@ -133,7 +224,7 @@ memory_search({ query: "关于X的决策" })
 
 **核心用法**：
 ```javascript
-memory_get({ path: "memory/projects/xxx/summary.md", from: 1, lines: 50 })
+memory_get({ path: "memory/glossary.md", from: 1, lines: 50 })
 ```
 
 **配合使用**：先 `memory_search` 找到文件，再 `memory_get` 拉取详情

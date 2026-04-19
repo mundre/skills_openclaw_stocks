@@ -136,7 +136,7 @@
 ## Make It Yours（中文个性化）
 
 ### 我的工作目录
-`/home/axelhu/.openclaw/workspace-writing/zero-[角色名]/`
+`/home/axelhu/.openclaw/workspace/zero-[角色名]/`
 
 ### 我常用的命令
 - [列出你常用的操作]
@@ -170,4 +170,4 @@
 | IDENTITY.md 的 name 是英文 | 应填中文名字 |
 | AGENTS.md 只有英文 + 新中文章节混在 | 必须先完整翻译，再整合内容 |
 | 保留了大段英文模板内容 | "Make It Yours" 应替换为中文个性化内容 |
-| 工作目录路径不对 | 确认在 `/home/axelhu/.openclaw/workspace-writing/zero-xxx/` |
+| 工作目录路径不对 | 确认在 `/home/axelhu/.openclaw/workspace/zero-xxx/` |

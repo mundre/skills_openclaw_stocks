@@ -2,6 +2,89 @@
 
 ## 搜索与信息获取
 
+### mmx-cli（MiniMax CLI 工具箱）
+
+**用途**：中文友好的搜索、图片生成、语音合成、视频生成、音乐生成
+
+**安装**：已安装在 PATH（`which mmx` 验证），API key 已配置在 `~/.mmx/config.json`
+
+**优势**：比 `mcporter call` 更稳定，不易超时
+
+**所有子命令**：
+```
+mmx --help
+mmx search     # 搜索
+mmx image      # 图片生成
+mmx speech     # 语音合成
+mmx video      # 视频生成
+mmx music      # 音乐生成
+mmx vision     # 图片理解
+mmx quota      # 额度查询
+```
+
+**搜索（search）**：
+```bash
+mmx search query "搜索内容"
+```
+
+**图片生成（image）**：
+```bash
+mmx image generate "一只穿宇航服的猫站在火星上"
+# 查看任务状态（慢任务）
+mmx video task get <task_id>
+```
+
+**语音合成（speech）**：
+```bash
+mmx speech synthesize "要转成语音的文字"
+# 查看可用音色
+mmx speech voices
+```
+
+**图片理解（vision）**：
+```bash
+mmx vision describe "https://example.com/image.jpg"
+```
+
+**视频生成（video）**：
+```bash
+mmx video generate "日落海浪，慢镜头"
+# 视频生成慢，可后台运行
+mmx video generate "描述" &
+# 查看任务状态
+mmx video task get <task_id>
+```
+
+**音乐生成（music）**：
+```bash
+mmx music generate "生成一首欢快的夏天流行歌"
+```
+
+**额度查询**：
+```bash
+mmx quota show
+```
+
+**验证**：
+- `mmx search query "今天上海天气"` 能返回准确结果
+- `mmx image generate "一只红猫"` 能生成图片
+
+### mini-max-web-search（MiniMax 网络搜索 via MCP）
+
+**用途**：中文友好的网络搜索，质量高于 Brave Search
+
+**说明**：备选方案，`mmx search` 优先于本方式
+
+**核心用法**：
+```bash
+mcporter call --stdio "uvx minimax-coding-plan-mcp -y" \
+  --env MINIMAX_API_KEY=你的key \
+  --env MINIMAX_API_HOST=https://api.minimaxi.com \
+  web_search query:"搜索内容"
+```
+
+**注意**：mcporter 方式容易卡死/超时，优先用 `mmx search`
+
 ### multi-search-engine（多引擎搜索）
 
 **用途**：搜索中文/英文网络资源，支持 17 种搜索引擎
@@ -15,42 +98,6 @@
 - 支持 `intitle:` 标题搜索
 
 **验证**：能搜索"上海今天天气"并给出准确结果
-
-### duckduckgo-search（隐私搜索）
-
-**用途**：不记录隐私的搜索引擎
-
-**安装**：`clawhub install duckduckgo-search --dir skills`
-
-**核心用法**：
-- 不需要 API key
-- 适合搜索敏感话题
-- 返回标题、链接、摘要
-
-**验证**：能用 duckduckgo 搜索并返回结果
-
-### minimax-web-search（MiniMax 网络搜索）
-
-**用途**：中文友好的网络搜索，质量高于 Brave Search
-
-**说明**：优先于默认的 `web_search`（Brave）使用，中文内容结果更准确
-
-**核心用法**：
-```bash
-mcporter call --stdio "uvx minimax-coding-plan-mcp -y" \
-  --env MINIMAX_API_KEY=你的key \
-  --env MINIMAX_API_HOST=https://api.minimaxi.com \
-  web_search query:"搜索内容"
-```
-
-**特点**：
-- 中文搜索结果质量高
-- 支持时间过滤（ freshness 参数）
-- 返回标题、链接、摘要、日期
-
-**验证**：搜索"今天上海天气"能返回准确结果
-
-**注意**：API Key 填入 `你的key` 占位符，实际运行时由调用方替换为真实密钥。
 
 ---
 
@@ -82,22 +129,17 @@ browser({ action: "act", kind: "click", ref: "..." })
 
 ### mcporter（MCP 工具调用）
 
-**用途**：调用外部 API 和工具服务，如 MiniMax 图片/视频生成
+**用途**：备选方案，用于 mmx-cli 不覆盖的场景
 
 **安装**：需单独配置 MiniMax API key
 
-**核心用法**：
-```bash
-mcporter call --stdio "npx -y minimax-mcp-js" \
-  --env MINIMAX_API_KEY=你的key \
-  text_to_image prompt:"描述文字"
-```
+**注意**：mcporter 方式容易卡死/超时，搜索和图片生成优先用 `mmx-cli`
 
 **常用工具**：
 | 工具 | 用途 |
 |------|------|
-| `text_to_image` | 图片生成 |
-| `text_to_video` | 视频生成 |
+| `text_to_image` | 图片生成（用 `mmx image` 优先）|
+| `text_to_video` | 视频生成（用 `mmx video` 优先）|
 | `text_to_audio` | TTS 语音 |
 | `voice_clone` | 声音克隆 |
 
@@ -113,6 +155,8 @@ mcporter call --stdio "npx -y minimax-mcp-js" \
 
 **安装**：OpenClaw 内置
 
+**⚠️ 注意**：`action` 字段必须是特定枚举值，不接受 `open`。用 `browser` 工具打开 URL 而非 canvas。
+
 **核心用法**：
 ```javascript
 canvas({ action: "present", url: "data:image/png;base64,..." })
@@ -120,6 +164,32 @@ canvas({ action: "snapshot" })
 ```
 
 **验证**：能用 canvas 生成一张图片
+
+### mmx-cli（MiniMax 图片/视频生成）
+
+**用途**：云端图片/视频生成，稳定可靠
+
+**安装**：已安装在 PATH，API key 已配置
+
+**图片生成**：
+```bash
+mmx image generate "一只穿宇航服的猫站在火星上"
+```
+
+**视频生成**：
+```bash
+mmx video generate "日落海浪，慢镜头"
+```
+
+**特点**：比 mcporter 方式更稳定，不易超时
+
+### image（OpenClaw 内置图片理解）
+
+**用途**：分析/理解图片内容
+
+**安装**：OpenClaw 内置，视觉模型权限自动激活
+
+**注意**：OpenClaw 有时误用 `read` 工具来识图，导致结果不准确。遇到识图任务时，应明确使用 `image` 工具。
 
 ---
 
@@ -154,8 +224,8 @@ clawhub publish [路径]          # 发布技能
 
 ## 进阶课程毕业标准
 
-1. 能用多引擎搜索找到准确信息
-2. 能用 minimax web_search 搜索中文内容
-3. 能用 browser 打开网页并获取内容
-4. 能用 mcporter 生成图片
+1. 能用 `mmx search` 搜索中文内容
+2. 能用内置 `image` 工具正确理解图片（不用 `read` 工具）
+3. 能用 `mmx image generate` 生成图片
+4. 能用 browser 打开网页并获取内容
 5. 能用 clawhub 找到并安装一个新技能
