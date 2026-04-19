@@ -97,6 +97,23 @@ def test_cmd_integration_plan_json(tmp_path, capsys):
     assert payload["automation"]["schedule"]["cron"] == "0 7 * * *"
 
 
+def test_cmd_integration_plan_creates_output_parent_dirs(tmp_path, capsys):
+    skill_dir = tmp_path / "skills" / "naver-news-briefing"
+    skill_dir.mkdir(parents=True)
+    output_path = tmp_path / "nested" / "plans" / "bundle.json"
+    args = DummyArgs(
+        request="반도체 뉴스 1시간마다 모니터링해줘",
+        channel="telegram",
+        skill_dir=str(skill_dir),
+        output=str(output_path),
+        json=True,
+    )
+    assert cli.cmd_integration_plan(args) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert output_path.exists()
+    assert json.loads(output_path.read_text(encoding="utf-8"))["storage"]["target"] == payload["storage"]["target"]
+
+
 def test_cmd_plan_save_creates_group(monkeypatch, capsys):
     monkeypatch.setattr(cli, "create_group", lambda **kwargs: {"name": kwargs["name"], "queries": kwargs["queries"], "template": kwargs["template"], "schedule": kwargs["schedule"], "operator_hints": kwargs["operator_hints"]})
     args = DummyArgs(request="반도체, AI 데이터센터 뉴스 매일 아침 7시에 브리핑해줘", name="morning-tech", as_type="group", label="아침 브리핑", tag=["테크"], json=True)
@@ -109,3 +126,55 @@ def test_cmd_plan_save_creates_group(monkeypatch, capsys):
     assert value["template"] == "morning-briefing"
     assert value["schedule"]["time"] == "07:00"
     assert value["operator_hints"]["storage_target"] == "group"
+
+
+def test_cmd_plan_save_dedupes_tags(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "add_rule", lambda **kwargs: {"name": kwargs["name"], "tags": kwargs["tags"]})
+    args = DummyArgs(
+        request="반도체 뉴스 1시간마다 모니터링해줘",
+        name="semi-hourly",
+        as_type="watch",
+        label=None,
+        tag=["watch", "interval", "watch", "사용자태그"],
+        json=True,
+    )
+    assert cli.cmd_plan_save(args) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["created"][0]["value"]["tags"] == ["watch", "interval", "사용자태그"]
+
+
+def test_cmd_plan_save_rejects_group_plan_as_watch():
+    args = DummyArgs(
+        request="반도체, AI 데이터센터 뉴스 매일 아침 7시에 브리핑해줘",
+        name="morning-tech",
+        as_type="watch",
+        label=None,
+        tag=None,
+        json=True,
+    )
+    try:
+        cli.cmd_plan_save(args)
+    except ValueError as exc:
+        assert "--as group" in str(exc)
+    else:
+        raise AssertionError("ValueError expected")
+
+
+def test_main_reports_missing_group_with_available_names(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "get_group", lambda name: (_ for _ in ()).throw(KeyError(f"keyword group not found: {name}")))
+    monkeypatch.setattr(cli, "list_groups", lambda: [{"name": "market-watch"}, {"name": "morning-tech"}])
+    exit_code = cli.main(["group-list", "missing-group"])
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "등록된 키워드 그룹을(를) 찾지 못했습니다: missing-group" in captured.err
+    assert "market-watch, morning-tech" in captured.err
+
+
+def test_main_reports_missing_watch_rule_with_hint(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "get_rule", lambda name: (_ for _ in ()).throw(KeyError(f"watch rule not found: {name}")))
+    monkeypatch.setattr(cli, "list_rules", lambda: [{"name": "semi-hourly"}])
+    exit_code = cli.main(["watch-check", "unknown-watch"])
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "등록된 watch rule을(를) 찾지 못했습니다: unknown-watch" in captured.err
+    assert "semi-hourly" in captured.err

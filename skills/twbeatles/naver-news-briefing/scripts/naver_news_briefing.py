@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import html
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -25,6 +27,13 @@ from watch_store import add_rule, get_rule, list_rules, mark_seen, remove_rule
 
 MISSING_CREDENTIALS_ERROR = "네이버 API 자격증명이 설정되지 않았습니다."
 DEFAULT_TEST_QUERY = "최근 1일 반도체 뉴스"
+ANNOUNCE_PREVIEW_LIMIT = 10
+
+
+def _strip_html(value: str) -> str:
+    text = html.unescape(str(value or ""))
+    text = re.sub(r"<[^>]+>", "", text)
+    return " ".join(text.split()).strip()
 
 
 def _brief_lines(result: Dict[str, Any], *, title: str | None = None) -> List[str]:
@@ -377,6 +386,35 @@ def cmd_watch_check(args: argparse.Namespace) -> int:
     if not payload:
         print("체크할 watch rule이 없습니다.")
         return 0
+    if getattr(args, "announce_text", False):
+        if len(payload) != 1:
+            print("NO_REPLY")
+            return 0
+        entry = payload[0]
+        new_items = entry.get("new_items", [])
+        if not new_items:
+            print("NO_REPLY")
+            return 0
+        summary = entry.get("summary", {})
+        new_count = summary.get("new_count", len(new_items))
+        latest_iso = new_items[0].get("pub_date_iso")
+        latest_text = latest_iso.replace("T", " ")[:16] if latest_iso else "최신 없음"
+        preview_items = new_items[:ANNOUNCE_PREVIEW_LIMIT]
+        lines = [
+            f"확인 요약: 새 뉴스 {new_count}건, 현재 검색 상위 {summary.get('displayed', 0)}건 / 전체 {summary.get('total', 0)}건, 최신 {latest_text}"
+        ]
+        for item in preview_items:
+            title = _strip_html(item.get("title", "제목 없음"))
+            publisher = item.get("publisher") or "정보 없음"
+            pub_iso = item.get("pub_date_iso")
+            pub_text = pub_iso.replace("T", " ")[:16] if pub_iso else item.get("pub_date", "시간 없음")
+            link = item.get("link") or item.get("original_link") or ""
+            lines.append(f"- {title} / {publisher} / {pub_text} / {link}")
+        extra_count = max(0, new_count - len(preview_items))
+        if extra_count > 0:
+            lines.append(f"- 외 추가 새 뉴스 {extra_count}건")
+        print("\n".join(lines))
+        return 0
     lines: List[str] = []
     for entry in payload:
         rule = entry["rule"]
@@ -615,6 +653,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("watch-check", help="watch rule 신규 기사 체크")
     p.add_argument("name_or_id", nargs="?")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--announce-text", action="store_true", help="cron/announce friendly plain text output")
     p.set_defaults(func=cmd_watch_check)
 
     p = sub.add_parser("group-add", help="키워드 그룹 추가")
