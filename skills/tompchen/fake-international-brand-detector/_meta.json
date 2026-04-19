@@ -3,9 +3,15 @@
   "slug": "fake-international-brand-detector",
   "displayName": "Fake International Brand Detector",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774226468551,
-    "commit": "https://github.com/openclaw/skills/commit/424905947e4c48bd96923f34a4893a71eb8d5a87"
+    "version": "2.1.0",
+    "publishedAt": 1776305405589,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774226468551,
+      "commit": "https://github.com/openclaw/skills/commit/424905947e4c48bd96923f34a4893a71eb8d5a87"
+    }
+  ]
 }
