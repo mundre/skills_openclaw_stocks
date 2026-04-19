@@ -1,38 +1,24 @@
 ---
-name: land-rover
-description: "Information assistant for Land Rover 路虎. Search models, specs, pricing, reviews, and dealership info."
-metadata:
-  { "openclaw": { "emoji": "🚗", "version": "0.1.0", "author": "hanxueyuan", "tags": ["automotive","brand","cars"] } }
+summary: "land-rover 综合信息"
+read_when:
+  - 搜索 land-rover
+  - 咨询 land-rover 详情
 ---
 
-# 🚗 Land Rover 路虎 — Automotive Info Assistant
+# land-rover 信息站
 
-Your AI guide to Land Rover 路虎. Get model info, specs, pricing, reviews, and more.
+land-rover — 在其行业具有重要影响力。
 
-## About
+## 信息模块
+【历史沿革】创立时间、地点、创始人及关键里程碑
+【业务范围】主营产品/服务及特色
+【全球布局】分支机构、市场分布
+【最新动态】近期新闻、产品发布、战略合作
 
-- **Brand**: Land Rover 路虎
-- **Category**: British luxury SUV
-- **Official Website**: https://www.landrover.com
+## 适用场景
+✓ 商业背景调查
+✓ 产品咨询与比较
+✓ 行业研究与分析
+✓ 学术教学参考
 
-## What This Skill Does
-
-1. **Model Lineup** — Current models, specs, pricing, and configurations
-2. **Reviews & Comparisons** — Expert and user reviews, competitor comparisons
-3. **Pricing & Deals** — MSRP, dealer pricing, incentives, and financing options
-4. **News & Updates** — Latest launches, recalls, technology updates
-5. **Dealership Locator** — Find nearby dealers and service centers
-
-## Example Queries
-
-- "What Land models are available?"
-- "Compare Land vs [competitor]"
-- "Land latest news"
-- "Best Land for families"
-
-## How It Works
-
-Uses web search to fetch real-time information from https://www.landrover.com, automotive review sites, and dealer networks.
-
-## Author
-Created by hanxueyuan | License: MIT
+获取更详细信息请访问官方网站。
