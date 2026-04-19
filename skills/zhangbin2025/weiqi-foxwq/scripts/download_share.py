@@ -25,6 +25,8 @@ from datetime import datetime
 from contextlib import contextmanager
 from collections import OrderedDict
 
+from sgf_parser import parse_sgf as sgf_parse
+
 # 性能计时工具
 class PerformanceTimer:
     """性能计时器"""
@@ -146,7 +148,7 @@ def extract_game_info(chessid, uid=None):
         return None
 
 def extract_moves_from_binary(data):
-    """从二进制数据中提取着法 (08 xx 10 yy 模式)"""
+    """从二进制数据中提取着法 (08 xx 10 yy 模式) - 普通直播棋谱"""
     moves = []
     i = 0
     while i < len(data) - 4:
@@ -159,6 +161,83 @@ def extract_moves_from_binary(data):
                 continue
         i += 1
     return moves
+
+
+def extract_jueyi_live_from_binary(data):
+    """
+    从绝艺解说直播二进制数据中提取主分支棋谱
+    
+    协议格式:
+    - 主分支标记: 10 cb 01
+    - 着法数据: 1a12 08<x>10<y>18<color> ...
+    - 绝艺评论: jueyi[评论内容]
+    
+    Args:
+        data: 二进制数据
+        
+    Returns:
+        list: 着法列表 [(x, y), ...]
+    """
+    moves = []
+    
+    # 主分支标记
+    main_branch_marker = bytes([0x10, 0xcb, 0x01])
+    
+    pos = 0
+    while True:
+        pos = data.find(main_branch_marker, pos)
+        if pos == -1:
+            break
+        
+        # 标记后应该是: 1a12 08<x>10<y>18<color>
+        start = pos + len(main_branch_marker)
+        segment = data[start:start+20]
+        
+        if len(segment) < 8:
+            pos += 1
+            continue
+        
+        # 解析着法: \x08<x>\x10<y>\x18<color>
+        move_match = re.search(rb'\x08([\x00-\x13])\x10([\x00-\x13])\x18([\x01\x02])', segment)
+        if not move_match:
+            pos += 1
+            continue
+        
+        x = move_match.group(1)[0]
+        y = move_match.group(2)[0]
+        
+        moves.append((x, y))
+        
+        pos += 1
+    
+    return moves
+
+
+def is_jueyi_live_data(data):
+    """
+    判断是否为绝艺解说直播数据
+    
+    判断依据:
+    - 包含 "jueyi" 字符串
+    - 包含主分支标记 10 cb 01
+    
+    Args:
+        data: 二进制数据
+        
+    Returns:
+        bool: 是否为绝艺直播数据
+    """
+    # 检查是否包含 "jueyi" 字符串
+    if b'jueyi' in data:
+        return True
+    
+    # 检查是否包含主分支标记
+    main_branch_marker = bytes([0x10, 0xcb, 0x01])
+    if main_branch_marker in data:
+        return True
+    
+    return False
+
 
 def extract_handicap_from_binary(data):
     """从二进制数据中提取让子数
@@ -228,6 +307,10 @@ async def extract_via_websocket(url, timeout=15, debug=False):
     """
     通过WebSocket提取棋谱（可选功能，仅用于进行中的对局）
     
+    自动判断棋谱类型：
+    - 绝艺解说直播：使用 extract_jueyi_live_from_binary
+    - 普通直播：使用 extract_moves_from_binary
+    
     注意: 此功能需要可选依赖 playwright
     历史棋谱请使用 --mode api 模式，无需安装 playwright
     """
@@ -239,12 +322,13 @@ async def extract_via_websocket(url, timeout=15, debug=False):
         print("   pip3 install playwright && playwright install chromium")
         print()
         print("   💡 提示: 历史棋谱可使用 --mode api 模式，无需 playwright")
-        return None, None, 0
+        return None, None, 0, None
     
     moves = []
     player_names = []
     handicap = 0
     raw_data = None
+    is_jueyi = False
     
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -255,12 +339,21 @@ async def extract_via_websocket(url, timeout=15, debug=False):
         
         def handle_ws(ws):
             async def on_message(data):
-                nonlocal moves, player_names, handicap, raw_data
+                nonlocal moves, player_names, handicap, raw_data, is_jueyi
                 if isinstance(data, bytes):
                     if len(data) > 1000:
                         raw_data = data
+                        
+                        # 判断棋谱类型
                         if not moves:
-                            moves = extract_moves_from_binary(data)
+                            if is_jueyi_live_data(data):
+                                is_jueyi = True
+                                print("   🎯 检测到绝艺解说直播棋谱")
+                                moves = extract_jueyi_live_from_binary(data)
+                            else:
+                                print("   📺 检测到普通直播棋谱")
+                                moves = extract_moves_from_binary(data)
+                        
                         if not player_names:
                             player_names = extract_player_names(data)
                         if handicap == 0:
@@ -296,7 +389,7 @@ async def extract_via_websocket(url, timeout=15, debug=False):
                 if len(line) > 3 and len(line) < 100:
                     print(f"     {line}")
     
-    return moves, player_names, handicap
+    return moves, player_names, handicap, is_jueyi
 
 def create_sgf(moves, pb="黑棋", pw="白棋", handicap=0):
     """创建SGF格式棋谱
@@ -347,26 +440,20 @@ def create_sgf(moves, pb="黑棋", pw="白棋", handicap=0):
     return sgf
 
 def parse_sgf_info(sgf):
-    """从SGF中提取信息"""
-    info = {}
+    """从SGF中提取信息（使用sgf_parser解析）"""
+    result = sgf_parse(sgf)
+    game_info = result.get('game_info', {})
+    stats = result.get('stats', {})
     
-    pb_match = re.search(r'PB\[([^\]]*)\]', sgf)
-    pw_match = re.search(r'PW\[([^\]]*)\]', sgf)
-    br_match = re.search(r'BR\[([^\]]*)\]', sgf)
-    wr_match = re.search(r'WR\[([^\]]*)\]', sgf)
-    re_match = re.search(r'RE\[([^\]]*)\]', sgf)
-    dt_match = re.search(r'DT\[([^\]]*)\]', sgf)
-    
-    info['pb'] = pb_match.group(1) if pb_match else '黑棋'
-    info['pw'] = pw_match.group(1) if pw_match else '白棋'
-    info['br'] = br_match.group(1) if br_match else ''
-    info['wr'] = wr_match.group(1) if wr_match else ''
-    info['result'] = re_match.group(1) if re_match else ''
-    info['date'] = dt_match.group(1) if dt_match else ''
-    
-    # 计算手数
-    moves = re.findall(r';[BW]\[[a-z]{2}\]', sgf)
-    info['movenum'] = len(moves)
+    info = {
+        'pb': game_info.get('black', '黑棋'),
+        'pw': game_info.get('white', '白棋'),
+        'br': game_info.get('black_rank', ''),
+        'wr': game_info.get('white_rank', ''),
+        'result': game_info.get('result', ''),
+        'date': game_info.get('date', ''),
+        'movenum': stats.get('move_nodes', 0)
+    }
     
     return info
 
@@ -380,7 +467,7 @@ def extract_from_share_link(url, output_path=None, mode='auto'):
         mode: 提取模式 ('auto', 'api', 'websocket')
               auto - 自动选择（优先API）
               api - 仅使用API
-              websocket - 仅使用WebSocket
+              websocket - 使用WebSocket（自动判断普通/绝艺直播）
     """
     
     print("="*60)
@@ -424,10 +511,14 @@ def extract_from_share_link(url, output_path=None, mode='auto'):
         print("🌐 尝试通过WebSocket获取棋谱...")
         print("   (适用于进行中的对局)")
         
-        moves, player_names, handicap = asyncio.run(extract_via_websocket(url))
+        moves, player_names, handicap, is_jueyi = asyncio.run(extract_via_websocket(url))
         
         if moves:
-            print("✅ WebSocket获取成功！")
+            if is_jueyi:
+                print(f"✅ 绝艺直播棋谱获取成功！共 {len(moves)} 手")
+            else:
+                print(f"✅ 普通直播棋谱获取成功！共 {len(moves)} 手")
+            
             pb = player_names[0] if len(player_names) > 0 else "黑棋"
             pw = player_names[1] if len(player_names) > 1 else "白棋"
             
@@ -504,7 +595,7 @@ def main():
   python3 download_share.py "https://h5.foxwq.com/yehunewshare/?chessid=123..."
   python3 download_share.py "https://h5.foxwq.com/..." /tmp/game.sgf
   python3 download_share.py "..." --mode api        # 仅使用API
-  python3 download_share.py "..." --mode websocket  # 仅使用WebSocket
+  python3 download_share.py "..." --mode websocket  # 使用WebSocket（自动判断棋谱类型）
         '''
     )
     
