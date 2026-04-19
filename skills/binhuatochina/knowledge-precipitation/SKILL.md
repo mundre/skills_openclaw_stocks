@@ -1,8 +1,16 @@
 ---
 name: knowledge-precipitation
-version: 0.1.3
+version: 0.1.5
 description: |
-  每日知识沉淀引擎（Knowledge Auto-Precipitation Engine，KAPE）v0.1.3。自动完成：下载昨日Get笔记内容 → 结合对话记录 → 深度分析用户学习、感悟、工作状态 → 生成含重点摘要的日志简报 → 同步归档到 Get笔记（带标签）+ 飞书知识库 + 飞书文档。触发场景：「整理昨天的日志」「生成日报简报」「知识沉淀」「整理学习记录」「存档昨天的内容」。
+  每日知识沉淀引擎（Knowledge Auto-Precipitation Engine，KAPE）v0.1.5。自动完成：下载昨日Get笔记内容 → 结合对话记录 → 深度分析用户学习、感悟、工作状态 → 生成含主题关联图的日志简报 → 同步归档到 Get笔记（带标签）+ 飞书知识库 + 飞书文档。触发场景：「整理昨天的日志」「生成日报简报」「知识沉淀」「整理学习记录」「存档昨天的内容」。
+
+## v0.1.5 更新说明
+- 新增主题关联图功能：帮助快速定位知识节点
+- 日志简报结构优化：主题关联图位于数据概览之后、核心主题之前
+
+## v0.1.4 更新说明
+- 新增第零步：Get笔记授权检查与自动刷新（电脑重启后 CLI 认证状态丢失时自动修复）
+- API Key 从配置文件读取后直接传给 CLI，不记录任何日志，防止隐私泄露
 
 ## v0.1.3 更新说明
 - 修复 memory 文件路径格式问题（Markdown 链接语法导致 ENOENT）
@@ -10,7 +18,7 @@ description: |
 - 确保 Get笔记 API 始终被调用，不依赖 memory 文件状态
 ---
 
-# KAPE — 知识自动沉淀引擎 v0.1.3
+# KAPE — 知识自动沉淀引擎 v0.1.5
 
 ## 安全说明
 
@@ -57,6 +65,22 @@ Get笔记 API 凭证存储在 `openclaw.json` 中：
 ## 核心工作流
 
 每天自动生成日志简报，三端同步归档。
+
+### 第零步：Get笔记 授权检查与自动刷新
+
+> ⚠️ **重要**：Get笔记 CLI 维护独立于 openclaw.json 的登录状态，电脑重启后可能被重置（显示 `Not authenticated`）。本步骤自动检测并修复，无需用户手动操作。
+
+**操作流程：**
+1. 先执行 `getnote auth status` 检查当前认证状态
+2. 若返回 `Not authenticated`：
+   - 从 `~/.openclaw/openclaw.json` 读取 `skills.entries.getnote.apiKey` 和 `skills.entries.getnote.env.GETNOTE_CLIENT_ID`
+   - 执行 `getnote auth login --api-key "<apiKey>" --client-id "<clientId>"`（API Key 直接传给 CLI，不记录到任何日志）
+   - 等待 `Logged in successfully.` 确认
+3. 若已认证（`Authenticated`）：直接继续，不做任何操作
+
+**注意**：API Key 从配置文件读取后直接作为命令行参数传给 `getnote auth login`，不写入任何日志文件或工作记忆，防止隐私泄露。
+
+---
 
 ### 第一步：确定日期范围
 
@@ -119,6 +143,21 @@ Get笔记 API 凭证存储在 `openclaw.json` 中：
 | 决策态度 | 务实程度、换方法频率 |
 
 **生成日志简报结构**（见 references/briefing-template.md）
+
+**生成主题关联图（v0.1.5 新增）：**
+根据当日笔记和对话记录，自动提取3-5个核心主题，标注主题间的关联关系，帮助快速定位知识节点。
+
+**关联类型标签：**
+- `→` 因果关系（A导致B）
+- `⟶` 支撑关系（A证实/支持B）
+- `⇄` 竞争关系（A与B竞争）
+- `↙` 衍生关系（A衍生出B）
+
+**生成规则：**
+- 主题数量：3-5个为宜（太少则关联单薄，太多则失去焦点）
+- 关系数量：每对主题间最多1条关系，优先标注最强关联
+- 每条笔记/录音可归属1-2个主题
+- 飞书文档中使用列表格式替代 ASCII 图形
 
 ### 第四步：写入本地文件
 
