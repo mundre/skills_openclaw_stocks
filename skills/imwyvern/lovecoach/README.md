@@ -10,6 +10,8 @@ An [OpenClaw](https://github.com/openclaw/openclaw) Skill that gives you a psych
 - **🎭 Shit Test Detection** — Recognize compliance, fitness, nuclear, and jealousy tests with strategies to pass them
 - **📊 Stage Diagnosis** — Know exactly where you stand (ice-breaking → building → heating up → committed → crisis → post-breakup)
 - **📅 Date Planning** — Stage-matched date ideas with conversation starters and post-date texting strategy
+- **🧾 Post-Date Review** — Read date signals, compare post-date texting shifts, and decide whether/how to ask for date 2
+- **🌡️ Flirting Escalation Timeline** — Stage-by-stage guidance for chat cadence, topic depth, and physical escalation
 - **🔥 Conflict Resolution** — De-escalation strategies based on attachment dynamics
 
 ## Quick Start
@@ -71,6 +73,8 @@ Contributions welcome — especially:
 - 废物测试识别 — 服从测试/健身测试/核弹测试/嫉妒测试，教你怎么过
 - 关系阶段诊断 — 破冰→升温→热恋→稳定→危机→分手后
 - 约会策划 — 匹配阶段的约会方案 + 话题 + 约会后跟进
+- 约会后复盘 — 分析现场反应和后续消息变化，判断该不该约第二次
+- 暧昧期升温节奏 — 从认识到确认关系的聊天频率、话题升级、肢体接触节奏
 - 冲突化解 — 基于依恋动态的降温策略
 
 **安装：**
