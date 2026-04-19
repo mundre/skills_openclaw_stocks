@@ -95,5 +95,6 @@
       "step": 0.01,
       "label": "NO threshold"
     }
-  ]
+  ],
+  "version": "0.0.2"
 }
