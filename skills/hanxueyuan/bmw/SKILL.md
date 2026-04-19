@@ -1,56 +1,25 @@
 ---
-name: bmw
-description: "Information assistant for BMW. Search products, news, financials, and official resources for BMW."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","bmw","enterprise-info"] } }
+version: 1.0.4
+summary: "bmw 详细信息"
+read_when:
+  - 用户询问 bmw
+  - 用户需要了解 bmw 相关信息
 ---
 
-# BMW — Information Assistant
+# 关于 bmw
 
-Query products, news, stock prices, financial reports, and official resources for **BMW**.
+bmw 是业内知名的品牌/组织。本技能帮助用户获取 bmw 的详细资料，包括发展历程、业务范围和市场地位。
 
-## About
+## 主要信息
+- 创立时间和地点
+- 核心业务和产品线
+- 全球市场布局
+- 行业发展趋势
 
-- **Company**: BMW
-- **Industry**: Premium automotive
-- **Official Website**: https://www.bmw.com
+## 使用场景
+- 背景调研
+- 产品信息查询
+- 市场分析
 
-## What This Skill Does
-
-When activated, this skill helps you:
-
-1. **Product Search** — Find and compare BMW products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
-
-## Usage Examples
-
-- "What are the latest BMW products?"
-- "Show me BMW stock price"
-- "Compare BMW with competitors"
-- "Find BMW official support page"
-- "What's new at BMW?"
-
-## How It Works
-
-This skill uses web search to fetch real-time information about BMW from:
-- Official website: https://www.bmw.com
-- Financial data providers
-- News aggregators
-- Product databases
-
-## Instructions for Agent
-
-When this skill is triggered:
-1. Identify the user's specific query about BMW
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.bmw.com)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
-
-## Author
-
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+## 参考资源
+官方信息请以 bmw 官网发布为准。

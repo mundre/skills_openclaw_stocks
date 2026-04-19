@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "bmw",
-  "displayName": "BMW",
+  "displayName": "Bmw",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1774307512050,
-    "commit": "https://github.com/openclaw/skills/commit/123005be2711bc42d2055ddedee8954cced6af99"
+    "version": "0.1.5",
+    "publishedAt": 1776232954132,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1774307512050,
+      "commit": "https://github.com/openclaw/skills/commit/123005be2711bc42d2055ddedee8954cced6af99"
+    }
+  ]
 }
