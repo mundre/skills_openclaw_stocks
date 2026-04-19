@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "taylor-swift",
-  "displayName": "taylor-swift",
+  "displayName": "Taylor Swift",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774743855226,
-    "commit": "https://github.com/openclaw/skills/commit/ef61ac77deae436678ef2e9cb17f6e287022fbb7"
+    "version": "0.1.1",
+    "publishedAt": 1776295643352,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774743855226,
+      "commit": "https://github.com/openclaw/skills/commit/ef61ac77deae436678ef2e9cb17f6e287022fbb7"
+    }
+  ]
 }

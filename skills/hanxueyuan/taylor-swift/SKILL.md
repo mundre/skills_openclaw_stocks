@@ -1,38 +1,23 @@
 ---
-name: taylor-swift
-description: "Information assistant for Taylor Swift 泰勒斯威夫特. Get biography, latest news, career highlights, and social media updates."
-metadata:
-  { "openclaw": { "emoji": "⭐", "version": "0.1.0", "author": "hanxueyuan", "tags": ["celebrity","music","person"] } }
+summary: "taylor-swift 背景信息"
+read_when:
+  - 用户想了解 taylor-swift
+  - 查询 taylor-swift 相关资料
 ---
 
-# ⭐ Taylor Swift 泰勒斯威夫特 — Celebrity Info Assistant
+# taylor-swift 速览
 
-Get comprehensive information about Taylor Swift 泰勒斯威夫特.
+taylor-swift，行业内具有重要地位的品牌/组织。
 
-## About
+## 你将了解到
+1. 创立故事与发展历程
+2. 主营产品/服务的核心特色
+3. 在全球市场的布局情况
+4. 近期的重大新闻和战略调整
 
-- **Name**: Taylor Swift 泰勒斯威夫特
-- **Known For**: Pop megastar, billionaire musician
-- **Category**: Music
+## 推荐用途
+🔍 市场调研和竞品分析
+🔍 产品选型和比较
+🔍 商业合作背景调查
 
-## What This Skill Does
-
-1. **Biography** — Life story, early career, key milestones
-2. **Career Highlights** — Major achievements, awards, records
-3. **Latest News** — Recent activities, announcements, interviews
-4. **Business Ventures** — Brands, investments, endorsements
-5. **Social Media** — Latest posts, follower counts, trending content
-
-## Example Queries
-
-- "Tell me about Taylor"
-- "Latest news about Taylor"
-- "What businesses does Taylor own?"
-- "Taylor net worth"
-
-## How It Works
-
-Uses web search to fetch real-time information from news sources, social media, and biographical databases.
-
-## Author
-Created by hanxueyuan | License: MIT
+> 官方信息和权威媒体报道是获取准确数据的推荐渠道。
