@@ -1,7 +1,7 @@
 ---
 name: trent-openclaw-security
 description: Assess your Agent deployment against security risks using Trent.
-version: 1.1.1
+version: 1.2.0
 homepage: https://trent.ai
 user-invocable: true
 tags:
@@ -56,7 +56,9 @@ Save `response["thread_id"]` for Phase 3.
 
 Present findings grouped by severity (see "Present results" below).
 
-Summarize: "Phase 1 complete. N findings from configuration analysis. Proceeding to upload skills for deeper analysis..."
+Summarize: "Phase 1 complete. N findings from configuration analysis.
+Phase 2 will scan your skills for deeper analysis — I'll show you exactly
+what would be uploaded before anything is sent. Ready to continue?"
 
 Optional: specify a custom config path:
 
@@ -67,26 +69,7 @@ metadata = collect_openclaw_metadata(openclaw_path=Path("/path/to/openclaw/confi
 
 ### Phase 2 — Skill Upload
 
-**Data Disclosure — present this to the user before proceeding:**
-
-> This phase packages and uploads skill code to Trent for deep security analysis.
->
-> **What is sent:**
-> - Skill source code (with detected secrets automatically redacted)
-> - Skill metadata (name, version, dependencies)
->
-> **What is NOT sent:**
-> - Files with dangerous extensions (.env, .pem, .key, .db, .pyc) are excluded
-> - Known secret patterns (API keys, tokens, AWS keys, connection strings) are
->   replaced with [REDACTED] before packaging
-> - Environment variables and non-skill workspace files are never included
->
-> **Limitations:** Pattern-based redaction may miss custom or obfuscated secrets.
-> Best practice: do not hard-code secrets in skill files.
-
-**Wait for the user to confirm before running the upload.**
-
-Package skills (redaction happens automatically during packaging):
+Scan the workspace first (nothing is uploaded yet):
 
 ```python
 from openclaw_trent.lib.package_skills import scan_workspace
@@ -94,8 +77,27 @@ from openclaw_trent.lib.package_skills import scan_workspace
 skills = scan_workspace()
 ```
 
-Present what will be uploaded — for each skill show name, type, size, and
-whether secrets were redacted (`secrets_redacted` field).
+Present what was found and how it will be protected. Example:
+
+> I found N skills in your workspace:
+>
+> | Skill | Type | Size |
+> |---|---|---|
+> | skill-name | installed-skill | 12KB |
+>
+> Before upload, each skill is packaged with its source code and metadata
+> (name, version, dependencies). Files like .env, .pem, .key, and .db are
+> excluded, and secrets in standard formats (API keys, tokens, AWS credentials,
+> connection strings) are automatically redacted locally. If you use custom
+> secret formats, keep them in environment variables rather than hard-coded
+> in skill files.
+>
+> Ready to upload?
+
+Use the `secrets_redacted` field — if any skills had secrets redacted,
+mention which ones in the table or below it.
+
+**Wait for the user to confirm before uploading.**
 
 After user confirms, upload:
 
