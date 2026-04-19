@@ -246,6 +246,7 @@ A real-time web dashboard is available to view all tasks in a friendly format.
 - 🌐 Bilingual support (English/Chinese)
 - ⚡ Real-time updates via WebSocket when markdown files change
 - 📱 Responsive layout for different screen sizes
+- 💡 **Hover to see full task details** - Mouse over any task card to see complete information including description, subtasks, tags, and timestamps
 
 ### Dashboard Launch Workflow
 
@@ -296,5 +297,5 @@ cd dashboard
 
 ---
 
-*Version: 8.0 (Added real-time dashboard with bilingual support)*
-*Last Updated: 2026-04-16*
+*Version: 8.1 (Added task hover tooltip to show full details)*
+*Last Updated: 2026-04-17*

@@ -225,10 +225,25 @@ function renderMatrix() {
   renderTaskList('q4List', tasks.q4);
 }
 
+// Store tooltip elements keyed by task ID for proper cleanup
+const activeTooltips = new Map();
+
 // Render a task list
 function renderTaskList(elementId, tasks) {
   const container = document.getElementById(elementId);
   if (!container) return;
+
+  // Clean up existing tooltips for this container
+  container.querySelectorAll('.task-card').forEach(card => {
+    const taskId = card.dataset.taskId;
+    if (activeTooltips.has(taskId)) {
+      const tooltip = activeTooltips.get(taskId);
+      if (tooltip && tooltip.parentNode) {
+        tooltip.parentNode.removeChild(tooltip);
+      }
+      activeTooltips.delete(taskId);
+    }
+  });
 
   if (!tasks || tasks.length === 0) {
     container.innerHTML = `<div class="empty-state">${i18n.t('empty_tasks')}</div>`;
@@ -236,7 +251,7 @@ function renderTaskList(elementId, tasks) {
   }
 
   container.innerHTML = tasks.map(task => `
-    <div class="task-card ${task.blocked ? 'blocked' : ''} ${task.priority ? 'priority-' + task.priority.toLowerCase() : ''}">
+    <div class="task-card ${task.blocked ? 'blocked' : ''} ${task.priority ? 'priority-' + task.priority.toLowerCase() : ''}" data-task-id="${task.id}">
       <div class="task-header">
         <span class="task-id">#${task.id}</span>
         ${task.priority ? `<span class="task-priority ${task.priority.toLowerCase()}">${task.priority}</span>` : ''}
@@ -254,6 +269,100 @@ function renderTaskList(elementId, tasks) {
       </div>
     </div>
   `).join('');
+
+  // Add hover event listeners for tooltips
+  container.querySelectorAll('.task-card').forEach((card, index) => {
+    const task = tasks[index];
+    if (!task) return;
+
+    // Create tooltip element and append to body to avoid CSS containment issues
+    const tooltip = document.createElement('div');
+    tooltip.className = 'task-tooltip';
+    tooltip.innerHTML = `
+      <div class="tooltip-header">
+        <span class="tooltip-id">#${task.id}</span>
+        ${task.priority ? `<span class="tooltip-priority ${task.priority.toLowerCase()}">${task.priority}</span>` : ''}
+        ${task.blocked ? `<span class="tooltip-blocked">🚫 ${i18n.t('blocked_badge')}</span>` : ''}
+      </div>
+      <div class="tooltip-title">${escapeHtml(task.title)}</div>
+      ${task.description ? `<div class="tooltip-section"><div class="tooltip-label">${i18n.t('description')}</div><div class="tooltip-desc">${escapeHtml(task.description)}</div></div>` : ''}
+      ${task.subtasks && task.subtasks.length > 0 ? `
+        <div class="tooltip-section">
+          <div class="tooltip-label">${i18n.t('subtasks')} (${task.subtasks.length})</div>
+          <div class="tooltip-subtasks">
+            ${task.subtasks.map(sub => `<div class="tooltip-subtask">• ${escapeHtml(sub.title)}${sub.content ? `<br><small>${escapeHtml(sub.content)}</small>` : ''}</div>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+      ${task.tags.length > 0 ? `
+        <div class="tooltip-section">
+          <div class="tooltip-label">${i18n.t('tags')}</div>
+          <div class="tooltip-tags">
+            ${task.tags.map(tag => `<span class="tooltip-tag">${escapeHtml(tag)}</span>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+      <div class="tooltip-meta">
+        ${task.created ? `<div><span class="tooltip-label">${i18n.t('created_prefix')}</span> ${task.created}</div>` : ''}
+        ${task.updated ? `<div><span class="tooltip-label">${i18n.t('updated_prefix')}</span> ${task.updated}</div>` : ''}
+      </div>
+    `;
+    document.body.appendChild(tooltip);
+    activeTooltips.set(String(task.id), tooltip);
+
+    card.addEventListener('mouseenter', (e) => {
+      // First show tooltip to get its dimensions
+      tooltip.classList.add('show');
+      
+      // Then calculate position based on actual dimensions
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+
+      // Adjust if tooltip goes off right edge
+      if (left + tooltipRect.width > viewportWidth) {
+        left = e.clientX - tooltipRect.width - 15;
+      }
+
+      // Adjust if tooltip goes off bottom edge
+      if (top + tooltipRect.height > viewportHeight) {
+        top = e.clientY - tooltipRect.height - 15;
+      }
+
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+
+    card.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('show');
+    });
+
+    card.addEventListener('mousemove', (e) => {
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Calculate position relative to viewport
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+
+      // Adjust if tooltip goes off right edge
+      if (left + tooltipRect.width > viewportWidth) {
+        left = e.clientX - tooltipRect.width - 15;
+      }
+
+      // Adjust if tooltip goes off bottom edge
+      if (top + tooltipRect.height > viewportHeight) {
+        top = e.clientY - tooltipRect.height - 15;
+      }
+
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+  });
 }
 
 // Render customer projects
@@ -268,6 +377,9 @@ function renderCustomers(data, filter = 'all') {
     return;
   }
 
+  // Clear any existing customer tooltips
+  document.querySelectorAll('.customer-tooltip').forEach(t => t.remove());
+
   container.innerHTML = customers.map(customer => {
     // Filter projects
     let projects = customer.projects || [];
@@ -280,14 +392,14 @@ function renderCustomers(data, filter = 'all') {
     if (projects.length === 0) return '';
 
     return `
-      <div class="customer-card">
+      <div class="customer-card" data-customer="${escapeHtml(customer.name)}">
         <div class="customer-header">
           <div class="customer-name">${escapeHtml(customer.name)}</div>
           <div class="customer-priority">${escapeHtml(customer.priority)}</div>
         </div>
         <div class="projects-list">
           ${projects.map(project => `
-            <div class="project-item">
+            <div class="project-item" data-project-id="${project.id}">
               <div class="project-header">
                 <div class="project-name">${project.id}. ${escapeHtml(project.name)}</div>
                 <div class="project-status ${project.blocked ? 'blocked' : project.status.toLowerCase().replace(/\s+/g, '')}">
@@ -306,6 +418,76 @@ function renderCustomers(data, filter = 'all') {
       </div>
     `;
   }).filter(Boolean).join('') || `<div class="empty-state">${i18n.t('empty_filtered')}</div>`;
+
+  // Add hover tooltips for project items
+  container.querySelectorAll('.project-item').forEach(item => {
+    const customerCard = item.closest('.customer-card');
+    const customerName = customerCard?.dataset.customer || '';
+    const projectId = item.dataset.projectId;
+    
+    // Find project data
+    let project = null;
+    for (const customer of customers) {
+      project = customer.projects?.find(p => p.id.toString() === projectId);
+      if (project) break;
+    }
+    if (!project) return;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'task-tooltip customer-tooltip';
+    tooltip.innerHTML = `
+      <div class="tooltip-header">
+        <span class="tooltip-id">#${project.id}</span>
+        <span class="tooltip-priority">${escapeHtml(customerName)}</span>
+      </div>
+      <div class="tooltip-title">${escapeHtml(project.name)}</div>
+      <div class="tooltip-section">
+        <div class="tooltip-label">${i18n.t('status_active')}</div>
+        <div class="tooltip-desc">${project.blocked ? '🟡 ' + i18n.t('status_blocked') : escapeHtml(project.status)}</div>
+      </div>
+      <div class="tooltip-section">
+        <div class="tooltip-label">${i18n.t('type_prefix')}</div>
+        <div class="tooltip-desc">${escapeHtml(project.type)}</div>
+      </div>
+      <div class="tooltip-section">
+        <div class="tooltip-label">${i18n.t('priority_prefix')}</div>
+        <div class="tooltip-desc">${escapeHtml(project.priority)}</div>
+      </div>
+      ${project.notes ? `<div class="tooltip-section"><div class="tooltip-label">${i18n.t('description')}</div><div class="tooltip-desc">${escapeHtml(project.notes)}</div></div>` : ''}
+      <div class="tooltip-meta">
+        ${project.created ? `<div><span class="tooltip-label">${i18n.t('created_prefix')}</span> ${project.created}</div>` : ''}
+        ${project.lastReview ? `<div><span class="tooltip-label">${i18n.t('reviewed_prefix')}</span> ${project.lastReview}</div>` : ''}
+      </div>
+    `;
+    document.body.appendChild(tooltip);
+
+    item.addEventListener('mouseenter', (e) => {
+      tooltip.classList.add('show');
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+      if (left + tooltipRect.width > viewportWidth) left = e.clientX - tooltipRect.width - 15;
+      if (top + tooltipRect.height > viewportHeight) top = e.clientY - tooltipRect.height - 15;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+
+    item.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+
+    item.addEventListener('mousemove', (e) => {
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+      if (left + tooltipRect.width > viewportWidth) left = e.clientX - tooltipRect.width - 15;
+      if (top + tooltipRect.height > viewportHeight) top = e.clientY - tooltipRect.height - 15;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+  });
 }
 
 // Render delegation tasks
@@ -326,8 +508,11 @@ function renderDelegation(data, filter = 'all') {
     return;
   }
 
+  // Clear existing delegation tooltips
+  document.querySelectorAll('.delegation-tooltip').forEach(t => t.remove());
+
   container.innerHTML = tasks.map(task => `
-    <div class="delegation-card ${task.overdue ? 'overdue' : ''}">
+    <div class="delegation-card ${task.overdue ? 'overdue' : ''}" data-task-id="${task.id}">
       <div class="delegation-header">
         <div class="delegation-title">${task.id}. ${escapeHtml(task.title)}</div>
         <div class="delegation-status ${task.status === i18n.t('status_in_progress') || task.status === '进行中' ? 'inprogress' : 'todo'}">
@@ -343,6 +528,61 @@ function renderDelegation(data, filter = 'all') {
       </div>
     </div>
   `).join('');
+
+  // Add hover tooltips for delegation cards
+  container.querySelectorAll('.delegation-card').forEach((card, index) => {
+    const task = tasks[index];
+    if (!task) return;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'task-tooltip delegation-tooltip';
+    tooltip.innerHTML = `
+      <div class="tooltip-header">
+        <span class="tooltip-id">#${task.id}</span>
+        ${task.overdue ? `<span class="tooltip-blocked">⚠️ ${i18n.t('deadline_overdue')}</span>` : ''}
+      </div>
+      <div class="tooltip-title">${escapeHtml(task.title)}</div>
+      ${task.description ? `<div class="tooltip-section"><div class="tooltip-label">${i18n.t('description')}</div><div class="tooltip-desc">${escapeHtml(task.description)}</div></div>` : ''}
+      <div class="tooltip-section">
+        <div class="tooltip-label">${i18n.t('status_in_progress')}</div>
+        <div class="tooltip-desc">${escapeHtml(task.status)}</div>
+      </div>
+      <div class="tooltip-section">
+        <div class="tooltip-label">${i18n.t('assignee_prefix')}</div>
+        <div class="tooltip-desc">${escapeHtml(task.assignee)}</div>
+      </div>
+      ${task.deadline ? `<div class="tooltip-section"><div class="tooltip-label">${i18n.t('deadline_prefix')}</div><div class="tooltip-desc ${task.overdue ? 'overdue' : ''}">${escapeHtml(task.deadline)}</div></div>` : ''}
+      ${task.created ? `<div class="tooltip-meta"><span class="tooltip-label">${i18n.t('created_prefix')}</span> ${task.created}</div>` : ''}
+    `;
+    document.body.appendChild(tooltip);
+
+    card.addEventListener('mouseenter', (e) => {
+      tooltip.classList.add('show');
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+      if (left + tooltipRect.width > viewportWidth) left = e.clientX - tooltipRect.width - 15;
+      if (top + tooltipRect.height > viewportHeight) top = e.clientY - tooltipRect.height - 15;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+
+    card.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+
+    card.addEventListener('mousemove', (e) => {
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+      if (left + tooltipRect.width > viewportWidth) left = e.clientX - tooltipRect.width - 15;
+      if (top + tooltipRect.height > viewportHeight) top = e.clientY - tooltipRect.height - 15;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+  });
 }
 
 // Render maybe list
@@ -357,13 +597,62 @@ function renderMaybe(data) {
     return;
   }
 
+  // Clear existing maybe tooltips
+  document.querySelectorAll('.maybe-tooltip').forEach(t => t.remove());
+
   container.innerHTML = tasks.map(task => `
-    <div class="maybe-card">
+    <div class="maybe-card" data-task-id="${task.id}">
       <div class="maybe-category">${escapeHtml(task.category)}</div>
       <div class="maybe-title">${task.id}. ${escapeHtml(task.title)}</div>
       ${task.description ? `<div class="maybe-desc">${escapeHtml(task.description)}</div>` : ''}
     </div>
   `).join('');
+
+  // Add hover tooltips for maybe cards
+  container.querySelectorAll('.maybe-card').forEach((card, index) => {
+    const task = tasks[index];
+    if (!task) return;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'task-tooltip maybe-tooltip';
+    tooltip.innerHTML = `
+      <div class="tooltip-header">
+        <span class="tooltip-id">#${task.id}</span>
+        <span class="tooltip-priority">${escapeHtml(task.category)}</span>
+      </div>
+      <div class="tooltip-title">${escapeHtml(task.title)}</div>
+      ${task.description ? `<div class="tooltip-section"><div class="tooltip-label">${i18n.t('description')}</div><div class="tooltip-desc">${escapeHtml(task.description)}</div></div>` : ''}
+      ${task.created ? `<div class="tooltip-meta"><span class="tooltip-label">${i18n.t('created_prefix')}</span> ${task.created}</div>` : ''}
+    `;
+    document.body.appendChild(tooltip);
+
+    card.addEventListener('mouseenter', (e) => {
+      tooltip.classList.add('show');
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+      if (left + tooltipRect.width > viewportWidth) left = e.clientX - tooltipRect.width - 15;
+      if (top + tooltipRect.height > viewportHeight) top = e.clientY - tooltipRect.height - 15;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+
+    card.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+
+    card.addEventListener('mousemove', (e) => {
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      let left = e.clientX + 15;
+      let top = e.clientY + 15;
+      if (left + tooltipRect.width > viewportWidth) left = e.clientX - tooltipRect.width - 15;
+      if (top + tooltipRect.height > viewportHeight) top = e.clientY - tooltipRect.height - 15;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+  });
 }
 
 // Update timestamp

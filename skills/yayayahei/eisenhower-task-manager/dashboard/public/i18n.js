@@ -71,10 +71,15 @@ const i18n = {
 
       // Task meta
       'created_prefix': 'Created:',
+      'updated_prefix': 'Updated:',
       'reviewed_prefix': 'Reviewed:',
       'blocked_badge': '🚫 Blocked',
       'type_prefix': 'Type:',
       'priority_prefix': 'Priority:',
+      'description': 'Description',
+      'subtasks': 'Subtasks',
+      'tags': 'Tags',
+      'assignee_prefix': 'Assignee:',
 
       // Language switcher
       'language': 'Language',
@@ -150,10 +155,15 @@ const i18n = {
 
       // Task meta
       'created_prefix': '创建于:',
+      'updated_prefix': '更新于:',
       'reviewed_prefix': 'Reviewed:',
       'blocked_badge': '🚫 阻塞',
       'type_prefix': 'Type:',
       'priority_prefix': 'Priority:',
+      'description': '描述',
+      'subtasks': '子任务',
+      'tags': '标签',
+      'assignee_prefix': '责任人:',
 
       // Language switcher
       'language': '语言',
