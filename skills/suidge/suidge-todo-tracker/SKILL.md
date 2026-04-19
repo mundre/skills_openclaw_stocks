@@ -1,8 +1,10 @@
 ---
 name: Todo Tracker
-version: 1.1.0
+version: 1.2.0
 description: Manage follow-up items and remind users at appropriate times via heartbeat checks.
-changelog: v1.1.0 - Added cleanup script (scripts/todo-cleaner.py) for auto-deleting completed items after 24h
+changelog: |
+  v1.2.0 - Added HARD CONSTRAINTS section: marking completed/cancelled MUST set completed_at/cancelled_at fields
+  v1.1.0 - Added cleanup script (scripts/todo-cleaner.py) for auto-deleting completed items after 24h
 metadata:
   clawdbot:
     emoji: "📋"
@@ -29,6 +31,27 @@ User mentions reminders, follow-ups, or todos. Agent proactively checks pending 
 | Cleanup script | `scripts/todo-cleaner.py` |
 
 ## Core Rules
+
+### 🚨 HARD CONSTRAINTS (Must Follow)
+
+**When marking a todo as completed or cancelled, you MUST set the corresponding timestamp field**:
+
+- `status=completed` → **MUST set `completed_at`** to current time (ISO 8601 with timezone)
+- `status=cancelled` → **MUST set `cancelled_at`** to current time (ISO 8601 with timezone)
+
+**Example**:
+```json
+{
+  "status": "completed",
+  "completed_at": "2026-04-16T13:40:00+08:00"  // ← REQUIRED!
+}
+```
+
+**Failure to set these fields will cause cleanup script to skip the item**, leaving completed tasks in todo.json indefinitely.
+
+**Why this matters**: The cleanup script (`scripts/todo-cleaner.py`) checks `completed_at` to determine if an item is older than 24 hours. Without this field, completed items will never be deleted.
+
+---
 
 ### 1. Store Items in `memory/todo.json`
 Single source of truth. Each item has: id, description, follow_up_time, status, priority, context.
@@ -79,4 +102,3 @@ If user says "remind me tomorrow" without specifics, ask: "What time tomorrow?"
 
 slug: suidge-todo-tracker
 homepage: https://github.com/Suidge/todo-tracker
-changelog: Initial release
