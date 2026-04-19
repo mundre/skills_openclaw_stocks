@@ -3,11 +3,16 @@
   "slug": "stock-monitor-orange",
   "displayName": "A股和港股股票分析助手",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1775564815457,
-    "commit": "https://github.com/openclaw/skills/commit/0c2d2b98b3262ce01a2eb3161e90c4f041f1213b"
+    "version": "1.0.10",
+    "publishedAt": 1776181859107,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1775564815457,
+      "commit": "https://github.com/openclaw/skills/commit/0c2d2b98b3262ce01a2eb3161e90c4f041f1213b"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1775176031126,

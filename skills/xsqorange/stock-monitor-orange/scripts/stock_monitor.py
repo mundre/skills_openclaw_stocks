@@ -1627,6 +1627,7 @@ def format_single_stock_analysis(r: Dict, position: Dict = None) -> List[str]:
     macd  = ind.get("macd", {})
     kdj   = ind.get("kdj", {})
     rsi   = ind.get("rsi", {})
+    rsi_v = rsi.get("rsi6", 50)  # 提取RSI6作为短期判断
     boll  = ind.get("boll", {})
     dmi   = ind.get("dmi", {})
     obv   = ind.get("obv", {})
@@ -1699,10 +1700,91 @@ def format_single_stock_analysis(r: Dict, position: Dict = None) -> List[str]:
     if suggestions:
         lines.append(f"  💡 建议: {suggestions}")
     
+    # === 8. 精确买卖点位（核心增强） ===
+    sr = calc_support_resistance(klines) if klines else {}
+    support     = sr.get("support")
+    resistance  = sr.get("resistance")
+    short_low   = sr.get("short_low")
+    short_high  = sr.get("short_high")
+    boll_upper   = sr.get("boll_upper")
+    boll_lower   = sr.get("boll_lower")
+    ma60         = ma.get("ma60")
+    ma20         = ma.get("ma20")
+    entry_point = None
+    exit_point  = None
+    stop_loss   = None
+    take_profit = None
+    entry_range  = None  # 买入区间
+    exit_range   = None  # 卖出区间
+    
+    # 计算买入点位
+    if buy_s >= sell_s + 2:
+        if support and price <= support * 1.03:
+            entry_point = support
+            entry_range = f"{support * 0.98:.0f}-{support * 1.01:.0f}"  # 支撑上下2%
+        elif resistance and price >= resistance * 0.98 and price < resistance:
+            entry_point = f"突破{resistance}后确认"
+            entry_range = f"{resistance}-{resistance * 1.02:.0f}"
+        elif rsi_v < 35 and (boll_lower or support):
+            entry_point = boll_lower or support
+            entry_range = f"{boll_lower * 0.98:.0f}-{boll_lower * 1.02:.0f}" if boll_lower else f"{support * 0.98:.0f}-{support * 1.02:.0f}"
+        elif ma60 and price <= ma60 * 1.02:
+            entry_point = ma60
+            entry_range = f"{ma60 * 0.98:.0f}-{ma60 * 1.01:.0f}"
+        elif support:
+            entry_point = support
+            entry_range = f"{support * 0.98:.0f}-{support * 1.02:.0f}"
+    
+    # 计算卖出点位
+    if sell_s >= buy_s + 2 or sell_s >= 5:
+        if resistance and price >= resistance * 0.97:
+            exit_point = resistance
+            exit_range = f"{resistance * 0.97:.0f}-{resistance * 1.01:.0f}"  # 阻力上下3%
+        elif boll_upper and price >= boll_upper * 0.98:
+            exit_point = boll_upper
+            exit_range = f"{boll_upper * 0.97:.0f}-{boll_upper * 1.01:.0f}"
+        elif rsi_v > 68:
+            exit_point = boll_upper or resistance
+            exit_range = f"{exit_point * 0.97:.0f}-{exit_point * 1.01:.0f}"
+    
+    # 计算止损位
+    if support:
+        stop_loss = round(support * 0.97, 2)
+    elif ma60:
+        stop_loss = round(ma60 * 0.97, 2)
+    
+    # 计算目标位
+    if buy_s >= sell_s + 3 and resistance:
+        take_profit = resistance
+    elif buy_s >= sell_s + 2 and boll_upper:
+        take_profit = boll_upper
+    
+    # 输出点位信息（含区间）
+    if buy_s > sell_s + 1 or sell_s > buy_s + 1:
+        lines.append(f"  📌 关键点位:")
+        if entry_point:
+            lines.append(f"     买入: {entry_point}")
+        if entry_range and (buy_s >= sell_s + 2):
+            lines.append(f"     买入区间: {entry_range}（回踩分批建仓）")
+        if exit_point:
+            lines.append(f"     卖出: {exit_point}")
+        if exit_range and (sell_s >= buy_s + 2):
+            lines.append(f"     卖出区间: {exit_range}（分批止盈）")
+        if stop_loss:
+            lines.append(f"     止损: {stop_loss}")
+        if take_profit:
+            lines.append(f"     目标: {take_profit}")
+        if support:
+            lines.append(f"     支撑: {support}")
+        if resistance:
+            lines.append(f"     阻力: {resistance}")
+        if ma60 and ma20:
+            lines.append(f"     均线区间: MA20={ma20:.0f} / MA60={ma60:.0f}")
+    
     return lines
 
 def _generate_suggestion(r: Dict, trend_info: Dict, position: Dict = None) -> str:
-    """生成操作建议"""
+    """生成操作建议（含具体买卖点位）"""
     score = r.get("score", {})
     buy_s  = score.get("buy", 0)
     sell_s = score.get("sell", 0)
@@ -1712,47 +1794,163 @@ def _generate_suggestion(r: Dict, trend_info: Dict, position: Dict = None) -> st
     pct   = r.get("change_pct", 0)
     kdj   = r.get("indicators", {}).get("kdj", {})
     rsi_v = r.get("indicators", {}).get("rsi", {}).get("rsi6", 50)
+    boll  = r.get("indicators", {}).get("boll", {})
+    macd  = r.get("indicators", {}).get("macd", {})
+    dmi   = r.get("indicators", {}).get("dmi", {})
     sr    = calc_support_resistance(r.get("klines", [])) if r.get("klines") else {}
+    ma    = r.get("indicators", {}).get("ma", {})
     
     suggestions = []
+    entry_point = None  # 买入点位
+    exit_point  = None  # 卖出点位
+    stop_loss   = None  # 止损位
+    take_profit = None  # 止盈位
     
-    # 1. 趋势为基础
+    # ========== 计算关键价位 ==========
+    support   = sr.get("support")    # 支撑位
+    resistance = sr.get("resistance") # 阻力位
+    boll_upper = sr.get("boll_upper")
+    boll_lower = sr.get("boll_lower")
+    short_low  = sr.get("short_low")
+    short_high = sr.get("short_high")
+    ma60      = ma.get("ma60")       # 60日均线（重要中期支撑）
+    
+    # ========== 1. 趋势信号判断 ==========
     if trend_score >= 3 and buy_s > sell_s:
-        suggestions.append("🚀 上升趋势确认，多头信号共振，可持仓或加仓")
+        trend_signal = "🚀 上升趋势确认，多头信号共振"
     elif trend_score <= -3 and sell_s > buy_s:
-        suggestions.append("🔴 下降趋势确认，空头信号共振，建议减仓止损")
+        trend_signal = "🔴 下降趋势确认，空头信号共振"
     elif buy_s >= 6:
-        suggestions.append("✅ 技术面偏多，高概率向上")
+        trend_signal = "✅ 技术面偏多，高概率向上"
     elif sell_s >= 6:
-        suggestions.append("⚠️ 技术面偏空，高概率向下，谨慎")
+        trend_signal = "⚠️ 技术面偏空，高概率向下"
     elif "超卖" in kdj.get("signal", "") or rsi_v < 30:
-        suggestions.append("⚡ RSI/KDJ超卖，短线反弹概率大")
+        trend_signal = "⚡ RSI/KDJ超卖，短线反弹概率大"
     elif "超买" in kdj.get("signal", "") or rsi_v > 70:
-        suggestions.append("⚡ RSI/KDJ超买，短线调整风险")
+        trend_signal = "⚡ RSI/KDJ超买，短线调整风险"
     else:
-        suggestions.append("📊 方向不明，保持观望")
+        trend_signal = "📊 方向不明，保持观望"
     
-    # 2. 支撑/阻力提示
-    if sr.get("support") and price <= sr["support"] * 1.02:
-        suggestions.append(f"⚠️ 接近支撑位{sr['support']}，注意跌破风险")
-    if sr.get("resistance") and price >= sr["resistance"] * 0.98:
-        suggestions.append(f"⚠️ 接近阻力位{sr['resistance']}，突破可加仓")
+    suggestions.append(trend_signal)
     
-    # 3. 持仓用户专属建议
+    # ========== 2. 计算买入点位 ==========
+    # 买入条件：
+    # - 价格接近支撑位（入场安全边际）
+    # - 或放量突破阻力位（确认转强）
+    # - 或RSI超卖 + 价格企稳
+    if buy_s >= sell_s + 2:
+        if support and price <= support * 1.03:
+            # 价格回踩支撑位附近，是较好买入机会
+            entry_point = support
+            suggestions.append(f"📍 买入点位: {support}（回踩支撑企稳）")
+        elif resistance and price >= resistance * 0.98 and price < resistance:
+            # 接近阻力位，等待突破
+            entry_point = resistance
+            suggestions.append(f"📍 买入参考: {resistance}（突破后确认买入）")
+        elif rsi_v < 35:
+            # RSI偏低，提供买入参考
+            # 目标位：短期阻力位或BOLL上轨
+            entry_point = short_low if short_low else (boll_lower or support)
+            suggestions.append(f"📍 买入点位: {entry_point}（RSI偏低，分批建仓）")
+        elif ma60 and price <= ma60 * 1.02:
+            # 价格回踩60日均线
+            entry_point = ma60
+            suggestions.append(f"📍 买入点位: {ma60}（回踩60日线企稳）")
+        elif support:
+            entry_point = support
+            suggestions.append(f"📍 买入点位: {support}（支撑位参考）")
+    
+    # ========== 3. 计算卖出/止盈点位 ==========
+    # 卖出条件：
+    # - 价格接近阻力位（上涨乏力）
+    # - 或技术面转空（多指标死叉）
+    # - 或超买信号
+    if sell_s >= buy_s + 2 or sell_s >= 5:
+        if resistance and price >= resistance * 0.97:
+            # 价格接近阻力位，考虑减仓
+            exit_point = resistance
+            suggestions.append(f"📍 建议卖出: {resistance}（接近阻力位，分批减仓）")
+        elif boll_upper and price >= boll_upper * 0.98:
+            # 接近BOLL上轨
+            exit_point = boll_upper
+            suggestions.append(f"📍 建议卖出: {boll_upper}（BOLL上轨压力）")
+        elif rsi_v > 68:
+            # RSI超买
+            exit_point = (boll_upper or resistance) if (boll_upper or resistance) else short_high
+            if exit_point:
+                exit_range = f"{exit_point * 0.97:.0f}-{exit_point * 1.01:.0f}"
+                suggestions.append(f"📍 建议卖出: {exit_point}（RSI超买，分批止盈）")
+        elif macd.get("signal") and "死叉" in macd.get("signal", ""):
+            # MACD死叉
+            exit_point = short_high
+            suggestions.append(f"📍 建议卖出: {short_high}（MACD死叉，短线离场）")
+    
+    # ========== 4. 止损点位 ==========
+    if entry_point and support:
+        # 买入后，止损设在支撑下方2-3%
+        stop_loss = round(support * 0.97, 2)
+        suggestions.append(f"🛑 止损位: {stop_loss}（支撑下方3%）")
+    elif ma60:
+        # 中期止损参考60日线
+        stop_loss = round(ma60 * 0.97, 2)
+        suggestions.append(f"🛑 止损参考: {stop_loss}（60日线下方3%）")
+    
+    # ========== 5. 止盈点位 ==========
+    if (buy_s >= sell_s + 3) and resistance:
+        # 强势信号，预期上涨到阻力位
+        take_profit = resistance
+        profit_range = round((take_profit - price) / price * 100, 1) if price > 0 else 0
+        suggestions.append(f"🎯 目标位: {take_profit}（预计上涨{profit_range}%）")
+    elif (buy_s >= sell_s + 2) and boll_upper:
+        take_profit = boll_upper
+        profit_range = round((take_profit - price) / price * 100, 1) if price > 0 else 0
+        suggestions.append(f"🎯 目标位: {take_profit}（预计上涨{profit_range}%）")
+    
+    # ========== 6. 持仓用户专属建议 ==========
     if position:
-        cost  = position.get("cost_price", 0)
-        qty   = position.get("quantity", 0)
+        cost    = position.get("cost_price", 0)
+        qty     = position.get("quantity", 0)
         pnl_pct = (price - cost) / cost * 100 if cost > 0 else 0
-        pnl   = (price - cost) * qty
+        pnl     = (price - cost) * qty
         
         if pnl > 0 and sell_s > buy_s + 2:
             suggestions.append(f"🟢 盈利{pnl_pct:.1f}%但技术面转弱，建议部分止盈")
+            # 止盈建议在阻力位或BOLL上轨
+            if exit_point:
+                suggestions.append(f"📍 止盈参考: {exit_point}")
         elif pnl < 0 and buy_s > sell_s + 2:
             suggestions.append(f"🔵 亏损{pnl_pct:.1f}%但技术面转强，可加仓摊低成本")
+            if entry_point:
+                suggestions.append(f"📍 加仓参考: {entry_point}")
         elif pnl_pct > 15:
             suggestions.append(f"🟢 盈利{pnl_pct:.1f}%，建议设动态止盈")
+        elif pnl_pct < -8:
+            suggestions.append(f"🔴 亏损超过8%，注意控制风险")
     
-    return " | ".join(suggestions[:2])
+    # ========== 7. 综合点位总结 ==========
+    # 简化建议：给出核心操作区间
+    action_summary = []
+    if buy_s > sell_s + 2:
+        action_summary.append(f"✅ 操作: 回踩{entry_point or support or '支撑位'}买入")
+        if stop_loss:
+            action_summary.append(f" | 止损: {stop_loss}")
+        if take_profit:
+            action_summary.append(f" | 目标: {take_profit}")
+    elif sell_s > buy_s + 2:
+        action_summary.append(f"⚠️ 操作: 接近{exit_point or resistance or '阻力位'}减仓")
+        if stop_loss:
+            action_summary.append(f" | 止损参考: {stop_loss}")
+    else:
+        action_summary.append("📊 操作: 观望，等待信号确认")
+    
+    # 返回：趋势建议 + 操作区间（合并重复，精简输出）
+    final_suggestion = suggestions[:4]  # 最多4条
+    
+    # 添加操作区间总结
+    if action_summary:
+        final_suggestion.append("".join(action_summary))
+    
+    return " | ".join(final_suggestion[:3])
 
 def generate_full_report(market_indices: List[Dict], stock_results: List[Dict], period_label: str = "盘中") -> str:
     """
