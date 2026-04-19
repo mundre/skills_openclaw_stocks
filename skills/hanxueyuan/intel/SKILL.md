@@ -1,56 +1,46 @@
 ---
-name: intel
-description: "Information assistant for Intel. Search products, news, financials, and official resources for Intel."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","intel","enterprise-info"] } }
+summary: "英特尔 Intel——x86 CPU 发明者、PC 时代芯片霸主、AI 时代奋力追赶"
+read_when:
+  - 查询英特尔 · Intel相关信息
+  - 了解相关行业发展
 ---
 
-# Intel — Information Assistant
+# 英特尔 · Intel
 
-Query products, news, stock prices, financial reports, and official resources for **Intel**.
+---
 
-## About
+## 发展历程
 
-- **Company**: Intel
-- **Industry**: Processors, semiconductors
-- **Official Website**: https://www.intel.com
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1968 年** | Robert Noyce 和 Gordon Moore 创立 Intel |
+| **1971 年** | 推出 4004——世界上第一款商用微处理器 |
+| **1978 年** | 8086 处理器发布——x86 架构的起点 |
+| **1990s** | Pentium 系列——PC 时代的芯片霸主 |
+| **2000s** | 移动时代错失 ARM——智能手机芯片市场被高通/苹果占据 |
+| **2020s** | Pat Gelsinger 回归——IDM 2.0 战略，重夺芯片制造领先 |
 
-## What This Skill Does
+---
 
-When activated, this skill helps you:
+## 核心特点
 
-1. **Product Search** — Find and compare Intel products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
+CPU（x86 服务器/PC）+ 代工（Intel Foundry）+ AI 加速器（Gaudi）
 
-## Usage Examples
+## 核心优势
 
-- "What are the latest Intel products?"
-- "Show me Intel stock price"
-- "Compare Intel with competitors"
-- "Find Intel official support page"
-- "What's new at Intel?"
+x86 架构的发明者 + 全球唯二能制造先进制程芯片的公司（另一家是三星）
 
-## How It Works
+---
 
-This skill uses web search to fetch real-time information about Intel from:
-- Official website: https://www.intel.com
-- Financial data providers
-- News aggregators
-- Product databases
+## 关键数据
 
-## Instructions for Agent
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 540 亿美元 |
+| 员工数 | 约 131000 人 |
 
-When this skill is triggered:
-1. Identify the user's specific query about Intel
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.intel.com)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
+---
 
-## Author
+## 值得了解
 
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+Intel 的 'Intel Inside' 营销活动是科技史上最成功的品牌营销之一

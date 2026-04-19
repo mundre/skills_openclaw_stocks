@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "intel",
-  "displayName": "intel",
+  "displayName": "Intel",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774492283552,
-    "commit": "https://github.com/openclaw/skills/commit/f8f49b2abd9a735784a2fc3da9ea347f5c3774b7"
+    "version": "0.1.4",
+    "publishedAt": 1776533789814,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774492283552,
+      "commit": "https://github.com/openclaw/skills/commit/f8f49b2abd9a735784a2fc3da9ea347f5c3774b7"
+    }
+  ]
 }
