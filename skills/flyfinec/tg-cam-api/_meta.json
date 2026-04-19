@@ -3,11 +3,16 @@
   "slug": "tg-cam-api",
   "displayName": "TG Cam Skill",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1775127777895,
-    "commit": "https://github.com/openclaw/skills/commit/f85043a4662d88291a994f0b5cfdd96d2b55d553"
+    "version": "1.0.5",
+    "publishedAt": 1776095312182,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1775127777895,
+      "commit": "https://github.com/openclaw/skills/commit/f85043a4662d88291a994f0b5cfdd96d2b55d553"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1774665235392,

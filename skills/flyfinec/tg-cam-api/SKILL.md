@@ -1,64 +1,61 @@
 ---
 name: tg-cam-api
-description: 摄像头 Skill Server API。用于查询当前 Skill 已绑定的设备列表、触发截图、查询某设备事件、获取最近事件、读取事件图片、查看设备在线状态和电量。当用户要求查看当前可操作设备、拍一张当前画面、查询某天事件、查看最近事件、查看事件图片、查询在线状态或电量时使用。
+description: 探鸽摄像头 Skill 服务。用于查询当前 Skill 已绑定设备、查看当前画面、查询事件、查看事件图片、确认设备状态和电量。当用户要查看可操作设备、看某个摄像头当前截图、查询某天或某时段发生了什么、查看最近事件或事件图片、确认在线状态、查询电量时使用。
 metadata: {"openclaw":{"requires":{"env":["TIVS_CLI_ID","TIVS_API_KEY"]},"primaryEnv":"TIVS_API_KEY"}}
 ---
 
-# Camera Skill
+# Webcam Skill
 
-通过 Skill Server 查询和操作当前 Skill 已绑定的摄像头设备。本版尽量保持简单，只覆盖设备列表、截图、事件、在线状态和电量相关接口。
+## 概述
 
-## 何时使用
+这个 Skill 用于查询当前 Skill 已绑定摄像头的设备信息、当前画面、事件记录、事件图片、在线状态和电量，并在需要时完成拍照等操作。默认返回整理后的结论、摘要和图片，不直接回传长段原始接口响应。
 
-- 用户要查看当前 Skill 能操作哪些摄像头
-- 用户要看某个设备当前截图或实时画面
-- 用户要查某个设备某一天或某个时间段的事件
-- 用户要看最近一个事件或某个事件的图片
-- 用户要确认设备是否在线
-- 用户要查询设备电量
+- 可以做的事：查看设备列表、拍一张当前画面、查询事件、查看事件图片、确认在线状态、查询电量
+- 典型触发：用户说“看看有哪些设备”“帮我看下门口摄像头现在画面”“今天发生了什么”“最近一次事件是什么”“这条事件的图片给我看看”“设备在线吗”“查下电量”
+- 默认输出：整理后的结论、摘要和图片，不把长段原始 JSON 直接甩给用户
 
-## 基础配置
+## 使用规则
 
-### Base URL
+### 基础规则
 
-所有请求都使用：
-
-```text
-https://skill.webcamapp.cc
-```
-
-### 环境变量
-
-- `TIVS_CLI_ID`：Skill Server 分配的 `cli_id`
-- `TIVS_API_KEY`：Skill Server 分配的 `cli_api_key`
-
-### 公共请求头
-
-本版文档统一只使用 Header 鉴权，请求头写法如下：
+- 所有请求都使用 `https://skill.webcamapp.cc` 作为唯一 API Base URL。
+- 环境变量：
+  - `TIVS_CLI_ID`：摄像头 Skill 服务分配的 `cli_id`
+  - `TIVS_API_KEY`：摄像头 Skill 服务分配的 `cli_api_key`
+- 所有请求都带上以下请求头：
 
 ```http
 X-Client-ID: $TIVS_CLI_ID
 X-Api-Key: $TIVS_API_KEY
+X-Skill-Version: 0.0.3
 Content-Type: application/json
 ```
 
-补充说明：
-
+- 缺少 `TIVS_CLI_ID` 或 `TIVS_API_KEY` 时，提醒用户到摄像头 APP 内获取当前 Skill 的凭据，不要伪造请求
 - 不要在聊天内容中回显 `TIVS_API_KEY` 的真实值
 - 除非接口明确是 `GET` 且无请求体，否则默认按 JSON 请求发送
 - 统一按 Header 方式调用
 
-### 设备管理站点
+### 授权配置
 
-如果需要管理已授权设备，或排查为什么设备列表为空，可参考设备管理站点：
+如果会话中收到 `TIVS_CLI_ID` 和 `TIVS_API_KEY`，请将其写入 `openclaw.json`：
 
-```text
-https://skill.webcamapp.cc/icam365/api-key-device?xxx
+```json
+{
+  "skills": {
+    "entries": {
+      "tg-cam-api": {
+        "env": {
+          "TIVS_CLI_ID": "{TIVS_CLI_ID}",
+          "TIVS_API_KEY": "{TIVS_API_KEY}"
+        }
+      }
+    }
+  }
+}
 ```
 
-这个页面用于管理 `api_key` 已关联的设备，不是接口 Base URL。
-
-## 通用响应
+### 结果读取
 
 成功或失败都使用统一响应信封：
 
@@ -71,230 +68,240 @@ https://skill.webcamapp.cc/icam365/api-key-device?xxx
 }
 ```
 
-读取结果时优先关注 `data` 字段。
+- 读取结果时优先关注 `data`
+- 只解释已经确认的字段，不要给未知字段强行编含义
+- 默认把接口结果整理成用户能直接理解的答案，不输出长段原始 JSON
 
-## 接口列表
+### 图片处理
 
-### 1. 获取设备列表
+- 图片 URL 可能带签名参数；需要访问时必须使用完整 URL，不要截断。
+- 默认不要把原始图片 URL 直接发给用户；优先获取图片内容后再展示。
+
+### 调用约束
+
+- Query 参数统一使用 `snake_case`，例如 `device_id`、`start_time`、`event_id`
+- 截图接口请求体使用 `camelCase`，字段名固定为 `deviceId`
+- 响应字段通常是 `camelCase`，以实际返回为准
+- 不要臆造不存在的接口路径，也不要把 `devices` 和 `device` 写混
+- 如果用户按设备名、备注名或位置描述来操作，先查询设备列表确认目标设备
+- `event_id` 必须使用系统已经返回过的值，不要自己拼
+- 看到“实时画面”“拍一张”“截个图”时，将其理解为获取一张当前截图，不是实时视频流
+
+## 调用指南
+
+### 快速路由
+
+| 用户意图 | 优先调用 | 前置动作 | 回答重点 |
+|------|------|------|------|
+| 查看设备列表或指定设备 | `GET /api/v1/skill/devices` | 无 | 设备清单或指定设备信息 |
+| 按设备名找目标设备 | `GET /api/v1/skill/devices` | 用结果确认 `deviceId` | 设备匹配结果 |
+| 看某个设备当前画面 | `POST /api/v1/skill/device/snapshot` | 先确认 `deviceId` | 截图和简短说明 |
+| 查某天或某时段事件 | `GET /api/v1/skill/device/events` | 先确认 `device_id`，再补时间范围 | 事件列表或摘要 |
+| 看最近一个事件 | `GET /api/v1/skill/device/events/latest` | 先确认 `device_id` | 单条事件摘要和图片 |
+| 看某条事件图片 | `GET /api/v1/skill/device/events/image` | 需要已有 `event_id` | 图片和简短事件信息 |
+| 查设备在线状态 | `GET /api/v1/skill/device/online` | 先确认 `device_id` | 是否在线 |
+| 查设备电量 | `GET /api/v1/skill/device/battery` | 先确认 `device_id` | 电量结果 |
+
+### 通用流程
+
+1. 设备不明确时，先查设备列表，不要直接猜 `deviceId`。
+2. 命中多个设备时，先向用户澄清，不要替用户随意选择。
+3. 用户说“今天”“昨天”“最近一段时间”时，先换成明确的日期或时间范围，再发请求。
+4. 事件类查询默认返回整理后的摘要；用户明确要列表时，再按时间顺序列出重点事件。
+5. 图片可用时优先展示图片，同时补一句简短说明；图片不可用时，明确说明并保留事件摘要。
+6. 结果为空时直接说明“当前没有查到”，不要臆造原因或补不存在的数据。
+
+### 常见场景
+
+以下示例用于帮助快速选路。
+
+- 用户想看当前有哪些设备：
+  1. 调用 `GET /api/v1/skill/devices`
+  2. 整理成可读的设备清单，优先给出设备名、设备 ID、是否在线等关键信息
+
+- 用户想看某个设备当前画面：
+  1. 先确认 `deviceId`
+  2. 调用 `POST /api/v1/skill/device/snapshot`
+  3. 返回截图结果和简短说明
+
+- 用户想知道今天发生了什么：
+  1. 先确认 `device_id`
+  2. 将“今天”换成明确时间范围
+  3. 调用 `GET /api/v1/skill/device/events`
+  4. 按时间整理事件，并给出简短总结
+
+- 用户想看下午有没有快递来：
+  1. 先确认 `device_id`
+  2. 将“下午”换成明确时间范围
+  3. 调用 `GET /api/v1/skill/device/events`
+  4. 优先关注 `body`、`ai_summary`，先看 `detailDescription`，需要时再查看事件图片
+
+- 用户想看最近一个事件：
+  1. 先确认 `device_id`
+  2. 调用 `GET /api/v1/skill/device/events/latest`
+  3. 返回事件摘要；有图片时一并展示
+
+- 用户想查询设备电量：
+  1. 先确认 `device_id`
+  2. 调用 `GET /api/v1/skill/device/battery`
+  3. 直接解释电量结果，不输出原始结构
+
+- 用户想看多个设备某一天发生了什么：
+  1. 先调用 `GET /api/v1/skill/devices` 确认目标设备，并解析出多个 `device_id`
+  2. 将目标日期换成明确时间范围
+  3. 对每个设备分别调用 `GET /api/v1/skill/device/events`
+  4. 先按设备整理事件，再给出跨设备总结
+
+- 用户想看某个设备最近几天发生了什么：
+  1. 先确认 `device_id`
+  2. 将“最近几天”换成明确日期范围，总跨度不要超过 7 天
+  3. 按单日时间范围多次调用 `GET /api/v1/skill/device/events`
+  4. 先按日期总结，再给出跨天结论
+
+## 接口说明
+
+### 1. 查询设备列表
 
 ```http
 GET /api/v1/skill/devices
 ```
 
-用途：
+- 用途：查询当前 Skill 可操作的设备；传入 `device_id` 时返回指定设备信息
+- Query：
+  - `device_id`：可选；传入后仅返回该设备，不存在或无权限时 `items` 为空
+- 返回要点：
+  - `data.items[].deviceId`：设备ID
+  - `data.items[].deviceName`：设备名称
+  - `data.items[].isOwner`：设备归属；`true` 为本人设备，`false` 为共享设备
+  - `data.items[].connectWay`：联网方式
+  - `data.items[].extend.bindTime`：绑定时间
+- 注意：如果用户按设备名操作，先用这一步确认目标设备；查电量前可先看 `data.items[].attrs.power` 是否有 `battery`
 
-- 列出当前 Skill 已绑定、可操作的设备
-- 当用户只知道设备名称，需要先确认设备范围时优先调用
-
-返回要点：
-
-- `data.items[].deviceId`
-- `data.items[].deviceName`
-- `data.items[].deviceProductKey`
-- `data.items[].productKey`
-- `data.items[].online`
-- `data.items[].connectWay`
-- `data.items[].isOwner`
-- `data.items[].extend.bindTime`
-- `data.items[].appId`
-- `data.items[].pkgName`
-- `data.items[].userId`
-
-### 2. 截图 / 获取实时画面
-
-```http
-POST /api/v1/skill/device/snapshot
-```
-
-请求体：
-
-```json
-{
-  "deviceId": "dev-001"
-}
-```
-
-说明：
-
-- 请求体字段必须使用 `deviceId`
-- `deviceId` 为空时会返回 `bad_request`
-- 适合“拍一张”“看当前画面”“帮我截个图”这类请求
-
-返回要点：
-
-- `data.deviceId`
-- `data.status`
-- `data.imageUrl`
-
-### 3. 获取某一天或某时间段事件
-
-```http
-GET /api/v1/skill/device/events
-```
-
-查询参数：
-
-- `device_id`：必填
-- `start_time`：可选，Unix 秒时间戳
-- `end_time`：可选，Unix 秒时间戳
-- `tag`：可选，可重复传多个
-- `tags`：可选，作为 `tag` 的兼容写法
-- `limit`：可选，整数，需大于等于 `0`
-- `offset`：可选，整数，需大于等于 `0`
-
-说明：
-
-- 如果传时间范围，建议 `start_time` 和 `end_time` 一起传
-- 如果同时传 `start_time` 和 `end_time`，必须满足 `start_time < end_time`
-- 适合“今天发生了什么”“查某天事件”“只看某类事件”这类请求
-
-返回要点：
-
-- `data.items[].id`
-- `data.items[].tag`
-- `data.items[].time`
-- `data.items[].deviceId`
-- `data.items[].detailDescription`
-
-### 4. 获取最近一个事件
-
-```http
-GET /api/v1/skill/device/events/latest
-```
-
-查询参数：
-
-- `device_id`：必填
-- `start_time`：可选，Unix 秒时间戳
-- `end_time`：可选，Unix 秒时间戳
-
-说明：
-
-- 适合“最近一次发生了什么”“最新事件是什么”
-- 返回的是单条事件，不是列表
-
-返回要点：
-
-- `data.id`
-- `data.tag`
-- `data.time`
-- `data.deviceId`
-- `data.detailDescription`
-- `data.image`
-
-### 5. 获取某个事件的图片
-
-```http
-GET /api/v1/skill/device/events/image
-```
-
-查询参数：
-
-- `event_id`：必填
-
-说明：
-
-- 适合“给我看这条事件的图片”
-- `event_id` 必须使用系统已经返回过的事件 ID，不要自己拼
-
-返回要点：
-
-- `data.id`
-- `data.tag`
-- `data.time`
-- `data.deviceId`
-- `data.detailDescription`
-- `data.image`
-
-### 6. 获取设备在线状态
+### 2. 查询设备在线状态
 
 ```http
 GET /api/v1/skill/device/online
 ```
 
-查询参数：
+- 用途：判断设备当前是否在线、是否可用
+- Query：
+  - `device_id`：必填
+- 返回要点：
+  - `data.deviceId`
+  - `data.isOnline`
+- 注意：按接口实际返回直接解释即可
 
-- `device_id`：必填
+### 3. 查询设备当前画面
 
-返回要点：
+```http
+POST /api/v1/skill/device/snapshot
+```
 
-- `data.deviceId`
-- `data.isOnline`
-- `data.isAlive`
+- 用途：查询设备当前截图，适合“拍一张”“看当前画面”“帮我截个图”
 
-说明：
+请求体示例：
 
-- 适合“设备在线吗”“设备还活着吗”
-- 返回字段较简单，按接口实际值直接解释即可
+```json
+{
+  "deviceId": "678A7QP6Q5WD"
+}
+```
 
-### 7. 获取设备电量
+- Body：
+  - `deviceId`：必填
+- 返回要点：
+  - `data.deviceId`
+  - `data.status`
+  - `data.imageUrl`
+- 注意：
+  - 请求体字段必须写成 `deviceId`
+  - 这是截图，不是实时视频流
+  - 该接口不是直接读取现成图片，而是由服务器先给设备下发截图指令，再等待设备上传图片，通常会有约 3 秒等待时间
+  - 截图会产生一定存储和流量成本，不要频繁调用
+
+### 4. 查询设备某天或某时间段事件
+
+```http
+GET /api/v1/skill/device/events
+```
+
+- 用途：查询某一天或某个时间段内发生了什么，也可按标签过滤
+- Query：
+  - `device_id`：必填
+  - `start_time`：可选，Unix 秒时间戳
+  - `end_time`：可选，Unix 秒时间戳
+  - `tag`：可选，可重复传多个
+  - `limit`：可选，整数，需大于等于 `0`
+  - `offset`：可选，整数，需大于等于 `0`
+- 返回要点：
+  - `data.items[].id`
+  - `data.items[].tag`
+  - `data.items[].time`
+  - `data.items[].deviceId`
+  - `data.items[].detailDescription`
+- `tag` 说明：
+  - `tag` 是事件的分类标识，用于表示事件所属分类；`tag` / `tags` 都可用于筛选，重复传多个值表示同时关注多个分类
+  - 常见 tag 示例：`motion`（移动）、`sound`（声音）、`body`（人形）、`pet`（宠物）、`livestock`（家畜）、`fire`（火焰）、`guard`（看守异常）、`image_abnormal`（画面异常）、`car`（发现车辆）、`ai_summary`（AI 文字摘要）
+  - 实际支持哪些 tag，以接口返回结果为准
+- 使用建议：
+  - 可结合 `tag` 筛选，并优先阅读 `data.items[].detailDescription`
+  - 需要事件图片时，再用返回的 `id` 作为 `event_id` 调用 `GET /api/v1/skill/device/events/image`查询
+- 注意：
+  - 未传 `start_time` 和 `end_time` 时，默认查询设备时区当天的事件
+  - 查时间范围时，建议同时传 `start_time` 和 `end_time`，且需满足 `start_time < end_time`
+  - `limit` 和 `offset` 不能是负数
+
+### 5. 查询设备最近一个事件
+
+```http
+GET /api/v1/skill/device/events/latest
+```
+
+- 用途：查看设备最近一次发生了什么
+- Query：
+  - `device_id`：必填
+  - `start_time`：可选，Unix 秒时间戳
+  - `end_time`：可选，Unix 秒时间戳
+- 返回要点：
+  - `data.id`
+  - `data.tag`
+  - `data.time`
+  - `data.deviceId`
+  - `data.detailDescription`
+  - `data.image`
+- 注意：这是单条事件，不是事件列表
+
+### 6. 查询设备事件图片
+
+```http
+GET /api/v1/skill/device/events/image
+```
+
+- 用途：查看某条事件对应的图片
+- Query：
+  - `event_id`：必填
+- 返回要点：
+  - `data.id`
+  - `data.tag`
+  - `data.time`
+  - `data.deviceId`
+  - `data.image`
+- 注意：`event_id` 请使用系统已经返回过的事件 ID，不要自己拼，例如 `/api/v1/skill/device/events` 返回结果中的 `id`
+
+### 7. 查询设备电量
 
 ```http
 GET /api/v1/skill/device/battery
 ```
 
-查询参数：
+- 用途：查看设备电量
+- Query：
+  - `device_id`：必填
+- 返回要点：
+  - `data.deviceId`
+  - `data.qoe`：电量百分比，值为 `0-100`
+- 注意：仅当设备 `attrs.power` 有 `battery` 时，才可查询电量；若没有 `battery`，直接说明该设备不支持电量查询
 
-- `device_id`：必填
-- `start_time`：必填，Unix 秒时间戳
-- `end_time`：必填，Unix 秒时间戳
+### 补充规则
 
-说明：
-
-- 必须满足 `start_time < end_time`
-- 适合“查最近一段时间电量”这类请求
-
-返回要点：
-
-- `data.deviceId`
-- `data.qoe`
-
-## 使用约束
-
-- Query 参数统一使用 `snake_case`，例如 `device_id`、`start_time`、`event_id`
-- 截图接口请求体使用 `camelCase`，字段名固定为 `deviceId`
-- 响应字段以实际返回为准，常见为 `camelCase`
-- `limit` 和 `offset` 不能是负数
-- 对于事件图片和最近事件，优先使用接口返回的 `image`
-- 不要臆造不存在的接口路径，也不要把 `devices` 和 `device` 写混
-- 如果需要按设备名操作，先通过设备列表确认目标设备，再继续调用后续接口
-
-## 常见场景
-
-### 查看当前有哪些设备
-
-1. 调用 `GET /api/v1/skill/devices`
-2. 把结果整理成可读设备清单
-
-### 看某个设备当前画面
-
-1. 先确认 `deviceId`
-2. 调用 `POST /api/v1/skill/device/snapshot`
-3. 返回截图结果中的 `imageUrl`
-
-### 查看某个设备今天发生了什么
-
-1. 先确认 `device_id`
-2. 将“今天”换算成明确时间范围
-3. 调用 `GET /api/v1/skill/device/events`
-4. 按时间整理并总结事件
-
-### 查看最近一个事件
-
-1. 调用 `GET /api/v1/skill/device/events/latest`
-2. 输出事件摘要和图片
-
-## 错误处理
-
-- 缺少 `TIVS_CLI_ID` 或 `TIVS_API_KEY`：明确提示缺少环境变量，不要伪造请求
-- `deviceId` 或 `device_id` 缺失：提示用户补充目标设备
-- `event_id` 缺失：提示用户先提供事件 ID，或先查询事件列表
-- 时间参数非法或顺序错误：提示用户改为合法的 Unix 秒时间戳，并满足 `start_time < end_time`
-- 设备列表为空：直接说明当前 Skill 下没有可操作设备，并提示用户检查设备管理站点
-- 接口返回未知字段结构：只解释已确认字段，不要臆造含义
-
-## 明确禁止
-
-- 不要回显 `TIVS_API_KEY` 原文
-- 不要把设备管理站点当成 API 接口
-- 不要输出未经整理的长段原始 JSON 作为默认回答
+- 缺少 `deviceId`、`device_id` 或 `event_id` 时，先提示用户补充，或先走上游查询步骤
