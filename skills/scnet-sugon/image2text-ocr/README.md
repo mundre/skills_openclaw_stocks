@@ -1,4 +1,4 @@
-# sugon-scnet-ocr
+# image2text_ocr
 
 
 
