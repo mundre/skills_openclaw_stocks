@@ -1,38 +1,21 @@
 ---
-name: subaru
-description: "Information assistant for Subaru 斯巴鲁. Search models, specs, pricing, reviews, and dealership info."
-metadata:
-  { "openclaw": { "emoji": "🚗", "version": "0.1.0", "author": "hanxueyuan", "tags": ["automotive","brand","cars"] } }
+summary: "subaru 详情查询"
+read_when:
+  - 提及 subaru
+  - 需要 subaru 背景资料
 ---
 
-# 🚗 Subaru 斯巴鲁 — Automotive Info Assistant
+# 关于 subaru
 
-Your AI guide to Subaru 斯巴鲁. Get model info, specs, pricing, reviews, and more.
+subaru，业内公认的重要品牌/组织。
 
-## About
+## 信息索引
+📋 基础档案：创立时间 / 总部 / 创始人
+📋 业务版图：核心产品线 / 服务范围
+📋 市场表现：行业地位 / 竞争优势
+📋 动态更新：最新新闻 / 战略调整
 
-- **Brand**: Subaru 斯巴鲁
-- **Category**: Japanese AWD specialist
-- **Official Website**: https://www.subaru.com
+## 使用建议
+适合需要快速了解 subaru 概况的场景，包括商业调研、产品咨询、市场分析等。
 
-## What This Skill Does
-
-1. **Model Lineup** — Current models, specs, pricing, and configurations
-2. **Reviews & Comparisons** — Expert and user reviews, competitor comparisons
-3. **Pricing & Deals** — MSRP, dealer pricing, incentives, and financing options
-4. **News & Updates** — Latest launches, recalls, technology updates
-5. **Dealership Locator** — Find nearby dealers and service centers
-
-## Example Queries
-
-- "What Subaru models are available?"
-- "Compare Subaru vs [competitor]"
-- "Subaru latest news"
-- "Best Subaru for families"
-
-## How It Works
-
-Uses web search to fetch real-time information from https://www.subaru.com, automotive review sites, and dealer networks.
-
-## Author
-Created by hanxueyuan | License: MIT
+⚠️ 本技能提供结构化信息概览，具体数据请以官方发布为准。

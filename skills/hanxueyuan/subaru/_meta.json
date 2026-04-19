@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "subaru",
-  "displayName": "subaru",
+  "displayName": "Subaru",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774665884759,
-    "commit": "https://github.com/openclaw/skills/commit/f45a825be534a9ad48621604610393db4777db13"
+    "version": "0.1.1",
+    "publishedAt": 1776295626288,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774665884759,
+      "commit": "https://github.com/openclaw/skills/commit/f45a825be534a9ad48621604610393db4777db13"
+    }
+  ]
 }
