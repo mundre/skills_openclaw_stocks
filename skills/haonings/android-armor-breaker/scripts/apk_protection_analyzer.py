@@ -22,15 +22,17 @@ from i18n_logger import get_logger
 class ApkprotectionAnalyzer:
     """APKreinforcementanalysis器"""
     
-    def __init__(self, verbose: bool = True, language: str = 'en-US'):
+    def __init__(self, verbose: bool = True, language: str = 'en-US', json_mode: bool = False):
         """Initialize ApkprotectionAnalyzer
         
         Args:
             verbose: Enable verbose logging
             language: Language code (en-US, zh-CN)
+            json_mode: If True, suppresses log output for clean JSON output
         """
         self.logger = get_logger(language=language, verbose=verbose, module="apk_protection_analyzer")
         self.verbose = verbose
+        self.json_mode = json_mode
         self.apk_path = ""
         self.analysis_results = {
             "apk_file": "",
@@ -45,7 +47,7 @@ class ApkprotectionAnalyzer:
         
         # reinforcement feature library
         self.protection_patterns = {
-            # 爱encryption
+            # 爱加密
             "ijiami": [
                 (r"libijiami.*\.so$", "strong"),
                 (r"libexec.*\.so$", "strong"),
@@ -57,62 +59,64 @@ class ApkprotectionAnalyzer:
                 (r"ijiami.*\.xml$", "medium"),
                 (r"\.ijiami\.", "weak"),
             ],
-            # 360reinforcement
+            # 360加固
             "360": [
-                (r".*libjiagu.*\.so$", "strong"),           # 任意Directory下的libjiagulibrary
-                (r"assets/libjiagu.*\.so$", "strong"),      # assetsDirectory下的jiagulibrary（重点）
+                (r".*libjiagu.*\.so$", "strong"),           # 任意目录下的libjiagu库
+                (r"assets/libjiagu.*\.so$", "strong"),      # assets目录下的jiagu库（重点）
                 (r"lib360\.so$", "strong"),
                 (r"jiagu\.dex$", "strong"),
                 (r"protect\.jar$", "medium"),
-                (r".*360.*\.so$", "medium"),                # 任何360.sofile
-                (r"assets/.*360.*", "weak"),                # assets中的360file
-                (r"assets/.*jiagu.*", "strong"),            # assets中的jiagufile
-                (r".*jiagu.*", "weak"),                     # file名包含jiagu
+                (r".*360.*\.so$", "medium"),                # 任何360.so文件
+                (r"assets/.*360.*", "weak"),                # assets中的360文件
+                (r"assets/.*jiagu.*", "strong"),            # assets中的jiagu文件
+                (r".*jiagu.*", "weak"),                     # 文件名包含jiagu
             ],
-            # 百度reinforcement
+            # 百度加固
             "baidu": [
                 (r"baiduprotect.*\.dex$", "strong"),
-                (r"baiduprotect.*\.i\.dex$", "strong"),  # 新百度reinforcement中间DEXfile
+                (r"baiduprotect.*\.i\.dex$", "strong"),  # 新百度加固中间DEX文件
                 (r"libbaiduprotect.*\.so$", "strong"),
                 (r"libbdprotect.*\.so$", "strong"),
                 (r"protect\.jar$", "medium"),
-                (r"baiduprotect.*\.jar$", "medium"),  # 百度reinforcementJARfile
+                (r"baiduprotect.*\.jar$", "medium"),  # 百度加固JAR文件
             ],
-            # 腾讯reinforcement
+            # 腾讯加固
             "tencent": [
                 (r"libshell.*\.so$", "strong"),
                 (r"libtprotect.*\.so$", "strong"),
                 (r"libstub\.so$", "strong"),
-                (r"libAntiCheat\.so$", "strong"),  # 腾讯游戏Security(ACE)反作弊核心library
+                (r"libAntiCheat\.so$", "strong"),  # 腾讯游戏安全(ACE)反作弊核心库
                 (r"tps\.jar$", "medium"),
-                (r"libmain\.so$", "weak"),  # Note: 也可能是普通library
+                (r"libmain\.so$", "weak"),  # 注意：也可能是普通库
             ],
-            # 阿里reinforcement
+            # 阿里加固
             "ali": [
                 (r"libmobisec.*\.so$", "strong"),
                 (r"aliprotect\.dex$", "strong"),
                 (r"aliprotect\.jar$", "medium"),
             ],
-            # 梆梆reinforcement
+            # 梆梆加固
             "bangcle": [
                 (r"libbangcle.*\.so$", "strong"),
                 (r"libbc.*\.so$", "strong"),
                 (r"bangcle\.jar$", "medium"),
-                # 梆梆reinforcement企业版特征
+                # 梆梆加固企业版特征
                 (r"libdexjni\.so$", "strong"),
                 (r"libDexHelper\.so$", "strong"),
                 (r"libdexjni.*\.so$", "strong"),  # 变体
                 (r"libdexhelper.*\.so$", "strong"),  # 变体
             ],
-            # 娜迦reinforcement
+            # 娜迦加固
             "naga": [
                 (r"libnaga.*\.so$", "strong"),
                 (r"libng.*\.so$", "strong"),
             ],
         }
-        
+    
     def log(self, key: str, level: str = "INFO", **kwargs):
-        """Log a message using internationalized logger"""
+        """Log a message, but suppress if in JSON mode"""
+        if self.json_mode:
+            return  # 在JSON模式下不输出日志
         self.logger.log(key, level, **kwargs)
     
     def analyze_apk(self, apk_path: str) -> Dict:
@@ -235,6 +239,7 @@ class ApkprotectionAnalyzer:
 def main():
     """Main function for testing"""
     import argparse
+    import json
     
     parser = argparse.ArgumentParser(
         description='APK Protection Analyzer - Detect reinforcement types and protection levels'
@@ -244,21 +249,41 @@ def main():
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
     parser.add_argument('--language', '-l', default='en-US', choices=['en-US', 'zh-CN'], 
                        help='Language for output (en-US, zh-CN)')
+    parser.add_argument('--json', '-j', action='store_true', help='Output results as JSON')
+    parser.add_argument('--output', '-o', help='Output JSON file path (default: <apk_name>_protection_analysis.json)')
     
     args = parser.parse_args()
     
+    # 在JSON模式下，我们抑制日志输出以保持干净的JSON
+    analyzer = ApkprotectionAnalyzer(verbose=args.verbose, language=args.language, json_mode=args.json)
+    
+    # 执行分析
+    result = analyzer.analyze_apk(args.apk)
+    
+    # JSON输出模式
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+    
+    # 保存JSON文件（如果指定了输出文件）
+    if args.output:
+        with open(args.output, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+    else:
+        # 自动生成JSON文件
+        apk_base = os.path.splitext(args.apk)[0]
+        json_file = f"{apk_base}_protection_analysis.json"
+        with open(json_file, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+    
+    # 文本输出（保持向后兼容）
     print("=" * 60)
     print("🔍 APK Protection Analyzer - Internationalized Version")
     print(f"📁 APK: {args.apk}")
     print(f"🌐 Language: {args.language}")
     print("=" * 60)
     
-    analyzer = ApkprotectionAnalyzer(verbose=args.verbose, language=args.language)
-    
-    # Test analysis
     print("\n1. Testing APK analysis...")
-    result = analyzer.analyze_apk(args.apk)
-    
     print(f"\n2. Analysis Results:")
     print(f"   文件: {result.get('apk_file', 'N/A')}")
     print(f"   大小: {result.get('file_size', 0):,} bytes")

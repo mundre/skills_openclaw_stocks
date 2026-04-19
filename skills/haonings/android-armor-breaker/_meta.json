@@ -3,11 +3,16 @@
   "slug": "android-armor-breaker",
   "displayName": "Android Armor Breaker",
   "latest": {
-    "version": "2.2.0",
-    "publishedAt": 1775032139576,
-    "commit": "https://github.com/openclaw/skills/commit/bd6d8cc7099a939ccb72e32562a280e85c3ea6ec"
+    "version": "2.2.3",
+    "publishedAt": 1776416233083,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.0",
+      "publishedAt": 1775032139576,
+      "commit": "https://github.com/openclaw/skills/commit/bd6d8cc7099a939ccb72e32562a280e85c3ea6ec"
+    },
     {
       "version": "1.2.0",
       "publishedAt": 1774753444494,

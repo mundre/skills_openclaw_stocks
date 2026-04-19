@@ -5,7 +5,7 @@
 
 ```bash
 # 1. 进入脚本目录
-cd /home/goushi/.openclaw/workspace/skills/android-armor-breaker/scripts
+cd android-armor-breaker/scripts
 
 # 2. 确保脚本可执行
 chmod +x android-armor-breaker
