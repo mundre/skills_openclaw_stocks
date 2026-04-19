@@ -30,7 +30,7 @@ If the user said "I need a card for $25 for AWS" you already have both.
 ### Command
 
 ```
-lobstercash request card \
+lobstercash cards request \
   --amount <amount> \
   --description "<description>" \
 ```

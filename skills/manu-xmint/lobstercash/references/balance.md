@@ -5,7 +5,7 @@ Check the current token balances in the agent wallet.
 ## Command
 
 ```
-lobstercash balance
+lobstercash crypto balance
 ```
 
 ## Reading the output
@@ -34,7 +34,7 @@ tokens. Say "Your wallet is empty" not "wallet not found."
 
 If the balance is too low for what the user wants to do:
 Say: "Your wallet has [X] USDC. This needs [Y] USDC."
-Then use `lobstercash request deposit --amount <needed>` to
+Then use `lobstercash crypto deposit --amount <needed> --description "<reason>"` to
 generate a deposit link for the user.
 
 Do not attempt the operation with insufficient funds. The error message

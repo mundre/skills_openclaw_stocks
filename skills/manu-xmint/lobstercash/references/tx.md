@@ -28,7 +28,7 @@ passing it to the CLI.
 For a serialized transaction from an external source:
 
 ```
-lobstercash tx create \
+lobstercash crypto tx create \
   --type serialized \
   --serialized-transaction <base58-encoded-transaction>
 ```
@@ -36,7 +36,7 @@ lobstercash tx create \
 For a calls array:
 
 ```
-lobstercash tx create \
+lobstercash crypto tx create \
   --type calls \
   --calls '<json array>'
 ```
@@ -46,12 +46,12 @@ Parse the output. You need these values from the result:
 - `Transaction ID` — pass as `--id` to approve
 - The `messageToSign` and `messageToSignEncoding` values from the "Next step" line
 
-The output includes a ready-made `lobstercash tx approve` command you can copy.
+The output includes a ready-made `lobstercash crypto tx approve` command you can copy.
 
 ## Step 2 — Approve the transaction
 
 ```
-lobstercash tx approve \
+lobstercash crypto tx approve \
   --id <transactionId> \
   --message <messageToSign> \
   --encoding <messageToSignEncoding>
@@ -64,7 +64,7 @@ The command waits for on-chain confirmation by default.
 If you need to re-check after the fact:
 
 ```
-lobstercash tx status \
+lobstercash crypto tx status \
   --id <transactionId>
 ```
 

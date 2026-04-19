@@ -22,7 +22,7 @@ Registers a new agent on the server and sets it as the active agent locally.
   | Gemini      | `https://lobster.cash/agent-avatars/gemini.svg`      |
   | OpenClaw    | `https://lobster.cash/agent-avatars/openclaw.svg`    |
 
-  If none of these match, pass any publicly accessible image URL, or none at all.
+  Use a URL from this table, a URL the user explicitly provided, or omit `--image-url` entirely. Do **not** invent or guess image URLs — a broken avatar is worse than no avatar.
 
 #### Choosing a good name
 

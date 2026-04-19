@@ -1,6 +1,6 @@
 # Setup — Link Agent to Wallet
 
-Link this agent to your lobster.cash wallet. It gives the agent access to operate a blockchain wallet, as well as to request virtual cards and top ups. Use this when the user wants to connect the agent to their wallet **without** making a purchase. If the user wants to buy something, use `request card` or `request deposit` instead — they bundle setup automatically.
+Link this agent to your lobster.cash wallet. It gives the agent access to operate a blockchain wallet, as well as to request virtual cards and top ups. Use this when the user wants to connect the agent to their wallet **without** making a purchase. If the user wants to buy something, use `cards request` or `crypto deposit` instead — they bundle setup automatically.
 
 ## Prerequisite
 
@@ -67,11 +67,11 @@ Say: "Wallet ready. Your address is [walletAddress]."
 
 If the user originally asked for something specific (e.g. "buy X", "send tokens"), route to Branch 2 in the main skill file.
 
-If the user did not have a specific task, run `lobstercash store` and present available integrations so they can pick what to do next.
+If the user did not have a specific task, run `lobstercash examples` and present working examples so they can pick what to do next.
 
 ## Anti-Patterns
 
-- **Running setup when the user wants to buy:** Use `request card` or `request deposit` instead — they handle setup automatically.
+- **Running setup when the user wants to buy:** Use `cards request` or `crypto deposit` instead — they handle setup automatically.
 - **Running `lobstercash setup` more than once without user interaction:** Wait for the user to confirm approval between calls.
 - **Asking the user for their wallet address or private key:** The CLI generates and manages keys locally.
 - **Polling for approval:** The user must tell you they approved. Do not auto-poll.
