@@ -16,22 +16,41 @@
 ## 响应结构
 ```json
 {
-  "code": "0",          // 应答码，0 表示成功
-  "msg": "success",     // 应答信息
-  "data": [             // 应答数据体
-    {
-      "result": [        // 票据识别结果数组
+    "code": "0",
+    "msg": "success",
+    "data": [
         {
-          "confidence": "0.98",
-          "coordinate": [3,584,3,1,412,1,412,584],
-          "elements": { ... },  // 核心识别字段，因类型而异
-          "isCopy": "0",
-          "page": 0,
-          "printOffset": "0"
+            "traceId": "202604010000011",
+            "originalFilename": "营业执照示例.jpg",
+            "cosPath": "/ocr/202604/01/营业执照示例.jpg",
+            "result": [
+                {
+                    "status": 200,
+                    "originFilename": "营业执照示例.jpg",
+                    "cosPath": "/ocr/202604/01/营业执照示例.jpg",
+                    "fileIndex": 1,
+                    "cutIndex": 0,
+                    "coordinate": [],
+                    "classifyCode": "BUSINESS_LICENSE",
+                    "confidence": 0.996,
+                    "elements": {
+                        "title": "营业执照",
+                        "socialCreditCode": "9141225973G225973G",
+                        "name": "技术开发电子科技有限公司",
+                        "capital": "陆佰壹拾万圆整",
+                        "type": "有限责任公司(自然人投资或控股的法人独资)",
+                        "date": "2003年04月28日",
+                        "directorType": "法定代表人",
+                        "director": "张开发",
+                        "businessTerm": "2003年04月28日至2028年04月01日",
+                        "businessScope": "电子产品的技术开发, 安全生产检测检验(凭有效资质证经营)。(依法须经批准的项目, 经相关部门批准后方可开展经营活动)",
+                        "address": "山州市圆山路330号院307室"
+                    },
+                    "stamps": []
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
 ```
 ## 错误码
