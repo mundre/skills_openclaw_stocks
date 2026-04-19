@@ -13,21 +13,21 @@ Run the script using absolute path:
 
 **Generate new image:**
 ```bash
-uv run ~/.openclaw/skills/nano-banana-pro-openrouter/scripts/generate_image.py --prompt "your image description" --filename "output-name.png" [--resolution 1K|2K|4K] [--api-key KEY]
+uv run /path/to/this/skill/scripts/generate_image.py --prompt "your image description" --filename "output-name.png" [--resolution 1K|2K|4K] [--api-key KEY]
 ```
 
 **Edit existing image:**
 ```bash
-uv run ~/.openclaw/skills/nano-banana-pro-openrouter/scripts/generate_image.py --prompt "editing instructions" --filename "output-name.png" --input-image "path/to/input.png" [--resolution 1K|2K|4K] [--api-key KEY]
+uv run /path/to/this/skill/scripts/generate_image.py --prompt "editing instructions" --filename "output-name.png" --input-image "path/to/input.png" [--resolution 1K|2K|4K] [--api-key KEY]
 ```
 
 **Custom output directory:**
 ```bash
-uv run ~/.openclaw/skills/nano-banana-pro-openrouter/scripts/generate_image.py --prompt "your image description" --filename "output-name.png" --output-dir "/custom/path"
+uv run /path/to/this/skill/scripts/generate_image.py --prompt "your image description" --filename "output-name.png" --output-dir "/custom/path"
 ```
 
 **Output Location:**
-- **Default:** Images are saved to `~/.openclaw/skills/nano-banana-pro-openrouter/output_images/`
+- **Default:** Images are saved to `./output_images/` (relative to this skill's root directory)
 - **Custom:** Use `--output-dir` to specify a different directory
 - The script will create the output directory if it doesn't exist
 
@@ -36,11 +36,11 @@ uv run ~/.openclaw/skills/nano-banana-pro-openrouter/scripts/generate_image.py -
 Goal: fast iteration without burning time on 4K until the prompt is correct.
 
 - Draft (1K): quick feedback loop
-  - `uv run ~/.codex/skills/nano-banana-pro/scripts/generate_image.py --prompt "<draft prompt>" --filename "yyyy-mm-dd-hh-mm-ss-draft.png" --resolution 1K`
+  - `uv run /path/to/this/skill/scripts/generate_image.py --prompt "<draft prompt>" --filename "yyyy-mm-dd-hh-mm-ss-draft.png" --resolution 1K`
 - Iterate: adjust prompt in small diffs; keep filename new per run
   - If editing: keep the same `--input-image` for every iteration until you’re happy.
 - Final (4K): only when prompt is locked
-  - `uv run ~/.codex/skills/nano-banana-pro/scripts/generate_image.py --prompt "<final prompt>" --filename "yyyy-mm-dd-hh-mm-ss-final.png" --resolution 4K`
+  - `uv run /path/to/this/skill/scripts/generate_image.py --prompt "<final prompt>" --filename "yyyy-mm-dd-hh-mm-ss-final.png" --resolution 4K`
 
 ## Resolution Options
 
@@ -129,10 +129,10 @@ Use templates when the user is vague or when edits must be precise.
 
 **Generate new image:**
 ```bash
-uv run ~/.codex/skills/nano-banana-pro/scripts/generate_image.py --prompt "A serene Japanese garden with cherry blossoms" --filename "2025-11-23-14-23-05-japanese-garden.png" --resolution 4K
+uv run /path/to/this/skill/scripts/generate_image.py --prompt "A serene Japanese garden with cherry blossoms" --filename "2025-11-23-14-23-05-japanese-garden.png" --resolution 4K
 ```
 
 **Edit existing image:**
 ```bash
-uv run ~/.codex/skills/nano-banana-pro/scripts/generate_image.py --prompt "make the sky more dramatic with storm clouds" --filename "2025-11-23-14-25-30-dramatic-sky.png" --input-image "original-photo.jpg" --resolution 2K
+uv run /path/to/this/skill/scripts/generate_image.py --prompt "make the sky more dramatic with storm clouds" --filename "2025-11-23-14-25-30-dramatic-sky.png" --input-image "original-photo.jpg" --resolution 2K
 ```
