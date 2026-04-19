@@ -3,9 +3,15 @@
   "slug": "car-key",
   "displayName": "carkey",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774352773268,
-    "commit": "https://github.com/openclaw/skills/commit/be436b6a20d5955a5de6ec53fcc7d74f19d44c25"
+    "version": "1.1.0",
+    "publishedAt": 1776161808913,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774352773268,
+      "commit": "https://github.com/openclaw/skills/commit/be436b6a20d5955a5de6ec53fcc7d74f19d44c25"
+    }
+  ]
 }
