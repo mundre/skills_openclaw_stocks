@@ -29,7 +29,6 @@ def summarize_cluster(cluster: List[SamplePoint], boxes: List[BoundingBox], targ
     cs = [p.cloud_stddev for p in cluster if p.cloud_stddev is not None]
     nd = [p.night_avg_dew_point for p in cluster if p.night_avg_dew_point is not None]
     np = [p.night_max_precip for p in cluster if p.night_max_precip is not None]
-    ncb = [p.night_min_cloud_base for p in cluster if p.night_min_cloud_base is not None]
     ncl = [p.night_avg_cloud_low for p in cluster if p.night_avg_cloud_low is not None]
     ncm = [p.night_avg_cloud_mid for p in cluster if p.night_avg_cloud_mid is not None]
     nch = [p.night_avg_cloud_high for p in cluster if p.night_avg_cloud_high is not None]
@@ -94,8 +93,6 @@ def summarize_cluster(cluster: List[SamplePoint], boxes: List[BoundingBox], targ
         "night_avg_dew_point_c": round(sum(nd) / len(nd), 1) if nd else None,
         "night_max_precip": night_max_precip,
         "night_max_precip_mm": night_max_precip,
-        "night_min_cloud_base": min(ncb) if ncb else None,
-        "night_min_cloud_base_m": min(ncb) if ncb else None,
         "night_avg_cloud_low": round(sum(ncl) / len(ncl), 1) if ncl else None,
         "night_avg_cloud_mid": round(sum(ncm) / len(ncm), 1) if ncm else None,
         "night_avg_cloud_high": round(sum(nch) / len(nch), 1) if nch else None,
@@ -409,7 +406,6 @@ def build_ranked_candidates(labels: List[dict], limit: int = 10, min_score: floa
             "night_avg_humidity_pct": region.get("night_avg_humidity"),
             "night_avg_visibility_m": region.get("night_avg_visibility_m"),
             "night_max_precip_mm": region.get("night_max_precip"),
-            "night_min_cloud_base_m": region.get("night_min_cloud_base"),
             "night_weather_codes": region.get("night_weather_codes"),
             "low_cloud_terrain_note": region.get("low_cloud_terrain_note"),
             "moon_interference": region.get("moon_interference"),
@@ -472,8 +468,6 @@ def build_ranked_candidate_lines(ranked_candidates: List[dict]) -> List[str]:
             lines.append(f"  - 光污染：{row['light_pollution_bortle']}")
         if row.get("night_max_precip_mm") is not None:
             lines.append(f"  - 夜间最大降水：{row['night_max_precip_mm']:.2f} mm/h")
-        if row.get("night_min_cloud_base_m") is not None:
-            lines.append(f"  - 最低云底：{row['night_min_cloud_base_m']:.0f} m")
         if row.get("night_weather_codes"):
             lines.append(f"  - 天气现象码：{row['night_weather_codes']}")
         if row.get("low_cloud_terrain_note"):

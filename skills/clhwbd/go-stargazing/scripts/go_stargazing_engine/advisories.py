@@ -82,15 +82,6 @@ def _precip_advisory(max_precip_mm: Optional[float]) -> Optional[str]:
         return "局部有弱降水"
     return None
 
-def _cloud_base_advisory(min_cloud_base_m: Optional[float]) -> Optional[str]:
-    if min_cloud_base_m is None:
-        return None
-    if min_cloud_base_m < 200:
-        return "云底极低（<200m），完全被云遮盖"
-    if min_cloud_base_m < 500:
-        return "云底偏低（<500m），山顶易被云遮"
-    return None
-
 def build_reference_info_note(moon_advisory: Optional[str] = None, light_pollution_note: Optional[str] = None, extra_indicators: Optional[List[str]] = None, no_candidates: bool = False) -> dict:
     used = ["云量", "风速", "湿度", "夜间通透度", "月光影响", "光污染粗估（城市距离法，非实测）"]
     if extra_indicators:

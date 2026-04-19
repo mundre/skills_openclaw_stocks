@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
-from .advisories import _weather_code_advisory, _precip_advisory, _cloud_base_advisory, _dew_point_advisory
+from .advisories import _weather_code_advisory, _precip_advisory, _dew_point_advisory
 
 DIRECTION_SUFFIXES = ["东北部", "西北部", "东南部", "西南部", "东部", "西部", "南部", "北部", "中部"]
 
@@ -69,20 +69,12 @@ def _window_phrase(region: dict) -> Optional[str]:
     return None
 
 def _confidence_phrase(confidence: Optional[str], model: Optional[str] = None) -> Optional[str]:
-    model_rank = {"ecmwf_ifs": 3, "gfs_global": 2, "icon_global": 2, None: 0}.get(model, 0)
-    horizon_score = {"high": 3, "medium": 2, "low": 1, None: 0}.get(confidence, 0)
-    if confidence == "high" and model_rank >= 2:
-        return "短期预报可信度较高，且使用了较高分辨率模型，结果相对可靠"
     if confidence == "high":
-        return "短期预报可信度较高"
-    if confidence == "medium" and model_rank >= 2:
-        return "属于中期预报，但使用了较高分辨率模型，参考价值仍较强，建议出发前再复查一次"
+        return "短期预报可信度较高，按 ECMWF 当前预报看结果相对可靠"
     if confidence == "medium":
-        return "属于中期预报，预报精度有所下降，建议出发前再复查一次"
-    if confidence == "low" and model_rank >= 2:
-        return "属于中远期预报，更适合作趋势参考；较高分辨率模型有助于减少误判"
+        return "属于中期预报，当前按 ECMWF 预报可作参考，建议出发前再复查一次"
     if confidence == "low":
-        return "属于中远期预报，当前更适合作趋势参考"
+        return "属于中远期预报，当前按 ECMWF 预报更适合作趋势参考"
     return None
 
 def _hours_phrase(hours: Optional[float]) -> Optional[str]:
@@ -114,11 +106,9 @@ def _qualification_phrase(value: Optional[str]) -> Optional[str]:
         return "更适合先观察，不建议直接拍板"
     return None
 
-def _evidence_phrase(evidence_type: Optional[str], model_coverage: Optional[int]) -> Optional[str]:
-    if evidence_type in {"dual_model", "multi_model"}:
-        return f"有 {model_coverage or 2} 个模型提供支持"
-    if evidence_type == "single_model":
-        return "目前主要由单个模型支撑"
+def _source_phrase(weather_model: Optional[str]) -> Optional[str]:
+    if weather_model == "ecmwf_ifs":
+        return "基于 ECMWF 预报"
     return None
 
 def _judgement_phrase(judgement: Optional[str], dispute_type: Optional[str] = None) -> Optional[str]:
@@ -152,7 +142,6 @@ def build_region_human_view(region: dict) -> dict:
     moon_dark = region.get("moon_dark_window")
     dew = region.get("night_avg_dew_point")
     precip = region.get("night_max_precip")
-    cloud_base = region.get("night_min_cloud_base")
     low_cloud = region.get("night_avg_cloud_low")
     mid_cloud = region.get("night_avg_cloud_mid")
     high_cloud = region.get("night_avg_cloud_high")
@@ -160,8 +149,6 @@ def build_region_human_view(region: dict) -> dict:
     weather_codes = region.get("night_weather_codes")
     stability = region.get("cloud_stability")
     qualification = region.get("qualification")
-    evidence_type = region.get("evidence_type")
-    model_coverage = region.get("model_coverage")
     judgement = region.get("judgement")
     dispute_type = region.get("dispute_type")
 
@@ -193,10 +180,6 @@ def build_region_human_view(region: dict) -> dict:
         precip_note = _precip_advisory(precip)
         if precip_note:
             risks.append(precip_note)
-    if cloud_base is not None:
-        cb_note = _cloud_base_advisory(cloud_base)
-        if cb_note:
-            risks.append(cb_note)
     if low_cloud_terrain_note:
         risks.append(low_cloud_terrain_note)
     if dew is not None:
@@ -212,8 +195,8 @@ def build_region_human_view(region: dict) -> dict:
 
     readable = {
         "推荐级别": _qualification_phrase(qualification),
-        "联合判断": _judgement_phrase(judgement, dispute_type),
-        "模型支持": _evidence_phrase(evidence_type, model_coverage),
+        "结果判断": _judgement_phrase(judgement, dispute_type),
+        "数据来源": _source_phrase(region.get("weather_model")),
         "可拍窗口": _hours_phrase(usable_hours),
         "最长连续窗口": _hours_phrase(streak),
         "平均云量": f"约 {avg_cloud:.1f}%" if avg_cloud is not None else None,
@@ -373,4 +356,3 @@ def dedupe_display_labels(labels: List[dict]) -> List[dict]:
         if curr_score > prev_score:
             deduped[key] = region
     return list(deduped.values())
-

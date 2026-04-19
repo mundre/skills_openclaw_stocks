@@ -1,7 +1,6 @@
 import argparse
 import copy
 import json
-import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 from datetime import datetime, timedelta
@@ -41,12 +40,6 @@ def parse_target_datetime(value: Optional[str]) -> datetime:
     if value:
         return datetime.fromisoformat(value)
     return datetime.now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-
-
-def progress_log(stage: str, **fields) -> None:
-    payload = {"stage": stage, **fields}
-    print(json.dumps(payload, ensure_ascii=False), file=sys.stderr, flush=True)
-
 
 def select_stage2_budget(points: List[SamplePoint], max_stage2_points: int, direct_stage2_threshold: int = 10) -> List[SamplePoint]:
     ordered = sorted(points, key=lambda p: (0 if p.stage1_status == "pass" else 1, p.night_avg_cloud if p.night_avg_cloud is not None else (p.cloud_cover if p.cloud_cover is not None else 999.0), p.id))
@@ -304,7 +297,7 @@ def _candidate_record(region: dict, date: str, rank: int, weather_source: str, w
         "rank": rank,
         "area_name": region.get("display_label") or region.get("label"),
         "primary_area": region.get("anchor_label") or region.get("display_label") or region.get("label"),
-        "refined_area": region.get("refined_label") or region.get("label"),
+        "focus_area": region.get("refined_label") or region.get("label"),
         "province_list": region.get("provinces") or ([region.get("province")] if region.get("province") else []),
         "recommended_level": region.get("qualification"),
         "ranking_score": round(region.get("ranking_score") or region.get("decision_rank_score") or region.get("final_score") or 0.0, 2),
@@ -343,7 +336,6 @@ def _candidate_record(region: dict, date: str, rank: int, weather_source: str, w
         "condensation_risk": _condensation_risk(region),
         "wind_stability_note": _wind_stability_note(region),
         "max_precip_mm": region.get("night_max_precip_mm") if region.get("night_max_precip_mm") is not None else region.get("night_max_precip"),
-        "min_cloud_base_m": region.get("night_min_cloud_base_m") if region.get("night_min_cloud_base_m") is not None else region.get("night_min_cloud_base"),
         "weather_codes": codes,
         "dominant_weather_code": codes[0] if codes else None,
         "weather_summary": _night_weather_summary(codes),
@@ -382,7 +374,7 @@ def build_professional_output(labels: List[dict], decision_summary: dict, fetch_
     today = datetime.now().date()
     forecast_horizon_days = (target_dt.date() - today).days
     weather_source = next((x.get("weather_source") for x in labels if x.get("weather_source")), "openmeteo-http" if getattr(args, "real_weather", False) else "mock")
-    model_name = weather_model or "joint_dual_with_optional_icon"
+    model_name = weather_model or "ecmwf_ifs"
     sorted_labels = sorted(labels, key=lambda x: (-(x.get("decision_rank_score") or x.get("ranking_score") or x.get("final_score") or 0.0), -(x.get("final_score") or 0.0), x.get("display_label") or x.get("label") or ""))
     candidate_rows = [
         _candidate_record(region, date, idx, weather_source, model_name, confidence, forecast_horizon_days)
@@ -398,7 +390,7 @@ def build_professional_output(labels: List[dict], decision_summary: dict, fetch_
     night_summary = {
         "date": date,
         "primary_area": top.get("primary_area") if top else None,
-        "refined_area": top.get("refined_area") if top else None,
+        "focus_area": top.get("focus_area") if top else None,
         "top_pick": top.get("area_name") if top else None,
         "second_pick": second.get("area_name") if second else None,
         "third_pick": third.get("area_name") if third else None,
@@ -423,7 +415,7 @@ def build_professional_output(labels: List[dict], decision_summary: dict, fetch_
     decision_summary.setdefault("professional_bridge", {})
     decision_summary["professional_bridge"].update({
         "primary_area": night_summary.get("primary_area"),
-        "refined_area": night_summary.get("refined_area"),
+        "focus_area": night_summary.get("focus_area"),
         "top_pick": night_summary.get("top_pick"),
         "practical_best_pick": practical_best_pick,
         "recommended_action": recommended_action,
@@ -587,21 +579,22 @@ def _coarse_screen_points(args, points: List[SamplePoint], target_dt: datetime, 
     }
 
 
+def _national_target_final_count(args) -> int:
+    configured = getattr(args, 'national_target_final_count', None)
+    if configured:
+        return max(34, int(configured))
+    return 200
+
+
+
 def _prepare_stage2_candidates(args, boxes: List[BoundingBox], province_polygons, prefecture_polygons, target_dt: datetime) -> dict:
     all_points: List[SamplePoint] = []
     generated_count_before_filter = 0
     scope_mode = build_scope_meta(boxes).get('scope_mode')
     national_uniform_mode = len({b.province for b in boxes}) >= 34
-    progress_log("prepare_stage2_candidates:start", scope_mode=scope_mode, national_uniform_mode=national_uniform_mode, real_weather=bool(args.real_weather), target_datetime=target_dt.isoformat())
     if national_uniform_mode:
         generated_count_before_filter = len(boxes) * args.target_count
-        all_points = generate_national_uniform_points(
-            boxes,
-            generated_count_before_filter,
-            province_polygons,
-            prefecture_polygons,
-            target_final_count=200,
-        )
+        all_points = generate_national_uniform_points(boxes, generated_count_before_filter, province_polygons, prefecture_polygons, target_final_count=_national_target_final_count(args))
     else:
         for box in boxes:
             pts = generate_grid_points(box, args.target_count)
@@ -609,67 +602,32 @@ def _prepare_stage2_candidates(args, boxes: List[BoundingBox], province_polygons
             pts = filter_points_by_polygon(pts, province_polygons, prefecture_polygons)
             all_points.extend(pts)
 
-    # Coarse screening is intentionally single-model (GFS only) to cut national API load.
-    # Stage2 / final comparison still uses args.compare_models as before.
-    coarse_models = ["gfs_global"]
-    progress_log("prepare_stage2_candidates:generated_points", scope_mode=scope_mode, generated_count_before_filter=generated_count_before_filter, filtered_point_count=len(all_points), coarse_models=coarse_models)
-    coarse_bundle = _coarse_screen_points(args, all_points, target_dt, coarse_models=coarse_models, scope_mode=scope_mode, icon_model=args.auto_third_model)
-    coarse_pass = coarse_bundle["coarse_pass"]
-    progress_log("prepare_stage2_candidates:coarse_done", coarse_pass_count=len(coarse_pass), fetch_health=coarse_bundle.get("fetch_health"))
+    hydrate_weather(all_points, real_weather=args.real_weather, target_dt=target_dt, timezone=args.timezone, mode=args.mode, max_workers=args.max_workers, model="ecmwf_ifs", scope_mode=scope_mode)
+    coarse_pass = coarse_filter(all_points, args.mode)
 
     adaptive_points = generate_adaptive_refinement_points(coarse_pass, boxes)
-    adaptive_bundle = None
     if adaptive_points:
-        progress_log("prepare_stage2_candidates:adaptive_start", adaptive_candidate_count=len(adaptive_points))
-        adaptive_bundle = _coarse_screen_points(args, adaptive_points, target_dt, coarse_models=coarse_models, scope_mode=scope_mode, icon_model=args.auto_third_model)
-        adaptive_points = adaptive_bundle["coarse_pass"]
+        hydrate_weather(adaptive_points, real_weather=args.real_weather, target_dt=target_dt, timezone=args.timezone, mode=args.mode, max_workers=args.max_workers, model="ecmwf_ifs", scope_mode=scope_mode)
+        adaptive_points = coarse_filter(adaptive_points, args.mode)
         coarse_pass = coarse_pass + adaptive_points
-        progress_log("prepare_stage2_candidates:adaptive_done", adaptive_pass_count=len(adaptive_points), combined_coarse_pass_count=len(coarse_pass), fetch_health=adaptive_bundle.get("fetch_health"))
 
     stage2_seed = select_stage2_budget(
         coarse_pass,
         max_stage2_points=args.max_stage2_points,
         direct_stage2_threshold=args.direct_stage2_threshold,
     )
-    combined_fetch_rows = [coarse_bundle.get("fetch_health")]
-    if adaptive_bundle:
-        combined_fetch_rows.append(adaptive_bundle.get("fetch_health"))
-    total_points = sum((row or {}).get("total_points", 0) for row in combined_fetch_rows)
-    successful_points = sum((row or {}).get("successful_points", 0) for row in combined_fetch_rows)
-    failed_points = sum((row or {}).get("failed_points", 0) for row in combined_fetch_rows)
-    retried_points = sum((row or {}).get("retried_points", 0) for row in combined_fetch_rows)
-    recovered_points = sum((row or {}).get("recovered_points", 0) for row in combined_fetch_rows)
-    failed_ratio = (failed_points / total_points) if total_points else 0.0
-    error_breakdown: Dict[str, int] = {}
-    for row in combined_fetch_rows:
-        for key, value in ((row or {}).get("error_breakdown") or {}).items():
-            error_breakdown[key] = error_breakdown.get(key, 0) + value
-    progress_log("prepare_stage2_candidates:done", stage2_seed_count=len(stage2_seed), combined_fetch_health={
-        "status": "degraded" if failed_ratio >= 0.35 else ("partial" if failed_ratio > 0 else "ok"),
-        "total_points": total_points,
-        "failed_points": failed_points,
-        "failed_ratio": round(failed_ratio, 3),
-    })
+    fetch_points = list(all_points) + list(adaptive_points)
+    fetch_health = summarize_fetch_health(fetch_points)
     return {
         "generated_count_before_filter": generated_count_before_filter,
         "all_points": all_points,
         "coarse_pass": coarse_pass,
         "adaptive_points": adaptive_points,
         "stage2_seed": stage2_seed,
-        "coarse_model": "+".join(coarse_models),
-        "coarse_models": coarse_models,
-        "coarse_third_model_recheck": coarse_bundle.get("third_model_recheck"),
-        "coarse_fetch_health": {
-            "status": "degraded" if failed_ratio >= 0.35 else ("partial" if failed_ratio > 0 else "ok"),
-            "total_points": total_points,
-            "successful_points": successful_points,
-            "failed_points": failed_points,
-            "failed_ratio": round(failed_ratio, 3),
-            "retried_points": retried_points,
-            "recovered_points": recovered_points,
-            "error_breakdown": error_breakdown,
-            "user_note": None,
-        },
+        "coarse_model": "ecmwf_ifs",
+        "coarse_models": ["ecmwf_ifs"],
+        "coarse_third_model_recheck": None,
+        "coarse_fetch_health": fetch_health,
     }
 
 
@@ -677,7 +635,6 @@ def _run_stage2_model_pipeline(args, stage2_seed: List[SamplePoint], boxes: List
     started_at = time.perf_counter()
     scope_mode = build_scope_meta(boxes).get('scope_mode')
     model_stage2_points = _clone_points(stage2_seed)
-    progress_log("stage2_model:start", model=model, scope_mode=scope_mode, point_count=len(model_stage2_points))
     hydrate_weather(model_stage2_points, real_weather=args.real_weather, target_dt=target_dt, timezone=args.timezone, mode=args.mode, max_workers=args.max_workers, model=model, scope_mode=scope_mode)
     for p in model_stage2_points:
         compute_final_score(p, args.mode)
@@ -695,7 +652,6 @@ def _run_stage2_model_pipeline(args, stage2_seed: List[SamplePoint], boxes: List
         region["human_view"] = build_region_human_view(region)
     top_region_advice = labels[0].get("brief_advice") if labels else None
     fetch_health = summarize_fetch_health(model_stage2_points)
-    progress_log("stage2_model:weather_done", model=model, fetch_health=fetch_health)
     moon_advisory = None
     lp_note = None
     if labels:
@@ -760,7 +716,6 @@ def _run_stage2_model_pipeline(args, stage2_seed: List[SamplePoint], boxes: List
         "deduped_survivors": [asdict(p) for p in deduped],
         "region_labels": labels,
     }
-    progress_log("stage2_model:done", model=model, elapsed_seconds=round(elapsed_ms / 1000.0, 2), label_count=len(labels), fetch_health=fetch_health)
     return {
         **user_output,
         **debug_output,
@@ -905,27 +860,13 @@ def build_decision_summary(labels: List[dict], confidence: Optional[str] = None,
             summary["next_step_note"] = f"如果你要继续细筛，我可以在 {primary_region} 这一带进一步收窄到更偏哪一侧、哪几个落点更值得优先守候。"
         else:
             summary["next_step_note"] = f"如果你要继续细筛，我可以接着把 {primary_region} 这一带再收窄到更具体的区域和守候时段。"
-    if joint and joint.get("top_joint_advice"):
-        summary["joint_note"] = joint.get("top_joint_advice")
-    joint_summary = (joint or {}).get("summary") or {}
-    if joint_summary.get("stability_note"):
-        summary["model_stability_level"] = joint_summary.get("stability_level")
-        summary["model_stability_note"] = joint_summary.get("stability_note")
-    if third_model_recheck and third_model_recheck.get("enabled"):
-        if third_model_recheck.get("triggered"):
-            summary["third_model_note"] = f"已触发 {third_model_recheck.get('requested_model')} 复核"
-        else:
-            summary["third_model_note"] = f"未触发 {third_model_recheck.get('requested_model')} 复核"
 
     primary_region = summary.get("primary_region")
     primary_advice = summary.get("primary_advice")
     confidence_note = summary.get("confidence_note")
     risk_note = summary.get("risk_note")
-    joint_note = summary.get("joint_note")
-    third_note = summary.get("third_model_note")
     refinement_note = summary.get("refinement_note")
     backup_regions = summary.get("backup_regions") or []
-    model_stability_note = summary.get("model_stability_note")
     reference_note = summary.get("reference_note")
     next_step_note = summary.get("next_step_note")
     backup_photo_note = summary.get("backup_photo_note")
@@ -951,10 +892,6 @@ def build_decision_summary(labels: List[dict], confidence: Optional[str] = None,
         reply_lines.append(f"备选：{ '、'.join(backup_regions) }")
     if backup_photo_note:
         reply_lines.append(backup_photo_note)
-    if joint_note and joint_note != primary_advice:
-        reply_lines.append(f"联合判断：{joint_note}")
-    if model_stability_note:
-        reply_lines.append(f"模型情况：{model_stability_note}")
     if risk_note:
         reply_lines.append(f"风险：{risk_note}")
     if refinement_note:
@@ -973,8 +910,6 @@ def build_decision_summary(labels: List[dict], confidence: Optional[str] = None,
     if ranked_candidate_lines:
         reply_lines.append("当晚前 10 候选（含分数）：")
         reply_lines.extend(ranked_candidate_lines)
-    if third_note:
-        reply_lines.append(f"复核：{third_note}")
     if reference_note:
         reply_lines.append(reference_note)
     if next_step_note:
@@ -1016,8 +951,6 @@ def build_decision_summary(labels: List[dict], confidence: Optional[str] = None,
         standard_parts.append(f"结论：{primary_advice}")
     elif not primary_region:
         standard_parts.append("结论：这轮没有筛出明确值得优先推荐的区域。")
-    if joint_note and joint_note != primary_advice:
-        standard_parts.append(f"联合判断：{joint_note}")
     if backup_photo_note:
         standard_parts.append(backup_photo_note)
     if refinement_note:
@@ -1036,8 +969,6 @@ def build_decision_summary(labels: List[dict], confidence: Optional[str] = None,
     if ranked_candidate_lines:
         standard_parts.append("当晚前 10 候选（含分数）：")
         standard_parts.extend(ranked_candidate_lines)
-    if model_stability_note:
-        standard_parts.append(f"模型情况：{model_stability_note}")
     if reference_note:
         standard_parts.append(reference_note)
     if next_step_note:
@@ -1066,23 +997,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--polygons-json", help="Polygon JSON")
     p.add_argument("--polygons-file", help="Polygon file")
     p.add_argument("--max-workers", type=int, default=4, help="Max workers")
+    p.add_argument("--national-target-final-count", type=int, default=0, help="Cap national sampling points after polygon filtering and compensation (0 = auto)")
     p.add_argument("--max-stage2-points", type=int, default=12, help="Stage2 budget")
     p.add_argument("--direct-stage2-threshold", type=int, default=10, help="Direct stage2 threshold")
     p.add_argument("--top-n", type=int, default=10, help="Max output regions")
-    p.add_argument("--compare-models", nargs="+", choices=["gfs_global", "gfs_seamless", "icon_global", "ecmwf_ifs"], default=["gfs_global", "ecmwf_ifs"], help="Run multiple models (default: gfs_global + ecmwf_ifs)")
-    p.add_argument("--auto-third-model", choices=["icon_global"], default="icon_global", help="Auto-run third model (default: icon_global)")
     p.add_argument("--strict-national-scope", action="store_true", help="Fail if national scope looks partial")
     p.add_argument("--output-format", choices=["full"], default="full", help="Output full payload JSON")
     p.add_argument("--pretty", action="store_true")
     return p
 
 def check_date_availability(target_dt: datetime) -> Tuple[bool, Optional[datetime]]:
-    # Availability is date-based, so compare dates instead of mixing aware/naive datetimes.
-    today = datetime.now().date()
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     latest = today + timedelta(days=OPEN_METEO_HOURLY_WINDOW_DAYS)
-    required_end = target_dt.date() + timedelta(days=1)
+    required_end = target_dt + timedelta(days=1)
     is_available = required_end <= latest
-    return is_available, datetime.combine(latest, datetime.min.time())
+    return is_available, latest
 
 def _region_score(region: Optional[dict]) -> float:
     if not region:
@@ -1114,7 +1043,6 @@ def _multi_day_standard_reply(day_payloads: List[dict]) -> str:
         backups = [x for x in (ds.get("backup_regions") or []) if x]
         risk_note = ds.get("risk_note")
         confidence_note = ds.get("confidence_note")
-        model_note = ds.get("model_stability_note")
         refinement_note = ds.get("refinement_note")
         reference_info = ds.get("reference_info") or {}
         short_reference = reference_info.get("short_note")
@@ -1130,9 +1058,7 @@ def _multi_day_standard_reply(day_payloads: List[dict]) -> str:
             parts.append(f"备选可看 {'、'.join(backups)}")
         if risk_note:
             parts.append(f"{risk_note.rstrip('。')}，建议结合临近预报再判断")
-        if model_note:
-            parts.append(model_note.rstrip("。"))
-        elif confidence_note:
+        if confidence_note:
             parts.append(confidence_note.rstrip("。"))
         if short_reference:
             parts.append(short_reference.rstrip("。"))
@@ -1142,177 +1068,25 @@ def _multi_day_standard_reply(day_payloads: List[dict]) -> str:
     return "\n".join(lines)
 
 def build_daily_payload(args, boxes: List[BoundingBox], province_polygons, prefecture_polygons, county_polygons, target_dt: datetime, confidence: str) -> dict:
-    if args.compare_models:
-        compare_started = time.perf_counter()
-        progress_log("daily_payload:start", target_datetime=target_dt.isoformat(), compare_models=args.compare_models, auto_third_model=args.auto_third_model, real_weather=bool(args.real_weather))
-        scope_meta = build_scope_meta(boxes)
-        coarse_bundle = _prepare_stage2_candidates(args, boxes, province_polygons, prefecture_polygons, target_dt)
-        comparison = {
-            "comparison_target_datetime": target_dt.isoformat(),
-            "target_datetime": target_dt.isoformat(),
-            "forecast_confidence": confidence,
-            "scope_mode": scope_meta["scope_mode"],
-            "scope_coverage": scope_meta["scope_coverage"],
-            "scope_reduction_reason": scope_meta["scope_reduction_reason"],
-            "scope_guardrail": scope_meta["scope_guardrail"],
-            "compare_models": args.compare_models,
-            "coarse_model": coarse_bundle["coarse_model"],
-            "coarse_models": coarse_bundle.get("coarse_models") or args.compare_models,
-            "coarse_stage2_seed_count": len(coarse_bundle["stage2_seed"]),
-            "coarse_third_model_recheck": coarse_bundle.get("coarse_third_model_recheck"),
-            "model_results": {},
-            "fetch_health": None,
-        }
-        model_jobs = {}
-        model_parallelism = max(1, min(len(args.compare_models), 3 if scope_meta['scope_mode'] == 'national' else 1))
-        progress_log("daily_payload:stage2_dispatch", model_parallelism=model_parallelism, stage2_seed_count=len(coarse_bundle["stage2_seed"]))
-        with ThreadPoolExecutor(max_workers=model_parallelism) as executor:
-            for model_name in args.compare_models:
-                model_jobs[executor.submit(
-                    _run_stage2_model_pipeline,
-                    args,
-                    coarse_bundle["stage2_seed"],
-                    boxes,
-                    prefecture_polygons,
-                    county_polygons,
-                    target_dt,
-                    confidence,
-                    coarse_bundle["generated_count_before_filter"],
-                    coarse_bundle["coarse_pass"],
-                    coarse_bundle["all_points"],
-                    coarse_bundle["adaptive_points"],
-                    province_polygons,
-                    model_name,
-                )] = model_name
-            for future in as_completed(model_jobs):
-                model_name = model_jobs[future]
-                comparison["model_results"][model_name] = future.result()
-                progress_log("daily_payload:stage2_model_collected", model=model_name, timing=comparison["model_results"][model_name].get("timing"), fetch_health=comparison["model_results"][model_name].get("fetch_health"))
-        comparison["model_results"] = {k: comparison["model_results"][k] for k in args.compare_models if k in comparison["model_results"]}
-        comparison["joint_judgement"] = build_joint_judgement(comparison["model_results"], confidence=confidence)
-
-        if args.auto_third_model and args.auto_third_model not in comparison["model_results"]:
-            summary = comparison["joint_judgement"].get("summary", {})
-            should_rerun = summary.get("disputed_count", 0) > 0 or summary.get("single_model_count", 0) > 0
-            comparison["third_model_recheck"] = {
-                "enabled": True,
-                "requested_model": args.auto_third_model,
-                "triggered": should_rerun,
-                "reason": "initial_dual_model_disputed_or_single_model_heavy" if should_rerun else "initial_dual_model_already_stable",
-            }
-            if should_rerun:
-                comparison["model_results"][args.auto_third_model] = run_pipeline(
-                    args, boxes, province_polygons, prefecture_polygons, county_polygons, target_dt, confidence, model=args.auto_third_model
-                )
-                comparison["joint_judgement"] = build_joint_judgement(comparison["model_results"], confidence=confidence)
-                comparison["compare_models"] = list(comparison["model_results"].keys())
-
-        fetch_rows = []
-        if coarse_bundle.get("coarse_fetch_health"):
-            fetch_rows.append(coarse_bundle.get("coarse_fetch_health"))
-        fetch_rows.extend([v.get("fetch_health") for v in comparison["model_results"].values() if v.get("fetch_health")])
-        if fetch_rows:
-            total_points = sum(x.get("total_points", 0) for x in fetch_rows)
-            successful_points = sum(x.get("successful_points", 0) for x in fetch_rows)
-            failed_points = sum(x.get("failed_points", 0) for x in fetch_rows)
-            retried_points = sum(x.get("retried_points", 0) for x in fetch_rows)
-            recovered_points = sum(x.get("recovered_points", 0) for x in fetch_rows)
-            failed_ratio = (failed_points / total_points) if total_points else 0.0
-            error_breakdown: Dict[str, int] = {}
-            for row in fetch_rows:
-                for key, value in (row.get("error_breakdown") or {}).items():
-                    error_breakdown[key] = error_breakdown.get(key, 0) + value
-            user_note = None
-            if failed_ratio > 0:
-                user_note = "本轮有部分模型查询出现抓取缺失，结论可参考，但更建议临近出发前再复查。"
-            elif recovered_points > 0:
-                user_note = "本轮有少量点位初次抓取失败，但已在重试后恢复。"
-            comparison["fetch_health"] = {
-                "status": "degraded" if failed_ratio >= 0.35 else ("partial" if failed_ratio > 0 else "ok"),
-                "total_points": total_points,
-                "successful_points": successful_points,
-                "failed_points": failed_points,
-                "failed_ratio": round(failed_ratio, 3),
-                "retried_points": retried_points,
-                "recovered_points": recovered_points,
-                "error_breakdown": error_breakdown,
-                "user_note": user_note,
-            }
-
-        first_model_key = next(iter(comparison["model_results"].keys())) if comparison["model_results"] else None
-        first_labels = comparison["model_results"].get(first_model_key, {}).get("region_labels", []) if first_model_key else []
-        if not first_labels:
-            first_labels = []
-            for row in comparison.get("joint_judgement", {}).get("consensus_regions", [])[:3]:
-                first_labels.append({
-                    "label": row.get("label"),
-                    "display_label": row.get("display_label") or row.get("label"),
-                    "display_label_role": "consensus",
-                    "brief_advice": row.get("joint_brief_advice"),
-                    "cloud_stability": None,
-                    "longest_usable_streak_hours": None,
-                    "refinement_note": row.get("refinement_note"),
-                })
-        comparison_lunar_advisory = None
-        comparison_lp_note = None
-        if first_labels:
-            moon_val = first_labels[0].get("moon_interference")
-            if moon_val is not None:
-                comparison_lunar_advisory = _moon_advisory(moon_val)
-            comparison_lp_note = first_labels[0].get("light_pollution_note")
-        comparison["region_labels"] = comparison.get("joint_judgement", {}).get("consensus_regions", []) or first_labels
-        comparison["decision_summary"] = build_decision_summary(
-            first_labels,
-            confidence=confidence,
-            joint=comparison.get("joint_judgement"),
-            third_model_recheck=comparison.get("third_model_recheck"),
-            moon_advisory=comparison_lunar_advisory,
-            light_pollution_note=comparison_lp_note,
-        )
-        comparison["decision_summary"] = _apply_fetch_failure_policy(comparison["decision_summary"], comparison.get("fetch_health"))
-        comparison["final_text_recommendation"] = comparison["decision_summary"].get("reply_drafts", {}).get("standard") or comparison["decision_summary"].get("final_reply_draft") or comparison["decision_summary"].get("one_line")
-        if comparison.get("fetch_health", {}).get("user_note") and not ((comparison.get("fetch_health", {}).get("error_breakdown") or {}).get("daily_limit_exceeded")):
-            note = comparison["fetch_health"]["user_note"]
-            comparison["decision_summary"]["data_quality_note"] = note
-            if comparison["decision_summary"].get("final_reply_draft"):
-                comparison["decision_summary"]["final_reply_draft"] += f"\n数据完整性：{note}"
-            if comparison["decision_summary"]["reply_drafts"].get("concise"):
-                clean_note = str(note).rstrip("。")
-                comparison["decision_summary"]["reply_drafts"]["concise"] = comparison["decision_summary"]["reply_drafts"]["concise"].rstrip("。") + f"；{clean_note}。"
-            if comparison["decision_summary"]["reply_drafts"].get("standard"):
-                comparison["decision_summary"]["reply_drafts"]["standard"] += f"\n数据完整性：{note}"
-            if comparison["decision_summary"].get("final_reply_draft"):
-                comparison["decision_summary"]["reply_drafts"]["detailed"] = comparison["decision_summary"]["final_reply_draft"]
-
-        total_ms = round((time.perf_counter() - compare_started) * 1000, 1)
-        progress_log("daily_payload:done", elapsed_seconds=round(total_ms / 1000.0, 2), fetch_health=comparison.get("fetch_health"), consensus_count=len(comparison.get("region_labels") or []))
-        comparison["timing"] = {
-            "elapsed_ms": total_ms,
-            "elapsed_seconds": round(total_ms / 1000.0, 2),
-            "per_model_seconds": {
-                k: v.get("timing", {}).get("elapsed_seconds") for k, v in comparison["model_results"].items()
-            },
-        }
-        return comparison
-
-    raise RuntimeError("single-model path removed; use dual-model default flow (gfs_global + ecmwf_ifs) with icon_global auto recheck")
+    return run_pipeline(
+        args,
+        boxes,
+        province_polygons,
+        prefecture_polygons,
+        county_polygons,
+        target_dt,
+        confidence,
+        model="ecmwf_ifs",
+    )
 
 def run_pipeline(args, boxes: List[BoundingBox], province_polygons, prefecture_polygons, county_polygons, target_dt: datetime, confidence: str, model: Optional[str] = None) -> dict:
     started_at = time.perf_counter()
     all_points: List[SamplePoint] = []
     generated_count_before_filter = 0
-    scope_meta = build_scope_meta(boxes)
     national_uniform_mode = len({b.province for b in boxes}) >= 34
-    progress_log("run_pipeline:start", model=model, scope_mode=scope_meta.get("scope_mode"), real_weather=bool(args.real_weather), target_datetime=target_dt.isoformat())
     if national_uniform_mode:
         generated_count_before_filter = len(boxes) * args.target_count
-        all_points = generate_national_uniform_points(
-            boxes,
-            generated_count_before_filter,
-            province_polygons,
-            prefecture_polygons,
-            target_final_count=200,
-        )
+        all_points = generate_national_uniform_points(boxes, generated_count_before_filter, province_polygons, prefecture_polygons, target_final_count=_national_target_final_count(args))
     else:
         for box in boxes:
             pts = generate_grid_points(box, args.target_count)
@@ -1320,31 +1094,28 @@ def run_pipeline(args, boxes: List[BoundingBox], province_polygons, prefecture_p
             pts = filter_points_by_polygon(pts, province_polygons, prefecture_polygons)
             all_points.extend(pts)
 
-    progress_log("run_pipeline:generated_points", model=model, generated_count_before_filter=generated_count_before_filter, filtered_point_count=len(all_points))
+    scope_meta = build_scope_meta(boxes)
     hydrate_weather(all_points, real_weather=args.real_weather, target_dt=target_dt, timezone=args.timezone, mode=args.mode, max_workers=args.max_workers, model=model, scope_mode=scope_meta['scope_mode'])
     coarse_pass = coarse_filter(all_points, args.mode)
-    progress_log("run_pipeline:coarse_done", model=model, coarse_pass_count=len(coarse_pass), fetch_health=summarize_fetch_health(all_points))
 
     adaptive_points = generate_adaptive_refinement_points(coarse_pass, boxes)
     if adaptive_points:
-        progress_log("run_pipeline:adaptive_start", model=model, adaptive_candidate_count=len(adaptive_points))
         hydrate_weather(adaptive_points, real_weather=args.real_weather, target_dt=target_dt, timezone=args.timezone, mode=args.mode, max_workers=args.max_workers, model=model, scope_mode=scope_meta['scope_mode'])
         adaptive_points = coarse_filter(adaptive_points, args.mode)
         coarse_pass = coarse_pass + adaptive_points
-        progress_log("run_pipeline:adaptive_done", model=model, adaptive_pass_count=len(adaptive_points), combined_coarse_pass_count=len(coarse_pass), fetch_health=summarize_fetch_health(adaptive_points))
 
     stage2_points = select_stage2_budget(
         coarse_pass,
         max_stage2_points=args.max_stage2_points,
         direct_stage2_threshold=args.direct_stage2_threshold,
     )
-    progress_log("run_pipeline:stage2_selected", model=model, stage2_point_count=len(stage2_points))
     for p in stage2_points:
         compute_final_score(p, args.mode)
     deduped = dedupe_cross_province(stage2_points, distance_km=args.dedupe_km, score_gap=args.cloud_gap)
     labels = aggregate_labels(deduped, boxes, top_n=args.top_n, cluster_km=args.cluster_km, target_date=target_dt.date(), prefecture_polygons=prefecture_polygons, county_polygons=county_polygons, confidence=confidence)
 
     elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    scope_meta = build_scope_meta(boxes)
     labels = apply_label_presentation(labels, scope_meta)
     labels = dedupe_display_labels(labels)
     labels.sort(key=lambda x: (-x["decision_rank_score"], -(x.get("final_score") or 0.0), x.get("display_label") or x["label"]))
@@ -1386,7 +1157,7 @@ def run_pipeline(args, boxes: List[BoundingBox], province_polygons, prefecture_p
     user_output = {
         "mode": args.mode,
         "target_datetime": target_dt.isoformat(),
-        "weather_model": model or "joint_dual_with_optional_icon",
+        "weather_model": model or "ecmwf_ifs",
         "forecast_confidence": confidence,
         "scope_mode": scope_meta["scope_mode"],
         "scope_coverage": scope_meta["scope_coverage"],
@@ -1418,7 +1189,6 @@ def run_pipeline(args, boxes: List[BoundingBox], province_polygons, prefecture_p
         "deduped_survivors": [asdict(p) for p in deduped],
         "region_labels": labels,
     }
-    progress_log("run_pipeline:done", model=model, elapsed_seconds=round(elapsed_ms / 1000.0, 2), label_count=len(labels), fetch_health=fetch_health)
     return {
         **user_output,
         **debug_output,
@@ -1579,7 +1349,6 @@ def main() -> None:
                         "night_avg_cloud_high": row.get("night_avg_cloud_high"),
                         "night_avg_dew_point": row.get("night_avg_dew_point_c"),
                         "night_max_precip": row.get("night_max_precip_mm") if row.get("night_max_precip_mm") is not None else row.get("night_max_precip"),
-                        "night_min_cloud_base": row.get("night_min_cloud_base_m") if row.get("night_min_cloud_base_m") is not None else row.get("night_min_cloud_base"),
                         "low_cloud_terrain_note": row.get("low_cloud_terrain_note"),
                         "moon_interference": row.get("moon_interference"),
                         "light_pollution_bortle": row.get("light_pollution_bortle"),

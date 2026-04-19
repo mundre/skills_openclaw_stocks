@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import socket
 import ssl
-import sys
 import threading
 import time
 import urllib.error
@@ -22,28 +21,14 @@ OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 OPEN_METEO_HOURLY_WINDOW_DAYS = 16
 
-# National scans need a shorter per-request timeout so one slow upstream request
-# doesn't make the whole run look hung for many minutes.
-_OPEN_METEO_TIMEOUT_SECONDS = {
-    "national": 12,
-    "point_check": 20,
-    "default": 18,
-}
-
 _MODEL_RATE_LIMIT_LOCK = threading.Lock()
 _MODEL_NEXT_ALLOWED_AT: Dict[str, float] = {}
-
-
-def weather_progress_log(stage: str, **fields) -> None:
-    print(json.dumps({"weather_stage": stage, **fields}, ensure_ascii=False), file=sys.stderr, flush=True)
+_SSL_CONTEXT: Optional[ssl.SSLContext] = None
 
 
 def _model_rate_limit_interval_s(model: Optional[str], scope_mode: Optional[str]) -> float:
-    model_key = model or "default"
     if scope_mode == "national":
-        # Temporarily disable national per-model pacing to verify whether
-        # artificial throttling is the main bottleneck.
-        return 0.0
+        return 0.35
     if scope_mode == "point_check":
         return 1.25
     return 0.9
@@ -131,14 +116,14 @@ def classify_fetch_error(exc: Exception) -> str:
         return f"http_{exc.code}"
     if isinstance(exc, urllib.error.URLError):
         reason = getattr(exc, "reason", None)
-        if isinstance(reason, ssl.SSLError):
+        if isinstance(reason, OSError) and "SSL" in reason.__class__.__name__.upper():
             return "ssl"
         if isinstance(reason, socket.timeout):
             return "timeout"
         return "url"
     if isinstance(exc, socket.timeout):
         return "timeout"
-    if isinstance(exc, ssl.SSLError):
+    if isinstance(exc, OSError) and "SSL" in exc.__class__.__name__.upper():
         return "ssl"
     if isinstance(exc, ValueError):
         return "parse"
@@ -146,12 +131,42 @@ def classify_fetch_error(exc: Exception) -> str:
 
 
 
-def _request_timeout_seconds(scope_mode: Optional[str]) -> float:
-    return _OPEN_METEO_TIMEOUT_SECONDS.get(scope_mode or "", _OPEN_METEO_TIMEOUT_SECONDS["default"])
+def _build_ssl_context() -> ssl.SSLContext:
+    global _SSL_CONTEXT
+    if _SSL_CONTEXT is not None:
+        return _SSL_CONTEXT
+    ctx = ssl.create_default_context()
+    try:
+        import certifi  # type: ignore
+        ctx.load_verify_locations(cafile=certifi.where())
+    except Exception:
+        pass
+    _SSL_CONTEXT = ctx
+    return ctx
 
 
-def _fetch_json_via_urllib(url: str, insecure: bool = False, timeout_s: Optional[float] = None) -> dict:
-    context = ssl._create_unverified_context() if insecure else None
+
+def _request_timeout_s(scope_mode: Optional[str]) -> float:
+    if scope_mode == "national":
+        return 12.0
+    if scope_mode == "point_check":
+        return 20.0
+    return 16.0
+
+
+
+def _retry_budget(scope_mode: Optional[str], explicit_max_retries: Optional[int]) -> int:
+    if explicit_max_retries is not None:
+        return max(0, explicit_max_retries)
+    if scope_mode == "national":
+        return 1
+    if scope_mode == "point_check":
+        return 2
+    return 2
+
+
+
+def _fetch_json_via_urllib(url: str, timeout_s: float) -> dict:
     req = urllib.request.Request(
         url,
         headers={
@@ -159,9 +174,8 @@ def _fetch_json_via_urllib(url: str, insecure: bool = False, timeout_s: Optional
             "Accept": "application/json",
         },
     )
-    timeout_s = timeout_s or _OPEN_METEO_TIMEOUT_SECONDS["default"]
     try:
-        with urllib.request.urlopen(req, timeout=timeout_s, context=context) as resp:
+        with urllib.request.urlopen(req, timeout=timeout_s, context=_build_ssl_context()) as resp:
             return _extract_first_json_object(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         body = ""
@@ -180,7 +194,7 @@ def _fetch_json_via_urllib(url: str, insecure: bool = False, timeout_s: Optional
 
 
 
-def fetch_openmeteo_payload(point: SamplePoint, target_dt: datetime, timezone: str, model: Optional[str] = None, max_retries: int = 3, retry_delay_s: float = 0.8, scope_mode: Optional[str] = None) -> dict:
+def fetch_openmeteo_payload(point: SamplePoint, target_dt: datetime, timezone: str, model: Optional[str] = None, max_retries: Optional[int] = None, retry_delay_s: float = 0.8, scope_mode: Optional[str] = None) -> dict:
     # Query target date + next date, so the night window can include next-morning hours.
     end_date = (target_dt.date() + timedelta(days=1)).isoformat()
     params = {
@@ -199,19 +213,14 @@ def fetch_openmeteo_payload(point: SamplePoint, target_dt: datetime, timezone: s
     url = OPEN_METEO_FORECAST_URL + "?" + urllib.parse.urlencode(params)
 
     last_exc: Optional[Exception] = None
-    effective_retries = max_retries
-    if scope_mode == "national":
-        # National scans are broad sweeps: fail fast instead of stalling the whole run.
-        effective_retries = min(max_retries, 1)
-    total_attempts = max(1, effective_retries + 1)
+    retry_budget = _retry_budget(scope_mode, max_retries)
+    total_attempts = max(1, retry_budget + 1)
+    timeout_s = _request_timeout_s(scope_mode)
     for attempt in range(total_attempts):
         point.fetch_attempts = attempt + 1
-        insecure = attempt > 0
         _apply_model_rate_limit(model, scope_mode)
         try:
-            payload = _fetch_json_via_urllib(url, insecure=insecure, timeout_s=_request_timeout_seconds(scope_mode))
-            if scope_mode == "national" and attempt > 0:
-                weather_progress_log("fetch_point:recovered", model=model, point_id=point.id, attempt=attempt + 1)
+            payload = _fetch_json_via_urllib(url, timeout_s=timeout_s)
             point.fetch_recovered = attempt > 0
             point.fetch_error_type = None
             point.fetch_error_message = None
@@ -220,8 +229,6 @@ def fetch_openmeteo_payload(point: SamplePoint, target_dt: datetime, timezone: s
             last_exc = exc
             point.fetch_error_type = classify_fetch_error(exc)
             point.fetch_error_message = str(exc)[:240]
-            if scope_mode == "national":
-                weather_progress_log("fetch_point:error", model=model, point_id=point.id, attempt=attempt + 1, error_type=point.fetch_error_type, message=point.fetch_error_message)
             if point.fetch_error_type == "daily_limit_exceeded":
                 _bump_model_cooldown(model, 12 * 3600)
                 raise last_exc
@@ -241,19 +248,12 @@ def hourly_index(payload: dict, target_dt: datetime) -> int:
     times = payload.get("hourly", {}).get("time", [])
     if not times:
         raise RuntimeError("No hourly timeline")
-
-    # Open-Meteo returns local wall-clock times for the requested timezone.
-    # When caller passes an aware datetime (e.g. +08:00), normalize to the same
-    # wall-clock naive representation before matching/comparing.
-    target_hour = target_dt.replace(minute=0, second=0, microsecond=0)
-    if target_hour.tzinfo is not None:
-        target_hour = target_hour.replace(tzinfo=None)
-
-    target_key = target_hour.isoformat(timespec="minutes")
+    target_key = target_dt.replace(minute=0, second=0, microsecond=0).isoformat(timespec="minutes")
     try:
         return times.index(target_key)
     except ValueError:
         parsed = [datetime.fromisoformat(t) for t in times]
+        target_hour = target_dt.replace(minute=0, second=0, microsecond=0)
         return min(range(len(parsed)), key=lambda i: abs((parsed[i] - target_hour).total_seconds()))
 
 
@@ -312,7 +312,7 @@ def hydrate_mock_weather(points: List[SamplePoint], target_dt: datetime, mode: s
 def fetch_point_weather(point: SamplePoint, target_dt: datetime, timezone: str, mode: str, model: Optional[str] = None, scope_mode: Optional[str] = None) -> SamplePoint:
     """Fetch weather for a point, compute single-hour snapshot + nightly aggregation."""
     payload = fetch_openmeteo_payload(point, target_dt, timezone, model=model, scope_mode=scope_mode)
-    point.weather_model = model or "joint_dual_with_optional_icon"
+    point.weather_model = model or "ecmwf_ifs"
     hourly = payload.get("hourly", {})
     times = hourly.get("time", [])
 
@@ -333,7 +333,6 @@ def fetch_point_weather(point: SamplePoint, target_dt: datetime, timezone: str, 
         night_temp, night_gust = [], []
         night_cloud_low, night_cloud_mid, night_cloud_high = [], [], []
         night_dew, night_precip = [], []
-        night_cloud_base = []
         night_weather_codes = []
         night_moon_scores = []
         usable_flags = []
@@ -362,7 +361,6 @@ def fetch_point_weather(point: SamplePoint, target_dt: datetime, timezone: str, 
             high = hourly.get("cloud_cover_high", [None])[i] if hourly.get("cloud_cover_high") else None
             dew = hourly.get("dew_point_2m", [None])[i] if hourly.get("dew_point_2m") else None
             precip = hourly.get("precipitation", [None])[i] if hourly.get("precipitation") else None
-            cb = hourly.get("cloud_base_height", [None])[i] if hourly.get("cloud_base_height") else None
             wcode = hourly.get("weather_code", [None])[i] if hourly.get("weather_code") else None
             night_times.append(t.isoformat(timespec="minutes"))
             night_rel_hours.append(rel_hour)
@@ -388,8 +386,6 @@ def fetch_point_weather(point: SamplePoint, target_dt: datetime, timezone: str, 
                 night_dew.append(dew)
             if precip is not None:
                 night_precip.append(precip)
-            if cb is not None:
-                night_cloud_base.append(cb)
             if wcode is not None:
                 night_weather_codes.append(wcode)
             # Moon interference at this hour
@@ -413,7 +409,6 @@ def fetch_point_weather(point: SamplePoint, target_dt: datetime, timezone: str, 
             point.night_avg_cloud_high = round(sum(night_cloud_high) / len(night_cloud_high), 1) if night_cloud_high else None
             point.night_avg_dew_point = round(sum(night_dew) / len(night_dew), 1) if night_dew else None
             point.night_max_precip = max(night_precip) if night_precip else None
-            point.night_min_cloud_base = min(night_cloud_base) if night_cloud_base else None
             point.night_weather_codes = night_weather_codes
             point.moon_interference = sum(night_moon_scores) / len(night_moon_scores) if night_moon_scores else 100.0
             point.usable_hours = float(sum(1 for x in usable_flags if x))
@@ -475,7 +470,7 @@ def fetch_point_weather(point: SamplePoint, target_dt: datetime, timezone: str, 
 
 
 def _mark_fetch_failure(point: SamplePoint, model: Optional[str], exc: Exception) -> None:
-    point.weather_model = model or "joint_dual_with_optional_icon"
+    point.weather_model = model or "ecmwf_ifs"
     point.weather_source = "fetch_error"
     point.fetch_error_type = classify_fetch_error(exc)
     point.fetch_error_message = str(exc)[:240]
@@ -546,67 +541,32 @@ def hydrate_real_weather(points: List[SamplePoint], target_dt: datetime, timezon
         retry_workers = 1
     failed_points: List[SamplePoint] = []
 
-    if scope_mode == "national":
-        weather_progress_log("hydrate:start", model=model, point_count=len(points), primary_workers=primary_workers, retry_workers=retry_workers)
-
-    completed = 0
-    total = len(points)
     with ThreadPoolExecutor(max_workers=primary_workers) as ex:
         future_map = {ex.submit(fetch_point_weather, p, target_dt, timezone, mode, model, scope_mode): p for p in points}
         for fut in as_completed(future_map):
             original = future_map[fut]
-            completed += 1
             try:
                 updated = fut.result()
             except Exception as exc:
                 failed_points.append(original)
                 _mark_fetch_failure(original, model, exc)
-            else:
-                _copy_fetch_result(original, updated)
-
-            if scope_mode == "national" and (completed == total or completed % 25 == 0):
-                error_breakdown: Dict[str, int] = {}
-                for p in failed_points:
-                    key = p.fetch_error_type or "unknown"
-                    error_breakdown[key] = error_breakdown.get(key, 0) + 1
-                weather_progress_log("hydrate:progress", model=model, completed=completed, total=total, failed=len(failed_points), error_breakdown=error_breakdown)
+                continue
+            _copy_fetch_result(original, updated)
 
     if not failed_points:
-        if scope_mode == "national":
-            weather_progress_log("hydrate:done", model=model, total=total, failed=0, retried=0)
         return
 
-    retry_error_types = [p.fetch_error_type for p in failed_points]
-    retry_wait = 2.0 if any((p.fetch_error_type == 'http_429') for p in failed_points) else 0.8
-    if scope_mode == "national":
-        weather_progress_log("hydrate:retry_start", model=model, retry_count=len(failed_points), retry_wait_seconds=retry_wait, retry_error_types=retry_error_types)
-
-    time.sleep(retry_wait)
-    retry_failed_points: List[SamplePoint] = []
-    retry_completed = 0
-    retry_total = len(failed_points)
+    time.sleep(2.0 if any((p.fetch_error_type == 'http_429') for p in failed_points) else 0.8)
     with ThreadPoolExecutor(max_workers=retry_workers) as ex:
         future_map = {ex.submit(fetch_point_weather, p, target_dt, timezone, mode, model, scope_mode): p for p in failed_points}
         for fut in as_completed(future_map):
             original = future_map[fut]
-            retry_completed += 1
             try:
                 updated = fut.result()
             except Exception as exc:
                 _mark_fetch_failure(original, model, exc)
-                retry_failed_points.append(original)
-            else:
-                _copy_fetch_result(original, updated)
-
-            if scope_mode == "national" and (retry_completed == retry_total or retry_completed % 10 == 0):
-                error_breakdown: Dict[str, int] = {}
-                for p in retry_failed_points:
-                    key = p.fetch_error_type or "unknown"
-                    error_breakdown[key] = error_breakdown.get(key, 0) + 1
-                weather_progress_log("hydrate:retry_progress", model=model, completed=retry_completed, total=retry_total, still_failed=len(retry_failed_points), error_breakdown=error_breakdown)
-
-    if scope_mode == "national":
-        weather_progress_log("hydrate:done", model=model, total=total, failed=len(retry_failed_points), retried=retry_total)
+                continue
+            _copy_fetch_result(original, updated)
 
 
 
@@ -615,5 +575,3 @@ def hydrate_weather(points: List[SamplePoint], real_weather: bool, target_dt: da
         hydrate_real_weather(points, target_dt, timezone, mode, max_workers=max_workers, model=model, scope_mode=scope_mode)
     else:
         hydrate_mock_weather(points, target_dt, mode)
-
-

@@ -7,7 +7,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
-from .models import BoundingBox, MultiPolygon, SamplePoint
+from .models import BoundingBox, MultiPolygon, NATIONAL_SCOPE_BOXES, SamplePoint
 
 BoundaryGeometry = Union[MultiPolygon, Tuple[float, float, float, float]]
 
@@ -158,9 +158,12 @@ def build_national_scope_boxes_from_provinces(province_polygons: Dict[str, Bound
 
 def load_scope_preset(name: str, province_polygons: Optional[Dict[str, BoundaryGeometry]] = None) -> List[BoundingBox]:
     if name == "national":
-        if not province_polygons:
-            raise ValueError("national scope preset now requires province polygons")
-        return build_national_scope_boxes_from_provinces(province_polygons)
+        if province_polygons:
+            return build_national_scope_boxes_from_provinces(province_polygons)
+        return [
+            BoundingBox(name=row.get("name") or row["province"], province=row["province"], min_lat=float(row["min_lat"]), max_lat=float(row["max_lat"]), min_lng=float(row["min_lng"]), max_lng=float(row["max_lng"]))
+            for row in NATIONAL_SCOPE_BOXES
+        ]
     raise ValueError(f"Unknown scope preset: {name}")
 
 
@@ -465,6 +468,41 @@ def fill_sampling_holes(
 
 
 
+def _hard_cap_national_points(points: List[SamplePoint], target_final_count: Optional[int]) -> List[SamplePoint]:
+    if not target_final_count or len(points) <= target_final_count:
+        return points
+    by_province: Dict[str, List[SamplePoint]] = {}
+    for p in points:
+        by_province.setdefault(p.province, []).append(p)
+    kept: List[SamplePoint] = []
+    seen_keys = set()
+    for province in CHINA_PROVINCIAL_LEVEL_REGIONS:
+        rows = by_province.get(province) or []
+        if not rows:
+            continue
+        pick = rows[0]
+        key = (pick.province, pick.lat, pick.lng)
+        if key in seen_keys:
+            continue
+        kept.append(pick)
+        seen_keys.add(key)
+        if len(kept) >= target_final_count:
+            return kept
+    remaining = []
+    for p in points:
+        key = (p.province, p.lat, p.lng)
+        if key in seen_keys:
+            continue
+        remaining.append(p)
+    remaining.sort(key=lambda p: (p.province, p.id))
+    for p in remaining:
+        kept.append(p)
+        if len(kept) >= target_final_count:
+            break
+    return kept
+
+
+
 def generate_national_uniform_points(
     boxes: List[BoundingBox],
     total_count: int,
@@ -540,8 +578,12 @@ def generate_national_uniform_points(
     box_by_province = {b.province: b for b in boxes}
     existing_keys = {(p.province, p.lat, p.lng) for p in points}
     floor_idx = 1
+    dynamic_min_points = None
+    if target_final_count:
+        dynamic_min_points = max(1, target_final_count // max(1, len(CHINA_PROVINCIAL_LEVEL_REGIONS)))
     for province in CHINA_PROVINCIAL_LEVEL_REGIONS:
-        region_min_points = 1 if province in {"香港", "澳门"} else min_points_per_region
+        base_region_min_points = 1 if province in {"香港", "澳门"} else min_points_per_region
+        region_min_points = min(base_region_min_points, dynamic_min_points) if dynamic_min_points else base_region_min_points
         need = max(0, region_min_points - counts.get(province, 0))
         if need <= 0:
             continue
@@ -613,8 +655,9 @@ def generate_national_uniform_points(
                 ))
                 break
     points = add_representative_compensation(points, boxes, province_polygons, prefecture_polygons)
-    if target_final_count:
+    if target_final_count and len(points) < target_final_count:
         points = fill_sampling_holes(points, boxes, target_final_count, province_polygons, prefecture_polygons)
+    points = _hard_cap_national_points(points, target_final_count)
     return points
 
 
