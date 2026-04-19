@@ -1,60 +1,45 @@
 ---
-name: honda
-description: "Honda vehicles, motorcycles, power equipment. Civic, CR-V, Accord specs, pricing, and reliability ratings."
-metadata:
-  { "openclaw": { "emoji": "🏍️", "version": "0.1.0", "author": "hanxueyuan", "tags": ["automotive","honda","japanese-cars"] } }
+summary: "本田 Honda——全球最大发动机制造商、摩托车和汽车双冠王"
+read_when:
+  - 查询本田 · Honda相关信息
+  - 了解相关行业发展
 ---
 
-# Honda
+# 本田 · Honda
 
-Your guide to Honda — Japan's engineering powerhouse in automobiles, motorcycles, and power equipment.
+---
 
-## Automobiles
+## 发展历程
 
-### Sedans
-- **Civic** — Compact car benchmark (sedan, hatchback, Si, Type R)
-- **Accord** — Midsize sedan (hybrid standard since 2024)
-- **Civic Type R** — Hot hatch icon, 315hp turbo
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1948 年** | 本田宗一郎在静冈创立 |
+| **1960s** | 进入摩托车和汽车市场 |
+| **1970s** | CVCC 发动机通过美国排放标准 |
+| **2020s** | 向电动车和机器人（ASIMO 后继者）转型 |
 
-### SUVs & Crossovers
-- **CR-V** — Best-selling compact SUV (hybrid available)
-- **HR-V** — Subcompact crossover
-- **Pilot** — 3-row family SUV
-- **Passport** — Adventure-oriented midsize SUV
-- **Prologue** — First electric SUV (Ultium platform)
+---
 
-### Trucks & Vans
-- **Ridgeline** — Unibody midsize pickup
-- **Odyssey** — Minivan
+## 核心特点
 
-## Motorcycles
-- **CBR** series — Sport bikes (CBR600RR, CBR1000RR-R Fireblade)
-- **Gold Wing** — Touring flagship
-- **Africa Twin** — Adventure motorcycle
-- **Rebel** — Cruiser (300, 500, 1100)
-- **Grom** — Mini bike phenomenon
-- **CRF** series — Dirt bikes and dual-sport
+汽车 + 摩托车 + 动力产品（发动机/发电机）
 
-## Power Equipment
-- Lawn mowers, generators, outboard motors, tillers
+## 核心优势
 
-## Company Facts
-- **Stock**: HMC (NYSE), 7267.T (Tokyo)
-- **Headquarters**: Minato, Tokyo, Japan
-- **Founded**: 1948 by Soichiro Honda
-- **Revenue**: ~$130 billion
-- **Known For**: VTEC engines, reliability, Honda Racing (F1 power units)
+全球最大发动机制造商（年产超过 1400 万台）+ 摩托车全球第一
 
-## What You Can Ask
-- "Honda Civic Type R specs"
-- "CR-V hybrid fuel economy"
-- "Honda reliability ratings"
-- "Honda motorcycle lineup 2025"
-- "Honda vs Toyota comparison"
+---
 
-## Data Sources
-- Official: https://www.honda.com | https://powersports.honda.com
-- Honda Newsroom, J.D. Power, Consumer Reports
+## 关键数据
 
-## Author
-Created by hanxueyuan | License: MIT
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 17 万亿日元 |
+| 年汽车销量 | 约 400 万辆 |
+| 员工数 | 约 204000 人 |
+
+---
+
+## 值得了解
+
+本田是全球最大的发动机制造商——每年生产超过 1400 万台发动机
