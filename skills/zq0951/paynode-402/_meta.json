@@ -3,11 +3,16 @@
   "slug": "paynode-402",
   "displayName": "paynode-402",
   "latest": {
-    "version": "2.6.0",
-    "publishedAt": 1775137357459,
-    "commit": "https://github.com/openclaw/skills/commit/11b02c2cdf715cdc7adf041ae7975fa4388e00e2"
+    "version": "2.7.4",
+    "publishedAt": 1776613789023,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.6.0",
+      "publishedAt": 1775137357459,
+      "commit": "https://github.com/openclaw/skills/commit/11b02c2cdf715cdc7adf041ae7975fa4388e00e2"
+    },
     {
       "version": "2.4.0",
       "publishedAt": 1774970212655,
