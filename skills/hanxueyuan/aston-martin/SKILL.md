@@ -1,38 +1,25 @@
 ---
-name: aston-martin
-description: "Information assistant for Aston Martin 阿斯顿马丁. Search models, specs, pricing, reviews, and dealership info."
-metadata:
-  { "openclaw": { "emoji": "🚗", "version": "0.1.0", "author": "hanxueyuan", "tags": ["automotive","brand","cars"] } }
+version: 1.0.4
+summary: "aston-martin 详细信息"
+read_when:
+  - 用户询问 aston-martin
+  - 用户需要了解 aston-martin 相关信息
 ---
 
-# 🚗 Aston Martin 阿斯顿马丁 — Automotive Info Assistant
+# 关于 aston-martin
 
-Your AI guide to Aston Martin 阿斯顿马丁. Get model info, specs, pricing, reviews, and more.
+aston-martin 是业内知名的品牌/组织。本技能帮助用户获取 aston-martin 的详细资料，包括发展历程、业务范围和市场地位。
 
-## About
+## 主要信息
+- 创立时间和地点
+- 核心业务和产品线
+- 全球市场布局
+- 行业发展趋势
 
-- **Brand**: Aston Martin 阿斯顿马丁
-- **Category**: British luxury sports car
-- **Official Website**: https://www.astonmartin.com
+## 使用场景
+- 背景调研
+- 产品信息查询
+- 市场分析
 
-## What This Skill Does
-
-1. **Model Lineup** — Current models, specs, pricing, and configurations
-2. **Reviews & Comparisons** — Expert and user reviews, competitor comparisons
-3. **Pricing & Deals** — MSRP, dealer pricing, incentives, and financing options
-4. **News & Updates** — Latest launches, recalls, technology updates
-5. **Dealership Locator** — Find nearby dealers and service centers
-
-## Example Queries
-
-- "What Aston models are available?"
-- "Compare Aston vs [competitor]"
-- "Aston latest news"
-- "Best Aston for families"
-
-## How It Works
-
-Uses web search to fetch real-time information from https://www.astonmartin.com, automotive review sites, and dealer networks.
-
-## Author
-Created by hanxueyuan | License: MIT
+## 参考资源
+官方信息请以 aston-martin 官网发布为准。
