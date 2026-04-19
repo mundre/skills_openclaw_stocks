@@ -22,22 +22,16 @@
  * 合法组合：
  *   1. 出发地 + 目的地
  *   2. 航班号
- *   3. 出发地 + lowPrice（特价/低价；可再加目的地指定航线）
+ *   3. 出发地 + low_price（特价/低价；可再加目的地指定航线）
  * 
  * 配置（优先级：环境变量 > config.json）：
  *   - CHENGXIN_API_KEY（环境变量）
  *   - 或创建 config.json 文件（见 config.example.json）
  */
 
-const { call_api } = require('./lib/api-client');
-const { resolve_output_mode } = require('./lib/output-mode');
-const {
-  NO_MATCH_DETAIL,
-  create_success_banner_once,
-  handle_api_result,
-  print_no_match_lines,
-  print_request_exception
-} = require('./lib/query-response');
+const { create_query_runner } = require('./lib/base-query');
+const { NO_MATCH_DETAIL, MORE_CHOICES_PROMPT, ROUND_TRIP_PROMPTS } = require('./lib/query-response');
+const { is_transfer_trip, is_round_trip } = require('./lib/data-utils');
 const {
   format_flight_card,
   format_flight_table,
@@ -49,123 +43,20 @@ const {
 const FLIGHT_API_PATH = '/flightResource';
 
 /**
- * 调用机票专用 API
- * @param {object} params - 查询参数
- * @returns {Promise<object>} - API 响应
- */
-function query_flight_api(params) {
-  return call_api(FLIGHT_API_PATH, params);
-}
-
-/**
- * 格式化机票结果
- * @param {object} flight_data - 机票数据
- * @param {boolean} use_table - 是否使用表格格式
- * @param {boolean} use_plain_link - 是否使用纯文本链接
- * @returns {string} - 格式化输出
- */
-function format_flight_result(flight_data, use_table = false, use_plain_link = false) {
-  if (!flight_data || !flight_data.flightList) {
-    return '未找到相关机票信息';
-  }
-  
-  const flights = flight_data.flightList;
-  // 获取顶层 PC 链接（列表页）作为备选
-  const page_pc_link = flight_data.pageDataList?.[0]?.pcRedirectUrl || '';
-  
-  // 检测是否为特价机票场景（字段为 null 表示特价推荐）
-  const is_special_price = flights.length > 0 && (flights[0].flightNo === null || flights[0].flightNo === undefined);
-  
-  let output = '✈️ 机票查询结果：\n\n';
-  
-  const is_transfer_flight = (f) =>
-    f.tripType === 'TRANSFER' && f.segmentList && f.segmentList.length > 0;
-
-  if (is_special_price && use_table) {
-    // 特价机票格式：表格
-    output += format_flight_table_special(flights, use_plain_link);
-  } else if (use_table) {
-    const direct_flights = flights.filter((f) => !is_transfer_flight(f));
-    const transfer_flights = flights.filter(is_transfer_flight);
-    if (direct_flights.length > 0) {
-      output += format_flight_table(direct_flights, use_plain_link, page_pc_link);
-    }
-    transfer_flights.forEach((flight) => {
-      output += format_transfer_trip(flight, use_plain_link);
-    });
-  } else {
-    flights.forEach((flight) => {
-      if (is_transfer_flight(flight)) {
-        output += format_transfer_trip(flight, use_plain_link);
-      } else {
-        output += format_flight_card(flight, use_plain_link, page_pc_link);
-      }
-    });
-  }
-  
-  output += '💡 **更多选择**：也可以打开 **同程旅行 APP** 或在 **微信 - 我 - 服务** 中，点击 **火车票机票** 查看更丰富的资源。\n';
-  output += '\n';
-  return output;
-}
-
-/**
- * 解析命令行参数
- * @returns {object} - 解析后的参数对象
- */
-function parse_args() {
-  const args = process.argv.slice(2);
-  const params = {
-    departure: '',
-    destination: '',
-    flightNumber: '',
-    extra: '',
-    lowPrice: false,
-    channel: '',
-    surface: ''
-  };
-  
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    
-    if (arg === '--departure' && args[i + 1]) {
-      params.departure = args[++i];
-    } else if (arg === '--destination' && args[i + 1]) {
-      params.destination = args[++i];
-    } else if (arg === '--flight-number' && args[i + 1]) {
-      params.flightNumber = args[++i];
-    } else if (arg === '--extra' && args[i + 1]) {
-      params.extra = args[++i];
-    } else if (arg === '--low-price') {
-      params.lowPrice = true;
-    } else if (arg === '--channel' && args[i + 1]) {
-      params.channel = args[++i];
-    } else if (arg === '--surface' && args[i + 1]) {
-      params.surface = args[++i];
-    } else if (!arg.startsWith('--') && !params.departure) {
-      // 支持简写：第一个非选项参数作为查询文本
-      params.query = arg;
-    }
-  }
-  
-  return params;
-}
-
-/**
  * 验证参数组合
  * @param {object} params - 参数对象
  * @returns {object} - { valid: boolean, error: string, suggest_low_price: boolean }
  */
 function validate_params(params) {
   const has_departure_dest = params.departure && params.destination;
-  const has_flight_number = params.flightNumber;
-  const has_low_price = params.departure && params.lowPrice;
+  const has_flight_number = params.flight_number;
+  const has_low_price = params.departure && params.low_price;
   
   if (has_departure_dest || has_flight_number || has_low_price) {
     return { valid: true };
   }
   
   if (params.departure && !params.destination) {
-    // 只有出发地，建议用户使用 lowPrice 查询特价机票
     return { 
       valid: false, 
       error: `⚠️ 参数不完整，请提供以下组合之一：
@@ -180,93 +71,112 @@ function validate_params(params) {
 }
 
 /**
- * 主函数
+ * 格式化机票结果
+ * @param {object} flight_data - 机票数据
+ * @param {boolean} use_table - 是否使用表格格式
+ * @param {boolean} use_plain_link - 是否使用纯文本链接（转发给底层格式化函数）
+ * @returns {string} - 格式化输出
  */
-async function main() {
-  const params = parse_args();
-  
-  // 验证参数
-  const validation = validate_params(params);
-  if (!validation.valid) {
-    console.log('用法：');
-    console.log('  node flight-query.js --departure "北京" --destination "上海"');
-    console.log('  node flight-query.js --flight-number "CA1234"');
-    console.log('  node flight-query.js --departure "上海" --destination "北京" --low-price');
-    console.log('  node flight-query.js --departure "北京" --low-price --extra "明天"');
-    console.log('\n参数说明：');
-    console.log('  --departure <城市>        出发地城市');
-    console.log('  --destination <城市>      目的地城市');
-    console.log('  --flight-number <航班号>  航班号');
-    console.log('  --extra <补充信息>        额外信息（日期、偏好等）');
-    console.log('  --low-price               特价/低价（可配合 --destination 指定航线）');
-    console.log('  --channel <渠道>          通信渠道（webchat/wechat 等）');
-    console.log('  --surface <界面>          交互界面（mobile/desktop/table/card）');
-    console.log('\n' + validation.error);
-    
-    if (validation.suggest_low_price) {
-      console.log('\n💡 提示：如果您想查看从该地出发到全国各地的特价机票，请添加 --low-price 参数');
-    }
-    process.exit(1);
+function format_flight_result(flight_data, use_table = false, use_plain_link = false) {
+  if (!flight_data || !flight_data.flightList) {
+    return '未找到相关机票信息';
   }
   
-  // 构建请求参数（只包含非空字段）
-  const request_params = {};
-  if (params.departure) request_params.departure = params.departure;
-  if (params.destination) request_params.destination = params.destination;
-  if (params.flightNumber) request_params.flightNumber = params.flightNumber;
-  if (params.extra) request_params.extra = params.extra;
-  if (params.lowPrice) request_params.lowPrice = true;
-  if (params.channel) request_params.channel = params.channel;
-  if (params.surface) request_params.surface = params.surface;
+  const flights = flight_data.flightList;
+  const is_special_price = flights.length > 0 && (flights[0].flightNo === null || flights[0].flightNo === undefined);
   
-  const { use_table, use_plain_link } = resolve_output_mode(params);
+  let output = '✈️ 机票查询结果：\n\n';
 
-  try {
-    const result = await query_flight_api(request_params);
-
-    handle_api_result(result, {
-      no_match_detail: NO_MATCH_DETAIL.flight,
-      on_success: (res) => {
-        const print_success_once = create_success_banner_once();
-        const response_data = res.data?.data || res.data;
-
-        const flight_data_list = response_data?.flightDataList;
-
-        if (Array.isArray(flight_data_list) && flight_data_list.length > 0) {
-          let has_output = false;
-          flight_data_list.forEach((item, index) => {
-            if (item.flightList && item.flightList.length > 0) {
-              print_success_once();
-              if (item.desc) {
-                console.log(`📌 ${item.desc}\n`);
-              } else if (flight_data_list.length > 1) {
-                console.log(`📌 列表 ${index + 1}\n`);
-              }
-              console.log(format_flight_result(item, use_table, use_plain_link));
-              has_output = true;
-            }
-          });
-          if (!has_output) {
-            print_no_match_lines(NO_MATCH_DETAIL.flight);
-          }
-        } else {
-          print_no_match_lines(NO_MATCH_DETAIL.flight);
-        }
+  if (is_special_price && use_table) {
+    output += format_flight_table_special(flights, use_plain_link);
+  } else if (use_table) {
+    const direct_flights = flights.filter((f) => !is_transfer_trip(f));
+    const transfer_flights = flights.filter(is_transfer_trip);
+    if (direct_flights.length > 0) {
+      output += format_flight_table(direct_flights, use_plain_link);
+    }
+    transfer_flights.forEach((flight) => {
+      output += format_transfer_trip(flight, use_plain_link);
+    });
+  } else {
+    flights.forEach((flight) => {
+      if (is_transfer_trip(flight)) {
+        output += format_transfer_trip(flight, use_plain_link);
+      } else {
+        output += format_flight_card(flight, use_plain_link);
       }
     });
-  } catch (error) {
-    print_request_exception(error);
+  }
+  
+  output += MORE_CHOICES_PROMPT;
+  output += '\n';
+  return output;
+}
+
+/**
+ * 处理查询结果
+ */
+function handle_result(response_data, { print_success_once, format_options, print_no_match, request_params }) {
+  const { use_table, use_plain_link } = format_options;
+  const round_trip = is_round_trip(request_params?.extra);
+  const flight_data_list = response_data?.flightDataList;
+
+  if (Array.isArray(flight_data_list) && flight_data_list.length > 0) {
+    let has_output = false;
+    flight_data_list.forEach((item, index) => {
+      if (item.flightList && item.flightList.length > 0) {
+        print_success_once();
+        if (item.desc) {
+          console.log(`📌 ${item.desc}\n`);
+        } else if (flight_data_list.length > 1) {
+          console.log(`📌 列表 ${index + 1}\n`);
+        }
+        console.log(format_flight_result(item, use_table, use_plain_link));
+        has_output = true;
+      }
+    });
+    if (!has_output) {
+      print_no_match();
+    } else if (round_trip) {
+      console.log(ROUND_TRIP_PROMPTS.flight);
+    }
+  } else {
+    print_no_match();
   }
 }
 
+// 创建查询运行器
+const runner = create_query_runner({
+  api_path: FLIGHT_API_PATH,
+  param_defs: {
+    departure: '',
+    destination: '',
+    flight_number: '',
+    extra: '',
+    low_price: false,
+    channel: '',
+    surface: ''
+  },
+  param_descriptions: {
+    low_price: '查询特价/低价机票',
+    flight_number: '航班号（如 CA1234）'
+  },
+  validate: validate_params,
+  handle_result: handle_result,
+  no_match_detail: NO_MATCH_DETAIL.flight,
+  usage_example: `  node flight-query.js --departure "北京" --destination "上海"
+  node flight-query.js --flight-number "CA1234"
+  node flight-query.js --departure "上海" --destination "北京" --low-price
+  node flight-query.js --departure "北京" --low-price --extra "明天"`
+});
+
 // 导出函数供其他模块使用
 module.exports = {
-  query_flight_api,
   validate_params,
   format_flight_result
 };
 
 // 运行主函数
 if (require.main === module) {
-  main();
+  runner.run();
 }

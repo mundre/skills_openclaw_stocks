@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * 根据 channel / surface 解析输出形态（表格 vs 卡片、Markdown 链接 vs 纯文本 URL）。
  * 规则与 SKILL.md、references/output-format.md 一致。

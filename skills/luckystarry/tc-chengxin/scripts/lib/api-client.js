@@ -13,7 +13,7 @@ const path = require('path');
 
 // 接口基础配置
 const API_BASE_URL = 'https://wx.17u.cn/skills/gateway/api/v1/gateway';
-const API_VERSION = '0.5.0';
+const API_VERSION = '0.6.0';
 
 // 配置读取（优先级：环境变量 > config.json）
 let API_KEY = process.env.CHENGXIN_API_KEY;
@@ -71,14 +71,15 @@ function call_api(api_path, params) {
       port: parsed_url.port || 443,
       path: parsed_url.path,
       method: 'POST',
+      timeout: 15000, // 15 秒超时
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(post_data),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': `TC-Chengxin-NodeJS/${API_VERSION}`,
         'Accept': 'application/json, text/plain, */*',
         'Origin': 'https://www.ly.com',
         'Referer': 'https://www.ly.com/',
-        'Authorization': build_auth_token(API_KEY)
+        ...(API_KEY ? { 'Authorization': build_auth_token(API_KEY) } : {})
       }
     };
 
@@ -90,6 +91,12 @@ function call_api(api_path, params) {
       });
 
       res.on('end', () => {
+        // 检查 HTTP 状态码
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP 错误：${res.statusCode} ${res.statusMessage || ''}`));
+          return;
+        }
+
         try {
           const result = JSON.parse(data);
           resolve(result);
@@ -97,6 +104,12 @@ function call_api(api_path, params) {
           reject(new Error(`解析响应失败：${e.message}`));
         }
       });
+    });
+
+    // 超时处理
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('请求超时（15秒）'));
     });
 
     req.on('error', (e) => {

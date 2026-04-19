@@ -25,15 +25,9 @@
  *   - 或创建 config.json 文件（见 config.example.json）
  */
 
-const { call_api } = require('./lib/api-client');
-const { resolve_output_mode } = require('./lib/output-mode');
-const {
-  NO_MATCH_DETAIL,
-  create_success_banner_once,
-  handle_api_result,
-  print_no_match_lines,
-  print_request_exception
-} = require('./lib/query-response');
+const { create_query_runner } = require('./lib/base-query');
+const { NO_MATCH_DETAIL, MORE_CHOICES_PROMPT, ROUND_TRIP_PROMPTS } = require('./lib/query-response');
+const { is_transfer_trip, is_round_trip } = require('./lib/data-utils');
 const {
   format_train_table,
   format_train_card,
@@ -48,16 +42,27 @@ const {
 const TRAFFIC_API_PATH = '/trafficResource';
 
 /**
- * 调用交通资源智能 API
- * @param {object} params - 查询参数
- * @returns {Promise<object>} - API 响应
+ * 验证参数组合
+ * @param {object} params - 参数对象
+ * @returns {object} - { valid: boolean, error: string }
  */
-function query_traffic_api(params) {
-  return call_api(TRAFFIC_API_PATH, params);
+function validate_params(params) {
+  if (params.departure && params.destination) {
+    return { valid: true };
+  }
+  
+  return { 
+    valid: false, 
+    error: `⚠️ 参数不完整，请提供出发地和目的地。
+  示例：--departure "北京" --destination "上海"`
+  };
 }
 
 /**
  * 格式化火车结果
+ * @param {object} train_data - 火车数据
+ * @param {boolean} use_table - 是否使用表格格式
+ * @param {boolean} use_plain_link - 是否使用纯文本链接（转发给底层格式化函数）
  */
 function format_train_result(train_data, use_table = false, use_plain_link = false) {
   if (!train_data || !train_data.trainList) {
@@ -65,10 +70,8 @@ function format_train_result(train_data, use_table = false, use_plain_link = fal
   }
   
   const trains = train_data.trainList;
-  const is_transfer = (t) =>
-    t.tripType === 'TRANSFER' && t.segmentList && t.segmentList.length > 0;
-  const direct_trains = trains.filter((t) => !is_transfer(t));
-  const transfer_trains = trains.filter(is_transfer);
+  const direct_trains = trains.filter((t) => !is_transfer_trip(t));
+  const transfer_trains = trains.filter(is_transfer_trip);
 
   let output = '\n🚄 **火车票**\n\n';
 
@@ -93,6 +96,9 @@ function format_train_result(train_data, use_table = false, use_plain_link = fal
 
 /**
  * 格式化机票结果
+ * @param {object} flight_data - 机票数据
+ * @param {boolean} use_table - 是否使用表格格式
+ * @param {boolean} use_plain_link - 是否使用纯文本链接（转发给底层格式化函数）
  */
 function format_flight_result(flight_data, use_table = false, use_plain_link = false) {
   if (!flight_data || !flight_data.flightList) {
@@ -100,27 +106,23 @@ function format_flight_result(flight_data, use_table = false, use_plain_link = f
   }
   
   const flights = flight_data.flightList;
-  const page_pc_link = flight_data.pageDataList?.[0]?.pcRedirectUrl || '';
   let output = '\n✈️ **机票**\n\n';
 
-  const is_transfer_flight = (f) =>
-    f.tripType === 'TRANSFER' && f.segmentList && f.segmentList.length > 0;
-  
   if (use_table) {
-    const direct_flights = flights.filter((f) => !is_transfer_flight(f));
-    const transfer_flights = flights.filter(is_transfer_flight);
+    const direct_flights = flights.filter((f) => !is_transfer_trip(f));
+    const transfer_flights = flights.filter(is_transfer_trip);
     if (direct_flights.length > 0) {
-      output += format_flight_table(direct_flights, use_plain_link, page_pc_link);
+      output += format_flight_table(direct_flights, use_plain_link);
     }
     transfer_flights.forEach((flight) => {
       output += format_transfer_trip(flight, use_plain_link);
     });
   } else {
     flights.forEach((flight) => {
-      if (is_transfer_flight(flight)) {
+      if (is_transfer_trip(flight)) {
         output += format_transfer_trip(flight, use_plain_link);
       } else {
-        output += format_flight_card(flight, use_plain_link, page_pc_link);
+        output += format_flight_card(flight, use_plain_link);
       }
     });
   }
@@ -130,13 +132,16 @@ function format_flight_result(flight_data, use_table = false, use_plain_link = f
 
 /**
  * 格式化汽车票结果
+ * @param {object} bus_data - 汽车票数据
+ * @param {boolean} use_table - 是否使用表格格式
+ * @param {boolean} use_plain_link - 是否使用纯文本链接（转发给底层格式化函数）
  */
 function format_bus_result(bus_data, use_table = false, use_plain_link = false) {
-  if (!bus_data || !bus_data.pageDataList) {
+  if (!bus_data || !bus_data.busList) {
     return '';
   }
   
-  const buses = bus_data.pageDataList;
+  const buses = bus_data.busList;
   let output = '\n🚌 **汽车票**\n\n';
   
   if (use_table) {
@@ -151,160 +156,90 @@ function format_bus_result(bus_data, use_table = false, use_plain_link = false) 
 }
 
 /**
- * 解析命令行参数
- * @returns {object} - 解析后的参数对象
+ * 处理查询结果
  */
-function parse_args() {
-  const args = process.argv.slice(2);
-  const params = {
+function handle_result(response_data, { print_success_once, format_options, print_no_match, request_params }) {
+  const { use_table, use_plain_link } = format_options;
+  const round_trip = is_round_trip(request_params?.extra);
+
+  const train_data_list = response_data?.trainDataList;
+  const flight_data_list = response_data?.flightDataList;
+  const bus_data_list = response_data?.busDataList;
+
+  let has_output = false;
+
+  if (Array.isArray(train_data_list) && train_data_list.length > 0 && Array.isArray(train_data_list[0].trainList) && train_data_list[0].trainList.length > 0) {
+    print_success_once();
+    train_data_list.forEach((item, index) => {
+      if (item.desc && train_data_list.length > 1) {
+        console.log(`📌 ${item.desc}\n`);
+      }
+      if (item.trainList && item.trainList.length > 0) {
+        console.log(format_train_result(item, use_table, use_plain_link));
+        has_output = true;
+      }
+    });
+  }
+
+  if (Array.isArray(flight_data_list) && flight_data_list.length > 0 && Array.isArray(flight_data_list[0].flightList) && flight_data_list[0].flightList.length > 0) {
+    print_success_once();
+    flight_data_list.forEach((item, index) => {
+      if (item.desc && flight_data_list.length > 1) {
+        console.log(`📌 ${item.desc}\n`);
+      }
+      if (item.flightList && item.flightList.length > 0) {
+        console.log(format_flight_result(item, use_table, use_plain_link));
+        has_output = true;
+      }
+    });
+  }
+
+  if (Array.isArray(bus_data_list) && bus_data_list.length > 0 && Array.isArray(bus_data_list[0].busList) && bus_data_list[0].busList.length > 0) {
+    print_success_once();
+    bus_data_list.forEach((item, index) => {
+      if (item.desc && bus_data_list.length > 1) {
+        console.log(`📌 ${item.desc}\n`);
+      }
+      if (item.busList && item.busList.length > 0) {
+        console.log(format_bus_result(item, use_table, use_plain_link));
+        has_output = true;
+      }
+    });
+  }
+
+  if (!has_output) {
+    print_no_match();
+  } else {
+    if (round_trip) {
+      console.log(ROUND_TRIP_PROMPTS.traffic);
+    }
+    console.log(MORE_CHOICES_PROMPT);
+  }
+}
+
+// 创建查询运行器
+const runner = create_query_runner({
+  api_path: TRAFFIC_API_PATH,
+  param_defs: {
     departure: '',
     destination: '',
     extra: '',
     channel: '',
     surface: ''
-  };
-  
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    
-    if (arg === '--departure' && args[i + 1]) {
-      params.departure = args[++i];
-    } else if (arg === '--destination' && args[i + 1]) {
-      params.destination = args[++i];
-    } else if (arg === '--extra' && args[i + 1]) {
-      params.extra = args[++i];
-    } else if (arg === '--channel' && args[i + 1]) {
-      params.channel = args[++i];
-    } else if (arg === '--surface' && args[i + 1]) {
-      params.surface = args[++i];
-    }
-  }
-  
-  return params;
-}
-
-/**
- * 验证参数组合
- * @param {object} params - 参数对象
- * @returns {object} - { valid: boolean, error: string }
- */
-function validate_params(params) {
-  if (params.departure && params.destination) {
-    return { valid: true };
-  }
-  
-  return { 
-    valid: false, 
-    error: `⚠️ 参数不完整，请提供出发地和目的地。
-  示例：--departure "北京" --destination "上海"`
-  };
-}
-
-/**
- * 主函数
- */
-async function main() {
-  const params = parse_args();
-  
-  // 验证参数
-  const validation = validate_params(params);
-  if (!validation.valid) {
-    console.log('用法：');
-    console.log('  node traffic-query.js --departure "北京" --destination "上海"');
-    console.log('  node traffic-query.js --departure "北京" --destination "上海" --extra "明天"');
-    console.log('\n参数说明：');
-    console.log('  --departure <城市>        出发地城市');
-    console.log('  --destination <城市>      目的地城市');
-    console.log('  --extra <补充信息>        额外信息（日期、偏好等）');
-    console.log('  --channel <渠道>          通信渠道（webchat/wechat 等）');
-    console.log('  --surface <界面>          交互界面（mobile/desktop/table/card）');
-    console.log('\n' + validation.error);
-    process.exit(1);
-  }
-  
-  // 构建请求参数（只包含非空字段）
-  const request_params = {};
-  if (params.departure) request_params.departure = params.departure;
-  if (params.destination) request_params.destination = params.destination;
-  if (params.extra) request_params.extra = params.extra;
-  if (params.channel) request_params.channel = params.channel;
-  if (params.surface) request_params.surface = params.surface;
-  
-  const { use_table, use_plain_link } = resolve_output_mode(params);
-
-  try {
-    const result = await query_traffic_api(request_params);
-
-    handle_api_result(result, {
-      no_match_detail: NO_MATCH_DETAIL.traffic,
-      on_success: (res) => {
-        const print_success_once = create_success_banner_once();
-        const response_data = res.data?.data || res.data;
-
-        const train_data_list = response_data?.trainDataList;
-        const flight_data_list = response_data?.flightDataList;
-        const bus_data_list = response_data?.busDataList;
-
-        let has_output = false;
-
-        if (Array.isArray(train_data_list) && train_data_list.length > 0 && train_data_list[0].trainList) {
-          print_success_once();
-          train_data_list.forEach((item, index) => {
-            if (item.desc && train_data_list.length > 1) {
-              console.log(`📌 ${item.desc}\n`);
-            }
-            if (item.trainList && item.trainList.length > 0) {
-              console.log(format_train_result(item, use_table, use_plain_link));
-              has_output = true;
-            }
-          });
-        }
-
-        if (Array.isArray(flight_data_list) && flight_data_list.length > 0 && flight_data_list[0].flightList) {
-          print_success_once();
-          flight_data_list.forEach((item, index) => {
-            if (item.desc && flight_data_list.length > 1) {
-              console.log(`📌 ${item.desc}\n`);
-            }
-            if (item.flightList && item.flightList.length > 0) {
-              console.log(format_flight_result(item, use_table, use_plain_link));
-              has_output = true;
-            }
-          });
-        }
-
-        if (Array.isArray(bus_data_list) && bus_data_list.length > 0 && bus_data_list[0].pageDataList) {
-          print_success_once();
-          bus_data_list.forEach((item, index) => {
-            if (item.desc && bus_data_list.length > 1) {
-              console.log(`📌 ${item.desc}\n`);
-            }
-            if (item.pageDataList && item.pageDataList.length > 0) {
-              console.log(format_bus_result(item, use_table, use_plain_link));
-              has_output = true;
-            }
-          });
-        }
-
-        if (!has_output) {
-          print_no_match_lines(NO_MATCH_DETAIL.traffic);
-        } else {
-          console.log('💡 **更多选择**：也可以打开 **同程旅行 APP** 或在 **微信 - 我 - 服务** 中，点击 **火车票机票** 查看更丰富的资源。\n');
-        }
-      }
-    });
-  } catch (error) {
-    print_request_exception(error);
-  }
-}
+  },
+  validate: validate_params,
+  handle_result: handle_result,
+  no_match_detail: NO_MATCH_DETAIL.traffic,
+  usage_example: `  node traffic-query.js --departure "北京" --destination "上海"
+  node traffic-query.js --departure "北京" --destination "上海" --extra "明天"`
+});
 
 // 导出函数供其他模块使用
 module.exports = {
-  query_traffic_api,
   validate_params
 };
 
 // 运行主函数
 if (require.main === module) {
-  main();
+  runner.run();
 }

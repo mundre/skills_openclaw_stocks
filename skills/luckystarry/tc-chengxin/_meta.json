@@ -3,11 +3,16 @@
   "slug": "tc-chengxin",
   "displayName": "Tongcheng Chengxin Travel Search",
   "latest": {
-    "version": "0.5.0",
-    "publishedAt": 1775918585543,
-    "commit": "https://github.com/openclaw/skills/commit/49767b32069bf5558effdc6f55e06df211b49d77"
+    "version": "0.6.0",
+    "publishedAt": 1776429348777,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.5.0",
+      "publishedAt": 1775918585543,
+      "commit": "https://github.com/openclaw/skills/commit/49767b32069bf5558effdc6f55e06df211b49d77"
+    },
     {
       "version": "0.2.0",
       "publishedAt": 1775208559477,

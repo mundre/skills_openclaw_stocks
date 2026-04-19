@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * 各 *-query.js 共用的 API 响应处理：成功判定、无结果/失败输出、异常退出。
  */
@@ -10,6 +12,17 @@ const NO_MATCH_DETAIL = {
   bus: '未找到符合条件的长途汽车，请尝试调整查询条件。',
   travel: '未找到符合条件的度假产品，请尝试调整查询条件。',
   traffic: '未找到符合条件的交通方式，请尝试调整查询条件。'
+};
+
+/** "更多选择"底部引导文案，统一维护 */
+const MORE_CHOICES_PROMPT = '🔗 点击预订链接即可快速下单！\n💡 **更多选择**：也可以打开 **同程旅行 APP** 或在 **微信 - 我 - 服务** 中，点击 **火车票机票** 或 **酒店民宿** 发现更多您喜欢的产品！\n';
+
+/** 往返行程引导文案，按交通类型区分名词 */
+const ROUND_TRIP_PROMPTS = {
+  traffic: '🔄 用户查询了往返交通，请确认去程和返程的交通方案是否已齐全。如有缺少，需再次查询另一程（交换出发地和目的地）。\n',
+  flight: '🔄 用户查询了往返航班，请确认去程和返程的航班是否已齐全。如有缺少，需再次查询另一程（交换出发地和目的地）。\n',
+  train: '🔄 用户查询了往返车次，请确认去程和返程的车次是否已齐全。如有缺少，需再次查询另一程（交换出发地和目的地）。\n',
+  bus: '🔄 用户查询了往返班次，请确认去程和返程的班次是否已齐全。如有缺少，需再次查询另一程（交换出发地和目的地）。\n'
 };
 
 /**
@@ -67,7 +80,7 @@ function print_api_success_banner() {
   console.log('3. ⚠️ **不要遗漏预订链接** — 每条结果都要包含完整的预订链接');
   console.log('4. 如果数据量大，可以分段展示，但每段都要完整');
   console.log('5. 中转联程必须给出所有程次的详细信息（包括每一程的班次、车站、时间、时长、价格等）\n');
-  console.log('💡 请不要忽略下方的预订链接，点击即可快速进入产品的预订页面。\n');
+  console.log('💡 请不要忽略产品资源的预订链接，点击即可快速进入预订页面。\n');
 }
 
 /**
@@ -105,6 +118,8 @@ function handle_api_result(result, { on_success, no_match_detail }) {
 
 module.exports = {
   NO_MATCH_DETAIL,
+  MORE_CHOICES_PROMPT,
+  ROUND_TRIP_PROMPTS,
   is_api_success,
   is_api_no_match,
   print_no_match_lines,
