@@ -44,6 +44,12 @@ canonry project remove-location <name> <label>
 ## Sweeps
 
 ```bash
+canonry snapshot "Acme Corp" --domain acme.example.com      # one-shot sales snapshot
+canonry snapshot "Acme Corp" --domain acme.example.com --md          # save markdown report
+canonry snapshot "Acme Corp" --domain acme.example.com --output report.md  # custom path
+canonry snapshot "Acme Corp" --domain acme.example.com --pdf         # save PDF report
+canonry snapshot "Acme Corp" --domain acme.example.com --format json
+
 canonry run <project>                             # sweep all configured providers
 canonry run <project> --provider gemini           # single provider only
 canonry run <project> --wait                      # block until complete
@@ -60,6 +66,8 @@ Run statuses: `queued` → `running` → `completed` / `failed` / `partial`
 
 `partial` = some providers failed (usually rate limits) — successful snapshots are still saved.
 
+`snapshot` does not create a project or write to the DB. It generates category queries, runs providers, and produces a report for prospecting.
+
 ## Citation Data
 
 ```bash
@@ -67,6 +75,8 @@ canonry evidence <project>                        # per-keyword cited/not-cited
 canonry evidence <project> --format json          # JSON output
 canonry history <project>                         # audit trail
 canonry export <project> --include-results        # export as YAML
+canonry backfill answer-visibility                # recompute answer visibility from stored answers
+canonry backfill answer-visibility --project <name> --format json
 ```
 
 Output shows:
@@ -82,6 +92,21 @@ canonry analytics <project> --feature metrics     # citation rate trends
 canonry analytics <project> --feature gaps        # brand gap analysis (cited/gap/uncited)
 canonry analytics <project> --feature sources     # source breakdown by category
 canonry analytics <project> --window 7d           # time window: 7d, 30d, 90d, all
+```
+
+## Intelligence
+
+```bash
+canonry insights <project>                        # list active insights (regressions, gains, opportunities)
+canonry insights <project> --dismissed            # include dismissed insights
+canonry insights <project> --format json          # JSON output
+canonry insights dismiss <project> <id>           # dismiss an insight
+canonry health <project>                          # latest citation health snapshot
+canonry health <project> --history                # health trend over time
+canonry health <project> --history --limit 10     # limit history entries
+canonry health <project> --format json            # JSON output
+canonry backfill insights <project>              # backfill insights for all completed runs
+canonry backfill insights <project> --from-run <id> --to-run <id>  # backfill a range
 ```
 
 ## Keywords & Competitors
@@ -114,7 +139,9 @@ canonry notify remove <project> <id>
 canonry notify test <project> <id>
 ```
 
-Available events: `citation.lost`, `citation.gained`, `run.completed`, `run.failed`
+Available events: `citation.lost`, `citation.gained`, `run.completed`, `run.failed`, `insight.critical`, `insight.high`
+
+`insight.critical` and `insight.high` fire when the intelligence engine generates critical- or high-severity insights after a sweep completes.
 
 ## Provider Settings & Quotas
 
@@ -132,6 +159,22 @@ Available providers: `gemini`, `openai`, `claude`, `perplexity`, `local`, `cdp`
 
 If a provider hits rate limits (429 errors), the run completes as `partial`. Reduce concurrency or increase time between sweeps.
 
+### Gemini Vertex AI
+
+Gemini supports Vertex AI as an alternative to API key authentication. Use GCP Application Default Credentials (ADC) or a service account JSON key file:
+
+```bash
+# Via env vars (recommended for servers)
+export GEMINI_VERTEX_PROJECT=my-gcp-project
+export GEMINI_VERTEX_REGION=us-central1            # optional, defaults to us-central1
+export GEMINI_VERTEX_CREDENTIALS=/path/to/sa.json  # optional, falls back to ADC
+
+# Or in canonry.yaml config
+# vertexProject, vertexRegion, vertexCredentials fields under provider config
+```
+
+When Vertex AI is configured, no `GEMINI_API_KEY` is required. The provider uses the `@google-cloud/vertexai` SDK with `googleAuthOptions` for credential handling.
+
 ## Google Search Console
 
 ```bash
@@ -148,6 +191,7 @@ canonry google sync <project>                             # sync GSC data
 canonry google sync <project> --days 30 --full --wait     # full sync with wait
 
 canonry google coverage <project>                         # index coverage summary
+canonry google refresh <project>                         # force-fetch fresh GSC coverage data
 canonry google performance <project>                      # search performance data
 canonry google performance <project> --days 30 --keyword "term" --page "/url"
 
@@ -170,11 +214,56 @@ canonry bing status <project>                    # connection status
 canonry bing sites <project>                     # list verified sites
 canonry bing set-site <project> <url>            # set active site URL
 canonry bing coverage <project>                  # URL coverage data
+canonry bing refresh <project>                  # force-fetch fresh Bing coverage data
 canonry bing inspect <project> <url>             # inspect specific URL
 canonry bing inspections <project>               # inspection history
 canonry bing request-indexing <project> <url>    # submit URL for indexing
 canonry bing request-indexing <project> --all-unindexed  # submit all unindexed
 canonry bing performance <project>               # search performance data
+```
+
+## WordPress Integration
+
+```bash
+canonry wordpress connect <project> --url <url> --user <user>   # connect (prompts for app password)
+canonry wordpress disconnect <project>                          # disconnect
+canonry wordpress status <project>                              # connection status
+canonry wordpress pages <project> [--live|--staging]            # list pages
+canonry wordpress page <project> <slug>                         # show page detail
+canonry wordpress create-page <project> --title <t> --slug <s> --content <c>  # create page
+canonry wordpress update-page <project> <slug> --content <c>   # update page
+canonry wordpress set-meta <project> <slug> --title <t>        # set SEO meta (single page)
+canonry wordpress set-meta <project> --from <file>              # bulk set SEO meta from JSON
+canonry wordpress schema <project> <slug>                       # read page JSON-LD
+canonry wordpress schema deploy <project> --profile <file>      # deploy schema from profile
+canonry wordpress schema status <project>                       # schema status per page
+canonry wordpress set-schema <project> <slug>                   # manual schema handoff
+canonry wordpress audit <project>                               # audit pages for SEO issues
+canonry wordpress diff <project> <slug>                         # compare live vs staging
+canonry wordpress staging status <project>                      # staging config status
+canonry wordpress staging push <project>                        # manual staging push handoff
+canonry wordpress llms-txt <project>                            # read /llms.txt
+canonry wordpress set-llms-txt <project>                        # manual llms.txt handoff
+canonry wordpress onboard <project> --url <url> --user <user>  # full onboarding workflow
+```
+
+**Onboard** runs: connect → audit → set-meta → schema deploy → Google submit → Bing submit. Use `--skip-schema` or `--skip-submit` to skip steps. `--profile <file>` provides business data and page-to-schema mapping for schema deployment.
+
+## Google Analytics 4
+
+GA4 integration uses service account authentication (no OAuth). The service account must have Viewer access on the GA4 property.
+
+```bash
+canonry ga connect <project> --property-id <id> --key-file ./sa-key.json  # connect GA4
+canonry ga disconnect <project>                  # disconnect
+canonry ga status <project>                      # connection status
+canonry ga sync <project> [--days 30] [--only traffic|ai|social]  # pull GA4 data (selective or full)
+canonry ga traffic <project>                     # landing pages + AI/social referral sources
+canonry ga coverage <project>                    # indexed pages with traffic overlay
+canonry ga ai-referral-history <project>         # daily AI referral history by source
+canonry ga social-referral-history <project>     # daily social referral history by source
+canonry ga social-referral-summary <project> [--trend]  # one-line social summary + optional trend
+canonry ga attribution <project> [--trend]        # unified channel attribution overview + optional trends
 ```
 
 ## CDP / Browser Provider
@@ -206,6 +295,54 @@ canonry apply file1.yaml file2.yaml               # multiple files
 canonry export <project> --include-results > project.yaml
 canonry sitemap inspect <project>
 ```
+
+## Agent
+
+Canonry ships the built-in **Aero** agent (backed by pi-agent-core) for users
+who don't already have one, plus a webhook integration for users who want to
+drive Canonry from Claude Code / Codex / a custom agent.
+
+### Built-in Aero (one-shot CLI)
+
+```bash
+# One-shot turn — Aero picks its own tools, streams events to stdout.
+canonry agent ask <project> "<prompt>"
+canonry agent ask <project> "<prompt>" --format json      # JSON event stream
+
+# Select a specific provider / model (otherwise auto-detected from config).
+canonry agent ask <project> "<prompt>" --provider anthropic --model claude-opus-4-7
+canonry agent ask <project> "<prompt>" --provider zai      --model glm-5.1
+canonry agent ask <project> "<prompt>" --provider openai
+canonry agent ask <project> "<prompt>" --provider google
+
+# Restrict the tool surface. Default is --scope all (full 13-tool surface:
+# 7 read + 6 write). --scope read-only exposes only the 7 read tools and
+# is what the dashboard bar uses by default so pasted "Copy as CLI"
+# commands can't enable writes the UI turn couldn't perform.
+canonry agent ask <project> "<prompt>" --scope read-only
+canonry agent ask <project> "<prompt>" --scope all
+```
+
+**Provider detection order** when `--provider` is omitted: `anthropic` →
+`openai` → `google` → `zai`, whichever has an API key present first
+(from `~/.canonry/config.yaml` providers block, or the matching env var
+`ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` / `ZAI_API_KEY`).
+
+Conversations **persist per project** — `canonry agent ask` continues the
+same rolling thread each invocation. Reset with `DELETE /api/v1/projects/<name>/agent/transcript`
+or via the dashboard bar's reset button.
+
+### External agents (webhook)
+
+```bash
+# Wire an external agent webhook to a project
+canonry agent attach <project> --url <webhook-url>        # register webhook subscription
+canonry agent attach <project> --url <url> --format json  # JSON output
+canonry agent detach <project>                            # remove the agent webhook
+canonry agent detach <project> --format json              # JSON output
+```
+
+**Agent webhooks** fire on `run.completed`, `insight.critical`, `insight.high`, and `citation.gained`. The attach/detach pair is idempotent per project (one agent webhook per project, matched by source tag).
 
 ## Output Formats
 
