@@ -1,13 +1,18 @@
 {
   "owner": "hanxueyuan",
   "slug": "rolls-royce",
-  "displayName": "rolls-royce",
+  "displayName": "Rolls Royce",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774605403530,
-    "commit": "https://github.com/openclaw/skills/commit/a1f70a133405910c8ba6fb2be6f90426b4a7ca30"
+    "version": "0.1.1",
+    "publishedAt": 1776295582415,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774605403530,
+      "commit": "https://github.com/openclaw/skills/commit/a1f70a133405910c8ba6fb2be6f90426b4a7ca30"
+    },
     {
       "version": "0.2.0",
       "publishedAt": 1774484311456,

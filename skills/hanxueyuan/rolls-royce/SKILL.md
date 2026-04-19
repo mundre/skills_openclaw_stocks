@@ -1,38 +1,24 @@
 ---
-name: rolls-royce
-description: "Information assistant for Rolls-Royce 劳斯莱斯. Search models, specs, pricing, reviews, and dealership info."
-metadata:
-  { "openclaw": { "emoji": "🚗", "version": "0.1.0", "author": "hanxueyuan", "tags": ["automotive","brand","cars"] } }
+summary: "rolls-royce 品牌档案"
+read_when:
+  - 查找 rolls-royce
+  - 了解 rolls-royce 的背景
 ---
 
-# 🚗 Rolls-Royce 劳斯莱斯 — Automotive Info Assistant
+# rolls-royce 档案
 
-Your AI guide to Rolls-Royce 劳斯莱斯. Get model info, specs, pricing, reviews, and more.
+rolls-royce — 值得关注的重要品牌。
 
-## About
+## 快速了解
+• **它是谁：** 在所属领域具有重要影响力的品牌
+• **做什么：** 提供核心产品/服务，覆盖全球/区域市场  
+• **怎么样：** 在行业中占据重要地位，具有竞争优势
 
-- **Brand**: Rolls-Royce 劳斯莱斯
-- **Category**: Ultimate luxury car
-- **Official Website**: https://www.rolls-roycemotorcars.com
+## 深入探索
+想要了解更详细的内容？本技能涵盖：
+→ 发展历程中的关键节点
+→ 产品/服务的核心特点
+→ 全球市场分布情况
+→ 行业竞争格局分析
 
-## What This Skill Does
-
-1. **Model Lineup** — Current models, specs, pricing, and configurations
-2. **Reviews & Comparisons** — Expert and user reviews, competitor comparisons
-3. **Pricing & Deals** — MSRP, dealer pricing, incentives, and financing options
-4. **News & Updates** — Latest launches, recalls, technology updates
-5. **Dealership Locator** — Find nearby dealers and service centers
-
-## Example Queries
-
-- "What Rolls-Royce models are available?"
-- "Compare Rolls-Royce vs [competitor]"
-- "Rolls-Royce latest news"
-- "Best Rolls-Royce for families"
-
-## How It Works
-
-Uses web search to fetch real-time information from https://www.rolls-roycemotorcars.com, automotive review sites, and dealer networks.
-
-## Author
-Created by hanxueyuan | License: MIT
+🔗 官方渠道是获取最新、最准确信息的推荐来源。
