@@ -3,11 +3,16 @@
   "slug": "llm-judge",
   "displayName": "Llm Judge",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775858019836,
-    "commit": "https://github.com/openclaw/skills/commit/442c6390f6ad7f40217e1c32e255834e5de27db5"
+    "version": "1.0.2",
+    "publishedAt": 1775966677863,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775858019836,
+      "commit": "https://github.com/openclaw/skills/commit/442c6390f6ad7f40217e1c32e255834e5de27db5"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773992817414,
