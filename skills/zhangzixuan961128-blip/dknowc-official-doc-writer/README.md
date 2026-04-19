@@ -38,8 +38,15 @@ cp config.ini.example config.ini
 
 ```ini
 [dkag]
+# 深知可信搜索接口配置
+# 接口地址: https://open.dknowc.cn/dependable/search/
+# 请求方式: POST
+
+# API 密钥（从 MAAS 平台获取）
 api_key=你的API Key
-api_url=https://你的MAAS平台地址/dependable/search/xxx
+
+# 注意：现在只需要配置 API Key，不需要配置 appid
+# 接口使用固定地址，无需额外配置
 ```
 
 > 如不配置搜索，写作时将跳过素材检索步骤。

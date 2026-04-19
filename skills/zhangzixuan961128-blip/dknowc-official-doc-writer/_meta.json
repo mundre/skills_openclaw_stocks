@@ -3,11 +3,16 @@
   "slug": "dknowc-official-doc-writer",
   "displayName": "Dknowc Official Doc Writer",
   "latest": {
-    "version": "2.0.2",
-    "publishedAt": 1775812902427,
-    "commit": "https://github.com/openclaw/skills/commit/728675b84ef1d80eec02be8282b0ae0d6ce8bb1f"
+    "version": "2.6.1",
+    "publishedAt": 1776412508590,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.2",
+      "publishedAt": 1775812902427,
+      "commit": "https://github.com/openclaw/skills/commit/728675b84ef1d80eec02be8282b0ae0d6ce8bb1f"
+    },
     {
       "version": "2.0.1",
       "publishedAt": 1775812704797,
