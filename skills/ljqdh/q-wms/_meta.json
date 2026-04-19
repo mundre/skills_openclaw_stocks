@@ -3,11 +3,16 @@
   "slug": "q-wms",
   "displayName": "Q Wms",
   "latest": {
-    "version": "1.0.58",
-    "publishedAt": 1776129458481,
-    "commit": "https://github.com/openclaw/skills/commit/5b4f3f5b62efba9b2d60dc1e334229c15a02a060"
+    "version": "1.0.64",
+    "publishedAt": 1776612976321,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.58",
+      "publishedAt": 1776129458481,
+      "commit": "https://github.com/openclaw/skills/commit/5b4f3f5b62efba9b2d60dc1e334229c15a02a060"
+    },
     {
       "version": "1.0.52",
       "publishedAt": 1775991163366,

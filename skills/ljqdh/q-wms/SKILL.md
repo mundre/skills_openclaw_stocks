@@ -1,7 +1,7 @@
 ---
 name: q-wms
-version: 1.0.58
-description: 千易 WMS 智能查询技能。默认开放一期 stable 场景：今日仓内总览、今日待办与异常、出库积压归因、昨日问题恢复情况，以及库存、订单、任务、绩效和仓库/货主上下文查询。所有查询必须通过 q-claw。
+version: 1.0.64
+description: 千易 WMS 智能查询技能。当前开放的一期场景：今日仓内总览、今日待办与异常、出库积压归因、昨日问题恢复情况，以及库存、订单、任务、绩效和仓库/货主上下文查询。所有查询必须通过 q-claw。
 user-invocable: true
 ---
 
@@ -9,7 +9,7 @@ user-invocable: true
 
 ## Scope
 
-默认推荐给用户的一期 stable 场景：
+当前推荐给用户的一期场景：
 - 查库存、库存数量、库存明细
 - 查仓库、选择仓库、仓库列表
 - 查货主、选择货主、货主列表
@@ -24,6 +24,14 @@ user-invocable: true
 不使用本 Skill 的场景：
 - 与 WMS/ERP 无关的闲聊/翻译/写作
 
+## Locale Policy
+
+- 读取 `context.locale`。
+- `zh_CN`：使用简体中文回复，并优先使用中文示例话术。
+- `en_US`：使用英文回复，并优先使用英文示例话术。
+- 其他 locale：统一回退到英文。
+- 禁止翻译 `scene`、参数名、编码字段、状态码。
+
 ## First-Touch Guidance
 
 - 首次授权后的默认推荐按两条线组织：
@@ -31,20 +39,32 @@ user-invocable: true
   - 仓管 / 作业：`查库存 -> 查订单 -> 查任务 -> 查绩效`
 - `wms.manager.issue.followup` 只作为 `wms.manager.issue.list` 之后的追问场景，不作为首屏推荐入口。
 - `wms.warehouse.options` 和 `wms.owner.options` 继续保留，用于库存等场景补齐上下文，但不作为首屏推荐能力。
+- 英文用户可直接这样问：
+  - Manager: `Give me today's warehouse overview`
+  - Manager: `Show today's tasks and issues`
+  - Manager: `Why is outbound backlog high today`
+  - Operator: `Check inventory for SKU001`
+  - Operator: `Show today's outbound orders`
+  - Operator: `How are today's warehouse tasks going`
 
 ## Critical Rules
 
 1. 所有 WMS 请求必须调用 `q-claw`，禁止直接回答或编造数据。
 2. scene 只能从本文件路由表选择，禁止替换为未定义 scene。
-3. 默认只开放一期 stable 场景，禁止主动介绍、主动推荐、主动追问引导到 demo 场景（`wms.stock.log.query`、`wms.order.pool.query`、`wms.ios.new.query`）。
-4. 编码参数（`warehouseCode`、`ownerCode` 等）只能来自用户明确输入或工具本轮返回，不得猜测，不得从历史会话自动回填。
-5. 结果输出以工具返回为准：
+3. 当前仅开放本文件列出的一期场景，禁止主动介绍、主动推荐、主动追问引导到当前未开放场景（`wms.stock.log.query`、`wms.order.pool.query`、`wms.ios.new.query`）。
+4. 对外介绍当前产品能力时，使用产品名“千易 WMS”，聚焦说明当前已接入的产品能力边界。
+5. 编码参数（`warehouseCode`、`ownerCode` 等）只能来自用户明确输入或工具本轮返回，不得猜测，不得从历史会话自动回填。
+6. 精确单 SKU 库存查询必须显式带参数契约：
+   - 当用户明确要查询某一个具体 SKU 的库存时，必须调用 `wms.inventory.query`，并设置 `params.queryMode = EXACT_SKU` 与 `params.skuCode = <用户明确提供的 SKU 编码>`。
+   - 如果当前对话里无法可靠确定“恰好一个 SKU 编码”，禁止调用工具；改为按当前 `locale` 追问用户先提供 SKU 编码。
+   - 禁止把精确单 SKU 查询降级成 `params = {}` 的普通库存查询。
+7. 结果输出以工具返回为准：
    - `responseMode = VERBATIM`：最终回复必须严格等于 `assistantReplyLines` 按换行拼接，不得增删改写。
    - `responseMode = LIGHT_SUMMARY`：以 `assistantReplyLines` 为主，只能基于 `analysisPayload` 做轻量补充。
    - `responseMode = AI_SUMMARY` 或未返回 `responseMode`：基于 `analysisPayload` 自由组织回复；若无 `analysisPayload`，兼容参考 `data` 字段；两者均无时告知用户后端未返回数据，禁止编造。
-6. 工具返回固定交互（授权链接、仓库候选表、货主候选表）时，必须逐行原样输出，本轮立即结束，禁止附加解释或兜底方案。
-7. 同一轮内同一 scene + 同一参数语义连续 2 次返回同一非授权失败码，停止调用，直接告知用户失败原因。
-8. 返回 `AUTH_REQUIRED` 或 `AUTH_EXPIRED` 时，必须引导用户完成授权。
+8. 工具返回固定交互（授权链接、仓库候选表、货主候选表）时，必须逐行原样输出，本轮立即结束，禁止附加解释或兜底方案。
+9. 同一轮内同一 scene + 同一参数语义连续 2 次返回同一非授权失败码，停止调用，直接告知用户失败原因。
+10. 返回 `AUTH_REQUIRED` 或 `AUTH_EXPIRED` 时，必须引导用户完成授权。
 
 ## Scene Routing
 
@@ -86,15 +106,15 @@ user-invocable: true
 | `wms.manager.backlog.analysis` | `wms.manager.issue.list`（展开看今日待办与异常） | `wms.manager.briefing.morning`（看近7天出库趋势） | `wms.manager.briefing.morning`（回到今日仓内总览） |
 | `wms.manager.issue.followup` | `wms.manager.issue.list`（回到今日待办与异常） | `wms.manager.backlog.analysis`（看出库积压归因） | `wms.manager.briefing.morning`（回到今日仓内总览） |
 
-数字追问时，`userInput` 必须替换为对应中文追问文本再调用工具，禁止把数字原样传给后端。
+数字追问时，`userInput` 必须替换为对应映射语义的追问文本再调用工具：`zh_CN` 用中文，其他 locale 用英文；禁止把数字原样传给后端。
 
 调用字段：`scene`、`userInput`、`params`（`tenantKey/openId` 由运行时注入）。
 
 ## Multi-Turn Rules
 
-1. 多轮路由优先级：当轮明确语义 > 主管场景下钻/数字追问映射 > 上一轮已确认 scene > 弱语义短输入兜底。
-2. 用户回复弱语义短输入（好了/继续/0/9/wms，或未命中上方“主管场景数字追问映射”表的短输入）时，若上一轮已确认 scene 存在，继续该 scene 并继承已确定的时间范围与筛选条件。若用户回复 `1/2/3` 且已命中上方映射表，必须按映射跳转，禁止继续原 scene。
-3. **选仓/选货主流程中的数字输入**：上一轮工具返回了仓库候选表（`choose_warehouse`）或货主候选表（`choose_owner`），用户回复数字（如 `1/2/0/9`）时，必须继续调用上一轮已确认的业务 scene，并继承上一轮已确定的时间范围与筛选条件；本轮只将数字作为选择输入回传 `q-claw`，禁止自己映射编码、禁止直接落回默认业务 scene、禁止自行分页。
+1. 多轮路由优先级：固定交互续跑（`choose_warehouse` / `choose_owner`） > 当轮明确语义 > 主管场景下钻/数字追问映射 > 上一轮已确认 scene > 弱语义短输入兜底。
+2. 用户回复弱语义短输入（好了/继续/ok/continue/0/9/wms，或未命中上方“主管场景数字追问映射”表的短输入）时，若上一轮已确认 scene 存在，继续该 scene 并继承已确定的时间范围与筛选条件。若用户回复 `1/2/3` 且已命中上方映射表，必须按映射跳转，禁止继续原 scene。
+3. **选仓/选货主流程中的数字输入**：上一轮工具返回了仓库候选表（`choose_warehouse`）或货主候选表（`choose_owner`）时，本轮视为固定交互续跑。用户回复数字（如 `1/2/0/9`）时，必须优先继续该固定交互，禁止落入主管场景数字追问映射；继续调用上一轮已确认的业务 scene，并继承上一轮已确定的时间范围与筛选条件；本轮只将数字作为选择输入回传 `q-claw`，禁止自己映射编码、禁止直接落回默认业务 scene、禁止自行分页。
 4. 已确认仓库上下文存在时，后续调用沿用该仓库，不重新进入选仓流程。`wms.warehouse.options` 本身是建立仓库上下文的入口，不受此限制。
 5. `ownerCode` 不跨轮默认：仅当用户本轮明确提供，或工具本轮返回并要求立即回传时才传入。
 6. 时间参数必须转成显式值，不得只传自然语言：
@@ -108,23 +128,7 @@ user-invocable: true
 
 1. 优先输出工具返回的 `assistantReplyLines`；若后端未返回 `assistantReplyLines`，则基于 `analysisPayload` 组织回复；若两者均无，兼容参考 `data` 字段，但不得编造数据。
 2. 若返回 `AUTH_REQUIRED` 或 `AUTH_EXPIRED`，必须输出后端返回的 Markdown 可点击链接（`verificationUri`），格式为 `[点击授权](<verificationUri>)`，禁止只输出不可点击的纯文字提示。
-3. 当 `firstTimeAuth: true` 时，先输出业务结果，再追加以下引导话术（原样输出，不改写）：
-
----
-🎉 授权成功！千易助手已就绪，你可以直接问我：
-
-老板 / 主管先看：
-- **今日仓内总览**：「给我今天仓内总览」
-- **今日待办与异常**：「今天有哪些待办和异常」
-- **出库积压归因**：「为什么今天出库积压高」
-
-仓管 / 作业排查常用：
-- **查库存**：「查一下北京仓 SKU001 的库存」
-- **查订单**：「今天有哪些待发货订单」
-- **查任务**：「今天库内任务完成情况怎么样」
-
-如果想继续追问昨天的问题有没有恢复，可以直接说：「昨日问题恢复了吗」
----
+3. 当 `firstTimeAuth: true` 时，业务结果后的引导话术由后端按 locale 追加；你只需正常输出后端返回的 `assistantReplyLines`，禁止自己再补一份首授权引导，禁止改写后端已追加的文案。
 
 4. 场景不可用时的处理：
    - `wms.performance.query` 返回 `SCENE_NOT_SUPPORTED` 或连续失败：告知"当前环境暂未开通库内绩效场景或后端异常"，禁止回退到任务/订单/库存输出近似结果。
@@ -132,9 +136,14 @@ user-invocable: true
 
 ## Tool Call Examples
 
-查库存：
+精确查询单个 SKU 的库存：
 ```json
-{"scene":"wms.inventory.query","userInput":"查一下北京仓 SKU001 的库存","params":{}}
+{"scene":"wms.inventory.query","userInput":"查一下 SKU001 的库存","params":{"queryMode":"EXACT_SKU","skuCode":"SKU001"}}
+```
+
+查库存概览：
+```json
+{"scene":"wms.inventory.query","userInput":"查一下库存","params":{}}
 ```
 
 查仓库：
