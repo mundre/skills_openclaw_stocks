@@ -1,13 +1,18 @@
 {
   "owner": "imwyvern",
   "slug": "workreply",
-  "displayName": "Workreply Skill",
+  "displayName": "Workreply Skill Pub",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1775062835650,
-    "commit": "https://github.com/openclaw/skills/commit/9fc171ddcd1e3ba5529bd51b0c28d20deb8245c5"
+    "version": "1.2.1",
+    "publishedAt": 1776348917804,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1775062835650,
+      "commit": "https://github.com/openclaw/skills/commit/9fc171ddcd1e3ba5529bd51b0c28d20deb8245c5"
+    },
     {
       "version": "1.1.2",
       "publishedAt": 1774893573268,
