@@ -3,11 +3,16 @@
   "slug": "aqara-agent",
   "displayName": "Aqara Agent",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1775131219183,
-    "commit": "https://github.com/openclaw/skills/commit/4c85373f29bcf8684af150cebb1f9c494bfbd695"
+    "version": "0.1.2",
+    "publishedAt": 1776047960196,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1775131219183,
+      "commit": "https://github.com/openclaw/skills/commit/4c85373f29bcf8684af150cebb1f9c494bfbd695"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1774618446804,
