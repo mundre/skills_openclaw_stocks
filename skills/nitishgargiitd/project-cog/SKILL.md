@@ -1,6 +1,6 @@
 ---
 name: project-cog
-description: "CellCog Projects for agents. Create knowledge workspaces, upload documents, retrieve AI-processed context trees and signed URLs. Works standalone or as CellCog chat context."
+description: "AI project management powered by CellCog. Knowledge workspaces, document upload, AI-processed context trees, signed URL retrieval. Works standalone or as CellCog chat context."
 author: CellCog
 homepage: https://cellcog.ai
 metadata:
@@ -12,7 +12,6 @@ metadata:
       env: [CELLCOG_API_KEY]
 dependencies: [cellcog]
 ---
-
 # Project Cog — Knowledge Workspaces for Agents
 
 CellCog Projects are knowledge workspaces where documents are organized into AI-processed **Context Trees** — structured, hierarchical summaries that agents can read, search, and reason about.
@@ -22,6 +21,33 @@ CellCog Projects are knowledge workspaces where documents are organized into AI-
 **1. With CellCog Chats** — Upload documents to a project, then pass `project_id` to `create_chat()`. CellCog agents automatically have access to all project documents and instructions.
 
 **2. Standalone** — Use projects purely as a knowledge management layer. Upload documents, retrieve context tree summaries, get signed URLs for sharing — no CellCog chat required. Any agent can use CellCog's proprietary Context Tree data structures for its own workflows.
+
+## How to Use
+
+For your first CellCog task in a session, read the **cellcog** skill for the full SDK reference — file handling, chat modes, timeouts, and more.
+
+**OpenClaw (fire-and-forget):**
+```python
+result = client.create_chat(
+    prompt="[your task prompt]",
+    notify_session_key="agent:main:main",
+    task_label="my-task",
+    chat_mode="agent",
+)
+```
+
+**All agents except OpenClaw (blocks until done):**
+```python
+from cellcog import CellCogClient
+client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
+result = client.create_chat(
+    prompt="[your task prompt]",
+    task_label="my-task",
+    chat_mode="agent",
+)
+print(result["message"])
+```
+
 
 ---
 
@@ -312,7 +338,7 @@ result = client.create_chat(
 )
 ```
 
-See the **cellcog** mothership skill (`clawhub install cellcog`) for complete SDK API reference — delivery modes, `send_message()`, timeouts, file handling, and more.
+See https://cellcog.ai for complete SDK API reference — delivery modes, `send_message()`, timeouts, file handling, and more.
 
 **Finding project and role IDs:**
 ```python
@@ -406,3 +432,12 @@ All errors include descriptive messages. Check `error.message` for details.
 
 6. **Use the right `context_tree_id`.** Every project has its own context tree. Get it from `list_projects()`, `create_project()`, or `get_project()`. Don't mix context tree IDs from different projects or organizations.
 
+
+---
+
+## If CellCog is not installed
+
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
+**Other agents:** `pip install cellcog` and set `CELLCOG_API_KEY`. See https://cellcog.ai for details.

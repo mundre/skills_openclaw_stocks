@@ -3,11 +3,16 @@
   "slug": "project-cog",
   "displayName": "Project Cog",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1775886752841,
-    "commit": "https://github.com/openclaw/skills/commit/22728ecea860f9872f67fb42fc17098f610b9943"
+    "version": "1.0.10",
+    "publishedAt": 1776187974140,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1775886752841,
+      "commit": "https://github.com/openclaw/skills/commit/22728ecea860f9872f67fb42fc17098f610b9943"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1775452064879,
