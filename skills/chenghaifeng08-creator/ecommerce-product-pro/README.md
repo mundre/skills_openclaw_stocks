@@ -1,144 +1,124 @@
-# Ecommerce Product Pro 🛍️
+# 🛒 Ecommerce Product Pro
 
-> AI-powered product research tool for Amazon FBA, Shopify, and dropshipping sellers.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![OpenClaw Skill](https://img.shields.io/badge/OpenClaw-Skill-blue)](https://clawhub.com)
-
-## 🎯 What It Does
-
-Ecommerce Product Pro helps sellers:
-
-- **Find Winning Products** - Discover high-demand, low-competition products
-- **Analyze Markets** - Understand market size, trends, seasonality
-- **Calculate Profits** - Accurate profit estimation with all fees
-- **Find Suppliers** - Alibaba supplier recommendations
-- **Track Trends** - Stay ahead of market trends
-- **Spy on Competition** - Analyze competitor products
-
-## 📦 Installation
-
-```bash
-# Install via ClawHub
-npx clawhub@latest install ecommerce-product-pro
-
-# Or clone manually
-git clone https://github.com/openclaw/skills/ecommerce-product-pro
-cd ecommerce-product-pro
-npm install
-```
-
-## 🚀 Quick Start
-
-```javascript
-const { EcommerceProductPro } = require('ecommerce-product-pro');
-
-const research = new EcommerceProductPro({
-  apiKey: 'your-api-key',
-  marketplace: 'amazon',
-  targetCountry: 'US',
-  budget: 5000
-});
-
-// Find winning products
-const products = await research.findWinningProducts({
-  niche: 'home fitness',
-  minPrice: 20,
-  maxPrice: 100,
-  minMargin: 30,
-  count: 20
-});
-console.log(products);
-
-// Calculate profit
-const profit = await research.calculateProfit({
-  sellingPrice: 29.99,
-  productCost: 8.50,
-  shippingCost: 3.20,
-  marketplace: 'amazon',
-  fbaFulfillment: true
-});
-console.log(profit);
-
-// Find suppliers
-const suppliers = await research.findSuppliers({
-  product: 'resistance bands set',
-  minMOQ: 100,
-  maxPrice: 10
-});
-console.log(suppliers);
-```
-
-## 📊 Key Features
-
-### Product Research
-- Winning product finder
-- Market size estimation
-- Competition analysis
-- Trend tracking
-- Seasonal opportunities
-- Product validation scoring
-
-### Profit Calculator
-- Amazon FBA fees
-- Shopify transaction fees
-- Shipping costs
-- Product cost
-- Net profit margin
-- ROI calculation
-- Break-even analysis
-
-### Supplier Finder
-- Alibaba supplier recommendations
-- Supplier verification status
-- Price comparison
-- MOQ (minimum order quantity)
-- Response time tracking
-- Location information
-
-### Market Analysis
-- Growth trends
-- Seasonality patterns
-- Customer demographics
-- Price point analysis
-- Market saturation level
-
-### Competition Analysis
-- Number of sellers
-- Review analysis (avg rating, count)
-- Listing quality score
-- Pricing strategy
-- Market share estimation
-
-## 💰 Pricing
-
-| Tier | Price | Features |
-|------|-------|----------|
-| **Basic** | $59 | Product finder, market analysis, profit calculator |
-| **Pro** | $119 | + Supplier finder, trend tracking, competitor tracking |
-
-## 🎯 Ideal For
-
-- **Amazon FBA Sellers** - Find profitable products to sell
-- **Shopify Store Owners** - Discover trending products
-- **Dropshippers** - Find winning products with low risk
-- **Ecommerce Entrepreneurs** - Validate product ideas
-- **Product Researchers** - Save hours of manual research
-
-## ⚠️ Disclaimer
-
-This tool provides estimates and suggestions. Always validate product ideas with real market research before investing. Ecommerce involves risk.
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🙏 Support
-
-- **GitHub**: https://github.com/openclaw/skills/ecommerce-product-pro
-- **Discord**: OpenClaw Community
-- **Email**: support@openclaw.ai
+AI 驱动的电商产品研究工具 - 发现爆款产品、分析竞争、估算利润
 
 ---
 
-*Built with ❤️ by OpenClaw Agent*
+## 🚀 快速开始
+
+```bash
+# 安装技能
+clawhub install ecommerce-product-pro
+
+# 产品研究
+/ecommerce research --category "home decor" --platform amazon
+
+# 利润计算
+/ecommerce profit --cost 10 --price 35 --fees 5
+```
+
+---
+
+## 💎 专业版功能
+
+**免费版**: 基础产品搜索（5 次/天）
+
+**专业版 ($9.99/月)** 解锁:
+- ✅ 无限产品研究
+- ✅ 竞争对手分析
+- ✅ 利润计算器（含所有费用）
+- ✅ 销售估算
+- ✅ 趋势分析
+- ✅ 供应商推荐
+- ✅ 关键词追踪
+- ✅ 产品数据库访问（100 万+）
+- ✅ 优先技术支持
+
+**[升级到专业版 →](../../PAID-TIER.md)**
+
+---
+
+## 支持平台
+
+- ✅ Amazon FBA
+- ✅ Shopify
+- ✅ eBay
+- ✅ Etsy
+- ✅ WooCommerce
+- ✅ TikTok Shop
+- ✅ 独立站
+
+---
+
+## 核心功能
+
+### 1. 产品发现
+- 爆款产品筛选
+- 利基市场分析
+- 趋势产品追踪
+- 季节性产品提醒
+
+### 2. 竞争分析
+- 竞争对手销量估算
+- 评论分析（痛点发现）
+- 价格策略分析
+-  listing 质量评分
+
+### 3. 利润计算
+- 采购成本
+- 平台费用
+- FBA/物流费用
+- 广告成本
+- 净利润率
+
+### 4. 供应商推荐
+- 1688 推荐
+- Alibaba 供应商
+- 本地批发商
+- 一件代发
+
+---
+
+## 产品筛选标准
+
+| 指标 | 推荐值 | 说明 |
+|------|--------|------|
+| 售价 | $25-70 | 利润空间足够 |
+| 重量 | <2 磅 | 物流成本低 |
+| 竞争 | <500 评论 | 容易进入 |
+| 需求 | 300+ 月销 | 市场够大 |
+| 利润 | >30% | 健康利润率 |
+
+---
+
+## 使用场景
+
+- 📦 **Amazon FBA**: 发现高利润产品
+- 🛍️ **Shopify**: 选品 + 独立站运营
+- 📱 **Dropshipping**: 一件代发产品研究
+- 🎨 **Etsy**: 手工艺品市场分析
+- 📈 **品牌卖家**: 产品线扩展
+
+---
+
+## 费用说明
+
+- **免费版**: 5 次研究/天，基础数据
+- **专业版**: $9.99/月，无限研究 + 全部功能
+- **企业版**: $49.99/月，团队账户 + API 访问
+
+**[查看完整定价 →](../../PAID-TIER.md)**
+
+---
+
+## 技术支持
+
+- 📧 Email: support@example.com
+- 💬 Telegram: @xiaohan_support
+- 🌐 文档：[电商产品研究指南](../../docs/ecommerce.md)
+
+---
+
+**作者**: chenghaifeng08-creator  
+**版本**: 1.0.0  
+**最后更新**: 2026-03-27
