@@ -3,11 +3,16 @@
   "slug": "manobrowser",
   "displayName": "ManoBrowser",
   "latest": {
-    "version": "2.2.6",
-    "publishedAt": 1775127382344,
-    "commit": "https://github.com/openclaw/skills/commit/ab40d9dbf74a8673fe49a905eb31abf237019066"
+    "version": "2.2.7",
+    "publishedAt": 1776310370713,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.6",
+      "publishedAt": 1775127382344,
+      "commit": "https://github.com/openclaw/skills/commit/ab40d9dbf74a8673fe49a905eb31abf237019066"
+    },
     {
       "version": "2.2.1",
       "publishedAt": 1774859162902,
