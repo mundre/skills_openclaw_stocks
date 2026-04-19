@@ -1,38 +1,44 @@
 ---
-name: maserati
-description: "Information assistant for Maserati 玛莎拉蒂. Search models, specs, pricing, reviews, and dealership info."
-metadata:
-  { "openclaw": { "emoji": "🚗", "version": "0.1.0", "author": "hanxueyuan", "tags": ["automotive","brand","cars"] } }
+summary: "玛莎拉蒂 Maserati——意大利超豪华品牌、三叉戟标志、Stellantis 集团旗下"
+read_when:
+  - 查询玛莎拉蒂 · Maserati相关信息
+  - 了解相关行业发展
 ---
 
-# 🚗 Maserati 玛莎拉蒂 — Automotive Info Assistant
+# 玛莎拉蒂 · Maserati
 
-Your AI guide to Maserati 玛莎拉蒂. Get model info, specs, pricing, reviews, and more.
+---
 
-## About
+## 发展历程
 
-- **Brand**: Maserati 玛莎拉蒂
-- **Category**: Italian luxury car maker
-- **Official Website**: https://www.maserati.com
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1914 年** | Maserati 三兄弟在博洛尼亚创立 |
+| **1926 年** | Tipo 26 赛车——第一辆玛莎拉蒂 |
+| **2000s** | 与法拉利共享发动机 |
+| **2020s** | MC20 超跑发布——独立发动机研发 |
 
-## What This Skill Does
+---
 
-1. **Model Lineup** — Current models, specs, pricing, and configurations
-2. **Reviews & Comparisons** — Expert and user reviews, competitor comparisons
-3. **Pricing & Deals** — MSRP, dealer pricing, incentives, and financing options
-4. **News & Updates** — Latest launches, recalls, technology updates
-5. **Dealership Locator** — Find nearby dealers and service centers
+## 核心特点
 
-## Example Queries
+豪华跑车和轿车
 
-- "What Maserati models are available?"
-- "Compare Maserati vs [competitor]"
-- "Maserati latest news"
-- "Best Maserati for families"
+## 核心优势
 
-## How It Works
+意大利超豪华品牌 + 三叉戟标志的辨识度
 
-Uses web search to fetch real-time information from https://www.maserati.com, automotive review sites, and dealer networks.
+---
 
-## Author
-Created by hanxueyuan | License: MIT
+## 关键数据
+
+| 指标 | 数值 |
+|------|------|
+| 母公司 | Stellantis |
+| 年销量 | 约 30000 辆 |
+
+---
+
+## 值得了解
+
+玛莎拉蒂的三叉戟标志来自博洛尼亚海神广场的海神雕像
