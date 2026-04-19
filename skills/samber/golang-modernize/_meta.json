@@ -3,9 +3,15 @@
   "slug": "golang-modernize",
   "displayName": "Golang Modernize",
   "latest": {
-    "version": "1.1.1",
-    "publishedAt": 1774607315419,
-    "commit": "https://github.com/openclaw/skills/commit/9825bb0d6e26a68ba5aab9b973d7dc130e4a2f2f"
+    "version": "1.1.3",
+    "publishedAt": 1774996923410,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.1",
+      "publishedAt": 1774607315419,
+      "commit": "https://github.com/openclaw/skills/commit/9825bb0d6e26a68ba5aab9b973d7dc130e4a2f2f"
+    }
+  ]
 }
