@@ -1,13 +1,18 @@
 {
   "owner": "goog",
   "slug": "kcard",
-  "displayName": "Knowledge card creator, your memory helper",
+  "displayName": "Knowledge card creator, your memory notes",
   "latest": {
-    "version": "1.6.4",
-    "publishedAt": 1775176875721,
-    "commit": "https://github.com/openclaw/skills/commit/3cedd0e2414750a26c7de473008aa86487bde0e1"
+    "version": "1.6.5",
+    "publishedAt": 1776047190527,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.6.4",
+      "publishedAt": 1775176875721,
+      "commit": "https://github.com/openclaw/skills/commit/3cedd0e2414750a26c7de473008aa86487bde0e1"
+    },
     {
       "version": "1.1.1",
       "publishedAt": 1774876687101,

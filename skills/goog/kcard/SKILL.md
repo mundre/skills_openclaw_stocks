@@ -1,6 +1,6 @@
 ---
 name: kcard
-description: Knowledge Card generator. Extracts key knowledge from user-provided material (text, files, URLs), determines optimal card type (concept/备忘/流程/对比), applies cognitive science principles (chunking, dual coding, elaboration), outputs structured Markdown, and renders it into a beautiful image. Use when user says "知识卡片", "kcard", "make a card", "学习卡片", "knowledge card", or wants to turn notes/articles into memorable visual cards.
+description: Knowledge Card generator. Extracts key knowledge from user-provided material (text, files, URLs), determines optimal card type (concept/memo/process/comparison), applies cognitive science principles (chunking, dual coding, elaboration), outputs structured Markdown, and renders it into a beautiful image. Use when user says "知识卡片", "kcard", "make a card", "knowledge card", or wants to turn notes/articles into memorable visual cards.
 ---
 
 # Knowledge Card Generator
@@ -22,10 +22,10 @@ Pick the **best-fit** type based on content nature:
 
 | Type | Trigger Pattern | Structure |
 |------|----------------|-----------|
-| **概念卡** (Concept) | Defines a term, theory, model | Term → Definition → Analogy → Key Points |
-| **备忘卡** (Memo) | Steps, commands, configs, references | Title → Ordered Steps → Tips / Gotchas |
-| **流程卡** (Process) | Sequential workflow or lifecycle | Title → Phases → Steps per Phase → Output |
-| **对比卡** (Comparison) | Compares 2+ items | Dimension → Item A vs Item B → Verdict |
+| **Concept** | Defines a term, theory, model | Term → Definition → Analogy → Key Points |
+| **Memo** | Steps, commands, configs, references | Title → Ordered Steps → Tips / Gotchas |
+| **Process** | Sequential workflow or lifecycle | Title → Phases → Steps per Phase → Output |
+| **Comparison** | Compares 2+ items | Dimension → Item A vs Item B → Verdict |
 
 If unsure, default to **Concept card**.
 
