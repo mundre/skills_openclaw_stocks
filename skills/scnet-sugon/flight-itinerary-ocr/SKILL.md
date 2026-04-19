@@ -1,7 +1,7 @@
 ---
 name: flight_itinerary_ocr
-description: 支持从航空运输电子客票行程单中提取旅客姓名、身份证号、航班号、起降地、起降时间、票价、燃油附加费、民航发展基金及电子客票号码
-version: 1.0.0
+description: 支持从航空运输电子客票行程单中提取旅客姓名、身份证号、航班号、起降地、起降时间、票价、燃油附加费、民航发展基金及电子客票号码等信息识别并提取出来
+version: 1.0.5
 author: SCNet
 license: MIT
 tags:
@@ -9,6 +9,14 @@ tags:
   - 证件识别
   - 发票识别
   - 文字提取
+required_env_vars:
+  - SCNET_API_KEY
+optional_env_vars:
+  - SCNET_API_BASE
+primary_credential: SCNET_API_KEY
+dependencies:
+  - python3
+  - requests
 input:
   - ocrType : 识别类型，可选值见下文
   - filePath : 待识别图片的本地路径
@@ -16,14 +24,11 @@ output: 结构化的 JSON 数据，包含识别结果和置信度
 ---
 # Sugon-Scnet 通用 OCR 技能
 
-本技能封装了 Sugon-Scnet 通用 OCR 服务，通过单一接口即可调用 10 种识别能力，高效提取文字及票据信息。
+本技能封装了 Sugon-Scnet 航空运输电子客票行程单 OCR 服务，通过单一接口即可调用 1 种识别能力，高效提取文字及票据信息。
 
 ## 功能特性
 
-- **通用文字识别**：提取图片中的全部文字，支持横竖版及坐标定位。
-- **个人证照**：识别大陆身份证（姓名、身份证号等）、银行卡（卡号、银行等）。
-- **行业资质**：识别营业执照（统一社会信用代码、企业名称等）。
-- **财务票据**：覆盖增值税发票、出租车票、火车票、航空行程单、机动车销售统一发票，自动提取关键字段。
+- **航空运输电子客票行程单票据**：覆盖航空运输电子客票行程单发票，自动提取关键字段。
 
 ## 前置配置
 
@@ -37,11 +42,7 @@ output: 结构化的 JSON 数据，包含识别结果和置信度
 
 ### 配置 Token
 
-**方式一：让 AI 配置**
-
-> “帮我配置 Scnet OCR，Token 是：`xxx`”
-
-**方式二：手动配置**
+**手动配置（推荐）**
 1. 在技能目录下创建 `config/.env` 文件，内容如下：
 ```ini
 # =====  Sugon-Scnet OCR API 配置 =====
@@ -51,11 +52,21 @@ SCNET_API_KEY=your_scnet_api_key_here
 # API 基础地址（一般无需修改）
 SCNET_API_BASE=https://api.scnet.cn/api/llm/v1
 ```
+2. 添加：`SCNET_API_KEY=你的密钥`
+3. 设置文件权限为 600（仅所有者可读写）
+**⚠️ 安全警告**：切勿将 API Key 直接粘贴到聊天对话中，否则可能被记录或泄露。
 
 ### Token 更新
 
 Token 过期后调用会返回 401 或 403 错误。更新方法：重新申请 Token 并替换 config/.env 中的 SCNET_API_KEY。
 
+### 依赖安装
+
+本技能需要 Python 3.6+ 和 requests 库。请运行以下命令：
+
+```bash
+   pip install requests
+```
 ---
 ### 使用方法
 
@@ -69,7 +80,7 @@ Token 过期后调用会返回 401 或 403 错误。更新方法：重新申请 
 ### 命令行调用示例
 
 ```bash
-python .claude/skills/sugon-scnet-ocr/scripts/main.py VAT_INVOICE /path/to/invoice.jpg
+   python .claude/skills/flight_itinerary_ocr/scripts/main.py AIRPORT_TICKET /path/to/invoice.jpg
 ```
 
 ### 在 AI 对话中使用
@@ -79,6 +90,10 @@ python .claude/skills/sugon-scnet-ocr/scripts/main.py VAT_INVOICE /path/to/invoi
 - “帮我识别这张飞机票，图片在 /Users/name/Downloads/id.jpg”
 
 AI 会根据 description 中的关键词自动触发本技能。
+
+### AI 调用建议
+为避免触发 API 速率限制（10 QPS），请串行调用本技能，即等待前一个识别完成后再发起下一个请求。
+如果使用 OpenClaw 的 exec 工具，建议设置 timeout 或 yieldMs 参数，让命令同步执行，避免多个命令同时运行导致并发。
 
 ### 配置选项
 
@@ -95,6 +110,12 @@ AI 会根据 description 中的关键词自动触发本技能。
 - 识别结果位于 data[0].result[0].elements 中，具体字段取决于 ocrType。
 - 错误信息：如果发生错误，会输出以 `错误:` 开头的友好提示。
 
+### 注意事项
+
+- 本技能调用的 OCR API 有 10 QPS 的速率限制。
+- 如果遇到 429 错误，请等待 2-3 秒后重试，不要连续发起请求。
+- 建议在调用前确保图片已准备就绪，避免因网络问题导致重复调用。
+
 ### 故障排除
 
 | 问题 | 解决方案 |
@@ -105,5 +126,6 @@ AI 会根据 description 中的关键词自动触发本技能。
 | 网络连接失败 | 检查网络连接或防火墙设置 |
 | 不支持的文件类型 | 确保文件扩展名为允许的类型（参考 API 文档） |
 | 401/403/Unauthorized | Token 无效或过期，重新申请并配置 |
+| 429 Too Many Requests | 请求过于频繁，技能会自动等待并重试（最多 3 次）。若持续失败，请降低调用频率或联系服务方提高限额。 |
 
 
