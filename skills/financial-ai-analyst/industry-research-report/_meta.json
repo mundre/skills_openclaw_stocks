@@ -3,11 +3,16 @@
   "slug": "industry-research-report",
   "displayName": "Industry Research Agent",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775818856616,
-    "commit": "https://github.com/openclaw/skills/commit/41a79c836ea393cf0d84750ee97dc46a220c9e54"
+    "version": "1.0.3",
+    "publishedAt": 1776424711133,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775818856616,
+      "commit": "https://github.com/openclaw/skills/commit/41a79c836ea393cf0d84750ee97dc46a220c9e54"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1775210091501,

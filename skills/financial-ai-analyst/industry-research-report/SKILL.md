@@ -1,5 +1,5 @@
 ---
-name: industry_research_report
+name: industry-research-report
 description: >
   依托东方财富数据库，为指定行业生成深度研究报告。
   当用户问题中出现可识别的行业/产业/领域主体，且意图属于行业认知、产业剖析或撰写研究报告时，应触发本 Skill。
