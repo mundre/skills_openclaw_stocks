@@ -1,0 +1,11 @@
+{
+  "owner": "highnoonoffice",
+  "slug": "agent-ping-pong",
+  "displayName": "Agent Ping Pong",
+  "latest": {
+    "version": "2.5.3",
+    "publishedAt": 1776636000211,
+    "commit": null
+  },
+  "history": []
+}
