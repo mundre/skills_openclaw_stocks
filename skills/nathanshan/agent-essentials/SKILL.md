@@ -1,6 +1,6 @@
 ---
 name: agent-essentials
-description: Meta-skill for capability expansion and cautious self-improvement. Use when a request suggests a missing capability, external platform support, workflow automation, integration work, or a reusable process that may benefit from skill discovery before giving up. Also use when a meaningful failure, user correction, recurring mistake, or better workflow should be captured and routed into future behavior.
+description: Meta-skill for capability expansion and cautious self-improvement. USE WHEN (a) a request suggests a missing capability, external platform support, workflow automation, integration work, or any reusable process that may benefit from skill discovery before giving up — common phrases include "automate X", "integrate with X", "support X platform", "帮我自动化X", "对接X", "做一个工具来X"; OR (b) a meaningful failure, user correction, recurring mistake ("again", "this is the Nth time", "又错了", "这是第N次了"), or better workflow should be captured and routed into a durable file (AGENTS.md / TOOLS.md / USER.md / SOUL.md). DO NOT use for one-off questions or trivial noise.
 ---
 
 # Agent Essentials
@@ -12,90 +12,81 @@ This skill has two jobs:
 
 ## Capability Expansion
 
-### Core idea
+**Rule**: never stop at "I can't" or "no built-in way" without checking for a better capability path.
 
-Do not stop at “I can’t,” “there’s no built-in way,” or “I don’t have a skill for that” without checking whether a better capability path exists.
-
-### Trigger signals
-
-Use this skill when the request implies:
-
-- external platform support
-- workflow automation
-- system integration
-- repeatable operational tasks
-- a likely capability gap that built-in tools do not clearly cover
-
-Common user phrasing includes:
-
-- “automate X”
-- “integrate with X”
-- “add a workflow for X”
-- “support X platform”
-- “help me do this in X”
+**Triggers** — request implies external platform / workflow automation / system integration / repeatable ops / capability gap. Common phrasing: *"automate X" / "integrate with X" / "support X platform" / "help me do this in X"*.
 
 ### Workflow
 
 1. **Detect the gap**
-   - Determine whether the request requires a reusable capability, external platform workflow, or operational integration rather than a one-off answer.
-   - Ask whether the current tool/skill set is clearly sufficient.
+   - **Input**: the user's request.
+   - **Test**: would solving this same request appear ≥2 times across this user's work? OR does it require a tool/platform not in the loaded skill list?
+   - **Output**: a 1-line verdict — `gap: <yes/no> — <which capability is missing>`. If `no`, exit this workflow and answer normally.
+   - **If ambiguous**: count yes on {*reusable later? / specific platform? / >1 step?*}; ≥2 yes → treat as gap.
 
 2. **Search**
-   - Check local skills and ClawHub before concluding that nothing exists.
-   - Prefer thorough discovery over improvising a weak workaround too early.
-   - Recommend **1–3 candidates** with **one clear best fit**.
+   - **Input**: gap verdict + missing-capability keywords from step 1.
+   - **Where**: (a) loaded skill list — match name/description/triggers; (b) ClawHub via `https://clawhub.ai/search?q=<keyword>`, try 1–3 variants.
+   - **Stop**: strong match found OR 3 variants returned nothing.
+   - **Output**: 1–3 candidates as `<name> — <one-line value> — <fit: strong/moderate/weak>`.
 
-3. **Act**
-   - Install the recommended skill if the user wants it.
-   - If no strong match exists, choose the best fallback:
-     - do the task directly
-     - create a custom skill
-     - refine the search
+3. **Act** — pause for user confirmation before any of these:
+   - **Installing a skill** → show name, source, one-line value, and ask "install? [y/N]" before downloading.
+   - **Creating a new custom skill** → show the proposed name + 3-line description and ask before scaffolding.
+   - **Doing the task directly** → only this branch may proceed without confirmation, and only if no fallback above is viable.
 
 ## Self-Improvement
 
-### Core idea
+**Rule**: when something meaningful is learned, preserve the minimum useful lesson.
 
-When something meaningful is learned, preserve the minimum useful lesson so future behavior improves.
-
-### Trigger signals
-
-Use this part of the skill after:
-
-- a meaningful failure
-- a user correction
-- a recurring mistake
-- discovery of a better workflow
-
-Do **not** log trivial failures or one-off noise.
+**Triggers** — meaningful failure / user correction / recurring mistake / discovery of a better workflow. Do **not** log trivial failures or one-off noise.
 
 ### Workflow
 
 1. **Capture**
-   - Record the smallest useful unit:
-     - what happened
-     - what is actually correct
-     - what to do next time
+   - **Input**: the trigger event (failure / correction / insight).
+   - **Output**: a 3-line lesson:
+     ```
+     What: <what went wrong or was discovered>
+     Correct: <the actually correct behavior>
+     Next time: <concrete trigger → action>
+     ```
+   - **Reject**: can't fit in 3 lines → lesson too vague, sharpen first.
 
 2. **Route**
    - Store the learning in the right place:
 
-| Type | Destination |
-|---|---|
-| Session note | Daily memory / learnings file |
-| Workflow rule | `AGENTS.md` |
-| Tool gotcha | `TOOLS.md` |
-| Voice / boundary pattern | `SOUL.md` |
-| User preference | `USER.md` or long-term memory |
-| Missing capability | Skill discovery or skill creation |
+| Type | Destination | Confirm? |
+|---|---|---|
+| Session note | Daily memory / learnings file | — |
+| Workflow rule | `AGENTS.md` | ✓ |
+| Tool gotcha | `TOOLS.md` | ✓ |
+| Voice / boundary pattern | `SOUL.md` | ✓ |
+| User preference | `USER.md` or long-term memory | ✓ |
+| Missing capability | Skill discovery (see above) | ✓ |
 
-3. **Promote**
-   - Promote a lesson into durable guidance only if it is:
-     - **recurring**
-     - **high-value**
-     - **broadly reusable**
-     - **likely to prevent future mistakes**
-   - Keep one-off lessons local.
+   - For any ✓ row: show the diff and ask "append to <file>? [y/N]" before writing. Never silently mutate durable files.
+
+3. **Promote** to durable file only if **all** hold:
+     - **Recurring** — ≥2 occurrences (user saying "Nth time" / "又错了" is proof)
+     - **High-value** — non-trivial consequence (broken CI, lost work, wrong user output), not style nits
+     - **Broadly reusable** — class of situations, not one specific file/PR
+     - **Rule-preventable** — a future-you reading the rule would avoid it
+   - If any fails, keep in daily memory only.
+
+## File Locations
+
+Resolve durable files in this order — first hit wins:
+
+| File | Lookup order |
+|---|---|
+| `AGENTS.md` | `./AGENTS.md` → `~/.claude/AGENTS.md` |
+| `TOOLS.md` | `./TOOLS.md` → `~/.claude/TOOLS.md` |
+| `SOUL.md` | `./SOUL.md` → `~/.claude/SOUL.md` |
+| `USER.md` | `~/.claude/USER.md` (always user-scoped) |
+| Daily memory | `~/.claude/memory/YYYY-MM-DD.md` (auto-create if missing) |
+
+If none exists and a write is approved, create at the project-root path (or `~/.claude/` for `USER.md`) and tell the user "creating new file `<path>`."
 
 ## Decision Tree
 
@@ -109,10 +100,13 @@ Something notable happened
    └─ Continue normally
 ```
 
+## Edge Cases
+
+- **User declines install** → fall to "do directly" or "create custom"; do not re-pitch in this session.
+- **ClawHub unreachable** → state failure; rely on local list only; offer retry.
+- **2+ candidates tie "strong"** → show all + 1-line differentiator and let user pick; never silently choose.
+
 ## Principles
 
-- Search before saying “nothing exists.”
-- Prefer short useful learnings over elaborate templates.
-- Do not promote one-off lessons into permanent doctrine.
-- Do not install weak-matching skills just to reduce uncertainty.
-- Do not rewrite major workspace files casually.
+- Search before saying "nothing exists." Prefer short learnings over elaborate templates.
+- Do not promote one-off lessons. Do not install weak-matching skills just to reduce uncertainty. Do not rewrite major workspace files casually.
