@@ -91,7 +91,7 @@ Hosted mode:
 
 - `node`
 - `jq`
-- `python3` with Pillow
+- `npm install` in the repo root so the bundled PNG background compositor is available when a non-transparent background is requested
 
 Unity mode:
 
@@ -102,4 +102,5 @@ Unity mode:
 
 - Hosted mode ignores some local-only pose behavior.
 - Unity mode is mainly for fallback, debugging, and local experimentation.
+- No environment variables are required for normal hosted rendering.
 - The Unity `Library/`, `Logs/`, `UserSettings/`, `Renders/`, and top-level generated outputs are intentionally ignored.

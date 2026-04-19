@@ -1,6 +1,5 @@
 ---
 name: gotchi-3d-custom-render
-version: 1.1.1
 description: Render custom Aavegotchi 3D images from arbitrary trait and wearable combinations. Use when the user describes a synthetic or hypothetical gotchi look in plain language, asks for an outfit preview, headshot, or full-body image, and is not asking for an existing onchain token by tokenId or inventory URL.
 ---
 
@@ -35,8 +34,9 @@ Do not wait for the user to explicitly say `gotchi-3d-custom-render`.
 - requires a local Unity editor installation
 - hosted mode matches the existing Aavegotchi renderer look much more closely, but may ignore custom local-only pose behavior
 - Unity fallback is still useful for hypothetical combinations or local debugging
-- hosted mode can run on non-Unity hosts as long as `node`, `jq`, and `python3` with Pillow are available
+- hosted mode can run on non-Unity hosts as long as `node`, `jq`, and `npm install` have been run in the repo root so the bundled PNG background compositor is available when a non-transparent background is requested
 - intended for local development first, then AAi/Telegram integration through hosted mode
+- no environment variables are required for normal hosted rendering
 
 ## Routing Notes
 

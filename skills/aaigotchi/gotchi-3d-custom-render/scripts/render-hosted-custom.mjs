@@ -2,12 +2,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { loadRenderRequest } from "./load-render-request.mjs";
 
 const DAPP_BASE = "https://www.aavegotchi.com";
 const BATCH_ENDPOINT = `${DAPP_BASE}/api/renderer/batch`;
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const RENDER_TYPES = ["PNG_Full", "PNG_Headshot", "GLB_3DModel"];
 let GLOBAL_QUIET_FAIL = false;
 
@@ -266,34 +264,9 @@ function withTempSuffix(filePath, suffix) {
   return path.join(parsed.dir, `${parsed.name}${suffix}${parsed.ext}`);
 }
 
-function applyBackground(inputPath, outputPath, hexColor) {
-  const attempts = [
-    {
-      name: "swift",
-      command: "swift",
-      args: [path.join(SCRIPT_DIR, "add-bg-color.swift"), inputPath, outputPath, hexColor]
-    },
-    {
-      name: "python",
-      command: "python3",
-      args: [path.join(SCRIPT_DIR, "add-bg-color.py"), inputPath, outputPath, hexColor]
-    }
-  ];
-  const errors = [];
-
-  for (const attempt of attempts) {
-    const result = spawnSync(attempt.command, attempt.args, { encoding: "utf8" });
-    if (result.error && result.error.code === "ENOENT") {
-      continue;
-    }
-    if (result.status === 0) {
-      return;
-    }
-    const stderr = (result.stderr || "").trim();
-    errors.push(`${attempt.name}${stderr ? `: ${stderr}` : ""}`);
-  }
-
-  throw new Error(`Background compositing failed (${errors.join(" | ") || "no compositor available"})`);
+async function applyBackground(inputPath, outputPath, hexColor) {
+  const { applySolidBackground } = await import("./add-bg-color.mjs");
+  applySolidBackground(inputPath, outputPath, hexColor);
 }
 
 function emitAndExit(obj, code = 0, quiet = false) {
@@ -363,7 +336,7 @@ async function main() {
     throw new Error("Provide --input-json <request.json>.");
   }
 
-  const request = JSON.parse(fs.readFileSync(options.inputJson, "utf8"));
+  const request = loadRenderRequest(options.inputJson);
   const manifestPath = request?.output?.manifest_json;
   const fullOutput = request?.output?.full_png;
   const headshotOutput = request?.output?.headshot_png;
