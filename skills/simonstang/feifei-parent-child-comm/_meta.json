@@ -1,13 +1,18 @@
 {
   "owner": "simonstang",
   "slug": "feifei-parent-child-comm",
-  "displayName": "Feifei Parent Child Comm",
+  "displayName": "菲菲老师亲子沟通专家",
   "latest": {
-    "version": "3.1.2",
-    "publishedAt": 1775524354277,
-    "commit": "https://github.com/openclaw/skills/commit/bbb4cc21f8434058f829675661cbdd033c2d7f7b"
+    "version": "3.5.1",
+    "publishedAt": 1776309452663,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.1.2",
+      "publishedAt": 1775524354277,
+      "commit": "https://github.com/openclaw/skills/commit/bbb4cc21f8434058f829675661cbdd033c2d7f7b"
+    },
     {
       "version": "3.1.0",
       "publishedAt": 1775039762373,
