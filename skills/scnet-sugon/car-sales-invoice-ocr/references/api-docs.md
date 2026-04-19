@@ -16,22 +16,66 @@
 ## 响应结构
 ```json
 {
-  "code": "0",          // 应答码，0 表示成功
-  "msg": "success",     // 应答信息
-  "data": [             // 应答数据体
-    {
-      "result": [        // 票据识别结果数组
+    "code": "0",
+    "msg": "success",
+    "data": [
         {
-          "confidence": "0.98",
-          "coordinate": [3,584,3,1,412,1,412,584],
-          "elements": { ... },  // 核心识别字段，因类型而异
-          "isCopy": "0",
-          "page": 0,
-          "printOffset": "0"
+            "traceId": "202604010000020",
+            "originalFilename": "机动车销售统一发票示例.jpg",
+            "cosPath": "/ocr/202604/01/机动车销售统一发票示例.jpg",
+            "result": [
+                {
+                    "status": 200,
+                    "originFilename": "机动车销售统一发票示例.jpg",
+                    "cosPath": "/ocr/202604/01/机动车销售统一发票示例.jpg",
+                    "fileIndex": 1,
+                    "cutIndex": 0,
+                    "coordinate": [],
+                    "classifyCode": "MEDICAL_INVOICE",
+                    "confidence": 0.995,
+                    "elements": {
+                      "title": "机动车销售统一发票",
+                      "invoiceForm": "第一联:发票联",
+                      "invoiceCode": "163163163163",
+                      "invoiceNo": "390039",
+                      "issueDate": "20200702",
+                      "printedCode": "163163163163",
+                      "printedNo": "390039",
+                      "machineCode": "539929120039",
+                      "taxControlCode": "0343<-1<6097D+0>>79^6<00>*9^3+72<<05340343<-1<6097+",
+                      "buyerName": "中国流动服务股份有限公司河北省分行",
+                      "buyerTaxId": "91130000891130000Y",
+                      "buyerCode": "91130000891130000Y",
+                      "vehicleType": "流动服务车",
+                      "brandModel": "NJH5045XDWW6161",
+                      "originalPlace": "南京市",
+                      "qualifiedNo": "YV3342001942001",
+                      "importCertificateNo": "",
+                      "commodityInspectionNo": "",
+                      "engineNo": "1366666",
+                      "vehicleIdentificationNo": "LNVL9113000000998",
+                      "totalAmountUpper": "捌拾贰万圆整",
+                      "totalAmountLower": "820000",
+                      "sellerName": "青海经济技术开发区汽车销售有限公司",
+                      "sellerTaxId": "91632900595900595Q",
+                      "sellerAddressAndPhone": "青海省西宁市经济技术开发区开发路55号(0971-8877777)",
+                      "sellerBankAndAccount": "流动服务经济技术开发区支行|2806018309198130919",
+                      "taxRate": "13%",
+                      "taxAmount": "94336.28",
+                      "taxAuthorityName": "国家税务总局西宁经济技术开发区开发工业园区税务局税源管理股",
+                      "taxAuthorityCode": "163320000004",
+                      "preTaxAmount": "725663.72",
+                      "taxPaymentVoucher": "",
+                      "tonnage": "",
+                      "maxCapacity": "",
+                      "drawer": "王莺",
+                      "remark": ""
+                    },
+                    "stamps": []
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
 ```
 ## 错误码
