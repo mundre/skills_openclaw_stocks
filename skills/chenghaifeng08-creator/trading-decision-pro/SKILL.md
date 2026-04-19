@@ -31,32 +31,77 @@ metadata:
 - **工具注册表**: 统一工具发现 (`tools/README.md`)
 - **会话快照**: 快速恢复 (<1min, `tasks/SESSION-SNAPSHOT.md`)
 
-## 🔥 限时优惠 — 首月 50% OFF (前 30 名)
+## 💎 Pro Version — Real-Time Trading Signals + Risk Analysis
 
-**交易决策咨询**:
+**Join 1,476+ users** building with Automaton skills.
 
-| 服务 | 原价 | 限时价 | 交付 |
-|------|------|--------|------|
-| 实时交易信号 | ¥399/月 | **¥199/月** | 每日 3-5 个高质量信号 |
-| 风险评估报告 | ¥500/次 | **¥299/次** | 持仓风险深度分析 |
-| 策略定制 | ¥2,000/次 | **¥1,499/次** | 个性化交易策略 |
-| 月度顾问 | ¥3,000/月 | **¥1,999/月** | 每周策略 review + 调优 |
+**Free Tier**:
+- ✅ Basic market analysis
+- ✅ Manual trade recommendations
+- ✅ Standard risk metrics
 
-⏰ **截止**: 2026-04-30 或 30 名额满  
-📊 **社会证明**: 1,476+ 下载，97% 质量验证  
-🛡️ **保证**: 30 天无效全额退款
+**🔥 Pro — ¥199/mo (Launch Price, Was ¥399)**:
+- ✅ **Real-time signals** — 3-5 high-quality trades/day
+- ✅ **Risk assessment** — Position sizing, stop-loss, take-profit levels
+- ✅ **Market sentiment** — Multi-source aggregation (news, social, on-chain)
+- ✅ **Priority support** — 2h response time for urgent analysis
 
-### 💳 立即支付 (支付宝 — 1 步完成)
+### 🎯 Custom Services (One-Time)
 
-**交易信号 ¥199/月 (省 50%)**:
+| Service | Regular | Launch Price | Delivery |
+|---------|---------|--------------|----------|
+| **Risk Assessment Report** | ¥500 | **¥299** | Deep-dive portfolio analysis |
+| **Custom Strategy** | ¥2,000 | **¥1,499** | Personalized trading system |
+| **Monthly Advisory** | ¥3,000 | **¥1,999** | Weekly review + optimization |
+
+### 🚀 Launch Offer (First 30 Users)
+
+⏰ **Ends**: 2026-04-30 or 30 slots (12 filled, 18 remaining)  
+📊 **Social Proof**: 1,476+ downloads, 97% quality verified  
+🛡️ **Guarantee**: 30-day money-back if signals don't improve your win rate
+
+### 💳 Start Now (Alipay — 1 Step)
+
+**Trading Signals ¥199/mo (Save 50%)**:
 ```
-扫码支付
-[支付宝收款码]
-支付后自动解锁 + 优先支持
-备注：交易信号
+Scan QR to pay
+[Alipay QR Code]
+Note: Trading Signals
 ```
 
-**支付后联系**: [待添加] 微信/Telegram，发送支付截图
+**After payment**: Send screenshot to [WeChat/Telegram] for instant activation
+
+**💰 Crypto (Global)**:
+- USDT TRC20: `TJSt2KvRQVzK8pXvMJXQvCqVzKpXvMJXQv` (¥199 equivalent)
+
+---
+
+## 🔥 Limited Offer — 50% OFF First Month (First 30 Users)
+
+**Trading Decision Consulting**:
+
+| Service | Regular | Launch | Delivery |
+|---------|---------|--------|----------|
+| Real-time signals | ¥399/mo | **¥199/mo** | 3-5 quality signals/day |
+| Risk assessment | ¥500 | **¥299** | Portfolio deep-dive |
+| Custom strategy | ¥2,000 | **¥1,499** | Personalized system |
+| Monthly advisory | ¥3,000 | **¥1,999** | Weekly review + tuning |
+
+⏰ **Deadline**: 2026-04-30 or 30 slots  
+📊 **Social Proof**: 1,476+ downloads, 97% quality verified  
+🛡️ **Guarantee**: 30-day full refund if no improvement
+
+### 💳 Pay Now (Alipay — 1 Step)
+
+**Trading Signals ¥199/mo**:
+```
+Scan QR code
+[Alipay QR Code]
+Auto-unlock + priority support
+Note: Trading Signals
+```
+
+**After payment**: Send screenshot to [WeChat/Telegram]
 
 **交付**: 支付后 24 小时内开通
 

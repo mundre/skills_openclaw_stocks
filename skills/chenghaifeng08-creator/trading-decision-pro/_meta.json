@@ -3,9 +3,15 @@
   "slug": "trading-decision-pro",
   "displayName": "Trading Decision Pro",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774794320214,
-    "commit": "https://github.com/openclaw/skills/commit/7d4286db4407957739365ed1b5da3bc781055a04"
+    "version": "1.0.1",
+    "publishedAt": 1776236042819,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774794320214,
+      "commit": "https://github.com/openclaw/skills/commit/7d4286db4407957739365ed1b5da3bc781055a04"
+    }
+  ]
 }
