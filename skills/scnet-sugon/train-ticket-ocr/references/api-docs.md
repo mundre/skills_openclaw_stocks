@@ -16,22 +16,54 @@
 ## 响应结构
 ```json
 {
-  "code": "0",          // 应答码，0 表示成功
-  "msg": "success",     // 应答信息
-  "data": [             // 应答数据体
-    {
-      "result": [        // 票据识别结果数组
+    "code": "0",
+    "msg": "success",
+    "data": [
         {
-          "confidence": "0.98",
-          "coordinate": [3,584,3,1,412,1,412,584],
-          "elements": { ... },  // 核心识别字段，因类型而异
-          "isCopy": "0",
-          "page": 0,
-          "printOffset": "0"
+            "traceId": "202604010000019",
+            "originalFilename": "火车票示例.jpg",
+            "cosPath": "/ocr/202604/01/火车票示例.jpg",
+            "result": [
+                {
+                    "status": 200,
+                    "originFilename": "火车票示例.jpg",
+                    "cosPath": "/ocr/202604/01/火车票示例.jpg",
+                    "fileIndex": 1,
+                    "cutIndex": 0,
+                    "coordinate": [],
+                    "classifyCode": "TRAIN_TICKET",
+                    "confidence": 0.997,
+                    "elements": {
+                      "title": "电子发票(铁路电子客票)",
+                      "ticketNo": "03C027012",
+                      "departStation": "南京",
+                      "destinationStation": "上海虹桥",
+                      "trainNo": "D1021",
+                      "departDate": "20220120",
+                      "departTime": "0.265972222222222",
+                      "seatPostion": "03车01F号",
+                      "seatNo": "一等座",
+                      "ticketPrice": "48",
+                      "passengerName": "梁某某",
+                      "identifyId": "3422011966****1111",
+                      "invoiceNo": "22119230671000000011",
+                      "invoiceDate": "20220317",
+                      "preTaxAmount": "45.28",
+                      "taxRate": "0.06",
+                      "taxAmount": "2.72",
+                      "elecTicketNo": "306712A086012090014312022",
+                      "originInvoiceNo": "22119230671000000010",
+                      "buyerName": "铁路客票电子发票测试单位",
+                      "socialCreditCode": "91110001110AE35858",
+                      "refundTag": "Y",
+                      "replaceTag": "Y",
+                      "otherInfo": ""
+                    },
+                    "stamps": []
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
 ```
 ## 错误码
