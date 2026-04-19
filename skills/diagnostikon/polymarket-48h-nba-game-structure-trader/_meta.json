@@ -3,11 +3,16 @@
   "slug": "polymarket-48h-nba-game-structure-trader",
   "displayName": "Polymarket 48h Nba Game Structure Trader",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775316903672,
-    "commit": "https://github.com/openclaw/skills/commit/4d01c52468636739c90cc36f7bea72728c9d1572"
+    "version": "0.0.2",
+    "publishedAt": 1776513074215,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775316903672,
+      "commit": "https://github.com/openclaw/skills/commit/4d01c52468636739c90cc36f7bea72728c9d1572"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1774610716487,
