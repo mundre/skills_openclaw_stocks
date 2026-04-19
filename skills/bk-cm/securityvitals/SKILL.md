@@ -1,6 +1,7 @@
 ---
 name: securityvitals
-description: Security vitals checker, also known as ClawVitals. Scans your installation, scores your setup, and shows you exactly what to fix. First scan in seconds.
+displayName: ClawVitals
+description: Security vitals checker for OpenClaw. Scans your installation, scores your setup, and shows you exactly what to fix. First scan in seconds.
 homepage: https://clawvitals.io
 tags: [security, audit, health-check, openclaw, monitoring, vitals, security-vitals]
 metadata: {"openclaw": {"requires": {"bins": ["openclaw", "node"]}, "minVersion": "2026.3.0"}}
@@ -8,9 +9,9 @@ metadata: {"openclaw": {"requires": {"bins": ["openclaw", "node"]}, "minVersion"
 
 # ClawVitals
 
-Security health check for self-hosted OpenClaw installations. Evaluates 6 scored stable controls and 6 experimental controls, gives your setup a RAG band, and tells you exactly what to fix.
+Security health check for self-hosted OpenClaw installations. Evaluates 9 scored stable controls and 6 experimental controls, gives your setup a RAG band, and tells you exactly what to fix.
 
-**This skill is stateless and does not store scan history. The skill itself makes no network calls. Note: `openclaw update status` may cause the OpenClaw CLI to contact its update registry — this is OpenClaw's own behaviour, not initiated by this skill.**
+**This skill is stateless and does not store scan history. This skill makes no direct network calls and declares no network permissions. Note: one of the five CLI commands this skill runs — `openclaw update status` — may cause the OpenClaw CLI itself to contact its update registry. This is OpenClaw's own behaviour, not a network call made by this skill.**
 
 > This skill performs point-in-time checks only. Scan history, recurring monitoring, and the clawvitals.io/dashboard are part of the ClawVitals plugin — see clawvitals.io/plugin.
 
@@ -27,11 +28,9 @@ show clawvitals details     → full report with remediation steps
 
 ## How to run a scan
 
-When the user says "run clawvitals" or similar, execute ALL of the following commands and collect their full output **before** evaluating anything.
+When the user says "run clawvitals" or similar, execute the following commands. Extract only the specific fields listed for each command — do not store or reproduce raw output. Never display API keys, tokens, credentials, secrets, or any sensitive values that may appear in command output.
 
-**Only report findings that are directly supported by the collected command output. Do not infer, guess, or invent checks that are not explicitly covered below. If a check cannot be evaluated reliably, report it as ➖ N/A rather than guessing.**
-
-**Do not reproduce raw CLI output in your response. Extract only the specific fields needed to evaluate each control. Never display API keys, tokens, credentials, secrets, or sensitive values that may appear in command output.**
+**Only report findings that are directly supported by the extracted fields below. Do not infer, guess, or invent checks. If a check cannot be evaluated reliably, report it as ➖ N/A.**
 
 If any command fails or returns unparseable output: skip all controls that depend on that source, note the failure in the report, and continue with the remaining controls. Do not abort the scan.
 
@@ -41,38 +40,39 @@ If any command fails or returns unparseable output: skip all controls that depen
 ```
 openclaw security audit --json
 ```
-Returns JSON with `findings[]`. Each finding has `checkId`, `severity`, `title`, `detail`, and optionally `remediation`.
+Extract only: `findings[].checkId` and `findings[].detail` (for the `summary.attack_surface` finding only). Discard all other fields. Do not display raw `detail` field text in your response — the permitted display values for each finding are defined explicitly in the control evaluation steps below, and only those values may be shown to the user.
 
 **Health check:**
 ```
 openclaw health --json
 ```
-Returns JSON with `channels{}`. Each channel has `configured` (boolean), `probe.ok` (boolean), `probe.error` (string), and for iMessage specifically: `cliPath` (string or null).
+Extract only: for each channel entry — `configured` (boolean), `probe.ok` (boolean), `probe.error` (string if present), and for iMessage specifically: `cliPath` (string or null). Discard all other fields.
 
 **Version:**
 ```
 openclaw --version
 ```
-Returns a string like `OpenClaw 2026.3.13 (61d171a)`. Extract the version number (e.g. `2026.3.13`).
+Extract only: the version string (e.g. `2026.3.13`) from output like `OpenClaw 2026.3.13 (61d171a)`.
 Note: OpenClaw uses date-based versioning in `YYYY.M.D` format — the second segment is the month, not a semver minor.
 
 **Update status:**
 ```
 openclaw update status --json
 ```
-Returns JSON with `availability.hasRegistryUpdate` (boolean) and `update.registry.latestVersion` (string or null).
+Extract only: `availability.hasRegistryUpdate` (boolean) and `update.registry.latestVersion` (string or null).
+Note: this command may cause the OpenClaw CLI to contact its update registry — this is OpenClaw's own behaviour, not initiated by this skill.
 
 **Node version:**
 ```
 node --version
 ```
-Returns a string like `v22.22.1`. Extract the major version number.
+Extract only: the major version number (e.g. `22` from `v22.22.1`).
 
 ---
 
 ### Step 2 — Evaluate stable controls (scored)
 
-These 6 controls contribute to the score. Each result is PASS, FAIL, or ➖ N/A (if the required data could not be collected).
+These 9 controls contribute to the score. Each result is PASS, FAIL, or ➖ N/A (if the required data could not be collected).
 
 ---
 
@@ -115,6 +115,36 @@ These 6 controls contribute to the score. Each result is PASS, FAIL, or ➖ N/A 
 - When FAIL, show the user:
   > `gateway.trustedProxies` is empty. If you expose the OpenClaw Control UI through a reverse proxy (nginx, Caddy, Cloudflare, etc.), set `gateway.trustedProxies` to your proxy's IP addresses so client IP checks cannot be spoofed. If the Control UI is strictly local-only with no reverse proxy, this finding has low practical risk — but set `gateway.trustedProxies: []` explicitly to document the intent.
   > Full fix guide: clawvitals.io/docs/nc-auth-001
+
+---
+
+**NC-OC-012 | Critical | Gateway authentication not configured**
+- PASS if: `findings[]` does NOT contain `checkId = "gateway.loopback_no_auth"`
+- FAIL if: `findings[]` DOES contain `checkId = "gateway.loopback_no_auth"`
+- N/A if: security audit failed or returned unparseable output
+- When FAIL, show the user:
+  > Your OpenClaw gateway has no authentication token configured. Anyone who can reach your gateway URL can send commands to your agent with no credentials required. Set a strong token immediately: `openclaw gateway auth set --type bearer --token $(openssl rand -hex 32)` then restart the gateway.
+  > Full fix guide: clawvitals.io/docs/nc-oc-012
+
+---
+
+**NC-OC-013 | Critical | Browser control requires gateway authentication**
+- PASS if: `findings[]` does NOT contain `checkId = "browser.control_no_auth"`
+- FAIL if: `findings[]` DOES contain `checkId = "browser.control_no_auth"`
+- N/A if: security audit failed or returned unparseable output
+- When FAIL, show the user:
+  > Browser control is enabled but the gateway has no authentication token. This exposes a powerful command interface to anyone who can reach the gateway — no credentials needed. Either set gateway auth (`openclaw gateway auth set --type bearer --token <token>`) or disable browser control if it's not in use.
+  > Full fix guide: clawvitals.io/docs/nc-oc-013
+
+---
+
+**NC-OC-014 | High | Gateway auth token meets minimum length**
+- PASS if: `findings[]` does NOT contain `checkId = "gateway.token_too_short"`
+- FAIL if: `findings[]` DOES contain `checkId = "gateway.token_too_short"`
+- N/A if: security audit failed or returned unparseable output
+- When FAIL, show the user:
+  > Your gateway auth token is below the minimum recommended length and is more vulnerable to brute-force attacks. Generate a stronger token: `openssl rand -hex 32` and set it with `openclaw gateway auth set --type bearer --token <new-token>`.
+  > Full fix guide: clawvitals.io/docs/nc-oc-014
 
 ---
 
@@ -223,7 +253,8 @@ Score is calculated based only on evaluated controls. Controls marked ➖ N/A ar
 **Summary format:**
 
 ```
-ClawVitals · OpenClaw {version}
+ClawVitals Skill v1.4.3 🔎
+OpenClaw {version}
 {band emoji} {band} — {score}/100
 
 | Control     | Severity | Result      |
@@ -258,6 +289,12 @@ After all findings, always append this line:
 ---
 
 ## show clawvitals details
+
+Begin the detail report with:
+```
+ClawVitals Skill v1.4.3 🔎  ·  Full Report
+OpenClaw {version}
+```
 
 Re-run all data collection (or use data already collected in the current conversation). Present:
 
@@ -308,7 +345,7 @@ Running your first scan now...
 - `openclaw update status --json`
 - `node --version`
 
-**Network access:** This skill makes no network calls and declares no network permissions. Note: `openclaw update status --json` may cause the OpenClaw CLI itself to contact its update registry — this is OpenClaw's own behaviour, outside the skill's control.
+**Network access:** This skill makes no direct network calls and declares no network permissions. One of the five CLI commands this skill runs — `openclaw update status --json` — may cause the OpenClaw CLI itself to contact its update registry. This is OpenClaw's own behaviour, outside the skill's control. If a fully offline scan is required, omit or skip the update status step.
 
 **Local storage:** Nothing is stored. This skill is stateless and does not store scan history.
 
