@@ -1,45 +1,65 @@
-# 更新日志
+# Changelog
 
-所有重要的更改都将记录在此文件中。
+All notable changes to this project will be documented in this file.
 
-格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
-版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+## [1.2.0] - 2026-03-26
 
-## [1.0.0] - 2026-03-24
+### Security
+- 🛡️ Nginx反向代理防护
+- 🔒 限流保护 (20次/分钟/IP)
+- 📦 上传限制 (50MB)
+- 🔐 安全头注入 (X-Frame-Options, X-Content-Type-Options)
 
-### 新增
-- 智能报价引擎核心框架
-- STEP/STP 3D 图纸解析模块
-- 风险控制与人工审核流程
-- 混合检索器 (规则匹配 + RAG)
-- OpenClaw 多渠道集成支持
-- 示例配置文件
-- 部署脚本
-- API 文档
+### Changed
+- README添加在线演示地址
+- 演示地址改为80端口 (Nginx代理)
 
-### 特性
-- 支持阳极氧化、镀锌、镀镍等 11 种表面处理识别
-- 支持铝合金、不锈钢、铜合金等材料报价
-- 自动提取 STEP 文件几何参数
-- 低置信度订单自动转人工审核
-- 与 OpenClaw Gateway 无缝集成
+## [1.1.0] - 2026-03-26
 
-### 文档
-- README.md - 项目介绍
-- docs/deployment.md - 部署指南
-- docs/api.md - API 文档
+### Added
+- 多平台API适配器 (`core/config.py`)
+- 支持 6 种 LLM 服务商
+- 多平台适配文档 (`docs/PROVIDERS.md`)
+- 本地模型支持 (Ollama)
 
----
+### Changed
+- 移除硬编码的 API 配置
+- 支持环境变量配置
+- 提高平台兼容性
 
-## 未来计划
+### Supported Providers
+| Provider | ID | API Key Required |
+|----------|-----|------------------|
+| DashScope | `dashscope` | Yes |
+| OpenAI | `openai` | Yes |
+| DeepSeek | `deepseek` | Yes |
+| 智谱AI | `zhipu` | Yes |
+| Moonshot | `moonshot` | Yes |
+| Ollama (本地) | `local` | No |
 
-### [1.1.0] - 计划中
-- Docker 镜像支持
-- Web UI 管理界面
-- 更多 CAD 格式支持 (IGES, STL)
+## [1.0.0] - 2026-03-26
 
-### [商业版]
-- 预训练模型
-- 行业价格数据库
-- 高级 RAG 检索
-- 定制化服务
+### Added
+- 初始版本发布
+- 核心报价引擎框架
+- STEP图纸解析模块
+- 风险控制模块
+- 混合检索器
+- 案例检索器
+- 中英文文档
+
+### Features
+- 材料库管理框架
+- 工时计算算法
+- 报价单生成
+- 风险预警
+
+### Documentation
+- README 中英文双语
+- 部署指南
+- API文档
+
+### Contact
+- 官网: https://openclaw.ai/cnc
+- 邮箱: miscdd@163.com
+- QQ: 849355070

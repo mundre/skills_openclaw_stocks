@@ -1,108 +1,66 @@
----
-name: openclaw-cnc-core
-description: 🦞 OpenClaw CNC 智能报价系统核心框架 - 支持 STEP 解析、智能报价、风险控制
-version: 1.2.0
-author: Timo2026
-license: MIT
-repository: https://github.com/Timo2026/openclaw-cnc-core
-tags:
-  - cnc
-  - quote
-  - cad
-  - step
-  - manufacturing
-  - ai
-  - openclaw
-metadata:
-  openclaw:
-    runtime: python3.8
-    entrypoint: core/quote_engine
-    channels:
-      - qqbot
-      - email
-      - feishu
-requirements:
-  env_vars:
-    - name: OPENCLAW_WORKSPACE
-      description: 工作目录路径（可选，默认当前目录）
-    - name: DASHSCOPE_API_KEY
-      description: DashScope API密钥（用于向量嵌入，可选）
-  external_apis:
-    - name: DashScope
-      purpose: 向量嵌入服务
-      optional: true
-    - name: Feishu Webhook
-      purpose: 风险预警通知
-      optional: true
----
+# OpenClaw CNC Core
 
-# OpenClaw CNC Core 🦞
+> CNC加工智能报价系统 | Intelligent CNC Machining Quote System
 
-> 基于 OpenClaw 的 CNC 智能报价系统核心框架
+## 简介
 
-## ⚠️ 重要说明
+OpenClaw CNC Core 是面向CNC加工行业的智能报价引擎，提供：
+- 📐 STEP/STL 图纸解析
+- 💰 智能报价计算
+- ⚠️ 风险控制预警
+- 🔍 历史案例检索
 
-### 外部API声明
+## 在线演示
 
-本系统使用以下外部服务（均为可选）：
+🌐 **演示地址**: http://47.253.101.130/
 
-| 服务 | 用途 | 必需 |
-|------|------|------|
-| **DashScope API** | 向量嵌入服务 | ❌ 可选 |
-| **Feishu Webhook** | 风险预警通知 | ❌ 可选 |
+> 🔒 安全防护：Nginx限流 (20次/分钟/IP) + 安全头 + 50MB上传限制
 
-### 环境变量
-
-```bash
-# 可选：设置工作目录
-export OPENCLAW_WORKSPACE=/your/workspace/path
-
-# 可选：DashScope API密钥（用于向量嵌入）
-export DASHSCOPE_API_KEY=your_api_key
-```
-
-## ✨ Features
-
-- 🔧 **Smart Quote Engine** - Rule + RAG hybrid decision system
-- 📐 **3D Drawing Parser** - STEP/STP file support, auto geometry extraction
-- ⚠️ **Risk Control** - Auto anomaly detection, manual review trigger
-- 🔍 **Case Retrieval** - Similar order matching for accuracy
-- 🚀 **OpenClaw Integration** - QQ/Email/Feishu multi-channel
-
-## 🚀 Quick Start
+## 快速开始
 
 ```python
 from core.quote_engine import OpenClawQuoteEngine
 
+# 初始化引擎
 engine = OpenClawQuoteEngine(config_dir="./config/examples")
-result = engine.calculate_quote(order_data)
-print(f"Quote: ¥{result.total_price}")
+
+# 计算报价
+order = {
+    "material": "铝6061",
+    "volume_cm3": 100,
+    "area_dm2": 20,
+    "quantity": 10,
+    "surface_treatment": "阳极氧化"
+}
+result = engine.calculate_quote(order)
+print(f"报价: ¥{result.total_price}")
 ```
 
-## 📦 Versions
+## 支持的LLM平台
 
-| Version | Features | Use Case |
-|---------|----------|----------|
-| **Community (Free)** | Engine framework + CAD parser + Examples | Learning, Small projects |
-| **Commercial (Paid)** | Pre-trained model + Price database + Support | Production, Enterprise |
+| 平台 | 标识符 | 需要API Key |
+|------|--------|-------------|
+| DashScope | `dashscope` | ✅ |
+| OpenAI | `openai` | ✅ |
+| DeepSeek | `deepseek` | ✅ |
+| 智谱AI | `zhipu` | ✅ |
+| Moonshot | `moonshot` | ✅ |
+| Ollama (本地) | `local` | ❌ |
 
-## 📥 Install
+## 版本
 
-```bash
-pip install cadquery trimesh open3d flask numpy pandas scipy
-```
+- **社区版**: MIT License，免费使用
+- **商业版**: 预训练模型 + 行业价格库 + 定制服务
 
-## 🔗 Links
+## 联系方式
 
-- **Gitee**: https://gitee.com/timo2026/openclaw-cnc-core
-- **GitHub**: https://github.com/Timo2026/openclaw-cnc-core
-- **Commercial**: cnc@openclaw.ai
-
-## 📄 License
-
-- Community: MIT License
-- Commercial: Contact for licensing
+- 🌐 官网: https://openclaw.ai/cnc
+- 📧 邮箱: miscdd@163.com
+- 💬 QQ: 849355070
+- GitHub: https://github.com/Timo2026/openclaw-cnc-core
 
 ---
 
-Made with ❤️ by [OpenClaw Team](https://openclaw.ai)
+**开源日期**: 2026-03-26  
+**版本**: v1.2.0  
+**许可证**: MIT

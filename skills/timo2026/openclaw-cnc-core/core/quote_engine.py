@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 CNC 智能报价系统 - P0 报价引擎
-版本：v1.2 (脱敏版)
-功能：表面处理识别 + 成本计算 + RAG 历史修正 + 工艺难度系数
+版本：v1.2 (统一数据层集成)
+功能：表面处理识别 + 成本计算 + RAG 历史修正 + 统一数据访问
 """
 
 import json
@@ -15,50 +15,25 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 from enum import Enum
 
+# 导入统一数据层
+import sys
+DATA_LAYER_PATH = os.path.expanduser("~/.openclaw/workspace/data")
+if DATA_LAYER_PATH not in sys.path:
+    sys.path.insert(0, DATA_LAYER_PATH)
+
+try:
+    from data_layer import get_data_layer, MaterialInfo, QuoteRecord
+    UNIFIED_DATA_AVAILABLE = True
+except ImportError:
+    UNIFIED_DATA_AVAILABLE = False
+    logging.warning("统一数据层不可用，使用本地配置")
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-
-# ========== v3.2 新增：工艺难度系数 ==========
-# 独立于几何复杂度，考虑材料特性和工艺约束
-PROCESS_DIFFICULTY = {
-    # 材料特性
-    "material": {
-        "钛合金TC4": 1.35,      # 刀具磨损极快，加工困难
-        "钛合金TA1": 1.30,      # 纯钛，略软但仍难
-        "不锈钢316": 1.20,      # 比304更难加工
-        "不锈钢304": 1.10,      # 标准难度
-        "模具钢H13": 1.25,      # 硬度高，刀具损耗大
-        "铜合金": 0.85,         # 软，易加工
-        "黄铜": 0.80,           # 最易加工
-        "铝合金6061": 0.90,     # 较易加工
-        "铝合金7075": 1.05,     # 高强度铝，稍难
-    },
-    # 结构特性（几何相关但独立于复杂度）
-    "structure": {
-        "薄壁(<2mm)": 1.20,     # 易变形，需要小心
-        "薄壁(<1mm)": 1.35,     # 极薄，难度大增
-        "深孔(>5D)": 1.40,      # 排屑困难
-        "深孔(>10D)": 1.60,     # 极深孔
-        "细长轴(L/D>10)": 1.25, # 刚性差，易振动
-        "异形腔": 1.15,         # 需要多轴联动
-        "内螺纹": 1.10,         # 攻丝风险
-        "外螺纹": 1.05,         # 相对简单
-    },
-    # 工艺约束
-    "constraint": {
-        "公差±0.01mm": 1.30,    # 超精密
-        "公差±0.02mm": 1.20,    # 高精密
-        "公差±0.05mm": 1.10,    # 精密
-        "Ra<0.8": 1.15,         # 高光洁度要求
-        "Ra<0.4": 1.25,         # 超高光洁度
-        "同轴度<0.02": 1.20,    # 形位公差严格
-    }
-}
 
 
 # ========== v3.2 新增：工艺难度系数 ==========

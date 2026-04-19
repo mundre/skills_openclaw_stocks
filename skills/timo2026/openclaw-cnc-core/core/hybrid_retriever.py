@@ -39,8 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("HybridRetriever")
 
-# 使用相对路径，避免硬编码
-WORKSPACE = Path(os.environ.get("OPENCLAW_WORKSPACE", Path.cwd()))
+WORKSPACE = Path("/home/admin/.openclaw/workspace")
 DB_PATH = WORKSPACE / "data" / "training_quotes.db"
 CONFIG_PATH = WORKSPACE / "data" / "retriever_config.json"
 
@@ -73,9 +72,20 @@ class RetrievalResult:
 class VectorRetriever:
     """向量检索器（需要API Key）"""
     
-    def __init__(self, api_key: str = None, api_url: str = None):
-        self.api_key = api_key or os.environ.get("DASHSCOPE_API_KEY")
-        self.api_url = api_url or "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    def __init__(self, api_key: str = None, api_url: str = None, provider: str = "dashscope"):
+        """
+        初始化混合检索器
+
+        Args:
+            api_key: API密钥（可选）
+            api_url: API地址（可选）
+            provider: 服务提供商，支持: dashscope, openai, deepseek, zhipu, moonshot, local
+        """
+        from .config import APIAdapter
+
+        self.adapter = APIAdapter(provider, api_key)
+        self.api_key = self.adapter.api_key
+        self.api_url = api_url or self.adapter.base_url
         self.available = False
         self._check_availability()
     

@@ -313,15 +313,9 @@ def validate_step_with_pdf(step_path: str, pdf_path: str = None) -> Dict:
 # ============ 测试 ============
 
 if __name__ == '__main__':
-    # 测试用例 - 使用环境变量或参数
-    import sys
-    
-    if len(sys.argv) >= 3:
-        step_file = sys.argv[1]
-        pdf_file = sys.argv[2]
-    else:
-        print("用法: python step_2d_validator.py <step_file> <pdf_file>")
-        sys.exit(1)
+    # 测试用例
+    step_file = "/home/admin/.openclaw/qqbot/downloads/G360L 舱门扩展-12''wafer 主体_1773973463882.STEP"
+    pdf_file = "/home/admin/.openclaw/qqbot/downloads/G360L 舱门扩展-12''wafer 主体_1773973461176.pdf"
     
     print("=== STEP + 2D 联动校准测试 ===\n")
     
