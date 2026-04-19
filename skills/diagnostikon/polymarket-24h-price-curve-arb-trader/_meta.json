@@ -3,11 +3,16 @@
   "slug": "polymarket-24h-price-curve-arb-trader",
   "displayName": "Polymarket 24h Price Curve Arb Trader",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775316866574,
-    "commit": "https://github.com/openclaw/skills/commit/1e30f7a86e7cd298c6923ae1141948acc5f3b70f"
+    "version": "0.0.2",
+    "publishedAt": 1776513034564,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775316866574,
+      "commit": "https://github.com/openclaw/skills/commit/1e30f7a86e7cd298c6923ae1141948acc5f3b70f"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774629595891,
