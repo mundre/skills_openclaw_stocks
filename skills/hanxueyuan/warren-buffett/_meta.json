@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "warren-buffett",
-  "displayName": "warren-buffett",
+  "displayName": "Warren Buffett",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1774749945649,
-    "commit": "https://github.com/openclaw/skills/commit/401bf789c521b43b83bb343d2e41371ea7a72338"
+    "version": "0.1.1",
+    "publishedAt": 1776295731427,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1774749945649,
+      "commit": "https://github.com/openclaw/skills/commit/401bf789c521b43b83bb343d2e41371ea7a72338"
+    }
+  ]
 }

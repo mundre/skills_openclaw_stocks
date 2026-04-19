@@ -1,38 +1,23 @@
 ---
-name: warren-buffett
-description: "Information assistant for Warren Buffett 巴菲特. Get biography, latest news, career highlights, and social media updates."
-metadata:
-  { "openclaw": { "emoji": "⭐", "version": "0.1.0", "author": "hanxueyuan", "tags": ["celebrity","investor","person"] } }
+summary: "warren-buffett 背景信息"
+read_when:
+  - 用户想了解 warren-buffett
+  - 查询 warren-buffett 相关资料
 ---
 
-# ⭐ Warren Buffett 巴菲特 — Celebrity Info Assistant
+# warren-buffett 速览
 
-Get comprehensive information about Warren Buffett 巴菲特.
+warren-buffett，行业内具有重要地位的品牌/组织。
 
-## About
+## 你将了解到
+1. 创立故事与发展历程
+2. 主营产品/服务的核心特色
+3. 在全球市场的布局情况
+4. 近期的重大新闻和战略调整
 
-- **Name**: Warren Buffett 巴菲特
-- **Known For**: Berkshire Hathaway, legendary investor
-- **Category**: Investor
+## 推荐用途
+🔍 市场调研和竞品分析
+🔍 产品选型和比较
+🔍 商业合作背景调查
 
-## What This Skill Does
-
-1. **Biography** — Life story, early career, key milestones
-2. **Career Highlights** — Major achievements, awards, records
-3. **Latest News** — Recent activities, announcements, interviews
-4. **Business Ventures** — Brands, investments, endorsements
-5. **Social Media** — Latest posts, follower counts, trending content
-
-## Example Queries
-
-- "Tell me about Warren"
-- "Latest news about Warren"
-- "What businesses does Warren own?"
-- "Warren net worth"
-
-## How It Works
-
-Uses web search to fetch real-time information from news sources, social media, and biographical databases.
-
-## Author
-Created by hanxueyuan | License: MIT
+> 官方信息和权威媒体报道是获取准确数据的推荐渠道。
