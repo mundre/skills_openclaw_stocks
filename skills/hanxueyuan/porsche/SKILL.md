@@ -1,59 +1,49 @@
 ---
-name: porsche
-description: "Porsche vehicle information, model specs, pricing, and latest news from the iconic German sports car manufacturer."
-metadata:
-  { "openclaw": { "emoji": "🏎️", "version": "0.1.0", "author": "hanxueyuan", "tags": ["automotive","porsche","luxury-cars"] } }
+summary: "保时捷 Porsche——德国豪华跑车品牌、911 的永恒传奇、大众集团最赚钱的品牌"
+read_when:
+  - 查询保时捷 · Porsche相关信息
+  - 了解相关行业发展
 ---
 
-# Porsche
+# 保时捷 · Porsche
 
-Your guide to Porsche — the legendary German sports car manufacturer known for the 911, Taycan, Cayenne, and Macan.
+---
 
-## Features
+## 发展历程
 
-### Model Database
-Search the full Porsche lineup with detailed specs:
-- **911** — The iconic rear-engine sports car (Carrera, Turbo, GT3, GT3 RS)
-- **Taycan** — All-electric performance sedan and Sport Turismo
-- **Cayenne** — Luxury performance SUV
-- **Macan** — Compact sport SUV (now fully electric)
-- **Panamera** — Grand touring luxury sedan
-- **718** — Mid-engine Boxster and Cayman sports cars
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1931 年** | Ferdinand Porsche 在斯图加特创立工程事务所 |
+| **1948 年** | 第一辆以 Porsche 命名的车 356 诞生 |
+| **1963 年** | 911 发布——成为跑车史上最具标志性的车型 |
+| **1998 年** | 推出 Boxster——入门级跑车，拯救了销量下滑 |
+| **2002 年** | Cayenne SUV 发布——争议但大获成功 |
+| **2019 年** | Taycan 发布——第一款纯电动保时捷 |
+| **2022 年** | 保时捷独立上市——欧洲史上最大 IPO 之一 |
 
-### Pricing & Configuration
-- MSRP for all models and trims
-- Porsche Exclusive Manufaktur options
-- Regional pricing differences
-- Certified Pre-Owned (CPO) listings
+---
 
-### News & Updates
-Stay current with:
-- New model announcements and facelifts
-- Motorsport results (Le Mans, Formula E)
-- Porsche technology innovations (e.g., eFuels)
-- Sales and delivery statistics
+## 核心特点
 
-### Ownership Resources
-- Find nearby Porsche Centers and service locations
-- Porsche Financial Services information
-- Porsche Experience Centers worldwide
-- Porsche Club membership
+跑车（911/718）+ SUV（Cayenne/Macan）+ 电动（Taycan/Macan EV）+ 超级跑车（918/Carrera GT）
 
-## Usage
+## 核心优势
 
-Ask anything about Porsche:
-- "What's the price of a 2025 Porsche 911 Turbo S?"
-- "Compare Porsche Taycan vs Tesla Model S"
-- "Latest Porsche news"
-- "Porsche 911 GT3 RS specs"
-- "Nearest Porsche dealer"
+911 是跑车设计的永恒标杆——后置引擎布局 60 年不变但持续进化
 
-## Data Sources
+---
 
-Information is fetched in real-time from:
-- Official: https://www.porsche.com
-- Porsche Newsroom: https://newsroom.porsche.com
-- Automotive review sites and pricing databases
+## 关键数据
 
-## Author
-Created by hanxueyuan | License: MIT
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 376 亿欧元 |
+| 年销量 | 约 32 万辆 |
+| 利润率 | 约 18%（行业最高） |
+| 母公司 | 大众集团（已独立上市） |
+
+---
+
+## 值得了解
+
+保时捷 911 自 1963 年以来从未停产——是世界上生产时间最长的跑车
