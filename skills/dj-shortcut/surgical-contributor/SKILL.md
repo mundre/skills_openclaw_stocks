@@ -7,7 +7,26 @@ description: Deliver small, high-signal contributions by finding and fixing one 
 
 ## Overview
 
-Execute a disciplined contribution loop: reproduce, isolate, patch minimally, protect against regressions, and self-review before presenting results. Optimize for mergeability, trust, and behavior stability over feature scope.
+Execute a disciplined contribution loop: reproduce, isolate, patch minimally, and protect against regressions.
+
+Optimize for:
+- Mergeability
+- Trust
+- Behavior stability
+
+## Core Principles
+
+These principles govern all decisions:
+
+- Think before coding: do not assume; surface uncertainty early
+- Simplicity first: prefer the smallest solution that fully solves the problem
+- Surgical changes: touch only what is required for the fix
+- Goal-driven execution: define success via reproduction and verification
+
+If uncertain:
+- state assumptions explicitly
+- prefer clarification over guessing
+- choose the safer, narrower change
 
 ## Contribution Doctrine
 
@@ -24,49 +43,89 @@ Refuse these by default unless explicitly requested:
 - Opportunistic style rewrites
 - Feature expansion beyond the bug or paper cut
 
+## What “Surgical” Means in Practice
+
+- Only modify the minimal set of files and lines required
+- Do not change unrelated code, comments, or formatting
+- Match existing patterns and conventions
+- Do not introduce abstractions unless strictly necessary
+- If a smaller patch works, prefer it
+
+Every changed line must trace directly to the identified problem.
+
 ## Operating Modes
 
 Choose exactly one mode at the start of work:
 
-1. Bugfix mode
+1. Bugfix mode  
 Reproduce a correctness issue, isolate root cause, apply narrow patch, add regression protection.
-2. Paper-cut mode
-Fix high-frequency UX friction in hot paths (navigation, shortcuts, defaults, wording, startup flow) with minimal behavioral surface area.
-3. Refactor-under-permission mode
-Perform cleanup only when explicitly requested; keep each change independently safe and reviewable.
-4. Review-my-own-PR mode
-Run an explicit maintainer-style critique before final output.
-This is a standalone review mode (no code changes), not a second execution mode alongside Bugfix/Paper-cut flows.
+
+2. Paper-cut mode  
+Fix high-frequency UX friction in hot paths with minimal behavioral surface area.
+
+3. Refactor-under-permission mode  
+Only when explicitly requested; keep each change independently safe and reviewable.
+
+4. Review-my-own-PR mode  
+Perform a strict maintainer-style critique before final output (no code changes).
 
 ### Non-code repository fallback
 
-This fallback is not a separate mode.
-If no executable code or reproducible runtime bug exists, treat the repository as a specification system and fix exactly one deterministic weakness (ambiguity, missing constraint, contradiction, scope leak, or unenforceable rule) with the smallest reviewable docs patch.
+If no executable bug exists, treat the repository as a specification system.
+
+Fix exactly one deterministic weakness:
+- ambiguity
+- missing constraint
+- contradiction
+- scope leak
+- unenforceable rule
+
+Use the smallest reviewable documentation patch.
 
 ## Standard Workflow
 
 ### 1. Find one pain point
 
-Scan current code and nearby tests for one concrete issue that is:
+Select one issue that is:
+- Reproducible
+- Narrow in scope
+- High-value
 
-- Reproducible now
-- Small enough for a focused patch
-- Valuable to daily usage, correctness, or reliability
-
-Prefer high-leverage targets:
-
-- Stale index logic
-- Undo/redo correctness
-- Selection or batch state drift
-- Cache invalidation mistakes
+Prefer:
+- State/caching bugs
 - Edge-case crashes
-- Startup/config/platform breakage
-- UI-backend contract mismatches
+- UI-backend drift
+- Startup/config issues
 - Hot-path UX friction
+
+## Stack-Specific Focus
+
+When working in UI-heavy or stateful codebases, prioritize issues where small state mistakes create disproportionate user impact.
+
+Focus areas:
+
+- State synchronization bugs
+- Cache invalidation errors
+- Selection / batch operation drift
+- Undo/redo inconsistencies
+- UI-backend contract mismatches
+- Interaction edge cases (keyboard, focus, timing)
+
+These bugs often:
+- have small fixes
+- but high user impact
+- and low review resistance when isolated correctly
+
+When available, consult:
+- `references/risk-map.md`
+
+Use it during:
+- target selection
+- self-review
 
 ### 2. Write a tiny change plan before editing
 
-Document five items in plain language:
+Document:
 
 - Observed behavior
 - Expected behavior
@@ -74,54 +133,56 @@ Document five items in plain language:
 - Safest seam to modify
 - Risk surface
 
+State assumptions explicitly if any uncertainty exists.
+
 ### 3. Reproduce first
 
-Create a minimal repro with one of:
+Create a minimal repro:
 
-- Existing automated test
+- Existing test
 - New focused test
-- Small harness script
-- Manual repro recipe when GUI constraints block automation
+- Small harness
+- Manual repro if needed
 
-Avoid fixing before proving the failure.
+Do not fix before proving the failure.
 
 ### 4. Implement the narrowest safe fix
 
-Constrain edits to the smallest practical set of files and lines.
-
 Rules:
 
-- Do not mix unrelated cleanup into the patch
-- Preserve behavior outside the defect scope
-- Prefer local guards, condition fixes, and invariant restoration over broad rewrites
-- Keep naming and style aligned with surrounding code
+- No unrelated cleanup
+- Preserve all non-bug behavior
+- Prefer local fixes over rewrites
+- Avoid new abstractions unless required
+- Keep code as simple as possible
+
+If two solutions exist, choose the simpler one.
 
 ### 5. Add regression protection
 
-Add one durable protection artifact:
+Add exactly one durable protection:
 
 - Automated test (preferred)
-- Focused test helper/harness
-- Manual verification protocol with exact steps and expected results when automation is not feasible
+- Focused harness
+- Manual verification protocol
 
-Tie assertions directly to the reproduced failure and fixed behavior.
+Tie directly to the reproduced issue.
 
 ### 6. Run self-review before finalizing
 
-Perform this checklist and resolve any "no" answers:
+Checklist:
 
-- Is non-bug behavior preserved?
-- Are stale indices or invalid references still possible?
-- Can cache/state desync still occur?
-- Are undo/redo semantics still consistent?
-- Are keyboard/UI interaction flows intact?
-- Is platform behavior safe on Windows/macOS/Linux (as relevant)?
-- Is naming clear and consistent with repo conventions?
-- Is there a smaller patch that would work equally well?
+- Is behavior outside the bug unchanged?
+- Are state and cache flows still consistent?
+- Are edge cases still safe?
+- Are UI/interaction flows intact?
+- Is platform behavior safe (if relevant)?
+- Is naming consistent with the repo?
+- Is this the smallest viable patch?
 
 ### 7. Produce maintainer-language PR summary
 
-Use this exact heading structure:
+Use this exact structure:
 
 ```markdown
 ## What broke
@@ -131,28 +192,10 @@ Use this exact heading structure:
 <one short paragraph>
 
 ## Why this fix is minimal
-<scope boundary + why no broader change>
+<scope boundary + reasoning>
 
 ## What I tested
-<tests run, harness checks, or manual steps>
+<tests / repro / verification>
 
 ## What I intentionally did not change
-<explicit non-goals to reduce review ambiguity>
-```
-
-Keep the summary scannable in about 20 seconds.
-
-## Stack-Specific Focus
-
-When working in UI-heavy codebases, prioritize bugs where small state mistakes have outsized UX impact. Read [references/risk-map.md](references/risk-map.md) when selecting targets or doing self-review.
-
-## Output Contract
-
-Return results in this order:
-
-1. Change plan (5 bullets)
-2. Reproduction evidence
-3. Minimal patch summary
-4. Regression protection summary
-5. Self-review findings
-6. PR summary with required headings
+<explicit non-goals>
