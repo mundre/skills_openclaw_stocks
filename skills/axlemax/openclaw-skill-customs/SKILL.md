@@ -175,8 +175,32 @@ python scripts/file_transfer.py --mode download --result-id <result_id> --filena
   --output tasks/customs_<id>/customs_result.xlsx
 ```
 
-展示完结果后，**主动询问用户**：
-> 📋 以上是本次报关提取结果，如需修改任何内容（如品名、编码、数量等），请直接告诉我要改什么，我会帮你修正并重新生成 Excel。
+展示完结果后，**立即执行 Step 5.5 合规性检查**（不等用户指令）。
+
+---
+
+## Step 5.5：合规性检查（自动执行）
+
+展示结果后，**在询问用户是否修改之前**，自动执行合规检查。
+
+### 执行流程
+
+1. **阅读通用规则** — 打开 [COMPLIANCE_RULES.md](references/COMPLIANCE_RULES.md)，逐项核对 Step 5 展示的 `structured_data`
+2. **行业规则检查（可选）** — 查看结果中各商品的 HS 编码前 2 位，如果命中 [INDUSTRY_RULES.md](references/INDUSTRY_RULES.md) 中的章节（21/22/39/41/64/85），打开该文件阅读对应章节，检查是否遗漏行业特殊申报要素
+3. **生成检查报告** — 按 `COMPLIANCE_RULES.md` 中规定的输出格式生成报告
+
+### ⛔ 约束
+
+- 检查结果是 **建议性质**，不阻塞流程。用户可以选择忽略
+- 仅输出实际发现的问题，通过项只汇总数量不逐项列出
+- 🔴 必须级最多输出 5 条，🟡 建议级最多输出 3 条
+- **不要过度检查**：如果某字段在结果中本身不存在（如后端未返回保费字段），不视为异常；只在字段存在但值异常时提示
+- 全部通过时只输出「✅ 合规检查通过（共 N 项）」
+
+### 报告输出后
+
+合规报告输出完毕后，**主动询问用户**：
+> 📋 如需修改任何内容（如品名、编码、数量等），请直接告诉我要改什么。或回复「确认」继续。
 
 ---
 
@@ -185,6 +209,8 @@ python scripts/file_transfer.py --mode download --result-id <result_id> --filena
 当用户对 Step 5 展示的结果提出修改要求时，参照 [MODIFICATION.md](references/MODIFICATION.md) 执行。
 
 核心约束：**禁止**重新上传文件或提交新任务，**必须**基于已有 `structured_data` 和已下载的 Excel 文件直接修改单元格。修改前必须展示变更对比并等待用户确认。
+
+修改字段时，Agent 应打开 [FIELD_GUIDE.md](references/FIELD_GUIDE.md) 查阅对应字段的规范，在修改预览中附带合规提示（详见 MODIFICATION.md）。
 
 ---
 
@@ -219,3 +245,6 @@ python scripts/submit_and_poll.py --mode retry --result-id <result_id>
 - 文件类型枚举与展示格式：[FILE_TYPES.md](references/FILE_TYPES.md)
 - 等待期互动话术：[INTERACTION.md](references/INTERACTION.md)
 - 结果修改详细流程：[MODIFICATION.md](references/MODIFICATION.md)
+- 合规检查规则：[COMPLIANCE_RULES.md](references/COMPLIANCE_RULES.md)
+- 字段填写规范速查：[FIELD_GUIDE.md](references/FIELD_GUIDE.md)
+- 行业特殊申报要素：[INDUSTRY_RULES.md](references/INDUSTRY_RULES.md)

@@ -3,11 +3,16 @@
   "slug": "openclaw-skill-customs",
   "displayName": "openclaw-skill-customs",
   "latest": {
-    "version": "1.0.9",
-    "publishedAt": 1775667574260,
-    "commit": "https://github.com/openclaw/skills/commit/2a9368586962e7b4e59f34ba07e5e099bec6aee1"
+    "version": "1.0.10",
+    "publishedAt": 1776237883257,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.9",
+      "publishedAt": 1775667574260,
+      "commit": "https://github.com/openclaw/skills/commit/2a9368586962e7b4e59f34ba07e5e099bec6aee1"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1775023031366,
