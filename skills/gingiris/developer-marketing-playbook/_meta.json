@@ -1,13 +1,18 @@
 {
   "owner": "gingiris",
   "slug": "developer-marketing-playbook",
-  "displayName": "Developer Marketing Playbook",
+  "displayName": "Developer Marketing & DevRel Playbook",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1774897242033,
-    "commit": "https://github.com/openclaw/skills/commit/e6a217b8756f5775a2c84b55da4b642f466cd2fb"
+    "version": "1.1.2",
+    "publishedAt": 1776567356118,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1774897242033,
+      "commit": "https://github.com/openclaw/skills/commit/e6a217b8756f5775a2c84b55da4b642f466cd2fb"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774759959766,
