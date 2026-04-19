@@ -1,13 +1,18 @@
 {
   "owner": "michaelfeng",
   "slug": "clawbrain-pro",
-  "displayName": "ClawBrain Pro",
+  "displayName": "Clawhub",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1775796972763,
-    "commit": "https://github.com/openclaw/skills/commit/d8a9f8d32385043eaeaf11dfdb40a0c757337eed"
+    "version": "1.6.0",
+    "publishedAt": 1776179642247,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1775796972763,
+      "commit": "https://github.com/openclaw/skills/commit/d8a9f8d32385043eaeaf11dfdb40a0c757337eed"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774251437431,
