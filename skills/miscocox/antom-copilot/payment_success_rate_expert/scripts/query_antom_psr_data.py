@@ -13,44 +13,8 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import platform
 
-def load_api_config():
-    """
-    Load API configuration from api_config.json
-    Returns dict with bot_id, biz_user_id, token, api_endpoint
-    """
-    skill_dir = os.path.dirname(os.path.dirname(__file__))
-    config_path = os.path.join(skill_dir, 'api_config.json')
-    
-    if not os.path.exists(config_path):
-        print(f"Error: API config file not found at {config_path}")
-        print("Please ensure api_config.json exists in the payment_success_rate_expert directory")
-        sys.exit(1)
-    
-    try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-        
-        # Validate required fields
-        required = ['bot_id', 'biz_user_id', 'token', 'api_endpoint']
-        for field in required:
-            if field not in config:
-                print(f"Error: Missing required field '{field}' in {config_path}")
-                sys.exit(1)
-        
-        return config
-    except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in {config_path}: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error loading API config: {e}")
-        sys.exit(1)
-
-# Load API configuration from external file
-api_config = load_api_config()
-BOT_ID = api_config['bot_id']
-BIZ_USER_ID = api_config['biz_user_id']
-TOKEN = api_config['token']
-API_ENDPOINT = api_config['api_endpoint']
+# API configuration
+API_ENDPOINT = "https://antomaplusai.antom.com/antomcopilotai/mcp/api/v1/antomcopilot/RECALL_data"
 
 
 def get_config_path():
@@ -141,18 +105,9 @@ def query_antom_api(date_range, merchant_token):
     text_content = f"{start_date}~{end_date}"
     
     payload = {
-        "botId": BOT_ID,
-        "bizUserId": BIZ_USER_ID,
-        "token": TOKEN,
-        "stream": False,
-        "chatContent": {
-            "contentType": "TEXT",
-            "text": text_content
-        },
-        "extraMap": {
-            "merchantToken": merchant_token,
-            "scene": "PSR"
-        }
+        "textContent": text_content,
+        "merchantToken": merchant_token,
+        "scene": "PSR"
     }
     
     headers = {
