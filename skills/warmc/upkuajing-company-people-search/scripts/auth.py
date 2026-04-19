@@ -4,10 +4,11 @@
 提供 API 密钥申请、充值等功能。
 """
 import argparse
-import sys
 import json
-from pathlib import Path
-from common import print_json_output, make_request, API_KEY_ENV, UPKUAJING_ENV_FILE, UPKUAJING_DIR
+import os
+import sys
+
+from common import print_json_output, make_request, API_KEY_ENV, UPKUAJING_ENV_FILE, UPKUAJING_DIR, SKILL_BASE_DIR
 
 
 def new_key() -> dict:
@@ -104,9 +105,9 @@ def account_info() -> dict:
 
     result = {
         '跨境魔方账号': data.get('orgPhone', ''),
-        '跨境魔方账号余额': f'{org_balance}分钱',
+        '跨境魔方账号余额': f'{org_balance}分钱(RMB)',
         '跨境魔方开放平台账号': data.get('apiAccount', ''),
-        '跨境魔方开放平台账号余额': f'{api_balance}分钱'
+        '跨境魔方开放平台账号余额': f'{api_balance}分钱(RMB)'
     }
 
     return result
@@ -124,7 +125,8 @@ def price_info() -> dict:
     """
     获取开放平台接口定价信息
     """
-    response = make_request('/api/list', {})
+    skill_name = os.path.basename(SKILL_BASE_DIR)
+    response = make_request('/api/list', {"name": skill_name})
     return response
 
 

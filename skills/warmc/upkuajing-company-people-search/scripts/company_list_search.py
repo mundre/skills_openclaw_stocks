@@ -166,7 +166,7 @@ def main():
     if error_message:
         print(f"查询失败：{error_message}", file=sys.stderr)
     else:
-        print(f"查询完成：共获取 {total_retrieved} 条数据，总费用 {total_cost}分钱")
+        print(f"查询完成：共获取 {total_retrieved} 条数据，总费用 {total_cost}分钱(RMB)")
 
     # 构建最终输出
     output_data = {
@@ -176,8 +176,8 @@ def main():
         'error_msg': error_message,
         'file_url': get_task_result_file(task_id),
         'fee': {
-            "apiCost": f"{total_cost}分钱",
-            "balance": f"{account_balance}分钱"
+            "apiCost": f"{total_cost}分钱(RMB)",
+            "balance": f"{account_balance}分钱(RMB)"
         }
     }
 
