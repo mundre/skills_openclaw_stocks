@@ -1,7 +1,7 @@
 ---
 name: expense_invoice_ocr
 description: 支持识别企业财务报销场景的常见票据，包括增值税发票、增值税卷票、出租车发票、火车票、航空电子客票行程单、机动车销售统一发票、定额发票、过路过桥费发票、医疗发票、税收完税证明、船票、非税票据、通用机打发票、汽车票识别。
-version: 1.0.0
+version: 1.0.4
 author: SCNet
 license: MIT
 tags:
@@ -9,6 +9,14 @@ tags:
   - 证件识别
   - 发票识别
   - 文字提取
+required_env_vars:
+  - SCNET_API_KEY
+optional_env_vars:
+  - SCNET_API_BASE
+primary_credential: SCNET_API_KEY
+dependencies:
+  - python3
+  - requests
 input:
   - ocrType : 识别类型，可选值见下文
   - filePath : 待识别图片的本地路径
@@ -34,11 +42,7 @@ output: 结构化的 JSON 数据，包含识别结果和置信度
 
 ### 配置 Token
 
-**方式一：让 AI 配置**
-
-> “帮我配置 Scnet OCR，Token 是：`xxx`”
-
-**方式二：手动配置**
+**手动配置（推荐）**
 1. 在技能目录下创建 `config/.env` 文件，内容如下：
 ```ini
 # =====  Sugon-Scnet OCR API 配置 =====
@@ -48,11 +52,21 @@ SCNET_API_KEY=your_scnet_api_key_here
 # API 基础地址（一般无需修改）
 SCNET_API_BASE=https://api.scnet.cn/api/llm/v1
 ```
+2. 添加：`SCNET_API_KEY=你的密钥`
+3. 设置文件权限为 600（仅所有者可读写）
+**⚠️ 安全警告**：切勿将 API Key 直接粘贴到聊天对话中，否则可能被记录或泄露。
 
 ### Token 更新
 
 Token 过期后调用会返回 401 或 403 错误。更新方法：重新申请 Token 并替换 config/.env 中的 SCNET_API_KEY。
 
+### 依赖安装
+
+本技能需要 Python 3.6+ 和 requests 库。请运行以下命令：
+
+```bash
+   pip install requests
+```
 ---
 ### 使用方法
 
@@ -60,22 +74,20 @@ Token 过期后调用会返回 401 或 403 错误。更新方法：重新申请 
 
 | 参数名 | 类型 | 必填 | 描述 |
 |--------|------|------|------|
-| ocrType | string | 是 | 识别类型枚举。必须为以下之一：<br>• VAT_INVOICE（增值税发票）<br>• VAT_ROLL_INVOICE（增值税卷票）<br>• TAXI_INVOICE（出租车发票）<br>• TRAIN_TICKET（火车票）<br>• AIRPORT_TICKET（航空运输电子客票行程单）<br>• VEHICLE_SALE_INVOICE（机动车销售统一发票）<br>• QUOTA_INVOICE（定额发票）<br>• TOLL_INVOICE（过路过桥费发票）<br>• MEDICAL_INVOICE（医疗发票）<br>• TAX_PAYMENT_CERTIFICATE（税收完税证明）<br>• NON_TAX_INVOICE（非税票据）<br>• GENERAL_MACHINE_INVOICE（通用机打发票）<br>• SHIP_TICKET（船票）<br>• BUS_TICKET（汽车票） |
+| ocrType | string | 是 | 识别类型枚举。必须为以下之一：<br>• VAT_INVOICE（增值税发票）<br>• VAT_ROLL_INVOICE（增值税卷票）<br>• TAXI_INVOICE（出租车发票）<br>• TRAIN_TICKET（火车票）<br>• AIRPORT_TICKET（航空运输电子客票行程单）<br>• VEHICLE_SALE_INVOICE（机动车销售统一发票）<br>• QUOTA_INVOICE（定额发票）<br>• TOLL_INVOICE（过路过桥费发票）<br>• MEDICAL_INVOICE（医疗发票）<br>• TAX_CERTIFICATE（税收完税证明）<br>• NON_TAX_BILL（非税票据）<br>• GENERAL_MACHINE_INVOICE（通用机打发票）<br>• SHIP_TICKET（船票）<br>• BUS_TICKET（汽车票） |
 | filePath | string | 是 | 待识别图片的本地绝对路径。支持 jpg、png、pdf 等常见格式。 |
 
 ### 命令行调用示例
 
 ```bash
-python .claude/skills/expense_invoice_ocr/scripts/main.py VAT_INVOICE /path/to/invoice.jpg
+   python .claude/skills/expense_invoice_ocr/scripts/main.py VAT_INVOICE /path/to/invoice.jpg
 ```
 
 ### 在 AI 对话中使用
 
 用户可以说：
 
-- “帮我识别这张身份证，图片在 /Users/name/Downloads/id.jpg”
 - “提取这张发票的信息，路径是 /Users/name/Downloads/fapiao.png”
-- “OCR 这个图片里的文字，图片在 /Users/name/Desktop/text.png”
 
 AI 会根据 description 中的关键词自动触发本技能。
 
