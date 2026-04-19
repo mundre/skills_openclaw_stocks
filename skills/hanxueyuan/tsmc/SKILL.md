@@ -1,56 +1,25 @@
 ---
-name: tsmc
-description: "Information assistant for TSMC. Search products, news, financials, and official resources for TSMC."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","tsmc","enterprise-info"] } }
+summary: "tsmc 知识卡片"
+read_when:
+  - 用户搜索 tsmc
+  - 需要 tsmc 基本信息
 ---
 
-# TSMC — Information Assistant
+# tsmc 知识卡片
 
-Query products, news, stock prices, financial reports, and official resources for **TSMC**.
+**一句话介绍：** tsmc 是其领域的重要参与者，本技能帮助你快速了解它。
 
-## About
+## 关键事实
+| 维度 | 内容 |
+|------|------|
+| 行业 | 所属领域 |
+| 业务 | 核心产品/服务 |
+| 覆盖 | 全球/区域市场 |
+| 地位 | 行业影响力 |
 
-- **Company**: TSMC
-- **Industry**: Semiconductor foundry
-- **Official Website**: https://www.tsmc.com
+## 使用提示
+- 适合快速了解 tsmc 概况
+- 商业决策前的背景调研
+- 学术研究和教学辅助
 
-## What This Skill Does
-
-When activated, this skill helps you:
-
-1. **Product Search** — Find and compare TSMC products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
-
-## Usage Examples
-
-- "What are the latest TSMC products?"
-- "Show me TSMC stock price"
-- "Compare TSMC with competitors"
-- "Find TSMC official support page"
-- "What's new at TSMC?"
-
-## How It Works
-
-This skill uses web search to fetch real-time information about TSMC from:
-- Official website: https://www.tsmc.com
-- Financial data providers
-- News aggregators
-- Product databases
-
-## Instructions for Agent
-
-When this skill is triggered:
-1. Identify the user's specific query about TSMC
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.tsmc.com)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
-
-## Author
-
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+📎 延伸：建议查阅官方发布内容和行业分析报告。
