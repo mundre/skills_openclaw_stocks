@@ -1,56 +1,45 @@
 ---
-name: volvo
-description: "Volvo Cars and Trucks. Safety-first Swedish vehicles, EX90, XC90, electric lineup, specs, and pricing."
-metadata:
-  { "openclaw": { "emoji": "🚗", "version": "0.1.0", "author": "hanxueyuan", "tags": ["automotive","volvo","safety"] } }
+summary: "沃尔沃 Volvo——瑞典豪华汽车品牌、安全性的代名词、吉利集团控股"
+read_when:
+  - 查询沃尔沃 · Volvo相关信息
+  - 了解相关行业发展
 ---
 
-# Volvo
+# 沃尔沃 · Volvo
 
-Your guide to Volvo — the Swedish automaker synonymous with safety, now pivoting to fully electric by 2030.
+---
 
-## Car Lineup
+## 发展历程
 
-### Electric
-- **EX30** — Compact electric SUV, Volvo's most affordable EV
-- **EX90** — Flagship electric SUV with LiDAR
-- **EC40** — Electric coupe crossover
-- **EM90** — Electric luxury MPV (China market)
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1927 年** | Assar Gabrielsson 和 Gustaf Larson 在瑞典哥德堡创立 |
+| **1959 年** | 发明三点式安全带——无偿开放专利 |
+| **2010 年** | 被中国吉利集团收购 |
+| **2020s** | 全面电动化——2030 年只销售电动车 |
 
-### SUVs
-- **XC90** — 7-seat luxury SUV flagship
-- **XC60** — Bestselling midsize SUV
-- **XC40** — Compact premium SUV
+---
 
-### Sedans & Wagons
-- **S60** — Sport sedan
-- **S90** — Executive sedan
-- **V60** — Sport wagon
-- **V90** — Premium wagon
+## 核心特点
 
-### Safety Technology
-- Invented the 3-point seatbelt (1959, shared patent freely)
-- City Safety with auto-braking
-- Pilot Assist semi-autonomous driving
-- Run-off road protection
-- Goal: zero fatalities in new Volvo cars
+豪华乘用车（S90/XC90/EX30 等）+ 卡车（独立上市）
 
-## Company Facts
-- **Owner**: Geely (Chinese automotive group, since 2010)
-- **Headquarters**: Gothenburg, Sweden
-- **Founded**: 1927
-- **Stock**: VOLCAR-B.ST (Nasdaq Stockholm)
-- **EV Target**: 100% electric by 2030
+## 核心优势
 
-## What You Can Ask
-- "Volvo EX90 range and price"
-- "Safest Volvo models"
-- "Volvo XC60 vs BMW X3"
-- "Volvo electric car lineup"
+安全性的品牌定位 + 三点式安全带发明者
 
-## Data Sources
-- Official: https://www.volvocars.com
-- Volvo Media, Euro NCAP safety ratings
+---
 
-## Author
-Created by hanxueyuan | License: MIT
+## 关键数据
+
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 3800 亿瑞典克朗 |
+| 年销量 | 约 70 万辆 |
+| 母公司 | 吉利集团 |
+
+---
+
+## 值得了解
+
+沃尔沃发明三点式安全带后无偿开放专利——拯救了数百万人的生命
