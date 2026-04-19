@@ -1,43 +1,23 @@
 ---
-name: chanel
-description: "Chanel fashion, fragrance, beauty, and haute couture information. Explore collections, iconic products, and brand history."
-metadata:
-  { "openclaw": { "emoji": "👗", "version": "0.1.0", "author": "hanxueyuan", "tags": ["luxury","fashion","chanel"] } }
+summary: "chanel 使用指南"
+read_when:
+  - 用户询问 chanel
+  - 需要 chanel 详细信息
 ---
 
-# Chanel
+# chanel 百科
 
-Explore the world of Chanel — the iconic French luxury fashion house founded by Coco Chanel in 1910.
+chanel 是你可能听说过的知名品牌。让我们一起了解它。
 
-## What You Can Ask
+## 内容导航
+▸ 品牌故事 — 创立背景和发展节点
+▸ 产品矩阵 — 主要业务线和特色产品
+▸ 全球足迹 — 市场覆盖和分支机构
+▸ 行业观察 — 竞争分析和未来趋势
 
-### Collections & Products
-- **Fashion**: Ready-to-wear, haute couture, cruise collections
-- **Fragrance**: N°5, Coco Mademoiselle, Bleu de Chanel, Chance
-- **Beauty**: Skincare (Hydra Beauty, Le Lift), makeup (Rouge Allure, Les Beiges)
-- **Accessories**: Classic flap bag, Boy bag, J12 watch, fine jewelry
+## 典型场景
+「我要了解 chanel 的基本信息」→ 使用本技能
+「我需要 chanel 的产品详情」→ 使用本技能
+「我想对比 chanel 和竞品」→ 使用本技能
 
-### Pricing & Availability
-- Current retail prices by region
-- Price history and trends (e.g., classic flap bag price increases)
-- Boutique locations worldwide
-- Resale market insights
-
-### Brand Heritage
-- Coco Chanel biography and legacy
-- Karl Lagerfeld era (1983-2019)
-- Virginie Viard as Creative Director
-- Iconic designs: little black dress, tweed jacket, camellia, interlocking CC
-
-### Latest News
-- Fashion show coverage (Paris Fashion Week)
-- New product launches
-- Celebrity ambassadors (Jennie Kim, Margot Robbie, Penélope Cruz)
-- Business updates and financial performance
-
-## Data Sources
-- Official: https://www.chanel.com
-- Fashion news outlets, industry databases, and resale platforms
-
-## Author
-Created by hanxueyuan | License: MIT
+📖 深入阅读请访问官方网站或查阅行业白皮书。
