@@ -1,7 +1,12 @@
 #!/bin/bash
 #
-# One-Click Restore for OpenClaw Workspace v2.2.1 (Merge Mode)
+# One-Click Restore for OpenClaw Workspace v3.0.8 (Merge Mode)
 # Usage: ./one-click-restore.sh <backup_file> [--dry-run] [--force] [--with-sessions]
+#
+# Improvements in v3.0.8:
+# - FIXED: cron tasks auto-restore (was manual-only)
+# - FIXED: merge mode is now the default (--merge or implied)
+# - Added version check to prevent script downgrade
 #
 # Improvements in v2.2.1:
 # - FIXED: Cron export files correctly included in archive
@@ -16,6 +21,8 @@ set -e
 
 WORKSPACE_DIR="$HOME/.openclaw/workspace"
 OPENCLAW_DIR="$HOME/.openclaw"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURRENT_VERSION="3.0.8"
 
 # Colors
 RED='\033[0;31m'
@@ -65,7 +72,7 @@ show_usage() {
 }
 
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}  OpenClaw Workspace Restore v2.2${NC}"
+echo -e "${GREEN}  OpenClaw Workspace Restore v3.0.9${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
@@ -106,6 +113,62 @@ trap "rm -rf $TEMP_DIR" EXIT
 echo -e "${YELLOW}Extracting backup...${NC}"
 tar -xzf "$BACKUP_FILE" -C "$TEMP_DIR"
 echo -e "${GREEN}✓ Extraction complete${NC}"
+echo ""
+
+# ============================================
+# Security: Protect machine-specific credentials from being overwritten
+# ============================================
+echo -e "${YELLOW}[SECURITY] Protecting machine-specific credentials...${NC}"
+
+# Files that are machine-specific and must NEVER be overwritten
+PROTECTED_FILES=(
+    "agents/main/agent/auth-profiles.json"
+    "agents/main/agent/models.json"
+    "openclaw.json"
+    "exec-approvals.json"
+)
+
+PROTECTED_COUNT=0
+for rel_path in "${PROTECTED_FILES[@]}"; do
+    extracted_file="$TEMP_DIR/$rel_path"
+    if [ -f "$extracted_file" ]; then
+        mv "$extracted_file" "${extracted_file}.bak-$(date +%Y%m%d%H%M%S)"
+        echo "  ✓ Protected (renamed to .bak): $rel_path"
+        ((PROTECTED_COUNT++))
+    fi
+done
+
+if [ "$PROTECTED_COUNT" -gt 0 ]; then
+    echo -e "  ${GREEN}Protected $PROTECTED_COUNT machine-specific files${NC}"
+    echo "  → These files will NOT be restored (preserves current machine credentials)"
+else
+    echo "  ○ No protected files found in backup"
+fi
+echo ""
+
+# ============================================
+# Version check: prevent old scripts from corrupting new configs
+# ============================================
+echo -e "${YELLOW}[VERSION CHECK]${NC}"
+if [ -f "$TEMP_DIR/.backup-version" ]; then
+    BACKUP_VER=$(cat "$TEMP_DIR/.backup-version")
+    echo "  Backup version: $BACKUP_VER"
+    echo "  Restore version: $CURRENT_VERSION"
+    if [ "$BACKUP_VER" != "$CURRENT_VERSION" ]; then
+        echo -e "  ${YELLOW}⚠ Version mismatch!${NC}"
+        echo "  This restore script (v$CURRENT_VERSION) may not be fully compatible with backup (v$BACKUP_VER)."
+        read -p "Continue anyway? [y/N] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${YELLOW}Restore cancelled${NC}"
+            exit 1
+        fi
+    else
+        echo -e "  ${GREEN}✓ Version match${NC}"
+    fi
+else
+    echo "  ○ No version tag in backup (old format)"
+fi
 echo ""
 
 # Preview
@@ -340,16 +403,27 @@ fi
 # ============================================
 # 5. Restore cron tasks
 # ============================================
-echo -e "${BLUE}[5/5] Checking cron tasks...${NC}"
+echo -e "${BLUE}[5/5] Restoring cron tasks (merge mode)...${NC}"
 
 CRON_FILES=$(ls "$TEMP_DIR"/cron-tasks-*.json 2>/dev/null || true)
 if [ -n "$CRON_FILES" ]; then
-    echo -e "${YELLOW}Cron tasks found in backup${NC}"
+    echo -e "${YELLOW}Found cron tasks in backup${NC}"
+    LATEST_CRON=$(ls -t $TEMP_DIR/cron-tasks-*.json 2>/dev/null | head -1)
+    echo "  → $LATEST_CRON"
     echo ""
-    echo -e "${BLUE}To restore cron tasks:${NC}"
-    echo "  1. Review: cat $TEMP_DIR/cron-tasks-*.json"
-    echo "  2. Import manually or restore openclaw.json config"
+    echo -e "${BLUE}Running merge restore...${NC}"
+    bash "$SCRIPT_DIR/restore-cron-tasks.sh" "$LATEST_CRON" --dry-run
     echo ""
+    read -p "Proceed with merge? [y/N] " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        bash "$SCRIPT_DIR/restore-cron-tasks.sh" "$LATEST_CRON"
+        echo ""
+        echo -e "${YELLOW}Restart gateway to activate:${NC}"
+        echo "  openclaw gateway restart"
+    else
+        echo "Skipped cron merge."
+    fi
 else
     echo "  ○ No cron tasks backup found"
 fi

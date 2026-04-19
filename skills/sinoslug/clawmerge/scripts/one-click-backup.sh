@@ -213,7 +213,7 @@ fi
 # ============================================
 # Step 4: Create backup archive
 # ============================================
-echo -e "${YELLOW}[4/6] Creating backup archive...${NC}"
+echo -e "${YELLOW}[5/6] Creating backup archive...${NC}"
 
 cd "$WORKSPACE_DIR"
 
@@ -301,9 +301,17 @@ rm -f "$WORKSPACE_DIR"/cron-tasks-*.json "$WORKSPACE_DIR"/system-crontab-*.txt 2
 rm -rf "$WORKSPACE_DIR/.backup-sessions" 2>/dev/null || true
 
 # ============================================
-# Step 5: Verify and summary
+# Step 5: Tag backup version
 # ============================================
-echo -e "${YELLOW}[5/6] Verifying backup...${NC}"
+echo -e "${YELLOW}[5/6] Tagging backup version...${NC}"
+echo "$CURRENT_VERSION" > "$WORKSPACE_DIR/.backup-version"
+echo -e "  ${GREEN}✓ Backup version: $CURRENT_VERSION${NC}"
+echo ""
+
+# ============================================
+# Step 6: Verify and summary
+# ============================================
+echo -e "${YELLOW}[6/6] Verifying backup...${NC}"
 if [ -f "$BACKUP_FILE" ]; then
     SIZE=$(ls -lh "$BACKUP_FILE" | awk '{print $5}')
     CHECKSUM=$(md5sum "$BACKUP_FILE" | awk '{print $1}')
