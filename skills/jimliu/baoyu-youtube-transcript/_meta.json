@@ -3,11 +3,16 @@
   "slug": "baoyu-youtube-transcript",
   "displayName": "Baoyu Youtube Transcript",
   "latest": {
-    "version": "1.89.2",
-    "publishedAt": 1775277444265,
-    "commit": "https://github.com/openclaw/skills/commit/3a308236e639621dd436846373903cb5a7701913"
+    "version": "1.103.1",
+    "publishedAt": 1776097110766,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.89.2",
+      "publishedAt": 1775277444265,
+      "commit": "https://github.com/openclaw/skills/commit/3a308236e639621dd436846373903cb5a7701913"
+    },
     {
       "version": "1.81.0",
       "publishedAt": 1774404072222,
