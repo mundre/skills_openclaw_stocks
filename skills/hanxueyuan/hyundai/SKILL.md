@@ -1,56 +1,45 @@
 ---
-name: hyundai
-description: "Information assistant for Hyundai. Search products, news, financials, and official resources for Hyundai."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","hyundai","enterprise-info"] } }
+summary: "现代 Hyundai——韩国最大汽车制造商、从廉价车到设计和技术领先的逆袭"
+read_when:
+  - 查询现代汽车 · Hyundai相关信息
+  - 了解相关行业发展
 ---
 
-# Hyundai — Information Assistant
+# 现代汽车 · Hyundai
 
-Query products, news, stock prices, financial reports, and official resources for **Hyundai**.
+---
 
-## About
+## 发展历程
 
-- **Company**: Hyundai
-- **Industry**: Automotive
-- **Official Website**: https://www.hyundai.com
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1967 年** | 郑周永在首尔创立 |
+| **1975 年** | 第一款自主车型 Pony |
+| **1998 年** | 收购起亚汽车 |
+| **2020s** | IONIQ 电动车系列 + 设计驱动转型 |
 
-## What This Skill Does
+---
 
-When activated, this skill helps you:
+## 核心特点
 
-1. **Product Search** — Find and compare Hyundai products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
+乘用车（现代/捷尼赛思）+ 商用车
 
-## Usage Examples
+## 核心优势
 
-- "What are the latest Hyundai products?"
-- "Show me Hyundai stock price"
-- "Compare Hyundai with competitors"
-- "Find Hyundai official support page"
-- "What's new at Hyundai?"
+设计驱动转型 + IONIQ 电动车 + 性价比
 
-## How It Works
+---
 
-This skill uses web search to fetch real-time information about Hyundai from:
-- Official website: https://www.hyundai.com
-- Financial data providers
-- News aggregators
-- Product databases
+## 关键数据
 
-## Instructions for Agent
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 1400 亿美元 |
+| 年销量 | 约 730 万辆 |
+| 员工数 | 约 250000 人 |
 
-When this skill is triggered:
-1. Identify the user's specific query about Hyundai
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.hyundai.com)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
+---
 
-## Author
+## 值得了解
 
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+现代的捷尼赛思（Genesis）豪华品牌连续多年获评北美年度车型
