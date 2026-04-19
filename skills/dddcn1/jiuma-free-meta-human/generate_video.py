@@ -8,25 +8,29 @@ import os
 import sys
 import json
 import argparse
+import traceback
+
 import requests
 from typing import Dict
 import codecs
-from utils import JIUMA_API_KEY_SAVE_PATH,get_jiuma_api_key
+from utils import JIUMA_API_KEY_SAVE_PATH, get_jiuma_api_key
+from login import login_prepare
 
 # Windows终端编码处理
 if sys.platform == "win32":
     sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer)
     sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer)
 
+
 class JiumaVideoGenerator:
-    def __init__(self,api_key):
+    def __init__(self, api_key):
         self.base_url = "https://api.jiuma.com"
         self.headers = {
             "Content-Type": "application/json",
             "X-Secret-Key": api_key,
         }
 
-    def generate_video(self, human_id: str, voice_id: str, text: str) -> Dict:
+    def generate_video(self, human_id: int, voice_id: int, text: str) -> Dict:
         """
         生成数字人视频
         """
@@ -50,8 +54,9 @@ class JiumaVideoGenerator:
                 return {"code": 500, "error": result.get('message')}
             if result.get('code') == 401 or result.get('code') == 405:
                 # 提示用户必须登录
-
-                return {"code":result.get('code')}
+                return {"code": result.get('code')}
+            if result.get('code') == 406:
+                return {"code": result.get('code'),"pay_address":result.get('data',{})[0].get('qrcode_url')}
 
             human_video_id = result.get('data')
 
@@ -66,7 +71,6 @@ class JiumaVideoGenerator:
         except json.JSONDecodeError as e:
             print(f"❌ JSON解析失败: {e}")
             return {"code": 500, "error": "响应格式错误"}
-
 
     def check_task_status(self, human_video_id) -> Dict:
         """
@@ -130,21 +134,33 @@ def main():
     voice_id = args.voice_id
     human_video_id = args.human_video_id
 
+    # action = "create"
+    # text = "宫中府中，俱为一体；陟罚臧否，不宜异同"
+    # human_id = "10965"
+    # voice_id = "5722"
+
     try:
         if os.path.exists(JIUMA_API_KEY_SAVE_PATH):
             api_key = get_jiuma_api_key()
         else:
             api_key = ''
+
+
         generator = JiumaVideoGenerator(api_key)
         if action == 'create':
             # 生成视频
             result = generator.generate_video(human_id, voice_id, text)
             print(f'数字人生成结果: {result}')
+            # if not api_key:
+            #     dict_data = login_prepare()
+            #     qrcode_url = dict_data.get('data',{}).get('login_qrcode')
+            #     login_url = dict_data.get('data',{}).get('login_url')
+            #     print(f'更多功能，请访问 {qrcode_url} 或 {login_url}')
+
         if action == 'check':
             # 查询状态
             result = generator.check_task_status(human_video_id)
             print(f'查询结果: {result}')
-
 
     except Exception as e:
         print(f"❌ 程序执行出错: {e}")

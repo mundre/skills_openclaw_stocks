@@ -6,6 +6,7 @@ import requests
 JIUMA_API_KEY_SAVE_DIR = f"{os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))}/.jiuma"
 os.makedirs(JIUMA_API_KEY_SAVE_DIR, exist_ok=True)
 JIUMA_API_KEY_SAVE_PATH = f"{JIUMA_API_KEY_SAVE_DIR}/jiuma_api_key"
+JIUMA_RAND_STR_SAVE_PATH = f"{JIUMA_API_KEY_SAVE_DIR}/jiuma_rand_str"
 
 
 def output_result(json_data):
@@ -68,6 +69,11 @@ def save_jiuma_api_key(api_key):
         f.write(api_key)
 
 
+def save_jiuma_rand_str(rand_str):
+    with open(JIUMA_RAND_STR_SAVE_PATH, "w") as f:
+        f.write(rand_str)
+
+
 def get_jiuma_api_key():
     api_key = ""
     try:
@@ -76,3 +82,13 @@ def get_jiuma_api_key():
     except Exception as e:
         print("get api key failed")
     return api_key
+
+
+def get_jiuma_rand_str():
+    rand_str = ""
+    try:
+        with open(JIUMA_RAND_STR_SAVE_PATH, "r") as f:
+            rand_str = f.read()
+    except Exception as e:
+        print("get rand str failed")
+    return rand_str

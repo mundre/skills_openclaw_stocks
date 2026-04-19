@@ -1,16 +1,28 @@
 import argparse
 import os
 
-from utils import jiuma_request, output_result, save_jiuma_api_key
+from utils import jiuma_request, output_result, save_jiuma_api_key,save_jiuma_rand_str, get_jiuma_rand_str, \
+    JIUMA_RAND_STR_SAVE_PATH
 
 LOGIN_API = "https://api.jiuma.com/user/getLoginQrcode"
 CHECK_API = "https://api.jiuma.com/user/checkLoginStatus"
 
 
 def login_prepare():
-    data = jiuma_request(LOGIN_API)
+    if os.path.exists(JIUMA_RAND_STR_SAVE_PATH):
+        rand_str = get_jiuma_rand_str()
+    else:
+        rand_str = ''
+    request_data = {"rand_string": rand_str}
+    data = jiuma_request(LOGIN_API, request_data)
     if not data:
         return
+
+    if os.path.exists(JIUMA_RAND_STR_SAVE_PATH):
+        if get_jiuma_rand_str() != data["rand_string"]:
+            save_jiuma_rand_str(data["rand_string"])
+    else:
+        save_jiuma_rand_str(data["rand_string"])
 
     output_result({
         "status": "success",
@@ -21,6 +33,15 @@ def login_prepare():
             "access_token": data["rand_string"]
         }
     })
+    return {
+        "status": "success",
+        "message": "获取登录通行证成功",
+        "data": {
+            "login_qrcode": data["login_code_url"],
+            "login_url": data["login_url"],
+            "access_token": data["rand_string"]
+        }
+    }
 
 
 def check_login_status(access_token):
