@@ -12,6 +12,15 @@ requirements:
     - type: file_read
       paths:
         - ~/.meitu/credentials.json
+        - ~/.openclaw/workspace/visual/
+        - ./openclaw.yaml
+        - ./DESIGN.md
+    - type: file_write
+      paths:
+        - ~/.openclaw/workspace/visual/
+        - ./output/
+        - ./openclaw.yaml
+        - ./DESIGN.md
     - type: exec
       commands:
         - meitu
@@ -39,26 +48,19 @@ This is the top-level routing skill:
 
 ## Permission Scope
 
-This root skill is routing-only with minimal permissions. Scene skills have broader permissions appropriate to their workflows.
+This root skill declares permissions for project-mode workflows. Scene skills inherit and use these permissions for their workflows.
 
 ### Root Skill (meitu-skills)
 
-- **exec**: `meitu` CLI only
-- **file_read**: `~/.meitu/credentials.json` only
-- **file_write**: None
-- This root skill does not have `node` permission.
+- **exec**: `meitu` CLI
+- **file_read**: `~/.meitu/credentials.json`, `~/.openclaw/workspace/visual/`, `./openclaw.yaml`, `./DESIGN.md`
+- **file_write**: `~/.openclaw/workspace/visual/`, `./output/`, `./openclaw.yaml`, `./DESIGN.md`
+
+These permissions enable project-mode workflows that read/write design documents, shared visual memory, and project configuration.
 
 ### Scene Skills (meitu-poster, meitu-visual-me, etc.)
 
-Scene skills declare their own permissions for their workflows:
-
-- **exec**: `meitu` CLI
-- **file_read**: `~/.meitu/credentials.json`, `~/.openclaw/workspace/visual/`
-- **file_write**: `~/.openclaw/workspace/visual/`
-
-In project mode (when `openclaw.yaml` exists), scene skills may also:
-- Create/update `./output/`, `./DESIGN.md`, `openclaw.yaml`
-- Write shared memory under `~/.openclaw/workspace/visual/`
+Scene skills use the permissions declared by the root skill for their workflows.
 
 ### meitu-tools
 
