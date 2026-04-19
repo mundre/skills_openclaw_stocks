@@ -67,6 +67,17 @@ def add_rect(slide, x, y, w, h, fill_color):
     return shape
 
 
+def ensure_real_png(logo_path):
+    """确保 logo 文件是真正的 PNG（修复 JPEG/WEBP/SVG 伪装为 .png 的问题）"""
+    try:
+        from PIL import Image as PILImage
+        img = PILImage.open(logo_path)
+        if img.format != 'PNG':
+            img.convert('RGBA').save(logo_path, 'PNG')
+    except Exception:
+        pass  # 如果 Pillow 不可用或转换失败，让 python-pptx 尝试原文件
+
+
 def find_logo(company, logos_dir):
     """查找公司 logo 文件，返回完整路径或 None"""
     logo_file = company.get('file') or company.get('logo')
@@ -74,6 +85,7 @@ def find_logo(company, logos_dir):
         return None
     logo_path = os.path.join(logos_dir, logo_file)
     if os.path.exists(logo_path) and os.path.getsize(logo_path) > 1000:
+        ensure_real_png(logo_path)
         return logo_path
     return None
 

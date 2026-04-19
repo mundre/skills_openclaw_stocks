@@ -102,6 +102,30 @@ async function searchBaidu(page, query) {
   });
 }
 
+// ── Bing 图片搜索（备选，中文公司百度效果差时使用）──────────────
+async function searchBing(page, query) {
+  const url = `https://www.bing.com/images/search?q=${encodeURIComponent(query)}&qft=+filterui:imagesize-medium`;
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 });
+  await page.waitForTimeout(3000);
+
+  return page.evaluate(() => {
+    const urls = new Set();
+    document.querySelectorAll('a.iusc').forEach(el => {
+      try {
+        const m = JSON.parse(el.getAttribute('m') || '{}');
+        if (m.murl && m.murl.startsWith('http')) urls.add(m.murl);
+      } catch(e) {}
+    });
+    document.querySelectorAll('.mimg').forEach(img => {
+      const src = img.getAttribute('src') || img.getAttribute('data-src');
+      if (src && src.startsWith('http') && !src.includes('bing.com') && !src.includes('bing.net')) {
+        urls.add(src);
+      }
+    });
+    return [...urls].slice(0, 10);
+  });
+}
+
 // ── 官网尝试 ─────────────────────────────────────────────────
 async function tryOfficialSite(page, officialUrl, destPath) {
   try {
@@ -180,6 +204,27 @@ async function tryOfficialSite(page, officialUrl, destPath) {
       console.log(`  尝试官网: ${c.official}`);
       ok = await tryOfficialSite(page, c.official, destPath);
       if (ok) console.log(`  ✅ 官网下载成功`);
+    }
+
+    // 策略3：Bing 图片搜索（英文关键词，适合国际公司）
+    if (!ok) {
+      const bingQuery = c.en ? `${c.en} company logo PNG` : `${c.name} logo PNG`;
+      try {
+        const bingUrls = await searchBing(page, bingQuery);
+        console.log(`  Bing找到 ${bingUrls.length} 个URL`);
+        for (let i = 0; i < Math.min(bingUrls.length, 6); i++) {
+          try {
+            await downloadFile(bingUrls[i], destPath);
+            console.log(`  ✅ Bing下载成功 (URL${i+1})`);
+            ok = true;
+            break;
+          } catch (e) {
+            console.log(`  ✗ Bing URL${i+1}: ${e.message.slice(0, 60)}`);
+          }
+        }
+      } catch (e) {
+        console.log(`  Bing搜索失败: ${e.message.slice(0, 60)}`);
+      }
     }
 
     results.push({ ...c, status: ok ? 'success' : 'failed' });

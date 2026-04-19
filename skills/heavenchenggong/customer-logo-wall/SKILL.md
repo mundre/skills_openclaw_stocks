@@ -1,6 +1,6 @@
 ---
 name: customer-logo-wall
-version: 1.1.0
+version: 1.2.0
 description: 处理客户表格并生成Logo墙PPT的自动化工具。当用户提到"客户表格"、"公司中文名"、"Logo墙"、"客户logo"或需要处理Excel中的客户数据并生成PPT时使用此技能。
 ---
 
@@ -11,9 +11,10 @@ description: 处理客户表格并生成Logo墙PPT的自动化工具。当用户
 从 Excel 客户列表出发，自动完成：
 1. 读取公司英文名 → 搜索/确认中文名
 2. 按知名度分 Tier 排序
-3. 用百度图片自动下载公司 Logo
-4. 自动核验 Logo 准确性（无需用户手动校对）
-5. 生成专业 Logo 墙 PPT
+3. 用百度图片 + Bing 备选自动下载公司 Logo
+4. **Logo 格式标准化**（JPEG/WEBP/SVG → 真正 PNG，防止 API 报错）
+5. 自动核验 Logo 准确性（无需用户手动校对）
+6. 生成专业 Logo 墙 PPT
 
 ## 工作流程
 
@@ -66,6 +67,25 @@ description: 处理客户表格并生成Logo墙PPT的自动化工具。当用户
 **搜索策略**（按优先级）：
 1. 百度图片搜索：`{公司中文名} {英文名} logo`
 2. 若百度失败，尝试访问公司官网抓取 header 中的 logo img
+3. 若仍失败，用 Bing 图片搜索（英文关键词，适合国际公司）
+
+### Step 4.5：Logo 格式标准化（新增 v1.2.0）
+
+使用 `scripts/normalize_logos.py` 将所有下载的 Logo 统一为真正的 PNG 格式。
+
+**解决的问题**：
+- 搜索引擎返回的图片实际是 JPEG/WEBP/SVG，但扩展名为 `.png`
+- SVG 伪装为 PNG → Anthropic API 报错 `Could not process image`
+- WEBP 格式在部分系统和 PowerPoint 中不支持
+
+**转换策略**（自动检测文件头）：
+| 实际格式 | 转换方式 |
+|---------|---------|
+| JPEG/WEBP | Pillow 转 RGBA → 保存 PNG |
+| SVG | rsvg-convert → cairosvg → qlmanage（macOS）按优先级尝试 |
+| 已是 PNG | 跳过，仅验证完整性 |
+
+> ⚠️ `build_ppt.py` 也内置了运行时格式修复（`ensure_real_png`），但建议先跑一遍标准化脚本。
 
 ### Step 5：自动核验 Logo 准确性
 
@@ -99,10 +119,13 @@ export AGENT_BROWSER="<你的agent-browser路径>"
 # 1. 下载 Logo（用 Node + playwright）
 $NODE_BIN scripts/download_logos.js --output <输出目录> --companies <公司列表JSON>
 
-# 2. 核验 Logo
+# 2. Logo 格式标准化（确保全部是真正的 PNG）
+python3 scripts/normalize_logos.py --logos-dir <logo目录> --companies <公司列表JSON>
+
+# 3. 核验 Logo
 python3 scripts/verify_logos.py --logos-dir <logo目录> --companies <公司列表JSON>
 
-# 3. 生成 PPT
+# 4. 生成 PPT
 python3 scripts/build_ppt.py --logos-dir <logo目录> --companies <公司列表JSON> --output <输出路径>
 ```
 
@@ -110,14 +133,16 @@ python3 scripts/build_ppt.py --logos-dir <logo目录> --companies <公司列表J
 
 | 脚本 | 作用 |
 |------|------|
-| `scripts/download_logos.js` | 用 playwright + 百度图片批量下载 Logo（Node.js） |
+| `scripts/download_logos.js` | 用 playwright + 百度/Bing 图片批量下载 Logo（Node.js） |
+| `scripts/normalize_logos.py` | Logo 格式标准化：JPEG/WEBP/SVG → 真正 PNG（Python） |
 | `scripts/verify_logos.py` | 自动核验 Logo 准确性（Python） |
-| `scripts/build_ppt.py` | 生成 Logo 墙 PPT（Python + python-pptx） |
+| `scripts/build_ppt.py` | 生成 Logo 墙 PPT，内置格式修复（Python + python-pptx） |
 
 ## 参考文档
 
 - `references/logo-verification.md`：Logo 自动核验的详细逻辑与阈值说明
 - `references/ppt-design.md`：PPT 设计规范与颜色定义
+- `references/logo-format-issues.md`：Logo 格式常见问题与解决方案
 
 ## 依赖环境
 
