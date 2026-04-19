@@ -124,10 +124,13 @@ Create final files:
 
 ### Step 6: Package Output
 
-Create tar.gz archive:
+Create tar.gz archive with timestamp and version:
 ```bash
-tar -czf {repo-slug}-xhs.tar.gz {repo-slug}/
+tar -czf {repo-slug}-xhs-{YYYYMMDD}-v{N}.tar.gz {repo-slug}/
 ```
+
+**Naming Convention**: `{repo-slug}-xhs-{date}-v{version}.tar.gz`
+- Example: `hermes-agent-xhs-20250413-v2.tar.gz`
 
 ## Output Structure
 
@@ -142,13 +145,13 @@ xhs-images/{repo-slug}/
 ├── outline-strategy-e.md         # Warm hand-drawn (NEW)
 ├── outline-strategy-f.md         # Dark professional (NEW)
 ├── outline.md                    # Final selected outline
-├── prompts/
+├── xiaohongshu-post.html         # Complete visual output
+├── xiaohongshu-article.md        # Article content for XHS caption
+├── prompts/                      # Image generation prompts
 │   ├── 01-cover-{slug}.md
 │   ├── 02-features-{slug}.md
-│   ├── 03-tech-{slug}.md
-│   ├── 04-compare-{slug}.md
-│   └── 05-cta-{slug}.md
-└── xiaohongshu-post.html         # Complete visual output
+│   └── ...
+└── {repo-slug}-xhs-{YYYYMMDD}-v{N}.tar.gz  # Final package
 ```
 
 ## HTML Output Features
@@ -206,6 +209,35 @@ Output: Technical introduction with:
 - Performance metrics
 - Code examples
 - Getting started guide
+```
+
+## File Naming Standards
+
+When delivering files to users, always use the following format:
+
+**Archive File**: `{repo-slug}-xhs-{YYYYMMDD}-v{N}.tar.gz`
+- `repo-slug`: Repository name (e.g., `hermes-agent`)
+- `YYYYMMDD`: Current date (e.g., `20250413`)
+- `v{N}`: Version number starting from v1 (e.g., `v2` for revisions)
+
+**Example**: `hermes-agent-xhs-20250413-v2.tar.gz`
+
+## Delivery Message Template
+
+When sending the file, include:
+1. Filename with date and version
+2. Brief description of contents
+3. Usage instructions
+
+```
+文件名: {repo-slug}-xhs-{YYYYMMDD}-v{N}.tar.gz
+日期: {YYYY-MM-DD}
+版本: v{N}
+
+包含:
+- xiaohongshu-post.html - 5页卡片
+- xiaohongshu-article.md - 正文文案
+- prompts/ - AI绘图提示词
 ```
 
 ## Tips
