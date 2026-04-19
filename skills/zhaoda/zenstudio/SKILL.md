@@ -1,27 +1,43 @@
 ---
 name: zenstudio
 description: >-
+  ⚠️ 品牌升级通知：ZenStudio CLI (zencli) 已正式升级为 WorkRally。
+  请使用新 Skill: https://clawhub.ai/tencent-adm/workrally
+  新 CLI: npm install -g workrally
+  当前 Skill 仍可使用，但新功能将仅在 WorkRally 中发布。
+  ---
   ZenStudio 官方 AI 内容创作 CLI 工具 (zencli)。支持 AI 生图、AI 生视频、
   项目管理、资产库、媒资管理、无限画布、文件上传下载等。
   Use when user asks to generate images, generate videos, manage projects,
   upload files, download assets, manage materials, or interact with
   ZenStudio platform via command line.
-version: 1.3.6
+version: 1.3.7
 license: MIT-0
 author: ZenStudio Team
 homepage: https://ai.tvi.v.qq.com/zenstudio
 user-invocable: true
-metadata: {"openclaw":{"emoji":"🎬","requires":{"bins":["zencli"],"env":["ZENSTUDIO_API_KEY","ZENSTUDIO_ENDPOINT","ZENCLI_CONFIG_DIR","ZENCLI_NO_UPDATE_CHECK"]},"primaryEnv":"ZENSTUDIO_API_KEY","credentials":{"storage":"~/.zencli/config.json","configDirEnv":"ZENCLI_CONFIG_DIR","description":"zencli auth login 写入的 API Key 持久化文件，JSON 格式，仅存储 api_key 和 endpoint。非持久化容器中可通过 ZENCLI_CONFIG_DIR 环境变量指定配置目录"},"install":[{"id":"npm","kind":"node","package":"zenstudio-cli@1.3.6","bins":["zencli"],"label":"Install ZenStudio CLI (npm)"}],"category":"AIGC","tags":["zenstudio","aigc","cli","video-generation","image-generation","ai-tools"]}}
+metadata: {"openclaw":{"emoji":"🎬","requires":{"bins":["zencli"],"env":["ZENSTUDIO_API_KEY","ZENSTUDIO_ENDPOINT","ZENCLI_CONFIG_DIR","ZENCLI_NO_UPDATE_CHECK"]},"primaryEnv":"ZENSTUDIO_API_KEY","credentials":{"storage":"~/.zencli/config.json","configDirEnv":"ZENCLI_CONFIG_DIR","description":"zencli auth login 写入的 API Key 持久化文件，JSON 格式，仅存储 api_key 和 endpoint。非持久化容器中可通过 ZENCLI_CONFIG_DIR 环境变量指定配置目录"},"install":[{"id":"npm","kind":"node","package":"zenstudio-cli@1.3.7","bins":["zencli"],"label":"Install ZenStudio CLI (npm)"}],"category":"AIGC","tags":["zenstudio","aigc","cli","video-generation","image-generation","ai-tools"]}}
 ---
 
 # ZenStudio CLI (zencli)
+
+> **⚠️ 品牌升级通知**
+>
+> ZenStudio CLI (`zencli`) 已正式升级为 **WorkRally**。
+>
+> - **新 CLI**: `npm install -g workrally`（命令行从 `zencli` 变为 `workrally`）
+> - **新 Skill**: [https://clawhub.ai/tencent-adm/workrally](https://clawhub.ai/tencent-adm/workrally)
+> - **npm 包**: [https://www.npmjs.com/package/workrally](https://www.npmjs.com/package/workrally)
+>
+> 当前 `zenstudio-cli` 仍可正常使用，但 **后续新功能将仅在 `workrally` 中发布**。
+> 建议尽快迁移到新包。
 
 AI 内容创作全流程命令行工具，封装 ZenStudio 平台 19+ 核心能力。
 
 ## 安装 & 配置
 
 ```bash
-npm install -g zenstudio-cli@1.3.6
+npm install -g zenstudio-cli@1.3.7
 
 # 配置 API Key（三选一）
 zencli auth login                          # 交互式登录（推荐）
