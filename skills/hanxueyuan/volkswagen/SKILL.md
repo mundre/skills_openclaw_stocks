@@ -1,56 +1,45 @@
 ---
-name: volkswagen
-description: "Information assistant for Volkswagen. Search products, news, financials, and official resources for Volkswagen."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","volkswagen","enterprise-info"] } }
+summary: "大众 VW——欧洲最大汽车制造商、保时捷/奥迪/兰博基尼母公司"
+read_when:
+  - 查询大众汽车 · Volkswagen相关信息
+  - 了解相关行业发展
 ---
 
-# Volkswagen — Information Assistant
+# 大众汽车 · Volkswagen
 
-Query products, news, stock prices, financial reports, and official resources for **Volkswagen**.
+---
 
-## About
+## 发展历程
 
-- **Company**: Volkswagen
-- **Industry**: Automotive
-- **Official Website**: https://www.volkswagen.com
+| 时期 | 关键事件 |
+|:----:|--------|
+| **1937 年** | 纳粹德国政府创立——'人民的汽车' |
+| **1945 年** | 战后由英国接管 |
+| **1970s** | 甲壳虫全球畅销——累计 2150 万辆 |
+| **2020s** | 向电动车转型——ID 系列 |
 
-## What This Skill Does
+---
 
-When activated, this skill helps you:
+## 核心特点
 
-1. **Product Search** — Find and compare Volkswagen products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
+乘用车（大众/奥迪/保时捷/兰博基尼/宾利/布加迪/斯柯达/西雅特等）+ 商用车
 
-## Usage Examples
+## 核心优势
 
-- "What are the latest Volkswagen products?"
-- "Show me Volkswagen stock price"
-- "Compare Volkswagen with competitors"
-- "Find Volkswagen official support page"
-- "What's new at Volkswagen?"
+全球最大汽车集团（按品牌数）+ 平台化战略（MQB/MEB）
 
-## How It Works
+---
 
-This skill uses web search to fetch real-time information about Volkswagen from:
-- Official website: https://www.volkswagen.com
-- Financial data providers
-- News aggregators
-- Product databases
+## 关键数据
 
-## Instructions for Agent
+| 指标 | 数值 |
+|------|------|
+| 年营收 | 约 3200 亿欧元 |
+| 年销量 | 约 900 万辆 |
+| 品牌数 | 12 个 |
 
-When this skill is triggered:
-1. Identify the user's specific query about Volkswagen
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.volkswagen.com)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
+---
 
-## Author
+## 值得了解
 
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+大众集团拥有从斯柯达到布加迪的全品牌矩阵——从平民到超豪华全覆盖
