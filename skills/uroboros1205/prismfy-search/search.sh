@@ -24,29 +24,99 @@ QUOTA_ENDPOINT="$BASE_URL/v1/user/me"
 
 die() { echo "❌  $*" >&2; exit 1; }
 
+usage() {
+  sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+}
+
 check_deps() {
   command -v curl >/dev/null 2>&1 || die "curl is required but not installed."
   command -v jq   >/dev/null 2>&1 || die "jq is required but not installed. Install with: brew install jq / apt install jq"
 }
 
 check_key() {
-  [[ -z "${PRISMFY_API_KEY:-}" ]] && die "PRISMFY_API_KEY is not set.
+  if [[ -z "${PRISMFY_API_KEY:-}" ]]; then
+    die "PRISMFY_API_KEY is not set.
 Set it in your shell profile:
   export PRISMFY_API_KEY=\"ss_live_your_key_here\"
 Get a free key (3,000 searches/month) at: https://prismfy.io/register"
+  fi
+}
+
+validate_time_range() {
+  local value="$1"
+  case "$value" in
+    day|week|month|year) ;;
+    *) die "Invalid --time value: $value. Expected one of: day, week, month, year." ;;
+  esac
+}
+
+validate_page() {
+  local value="$1"
+  [[ "$value" =~ ^[1-9][0-9]*$ ]] || die "Invalid --page value: $value. Expected a positive integer."
+}
+
+api_request() {
+  local method="$1"
+  local endpoint="$2"
+  local body="${3:-}"
+
+  local response
+  local curl_args=(
+    -sS
+    -X "$method"
+    "$endpoint"
+    -H "Authorization: Bearer $PRISMFY_API_KEY"
+    -H "Content-Type: application/json"
+  )
+
+  if [[ -n "$body" ]]; then
+    curl_args+=(-d "$body")
+  fi
+
+  if ! response=$(curl "${curl_args[@]}"); then
+    die "Failed to reach Prismfy API. Check your internet connection."
+  fi
+
+  echo "$response"
+}
+
+api_error_message() {
+  local code="$1"
+  local response="$2"
+
+  case "$code" in
+    UNAUTHORIZED)
+      echo "Invalid API key. Check your PRISMFY_API_KEY." ;;
+    QUOTA_EXCEEDED)
+      echo "Monthly quota exceeded. Upgrade at https://prismfy.io or wait for reset." ;;
+    ENGINE_NOT_AVAILABLE)
+      echo "One or more engines are not available on your plan.
+Free tier engines: brave, startpage, yahoo
+Upgrade for Google, Reddit, GitHub, arXiv, etc.: https://prismfy.io" ;;
+    "")
+      echo "" ;;
+    *)
+      local api_message
+      api_message=$(echo "$response" | jq -r '.message // empty' 2>/dev/null || true)
+      if [[ -n "$api_message" ]]; then
+        echo "API error ($code): $api_message"
+      else
+        echo "API error ($code)."
+      fi ;;
+  esac
 }
 
 # ── Quota ─────────────────────────────────────────────────────────────────────
 
 show_quota() {
   local response
-  response=$(curl -sf "$QUOTA_ENDPOINT" \
-    -H "Authorization: Bearer $PRISMFY_API_KEY") || \
-    die "Failed to reach Prismfy API. Check your internet connection or API key."
+  response=$(api_request "GET" "$QUOTA_ENDPOINT")
 
   local code
-  code=$(echo "$response" | jq -r '.code // empty')
-  [[ "$code" == "UNAUTHORIZED" ]] && die "Invalid API key. Check your PRISMFY_API_KEY."
+  code=$(echo "$response" | jq -r '.code // empty' 2>/dev/null || true)
+  if [[ -n "$code" ]]; then
+    die "$(api_error_message "$code" "$response")"
+  fi
 
   echo "$response" | jq -r '
     "👤  Plan:       \(.tier | ascii_upcase)",
@@ -81,28 +151,14 @@ run_search() {
   [[ -n "$domain"     ]] && body=$(echo "$body" | jq --arg d "$domain"     '. + {domain: $d}')
 
   local response
-  response=$(curl -sf -X POST "$SEARCH_ENDPOINT" \
-    -H "Authorization: Bearer $PRISMFY_API_KEY" \
-    -H "Content-Type: application/json" \
-    -d "$body") || die "Failed to reach Prismfy API. Check your internet connection."
+  response=$(api_request "POST" "$SEARCH_ENDPOINT" "$body")
 
   # Check for API errors
   local err_code
-  err_code=$(echo "$response" | jq -r '.code // empty')
-  case "$err_code" in
-    UNAUTHORIZED)
-      die "Invalid API key. Check your PRISMFY_API_KEY." ;;
-    QUOTA_EXCEEDED)
-      die "Monthly quota exceeded. Upgrade at https://prismfy.io or wait for reset." ;;
-    ENGINE_NOT_AVAILABLE)
-      die "One or more engines are not available on your plan.
-Free tier engines: brave, startpage, yahoo
-Upgrade for Google, Reddit, GitHub, arXiv, etc.: https://prismfy.io" ;;
-    "")
-      : ;; # no error
-    *)
-      die "API error ($err_code): $(echo "$response" | jq -r '.message // "unknown error"')" ;;
-  esac
+  err_code=$(echo "$response" | jq -r '.code // empty' 2>/dev/null || true)
+  if [[ -n "$err_code" ]]; then
+    die "$(api_error_message "$err_code" "$response")"
+  fi
 
   if [[ "$raw" == "true" ]]; then
     echo "$response" | jq .
@@ -148,7 +204,6 @@ Upgrade for Google, Reddit, GitHub, arXiv, etc.: https://prismfy.io" ;;
 
 main() {
   check_deps
-  check_key
 
   local engines=""
   local time_range=""
@@ -168,11 +223,11 @@ main() {
         # Convert "google,reddit" → ["google","reddit"]
         engines=$(echo "$1" | jq -Rc 'split(",")')  ;;
       --time)
-        shift; time_range="$1" ;;
+        shift; time_range="$1"; validate_time_range "$time_range" ;;
       --domain)
         shift; domain="$1" ;;
       --page)
-        shift; page="$1" ;;
+        shift; page="$1"; validate_page "$page" ;;
       --lang)
         shift; lang="$1" ;;
       --quota)
@@ -180,7 +235,7 @@ main() {
       --raw)
         raw="true" ;;
       --help|-h)
-        sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+        usage
         exit 0 ;;
       -*)
         die "Unknown option: $1. Run with --help for usage." ;;
@@ -189,6 +244,8 @@ main() {
     esac
     shift
   done
+
+  check_key
 
   if [[ "$quota_mode" == "true" ]]; then
     show_quota

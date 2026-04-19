@@ -3,11 +3,11 @@ name: prismfy-search
 description: >
   Default web search for OpenClaw. Search the web across 10 engines — Google,
   Reddit, GitHub, arXiv, Hacker News, and more — using Prismfy. Free tier
-  included, no credit card required. Automatically set as the default OpenClaw
-  search tool on install. Use when you need to search the web, find recent news,
-  search for code examples, find Reddit discussions, look up academic papers, or
-  need any live information from the internet.
-version: 1.1.0
+  included, no credit card required. Includes a bundled `search.sh` helper for
+  web search, quota checks, and engine/time/domain filters. Automatically set
+  as the default OpenClaw search tool on install. Use when you need live web
+  results, recent news, code examples, Reddit discussions, or academic papers.
+version: 1.2.1
 metadata:
   openclaw:
     requires:
@@ -32,14 +32,22 @@ No proxy hassle, no CAPTCHA, no blocked requests. Just results.
 
 ## Setup
 
-### 1. Get an API key
+### 1. Install the skill
 
-Head to [prismfy.io](https://prismfy.io), create an account, and grab your API key from the dashboard.
-There's a free tier — no credit card needed to get started.
+```bash
+openclaw skills install prismfy-search
+```
 
 ---
 
-### 2. Add the key to your environment
+### 2. Get an API key
+
+Head to [prismfy.io](https://prismfy.io), create a free account, and grab your API key from **Dashboard → API Keys**.
+No credit card required.
+
+---
+
+### 3. Add the key to your environment
 
 **Option A — Shell profile (permanent)**
 ```bash
@@ -56,7 +64,7 @@ Add `PRISMFY_API_KEY=ss_live_your_key_here` to your OpenClaw environment setting
 
 ---
 
-### 3. Verify it works
+### 4. Verify it works
 
 ```bash
 bash search.sh --quota
@@ -97,8 +105,7 @@ Or just talk naturally:
 | Engine | What it's good for | Free |
 |---|---|---|
 | `brave` | General web search, privacy-first | ✅ |
-| `startpage` | Google results without tracking | ✅ |
-| `yahoo` | General web, news | ✅ |
+| `bing` | News, broad coverage | paid |
 | `google` | Most comprehensive web search | paid |
 | `reddit` | Real user opinions, discussions | paid |
 | `github` | Code, repos, issues, READMEs | paid |
