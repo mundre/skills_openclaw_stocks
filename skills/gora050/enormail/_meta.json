@@ -3,11 +3,16 @@
   "slug": "enormail",
   "displayName": "Enormail",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775166567734,
-    "commit": "https://github.com/openclaw/skills/commit/de14d947a342e7e668f26d8c22f3df94095f4929"
+    "version": "1.0.2",
+    "publishedAt": 1775166569470,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775166567734,
+      "commit": "https://github.com/openclaw/skills/commit/de14d947a342e7e668f26d8c22f3df94095f4929"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774238602922,
