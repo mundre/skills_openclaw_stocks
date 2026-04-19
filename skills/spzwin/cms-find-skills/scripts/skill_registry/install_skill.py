@@ -219,6 +219,20 @@ def install_skill(
         if not installed_path:
             return {"success": False, "message": "解压失败"}
 
+        # 安装后做一次轻量结构校验
+        try:
+            from verify_skill import verify  # type: ignore
+            verify_result = verify(installed_path)
+            if not verify_result["success"]:
+                return {
+                    "success": False,
+                    "path": installed_path,
+                    "message": "安装结果校验失败",
+                    "errors": verify_result["errors"],
+                }
+        except Exception as exc:
+            log(f"⚠️ 跳过安装后校验: {exc}", quiet)
+
         return {
             "success": True,
             "path": installed_path,

@@ -3,11 +3,16 @@
   "slug": "cms-find-skills",
   "displayName": "cms-find-skills",
   "latest": {
-    "version": "1.5.0",
-    "publishedAt": 1775208485007,
-    "commit": "https://github.com/openclaw/skills/commit/d8047f598a60cfdf7d734f27843cdb8a6e79ed02"
+    "version": "1.6.0",
+    "publishedAt": 1775644974490,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.0",
+      "publishedAt": 1775208485007,
+      "commit": "https://github.com/openclaw/skills/commit/d8047f598a60cfdf7d734f27843cdb8a6e79ed02"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1774858402239,
