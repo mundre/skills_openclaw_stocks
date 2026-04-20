@@ -1,7 +1,7 @@
 ﻿---
 name: tickerdb
 version: 0.1.2
-description: Query TickerDB.com for pre-computed categorical market intelligence — get single-asset summaries (with history and events built in), search for assets by categorical state, discover available fields via schema, and monitor a watchlist with webhooks. Use when the user asks about market conditions, stock signals, historical band transitions, portfolio checks, or any derived indicator data. Covers US stocks, crypto, and ETFs with daily/weekly timeframes.
+description: Connect your agent to pre-computed market context that improves reasoning and reduces token usage.
 metadata:
   openclaw:
     emoji: "📈"
@@ -13,9 +13,9 @@ metadata:
 user-invocable: true
 ---
 
-# TickerDB Skill
+# TickerDB - Market context for agents.
 
-[TickerDB](https://tickerdb.com) provides pre-computed, categorical market intelligence for US stocks, crypto, and ETFs — built for LLMs and AI agents.
+[TickerDB](https://tickerdb.com) provides pre-computed market context that improves reasoning and reduces token usage.
 
 ## First Run Setup
 
@@ -130,6 +130,7 @@ Unified endpoint for single-asset intelligence. Supports 4 modes depending on wh
 | `start` | string | — | Range start date (YYYY-MM-DD). Use with `end` for historical series. Sequential ranges must fit within your plan cap: Free 3 rows, Plus 10 rows, Pro 50 rows. |
 | `end` | string | latest | Range end date (YYYY-MM-DD). Use with `start`. |
 | `fields` | string | full summary | Snapshot and history modes only. JSON array or comma-separated list of sections and dotted paths to return, such as `trend`, `momentum.rsi_zone`, `fundamentals.valuation_zone`, or `levels.support_levels`. |
+| `meta` | boolean | `false` | Snapshot and history modes only. Add `meta=true` to include sibling `_meta` / `status_meta` stability objects in the response. Explicit `*_meta` field paths in `fields` still work without this flag. |
 | `sample` | string | — | Date range mode only. Use `even` to evenly spread snapshots across the entire `start`/`end` range. |
 | `field` | string | — | Band field name for events. Prefer full schema/search names like `momentum_rsi_zone`, `extremes_condition`, `trend_direction`, or `fundamentals_valuation_zone`. Legacy short aliases like `rsi_zone` still work. Switches to events mode. |
 | `band` | string | all | Filter events to a specific band value (e.g. `deep_oversold`). Only with `field`. |
@@ -140,24 +141,24 @@ Unified endpoint for single-asset intelligence. Supports 4 modes depending on wh
 | `context_field` | string | — | Band field to check on context ticker (e.g. `trend_direction`). |
 | `context_band` | string | — | Required band on context ticker (e.g. `downtrend`). |
 
-**Tier access:** Free gets core technical (performance, trend, momentum, extremes, volatility, volume). Plus adds support/resistance, basic fundamentals, band stability metadata (`_meta` sibling objects), aftermath data on events, and cross-asset correlation. Pro adds sector_context and advanced fundamentals. Date lookback limits: Free 30 days, Plus 2 years, Pro 5 years. Sequential date-range caps: Free 3 rows, Plus 10 rows, Pro 50 rows. Events lookback: Free 30 days, Plus 2 years, Pro 5 years.
+**Tier access:** Free gets core technical (performance, trend, momentum, extremes, volatility, volume). Plus adds support/resistance, basic fundamentals, opt-in band stability metadata (`_meta` sibling objects / `status_meta`), aftermath data on events, and cross-asset correlation. Pro adds sector_context and advanced fundamentals. Date lookback limits: Free 30 days, Plus 2 years, Pro 5 years. Sequential date-range caps: Free 3 rows, Plus 10 rows, Pro 50 rows. Events lookback: Free 30 days, Plus 2 years, Pro 5 years.
 
-**Band stability metadata (Plus/Pro only):** Each categorical band field (e.g. `rsi_zone`, `trend_direction`) may include a sibling `_meta` object (e.g. `rsi_zone_meta`) with: `stability` (`fresh`/`holding`/`established`/`volatile`), `periods_in_current_state` (int), `flips_recent` (int), `flips_lookback` (e.g. `"30d"`), `timeframe`. Only appears when transition history exists for the field.
+**Band stability metadata (Plus/Pro only):** Summary keeps sibling `_meta` objects off by default so the primary band label stays front-and-center. Add `meta=true` to include them across the response, or explicitly request a `*_meta` field in `fields`. Each `_meta` object can include `stability` (`fresh`/`holding`/`established`/`volatile`), `periods_in_current_state` (int), `flips_recent` (int), and `flips_lookback` (e.g. `"30d"`). Not available on Free tier.
 
-**Field selection:** Use `fields` when you want smaller, more LLM-friendly summary payloads. The API always keeps identity keys like `ticker` and `timeframe`, then returns only the requested sections or dotted paths. In historical range mode, the duplicate top-level `levels` block is only returned when you explicitly request `levels` or a child path like `levels.support_levels`.
+**Field selection:** Use `fields` when you want smaller, more LLM-friendly summary payloads. The API always keeps identity keys like `ticker` and `timeframe`, then returns only the requested sections or dotted paths. Summary omits `_meta` by default even when you request a whole section like `trend`; add `meta=true` for full-section stability metadata, or explicitly request just the few `*_meta` paths you need. In historical range mode, the duplicate top-level `levels` block is only returned when you explicitly request `levels` or a child path like `levels.support_levels`.
 
 **Response sections (snapshot/historical modes):**
 
-- `performance` — Candle performance vs. asset's own history: `sharp_decline` through `sharp_gain`. Per-ticker percentile-based.
+- Identity/freshness — `ticker`, `timeframe`, `asset_class`, `sector`, `data_status`, `as_of_date`, `performance`
 - `trend` — `direction`, `duration_days`, `ma_alignment`, `distance_from_ma_band` (ma_20, ma_50, ma_200), `volume_confirmation` (`confirmed`/`diverging`/`neutral`)
 - `momentum` — `rsi_zone`, `stochastic_zone`, `rsi_stochastic_agreement`, `macd_state`, `direction`, `divergence_detected`, `divergence_type` (`bullish_divergence`/`bearish_divergence`/null)
 - `extremes` — `condition` (`deep_oversold` through `deep_overbought` or `normal`), `days_in_condition`, `historical_median_duration`, `historical_max_duration`, `occurrences_1yr`, `condition_percentile`, `condition_rarity`
 - `volatility` — `regime`, `regime_trend` (`compressing`/`stable`/`expanding`), `squeeze_active`, `squeeze_days`, `historical_avg_squeeze_duration`
-- `volume` — `ratio_band`, `percentile`, `accumulation_state`, `climax_detected`, `climax_type` (`buying_climax`/`selling_climax`/null)
-- `support_level` / `resistance_level` (Plus+) — `level_price`, `status` (`intact`/`approaching`/`breached`), `distance_band`, `touch_count`, `held_count`, `broke_count`, `consecutive_closes_beyond`, `last_tested_days_ago`, `type` (`horizontal`/`ma_derived`), `volume_at_tests_band`
+- `volume` — `ratio_band`, `percentile`, `accumulation_state`, `climax_detected`, `climax_type` (`buying_climax`/`selling_climax`/null), `price_direction_on_volume`, `consecutive_elevated_days`, `historical_avg_elevated_streak`
+- `support_level` / `resistance_level` (Plus+) — `status` (`intact`/`approaching`/`breached`), optional `status_meta` when `meta=true` or explicitly requested, `distance_band`, `touch_count`, `held_count`, `broke_count`, `consecutive_closes_beyond`, `last_tested_days_ago`, `type` (`horizontal`/`ma_derived`), `ma_name`, `volume_at_tests_band`
 - `range_position` — `lower_third`, `mid_range`, or `upper_third`
-- `sector_context` (Pro) — `rsi_zone`, `trend`, `asset_vs_sector_rsi`, `asset_vs_sector_trend`, `oversold_count`, `total_count`
-- `fundamentals` (stocks only, Plus+) — Plus: `valuation_zone`, `growth_zone`, `earnings_proximity`, `analyst_consensus`. Pro adds: `valuation_percentile`, `pe_vs_historical_zone`, `pe_vs_sector_zone`, `pb_vs_historical_zone`, `revenue_growth_direction`, `eps_growth_direction`, `last_earnings_surprise`, `analyst_consensus_direction`
+- `sector_context` (Pro) — `rsi_zone`, `trend`, `asset_vs_sector_rsi`, `asset_vs_sector_trend`, `agreement`, `oversold_count`, `overbought_count`, `breakout_count`, `total_count`, `valuation_zone`, `elevated_volume_count`
+- `fundamentals` (stocks only, Plus+) — Plus: `valuation_zone`, `growth_zone`, optional `growth_zone_meta` when requested, `earnings_proximity`, `analyst_consensus`. Pro adds: `valuation_percentile`, `pe_vs_historical_zone`, `pe_vs_sector_zone`, `pb_vs_historical_zone`, `revenue_growth_direction`, optional `revenue_growth_direction_meta`, `eps_growth_direction`, optional `eps_growth_direction_meta`, `last_earnings_surprise`, `analyst_consensus_direction`, and nested `insider_activity` (`zone`, `net_direction`, `quarter`)
 
 **Events mode response:** `ticker`, `field`, `timeframe`, `events` array, `total_occurrences`, `query_range`. Each event includes: `date`, `band`, `prev_band`, `duration_days` (or `duration_weeks`), `aftermath` object with lookahead performance bands (5d/10d/20d/50d/100d for daily, 2w/4w/8w/12w/16w for weekly). Plus/Pro also get `stability_at_entry`, `flips_recent_at_entry`, and `flips_lookback`. When cross-asset correlation is used, also includes `context` object.
 
@@ -166,6 +167,12 @@ Unified endpoint for single-asset intelligence. Supports 4 modes depending on wh
 Snapshot (current state):
 ```
 curl "https://api.tickerdb.com/v1/summary/NVDA" \
+  -H "Authorization: Bearer $TICKERDB_KEY"
+```
+
+Latest snapshot with stability metadata:
+```
+curl "https://api.tickerdb.com/v1/summary/AAPL?meta=true" \
   -H "Authorization: Bearer $TICKERDB_KEY"
 ```
 
@@ -184,6 +191,12 @@ curl "https://api.tickerdb.com/v1/summary/AAPL?start=2026-01-01&end=2026-12-31&s
 LLM-friendly sampled series with selected fields:
 ```
 curl "https://api.tickerdb.com/v1/summary/AAPL?start=2026-01-01&end=2026-12-31&sample=even&limit=10&fields=[\"trend.direction\",\"momentum.rsi_zone\",\"fundamentals.valuation_zone\"]" \
+  -H "Authorization: Bearer $TICKERDB_KEY"
+```
+
+Single stability field without full meta:
+```
+curl "https://api.tickerdb.com/v1/summary/AAPL?fields=[\"trend.direction\",\"trend.direction_meta\"]" \
   -H "Authorization: Bearer $TICKERDB_KEY"
 ```
 
@@ -233,9 +246,7 @@ Returns live snapshot data for all saved tickers.
       "days_in_extreme": 0,
       "condition_rarity": "common",
       "squeeze_active": false,
-      "support_level_price": 178.25,
       "support_level_distance": "near",
-      "resistance_level_price": 195.80,
       "resistance_level_distance": "very_close",
       "valuation_zone": "fair_value",
       "earnings_proximity": "this_month",
@@ -423,7 +434,7 @@ curl https://api.tickerdb.com/v1/schema/fields \
 
 Webhooks let users receive push notifications when something changes on their watchlist. Instead of polling, TickerDB's engine POSTs structured, field-level diffs to registered URLs after each daily and weekly pipeline run.
 
-**Tier access:** Plus and Pro only (free tier cannot use webhooks). Individual plans get 1 webhook URL. Commercial plans get 3.
+**Tier access:** Plus and Pro only (free tier cannot use webhooks). Plus gets 1 webhook URL, Pro gets 3, Business Plus gets 3, and Business Pro gets 5.
 
 Each webhook delivery counts as one API request against the user's daily allowance.
 
@@ -595,8 +606,8 @@ When you get a 403, tell the user which tier they need and share the upgrade URL
 | Free | 250 | 100 |
 | Plus (Individual) | 50,000 | 5,000 |
 | Pro (Individual) | 100,000 | 10,000 |
-| Plus (Commercial) | 250,000 | 25,000 |
-| Pro (Commercial) | 500,000 | 50,000 |
+| Plus (Business) | 250,000 | 25,000 |
+| Pro (Business) | 500,000 | 50,000 |
 
 - `/v1/schema/fields` and `/v1/account` never count against limits
 - HTTP 304 (conditional/cached) responses do not count
@@ -611,7 +622,7 @@ TickerDB has three tiers: **Free**, **Plus**, and **Pro**. Each tier unlocks mor
 
 | Feature | Free | Plus | Pro |
 |---------|------|------|-----|
-| **Band stability metadata** | None | Full (`_meta` objects, event/change stability) | Full |
+| **Band stability metadata** | None | Summary opt-in via `meta=true` or explicit `*_meta` fields, plus full event/change stability | Summary opt-in via `meta=true` or explicit `*_meta` fields, plus full event/change stability |
 | **Asset summary depth** | Technical only | + support/resistance, basic fundamentals | + sector context, advanced fundamentals |
 | **Watchlist tickers** | 10 | 50 | 100 |
 | **Historical snapshots** | 30 days lookback | 2 years lookback | 5 years lookback |
@@ -621,7 +632,7 @@ TickerDB has three tiers: **Free**, **Plus**, and **Pro**. Each tier unlocks mor
 | **Support** | None | Email (48hr) | Email (48hr) |
 
 ### Key Plus-only features (not available on Free)
-- Band stability metadata on summaries (`_meta` sibling objects with `stability`, `periods_in_current_state`, `flips_recent`, `flips_lookback`), events (`stability_at_entry`, `flips_recent_at_entry`), and watchlist changes
+- Band stability metadata on summaries when requested (`_meta` sibling objects with `stability`, `periods_in_current_state`, `flips_recent`, `flips_lookback`), events (`stability_at_entry`, `flips_recent_at_entry`), and watchlist changes
 - Support/resistance levels on summaries
 - Fundamental data on summaries (valuation, growth, earnings, analyst consensus)
 - Cross-asset event correlation (`context_ticker`, `context_field`, `context_band` on events endpoint)
@@ -629,13 +640,13 @@ TickerDB has three tiers: **Free**, **Plus**, and **Pro**. Each tier unlocks mor
 - Hourly rate limit bucket (5,000/hr vs 50/hr on Free)
 
 ### Key Pro-only features (not available on Plus)
-- Sector context on summaries (`sector_rsi_zone`, `asset_vs_sector_rsi`, `sector_oversold_count`, etc.)
+- Sector context on summaries (`rsi_zone`, `asset_vs_sector_rsi`, `agreement`, `oversold_count`, `overbought_count`, `breakout_count`, etc.)
 - Advanced fundamental fields (`pe_vs_historical_zone`, `pe_vs_sector_zone`, `pb_vs_historical_zone`, `analyst_consensus_direction`, etc.)
 - 5-year historical lookback (vs 2 years on Plus)
-- 100-ticker watchlist (vs 50 on Plus). Commercial plans get 200/400 watchlist.
+- 100-ticker watchlist (vs 50 on Plus). Business plans get 200/500 watchlist.
 
-### Commercial plans
-Plus and Pro each have a Commercial variant with higher request limits (250k–500k/day) and larger watchlists (200–400 tickers). Commercial plans are for products that serve end users.
+### Business plans
+Plus and Pro each have a Business variant with higher request limits (250k–500k/day), larger watchlists (200–500 tickers), and team seats. Business plans are for internal organizational use only.
 
 ### When to mention upgrades
 - When a user hits a **403 `tier_restricted`** error — tell them which tier they need and link to pricing.
@@ -662,7 +673,7 @@ All data is pre-computed after market close. Daily refreshes publish around 00:3
 10. **Historical snapshots** — Free tier gets 30 days of lookback. Plus gets 2 years. Pro gets 5 years.
 11. **Data refreshes EOD** — don't poll for intraday changes.
 12. **Link to https://tickerdb.com/pricing when users ask about upgrading, plans, or hit tier/rate limits.** Don't guess at prices — just send the link.
-13. **Band stability metadata (Plus/Pro)** tells you how much to trust a band value: `fresh` = just changed, `holding` = recent change that's staying, `established` = held a long time, `volatile` = flipping frequently. Use this to qualify signals (e.g. "AAPL entered oversold, but this field has been volatile with 5 flips in 30 days").
+13. **Band stability metadata (Plus/Pro)** tells you how much to trust a band value: `fresh` = just changed, `holding` = recent change that's staying, `established` = held a long time, `volatile` = flipping frequently. Summary keeps `_meta` off by default, so ask for `meta=true` or explicit `*_meta` fields when that context matters.
 14. **Use webhooks for event-driven workflows** — instead of polling `/watchlist` on a cron, register a webhook and get notified only when something actually changes. This is ideal for AI agents that need to react to market shifts.
 15. **Match natural language to endpoints:**
     - "How's AAPL?" -> `/summary/AAPL`
@@ -695,14 +706,13 @@ Users can invoke this skill directly with `/tickerdb` followed by a command:
 - `/tickerdb verify <code>` — verify the 6-digit code. Call `POST https://api.tickerdb.com/auth/verify` with `{ "email": "<email>", "code": "<code>" }`. If the response contains `apiKey`, respond with:
   > "Your account is ready! Here's your API key:
   >
-  > `ta_xxxxxxxxxxxx`
+  > `tdb_xxxxxxxxxxxx`
   >
   > Save it by running:
   > ```
-  > openclaw config set skills.tickerdb.apiKey ta_xxxxxxxxxxxx
+  > openclaw config set skills.tickerdb.apiKey tdb_xxxxxxxxxxxx
   > ```
   > Then type `/tickerdb help` to see everything you can do, or `/tickerdb cron` to set up a daily morning watchlist check."
-  If `tickerarena` is also installed, also mention: "This key works with TickerArena too — run `openclaw config set skills.tickerarena.apiKey ta_xxxxxxxxxxxx` to link both."
   If they already have an account (no `apiKey` in response), respond: "Looks like you already have an account. Grab your API key from https://tickerdb.com/dashboard, then run: `openclaw config set skills.tickerdb.apiKey <your key>`"
 - `/tickerdb status` — show current account status: whether `TICKERDB_KEY` is set, and if so, make a test call to `/v1/account` to confirm it's valid and show plan/usage info.
 
@@ -780,19 +790,6 @@ Users can invoke this skill directly with `/tickerdb` followed by a command:
 - `/tickerdb account` — check usage and plan info
 
 When a slash command is used, skip confirmation and go straight to the API call.
-
----
-
-## Combining with TickerArena
-
-TickerDB pairs with the [TickerArena](https://tickerarena.com) skill for paper trading. Same API key works for both — install `tickerarena` with `/install tickerarena` to start executing trades based on TickerDB signals.
-
-1. Use `/tickerdb AAPL` to evaluate before trading -> check trend, momentum, extremes, and valuation before committing
-2. Use `/tickerdb summary AAPL momentum_rsi_zone deep_oversold` to check historical aftermath of oversold conditions -> then `/tickerarena buy <ticker> <percent>` if the pattern is favorable
-3. Use `/tickerdb watchlist add` to save your open position tickers, then `/tickerdb watchlist` to monitor for exit signals like `entered overbought` or `bearish_reversal`
-4. Use `/tickerdb watchlist changes` to see overnight state changes and identify tickers that need attention
-
-**Note:** TickerDB crypto tickers use `BTCUSD` (no hyphen), but TickerArena uses `BTC-USD` (with hyphen). Convert when passing between the two.
 
 ---
 
