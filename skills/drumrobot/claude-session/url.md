@@ -14,7 +14,7 @@ http://localhost:5174/#project={project-key}&session={session-id}
 |-------------|------|-------------|
 | Windows | `C:\Users\USER\path\repo` | `C--Users-USER-path-repo` |
 | WSL | `/mnt/c/Users/USER/path/repo` | `-mnt-c-Users-USER-path-repo` |
-| macOS | `/Users/david/path/repo` | `-Users-david-path-repo` |
+| macOS | `/Users/es6kr/path/repo` | `-Users-es6kr-path-repo` |
 
 Rule: Replace all non-alphanumeric characters with `-`
 
