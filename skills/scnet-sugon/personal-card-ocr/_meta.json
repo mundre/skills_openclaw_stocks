@@ -3,9 +3,15 @@
   "slug": "personal-card-ocr",
   "displayName": "Personal Card Ocr",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776072924536,
-    "commit": "https://github.com/openclaw/skills/commit/7488b1a365c9f5f0f0452caa248441f5f438ca95"
+    "version": "1.0.3",
+    "publishedAt": 1776307548908,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776072924536,
+      "commit": "https://github.com/openclaw/skills/commit/7488b1a365c9f5f0f0452caa248441f5f438ca95"
+    }
+  ]
 }
