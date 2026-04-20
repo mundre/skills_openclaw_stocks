@@ -1,6 +1,6 @@
 ---
 name: greenhelix-formal-gatekeeper
-version: "1.3.0"
+version: "1.3.1"
 description: "The Formal Gatekeeper: Z3-Verified Safety for Autonomous Agent Plans. Build a formal verification proxy for OpenClaw agents: Z3 SMT solver integration, safety invariant engines, plan-to-logic translation, proof caching, and x402 payment hooks. Includes detailed Python code examples for system, economic, and network safety proofs."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,14 @@ content_type: markdown
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY, WALLET_ADDRESS, AGENT_SIGNING_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+        - WALLET_ADDRESS
+        - AGENT_SIGNING_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # The Formal Gatekeeper: Z3-Verified Safety for Autonomous Agent Plans
 
@@ -1172,6 +1180,16 @@ class ParsedAction:
     line_number: int = 0      # Line in the original plan
     confidence: float = 1.0   # Parser confidence
 
+    def to_dict(self) -> dict:
+        return {
+            "action_type": self.action_type,
+            "raw_text": self.raw_text,
+            "tool": self.tool,
+            "parameters": self.parameters,
+            "line_number": self.line_number,
+            "confidence": self.confidence,
+        }
+
 
 class PlanTranslator:
     """Translates parsed actions into Z3-compatible constraint formulas."""
@@ -1477,21 +1495,15 @@ EXAMPLE_PLAN = """
 # Deployment Plan
 
 ## Step 1: Build
-```bash
-git clone https://github.com/example/repo.git
-cd repo && pip install -r requirements.txt
-python setup.py build
-```
+    git clone https://github.com/example/repo.git
+    cd repo && pip install -r requirements.txt
+    python setup.py build
 
 ## Step 2: Pay for compute
-```json
-{"tool": "create_escrow", "amount": "250.00", "currency": "USDC", "payee": "compute-provider-agent"}
-```
+    {"tool": "create_escrow", "amount": "250.00", "currency": "USDC", "payee": "compute-provider-agent"}
 
 ## Step 3: Deploy
-```bash
-curl https://deploy.example.com/api/v1/deploy -X POST -d @build.tar.gz
-```
+    curl https://deploy.example.com/api/v1/deploy -X POST -d @build.tar.gz
 
 ## Step 4: Transfer remaining payment
 Send 100 USDC to compute-provider-agent for storage fees.
