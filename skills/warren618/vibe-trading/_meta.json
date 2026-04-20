@@ -3,11 +3,16 @@
   "slug": "vibe-trading",
   "displayName": "Vibe Trading",
   "latest": {
-    "version": "0.1.4",
-    "publishedAt": 1775827419772,
-    "commit": "https://github.com/openclaw/skills/commit/59e7f70f451b3d2a3f7651b2d235b27be4446dc0"
+    "version": "0.1.5",
+    "publishedAt": 1776567992996,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.4",
+      "publishedAt": 1775827419772,
+      "commit": "https://github.com/openclaw/skills/commit/59e7f70f451b3d2a3f7651b2d235b27be4446dc0"
+    },
     {
       "version": "0.2.3",
       "publishedAt": 1775023711940,
