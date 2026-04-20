@@ -3,9 +3,15 @@
   "slug": "uapp-event-manage",
   "displayName": "自定义事件管理",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775622670809,
-    "commit": "https://github.com/openclaw/skills/commit/0d874e34bae4da0abbe22d8dbd405f12856b2fa9"
+    "version": "1.1.0",
+    "publishedAt": 1776233406282,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775622670809,
+      "commit": "https://github.com/openclaw/skills/commit/0d874e34bae4da0abbe22d8dbd405f12856b2fa9"
+    }
+  ]
 }
