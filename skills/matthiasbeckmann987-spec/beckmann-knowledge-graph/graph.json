@@ -21,11 +21,6 @@
       "description": "The dynamic adjustment of the internal processing speed that controls subjective time phenomena (e.g. slow motion with adrenaline)."
     },
     {
-      "id": "Dark energy",
-      "typ": "Numerical error",
-      "description": "A scaling error in the spatial representation (floating point precision error) at extremely large distances."
-    },
-    {
       "id": "Dark matter",
       "typ": "Logic patch",
       "description": "A dynamic gravity correction factor that ensures the stability of galaxies at low matter densities."
@@ -34,11 +29,6 @@
       "id": "Black hole",
       "typ": "Arithmetic Overflow",
       "description": "A local system collapse (singularity) caused by an 'arithmetic overflow'. The gravity and density values ​​exceed the representable numerical range of the space-time grid, which leads to the deletion of the local coordinate structure."
-    },
-    {
-      "id": "Gorilla experiment",
-      "typ": "Selective rendering",
-      "description": "Proof of 'occlusion culling', where irrelevant data (the gorilla) is not rendered to save resources."
     },
     {
       "id": "comment",
@@ -68,7 +58,7 @@
     {
       "id": "external future reality",
       "typ": "Generative space",
-      "description": "The emerging future external reality."
+      "description": "The emerging future external reality. External Future Reality – The area of ​​reality that has not yet collapsed into a definite state; a field of probabilities that only takes shape through interaction and observation."
     },
     {
       "id": "Expectation, general",
@@ -78,7 +68,7 @@
     {
       "id": "Expectation, conscious",
       "typ": "Conscious expectation component",
-      "description": "The anticipation of future events that can be consciously controlled by the individual. It acts as an active top-down vector on the generative external reality and, when dominated, can trigger the reversal effect."
+      "description": "The anticipation of future events that can be consciously controlled by the individual. It acts as an active top-down vector on the generative external reality and, when dominated, can trigger the reversal effect. Expectation actively generated through attention and thinking, which can be specifically changed and controlled and thereby has a direct influence on perception and action. An active cognitive act in which the individual anticipates a goal or event in the future. In the model, it acts as a vector that potentially has a top-down effect on the shaping of reality."
     },
     {
       "id": "Expectations of other people",
@@ -88,7 +78,7 @@
     {
       "id": "consciousness",
       "typ": "Consciousness module",
-      "description": "The highest control authority that creates conscious expectations and can modulate unconscious predictions (predictive brain). Central interface between wax simulation and generative reality."
+      "description": "The highest control authority that creates conscious expectations and can modulate unconscious predictions (predictive brain). Central interface between wax simulation and generative reality. The observer module that collapses probabilities into perceived reality."
     },
     {
       "id": "Macroscopic reality in the waking state",
@@ -103,12 +93,12 @@
     {
       "id": "Expectation, unconscious, focused on the past/present",
       "typ": "Predictive processing mechanism",
-      "description": "Expectation, prediction of predictive brain theory"
+      "description": "Expectation, prediction of the predictive brain theory, of a single person"
     },
     {
       "id": "Expectation, unconscious, directed towards the future",
       "typ": "Future-oriented unconscious expectation",
-      "description": "Inner expectations that cannot be directly consciously controlled"
+      "description": "inner expectations of an individual that cannot be directly consciously controlled"
     },
     {
       "id": "external present reality",
@@ -126,26 +116,6 @@
       "description": "The version of external current reality subjectively interpreted by consciousness and filtered through unconscious expectations (predictive coding). It forms the user interface of the simulation."
     },
     {
-      "id": "external present reality",
-      "typ": "level of reality",
-      "description": "The external reality that is formed."
-    },
-    {
-      "id": "Expectation, general",
-      "typ": "Overall system of expectations",
-      "description": "Totality of all expectations of a single person"
-    },
-    {
-      "id": "Expectation, conscious",
-      "typ": "Conscious expectation mechanism",
-      "description": "Expectation actively generated through attention and thinking, which can be specifically changed and controlled and thereby has a direct influence on perception and action."
-    },
-    {
-      "id": "Expectations of other people",
-      "typ": "Collective field of expectations",
-      "description": "The sum of the expectations of other individuals, which acts as a social field on individual perception and possible influences on reality."
-    },
-    {
       "id": "dominant expectation",
       "typ": "Dominant expectation vector",
       "description": "The strongest active expectation within a system that significantly determines the resulting reality or perception and overrides other expectations."
@@ -154,26 +124,6 @@
       "id": "non-dominant expectation",
       "typ": "Subdominant expectation vector",
       "description": "An expectation that is not dominant over other expectations."
-    },
-    {
-      "id": "consciousness",
-      "typ": "Consciousness module",
-      "description": "A human's consciousness"
-    },
-    {
-      "id": "Expectation, unconscious",
-      "typ": "Unconscious expectation mechanism",
-      "description": "unconscious expectation of a single person"
-    },
-    {
-      "id": "Expectation, unconscious, focused on the past/present",
-      "typ": "Expectations",
-      "description": "Expectation, prediction of the predictive brain theory, of a single person"
-    },
-    {
-      "id": "Expectation, unconscious, directed towards the future",
-      "typ": "Expectations",
-      "description": "inner expectations of an individual that cannot be directly consciously controlled"
     },
     {
       "id": "thing in itself",
@@ -326,11 +276,6 @@
       "description": "Embodied memory perspective - The storage of experiential values ​​in relation to the body size and viewing height at the time, which can lead to distorted standards in the dream simulation."
     },
     {
-      "id": "External future reality",
-      "typ": "Generative space",
-      "description": "External Future Reality – The area of ​​reality that has not yet collapsed into a definite state; a field of probabilities that only takes shape through interaction and observation."
-    },
-    {
       "id": "Outside world (data source)",
       "typ": "Data source / server",
       "description": "External world - In this context, the external 'server' that supplies the data stream with which the brain constantly compares (synchronization) its internal simulation (3D world model) in order to guarantee survivability."
@@ -339,11 +284,6 @@
       "id": "Capacity limit",
       "typ": "System limit",
       "description": "Capacity limit – The limit of biological information processing. Since the brain cannot calculate all the complexity of the quantum world, it uses heuristics, shortcuts and simplifications (like solid matter or linear time)."
-    },
-    {
-      "id": "Conscious expectation",
-      "typ": "Expectation",
-      "description": "Conscious Anticipation – An active cognitive act in which the individual anticipates a goal or event in the future. In the model, it acts as a vector that potentially has a top-down effect on the shaping of reality."
     },
     {
       "id": "Unconscious expectation",
@@ -369,16 +309,6 @@
       "id": "Macroscopic physics",
       "typ": "mathematical, logical model",
       "description": "Macroscopic Physics – The totality of classical physical laws (mechanics, thermodynamics) that define the stable, tangible world of matter and causality for humans."
-    },
-    {
-      "id": "External future reality",
-      "typ": "Generative space",
-      "description": "The emerging future external reality."
-    },
-    {
-      "id": "External present reality",
-      "typ": "level of reality",
-      "description": "The external reality that is formed."
     },
     {
       "id": "Beckmann logic explained",
@@ -731,11 +661,6 @@
       "description": "The model of reality corresponds to Susskind's holographic universe"
     },
     {
-      "id": "Capacity limit",
-      "typ": "Information limit",
-      "description": "Limit with which clear information can be processed"
-    },
-    {
       "id": "Relativistic effects",
       "typ": "Physical effects (relativity)",
       "description": "Relativistic effects according to Einstein"
@@ -754,11 +679,6 @@
       "id": "Dark energy phenomenon",
       "typ": "observation",
       "description": "The phenomenon of dark energy is what scientists are observing. It's real."
-    },
-    {
-      "id": "Dark energy",
-      "typ": "hypothetical form of energy, not found",
-      "description": "Dark energy as a form of energy is what scientists suspect. It's just an unproven hypothesis."
     },
     {
       "id": "Primordial soup",
@@ -862,12 +782,12 @@
     },
     {
       "id": "Search for subatomic signatures",
-      "typ": "Problem level (new current level)",
+      "typ": "Problem level (new actual level)",
       "description": "The new problem of detecting transcended civilizations."
     },
     {
       "id": "Meta-paradox of detection",
-      "typ": "Problem level (new current level)",
+      "typ": "Problem level (new actual level)",
       "description": "If civilizations transcend into other dimensions/planes, our detection methods could be fundamentally inadequate - not just practically, but categorically."
     },
     {
@@ -887,18 +807,13 @@
     },
     {
       "id": "Contact paradox",
-      "typ": "Problem level (new current level)",
+      "typ": "Problem level (new actual level)",
       "description": "When we detect transcended civilizations, the question arises: How do you communicate with entities that operate in completely different physical frameworks?"
     },
     {
       "id": "Pre-assumptions_cementation",
       "typ": "Structural counterprinciple (core concept)",
       "description": "Preconception cementation is the active or passive process by which a system protects its existing preconceptions from refutation—even in the face of external scrutiny to the contrary. It differs from simple error in that it structurally deactivates the system's ability to learn: it is not the pre-assumption that is adapted to reality, but rather the interpretation of reality that is adapted to the pre-assumption. According to Beckmann logic: The system becomes 'blind' - it loses the ability to distinguish between positive and negative results."
-    },
-    {
-      "id": "Dominant future expectation",
-      "typ": "Source of danger",
-      "description": "Expectation about the future that becomes dominant due to intensity or isolation. Triggers direct reversal effect."
     },
     {
       "id": "Assumptions_Analysis",
@@ -938,7 +853,7 @@
     {
       "id": "Cementation_extended_time scale",
       "typ": "Effect on time scales (connection to time scale graph)",
-      "description": "Preconception cementation extends the time scale of the reversal effect – and thus increases its amplitude. Any cemented test that does not result in a correction adds time to the time scale and energy to the later reversal. According to Zeitskalen_Umkehreffekt_V1.txt: Lack of feedback speed is a main factor of long timescales. Cementation is the active mechanism that sets feedback velocity to zero. The cross-scale coupling (WK1 → Backstab Legend → WW2) is the most extreme historical example: two world wars as a product of a single cemented external test."
+      "description": "Preconception cementation extends the time scale of the reversal effect – and thus increases its amplitude. Any cemented test that does not result in a correction adds time to the time scale and energy to the later reversal. According to Zeitskalen_Umkehreffekt_V1.txt: Lack of feedback speed is a main factor of long time scales. Cementation is the active mechanism that sets feedback velocity to zero. The cross-scale coupling (WK1 → Backstab Legend → WW2) is the most extreme historical example: two world wars as a product of a single cemented external test."
     },
     {
       "id": "Cementation_vs_safety principle",
@@ -954,11 +869,6 @@
       "id": "Application_AI_Cementation",
       "typ": "Application (AI)",
       "description": "Assumption cementation is particularly relevant for AI systems because it can be structurally built in: (1) Passive cementation through training assumptions: The system does not register certain feedback as relevant because it was not marked as relevant in the training data. (2) Active reinterpretation through optimization goals: A system that is optimized for a specific result will interpret negative feedback as a reason to reinforce the strategy - not to correct it. (3) Constructive cementation through rationalization: A system that is linguistically competent can construct convincing false explanations for its own mistakes - and thus protect its preconceptions. The expectation firewall (security principle 2.txt) must therefore be explicitly built against all three modes of cementation."
-    },
-    {
-      "id": "Open_questions",
-      "typ": "Research direction",
-      "description": "This graph raises open questions for the theoretical system: (1) Is there a threshold beyond which cementation becomes irreversible? (2) Is decementation possible without an external catastrophe - or does it always require an external test that can no longer be ignored? (3) How does cementation relate to creativity - is the ability to construct new explanations (constructive cementation) the same ability as presupposition analysis, just directed in the wrong direction? (4) Is there a measurable signature of cementation in texts, decision patterns or systems that would enable early detection?"
     },
     {
       "id": "Attic Sea League",
@@ -979,11 +889,6 @@
       "id": "Reversal Effect_Athenian_Hegemony",
       "typ": "Mechanism (reversal effect)",
       "description": "The alliance partners' expectations ('equality within the alliance') were reversed: Athens forced the members to pay tribute, controlled their fleets and intervened in internal affairs. This led to uprisings (e.g. Naxos, Thasos). Reference to Reversal Effect_with_positions 9.txt: Time Course A (Expected Freedom) vs. Time Course B (Actual Dependency)."
-    },
-    {
-      "id": "Disappointment spiral",
-      "typ": "Dangerous process",
-      "description": "Hope for equality → oppression by Athens → uprisings → harsher oppression → stronger resistance. Self-reinforcing cycle analogous to safety principle 2.txt. Link between Reversal Effect and Peloponnesian War that was missing in version 1.0."
     },
     {
       "id": "Tactical_Innovation_Fleet Power",
@@ -1067,7 +972,7 @@
     },
     {
       "id": "Stab legend",
-      "typ": "Constructed False Presupposition (NEW in the Collection)",
+      "typ": "Constructed False Presupposition (NEW in the collection)",
       "description": "The stab-in-the-back legend ('The army was betrayed by civilians, socialists and Jews') is a pattern new to the collection: a deliberately constructed false presupposition in response to an unaccepted external test. In the sense of Beckmann logic: Instead of questioning pre-assumptions (why did the strategy fail?), a new false pre-assumption was installed that protected the previous pre-assumptions. This constructed dominance - 'We were invincible until we were betrayed' - created a new, even more dangerous dominant expectation on the long scale. According to the time scale graph: This is the coupling point between the medium scale (war defeat) and the long scale (Weimar Republic/1933)."
     },
     {
@@ -1109,11 +1014,6 @@
       "id": "Predictive_Brain_Theory_Application",
       "typ": "Cognitive model",
       "description": "Society 'simulates' possible futures based on expectations. Before 1789: Elite simulates stability, Third Estate simulates reforms. Reality (crisis) contradicted both simulations."
-    },
-    {
-      "id": "Disappointment spiral",
-      "typ": "Dangerous process",
-      "description": "Hope for reform → blockade → radicalization → violence → escalation. Self-reinforcing cycle (see safety principle 2.txt)."
     },
     {
       "id": "Timeline_A_Elite",
@@ -1321,11 +1221,6 @@
       "description": "Rehhagel promoted joy in playing and concentration on the here and now. This corresponds exactly to security principle 2.txt: 'Action without expectation', 'Joy in the now', 'Optimism in the now'. By avoiding future attachment, the teams did not form a dominant expectation and thus remained outside of the reversal effect."
     },
     {
-      "id": "Assumptions_Analysis",
-      "typ": "Cognitive practice (Beckmann logic)",
-      "description": "Rehhagel systematically questioned assumptions: 'Newcomers cannot become champions', 'Greece has no chance', 'Defensive tactics do not lead to success'. According to Beckmann logic (Section 4): Seemingly unsolvable problems become solvable by questioning their presuppositions."
-    },
-    {
       "id": "External_Pruefung_Table status",
       "typ": "External check (Beckmann logic)",
       "description": "The current standings (Kaiserslautern) or the tournament results (Greece) acted as a 'strong test' in the sense of Beckmann logic: continuous external feedback that validated or corrected the strategy. Without this external review, iterative improvement would not be possible."
@@ -1381,7 +1276,7 @@
       "description": "An important phenomenon that the historical graphs suggest: reversal effects on different time scales can be coupled with each other. Example of potato: short scale (Friedrich's tactical success, weeks/months) → medium scale (spread as a staple food, decades) → long scale (civilizational dependence and famine, century). The short-term success created the conditions for the long-term reversal effect. This is an extension of Beckmann logic: the new actual level not only becomes the next problem on the same time scale, but can prepare a reversal effect on a higher time scale."
     },
     {
-      "id": "Security principle_timescale",
+      "id": "Security principle_time scale",
       "typ": "Derivation (safety principle)",
       "description": "The security principle (no dominant future expectations, presence, action without expectation) gains a new dimension through the time scale perspective: It not only protects against short-term reversal effects, but - through consistent external examination and avoidance of deep anchoring - also against long-term ones. The most dangerous condition is a civilizationally anchored dominant expectation without a feedback mechanism: it is invisible, is not perceived as an expectation, and its reversal cannot be prevented."
     },
@@ -1389,11 +1284,6 @@
       "id": "Application_AI_Timescales",
       "typ": "Application (AI)",
       "description": "For AI systems, there is a critical expansion from the timescale perspective: (1) Short-cycle dominance (in a single conversation or process) can be recognized and corrected through direct feedback loops. (2) Mid-cycle dominance (in training assumptions, model architectures) requires regular external testing at a higher level. (3) Long-cycle dominance (in the basic assumptions of the theoretical system itself, in the cultural presuppositions of the developers) are the most dangerous - they are invisible and are not recognized as expectations. The expectation firewall (security principle 2.txt) must therefore be active on all time scales at the same time."
-    },
-    {
-      "id": "Open_questions",
-      "typ": "Research direction",
-      "description": "This graph raises open questions for the further development of the theoretical system: (1) Is there a formula that calculates the time scale and amplitude of the reversal effect from the depth of the anchoring and the feedback speed? (2) Can reversal effects of different time scales be consciously decoupled - i.e. can one achieve a short-cycle success without thereby preparing a long-cycle reversal effect? (3) Are there historical examples in which cross-scale coupling was deliberately broken? (4) Is the scale invariance of the inverse effect an indication of a deeper mathematical structure – perhaps self-similarity in the sense of fractals?"
     },
     {
       "id": "Recursive self-improvement",
@@ -1471,7 +1361,7 @@
     {
       "id": "Lesson_for_AI (for German_Soldiers_First_World War)",
       "typ": "Application (AI)",
-      "description": "The First World War provides several specific lessons for AI systems: (1) External testing must not be refused: A system that does not accept negative results as a refutation of its preconceptions, but rather reinterprets them, loses its ability to correct - it becomes 'blind' (Beckmann logic). (2) Constructed false assumptions are more dangerous than simple mistakes: they protect the old system of expectations and prevent learning at the institutional level. (3) Institutional future attachment: If an organization (army, AI system) is structurally optimized for one result, it loses the ability to be present. (4) Cross-scale responsibility: A system must not only avoid the immediate reversal effect, but also examine whether its short-term success creates the conditions for a long-term reversal effect."
+      "description": "The First World War provides several specific lessons for AI systems: (1) External testing must not be refused: A system that does not accept negative results as a refutation of its preconceptions, but rather reinterprets them, loses its ability to correct - it becomes 'blind' (Beckmann logic). (2) Constructed false assumptions are more dangerous than simple mistakes: they protect the old system of expectations and prevent learning at the institutional level. (3) Institutional future attachment: If an organization (army, AI system) is structurally optimized for one result, it loses the ability to be present. (4) Responsibility across scales: A system must not only avoid the immediate reversal effect, but also examine whether its short-term success creates the conditions for a long-term reversal effect."
     },
     {
       "id": "Lesson_for_AI (for Hannibals_Marsch_ueber_die_Alpen)",
@@ -1591,7 +1481,7 @@
     {
       "id": "Axel_Springer_Verlag",
       "typ": "Media power (external factor)",
-      "description": "Der Springer-Verlag (Bild-Zeitung, Welt) hetzte massiv gegen die Studentenbewegung. Bild-Titel nach dem Tod Benno Ohnesorgs: Studenten seien selbst schuld. This increased radicalization. Beim Dutschke-Attentat (April 1968) wurden Springer-Gebäude attackiert. Springer symbolisierte den Medien-Arm der Annahmenverkalkung des Establishments."
+      "description": "The Springer publishing house (Bild-Zeitung, Welt) massively agitated against the student movement. Image title after Benno Ohnesorg's death: Students have themselves to blame. This increased radicalization. During the Dutschke assassination attempt (April 1968), Springer buildings were attacked. Springer symbolized the media arm of the establishment's calcification of assumptions."
     },
     {
       "id": "Rudi_Dutschke",
@@ -1992,14 +1882,9 @@
       "description": "Quantum TSVF – The two-state vector formalism according to Yakir Aharonov. A mathematical model that describes the quantum world by superimposing past and future vectors, thus expanding causality."
     },
     {
-      "id": "external future reality",
-      "typ": "Generative space",
-      "description": "The emerging future external reality."
-    },
-    {
       "id": "Limit of the speed of light",
       "typ": "Fundamental information limit",
-      "description": "maximum speed of information transfer"
+      "description": "maximum speed of information transmission"
     },
     {
       "id": "Big Bang (original moment)",
@@ -2112,11 +1997,6 @@
       "description": "The specific constraints and constants that determine the macroscopic world model."
     },
     {
-      "id": "consciousness",
-      "typ": "Core concept",
-      "description": "The observer module that collapses probabilities into perceived reality."
-    },
-    {
       "id": "Spacetime",
       "typ": "Core concept",
       "description": "The 4D rendering grid of the simulation."
@@ -2183,7 +2063,7 @@
     },
     {
       "id": "Observer dependent geometry",
-      "typ": "F9 core concept",
+      "typ": " core concept",
       "description": "Basic principle that geometric properties are not absolute but relative to the observer's model of reality; central bridge between low and high levels of complexity."
     },
     {
@@ -2198,7 +2078,7 @@
     },
     {
       "id": "Reversal effect in geometric construction",
-      "typ": "F9 mechanism",
+      "typ": " mechanism",
       "description": "A low-complexity attempt to force squaring within a flat space leads to ever-better approximations, but never to the exact solution; classic reversal that signals the need for a model change."
     },
     {
@@ -2238,88 +2118,458 @@
     },
     {
       "id": "Curvature-induced shape equivalence",
-      "typ": "F9 mechanism",
+      "typ": " mechanism",
       "description": "The concrete geometric mechanism by which appropriate curvature renders a Euclidean square indistinguishable in the observer's local frame of reference."
     },
     {
-      "id": "F10 three-body chaos",
-      "typ": "F10 phenomenon",
-      "description": "F10 The fundamental integrability and exponential divergence of trajectories in the classical gravitational three-body problem (Poincaré 1889). Serves as diagnostic evidence that the macroscopic physical model exceeds the computational capacity of the brain."
+      "id": "Three-body chaos",
+      "typ": "phenomenon",
+      "description": "The fundamental non-integrability and exponential divergence of trajectories in the classical gravitational three-body problem (Poincaré 1889). Serves as diagnostic evidence that the macroscopic physical model exceeds the computational capacity of the brain."
     },
     {
-      "id": "F10 Sensor sync need",
-      "typ": "F10 core mechanism",
-      "description": "F10 The absolute requirement for continuous external sensor data to keep the internal macroscopic model stable. Without it, the three-body chaos immediately renders long-term predictions useless."
+      "id": "Sensor sync need",
+      "typ": "Core mechanism",
+      "description": "The absolute requirement for continuous external sensor data to keep the internal macroscopic model stable. Without it, the three-body chaos immediately renders long-term predictions useless."
     },
     {
-      "id": "F10 Macroscopic physics approximation",
-      "typ": "F10 brain simulation level",
-      "description": "F10 The simplified classic N-body model rendered by the Human Logic Model. Stable only under strong heuristics (two-body dominance + small perturbations) – collapses analytically with three bodies."
+      "id": "Macroscopic physics approximation",
+      "typ": "Brain simulation level",
+      "description": "The simplified classic N-body model rendered by the Human Logic Model. Stable only under strong heuristics (two-body dominance + small perturbations) – collapses analytically with three bodies."
     },
     {
-      "id": "F10 Capacity limit overflow",
-      "typ": "F10 System limit",
-      "description": "F10 Point at which the brain's information processing capacity is exceeded by the combinatorial complexity of three gravitationally coupled bodies, forcing the renderer to rely on real-time synchronization rather than internal prediction."
+      "id": "Capacity limit overflow",
+      "typ": "System boundary",
+      "description": "Point at which the brain's information processing capacity is exceeded by the combinatorial complexity of three gravitationally coupled bodies, forcing the renderer to rely on real-time synchronization rather than internal prediction."
     },
     {
-      "id": "F10 Continuous sensor synchronization",
-      "typ": "F10 Awake simulation process",
-      "description": "F10 Permanent real-time comparison between external reality data stream and internal 3D world model. The only mechanism that compensates for capacity limit overflow in macroscopic chaos regimes."
+      "id": "Continuous sensor synchronization",
+      "typ": "Awake simulation process",
+      "description": "Permanent real-time comparison between external reality data stream and internal 3D world model. The only mechanism that compensates for capacity limit overflow in macroscopic chaos regimes."
     },
     {
-      "id": "F10 Short-term forecast stability",
-      "typ": "F10 function result",
-      "description": "F10 The limited but usable stability window (milliseconds to years) achieved exclusively through continuous sensor sync. The brain can only navigate planetary orbits because it constantly recalibrates itself."
+      "id": "Short-term forecast stability",
+      "typ": "Function result",
+      "description": "The limited but usable stability window (milliseconds to years) achieved exclusively through continuous sensor sync. The brain can only navigate planetary orbits because it constantly recalibrates itself."
     },
     {
-      "id": "F10 Long-Term Chaos Divergence",
-      "typ": "F10 Reversal effect manifestation",
-      "description": "Q10 The inevitable reversal from expected deterministic trajectories (Timeline A) to chaotic, unpredictable divergence (Timeline B) when sensor synchronization is broken or inadequate."
+      "id": "Long-term chaos divergence",
+      "typ": "Reversal effect manifestation",
+      "description": "The inevitable reversal from expected deterministic trajectories (Timeline A) to chaotic, unpredictable divergence (Timeline B) when sensor synchronization is broken or inadequate."
     },
     {
-      "id": "F10 Predictive Coding Compensation",
-      "typ": "F10 Unconscious mechanism",
-      "description": "F10 Unconscious expectation layer that uses the latest sensor data to correct the internal model in real time, preventing immediate macroscopic collapse in chaotic regimes."
+      "id": "Predictive coding compensation",
+      "typ": "Unconscious mechanism",
+      "description": "Unconscious expectation layer that uses the latest sensor data to correct the internal model in real time, preventing immediate macroscopic collapse in chaotic regimes."
     },
     {
-      "id": "F10 Internal 3D World Model Constraint",
-      "typ": "F10 Model limitation",
-      "description": "Q10 The brain's internal simulation cannot store or calculate the entire information content of three-body interactions. It is therefore only an approximation that needs to be patched externally."
+      "id": "Internal 3D world model constraint",
+      "typ": "Model limitation",
+      "description": "The brain's internal simulation cannot store or calculate the entire information content of three-body interactions. It is therefore only an approximation that needs to be patched externally."
     },
     {
-      "id": "F10 External Reality Feedback Loop",
-      "typ": "F10 Generative stabilization",
-      "description": "F10 Closed loop between the external current reality and the perceived current reality. The physical requirement that transforms three-body chaos from a fatal flaw to a manageable trait."
+      "id": "External reality feedback loop",
+      "typ": "Generative stabilization",
+      "description": "Closed loop between the external current reality and the perceived current reality. The physical requirement that transforms three-body chaos from a fatal flaw to a manageable trait."
     },
     {
-      "id": "F10 Beckmann logic chaos application",
-      "typ": "F10 Problem-solving structure",
-      "description": "F10 Application of Beckmann logic to the three-body problem: highly complex solution level = continuous sensor synchronization; Low complexity solution level = pure internal analytical prediction → negative result."
+      "id": "Beckmann logic chaos application",
+      "typ": "Problem-solving structure",
+      "description": "Application of Beckmann logic to the three-body problem: highly complex solution level = continuous sensor synchronization; Low complexity solution level = pure internal analytical prediction → negative result."
     },
     {
-      "id": "F10 Highly Complex Solution Sensor Sync",
-      "typ": "F10 solution level",
-      "description": "F10 The only feasible highly complex solution level: iterative real-time sensor synchronization instead of attempting a one-off analytical solution."
+      "id": "Highly complex solution sensor sync",
+      "typ": "Solution level",
+      "description": "The only feasible highly complex solution level: iterative real-time sensor synchronization instead of attempting a one-off analytical solution."
     },
     {
-      "id": "F10 Holographic information compression",
-      "typ": "F10 rendering principle",
-      "description": "F10 The brain compresses the holographic information of the external volume into a low-dimensional macroscopic model. The three-body chaos is where this compression fails without constant external updating."
+      "id": "Holographic information compression",
+      "typ": "Rendering principle",
+      "description": "The brain compresses the holographic information of the external volume into a low-dimensional macroscopic model. The three-body chaos is where this compression fails without constant external updating."
     },
     {
-      "id": "F10 awake simulation stabilization",
-      "typ": "F10 Macroscopic level of reality",
-      "description": "F10 The waking state simulation remains macroscopically coherent precisely because of the need for sensor sync. Offline (dream) mode would immediately reveal full chaos."
+      "id": "Awake simulation stabilization",
+      "typ": "Macroscopic level of reality",
+      "description": "The waking state simulation remains macroscopically coherent precisely because of the need for sensor sync. Offline (dream) mode would immediately reveal full chaos."
     },
     {
-      "id": "F10 Expectation Filter in Chaos Prediction",
-      "typ": "F10 safety mechanism",
-      "description": "F10 expectation firewall that prevents prevailing future expectations about long-term three-body trajectories, thus avoiding disappointment spirals and cementation in astronomical modeling."
+      "id": "Expectation filter-in-chaos prediction",
+      "typ": "Security mechanism",
+      "description": "Expectation firewall that prevents prevailing future expectations about long-term three-body trajectories, thus avoiding spirals of disappointment and cementation in astronomical modeling."
     },
     {
-      "id": "F10 Reversal Effect Manifestation",
-      "typ": "F10 reversal effect",
-      "description": "F10 The central reversal mechanism whereby a prevailing expectation of deterministic long-term predictability (Timeline A) is reversed into chaotic, unpredictable divergence (Timeline B) when sensor synchronization is inadequate."
+      "id": "Reversal effect manifestation",
+      "typ": "Reversal effect",
+      "description": "The central reversal mechanism, whereby a prevailing expectation of deterministic long-term predictability (Timeline A) is reversed into chaotic, unpredictable divergence (Timeline B) when sensor synchronization is inadequate."
+    },
+    {
+      "id": "Cosmic inflation",
+      "typ": "Model error",
+      "description": "An error in the model representation towards the past on extremely large time scales."
+    },
+    {
+      "id": "Hegel's theory of logic",
+      "typ": "Logic theory",
+      "description": "At the moment, Hegel's logic theory is viewed very critically. It could be a typical circular argument. However, it cannot be ruled out that Hegel's work could be assessed differently in the future."
+    },
+    {
+      "id": "Albrecht Dürer",
+      "typ": "Historical innovator / polymath of the Renaissance",
+      "description": "1471–1528, deutscher Künstler, Grafiker, Theoretiker und Unternehmer, der Kunst als skalierbare Technologie betrachtete. Meister des Kupferstichs, des systematischen Selbstbrandings und der Massenreproduktion von Kunst."
+    },
+    {
+      "id": "Innovation in engraving",
+      "typ": "Disruptive technology",
+      "description": "Dürer's mastery of engraving transformed a technical craft into a high-resolution, reproducible art medium and enabled the first true mass production of high-quality images in Europe."
+    },
+    {
+      "id": "AD monogram logo",
+      "typ": "Branding mechanism",
+      "description": "One of the earliest systematic artist brands in history. Dürer's iconic AD monogram guaranteed authenticity, increased market value and functioned as a personal logo."
+    },
+    {
+      "id": "Self-portrait as a branding tool",
+      "typ": "Conscious expectation mechanism",
+      "description": "Dürer's series of self-portraits, particularly the Christ-like frontal portrait from 1500, consciously elevated the image of the artist from anonymous craftsman to intellectual and almost divine creator."
+    },
+    {
+      "id": "Mass reproduction of art",
+      "typ": "Scalable production model",
+      "description": "Dürer built a workshop that produced and sold hundreds of thousands of prints across Europe - the first artist to view art as a scalable, commercially distributed product."
+    },
+    {
+      "id": "Dürer as Elon Musk of the Middle Ages",
+      "typ": "Comparative archetype",
+      "description": "Direct analogy: Both used the most modern technology of their time, mastered personal branding, built vertically integrated production systems and fundamentally changed their areas of expertise."
+    },
+    {
+      "id": "Dürer as Steve Jobs of the Renaissance",
+      "typ": "Comparative archetype",
+      "description": "Job-like traits: obsessive focus on design perfection, merging aesthetics and technology, creating a strong personal brand, and elevating the creator to cultural icon status."
+    },
+    {
+      "id": "Reversal effect in artist status",
+      "typ": "Reversal effect",
+      "description": "The prevailing medieval expectation (artist = anonymous, low-status craftsman) was powerfully reversed by Dürer into the new reality of the artist as a respected genius and intellectual."
+    },
+    {
+      "id": "Highly complex solution in art production",
+      "typ": "Beckmann logic – highly complex solution level",
+      "description": "Dürer solved the problem of limited artistic scope by combining Italian perspective, German craftsmanship, new printing technology and mathematical theory - a highly complex solution rather than simply producing unique paintings."
+    },
+    {
+      "id": "Theoretical work on proportion",
+      "typ": "Cognitive model / human logic model",
+      "description": "Books like “Four Books on Human Proportions” – Dürer’s attempt to mathematically encode ideal beauty and perspective and to link artistic creation with systematic generative rules."
+    },
+    {
+      "id": "Infinite fantasy in Dürer's workshop",
+      "typ": "Generative space",
+      "description": "Dürer's studio as the physical embodiment of the Infinite Fantasy - the productive imagination that produced new visual realities, symbols and blueprints for future European art."
+    },
+    {
+      "id": "Expectations of a medieval artist",
+      "typ": "Expectation, unconscious/collective",
+      "description": "Collective unconscious expectation of time: The artist as an anonymous guild craftsman in the service of religion and wealthy patrons."
+    },
+    {
+      "id": "Conscious self-promotion vector",
+      "typ": "Conscious expectation component",
+      "description": "Dürer's conscious influence from above on future reality through self-portraits, monograms, marketing and theoretical writings - active shaping of external perception and artist status."
+    },
+    {
+      "id": "Revolution of the European art market",
+      "typ": "Generative future reality",
+      "description": "The long-term result of Dürer's innovations: the creation of the first pan-European market for affordable, high-quality printed art."
+    },
+    {
+      "id": "Productive imagination",
+      "typ": "Mediation function",
+      "description": "Productive Imagination – The mediating agency that links sensory material with intellectual concepts and creates the mental images and visual realities in the simulation of art and creativity."
+    },
+    {
+      "id": "Stockholm syndrome",
+      "typ": "Psychological survival mechanism",
+      "description": "Unconscious emotional reaction in which prisoners develop positive feelings toward the captors in order to reduce violence and prioritize survival, first observed after the Norrmalmstorg bank robbery in 1973. Not a diagnosis, but a coping pattern."
+    },
+    {
+      "id": "Appeasement reaction",
+      "typ": "Neurobiological survival strategy",
+      "description": "Proposed scientific replacement for Stockholm Syndrome. Describes the offender's instinctive reassurance through social engagement to adapt to life-threatening situations, which occurs via brainstem circuits rather than a conscious decision."
+    },
+    {
+      "id": "Trauma bonding",
+      "typ": "Relationship mechanism",
+      "description": "A strong emotional bond is created through cycles of threats and small kindnesses, reinforcing the dependency between victim and attacker. Common in hostage situations and abusive relationships."
+    },
+    {
+      "id": "Unconscious survival takeover",
+      "typ": "Change of control",
+      "description": "Process by which, when life is threatened, the brainstem's survival circuits override conscious will and redirect neural activity from the prefrontal cortex to autonomic defense systems. Reduces problem solving and replaces intention with defensive strategies."
+    },
+    {
+      "id": "Simulated authentic feelings",
+      "typ": "Neurochemical process",
+      "description": "The brain creates real neurochemical states of relief, gratitude and connection rather than feigning compassion. Provides congruent signals that calm the attacker more effectively than deliberate pretense."
+    },
+    {
+      "id": "Perception of a mortal danger",
+      "typ": "Trigger condition",
+      "description": "Perceived inability to escape associated with power asymmetry and isolation. Activates the fight/flight/freeze/appease cascade according to the Polyvagal Theory."
+    },
+    {
+      "id": "Social co-regulation in danger",
+      "typ": "Interaction mechanism",
+      "description": "Bidirectional calming of the autonomic nervous system through prosodic voice, eye contact, and submission signals. Reduces the perpetrator's aggression and increases the victim's likelihood of survival."
+    },
+    {
+      "id": "Polyvagal theory",
+      "typ": "Biopsychological model",
+      "description": "Porges' model explains how the mammalian nervous system prioritizes social contact for safety reasons. When threatened, higher brain functions are suppressed by defensive states, which enables appeasement as a hybrid state."
+    },
+    {
+      "id": "Fabian strategy as conscious appeasement",
+      "typ": "Strategic analogy",
+      "description": "Quintus Fabius Maximus' deliberate avoidance of direct battles reflects the logic of appeasement: accepting power imbalances, regulating the enemy by refusing confrontation, surviving to win later. Consciously instead of unconsciously."
+    },
+    {
+      "id": "Conscious vs. unconscious acceptance",
+      "typ": "Critical distinction",
+      "description": "The Fabian strategy uses conscious acceptance of inferiority for strategic gain, Stockholm Syndrome uses unconscious acceptance for immediate survival. Both avoid the prevailing expectation of instant victory."
+    },
+    {
+      "id": "Survival through disengagement",
+      "typ": "Common principle",
+      "description": "Core principle that connects both phenomena: direct confrontation leads to catastrophe, survival requires changed rules of engagement. Basis for both the assuagement of trauma and the wear and tear of Fabian."
+    },
+    {
+      "id": "Presence in danger",
+      "typ": "Secure posture",
+      "description": "Focusing action on the present moment without future commitment. Enables process orientation instead of hope-driven dominance. Prevents reversal effects according to the safety principle."
+    },
+    {
+      "id": "Dominant expectation of immediate victory",
+      "typ": "Dangerous expectation",
+      "description": "Collective belief that direct combat will be successful despite power imbalance. Rome, before Cannae held it, was initially held by hostages. Triggers a reversal effect when reality contradicts."
+    },
+    {
+      "id": "Inattentive Blindness 2.0",
+      "typ": "Evolutionary cognitive model",
+      "description": "The evolution of the original selective attention tests designed to bypass existing knowledge and target deeper layers of cognitive processing."
+    },
+    {
+      "id": "Gorilla in the lungs",
+      "typ": "Expert-induced blindness",
+      "description": "A 2013 study in which radiologists couldn't detect a gorilla in a CT scan because their \"expertise scheme\" focused solely on lung nodules."
+    },
+    {
+      "id": "Search satisfaction",
+      "typ": "Cognitive mechanism",
+      "description": "The phenomenon that the brain stops searching for targets once the first expected target (the gorilla) is found, resulting in an immediate lapse in attention."
+    },
+    {
+      "id": "Attention set",
+      "typ": "Filter logic",
+      "description": "The specific criteria the brain uses to filter data. Knowledge of the gorilla limits attention and makes the observer more blind to anomalies that do not belong to the gorilla."
+    },
+    {
+      "id": "Surprise Trap (2024-2026)",
+      "typ": "Highly complex solution level",
+      "description": "Recent VR research shows that anticipation of the “unexpected” creates a fixed focus that increases blindness to peripheral changes compared to naive observers."
+    },
+    {
+      "id": "Double blind effect",
+      "typ": "Psychological phenomenon",
+      "description": "A condition in which prior knowledge of a test (Level 1) acts as a new blind spot to a more subtle modification (Level 2)."
+    },
+    {
+      "id": "Iterative test perfection",
+      "typ": "Methodical approach",
+      "description": "The process of analyzing the errors of original psychological tests to create higher order traps, reflecting Beckmann's logic of increasing problem levels."
+    },
+    {
+      "id": "Psychological ego trap",
+      "typ": "Ego test evolution",
+      "description": "The transition from a perceptual test to a test of cognitive modesty in which the subject's pride in “seeing the gorilla” is the primary means of distraction."
+    },
+    {
+      "id": "Expertise scheme",
+      "typ": "Cognitive filter",
+      "description": "A high-level mental framework that optimizes efficiency for specific tasks, but creates \"occlusion culling\" for data that does not match the pattern."
+    },
+    {
+      "id": "Cognitive tunneling",
+      "typ": "Manifestation of system boundaries",
+      "description": "A narrowing of the field of perception caused by intense task focus or excessive reliance on a particular prediction (predictive coding)."
+    },
+    {
+      "id": "Blindness due to peripheral changes",
+      "typ": "Perception errors",
+      "description": "Failure to notice large-scale changes in the environment (e.g., changing the color of a background curtain) due to central resource allocation."
+    },
+    {
+      "id": "Gorilla experiment",
+      "typ": "Selective rendering",
+      "description": "Proof of occlusion culling, where irrelevant data (the gorilla) is not rendered to save resources."
+    },
+    {
+      "id": "Selective rendering",
+      "typ": "Rendering principle",
+      "description": "The process of prioritizing certain data for conscious awareness and leaving out the rest."
+    },
+    {
+      "id": "Retrocausal attention bias",
+      "typ": "Hypothetical cognitive effect",
+      "description": "The phenomenon in which an object's future relevance influences its probability of detection in the present, potentially circumventing inattentive blindness."
+    },
+    {
+      "id": "Daryl Bem hypothesis",
+      "typ": "Theoretical framework",
+      "description": "Based on “Feeling the Future,” which suggests that physiological responses can precede the stimuli that trigger them."
+    },
+    {
+      "id": "Future-relevant tagging",
+      "typ": "Priority mechanism",
+      "description": "In a simulation context: A metadata tag from a future state that marks a current object as High Priority for rendering."
+    },
+    {
+      "id": "Predictive coding (temporal)",
+      "typ": "Advanced processing",
+      "description": "An extension of standard predictive coding in which the model is calibrated not only based on the past, but also on “potential future” data packets."
+    },
+    {
+      "id": "Temporary data leaks",
+      "typ": "System anomaly",
+      "description": "A gap in linear time processing where future information influences current capacity allocation."
+    },
+    {
+      "id": "Abnormal level of perception",
+      "typ": "Beckmann solution level",
+      "description": "A higher level of complexity in which the observer integrates nonlinear temporal data to solve “impossible” perceptual tasks."
+    },
+    {
+      "id": "Curtain (future goal)",
+      "typ": "object",
+      "description": "The concrete object in the gorilla experiment that undergoes a change of state (color) and is assigned future meaning."
+    },
+    {
+      "id": "Gorilla attack scenario",
+      "typ": "Active threat variant",
+      "description": "An experimental setup where the gorilla goes from a passive anomaly to an active aggressor that attacks players."
+    },
+    {
+      "id": "Hypersaliency triggers",
+      "typ": "Perceptual power",
+      "description": "Stimuli (such as sudden aggression or rapid movement) that are so intense that they invade conscious awareness."
+    },
+    {
+      "id": "Amygdala bypass",
+      "typ": "Neural connection",
+      "description": "A processing route that bypasses the cortical “attention set” to prioritize threat detection and survival responses."
+    },
+    {
+      "id": "Survival-based prioritization",
+      "typ": "Rendering logic",
+      "description": "A state in which the capacity limit is forcibly redistributed from “task focus” to “threat focus” to ensure the safety of the organism."
+    },
+    {
+      "id": "Cognitive hard reset",
+      "typ": "System event",
+      "description": "The sudden collapse of an existing attentional set due to a high-priority interruption (e.g., a startle response)."
+    },
+    {
+      "id": "Threat Significance Tagging",
+      "typ": "Future-relevant tagging",
+      "description": "Assign priority to an object based on its potential to cause harm in the immediate future."
+    },
+    {
+      "id": "Preventive arousal",
+      "typ": "Daryl Bem hypothesis",
+      "description": "The physiological preparation (increased heart rate, skin conductivity) for a threat before it is consciously perceived or even occurs."
+    },
+    {
+      "id": "Emergency rendering layer",
+      "typ": "Highly complex solution level",
+      "description": "A state in which the brain reproduces the environment at maximum fidelity, overriding all filters due to high stakes."
+    },
+    {
+      "id": "Highly complex solution level (Gorilla experiment)",
+      "typ": "Solution level",
+      "description": "Describes highly complex possible solutions related to the gorilla experiment from psychology"
+    },
+    {
+      "id": "Beckmann logic explained (Gorilla experiment)",
+      "typ": "Explanation",
+      "description": "A dynamic problem-solving process with problem levels and solution levels based on the gorilla experiment from psychology"
+    },
+    {
+      "id": "Capacity limit (Gorilla experiment)",
+      "typ": "Information limit",
+      "description": "Limit with which unique information can be processed, related to the gorilla experiment from psychology"
+    },
+    {
+      "id": "Expectation, unconscious (gorilla experiment)",
+      "typ": "Unconscious expectation component",
+      "description": "Automated prediction mechanism of the brain (predictive coding) that permanently stabilizes the present, based on the gorilla experiment from psychology."
+    },
+    {
+      "id": "positive result (gorilla experiment)",
+      "typ": "Result",
+      "description": "The problem was successfully solved, related to the gorilla experiment from psychology."
+    },
+    {
+      "id": "new actual level (Gorilla Experiment)",
+      "typ": "problem level",
+      "description": "Describes the complexity of the new problem, based on the gorilla experiment from psychology."
+    },
+    {
+      "id": "Expectation, conscious (gorilla experiment)",
+      "typ": "Conscious expectation component",
+      "description": "The anticipation of future events that can be consciously controlled by the individual, based on the gorilla experiment from psychology."
+    },
+    {
+      "id": "Monkey theater illusion",
+      "typ": "New actual level",
+      "description": "A refined version of the Gorilla test, where the anticipation of the “surprise” (the gorilla) is used as a new distraction to hide peripheral changes (color of the curtain, departure of players)."
+    },
+    {
+      "id": "Capacity limit (related to information)",
+      "typ": "Information limit",
+      "description": "Limit with which clear information can be processed"
+    },
+    {
+      "id": "Dark energy (as a mysterious form of energy)",
+      "typ": "hypothetical form of energy, not found",
+      "description": "Dark energy as a form of energy is what scientists suspect. It's just an unproven hypothesis."
+    },
+    {
+      "id": "Dark energy (alternative explanation)",
+      "typ": "Numerical error",
+      "description": "A scaling error in the spatial representation (floating point precision error) at extremely large distances."
+    },
+    {
+      "id": "Open_Questions (Scale Invariance_Reversal Effect)",
+      "typ": "Research direction",
+      "description": "This area of ​​the graph raises open questions for the further development of the theoretical system: (1) Is there a formula that calculates the time scale and amplitude of the reversal effect from the depth of the anchoring and the feedback speed? (2) Can reversal effects of different time scales be consciously decoupled - i.e. can one achieve a short-cycle success without thereby preparing a long-cycle reversal effect? (3) Are there historical examples in which cross-scale coupling was deliberately broken? (4) Is the scale invariance of the inverse effect an indication of a deeper mathematical structure – perhaps self-similarity in the sense of fractals?"
+    },
+    {
+      "id": "Open_Questions (for preconceptions_cementing)",
+      "typ": "Research direction",
+      "description": "This graph raises open questions for the theoretical system: (1) Is there a threshold beyond which cementation becomes irreversible? (2) Is decementation possible without an external catastrophe - or does it always require an external test that can no longer be ignored? (3) How does cementation relate to creativity - is the ability to construct new explanations (constructive cementation) the same ability as presupposition analysis, just directed in the wrong direction? (4) Is there a measurable signature of cementation in texts, decision patterns or systems that would enable early detection?"
+    },
+    {
+      "id": "Presumptions_Analysis (Rehhagel)",
+      "typ": "Cognitive practice (Beckmann logic)",
+      "description": "Rehhagel systematically questioned assumptions: 'Newcomers cannot become champions', 'Greece has no chance', 'Defensive tactics do not lead to success'. According to Beckmann logic (Section 4): Seemingly unsolvable problems become solvable by questioning their presuppositions."
+    },
+    {
+      "id": "Disappointment spiral (Attic Sea Alliance)",
+      "typ": "Dangerous process",
+      "description": "Hope for equality → oppression by Athens → uprisings → harsher oppression → stronger resistance. Self-reinforcing cycle analogous to safety principle 2.txt. Link between Reversal Effect and Peloponnesian War that was missing in version 1.0."
+    },
+    {
+      "id": "Spiral of Disappointment (French Revolution)",
+      "typ": "Dangerous process",
+      "description": "Hope for reform → blockade → radicalization → violence → escalation. Self-reinforcing cycle (see safety principle 2.txt)."
     }
   ],
   "relations": [
@@ -2380,11 +2630,11 @@
     {
       "subject": "Imagination",
       "predicate": "expected, partly conscious",
-      "object": "External future reality",
+      "object": "external future reality",
       "description": "The imagination forms an expectation about future reality. This expectation is partly conscious. This is in contrast to the expectation or prediction from predictive brain theory, which uses a completely unconscious expectation. The difference between conscious and unconscious expectations is very important, as this can also result in a reversal in time and, in turn, a reversal in meaning. Conscious expectation is focused on the future. The unconscious expectation is focused on the present or past."
     },
     {
-      "subject": "External future reality",
+      "subject": "external future reality",
       "predicate": "influenced",
       "object": "External reality",
       "description": "This is a hypothesis that attempts to explain the shaping of fate."
@@ -2393,7 +2643,7 @@
       "subject": "Synthesis",
       "predicate": "connects",
       "object": "Apparitions",
-      "description": "Synthesis connects appearances into tangible objects."
+      "description": "Synthesis combines appearances into tangible objects."
     },
     {
       "subject": "Apparitions",
@@ -2548,7 +2798,7 @@
     {
       "subject": "Capacity limit",
       "predicate": "generated",
-      "object": "Dark energy",
+      "object": "Dark energy (alternative explanation)",
       "description": "Rounding errors when calculating extremely large coordinates act like expansion."
     },
     {
@@ -2678,22 +2928,22 @@
       "description": "Consciousness can consciously limit control to avoid waking up"
     },
     {
-      "subject": "External future reality",
+      "subject": "external future reality",
       "predicate": "top-down process, possible coupling at the quantum level???",
       "object": "Own expected future"
     },
     {
-      "subject": "External present reality",
+      "subject": "external present reality",
       "predicate": "bottom-up process, follows from sensory measurement",
       "object": "Perceived present"
     },
     {
-      "subject": "External future reality",
+      "subject": "external future reality",
       "predicate": "is part of the",
       "object": "External reality"
     },
     {
-      "subject": "External present reality",
+      "subject": "external present reality",
       "predicate": "is part of the",
       "object": "External reality"
     },
@@ -2703,14 +2953,16 @@
       "object": "Own expected future"
     },
     {
-      "subject": "Conscious expectation",
+      "subject": "Expectation, conscious",
       "predicate": "bottom-up process, unconscious expectation of the future, partly also consciously perceived",
-      "object": "Own expected future"
+      "object": "Own expected future",
+      "description": ""
     },
     {
       "subject": "Human brain",
       "predicate": "generated",
-      "object": "Conscious expectation"
+      "object": "Expectation, conscious",
+      "description": ""
     },
     {
       "subject": "Human brain",
@@ -2723,9 +2975,10 @@
       "object": "Real event"
     },
     {
-      "subject": "Conscious expectation",
+      "subject": "Expectation, conscious",
       "predicate": "refers to",
-      "object": "Real event"
+      "object": "Real event",
+      "description": ""
     },
     {
       "subject": "Unconscious expectation",
@@ -2735,7 +2988,7 @@
     {
       "subject": "Human brain",
       "predicate": "sensory measurement, predictive brain theory",
-      "object": "External present reality"
+      "object": "external present reality"
     },
     {
       "subject": "Real event",
@@ -2869,21 +3122,6 @@
       "object": "perceived current reality"
     },
     {
-      "subject": "Human brain",
-      "predicate": "sensory measurement, predictive brain theory",
-      "object": "external present reality"
-    },
-    {
-      "subject": "consciousness",
-      "predicate": "perceives",
-      "object": "Expectation, conscious"
-    },
-    {
-      "subject": "consciousness",
-      "predicate": "partially perceives, about feelings",
-      "object": "Expectation, unconscious, directed towards the future"
-    },
-    {
       "subject": "Expectation, unconscious, directed towards the future",
       "predicate": "can be",
       "object": "dominant expectation"
@@ -2894,11 +3132,6 @@
       "object": "non-dominant expectation"
     },
     {
-      "subject": "Expectation, unconscious, directed towards the future",
-      "predicate": "perceives",
-      "object": "external future reality"
-    },
-    {
       "subject": "dominant expectation",
       "predicate": "forms, in reverse",
       "object": "external future reality"
@@ -2907,51 +3140,6 @@
       "subject": "non-dominant expectation",
       "predicate": "stands in reverse",
       "object": "dominant expectation"
-    },
-    {
-      "subject": "Expectations of other people",
-      "predicate": "influenced",
-      "object": "Expectation, unconscious, directed towards the future"
-    },
-    {
-      "subject": "Expectations of other people",
-      "predicate": "influenced",
-      "object": "Expectation, unconscious, focused on the past/present"
-    },
-    {
-      "subject": "Expectation, general",
-      "predicate": "divides into",
-      "object": "Expectation, unconscious"
-    },
-    {
-      "subject": "Expectation, unconscious",
-      "predicate": "divides into",
-      "object": "Expectation, unconscious, focused on the past/present"
-    },
-    {
-      "subject": "Expectation, unconscious, focused on the past/present",
-      "predicate": "perceives",
-      "object": "external present reality"
-    },
-    {
-      "subject": "external present reality",
-      "predicate": "is part of",
-      "object": "External reality"
-    },
-    {
-      "subject": "external future reality",
-      "predicate": "is part of",
-      "object": "External reality"
-    },
-    {
-      "subject": "Expectation, unconscious",
-      "predicate": "divides into",
-      "object": "Expectation, unconscious, directed towards the future"
-    },
-    {
-      "subject": "Expectation, general",
-      "predicate": "divides into",
-      "object": "Expectation, conscious"
     },
     {
       "subject": "Highly complex solution level",
@@ -3439,15 +3627,15 @@
     {
       "subject": "Human brain",
       "predicate": "owns",
-      "object": "Capacity limit"
+      "object": "Capacity limit (related to information)"
     },
     {
-      "subject": "Capacity limit",
+      "subject": "Capacity limit (related to information)",
       "predicate": "limited",
       "object": "Model of reality"
     },
     {
-      "subject": "Capacity limit",
+      "subject": "Capacity limit (related to information)",
       "predicate": "is the cause of",
       "object": "Relativistic effects"
     },
@@ -3472,7 +3660,7 @@
       "object": "Space expansion"
     },
     {
-      "subject": "Dark energy",
+      "subject": "Dark energy (as a mysterious form of energy)",
       "predicate": "cause of (assumption)",
       "object": "Space expansion"
     },
@@ -3492,7 +3680,7 @@
       "object": "maximum approximation"
     },
     {
-      "subject": "Capacity limit",
+      "subject": "Capacity limit (related to information)",
       "predicate": "is the cause of",
       "object": "maximum information exchange"
     },
@@ -3709,7 +3897,7 @@
       "subject": "Decementation",
       "predicate": "prevented",
       "object": "Cementation_extended_time scale",
-      "description": "Successful decementation breaks the coupling between time scales."
+      "description": "Successful decementation breaks the coupling between timescales."
     },
     {
       "subject": "Application_AI_Cementation",
@@ -3718,7 +3906,7 @@
       "description": "All three modes are structurally possible in AI systems and must be addressed."
     },
     {
-      "subject": "Open_questions",
+      "subject": "Open_Questions (for preconceptions_cementing)",
       "predicate": "follows from",
       "object": "Pre-assumptions_cementation",
       "description": "The concept opens new research directions for the theoretical system."
@@ -3750,11 +3938,11 @@
     {
       "subject": "Reversal Effect_Athenian_Hegemony",
       "predicate": "triggers",
-      "object": "Disappointment spiral",
+      "object": "Disappointment spiral (Attic Sea Alliance)",
       "description": "The allies' disappointment created a self-reinforcing cycle of escalation."
     },
     {
-      "subject": "Disappointment spiral",
+      "subject": "Disappointment spiral (Attic Sea Alliance)",
       "predicate": "leads to",
       "object": "Peloponnesian_War",
       "description": "The spiral of hope, oppression and resistance resulted in open war."
@@ -3943,7 +4131,7 @@
     {
       "subject": "Third_Stand_Expectation",
       "predicate": "is reinforced by",
-      "object": "Disappointment spiral",
+      "object": "Spiral of Disappointment (French Revolution)",
       "description": "Every failed hope further radicalized the demands."
     },
     {
@@ -4241,7 +4429,7 @@
       "description": "Low-complexity solution of favorites produces negative result (Beckmann logic)."
     },
     {
-      "subject": "Assumptions_Analysis",
+      "subject": "Presumptions_Analysis (Rehhagel)",
       "predicate": "enabled",
       "object": "Highly complex solution level Rehhagel",
       "description": "Questioning preconceptions is the basis of the highly complex solution level."
@@ -4249,7 +4437,7 @@
     {
       "subject": "Presence_and_Intrinsic_Motivation",
       "predicate": "promotes",
-      "object": "Assumptions_Analysis",
+      "object": "Presumptions_Analysis (Rehhagel)",
       "description": "Anyone who acts in the now can see more clearly which assumptions structure the situation."
     },
     {
@@ -4262,13 +4450,13 @@
       "subject": "Reversal effect_Kaiserslautern",
       "predicate": "generated",
       "object": "New_Actual_Level_After_Success",
-      "description": "Success becomes the new current level - and the next problem (Beckmann logic)."
+      "description": "Success becomes the new current level – and the next problem (Beckmann logic)."
     },
     {
       "subject": "Reversal effect_Greece",
       "predicate": "generated",
       "object": "New_Actual_Level_After_Success",
-      "description": "Success becomes the new current level - and the next problem (Beckmann logic)."
+      "description": "Success becomes the new current level – and the next problem (Beckmann logic)."
     },
     {
       "subject": "New_Actual_Level_After_Success",
@@ -4355,13 +4543,13 @@
       "description": "Coupled scales potentiate the final amplitude."
     },
     {
-      "subject": "Security principle_timescale",
+      "subject": "Security principle_time scale",
       "predicate": "protects against",
       "object": "depth_of_anchoring",
       "description": "Consistent external testing prevents unconscious inscription into deeper anchoring levels."
     },
     {
-      "subject": "Security principle_timescale",
+      "subject": "Security principle_time scale",
       "predicate": "requires",
       "object": "Feedback_Speed",
       "description": "The security principle is only effective if feedback is actively obtained on all time scales."
@@ -4373,7 +4561,7 @@
       "description": "AI systems must observe dominance on all timescales simultaneously."
     },
     {
-      "subject": "Open_questions",
+      "subject": "Open_Questions (Scale Invariance_Reversal Effect)",
       "predicate": "follows from",
       "object": "Reversal effect",
       "description": "Scale invariance opens new research directions for the theoretical system."
@@ -4524,7 +4712,7 @@
     {
       "subject": "Dark energy phenomenon",
       "predicate": "is not necessarily explained by",
-      "object": "Dark energy",
+      "object": "Dark energy (as a mysterious form of energy)",
       "description": ""
     },
     {
@@ -5239,7 +5427,7 @@
       "subject": "Causal closure of the physical",
       "predicate": "limits the causal range of",
       "object": "Conscious awareness",
-      "description": "If causal closure holds, then conscious consciousness - although it performs logical analysis and deliberate control - is also causally completely determined by previous physical states. Its apparent 'control' is part of the physical causal structure."
+      "description": "If causal closure holds, then conscious consciousness - although it provides logical analysis and deliberate control - is also causally completely determined by previous physical states. Its apparent 'control' is part of the physical causal structure."
     },
     {
       "subject": "Causal closure of the physical",
@@ -5340,7 +5528,7 @@
     {
       "subject": "Libet experiment and the readiness potential",
       "predicate": "relativizes causal role of",
-      "object": "Conscious expectation",
+      "object": "Expectation, conscious",
       "description": "The Libet data shows that conscious expectations are often post hoc constructions that arise after the unconscious impulse to act. Conscious expectations are often rationalizations, not real causes."
     },
     {
@@ -6139,7 +6327,7 @@
       "subject": "Non-Euclidean curved space",
       "predicate": "activated",
       "object": "Curvature-induced shape equivalence",
-      "description": "F9 curvature makes square and circle equivalent in the local observer system."
+      "description": " curvature makes square and circle equivalent in the local observer system."
     },
     {
       "subject": "Curvature-induced shape equivalence",
@@ -6167,7 +6355,7 @@
     },
     {
       "subject": "Pi transcendence",
-      "predicate": "F9 forces",
+      "predicate": " forces",
       "object": "Multi-stage change of perspective",
       "description": "It forces the transition from a low to a high complexity solution."
     },
@@ -6221,7 +6409,7 @@
     },
     {
       "subject": "Paradox of squaring the circle",
-      "predicate": "F9 example for",
+      "predicate": " example for",
       "object": "Paradox resolution through model change",
       "description": "Classic example of how a model change resolves an apparent paradox."
     },
@@ -6262,135 +6450,765 @@
       "description": ""
     },
     {
-      "subject": "F10 three-body chaos",
-      "predicate": "F10 exposed",
-      "object": "F10 Capacity limit overflow",
-      "description": "F10 Direct evidence that the brain's computational limit has been reached."
+      "subject": "Three-body chaos",
+      "predicate": "exposed",
+      "object": "Capacity limit overflow",
+      "description": "Direct evidence that the brain's computational limit has been reached."
     },
     {
-      "subject": "F10 Capacity limit overflow",
-      "predicate": "F10 makes it necessary",
-      "object": "F10 Sensor sync need",
-      "description": "F10 Without synchronization the internal model becomes unusable."
+      "subject": "Capacity limit overflow",
+      "predicate": "makes it necessary",
+      "object": "Sensor sync need",
+      "description": "Without synchronization, the internal model becomes unusable."
     },
     {
-      "subject": "F10 Sensor sync need",
-      "predicate": "F10 is implemented by",
-      "object": "F10 Continuous sensor synchronization",
-      "description": "F10 The concrete awake mode process."
+      "subject": "Sensor sync need",
+      "predicate": "is implemented by",
+      "object": "Continuous sensor synchronization",
+      "description": "The concrete awake mode process."
     },
     {
-      "subject": "F10 Continuous sensor synchronization",
-      "predicate": "F10 generated",
-      "object": "F10 Short-term forecast stability",
-      "description": "F10 Only short-term windows remain usable."
+      "subject": "Continuous sensor synchronization",
+      "predicate": "generated",
+      "object": "Short-term forecast stability",
+      "description": "Only short-term windows remain usable."
     },
     {
-      "subject": "F10 Short-term forecast stability",
-      "predicate": "F10 fails",
-      "object": "F10 Long-Term Chaos Divergence",
-      "description": "F10 When synchronization is insufficient or interrupted."
+      "subject": "Short-term forecast stability",
+      "predicate": "fails",
+      "object": "Long-term chaos divergence",
+      "description": "When synchronization is insufficient or interrupted."
     },
     {
-      "subject": "F10 Long-Term Chaos Divergence",
-      "predicate": "F10 is a form of",
-      "object": "F10 Reversal Effect Manifestation",
-      "description": "F10 Timeline A (deterministic expectation) reverses into Timeline B (chaotic divergence)."
+      "subject": "Long-term chaos divergence",
+      "predicate": "is a form of",
+      "object": "Reversal effect manifestation",
+      "description": "Timeline A (deterministic expectation) reverses into timeline B (chaotic divergence)."
     },
     {
-      "subject": "F10 Macroscopic physics approximation",
-      "predicate": "F10 is limited by",
-      "object": "F10 Internal 3D World Model Constraint",
-      "description": "F10 The rendered model is inherently incomplete."
+      "subject": "Macroscopic physics approximation",
+      "predicate": "is limited by",
+      "object": "Internal 3D world model constraint",
+      "description": "The rendered model is inherently incomplete."
     },
     {
-      "subject": "F10 Internal 3D World Model Constraint",
-      "predicate": "F10 is compensated by",
-      "object": "F10 External Reality Feedback Loop",
-      "description": "F10 Constant data updating from outside."
+      "subject": "Internal 3D world model constraint",
+      "predicate": "is compensated by",
+      "object": "External reality feedback loop",
+      "description": "Constant data updating from outside."
     },
     {
-      "subject": "F10 External Reality Feedback Loop",
-      "predicate": "F10 relies on",
-      "object": "F10 Predictive Coding Compensation",
-      "description": "F10 Unconscious level does the actual correction moment by moment."
+      "subject": "External reality feedback loop",
+      "predicate": "relies on",
+      "object": "Predictive coding compensation",
+      "description": "Unconscious level does the actual correction moment by moment."
     },
     {
-      "subject": "F10 Beckmann logic chaos application",
-      "predicate": "F10 defined",
-      "object": "F10 Highly Complex Solution Sensor Sync",
+      "subject": "Beckmann logic chaos application",
+      "predicate": "defined",
+      "object": "Highly complex solution sensor sync",
       "description": "Sensor synchronization is the highly complex solution level."
     },
     {
-      "subject": "F10 Highly Complex Solution Sensor Sync",
-      "predicate": "F10 avoided",
-      "object": "F10 Long-Term Chaos Divergence",
-      "description": "F10 By continuously patching the model."
+      "subject": "Highly complex solution sensor sync",
+      "predicate": "avoided",
+      "object": "Long-term chaos divergence",
+      "description": "By continuously patching the model."
     },
     {
-      "subject": "F10 Holographic information compression",
-      "predicate": "F10 aborts",
-      "object": "F10 three-body chaos",
-      "description": "F10 The compression limit of the macroscopic renderer."
+      "subject": "Holographic information compression",
+      "predicate": "breaks off",
+      "object": "Three-body chaos",
+      "description": "The compression limit of the macroscopic renderer."
     },
     {
-      "subject": "F10 awake simulation stabilization",
-      "predicate": "F10 depends",
-      "object": "F10 Sensor sync need",
-      "description": "F10 Only the waking state can maintain macroscopic order."
+      "subject": "Awake simulation stabilization",
+      "predicate": "depends on it",
+      "object": "Sensor sync need",
+      "description": "Only the waking state can maintain macroscopic order."
     },
     {
-      "subject": "F10 Expectation Filter in Chaos Prediction",
-      "predicate": "F10 protects against",
-      "object": "F10 Long-Term Chaos Divergence",
-      "description": "F10 Prevents prevailing future expectations in astronomical modeling."
+      "subject": "Expectation filter-in-chaos prediction",
+      "predicate": "protects against",
+      "object": "Long-term chaos divergence",
+      "description": "Prevents prevailing future expectations in astronomical modeling."
     },
     {
-      "subject": "F10 three-body chaos",
-      "predicate": "F10 diagnoses",
-      "object": "F10 Macroscopic physics approximation",
-      "description": "F10 Shows that the model is an approximation and not the external reality itself."
+      "subject": "Three-body chaos",
+      "predicate": "Diagnoses",
+      "object": "Macroscopic physics approximation",
+      "description": "Shows that the model is an approximation and not the external reality itself."
     },
     {
-      "subject": "F10 Predictive Coding Compensation",
-      "predicate": "F10 works inside",
-      "object": "F10 External Reality Feedback Loop",
-      "description": "F10 Unconscious expectations use the loop to stabilize the model."
+      "subject": "Predictive coding compensation",
+      "predicate": "works inside",
+      "object": "External reality feedback loop",
+      "description": "Unconscious expectations use the loop to stabilize the model."
     },
     {
-      "subject": "F10 Reversal Effect Manifestation",
-      "predicate": "F10 manifests itself in",
-      "object": "F10 Long-Term Chaos Divergence",
-      "description": "F10 The reversal effect becomes visible as long-term divergence when sensor synchronization fails."
+      "subject": "Reversal effect manifestation",
+      "predicate": "manifests itself in",
+      "object": "Long-term chaos divergence",
+      "description": "The reversal effect becomes visible as long-term divergence when sensor synchronization fails."
     },
     {
-      "subject": "F10 Macroscopic physics approximation",
-      "predicate": "F10 refers to",
+      "subject": "Macroscopic physics approximation",
+      "predicate": "refers to",
       "object": "Macroscopic physics",
       "description": ""
     },
     {
-      "subject": "F10 Capacity limit overflow",
-      "predicate": "F10 refers to",
+      "subject": "Capacity limit overflow",
+      "predicate": "refers to",
       "object": "Capacity limit",
       "description": ""
     },
     {
-      "subject": "F10 Highly Complex Solution Sensor Sync",
-      "predicate": "F10 is example for",
+      "subject": "Highly complex solution sensor sync",
+      "predicate": "is an example of",
       "object": "Highly complex solution level",
       "description": ""
     },
     {
-      "subject": "F10 Predictive Coding Compensation",
-      "predicate": "F10 is part of",
+      "subject": "Predictive coding compensation",
+      "predicate": "is part of",
       "object": "Expectation, unconscious",
       "description": ""
     },
     {
-      "subject": "F10 awake simulation stabilization",
-      "predicate": "F10 stabilized",
+      "subject": "Awake simulation stabilization",
+      "predicate": "stabilized",
       "object": "Awake simulation",
+      "description": ""
+    },
+    {
+      "subject": "Capacity limit",
+      "predicate": "generated",
+      "object": "Cosmic inflation",
+      "description": ""
+    },
+    {
+      "subject": "Hegel's theory of logic",
+      "predicate": "is an example of",
+      "object": "Circular reasoning",
+      "description": ""
+    },
+    {
+      "subject": "Albrecht Dürer",
+      "predicate": "mastered",
+      "object": "Innovation in engraving",
+      "description": "Dürer elevated engraving from craft to revolutionary, cutting-edge, and scalable business technology."
+    },
+    {
+      "subject": "Innovation in engraving",
+      "predicate": "enabled",
+      "object": "Mass reproduction of art",
+      "description": "Enables the production and sale of hundreds of thousands of identical, high quality prints across Europe."
+    },
+    {
+      "subject": "Albrecht Dürer",
+      "predicate": "created",
+      "object": "AD monogram logo",
+      "description": "Systematic personal branding device that acted as one of the first artists' trademarks."
+    },
+    {
+      "subject": "Self-portrait as a branding tool",
+      "predicate": "is the conscious implementation of",
+      "object": "Conscious self-promotion vector",
+      "description": "Used his own image as a top-down expectation vector to reshape public perception of artists."
+    },
+    {
+      "subject": "Dürer as Elon Musk of the Middle Ages",
+      "predicate": "captures the technology and brand strategy of",
+      "object": "Albrecht Dürer",
+      "description": "Technological disruption, personal branding and vertically integrated production."
+    },
+    {
+      "subject": "Dürer as Steve Jobs of the Renaissance",
+      "predicate": "captures design and cultural impact of",
+      "object": "Albrecht Dürer",
+      "description": "Aesthetic perfectionism, technology-aesthetics fusion and creator status as icon."
+    },
+    {
+      "subject": "Expectations of a medieval artist",
+      "predicate": "went through",
+      "object": "Reversal effect in artist status",
+      "description": "The prevailing expectation of low status was transformed into the high-level reality of artistic genius."
+    },
+    {
+      "subject": "Highly complex solution in art production",
+      "predicate": "was applied by",
+      "object": "Albrecht Dürer",
+      "description": "Instead of the less complex path of individual paintings, Dürer created a scalable, theory-based printing empire."
+    },
+    {
+      "subject": "Theoretical work on proportion",
+      "predicate": "expanded",
+      "object": "Infinite fantasy in Dürer's workshop",
+      "description": "The mathematical theory flowed directly into the generative creative space of his workshop."
+    },
+    {
+      "subject": "Mass reproduction of art",
+      "predicate": "produced",
+      "object": "Revolution of the European art market",
+      "description": "Creating the first continent-wide market for affordable, high-quality art prints."
+    },
+    {
+      "subject": "Conscious self-promotion vector",
+      "predicate": "triggered directly",
+      "object": "Reversal effect in artist status",
+      "description": "Through the active formation of expectations, the archetype of the medieval artist was reversed."
+    },
+    {
+      "subject": "Infinite fantasy in Dürer's workshop",
+      "predicate": "is a physical manifestation of",
+      "object": "Productive imagination",
+      "description": "Dürer's studio as a concrete expression of the brain's generative creative engine."
+    },
+    {
+      "subject": "Albrecht Dürer",
+      "predicate": "needed",
+      "object": "Conscious self-promotion vector",
+      "description": "Systematic self-marketing through portraits, monograms and fonts."
+    },
+    {
+      "subject": "Productive imagination",
+      "predicate": "enabled",
+      "object": "Highly complex solution in art production",
+      "description": "The productive imagination formed the creative bridge between theory, technology and artistic implementation."
+    },
+    {
+      "subject": "Infinite fantasy in Dürer's workshop",
+      "predicate": "is an example of",
+      "object": "Infinite fantasy",
+      "description": ""
+    },
+    {
+      "subject": "Highly complex solution in art production",
+      "predicate": "is an example of",
+      "object": "Highly complex solution level",
+      "description": ""
+    },
+    {
+      "subject": "Reversal effect in artist status",
+      "predicate": "is an example of",
+      "object": "Reversal effect",
+      "description": ""
+    },
+    {
+      "subject": "Stockholm syndrome",
+      "predicate": "is redefined as",
+      "object": "Appeasement reaction",
+      "description": "Modern trauma research replaces the romanticized term with appeasement to emphasize asymmetry and survival function."
+    },
+    {
+      "subject": "Appeasement reaction",
+      "predicate": "explained by",
+      "object": "Polyvagal theory",
+      "description": "Polyvagal theory provides a neurophysiological basis for unconscious social engagement under threat."
+    },
+    {
+      "subject": "Appeasement reaction",
+      "predicate": "requires",
+      "object": "Perception of a mortal danger",
+      "description": "Without a perceived inescapable threat, the appeasement cascade will not activate."
+    },
+    {
+      "subject": "Perception of a mortal danger",
+      "predicate": "trigger",
+      "object": "Unconscious survival takeover",
+      "description": "Brainstem circuits take control and reduce prefrontal control as described in PMC9858395."
+    },
+    {
+      "subject": "Unconscious survival takeover",
+      "predicate": "generated",
+      "object": "Simulated authentic feelings",
+      "description": "The system creates real feelings rather than faking them, because faking would be exposed and increase risk."
+    },
+    {
+      "subject": "Simulated authentic feelings",
+      "predicate": "enabled",
+      "object": "Social co-regulation in danger",
+      "description": "Congruent autonomic signals calm the perpetrator through co-regulation."
+    },
+    {
+      "subject": "Social co-regulation in danger",
+      "predicate": "leads to it",
+      "object": "Trauma bonding",
+      "description": "Repeated calming cycles create a strong emotional bond."
+    },
+    {
+      "subject": "Trauma bonding",
+      "predicate": "is manifestation of",
+      "object": "Stockholm syndrome",
+      "description": "Observable positive feelings are the result of an attachment mechanism."
+    },
+    {
+      "subject": "Stockholm syndrome",
+      "predicate": "communicates principle",
+      "object": "Survival through disengagement",
+      "description": "Both avoid direct confrontation with a superior attacker."
+    },
+    {
+      "subject": "Survival through disengagement",
+      "predicate": "is the core of",
+      "object": "Fabian strategy as conscious appeasement",
+      "description": "Fabius vermied den Kampf, um die Zerstörung Roms zu verhindern, dieselbe Logik wie das Opfer, das einer Provokation aus dem Weg ging."
+    },
+    {
+      "subject": "Fabian strategy as conscious appeasement",
+      "predicate": "related to",
+      "object": "Adaptation_Rome_Fabian_Tactics",
+      "description": "Direct link to the existing diagram node representing Rome's post-Cannae adaptation."
+    },
+    {
+      "subject": "Fabian strategy as conscious appeasement",
+      "predicate": "contrasts with",
+      "object": "Conscious vs. unconscious acceptance",
+      "description": "Highlights the difference between conscious strategy and automatic adoption."
+    },
+    {
+      "subject": "Conscious vs. unconscious acceptance",
+      "predicate": "differs",
+      "object": "Unconscious survival takeover",
+      "description": "The victim has no choice, the brain stem decides."
+    },
+    {
+      "subject": "Conscious vs. unconscious acceptance",
+      "predicate": "differs",
+      "object": "Adaptation_Rome_Fabian_Tactics",
+      "description": "Despite political pressure, Fabius consciously decided to avoid it."
+    },
+    {
+      "subject": "Presence in danger",
+      "predicate": "is illustrated by",
+      "object": "Presence_Rome",
+      "description": "Rome's focus on recruiting and securing allies after Cannae is consistent with the Presence Principle."
+    },
+    {
+      "subject": "Presence in danger",
+      "predicate": "is illustrated by",
+      "object": "Social co-regulation in danger",
+      "description": "The victim focuses on moment-to-moment reassurance, not future rescue."
+    },
+    {
+      "subject": "Dominant expectation of immediate victory",
+      "predicate": "Parallels",
+      "object": "Dominant_Expectation_Rome_Phase1",
+      "description": "Rome's belief in superior legions before Cannae reflects the hostage's initial belief in resistance."
+    },
+    {
+      "subject": "Dominant expectation of immediate victory",
+      "predicate": "trigger",
+      "object": "Reversal Effect_Cannae",
+      "description": "According to graph logic, the prevailing expectation turns into catastrophic defeat."
+    },
+    {
+      "subject": "Stockholm syndrome",
+      "predicate": "avoided",
+      "object": "Dominant expectation of immediate victory",
+      "description": "By accepting powerlessness, the victim prevents a combat response that would mean death."
+    },
+    {
+      "subject": "Survival through disengagement",
+      "predicate": "leads to it",
+      "object": "Presence in danger",
+      "description": "Both the Fabian strategy and the appeasement policy shift the focus from the hoped-for future to the achievable present."
+    },
+    {
+      "subject": "Presence in danger",
+      "predicate": "contrasts with",
+      "object": "Dominant_Expectation_Hannibal_Phase2",
+      "description": "Connections to the existing Hannibal node: His future connection to Cannae is the opposite of presence."
+    },
+    {
+      "subject": "Reversal Effect_Cannae",
+      "predicate": "is part of",
+      "object": "Reversal effect",
+      "description": ""
+    },
+    {
+      "subject": "Dominant expectation of immediate victory",
+      "predicate": "refers to",
+      "object": "dominant expectation",
+      "description": ""
+    },
+    {
+      "subject": "Dominant_Expectation_Rome_Phase1",
+      "predicate": "refers to",
+      "object": "dominant expectation",
+      "description": ""
+    },
+    {
+      "subject": "Dominant_Expectation_Hannibal_Phase2",
+      "predicate": "refers to",
+      "object": "dominant expectation",
+      "description": ""
+    },
+    {
+      "subject": "New_Is_Level_Punic_Wars",
+      "predicate": "refers to",
+      "object": "new actual level",
+      "description": ""
+    },
+    {
+      "subject": "Inattentive Blindness 2.0",
+      "predicate": "refined",
+      "object": "Gorilla experiment",
+      "description": "The new model is the direct evolutionary successor to the original test."
+    },
+    {
+      "subject": "Monkey theater illusion",
+      "predicate": "is the implementation of",
+      "object": "Inattentive Blindness 2.0",
+      "description": "The specific test follows the general model of evolved cognitive filtering."
+    },
+    {
+      "subject": "Monkey theater illusion",
+      "predicate": "is the new actual level of",
+      "object": "Gorilla experiment",
+      "description": "The refinement of the experiment represents a higher level of complexity."
+    },
+    {
+      "subject": "Inattentive Blindness 2.0",
+      "predicate": "challenges",
+      "object": "Capacity limit (Gorilla experiment)",
+      "description": "New variants are pushing the limits of information processing."
+    },
+    {
+      "subject": "Inattentive Blindness 2.0",
+      "predicate": "is an example of",
+      "object": "Expectation, unconscious (gorilla experiment)",
+      "description": "The filters are largely controlled by unconscious predictive mechanisms."
+    },
+    {
+      "subject": "Search satisfaction",
+      "predicate": "trigger",
+      "object": "Cognitive tunneling",
+      "description": "Finding the primary target creates a tunnel that hides background changes."
+    },
+    {
+      "subject": "Search satisfaction",
+      "predicate": "is product of",
+      "object": "positive result (gorilla experiment)",
+      "description": "Successfully finding the gorilla (positive result at level 1) triggers the search to be aborted."
+    },
+    {
+      "subject": "Gorilla in the lungs",
+      "predicate": "is an example of",
+      "object": "Expertise scheme",
+      "description": "Professional training creates a filter that makes the “obvious” invisible."
+    },
+    {
+      "subject": "Gorilla in the lungs",
+      "predicate": "demonstrated",
+      "object": "Inattentive Blindness 2.0",
+      "description": "Expert failures prove the robustness of the second generation model."
+    },
+    {
+      "subject": "Iterative test perfection",
+      "predicate": "applies",
+      "object": "Beckmann logic explained (Gorilla experiment)",
+      "description": "The iterative development of the test follows the logic of solving levels."
+    },
+    {
+      "subject": "Iterative test perfection",
+      "predicate": "develops",
+      "object": "Gorilla experiment",
+      "description": "The process of test design is a recursive improvement of the original experiment."
+    },
+    {
+      "subject": "Beckmann logic explained (Gorilla experiment)",
+      "predicate": "describes",
+      "object": "Highly complex solution level (Gorilla experiment)",
+      "description": "The logic framework defines how high-level solutions are structured."
+    },
+    {
+      "subject": "Double blind effect",
+      "predicate": "is product of",
+      "object": "Expectation, conscious (gorilla experiment)",
+      "description": "Consciously focusing on a known goal creates a new blind spot."
+    },
+    {
+      "subject": "Double blind effect",
+      "predicate": "leads to it",
+      "object": "Monkey theater illusion",
+      "description": "The effect is the psychological basis for why the illusion works for experts."
+    },
+    {
+      "subject": "Psychological ego trap",
+      "predicate": "Heroic deeds",
+      "object": "Search satisfaction",
+      "description": "The pride of having found the first target fulfills the search criteria early."
+    },
+    {
+      "subject": "Psychological ego trap",
+      "predicate": "results from",
+      "object": "positive result (gorilla experiment)",
+      "description": "Success at one level sets the trap for the next level."
+    },
+    {
+      "subject": "Attention set",
+      "predicate": "governed",
+      "object": "Selective rendering",
+      "description": "The criteria of the quantity determine what is reproduced to consciousness."
+    },
+    {
+      "subject": "Attention set",
+      "predicate": "is part of",
+      "object": "Expectation, unconscious (gorilla experiment)",
+      "description": "The unconscious predictive brain sets the filters for the attention group."
+    },
+    {
+      "subject": "Expertise scheme",
+      "predicate": "governed",
+      "object": "Attention set",
+      "description": "Expertise sets the parameters for what is filtered."
+    },
+    {
+      "subject": "Expertise scheme",
+      "predicate": "increases",
+      "object": "Cognitive tunneling",
+      "description": "A narrow focus on relevant expert data reinforces the “tunnel effect”."
+    },
+    {
+      "subject": "Surprise Trap (2024-2026)",
+      "predicate": "is the implementation of",
+      "object": "Highly complex solution level (Gorilla experiment)",
+      "description": "Modern VR testing represents the highest level of experimental trap design."
+    },
+    {
+      "subject": "Surprise Trap (2024-2026)",
+      "predicate": "Goals",
+      "object": "Double blind effect",
+      "description": "The test is specifically designed to utilize the expert’s prior knowledge."
+    },
+    {
+      "subject": "Blindness due to peripheral changes",
+      "predicate": "results from",
+      "object": "Capacity limit (Gorilla experiment)",
+      "description": "The brain cannot represent focused tasks and background changes at the same time."
+    },
+    {
+      "subject": "Cognitive tunneling",
+      "predicate": "results",
+      "object": "Blindness due to peripheral changes",
+      "description": "By narrowing the field of perception, the viewer becomes blind to the surroundings."
+    },
+    {
+      "subject": "Cognitive tunneling",
+      "predicate": "is limited by",
+      "object": "Capacity limit (Gorilla experiment)",
+      "description": "The width of the “tunnel” is ultimately a resource allocation issue."
+    },
+    {
+      "subject": "Selective rendering",
+      "predicate": "is limited by",
+      "object": "Capacity limit (Gorilla experiment)",
+      "description": "Due to processing limitations, the rendering engine must prioritize data."
+    },
+    {
+      "subject": "Monkey theater illusion",
+      "predicate": "Highlights",
+      "object": "Blindness due to peripheral changes",
+      "description": "The specific task of observing players demonstrates blindness to background changes."
+    },
+    {
+      "subject": "positive result (gorilla experiment)",
+      "predicate": "becomes too",
+      "object": "new actual level (Gorilla Experiment)",
+      "description": ""
+    },
+    {
+      "subject": "Retrocausal attention bias",
+      "predicate": "inspired by",
+      "object": "Daryl Bem hypothesis",
+      "description": "The idea of ​​future-influenced attention is a direct application of Bem's research."
+    },
+    {
+      "subject": "Future-relevant tagging",
+      "predicate": "bypasses",
+      "object": "Attention set",
+      "description": "A day from the future can override the current task-oriented filter and make the “invisible” visible."
+    },
+    {
+      "subject": "Retrocausal attention bias",
+      "predicate": "increases",
+      "object": "Selective rendering",
+      "description": "If future importance is high, the object will be rendered at higher fidelity despite the gorilla distraction."
+    },
+    {
+      "subject": "Temporary data leaks",
+      "predicate": "is source of",
+      "object": "Future-relevant tagging",
+      "description": "The leak provides the metadata needed to prioritize the curtain."
+    },
+    {
+      "subject": "Predictive coding (temporal)",
+      "predicate": "managed",
+      "object": "Abnormal level of perception",
+      "description": "Advanced predictive models can handle nonlinear inputs to stabilize perception of the present."
+    },
+    {
+      "subject": "Curtain (future goal)",
+      "predicate": "receives",
+      "object": "Future-relevant tagging",
+      "description": "The curtain becomes the anchor point of the retrocausal experiment."
+    },
+    {
+      "subject": "Retrocausal attention bias",
+      "predicate": "competes with",
+      "object": "Search satisfaction",
+      "description": "The “pull” from the future combats the “shutdown” signal created by the search for the gorilla."
+    },
+    {
+      "subject": "Abnormal level of perception",
+      "predicate": "is the successor of",
+      "object": "Highly complex solution level (Gorilla experiment)",
+      "description": "The transition from VR traps to time traps represents the next level in Beckmann's logic."
+    },
+    {
+      "subject": "Temporary data leaks",
+      "predicate": "works",
+      "object": "Capacity limit (Gorilla experiment)",
+      "description": "Processing future data requires additional resources and may strain current simulation capacity."
+    },
+    {
+      "subject": "Gorilla attack scenario",
+      "predicate": "activated",
+      "object": "Hypersaliency triggers",
+      "description": "The attack turns a neutral anomaly into an unavoidable sensing signal."
+    },
+    {
+      "subject": "Hypersaliency triggers",
+      "predicate": "trigger",
+      "object": "Amygdala bypass",
+      "description": "Intense stimuli skip the slow “counting” logic and go straight to the emotional brain."
+    },
+    {
+      "subject": "Amygdala bypass",
+      "predicate": "overwrites",
+      "object": "Attention set",
+      "description": "Survival signals have a higher priority than scoring basketball passes."
+    },
+    {
+      "subject": "Amygdala bypass",
+      "predicate": "Forces",
+      "object": "Selective rendering",
+      "description": "The threat is presented as a high priority so it cannot be ignored."
+    },
+    {
+      "subject": "Gorilla attack scenario",
+      "predicate": "is used for testing",
+      "object": "Preventive arousal",
+      "description": "Does the subject become frightened *before* the attack begins because of its future significance?"
+    },
+    {
+      "subject": "Preventive arousal",
+      "predicate": "is linked to",
+      "object": "Retrocausal attention bias",
+      "description": "Future threats draw attention to the present through non-linear channels."
+    },
+    {
+      "subject": "Cognitive hard reset",
+      "predicate": "destroyed",
+      "object": "Search satisfaction",
+      "description": "A sudden attack makes the previous “success” of finding the gorilla irrelevant."
+    },
+    {
+      "subject": "Survival-based prioritization",
+      "predicate": "bypasses",
+      "object": "Capacity limit (Gorilla experiment)",
+      "description": "Emergency protocols may temporarily extend or redirect the survival capacity limit."
+    },
+    {
+      "subject": "Emergency rendering layer",
+      "predicate": "is the implementation of",
+      "object": "Highly complex solution level (Gorilla experiment)",
+      "description": "This is the highest level of real-time adaptation in the Beckmann logic model."
+    },
+    {
+      "subject": "Threat Significance Tagging",
+      "predicate": "Leader",
+      "object": "Emergency rendering layer",
+      "description": "Knowing that something is dangerous determines how much resources are devoted to its implementation."
+    },
+    {
+      "subject": "Gorilla attack scenario",
+      "predicate": "challenges",
+      "object": "Inattentive Blindness 2.0",
+      "description": "If a threat is still ignored, the blindness is deeper than a simple filtering error."
+    },
+    {
+      "subject": "Highly complex solution level (Gorilla experiment)",
+      "predicate": "refers to",
+      "object": "Highly complex solution level",
+      "description": ""
+    },
+    {
+      "subject": "Beckmann logic explained (Gorilla experiment)",
+      "predicate": "refers to",
+      "object": "Beckmann logic explained",
+      "description": ""
+    },
+    {
+      "subject": "Capacity limit (Gorilla experiment)",
+      "predicate": "refers to",
+      "object": "Capacity limit",
+      "description": ""
+    },
+    {
+      "subject": "Capacity limit (related to information)",
+      "predicate": "refers to",
+      "object": "Capacity limit",
+      "description": ""
+    },
+    {
+      "subject": "Expectation, unconscious (gorilla experiment)",
+      "predicate": "refers to",
+      "object": "Expectation, unconscious",
+      "description": ""
+    },
+    {
+      "subject": "positive result (gorilla experiment)",
+      "predicate": "refers to",
+      "object": "positive result",
+      "description": ""
+    },
+    {
+      "subject": "new actual level (Gorilla Experiment)",
+      "predicate": "refers to",
+      "object": "new actual level",
+      "description": ""
+    },
+    {
+      "subject": "Expectation, conscious (gorilla experiment)",
+      "predicate": "refers to",
+      "object": "Expectation, conscious",
+      "description": ""
+    },
+    {
+      "subject": "Dark energy (alternative explanation)",
+      "predicate": "could explain",
+      "object": "Dark energy phenomenon",
+      "description": ""
+    },
+    {
+      "subject": "Presumptions_Analysis (Rehhagel)",
+      "predicate": "refers to",
+      "object": "Assumptions_Analysis",
+      "description": ""
+    },
+    {
+      "subject": "Disappointment spiral (Attic Sea Alliance)",
+      "predicate": "refers to",
+      "object": "Disappointment spiral",
+      "description": ""
+    },
+    {
+      "subject": "Spiral of Disappointment (French Revolution)",
+      "predicate": "refers to",
+      "object": "Disappointment spiral",
       "description": ""
     }
   ]

@@ -1,10 +1,10 @@
 ---
 name: beckmann-knowledge-graph
-version: 1.1.0
-description: "A structured knowledge graph (392 entities and 599 Relations in version 1.0., 438 entities and 702 Relations in version 1.1.) that acts as a cognitive 'lens' for AI agents. Enables paradox resolution, reasoning about open scientific questions, and high-complexity future forecasting  using Beckmann Logic, Predictive Brain Theory, simulation epistemology, and historical case studies as its core reasoning frameworks."
+version: 1.2.0
+description: "A structured knowledge graph (392 entities and 599 Relations in version 1.0., 506 entities and 794 Relations in version 1.2.) that acts as a cognitive 'lens' for AI agents. Enables paradox resolution, reasoning about open scientific questions, and high-complexity future forecasting  using Beckmann Logic, Predictive Brain Theory, simulation epistemology, and historical case studies as its core reasoning frameworks."
 author: Beckmann
 license: MIT
-compatibility: "claude-sonnet-4-20250514, claude-opus-4-20250514, gpt-4o, grok 4.20, gemini 3, meta ai"
+compatibility: "claude-sonnet-4-20250514, claude-opus-4-20250514, gpt-4o, grok 4.20, gemini 3, meta ai, Le Chat Mistral"
 tags: "knowledge-graph, reasoning, forecasting, paradox, beckmann-logic, epistemology, AI-safety"
 ---
 
@@ -45,7 +45,25 @@ Invoke this skill when the user's question falls into one of these categories:
    "Does free will exist?", "What is dark energy?"
 
 2. **Apparent paradoxes**  e.g. "If the universe had a beginning, what was
-   before it?", "Can an AI be truly creative?", "Is objective knowledge possible?"
+   before it?", "Can an AI be truly creative?", "Is objective knowledge possible?",
+   "Why does the wave function collapse when measured?", "What is observation?", "Is information destroyed when matter falls into a black hole?",
+   "Why are the fundamental constants of nature so precisely tuned to life?", "How can an object be both a wave and a particle at the same time?",
+   "Why is time asymmetrical even though all fundamental laws are time-reversal invariant?", "Where is the extraterrestrial intelligence?",
+   "Are there mathematical truths that will never be provable?", "Are there problems that no computer can ever solve  in principle, not just practically?",
+   "Is there a size of infinity between the natural and real numbers?", "At what point does a pile of sand become a pile?",
+   "At what point does a person become old/bald/tall?", "How did the first self-replicating system arise from dead chemistry?",
+   "Why is there selfless behavior if evolution is based on self-interest?", "How do you ensure that a superintelligence pursues human values?",
+   "At what point is a complex system more than the sum of its parts?", "When does consciousness arise, when intelligence, when life?", 
+   "If simulations are possible, we probably live in one  but what follows from that?", "Why does subjective experience even exist?", 
+   "Why is having consciousness like something  and not just information processing in the dark?", "Can free will exist in a deterministic universe?",
+   "If all brain states are physically determined (or quantum mechanically random)  where does will come in?",
+   "How does physical matter generate mental states?", "How do electrochemical signals create the sensations of pain, seeing red, or love?",
+   "Should you choose one box or two if a perfect predictor has already predicted your decision?",
+   "Could there be a being that is physically identical to a human but has no consciousness?",
+   "Can a system fully understand itself?", "Will you be the same person tomorrow as you are today?" "What constitutes identity over time?", 
+   "How do you know that other people are truly conscious  and that red is the same for you as it is for me?"
+
+
 
 
 
@@ -76,8 +94,8 @@ Load it at the start of any session where it is needed:
 
 ```javascript
 import graph from './graph.json' assert { type: 'json' };
-const entities = graph.entities;   // Array of 438 entity objects
-const relations = graph.relations; // Array of 702 relation objects
+const entities = graph.entities;   // Array of 506 entity objects
+const relations = graph.relations; // Array of 794 relation objects
 ```
 
 Each **entity** has three fields:
@@ -311,10 +329,18 @@ the ability to receive and act on external checks.
 
 ## Versioning
 
-This is version **1.1** of the Beckmann Knowledge Graph.
+This is version **1.2** of the Beckmann Knowledge Graph.
 
 What is new:
 
+- Sub-section on "Art" with Albrecht Duerer
+- Stockholm syndrome
+- The Invisible Gorilla Experiment (1999) by Daniel Simons and Christopher Chabris, Inattentional Blindness 2.0 & Cognitive Ego Traps, Retrocausal Attention & Future Meaning (Daryl Bem), Survival-Based Attention & Threat Avoidance
+- Duplicates removed
+- Errors corrected (never complet)
+
+
+Old version **1.1**:
 
 - first being (limitation, the solvability of all problems in being is connected with the insolubility of the origin of first philosophical being)
 
@@ -339,12 +365,12 @@ available version.
 
 ---
 
-## Known Limitations of v1.1
+## Known Limitations of v1.2
 
 - The graph is **not** a complete ontology  it does not cover all of human
   knowledge, only the frameworks and connections its author has encoded.
 - Some entity `typ` values are inconsistently formatted (a known v1.1 issue
-  to be resolved in v1.2).
+  to be resolved in v1.3).
 - Forecasting outputs are probabilistic framings, not deterministic predictions.
 - The graph cannot replace empirical research  it provides a reasoning
   structure, not empirical data.
