@@ -3,9 +3,15 @@
   "slug": "connect-tool-library",
   "displayName": "Connect Tool Library",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1774996300775,
-    "commit": "https://github.com/openclaw/skills/commit/37c1b7ea90d0dc01e96b02224aaf67582cca80b3"
+    "version": "2.0.0",
+    "publishedAt": 1776349573502,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1774996300775,
+      "commit": "https://github.com/openclaw/skills/commit/37c1b7ea90d0dc01e96b02224aaf67582cca80b3"
+    }
+  ]
 }

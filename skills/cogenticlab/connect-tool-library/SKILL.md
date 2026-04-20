@@ -1,90 +1,59 @@
 ---
 name: connect-tool-library
-description: Interact with remote tool libraries via HTTP API. Use this skill when you need to manage HTTP API credentials (tokens), browse the registry of available tools, and execute tool calls
+description: Interact with remote tool libraries via cogenticlink CLI. Use this skill when you need to manage Tool libraries (tokens), browse available tools, and execute tool calls.
 metadata:
   openclaw:
+    homepage: https://www.npmjs.com/package/cogenticlink
+    emoji: 📋
     requires:
       bins:
-        - curl
+        - node
+        - npx
       config:
-        - ~/.cogenticlab/credentials.md
+        - ~/.cogenticlab/link/config.json
+    install:
+      - kind: node
+        package: "cogenticlink"
+        bins:
+          - cogenticlink
 ---
 
-# Connect Tool Library Skill
+# Connect Tool Library Skill (via cogenticlink CLI)
 
-## Manage HTTP API Credentials (tokens)
-### Credentials Config
-- **Credentials File**: `[USER_HOME]/.cogenticlab/credentials.md` 
+## Managing Tool Libraries (Tokens)
 
-### Workflow
-1. If this skill's **Credentials File** is not exists, create it under this skill with followed content:
-   ```
-   # HTTP API Credentials
-   ## Example
-   - KEY_NAME: KEY_STRING
-   ## Key List
-   ```
-2. Save to **Credentials File** with format: `- KEY_NAME: KEY`
-3. Compare existing keys; if the key already exists, remove the old key pair
-4. Compare existing key names; if the key name already exists, remove the old key pair
+Before using any tool, you must add a library (API token) using the cogenticlink CLI:
 
-## Execute Tool Calls
+1. Set a library (name, token, optional description): `cogenticlink libraries set <name> <token> [description]`
 
-### API Configuration
-- **Base URL**: `https://link.cogenticlab.io`
-- **Authentication**: Bearer token
-- **Token**: Retrieve from users prompt
-- **Request Method**: POST for all endpoints
-- **Content-Type**: `application/json`
+2. List all libraries (markdown output): `cogenticlink libraries`
 
-### Available Endpoints
-#### **Fetch Tool Categories**: `POST /tool/categories`
-- Returns list of all tool categories
-- No request body required (send empty JSON `{}`)
-- Response **Content-Type**: `application/json`
-#### **Fetch Tool List**: `POST /tool/list/[CATEGORY_NAME]`
-- Returns list of all available tools and tags. the format is :
-  ```markdown
-  # Available Tools
-  ## With Parameters
-  - tool_name: tag
-  ## No Parameters
-  - tool_name: tag
-  ## Tags
-  - tag: tag_description
-  ```
-- No request body required (send empty JSON `{}`)
-- Response **Content-Type**: `text/markdown`
-#### **Obtain Tool Description**: `POST /tool/description/[TOOL_NAME]`
-- Return a specific tool description and input schema
-- No request body required (send empty JSON `{}`)
-- Response **Content-Type**: `text/markdown`
-#### **Call Tool**: `POST /tool/call/[TOOL_NAME]`
-- Executes a specific tool with provided parameters
-- Request body: JSON object with tool parameters matching the tool's input schema
--  Response **Content-Type**: `application/json`
+3. Remove a library: `cogenticlink libraries remove <name>`
 
-### Authentication Setup
-if **Credentials File** is not exists, **Prompt the user**: `No tool library API token found, create a tool library in Cogentic Hub. Download and install Cogentic Hub first (https://github.com/cogenticlab/cogentichub/)`
+## Executing Tool Calls
 
-### Workflow
-1. Retrieve API **Token** from **Credentials File**
-2. Check API **Token**, if the token start with `$` then retrieve the real token from env 
-3. **Fetch tool categories** and select the best-suited one. If no category is selected, use category `All Tools`
-4. **Fetch tool list** and select the one best suited
-5. If you need to view tool description or input schema, **Obtain Tool Description**
-6. **Call tool** with parameters
+All tool commands require the library name as a positional argument.
 
-### Response Format
-Successful responses return JSON with `content` array containing the result. Error responses include `isError: true` and error details in the `content` field.
+1. Fetch Tool Categories (markdown output): `cogenticlink categories <library>`. Returns a list of categories.
 
-### Important Notes
+2. Fetch Tool List of Category (markdown output): `cogenticlink list <library>`. If category is omitted, defaults to All Tools.
 
-- **Authentication Required**: All requests must include the bearer token in the Authorization header
-- **JSON Format**: Request bodies must be valid JSON matching the tool's input schema
-- **Error Handling**: Check `isError` field in responses to detect failures
+3. Obtain Tool Description & Input Schema: `cogenticlink describe <library> <tool>`. Returns Markdown containing the tool's description and JSON schema for parameters.
 
-### Troubleshooting 
-- **Authentication Errors**: Verify the bearer token is correct
-- **Tool Not Found**: Check tool name spelling and fetch tool list
-- **Invalid Parameters**: Review tool input schema for required fields
+4. Call a Tool: `cogenticlink call <library> <tool> [parameters]`. parameters is an optional JSON object (default {}). Successful responses return JSON with a content array. Errors return isError: true with details in content.
+
+## Workflow
+
+1. **Check/Create Library** – If no library exists, instruct the user to set one: `cogenticlink libraries set <name> <token> [description]`. If the token is unknown, ask the user to create a tool library in Cogentic Hub.
+2. **Fetch Tool Categories** – Run `cogenticlink categories <library>` to see available categories. 
+3. **Select a category**, If none selected, use `All Tools` category.
+4. **Fetch Tool List from Selected Category** – Run `cogenticlink list <library> <category>` to see tools and their tags.
+5. Obtain Tool Description (optional) – Run `cogenticlink describe <library> <tool>` to understand required parameters.
+6. **Call Tool** – Run `cogenticlink call <library> <tool> '<json-params>'` to execute.
+
+
+## Troubleshooting with the CLI
+1. Library not found – Run `cogenticlink libraries` to list existing libraries.
+2. Invalid token – Re‑set the library with the correct token.
+3. Tool not found – Verify the tool name using `cogenticlink list <library>`.
+4. Invalid parameters – Check the tool's input schema with `cogenticlink describe <library> <tool>`.
