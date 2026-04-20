@@ -3,9 +3,15 @@
   "slug": "drama-ai-studio",
   "displayName": "DramaAIStudio（AI影视工场）",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775116548590,
-    "commit": "https://github.com/openclaw/skills/commit/2e25ad45629b1a475f177db9c26a1afd3da2cdd5"
+    "version": "1.0.1",
+    "publishedAt": 1776177009691,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775116548590,
+      "commit": "https://github.com/openclaw/skills/commit/2e25ad45629b1a475f177db9c26a1afd3da2cdd5"
+    }
+  ]
 }
