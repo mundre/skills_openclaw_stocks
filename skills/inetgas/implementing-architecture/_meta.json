@@ -3,9 +3,15 @@
   "slug": "implementing-architecture",
   "displayName": "Implementing Architecture",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775853807354,
-    "commit": "https://github.com/openclaw/skills/commit/3e31bc215203b6712b00e189ad02f85119beb3e9"
+    "version": "1.0.2",
+    "publishedAt": 1776193519128,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775853807354,
+      "commit": "https://github.com/openclaw/skills/commit/3e31bc215203b6712b00e189ad02f85119beb3e9"
+    }
+  ]
 }
