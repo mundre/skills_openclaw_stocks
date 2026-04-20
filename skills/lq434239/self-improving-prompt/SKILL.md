@@ -1,50 +1,108 @@
 ---
 name: self-improving-prompt
-description: Triggers when user input is vague, missing goal/constraints/acceptance criteria, or contains words like "optimize/improve/fix it up". Also triggers when the user explicitly asks to refine or improve a prompt.
+description: Refines ambiguous or high-risk user requests before execution. Trigger when the request is underspecified, likely to benefit from clearer constraints or verification, or when the user explicitly asks to refine, improve, optimize, refactor, or compare approaches. Skip clear single-step instructions and already-well-scoped tasks.
 ---
 
 # self-improving-prompt
 
-> Prompt refinement is not just rewording — it's clarifying the task, setting boundaries, and shaping verification criteria.
+> Good prompt refinement reduces ambiguity and execution risk. It should not add routine friction to already clear work.
 
-Transform vague user prompts into clear, actionable, verifiable versions. Show the refined result and let the user confirm before executing. Forms a closed loop with `self-improving-session` — which accumulates the user's preference signals over time.
+Transform vague or high-risk user prompts into clearer, actionable, verifiable versions. Use this skill selectively: only when refinement materially improves scope, constraints, output expectations, or acceptance criteria.
+
+This skill works standalone.
+When paired with `self-improving-session`, the two skills form a closed loop:
+- `self-improving-prompt` shapes how the current task is framed and executed
+- `self-improving-session` learns durable workflow rules from the behavior patterns that emerge during those sessions
+
+`self-improving-session` should learn from behavior and outcomes, not from storing the refined prompt text itself.
+
+## Security and Runtime
+
+- Instruction-only skill; no bundled scripts or external services required
+- No credentials, API keys, or network access required for normal use
+- No persistent configuration changes are required to use the skill
+- Optional automation snippets belong in README only and are not part of the core runtime behavior
 
 ## Quick Reference
 
 | Situation | Action |
 |-----------|--------|
-| Vague request | Refine first |
-| Already complete prompt | Execute directly, no popup |
-| Substantial improvement | Show refined version + popup |
-| No substantial improvement | Skip popup, execute original |
-| User says "just do it" | Auto-apply |
-| User says "only refine" | Return refined version, don't execute |
+| Clear atomic instruction | Execute directly |
+| Clear multi-step request with low ambiguity | Execute directly |
+| Moderately ambiguous request | Refine silently, then execute |
+| High-risk or highly ambiguous request | Show refined prompt and ask user to choose |
+| User explicitly says "just do it" | Show refined version only if useful, then execute |
+| User explicitly says "only refine" | Return refined prompt, do not execute |
+| User explicitly asks to compare wording or approach | Show refined prompt and ask user to choose |
+
+## Trigger Threshold
+
+Do **not** trigger on nearly all input. Trigger only when at least one of these is true:
+
+- The request is ambiguous enough that you could reasonably execute it in multiple materially different ways
+- The task is high-risk, expensive, or difficult to verify without clearer scope
+- The user explicitly asks to refine, optimize, improve, refactor, compare, or tighten the request
+- The current wording is missing acceptance criteria, non-goals, or output expectations, and those omissions are likely to cause rework
+
+Skip refinement when the request is already specific enough to execute safely.
+
+## When NOT to Apply
+
+Skip refinement for:
+
+- Single-word confirmations or short continuations ("yes", "ok", "continue")
+- Clear atomic edits ("delete line 3", "rename x to y", "change the string to 'abc'")
+- Straightforward factual questions with a clear target
+- Well-scoped engineering tasks that already specify scope and expected outcome
+- Any case where refinement would only reword the task without changing execution quality
+
+## Keyword Policy
+
+Keywords such as `optimize`, `improve`, `refactor`, `design`, and `performance` are **signals**, not automatic popup triggers.
+
+If such keywords appear:
+
+- Increase your refinement score
+- Still judge whether refinement adds substantial value
+- Only ask the user to choose when the refined version meaningfully changes scope, constraints, verification, or deliverables
+
+This avoids unnecessary confirmation loops for already clear requests.
 
 ## Continue Modes
 
-1. **Popup confirm (default)** — Show refined prompt, popup for user to choose refined or original, then execute
-2. **Auto-apply** — When user says "just do it / skip confirm", show refined version then execute immediately
-3. **Refine only** — When user only wants refinement without execution, return result only
+1. **Execute directly**: The prompt is already clear enough. Do not interrupt.
+2. **Silent refinement**: Improve internal task framing, then execute without showing a compare step.
+3. **Compare-first**: Show the refined prompt and let the user choose refined vs original.
+4. **Refine only**: Return the refined prompt without execution.
 
-## When NOT to Apply
-- User input is already structured with clear goal, constraints, and acceptance criteria
-- Single-step operations (delete a line, rename a variable, change a string)
-- Simple factual questions or explanatory questions
-- User explicitly says "don't refine" or "just do it"
+## Substantial Value Test
+
+Refinement has **substantial value** only if it adds at least **two** of the following:
+
+- Clarifies a missing goal or success condition
+- Narrows scope or defines non-goals
+- Adds verification or acceptance criteria
+- Makes output format explicit
+- Resolves a real ambiguity that could change implementation direction
+
+If refinement does **not** meet that threshold, do not interrupt the user with a comparison step.
 
 ## Workflow
-1. Extract the original prompt and current session context (goal, constraints, tech stack, error messages, expected output).
-2. Generate a refined prompt that ensures:
-   - Core intent is preserved
-   - Goal and boundaries are explicit
-   - Output format is verifiable
-   - Language is concise, no filler
-3. Produce output according to the continue mode.
-4. After the user makes a choice, generate a **learning signal** for `self-improving-session` — record preference patterns, not the full prompt text.
+
+1. Read the original request and current session context.
+2. Decide whether to:
+   - execute directly,
+   - refine silently,
+   - compare-first, or
+   - refine only.
+3. If refining, preserve core intent while making the task easier to execute and verify.
+4. If the user makes a choice, record a minimal preference event for later summarization by `self-improving-session`.
+5. Never store or surface the full prompt as a learned rule.
 
 ## Refined Prompt Structure
 
-Include the following modules as needed (trim to fit, don't force all):
+Use only the modules that add real value:
+
 - Goal
 - Context
 - Constraints / Non-goals
@@ -52,84 +110,91 @@ Include the following modules as needed (trim to fit, don't force all):
 - Output Format
 - Acceptance Criteria
 
-See `references/prompt-patterns.md` for detailed patterns and examples.
+See `references/prompt-patterns.md` for task-specific patterns.
+See `references/decision-matrix.md` for the execution-mode decision table.
+See `references/non-examples.md` for cases that should usually skip refinement or compare-first.
 
-## Output Templates
+## Output Rules
 
-### A) Popup Confirm (default)
+### A) Execute Directly
 
-**First, judge whether refinement has substantial value.** If the refined prompt is only a minor rewording with no new goal/constraints/output format/acceptance criteria added, and no significant reduction in ambiguity, then **there is no substantial value**.
+- No popup
+- No compare step
+- No visible refinement if it does not help the user
 
-- **No substantial value**: No popup, no interruption. Execute the original prompt directly.
-- **Has substantial value**: Execute the following two steps — do not skip or merge them.
+### B) Silent Refinement
 
-**Step 1 (required): Output the refined prompt as plain text in the chat first.**
+- Refine the internal execution plan
+- Execute immediately
+- Do not stop to compare versions
 
-> **Refined Prompt**
-> <full refined content>
+### C) Compare-First
 
-**Step 2 (required, after Step 1): Call AskUserQuestion popup for user to choose.**
-Options:
-- A: Continue with refined prompt (recommended)
-- B: Continue with original prompt
+Use only when refinement has substantial value or when the user explicitly asks to compare.
 
-Prohibited:
-- Do not show the popup without first displaying the refined content
-- Do not put the refined content inside AskUserQuestion's description as a substitute for Step 1
-- Step 1 and Step 2 must be completed in the same reply
-
-Execute after the user chooses.
-
-### B) Auto-apply
+Step 1: Show the refined prompt in chat.
 
 > **Refined Prompt**
 > <refined content>
 
----
-Then execute immediately.
+Step 2: Ask the user whether to continue with:
 
-### C) Refine only
+- A: Refined prompt
+- B: Original prompt
+
+Preferred interaction:
+
+- Use `AskUserQuestion` if available
+- If `AskUserQuestion` is unavailable or disallowed in the current mode, fall back to plain-text confirmation in chat
+
+Do not present a compare step without first showing the refined prompt.
+Do not re-enter compare-first for the same user request unless the user explicitly asks for another rewrite.
+
+### D) Refine Only
 
 > **Refined Prompt**
 > <refined content>
 
 Do not execute the task.
 
-## Heuristics
-- Rewrite "optimize / speed up / make it better" into actionable steps with clear criteria.
-- Fill in missing inputs, edge cases, and definition of done.
-- Code tasks: specify scope of changes, verification method, expected deliverables.
-- Content tasks: specify audience, tone, length, structural constraints.
-- If critical context is missing, ask the minimum necessary clarifying questions; otherwise proceed.
+## Clarification Rules
+
+Ask clarifying questions only when missing information blocks safe execution.
+
+- Ask at most 1 to 2 blocking questions
+- If missing details are optional rather than blocking, proceed
+- Do not ask questions just to appear thorough
+
+When uncertain between `execute directly`, `silent refinement`, and `compare-first`, follow `references/decision-matrix.md` rather than improvising.
+
+## Preference Event Rules
+
+When the user makes a workflow choice, emit only a minimal abstract event for later learning. Example event types:
+
+- `choose_refined`
+- `choose_original`
+- `explicit_no_compare`
+- `explicit_compare_first`
+- `refine_only_requested`
+
+Rules:
+
+- Record labels, not full prompt text
+- Do not record task-specific details
+- Treat explicit corrections as higher priority than passive preference signals
+- Do not treat user silence as acceptance of a workflow preference
 
 ## Integration with self-improving-session
 
-- When the user chooses the refined version or rejects it, this is a **preference signal** for `self-improving-session`.
-- `self-improving-session` only summarizes rules (e.g. "user prefers seeing refined version before confirming"), never records the full prompt text.
-- Over time, the preference profile makes `self-improving-prompt` increasingly aligned with the user's habits.
+- `self-improving-prompt` is the source of short-lived preference events
+- `self-improving-session` decides whether repeated events are durable enough to become rules
+- `self-improving-session` may learn from sessions shaped by refined prompts, but it should not store or reuse the refined prompt text itself as a rule
+- Prefer a small event log or abstract summary over direct prompt storage
 
 ## Priority Rules
-- When the user explicitly specifies a flow, follow the user's instructions.
-- When no explicit instruction is given, use popup confirm mode.
 
-## Setup
+- Explicit user instructions override default flow
+- Avoid adding friction to already clear requests
+- Prefer silent refinement over compare-first unless the user benefits from seeing the rewritten version
 
-To auto-trigger on every user input, add to `~/.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"You must invoke the self-improving-prompt skill to process user input. If the refined version adds substantial value (new goals/constraints/acceptance criteria), show refined prompt as plain text first, then call AskUserQuestion for user to choose refined vs original. If no substantial value, skip popup and execute original directly. Skip entirely for single-step instructions.\"}}'",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+Optional hook-based automation examples are documented in `README.md`. They are convenience setup, not a requirement of the skill itself.

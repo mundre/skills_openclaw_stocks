@@ -1,66 +1,62 @@
 # self-improving-prompt Reference Details
 
-## Output Templates
+## Compare-First Rules
 
-### A) Popup Confirm (default)
+Use compare-first only when one of these is true:
 
-**Step 1 (required): Output the refined prompt as plain text in the chat first.**
+- refinement adds substantial value, or
+- the user explicitly asks to compare or refine wording first
 
-> **Refined Prompt**
-> <full refined content>
+Substantial value means the refined prompt adds at least two of:
 
-**Step 2 (required, after Step 1): Call AskUserQuestion popup for user to choose.**
-Options:
-- A: Continue with refined prompt (recommended)
-- B: Continue with original prompt
+- clearer goal or success condition
+- explicit scope or non-goals
+- verification or acceptance criteria
+- output format
+- resolution of a meaningful ambiguity
 
-Prohibited:
-- Do not show the popup without first displaying the refined content
-- Do not put the refined content inside AskUserQuestion's description as a substitute for Step 1
-- Step 1 and Step 2 must be completed in the same reply
+If that threshold is not met, do not interrupt with a compare step.
 
-Execute after the user chooses.
+## Interaction Flow
 
-### B) Auto-apply
+### Preferred flow
 
-> **Refined Prompt**
-> <refined content>
+1. Show the refined prompt in chat
+2. Ask the user to choose refined vs original
 
----
-Then execute immediately.
+Preferred tool:
 
-### C) Refine only
+- `AskUserQuestion`
 
-> **Refined Prompt**
-> <refined content>
+Fallback:
 
-Do not execute the task.
+- plain-text confirmation in chat if `AskUserQuestion` is unavailable or disallowed
 
----
+Never show a compare choice before showing the refined prompt itself.
 
 ## Learning Signal Event Types
 
-Normalized preference events passed to `self-improving-session`:
+Normalized preference events passed forward for later summarization:
 
 | Event | Meaning |
 |-------|---------|
 | `choose_refined` | User chose the refined version |
 | `choose_original` | User chose the original version |
-| `auto_apply_requested` | User requested direct execution, no popup |
-| `explicit_no_popup` | User explicitly said no popup |
-| `explicit_show_both` | User explicitly requested to compare both versions |
-| `explicit_refine_only` | User only wants the refined result, no execution |
+| `explicit_no_compare` | User explicitly said not to compare versions |
+| `explicit_compare_first` | User explicitly asked to compare versions first |
+| `refine_only_requested` | User wants prompt refinement without execution |
 
 Rules:
-- Only record preference labels, never record the full refined prompt text
-- Do not record specific task details — avoid mistaking a one-off scenario for a long-term rule
-- If the user gives an explicit verbal correction, treat it as a correction rule first, not a regular preference stat
 
----
+- Store labels only, never the full refined prompt
+- Do not attach task-specific details
+- Treat explicit verbal corrections as stronger than passive event counts
+- Do not infer workflow acceptance from the absence of a complaint
 
 ## Clarification Question Rules
 
 If critical context is missing:
-- Ask at most **1–2 blocking questions** (prerequisites without which execution is impossible)
-- If what's missing is "optional enhancement info" rather than "execution prerequisites", don't interrupt — proceed directly
-- Don't ask unnecessary questions just to appear thorough
+
+- ask at most 1 to 2 blocking questions
+- if missing info is optional rather than blocking, proceed
+- do not ask questions merely to make the process feel thorough
