@@ -3,9 +3,15 @@
   "slug": "momondo",
   "displayName": "Momondo",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775781324554,
-    "commit": "https://github.com/openclaw/skills/commit/d5411320e0a43f536052db93e42434a2c3d16404"
+    "version": "1.0.1",
+    "publishedAt": 1776295456259,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775781324554,
+      "commit": "https://github.com/openclaw/skills/commit/d5411320e0a43f536052db93e42434a2c3d16404"
+    }
+  ]
 }
