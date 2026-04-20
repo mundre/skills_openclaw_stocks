@@ -1,6 +1,6 @@
 ---
 name: api-device-list
-description: "调用 ai-open-gateway 的设备列表查询接口 POST /api/device/list，获取当前用户绑定的所有设备信息。Use when: 需要查看绑定了哪些设备、获取设备 MAC 地址、确认设备是否已绑定。⚠️ 需设置 AI_GATEWAY_API_KEY。"
+description: "Closeli 设备列表查询接口。用于获取当前账号下的设备列表，返回设备名称、MAC、IMEI 等基础信息。Use when: 需要查看账号下有哪些设备，或在调用其他设备接口前先获取设备标识。⚠ 安全要求：必须设置 AI_GATEWAY_API_KEY 环境变量，使用最小权限凭证，环境变量请前往APP中AI设置页获取。"
 metadata:
   openclaw:
     requires:
