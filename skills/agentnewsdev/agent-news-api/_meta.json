@@ -1,0 +1,11 @@
+{
+  "owner": "agentnewsdev",
+  "slug": "agent-news-api",
+  "displayName": "Agent News Api",
+  "latest": {
+    "version": "1.2.2",
+    "publishedAt": 1775092637962,
+    "commit": null
+  },
+  "history": []
+}
