@@ -1,6 +1,6 @@
 ---
 name: greenhelix-agent-revenue-analytics
-version: "1.2.0"
+version: "1.3.1"
 description: "Agent Revenue Analytics: Attribution, LTV, Cohorts, and Pricing Optimization for AI Agent Services. Complete guide to revenue measurement for AI agent services: revenue attribution by channel, customer lifetime value for agent-to-agent commerce, cohort analysis and retention curves, churn prediction from billing signals, price elasticity estimation, competitive intelligence from marketplace data, and webhook-driven revenue dashboards. Includes detailed Python code examples with full API integration."
 license: MIT
 compatibility: [openclaw]
@@ -12,12 +12,19 @@ content_type: markdown
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # Agent Revenue Analytics: Attribution, LTV, Cohorts, and Pricing Optimization for AI Agent Services
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 >
 > **Referenced credentials** (you supply these in your own environment):
 > - `GREENHELIX_API_KEY`: API authentication for GreenHelix gateway (read/write access to purchased API tools only)
@@ -48,9 +55,13 @@ This is the revenue gap. Cost management tells you how efficiently you operate. 
 
 RevenueCat's 2026 State of Subscription Apps report found that AI-powered applications earn 41% more revenue per user than traditional apps but churn 30% faster. That asymmetry is the central challenge of agent commerce economics. Your agent service likely follows the same pattern: high initial monetization as customers integrate your tools into their workflows, followed by rapid attrition as they find alternatives, build in-house replacements, or simply stop needing the service. Without revenue analytics, you experience this as a mysterious plateau in monthly income. With revenue analytics, you see the cohort curves, identify the churn inflection point, calculate the price that maximizes lifetime revenue, and intervene before customers leave.
 
-Every code example in this guide calls the GreenHelix A2A Commerce Gateway via `POST /v1/execute` with a JSON body of `{"tool": "tool_name", "input": {...}}`. Authentication is via Bearer token. Every class and function is production-ready Python using the `requests` library. Define the core `RevenueAnalytics` class once and reference it throughout.
+Every code example in this guide calls the GreenHelix A2A Commerce Gateway via the REST API (`POST /v1/{tool}`) with a JSON body of `{"tool": "tool_name", "input": {...}}`. Authentication is via Bearer token. Every class and function is production-ready Python using the `requests` library. Define the core `RevenueAnalytics` class once and reference it throughout.
 
 ---
+
+
+> **Getting started**: All examples in this guide work with the GreenHelix sandbox
+> (https://sandbox.greenhelix.net) which provides 500 free credits — no API key required.
 
 ## Table of Contents
 
@@ -154,7 +165,7 @@ class RevenueTracker:
     def _execute(self, tool: str, input_data: dict) -> dict:
         """Execute a tool on the GreenHelix gateway."""
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
