@@ -1,48 +1,5 @@
 {
-  "version": "1.0",
-  "wishes": [
-    {
-      "id": "mno6pmjp875u25vlq",
-      "content": "作为非程序员，在社区上传一个技能，得到一个星",
-      "status": "pending",
-      "createdAt": "2026-04-07",
-      "endedAt": null,
-      "endedBy": null,
-      "completionNote": "",
-      "timeline": [
-        {
-          "date": "2026-04-07",
-          "event": "添加愿望",
-          "note": "作为非程序员，在社区上传一个技能，得到一个星"
-        },
-        {
-          "date": "2026-04-07",
-          "event": "进展更新",
-          "note": "bucket-list@1.3.0 已上传到 ClawHub，等待有人给星"
-        }
-      ]
-    },
-    {
-      "id": "mno6rrz4si500efzy",
-      "content": "Claude Code的minimax有5小时600次的调用额度，基本闲置，要想办法给Claude Code找活干",
-      "status": "pending",
-      "createdAt": "2026-04-07",
-      "endedAt": null,
-      "endedBy": null,
-      "completionNote": "",
-      "timeline": [
-        {
-          "date": "2026-04-07",
-          "event": "添加愿望",
-          "note": "Claude Code的minimax有5小时600次的调用额度，基本闲置，要想办法给Claude Code找活干"
-        },
-        {
-          "date": "2026-04-07",
-          "event": "讨论",
-          "note": "现状：有额度没需求，不是程序员所以没有日常编程任务。需要寻找适合非程序员的使用场景"
-        }
-      ]
-    }
-  ],
-  "createdAt": "2026-04-07"
+  "version": "1.4",
+  "wishes": [],
+  "createdAt": "2026-04-15"
 }

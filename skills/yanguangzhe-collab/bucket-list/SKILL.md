@@ -1,58 +1,85 @@
-# 愿望清单 (Bucket List)
-
-> 记录主人与龙虾一起完成的人生愿望清单
-
 ---
 name: bucket-list
-version: 1.3.1
-description: 记录和追踪人生愿望的伙伴工具。支持CLI聊天和GUI双入口，主人和龙虾共同读写同一份数据。路径已统一，数据有验证。
+version: 1.4.0
+description: Use this skill when the user wants to record, view, update, complete, cancel, or review a personal bucket list / wish list. Supports Chinese commands such as "添加愿望：...", "查看愿望清单", "完成了...", and "我们完成了什么", plus a localhost GUI that shares the same JSON data file.
 ---
 
-## 功能定位
+# 愿望清单 (Bucket List)
 
-- **协作**：主人和龙虾共同读写同一份愿望清单
-- **记录**：人生愿望清单
-- **追踪**：完成进度和成就回顾
-- **陪伴**：可选的人生进度显示
-- **安全**：HTTP 服务器仅 localhost 访问
+记录主人与龙虾一起完成的人生愿望清单。它不是待办软件，也不是人生导师；它是一个本地优先的愿望记录和成就回顾工具。
 
-## 使用方式
+## When To Use
 
-### GUI 界面
-启动服务器后，浏览器访问：
+Use this skill when the user asks to:
+
+- add a wish, bucket-list item, life goal, or "愿望"
+- view pending, completed, or cancelled wishes
+- mark a wish completed or cancelled
+- review completed wishes or shared achievements
+- open or maintain the bucket-list GUI
+- import, export, or repair bucket-list data
+
+## Quick Start
+
+Start the GUI:
+
 ```bash
+cd skills/bucket-list
 node server.js
-# 访问 http://localhost:9999/
+# open http://localhost:9999/
 ```
 
-功能：
-- 添加/完成/取消愿望
-- 可选的人生进度显示
-- 导出/导入备份
+Use the CLI:
 
-### CLI 命令
-通过 OpenClaw 直接操作，双方共享数据。
-
-## 数据存储
-
-- **localStorage**：浏览器本地存储
-- **导出/导入**：手动备份恢复
-- **字段**：`id`, `content`, `status`, `createdAt`, `endedAt`, `endedBy`, `completionNote`, `timeline`
-- **状态**：`pending` / `completed` / `cancelled`
-
-## 文件结构
-
-```
-skills/bucket-list/
-├── SKILL.md          # 本文档
-├── bucket-list.html  # GUI 界面
-├── server.js         # Node.js HTTP 服务器（仅 localhost）
-├── bucket-list.sh    # Shell 脚本
-└── data/
-    └── bucket-list.json  # 愿望数据
+```bash
+./bucket-list.sh add "去南极看企鹅" "旅行"
+./bucket-list.sh view
+./bucket-list.sh complete "南极" "看到了企鹅"
+./bucket-list.sh cancel "学吉他" "改学钢琴"
+./bucket-list.sh achievements
 ```
 
-## 边界
+Natural-language entry:
 
-- **不是**：待办提醒工具、心理治疗师、人生导师
-- **只是**：愿望记录工具 + 协作界面
+```bash
+./bucket-list.sh intent "添加愿望：去南极看企鹅"
+./bucket-list.sh intent "查看愿望清单"
+./bucket-list.sh intent "完成了 发布技能"
+./bucket-list.sh intent "我们完成了什么"
+```
+
+## Data
+
+The runtime data file is stored outside the skill folder:
+
+```text
+<workspace>/data/bucket-list.json
+```
+
+The published `data/bucket-list.json` inside this skill is only an empty template. Do not publish personal wishes in the package.
+
+Canonical wish fields:
+
+- `id`
+- `content`
+- `category`
+- `status`: `pending`, `completed`, or `cancelled`
+- `createdAt`
+- `endedAt`
+- `endedBy`
+- `completionNote`
+- `cancelReason`
+- `timeline`
+
+## Safety
+
+- The server binds to `127.0.0.1` only.
+- The server only accepts same-origin browser writes by default.
+- Writes are validated, size-limited, and saved atomically with a backup.
+- The CLI uses Node JSON parsing/writing instead of shell text edits.
+
+## Boundaries
+
+- Do not treat ordinary tasks as wishes unless the user frames them as a wish, life goal, or bucket-list item.
+- Ask before recording sensitive or emotionally loaded content if the user's intent is unclear.
+- Strong negative emotion should receive care first; record or update wishes only after the user confirms.

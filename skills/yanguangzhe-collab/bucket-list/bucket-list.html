@@ -446,11 +446,9 @@
             try {
                 const text = await file.text();
                 const data = JSON.parse(text);
-                if (data.wishes) {
-                    wishData = data;
-                    await syncToFile();
-                    render();
-                }
+                wishData = normalizeData(data);
+                saveData();
+                render();
             } catch (e) {
                 alert('导入失败: ' + e.message);
             }
@@ -464,7 +462,7 @@
                 xhr.open('GET', DATA_FILE, false);
                 xhr.send();
                 if (xhr.status === 200) {
-                    wishData = JSON.parse(xhr.responseText);
+                    wishData = normalizeData(JSON.parse(xhr.responseText));
                 }
             } catch (e) {
                 console.log('初始化新数据');
@@ -478,10 +476,38 @@
                 xhr.open('POST', DATA_FILE, false);
                 xhr.setRequestHeader('Content-Type', 'application/json');
                 xhr.send(JSON.stringify(wishData, null, 2));
+                if (xhr.status < 200 || xhr.status >= 300) {
+                    throw new Error(xhr.responseText || 'HTTP ' + xhr.status);
+                }
             } catch (e) {
                 console.error('保存失败:', e);
+                alert('保存失败：' + e.message);
             }
             syncToFile();
+        }
+
+        function normalizeData(data) {
+            if (!data || !Array.isArray(data.wishes)) {
+                throw new Error('数据必须包含 wishes 数组');
+            }
+            return {
+                version: data.version || '1.4',
+                createdAt: data.createdAt || new Date().toISOString().split('T')[0],
+                wishes: data.wishes
+                    .filter(w => w && typeof w.content === 'string' && w.content.trim())
+                    .map(w => ({
+                        id: String(w.id || generateId()),
+                        content: String(w.content || '').trim(),
+                        category: String(w.category || '其他'),
+                        status: ['pending', 'completed', 'cancelled'].includes(w.status) ? w.status : 'pending',
+                        createdAt: String(w.createdAt || new Date().toISOString().split('T')[0]).slice(0, 10),
+                        endedAt: w.endedAt ? String(w.endedAt).slice(0, 10) : null,
+                        endedBy: w.endedBy || null,
+                        completionNote: String(w.completionNote || ''),
+                        cancelReason: String(w.cancelReason || ''),
+                        timeline: Array.isArray(w.timeline) ? w.timeline : []
+                    }))
+            };
         }
 
         function render() {
@@ -511,8 +537,8 @@
                 <div class="timeline-entry">
                     <div class="entry-header">
                         <span class="entry-icon">${e.event === '完成' ? '✅' : e.event === '取消' ? '❌' : '📝'}</span>
-                        <span class="entry-event">${e.event}</span>
-                        <span class="entry-date">${e.date}</span>
+                        <span class="entry-event">${escapeHtml(e.event || '更新')}</span>
+                        <span class="entry-date">${escapeHtml(e.date || '')}</span>
                     </div>
                     ${e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : ''}
                 </div>
@@ -525,25 +551,30 @@
                 container.innerHTML = '<div class="empty">暂无</div>';
                 return;
             }
-            container.innerHTML = wishes.map(w => `
-                <div class="wish-item">
-                    <div class="wish-content ${w.status === 'completed' ? 'completed' : ''}">
-                        <div class="text ${w.status === 'completed' ? 'completed' : ''}" onclick="toggleTimeline(this)">${escapeHtml(w.content)}</div>
-                        <div class="meta">添加于 ${w.createdAt || '未知'}${w.endedAt ? ' · ' + w.statusText : ''}</div>
-                        ${w.completionNote ? `<div class="note">${escapeHtml(w.completionNote)}</div>` : ''}
-                        <div class="expand-hint" onclick="toggleTimeline(this.parentElement)">查看详情 ▾</div>
-                        <div class="timeline" id="tl-${w.id}">${renderTimeline(w.timeline || [])}</div>
+            container.innerHTML = wishes.map(w => {
+                const idArg = JSON.stringify(String(w.id));
+                const endedText = w.endedAt ? ` · ${w.status === 'completed' ? '完成于' : '取消于'} ${escapeHtml(w.endedAt)}` : '';
+                const note = w.completionNote || w.cancelReason || '';
+                return `
+                    <div class="wish-item">
+                        <div class="wish-content ${w.status === 'completed' ? 'completed' : ''}">
+                            <div class="text ${w.status === 'completed' ? 'completed' : ''}" onclick="toggleTimeline(this.parentElement)">${escapeHtml(w.content)}</div>
+                            <div class="meta">添加于 ${escapeHtml(w.createdAt || '未知')}${endedText}</div>
+                            ${note ? `<div class="note">${escapeHtml(note)}</div>` : ''}
+                            <div class="expand-hint" onclick="toggleTimeline(this.parentElement)">查看详情 ▾</div>
+                            <div class="timeline">${renderTimeline(w.timeline || [])}</div>
+                        </div>
+                        <div class="actions">
+                            ${w.status === 'pending' ? `
+                                <button class="complete-btn" onclick='completeWish(${idArg})'>完成</button>
+                                <button class="cancel-btn" onclick='cancelWish(${idArg})'>取消</button>
+                            ` : ''}
+                            ${w.status === 'completed' ? `<button class="undo-btn" onclick='undoComplete(${idArg})'>撤销</button>` : ''}
+                            ${w.status === 'cancelled' ? `<button class="undo-btn" onclick='undoCancel(${idArg})'>撤销</button>` : ''}
+                        </div>
                     </div>
-                    <div class="actions">
-                        ${w.status === 'pending' ? `
-                            <button class="complete-btn" onclick="completeWish('${w.id}')">完成</button>
-                            <button class="cancel-btn" onclick="cancelWish('${w.id}')">取消</button>
-                        ` : ''}
-                        ${w.status === 'completed' ? `<button class="undo-btn" onclick="undoComplete('${w.id}')">撤销</button>` : ''}
-                        ${w.status === 'cancelled' ? `<button class="undo-btn" onclick="undoCancel('${w.id}')">撤销</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function toggleTimeline(element) {
