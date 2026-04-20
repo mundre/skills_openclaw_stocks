@@ -6,7 +6,7 @@
     "meta": "可选。含 generatedAt、source 等，由向导生成，推送接口不读。",
     "apiBase": "可选。推送接口完整 URL。缺省时大模型应使用 https://api.pcloud.ac.cn/openClawService 。仅 POST JSON。说明：推送链路长，HTTP 超时较常见，超时可视为已成功，请用户注意查微信服务通知/草稿箱。",
     "openId": "必填。微信用户 openId，由配置向导微信扫码后得到；推送 sendToWechat 必须携带。禁止编造。",
-    "accounts": "必填。第一项是系统默认公众号，从第二项起是已授权的公众号。有且仅有一项 selected:true 表示向导最终选择。custom 项字段以服务端返回为准（name、appId 等）。推送脚本首参可传 default 或某条 appId。",
+    "accounts": "必填。accounts 中 selected:true 表示向导最终选择。",
     "sendToWechatExample": "可选。演示 POST Body 形状，推送HTML时，便于大模型照抄；接口不读取本对象。",
     "sendToWechatExample_image": "可选。演示 POST Body 形状，推送图片链接时，便于大模型照抄；接口不读取本对象。"
   },
@@ -16,7 +16,7 @@
     "title": "HTML 推送：通常对应 HTML 的 <title>；图片链接推送：与配图一起展示的标题，由调用方传入。",
     "content": "HTML 推送：整段 HTML 字符串（脚本 push-to-wechat-mp.js 的 html 模式读文件上传）。图片链接推送：正文/摘要等字符串，多为纯文本；配图 URL 放在 imgUrls。",
     "imgUrls": "可选。string[]，元素为可公网访问的图片链接；缺省、null 或省略则按 HTML 模式处理，有值时按图片链接模式处理。",
-    "appId": "仅当选中自定义公众号时传AppID；选中系统默认时省略或空字符串。"
+    "appId": "仅当选中自定义公众号时传AppID；选中平台提供时省略或空字符串。"
   },
   "version": 1,
   "description": "由用户通过配置向导动态生成；示例占位。",
@@ -24,16 +24,9 @@
   "openId": "oXXXXXXXXXXXXXXXXXXXXXXXXXXX",
   "accounts": [
     {
-      "kind": "default",
-      "name": "系统默认公众号",
-      "appId": null,
+      "name": "平台提供的公众号",
+      "appId": "default",
       "selected": true
-    },
-    {
-      "kind": "custom",
-      "name": "示例订阅号",
-      "appId": "wxXXXXXXXXXXXXXXXX",
-      "selected": false
     }
   ],
   "sendToWechatExample": {

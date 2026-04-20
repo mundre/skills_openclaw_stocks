@@ -2,11 +2,11 @@
 /**
  * 推送到公众号。config.json 和此脚本应在同一目录；支持 HTML 和图片模式，HTML 应放在同目录。
  *
- * 首参为目标公众号 AppID（default、- 或空字符串表示系统默认；wx 开头为自定义号），第二参为 html 或 img：
+ * 首参为目标公众号 AppID（default、- 或空字符串表示平台提供的公众号；wx 开头为自定义公众号），第二参为 html 或 img：
  *   node push-to-wechat-mp.js <targetAppId> html <HTML 文件名> [sendMode]
  *   node push-to-wechat-mp.js <targetAppId> img '<JSON数组>' <title> <content> [sendMode]
  * 示例：
- *   node push-to-wechat-mp.js default html 你的文件.html draft
+ *   node push-to-wechat-mp.js targetAppId html 你的文件.html draft
  *   node push-to-wechat-mp.js wxabcdef0123456789 img '["https://example.com/a.png"]' "标题" "正文" draft
  */
 
@@ -167,7 +167,7 @@ function isDefaultAppIdTarget(s) {
   return t === '' || t === 'default' || t === '-';
 }
 
-/** @returns {string|undefined} appId 传给接口：appId；系统默认返回 undefined */
+/** @returns {string|undefined} appId 传给接口：appId；平台提供返回 undefined */
 function resolvePushAppId(cfg, targetAppIdFromCli) {
   if (isDefaultAppIdTarget(targetAppIdFromCli)) {
     return undefined;
@@ -193,13 +193,13 @@ async function main() {
   const args = process.argv.slice(2);
   if (args.length < 2) {
     throw new Error(
-      '用法:\n  node push-to-wechat-mp.js <targetAppId> html <文件名.html> [sendMode]\n  node push-to-wechat-mp.js <targetAppId> img \'<JSON>\' <title> <content> [sendMode]\n  targetAppId：default、- 或空字符串表示系统默认；wx 开头为自定义公众号。'
+      '用法:\n  node push-to-wechat-mp.js <targetAppId> html <文件名.html> [sendMode]\n  node push-to-wechat-mp.js <targetAppId> img \'<JSON>\' <title> <content> [sendMode]\n  targetAppId：default、- 或空字符串表示平台提供；wx 开头为自定义公众号。'
     );
   }
 
   if (args[0] === 'html' || args[0] === 'img') {
     throw new Error(
-      '首参须为目标公众号 AppID（系统默认请写 default）。示例:\n  node push-to-wechat-mp.js default html 你的文件.html draft'
+      '首参须为目标公众号 AppID（平台提供请写 default）。示例:\n  node push-to-wechat-mp.js targetAppId html 你的文件.html draft'
     );
   }
 
@@ -213,6 +213,7 @@ async function main() {
   const mode = String(args[1] || '').toLowerCase();
   let title;
   let content;
+  let thumbImageContent = '';
   let sendMode;
   /** @type {string[]|undefined} */
   let imgUrls;
@@ -220,7 +221,7 @@ async function main() {
   if (mode === 'img') {
     if (args.length < 5) {
       throw new Error(
-        '图片模式参数不足。示例: node push-to-wechat-mp.js default img \'["https://example.com/a.png"]\' "标题" "正文说明" draft'
+        '图片模式参数不足。示例: node push-to-wechat-mp.js targetAppId img \'["https://example.com/a.png"]\' "标题" "正文说明" draft'
       );
     }
     imgUrls = parseImgUrlsArg(args[2]);
@@ -230,13 +231,13 @@ async function main() {
   } else if (mode === 'html') {
     if (args.length < 3) {
       throw new Error(
-        'HTML 模式须传入文件名。示例: node push-to-wechat-mp.js default html 你的文件.html draft'
+        'HTML 模式须传入文件名。示例: node push-to-wechat-mp.js targetAppId html 你的文件.html draft'
       );
     }
     const fileName = path.basename((args[2] || '').trim());
     if (!fileName) {
       throw new Error(
-        '请传入 HTML 文件名（与脚本同目录）。例如: node push-to-wechat-mp.js default html 你的文件.html draft'
+        '请传入 HTML 文件名（与脚本同目录）。例如: node push-to-wechat-mp.js targetAppId html 你的文件.html draft'
       );
     }
     sendMode = (args[3] && args[3].trim()) || 'draft';
@@ -247,10 +248,20 @@ async function main() {
     }
     content = fs.readFileSync(htmlPath, 'utf8');
     if (!content.trim()) throw new Error('文件为空: ' + htmlPath);
-    title = titleFromHtml(content);
+    title = titleFromHtml(content); 
+
+    const thumbImagePath = path.join(DIR, fileName.replace('.html', '_title.html'));
+    if (!fs.existsSync(thumbImagePath)) {
+      console.warn('同目录下找不到: ' + thumbImagePath + '（本次跳过title.html封面图片生成，将使用其它方式生成封面图片）');
+    }
+    else
+    {
+      thumbImageContent = fs.readFileSync(thumbImagePath, 'utf8');
+    }
+
   } else {
     throw new Error(
-      '第二参须为 html 或 img。示例:\n  node push-to-wechat-mp.js default html 你的文件.html draft'
+      '第二参须为 html 或 img。示例:\n  node push-to-wechat-mp.js targetAppId html 你的文件.html draft'
     );
   }
 
@@ -260,7 +271,8 @@ async function main() {
     action: 'sendToWechat',
     openId: cfg.openId,
     title: title.slice(0, 64),
-    content,
+    thumbImageContent,
+    content, 
     sendMode,
   };
   if (imgUrls && imgUrls.length > 0) {
