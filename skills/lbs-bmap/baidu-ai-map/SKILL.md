@@ -1,6 +1,6 @@
 ---
 name: baidu-ai-map
-description: 百度地图 Agent Plan 直连调用 place、direction、geocoding、reverse_geocoding、weather 五类能力。
+description: 百度地图 Agent Plan ，调用AI地点检索、AI路线规划、地理编码、逆地理编码、天气查询五类能力。
 license: MIT
 version: 1.0.0
 homepage: https://lbs.baidu.com
@@ -114,9 +114,7 @@ curl --get "https://api.map.baidu.com/agent_plan/v1/place" \
 
 #### API
 
-`POST /agent_plan/v1/direction`
-
-`Content-Type: application/x-www-form-urlencoded`
+`GET /agent_plan/v1/direction`
 
 #### 参数输入
 
@@ -130,35 +128,32 @@ Optional:
 Rules:
 - 当前仅支持驾车、步行、骑行、公交路线规划。`user_raw_request` 中出现其他交通方式时，需要改写到这四种交通方式
 - `location` 当起点有歧义（如同名地标、模糊起点）时，路线规划服务会基于当前位置推理最合理的起点位置
-- `refer_pois` 默认不传，用于同名地点消歧，仅在user_raw_request中明确有歧义地点时传入
+- `refer_pois` 默认不传，用于同名地点消歧，仅在 `user_raw_request` 中明确有歧义地点时传入
 - `refer_pois` / `location` 的经纬度至少保留小数点后 6 位，禁止推测/编造，可通过 `geocoding` / `place` 等工具获取
 
 #### 鉴权
 
-- POST：Header `Authorization: Bearer $BAIDU_MAP_AUTH_TOKEN`
+- GET：Header `Authorization: Bearer $BAIDU_MAP_AUTH_TOKEN`
 
 #### 示例
 
 ```bash
 # 1) 帮我规划从故宫到颐和园的驾车路线
-curl -X POST "https://api.map.baidu.com/agent_plan/v1/direction" \
+curl --get "https://api.map.baidu.com/agent_plan/v1/direction" \
   -H "Authorization: Bearer $BAIDU_MAP_AUTH_TOKEN" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "user_raw_request=帮我规划从故宫到颐和园的驾车路线" \
   --data-urlencode "location=39.914590,116.403770"
 
 # 2) “我家”别名映射
-curl -X POST "https://api.map.baidu.com/agent_plan/v1/direction" \
+curl --get "https://api.map.baidu.com/agent_plan/v1/direction" \
   -H "Authorization: Bearer $BAIDU_MAP_AUTH_TOKEN" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "user_raw_request=步行去我家附近最近的中餐厅" \
   --data-urlencode "location=40.056800,116.308300" \
   --data-urlencode "refer_pois=我家:fbc88a21464370106e3e1b52,40.092180,116.345310"
 
 # 2) 交通方式推理改写：从王府井打车去三里屯要多久
-curl -X POST "https://api.map.baidu.com/agent_plan/v1/direction" \
+curl --get "https://api.map.baidu.com/agent_plan/v1/direction" \
   -H "Authorization: Bearer $BAIDU_MAP_AUTH_TOKEN" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "user_raw_request=从王府井驾车去三里屯要多久" \
   --data-urlencode "location=39.914590,116.403770"
 ```
@@ -253,4 +248,4 @@ curl --get "https://api.map.baidu.com/agent_plan/v1/weather" \
 1. 如果缺少 token，提示用户执行：  
    申请地址：https://lbs.baidu.com/apiconsole/agentplan  
    `export BAIDU_MAP_AUTH_TOKEN="<YOUR_BAIDU_MAP_AUTH_TOKEN>"`
-2. 如果缺少必填参数，直接指出缺的是哪个参数。
+2. 如果提示参数错误，重新阅读本Skills查阅如何传参
