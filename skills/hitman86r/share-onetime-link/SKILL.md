@@ -11,6 +11,17 @@ metadata:
     emoji: "🔗"
     requires:
       bins: ["node", "cloudflared"]
+    env_vars:
+      required:
+        - name: SHARE_PUBLIC_URL
+          description: "Public base URL for generated links (e.g. https://share.yourdomain.com)"
+        - name: SHARE_SECRET
+          description: "Secret key to protect /generate and /status endpoints"
+      optional:
+        - name: SHARE_PORT
+          description: "Local server port (default: 5050)"
+        - name: SHARED_DIR
+          description: "Directory for shared files (default: workspace/shared/)"
 ---
 
 # Share One-Time Link
@@ -95,15 +106,15 @@ curl -H "x-share-secret: your-secret" http://localhost:5050/status
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `SHARE_PUBLIC_URL` | **Yes** | `http://localhost:5050` | Public base URL for generated links |
-| `SHARE_SECRET` | Recommended | *(none)* | Secret key for `/generate` and `/status` endpoints |
+| `SHARE_SECRET` | **Yes** | *(none)* | Secret key for `/generate` and `/status` endpoints |
 | `SHARE_PORT` | No | `5050` | Local server port |
 | `SHARED_DIR` | No | `workspace/shared/` | Directory for shared files |
 
 ## Security notes
 
 - `/dl/:token` is **public by design** — anyone with the link can download once
-- `/generate` and `/status` are **protected by `SHARE_SECRET`** — set it before exposing publicly
-- If `SHARE_SECRET` is not set, a warning is logged and endpoints are unprotected
+- `/generate` and `/status` are **protected by `SHARE_SECRET`** — required, server refuses to start without it
+- If `SHARE_SECRET` is not set the server exits immediately with an error
 - Files outside `shared/` are never accessible
 - Tokens are cryptographically random (32 bytes / 64 hex chars)
 - TTL is enforced server-side regardless of client behavior

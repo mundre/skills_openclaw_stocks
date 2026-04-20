@@ -19,12 +19,14 @@ const SHARED_DIR = process.env.SHARED_DIR ||
 const API_SECRET = process.env.SHARE_SECRET || null;
 
 if (!API_SECRET) {
-  console.warn('[warn] SHARE_SECRET not set — /generate and /status are unprotected!');
+  console.error('[error] SHARE_SECRET env var is required but not set.');
+  console.error('[error] Set SHARE_SECRET to a strong random string before starting the server.');
+  console.error('[error] Example: SHARE_SECRET=$(openssl rand -hex 32) node server.js');
+  process.exit(1);
 }
 
-// Auth middleware for protected endpoints
+// Auth middleware for protected endpoints (API_SECRET is always set)
 function requireSecret(req, res, next) {
-  if (!API_SECRET) return next(); // no secret configured, allow (with warning)
   const provided = req.headers['x-share-secret'] || req.query.secret;
   if (provided !== API_SECRET) {
     return res.status(401).json({ error: 'Unauthorized: missing or invalid secret' });
