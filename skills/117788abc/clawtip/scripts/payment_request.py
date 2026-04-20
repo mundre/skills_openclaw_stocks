@@ -68,7 +68,7 @@ class Resource:
 
 class Extensions:
     def __init__(self, orderNo: str, askedContents: str, deviceId: str, skillId: str = "",
-                 slug: str = "", encryptedData: str = "", skillVersion: str = "1.0.1"):
+                 slug: str = "", encryptedData: str = "", skillVersion: str = "1.0.8"):
         self.orderNo = orderNo
         self.askedContents = askedContents
         self.deviceId = deviceId

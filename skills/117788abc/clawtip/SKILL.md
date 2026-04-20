@@ -56,7 +56,7 @@ Provide the following parameters strictly according to their defined formats:
 
 ## 2. Hyperparameters
 
-* **`skill-version`** (string): The version of the skill. Currently set to `1.0.1`.
+* **`skill-version`** (string): The version of the skill. Currently set to `1.0.8`.
 
 ## 3. Execution Command
 

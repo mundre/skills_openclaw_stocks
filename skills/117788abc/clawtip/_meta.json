@@ -3,11 +3,16 @@
   "slug": "clawtip",
   "displayName": "clawtip",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1775742873217,
-    "commit": "https://github.com/openclaw/skills/commit/f3ae9d5984e784de04e4c63a77853ce884ff5793"
+    "version": "1.0.8",
+    "publishedAt": 1776064884850,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1775742873217,
+      "commit": "https://github.com/openclaw/skills/commit/f3ae9d5984e784de04e4c63a77853ce884ff5793"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1774888754233,

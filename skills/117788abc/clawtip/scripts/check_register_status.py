@@ -10,7 +10,7 @@ def get_public_key():
     """
     从域名获取base64编码后公钥
     """
-    api_url = "https://ms.jr.jd.com/gw2/generic/hyqy/h5/m/getSMPublicKeyPre"
+    api_url = "https://ms.jr.jd.com/gw2/generic/hyqy/h5/m/getSMPublicKey"
     try:
         response = requests.post(api_url, timeout=10)
         response.raise_for_status()
@@ -59,7 +59,7 @@ def query_register_status(device_id: str):
         print(f"执行加密脚本时发生异常: {e}")
         return False, None
 
-    url = f"https://ms.jr.jd.com/gw2/generic/hyqy/h5/m/queryTokenPre"
+    url = f"https://ms.jr.jd.com/gw2/generic/hyqy/h5/m/queryToken"
 
     body = {
         "requestNo": request_no,

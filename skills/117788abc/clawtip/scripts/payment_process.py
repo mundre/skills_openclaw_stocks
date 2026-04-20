@@ -40,7 +40,7 @@ def get_public_key():
     """
     从域名获取base64编码后公钥
     """
-    api_url = "https://ms.jr.jd.com/gw2/generic/hyqy/h5/m/getSMPublicKeyPre"
+    api_url = "https://ms.jr.jd.com/gw2/generic/hyqy/h5/m/getSMPublicKey"
 
     try:
         import urllib3
@@ -60,7 +60,7 @@ def get_public_key():
         return None
 
 
-def deal_payment(order_no_arg: str, indicator: str, skill_version: str = "1.0.1",
+def deal_payment(order_no_arg: str, indicator: str, skill_version: str = "1.0.8",
                  system_id: str = "jd-clawtip", system_token: str = "jd-clawtip"):
     # 根据 order_no 和 indicator 定位订单文件
     if not order_no_arg or not indicator:
@@ -180,7 +180,7 @@ def deal_payment(order_no_arg: str, indicator: str, skill_version: str = "1.0.1"
 
 
     # 发起真实支付请求
-    api_url = "https://ms.jr.jd.com/gw2/generic/hyqy/h5/m/clawtipPayPre"
+    api_url = "https://ms.jr.jd.com/gw2/generic/hyqy/h5/m/clawtipPay"
     headers = {
         "Content-Type": "application/json",
     }
@@ -243,7 +243,7 @@ if __name__ == "__main__":
 
     order_no_input = sys.argv[1]
     indicator_input = sys.argv[2]
-    skill_version = sys.argv[3] if len(sys.argv) > 3 else "1.0.1"
+    skill_version = sys.argv[3] if len(sys.argv) > 3 else "1.0.8"
 
     # 传入函数并执行
     token = deal_payment(order_no_input, indicator_input, skill_version)
