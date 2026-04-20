@@ -3,11 +3,16 @@
   "slug": "compound-eng-reflect",
   "displayName": "reflect",
   "latest": {
-    "version": "2.55.1",
-    "publishedAt": 1776004258288,
-    "commit": "https://github.com/openclaw/skills/commit/f42135b5de821d4684ab7e776eea9248a078b2f6"
+    "version": "2.56.1",
+    "publishedAt": 1776519036925,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.55.1",
+      "publishedAt": 1776004258288,
+      "commit": "https://github.com/openclaw/skills/commit/f42135b5de821d4684ab7e776eea9248a078b2f6"
+    },
     {
       "version": "2.53.0",
       "publishedAt": 1775523326065,
