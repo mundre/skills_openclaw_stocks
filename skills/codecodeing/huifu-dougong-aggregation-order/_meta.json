@@ -3,9 +3,15 @@
   "slug": "huifu-dougong-aggregation-order",
   "displayName": "Huifu DouGong Aggregation Order",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775551891662,
-    "commit": "https://github.com/openclaw/skills/commit/4c7c83185f39d8df190ad8efd21069c2c629d43d"
+    "version": "1.0.2",
+    "publishedAt": 1776162181340,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775551891662,
+      "commit": "https://github.com/openclaw/skills/commit/4c7c83185f39d8df190ad8efd21069c2c629d43d"
+    }
+  ]
 }

@@ -8,6 +8,12 @@
 | `U_NATIVE` | 银联正扫 |
 | `U_MICROPAY` | 银联付款码反扫 |
 
+## `method_expand` 对象边界
+
+- `trade_type` 负责选择银联场景。
+- `method_expand` 的 JSON 内容直接就是银联对象本身。
+- 不要再写成 `{ "U_JSAPI": {...} }`、`{ "U_MICROPAY": {...} }` 这种带场景 key 的包装结构。
+
 ## 官方接入前准备
 
 - 官方开发指引要求先完成商户进件并开通银联业务。

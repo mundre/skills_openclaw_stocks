@@ -1,21 +1,18 @@
 ---
-name: dougong-aggregation-aggregate-order
-display_name: 汇付聚合支付下单
-description: "汇付聚合支付（dg-lightning-sdk）下单 Skill：覆盖微信公众号/小程序/APP、支付宝JS/正扫、银联JS/正扫、微信/支付宝/银联付款码等全场景聚合支付下单。当开发者需要通过聚合支付方式创建支付订单时使用。触发词：聚合支付下单、微信支付下单、支付宝下单、银联下单、二维码支付、付款码支付。"
-version: 1.0.0
+name: huifu-dougong-aggregation-order
+display_name: 汇付支付聚合支付下单
+description: "汇付支付聚合支付下单的斗拱SDK Skill：覆盖微信公众号/小程序/APP、支付宝 JS / 正扫、银联 JS / 正扫、微信 / 支付宝 / 银联付款码等全场景聚合支付下单。参数表和业务规则按协议字段组织，Java SDK 调用方式放在语言适配入口里。当开发者需要创建聚合支付订单时使用。触发词：聚合支付下单、微信支付下单、支付宝下单、银联下单、二维码支付、付款码支付。"
+version: 1.1.0
 author: "jiaxiang.li | 内容版权：上海汇付支付有限公司"
 homepage: https://paas.huifu.com/open/home/index.html
-license: MIT
+license: CC-BY-NC-4.0
 compatibility:
   - openclaw
 dependencies:
-  - dougong-aggregation-pay-base
+  - huifu-dougong-aggregation-base
 metadata:
   openclaw:
     requires:
-      bins:
-        - java
-        - mvn
       config:
         - HUIFU_PRODUCT_ID
         - HUIFU_SYS_ID
@@ -36,15 +33,39 @@ metadata:
 
 覆盖微信/支付宝/银联全场景聚合支付下单。
 
+## 适配版本与复核信息
+
+| 项目 | 内容 |
+| --- | --- |
+| Skill 版本 | `1.1.0` |
+| 当前适配 SDK | `dg-lightning-sdk` `1.0.3` |
+| 最后复核日期 | `2026-04-08` |
+| 官方文档来源 | 汇付开放平台聚合支付下单接口文档、Java SDK 文档、加验签说明、异步消息说明 |
+
 ## 运行依赖与凭据边界
 
-本 Skill 依赖 [dougong-aggregation-pay-base](../dougong-aggregation-pay-base/SKILL.md) 提供公共运行时与商户配置约束。metadata 中列出的 `HUIFU_PRODUCT_ID`、`HUIFU_SYS_ID`、`HUIFU_RSA_PRIVATE_KEY`、`HUIFU_RSA_PUBLIC_KEY` 用于让接入方应用在运行时完成 `dg-lightning-sdk` 初始化，并由 SDK 在应用侧完成请求签名和响应验签；本 Skill 本身只提供接入说明，不会在 Skill 包内保存、打印、上传或持久化这些凭据。
+本 Skill 依赖 [huifu-dougong-aggregation-base](../huifu-dougong-aggregation-base/SKILL.md) 提供公共运行时。凭据使用规则与存放边界见 [credential-boundary.md](../huifu-dougong-pay-shared-base/governance/credential-boundary.md)。
 
-> **前置依赖**：首次接入请先阅读 [dougong-aggregation-pay-base](../dougong-aggregation-pay-base/SKILL.md) 完成 SDK 初始化。
+> **前置依赖**：首次接入请先阅读 [huifu-dougong-aggregation-base](../huifu-dougong-aggregation-base/SKILL.md) 完成 SDK 初始化。
 
-> **开发前先补两步**：先核对 [客户前置准备清单](../dougong-aggregation-pay-base/references/customer-preparation.md)，再按 [参数校验与 JSON 构造规范](../dougong-aggregation-pay-base/references/payload-construction.md) 建模。`sub_openid`、`buyer_id`、`auth_code`、`devs_id`、`customer_ip` 这些值都不能让模型自行猜测。
+> **开发前先补两步**：先核对 [客户前置准备清单](../huifu-dougong-aggregation-base/references/customer-preparation.md)，再按 [参数校验与 JSON 构造规范](../huifu-dougong-aggregation-base/references/payload-construction.md) 建模。`sub_openid`、`buyer_id`、`auth_code`、`devs_id`、`customer_ip` 这些值都不能让模型自行猜测。
 
 > **官方开发指引补充约束**：接入前还要完成渠道业务开通、应用配置或授权绑定。微信公众号 / 小程序场景的 `sub_openid`、支付宝 JS 的 `buyer_id`、银联 JS 的 `user_id`、各类反扫的 `auth_code`，都必须来自真实获取链路；前端支付完成回调也不等于最终交易成功。
+
+## 协议规则入口
+
+真正跨语言共用的协议规则，统一看共享资料：
+
+- [signing-v2.md](../huifu-dougong-pay-shared-base/protocol/signing-v2.md)
+- [async-notify.md](../huifu-dougong-pay-shared-base/protocol/async-notify.md)
+
+## 语言适配入口
+
+这份 Skill 里的 trade_type、参数表、返回字段和状态说明，都是语言无关的。  
+具体语言怎么初始化和发请求，先看这里：
+
+- [huifu-dougong-aggregation-base/SKILL.md](../huifu-dougong-aggregation-base/SKILL.md)
+- [server-sdk-matrix.md](../huifu-dougong-pay-shared-base/runtime/server-sdk-matrix.md)
 
 ## 端到端支付流程
 
@@ -68,7 +89,7 @@ metadata:
 ### 步骤 2：用户支付
 
 - **正扫**：前端将 qr_code 生成二维码展示，用户扫码支付
-- **JS 支付**：前端使用 pay_info 调起微信/支付宝/银联支付
+- **JS 支付**：前端使用 pay_info 调起微信/支付宝/银联支付；`pay_info` 是语言无关的返回结果，Java SDK 只是其中一种接法
 - **反扫**：无需用户操作，商户扫描用户付款码后同步完成
 
 ### 步骤 3：接收异步通知
@@ -76,15 +97,15 @@ metadata:
 汇付将交易结果 POST 到 `notify_url`：
 - 返回 `RECV_ORD_ID_` + req_seq_id（5 秒内）
 - 以 `hf_seq_id` 为幂等键
-- 详见 [tech-spec.md](../dougong-aggregation-pay-base/references/tech-spec.md)
+- 详见 [tech-spec.md](../huifu-dougong-aggregation-base/references/tech-spec.md)
 
 ### 步骤 4：二次查询确认
 
-见 [dougong-aggregation-aggregate-query](../dougong-aggregation-aggregate-query/SKILL.md)。官方微信 / 支付宝 / 银联开发指引都明确要求：用户前端页面收到支付完成回调后，后端仍需调用查询订单 API 确认最终状态。
+见 [huifu-dougong-aggregation-query](../huifu-dougong-aggregation-query/SKILL.md)。官方微信 / 支付宝 / 银联开发指引都明确要求：用户前端页面收到支付完成回调后，后端仍需调用查询订单 API 确认最终状态。
 
 ### 步骤 5：退款（可选）
 
-见 [dougong-aggregation-aggregate-refund](../dougong-aggregation-aggregate-refund/SKILL.md)
+见 [huifu-dougong-aggregation-refund](../huifu-dougong-aggregation-refund/SKILL.md)
 
 ---
 
@@ -135,20 +156,27 @@ metadata:
 ## 通用架构
 
 ```text
-PayController (@RestController, /api/pay)
-  +- POST /create -> payService.createOrder(req)
+接口层
+  +- 接收业务系统的下单请求
+  +- 校验交易金额、支付类型、通知地址和渠道特有参数
 
-PayService (@Service)
-  +- createOrder() -> Factory.Payment.Common().create(request)
+业务逻辑层
+  +- 根据 trade_type 选择具体支付场景
+  +- 组装聚合支付报文
+  +- 调用对应语言 SDK 或 HTTP 客户端发起 `v4/trade/payment/create`
+  +- 保存 req_seq_id / req_date / hf_seq_id 供查单和退款复用
 
-PayOrderReq (DTO)
-  |- huifuId - 商户号（必填）
-  |- transAmt - 交易金额（必填）
-  |- tradeType - 支付类型（必填）
-  |- goodsDesc - 商品描述（必填）
-  |- methodExpand - 渠道扩展参数（业务层保持对象结构，按 trade_type 决定）
-  +- txMetadata - 分账 / 设备 / 补贴对象（进入 SDK 前再序列化）
+请求对象
+  |- huifu_id
+  |- req_seq_id
+  |- trade_type
+  |- trans_amt
+  |- goods_desc
+  +- method_expand / acct_split_bunch / terminal_device_data / combinedpay_data / combinedpay_data_fee_info / trans_fee_allowance_info / tx_metadata 等扩展字段
 ```
+
+下面出现的 SDK Request 类和包路径，是 Java 适配层的写法。  
+如果你不是 Java 项目，参数结构仍按本 Skill 的协议字段来实现。
 
 ## 通用请求参数
 
@@ -160,12 +188,17 @@ PayOrderReq (DTO)
 | trade_type | String(16) | Y | 支付类型（见场景路由表） |
 | trans_amt | String(14) | Y | 交易金额，单位元，保留两位小数，最低 0.01 |
 | goods_desc | String(128) | Y | 商品描述 |
-| method_expand | String | C | 交易类型扩展参数（JSON），是否必填取决于 trade_type |
+| method_expand | String | C | 交易类型扩展参数（JSON），是否必填取决于 trade_type；JSON 内容直接是当前场景对象本身 |
 | notify_url | String(504) | N | 异步通知地址 |
 | time_expire | String(14) | N | 交易失效时间 yyyyMMddHHmmss |
 | delay_acct_flag | String(1) | N | 是否延迟入账，Y=延迟、N=不延迟 |
 | fee_flag | String(1) | N | 手续费标记 |
-| tx_metadata | String | N | 扩展参数集合（JSON），含分账、设备、补贴、手续费补贴 |
+| acct_split_bunch | String | N | 分账对象，顶层请求字段 |
+| terminal_device_data | String | N | 设备信息，顶层请求字段 |
+| combinedpay_data | String | N | 补贴支付信息，顶层扩展字段 |
+| combinedpay_data_fee_info | String | N | 补贴支付手续费承担方信息，顶层扩展字段 |
+| trans_fee_allowance_info | String | N | 手续费补贴信息，顶层扩展字段 |
+| tx_metadata | String | N | 扩展参数集合（JSON），保留为顶层扩展入口，但不要混塞已确认属于顶层的补贴类字段 |
 | remark | String(255) | N | 备注，原样返回 |
 
 ## 通用同步返回参数
@@ -186,7 +219,7 @@ PayOrderReq (DTO)
 | out_trans_id | String(64) | 用户账单交易订单号 |
 | party_order_id | String(64) | 用户账单商户订单号 |
 | delay_acct_flag | String(1) | 是否延迟交易 |
-| tx_metadata | String | 扩展参数集合（补贴、设备、手续费补贴） |
+| tx_metadata | String | 返回扩展参数集合（补贴、分账、设备、手续费补贴等），与请求侧边界不同 |
 | payment_fee | String | 手续费对象 |
 
 > **重要**：调用成功后务必保存 `req_seq_id` 和 `req_date`，后续查询、退款、关单均需使用。
@@ -241,14 +274,4 @@ PayOrderReq (DTO)
 
 ---
 
-## 版权声明
-
-本 Skill 的内容来源于 **上海汇付支付有限公司** 官方开放平台文档。
-
-- **版权归属**：上海汇付支付有限公司
-- **客服热线**：400-820-2819
-- **客服邮箱**：cs@huifu.com
-- **官方网站**：[https://www.huifu.com/](https://www.huifu.com/)
-- **开放平台**：[https://paas.huifu.com/open/home/index.html](https://paas.huifu.com/open/home/index.html)
-
-本 Skill 仅作技术学习交流使用，原始内容由汇付支付官方维护和更新。如有任何疑问或需要商业支持，请直接联系汇付支付官方客服。
+> 版权声明与联系方式见 [copyright-notice.md](../huifu-dougong-pay-shared-base/governance/copyright-notice.md)

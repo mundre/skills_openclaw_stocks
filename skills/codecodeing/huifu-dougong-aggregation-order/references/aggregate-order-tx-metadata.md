@@ -1,16 +1,27 @@
-# 聚合下单扩展结构：`tx_metadata` 与手续费对象
+# 聚合下单扩展字段边界：请求顶层、`tx_metadata` 与返回扩展对象
 
-## 请求 `tx_metadata`
+> 这份文件只做一件事：把“请求怎么传”和“返回怎么收”分开。开发确认后，请求侧 `acct_split_bunch`、`terminal_device_data`、`combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info` 都按 `data` 顶层字段处理；不要再把后 3 个补贴类字段包进请求 `tx_metadata`。同步 / 查询返回里，部分扩展对象仍可能放在返回 `tx_metadata` 下；异步回调里，这些对象又可能直接展开在 `resp_data` 顶层。
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `acct_split_bunch` | String(JSON Object) | N | 分账对象 |
-| `terminal_device_data` | String(JSON Object) | C | 设备信息；反扫支付时必填 |
-| `combinedpay_data` | String(JSON Array) | N | 补贴支付信息 |
-| `combinedpay_data_fee_info` | String(JSON Object) | N | 补贴支付手续费承担方信息 |
-| `trans_fee_allowance_info` | String(JSON Object) | N | 手续费补贴信息 |
+## 请求侧边界速记
 
-## `acct_split_bunch`（请求）
+| 路径 | 对象 | 传参方式 | 说明 |
+|------|------|----------|------|
+| `data.acct_split_bunch` | 分账对象 | `setAcctSplitBunch()` | 请求顶层字段 |
+| `data.terminal_device_data` | 设备信息 | `setTerminalDeviceData()` | 请求顶层字段 |
+| `data.combinedpay_data` | 补贴支付信息 | `request.addExtendInfo(...)` / `client.optional(...)` | 请求顶层扩展字段 |
+| `data.combinedpay_data_fee_info` | 补贴支付手续费承担方信息 | `request.addExtendInfo(...)` / `client.optional(...)` | 请求顶层扩展字段 |
+| `data.trans_fee_allowance_info` | 手续费补贴信息 | `request.addExtendInfo(...)` / `client.optional(...)` | 请求顶层扩展字段 |
+| `data.tx_metadata` | 其他扩展参数集合 | `request.optional("tx_metadata", json)` | 保留为扩展入口，但不要混塞已确认属于顶层的补贴类字段 |
+
+关键约束：
+
+- 请求时不要把 `acct_split_bunch`、`terminal_device_data` 塞进 `tx_metadata`。
+- 请求时也不要把 `combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info` 再包进 `tx_metadata`。
+- 这 3 个补贴类字段现在按开发确认的真实请求口径，直接作为 `data` 顶层扩展字段上送。
+
+## 请求顶层扩展字段
+
+### `acct_split_bunch`（请求顶层）
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -33,7 +44,7 @@
 - 百分比分账时，`acct_infos` 中全部 `percentage_div` 之和必须为 `100.00`。
 - `is_clean_split` 只有在“手续费内扣 + 百分比分账”场景下才有意义。
 
-## `terminal_device_data`（请求）
+### `terminal_device_data`（请求顶层）
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -63,7 +74,7 @@
 - `location` 格式为 `纬度/经度`，例如 `+37.12/-121.213`。
 - `devs_id` 取自汇付终端报备或终端查询接口返回的 `device_id`。
 
-## `combinedpay_data[]`（请求）
+### `combinedpay_data[]`（请求顶层）
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -72,22 +83,35 @@
 | `acct_id` | String | N | 营销补贴方账户号 |
 | `amount` | String | N | 补贴金额 |
 
-## `combinedpay_data_fee_info`（请求）
+### `combinedpay_data_fee_info`（请求顶层）
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `huifu_id` | String | N | 补贴支付手续费承担方汇付编号 |
 | `acct_id` | String | N | 补贴支付手续费承担方账户号 |
 
-## `trans_fee_allowance_info`（请求）
+### `trans_fee_allowance_info`（请求顶层）
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `allowance_fee_amt` | String | N | 补贴手续费金额 |
 
-## 同步 / 异步返回中的扩展对象
+## 返回侧路径差异速记
 
-### `tx_metadata.combinedpay_data[]`
+| 场景 | 路径 | 说明 |
+|------|------|------|
+| 同步返回 | `data.tx_metadata.*` 或顶层返回扩展字段 | 同步返回的扩展对象存在包装差异，落地时应按实际报文解析 |
+| 查询返回 | `data.tx_metadata.*` | 查询接口通常沿用 `tx_metadata` 包装 |
+| 异步回调 | `resp_data.combinedpay_data` / `resp_data.combinedpay_data_fee_info` / `resp_data.trans_fee_allowance_info` | 这 3 个补贴类对象在异步里通常直接展开在 `resp_data` 顶层 |
+| 异步回调 | `resp_data.acct_split_bunch` / `resp_data.mer_dev_location` | 异步里分账和定位对象也直接在 `resp_data` 顶层 |
+| 独立返回对象 | `data.payment_fee` | `payment_fee` 是独立返回对象，不属于请求参数 |
+
+## 同步 / 查询返回中的扩展对象
+
+### `combinedpay_data[]`
+
+- 查询返回路径通常为 `tx_metadata.combinedpay_data`。
+- 异步回调路径通常为 `resp_data.combinedpay_data`。
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
@@ -96,7 +120,10 @@
 | `acct_id` | String | 补贴方账户号 |
 | `amount` | String | 补贴金额 |
 
-### `tx_metadata.combinedpay_data_fee_info`
+### `combinedpay_data_fee_info`
+
+- 查询返回路径通常为 `tx_metadata.combinedpay_data_fee_info`。
+- 异步回调路径通常为 `resp_data.combinedpay_data_fee_info`。
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
@@ -104,7 +131,10 @@
 | `acct_id` | String | 补贴支付手续费承担方账户号 |
 | `combinedpay_fee_amt` | String | 补贴支付手续费金额；该字段出现在返回侧 |
 
-### `tx_metadata.trans_fee_allowance_info`
+### `trans_fee_allowance_info`
+
+- 查询返回路径通常为 `tx_metadata.trans_fee_allowance_info`。
+- 异步回调路径通常为 `resp_data.trans_fee_allowance_info`。
 
 同步 / 异步返回共有字段：
 
@@ -149,14 +179,14 @@
 | `create_time` | String | Y | 创建时间 |
 | `update_time` | String | Y | 更新时间 |
 
-### `tx_metadata.terminal_device_data`（同步返回）
+### `terminal_device_data`（同步 / 查询返回 `tx_metadata.terminal_device_data`）
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `terminal_ip` | String | 交易设备公网 IP |
 | `terminal_location` | String | 终端实时经纬度信息 |
 
-### `mer_dev_location`（异步回调）
+### `mer_dev_location`（异步回调 `resp_data.mer_dev_location`）
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
@@ -198,6 +228,8 @@
 
 ## 结构边界说明
 
-- 请求侧 `terminal_device_data` 是设备指纹对象。
-- 同步返回 `tx_metadata.terminal_device_data` 和异步 `mer_dev_location` 都是定位对象，只含 `terminal_ip` / `terminal_location`。
-- `payment_fee` 是汇付返回的手续费对象，不属于请求 `tx_metadata` 本体。
+- 请求侧 `acct_split_bunch`、`terminal_device_data`、`combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info` 都按 `data` 顶层字段处理。
+- `tx_metadata` 不再承担这 3 个补贴类请求字段的包装职责；不要再把它们塞进去。
+- 查询返回里，补贴类对象仍常放在返回 `tx_metadata` 下；异步回调里，同名扩展对象可能直接展开在 `resp_data` 顶层。
+- 同步 / 查询返回 `tx_metadata.terminal_device_data` 和异步 `mer_dev_location` 都是定位对象，只含 `terminal_ip` / `terminal_location`，不要按请求侧设备指纹结构去解析。
+- `payment_fee` 是汇付返回的独立手续费对象，不属于请求参数本体。

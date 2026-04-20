@@ -24,7 +24,7 @@
 说明：
 
 - 聚合支付将微信、支付宝、银联等多种支付方式统一到一个下单 API。
-- 请求和响应整体都需要签名，验签规则见 `dougong-aggregation-pay-base/references/tech-spec.md`。
+- 请求和响应整体都需要签名，验签规则见 `huifu-dougong-aggregation-base/references/tech-spec.md`。
 - `method_expand`、`tx_metadata`、异步 `resp_data` 里的多个字段，外层通常是 `String`，值内容是 JSON 字符串。
 - 下单结果不能只看 `resp_code`；官方特别强调最终交易状态以 `trans_stat` 为准。
 - 交易完成后除标准异步通知外，还支持额外发送 Webhook 事件。
@@ -37,7 +37,7 @@
 | [aggregate-order-method-wechat.md](aggregate-order-method-wechat.md) | 微信公众号 / 小程序 / APP / 反扫的请求与回调字段 |
 | [aggregate-order-method-alipay.md](aggregate-order-method-alipay.md) | 支付宝 JS / 正扫 / 反扫的请求与回调字段 |
 | [aggregate-order-method-unionpay.md](aggregate-order-method-unionpay.md) | 银联 JS / 正扫 / 反扫的请求与回调字段 |
-| [aggregate-order-tx-metadata.md](aggregate-order-tx-metadata.md) | `tx_metadata`、`payment_fee`、分账与手续费扩展结构 |
+| [aggregate-order-tx-metadata.md](aggregate-order-tx-metadata.md) | 请求顶层扩展字段、保留的 `tx_metadata` 入口、返回扩展对象与 `payment_fee` 边界 |
 | [aggregate-order-response.md](aggregate-order-response.md) | 同步返回、异步回调、解冻通知、反扫回调差异 |
 | [aggregate-order-errors.md](aggregate-order-errors.md) | 业务返回码、反扫返回码、文档勘误与实现备注 |
 
@@ -68,7 +68,9 @@
 | `tradeType` | `setTradeType()` | 交易类型 |
 | `transAmt` | `setTransAmt()` | 交易金额 |
 | `goodsDesc` | `setGoodsDesc()` | 商品描述 |
-| `methodExpand` | `setMethodExpand()` 或 `client.optional("method_expand", ...)` | 渠道扩展参数 |
+| `methodExpand` | `setMethodExpand()` | 渠道扩展参数 |
+| `acctSplitBunch` | `setAcctSplitBunch()` | 分账对象，顶层字段 |
+| `terminalDeviceData` | `setTerminalDeviceData()` | 设备信息，顶层字段 |
 | `delayAcctFlag` | `setDelayAcctFlag()` | 延迟标识 |
 
 其余业务字段在本 skill 库的 SDK 接入实践中更稳妥的方式：
@@ -76,9 +78,9 @@
 - `notify_url`、`remark`、`acct_id`、`time_expire`、`fee_flag`
 - `limit_pay_type`、`channel_no`、`pay_scene`
 - `term_div_coupon_type`、`fq_mer_discount_flag`
-- `tx_metadata`
+- `combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info`、`tx_metadata`
 
-统一建议通过 `client.optional(key, value)` 传入；如果你当前 SDK 版本恰好提供独立 setter，也可以直接使用 setter。
+其中 `combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info` 作为请求顶层扩展字段，统一建议通过 `client.optional(key, value)` / `request.addExtendInfo(...)` 注入；`tx_metadata` 也统一通过 `client.optional(key, value)` 或 `request.optional(key, value)` 传入。本仓库当前复核基线下，不应把它们误解成 `TradePaymentCreateRequest` 的独立 setter 字段。
 
 实现注意：
 
@@ -91,7 +93,7 @@
 
 - `aggregate-order-request.md` 负责“怎么发请求”。
 - `aggregate-order-method-*.md` 负责“不同支付渠道怎样组织 `method_expand`、怎样解析渠道返回”。
-- `aggregate-order-tx-metadata.md` 负责“分账、补贴、设备、手续费补贴”。
+- `aggregate-order-tx-metadata.md` 负责“请求顶层分账 / 设备 / 补贴字段、保留的 `tx_metadata` 入口，以及返回扩展对象边界”。
 - `aggregate-order-response.md` 负责“同步 / 异步 / 解冻回调”。
 - `aggregate-order-errors.md` 负责“返回码 + 勘误”。
 

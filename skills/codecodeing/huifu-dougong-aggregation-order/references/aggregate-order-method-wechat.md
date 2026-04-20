@@ -9,14 +9,11 @@
 | `T_APP` | 微信 APP 支付 |
 | `T_MICROPAY` | 微信付款码反扫 |
 
-## `method_expand` 键映射
+## `method_expand` 对象边界
 
-| 键 | 说明 |
-|----|------|
-| `T_JSAPI` | 微信公众号支付参数 |
-| `T_MINIAPP` | 微信小程序支付参数 |
-| `T_APP` | 微信 APP 支付参数 |
-| `T_MICROPAY` | 微信反扫参数 |
+- `trade_type` 负责选择微信场景。
+- `method_expand` 的 JSON 内容直接就是微信对象本身。
+- 不要再写成 `{ "T_JSAPI": {...} }`、`{ "T_MINIAPP": {...} }` 这种带场景 key 的包装结构。
 
 ## 官方接入前准备
 

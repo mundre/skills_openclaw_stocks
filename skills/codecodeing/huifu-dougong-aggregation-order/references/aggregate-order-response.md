@@ -39,7 +39,7 @@
 | `acct_stat` | 账务状态 | String | 1 | N | `P`=处理中，`S`=成功，`F`=失败 |
 | `bank_message` | 通道返回描述 | String | 200 | N | 通道返回描述 |
 | `method_expand` | 交易扩展参数 | String(JSON Object) | - | N | 各渠道结构见渠道分册 |
-| `tx_metadata` | 扩展参数集合 | String(JSON Object) | - | N | 结构见 [aggregate-order-tx-metadata.md](aggregate-order-tx-metadata.md)；返回侧 `terminal_device_data` 是定位对象，不同于请求侧设备指纹对象 |
+| `tx_metadata` | 扩展参数集合 | String(JSON Object) | - | N | 结构见 [aggregate-order-tx-metadata.md](aggregate-order-tx-metadata.md)；同步返回里补贴 / 分账 / 设备等扩展对象常放这里，且返回侧 `terminal_device_data` 是定位对象，不同于请求侧设备指纹对象 |
 | `payment_fee` | 手续费对象 | String(JSON Object) | - | N | 结构见 [aggregate-order-tx-metadata.md](aggregate-order-tx-metadata.md) |
 
 ## 异步返回
@@ -77,9 +77,9 @@
 | `fee_flag` | 手续费扣款标志 | Integer | N | `1`=外扣，`2`=内扣 |
 | `fee_formula_infos` | 手续费费率信息 | Array | N | 手续费费率信息 |
 | `fee_amount` | 手续费金额 | String | N | 手续费金额 |
-| `trans_fee_allowance_info` | 手续费补贴信息 | Object | N | 手续费补贴信息 |
-| `combinedpay_data` | 补贴支付信息 | String | N | 补贴支付信息 |
-| `combinedpay_data_fee_info` | 补贴支付手续费信息 | String | N | 补贴支付手续费信息 |
+| `trans_fee_allowance_info` | 手续费补贴信息 | Object | N | 异步回调里直接位于 `resp_data` 顶层，不再包在返回 `tx_metadata` 下 |
+| `combinedpay_data` | 补贴支付信息 | String | N | 异步回调里直接位于 `resp_data` 顶层，不再包在返回 `tx_metadata` 下 |
+| `combinedpay_data_fee_info` | 补贴支付手续费信息 | String | N | 异步回调里直接位于 `resp_data` 顶层，不再包在返回 `tx_metadata` 下 |
 | `debit_type` | 借贷记标识 | String | N | `D`=借记卡，`C`=贷记卡，`0`=其他 |
 | `is_div` | 是否分账交易 | String | Y | `1`=分账交易，`0`=非分账交易 |
 | `acct_split_bunch` | 分账对象 | Object | N | 分账对象 |
@@ -163,4 +163,5 @@
 - 同步字段名是 `trade_type`，异步字段名是 `trans_type`，不要混用。
 - `resp_code=00000000` 仅代表受理成功，不代表交易最终成功。
 - 最终业务判断统一看 `trans_stat`。
+- 同步 / 查询返回时，补贴类对象常放在返回 `tx_metadata` 下；异步回调时，`combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info` 会直接展开在 `resp_data` 顶层，不要按同一包装层硬解析。
 - 同步返回 `tx_metadata.terminal_device_data` 与异步 `mer_dev_location` 都是定位对象，不要按请求侧设备指纹结构去解析。

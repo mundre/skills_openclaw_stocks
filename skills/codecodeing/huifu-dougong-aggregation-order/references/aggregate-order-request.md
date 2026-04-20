@@ -1,6 +1,8 @@
 # 聚合下单请求参数
 
 > 本文只覆盖请求侧参数；渠道扩展参数请继续阅读各渠道分册。
+> 
+> Java SDK 复核基线：`TradePaymentCreateRequest` 独立字段包含 `trade_type`、`method_expand`、`acct_split_bunch`、`terminal_device_data`；`combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info` 作为请求顶层扩展字段通过 `addExtendInfo(...)` / `optional(...)` 注入；`tx_metadata` 单独通过 `request.optional(...)` 或 `Factory.Payment.Common().optional(...)` 注入。
 
 ## 公共请求参数
 
@@ -26,14 +28,19 @@
 | `time_expire` | 交易有效期 | String | 14 | N | `yyyyMMddHHmmss` |
 | `delay_acct_flag` | 延迟标识 | String | 1 | N | `Y`=延迟，`N`=不延迟，默认 `N` |
 | `fee_flag` | 手续费扣款标识 | Integer | 1 | N | `1`=外扣，`2`=内扣 |
+| `acct_split_bunch` | 分账对象 | String(JSON Object) | - | C | 顶层请求字段；有分账权限时传 |
+| `terminal_device_data` | 设备信息 | String(JSON Object) | - | C | 顶层请求字段；反扫或终端报备场景常用 |
 | `limit_pay_type` | 禁用支付方式 | String | 128 | N | 见下方枚举 |
 | `channel_no` | 渠道号 | String | 32 | N | 自有渠道号 |
 | `pay_scene` | 场景类型 | String | 2 | N | 微信业务开通类型 |
 | `term_div_coupon_type` | 分账遇到优惠的处理规则 | String | 2 | N | `1`=按比例分，`2`=按顺序保障，`3`=只给交易商户 |
 | `fq_mer_discount_flag` | 商户贴息标记 | String | 1 | N | `Y`=商户全额贴息，`P`=商户部分贴息 |
 | `notify_url` | 异步通知地址 | String | 504 | N | HTTP 或 HTTPS 地址 |
-| `method_expand` | 交易类型扩展参数 | String(JSON Object) | - | Y | 按 `trade_type` 选择对应结构 |
-| `tx_metadata` | 扩展参数集合 | String(JSON Object) | - | C | 分账、补贴、设备等交易能力扩展 |
+| `method_expand` | 交易类型扩展参数 | String(JSON Object) | - | C | 按 `trade_type` 选择当前渠道对象；JSON 内容直接是当前场景参数本身，不再额外包一层 `T_JSAPI` / `A_JSAPI` / `U_MICROPAY` 这类 key |
+| `combinedpay_data` | 补贴支付信息 | String(JSON Array) | - | C | 顶层扩展字段；有补贴支付场景时传，Java SDK 通过 `addExtendInfo(...)` / `optional(...)` 注入 |
+| `combinedpay_data_fee_info` | 补贴支付手续费承担方信息 | String(JSON Object) | - | C | 顶层扩展字段；有明确承担方时传，Java SDK 通过 `addExtendInfo(...)` / `optional(...)` 注入 |
+| `trans_fee_allowance_info` | 手续费补贴信息 | String(JSON Object) | - | C | 顶层扩展字段；有手续费补贴场景时传，Java SDK 通过 `addExtendInfo(...)` / `optional(...)` 注入 |
+| `tx_metadata` | 扩展参数集合 | String(JSON Object) | - | C | 保留为顶层扩展 key，但不要把已确认属于顶层的补贴类字段混塞进去 |
 
 ## `trade_type` 枚举
 
@@ -99,8 +106,11 @@
     "trans_amt": "0.01",
     "goods_desc": "银联反扫测试",
     "delay_acct_flag": "N",
-    "method_expand": "{\"U_MICROPAY\":{\"auth_code\":\"2884138408701518074\"}}",
-    "tx_metadata": "{\"terminal_device_data\":{\"device_ip\":\"10.10.0.1\"}}"
+    "method_expand": "{\"qr_code\":\"union-542323asdas12351111\",\"user_id\":\"union4f4f5a5f5a5f5111\",\"auth_code\":\"6236171220051893816\"}",
+    "terminal_device_data": "{\"device_ip\":\"221.11.52.52\",\"mer_device_type\":\"11\",\"devs_id\":\"SPINTP35142090061111\"}",
+    "combinedpay_data": "[{\"huifu_id\":\"6666000108609999\",\"user_type\":\"merchant\",\"acct_id\":\"F00598652\",\"amount\":\"0.02\"}]",
+    "combinedpay_data_fee_info": "{\"huifu_id\":\"6666000108609999\",\"acct_id\":\"F00598652\"}",
+    "trans_fee_allowance_info": "{\"allowance_fee_amt\":\"0.01\"}"
   },
   "sign": "RSA签名"
 }
@@ -110,12 +120,15 @@
 
 - 官方把 `req_date` 标成 N，但 SDK 示例和后续查询 / 回调都依赖它，实务上建议始终传。
 - 官方把 `method_expand` 标成 Y，但真实是否有强制子字段取决于 `trade_type`。
-- `tx_metadata` 的完整结构见 [aggregate-order-tx-metadata.md](aggregate-order-tx-metadata.md)。
+- `acct_split_bunch`、`terminal_device_data` 是请求顶层字段，不要再包进 `tx_metadata`。
+- 开发确认后，`combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info` 也按请求顶层扩展字段处理，不要再包进 `tx_metadata`。
+- `tx_metadata` 仍保留为扩展参数集合入口，但不要把已确认属于顶层的补贴类字段混塞进去；完整边界见 [aggregate-order-tx-metadata.md](aggregate-order-tx-metadata.md)。
 
 ## 参数校验与构造约束
 
-- `trade_type` 决定 `method_expand` 的对象结构，先校验场景，再决定哪些子字段必须出现。
-- `method_expand`、`tx_metadata` 在业务层不要设计成裸字符串；优先用嵌套 DTO / `Map` / `List` / `ObjectNode` 建模。
+- `trade_type` 先决定场景，再构造该场景自己的 `method_expand` 对象。
+- `method_expand` 的 JSON 内容就是当前渠道对象本身，不要再写成 `{\"T_MINIAPP\": {...}}`、`{\"A_JSAPI\": {...}}` 这种包装结构。
+- `method_expand`、`acct_split_bunch`、`terminal_device_data`、`combinedpay_data`、`combinedpay_data_fee_info`、`trans_fee_allowance_info`、`tx_metadata` 在业务层不要设计成裸字符串；优先用 DTO / `Map` / `List` / `ObjectNode` 建模。
 - 只在调用 SDK 前做一次 JSON 序列化，不要在代码里手写长字符串常量。
 - 对象一旦出现，就要保证子结构完整；不要只传一个空壳对象或半截 JSON。
 - `sub_openid`、`buyer_id`、`user_id`、`auth_code`、`customer_ip`、`devs_id` 这类值若无明确来源，应先暴露缺口，不要让模型补示例值。
@@ -123,11 +136,25 @@
 推荐写法：
 
 ```java
-Map<String, Object> methodExpand = new HashMap<>();
-methodExpand.put("T_MINIAPP", wechatMethodExpand);
-request.setMethodExpand(objectMapper.writeValueAsString(methodExpand));
+request.setTradeType(cmd.getTradeType());
+request.setMethodExpand(objectMapper.writeValueAsString(buildMethodExpand(cmd)));
 
-if (txMetadata != null) {
-    request.setTxMetadata(objectMapper.writeValueAsString(txMetadata));
+if (cmd.getAcctSplitBunch() != null) {
+    request.setAcctSplitBunch(objectMapper.writeValueAsString(cmd.getAcctSplitBunch()));
+}
+if (cmd.getTerminalDeviceData() != null) {
+    request.setTerminalDeviceData(objectMapper.writeValueAsString(cmd.getTerminalDeviceData()));
+}
+if (cmd.getCombinedpayData() != null) {
+    request.addExtendInfo("combinedpay_data", objectMapper.writeValueAsString(cmd.getCombinedpayData()));
+}
+if (cmd.getCombinedpayDataFeeInfo() != null) {
+    request.addExtendInfo("combinedpay_data_fee_info", objectMapper.writeValueAsString(cmd.getCombinedpayDataFeeInfo()));
+}
+if (cmd.getTransFeeAllowanceInfo() != null) {
+    request.addExtendInfo("trans_fee_allowance_info", objectMapper.writeValueAsString(cmd.getTransFeeAllowanceInfo()));
+}
+if (cmd.getTxMetadata() != null) {
+    request.optional("tx_metadata", objectMapper.writeValueAsString(cmd.getTxMetadata()));
 }
 ```
