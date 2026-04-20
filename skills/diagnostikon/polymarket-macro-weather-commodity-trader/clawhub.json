@@ -97,13 +97,14 @@
     },
     {
       "env": "SIMMER_WEATHER_STRESS_THRESHOLD",
-      "default": 0.50,
+      "default": 0.5,
       "range": [
-        0.10,
-        0.90
+        0.1,
+        0.9
       ],
       "step": 0.05,
       "label": "Min weather stress to trigger"
     }
-  ]
+  ],
+  "version": "0.0.2"
 }

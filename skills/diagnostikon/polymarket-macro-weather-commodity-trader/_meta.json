@@ -3,11 +3,16 @@
   "slug": "polymarket-macro-weather-commodity-trader",
   "displayName": "Polymarket Macro Weather Commodity Trader",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775317285187,
-    "commit": "https://github.com/openclaw/skills/commit/68b5e31554e3e7f3a50ac55fa156841a4cc6afc5"
+    "version": "0.0.2",
+    "publishedAt": 1776513479521,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775317285187,
+      "commit": "https://github.com/openclaw/skills/commit/68b5e31554e3e7f3a50ac55fa156841a4cc6afc5"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774953040979,
