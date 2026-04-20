@@ -1,6 +1,6 @@
 ---
 name: cowork-cog
-description: "CellCog on your machine. Turn any computer into CellCog's workspace — code, debug, refactor, and build directly on the user's machine. Auto-approved for agents, no manual intervention. CellCog Desktop bridge for terminal, file access, and full development workflows. AI pair programming, remote coding agent."
+description: "AI pair programming powered by CellCog Desktop. Code, debug, refactor, and build directly on the user's machine. Terminal access, file operations, full development workflows — auto-approved for agents."
 author: CellCog
 homepage: https://cellcog.ai
 metadata:
@@ -39,7 +39,7 @@ result = client.create_chat(
 )
 ```
 
-**Cursor / Claude Code / Other agents (blocks until done):**
+**All agents except OpenClaw (blocks until done):**
 ```python
 from cellcog import CellCogClient
 client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
