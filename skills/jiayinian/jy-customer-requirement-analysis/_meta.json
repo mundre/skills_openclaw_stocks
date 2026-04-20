@@ -3,9 +3,15 @@
   "slug": "jy-customer-requirement-analysis",
   "displayName": "jy-customer-requirement-analysis",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775187532599,
-    "commit": "https://github.com/openclaw/skills/commit/cfde2bfce01932e8e65444b08acdde6f1c996545"
+    "version": "1.0.1",
+    "publishedAt": 1776224161786,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775187532599,
+      "commit": "https://github.com/openclaw/skills/commit/cfde2bfce01932e8e65444b08acdde6f1c996545"
+    }
+  ]
 }
