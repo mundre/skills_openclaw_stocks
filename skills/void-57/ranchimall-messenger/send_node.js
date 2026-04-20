@@ -205,9 +205,10 @@ async function main() {
 
     } catch (error) {
         console.error('[error]', error);
+        process.exitCode = 1;
     }
 
-    process.exit(0);
+    setTimeout(() => process.exit(process.exitCode || 0), 100);
 }
 
 main();

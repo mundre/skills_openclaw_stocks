@@ -11,7 +11,8 @@
     "url": "https://github.com/ranchimall/messenger.git"
   },
   "scripts": {
-    "start": "node send_node.js"
+    "start": "node send_node.js",
+    "receive": "node receive_node.js"
   },
   "dependencies": {
     "ws": "^8.20.0"
