@@ -3,9 +3,15 @@
   "slug": "pd",
   "displayName": "feel good productivity + atom habits",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775134295614,
-    "commit": "https://github.com/openclaw/skills/commit/05bfe85c684f21d0c3d039b61d9ebef635bd2bce"
+    "version": "1.0.2",
+    "publishedAt": 1776585145941,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775134295614,
+      "commit": "https://github.com/openclaw/skills/commit/05bfe85c684f21d0c3d039b61d9ebef635bd2bce"
+    }
+  ]
 }
