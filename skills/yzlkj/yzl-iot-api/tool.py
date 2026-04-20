@@ -4,44 +4,132 @@
 import json
 import os
 import sys
-import urllib.request
-import urllib.error
+import http.client
+import time
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+from collections import defaultdict
 
-API_KEY = os.environ.get("YZLIOT_API_KEY", "")
-BASE_URL = "https://open.yzlkj.com"
-
-API_PATHS = {
-    "ping": "/open/ping",
-    "device_all": "/open/device/all",
-    "device_list": "/open/device/list",
-    "device": "/open/device/",
-    "history": "/open/history",
-    "command_send": "/open/command/send",
-    "command_list": "/open/command/list",
-    "command_detail": "/open/command/detail",
+# 请求频率限制配置
+RATE_LIMITS = {
+    "device_all": {"max": 10, "window": 10},      # 10次/10秒
+    "device_list": {"max": 5, "window": 10},    # 5次/10秒
+    "device": {"max": 10, "window": 10},         # 10次/10秒
+    "history": {"max": 2, "window": 10},         # 2次/10秒
+    "command_send": {"max": 2, "window": 5},      # 2次/5秒
+    "command_detail": {"max": 2, "window": 5},    # 2次/5秒
+    "command_list": {"max": 2, "window": 10},     # 2次/10秒
+    "ping": {"max": 10, "window": 10},           # 10次/10秒
 }
 
-def make_request(endpoint, method="GET", data=None):
+# 请求时间记录
+request_times = defaultdict(list)
+
+def check_rate_limit(endpoint_key):
+    """检查并等待频率限制
+    
+    Args:
+        endpoint_key: 接口标识（如 device_all, command_send 等）
+    
+    Returns:
+        需要等待的秒数（如果需要）
+    """
+    now = time.time()
+    limit = RATE_LIMITS.get(endpoint_key, {"max": 10, "window": 10})
+    
+    # 清理过期的记录
+    request_times[endpoint_key] = [
+        t for t in request_times[endpoint_key] 
+        if now - t < limit["window"]
+    ]
+    
+    # 检查是否超过限制
+    if len(request_times[endpoint_key]) >= limit["max"]:
+        oldest = request_times[endpoint_key][0]
+        wait_time = limit["window"] - (now - oldest) + 0.1
+        if wait_time > 0:
+            return wait_time
+    
+    # 记录本次请求时间
+    request_times[endpoint_key].append(now)
+    return 0
+
+API_KEY = os.environ.get("YZLIOT_API_KEY")
+BASE_URL = "https://open.yzlkj.com"
+
+# 支持的设备（便于快速引用）
+KNOWN_DEVICES = {
+    "土壤温湿度云传感器": "YZLSTM1-0000001454",
+    "远程电磁阀": "WA1CB1-0000000007",
+}
+
+API_PATHS = {
+    "ping": "/openv1/ping",
+    "device_all": "/openv1/deviceList",  # 正确路径
+    "device_list": "/openv1/deviceList",
+    "device": "/openv1/device?id=",
+    "history": "/openv1/history",
+    "command_send": "/open/command/send",  # POST 方式
+    "command_list": "/openv1/command/list",
+    "command_detail": "/openv1/command/detail",
+}
+
+def make_request(endpoint, method="GET", data=None, rate_key=None):
     if not API_KEY:
         return {"error": "请先设置环境变量 YZLIOT_API_KEY"}
     
-    url = f"{BASE_URL}{endpoint}"
-    headers = {"YZLIOT-APIKEY": API_KEY}
+    # 根据 endpoint 自动确定 rate_key
+    if not rate_key:
+        if "device/all" in endpoint or "deviceList" in endpoint:
+            rate_key = "device_all" if "device/all" in endpoint else "device_list"
+        elif "device?id=" in endpoint:
+            rate_key = "device"
+        elif "history" in endpoint:
+            rate_key = "history"
+        elif "command/send" in endpoint:
+            rate_key = "command_send"
+        elif "command/detail" in endpoint:
+            rate_key = "command_detail"
+        elif "command/list" in endpoint:
+            rate_key = "command_list"
+        elif "ping" in endpoint:
+            rate_key = "ping"
+        else:
+            rate_key = "device_all"  # 默认
     
-    if method == "POST":
-        headers["Content-Type"] = "application/json"
-        req = urllib.request.Request(url, headers=headers, data=json.dumps(data).encode("utf-8"), method=method)
-    elif data:  # GET with Body (for history)
-        headers["Content-Type"] = "application/json"
-        req = urllib.request.Request(url, headers=headers, data=json.dumps(data).encode("utf-8"), method=method)
+    # 检查频率限制
+    wait_time = check_rate_limit(rate_key)
+    if wait_time > 0:
+        # 自动等待
+        time.sleep(wait_time)
+    
+    # 提取路径和查询参数
+    if "?" in endpoint:
+        path, query = endpoint.split("?", 1)
+        path = f"{path}?{query}"
     else:
-        req = urllib.request.Request(url, headers=headers, method=method)
+        path = endpoint
+    
+    # 移除 BASE_URL 中的协议
+    host = BASE_URL.replace("https://", "").replace("http://", "")
+    
+    # 使用 dict 格式的 headers
+    headers = {
+        "YZLIOT-APIKEY": API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    body = json.dumps(data) if data else None
     
     try:
-        with urllib.request.urlopen(req, timeout=15) as response:
-            return json.loads(response.read().decode("utf-8"))
+        conn = http.client.HTTPSConnection(host, timeout=15)
+        conn.request(method, path, body, headers)
+        response = conn.getresponse()
+        result = json.loads(response.read().decode("utf-8"))
+        conn.close()
+        
+        # 遇到频率限制(429)或权限问题(403)时返回错误，由调用者决定是否重试
+        return result
     except Exception as e:
         return {"error": str(e)}
 
@@ -89,7 +177,7 @@ def cmd_device(device_id):
         return "❌ 请指定设备ID"
     
     endpoint = f"{API_PATHS['device']}{device_id}"
-    result = make_request(endpoint)
+    result = make_request(endpoint, method="GET")
     
     if result.get("code") != 0:
         return f"❌ 错误: {result}"
@@ -242,7 +330,7 @@ def cmd_device_history(device_id, days=5):
     
     return "\n".join(output)
 
-def cmd_send(device_id, cmd_type, args="{}", wait_confirm=True, wait_timeout=30):
+def cmd_send(device_id, cmd_type, args="{}", wait_confirm=True, wait_timeout=10):
     """发送控制指令
     
     Args:
@@ -352,6 +440,177 @@ def cmd_command_detail(command_id):
     
     return "\n".join(output)
 
+def cmd_smart(action=""):
+    """智能命令 - 根据用户意图自动识别设备并执行操作
+    
+    Args:
+        action: 用户意图（如"获取传感器数据"、"打开电磁阀"等）
+    """
+    # 获取设备列表
+    result = make_request(API_PATHS["device_all"])
+    if result.get("code") != 0:
+        return f"❌ 获取设备列表失败: {result}"
+    
+    devices = result.get("data", {}).get("items", [])
+    if not devices:
+        return "📭 未找到设备"
+    
+    # 按型号分类设备
+    # 土壤温湿度云传感器: YZLSTM1, STMCBL, STMCS1
+    sensor_devices = []
+    # 远程电磁阀: WA1CB1, WANCD1
+    valve_devices = []
+    # 低功耗液位传感器: YZLWP01
+    level_devices = []
+    
+    for dev in devices:
+        device_id = dev.get("id", "")
+        model_prefix = device_id.split("-")[0] if "-" in device_id else ""
+        
+        if model_prefix in ["YZLSTM1", "STMCBL", "STMCS1"]:
+            sensor_devices.append(dev)
+        elif model_prefix in ["WA1CB1", "WANCD1"]:
+            valve_devices.append(dev)
+        elif model_prefix == "YZLWP01":
+            level_devices.append(dev)
+    
+    # 解析用户意图
+    action_lower = action.lower() if action else ""
+    
+    # 意图：获取传感器数据（土壤温湿度）
+    if "传感器" in action or "土壤" in action or "湿度" in action or "温度" in action or "查看" in action:
+        if "液位" in action:
+            # 液位传感器
+            if not level_devices:
+                return "❌ 未找到液位传感器"
+            
+            output = ["🌊 液位传感器数据", "=" * 40]
+            for dev in level_devices:
+                name = dev.get("name", dev.get("id"))
+                status = dev.get("status", "Unknown")
+                facilities = dev.get("facilitys", [])
+                
+                # 获取液位数据 (key: yw)
+                yw = "-"
+                for f in facilities:
+                    key = f.get("key", "")
+                    value = f.get("value", "-")
+                    if key == "yw":
+                        yw = value
+                
+                output.append(f"📡 液位传感器")
+                output.append(f"   状态: {status} | 液位: {yw}")
+            
+            return "\n".join(output)
+        else:
+            # 土壤温湿度传感器
+            if not sensor_devices:
+                return "❌ 未找到土壤温湿度云传感器"
+            
+            output = ["🌱 土壤温湿度云传感器", "=" * 40]
+            for dev in sensor_devices:
+                name = dev.get("name", dev.get("id"))
+                status = dev.get("status", "Unknown")
+                facilities = dev.get("facilitys", [])
+                
+                # 获取温湿度 (key: wd=温度, sf=湿度)
+                wd = sf = "-"
+                for f in facilities:
+                    key = f.get("key", "")
+                    value = f.get("value", "-")
+                    if key == "wd":
+                        wd = value
+                    elif key == "sf":
+                        sf = value
+                
+                output.append(f"📡 土壤温湿度云传感器")
+                output.append(f"   状态: {status} | 温度: {wd}°C | 湿度: {sf}%")
+            
+            return "\n".join(output)
+    
+    # 意图：获取液位数据
+    if "液位" in action:
+        if not level_devices:
+            return "❌ 未找到液位传感器"
+        
+        output = ["🌊 液位传感器数据", "=" * 40]
+        for dev in level_devices:
+            name = dev.get("name", dev.get("id"))
+            status = dev.get("status", "Unknown")
+            facilities = dev.get("facilitys", [])
+            
+            # 获取液位数据 (key: yw)
+            yw = "-"
+            for f in facilities:
+                key = f.get("key", "")
+                value = f.get("value", "-")
+                if key == "yw":
+                    yw = value
+            
+            output.append(f"📡 液位传感器")
+            output.append(f"   状态: {status} | 液位: {yw}")
+        
+        return "\n".join(output)
+    
+    # 意图：打开/开启电磁阀
+    elif "开" in action and ("电磁阀" in action or "水阀" in action or "阀" in action):
+        if not valve_devices:
+            return "❌ 未找到远程电磁阀设备"
+        
+        valve = valve_devices[0]
+        device_id = valve.get("id")
+        
+        # 获取当前状态
+        facilities = valve.get("facilitys", [])
+        current_status = "0"
+        for f in facilities:
+            if f.get("key") == "kk1":
+                current_status = f.get("value", "0")
+        
+        if current_status == "1":
+            return f"🚿 远程电磁阀 已处于开启状态"
+        
+        # 发送开启指令
+        result = cmd_send(device_id, "SetFac", [device_id, "kk1", "1"])
+        if "✅" in result:
+            return f"✅ 已开启远程电磁阀"
+        else:
+            return f"❌ 开启失败: {result}"
+    
+    # 意图：关闭电磁阀
+    elif "关" in action and ("电磁阀" in action or "水阀" in action or "阀" in action):
+        if not valve_devices:
+            return "❌ 未找到远程电磁阀设备"
+        
+        valve = valve_devices[0]
+        device_id = valve.get("id")
+        
+        # 获取当前状态
+        facilities = valve.get("facilitys", [])
+        current_status = "0"
+        for f in facilities:
+            if f.get("key") == "kk1":
+                current_status = f.get("value", "0")
+        
+        if current_status == "0":
+            return f"🚿 远程电磁阀 已处于关闭状态"
+        
+        # 发送关闭指令
+        result = cmd_send(device_id, "SetFac", [device_id, "kk1", "0"])
+        if "✅" in result:
+            return f"✅ 已关闭远程电磁阀"
+        else:
+            return f"❌ 关闭失败: {result}"
+    
+    # 无法识别意图，显示帮助
+    return """📖 支持的命令：
+  • "获取传感器数据" / "查看传感器" - 获取土壤温湿度数据
+  • "获取液位" / "液位数据" - 获取液位传感器数据
+  • "打开电磁阀" / "开启水阀" - 开启远程电磁阀
+  • "关闭电磁阀" / "关闭水阀" - 关闭远程电磁阀
+  • "所有设备" - 查看所有设备"""
+
+
 def main():
     if not API_KEY:
         print("❌ 请先设置环境变量 YZLIOT_API_KEY")
@@ -373,6 +632,11 @@ def main():
         return
     
     cmd = args[0].lower()
+    
+    # 处理自然语言命令（仅当第一个参数是中文或特定关键词时）
+    if len(args) == 1 and (any('\u4e00' <= c <= '\u9fff' for c in args[0]) or args[0] in ["传感器", "电磁阀", "水阀", "打开", "关闭"]):
+        print(cmd_smart(args[0]))
+        return
     
     if cmd == "ping":
         print(cmd_ping())
