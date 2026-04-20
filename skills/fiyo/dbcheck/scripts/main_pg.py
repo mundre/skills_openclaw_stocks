@@ -1,8 +1,9 @@
 ﻿#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+from version import __version__ as VER
+
 """
-PostgreSQL 数据库自动化健康巡检工具 v1.0
-参照 MySQL 巡检工具 (main.py) 结构编写
+PostgreSQL 数据库自动化健康巡检工具 {VER}
 依赖: psycopg2, python-docx, docxtpl, openpyxl, psutil, paramiko
 """
 import warnings
@@ -1768,14 +1769,14 @@ def show_main_menu():
     """
     显示程序主菜单并等待用户选择。
 
-    打印 PostgreSQL 数据库巡检工具 v2.0 的主菜单，
+    打印 PostgreSQL 数据库巡检工具 的主菜单，
     菜单选项：1 单机巡检、2 批量巡检、3 创建 Excel 模板、4 退出。
     循环接受输入，直到用户输入有效选项（1-4）为止。
 
     :return: 用户选择的菜单项字符串（"1"/"2"/"3"/"4"）
     """
     print("\n" + "=" * 60)
-    print("            PostgreSQL 数据库巡检工具 v2.0")
+    print("            DBCheck - PostgreSQL 巡检工具 " + VER)
     print("=" * 60)
     print("1. 单机巡检")
     print("2. 批量巡检(从Excel导入)")
@@ -2190,12 +2191,12 @@ class saveDoc(object):
                 return True
             except AttributeError as ae:
                 if 'part' in str(ae):
-                    print("⚠️ 检测到模板兼容性问题，启用增强备用渲染...")
+                    pass  # 静默降级到备用渲染
                     return self._fallback_render()
                 else:
                     raise
             except Exception as e:
-                print(f"⚠️ docxtpl渲染异常: {e}，启用增强备用渲染...")
+                pass  # 静默降级到备用渲染
                 return self._fallback_render()
 
         except Exception as e:
@@ -2513,10 +2514,10 @@ class saveDoc(object):
                 doc.add_paragraph(note)
 
             doc.save(self.ofile)
-            print("✅ 增强备用渲染成功生成详细报告")
+            pass  # 备用渲染成功
             return True
         except Exception as e:
-            print(f"❌ 备用渲染失败: {e}")
+            pass  # 备用渲染失败
             import traceback
             traceback.print_exc()
             return False
@@ -2623,48 +2624,12 @@ def print_banner():
   ██║  ██║██╔══██╗██║     ██╔══██║██╔══╝  ██║     ██╔═██╗
   ██████╔╝██████╔╝╚██████╗██║  ██║███████╗╚██████╗██║  ██╗
   ╚═════╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝{RESET}
-{GREEN}{BOLD}             🐘  PostgreSQL  数据库巡检工具  v2.0{RESET}
+{GREEN}{BOLD}             🐘  DBCheck - PostgreSQL 巡检工具  {VER}{RESET}
 {DIM}  ──────────────────────────────────────────────────────────{RESET}
 {YELLOW}  支持单机巡检 / 批量巡检 / Word报告 / SSH系统采集{RESET}
 {DIM}  ──────────────────────────────────────────────────────────{RESET}
 """
     print(art)
-
-def check_license():
-    """
-    检查并验证许可证有效性。
-
-    实例化 LicenseValidator 并调用 validate_license()：
-    - 验证通过：打印成功消息后返回
-    - 验证失败：提示用户是否重新创建许可证；
-      重新创建仍失败则调用 sys.exit(1) 退出程序
-    - 验证过程异常：打印警告但不退出，允许程序继续运行
-    """
-    try:
-        validator = LicenseValidator()
-        is_valid, message, remaining_days = validator.validate_license()
-        if not is_valid:
-            print(f"❌ {message}")
-            print(f"📁 许可证文件位置: {validator.license_file}")
-            retry = input("是否尝试重新创建许可证? (y/n) [y]: ").strip().lower()
-            if retry in ['', 'y', 'yes']:
-                validator._create_trial_license()
-                is_valid, message, remaining_days = validator.validate_license()
-                if is_valid:
-                    print(f"✅ {message}")
-                    return
-                else:
-                    print(f"❌ 重新创建许可证失败: {message}")
-                    sys.exit(1)
-            else:
-                print("请联系管理员获取有效许可证")
-                sys.exit(1)
-        else:
-            print(f"✅ {message}")
-            print()
-    except Exception as e:
-        print(f"❌ 许可证检查异常: {e}")
-        print("程序将继续运行，但部分功能可能受限")
 
 def single_inspection():
     """
@@ -2835,18 +2800,22 @@ def main():
     执行流程：
     1. 记录程序启动时间
     2. 打印横幅（print_banner）
-    3. 验证许可证（check_license）
-    4. 进入主菜单循环：
+    3. 进入主菜单循环：
        - 选项 1：执行单机巡检（single_inspection）
        - 选项 2：执行批量巡检（batch_inspection）
        - 选项 3：创建 Excel 模板（create_excel_template）
        - 选项 4：退出程序
-    5. 每次操作完成后询问是否返回主菜单
-    6. 程序退出前打印总运行耗时
+    4. 每次操作完成后询问是否返回主菜单
+    5. 程序退出前打印总运行耗时
     """
     start_time = time.time()
+
+    # 支持从主入口通过 --template 直接生成 Excel 模板
+    if len(sys.argv) > 1 and sys.argv[1] == '--template':
+        create_excel_template()
+        return
+
     print_banner()
-    check_license()
     while True:
         choice = show_main_menu()
         if choice == '1':

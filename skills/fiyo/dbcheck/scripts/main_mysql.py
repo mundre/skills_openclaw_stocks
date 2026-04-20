@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+from version import __version__ as VER
 
 # 磁盘采集时忽略的外接 ISO / Media 挂载点前缀
 IGNORE_MOUNTS = {'/mnt/iso', '/media', '/run/media', '/iso', '/cdrom'}
@@ -55,6 +56,7 @@ template = ./templates/wordtemplates_v2.0.docx
 output = /tmp/MySQLCheckReport.docx
 
 [variables]
+datadir = show global variables like 'datadir';
 myversion = SELECT VERSION() as version;
 threads_connected = SHOW STATUS LIKE 'Threads_connected';
 back_log = show variables like 'back_log%';
@@ -313,7 +315,28 @@ class RemoteSystemInfoCollector:
         except Exception as e:
             print(f"获取磁盘信息失败: {e}")
             return []
-    
+        except Exception as e:
+            print(f"获取磁盘信息失败: {e}")
+            return []
+
+    def get_mysql_datadir(self):
+        """
+        通过远程 Shell 命令采集 MySQL datadir 路径。
+
+        使用 `mysql -e "show global variables like 'datadir'"` 命令查询。
+
+        :return: 包含 datadir 路径的字典，字段：datadir；失败时返回空字典
+        """
+        try:
+            cmd = 'mysql -e "show global variables like \'datadir\';" 2>/dev/null | tail -n 1 | awk \'{print $2}\''
+            output, _ = self.execute_command(cmd)
+            if output:
+                return {'datadir': output.strip()}
+            return {}
+        except Exception as e:
+            print(f"获取MySQL datadir失败: {e}")
+            return {}
+
     def get_system_info(self):
         """
         聚合采集远程主机的全部系统信息。
@@ -334,7 +357,8 @@ class RemoteSystemInfoCollector:
                 'disk': self.get_disk_info(),
                 'hostname': "",
                 'platform': "",
-                'boot_time': ""
+                'boot_time': "",
+                'mysql_datadir': ""
             }
             cmd = "hostname"
             output, _ = self.execute_command(cmd)
@@ -345,6 +369,10 @@ class RemoteSystemInfoCollector:
             cmd = "who -b | awk '{print $3 \" \" $4}'"
             output, _ = self.execute_command(cmd)
             if output: system_info['boot_time'] = output.strip()
+            # 采集 MySQL datadir
+            datadir_result = self.get_mysql_datadir()
+            if datadir_result:
+                system_info['mysql_datadir'] = datadir_result.get('datadir', '')
             return system_info
         finally:
             self.disconnect()
@@ -1735,14 +1763,14 @@ def show_main_menu():
     """
     显示程序主菜单并等待用户选择。
 
-    打印 MySQL 数据库巡检工具 v2.0 的主菜单，
+    打印 MySQL 数据库巡检工具 的主菜单，
     菜单选项：1 单机巡检、2 批量巡检、3 创建 Excel 模板、4 退出。
     循环接受输入，直到用户输入有效选项（1-4）为止。
 
     :return: 用户选择的菜单项字符串（"1"/"2"/"3"/"4"）
     """
     print("\n" + "=" * 60)
-    print("            MySQL 数据库巡检工具 v2.0")
+    print("            DBCheck - MySQL 巡检工具 " + VER)
     print("=" * 60)
     print("1. 单机巡检")
     print("2. 批量巡检(从Excel导入)")
@@ -1900,6 +1928,12 @@ class getData(object):
                 disk_info = get_host_disk_usage()
                 system_info['disk_list'] = disk_info
             self.context.update({"system_info": system_info})
+            # 如果通过SSH获取到MySQL datadir，覆盖SQL查询结果（SSH更精准）
+            if self.ssh_info and self.ssh_info.get('ssh_host') and system_info.get('mysql_datadir'):
+                ssh_datadir = system_info.get('mysql_datadir', '')
+                if ssh_datadir:
+                    self.context['datadir'] = [{'Value': ssh_datadir}]
+                    print(f"\n✅ 通过SSH获取MySQL datadir: {ssh_datadir}")
         except Exception as e:
             print(f"\n❌ 收集系统信息失败: {e}")
             self.context.update({"system_info": {
@@ -2163,12 +2197,12 @@ class saveDoc(object):
                 return True
             except AttributeError as ae:
                 if 'part' in str(ae):
-                    print("⚠️ 检测到模板兼容性问题，启用增强备用渲染...")
+                    pass  # 静默降级到备用渲染
                     return self._fallback_render()
                 else:
                     raise
             except Exception as e:
-                print(f"⚠️ docxtpl渲染异常: {e}，启用增强备用渲染...")
+                pass  # 静默降级到备用渲染
                 return self._fallback_render()
 
         except Exception as e:
@@ -2462,10 +2496,10 @@ class saveDoc(object):
                 doc.add_paragraph(note)
 
             doc.save(self.ofile)
-            print("✅ 增强备用渲染成功生成详细报告")
+            pass  # 备用渲染成功
             return True
         except Exception as e:
-            print(f"❌ 备用渲染失败: {e}")
+            pass  # 备用渲染失败
             import traceback
             traceback.print_exc()
             return False
@@ -2542,7 +2576,7 @@ def print_banner():
   ██║  ██║██╔══██╗██║     ██╔══██║██╔══╝  ██║     ██╔═██╗
   ██████╔╝██████╔╝╚██████╗██║  ██║███████╗╚██████╗██║  ██╗
   ╚═════╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝{RESET}
-{GREEN}{BOLD}              🐬  MySQL  数据库巡检工具  v2.0{RESET}
+{GREEN}{BOLD}              🐬  DBCheck - MySQL 巡检工具  {VER}{RESET}
 {DIM}  ──────────────────────────────────────────────────────────{RESET}
 {YELLOW}  支持单机巡检 / 批量巡检 / Word报告 / SSH系统采集{RESET}
 {DIM}  ──────────────────────────────────────────────────────────{RESET}
@@ -2761,8 +2795,14 @@ def main():
     6. 程序退出前打印总运行耗时
     """
     start_time = time.time()
+
+    # 支持从主入口通过 --template 直接生成 Excel 模板
+    if len(sys.argv) > 1 and sys.argv[1] == '--template':
+        create_excel_template()
+        return
+
     print_banner()
-    check_license()
+    # check_license()  # 许可证验证已屏蔽
     while True:
         choice = show_main_menu()
         if choice == '1':
