@@ -148,7 +148,7 @@ mcporter call jy-financedata-api.FinancialAnalysis query="600519.SH 财务指标
 **工具调用**：
 ```bash
 # 使用 StockMultipleFactorFilter 筛选相关股票
-mcporter call jy-financedata-tool.StockMultipleFactorFilter query="石油开采行业 上市公司" --output json
+mcporter call jy-financedata-tool.SmartStockSelection query="石油开采行业 上市公司" --output json
 # 使用 StockBelongConcept 查询概念板块归属
 mcporter call jy-financedata-api.StockBelongConcept query="原油概念 股票" --output json
 # 使用 MarketPerformanceComparison 对比市场表现

@@ -3,11 +3,16 @@
   "slug": "jy-news-interpretation",
   "displayName": "jy-news-interpretation",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776002649661,
-    "commit": "https://github.com/openclaw/skills/commit/3e2f33a3559dcce3be450bb4273c4830ef1612c0"
+    "version": "1.0.2",
+    "publishedAt": 1776224180342,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776002649661,
+      "commit": "https://github.com/openclaw/skills/commit/3e2f33a3559dcce3be450bb4273c4830ef1612c0"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775188637958,
