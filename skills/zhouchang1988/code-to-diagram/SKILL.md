@@ -1,6 +1,6 @@
 ---
 name: "code-to-diagram"
-description: "分析源代码逻辑，生成包含 Mermaid 流程图（.mmd）的 markdown 文件并渲染为 PNG 图片。支持流程图、状态机、时序图等多种图表类型。"
+description: "分析源代码逻辑，生成包含 Mermaid 流程图（.mmd）的 markdown 文件并渲染为 PNG 图片。支持流程图、状态机、时序图、架构图等多种图表类型。"
 version: "1.0.0"
 tags: ["diagram", "mermaid", "flowchart", "visualization", "code-analysis"]
 bindShells: ["ClaudeCode"]
@@ -30,6 +30,15 @@ bindShells: ["ClaudeCode"]
 | 接口 / 消息传递 | `sequenceDiagram` |
 | 实体关系 | `erDiagram` |
 | 简单流程 | `flowchart LR` |
+| **系统架构 / 分层架构** | **`flowchart TB` + `subgraph`** |
+| **微服务架构** | **`flowchart TB` + `subgraph` 或 `C4Container`** |
+| **部署架构** | **`flowchart TB`** |
+
+**识别架构图的信号**：
+- 用户明确要求"架构图"、"系统图"、"部署图"、"服务拓扑"
+- 代码有多层目录结构（如 `controllers/`、`services/`、`models/`、`repositories/`）
+- 代码有微服务边界或模块间调用
+- 需要展示系统组件及其依赖关系
 
 ### 第二步 —— 生成 Mermaid 源码
 
@@ -130,6 +139,48 @@ node ~/.claude/skills/code-to-diagram/scripts/code_to_diagram.js render \
   --theme default \
   --bg white \
   --output-dir /workspace/myproject
+```
+
+### 绘制系统架构图
+
+使用 `flowchart TB` + `subgraph` 绘制分层架构：
+
+```mermaid
+flowchart TB
+    subgraph 客户端层["客户端层"]
+        A[Web App]
+        B[Mobile App]
+    end
+    subgraph 服务层["服务层"]
+        C[API Gateway]
+        D[User Service]
+        E[Order Service]
+    end
+    subgraph 数据层["数据层"]
+        F[(PostgreSQL)]
+        G[(Redis Cache)]
+    end
+    A --> C
+    B --> C
+    C --> D
+    C --> E
+    D --> F
+    E --> F
+    D --> G
+```
+
+使用 C4 Model 绘制标准化架构图（需要 mermaid-cli 10.6+）：
+
+```mermaid
+C4Context
+    title 电商系统架构图
+    Person(user, "用户", "系统使用者")
+    System(web_app, "Web应用", "提供用户界面")
+    System(api, "API服务", "业务逻辑处理")
+    SystemDb(db, "数据库", "PostgreSQL")
+    Rel(user, web_app, "使用", "HTTPS")
+    Rel(web_app, api, "调用", "REST API")
+    Rel(api, db, "读写", "TCP/IP")
 ```
 
 ---
