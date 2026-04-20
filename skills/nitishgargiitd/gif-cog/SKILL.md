@@ -1,6 +1,6 @@
 ---
 name: gif-cog
-description: "AI GIF generator — reaction GIFs, product loops, cinemagraphs, social media animations from text or images. Seamless looping, platform-optimized sizes for Discord, Twitter, Slack, WhatsApp. Not a video-to-GIF converter — creates from scratch using video generation + intelligent optimization. Powered by CellCog."
+description: "AI GIF generation powered by CellCog. Reaction GIFs, product loops, cinemagraphs, social media animations. Seamless looping, platform-optimized for Discord, Twitter, Slack, WhatsApp. Created from scratch, not converted."
 metadata:
   openclaw:
     emoji: "🎞️"
@@ -32,7 +32,7 @@ result = client.create_chat(
 )
 ```
 
-**Cursor / Claude Code / Other agents (blocks until done):**
+**All agents except OpenClaw (blocks until done):**
 ```python
 from cellcog import CellCogClient
 client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
@@ -267,6 +267,6 @@ Tell CellCog which platform you're targeting and it will optimize automatically.
 
 ## If CellCog is not installed
 
-**Cursor:** Run `/cellcog-setup` to install and authenticate.
-**OpenClaw:** Run `clawhub install cellcog` for SDK setup.
-**Other agents:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
