@@ -3,9 +3,15 @@
   "slug": "netseeker",
   "displayName": "NetSeeker Game",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775835781822,
-    "commit": "https://github.com/openclaw/skills/commit/bb311ca93ed6b4b2abed0ff0a15f380b33b8173f"
+    "version": "1.0.2",
+    "publishedAt": 1776178320881,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775835781822,
+      "commit": "https://github.com/openclaw/skills/commit/bb311ca93ed6b4b2abed0ff0a15f380b33b8173f"
+    }
+  ]
 }
