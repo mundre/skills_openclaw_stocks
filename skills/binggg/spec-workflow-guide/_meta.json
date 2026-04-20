@@ -3,9 +3,15 @@
   "slug": "spec-workflow-guide",
   "displayName": "Spec Workflow Guide",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1776076212361,
-    "commit": "https://github.com/openclaw/skills/commit/feeb380a6c3bcfd42c156e046f0c9a1839c1b0b6"
+    "version": "1.5.0",
+    "publishedAt": 1776227224808,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1776076212361,
+      "commit": "https://github.com/openclaw/skills/commit/feeb380a6c3bcfd42c156e046f0c9a1839c1b0b6"
+    }
+  ]
 }
