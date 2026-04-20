@@ -1,11 +1,13 @@
 ---
 name: skill-creator
 slug: skylv-skill-creator
-version: 1.0.0
+version: 1.0.2
 description: "OpenClaw Skill Generator. Create production-ready OpenClaw Skills from descriptions. Triggers: create skill, build skill, new skill, skill template, OpenClaw skill development."
 author: SKY-lv
 license: MIT
 tags: [openclaw, skill, generator, template]
+keywords: skill, scaffolding, template, creation
+triggers: skill creator
 ---
 
 # Skill Creator — OpenClaw Skill 生成助手
@@ -171,3 +173,9 @@ clawhub publish ./skills/todo-manager \
 - ClawHub 文档：https://docs.openclaw.ai/tools/clawhub
 - Skill 创建指南：https://docs.openclaw.ai/skills/creating
 - 技能市场：https://clawhub.ai
+
+## Usage
+
+1. Install the skill
+2. Configure as needed
+3. Run with OpenClaw
