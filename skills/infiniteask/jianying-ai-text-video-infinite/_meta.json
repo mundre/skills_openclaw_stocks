@@ -1,11 +1,17 @@
 {
   "owner": "infiniteask",
   "slug": "jianying-ai-text-video-infinite",
-  "displayName": "jianying-ai-text-video-infinite",
+  "displayName": "剪映AI文字成片_无限",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775690111396,
-    "commit": "https://github.com/openclaw/skills/commit/611a7013b28070c9235c3f14ef6ee0d73a5b5d4a"
+    "version": "1.0.2",
+    "publishedAt": 1776599732033,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775690111396,
+      "commit": "https://github.com/openclaw/skills/commit/611a7013b28070c9235c3f14ef6ee0d73a5b5d4a"
+    }
+  ]
 }
