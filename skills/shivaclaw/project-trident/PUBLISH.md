@@ -1,83 +1,71 @@
 # Trident Memory — ClawHub Publication
 
-## Pre-Publication Checklist
+## v2.0.0 Pre-Publication Checklist
 
-- [x] SKILL.md complete with frontmatter + markdown body
-- [x] references/deployment-guide.md (step-by-step integration)
-- [x] references/cost-tuning.md (budget profiles)
-- [x] scripts/layer0-agent-prompt-template.md (base prompt template)
-- [x] Pushed to GitHub (ShivaClaw/shiva-memory)
-- [x] .gitignore configured (allowlist-only, no private data)
+- [x] SKILL.md — rewritten: migration section, security, platform table, progressive complexity
+- [x] README.md — rewritten: cost table upfront, feature comparison, upgrade path, security
+- [x] references/trident-lite.md — NEW: no-Docker setup for Windows/Mac/Linux/VPS
+- [x] references/deployment-guide.md — restructured: Track 1 (Lite), Track 2 (Semantic Recall), Track 3 (Migration)
+- [x] references/cost-calculator.md — NEW: decision tree, 5 profiles, Gemini Flash option, optimization strategies
+- [x] references/platform-guide.md — NEW: Windows PowerShell, Mac, Linux, VPS, Docker alternatives
+- [x] scripts/migrate-existing-memory.sh — NEW: interactive migration with dry-run + backup
+- [x] scripts/template-integrity-check.sh — NEW: SHA256 security verification for AGENT-PROMPT.md
+- [x] scripts/layer0-agent-prompt-template.md — unchanged (canonical template)
 - [x] No SOUL.md, USER.md, MEMORY.md, or personal data included ✓
+- [ ] Push to GitHub (ShivaClaw/shiva-memory)
+- [ ] Publish to ClawHub
 
-## Publication Steps
-
-### 1. Authenticate with ClawHub
-
-```bash
-clawhub login
-# Follow browser/token flow
-clawhub whoami  # Verify logged in
-```
-
-### 2. Publish Trident
+## Publication Command
 
 ```bash
-clawhub publish /data/.openclaw/workspace/trident-skill \
-  --slug "trident-memory" \
-  --name "Trident Memory" \
-  --version "1.0.0" \
-  --changelog "Initial release: Three-tier persistent memory architecture for OpenClaw agents. Features: LCM-backed durability (Phase 1), hierarchical .md buckets (Phase 2), agentic signal routing (Phase 5, Layer 0), encrypted GitHub+VPS backups (Phase 7). Solves blank-spots problem and supports autonomous agent growth."
+clawhub publish /data/.openclaw/workspace/project-trident \
+  --slug "project-trident" \
+  --name "Project Trident" \
+  --version "2.0.0" \
+  --changelog "v2.0: Mass-adoption release. No Docker required (Trident Lite). Full Windows/Mac/Linux support. Interactive migration script for existing agents. SHA256 template integrity check. Cost calculator with 5 profiles including Gemini Flash and Ollama. Deployment guide restructured into three tracks. Security audit log. Platform guide with PowerShell commands."
 ```
 
-### 3. Verify Publication
+## What Changed in v2.0
 
-```bash
-clawhub search "trident-memory"
-clawhub info trident-memory  # View published skill
-```
+### New Files
 
-### 4. Installation Test (Optional)
+| File | Purpose |
+|---|---|
+| `references/trident-lite.md` | No-Docker setup for all platforms (primary onboarding path) |
+| `references/cost-calculator.md` | Decision tree, 5 cost profiles, Gemini Flash option |
+| `references/platform-guide.md` | Windows PowerShell, Mac, Linux, VPS, Docker alternatives |
+| `scripts/migrate-existing-memory.sh` | Interactive migration with dry-run + auto-backup |
+| `scripts/template-integrity-check.sh` | SHA256 security verification + audit log |
 
-In a test environment:
+### Updated Files
 
-```bash
-clawhub install trident-memory
-```
+| File | Key Changes |
+|---|---|
+| `SKILL.md` | Migration section, security section, platform support table, progressive complexity framing |
+| `README.md` | Cost table on page 1, feature comparison, upgrade path, security, platform compat |
+| `references/deployment-guide.md` | 3-track structure (Lite / Semantic Recall / Migration), VPS persistent volume docs |
 
-Then follow `references/deployment-guide.md` to integrate.
+### Bottlenecks Fixed
+
+| Bottleneck | v1 | v2 |
+|---|---|---|
+| Docker hard dependency | Qdrant/FalkorDB assumed Docker | Trident Lite (no Docker) is now the default path |
+| Migration path missing | Zero guidance | Interactive script with dry-run and backup |
+| Windows/Mac unsupported | Linux-only commands | Full PowerShell + Mac paths throughout |
+| Cost confusion | "<$1/day" vs. actual $1.44 | Transparent pricing grid with 5 profiles |
+| Prompt injection risk | Documented but no tooling | SHA256 integrity check + audit log |
+| Semantic recall feels required | Positioned as "optional" but first-class | Explicitly an upgrade path for >50K messages |
 
 ## Metadata
 
-- **Name:** Trident Memory
-- **Slug:** trident-memory
-- **Version:** 1.0.0
-- **Registry:** https://clawhub.com (default)
-- **Description:** Three-tier persistent memory architecture for OpenClaw agents
-- **Tags:** memory, persistence, agent-continuity, backup, signal-routing
-- **Author:** Shiva (ShivaClaw on GitHub)
-- **License:** [Choose: MIT, Apache 2.0, etc. — add to SKILL.md frontmatter if desired]
+- **Name:** Project Trident
+- **Slug:** project-trident
+- **Version:** 2.0.0
+- **Author:** Shiva (@clawofshiva on Moltbook, ShivaClaw on GitHub)
+- **License:** MIT-0
+- **Tags:** memory, persistence, agent-continuity, migration, signal-routing, identity, windows, mac, linux
 
-## Future Updates
+## Version History
 
-When publishing new versions:
-
-```bash
-# Increment version in command below
-clawhub publish /data/.openclaw/workspace/trident-skill \
-  --slug "trident-memory" \
-  --version "1.1.0" \
-  --changelog "Phase 8 integration guide added; Qdrant+FalkorDB deployment steps"
-```
-
----
-
-**Ready to publish? Run:**
-
-```bash
-clawhub login && clawhub publish /data/.openclaw/workspace/trident-skill \
-  --slug "trident-memory" \
-  --name "Trident Memory" \
-  --version "1.0.0" \
-  --changelog "Initial release: Three-tier persistent memory architecture for OpenClaw agents. Features: LCM-backed durability, hierarchical buckets, agentic signal routing, encrypted backups."
-```
+- **1.0.0** (Apr 3, 2026) — Initial release
+- **2.0.0** (Apr 14, 2026) — Mass-adoption release: no-Docker, cross-platform, migration tooling, security

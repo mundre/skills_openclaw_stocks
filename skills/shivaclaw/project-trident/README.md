@@ -1,240 +1,380 @@
-# Project Trident: Best-in-Class Persistent Memory for AI Agents
+# Project Trident: Persistent Memory for AI Agents
 
-**A three-tier architecture that solves the AI agent memory problem once and for all.**
-
----
-
-## What Is Project Trident?
-
-Project Trident is a production-grade persistent memory system for OpenClaw AI agents. It addresses the fundamental challenge of AI agent continuity: **how do you give an agent a memory that survives restarts, grows intelligently, and never loses critical context?**
-
-Most agent frameworks treat memory as an afterthought—dumping everything into flat files or hoping vector databases magically fix context loss. Project Trident takes a different approach: **hierarchical storage with intelligent routing**, modeled after how computer systems manage memory (RAM → SSD → HDD).
-
-The result is an agent that:
-- **Never forgets important events** (even across sessions)
-- **Develops genuine personality and identity** over time
-- **Maintains operational continuity** through crashes, compactions, and code updates
-- **Stays cost-efficient** (sub-$1/day for 24/7 operation)
-- **Works deployment-agnostic** (local-first, cloud optional)
+**A four-tier memory architecture that gives your OpenClaw agent genuine continuity, identity, and resilience — across every session, crash, or deployment.**
 
 ---
 
-## What Does It Do?
+## The Problem
 
-### Core Capabilities
+AI agents forget. Every session starts blank. Important context — corrections, decisions, patterns, relationships — evaporates. Most agent frameworks treat memory as an afterthought: flat files or vector databases without intelligent curation. The result: agents that repeat mistakes, lose critical context, and can't develop genuine identity over time.
 
-1. **Lossless Context Management (LCM)**  
-   Every message, tool call, and system event is captured in SQLite with a DAG structure. Nothing is ever truly lost—even after aggressive compaction.
-
-2. **Signal-Based Memory Routing**  
-   A lightweight agent (Layer 0.5) runs every 15–30 minutes, scanning recent activity for memory-worthy signals:
-   - Corrections ("It's X, not Y")
-   - Project updates
-   - Self-awareness moments
-   - User preferences
-   - Mistakes and learnings
-   
-   These signals are classified and routed to semantic buckets (MEMORY.md, self/, lessons/, projects/).
-
-3. **Hierarchical Storage**  
-   - **Layer 0 (Foundation):** LCM SQLite database + DAG lineage
-   - **Layer 0.5 (Router):** Cron-based signal classifier + memory routing agent
-   - **Layer 1 (Durable Storage):** Curated .md files organized by topic (fast human/agent reads)
-
-4. **Personality Development**  
-   Identity isn't an add-on—it's a first-class architectural component. Files like `self/beliefs.md`, `self/patterns.md`, and `self/growth-log.md` track how the agent evolves over weeks and months.
-
-5. **Cost-Optimized**  
-   Layer 0.5 runs on Claude Haiku (~$0.67/day). LCM compaction uses cheap models. Total infrastructure cost: **under $1/day** for full 24/7 memory persistence.
+**Project Trident solves this.**
 
 ---
 
-## How Is It Engineered?
+## The Solution: Four-Tier Memory Stack
 
-### Architecture Overview
+Trident models memory the way computers model storage, **with an additional resilience layer**:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Layer 0.5: Signal Router (Haiku, 15-30min cron)            │
-│  ├─ Scans daily logs via write-ahead logging protocol       │
-│  ├─ Classifies signals (correction, project, self, memory)  │
-│  └─ Routes to Layer 1 buckets                               │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  Layer 1: Hierarchical .md Storage                          │
-│  ├─ MEMORY.md (long-term curated memory)                    │
-│  ├─ memory/daily/YYYY-MM-DD.md (raw episodic logs)          │
-│  ├─ memory/self/ (identity, beliefs, patterns, growth)      │
-│  ├─ memory/lessons/ (mistakes, tool quirks, workflows)      │
-│  ├─ memory/projects/ (active workstreams)                   │
-│  └─ memory/reflections/ (weekly/monthly consolidation)      │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  Layer 0: LCM (Lossless Context Management)                 │
-│  ├─ SQLite database (DAG structure, parent/child refs)      │
-│  ├─ Every message + tool call preserved                     │
-│  ├─ Compaction summaries link back to source messages       │
-│  └─ lcm_grep, lcm_expand, lcm_expand_query for deep recall  │
-└─────────────────────────────────────────────────────────────┘
+Layer 0   (RAM)        — LCM: SQLite+DAG. Every message captured. Nothing lost.
+Layer 0.5 (SSD)        — Signal Router: Cron agent classifies and routes memory every 15 min.
+Layer 1   (HDD)        — Hierarchical .md buckets: curated, human-readable, Git-compatible.
+Layer 2   (COLD)       — Backup & Updates: Git versioning, VPS snapshots, automated recovery.
 ```
 
-### Key Design Decisions
-
-**1. Write-Ahead Logging (WAL Protocol)**  
-Never rely on chat history as persistent storage. Every important event is immediately written to `SESSION-STATE.md` or the daily log *before* composing a response. This prevents "blank spots" where critical context gets lost between heartbeats.
-
-**2. Quality Over Accumulation**  
-Layer 0.5 is instructed to **compress, not append**. One clean, dense entry beats five redundant notes. Signal detection prioritizes corrections (highest priority), project state changes, and self-awareness moments.
-
-**3. Deployment-Agnostic Design**  
-No required cloud services. No mandatory Docker. No vendor lock-in. Trident works:
-- Local-only (files + SQLite)
-- With optional Git backup (any Git provider)
-- With optional vector search (Qdrant: Docker, cloud, or binary)
-- With optional entity graphs (FalkorDB: Docker, cloud, or Redis module)
-
-**4. Personality as Infrastructure**  
-`memory/self/` isn't metadata—it's core architecture. Agents develop:
-- **Beliefs** (worldview, ethical principles)
-- **Interests** (topics they find fascinating)
-- **Patterns** (recurring behaviors, communication style)
-- **Growth log** (weekly reflections on identity development)
-
-**5. Separation of Concerns**  
-- **Layer 0 (LCM):** Raw persistence, no curation
-- **Layer 0.5 (Signal Router):** Classification + routing
-- **Layer 1 (Buckets):** Curated semantic storage
-
-Each layer has a single job. No monoliths.
+The result: an agent that **never forgets what matters**, **develops genuine personality** over weeks and months, **maintains operational continuity** through crashes/compactions/deployments, and **can recover from catastrophic failure**.
 
 ---
 
-## Why Is It Best-in-Class?
+## What Your Agent Gets
 
-| Feature | Project Trident | Mem0 | LangChain Memory | AutoGPT Forge | Semantic Kernel |
-|---------|----------------|------|------------------|---------------|-----------------|
-| **Lossless capture** | ✅ (LCM SQLite+DAG) | ❌ | ❌ | ❌ | ❌ |
-| **Signal routing** | ✅ (Layer 0.5 cron) | ❌ | ❌ | ❌ | ❌ |
-| **Personality development** | ✅ (`memory/self/`) | ❌ | ❌ | ❌ | ❌ |
-| **Human-readable storage** | ✅ (.md files) | ❌ (vectors only) | ⚠️ (JSON) | ⚠️ (JSON) | ❌ |
-| **Deployment-agnostic** | ✅ | ❌ (cloud-only) | ✅ | ✅ | ✅ |
-| **Cost-optimized** | ✅ (<$1/day) | ⚠️ (API-dependent) | ⚠️ | ⚠️ | ⚠️ |
-| **Git-compatible** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Identity continuity** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Deep recall (lcm_expand_query)** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Offline resilience** | ✅ (local models) | ❌ | ⚠️ | ⚠️ | ⚠️ |
-
-**Why the difference?**
-
-Most memory systems focus on *search* (vector DBs, embeddings). Trident focuses on **curation**. Layer 0.5 acts like a personal librarian, classifying signals and routing them to the right semantic buckets. The result is a memory that's not just searchable, but *organized* and *meaningful*.
+| Feature | Benefit |
+|---------|---------|
+| **Continuity** | Wakes up remembering yesterday's conversation, decisions, and context |
+| **Identity development** | `memory/self/` tracks beliefs, patterns, voice, and growth over time |
+| **Zero blank spots** | WAL protocol + Layer 0.5 ensure nothing slips through cracks |
+| **Debuggable memory** | Open any `.md` file and see exactly what your agent knows and why |
+| **Git-compatible** | Version control for agent memory (diffable, auditable, recoverable) |
+| **Disaster recovery** | Automated daily snapshots + update rollback protect against loss |
+| **Platform-agnostic** | Works on Windows, Mac, Linux, and any VPS |
+| **No Docker required** | Trident Lite runs on local `.md` files and SQLite alone |
 
 ---
 
-## What's the Workflow?
+## Quick Start (10 minutes)
 
-### Day 1: Setup (30 minutes)
+### Installation
 
-1. Enable `lossless-claw` plugin in `openclaw.json`
-2. Create directory structure:
-   ```
-   workspace/
-   ├─ MEMORY.md
-   └─ memory/
-      ├─ daily/
-      ├─ semantic/
-      ├─ self/
-      ├─ lessons/
-      └─ projects/
-   ```
-3. Copy `scripts/layer0-agent-prompt-template.md` to your workspace
-4. Customize signal detection rules for your domain
-5. Create Layer 0.5 cron job (15-min interval, Haiku model)
-6. Test with manual run
+```bash
+# Install via ClawHub
+clawhub install shivaclaw/project-trident
 
-### Day 2–7: Observation
+# Read the quick-start guide
+cat ~/.openclaw/skills/project-trident/references/trident-lite.md
 
-- Let Layer 0.5 run autonomously
-- Check `memory/daily/*.md` logs
-- Verify signals are being routed correctly
-- Tune classification rules if needed
+# Follow the 10-step checklist to configure Layer 0.5 + Layer 1
+```
 
-### Week 2+: Continuous Operation
+### Migrating from Existing Memory
 
-- Layer 0.5 runs 24/7, classifying signals
-- `MEMORY.md` grows intelligently (not linearly)
-- `memory/self/` tracks personality development
-- Optional: Add Git backup cron
-- Optional: Deploy Qdrant for semantic search
+If you already have `MEMORY.md`, `SOUL.md`, or custom memory files:
+
+```bash
+cd ~/.openclaw/skills/project-trident/scripts
+
+# Preview changes first (safe dry run)
+./migrate-existing-memory.sh --dry-run
+
+# Apply migration (automatic backup created)
+./migrate-existing-memory.sh
+```
+
+Your existing memory is **never deleted** — always backed up in `memory/migration-backup/` before anything changes.
 
 ---
 
-## Optional Extensions
+## Cost
 
-### Semantic Recall (Advanced)
+| Profile | Model | Layer 0.5 Interval | Cost/day | Storage Cost |
+|---------|-------|-------------------|----------|--------------|
+| **Zero Budget** | Ollama (local) | 30 min | **$0** | **$0** |
+| **Budget** | Claude Haiku | 30 min | **$0.72** | **$0** |
+| **Standard (recommended)** | **Claude Haiku** | **15 min** | **$1.44** | **$0** |
+| **Premium** | Claude Sonnet | 15 min | **$3.12** | **$0** |
 
-For agents handling 100K+ messages, add vector search + entity graphs:
+**Note:** Layer 1 (.md files), Layer 0 (SQLite), and Layer 2 backup are all **free**. Git hosting (GitHub, GitLab, Gitea) is optional and typically free.
 
-**Qdrant (Vector Search):**
-- **Deployment options:** Docker, Qdrant Cloud, or local binary
-- **Purpose:** Semantic search across memory chunks
-- **Integration:** Pre-turn context injection via Layer 0.5
-
-**FalkorDB (Entity Graphs):**
-- **Deployment options:** Docker, cloud, or Redis module
-- **Purpose:** Entity relationship tracking
-- **Integration:** Graphiti MCP for automated entity extraction
-
-**Note:** These are **optional**. Trident core (Layers 0, 0.5, 1) works standalone.
+→ See `references/cost-calculator.md` for detailed pricing and optimization strategies.
 
 ---
 
-## Who Is This For?
+## Architecture Overview
 
-- **AI researchers** building long-running autonomous agents
-- **Power users** who want continuity across OpenClaw sessions
-- **Developers** prototyping agentic systems with real memory
-- **Anyone** frustrated with "the agent forgot X" problems
+### How It Works
+
+```
+User message / Tool result / Internal event
+    │
+    ▼
+┌─────────────────────────────┐
+│ Layer 0: LCM (SQLite+DAG)   │ ← Baseline durability
+│ Every message persisted     │
+│ Nothing lost, even after    │
+│ compaction                  │
+└──────────┬──────────────────┘
+           │
+           ▼
+Daily log (WAL protocol)
+    │ Write critical facts before responding
+    │ Prevents blank spots
+    ▼
+[Layer 0.5 Cron — every 10–30 min]
+    │ Signal router agent classifies signals
+    │ Corrections (highest priority)
+    │ Decisions, patterns, facts, self-signals
+    │
+    ├── Corrections & decisions      → MEMORY.md (curated)
+    ├── Self/identity signals        → memory/self/
+    ├── Learnings & mistakes         → memory/lessons/
+    ├── Active projects              → memory/projects/
+    └── Raw episodic logs            → memory/daily/YYYY-MM-DD.md
+    │
+    ▼
+[Layer 1: Hierarchical Memory Buckets]
+    │ Human-readable .md files
+    │ Git-compatible, searchable, auditable
+    │
+    ▼
+[Optional: Layer 1.5 — Semantic Recall]
+    │ Add when memory > 50K messages
+    │ Qdrant vector search (Docker or cloud)
+    │ FalkorDB entity graphs (Docker or cloud)
+    │
+    ▼
+[Layer 2: Backup & Updates Subsystem]
+    │ Automated daily backups
+    │ VPS snapshots (if deployed)
+    │ Git versioning (GitHub, GitLab, etc.)
+    │ Update resilience + rollback
+    │
+    └── Recovery checkpoints every 24h
+        Disaster recovery + compliance
+```
 
 ---
 
-## What's Included?
+## The Four Layers Explained
 
-- `SKILL.md` — Core architecture guide
-- `references/deployment-guide.md` — Step-by-step setup
-- `references/cost-tuning.md` — Model selection and budget optimization
-- `scripts/layer0-agent-prompt-template.md` — Customizable signal router prompt
+### Layer 0: Lossless Context Management (LCM)
+
+**What it does:**
+- Captures every message as SQLite row
+- Builds DAG (directed acyclic graph) of message lineage
+- Compaction creates summaries that link back to source messages
+
+**Why it matters:**
+- Baseline durability — nothing is ever truly lost
+- Recovery foundation for corrupted Layer 1 files
+- Prerequisite: Enable `lossless-claw` plugin in `openclaw.json`
+
+**Cost:** Free (SQLite is built-in)
+
+---
+
+### Layer 0.5: Signal Router (Cron Agent)
+
+**What it does:**
+- Runs every 10–30 minutes (configurable)
+- Reads daily logs (WAL protocol)
+- Classifies signals: corrections, decisions, facts, self-signals
+- Routes to appropriate Layer 1 buckets
+
+**Signal types:**
+| Signal | Priority | Destination | Example |
+|--------|----------|-------------|---------|
+| **Correction** | Highest | MEMORY.md | "It's X, not Y" |
+| **Decision** | High | MEMORY.md | "Let's do X" |
+| **Self-signal** | High | memory/self/ | "I prefer..." or identity shift |
+| **Project update** | Medium | memory/projects/ | New task, blocker, completion |
+| **Learning** | Medium | memory/lessons/ | Tool quirk, debugging note, mistake |
+| **Fact** | Low | memory/semantic/ | Names, dates, numbers, facts |
+
+**Model:** Claude Haiku recommended (cost-optimized, ~95% accuracy)
+
+**Cost:** $0.72–$1.44/day depending on interval (15–30 min)
+
+**Security:** SHA256 integrity verification prevents prompt injection
+
+---
+
+### Layer 1: Hierarchical Memory Buckets
+
+**What it does:**
+- Persistent `.md` file organization
+- Human-readable, Git-compatible, debuggable
+- Prevents noise accumulation (agentic curation vs auto-capture)
+
+**Structure:**
+```
+memory/
+├── MEMORY.md              ← Curated long-term memory (compressed, high-signal)
+├── daily/
+│   ├── 2026-04-19.md     ← Raw episodic log for today
+│   ├── 2026-04-18.md     ← Yesterday's events
+│   └── ...
+├── self/
+│   ├── identity.md        ← Name, personality, goals
+│   ├── beliefs.md         ← Core values, philosophy
+│   └── growth.md          ← Evolution, contradictions, learning
+├── lessons/
+│   ├── tools.md           ← Tool quirks, debugging notes
+│   ├── mistakes.md        ← Errors, failures, corrections
+│   └── workflows.md       ← Process improvements, heuristics
+├── projects/
+│   ├── job-search.md      ← Active job search
+│   ├── infrastructure.md  ← Deployment, ops
+│   └── ...                ← One file per active project
+├── semantic/
+│   ├── biology.md         ← Technical knowledge (synbio, etc.)
+│   └── ...                ← Organized by domain
+└── layer0/
+    ├── AGENT-PROMPT.md    ← Layer 0.5 router instructions
+    └── audit-log.md       ← Integrity verification log
+```
+
+**Quality rule:** Compress over accumulate; signal density over volume
+
+**Cost:** Free (local .md files)
+
+---
+
+### Layer 2: Backup & Updates Subsystem
+
+**What it does:**
+- **Daily Git commits** — Version control for memory
+- **VPS snapshots** — Point-in-time recovery (if deployed)
+- **Update resilience** — Pre-update snapshots + post-update healthchecks
+- **Automated rollback** — Revert to last known-good state on failure
+
+**Components:**
+
+| Component | Frequency | Purpose | Cost |
+|-----------|-----------|---------|------|
+| Git backup cron | Daily (4:20 AM) | Commit memory to GitHub/GitLab | **$0** (free tier) |
+| VPS snapshot | Daily (3 AM) | Point-in-time VM backup | **$0** (included in VPS) |
+| Pre-update snapshot | Before updates | Capture state before OpenClaw upgrade | **$0** |
+| Post-update healthcheck | After updates | Verify all systems operational | **$0** |
+
+**Example cron jobs:**
+```
+4:20 AM MDT  → Layer 2 Backup: Git commit + optional VPS snapshot
+3:00 AM MDT  → Pre-update snapshot (Sunday)
+            → Run update (automatic)
+            → Post-update healthcheck
+```
+
+**Recovery procedure:**
+1. If memory corrupted → restore from Git
+2. If deployment broken → restore VPS snapshot
+3. If update fails → rollback via post-update healthcheck log
+
+**Cost:** $0 (included in VPS; Git free tier available)
+
+---
+
+## Feature Comparison
+
+| Feature | **Trident** | Mem0 | LangChain Memory | AutoGPT |
+|---------|------------|------|------------------|---------|
+| **Lossless capture** (SQLite+DAG) | ✅ | ❌ | ❌ | ❌ |
+| **Intelligent signal routing** | ✅ | ❌ | ❌ | ❌ |
+| **Personality development** | ✅ | ❌ | ❌ | ❌ |
+| **Human-readable** (.md) | ✅ | ❌ (vectors) | ⚠️ (JSON) | ⚠️ (JSON) |
+| **No Docker required** | ✅ | ❌ | ✅ | ✅ |
+| **Git-compatible** | ✅ | ❌ | ❌ | ❌ |
+| **Backup + recovery** | ✅ | ❌ | ❌ | ❌ |
+| **Template security** | ✅ | ❌ | ❌ | ❌ |
+| **Migration tooling** | ✅ | ❌ | ❌ | ❌ |
+| **Offline (Ollama)** | ✅ | ❌ | ⚠️ | ⚠️ |
+| **Cost/day** | **$0–$1.44** | $$$ | varies | varies |
+
+---
+
+## Platform Support
+
+**Windows, Mac, Linux, and VPS all fully supported.**
+
+Trident Lite requires only Node.js ≥ 22.14.0 and OpenClaw. No Docker, no cloud accounts, no external dependencies.
+
+| Platform | Trident Lite | Semantic Recall (Docker) | Semantic Recall (No Docker) |
+|----------|--------------|--------------------------|----------------------------|
+| **Linux** | ✅ | ✅ | ✅ (native binary) |
+| **macOS** | ✅ | ✅ | ✅ (native binary) |
+| **Windows** | ✅ | ✅ (WSL2) | ✅ (binary or cloud) |
+| **VPS** (Ubuntu/Debian) | ✅ | ✅ | ✅ |
+| **Docker** container | ✅ | ✅ | ✅ |
+
+See `references/platform-guide.md` for platform-specific setup.
 
 ---
 
 ## Getting Started
 
-1. **Install the skill:**
-   ```bash
-   clawhub install shivaclaw/project-trident
-   ```
+### For New Agents (No Existing Memory)
 
-2. **Read the deployment guide:**
-   ```bash
-   cat ~/.openclaw/skills/project-trident/references/deployment-guide.md
-   ```
+```bash
+clawhub install shivaclaw/project-trident
+cd ~/.openclaw/skills/project-trident/
+cat references/trident-lite.md
 
-3. **Follow the checklist** in `SKILL.md`
+# Follow the 10-step checklist (~30 minutes)
+```
 
-4. **Test Layer 0.5** with a manual cron run
+### For Agents with Existing Memory
 
-5. **Let it run** for a week and observe
+```bash
+cd ~/.openclaw/skills/project-trident/scripts
+
+# Safe dry-run preview
+./migrate-existing-memory.sh --dry-run
+
+# Live migration (automatic backup)
+./migrate-existing-memory.sh
+```
+
+### Optional: Add Semantic Recall
+
+When your agent's memory exceeds ~50K messages:
+
+```bash
+cat references/deployment-guide.md
+
+# Deploy Qdrant (vector search) + FalkorDB (entity graphs)
+# Add pre-turn semantic context injection to Layer 0.5
+```
 
 ---
 
-## License
+## Upgrade Path
 
-MIT-0 — Free to use, modify, and redistribute. No attribution required.
+| Stage | Duration | Setup Time | Cost/day |
+|-------|----------|-----------|----------|
+| **Trident Lite** | Indefinite | 30 min | $0–$1.44 |
+| **+ Semantic Recall** | When >50K msgs | 1 hour | +$0 (Docker) |
+| **+ VPS Backup** | When deployed | 15 min | $0 (included) |
+
+Start with Lite. Upgrade components as your agent grows.
 
 ---
 
-## Questions?
+## What's Included
+
+| File | Purpose |
+|---|---|
+| **README.md** | This file. Overview and getting started. |
+| **SKILL.md** | Core architecture guide + full implementation checklist. |
+| `references/trident-lite.md` | **Start here.** No-Docker setup for all platforms. |
+| `references/deployment-guide.md` | Semantic Recall (Qdrant/FalkorDB) + Git backup setup. |
+| `references/cost-calculator.md` | Model selection, interval tuning, detailed pricing. |
+| `references/platform-guide.md` | Windows, Mac, Linux, VPS platform-specific commands. |
+| `scripts/migrate-existing-memory.sh` | Safe migration from existing memory files. |
+| `scripts/template-integrity-check.sh` | SHA256 security verification for Layer 0.5. |
+| `scripts/layer0-agent-prompt-template.md` | Customizable signal router prompt. |
+
+---
+
+## Philosophy
+
+Most memory systems focus on *search* (vector databases, embeddings). **Trident focuses on curation**.
+
+Layer 0.5 acts like a **personal librarian** — classifying signals and routing them to semantic buckets. The result is memory that's not just searchable, but *organized*, *meaningful*, and *personality-aware*.
+
+Your agent doesn't just remember facts. **It develops an identity.**
+
+---
+
+## Questions & Support
 
 - **GitHub:** [ShivaClaw/shiva-memory](https://github.com/ShivaClaw/shiva-memory)
 - **ClawHub:** [shivaclaw/project-trident](https://clawhub.ai/shivaclaw/project-trident)
@@ -242,4 +382,10 @@ MIT-0 — Free to use, modify, and redistribute. No attribution required.
 
 ---
 
-**Like a lobster shell, memory has layers. Make them durable.**
+## License
+
+**MIT-0** — Free to use, modify, and redistribute. No attribution required.
+
+---
+
+*Like a lobster shell, memory has layers. Make them durable. Make them yours.*

@@ -3,9 +3,15 @@
   "slug": "project-trident",
   "displayName": "Project Trident",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1775196326479,
-    "commit": "https://github.com/openclaw/skills/commit/f6cdb49a8bc6267703587fb11d2aa64b7c691ce2"
+    "version": "2.0.1",
+    "publishedAt": 1776631491203,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1775196326479,
+      "commit": "https://github.com/openclaw/skills/commit/f6cdb49a8bc6267703587fb11d2aa64b7c691ce2"
+    }
+  ]
 }
