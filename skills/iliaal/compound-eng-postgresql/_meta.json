@@ -3,11 +3,16 @@
   "slug": "compound-eng-postgresql",
   "displayName": "postgresql",
   "latest": {
-    "version": "2.55.1",
-    "publishedAt": 1776004233861,
-    "commit": "https://github.com/openclaw/skills/commit/034c15ed4d9e5106da5dd31677b2962e4fa5f6bb"
+    "version": "2.56.1",
+    "publishedAt": 1776519012248,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.55.1",
+      "publishedAt": 1776004233861,
+      "commit": "https://github.com/openclaw/skills/commit/034c15ed4d9e5106da5dd31677b2962e4fa5f6bb"
+    },
     {
       "version": "2.53.0",
       "publishedAt": 1775444254576,
