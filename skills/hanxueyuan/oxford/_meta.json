@@ -3,11 +3,16 @@
   "slug": "oxford",
   "displayName": "Oxford",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775634693213,
-    "commit": "https://github.com/openclaw/skills/commit/68748e4144422f411edcc6314beadd8a0a441edd"
+    "version": "1.0.5",
+    "publishedAt": 1776533909891,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775634693213,
+      "commit": "https://github.com/openclaw/skills/commit/68748e4144422f411edcc6314beadd8a0a441edd"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775519616103,
