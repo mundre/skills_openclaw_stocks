@@ -1,0 +1,11 @@
+{
+  "owner": "orca-labs-sudo",
+  "slug": "claw-pay",
+  "displayName": "claw-pay",
+  "latest": {
+    "version": "0.3.1",
+    "publishedAt": 1776669578275,
+    "commit": null
+  },
+  "history": []
+}
