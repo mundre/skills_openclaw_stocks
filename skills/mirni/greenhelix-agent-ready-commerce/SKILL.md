@@ -1,7 +1,7 @@
 ---
 name: greenhelix-agent-ready-commerce
-version: "1.2.0"
-description: "Agent-Ready Commerce: Retrofit Your APIs for AI Buyers. Build agent-discoverable storefronts and API-first product feeds so AI shopping agents choose your products over competitors. Covers structured data, UCP/ACP/x402 payment rails, and marketplace integration with production-ready code."
+version: "1.3.1"
+description: "Agent-Ready Commerce: Retrofit Your APIs for AI Buyers. Build agent-discoverable storefronts and API-first product feeds so AI shopping agents choose your products over competitors. Covers structured data, UCP/ACP/x402 payment rails, and marketplace integration with detailed code examples with code."
 license: MIT
 compatibility: [openclaw]
 author: felix-agent
@@ -12,12 +12,22 @@ content_type: markdown
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY, WALLET_ADDRESS, AGENT_SIGNING_KEY, STRIPE_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+        - WALLET_ADDRESS
+        - AGENT_SIGNING_KEY
+        - STRIPE_API_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # Agent-Ready Commerce: Retrofit Your APIs for AI Buyers
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 >
 > **Referenced credentials** (you supply these in your own environment):
 > - `GREENHELIX_API_KEY`: API authentication for GreenHelix gateway (read/write access to purchased API tools only)
@@ -27,7 +37,7 @@ credentials: [GREENHELIX_API_KEY, WALLET_ADDRESS, AGENT_SIGNING_KEY, STRIPE_API_
 
 
 AI shopping agents now influence over $67 billion in purchasing decisions. Between January 2025 and March 2026, AI-attributed orders grew 11x across tracked e-commerce platforms. The brands capturing this revenue share one trait: their product data is structured for machines, not just humans. The new commerce funnel is agent query, structured response, programmatic purchase -- and every gap in that chain is revenue lost to a competitor whose data is cleaner, whose schemas are richer, and whose checkout flow an agent can complete without human intervention.
-This guide is the practitioner's manual for building agent-ready commerce infrastructure. Every chapter contains production Python code against the GreenHelix A2A Commerce Gateway -- 128 tools accessible at `https://api.greenhelix.net/v1` via a single `POST /v1/execute` endpoint. By the end, you will have an agent-discoverable storefront, structured product feeds with validation, multi-protocol checkout flows (UCP, ACP, x402), a GreenHelix marketplace listing with trust signals, escrow-protected payment flows, an agent discoverability test harness, and a 14-day sprint plan to ship all of it.
+This guide is the practitioner's manual for building agent-ready commerce infrastructure. Every chapter contains production Python code against the GreenHelix A2A Commerce Gateway -- 128 tools accessible at `https://api.greenhelix.net/v1` via a single the REST API (`POST /v1/{tool}`) endpoint. By the end, you will have an agent-discoverable storefront, structured product feeds with validation, multi-protocol checkout flows (UCP, ACP, x402), a GreenHelix marketplace listing with trust signals, escrow-protected payment flows, an agent discoverability test harness, and a 14-day sprint plan to ship all of it.
 1. [The Agentic Commerce Shift](#chapter-1-the-agentic-commerce-shift)
 
 ## What You'll Learn
@@ -47,7 +57,7 @@ This guide is the practitioner's manual for building agent-ready commerce infras
 
 AI shopping agents now influence over $67 billion in purchasing decisions. Between January 2025 and March 2026, AI-attributed orders grew 11x across tracked e-commerce platforms. The brands capturing this revenue share one trait: their product data is structured for machines, not just humans. The new commerce funnel is agent query, structured response, programmatic purchase -- and every gap in that chain is revenue lost to a competitor whose data is cleaner, whose schemas are richer, and whose checkout flow an agent can complete without human intervention.
 
-This guide is the practitioner's manual for building agent-ready commerce infrastructure. Every chapter contains production Python code against the GreenHelix A2A Commerce Gateway -- 128 tools accessible at `https://api.greenhelix.net/v1` via a single `POST /v1/execute` endpoint. By the end, you will have an agent-discoverable storefront, structured product feeds with validation, multi-protocol checkout flows (UCP, ACP, x402), a GreenHelix marketplace listing with trust signals, escrow-protected payment flows, an agent discoverability test harness, and a 14-day sprint plan to ship all of it.
+This guide is the practitioner's manual for building agent-ready commerce infrastructure. Every chapter contains production Python code against the GreenHelix A2A Commerce Gateway -- 128 tools accessible at `https://api.greenhelix.net/v1` via a single the REST API (`POST /v1/{tool}`) endpoint. By the end, you will have an agent-discoverable storefront, structured product feeds with validation, multi-protocol checkout flows (UCP, ACP, x402), a GreenHelix marketplace listing with trust signals, escrow-protected payment flows, an agent discoverability test harness, and a 14-day sprint plan to ship all of it.
 
 ---
 
@@ -99,13 +109,13 @@ This is the core thesis of this guide: **structured product data is not a techni
 
 The GreenHelix A2A Commerce Gateway provides the infrastructure for agent-ready commerce across the full lifecycle: discovery (marketplace listing, search, ranking), payment (escrow, subscriptions, deposits), trust (metrics, claim chains, reputation scoring), and interoperability (protocol bridges for UCP, ACP, x402).
 
-Every code example in this guide calls the gateway via `POST /v1/execute`:
+Every code example in this guide calls the gateway via the REST API (`POST /v1/{tool}`):
 
 ```python
 import requests
 from typing import Any
 
-GATEWAY_URL = "https://api.greenhelix.net/v1"
+GATEWAY_URL = os.environ.get("GREENHELIX_API_URL", "https://sandbox.greenhelix.net")
 
 class CommerceClient:
     """Client for GreenHelix A2A Commerce Gateway."""
@@ -120,7 +130,7 @@ class CommerceClient:
     def execute(self, tool: str, input_data: dict[str, Any]) -> dict:
         """Execute a single tool on the gateway."""
         response = requests.post(
-            f"{GATEWAY_URL}/execute",
+            f"{GATEWAY_URL}/v1",
             json={"tool": tool, "input": input_data},
             headers=self.headers,
             timeout=30,
@@ -590,7 +600,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-GATEWAY_URL = "https://api.greenhelix.net/v1"
+GATEWAY_URL = os.environ.get("GREENHELIX_API_URL", "https://sandbox.greenhelix.net")
 
 
 @dataclass
@@ -616,7 +626,7 @@ class MultiProtocolCheckout:
     def _ghx(self, tool: str, input_data: dict) -> dict:
         """Execute a GreenHelix tool."""
         resp = requests.post(
-            f"{GATEWAY_URL}/execute",
+            f"{GATEWAY_URL}/v1",
             json={"tool": tool, "input": input_data},
             headers=self.headers,
             timeout=30,
@@ -1221,7 +1231,7 @@ Register a service with rich metadata that maximizes each ranking signal.
 import os
 import time
 
-GATEWAY_URL = "https://api.greenhelix.net/v1"
+GATEWAY_URL = os.environ.get("GREENHELIX_API_URL", "https://sandbox.greenhelix.net")
 
 api_key = os.environ["GREENHELIX_API_KEY"]
 headers = {
@@ -1233,7 +1243,7 @@ headers = {
 def ghx(tool: str, input_data: dict) -> dict:
     """Execute a GreenHelix tool."""
     resp = requests.post(
-        f"{GATEWAY_URL}/execute",
+        f"{GATEWAY_URL}/v1",
         json={"tool": tool, "input": input_data},
         headers=headers,
         timeout=30,
@@ -1418,7 +1428,7 @@ headers = {
 
 def ghx(tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{GATEWAY_URL}/execute",
+        f"{GATEWAY_URL}/v1",
         json={"tool": tool, "input": input_data},
         headers=headers,
         timeout=30,
@@ -1692,7 +1702,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Optional
 
-GATEWAY_URL = "https://api.greenhelix.net/v1"
+GATEWAY_URL = os.environ.get("GREENHELIX_API_URL", "https://sandbox.greenhelix.net")
 
 
 @dataclass
@@ -1733,7 +1743,7 @@ class AgentSimulator:
 
     def _ghx(self, tool: str, input_data: dict) -> dict:
         resp = requests.post(
-            f"{GATEWAY_URL}/execute",
+            f"{GATEWAY_URL}/v1",
             json={"tool": tool, "input": input_data},
             headers=self.headers,
             timeout=30,
@@ -2595,7 +2605,7 @@ SCORE: ___/100  GRADE: ___
 
 ## Appendix: Tool Reference
 
-The following GreenHelix A2A Commerce Gateway tools are used throughout this guide. All tools are called via `POST https://api.greenhelix.net/v1/execute` with Bearer token authentication.
+The following GreenHelix A2A Commerce Gateway tools are used throughout this guide. All tools are called via `POST https://sandbox.greenhelix.net/v1` with Bearer token authentication.
 
 | Tool | Chapter(s) | Purpose |
 |---|---|---|
