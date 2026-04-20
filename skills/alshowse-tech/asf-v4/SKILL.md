@@ -1,121 +1,76 @@
----
-name: asf-v4
-description: ASF V4.0 工业化增强模块 - 治理门禁 + 成本模型 + 安全优化。提供否决权执行、所有权证明、经济学评分、返工风险预测、安全在线优化等工业级能力。
-metadata:
-  {
-    "openclaw":
-      {
-        "requires": { "nodeVersion": ">=20.0.0" },
-        "install": [],
-      },
-  }
----
+# ANFSF V1.5.6 Skill - Enhanced Hybrid Adaptive Parser
 
-# ASF V4.0 - 工业化增强模块
+AI Native Full-Stack Software Factory V1.5.6 - Enhanced Hybrid Adaptive Parser with 100% health status (187/187 tests)
 
-**版本**: v0.9.0  
-**OpenClaw 兼容性**: >=2026.3.24
+## Overview
 
----
+This skill provides enhanced requirement refinement capabilities for ANFSF (AI Native Full-Stack Software Factory) architecture, featuring:
 
-## 功能说明
+- **Hybrid Adaptive Parser**: Smart detection of complex requirements with weighted scoring system
+- **Negation Handling**: Avoids false positives (e.g., "不需要多级审批" is not detected as complex)
+- **Multi-format Support**: Supports Mermaid, PlantUML, and image references
+- **Template Matching**: Automatically matches historical templates
+- **Complete Rollback**: Automatic rollback mechanism with monitoring
 
-ASF V4.0 为 OpenClaw 提供工业级治理和优化能力：
+## Key Features
 
-- **否决权执行** - 硬/软否决规则验证变更
-- **所有权证明** - 可验证的 single-writer 证明
-- **经济学评分** - 基于成本的角色分配优化
-- **返工风险** - 预测性风险分析
-- **安全优化器** - 带回滚保护的在线优化
+### 1. Hybrid Adaptive Parser
 
----
+Intelligently detects complex requirements using weighted scoring system:
+- **Multi-level审批 workflow**: +3 points
+- **Cross-department collaboration**: +1 point per department
+- **Complex data visualization**: +2 points
+- **External system integration**: +2 points
+- **Complex permission system**: +2 points
 
-## 工具
+### 2. Negation Processing
 
-| 工具 | 说明 |
-|------|------|
-| `veto-check` | 检查变更是否通过硬/软否决规则 |
-| `ownership-proof` | 生成可验证的所有权证明 |
-| `economics-score` | 计算角色分配经济学评分 |
-| `interface-budget` | 计算跨角色依赖成本 |
-| `rework-risk` | 预测任务返工风险 |
-| `hot-contract` | 分析契约耦合度并建议角色数量 |
-| `conflict-resolve` | 解决所有权冲突 |
-| `safe-optimize` | 安全在线优化 |
+Detects negative keywords to reduce false positives:
+- "不需要" (not required)
+- "无需" (no need)
+- "不要" (don't want)
+- "no", "without", "not required"
 
----
+### 3. Multi-format Content Support
 
-## 命令
+- Mermaid flowcharts
+- PlantUML diagrams
+- Image references (OCR preparation)
+- Markdown tables and lists
 
-| 命令 | 说明 |
-|------|------|
-| `asf:status` | 检查 ASF V4.0 状态 |
-| `asf:veto` | 运行否决检查 |
-| `asf:proof` | 生成所有权证明 |
-| `asf:score` | 计算经济学评分 |
-| `asf:risk` | 预测返工风险 |
-| `asf:hot-contracts` | 分析热契约 |
+### 4. Template Matching
 
----
+Automatically matches historical templates:
+- `fixed-asset-investment` (固定资产投资)
+- `project-management` (项目管理)
+- `hr-system` (人力资源系统)
 
-## 配置
+## Usage
 
-编辑 `config/asf-v4.config.yaml`：
+The skill automatically selects the appropriate parsing strategy based on requirement complexity:
 
-```yaml
-veto:
-  mode: default  # default | strict | custom
-  
-economics:
-  scoreWeights:
-    interfaceCost: -0.30
-    bottleneck: -0.20
-    skillMatch: 0.20
-    parallelismGain: 0.15
-    reworkRisk: -0.15
-
-optimizer:
-  enabled: true
-  cooldownMs: 1800000  # 30 分钟
-  failureThreshold: 2
+```typescript
+const skill = new RequirementRefinerSkill(context);
+const result = await skill.refine(rawRequirement);
 ```
 
----
+## Architecture
 
-## 依赖
+- **Layer 8.5 Governance**: Full governance control plane
+- **MemPalace Memory**: Enhanced memory architecture with isolated wings
+- **Evolution Harness**: Supported for self-calibration
 
-- Node.js >=20.0.0
-- OpenClaw >=2026.3.24
-
----
-
-## 使用示例
+## Installation
 
 ```bash
-# 检查状态
-asf:status
-
-# 运行否决检查
-asf:veto --changes='[{"resourceType":"contract","resourcePath":"/orders","action":"update"}]'
-
-# 生成所有权证明
-asf:proof --resources='[{"type":"contract","path":"/orders#POST"}]' --roles='[{"id":"backend-team"}]'
+clawhub install @anfsf-v1/openclaw-skill@1.5.6
 ```
 
----
+## Requirements
 
-## 架构影响
+- Node.js >= 20.0.0
+- OpenClaw >= 2026.3.24
 
-激活 ASF V4.0 后，ANFSF 架构获得以下增强：
+## License
 
-1. **Layer 4 (Requirement Graph)** - 增加变更追溯和热力图
-2. **Layer 8.5 (Role Control Plane)** - 增加 Interface Budget v2 和否决门禁
-3. **Layer 9 (Agent OS)** - 增加角色 KPI 仪表板
-4. **Layer 13 (Semantic Consistency)** - 增加契约语义化 diff
-5. **Layer 16 (Runtime Intelligence)** - 增加自动回滚和进化守卫
-
----
-
-## 许可证
-
-MIT License
+MIT

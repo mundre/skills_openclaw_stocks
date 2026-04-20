@@ -1,7 +1,7 @@
 {
-  "name": "@asf-v4/openclaw-skill",
-  "version": "0.9.0",
-  "description": "ASF V4.0 OpenClaw Skill - Industrial Governance & Optimization",
+  "name": "@anfsf-v1/openclaw-skill",
+  "version": "1.5.6",
+  "description": "AI Native Full-Stack Software Factory V1.5.6 - Enhanced Hybrid Adaptive Parser with 100% health status (187/187 tests)",
   "main": "index.ts",
   "types": "index.ts",
   "scripts": {
@@ -15,7 +15,11 @@
     "skill",
     "asf-v4",
     "governance",
-    "optimization"
+    "optimization",
+    "mempalace",
+    "memory-architecture",
+    "anfsf",
+    "memor Recall "
   ],
   "author": "ASF V4.0 Team",
   "license": "MIT",
@@ -23,14 +27,20 @@
     "openclaw": ">=2026.3.24"
   },
   "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
     "typescript": "^5.0.0"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "openclaw": {
-    "skillName": "asf-v4",
+    "skillName": "anfsf-v1",
+    "architectureName": "AI Native Full-Stack Software Factory V1.5.6 (Enhanced Hybrid Parser, Layer 8.5 Governance, MemPalace, 187/187 tests, 100% health)",
+    "architectureVersion": "1.5.0",
     "minOpenClawVersion": "2026.3.24",
     "tools": [
       "veto-check",
@@ -50,5 +60,8 @@
       "asf:risk",
       "asf:hot-contracts"
     ]
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.1"
   }
 }

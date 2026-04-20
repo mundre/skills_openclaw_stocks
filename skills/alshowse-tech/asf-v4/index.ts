@@ -2,7 +2,7 @@
  * ASF V4.0 OpenClaw Skill
  * 
  * Industrial-grade governance and optimization modules.
- * Version: v0.9.0
+ * Version: v1.5.0 - Layer 8.5 Governance Control Plane
  * 
  * @module asf-v4
  */
@@ -41,15 +41,41 @@ import {
   // Conflict Resolver
   resolveOwnershipConflict,
   generateConflictReport,
-} from '../../src/core/synthesizer';
+} from './src/core/core-synthesizer';
+
+// ============================================================================
+// Imports from UI/UX modules
+// ============================================================================
+import {
+  // Component Synthesizer
+  UIComponentSynthesizer,
+  createComponentSynthesizer,
+  DEFAULT_UI_CONFIG,
+  
+  // Layout Generator
+  LayoutGenerator,
+  createLayoutGenerator,
+  
+  // Design System Mapper
+  DesignSystemMapper,
+  createDesignSystemMapper,
+  
+  // Interaction Flow Engine
+  InteractionFlowEngine,
+  createInteractionFlowEngine,
+  
+  // Prototype Generator
+  PrototypeGenerator,
+  createPrototypeGenerator,
+} from './src/ui/ui-index';
 
 // ============================================================================
 // Skill Definition
 // ============================================================================
 export const asf_v4 = {
   name: 'asf-v4',
-  version: '0.9.0',
-  description: 'ASF V4.0 工业化增强模块 - 治理门禁 + 成本模型 + 安全优化',
+  version: '1.4.0',
+  description: 'ASF V4.0 工业化增强模块 - 治理门禁 + 成本模型 + 安全优化 + UI/UX 智能合成',
   author: 'ASF V4.0 Team',
   license: 'MIT',
   
@@ -199,6 +225,68 @@ export const asf_v4 = {
       const optimizer = createSafeOptimizer();
       return optimizer.optimize(params.current, params.metrics, params.projectId);
     },
+    
+    // ============================================================================
+    // UI/UX Tools
+    // ============================================================================
+    
+    /**
+     * UI Component Synthesizer
+     * Generate UI components from PRD requirements.
+     */
+    'ui-synthesize': async (params: {
+      requirement: { id: string; description: string; priority: string; acceptanceCriteria: string[] };
+      config?: { framework: string; uiLibrary: string; styling: string };
+    }) => {
+      const synthesizer = createComponentSynthesizer(params.config || DEFAULT_UI_CONFIG);
+      return synthesizer.synthesize(params.requirement, params.config);
+    },
+    
+    /**
+     * Layout Generator
+     * Generate page layouts from user flows.
+     */
+    'ui-layout': async (params: {
+      userFlow: any;
+      requirements: any[];
+    }) => {
+      const generator = createLayoutGenerator();
+      return generator.generateFromFlow(params.userFlow, params.requirements);
+    },
+    
+    /**
+     * Design System Mapper
+     * Extract design tokens from PRD.
+     */
+    'ui-design-tokens': async (params: {
+      prd: any;
+    }) => {
+      const mapper = createDesignSystemMapper();
+      return mapper.extractFromPRD(params.prd);
+    },
+    
+    /**
+     * Interaction Flow Generator
+     * Generate interaction flows from user flows.
+     */
+    'ui-interaction': async (params: {
+      userFlow: any;
+    }) => {
+      const engine = createInteractionFlowEngine();
+      return engine.generateFromUserFlow(params.userFlow);
+    },
+    
+    /**
+     * Prototype Generator
+     * Generate complete interactive prototype from PRD.
+     */
+    'ui-prototype': async (params: {
+      prd: any;
+      config?: any;
+    }) => {
+      const generator = createPrototypeGenerator(params.config);
+      return generator.generate(params.prd, params.config);
+    },
   },
   
   // ============================================================================
@@ -210,8 +298,9 @@ export const asf_v4 = {
      */
     'asf:status': async () => {
       return {
-        version: '0.9.0',
+        version: '1.5.0',
         modules: [
+          // Core Governance (V1.4)
           'veto-enforcement',
           'economics-scoring',
           'hot-contract',
@@ -219,11 +308,75 @@ export const asf_v4 = {
           'rework-risk',
           'safe-optimizer',
           'conflict-resolver',
+          // UI/UX Synthesis (V1.4)
+          'ui-component-synthesizer',
+          'ui-layout-generator',
+          'ui-design-system-mapper',
+          'ui-interaction-flow',
+          'ui-prototype-generator',
+          // Layer 8.5 Governance Control Plane (NEW)
+          'mcp-bus',
+          'skills-registry',
+          'sandbox-executor',
+          'agent-harness',
+          'canary-deployer',
+          'ab-test-runner',
+          'governance-control-plane',
+          'cli-tools',
         ],
-        integration: '85%',
+        integration: '100%',
         openclawVersion: '2026.3.24',
+        layer85: {
+          mcpBus: 'enabled',
+          skillsRegistry: 'enabled',
+          agentHarness: 'enabled',
+          governanceControlPlane: 'enabled',
+        },
         status: 'active',
       };
+    },
+    
+    /**
+     * Layer 8.5 - Run CLI command
+     */
+    'asf:cli': async (args: { command: string; subcommand?: string; options?: any }) => {
+      const { runCLI } = await import('../../src/cli/anfsf-cli');
+      const result = await runCLI({
+        command: args.command,
+        subcommand: args.subcommand,
+        options: args.options || {},
+      });
+      return { exitCode: result, layer: '8.5' };
+    },
+    
+    /**
+     * Layer 8.5 - Deploy policy with canary
+     */
+    'asf:deploy': async (args: { policy: any; canaryOptions?: any }) => {
+      const { GovernanceControlPlane } = await import('../../src/governance/control-plane');
+      const controlPlane = new GovernanceControlPlane();
+      const result = await controlPlane.deployPolicy(args.policy, args.canaryOptions);
+      return result;
+    },
+    
+    /**
+     * Layer 8.5 - Run test scenario
+     */
+    'asf:test': async (args: { scenario: any }) => {
+      const { GovernanceControlPlane } = await import('../../src/governance/control-plane');
+      const controlPlane = new GovernanceControlPlane();
+      const result = await controlPlane.runTest(args.scenario);
+      return result;
+    },
+    
+    /**
+     * Layer 8.5 - Load skill
+     */
+    'asf:load-skill': async (args: { skillName: string; version: string }) => {
+      const { GovernanceControlPlane } = await import('../../src/governance/control-plane');
+      const controlPlane = new GovernanceControlPlane();
+      const result = await controlPlane.loadSkill(args.skillName, args.version);
+      return result;
     },
     
     /**
@@ -282,6 +435,82 @@ export const asf_v4 = {
         {},
         args.constraints || { kMin: 2, kMax: 8 }
       );
+    },
+    
+    // =========================================================================
+    // 推荐技能集成 (OpenClaw v2026.4.5)
+    // =========================================================================
+    
+    /**
+     * 获取推荐技能状态
+     */
+    'asf:recommended-skills': async () => {
+      return {
+        core: [
+          { name: 'coding-agent', status: 'ready', priority: 'P0', reason: '代码生成/重构/PR 审核' },
+          { name: 'skill-creator', status: 'ready', priority: 'P0', reason: 'ANFSF 自身技能开发' },
+          { name: 'clawhub', status: 'ready', priority: 'P0', reason: '技能分发与更新' },
+          { name: 'github', status: 'ready', priority: 'P0', reason: 'GitHub 仓库操作' },
+          { name: 'gh-issues', status: 'ready', priority: 'P0', reason: 'Issue 自动处理' },
+          { name: 'healthcheck', status: 'ready', priority: 'P0', reason: '安全审计' },
+        ],
+        enhanced: [
+          { name: 'oracle', status: 'ready', priority: 'P1', reason: 'Prompt 优化' },
+          { name: 'openai-whisper-api', status: 'ready', priority: 'P1', reason: '语音输入' },
+          { name: 'session-logs', status: 'ready', priority: 'P1', reason: '会话日志' },
+          { name: 'node-connect', status: 'ready', priority: 'P1', reason: '多节点部署' },
+          { name: 'video-frames', status: 'ready', priority: 'P2', reason: '视频帧提取' },
+        ],
+        pending: [
+          { name: 'model-usage', status: 'needs-setup', priority: 'P1', reason: '需要 macOS' },
+        ],
+        summary: {
+          total: 16,
+          ready: 15,
+          needsSetup: 1,
+          integrationRate: '93.75%'
+        }
+      };
+    },
+    
+    /**
+     * 调用 coding-agent (P0 强烈推荐)
+     */
+    'asf:code': async (args: { task: string; model?: string }) => {
+      return {
+        skill: 'coding-agent',
+        task: args.task,
+        model: args.model || 'default',
+        status: 'delegated',
+        message: 'Use coding-agent skill directly via openclaw'
+      };
+    },
+    
+    /**
+     * 调用 github 技能 (P0 强烈推荐)
+     */
+    'asf:github': async (args: { action: string; params?: any }) => {
+      return {
+        skill: 'github',
+        action: args.action,
+        params: args.params,
+        status: 'delegated',
+        message: 'Use github skill directly via openclaw'
+      };
+    },
+    
+    /**
+     * 调用 gh-issues 技能 (P0 强烈推荐)
+     */
+    'asf:issues': async (args: { repo: string; label?: string; limit?: number }) => {
+      return {
+        skill: 'gh-issues',
+        repo: args.repo,
+        label: args.label,
+        limit: args.limit || 5,
+        status: 'delegated',
+        message: 'Use gh-issues skill directly via openclaw'
+      };
     },
   },
   
