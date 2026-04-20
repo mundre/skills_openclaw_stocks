@@ -3,11 +3,16 @@
   "slug": "philosophy-dialogue",
   "displayName": "Philosophy Dialogue",
   "latest": {
-    "version": "4.0.0",
-    "publishedAt": 1776098968785,
-    "commit": "https://github.com/openclaw/skills/commit/53f1d75ed24a90910015590d482a39b70278993d"
+    "version": "4.3.0",
+    "publishedAt": 1776270548109,
+    "commit": null
   },
   "history": [
+    {
+      "version": "4.0.0",
+      "publishedAt": 1776098968785,
+      "commit": "https://github.com/openclaw/skills/commit/53f1d75ed24a90910015590d482a39b70278993d"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775655260332,

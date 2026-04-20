@@ -88,6 +88,33 @@ description: |
 
 ---
 
+## 🏗️ 架构与依赖关系
+
+本 skill 采用**自包含架构**：243 位哲学家的蒸馏思维框架已内置在 skill 内部，无需外部依赖。
+
+```
+philosophy-dialogue (主 skill：对话编排、模式控制、评分体系)
+    │
+    ├── 读取 → references/philosopher-registry.md（243 位哲学家名单）
+    │
+    ├── 读取 → references/perspective/*-perspective/SKILL.md（内置哲学家思维框架）
+    │         └── 243 位哲学家的蒸馏文件已内置于 skill 内部
+    │         └── 包含：心智模型、启发式、核心技能、金句
+    │         └── 也可通过外部 skills/*-perspective/ 读取（向下兼容）
+    │
+    └── 写入 → memory/philosophy-dialogues/tournaments/（杯赛数据）
+```
+
+**哲学家思维框架（perspective skills）**
+
+哲学对话的核心是让每位哲学家**用自己的思维方式发言**。每位哲学家的 perspective SKILL.md 包含该哲学家的思维框架（心智模型、启发式、金句等），是对话质量的关键依赖。
+
+- **内置路径**（推荐）：`references/perspective/*-perspective/SKILL.md` —— 已集成在 skill 内部，无需额外安装
+- **外部路径**（向下兼容）：`skills/*-perspective/SKILL.md` —— 若工作区存在独立的 perspective skills 也可读取
+- **只读不写**：对 perspective skills 仅读取，不修改
+
+---
+
 ## ⚔️ 技能系统
 
 - **25 位哲学家**有专属技能
@@ -104,16 +131,27 @@ description: |
 ```
 skills/philosophy-dialogue/
 ├── SKILL.md (主文件)
-├── MODES.md (5 种模式详解) 🆕
-├── SKILLS-LIST.md (技能列表)
-├── SCENES.md (场景 BGM)
+├── MODES.md (6 种模式详解)
+├── CUP-MODE.md (雄辩天下杯赛模式)
 ├── DUEL-MODE.md (双人论战)
+├── SCORING.md (打分体系)
+├── SCENES.md (场景 BGM)
+├── SKILLS-LIST.md (技能列表)
 ├── UPGRADE-LOG.md (升级日志)
-├── package.json (v3.2.0)
-├── SCORING.md (打分体系) 🆕
+├── package.json
+├── .clawhubignore (发布排除文件)
+├── scripts/ (可选：杯赛角色分配脚本)
+│   └── tournament-allocator.py
 └── references/
-    └── philosopher-registry.md (173 位名单)
+    ├── philosopher-registry.md (哲学家名单，路径指向内置蒸馏文件)
+    └── perspective/ (🆕 243 位哲学家蒸馏思维框架，已内置)
+        ├── confucius-perspective/SKILL.md
+        ├── nietzsche-perspective/SKILL.md
+        ├── zhuangzi-perspective/SKILL.md
+        └── ... (243 个目录)
 ```
+
+**注意**: 比赛数据保存在 `memory/philosophy-dialogues/tournaments/`（用户 workspace），不属于 skill 本身。
 
 ---
 
@@ -124,26 +162,92 @@ skills/philosophy-dialogue/
 | v2.5-2.9 | 2026-04-12 | 情绪/技能/场景系统 |
 | v3.0 | 2026-04-13 | 5 种模式统一 + 173 位哲学家 |
 | v3.1 | 2026-04-13 | 双人论战：避免重复 + 集中投票 + 扩大评委 |
-| **v3.2** | **2026-04-13** | **5 维度评分体系 + 理由公开 + 全模式适用** |
+| v3.2 | 2026-04-13 | 5 维度评分体系 + 理由公开 + 全模式适用 |
+| v4.0 | 2026-04-14 | 雄辩天下杯赛模式 + 注册表更新 |
+| v4.1.1 | 2026-04-14 | 安全修复：明确 scripts/可选，memory/为用户目录 |
+| v4.2.4 | 2026-04-14 | permissions 声明扩大：读取 skills/*-perspective/ |
+| v4.2.5 | 2026-04-14 | 增加架构与依赖关系说明，解释跨 skill 读取的合理性 |
+| **v4.3.0** | **2026-04-16** | **蒸馏人物私域化：243 位哲学家思维框架内置于 skill 内部** |
 
 **升级日志**：见 [`UPGRADE-LOG.md`](UPGRADE-LOG.md)
+
+---
+
+## 📦 获取与安装
+
+### 方式一：ClawHub 安装（轻量版）
+
+```bash
+clawhub install philosophy-dialogue
+```
+
+> ℹ️ ClawHub 版包含核心模式文件和注册表，不包含 `references/perspective/`。对话时 AI 会基于自身知识生成哲学家视角。
+
+### 方式二：GitHub 安装（完整版，含蒸馏思维框架）
+
+```bash
+git clone https://github.com/Wings229/philosophy-dialogue-skill.git skills/philosophy-dialogue
+```
+
+**GitHub 仓库**：https://github.com/Wings229/philosophy-dialogue-skill
+
+> 📦 **完整版特有**：`references/perspective/` 目录包含 243 位哲学家的蒸馏思维框架文件。这些文件让每位哲学家以精确的个人思维方式发言，显著提升对话质量。
+
+> ⚠️ **安全提示**：clone 后建议先审查代码再使用。特别是 `scripts/tournament-allocator.py`，请确认其行为符合下方安全声明。
+
+**运行时依赖**：
+- 核心功能（对话/辩论）：无依赖，纯指令驱动
+- 杯赛角色分配脚本（`scripts/tournament-allocator.py`）：需要 **Python 3.6+**，仅使用标准库，无网络调用
+
+> 注：杯赛脚本为可选工具，不影响核心对话功能。手动分配角色也可以。
+
+**🔒 脚本安全声明**（`scripts/tournament-allocator.py`）：
+- ✅ 仅使用 Python 标准库（random, os, re, sys, json）
+- ✅ 无网络调用（无 urllib, requests, socket 等）
+- ✅ 无子进程调用（无 subprocess, os.system 等）
+- ✅ 文件读取：仅 `references/philosopher-registry.md` 和用户指定的题目文件
+- ✅ 文件写入：仅 `memory/philosophy-dialogues/tournaments/` 目录
+
+### 版本对比
+
+| 特性 | ClawHub | GitHub 完整版 |
+|------|---------|-------------|
+| 核心模式 (SKILL.md) | ✅ | ✅ |
+| 6 种模式详解 (MODES.md) | ✅ | ✅ |
+| 双人论战 (DUEL-MODE.md) | ✅ | ✅ |
+| 打分体系 (SCORING.md) | ✅ | ✅ |
+| 技能列表 (SKILLS-LIST.md) | ✅ | ✅ |
+| 场景 BGM (SCENES.md) | ✅ | ✅ |
+| 哲学家注册表 (philosopher-registry.md) | ✅ | ✅ |
+| 对话示例 (example-dialogue.md) | ✅ | ✅ |
+| 雄辩天下杯赛 (CUP-MODE.md) | ✅ | ✅ |
+| 🆕 蒸馏思维框架 (references/perspective/) | ❌ 需从 GitHub 获取 | ✅ 内置 243 位 |
+| 杯赛脚本 (scripts/) | ❌ | ✅ |
+| 升级日志 (UPGRADE-LOG.md) | ❌ | ✅ |
+| 辩论题目库 (references/) | ❌ | ✅ |
 
 ---
 
 ## ❓ 常见问题
 
 **Q: 如何选择模式？**
-A: 理论探讨→对抗辩论，人生意义→启发探索，名人理论→舌战群儒，道德争议→楚河汉界，直接对抗→双人论战。
+A: 理论探讨→对抗辩论，人生意义→启发探索，名人理论→舌战群儒，道德争议→楚河汉界，直接对抗→双人论战，大型赛事→雄辩天下。
 
 **Q: 双人论战如何触发？**
 A: 说「双人论战，话题：XX」或「A vs B，话题：XX」。
 
+**Q: 雄辩天下如何启动？**
+A: 说「雄辩天下」或「雄辩天下，参赛：32 人，评委：20 人」。杯赛角色分配可使用 `scripts/tournament-allocator.py`。
+
 **Q: 技能如何使用？**
 A: 自动触发，当哲学家遇到合适时机（如被强烈反对）会自动使用。
+
+**Q: 比赛数据保存在哪里？**
+A: `memory/philosophy-dialogues/tournaments/`（用户 workspace），不属于 skill 本身。
 
 **Q: 如何查看完整哲学家名单？**
 A: 见 [`references/philosopher-registry.md`](references/philosopher-registry.md)。
 
 ---
 
-*哲学对话 Skill v3.2.0 | 2026-04-13 更新 | 5 种模式 | 173 位哲学家 | 5 维度评分体系*
+*哲学对话 Skill v4.3.0 | 2026-04-16 更新 | 6 种模式 | 243 位哲学家 | 蒸馏思维框架已内置 | [GitHub 完整版](https://github.com/Wings229/philosophy-dialogue-skill)*

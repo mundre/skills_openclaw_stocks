@@ -9,7 +9,7 @@
 
 ## Phase 0: 参与人确认
 
-扫描 skills/ 目录，确认 21 位已蒸馏哲学家全部参与。
+从 references/philosopher-registry.md 读取已注册的哲学家，确认 21 位已蒸馏哲学家全部参与。
 
 ## Phase 1: 筛选主持人
 
