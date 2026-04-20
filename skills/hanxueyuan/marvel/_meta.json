@@ -3,11 +3,16 @@
   "slug": "marvel",
   "displayName": "Marvel",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775634680647,
-    "commit": "https://github.com/openclaw/skills/commit/f667a455d36deafd8ae4d18d4334a988a0569191"
+    "version": "1.0.3",
+    "publishedAt": 1776295427717,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775634680647,
+      "commit": "https://github.com/openclaw/skills/commit/f667a455d36deafd8ae4d18d4334a988a0569191"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775486909549,
