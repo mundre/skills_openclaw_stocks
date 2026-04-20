@@ -3,11 +3,16 @@
   "slug": "dc-comics",
   "displayName": "Dc Comics",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775634706551,
-    "commit": "https://github.com/openclaw/skills/commit/6d904a5fde71244ceb6aae3ea4214e57f7ddeb43"
+    "version": "1.0.8",
+    "publishedAt": 1776238513354,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775634706551,
+      "commit": "https://github.com/openclaw/skills/commit/6d904a5fde71244ceb6aae3ea4214e57f7ddeb43"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1775400431453,
