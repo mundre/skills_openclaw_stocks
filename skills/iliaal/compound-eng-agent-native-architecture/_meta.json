@@ -3,11 +3,16 @@
   "slug": "compound-eng-agent-native-architecture",
   "displayName": "agent-native-architecture",
   "latest": {
-    "version": "2.55.1",
-    "publishedAt": 1776004138010,
-    "commit": "https://github.com/openclaw/skills/commit/9210caf761e9d3f2aa98944638b171eb71ed60d9"
+    "version": "2.56.1",
+    "publishedAt": 1776518919338,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.55.1",
+      "publishedAt": 1776004138010,
+      "commit": "https://github.com/openclaw/skills/commit/9210caf761e9d3f2aa98944638b171eb71ed60d9"
+    },
     {
       "version": "2.53.0",
       "publishedAt": 1775433105099,
