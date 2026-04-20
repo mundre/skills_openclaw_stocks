@@ -1,3 +1,9 @@
+---
+metadata.openclaw:
+  always: true
+  reason: "Auto-classified as always-load (no specific rule for 'terse')"
+---
+
 # Terse Skill
 
 > 🪨 why use many token when few token do trick
