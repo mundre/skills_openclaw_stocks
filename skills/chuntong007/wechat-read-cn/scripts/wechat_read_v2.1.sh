@@ -1,13 +1,11 @@
 #!/bin/bash
 # wechat_read.sh — Read chat history from a WeChat contact/group via macOS desktop client
-# v2.2: 滚动方式升级
+# v2.1: 修复后的版本，解决了 critical 验证缺陷
 #
 # 主要改进:
 #   - 修复验证逻辑：不再依赖搜索框内容，改为检查实际聊天区
 #   - 改进焦点管理：Enter 前确保在第一项，Enter 后立即验证
 #   - 改进截图时序：扩大截图范围排除搜索框，多次验证滚到底
-#   - v2.2: scroll_to_bottom 改用 End 键（key code 119）
-#   - v2.2: 上下翻页改用 PgUp（key code 116）/ PgDown（key code 121）
 
 set -euo pipefail
 
@@ -24,9 +22,8 @@ CHAT_Y=90
 CHAT_W=830
 CHAT_H=620
 
-# PgUp/PgDown 模式下每次翻页重复按键次数（1 次 PgUp = 1 屏，可调）
-SCROLL_STEPS=1
-SCROLL_DELAY=0.05
+SCROLL_STEPS=8
+SCROLL_DELAY=0.04
 POST_SCROLL_WAIT=0.6
 
 FOCUS_X=750
@@ -264,7 +261,7 @@ verify_contact() {
 }
 
 # ──────────────────────────────────────
-# 改进: scroll_to_bottom — 使用 End 键直达底部
+# 改进: scroll_to_bottom — 多次验证
 # ──────────────────────────────────────
 scroll_to_bottom() {
     log "滚到底部..."
@@ -273,13 +270,16 @@ scroll_to_bottom() {
     cliclick c:"$FOCUS_X","$FOCUS_Y" || true
     sleep 0.3
 
-    # End 键（key code 119）直接跳到最底部
-    osascript -e '
-    tell application "System Events"
-        tell process "WeChat"
-            key code 119
-        end tell
-    end tell' 2>/dev/null || true
+    # 多次 Cmd+Down
+    for i in 1 2 3; do
+        osascript -e '
+        tell application "System Events"
+            tell process "WeChat"
+                key code 125 using command down
+            end tell
+        end tell' 2>/dev/null || true
+        sleep 0.2
+    done
 
     sleep 0.5
 }
@@ -369,27 +369,11 @@ capture_page() {
 }
 
 scroll_up_once() {
-    # PgUp（key code 116）向上翻一页
     local repeat_block=""
     repeat_block="tell application \"System Events\"
         tell process \"WeChat\"
             repeat ${SCROLL_STEPS} times
-                key code 116
-                delay ${SCROLL_DELAY}
-            end repeat
-        end tell
-    end tell"
-    osascript -e "$repeat_block" || fail "Scroll failed"
-    sleep "$POST_SCROLL_WAIT"
-}
-
-scroll_down_once() {
-    # PgDown（key code 121）向下翻一页
-    local repeat_block=""
-    repeat_block="tell application \"System Events\"
-        tell process \"WeChat\"
-            repeat ${SCROLL_STEPS} times
-                key code 121
+                key code 126
                 delay ${SCROLL_DELAY}
             end repeat
         end tell
@@ -487,7 +471,7 @@ do_auto() {
     local contact="$1"
     local max_pages="$2"
 
-    log "=== wechat-read v2.2 自动模式 ==="
+    log "=== wechat-read v2.1 自动模式 ==="
 
     # Step 1: Fast locate
     fast_locate "$contact"

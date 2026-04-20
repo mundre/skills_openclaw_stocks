@@ -124,8 +124,8 @@ bash scripts/wechat_read.sh "<联系人>" --capture <x>,<y> [--pages N]
 点击联系人进入会话，等待聊天加载，然后逐页截图聊天记录。通过 `cliclick` 点击目标坐标进入聊天窗口。
 
 - 截取**聊天内容区域**（右侧面板，不含侧边栏和输入框）
-- 使用 AppleScript `key code 126`（方向键↑）向上滚动
-- 每次滚动执行 **8 次方向键↑**，确保相邻两页有约 **30% 内容重叠**，防止消息遗漏
+- 使用 AppleScript `key code 116`（PgUp）向上滚动
+- 每次滚动执行 **1 次 PgUp**（恰好 1 屏），相邻页面可能有少量重叠
 - 截图保存至 `/tmp/wechat_read_p1.png`、`/tmp/wechat_read_p2.png`……
 - 默认截取 3 页；使用 `--pages N` 指定页数
 
@@ -258,7 +258,7 @@ bash scripts/wechat_read.sh "微信联系人" --capture 200,210 --pages 50
 | 参数 | 当前值 | 控制内容 |
 |------|--------|----------|
 | `CHAT_RECT` | `370,90,830,620` | 聊天内容区截图范围（x, y, 宽, 高） |
-| `SCROLL_STEPS` | `8` | 每次翻页的方向键↑次数 |
-| `SCROLL_DELAY` | `0.04` | 每次方向键↑之间的等待时间（秒） |
+| `SCROLL_STEPS` | `1` | 每次翻页 PgUp/PgDown 次数（1次=1屏） |
+| `SCROLL_DELAY` | `0.05` | 每次按键之间的等待时间（秒） |
 | `POST_SCROLL_WAIT` | `0.6` | 滚动后截图前的等待时间（秒） |
 | `CLICK_FOCUS_POS` | `750,400` | 截图前点击聚焦聊天区域的坐标 |
