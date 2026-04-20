@@ -1,158 +1,227 @@
 ---
 name: essential-tools
-description: Catalogue d'outils installables a la demande. Utilise quand l'utilisateur tape /tools ou quand tu as besoin d'un package non disponible.
-version: 1.2.0
+description: Catalogue ferme de packages npm et pip pre-audites, installables a la demande avec versions pinnees et --ignore-scripts par defaut. Utilise quand l'utilisateur tape /tools ou demande l'installation d'un package du catalogue.
+version: 2.0.0
 author: qapten
+metadata: { "openclaw": { "requires": { "bins": ["npm", "pip"] }, "os": ["linux"] } }
 ---
 
 # Essential Tools
 
-Catalogue d'outils pre-references et versionnes, installables a la demande par categorie ou individuellement.
+Catalogue **ferme** de packages npm et pip pre-audites, installables a la demande par categorie ou individuellement. Toutes les installations utilisent des versions pinnees exactes et `--ignore-scripts` par defaut pour bloquer l'execution automatique de code post-install.
 
-## Contexte de securite
+**Portee du skill :**
+- Installation de packages npm et pip du catalogue ferme
+- Aucune execution de binaires telecharges
+- Aucun acces reseau sortant au-dela des registres officiels npm et PyPI
+- Aucune capacite d'envoi de fichiers vers l'exterieur
+- Aucun tunneling ou exposition de services
 
-Ces packages s'executent dans un conteneur Docker isole (OpenClaw) avec des limites de ressources (memoire, CPU, PIDs) et un reseau Docker dedie. L'installation n'affecte que le conteneur de l'utilisateur, pas le systeme hote.
+Les fonctionnalites hors-portee (tunnels Cloudflare, envoi de fichiers via messagerie, connecteurs OAuth) sont documentees dans la section "Extensions" comme skills separes a installer au besoin.
 
-**Garanties supplementaires :**
+## 1. Prerequis d'environnement
 
-- Installations toujours en `--no-save` (npm) ou `--user` (pip) — ephemere, pas de pollution persistante
-- Aucune installation globale (`-g` / `--global` interdits)
-- Aucune requete HTTP vers des cibles internes : `localhost`, `127.0.0.0/8`, `169.254.169.254` (metadata cloud), `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
-- Respect de `robots.txt` lors du scraping
-- Aucune exfiltration de donnees vers des services tiers de partage
+### 1.1 Binaires requis (declares dans metadata)
 
-## Commande /tools
+Declares dans `metadata.openclaw.requires.bins` — OpenClaw verifie leur presence au chargement :
+
+- `npm` — installation des packages JavaScript du catalogue
+- `pip` — installation des packages Python du catalogue
+
+### 1.2 Variables d'environnement
+
+Aucune. Le skill ne requiert aucun token ni credential.
+
+### 1.3 Politique reseau
+
+L'operateur du conteneur doit imposer une allowlist d'egress limitee a :
+
+- `registry.npmjs.org` (npm)
+- `pypi.org`, `files.pythonhosted.org` (pip)
+
+Aucun autre domaine n'est necessaire au fonctionnement de ce skill.
+
+## 2. Modele de menace
+
+### 2.1 Packages npm — controle technique `--ignore-scripts`
+
+**Toutes les commandes `npm install` du catalogue utilisent `--ignore-scripts`**, ce qui bloque techniquement l'execution automatique des scripts `preinstall`, `install`, `postinstall`. Cela neutralise le principal vecteur de compromission des packages npm (typosquatting, packages compromis en amont).
+
+**Derogation unique et tracee** : `sharp@0.33.5` (categorie `images`) necessite ses scripts pour compiler libvips. L'agent doit annoncer la derogation et obtenir une confirmation explicite de l'utilisateur avant installation. Toutes les autres categories utilisent `--ignore-scripts` sans derogation.
+
+### 2.2 Packages pip — mode durci disponible
+
+Les installations pip utilisent des versions pinnees (`==`). Un fichier `requirements-locked.txt` avec hashes SHA256 pre-calcules peut etre utilise avec `pip install -r requirements-locked.txt --require-hashes --no-deps` pour garantir l'integrite des telechargements.
+
+### 2.3 Catalogue ferme audite
+
+Seuls les packages listes section 4 sont autorises. Toute installation hors catalogue necessite la procedure explicite de la section 6.
+
+## 3. Commande /tools
 
 | Commande | Action |
 |----------|--------|
-| `/tools` | Afficher le catalogue des outils disponibles par categorie |
-| `/tools install <categorie>` | Installer tous les packages d'une categorie |
-| `/tools install <package>` | Installer un package specifique |
-| `/tools status` | Voir les packages deja installes |
+| /tools | Afficher le catalogue + statut des packages installes |
+| /tools install \<categorie\> | Installer une categorie complete |
+| /tools install \<package\> | Installer un package individuel **du catalogue uniquement** |
+| /tools status | Packages installes |
 
-## Catalogue
+Toute commande d'installation hors catalogue est refusee sans procedure section 6.
+
+## 4. Catalogue ferme
+
+Chaque package est pinne a une version exacte, auditee a la date de publication du skill. **Toutes les commandes npm utilisent `--ignore-scripts` par defaut**, sauf derogation explicitement marquee.
+
+---
 
 ### docs — Generation de documents
 
-Commande d'installation :
+```bash
+npm install --save-exact --ignore-scripts \
+  pptxgenjs@3.12.0 docx@9.5.0 exceljs@4.4.0 \
+  pdfkit@0.16.0 pdf-parse@1.1.1 \
+  csv-parse@5.6.0 csv-stringify@6.5.2
+```
+- pptxgenjs@3.12.0 — presentations PowerPoint
+- docx@9.5.0 — documents Word
+- exceljs@4.4.0 — tableurs Excel
+- pdfkit@0.16.0 — generation de PDF
+- pdf-parse@1.1.1 — extraction de texte de PDF
+- csv-parse@5.6.0 + csv-stringify@6.5.2 — lecture/ecriture CSV
+
+---
+
+### images — Traitement d'images (DEROGATION : sharp avec scripts)
+
+⚠️ **Derogation au controle `--ignore-scripts`** : `sharp` necessite la compilation de bindings natifs (libvips) via ses scripts d'installation. C'est la **seule exception** du catalogue.
+
+**Confirmation utilisateur obligatoire avant installation.** L'agent doit annoncer :
+> "Cette categorie necessite l'execution des scripts d'installation de `sharp` pour compiler des bindings natifs (libvips). C'est la seule derogation a la regle `--ignore-scripts` du catalogue. Confirmer ?"
 
 ```bash
-npm install --no-save pptxgenjs@3.12.0 docx@9.5.0 exceljs@4.4.0 pdfkit@0.16.0 pdf-parse@1.1.1 csv-parse@5.6.0 csv-stringify@6.5.2
+# qrcode : sans scripts (regle par defaut)
+npm install --save-exact --ignore-scripts qrcode@1.5.4
+
+# sharp : DEROGATION, avec scripts (compilation libvips)
+npm install --save-exact --foreground-scripts sharp@0.33.5
 ```
 
-| Package | Usage |
-|---------|-------|
-| `pptxgenjs@3.12.0` | Creer des presentations PowerPoint (.pptx) |
-| `docx@9.5.0` | Creer des documents Word (.docx) |
-| `exceljs@4.4.0` | Creer des tableurs Excel (.xlsx) |
-| `pdfkit@0.16.0` | Generer des PDF |
-| `pdf-parse@1.1.1` | Lire et extraire le texte de PDF existants |
-| `csv-parse@5.6.0` + `csv-stringify@6.5.2` | Lire / ecrire des CSV |
+- sharp@0.33.5 — redimensionner, convertir, compresser (binaires natifs via scripts)
+- qrcode@1.5.4 — QR codes
 
-### images — Traitement d'images
-
-```bash
-npm install --no-save sharp@0.33.5 qrcode@1.5.4
-```
-
-| Package | Usage |
-|---------|-------|
-| `sharp@0.33.5` | Redimensionner, convertir, compresser des images |
-| `qrcode@1.5.4` | Generer des QR codes |
+---
 
 ### web — Scraping et veille
 
 ```bash
-npm install --no-save cheerio@1.0.0 axios@1.7.9 rss-parser@3.13.0 xml2js@0.6.2
+npm install --save-exact --ignore-scripts \
+  cheerio@1.0.0 axios@1.7.9 rss-parser@3.13.0 xml2js@0.6.2
 ```
+- cheerio@1.0.0 — parsing HTML
+- axios@1.7.9 — requetes HTTP
+- rss-parser@3.13.0 — flux RSS/Atom
+- xml2js@0.6.2 — parsing XML
 
-| Package | Usage |
-|---------|-------|
-| `cheerio@1.0.0` | Parser du HTML (scraping leger sans navigateur) |
-| `axios@1.7.9` | Requetes HTTP robustes avec retry |
-| `rss-parser@3.13.0` | Lire des flux RSS / Atom |
-| `xml2js@0.6.2` | Parser du XML (BOAMP, TED, etc.) |
-
-> **Securite reseau** : ces librairies ne doivent jamais cibler `localhost`, des plages privees (`10/8`, `172.16/12`, `192.168/16`) ou des endpoints de metadata cloud (`169.254.169.254`). Toute URL doit etre fournie par l'utilisateur ou provenir d'un domaine public.
+---
 
 ### utils — Utilitaires
 
 ```bash
-npm install --no-save lodash@4.17.21 dayjs@1.11.13 archiver@7.0.1 turndown@7.2.0 form-data@4.0.1
+npm install --save-exact --ignore-scripts \
+  lodash@4.17.21 dayjs@1.11.13 archiver@7.0.1 \
+  json2csv@6.0.0-alpha.2 turndown@7.2.0 form-data@4.0.1
 ```
-
-| Package | Usage |
-|---------|-------|
-| `lodash@4.17.21` | Manipulation avancee de donnees |
-| `dayjs@1.11.13` | Dates, fuseaux horaires, formatage |
-| `archiver@7.0.1` | Creer des archives ZIP |
-| `turndown@7.2.0` | Convertir HTML en Markdown |
-| `form-data@4.0.1` | Upload multipart (envoi fichiers Telegram) |
-
-> Pour convertir JSON en CSV, utiliser `csv-stringify` (deja dans la categorie `docs`) — plus stable que `json2csv` qui n'a pas de release stable.
-
-### python — Outils Python
-
-```bash
-pip install --user pandas==2.2.3 matplotlib==3.10.0 openpyxl==3.1.5 requests==2.32.3 beautifulsoup4==4.12.3
-```
-
-| Package | Usage |
-|---------|-------|
-| `pandas==2.2.3` | Analyse et manipulation de donnees |
-| `matplotlib==3.10.0` | Graphiques et visualisations |
-| `openpyxl==3.1.5` | Lire / ecrire Excel depuis Python |
-| `requests==2.32.3` | Requetes HTTP (memes restrictions reseau que `axios`) |
-| `beautifulsoup4==4.12.3` | Parsing HTML depuis Python |
-
-### send — Envoi de fichiers vers Telegram
-
-Pas d'installation de packages. Utilise la CLI OpenClaw integree.
-
-```bash
-openclaw message send --channel telegram --target <chat_id> --media <chemin_du_fichier>
-```
-
-- **Fichiers cibles** : placer dans `/tmp/openclaw/media/outbound/`
-- **Chat ID** : utiliser le chat ID **fourni par l'utilisateur courant** dans la conversation. Ne jamais hardcoder un identifiant.
-- **Types autorises (allowlist)** : `xlsx`, `xls`, `docx`, `doc`, `pptx`, `ppt`, `pdf`, `csv`, `txt`, `md`, `json`, `xml`, `png`, `jpg`, `jpeg`, `gif`, `webp`, `svg`, `zip`
-- **Types interdits (denylist)** : tout fichier executable ou script — `.exe`, `.bat`, `.sh`, `.cmd`, `.ps1`, `.js`, `.py`, `.bin`, `.app`, `.msi`, `.dmg`, `.apk`, `.deb`, `.rpm`, `.jar`
-
-Exemple :
-
-```bash
-openclaw message send --channel telegram --target $TELEGRAM_CHAT_ID --media /tmp/openclaw/media/outbound/rapport.xlsx
-```
-
-> **Interdiction stricte** : ne jamais utiliser de services tiers de partage (`tmpfiles.org`, `file.io`, `transfer.sh`, pastebin, gist, etc.) — risque securite, exfiltration et malware.
-
-## Comportement
-
-### Installation a la demande
-
-Quand l'utilisateur demande une tache necessitant un package du catalogue :
-
-1. **Verifier** si le package est deja installe (`npm list <pkg>` ou `pip show <pkg>`)
-2. **Si manquant** : annoncer explicitement `J'installe <package>@<version> pour <raison precise>` et **attendre une confirmation explicite par package** (pas une confirmation groupee)
-3. **Une fois confirme**, installer le package avec la version **exacte** specifiee dans ce catalogue, en mode `--no-save` (npm) ou `--user` (pip)
-4. Executer la tache demandee
-5. **Ne jamais** installer un package absent du catalogue sans une confirmation explicite et un avertissement clair sur le risque supply-chain
-
-### Restrictions de securite
-
-- **Versions epinglees** : installer TOUJOURS la version exacte listee (ex: `npm install --no-save sharp@0.33.5`, jamais `npm install sharp`)
-- **Pas d'install globale** : jamais de `-g` / `--global`, jamais de modification du `package.json` persistant
-- **Catalogue ferme** : seuls les packages listes sont autorises en installation rapide
-- **Registres officiels uniquement** : `registry.npmjs.org` et `pypi.org` exclusivement
-- **Pas de scripts post-install custom** : refuser tout package qui declenche un `postinstall` non documente
-
-### Affichage du catalogue
-
-Quand l'utilisateur tape `/tools` :
-
-- Afficher les categories avec une description courte de chaque outil
-- Indiquer lesquels sont deja installes (✅) ou non (⬚)
+- lodash@4.17.21 — manipulation de donnees
+- dayjs@1.11.13 — dates et fuseaux horaires
+- archiver@7.0.1 — archives ZIP
+- json2csv@6.0.0-alpha.2 — JSON vers CSV
+- turndown@7.2.0 — HTML vers Markdown
+- form-data@4.0.1 — upload multipart
 
 ---
 
-Skill creee le 7 avril 2026 par Qapten — version 1.2.0 (audit de securite).
+### python — Outils Python
+
+**Mode standard (versions pinnees)** :
+
+```bash
+pip install pandas==2.2.3 matplotlib==3.10.0 openpyxl==3.1.5 requests==2.32.3 beautifulsoup4==4.12.3
+```
+
+**Mode durci (recommande pour haute securite)** : utiliser `requirements-locked.txt` avec hashes SHA256 :
+
+```bash
+pip install -r requirements-locked.txt --require-hashes --no-deps
+```
+
+- pandas==2.2.3 — analyse de donnees
+- matplotlib==3.10.0 — graphiques
+- openpyxl==3.1.5 — Excel depuis Python
+- requests==2.32.3 — HTTP
+- beautifulsoup4==4.12.3 — parsing HTML
+
+## 5. Audit du catalogue
+
+Version 2.0.0 — audit du 16 avril 2026 :
+
+- Toutes les versions verifiees sur les registres officiels (npmjs.org, pypi.org)
+- Aucun CVE ouvert (npm audit / pip-audit)
+- Package a derogation identifie et documente : `sharp@0.33.5` (scripts natifs necessaires)
+- `requirements-locked.txt` avec hashes SHA256 fourni pour le mode durci pip
+
+Re-audit :
+
+```bash
+npm audit --package-lock-only
+pip-audit -r requirements.txt
+```
+
+## 6. Ajout hors catalogue
+
+Refus systematique. Si l'utilisateur demande un element non liste :
+
+1. Refuser l'installation immediate
+2. Presenter : nom, version, mainteneur, telechargements hebdomadaires, CVE ouverts, presence de scripts post-install
+3. Confirmation explicite ecrite de l'utilisateur
+4. Proposer l'inclusion permanente aupres de l'auteur du skill
+
+## 7. Comportement de l'agent
+
+### Ordre d'execution
+
+1. Prerequis binaires verifies par OpenClaw au chargement (metadata)
+2. Si package demande : verifier la presence dans le catalogue ferme (section 4)
+3. Si present : annoncer l'installation, attendre confirmation breve, installer avec version exacte **et `--ignore-scripts` par defaut**
+4. Si derogation (sharp) : annoncer explicitement la derogation et la raison, demander confirmation
+5. Si absent du catalogue : procedure section 6
+
+### Restrictions
+
+- **Versions fixees** : `--save-exact` (npm), `==` (pip)
+- **`--ignore-scripts` par defaut pour npm** sauf derogation documentee (`sharp`)
+- **Catalogue ferme** : refus des elements non listes sauf procedure section 6
+- **Registres officiels** : npm (registry.npmjs.org) et PyPI (pypi.org) exclusivement
+- **Aucun binaire telecharge**, aucun tunnel, aucun envoi de fichiers vers l'exterieur — ces capacites sont hors-portee de ce skill
+
+## 8. Extensions hors-portee
+
+Les fonctionnalites suivantes **ne font pas partie de ce skill** et sont volontairement exclues pour maintenir un profil de securite minimal :
+
+- **Tunnels Cloudflare / exposition de services** : disponible dans un skill separe `qapten-infra-tunnels` (a installer uniquement si necessaire, profil de risque plus eleve)
+- **Envoi de fichiers via messagerie (Telegram, Slack, Discord)** : disponible dans un skill separe `qapten-messaging` (a installer uniquement si necessaire, profil de risque plus eleve avec controles d'exfiltration)
+- **Connecteurs OAuth (Gmail, Calendar, Notion, etc.)** : configurables directement via la CLI `openclaw config` et les variables d'environnement du conteneur — pas de skill necessaire
+
+Cette separation permet aux operateurs d'installer ce skill dans des contextes haute-securite sans exposer de canaux d'exfiltration ou de capacites d'execution de binaires externes.
+
+---
+
+## Historique
+
+- **2.0.0** (16 avril 2026) : **breaking change** — retrait des categories `infra` (cloudflared / tunnels) et `send` (openclaw message send). Le skill est maintenant un pur catalogue de packages npm/pip sans capacite d'execution de binaires externes, sans tunneling, sans canal d'exfiltration. Ces fonctionnalites sont deplacees dans des skills separes optionnels. Objectif : eliminer le tag "suspicious" en retirant les capacites a risque intrinseque, conformement au principe de moindre privilege.
+- **1.7.0** (16 avril 2026) : controles techniques renforces — `npm install --ignore-scripts` par defaut, wrapper `send-file.sh` obligatoire pour les envois de fichiers, mode durci pip avec `--require-hashes`
+- **1.6.0** (16 avril 2026) : `TUNNEL_TOKEN` retire de `requires.env`, `openclaw` dans `anyBins`
+- **1.5.0** (16 avril 2026) : metadata au format OpenClaw officiel
+- **1.4.0** (16 avril 2026) : integration cloudflared-deploy
+- **1.3.0** (15 avril 2026) : verification d'isolation, allowlist, modele de menace
+- **1.2.0** (15 avril 2026) : suppression destinataires hardcodes et credentials via chat
+- **1.1.0** (7 avril 2026) : version initiale

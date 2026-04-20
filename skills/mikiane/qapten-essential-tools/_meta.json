@@ -3,11 +3,16 @@
   "slug": "qapten-essential-tools",
   "displayName": "qapten essential tools",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775810939104,
-    "commit": "https://github.com/openclaw/skills/commit/d3bc9ebb87c0783743811c7acee2504ab452d453"
+    "version": "1.4.6",
+    "publishedAt": 1776406689073,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775810939104,
+      "commit": "https://github.com/openclaw/skills/commit/d3bc9ebb87c0783743811c7acee2504ab452d453"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1775571405147,
