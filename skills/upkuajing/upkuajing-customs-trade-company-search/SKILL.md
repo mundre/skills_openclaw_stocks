@@ -1,7 +1,7 @@
 ---
 name: upkuajing-customs-trade-company-search
 description: Official skill for upkuajing (跨境魔方). Find companies (找公司) and global buyers using customs trade data. Get trade order details, business contact info, and lead generation tools for import/export market research and supply chain analysis.
-metadata: {"version":"1.0.5","homepage":"https://www.upkuajing.com","clawdbot":{"emoji":"🏢","requires":{"bins":["python"],"env":["UPKUAJING_API_KEY"]},"primaryEnv":"UPKUAJING_API_KEY"}}
+metadata: {"version":"1.0.6","homepage":"https://www.upkuajing.com","clawdbot":{"emoji":"🏢","requires":{"bins":["python"],"env":["UPKUAJING_API_KEY"]},"primaryEnv":"UPKUAJING_API_KEY"}}
 ---
 
 # UpKuaJing Customs Trade Company Search
@@ -22,6 +22,10 @@ API key generation and top-up are provided through the `auth.py` script.
 
 Script directory: `scripts/*.py`
 Run example: `python scripts/*.py`
+
+**Important**: Always use direct script invocation like `python scripts/trade_list_search.py`. **Do NOT use** shell compound commands like `cd scripts && python trade_list_search.py`.
+
+**Important**: Always use direct script invocation like `python scripts/company_list_search.py`. **Do NOT use** shell compound commands like `cd scripts && python company_list_search.py`.
 
 ### Two Search Methods
 
@@ -208,3 +212,13 @@ python scripts/company_list_search.py --task_id 'a1b2-c3d4' --query_count 1000
 - **Prohibit outputting technical parameter format**: Do not display code-style parameters in responses, convert to natural language
 - **Do not estimate or guess per-call fees** — use `python scripts/auth.py --price_info` to get accurate pricing information
 - **Do not** guess parameter names, get accurate parameter names and formats from documentation
+
+## Related Skills
+
+Other UpKuaJing skills you might find useful:
+
+- upkuajing-global-company-people-search — Global company and people search
+- upkuajing-email-tool — Send emails and manage email tasks
+- upkuajing-map-merchants-search — Map-based merchant search
+- upkuajing-sms-tool — Send SMS and manage SMS tasks
+- upkuajing-contact-info-validity-check — Check contact info validity
