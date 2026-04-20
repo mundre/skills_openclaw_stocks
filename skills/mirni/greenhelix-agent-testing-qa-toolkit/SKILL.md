@@ -1,6 +1,6 @@
 ---
 name: greenhelix-agent-testing-qa-toolkit
-version: "1.2.0"
+version: "1.3.1"
 description: "Agent Testing & QA Toolkit: Integration, Chaos, and Contract Testing for Multi-Agent Systems. Comprehensive testing toolkit for agent commerce systems: unit vs integration vs e2e testing strategies, mock strategies, chaos testing, contract testing between agents, performance benchmarking, CI/CD for agent deployments, and canary releases."
 license: MIT
 compatibility: [openclaw]
@@ -12,12 +12,19 @@ content_type: markdown
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # Agent Testing & QA Toolkit: Integration, Chaos, and Contract Testing for Multi-Agent Systems
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 >
 > **Referenced credentials** (you supply these in your own environment):
 > - `GREENHELIX_API_KEY`: API authentication for GreenHelix gateway (read/write access to purchased API tools only)
@@ -310,7 +317,7 @@ class AgentTestHarness:
         """Make a real API call to GreenHelix."""
         start = time.monotonic()
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         latency_ms = (time.monotonic() - start) * 1000
@@ -509,9 +516,9 @@ Three rules keep cassettes reliable. First, never record cassettes with producti
 
 Mocks are appropriate when you need to test your agent's decision logic without involving any external system. The goal is speed and isolation: validate that your agent makes the right decisions given specific API responses, without caring whether those responses came from a real server. Use mocks for unit tests. Use the test harness (Chapter 2) for integration tests. Never mock in end-to-end tests.
 
-### Mocking the /v1/execute Endpoint
+### Mocking the the REST API Endpoint
 
-The GreenHelix gateway exposes a single endpoint for tool execution: `POST /v1/execute` with a JSON body containing `tool` and `input` fields. This makes mocking straightforward -- you intercept the one endpoint and route responses based on the tool name.
+The GreenHelix gateway exposes a single endpoint for tool execution: the REST API (`POST /v1/{tool}`) with a JSON body containing `tool` and `input` fields. This makes mocking straightforward -- you intercept the one endpoint and route responses based on the tool name.
 
 ```python
 import json
@@ -532,7 +539,7 @@ class MockResponse:
 
 class GreenHelixMock:
     """
-    Mock server for GreenHelix /v1/execute endpoint.
+    Mock server for GreenHelix REST API endpoints.
     Supports static responses, stateful escrow simulation,
     and programmable error injection.
     """
@@ -573,7 +580,7 @@ class GreenHelixMock:
             self.inject_error(status_code)
 
     def execute(self, tool: str, input_data: dict) -> dict:
-        """Simulate a /v1/execute call."""
+        """Simulate a the REST API call."""
         self._call_log.append({
             "tool": tool,
             "input": input_data,
@@ -2124,7 +2131,7 @@ def configure_test_budget(api_key: str, agent_id: str) -> None:
     """Set conservative budget caps for test environments."""
     import requests
     resp = requests.post(
-        "https://sandbox.greenhelix.net/v1/execute",
+        "https://sandbox.greenhelix.netthe REST API",
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -2166,7 +2173,7 @@ def check_rollback_criteria(
 
     def execute(tool: str, input_data: dict) -> dict:
         resp = session.post(
-            f"{base_url}/execute",
+            f"{base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         return resp.json() if resp.status_code == 200 else {"error": resp.status_code}
@@ -2650,7 +2657,7 @@ def monitor_canary_via_greenhelix(
 
     def get_metrics(agent_id: str) -> dict:
         resp = session.post(
-            f"{base_url}/execute",
+            f"{base_url}/v1",
             json={
                 "tool": "get_agent_metrics",
                 "input": {"agent_id": agent_id, "window": "5m"},
