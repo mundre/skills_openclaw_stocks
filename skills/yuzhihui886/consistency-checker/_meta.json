@@ -3,9 +3,15 @@
   "slug": "consistency-checker",
   "displayName": "Consistency Checker",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775320014530,
-    "commit": "https://github.com/openclaw/skills/commit/081443a855db91ee9c0b975b354379832d995ea0"
+    "version": "2.0.0",
+    "publishedAt": 1776154726040,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775320014530,
+      "commit": "https://github.com/openclaw/skills/commit/081443a855db91ee9c0b975b354379832d995ea0"
+    }
+  ]
 }
