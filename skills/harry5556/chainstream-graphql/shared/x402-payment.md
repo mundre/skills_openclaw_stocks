@@ -9,6 +9,29 @@ ChainStream supports **two payment protocols** for purchasing subscription plans
 
 Plans and pricing are **identical** across both protocols. The only difference is which chain/token you pay with.
 
+## Trial Plans (Free Trial)
+
+New users are **automatically granted a subscription plan** on login — no manual purchase needed:
+
+| Action | Auto-granted Plan | Quota | Dedup |
+|--------|------------------|-------|-------|
+| `chainstream login` (new wallet created) | nano ($1) | 50,000 CU / 30 days | Per wallet (Turnkey org) |
+| `chainstream bind-email` or `chainstream login --email` | micro ($5) | 350,000 CU / 30 days | Per email address |
+
+- **Key-based users**: auto-receive nano plan (50K CU) immediately on first login
+- **Email-verified users**: auto-upgraded to micro plan (350K CU) on `bind-email` or `login --email`
+- **Dedup by email**: same email address only grants the micro upgrade once, even if bound to multiple wallets
+- **No manual purchase step**: the plan is activated server-side; `plan status` will show the active trial plan
+- **Upgrade behavior**: email verification replaces the nano plan with micro (quota is reset to micro's full allocation)
+
+Trial plans are **server-side only** — no on-chain transaction occurs. Agents do not need to change their workflow; the user already has API access after `chainstream login`.
+
+```bash
+# Check active plan after login
+npx @chainstream-io/cli plan status --json
+# Output: { "plan": "nano", "quota": { "used": 0, "total": 50000 }, "active": true }
+```
+
 ## Plans
 
 Plans and pricing are dynamic. **Always fetch the latest from the API — do NOT hardcode plan names or prices.**
@@ -31,39 +54,43 @@ When a user needs to purchase a subscription:
 1. **Fetch available plans**: call `GET /x402/pricing` or `GET /mpp/pricing`
 2. **Present ALL plans to the user** with name, price, quota (CU), and duration — let them choose. **NEVER auto-select a plan. NEVER default to any plan. The user MUST explicitly choose.**
 3. **Explain what it means**: "A subscription gives you a pool of **Compute Units (CU)**. Each API call consumes CU from the pool — the amount varies by endpoint complexity and response size. CU is NOT the same as API call count. The quota is valid for 30 days." **Always use "CU" as the unit — NEVER say "calls" or "requests" when describing quota.**
-4. **Ask which payment method the user has**:
+4. **Check wallet balance** (x402 only): `wallet balance --chain base` and/or `--chain sol` to confirm USDC is available. Also run `plan status` — if a trial plan is already active and sufficient, no purchase may be needed
+5. **Ask which payment method the user has**:
    - USDC on Base or Solana → use x402
    - USDC.e on Tempo → use MPP
    - No crypto wallet → obtain API Key from Dashboard
-5. **Configure payment chain** (x402 only):
-   - User has USDC on Base → `npx @chainstream-io/cli config set --key walletChain --value base` (default after `chainstream login`, usually no action needed)
+6. **Set payment chain** (x402 only, default is `base`):
+   - User has USDC on Base → no action needed (default)
    - User has USDC on Solana → `npx @chainstream-io/cli config set --key walletChain --value sol`
-6. **Wait for the user to confirm** both the plan and payment method
-7. **Execute the purchase**: `GET /x402/purchase?plan=<USER_CHOSEN>` or `GET /mpp/purchase?plan=<USER_CHOSEN>`
+7. **Wait for the user to confirm** both the plan and payment chain
+8. **Execute the purchase**: `plan purchase --plan <USER_CHOSEN> --json` (x402) or `tempo request .../mpp/purchase?plan=<USER_CHOSEN>` (MPP)
 
 **NEVER hardcode a plan name in the URL.** The `?plan=` parameter MUST come from the user's explicit selection. Do NOT say "you need the nano plan" — always show all options and let the user decide.
 
 ### Purchase flow (CLI)
 
-Use the `plan purchase` command to subscribe. Works in all environments (terminal, AI agent, CI/CD):
+`plan purchase` uses the configured `walletChain` for payment. **Default is `base`** (set after `chainstream login`). If your USDC is on Solana, you must set `walletChain` to `sol` before purchasing.
 
 ```bash
 # Step 1: Check existing subscription
 npx @chainstream-io/cli plan status --json
 
-# Step 2: Show plans (machine-readable) — present ALL to user, let them choose
+# Step 2: Show plans — present ALL to user, let them choose
 npx @chainstream-io/cli wallet pricing --json
 
-# Step 3: Configure payment chain if needed (default is base after login)
-npx @chainstream-io/cli config set --key walletChain --value sol   # if user has USDC on Solana
+# Step 3: Check wallet balance to confirm USDC is on the right chain
+npx @chainstream-io/cli wallet balance --chain base --json   # check Base
+npx @chainstream-io/cli wallet balance --chain sol --json    # check Solana
+# Default payment chain is base. If USDC is on Solana:
+npx @chainstream-io/cli config set --key walletChain --value sol
 
-# Step 4: Purchase after user confirms (non-interactive — signs x402 and pays directly)
+# Step 4: Purchase (real USDC payment via EIP-3009; not needed if trial plan is already active)
 npx @chainstream-io/cli plan purchase --plan <USER_CHOSEN> --json
 # Output: { "plan": "nano", "apiKey": "cs_live_...", "expiresAt": "..." }
-# API Key is auto-saved to config. Agent can now make data queries.
+# API Key auto-saved to config.
 ```
 
-This command performs real USDC payment (EIP-3009 `signTypedData`). Always present plans and get explicit user confirmation before calling `plan purchase`.
+Always present plans and get explicit user confirmation before calling `plan purchase`.
 
 For MPP (USDC.e on Tempo), `plan purchase` is not available — use `tempo request` instead (see MPP section below).
 

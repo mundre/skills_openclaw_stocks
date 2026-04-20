@@ -3,11 +3,16 @@
   "slug": "chainstream-graphql",
   "displayName": "Chainstream Graphql",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1775579325970,
-    "commit": "https://github.com/openclaw/skills/commit/9422e57ba824239f83deacdd4c1f287e587504e7"
+    "version": "1.0.6",
+    "publishedAt": 1776437569035,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1775579325970,
+      "commit": "https://github.com/openclaw/skills/commit/9422e57ba824239f83deacdd4c1f287e587504e7"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774974957995,

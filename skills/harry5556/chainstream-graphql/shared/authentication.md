@@ -2,6 +2,16 @@
 
 ChainStream supports wallet signature and API key authentication. Choose the integration path that matches your agent's wallet setup.
 
+## Agent Bootstrap Checklist
+
+**Every ChainStream skill (data / defi / graphql) requires auth. Run these 3 steps before any API call:**
+
+1. `npx @chainstream-io/cli config auth` — check login status
+2. If NOT logged in: `npx @chainstream-io/cli login` (creates wallet + auto-grants nano trial: 50K CU free, 30 days)
+3. `npx @chainstream-io/cli plan status` — verify subscription is active
+
+After login, most new users can immediately use all API endpoints (nano trial is sufficient for typical queries). To upgrade: `bind-email` for micro (350K CU) or `plan purchase` for paid plans.
+
 ## Which Path to Use
 
 | Your Agent Has | Integration Path | Auth | Payment Protocol |
@@ -41,6 +51,8 @@ What happens under the hood:
 4. CLI stores the organization ID and wallet addresses in `~/.config/chainstream/config.json`
 5. All API calls use SIWX wallet signature auth; x402 payment uses EIP-3009 signed authorization
 
+> New wallets are automatically granted a **nano trial plan** ($1, 50K CU, 30 days). No manual purchase needed — the plan is activated immediately. See [x402-payment.md](x402-payment.md#trial-plans-free-trial) for details.
+
 ### Session management
 
 ```bash
@@ -52,7 +64,7 @@ npx @chainstream-io/cli logout                    # Clear session (P-256 keys pr
 
 ### Optional: Bind email for recovery
 
-After creating a wallet, you can optionally bind an email for account recovery:
+After creating a wallet, you can optionally bind an email for account recovery. This also **auto-upgrades the trial plan to micro** ($5, 350K CU, 30 days; dedup by email — same email only grants once):
 
 ```bash
 # Interactive (TTY terminal):
@@ -68,7 +80,7 @@ npx @chainstream-io/cli bind-email-verify --otp-id <otpId> --code <code> --email
 
 ### Optional: Email OTP login
 
-If you prefer email-based login (e.g., to recover an existing wallet on a new device):
+If you prefer email-based login (e.g., to recover an existing wallet on a new device). First-time email login also auto-upgrades the trial plan to micro ($5, 350K CU; dedup by email):
 
 ```bash
 # Interactive (TTY terminal):

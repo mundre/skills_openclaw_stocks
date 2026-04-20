@@ -1,15 +1,15 @@
 ---
 name: chainstream-graphql
 description: >-
-  Execute flexible GraphQL queries against ChainStream's on-chain data warehouse (25 cubes in 3 chain groups: EVM, Solana, Trading).
+  Execute flexible GraphQL queries against ChainStream's on-chain data warehouse (27 cubes in 3 chain groups: EVM, Solana, Trading).
   Use when user needs custom analytics beyond standard REST/MCP — cross-cube JOINs, custom aggregations, complex WHERE filters,
   time-series analysis, or SQL-level flexibility on blockchain data. Supports x402/MPP auto-payment.
-  Keywords: GraphQL, query, cube, DEXTrades, DEXTradeByTokens, OHLC, aggregation, join, on-chain analytics, custom query.
+  Keywords: GraphQL, query, cube, DEXTrades, DEXTradeByTokens, Pairs, aggregation, join, on-chain analytics, custom query.
 ---
 
 # ChainStream GraphQL
 
-Flexible GraphQL interface to ChainStream's on-chain data warehouse. 25 cubes organized in 3 chain groups (EVM / Solana / Trading), covering DEX trades, token-centric trade analysis, OHLC, wallet PnL, transfers, blocks, transactions, prediction markets, and more — across Solana, Ethereum, BSC, and Polygon.
+Flexible GraphQL interface to ChainStream's on-chain data warehouse. 27 cubes organized in 3 chain groups (EVM / Solana / Trading), covering DEX trades, token-centric trade analysis, trading pairs, transfers, blocks, transactions, prediction markets, and more — across Solana, Ethereum, BSC, and Polygon.
 
 - **Endpoint**: `https://graphql.chainstream.io/graphql` (routed through APISIX gateway)
 - **CLI**: `npx @chainstream-io/cli graphql`
@@ -26,13 +26,20 @@ Flexible GraphQL interface to ChainStream's on-chain data warehouse. 25 cubes or
 | Complex filters (multi-condition WHERE, nested, OR via `any`) | **GraphQL** | Full filter operator support |
 | Time-series data with custom resolution | **GraphQL** | Time interval bucketing + dimension aggregation |
 | Prediction market data (PolyMarket) | **GraphQL** | PredictionTrades/Managements/Settlements cubes (Polygon) |
-| Data not exposed by REST API | **GraphQL** | Direct access to all 25 cubes |
+| Data not exposed by REST API | **GraphQL** | Direct access to all 27 cubes |
 
 ## Integration Path
 
+**Before anything else (CLI path), ensure user is authenticated:**
+1. `npx @chainstream-io/cli config auth` — check login status
+2. If NOT logged in → `npx @chainstream-io/cli login` (creates EVM + Solana wallet, auto-grants **nano trial plan: 50K CU free, 30 days** — no purchase needed)
+3. `npx @chainstream-io/cli plan status` — verify subscription is active
+
+**New users get a free trial on login (50K CU).** For details on trial plans and upgrade options, see [`shared/authentication.md`](../shared/authentication.md#agent-bootstrap-checklist).
+
 1. **Has API Key?**
    → YES → Use CLI directly: `npx @chainstream-io/cli graphql query --query '...'`
-   → NO → CLI auto-handles on first 402 (see Payment section below)
+   → NO → Ensure logged in (see above), then CLI auto-handles on first 402
 
 2. **First time / unsure about schema?**
    → Run `npx @chainstream-io/cli graphql schema --summary` to discover available cubes
@@ -82,7 +89,7 @@ npx @chainstream-io/cli wallet pricing
 npx @chainstream-io/cli graphql schema --summary
 ```
 
-This returns a compact list of all 25 cubes organized by chain group (EVM/Solana/Trading) with descriptions and top-level fields. If you need details on a specific cube:
+This returns a compact list of all 27 cubes organized by chain group (EVM/Solana/Trading) with descriptions and top-level fields. If you need details on a specific cube:
 
 ```bash
 npx @chainstream-io/cli graphql schema --type DEXTrades
@@ -142,7 +149,7 @@ query {
 # Trading (cross-chain pre-aggregated, no network arg)
 query {
   Trading {
-    OHLC(tokenAddress: {is: "..."}, limit: {count: 24}) {
+    Pairs(tokenAddress: {is: "..."}, limit: {count: 24}) {
       TimeMinute
       Price { Open High Low Close }
     }
@@ -165,9 +172,9 @@ query {
 
 | Chain Group | Wrapper | Cubes |
 |------------|---------|-------|
-| **Solana** | `Solana { ... }` | DEXTrades, DEXTradeByTokens, Transfers, BalanceUpdates, DEXPoolEvents, TokenSupplyUpdates, Blocks, Transactions, Instructions, Rewards, DEXOrders, DEXPools, TokenHolders, TransactionBalances, WalletTokenPnl |
-| **EVM** | `EVM(network: eth\|bsc\|polygon) { ... }` | DEXTrades, DEXTradeByTokens, Transfers, BalanceUpdates, DEXPoolEvents, TokenSupplyUpdates, Blocks, Transactions, Events, Calls, MinerRewards, DEXPools, TokenHolders, DEXPoolSlippages, TransactionBalances, Uncles, WalletTokenPnl, PredictionTrades*, PredictionManagements*, PredictionSettlements* |
-| **Trading** | `Trading { ... }` | OHLC, TokenTradeStats |
+| **Solana** | `Solana { ... }` | DEXTrades, DEXTradeByTokens, Transfers, BalanceUpdates, Blocks, Transactions, DEXPools, Instructions, InstructionBalanceUpdates, Rewards, DEXOrders, TokenSupplyUpdates |
+| **EVM** | `EVM(network: eth\|bsc\|polygon) { ... }` | DEXTrades, DEXTradeByTokens, Transfers, BalanceUpdates, Blocks, Transactions, DEXPoolEvents, Events, Calls, MinerRewards, DEXPoolSlippages, TokenHolders, TransactionBalances, Uncles, PredictionTrades*, PredictionManagements*, PredictionSettlements* |
+| **Trading** | `Trading { ... }` | Pairs, Tokens, Currencies, Trades |
 
 *Prediction cubes only available on `polygon` network.
 
@@ -184,13 +191,16 @@ query {
 
 | Error | Meaning | Recovery |
 |-------|---------|----------|
-| 401 / "Not authenticated" | No API Key configured | `npx @chainstream-io/cli config set --key apiKey --value <key>` |
-| 402 | No active subscription | CLI auto-handles: plan selection → x402/MPP payment → retry. **MANDATORY — READ** [`shared/x402-payment.md`](../shared/x402-payment.md) for manual purchase flow |
+| 401 / "Not authenticated" | Not logged in or no API Key | First `config auth` → `login` if not logged in (auto-grants nano trial 50K CU) → retry. If still failing: `config set --key apiKey --value <key>` |
+| 402 | No active subscription | First `config auth` → `login` if needed (trial may suffice) → `plan status`. If no subscription or quota exhausted: `wallet pricing` then `plan purchase`. **MANDATORY — READ** [`shared/x402-payment.md`](../shared/x402-payment.md) for manual purchase flow |
 | "GraphQL error: ..." | Invalid query syntax or non-existent field | Check field names against `graphql schema --type <cube>` |
 | 429 | Rate limit | Wait 1s, exponential backoff |
 | 5xx | Server error | Retry once after 2s |
 
-On 401/402: ask the user "Do you have a ChainStream API Key?" — if yes, set it; if no, load [`shared/x402-payment.md`](../shared/x402-payment.md) for the full purchase flow. GraphQL shares the same API Key / subscription pool as the REST API — no separate purchase needed.
+On 401/402, follow this sequence:
+1. **Check login**: `npx @chainstream-io/cli config auth` — if not logged in, run `login` (creates wallet + auto-grants nano trial with 50K CU free). After login, retry the failed command — it will likely succeed now
+2. **Check subscription**: `npx @chainstream-io/cli plan status` — if `active: true` with remaining quota, retry
+3. **If logged in but no subscription**: ask the user "Do you have a ChainStream API Key?" — if yes, `config set --key apiKey --value <key>` and retry; if no, load [`shared/x402-payment.md`](../shared/x402-payment.md) for the purchase flow. GraphQL shares the same API Key / subscription pool as the REST API — no separate purchase needed.
 
 ## Skill Map
 
