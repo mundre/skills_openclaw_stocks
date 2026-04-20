@@ -3,11 +3,16 @@
   "slug": "zion-baas-skill",
   "displayName": "zion-baas-skill",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1776075312312,
-    "commit": "https://github.com/openclaw/skills/commit/e73343b31602682842e08536df271084be8cba95"
+    "version": "1.0.3",
+    "publishedAt": 1776157104705,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1776075312312,
+      "commit": "https://github.com/openclaw/skills/commit/e73343b31602682842e08536df271084be8cba95"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1775632781404,

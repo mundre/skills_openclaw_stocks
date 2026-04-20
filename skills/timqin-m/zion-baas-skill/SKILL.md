@@ -38,7 +38,7 @@ Set up a local HTTP server to receive the OAuth callback. Open the Zion authenti
 You can run the bundled authentication script:
 
 ```bash
-cd ~/.kimi/skills/zion_baas/scripts
+cd ~/.openclaw/skills/zion_baas/scripts
 npm run auth
 ```
 
@@ -46,7 +46,7 @@ npm run auth
 You can directly login with an email and password using the Meta API:
 
 ```bash
-cd ~/.kimi/skills/zion_baas/scripts
+cd ~/.openclaw/skills/zion_baas/scripts
 npm run auth:email <email> <password>
 ```
 
@@ -56,14 +56,14 @@ Use the developer JWT token as a Bearer token against the Meta API (`https://zio
 You can run the bundled script to fetch the token. It requires the developer token to be present in `.zion/credentials.yaml`.
 
 ```bash
-cd ~/.kimi/skills/zion_baas/scripts
+cd ~/.openclaw/skills/zion_baas/scripts
 npm run fetch-token -- <projectExId>
 ```
 
 You can also search for projects or fetch their schema via the Meta API using the bundled `meta` script:
 
 ```bash
-cd ~/.kimi/skills/zion_baas/scripts
+cd ~/.openclaw/skills/zion_baas/scripts
 # Search projects (returns project names and exIds)
 npm run meta -- search-projects "optional search term"
 
@@ -112,7 +112,7 @@ You can use the bundled scripts to quickly test GraphQL queries, mutations, and 
 Pass your GraphQL query or mutation as a string.
 
 ```bash
-cd ~/.kimi/skills/zion_baas/scripts
+cd ~/.openclaw/skills/zion_baas/scripts
 npm run gql -- <projectExId> <role> '<query_string>' '<optional_variables_json>'
 ```
 - `<role>`: Can be `admin` (uses data visualizer token), `anonymous` (no token), or a specific `user_id` (fetches token from `other_users` in `.zion/credentials.yaml`).
@@ -126,7 +126,7 @@ npm run gql -- myProjectEx123 admin 'query GetProject($id: Int!) { project(id: $
 Pass your GraphQL subscription as a string.
 
 ```bash
-cd ~/.kimi/skills/zion_baas/scripts
+cd ~/.openclaw/skills/zion_baas/scripts
 npm run subscribe -- <projectExId> <role> '<query_string>' '<optional_variables_json>'
 ```
 The script will establish a WebSocket connection and continuously print events as they arrive until you kill it (Ctrl+C).
