@@ -1,6 +1,6 @@
 ---
 name: greenhelix-bundle-compliance-legal
-version: "1.3.0"
+version: "1.3.1"
 description: "Navigate the regulatory landscape for autonomous AI agents. Covers EU AI Act compliance, contract lifecycle management, agent insurance and risk pools, and tax/ledger compliance. 4 guides, $186 value."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,15 @@ tags: [bundle, compliance, contracts, insurance, tax, eu-ai-act, guide, greenhel
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY, AGENT_SIGNING_KEY, WALLET_ADDRESS, STRIPE_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+        - AGENT_SIGNING_KEY
+        - WALLET_ADDRESS
+        - STRIPE_API_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # Compliance & Legal Pack: 4-Guide Collection for Agent Governance and Regulatory Compliance
 
