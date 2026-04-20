@@ -1,8 +1,8 @@
-# dougong-hostingpay-cashier-refund — 退款与退款查询
+# huifu-dougong-hostingpay-cashier-refund — 退款与退款查询
 
 对已支付成功的订单发起退款，并查询退款处理结果。
 
-> **前置依赖**：首次接入请先完成 [dougong-hostingpay-pay-base](../../dougong-hostingpay-pay-base/SKILL.md) 的 SDK 初始化。
+> **前置依赖**：首次接入请先完成 [huifu-dougong-hostingpay-base](../../huifu-dougong-hostingpay-base/SKILL.md) 的 SDK 初始化。
 
 ## 本 Skill 解决什么问题
 
@@ -11,7 +11,7 @@
 ## 文件结构
 
 ```
-dougong-hostingpay-cashier-refund/
+huifu-dougong-hostingpay-cashier-refund/
 ├── SKILL.md                   # Skill 定义（触发词、退款流程、注意事项）
 └── references/
     ├── quickstart.md          # 本文件
@@ -22,7 +22,7 @@ dougong-hostingpay-cashier-refund/
 ## 退款流程
 
 ```
-① 确认原交易 trans_stat=S（通过 dougong-hostingpay-cashier-query 查询）
+① 确认原交易 trans_stat=S（通过 huifu-dougong-hostingpay-cashier-query 查询）
        ↓
 ② 调用退款接口（本 Skill）
        ↓

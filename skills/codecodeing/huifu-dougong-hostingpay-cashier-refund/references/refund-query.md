@@ -27,7 +27,7 @@
 说明：
 
 - 支持 JSON 报文。
-- 请求整体需要签名，验签规则见 `dougong-hostingpay-pay-base/references/tech-spec.md`。
+- 请求整体需要签名，验签规则见 `huifu-dougong-hostingpay-base/references/tech-spec.md`。
 - 本接口为同步查询接口，没有独立异步通知。
 - 查询的是退款交易，不是原支付交易。
 

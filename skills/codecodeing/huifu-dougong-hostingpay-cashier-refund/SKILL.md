@@ -1,21 +1,18 @@
 ---
-name: dougong-hostingpay-cashier-refund
-display_name: 汇付斗拱支付统一收银台退款
-description: "汇付托管支付（dg-java-sdk）退款 Skill：托管交易退款申请和退款结果查询。当开发者需要对收银台托管订单发起退款或查询退款状态时使用。触发词：托管退款、收银台退款、托管退款查询、收银台退款查询。"
-version: 1.0.0
+name: huifu-dougong-hostingpay-cashier-refund
+display_name: 汇付支付斗拱统一收银台退款
+description: " 汇付支付斗拱统一收银台退款 Skill：覆盖托管交易退款申请和退款结果查询。参数表和业务规则按协议字段组织，Java SDK 调用方式放在语言适配入口里。当开发者需要对收银台托管订单发起退款或查询退款状态时使用。触发词：托管退款、收银台退款、托管退款查询、收银台退款查询。"
+version: 1.1.0
 author: "jiaxiang.li | 内容版权：上海汇付支付有限公司"
 homepage: https://paas.huifu.com/open/home/index.html
-license: MIT
+license: CC-BY-NC-4.0
 compatibility:
   - openclaw
 dependencies:
-  - dougong-hostingpay-pay-base
+  - huifu-dougong-hostingpay-base
 metadata:
   openclaw:
     requires:
-      bins:
-        - java
-        - mvn
       config:
         - HUIFU_PRODUCT_ID
         - HUIFU_SYS_ID
@@ -36,13 +33,43 @@ metadata:
 
 托管交易退款申请 + 退款结果查询。
 
+## 适配版本与复核信息
+
+| 项目 | 内容 |
+| --- | --- |
+| Skill 版本 | `1.1.0` |
+| 当前适配 SDK | `dg-java-sdk` `3.0.34` |
+| 最后复核日期 | `2026-04-08` |
+| 官方文档来源 | 汇付开放平台托管支付退款/退款查询接口文档、Java SDK 文档、异步消息说明 |
+
 ## 运行依赖与凭据边界
 
-本 Skill 依赖 [dougong-hostingpay-pay-base](../dougong-hostingpay-pay-base/SKILL.md) 提供公共运行时与商户配置约束。metadata 中列出的 `HUIFU_PRODUCT_ID`、`HUIFU_SYS_ID`、`HUIFU_RSA_PRIVATE_KEY`、`HUIFU_RSA_PUBLIC_KEY` 用于让接入方应用在运行时完成 `dg-java-sdk` 初始化，并由 SDK 在应用侧完成请求签名和响应验签；本 Skill 本身只提供接入说明，不会在 Skill 包内保存、打印、上传或持久化这些凭据。
+本 Skill 依赖 [huifu-dougong-hostingpay-base](../huifu-dougong-hostingpay-base/SKILL.md) 提供公共运行时。凭据使用规则与存放边界见 [credential-boundary.md](../huifu-dougong-pay-shared-base/governance/credential-boundary.md)。
 
-> **前置依赖**：首次接入请先阅读 [dougong-hostingpay-pay-base](../dougong-hostingpay-pay-base/SKILL.md) 完成 SDK 初始化。
+> **前置依赖**：首次接入请先阅读 [huifu-dougong-hostingpay-base](../huifu-dougong-hostingpay-base/SKILL.md) 完成 SDK 初始化。
 
-> **进入本 Skill 前先确认**：原交易标识已经在订单侧沉淀并可回查，且退款参数按 [参数校验与 JSON 构造规范](../dougong-hostingpay-pay-base/references/payload-construction.md) 做过必填 / 条件必填校验。
+> **进入本 Skill 前先确认**：原交易标识已经在订单侧沉淀并可回查，且退款参数按 [参数校验与 JSON 构造规范](../huifu-dougong-hostingpay-base/references/payload-construction.md) 做过必填 / 条件必填校验。
+
+## 协议规则入口
+
+- [signing-v2.md](../huifu-dougong-pay-shared-base/protocol/signing-v2.md)
+- [async-notify.md](../huifu-dougong-pay-shared-base/protocol/async-notify.md)
+
+## 语言适配入口
+
+这份 Skill 的退款字段、定位键和状态说明，都是语言无关的。  
+具体语言怎么初始化和发请求，先看这里：
+
+- [huifu-dougong-hostingpay-base/SKILL.md](../huifu-dougong-hostingpay-base/SKILL.md)
+- [server-sdk-matrix.md](../huifu-dougong-pay-shared-base/runtime/server-sdk-matrix.md)
+
+## Java 适配说明
+
+下面这一段是 Java 专属约束。  
+如果你用的是其他语言，字段规则还是按协议表理解，但不要照搬 Java 的 setter 细节。
+
+- Java 运行时入口：看 [../huifu-dougong-hostingpay-base/references/language-adapters/java.md](../huifu-dougong-hostingpay-base/references/language-adapters/java.md)
+- 退款里最关键的 Java 专属坑，是 `org_req_seq_id` 没有独立 setter，必须走 `extendInfoMap`
 
 **[关键陷阱]** 退款最重要的字段 `org_req_seq_id`（原交易流水号）**没有独立的 setter 方法**，必须通过 `extendInfoMap` 传入。调用 `request.setOrgReqSeqId()` 将导致**编译错误**。详见 [refund.md](references/refund.md)。
 
@@ -77,14 +104,18 @@ request.setExtendInfo(extendInfoMap);
 ## 通用架构
 
 ```text
-HFPayController (@RestController, /hfpay)
-  |- POST /htRefund -> hostingPayService.htRefund(req)
-  +- POST /queryRefundInfo -> hostingPayService.queryRefundInfo(req)
+接口层
+  |- 接收退款和退款查询请求
+  |- 校验原交易定位键、退款金额和通知地址
 
-HostingPayService (@Service)
-  |- htRefund() -> V2TradeHostingPaymentHtrefundRequest -> BasePayClient.request()
-  +- queryRefundInfo() -> V2TradeHostingPaymentQueryrefundinfoRequest -> BasePayClient.request()
+业务逻辑层
+  |- 组装退款报文和退款查询报文
+  |- 调用对应语言 SDK 或 HTTP 客户端
+  +- 输出退款受理结果和退款最终状态
 ```
+
+下面出现的 SDK Request 类名，是 Java 适配层的写法。  
+如果你不是 Java 项目，参数结构仍按本 Skill 的协议字段来实现。
 
 ## SDK Request 类对照
 
@@ -228,14 +259,4 @@ HostingPayService (@Service)
 
 ---
 
-## 版权声明
-
-本 Skill 的内容来源于 **上海汇付支付有限公司** 官方开放平台文档。
-
-- **版权归属**：上海汇付支付有限公司
-- **客服热线**：400-820-2819
-- **客服邮箱**：cs@huifu.com
-- **官方网站**：[https://www.huifu.com/](https://www.huifu.com/)
-- **开放平台**：[https://paas.huifu.com/open/home/index.html](https://paas.huifu.com/open/home/index.html)
-
-本 Skill 仅作技术学习交流使用，原始内容由汇付支付官方维护和更新。如有任何疑问或需要商业支持，请直接联系汇付支付官方客服。
+> 版权声明与联系方式见 [copyright-notice.md](../huifu-dougong-pay-shared-base/governance/copyright-notice.md)

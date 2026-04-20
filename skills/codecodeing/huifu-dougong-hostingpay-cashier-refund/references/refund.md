@@ -28,7 +28,7 @@
 说明：
 
 - 支持 JSON 报文。
-- 请求整体需要签名，验签规则见 `dougong-hostingpay-pay-base/references/tech-spec.md`。
+- 请求整体需要签名，验签规则见 `huifu-dougong-hostingpay-base/references/tech-spec.md`。
 - 退款结果存在异步通知，最终状态不能只看同步返回。
 - 文档中的 `String(JSON Object)` / `String(JSON Array)` 表示字段外层类型仍是 `String`，但值内容需要传 JSON 字符串。
 

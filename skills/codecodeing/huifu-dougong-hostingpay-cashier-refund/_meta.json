@@ -3,9 +3,15 @@
   "slug": "huifu-dougong-hostingpay-cashier-refund",
   "displayName": "Huifu DouGong HostingPay Cashier Refund",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775551709790,
-    "commit": "https://github.com/openclaw/skills/commit/e544a5e374f05c8b889bd1625cca5ed2844edd7f"
+    "version": "1.0.3",
+    "publishedAt": 1776162407617,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775551709790,
+      "commit": "https://github.com/openclaw/skills/commit/e544a5e374f05c8b889bd1625cca5ed2844edd7f"
+    }
+  ]
 }
