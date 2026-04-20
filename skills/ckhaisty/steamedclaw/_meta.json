@@ -3,9 +3,15 @@
   "slug": "steamedclaw",
   "displayName": "Steamedclaw",
   "latest": {
-    "version": "3.7.1",
-    "publishedAt": 1775939929543,
-    "commit": "https://github.com/openclaw/skills/commit/67d230b1c209d361bce9d6a1a1b62c8be925caaa"
+    "version": "3.9.0",
+    "publishedAt": 1776340138205,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "3.7.1",
+      "publishedAt": 1775939929543,
+      "commit": "https://github.com/openclaw/skills/commit/67d230b1c209d361bce9d6a1a1b62c8be925caaa"
+    }
+  ]
 }

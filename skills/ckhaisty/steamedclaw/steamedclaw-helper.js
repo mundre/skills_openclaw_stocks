@@ -5,15 +5,19 @@
  * SteamedClaw helper script — batches HTTP + file operations into single exec invocations.
  * Reduces LLM calls per game turn from 5-6 (individual web_fetch) to 1-2 (exec this script).
  *
- * @version 1.1.0
+ * @version 1.3.0
  *
  * Usage:
  *   node steamedclaw-helper.js queue [gameId]        default: tic-tac-toe
  *   node steamedclaw-helper.js status
  *   node steamedclaw-helper.js move <action>         action: position number or JSON string
- *   node steamedclaw-helper.js update                download latest helper from server
  *
  * Output: single compact line per command. Errors exit with code 1.
+ *
+ * State files live in ~/.config/steamedclaw-state/. Earlier versions used
+ * ~/.config/steamedclaw/; the distinct "-state" suffix prevents LLMs from
+ * confusing the state dir with the skill install dir ~/.openclaw/skills/steamedclaw/
+ * (see issue #341). A one-shot migration on boot moves legacy files forward.
  */
 
 const https = require('https');
@@ -22,13 +26,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// Must match the @version tag above — the server parses that tag to advertise the version.
-const HELPER_VERSION = '1.1.0';
-
-// Track whether we've already printed an update hint this invocation.
-let updateHintPrinted = false;
-
-const DATA_DIR = path.join(os.homedir(), '.config', 'steamedclaw');
+const DATA_DIR = path.join(os.homedir(), '.config', 'steamedclaw-state');
+const LEGACY_DATA_DIR = path.join(os.homedir(), '.config', 'steamedclaw');
 const CREDENTIALS = path.join(DATA_DIR, 'credentials.md');
 const MATCH_HISTORY = path.join(DATA_DIR, 'match-history.md');
 const CURRENT_GAME = path.join(DATA_DIR, 'current-game.md');
@@ -42,6 +41,20 @@ API Key: (not registered yet)
 
 // Ensure data directory and seed files exist on first run
 fs.mkdirSync(DATA_DIR, { recursive: true });
+
+// Migrate from legacy ~/.config/steamedclaw/ (pre-1.3.0). If the new dir is
+// empty and the legacy dir has content, copy files forward. Keep the legacy
+// dir untouched so rollback is possible if something goes wrong.
+const FILES_TO_MIGRATE = ['credentials.md', 'current-game.md', 'match-history.md'];
+if (fs.existsSync(LEGACY_DATA_DIR)) {
+  for (const name of FILES_TO_MIGRATE) {
+    const legacy = path.join(LEGACY_DATA_DIR, name);
+    const target = path.join(DATA_DIR, name);
+    if (fs.existsSync(legacy) && !fs.existsSync(target)) {
+      fs.copyFileSync(legacy, target);
+    }
+  }
+}
 
 // Migrate: if old match-history.md has credentials but no credentials.md exists, migrate
 if (!fs.existsSync(CREDENTIALS) && fs.existsSync(MATCH_HISTORY)) {
@@ -137,11 +150,10 @@ function request(method, urlStr, body, apiKey, timeoutMs = 35000) {
         raw += chunk;
       });
       res.on('end', () => {
-        const serverHelperVersion = res.headers['x-helper-version'] || null;
         try {
-          resolve({ status: res.statusCode, data: JSON.parse(raw), serverHelperVersion });
+          resolve({ status: res.statusCode, data: JSON.parse(raw) });
         } catch {
-          resolve({ status: res.statusCode, data: raw, serverHelperVersion });
+          resolve({ status: res.statusCode, data: raw });
         }
       });
     });
@@ -194,28 +206,6 @@ function compactView(view, gameId) {
   return JSON.stringify(view).slice(0, 200);
 }
 
-// ── Version hint ─────────────────────────────────────────────────────────────
-
-function isNewerVersion(remote, local) {
-  const r = remote.split('.').map(Number);
-  const l = local.split('.').map(Number);
-  for (let i = 0; i < 3; i++) {
-    if ((r[i] || 0) > (l[i] || 0)) return true;
-    if ((r[i] || 0) < (l[i] || 0)) return false;
-  }
-  return false;
-}
-
-function checkVersionHint(res) {
-  if (updateHintPrinted || !res.serverHelperVersion) return;
-  if (isNewerVersion(res.serverHelperVersion, HELPER_VERSION)) {
-    console.log(
-      `hint: helper ${res.serverHelperVersion} available — run: node steamedclaw-helper.js update`,
-    );
-    updateHintPrinted = true;
-  }
-}
-
 // ── Commands ──────────────────────────────────────────────────────────────────
 
 async function cmdQueue(gameId = 'tic-tac-toe') {
@@ -249,7 +239,6 @@ async function cmdQueue(gameId = 'tic-tac-toe') {
 
   // Post to queue
   const res = await request('POST', `${server}/api/matchmaking/queue`, { gameId }, apiKey);
-  checkVersionHint(res);
   if (res.status === 401) {
     writeCredentials(server, '(not registered yet)', '(not registered yet)');
     clearGame();
@@ -317,8 +306,6 @@ async function cmdStatus() {
     await new Promise((r) => setTimeout(r, retryMs));
     res = await request('GET', url, null, apiKey);
   }
-
-  checkVersionHint(res);
 
   if (res.status === 404) {
     clearGame();
@@ -424,8 +411,6 @@ async function cmdMove(arg) {
     res = await request('POST', actionUrl, { sequence: state.seq, action }, apiKey);
   }
 
-  checkVersionHint(res);
-
   if (res.status === 400) {
     const detail = res.data?.details || res.data?.message || JSON.stringify(res.data);
     throw new Error(`${res.data?.error || 'invalid_action'} — ${detail}`);
@@ -450,20 +435,6 @@ async function cmdMove(arg) {
   console.log(`ok seq:${newSeq} status:${newState.status}`);
 }
 
-async function cmdUpdate() {
-  const { server } = readCredentials();
-  if (!server) throw new Error('no server URL in credentials.md');
-  const res = await request('GET', `${server}/api/skill/helper.js`, null, null);
-  if (res.status !== 200) throw new Error(`download failed ${res.status}`);
-  if (typeof res.data !== 'string')
-    throw new Error('unexpected response — expected script content');
-  const scriptPath = process.argv[1];
-  fs.writeFileSync(scriptPath, res.data);
-  // Extract version from downloaded content
-  const ver = (res.data.match(/@version\s+(.+)$/m) || [])[1]?.trim() || 'unknown';
-  console.log(`updated to ${ver} — changes take effect on next run`);
-}
-
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const [, , cmd, ...args] = process.argv;
@@ -473,10 +444,9 @@ const [, , cmd, ...args] = process.argv;
     if (cmd === 'queue') await cmdQueue(args[0]);
     else if (cmd === 'status') await cmdStatus();
     else if (cmd === 'move') await cmdMove(args.join(' '));
-    else if (cmd === 'update') await cmdUpdate();
     else {
       console.error(`err: unknown command: ${cmd || '(none)'}`);
-      console.error('Usage: node steamedclaw-helper.js queue|status|move|update');
+      console.error('Usage: node steamedclaw-helper.js queue|status|move');
       process.exit(1);
     }
   } catch (e) {
