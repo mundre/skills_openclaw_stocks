@@ -77,8 +77,8 @@ def main():
 
     save_lang = normalize_lang(save.get('language'))
     if save_lang:
-        score[save_lang] += 2.5
-        evidences.append({'source': 'save.language', 'lang': save_lang, 'confidence': 0.72})
+        score[save_lang] += 4.5
+        evidences.append({'source': 'save.language', 'lang': save_lang, 'confidence': 0.86})
 
     world_lang = normalize_lang((save.get('world') or {}).get('language'))
     if world_lang:
@@ -89,14 +89,14 @@ def main():
         val = evo.get(field)
         lang, conf = classify_text(val or '')
         if lang:
-            score[lang] += 1.5 * conf
+            score[lang] += 0.45 * conf
             evidences.append({'source': f'sidecar.{field}', 'lang': lang, 'confidence': round(conf, 3)})
 
     history = evo.get('history', [])[-3:]
     for item in history:
         lang, conf = classify_text((item or {}).get('story_text', ''))
         if lang:
-            score[lang] += 0.8 * conf
+            score[lang] += 0.18 * conf
             evidences.append({'source': 'sidecar.history', 'lang': lang, 'confidence': round(conf, 3)})
 
     preferred = 'en'
@@ -120,6 +120,7 @@ def main():
             'recent actual player text',
             'save.language',
             'world language',
+            'old sidecar text (weak only)',
             'system fallback'
         ]
     }

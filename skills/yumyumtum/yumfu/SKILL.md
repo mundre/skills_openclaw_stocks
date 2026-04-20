@@ -79,16 +79,23 @@ Just talk naturally after starting — no commands needed. Say what you want to 
 **Then you MUST:**
 1. ✅ Load their save file with `load_game.py`
 2. ✅ Generate images for **every game turn** (mandatory), with especially strong prompts for location / NPC / combat / chapter moments
-3. ✅ Generate **TTS by default for every gameplay turn** unless the player has explicitly turned TTS off for that save
-4. ✅ Save their progress with `save_game.py`
-5. ✅ Use the world's art style and narrative tone
+3. ✅ In group chats, do **not** downgrade YumFu to text-only mode by default — if the turn generates an image, the image must also be delivered into that same group chat unless the user explicitly disables images
+4. ✅ Generate **TTS by default for every gameplay turn** unless the player has explicitly turned TTS off for that save
+   - TTS content must be the **player-facing story/narration text only**
+   - Do **not** send meta execution chatter, progress updates, or internal action announcements as TTS
+5. ✅ Save their progress with `save_game.py`
+6. ✅ Use the world's art style and narrative tone
+7. ✅ Default to **silent execution** for YumFu operations — do the work, then deliver the finished turn; avoid AI process chatter unless the player explicitly asks for it or something failed
 
 **DO NOT:**
 - ❌ Manually roleplay without checking save files
 - ❌ Skip image generation for key scenes
+- ❌ In group chats, generate the image but fail to actually send it to the group
 - ❌ Forget to save progress
 - ❌ End a story branch with a simple choice (every choice opens a new path)
 - ❌ Design "dead end" options (B is never "game over", it's a different road)
+- ❌ Hide the actionable choices inside one long block of prose without a clearly separated options list
+- ❌ Fill YumFu turns with AI process chatter, self-narration, or “I am now doing X” filler that weakens the game feel
 
 **This ensures:**
 - Consistent character progression
@@ -107,6 +114,25 @@ Just talk naturally after starting — no commands needed. Say what you want to 
 - Minimum 30 decision nodes per character arc
 - Minimum 6 different endings per world
 - Option A/B/C all lead to rich story branches
+
+**1b. Choice presentation must be visually clear**
+- This rule applies to **all YumFu worlds by default**
+- Whenever a turn offers player choices, render them as a separate, easy-to-scan choice block
+- Prefer `1 / 2 / 3` for Chinese gameplay and `A / B / C` or `1 / 2 / 3` for English gameplay
+- Do **not** bury the choices inside a dense paragraph and expect the player to fish them out
+- Keep each option to one short line when possible
+- Default output structure for gameplay turns:
+  1. short story scene / consequence
+  2. one blank line
+  3. `你现在可以：` / `Choose your next move:`
+  4. separate numbered or lettered options on their own lines
+- Default pattern:
+  - `1. ...`
+  - `2. ...`
+  - `3. ...`
+- The story paragraph should lead into the decision, then the options should appear on their own lines below it
+- The player may still answer naturally in free text; the numbered/lettered options are for readability, not command restriction
+- If a turn has an especially obvious next move, still render the options block; do not rely on prose-only implied choices
 
 **2. Three-Arc Story Structure**
 ```
@@ -160,6 +186,14 @@ message(action="send", media="path/to/image.jpg", message="[full story text here
 Use an image generation path that writes a **local file only** and does **not** auto-send media to the chat by itself.
 For official YumFu turns, prefer local-file generators such as `scripts/generate_image.py` or an equivalent wrapper that returns only a saved path.
 
+✅ **Image backend fallback order — REQUIRED**:
+1. First try local-file generation via `uv run ~/clawd/skills/yumfu/scripts/generate_image.py ...` (always use `uv run`, not plain `python3`, so inline dependencies load correctly)
+2. If that fails because `GEMINI_API_KEY` / `GOOGLE_API_KEY` is missing, provider auth is unavailable, the local script errors, or the local runtime/import path is broken, immediately fall back to OpenClaw `image_generate` and then deliver the resulting local media path through the normal YumFu turn-delivery flow
+3. In group chats, if either image path succeeds, send that image back into the same group automatically for the current turn
+4. If both image paths fail, send the turn as text-only once, explicitly noting that image generation is temporarily unavailable
+
+⚠️ Never silently skip the image step. Either deliver the image, or clearly state that the turn is temporarily running without image support.
+
 ❌ Do **not** use any image tool/path that auto-inserts or auto-delivers the generated image into the current chat before the turn delivery logic runs.
 
 ❌ **WRONG pattern** — two separate messages:
@@ -184,6 +218,17 @@ This ensures the image and story are always visually paired together.
 ### 6c. Turn Delivery Rule - CRITICAL
 For each gameplay turn, enforce a single `turn_id` and delivery state.
 
+**Default implementation path (MANDATORY):**
+Use `uv run ~/clawd/skills/yumfu/scripts/deliver_yumfu_turn.py ...` as the default per-turn delivery preparation helper.
+This helper is now the standard YumFu path for:
+- preparing caption/follow-up text split
+- generating local turn image first
+- preparing TTS voice bubble output
+- carrying per-turn delivery state
+- deciding whether OpenClaw image fallback is needed
+
+For Telegram/group gameplay, do not hand-roll turn delivery if this helper can be used.
+
 Hard limits per turn:
 - **main_text_sent**: at most once
 - **image_sent**: at most once
@@ -191,10 +236,13 @@ Hard limits per turn:
 - **Never send a standalone image first if you still intend to send image+caption for the same turn later**
 
 Preferred delivery order:
-1. Try image+caption as the main message
-2. If image generation times out, send text-only once as the main story message
-3. If the delayed image later arrives, send image-only once as a fallback visual add-on
-4. TTS follows the main story message; never jumps ahead of the story
+1. Run `deliver_yumfu_turn.py` to prepare assets/state for the turn
+2. Try image+caption as the main message
+3. If local image generation fails and the helper marks fallback required, use OpenClaw `image_generate` and continue the same turn delivery flow
+4. If image generation times out or both image paths fail, send text-only once as the main story message
+5. If the delayed image later arrives, send image-only once as a fallback visual add-on
+6. TTS follows the main story message; never jumps ahead of the story
+7. Never generate/send TTS for assistant-side execution chatter such as “我来继续这回合”, “我现在发图文和语音”, “我把存档补上” — these are meta updates, not gameplay content
 
 Fallback sequencing rule:
 - If a turn needs two sends because image generation was slow, the order must be:
@@ -916,14 +964,41 @@ Before generating the update, load and consider:
 
 ### Daily Evolution output requirements
 Each daily evolution update should include:
-1. **1 short story update** (100-220 words)
-2. **1 generated image** showing the new situation
-3. **1 meaningful state change** (rumor, faction shift, patrol increase, resource loss, NPC movement, political signal, etc.)
-4. **1 hook** that invites the player back into active play
+1. **1 short front-context recap** (1-3 sentences) reminding the player why they are here, what line/faction/quest they are already tied to, and why today's scene matters
+2. **1 short story update** (100-220 words)
+3. **1 generated image** showing the new situation, with prompt continuity from the current arc instead of a context-free fresh scene
+4. **1 meaningful state change** (rumor, faction shift, patrol increase, resource loss, NPC movement, political signal, etc.)
+5. **1 hook** that invites the player back into active play
+6. **1 TTS voice-bubble delivery by default** unless that save has explicitly disabled TTS
+
+The recap is mandatory. Do not assume the player remembers yesterday's update, the hidden faction line, or why the current image matters.
+
+### Daily Evolution delivery rule (MANDATORY)
+Daily evolution is not text-only. If a daily evolution update is delivered to the player, the default delivery bundle is:
+1. image + recap-aware main story text
+2. follow-up TTS voice bubble for the same update using that same recap-aware text
+
+The player-facing text should normally read like:
+- short recap / 前情
+- today's world movement
+- one easy re-entry hook
+
+Rules:
+- If `save.tts.enabled != false`, generate and send TTS for daily evolution too.
+- Use the same stable per-save language/voice continuity rules as normal gameplay turns.
+- On channels that support it, send TTS as a **voice bubble** (`message(..., asVoice=true)`).
+- The TTS must follow the main image/text update, not precede it.
+- Do not silently drop TTS just because this is an offline daily evolution tick.
+- Only skip TTS when:
+  - the save explicitly disabled TTS, or
+  - TTS generation failed after an honest attempt.
+- If TTS fails, still send the image/text update, but treat the missing TTS as a delivery gap to be fixed rather than intended behavior.
 
 ### Re-entry design principle (VERY IMPORTANT)
 The core goal is **not** to generate a long lore report.
 The core goal is to **pull the player back into the current scene naturally and easily**.
+
+For daily evolution pushes, that re-entry starts immediately with a short recap. If the update opens cold, the player forgets the plot and the image loses meaning.
 
 Daily evolution should feel like:
 - “while you were away, something moved”
@@ -1028,6 +1103,8 @@ Supporting scripts:
 - `scripts/daily_evolution_prepare.py` — build dynamic runtime context
 - `scripts/run_daily_evolution_job.py` — generate a daily evolution update
 - `scripts/run_daily_evolution.py` — persist generated result into sidecar
+- `scripts/prepare_daily_evolution_delivery.py` — prepare image/text/TTS delivery plan for one daily evolution tick
+- `scripts/execute_daily_evolution_delivery.py` — emit exact send/mark/apply steps for one daily evolution tick with low freedom
 - `scripts/create_daily_evolution_cron.py` — create per-player daily cron
 - `scripts/disable_daily_evolution_cron.py` — disable per-player daily cron
 - `scripts/build_reentry_context.py` — merge save + sidecar for continue flow
@@ -1267,13 +1344,20 @@ uv run ~/clawd/skills/yumfu/scripts/generate_image.py \
   --resolution 2K
 ```
 
-**Note**: Script does NOT auto-send. Use `message` tool with `media` parameter to send.
+**Do not use** `python3 ~/clawd/skills/yumfu/scripts/generate_image.py ...` directly unless the equivalent dependencies are already installed in that exact interpreter; the supported/default path is `uv run`.
+
+**Note**: Script does NOT auto-send. After generation, send the image through the normal YumFu turn delivery flow. In Telegram group chats, this means the image must be delivered back into that same group for the turn.
 
 ---
 
 ### Art Styles by World
 
 **Each world has its own signature art style. ALWAYS include the style prefix in prompts.**
+
+**Global anti-text rule (MANDATORY for every YumFu image prompt):**
+Append an explicit negative constraint such as:
+`No text, no words, no letters, no captions, no signs, no speech bubbles, no book pages, no paragraph blocks, no watermark, no logo, image-only illustration.`
+If the model still renders text-like artifacts, strengthen the next prompt further instead of accepting the bad output as final turn art.
 
 #### 🇨🇳 Xiaoao Jianghu (笑傲江湖)
 ```
@@ -1754,8 +1838,14 @@ When a run reaches a meaningful ending **or** the player explicitly says they wa
    - final stats / relationships / achievements when available
 3. Preferred formats:
    - **HTML first** (canonical, richly styled, easy to preserve)
-   - **PDF if conversion succeeds**
-4. Delivery rule:
+   - **PDF if conversion succeeds and the layout is visually acceptable**
+4. **Scene-binding rule (MANDATORY)**:
+   - storybook pages must be organized as **scene blocks**
+   - each scene block should contain: **one image + the exact matching scene/dialogue text directly below or beside it**
+   - do **not** put images into a detached gallery while moving all text to separate long prose sections
+   - do **not** separate a scene's picture from its corresponding dialogue/narration across distant sections unless the user explicitly asks for a gallery-style export
+   - for chat-delivered HTML storybooks, prefer a readable comic/illustrated-book flow over a print-first PDF layout
+5. Delivery rule:
    - If generated, **send it back into chat** as a file/message whenever possible
    - Also keep the generated file(s) on disk under the YumFu storybook output directory
 5. Do **not** silently generate a final exported storybook every time; ask the player first unless they already requested it.
@@ -1781,40 +1871,43 @@ If daily evolution is enabled and a storybook source already exists for that sav
 When player requests storybook or reaches milestone:
 
 ```python
-# 1. Generate HTML storybook using exec tool
+# 1. Generate HTML storybook first
 result = exec({
     "command": "uv run ~/clawd/skills/yumfu/scripts/generate_storybook_v3.py --user-id 1309815719 --universe warrior-cats"
 })
 
-# 2. Find the generated HTML file
-# Output will show: "HTML: /path/to/storybook.html"
+# 2. Confirm the HTML uses scene-bound layout
+# Each major scene should read as:
+#   image
+#   matching scene/dialogue text
+# not: detached image gallery + separate prose dump
 
-# 3. Convert to PDF using browser tool
+# 3. Send HTML as the canonical deliverable
+message({
+    "action": "send",
+    "channel": "telegram",
+    "target": "1309815719",
+    "media": html_file_path,
+    "message": "📖 Your illustrated storybook is ready in HTML. This version keeps each image paired with its matching scene text."
+})
+
+# 4. Only generate/send PDF if the layout is visually confirmed good
 pdf_path = browser({
     "action": "pdf",
     "url": f"file://{html_file_path}",
     "path": "~/.openclaw/media/outbound/tumpaw-adventure.pdf"
 })
-
-# 4. Send to user
-message({
-    "action": "send",
-    "channel": "telegram",
-    "target": "1309815719",
-    "media": pdf_path,
-    "message": "📖 Your adventure storybook is complete! This PDF contains your complete journey with all images."
-})
 ```
 
-**Or use the simpler OpenClaw workflow:**
+**Preferred OpenClaw workflow:**
 
 ```bash
-# Generate HTML
+# Generate HTML first
 cd ~/clawd/skills/yumfu
 uv run scripts/generate_storybook_v3.py --user-id 1309815719 --universe warrior-cats
 
-# Convert to PDF (browser tool handles this)
-# Send via message tool
+# Ship HTML first if it reads well in-chat
+# Only convert to PDF after verifying the HTML layout preserves scene binding
 ```
 
 ---
