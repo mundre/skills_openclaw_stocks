@@ -3,9 +3,15 @@
   "slug": "huifu-dougong-aggregation-refund",
   "displayName": "Huifu DouGong Aggregation Refund",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775552457420,
-    "commit": "https://github.com/openclaw/skills/commit/cd0b021dc28abc77336f78532c4d117f34d38f18"
+    "version": "1.0.2",
+    "publishedAt": 1776162250141,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775552457420,
+      "commit": "https://github.com/openclaw/skills/commit/cd0b021dc28abc77336f78532c4d117f34d38f18"
+    }
+  ]
 }
