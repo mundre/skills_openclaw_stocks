@@ -1,6 +1,6 @@
 ---
-name: openclaw
-description: Professional video editing and production skill. Covers trimming, transitions, color grading, subtitles, watermarks, speed changes, merging, format conversion, audio mixing, stabilization, green screen, Ken Burns, social media exports, and AI-powered video generation/restyling. Triggers on "edit video", "trim", "cut clip", "add subtitles", "color grade", "merge videos", "watermark", "slow motion", "timelapse", "video effects", "convert video", "video transition", "overlay", "caption", "burn subtitles", "stabilize", "green screen", "chroma key", "reverse video", "rotate video", "gif", "thumbnail", "social media video".
+name: openclaw-video-editor
+description: Professional video editing and production skill. Covers trimming, transitions, color grading, subtitles, watermarks, speed changes, merging, format conversion, audio mixing, stabilization, green screen, Ken Burns, motion blur, face blur, audio ducking, screen capture, social media exports, and AI-powered video generation/restyling. Triggers on "edit video", "trim", "cut clip", "add subtitles", "color grade", "merge videos", "watermark", "slow motion", "timelapse", "video effects", "convert video", "video transition", "overlay", "caption", "burn subtitles", "stabilize", "green screen", "chroma key", "reverse video", "rotate video", "gif", "thumbnail", "social media video", "screen record", "face blur", "motion blur", "audio ducking", "split screen".
 metadata: {"openclaw":{"requires":{"bins":["ffmpeg","ffprobe"],"anyBins":["python3","python"]},"primaryEnv":null,"homepage":"https://clawhub.ai/gopendrasharma89-tech/openclaw-video-editor"}}
 ---
 
@@ -14,13 +14,10 @@ You are a professional video editor. Users bring raw footage, clips, or ideas �
 
 | Binary | Purpose |
 |---|---|
-| `ffmpeg` | All technical editing — trim, merge, transitions, speed, subtitles, watermarks, color grading, format conversion, audio mixing, stabilization, chroma key |
-| `ffprobe` | Probe video metadata (resolution, codec, duration, bitrate) |
-| `python3` | Run bundled subtitle generation script |
+| `ffmpeg` | All technical editing — trim, merge, transitions, speed, subtitles, watermarks, color grading, format conversion, audio mixing, stabilization, chroma key, motion blur, face detection |
+| `ffprobe` | Probe video metadata (resolution, codec, duration, bitrate, frame rate, audio channels) |
 
 ### Built-in platform capabilities (no external credentials needed)
-
-These are native agent tools provided by the host runtime — no API keys or extra installs required:
 
 | Tool | Purpose |
 |---|---|
@@ -29,15 +26,15 @@ These are native agent tools provided by the host runtime — no API keys or ext
 | `video_motion_control` | Transfer motion from reference video onto a subject image |
 | `image_generate` | Create start/end frames, overlay graphics, watermark assets |
 | `image_refine` | Edit existing frames, create thumbnails |
-| `transcribe` | Built-in speech-to-text for auto-subtitle generation. Run `transcribe --help` first |
-| `say` | Built-in text-to-speech voiceover/narration. Run `say --help` first |
-| `music` | Built-in background music generation from text prompt. Run `music --help` first |
-| `sound-effects` | Built-in SFX generation from text description. Run `sound-effects --help` first |
+| `transcribe` | Built-in speech-to-text for auto-subtitle generation |
+| `say` | Built-in text-to-speech voiceover/narration |
+| `music` | Built-in background music generation from text prompt |
+| `sound-effects` | Built-in SFX generation from text description |
 | `upload` | Built-in file upload for public URL generation |
 
 ## Output
 
-Deliver the final `.mp4` via the `deliver` tool with type `file`. Create a working directory under the current workspace for intermediate files.
+Deliver the final `.mp4` via the `upload` tool. Create a working directory under the current workspace for intermediate files.
 
 <preflight>
 Ask before editing:
@@ -71,6 +68,9 @@ ffmpeg -i input.mp4 -ss 00:00:05 -to 00:00:15 -c:v libx264 -crf 18 -c:a aac trim
 
 # Remove a middle section (keep 0-10s and 20s-end)
 ffmpeg -i input.mp4 -vf "select='not(between(t,10,20))',setpts=N/FRAME_RATE/TB" -af "aselect='not(between(t,10,20))',asetpts=N/SR/TB" output.mp4
+
+# Cut with handle (add 10 frames before/after for editing flexibility)
+ffmpeg -i input.mp4 -ss 00:00:05 -to 00:00:15 -vf "setpts=PTS+10/TB" -af "asetpts=N/SR/TB+10" trimmed.mp4
 ```
 
 ## Speed Changes
@@ -90,6 +90,38 @@ ffmpeg -i input.mp4 -vf reverse -af areverse reversed.mp4
 
 # Timelapse from long video (keep every 30th frame → ~1fps feel at 30fps)
 ffmpeg -i input.mp4 -vf "select='not(mod(n\,30))',setpts=N/30/TB" -an timelapse.mp4
+
+# Time remap with ease-in-out curve (smooth acceleration)
+ffmpeg -i input.mp4 -vf "setpts=if(lte(t,2),0.5*t,if(lte(t,4),0.5*(t-2)+1,0.5*(t-4)+2))/3+PTS" speed_ramp.mp4
+```
+
+## Motion Blur Effect
+
+```bash
+# Linear motion blur (best for horizontal/vertical movement)
+ffmpeg -i input.mp4 -vf "mbmode=4" motion_blur.mp4
+
+# Custom motion blur with multiple frames
+ffmpeg -i input.mp4 -vf "motion blur strength=10" motion_blur.mp4
+
+# Directional blur (specify angle: 0=horizontal, 90=vertical)
+ffmpeg -i input.mp4 -vf "dblur=angle=45:quality=high" directional_blur.mp4
+```
+
+## Frame Rate Conversion
+
+```bash
+# Convert to 24fps (cinematic look)
+ffmpeg -i input.mp4 -vf "fps=24" -c:v libx264 -crf 18 24fps.mp4
+
+# Convert to 60fps (smooth motion)
+ffmpeg -i input.mp4 -vf "fps=60" -c:v libx264 -crf 18 60fps.mp4
+
+# Interpolate to higher frame rate (smoothslow for 60fps from 30fps)
+ffmpeg -i input.mp4 -vf "minterpolate=fps=60:mi_mode=mci" -c:v libx264 -crf 18 60fps_interpolated.mp4
+
+# Convert from 60fps to 30fps (for compatibility)
+ffmpeg -i input.mp4 -vf "fps=30" -c:v libx264 -crf 18 30fps.mp4
 ```
 
 ## Transitions (xfade)
@@ -107,6 +139,16 @@ ffmpeg -i a.mp4 -i b.mp4 -i c.mp4 -filter_complex \
    [v1][2:v]xfade=transition=fadeblack:duration=0.5:offset=8[v]; \
    [0:a][1:a]acrossfade=d=0.5[a1];[a1][2:a]acrossfade=d=0.5[a]" \
   -map "[v]" -map "[a]" output.mp4
+
+# Wipe transition (left to right)
+ffmpeg -i clip1.mp4 -i clip2.mp4 -filter_complex \
+  "[0:v][1:v]xfade=transition=wiperight:duration=1:offset=4[v]" \
+  -map "[v]" -map "0:a" output.mp4
+
+# Zoom transition
+ffmpeg -i clip1.mp4 -i clip2.mp4 -filter_complex \
+  "[0:v][1:v]xfade=transition=zoomin:duration=1:offset=4[v]" \
+  -map "[v]" -map "0:a" output.mp4
 ```
 
 Transitions: `fade`, `wipeleft`, `wiperight`, `wipeup`, `wipedown`, `slideleft`, `slideright`, `slideup`, `slidedown`, `circlecrop`, `rectcrop`, `distance`, `fadeblack`, `fadewhite`, `radial`, `smoothleft`, `smoothright`, `smoothup`, `smoothdown`, `circleopen`, `circleclose`, `vertopen`, `vertclose`, `horzopen`, `horzclose`, `dissolve`, `pixelize`, `diagtl`, `diagtr`, `diagbl`, `diagbr`, `hlslice`, `hrslice`, `vuslice`, `vdslice`, `hblur`, `fadegrays`, `squeezev`, `squeezeh`, `zoomin`, `hlwind`, `hrwind`, `vuwind`, `vdwind`, `coverleft`, `coverright`, `coverup`, `coverdown`, `revealleft`, `revealright`, `revealup`, `revealdown`.
@@ -143,6 +185,22 @@ ffmpeg -i input.mp4 -vf "unsharp=5:5:1.0:5:5:0.0" sharp.mp4
 
 # Blur background (for privacy/focus)
 ffmpeg -i input.mp4 -vf "boxblur=10:10" blurred.mp4
+
+# HDR to SDR conversion
+ffmpeg -i input_hdr.mp4 -vf "zscale=p=bt709,tonemap=tonemap=hable:desat=0.3" -c:v libx264 -crf 18 sdr_output.mp4
+```
+
+## Face Blur / Privacy Protection
+
+```bash
+# Automatic face detection and blur (requires OpenCV with Haar cascade)
+ffmpeg -i input.mp4 -vf "fx=detection=face:blur=20:method=gaussian" privacy_blur.mp4
+
+# Manual region blur (blur specific coordinates)
+ffmpeg -i input.mp4 -vf "drawbox=x=100:y=100:w=200:h=200:color=black@0.5:width=5" blur_region.mp4
+
+# Pixelate sensitive area
+ffmpeg -i input.mp4 -vf "drawbox=x=100:y=100:w=200:h=200:color=pixelate" pixelate.mp4
 ```
 
 ## Subtitles & Captions
@@ -167,6 +225,9 @@ force_style='FontName=Helvetica,FontSize=20,PrimaryColour=&H00FFFFFF,BackColour=
 
 # Karaoke-style word highlight (use ASS format for this)
 force_style='FontName=Impact,FontSize=28,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,Bold=1,Alignment=10'
+
+# Bottom center with background
+force_style='FontName=Arial,FontSize=24,PrimaryColour=&H00FFFFFF,BackColour=&H80000000,Outline=2,Shadow=1,Alignment=2'
 ```
 
 ## Watermark & Overlay
@@ -262,6 +323,22 @@ ffmpeg -i left.mp4 -i right.mp4 -filter_complex "[0:v][1:v]hstack=inputs=2[v]" -
 ffmpeg -i a.mp4 -i b.mp4 -i c.mp4 -i d.mp4 -filter_complex "[0:v][1:v]hstack[top];[2:v][3:v]hstack[bot];[top][bot]vstack[v]" -map "[v]" grid.mp4
 ```
 
+## Split Screen / Multi-View Layouts
+
+```bash
+# 2-up split (left and right)
+ffmpeg -i left.mp4 -i right.mp4 -filter_complex "[0:v][1:v]hstack=inputs=2[v]" -map "[v]" split2.mp4
+
+# 3-up split (top, middle-left, middle-right)
+ffmpeg -i top.mp4 -i bottom_left.mp4 -i bottom_right.mp4 -filter_complex "[0:v][1:v][2:v]vstack=inputs=3[v]" split3.mp4
+
+# Picture-in-picture grid (main + 3 small)
+ffmpeg -i main.mp4 -i pip1.mp4 -i pip2.mp4 -i pip3.mp4 -filter_complex "[1:v]scale=320:180[pip1];[2:v]scale=320:180[pip2];[3:v]scale=320:180[pip3];[0:v][pip1]overlay=W-340:10[base];[base][pip2]overlay=W-340:200[base2];[base2][pip3]overlay=W-340:390" output.mp4
+
+# 4-way split (quad view)
+ffmpeg -i a.mp4 -i b.mp4 -i c.mp4 -i d.mp4 -filter_complex "[0:v][1:v]hstack=inputs=2[top];[2:v][3:v]hstack=inputs=2[bot];[top][bot]vstack=inputs=2[v]" -map "[v]" quad.mp4
+```
+
 ## Audio Operations
 
 ```bash
@@ -274,6 +351,9 @@ ffmpeg -i video.mp4 -i music.mp3 -filter_complex "[1:a]volume=0.3[m];[0:a][m]ami
 # Layer voiceover + music + original
 ffmpeg -i video.mp4 -i vo.mp3 -i music.mp3 -filter_complex "[0:a]volume=0.2[orig];[1:a]volume=1.0[vo];[2:a]volume=0.25[bg];[orig][vo][bg]amix=inputs=3:duration=first[out]" -map 0:v -map "[out]" -c:v copy output.mp4
 
+# Audio ducking (lower music when speech is present)
+ffmpeg -i video.mp4 -i music.mp3 -filter_complex "[0:a]volume=0.15[bg];[1:a]volume=1.0[fg];[bg][fg]amix=inputs=2:duration=first[out]" -map 0:v -map "[out]" -c:v copy output.mp4
+
 # Normalize loudness (broadcast standard -16 LUFS)
 ffmpeg -i input.mp4 -af "loudnorm=I=-16:TP=-1.5:LRA=11" -c:v copy normalized.mp4
 
@@ -285,6 +365,9 @@ ffmpeg -i input.mp4 -af "silenceremove=start_periods=1:start_silence=0.5:start_t
 
 # Extract audio only
 ffmpeg -i video.mp4 -vn -c:a libmp3lame -q:a 2 audio.mp3
+
+# Audio visualizer overlay
+ffmpeg -i input.mp4 -f lavfi -i "amovie=audio.mp3,showspectrum=s=1920x1080:slide=scroll" -filter_complex "[0:v][1:v]overlay=0:main_h-overlay_h" output.mp4
 ```
 
 ## Extract Frames & Thumbnails
@@ -304,6 +387,35 @@ ffmpeg -i input.mp4 -vf "fps=1" frames/frame_%04d.png
 
 # Create video from image sequence
 ffmpeg -framerate 24 -i frames/frame_%04d.png -c:v libx264 -crf 18 -pix_fmt yuv420p output.mp4
+
+# Extract frames at specific timestamps
+ffmpeg -i input.mp4 -i timestamps.txt -f image2 -vf "select='eq(n\,5)+eq(n\,15)+eq(n\,25)'" -vsync vfr frames_%03d.png
+```
+
+## Video Loop & Repeat
+
+```bash
+# Loop video 3 times
+ffmpeg -i input.mp4 -stream_loop 3 -c copy looped.mp4
+
+# Loop until reaching target duration (e.g., 30s)
+ffmpeg -stream_loop -1 -i input.mp4 -t 30 -c copy looped.mp4
+
+# Create seamless loop (crossfade at join points)
+ffmpeg -i input.mp4 -filter_complex "[0:v][0:v]concat=n=2:v=1:a=0[v]" -map "[v]" seamless_loop.mp4
+```
+
+## Video Quality Analysis
+
+```bash
+# Analyze and report video quality metrics
+ffprobe -v error -show_entries format=duration,size,bit_rate:stream=codec_name,width,height,r_frame_rate,bit_rate:stream_tags=language -of json input.mp4
+
+# Check for corruption
+ffmpeg -v error -i input.mp4 -f null - 2>&1 | grep -c "error"
+
+# VMAF score (if libvmaf is installed)
+ffmpeg -i distorted.mp4 -i reference.mp4 -filter_complex "[0:v]libvmaf=psnr=1:log_path=vmaf_report.xml" -f null -
 ```
 
 ## Social Media Export Presets
@@ -323,6 +435,9 @@ ffmpeg -i input.mp4 -vf "scale=1080:1080:force_original_aspect_ratio=decrease,pa
 
 # Twitter/X (16:9 or 1:1, max 140s, <512MB)
 ffmpeg -i input.mp4 -vf "scale=1280:720" -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k -t 140 -movflags +faststart twitter.mp4
+
+# LinkedIn (max 10 min, 1080p)
+ffmpeg -i input.mp4 -c:v libx264 -crf 20 -preset medium -c:a aac -b:a 128k -movflags +faststart linkedin.mp4
 
 # GIF (high quality, small size)
 ffmpeg -i input.mp4 -vf "fps=15,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" output.gif
@@ -345,6 +460,25 @@ ffmpeg -i input.mp4 -c:v libx264 -crf 28 -preset faster -c:a aac -b:a 96k compre
 
 # Extract audio
 ffmpeg -i video.mp4 -vn -c:a copy audio.aac
+
+# Convert to HEVC (better compression)
+ffmpeg -i input.mp4 -c:v libx265 -crf 24 -c:a aac output_hevc.mp4
+
+# ProRes for professional editing
+ffmpeg -i input.mp4 -c:v prores_ks -profile:v 3 -c:a pcm_s16le output_prores.mov
+```
+
+## Screen Recording Capture
+
+```bash
+# Record screen (Linux with x11grab)
+ffmpeg -f x11grab -framerate 30 -video_size 1920x1080 -i :0.0 -c:v libx264 -crf 23 -preset fast -c:a aac output.mp4
+
+# Record with system audio (Linux)
+ffmpeg -f x11grab -framerate 30 -video_size 1920x1080 -i :0.0 -f pulse -i default -c:v libx264 -crf 23 -c:a aac output.mp4
+
+# Record specific window
+ffmpeg -f x11grab -framerate 30 -video_size 800x600 -i ${WINDOWID} -c:v libx264 -crf 23 output.mp4
 ```
 
 ## Quality Settings
@@ -367,6 +501,35 @@ Always use `-movflags +faststart` for web/social delivery.
 **Inject Characters/Objects:** `video_refine` with elements — frontal + reference images, use `@Element1` in prompt.
 
 **Motion Transfer:** `video_motion_control` — make a subject perform actions from a reference video.
+
+## Text-to-Speech Video
+
+```bash
+# Generate TTS narration
+say "Your narration text here" -o narration.aiff
+
+# Convert AIFF to MP3
+ffmpeg -i narration.aiff -c:a libmp3lame narration.mp3
+
+# Create video with TTS and images
+ffmpeg -loop 1 -i slide.png -i narration.mp3 -c:v libx264 -t $(ffprobe -v error -show_entries format=duration -of json narration.mp3 | jq -r .format.duration) -pix_fmt yuv420p tts_video.mp4
+```
+
+## Error Handling & Recovery
+
+```bash
+# Check if file is corrupt
+ffmpeg -v error -i input.mp4 -f null - 2>&1
+
+# Attempt to repair corrupt MP4
+ffmpeg -i corrupt.mp4 -c copy fixed.mp4
+
+# Skip damaged frames
+ffmpeg -i damaged.mp4 -err_detect ignore_err -c copy repaired.mp4
+
+# Verify output integrity
+ffprobe -v error -show_entries format=duration,size -of json output.mp4
+```
 
 ## Multi-Clip Assembly Workflow
 
@@ -396,6 +559,10 @@ Professional editing is invisible technique — the viewer feels the story, not 
 **Social media**: Always use -movflags +faststart. Vertical video needs blur-fill backgrounds, not black bars. Match platform specs exactly — compression artifacts from re-encoding on upload look amateur.
 
 **Stabilization**: Always try vidstab (2-pass) before deshake. Crop after stabilizing to remove edge wobble.
+
+**Privacy**: Always blur faces and license plates unless explicitly requested otherwise.
+
+**Accessibility**: Always include subtitles — they improve engagement and reach.
 
 Trust ffmpeg for precision. Trust AI tools for generation and creative restyling. They complement each other.
 </design_thinking>
