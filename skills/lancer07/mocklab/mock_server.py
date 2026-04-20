@@ -3,7 +3,7 @@
 MockLab Mock Server - AI-driven Mock API Service
 v1.1: 新增延迟模拟、错误注入、请求镜像、动态响应
 """
-import os, sys, json, re, time, random, string, threading, asyncio
+import os, sys, json, re, time, random, string, threading, asyncio, urllib.parse
 from pathlib import Path
 from datetime import datetime
 from typing import Any, Optional
@@ -17,7 +17,9 @@ try:
     from fastapi import FastAPI, Request
     from fastapi.responses import HTMLResponse, JSONResponse
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.staticfiles import StaticFiles
     import uvicorn
+    import httpx
     FASTFAPI_AVAILABLE = True
 except ImportError:
     FASTFAPI_AVAILABLE = False
@@ -26,6 +28,8 @@ _projects = {}
 _sequences = {}
 _refs = {}
 _lock = threading.Lock()
+_custom_interfaces = {}  # name -> {method, path, req_fields, resp_fields}
+_CUSTOM_STORE = SKILL_DIR / "custom_store.json"
 
 def _load_state():
     global _sequences, _refs
@@ -42,11 +46,25 @@ def _save_state():
 
 _load_state()
 
-def _rnd(n): return "".join(random.choices(string.digits, k=int(n)))
-def _rnd_alnum(n): return "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
+def _load_custom_interfaces():
+    global _custom_interfaces
+    if _CUSTOM_STORE.exists():
+        try:
+            _custom_interfaces = json.loads(_CUSTOM_STORE.read_text(encoding="utf-8"))
+            print("[MockLab] Loaded %d custom interfaces" % len(_custom_interfaces))
+        except Exception:
+            _custom_interfaces = {}
+
+def _save_custom_interfaces():
+    _CUSTOM_STORE.write_text(json.dumps(_custom_interfaces, ensure_ascii=False, indent=2), encoding="utf-8")
+
+_load_custom_interfaces()
+
+def _rnd(n): return "".join(random.choices(string.digits, k=max(1,int(n or "6"))))
+def _rnd_alnum(n): return "".join(random.choices(string.ascii_uppercase + string.digits, k=max(1,int(n or "6"))))
 def _ts_ms(): return int(time.time() * 1000)
 def _ts_s(): return int(time.time())
-def _token(n="32"): return "".join(random.choices("ABCDEF0123456789", k=int(n)))
+def _token(n="32"): return "".join(random.choices("ABCDEF0123456789", k=max(1,int(n or "32"))))
 def _phone():
     p = ["130","131","132","133","134","135","136","137","138","139","150","151","152","153","155","156","157","158","159","170","171","173","175","176","177","178","179","180","181","182","183","184","185","186","187","188","189","199"]
     return random.choice(p) + "".join(random.choices(string.digits, k=8))
@@ -72,13 +90,25 @@ def _rate(spec=""):
     if "-" in spec:
         lo, hi = map(float, spec.split("-")); return round(random.uniform(lo, hi), 2)
     return round(random.uniform(3.5, 24.0), 2)
-def _enum(s):
+def _enum(s, index: int = None):
+    """支持 {index} 占位符的枚举函数"""
     vals = [v.strip() for v in s.split(",")]
     parsed = {}
     for v in vals:
         if "=" in v: k, _ = v.split("=", 1); parsed[k.strip()] = v
         else: parsed[v] = v
-    return list(parsed.values())[0] if parsed else vals[0]
+    choices = list(parsed.values())
+    if not choices: return vals[0] if vals else ""
+    # 如果包含 {index} 占位符，替换后返回
+    if index is not None:
+        # 找到包含 {index} 的值进行替换
+        for v in choices:
+            if "{index}" in v:
+                return v.replace("{index}", str(index))
+        # 没有找到 {index}，用 index 从列表中选择（循环取值保证不越界）
+        return choices[index % len(choices)]
+    # 没有 index 参数，随机选择一个
+    return random.choice(choices)
 def _seq(key):
     global _sequences
     with _lock:
@@ -270,6 +300,17 @@ def gen_field_value(field, req_context: dict = None):
     fname = field.get("name", "")
     if rule in ("skip", "ignore"): return None
 
+    # ── when 条件字段：从 sub_rule 取实际值规则 ──
+    if rule == "when":
+        when_cond = field.get("when", {})
+        sub_rule = when_cond.get("sub_rule", "string")
+        # 用 sub_rule 递归生成值
+        sub_field = dict(field)
+        sub_field["rule"] = sub_rule
+        # 暂时去掉 when 避免递归
+        sub_field.pop("when", None)
+        return gen_field_value(sub_field, req_context)
+
     # ── 动态响应规则（v1.1 新增）─────────────────
     if rule == "mirror":
         val = _resolve_dynamic_value("mirror", fname, req_context)
@@ -280,10 +321,16 @@ def gen_field_value(field, req_context: dict = None):
     if rule.startswith("body:") or rule.startswith("path:") or rule.startswith("query:") or rule.startswith("header:") or rule.startswith("state:"):
         val = _resolve_dynamic_value(rule, fname, req_context)
         if val is not None: return val
-        return None  # 取不到就不返回该字段
+        # 无 context 时返回占位值（示例展示用）
+        return fname
     # ── 动态响应规则结束 ──────────────────────
 
-    if rule.startswith("fixed:"): return rule.split(":",1)[1]
+    if rule.startswith("fixed:"):
+        val = rule.split(":",1)[1]
+        # 支持 {index} 占位符，用于数组元素编号
+        if "{index}" in val:
+            val = val.replace("{index}", str(field.get("_index", 0)))
+        return val
     if rule.startswith("random:"): return _rnd(rule.split(":",1)[1])
     if rule.startswith("random:A:"): return _rnd_alnum(rule.split(":",2)[2])
     if rule == "timestamp:ms": return _ts_ms()
@@ -295,33 +342,41 @@ def gen_field_value(field, req_context: dict = None):
     if rule == "plate": return _plate()
     if rule.startswith("amount"): return _amount(rule.split(":",1)[1] if ":" in rule else "")
     if rule.startswith("rate"): return _rate(rule.split(":",1)[1] if ":" in rule else "")
-    if rule.startswith("enum:"): return _enum(rule.split(":",1)[1])
+    if rule.startswith("enum:"): return _enum(rule.split(":",1)[1], field.get("_index"))
     if rule.startswith("sequence:"): return _seq(rule.split(":",1)[1])
     if rule == "province:code": return _prov_code()
     if rule == "province:name": return _prov_name()
     if rule.startswith("city:"): return _city_code(rule.split(":",1)[1] if len(rule.split(":"))>1 else "")
     if rule in ("city:name","city"): return _city_name()
     if rule.startswith("date:"): return _date()
-    if "date" in fname.lower() or "time" in fname.lower(): return _datetime()
     if rule.startswith("nested:"): return _gen_object(rule.split(":",1)[1], req_context)
     if rule.startswith("object:"): return _gen_object(rule.split(":",1)[1], req_context)
     if rule.startswith("array:"):
         name = rule.split(":",1)[1]
-        return [_gen_object(name, req_context) for _ in range(random.randint(1,3))]
+        return [_gen_object(name, req_context, i) for i in range(random.randint(2,5))]
     if field.get("ref"):
         with _lock:
             if fname in _refs: return _refs[fname]
         return _seq(fname)
+    # 字段名自动推断：只有当 rule 为空时，才根据字段名猜测合适的默认值
+    if not rule:
+        if "date" in fname.lower() or "time" in fname.lower(): return _datetime()
     return "MOCK_" + fname
 
-def _gen_object(schema_name, req_context: dict = None):
+def _gen_object(schema_name, req_context: dict = None, index: int = 0):
     for proj in _projects.values():
         inner = proj.get("inner_schemas", {})
         if schema_name in inner:
+            schema = inner[schema_name]
+            # 支持 {"fields": [...]} 和纯 [...] 两种格式
+            fields = schema.get("fields", []) if isinstance(schema, dict) else schema
             obj = {}
-            for f in inner[schema_name].get("fields", []):
+            for f in fields:
                 n = f.get("name","")
                 if not n or re.match(r".*sign.*", n.lower()): continue
+                # 给字段注入 index 信息，供 fixed:{index} 占位符使用
+                f = dict(f)
+                f["_index"] = index
                 v = gen_field_value(f, req_context)
                 if v is not None: obj[n] = v
             return obj
@@ -428,6 +483,10 @@ def _extract_path_params(path_template: str, actual_path: str) -> dict:
 app = FastAPI(title="MockLab", description="AI-driven Mock API Service v1.1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+_static_dir = Path(__file__).parent / "static"
+_static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
 _ui_file = (Path(__file__).parent / "ui.html")
 if _ui_file.exists():
     HTML_UI = _ui_file.read_text(encoding="utf-8")
@@ -453,6 +512,13 @@ async def get_project(name: str):
     interfaces = [{"name": i.get("name"), "path": i.get("path"), "method": i.get("method", "POST")} for i in _projects[name].get("interfaces", [])]
     return {"code": 0, "data": interfaces}
 
+@app.get("/mock/project-full/{name}")
+async def get_project_full(name: str):
+    """返回完整项目 Schema（含 inner_schemas），用于 CI 编辑器的嵌套字段编辑"""
+    if name not in _projects:
+        return JSONResponse({"code": 1, "error": "项目不存在"}, status_code=404)
+    return {"code": 0, "data": _projects[name]}
+
 @app.get("/mock/example/{name}/{path:path}")
 async def get_example(name: str, path: str):
     import urllib.parse
@@ -460,16 +526,19 @@ async def get_example(name: str, path: str):
     iface = find_interface(name, clean_path)
     if not iface:
         return JSONResponse({"code": 1, "error": "接口不存在"}, status_code=404)
-    req_fields = gen_req_example_fields(iface.get("req_fields", []))
+    # raw fields 用于编辑弹窗，req_example/resp_example 用于 editor-body 的 mock 数据展示
     return {
         "code": 0,
         "data": {
-            "interface": iface.get("name"),
+            "name": iface.get("name"),
             "path": iface.get("path"),
             "method": iface.get("method", "POST"),
             "delay": iface.get("delay", ""),
             "error": iface.get("error", ""),
-            "req_fields": req_fields
+            "req_fields": iface.get("req_fields", []),
+            "resp_fields": iface.get("resp_fields", []),
+            "req_example": gen_req_example_fields(iface.get("req_fields", [])),
+            "resp_example": gen_req_example_fields(iface.get("resp_fields", []))
         }
     }
 
@@ -480,21 +549,51 @@ async def call_mock(name: str, path: str, request: Request):
     1. 延迟模拟（interface.delay）
     2. 错误注入（interface.error）
     3. 请求镜像 + 动态响应（通过 req_context 下钻）
+    4. 支持自定义请求头（headers）
+    5. 支持 Seed 固定随机数据（seed）
     """
     import urllib.parse
+    raw_body = await request.body()
+    # 从原始 body 解析 JSON（不要重复读 request.body()，流只能读一次）
+    try:
+        req_data = json.loads(raw_body.decode("utf-8")) if raw_body else {}
+    except Exception:
+        req_data = {}
 
-    # ── 1. 查找接口 ───────────────────────────
+    # ── 0. 提取全局参数（headers / seed）─────────
+    # 从 X-Custom-Headers 请求头读取自定义请求头（JSON 编码）
+    extra_headers = {}
+    custom_headers_raw = request.headers.get("x-custom-headers")
+    if custom_headers_raw:
+        try:
+            extra_headers = json.loads(custom_headers_raw)
+        except Exception:
+            pass
+    seed = req_data.pop("seed", None) if isinstance(req_data, dict) else None
+    if isinstance(req_data, dict) and "req" in req_data:
+        req_data = req_data["req"]
+
+    # 应用 Seed（如果指定）
+    if seed is not None:
+        try:
+            random.seed(int(seed))
+        except (ValueError, TypeError):
+            pass
+
+    # ── 1. 查找接口（先查自定义接口，再查项目接口）────
     clean_path = "/" + urllib.parse.unquote(path.lstrip("/"))
-    iface = find_interface(name, clean_path)
+
+    # 优先查自定义接口（不依赖项目）
+    iface = _custom_interfaces.get(clean_path)
+
+    # 其次查项目接口
+    if not iface and name in _projects:
+        iface = find_interface(name, clean_path)
+
     if not iface:
         return JSONResponse({"code": 1, "error": "接口不存在"}, status_code=404)
 
     # ── 2. 构建请求上下文（用于动态响应）─────────
-    try:
-        req_data = await request.json()
-    except Exception:
-        req_data = {}
-
     query_params = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(str(request.url)).query))
 
     path_params = _extract_path_params(iface.get("path", clean_path), clean_path)
@@ -502,14 +601,13 @@ async def call_mock(name: str, path: str, request: Request):
     headers = {k.lower(): v for k, v in request.headers.items()}
 
     # ── 2.1 解析 reqData / ciphertext 等加密字符串字段 ──
-    # Mock 模式下这些字段通常是 JSON 字符串，需要解析后合并到 body 以支持 body:xxx 下钻
     req_data_merged = dict(req_data)
     for inner_field in ("reqData", "ciphertext", "data"):
         if inner_field in req_data_merged and isinstance(req_data_merged[inner_field], str):
             try:
                 parsed = json.loads(req_data_merged[inner_field])
                 if isinstance(parsed, dict):
-                    req_data_merged.update(parsed)  # 展平合并进 body
+                    req_data_merged.update(parsed)
             except Exception:
                 pass
 
@@ -519,6 +617,9 @@ async def call_mock(name: str, path: str, request: Request):
         "query_params": query_params,
         "headers": headers,
     }
+    # 合并前端传递的自定义请求头
+    if extra_headers:
+        req_context["headers"].update(extra_headers)
 
     # ── 3. 延迟模拟 ───────────────────────────
     delay_spec = iface.get("delay")
@@ -551,6 +652,52 @@ async def call_mock(name: str, path: str, request: Request):
     from starlette.responses import Response
     return Response(json.dumps(resp_data, ensure_ascii=False, indent=2), media_type="application/json")
 
+@app.post("/mock/proxy")
+async def proxy_request(request: Request):
+    """
+    代理转发：把请求转发到真实目标地址，原样返回响应（不走 Mock 逻辑）。
+    请求体: {
+        "target_url": "http://localhost:8080/api/user",
+        "method": "POST",
+        "headers": {"Authorization": "Bearer xxx"},
+        "body": {...}
+    }
+    """
+    import httpx
+    data = await request.json()
+    target_url = data.get("target_url")
+    method = data.get("method", "POST").upper()
+    req_headers = data.get("headers", {})
+    req_body = data.get("body")
+
+    if not target_url:
+        return JSONResponse({"code": 1, "error": "target_url 不能为空"}, status_code=400)
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            if method == "GET":
+                resp = await client.get(target_url, headers=req_headers)
+            elif method == "POST":
+                resp = await client.post(target_url, headers=req_headers, json=req_body)
+            elif method == "PUT":
+                resp = await client.put(target_url, headers=req_headers, json=req_body)
+            elif method == "DELETE":
+                resp = await client.delete(target_url, headers=req_headers)
+            else:
+                return JSONResponse({"code": 1, "error": "不支持的请求方法: " + method}, status_code=400)
+
+        # 返回真实响应
+        try:
+            resp_data = resp.json()
+            return Response(json.dumps(resp_data, ensure_ascii=False, indent=2), status_code=resp.status_code, media_type="application/json")
+        except Exception:
+            return Response(resp.text, status_code=resp.status_code, media_type="text/plain")
+
+    except httpx.TimeoutException:
+        return JSONResponse({"code": 1, "error": "请求超时: " + target_url}, status_code=504)
+    except Exception as e:
+        return JSONResponse({"code": 1, "error": "转发失败: " + str(e)}, status_code=502)
+
 @app.post("/mock/load")
 async def load_schema(request: Request):
     data = await request.json()
@@ -577,7 +724,15 @@ async def update_iface_settings(request: Request):
         return JSONResponse({"code": 1, "error": "缺少 project 或 path"}, status_code=400)
 
     clean_path = "/" + iface_path.lstrip("/")
-    iface = find_interface(project, clean_path)
+
+    # 优先查自定义接口
+    iface = _custom_interfaces.get(clean_path)
+    is_custom = bool(iface)
+
+    # 其次查项目接口
+    if not iface:
+        iface = find_interface(project, clean_path)
+
     if not iface:
         return JSONResponse({"code": 1, "error": "接口不存在"}, status_code=404)
 
@@ -586,22 +741,161 @@ async def update_iface_settings(request: Request):
     if "error" in data:
         iface["error"] = str(error).strip() if error != "" else None
 
-    # 回写 schema_store 中的文件（持久化）
+    if is_custom:
+        # 自定义接口直接保存到 _custom_interfaces（已在原对象上修改）
+        _save_custom_interfaces()
+    else:
+        # 项目接口回写 schema_store 中的文件（持久化）
+        schema_file = SCHEMA_STORE / (project + ".json")
+        if schema_file.exists():
+            try:
+                full_schema = json.loads(schema_file.read_text(encoding="utf-8"))
+                for f_iface in full_schema.get("interfaces", []):
+                    if f_iface.get("path") == clean_path:
+                        f_iface["delay"] = iface.get("delay")
+                        f_iface["error"] = iface.get("error")
+                        break
+                schema_file.write_text(json.dumps(full_schema, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception as e:
+                print("[MockLab] Warn: 回写 schema 失败: %s" % e)
+
+    updated = {"path": clean_path, "delay": iface.get("delay", ""), "error": iface.get("error", "")}
+    return {"code": 0, "message": "已更新", "data": updated}
+
+# ─────────────────────────────────────────────
+# v2.0 新增：自定义 Mock 接口 CRUD
+# ─────────────────────────────────────────────
+
+@app.get("/mock/custom")
+async def list_custom():
+    """列出所有自定义接口"""
+    return {"code": 0, "data": [{"path": p, "method": v.get("method", "POST"), "name": v.get("name", p)} for p, v in _custom_interfaces.items()]}
+
+@app.post("/mock/custom")
+async def create_custom(request: Request):
+    """
+    创建自定义接口。
+    请求体: {
+        "path": "/api/users",
+        "method": "POST",
+        "name": "用户列表",
+        "req_fields": [{"name": "page", "rule": "number"}, ...],
+        "resp_fields": [{"name": "id", "rule": "random:6"}, ...]
+    }
+    """
+    data = await request.json()
+    path = "/" + data.get("path", "").strip().lstrip("/")
+    if not path or path == "/":
+        return JSONResponse({"code": 1, "error": "path 不能为空"}, status_code=400)
+    if path in _custom_interfaces:
+        return JSONResponse({"code": 1, "error": "接口已存在: %s" % path}, status_code=409)
+
+    _custom_interfaces[path] = {
+        "method": data.get("method", "POST"),
+        "name": data.get("name", path),
+        "path": path,
+        "req_fields": data.get("req_fields", []),
+        "resp_fields": data.get("resp_fields", []),
+    }
+    _save_custom_interfaces()
+    return {"code": 0, "message": "已创建", "data": {"path": path}}
+
+@app.get("/mock/custom/{path:path}")
+async def get_custom(path: str):
+    """获取单个自定义接口详情（用于编辑）"""
+    clean_path = "/" + urllib.parse.unquote(path.lstrip("/"))
+    if clean_path not in _custom_interfaces:
+        return JSONResponse({"code": 1, "error": "接口不存在"}, status_code=404)
+    return {"code": 0, "data": _custom_interfaces[clean_path]}
+
+@app.put("/mock/custom/{path:path}")
+async def update_custom(path: str, request: Request):
+    """更新自定义接口"""
+    data = await request.json()
+    clean_path = "/" + urllib.parse.unquote(path.lstrip("/"))
+    new_path = "/" + data.get("path", "").strip().lstrip("/") or clean_path
+    if clean_path not in _custom_interfaces:
+        return JSONResponse({"code": 1, "error": "接口不存在"}, status_code=404)
+
+    entry = _custom_interfaces[clean_path]
+    if new_path != clean_path:
+        # path 变了：删旧建新
+        del _custom_interfaces[clean_path]
+        entry = _custom_interfaces[new_path] = {
+            "method": data.get("method", "POST"),
+            "name": data.get("name", new_path),
+            "path": new_path,
+            "req_fields": data.get("req_fields", []),
+            "resp_fields": data.get("resp_fields", []),
+        }
+    else:
+        entry.update({
+            "method": data.get("method", "POST"),
+            "name": data.get("name", clean_path),
+            "req_fields": data.get("req_fields", []),
+            "resp_fields": data.get("resp_fields", []),
+        })
+    _save_custom_interfaces()
+    return {"code": 0, "message": "已更新", "data": {"path": new_path}}
+
+@app.delete("/mock/custom/{path:path}")
+async def delete_custom(path: str):
+    """删除自定义接口"""
+    clean_path = "/" + urllib.parse.unquote(path.lstrip("/"))
+    if clean_path not in _custom_interfaces:
+        return JSONResponse({"code": 1, "error": "接口不存在"}, status_code=404)
+    del _custom_interfaces[clean_path]
+    _save_custom_interfaces()
+    return {"code": 0, "message": "已删除"}
+
+@app.put("/mock/project/{project}/interface")
+async def update_project_interface(project: str, request: Request):
+    """更新项目接口（编辑项目接口后保存）"""
+    data = await request.json()
+    clean_path = "/" + data.get("path", "").strip().lstrip("/")
+    if not clean_path or clean_path == "/":
+        return JSONResponse({"code": 1, "error": "path 不能为空"}, status_code=400)
+    if project not in _projects:
+        return JSONResponse({"code": 1, "error": "项目不存在"}, status_code=404)
+
+    # 查找原接口
+    iface = find_interface(project, clean_path)
+    if not iface:
+        return JSONResponse({"code": 1, "error": "接口不存在"}, status_code=404)
+
+    # 更新字段
+    if "req_fields" in data: iface["req_fields"] = data["req_fields"]
+    if "resp_fields" in data: iface["resp_fields"] = data["resp_fields"]
+    if "name" in data: iface["name"] = data["name"]
+    if "method" in data: iface["method"] = data["method"]
+
+    # 更新 inner_schemas（JSON 编辑器修改的嵌套结构）
+    new_inner = data.get("inner_schemas", {})
+    if new_inner:
+        _projects[project]["inner_schemas"] = new_inner
+
+    # 持久化到 schema 文件
     schema_file = SCHEMA_STORE / (project + ".json")
     if schema_file.exists():
         try:
             full_schema = json.loads(schema_file.read_text(encoding="utf-8"))
             for f_iface in full_schema.get("interfaces", []):
                 if f_iface.get("path") == clean_path:
-                    f_iface["delay"] = iface.get("delay")
-                    f_iface["error"] = iface.get("error")
+                    f_iface.update({
+                        "name": iface.get("name"),
+                        "method": iface.get("method"),
+                        "req_fields": iface.get("req_fields", []),
+                        "resp_fields": iface.get("resp_fields", []),
+                    })
                     break
+            # 同时持久化 inner_schemas
+            if new_inner:
+                full_schema["inner_schemas"] = new_inner
             schema_file.write_text(json.dumps(full_schema, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception as e:
-            print("[MockLab] Warn: 回写 schema 失败: %s" % e)
+            return JSONResponse({"code": 1, "error": "保存失败: " + str(e)}, status_code=500)
 
-    updated = {"path": clean_path, "delay": iface.get("delay", ""), "error": iface.get("error", "")}
-    return {"code": 0, "message": "已更新", "data": updated}
+    return {"code": 0, "message": "已更新", "data": {"path": clean_path}}
 
 @app.delete("/mock/state")
 async def clear_state():

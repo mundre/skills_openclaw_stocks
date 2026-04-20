@@ -1,11 +1,17 @@
 ---
 name: mocklab
 description: |
-  第三方接口 Mock 服务器。当用户需要对接第三方 API 但对方测试环境未就绪，或想在不依赖真实网关的情况下调试接口时使用此技能。
-  
+  MockLab 是一个**智能接口工具箱**，支持 Mock 数据生成、请求转发、数据复现——接口开发调试一站式解决。
+
   支持任意格式的接口文档（Markdown、Word、Java 源码、纯文本等）和任意结构（表格、嵌套 JSON、加密字段、数组对象等）。模型自动理解文档并驱动整个流程：解析文档 → 生成 Schema → 启动 Mock Server → 打开 UI。
-  
+
   触发词包括："启动 MockLab"、"创建一个 Mock Server"、"帮我 mock 这个接口"、"对接第三方接口"等。
+
+  ⚠️ AI 生成 Schema 前必须先阅读参考示例：
+  - `references/demo.json` — 完整 Schema 模板（如何写 interface / inner_schema / 字段规则）
+  - `references/demo__实际返回示例.json` — Python 代码对每个规则的【实际生成结果】
+  - `references/field_keys.md` — 字段 Key 命名规范（铁律：必须照抄文档第一列）
+  AI 必须严格遵守 field_keys.md 的命名规则，Schema field.name 必须与接口文档一字不差，禁止自己发明或转换字段名。
 ---
 
 # MockLab
@@ -97,10 +103,19 @@ description: |
 
 ## ref 跨接口状态关联
 
-- 响应字段标记 `"ref": true` → 自动存入状态表
+- 响应字段标记 `"is_ref": true` → 自动存入状态表
 - 后续接口请求中引用该字段时，自动填充上一次的值
 - 状态持久化到 `state_store.json`，服务重启不丢失
 - UI 上显示"引用自 X.X"标识
+
+**示例（accessToken 跨接口传递）：**
+```json
+// applyAccessToken 响应字段
+{ "name": "accessToken", "rule": "token:32", "is_ref": true }
+
+// 后续接口请求字段
+{ "name": "accessToken", "rule": "state:accessToken" }
+```
 
 ## ① 延迟模拟（interface.delay）
 

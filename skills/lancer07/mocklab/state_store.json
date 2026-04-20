@@ -1,8 +1,8 @@
 {
   "sequences": {
-    "out_apply_no": 1
+    "apply_no": 3,
+    "out_apply_no": 3,
+    "grantAuthId": 2
   },
-  "refs": {
-    "accessToken": "B6E7020F57BB1ADD897964D8DC2A0CCC"
-  }
+  "refs": {}
 }

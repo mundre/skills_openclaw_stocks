@@ -1,11 +1,17 @@
 {
   "owner": "lancer07",
   "slug": "mocklab",
-  "displayName": "mocklab",
+  "displayName": "智能接口工具箱",
   "latest": {
-    "version": "1.1.1",
-    "publishedAt": 1775112889642,
-    "commit": "https://github.com/openclaw/skills/commit/f1469ac066c39da7b8ddffbf7065271d1463b6a3"
+    "version": "1.1.2",
+    "publishedAt": 1776154587432,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.1",
+      "publishedAt": 1775112889642,
+      "commit": "https://github.com/openclaw/skills/commit/f1469ac066c39da7b8ddffbf7065271d1463b6a3"
+    }
+  ]
 }
