@@ -3,9 +3,15 @@
   "slug": "polymarket-micro-coin-lag-trader",
   "displayName": "Polymarket Micro Coin Lag Trader",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1775368469515,
-    "commit": "https://github.com/openclaw/skills/commit/19f15058c69605b47c3466b194a0e989546b75d3"
+    "version": "0.0.2",
+    "publishedAt": 1776513498998,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1775368469515,
+      "commit": "https://github.com/openclaw/skills/commit/19f15058c69605b47c3466b194a0e989546b75d3"
+    }
+  ]
 }
