@@ -18,7 +18,6 @@ description: |
 2. **智能分类** — 自动按领域分类（科技、商业、社会、娱乐等）
 3. **AI 选题评分** — 评估每个热点的「内容机会值」（热度 × 契合度 × 竞争窗口）
 4. **选题推荐** — 根据创作者定位，推荐最适合写作的热点
-5. **定时监控** — 每日定时抓取，发现新热点即时提醒
 
 ## 快速开始
 
@@ -132,15 +131,6 @@ python3 scripts/fetch_trends.py --all --json
 ]
 ```
 
-## 定时任务
-
-用户要求"每天早上帮我看看热点"时：
-
-1. 读取 qclaw-openclaw SKILL.md 了解 cron 创建方式
-2. 创建 cron 任务，设置触发时间（默认每天 08:00）
-3. payload.message 格式：「执行多平台热点聚合技能，抓取今日热点，AI分析并推荐选题，发送到飞书文档 {doc_token}」
-4. sessionTarget: "isolated", payload.kind: "agentTurn"
-
 ## 配置项
 
 首次使用时向用户确认：
@@ -150,16 +140,12 @@ python3 scripts/fetch_trends.py --all --json
 | 监控平台 | 抓取哪些平台 | 知乎+微博+百度 |
 | 过滤关键词 | 只看哪些领域 | 无（全部） |
 | 创作者定位 | 内容方向定位 | AI/科技 |
-| 推送时间 | 定时任务触发时间 | 08:00 |
-| 推送方式 | 飞书文档/群聊 | 飞书文档 |
 
 配置确认后记录到 memory/YYYY-MM-DD.md。
 
 ## 与其他 Skill 的配合
 
 - **rss-content-flow**：热点 + RSS = 完整内容来源
-- **social-media-poster**：选题确定后直接发布
-- **feishu-daily-report**：热点分析纳入日报数据源
 - **content-creator**：选题 → 生成内容 → 发布的完整链路
 
 ## 文件结构
@@ -171,9 +157,8 @@ multi-platform-trend/
 ├── scripts/
 │   ├── fetch_trends.py   # 热点抓取脚本
 │   └── config.json       # 用户配置（运行时生成）
-├── references/
-│   └── scoring_guide.md  # 选题评分指南
-└── assets/               # 示例截图等
+└── references/
+    └── scoring_guide.md  # 选题评分指南
 ```
 
 ## 注意事项

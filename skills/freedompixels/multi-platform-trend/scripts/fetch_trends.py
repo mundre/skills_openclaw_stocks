@@ -22,9 +22,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # SSL 配置：优先标准验证，失败才降级
 _SAFE_SSL_CTX = ssl.create_default_context()  # 标准验证
-_UNVERIFIED_SSL_CTX = ssl.create_default_context()  # 降级（仅备用）
-_UNVERIFIED_SSL_CTX.check_hostname = False
-_UNVERIFIED_SSL_CTX.verify_mode = ssl.CERT_NONE
 
 def _urlopen(req, timeout=10):
     """优先标准SSL，失败自动降级"""
@@ -34,12 +31,12 @@ def _urlopen(req, timeout=10):
         # SSL证书验证失败时降级
         reason = getattr(e, 'reason', None)
         if isinstance(reason, (ssl.SSLError, ssl.SSLCertVerificationError)):
-            return urlopen(req, timeout=timeout, context=_UNVERIFIED_SSL_CTX)
+            return urlopen(req, timeout=timeout, context=ssl.create_default_context())
         raise
     except Exception as e:
         # 其他SSL错误也尝试降级
         if 'SSL' in str(type(e).__name__) or 'SSL' in str(e):
-            return urlopen(req, timeout=timeout, context=_UNVERIFIED_SSL_CTX)
+            return urlopen(req, timeout=timeout, context=ssl.create_default_context())
         raise
 
 HEADERS = {
