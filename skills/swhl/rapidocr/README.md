@@ -1,159 +1,163 @@
-# RapidOCR CLI
+# RapidOCR Skill
 
-A lightweight and efficient command-line version of RapidOCR, designed for local image text recognition with no complex configuration required.
+一个适配当前平台执行方式的本地 OCR Skill，用于识别本机图片中的文字。
 
-## Overview
+## 当前能力
 
-RapidOCR CLI is the official command-line implementation of RapidOCR (v3.x), focusing on fast and accurate Chinese-English mixed OCR recognition for local images. It supports mainstream image formats and provides structured output, making it ideal for daily office scenarios such as image-to-text conversion, invoice recognition, and screenshot text extraction.
+- 支持本地图片 OCR：`png`、`jpg`、`jpeg`、`webp`、`bmp`、`tif`、`tiff`
+- 支持中文、英文、数字混合识别
+- 支持从 **自然语言** 中自动提取图片绝对路径
+- 支持识别 **远程图片 URL**，先自动下载到本机临时目录再 OCR
+- 支持两种输出模式：**纯文本** / **JSON 结构化输出**
+- 本地离线执行（依赖安装完成后，本地图片识别无需联网）
 
-### Key Features
+## 当前推荐调用方式
 
-- **Mainstream Image Support**: Compatible with JPG, PNG, and WEBP formats, adapting to daily screenshots, photos, and scanned documents.
-- **Chinese-English Mixed Recognition**: Accurately identifies Chinese, English, and numbers, meeting the needs of various multilingual scenarios.
-- **Structured Output**: Returns recognized text by default; location coordinates and confidence levels can be output via parameter configuration.
-- **Flexible Configuration**: Supports confidence filtering, visual bounding box generation, and orientation classification (for rotated images).
-- **Offline Usage**: No internet connection required after dependency installation, ensuring data security and stable recognition.
+### 纯文本输出
 
-## Prerequisites
-
-- Python 3.7+ (Python 3.8-3.11 is recommended for better compatibility)
-- pip (Python package manager, usually included with Python installation)
-
-## Installation
-
-Follow these steps to install RapidOCR CLI and its dependencies:
-
-1. Ensure Python 3.7+ is installed on your local machine. You can check the Python version by running:
-
-   ```bash
-   python --version  # Or python3 --version on some systems
-   ```
-
-2. Install the required dependencies using pip:
-
-   ```bash
-   pip install rapidocr onnxruntime
-   ```
-
-3. Verify the installation is successful by running:
-
-   ```bash
-   rapidocr check
-   ```
-
-   If the terminal displays the RapidOCR version information, the installation is complete.
-
-## Usage
-
-RapidOCR CLI supports two usage methods: basic call (default output) and parameterized call (customized output).
-
-### Basic Usage (Default Output: Recognized Text)
-
-Use the following command to recognize text from an image (replace `/path/to/image` with your actual image path):
-
-```bash
-rapidocr -img /path/to/image
-# Example: rapidocr -img ./test.png
+```text
+请识别图片里的文字，图片路径是 C:\Users\ma139\.maclaw\workspace\rapidocr_chinese_test.png
 ```
 
-### Advanced Usage (With Parameters)
+### JSON 输出
 
-You can add parameters to customize the recognition process and output results. Below are common parameter combinations and their uses:
-
-```bash
-# High-confidence filtering (retain results with confidence ≥ 0.8)
-rapidocr -img /path/to/image --text_score 0.8
-
-# Generate visual bounding box image (saved to ./out directory)
-rapidocr -img /path/to/image --vis_res --vis_save_dir ./out
-
-# Enable orientation classification (adapt for rotated images to avoid recognition errors)
-rapidocr -img /path/to/image --use_cls true
-
-# Output single-character coordinates (accurately locate each character's position)
-rapidocr -img /path/to/image --return_word_box
-
-# Recommended combination: high confidence + visualization + orientation classification
-rapidocr -img /path/to/image --text_score 0.7 --vis_res --use_cls true
+```text
+请识别图片里的文字并返回json，图片路径是 C:\Users\ma139\.maclaw\workspace\rapidocr_chinese_test.png
 ```
 
-## Parameter Details
+或：
 
-| Parameter                | Description                                  | Accepted Values/Examples      |
-|--------------------------|----------------------------------------------|-------------------------------|
-| -img / --img_path        | Required. Local path or URL of the image     | ./test.png, https://xxx.jpg   |
-| --text_score             | Optional. Confidence threshold to filter blurry results | 0.5-1.0 (Default: 0.5)         |
-| --vis_res                | Optional. Generate visual image with text bounding boxes | No value needed; add the parameter |
-| --vis_save_dir           | Optional. Directory to save visual images     | ./out, ~/Desktop/ocr_vis      |
-| --use_cls                | Optional. Enable image orientation classification | true / false (Default: false)  |
-| --return_word_box        | Optional. Output single-character coordinate information | No value needed; add the parameter |
-| --lang_type              | Optional. Specify recognition language       | ch (Chinese), en (English), etc. |
-| -h / --help              | Optional. View all parameter descriptions     | No value needed; run directly |
+```text
+请识别图片里的文字，图片路径是 C:\Users\ma139\.maclaw\workspace\rapidocr_chinese_test.png --json
+```
 
-## Example Input & Output
+### 远程图片 URL 自动下载后识别
 
-### Example 1: Basic Usage
+```text
+请识别这张图，图片链接是 https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/resources/test_files/test.png
+```
 
-- Input Command:
+Skill 会自动执行等价命令：
 
-  ```bash
-  rapidocr -img ./invoice.png
-  ```
+```bash
+node "{baseDir}/run_rapidocr.js" "<用户原话>"
+```
 
-- Output Result:
+也就是说：
 
-  ```text
-  [RapidOCR Recognition Result]
-  Invoice Number: NO.20260408
-  Invoice Date: April 08, 2026
-  Amount: ¥1,999.00
-  Payee: XXX Technology Co., Ltd.
-  ```
+- 不需要额外注入 `img_path` 模板变量
+- 不要求用户只传裸路径
+- 可以直接把用户原话当作脚本唯一参数传入
 
-### Example 2: Advanced Usage (High Confidence + Visualization)
+## 输出形式
 
-- Input Command:
+### 1. 默认纯文本
 
-  ```bash
-  rapidocr -img ./screenshot.png --text_score 0.8 --vis_res
-  ```
+每行一条识别结果：
 
-- Output Result:
+```text
+今天天气不错
+RapidOCR 中文测试
+ABC123
+```
 
-  ```text
-  [RapidOCR Recognition Result]
-  Title: ClawHub Skill Release Guide
-  Content: 1. Prepare Skill folder 2. Write SKILL.md 3. Upload and release
-  Confidence: 0.92
+### 2. JSON 结构化输出
 
-  [Hint] The visual bounding box image has been saved to ./out/screenshot_vis.png
-  ```
+返回字段：
 
-## Notes
+- `text`：合并后的完整文本
+- `lines`：逐行文本数组
+- `boxes`：检测框坐标
+- `scores`：每行置信度
+- `source`：实际识别的本地文件路径
 
-1. **Correct Image Path**: If the terminal prompts "File not found", check if the image path is correct. The relative path must match the terminal's current working directory.
-2. **Dependency Installation Failure**: If pip installation fails, try using a domestic mirror source to speed up the installation:
+示例：
 
-   ```bash
-   pip install -i https://pypi.tuna.tsinghua.edu.cn/simple rapidocr onnxruntime
-   ```
+```json
+{
+  "text": "今天天气不错\nRapidOCR 中文测试\nABC123",
+  "lines": ["今天天气不错", "RapidOCR 中文测试", "ABC123"],
+  "boxes": [[[30.0, 38.0], [247.0, 38.0], [247.0, 76.0], [30.0, 77.0]]],
+  "scores": [0.99965, 0.98901, 0.99894],
+  "source": "C:\\Users\\ma139\\.maclaw\\workspace\\rapidocr_chinese_test.png"
+}
+```
 
-3. **Garbled Text/Inaccurate Recognition**: If recognition results are garbled or inaccurate, add the `--use_cls true` parameter to enable orientation classification, or adjust the `--text_score` threshold to improve accuracy.
-4. **PDF Not Supported**: This tool only supports image recognition. To recognize text from PDF files, convert the PDF to images first (e.g., using tools like pdf2image).
-5. **Output Object Explanation**: The RapidOutput object returned by RapidOCR CLI is the official standard output carrier, which contains all core information required for recognition. No additional configuration is needed, and it does not affect the tool's usage or result display.
+## 依赖要求
 
-## Frequently Asked Questions (FAQ)
+建议环境：
 
-1. Q: Why does the terminal prompt "Command not found" when entering `rapidocr`?
-   A: Ensure that the dependencies are installed successfully. If the problem persists, restart the terminal or check if the Python environment variables are configured correctly.
-2. Q: How to speed up the recognition process?
-   A: Reduce optional parameters (such as `--return_word_box`) or lower the `--text_score` threshold to improve recognition speed.
-3. Q: Can RapidOCR CLI recognize handwritten text?
-   A: Currently, it only supports printed text recognition. The accuracy of handwritten text recognition is low and not recommended.
+- Python 3.8 - 3.11
+- 已安装：
 
-## Author & License
+```bash
+python -m pip install rapidocr onnxruntime
+```
 
-- **Author**: RapidAI
-- **Email**: liekkaskono@163.com
-- **Homepage**: https://rapidai.github.io/RapidOCRDocs
-- **License**: Apache 2.0 License
+如果终端里 `rapidocr` 不在 PATH 中，也没关系；wrapper 会自动尝试常见 Python Scripts 目录。
+
+## 脚本说明
+
+实际入口脚本：
+
+```text
+{baseDir}/run_rapidocr.js
+```
+
+这个 wrapper 做了几件事：
+
+1. 从自然语言、JSON、环境变量中提取图片路径或图片 URL
+2. 自动检查本地图片路径是否存在
+3. 若输入是 URL，自动下载到系统临时目录
+4. 自动寻找 Python / RapidOCR 可执行环境
+5. 调用 Python 中的 RapidOCR 库执行 OCR
+6. 过滤 warning 和 info 日志，只保留识别结果
+7. 按需输出纯文本或 JSON
+
+## 当前行为约定
+
+### 支持的输入形式
+
+1. 裸路径
+
+```text
+C:\Users\ma139\.maclaw\workspace\rapidocr_chinese_test.png
+```
+
+1. 自然语言 + 路径
+
+```text
+帮我识别这张图，图片路径是 C:\Users\ma139\.maclaw\workspace\rapidocr_chinese_test.png
+```
+
+1. JSON 风格文本
+
+```json
+{"img_path":"C:\\Users\\ma139\\.maclaw\\workspace\\rapidocr_chinese_test.png"}
+```
+
+1. 自然语言 + 远程图片 URL
+
+```text
+请识别这张图，图片链接是 https://example.com/demo.png
+```
+
+### 当前不支持
+
+- PDF 直接识别
+- 非图片 URL
+- 相对路径鲁棒处理仍较弱，推荐优先使用 **绝对路径**
+
+## 状态
+
+当前版本已完成以下验证：
+
+- 本地直接执行 wrapper：成功
+- 通过 `manage_skill run` 调用 Skill：成功
+- 路径从自然语言中提取：成功
+- JSON 输出：成功
+- 输出仅保留 OCR 文本 / JSON：成功
+
+## License
+
+- RapidOCR upstream: Apache 2.0
