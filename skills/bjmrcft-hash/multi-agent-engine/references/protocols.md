@@ -1,8 +1,108 @@
-# 运行时操作协议 v2026-04-04
+# 运行时操作协议 v2026-04-20 (v8.1 更新)
 
 主代理执行多代理任务时的**强制执行规范**。
 
 ⚠️ **本文件中的规则不可违反。主代理不得跳过、省略或修改任何流程阶段。**
+
+---
+
+## 🆕 v8.1 新增：子代理轮询监控协议（2026-04-20）
+
+### 背景问题
+
+在 OpenClaw vs Hermes 对比研究（2026-04-19）中发现：
+- **40% 子代理"完成"但未及时被主代理感知**
+- **Technical_Specialist 发送询问消息但主代理未收到**
+- **主代理误判子代理"丢失"，导致重复执行浪费 350k tokens**
+
+**根因**：
+1. `sessions_spawn` 完成通知是 push-based，但子代理的 `sessions_send` 询问消息不保证主代理能收到
+2. 主代理被动等待完成通知，没有主动轮询子代理状态
+3. 缺少超时处理机制，无法区分"延迟"和"丢失"
+
+### v8.1 解决方案
+
+#### 1. 主动轮询机制（必须执行）
+
+```javascript
+// Phase 3: collect 阶段必须使用主动轮询
+const { collectResults, PollMonitor } = await import('./lib/executor_v8.1.js');
+
+const monitor = new PollMonitor({
+  pollIntervalMs: 30000,  // 每 30 秒检查一次
+  timeoutMs: 3600000,     // 1 小时超时
+  logFile: './poll_log.jsonl'  // 可选：记录完整轮询历史
+});
+
+// 对每个子代理进行轮询
+for (const agentName of agentNames) {
+  const result = await monitor.pollUntilReady(
+    agentName,
+    `${outputDir}/${agentName}_report.md`
+  );
+  
+  if (!result.success) {
+    // 触发降级协议
+    console.warn(`${agentName} 超时：${result.reason}`);
+  }
+}
+```
+
+#### 2. 轮询状态定义
+
+| 状态 | 触发条件 | 处理动作 |
+|------|---------|---------|
+| `POLL_START` | 开始轮询 | 记录开始时间、输出文件路径 |
+| `POLL_CHECK` | 每次检查文件 | 记录文件状态（不存在/大小不足/内容无效） |
+| `FILE_READY` | 文件有效产出 | 记录文件大小、行数，进入验证阶段 |
+| `POSSIBLY_LOST` | 轮询≥10 次且>5 分钟 | 建议检查子代理会话状态或触发降级 |
+| `TIMEOUT` | 超过 1 小时 | 触发降级协议（Level 2 或 3） |
+| `ERROR` | 异常 | 记录错误详情，标记为缺失 |
+
+#### 3. 超时降级策略
+
+| 超时时间 | 降级级别 | 处理动作 |
+|---------|---------|---------|
+| < 5 分钟 | 正常等待 | 继续轮询 |
+| 5-10 分钟 | Level 1（轻度） | 记录 POSSIBLY_LOST，准备补做 |
+| 10-30 分钟 | Level 2（中度） | 重试缺失代理（换模型/加时限） |
+| > 30 分钟 | Level 3（重度） | 主代理全面接管 |
+| > 1 小时 | Level 3（重度） | 强制触发降级，记录审计日志 |
+
+#### 4. 消息路由验证
+
+**问题**：子代理通过 `sessions_send` 发送询问消息，但主代理可能收不到。
+
+**v8.1 要求**：
+1. 子代理在发送询问消息后，**必须同时写入进度文件**
+2. 主代理轮询时**检查进度文件**，而不仅依赖消息推送
+3. 进度文件格式：`{outputDir}/progress/{agentName}_status.json`
+
+```json
+{
+  "agent": "Technical_Specialist",
+  "status": "completed",
+  "timestamp": "2026-04-20T09:38:00Z",
+  "outputFile": "Technical_Specialist_report.md",
+  "message": "已完成量化对比分析，请确认是否需要补充 03_metrics_comparison_v2.md",
+  "awaitingResponse": true
+}
+```
+
+#### 5. 审计日志要求
+
+**必须记录**（用于事后调试和根因分析）：
+- 每个子代理的 spawn 时间、预期完成时间、实际完成时间
+- 每次轮询的时间戳、文件状态
+- 超时事件的详细信息（elapsedMs, pollCount, reason）
+- 降级决策的依据（成功率、缺失代理列表）
+
+**日志格式**（JSONL，便于机器解析）：
+```json
+{"timestamp":"2026-04-20T09:38:00Z","agent":"Technical_Specialist","event":"FILE_READY","elapsedMs":132000,"pollCount":5,"fileSize":20036}
+```
+
+---
 
 ## 0. 质量优先原则（最高约束，用户指定）
 

@@ -27,6 +27,32 @@ const ROLE_TRAITS = {
   Critic:               { prefer: ['analysis', 'general'],             avoid: [] },
 };
 
+// ===================== 已知无效模型黑名单（基于历史故障） =====================
+/**
+ * 已知无效或低效的模型ID
+ * 这些模型在历史执行中表现不佳（高频超时/空输出/API错误）
+ * 将在模型选择时自动过滤，除非明确允许
+ */
+const INEFFECTIVE_MODEL_BLACKLIST = new Set([
+  // OpenRouter free 层无效模型（高频 402/429）
+  'openrouter/free',
+  // 其他已知无效免费模型
+  'openrouter/auto',
+  // 历史记录中零产出的模型（基于 2026-04-04 审计）
+  'openrouter/nvidia/nemotron-3-super-120b-a12b:free',
+  'openrouter/stepfun/step-3.5-flash:free',
+  'openrouter/minimax/minimax-m2.5:free',
+]);
+
+/**
+ * 检查模型是否在有效范围内
+ * 排除黑名单中的模型，除非明确允许使用
+ */
+function isModelEffective(modelId, allowBlacklisted = false) {
+  if (allowBlacklisted) return true;
+  return !INEFFECTIVE_MODEL_BLACKLIST.has(modelId);
+}
+
 // ===================== 模型能力标签（启发式） =====================
 
 /**
@@ -262,6 +288,8 @@ export function selectModel(agentRole, options = {}) {
   let candidates = modelPool.all.filter(m => {
     if (excludedModels.includes(m.id)) return false;
     if (!allowFree && m.tier === 'free') return false;
+    // 排除已知无效模型（除非明确允许）
+    if (!isModelEffective(m.id, options.allowBlacklisted)) return false;
     return true;
   });
 
@@ -282,6 +310,11 @@ export function selectModel(agentRole, options = {}) {
       if (m.traits.includes(trait)) m._score += 15;
     }
 
+    // 黑名单模型大幅减分（优先级最低）
+    if (!isModelEffective(m.id, options.allowBlacklisted)) {
+      m._score -= 1000; // 几乎确保不被选中
+    }
+
     // 自定义规则覆盖
     if (rules?.boost?.[m.id]) m._score += rules.boost[m.id];
     if (rules?.penalty?.[m.id]) m._score -= rules.penalty[m.id];
@@ -295,6 +328,8 @@ export function selectModel(agentRole, options = {}) {
     // 无排除条件时的最佳模型（回退到最后可用）
     const fallback = modelPool.all.filter(m => {
       if (!allowFree && m.tier === 'free') return false;
+      // 排除黑名单模型（即使是fallback也避免使用）
+      if (!isModelEffective(m.id, options.allowBlacklisted)) return false;
       return m.contextWindow > 0 || m.tier !== 'free'; // 至少要有基本能力
     }).sort((a, b) => {
       // 优先 standard > local > free

@@ -11,11 +11,152 @@
  * 6. 决策引擎 - 智能决策与人工介入
  */
 
+// ===================== 前置环境检查 =====================
+/**
+ * 在导入任何模块之前，先检查基础环境兼容性
+ * 防止环境不兼容导致导入阶段就崩溃
+ */
+function checkRuntimeCompatibility() {
+  const errors = [];
+  const warnings = [];
+
+  // 1. 检查 Node.js 版本（ES Module 语法依赖）
+  try {
+    const [major, minor] = process.version.slice(1).split('.').map(Number);
+    if (major < 20 || (major === 20 && minor < 5)) {
+      errors.push(`Node.js 版本过低: ${process.version}，需要 20.5+`);
+      errors.push(`ES Module 语法不兼容，请升级 Node.js 版本`);
+    }
+  } catch (versionError) {
+    errors.push(`无法解析 Node.js 版本: ${process.version}`);
+  }
+
+  // 2. 检查 OpenClaw API 可用性
+  const openclawVersion = process.env.OPENCLAW_VERSION || 'unknown';
+  if (openclawVersion === 'unknown') {
+    warnings.push(`OpenClaw 版本未知，API 可用性检测跳过`);
+  } else {
+    try {
+      const [major] = openclawVersion.split('.').map(Number);
+      if (major < 2026) {
+        errors.push(`OpenClaw 版本过低: ${openclawVersion}，需要 2026.3.x+`);
+        errors.push(`缺少 sessions_spawn API，请升级 OpenClaw`);
+      }
+    } catch (versionError) {
+      warnings.push(`无法解析 OpenClaw 版本: ${openclawVersion}`);
+    }
+  }
+
+  // 注意：文件系统权限检查移到模块导入之后进行
+  // 因为在顶层函数中不能使用 await import()
+
+  // 如果有致命错误，立即退出并提供详细说明
+  if (errors.length > 0) {
+    const errorReport = `❌ 多代理引擎 - 环境不兼容错误\n${'═'.repeat(50)}\n\n` +
+      `检测到 ${errors.length} 个环境兼容性问题:\n\n` +
+      errors.map(e => `• ${e}`).join('\n') + '\n\n' +
+      `🔧 解决方案:\n` +
+      `1. 升级 Node.js 到 20.5+\n` +
+      `2. 升级 OpenClaw 到 2026.3.x+\n` +
+      `3. 检查文件系统权限\n` +
+      `4. 重新安装 multi-agent-engine 技能\n\n` +
+      `📝 详细说明:\n` +
+      `• 多代理引擎使用 ES Module 语法，需要 Node.js 20.5+\n` +
+      `• 并行执行需要 sessions_spawn API，需要 OpenClaw 2026.3.x+\n` +
+      `• 需要读写工作区目录的权限\n`;
+    console.error(errorReport);
+    process.exit(1);
+  }
+
+  // 如果有警告，记录但不阻止执行
+  if (warnings.length > 0) {
+    const warningReport = `⚠️  环境检测警告\n${'─'.repeat(50)}\n\n` +
+      warnings.map(w => `• ${w}`).join('\n') + '\n\n' +
+      `系统将继续执行，但某些功能可能受限。\n`;
+    console.warn(warningReport);
+  }
+}
+
+// 执行环境检查
+checkRuntimeCompatibility();
+
+// ===================== 导入核心模块 =====================
+// 环境检查通过后，再导入模块
 import fs from "fs";
 import path from "path";
 
+// ===== 文件系统权限检查 =====
+// 在模块导入之后检查文件系统权限
+try {
+  const testDir = path.join(process.env.USERPROFILE || process.env.HOME, '.openclaw', 'workspace', 'test_permission');
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.rmdirSync(testDir);
+} catch (fsError) {
+  const errorReport = `❌ 文件系统权限不足\n${'─'.repeat(50)}\n\n` +
+    `错误: ${fsError.message}\n\n` +
+    `🔧 解决方案:\n` +
+    `1. 检查工作区目录权限\n` +
+    `2. 使用管理员权限运行\n` +
+    `3. 检查磁盘是否已满\n`;
+  console.error(errorReport);
+  process.exit(1);
+}
+
+// ===== 模块加载异常处理 =====
+/**
+ * 安全的模块导入函数
+ * 提供详细的错误诊断信息
+ */
+function safeImportModule(modulePath) {
+  try {
+    return import(modulePath);
+  } catch (error) {
+    const errorReport = `❌ 模块加载失败\n${'─'.repeat(50)}\n\n` +
+      `模块路径: ${modulePath}\n` +
+      `错误类型: ${error.name}\n` +
+      `错误信息: ${error.message}\n\n` +
+      `🔍 可能原因:\n` +
+      `1. 模块文件不存在: ${modulePath}\n` +
+      `2. 导入语法错误\n` +
+      `3. Node.js 版本过低（需要 20.5+）\n` +
+      `4. 模块依赖缺失\n\n` +
+      `🔧 解决方案:\n` +
+      `1. 重新安装 multi-agent-engine 技能\n` +
+      `2. 检查 lib/ 目录下是否有对应文件\n` +
+      `3. 升级 Node.js 到 20.5+\n` +
+      `4. 联系技能开发者\n\n` +
+      `📝 调试信息:\n` +
+      `• 当前目录: ${process.cwd()}\n` +
+      `• Node.js 版本: ${process.version}\n` +
+      `• 错误堆栈: ${error.stack || '无'}\n`;
+    
+    console.error(errorReport);
+    process.exit(1);
+  }
+}
+
 // ===== 核心模块 =====
-import {
+// 使用安全导入
+let executorModule, executorLiteModule;
+try {
+  executorModule = await import('./lib/executor.js');
+} catch (error) {
+  console.error(`❌ 无法加载核心模块 executor.js`);
+  console.error(`请检查 lib/ 目录下是否有该文件`);
+  console.error(`错误详情: ${error.message}`);
+  process.exit(1);
+}
+
+// v8.0: 精简版执行模块（可选）
+try {
+  executorLiteModule = await import('./lib/executorLite_v8.2.js');
+} catch (error) {
+  console.warn(`⚠️ 精简版模块 executorLite_v8.2.js 加载失败: ${error.message}`);
+  console.warn(`将继续使用完整版 executor.js`);
+  executorLiteModule = null;
+}
+
+const {
   buildSpawnParams, buildParallelSpawnParams, collectResults,
   validateAgentOutput, aggregateResults, buildCriticTask,
   buildExecutionPlan, saveExecutionPlan, loadExecutionPlan,
@@ -31,33 +172,99 @@ import {
   archiveWorkflow, cleanShared, generateFinalSummary, archiveAndClean,
   // 环境验证
   validateEnvironment
-} from './lib/executor.js';
+} = executorModule;
 
-import { getModelPoolInfo } from './lib/modelSelector.js';
-import {
+// v8.0: 精简版函数导出
+const {
+  buildLiteSpawnParams,
+  validateLiteOutput,
+  handleLiteFailure,
+  buildBatchLiteSpawnParams,
+  estimateTokensSavings,
+  FAILURE_STRATEGIES
+} = executorLiteModule || {};
+
+// ===== 其他模块导入 =====
+let modelSelectorModule, modelAdaptationModule, thinkingCapabilitiesModule;
+let configValidatorModule, validatorModule, aggregatorModule, communicationModule;
+
+try {
+  modelSelectorModule = await import('./lib/modelSelector.js');
+} catch (error) {
+  console.error(`❌ 无法加载模块 modelSelector.js: ${error.message}`);
+  process.exit(1);
+}
+
+try {
+  modelAdaptationModule = await import('./lib/modelAdaptation.js');
+} catch (error) {
+  console.error(`❌ 无法加载模块 modelAdaptation.js: ${error.message}`);
+  process.exit(1);
+}
+
+try {
+  thinkingCapabilitiesModule = await import('./lib/thinkingCapabilities.js');
+} catch (error) {
+  console.error(`❌ 无法加载模块 thinkingCapabilities.js: ${error.message}`);
+  process.exit(1);
+}
+
+try {
+  configValidatorModule = await import('./lib/config_validator.js');
+} catch (error) {
+  console.error(`❌ 无法加载模块 config_validator.js: ${error.message}`);
+  process.exit(1);
+}
+
+try {
+  validatorModule = await import('./lib/validator.js');
+} catch (error) {
+  console.error(`❌ 无法加载模块 validator.js: ${error.message}`);
+  process.exit(1);
+}
+
+try {
+  aggregatorModule = await import('./lib/aggregator.js');
+} catch (error) {
+  console.error(`❌ 无法加载模块 aggregator.js: ${error.message}`);
+  process.exit(1);
+}
+
+try {
+  communicationModule = await import('./lib/communication.js');
+} catch (error) {
+  console.error(`❌ 无法加载模块 communication.js: ${error.message}`);
+  process.exit(1);
+}
+
+// 解构导入的模块
+const { getModelPoolInfo } = modelSelectorModule;
+const {
   detectPoolChanges, recommendRoleConfig,
   loadRoleConfig, saveRoleConfig, patchRoleConfig,
   needsSetup, generateSetupPrompt,
   checkForModelChanges,
   formatRecommendationReport, formatChangeNotification,
   buildRoleSpawnParams, ensureThinkingEnabled
-} from './lib/modelAdaptation.js';
-import {
+} = modelAdaptationModule;
+const {
   checkModelThinking, selectThinkingLevel, degradeThinking,
   verifyThinkingExecution, setUserOverride,
   getCapabilitiesSummary, formatCapabilitiesTable
-} from './lib/thinkingCapabilities.js';
-
-import { 
+} = thinkingCapabilitiesModule;
+const {
+  generateConfigReport, generateConfigGuide, autoConfigure
+} = configValidatorModule;
+const { 
   VALIDATION_RULESETS, validate, formatValidationReport 
-} from './lib/validator.js';
-import { 
+} = validatorModule;
+const { 
   AGGREGATION_TEMPLATES, aggregate, formatAggregation 
-} from './lib/aggregator.js';
-import { 
+} = aggregatorModule;
+const { 
   COMMUNICATION_PROTOCOLS,
   generateAgentPrompt, generateFeedbackPrompt
-} from './lib/communication.js';
+} = communicationModule;
 
 // ===================== 配置存储 =====================
 
@@ -512,8 +719,42 @@ const commands = {
 
   // ========== 完整执行（一键启动，返回文本指南）==========
 
-  run: (params) => {
+  run: async (params) => {
     if (!params.goal) return "❌ 缺少 --goal 参数";
+
+    // ===== 第一步：检查系统配置 =====
+    const configReport = generateConfigReport();
+
+    // 如果有错误，生成配置指南并等待用户同意
+    if (configReport.summary.error > 0) {
+      const guide = generateConfigGuide();
+      console.log(guide);
+
+      // 等待用户确认（在实际 OpenClaw 环境中，这会通过用户交互完成）
+      // 这里返回配置指南，让 AI 代理与用户确认
+      return guide;
+    }
+
+    // 如果有警告，提示用户（但继续执行）
+    if (configReport.summary.warning > 0) {
+      console.log('\n⚠️  发现可选配置项，建议手动优化：');
+      for (const warning of configReport.warnings) {
+        console.log(`  - ${warning.name}: ${warning.message}`);
+      }
+    }
+
+    // ===== 第二步：自动完成必需的配置 =====
+    if (configReport.errors.length > 0) {
+      console.log('\n🔧 开始自动配置...');
+      const configResult = await autoConfigure(configReport);
+
+      if (!configResult.success) {
+        return `❌ 自动配置失败: ${configResult.error}`;
+      }
+    }
+
+    // ===== 第三步：继续执行任务 =====
+    console.log('✅ 配置完成，开始执行多代理任务...\n');
 
     // 生成分层目录
     const directories = buildOutputDirs(
@@ -732,6 +973,72 @@ const commands = {
     return output;
   },
 
+  // ========== 配置向导 ==========
+
+  config_wizard: async (params) => {
+    try {
+      const report = generateConfigReport();
+      
+      let output = `🚀 多代理系统配置向导\n${'═'.repeat(50)}\n\n`;
+      
+      output += `## 📊 系统配置概览\n`;
+      output += `- 总检查项: ${report.summary.total}\n`;
+      output += `- ✅ 通过: ${report.summary.pass}\n`;
+      output += `- ⚠️  警告: ${report.summary.warning}\n`;
+      output += `- ❌ 错误: ${report.summary.error}\n\n`;
+      
+      if (report.errors.length > 0) {
+        output += `## ❌ 必须修复的问题 (${report.errors.length} 项)\n\n`;
+        for (const error of report.errors) {
+          output += `### ${error.name}\n`;
+          output += `- 问题: ${error.message.split('\n')[0]}\n`;
+          output += `- 影响: ${error.required || '系统无法运行'}\n\n`;
+        }
+      }
+      
+      if (report.warnings.length > 0) {
+        output += `## ⚠️  建议优化的项 (${report.warnings.length} 项)\n\n`;
+        for (const warning of report.warnings) {
+          output += `### ${warning.name}\n`;
+          output += `- 状态: ${warning.current || '未配置'}\n`;
+          output += `- 建议: ${warning.message.split('\n')[0]}\n\n`;
+        }
+      }
+      
+      // 提供操作建议
+      output += `## 🎯 下一步操作\n\n`;
+      
+      if (report.errors.length > 0) {
+        output += `1. **自动修复** (推荐): 系统可以自动创建缺失的目录和配置文件。\n`;
+        output += `\n2. **手动修复**: 按照以下步骤操作：\n`;
+        for (const error of report.errors) {
+          output += `   - ${error.name}: 需要 ${error.message.split('\n')[0]}\n`;
+        }
+        output += `\n💡 建议使用自动修复功能，确保配置完全正确。\n`;
+      } else if (report.warnings.length > 0) {
+        output += `1. **自动优化** (推荐): 系统可以创建可选目录和配置文件。\n`;
+        output += `2. **不优化** (接受当前配置): 继续使用现有配置。\n`;
+        output += `\n⚠️ 虽然可选配置不影响核心功能，但建议完善以获得最佳体验。\n`;
+      } else {
+        output += `✅ 所有配置检查通过！系统已准备就绪。\n`;
+        output += `\n🎉 现在可以开始使用多代理系统了！\n`;
+        output += `\n推荐命令:\n`;
+        output += `\n1. 查看代理配置: \`多代理 list\`\n`;
+        output += `2. 运行演示任务: \`多代理 run_demo\`\n`;
+        output += `3. 启动研究任务: \`多代理 run --goal \"研究主题\"\`\n`;
+      }
+      
+      output += `\n${'─'.repeat(50)}\n`;
+      output += `💡 提示: 使用 \`多代理 check_env\` 单独检查环境兼容性\n`;
+      
+      return output;
+      
+    } catch (err) {
+      return `❌ 配置向导执行失败: ${err.message}\n` +
+             `请检查 config_validator.js 模块是否可用。`;
+    }
+  },
+
   // ========== 帮助 ==========
 
   help: () => {
@@ -739,6 +1046,7 @@ const commands = {
 
 🔧 环境检查:
   check_env               检查 OpenClaw 版本和工具可用性
+  config_wizard           配置检查与修复向导
 
 📋 代理配置管理:
   list                    列出所有代理配置
