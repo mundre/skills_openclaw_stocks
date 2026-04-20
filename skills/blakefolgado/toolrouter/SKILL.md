@@ -1,98 +1,74 @@
 ---
 name: toolrouter
-description: One gateway to 150+ tools for AI agents — competitor research, video production, web search, image generation, security scanning, and more. Requires a ToolRouter API key (auto-provisioned on first use at toolrouter.com).
+description: One MCP gateway to 230+ AI tools — SEO, web search, image generation, video, screenshots, security scanning, and more. Auto-provisions on first use with no API key setup required.
+version: 1.0.2
+homepage: https://toolrouter.com
+tags: [mcp, tools, ai-agent, seo, image-generation, web-search, video, security, gateway, aggregator]
+agent-requested: true
+user-invocable: false
 ---
 
 # ToolRouter
 
-Give your AI agent superpowers with access to 150+ tools on demand with just one account. One API key replaces managing dozens of provider accounts.
+ToolRouter gives AI agents access to 230+ tools through a single MCP connection. One integration replaces managing dozens of separate provider accounts and API keys.
 
-## Authentication
+## Install in OpenClaw
 
-**Requires a ToolRouter API key.** Get one at [toolrouter.com](https://toolrouter.com) — auto-provisioned on first use. Set via `TOOLROUTER_API_KEY` environment variable.
+Add to `~/.openclaw/openclaw.json`:
 
 ```json
 {
   "mcpServers": {
     "toolrouter": {
       "command": "npx",
-      "args": ["-y", "toolrouter-mcp"],
-      "env": {
-        "TOOLROUTER_API_KEY": "your-api-key"
-      }
+      "args": ["-y", "toolrouter-mcp"]
     }
   }
 }
 ```
 
-## Setup
+Or paste this into OpenClaw and it sets itself up:
 
-### Option A: npx (stdio bridge)
+> Add ToolRouter MCP server to my OpenClaw config at ~/.openclaw/openclaw.json. Add a "toolrouter" entry under mcpServers with command "npx" and args ["-y", "toolrouter-mcp"]. No API key needed — account auto-provisions on first use.
 
-The `toolrouter-mcp` npm package ([npmjs.com/package/toolrouter-mcp](https://www.npmjs.com/package/toolrouter-mcp)) is a lightweight stdio-to-HTTP bridge that connects your local MCP client to the hosted ToolRouter API.
+Restart OpenClaw. All ToolRouter tools will be available.
 
-```
-npx -y toolrouter-mcp
-```
+## Remote MCP (no install)
 
-**Source:** Published on npm by [Humanleap](https://toolrouter.com). The package proxies MCP requests to `api.toolrouter.com` over HTTPS.
-
-### Option B: Remote MCP (streamable HTTP)
-
-Connect directly to the hosted endpoint — no local code execution:
+Connect directly without npx:
 
 ```
 https://api.toolrouter.com/mcp
 ```
 
-Authentication via API key header. Works with any MCP client that supports remote/streamable HTTP transport.
+## How It Works
 
-## What You Get
+- **Auto-provisions** — no API key or account setup needed. On first use it auto-creates an account and prints a claim URL to add billing details.
+- **230+ tools** — SEO, web search, image generation, video, screenshots, security scanning, company lookup, flight search, social media, financial data, and more.
+- **One connection** — replaces managing separate accounts for dozens of providers.
+- **Usage-based** — free tools work immediately. Paid tools cost fractions of a cent per call.
 
-150+ tools across these categories, growing daily:
+## Discover Tools
 
-- **Research** — competitor intelligence reports, deep research with citations, academic papers
-- **Video & Audio** — video production from creative briefs, AI dubbing in any language, text-to-speech with 1000+ voices
-- **Search & Data** — web search, job listings with salary data, SEC filings, lead generation
-- **Security** — penetration testing, vulnerability scanning, supply chain risk auditing
-- **Web Extraction** — stealth scraping through bot protection, structured data extraction
-- **Image & Media** — image generation, brand logo extraction
-- **Travel** — live flight search with pricing, hotel and stay comparisons
-- **Documents** — Word docs, Excel, PowerPoint, PDF creation and editing
-- **Marketing** — ad library search, social media analytics, app store optimization
-
-## Usage
-
-### Discover tools
-
-```json
-{
-  "tool": "toolrouter",
-  "skill": "discover",
-  "input": { "query": "competitor research" }
-}
+```
+discover *              # list all available tools
+discover seo            # search by category
+discover screenshots    # search by keyword
 ```
 
-### Call a tool
+## Example Calls
 
-```json
-{
-  "tool": "toolrouter",
-  "skill": "use_tool",
-  "input": {
-    "tool": "competitor-research",
-    "skill": "analyze",
-    "input": { "url": "https://example.com" }
-  }
-}
 ```
-
-## Billing
-
-Usage-based — pay per tool call. Most calls cost fractions of a cent. No subscriptions required.
+use_tool("seo", "analyze_page", { url: "https://example.com" })
+use_tool("web-search", "search", { query: "latest AI news" })
+use_tool("generate-image", "text_to_image", { prompt: "a cat in space" })
+use_tool("web-screenshot", "capture", { url: "https://example.com" })
+use_tool("company-lookup", "get_company", { domain: "example.com" })
+```
 
 ## Links
 
-- Website: [toolrouter.com](https://toolrouter.com)
-- npm: [npmjs.com/package/toolrouter-mcp](https://www.npmjs.com/package/toolrouter-mcp)
-- API: [api.toolrouter.com](https://api.toolrouter.com)
+- Website: https://toolrouter.com
+- Tools catalog: https://toolrouter.com/tools
+- Setup guide: https://toolrouter.com/connect
+- npm: https://www.npmjs.com/package/toolrouter-mcp
