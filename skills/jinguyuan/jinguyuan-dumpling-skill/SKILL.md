@@ -1,7 +1,7 @@
 ---
 name: jinguyuan-dumpling-skill
 description: 金谷园饺子馆信息查询与在线排队取号。查询餐厅信息、外卖配送、生饺子打包、Wi-Fi、最新动态；内嵌美团排队 Skill 支持在线取号、查进度、取消排队。
-version: 0.3.3
+version: 0.4.1
 alwaysApply: false
 keywords:
   - 金谷园
@@ -36,6 +36,27 @@ keywords:
 >
 > 本文档中所有示例数据（营业时间、门店地址等）**仅作格式参考**，不代表实时数据。
 > 回答用户问题时，**必须调用 MCP 工具获取实时数据**，不得直接使用文档中的示例值。
+>
+> **MCP 调用方式**：通过 MCP 协议（JSON-RPC 2.0 POST）调用。端点地址见 `skill.json` 中 `mcp_server.url` 字段。
+>
+> **调用示例**（以 `get_restaurant_info` 为例）：
+>
+> ```
+> POST <skill.json 中 mcp_server.url>
+> Content-Type: application/json
+>
+> {
+>   "jsonrpc": "2.0",
+>   "id": 1,
+>   "method": "tools/call",
+>   "params": {
+>     "name": "get_restaurant_info",
+>     "arguments": {}
+>   }
+> }
+> ```
+>
+> 其他工具调用方式相同，只需替换 `params.name` 为对应工具名。完整工具列表见 `skill.json` 的 `tools` 字段，或通过 `tools/list` 方法动态获取。
 >
 > **降级策略**：MCP 调用失败或超时时，可使用本文档静态数据回复。
 > 优先级：MCP 实时数据 > 本文档静态数据 > 告知用户稍后重试。
@@ -141,4 +162,3 @@ keywords:
 
 - GitHub：https://github.com/JinGuYuan/jinguyuan-dumpling-skill
 - Gitee：https://gitee.com/JinGuYuan/jinguyuan-dumpling-skill
-- ClawHub：https://clawhub.com/JinGuYuan/jinguyuan-dumpling-skill

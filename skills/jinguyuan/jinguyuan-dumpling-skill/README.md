@@ -1,6 +1,6 @@
 # 金谷园饺子馆 AI Skill
 
-![Version](https://img.shields.io/badge/version-0.3.3-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![MCP](https://img.shields.io/badge/protocol-MCP-purple) ![Transport](https://img.shields.io/badge/transport-Streamable%20HTTP-orange)
+![Version](https://img.shields.io/badge/version-0.4.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![MCP](https://img.shields.io/badge/protocol-MCP-purple) ![Transport](https://img.shields.io/badge/transport-Streamable%20HTTP-orange)
 
 这是一个 AI Skill——安装后，你的 AI 助手就能查询金谷园饺子馆的信息：在哪吃、几点开门、怎么排队、能不能外卖、生饺子怎么煮、Wi-Fi 密码是什么。还能直接帮你在美团上排队取号。
 
@@ -8,7 +8,7 @@
 
 ## 关于金谷园
 
-北邮旁边的饺子馆。
+北邮旁边的饺子馆。官网：[jinguyuan.cloud](https://jinguyuan.cloud)
 
 | 项目 | 内容 |
 |------|------|
@@ -66,8 +66,6 @@ jinguyuan-dumpling-skill/
 │       ├── SKILL.md         #   排队指令与命令说明
 │       ├── scripts/         #   排队脚本（mt_queue.py 等）
 │       └── references/      #   鉴权子 Skill（meituan-passport-user-auth）
-├── assets/                  # 模板与示例
-│   └── mcp-config-example.json  # MCP 配置示例（适用于所有 MCP 客户端）
 ├── README.md
 └── LICENSE
 ```
@@ -83,12 +81,6 @@ jinguyuan-dumpling-skill/
 Agent 会自动克隆仓库并安装到对应的 Skill 目录。
 
 ### 其他安装方式
-
-**通过 ClawHub CLI 安装：**
-
-```bash
-npx clawhub install https://gitee.com/JinGuYuan/jinguyuan-dumpling-skill
-```
 
 **手动克隆到 Skill 目录：**
 
@@ -115,7 +107,6 @@ git clone https://gitee.com/JinGuYuan/jinguyuan-dumpling-skill.git \
 
 - GitHub：https://github.com/JinGuYuan/jinguyuan-dumpling-skill
 - Gitee：https://gitee.com/JinGuYuan/jinguyuan-dumpling-skill
-- ClawHub：https://clawhub.com/JinGuYuan/jinguyuan-dumpling-skill
 
 ## 技术协议
 
@@ -125,28 +116,11 @@ git clone https://gitee.com/JinGuYuan/jinguyuan-dumpling-skill.git \
 | 传输 | Streamable HTTP |
 | 部署 | Tencent CloudBase 云函数 |
 
-## MCP 接入方式
-
-> 注意：直接配置 MCP 服务器仅当次会话生效，不会持久化。推荐使用上方「安装」方式，Skill 安装后永久可用。
-
-在支持 MCP 协议的 AI 客户端中添加以下配置即可接入：
-
-```json
-{
-  "mcpServers": {
-    "jinguyuan-dumpling-skill": {
-      "type": "streamable-http",
-      "url": "https://mcp-4g9gkps4c04addd0.service.tcloudbase.com/jgy-mcp"
-    }
-  }
-}
-```
-
 ## 版本
 
-当前版本：0.3.3（MCP 配置示例见 `assets/mcp-config-example.json`）
+当前版本：0.4.0
 
-> 说明：本 Skill 版本（0.3.3）与内嵌排队组件（meituan-queue）版本独立演进，互不影响。
+> 说明：本 Skill 版本（0.3.4）与内嵌排队组件（meituan-queue）版本独立演进，互不影响。
 
 ## License
 
