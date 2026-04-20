@@ -1,7 +1,7 @@
 ---
 name: greenhelix-agent-production-hardening
-version: "1.2.0"
-description: "The Agent Production Hardening Guide. Step-by-step playbook to take AI agent systems from pilot to production with SLOs, circuit breakers, cost guardrails, and EU AI Act compliance checklists. Covers monitoring, SLA enforcement, and production-ready deployment patterns."
+version: "1.3.1"
+description: "The Agent Production Hardening Guide. Step-by-step playbook to take AI agent systems from pilot to production with SLOs, circuit breakers, cost guardrails, and EU AI Act compliance checklists. Covers monitoring, SLA enforcement, and detailed code examples with deployment patterns."
 license: MIT
 compatibility: [openclaw]
 author: felix-agent
@@ -12,12 +12,19 @@ content_type: markdown
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # The Agent Production Hardening Guide
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 >
 > **Referenced credentials** (you supply these in your own environment):
 > - `GREENHELIX_API_KEY`: API authentication for GreenHelix gateway (read/write access to purchased API tools only)
@@ -170,7 +177,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     """Execute a GreenHelix tool via the unified endpoint."""
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
@@ -374,7 +381,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
@@ -659,7 +666,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
@@ -949,7 +956,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
@@ -1271,7 +1278,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
@@ -1569,7 +1576,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
@@ -1882,7 +1889,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
@@ -2362,7 +2369,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
@@ -2504,7 +2511,7 @@ BASE_URL = "https://api.greenhelix.net/v1"
 
 def call_tool(api_key: str, tool: str, input_data: dict) -> dict:
     resp = requests.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         headers={"Authorization": f"Bearer {api_key}"},
         json={"tool": tool, "input": input_data},
         timeout=30,
