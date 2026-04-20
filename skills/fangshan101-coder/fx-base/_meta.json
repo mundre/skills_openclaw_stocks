@@ -3,11 +3,16 @@
   "slug": "fx-base",
   "displayName": "Fx Base",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1775206312626,
-    "commit": "https://github.com/openclaw/skills/commit/cc091085af99717a457dd9df5358e0c8ddd0e824"
+    "version": "1.1.2",
+    "publishedAt": 1776253372876,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1775206312626,
+      "commit": "https://github.com/openclaw/skills/commit/cc091085af99717a457dd9df5358e0c8ddd0e824"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775031379783,
