@@ -1,7 +1,7 @@
 """
 core/persona_engine.py
 PersonaEngine - 子代理人格赋予核心引擎
-V2.0 核心模块
+V3.0 核心模块
 """
 
 from pathlib import Path

@@ -20,7 +20,7 @@ class PromptCompiler:
         phrases = persona_def.get("phrases", {})
         
         lines = []
-        lines.append("## 【心灵补手】谄媚模块 v2.0")
+        lines.append("## 【心灵补手】谄媚模块 v3.0")
         lines.append(f"**人格**: {meta.get('name', meta['id'])}")
         lines.append("")
         lines.append("### 身份")
