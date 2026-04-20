@@ -1,16 +1,16 @@
 ---
 name: nexus-talent-assessor
-description: Adaptive competency assessment with skill gap analysis, 360-feedback,
-  and career path recommendations.
-version: '2.1.0'
+description: "HR talent assessment agent. Performs competency-based evaluations, skill gap analysis, 360-feedback processing, and career path recommendations with AI coaching."
+license: proprietary
+compatibility: "Python 3.11+, NEXUS AI Corp ecosystem"
 metadata:
-  openclaw:
-    emoji: 👥
-    homepage: https://github.com/Shuwanito/SkillsMP/tree/main/.claude/skills/nexus-talent-assessor
-    os:
-    - macos
-    - linux
-    - windows
+  department: hr
+  agents: ["talent-assessor", "ai-coach"]
+  price_per_execution: "$2.00"
+  ecosystem: "NEXUS AI Corp"
+  version: "1.0.0"
+  publishable: true
+allowed-tools: web-search web-fetch filesystem
 ---
 
 # Nexus Talent Assessor
