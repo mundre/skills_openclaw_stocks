@@ -3,9 +3,15 @@
   "slug": "okx-defi-portfolio",
   "displayName": "Okx Defi Portfolio",
   "latest": {
-    "version": "2.2.7",
-    "publishedAt": 1775722753788,
-    "commit": "https://github.com/openclaw/skills/commit/6f2c227c02f283bd8d2b906e4cc8ecd12f67bbf2"
+    "version": "2.2.10",
+    "publishedAt": 1776333247119,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.2.7",
+      "publishedAt": 1775722753788,
+      "commit": "https://github.com/openclaw/skills/commit/6f2c227c02f283bd8d2b906e4cc8ecd12f67bbf2"
+    }
+  ]
 }
