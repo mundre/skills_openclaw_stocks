@@ -2,7 +2,7 @@
   "spec_version": "1.0",
   "name": "doc-review-Auuu",
   "slug": "doc-review-auuu",
-  "version": "2.9.3",
+  "version": "2.9.4",
   "title": "飞书 AI 文档审查",
   "description": "飞书 AI 文档审查 Skill - 对技术文档进行智能审查，支持文献调研、方案推演、实验设计、对外材料四类。接收用户提供的文档内容或公开链接，生成审查报告并创建飞书云文档。",
   "author": "Auuu",
