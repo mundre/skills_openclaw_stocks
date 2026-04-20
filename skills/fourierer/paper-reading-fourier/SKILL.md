@@ -22,7 +22,7 @@ Before starting, the user must provide:
 Given a local path, arXiv URL, or paper title from the user:
 
 ```bash
-python /Users/yihe/.config/opencode/skills/paper-reading/scripts/fetch_pdf.py <path_or_url_or_title> -o <pdf_output_path>
+python scripts/fetch_pdf.py <path_or_url_or_title> -o <pdf_output_path>
 ```
 
 - **Local path**: validates existence, returns absolute path
@@ -35,7 +35,7 @@ python /Users/yihe/.config/opencode/skills/paper-reading/scripts/fetch_pdf.py <p
 
 ```bash
 pip install pdfplumber  # if not already installed
-python /Users/yihe/.config/opencode/skills/paper-reading/scripts/read_pdf.py <pdf_path> [-p <page_range>] [-o <extracted_text_path>]
+python scripts/read_pdf.py <pdf_path> [-p <page_range>] [-o <extracted_text_path>]
 ```
 
 - Extracts text and tables from the PDF
