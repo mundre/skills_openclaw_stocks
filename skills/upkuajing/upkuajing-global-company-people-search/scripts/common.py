@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from datetime import datetime
 import httpx
-
+from version_check import check_and_notify
 
 # API配置
 API_BASE_URL = "https://openapi.upkuajing.com"
@@ -197,6 +197,9 @@ def make_request(
         api_key: API密钥（如果为None且require_auth=True，将从环境变量获取）
         require_auth: 是否需要Bearer令牌认证，默认为True
     """
+    # 版本检测
+    check_and_notify(API_BASE_URL)
+
     if require_auth and api_key is None:
         api_key = get_api_key()
 
