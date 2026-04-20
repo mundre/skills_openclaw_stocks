@@ -1,10 +1,59 @@
-# openclaw-rpa
+# 🚀 OpenClaw-RPA 
 
 English | **[中文](README.zh-CN.md)**
 
-> **AI-driven RPA that records once and replays forever — no model needed at run time.**
+### **The "RPA Compiler" for AI Agents.**
+**Record once → Replay as deterministic Python. Stop the "LLM Tax" on repetitive tasks.**
 
-**openclaw-rpa** is an **LLM-based RPA Agent framework**. You describe a task in plain language; the AI executes it step by step in a **real browser, on your computer, or via API services** — with screenshot proof at every step — then compiles everything into a **standalone Python script**. Replay requires no LLM, no cloud dependency; just let OpenClaw select and run the automation task automatically.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Playwright](https://img.shields.io/badge/powered%20by-Playwright-green)](https://playwright.dev/)
+
+---
+
+## 💡 Why OpenClaw-RPA?
+
+https://github.com/user-attachments/assets/e3ed5b34-1ddb-43a6-af42-2d1a907d3564
+
+Current AI Web、Computer、Workflow Agents are amazing but **fundamentally flawed** for production:
+* **The "LLM Tax":** Why pay for tokens every time your agent clicks a "Download" button it has clicked 100 times before?
+* **Latency:** Waiting for an LLM to "reason" through a fixed UI is painfully slow.
+* **Fragility:** High-temperature models can hallucinate and break stable workflows.
+
+**OpenClaw-RPA bridges the gap.** Use the intelligence of LLMs to **discover and record** a workflow *once*, then compile it into a **standalone, high-speed Playwright script** that runs with **ZERO token cost** forever.
+
+---
+
+## ✨ Key Features
+
+* **⚡ Zero-Token Replay:** Compile Agent reasoning into pure Python. Save 100% of inference costs on daily repetitive tasks.Like: Instantly replay your recorded sequence in a live browser window.
+* **🔑 Session Persistence (#rpa-login):** Manually solve 2FA, QR codes, or SMS once. The tool auto-injects cookies into all future headless runs. **Bypass login walls forever.**
+* **🌐 HTTP API Recording:** Mix REST `GET/POST` calls with browser steps in a single, replayable script.
+* **📄 Native Office Automation:** Build-in `excel_write` and `word_write`. **No Microsoft Office installation required.** Perfect for Linux/Docker environments.
+* **🔗 Seamless Integration:** Designed as a powerful skill for the OpenClaw ecosystem but generates standard Python/Playwright code.
+
+---
+
+## 🎥 Show, Don't Tell
+
+| **Record Mode (LLM Thinking)** | **Replay Mode (Deterministic Script)** |
+| :--- | :--- |
+| *Agent analyzes the DOM and plans actions...* | *Executes at native code speed...* |
+| 💸 **Cost:** $$$ (Tokens) | 💰 **Cost:** $0.00 (Pure Python) |
+| 🐢 **Speed:** Slow (Reasoning) | 🚀 **Speed:** Instant (Execution) |
+
+### **Competitive Analysis: The RPA Evolution**
+
+| Feature | Legacy RPA (UIPath, etc.) | Pure LLM Agents (Browser-use) | **OpenClaw-RPA (The Compiler)** |
+| :--- | :--- | :--- | :--- |
+| **Development Cost** | High (Manual selectors/logic) | Low (Natural language) | **Low (Auto-record & Compile)** |
+| **Operational Cost** | High (Expensive licenses) | Very High (Token cost per run) | **Near Zero (Native Python scripts)** |
+| **Execution Speed** | Moderate | Slow (Inference latency) | **Instant (Native code execution)** |
+| **Stability** | Brittle (Breaks on UI changes) | Probabilistic (Prone to hallucinations) | **Deterministic (High reliability code)** |
+| **2FA Handling** | Extremely Complex | Costly (Requires live reasoning) | **Simple (One-time session capture)** |
+| **Environment** | Windows & MS Office | Flexible (But expensive) | **Cloud-Native (Linux/Docker ready)** |
+| **Architecture** | Manual Flowcharts | Real-time Reasoning | **Reason Once → Compile → Replay** |
+
 
 ## What you can automate
 
@@ -15,9 +64,7 @@ English | **[中文](README.zh-CN.md)**
 | **Excel (`.xlsx`)** | Create / update workbooks, multiple sheets, headers, freeze panes, dynamic rows from JSON or another file |
 | **Word (`.docx`)** | Generate reports with paragraphs and tables — no Microsoft Office required |
 | **Auto-login** | Save cookies once with `#rpa-login`, inject them on every future recording and replay — skip OTP / CAPTCHA flows |
-| **Mixed flows** | Any combination of the above in a single recorded task |
-
-## How it works
+| **Mixed flows** | Any combination of the above in a single recorded task 
 
 ```
 You (plain language)
@@ -29,7 +76,7 @@ You (plain language)
  AI drives real Chrome     ← record-step (screenshot proof every step)
       │
       ▼
- "end recording"           ← synthesize
+ `#end`                     ← synthesize
       │
       ▼
  rpa/<task>.py             ← standalone Playwright Python script
@@ -148,7 +195,17 @@ Open Sina Finance https://finance.sina.com.cn/, search for NVDA, click "Company 
 Merge nvda_time_series_daily.json and nvda_news.txt into nvda.txt.
 ```
 
-### 4. OpenClaw + Feishu/Lark: `#rpa-list`, `#rpa-run`, and scheduled run
+### 4. Airbnb Competitor Price Tracker (Browser + Vision + Word) 🆕
+
+> [!TIP]
+> **Featured case — Real Computer-Use agent in production.**
+> Zero-code RPA robot: open browser → visual recognition → extract prices & ratings → append to a Word report.
+> Airbnb is a heavily dynamic **SPA**; traditional crawlers fail here. This case introduces **vision mode** — the AI reads the screen like a human, powered by **[Qwen3-VL](https://github.com/QwenLM/Qwen3-VL)** (Alibaba open-source, ultra-low token cost, local-deploy friendly).
+> Record **once** → auto-generate a Python script → all future runs execute the script directly: **zero Token cost, zero hallucinations, deterministic results.**
+>
+> 📖 **[Full step-by-step tutorial →](articles/scenario-airbnb-compare.md)**
+
+### 5. OpenClaw + Feishu/Lark: `#rpa-list`, `#rpa-run`, and scheduled run
 
 Screen recording of a typical chat with **OpenClaw-bot** on Feishu/Lark:
 
@@ -159,7 +216,7 @@ Screen recording of a typical chat with **OpenClaw-bot** on Feishu/Lark:
 
 https://github.com/user-attachments/assets/08ccbdc6-508b-457a-87d6-49ac77e9a89e
 
-### 5. Auto-login (Cookie reuse) — record post-login pages without re-entering credentials
+### 6. Auto-login (Cookie reuse) — record post-login pages without re-entering credentials
 
 **Scenario:** Sites like e-commerce platforms that require SMS OTP, CAPTCHA sliders, or QR-code login. Log in once manually, save the session, and every subsequent recording or replay **injects the cookies automatically** — skipping the login flow entirely.
 
@@ -186,7 +243,7 @@ https://github.com/user-attachments/assets/08ccbdc6-508b-457a-87d6-49ac77e9a89e
 
 ---
 
-### 6. AP reconciliation — GET API + local Excel + Word tables
+### 7. AP reconciliation — GET API + local Excel + Word tables
 
 **Finance / AP:** mock **GET** pulls open payables lines; **no ERP submit/close**; match against a local invoice workbook; save a **Word (`.docx`)** report with **tables**.
 
@@ -248,49 +305,8 @@ See comment block at the top of `requirements.txt` for the same breakdown.
 
 ## Advanced
 
-<details>
-<summary><b>Manual install · gateway Python · paths · publishing</b></summary>
-
-### Manual install (no `install.sh`)
-
-```bash
-cd /path/to/openclaw-rpa
-python3 -m venv .venv && source .venv/bin/activate
-pip install -U pip && pip install -r requirements.txt
-python -m playwright install chromium
-```
-
-### Which `python` does OpenClaw use?
-
-`rpa_manager.py` uses **`sys.executable`**. That interpreter must have **Playwright**. If the gateway uses **system** `python3`, install deps there **or** point tools at:
-
-`~/.openclaw/workspace/skills/openclaw-rpa/.venv/bin/python`
-
-### Locale & `config.json`
-
-- **`SKILL.md`** → `metadata.openclaw.localeConfig` → **`config.json`**
-- If `config.json` is missing, the router can use **`config.example.json`** for `locale`
-- Details: **`LOCALE.md`**
-
-### Paths in `SKILL.en-US.md` / `SKILL.zh-CN.md`
-
-Examples may use `~/.openclaw/workspace/skills/openclaw-rpa/`. Change the prefix if your workspace differs.
-
-### Publish the skill
-
-**[ClawHub — publish a skill](https://clawhub.ai/publish-skill)** (link this GitHub repo).
-
-### Environment check
-
-```bash
-python3 envcheck.py
-# or
-python3 rpa_manager.py env-check
-```
-
-`record-start` / `run` can auto-install Chromium if missing.
-
-</details>
+Manual install, gateway Python, locale config, paths, and publishing:
+**[articles/advanced-setup.md](articles/advanced-setup.md)**
 
 ---
 
@@ -324,56 +340,16 @@ Recorder: `record-start` → `record-step` → `record-end` (see `rpa_manager.py
 
 ## API recording (`api_call`)
 
-The recorder supports **`api_call`** steps: **GET/POST** (or other methods) via **httpx**, with the response optionally saved under the Desktop. Full field list and progressive-probing tips: **[SKILL.en-US.md — `api_call`](SKILL.en-US.md#single-step-recording-protocol-for-every-user-instruction)** and **Scenario 1**.
+The recorder supports **`api_call`** steps (GET/POST via httpx, response optionally saved to Desktop).
 
-### API notes
-
-<a id="api_call_notes"></a>
-
-For **agents / developers** (shell, JSON, `record-step`—not the plain-language user prompt in **[§3](#api-quotes-news-brief)**).
-
-1. **What `api_call` does**  
-   Adds a step that issues an **HTTP request** to a URL (independent of the current browser page) and optionally writes the response to a Desktop file (**`save_response_to`**).
-
-2. **Key embedding strategy**  
-   In the `record-step` JSON, use **`__ENV:ENV_VAR_NAME__`** in `params` or `headers` **and** include the actual key in the step's **`"env"` field**:
-
-   ```json
-   {
-     "action": "api_call",
-     ...,
-     "params": {"apikey": "__ENV:ALPHAVANTAGE_API_KEY__", ...},
-     "env": {"ALPHAVANTAGE_API_KEY": "your-real-key"}
-   }
-   ```
-
-   The code generator detects the `env` field and **writes the key directly into the script** (e.g. `'apikey': 'your-real-key'`) — no `export` needed for replay; the script runs as-is.  
-   If `env` is omitted, the generated code uses `os.environ.get("VAR", "")` and requires `export VAR=…` before running.
-
-3. **This README's [§3](#api-quotes-news-brief) example (Alpha Vantage daily)**  
-   Docs: [TIME_SERIES_DAILY](https://www.alphavantage.co/documentation/#daily). Typical `record-step`: **`base_url`** + **`params`** (`function`, `symbol` = IBM, `outputsize` = compact, …), `apikey` = `"__ENV:ALPHAVANTAGE_API_KEY__"`, `env` with real key, **`save_response_to`** = output filename.
-
-**Summary:** Use **`__ENV:NAME__`** + **`"env"` field** together → key written into script, no `export` needed.
-
-### Example: quotes + news page + local brief
-
-**Plain-language task prompt:** **[§3](#api-quotes-news-brief)**. **Wiring:** **[API notes](#api_call_notes)**. One task can **(1)** save quote JSON, **(2)** open a news page, **(3)** **`extract_text`** into the same brief filename (append rules in **[Scenario 1](SKILL.en-US.md#scenario-1-quotes--news-page--local-brief-browser--api--file)**).
+Full guide — key embedding strategy, env field, examples:
+**[articles/api-call-guide.md](articles/api-call-guide.md)**
 
 ---
-
-## Roadmap (planned)
-
-The following capabilities are **not shipped yet**; they describe where the project is headed.
-
-| Area | Description |
-|:-----|:------------|
-| **Deeper API tooling** | Richer **HTTP** helpers (e.g. auth presets, response shaping) on top of today’s **`api_call`** **record → synthesize → replay** path. |
-| **✅ Auto-login / session reuse** (shipped) | `#rpa-login` for one manual login → cookies saved automatically → `#rpa-autologin` injects them on every subsequent recording and replay, no re-login needed. See **[articles/autologin-tutorial.en-US.md](articles/autologin-tutorial.en-US.md)**. |
-
 **Caveats**
 
-- **Compliance:** Follow each site’s terms of service and policies. This repo does not endorse evading safeguards or scraping where it isn’t allowed.
-- **High-friction sites (e.g. LinkedIn):** Even with auto sign-in or session reuse, you may still hit **2FA, device checks, CAPTCHAs, and risk blocks** that require **human steps**. The goal is fewer redundant login flows **when your environment can keep a stable session**—not a promise of **fully unattended** operation on every platform.
+- **Compliance:** Follow each site's terms of service and policies. This repo does not endorse evading safeguards or scraping where it isn't allowed.
+- **High-friction sites (e.g. LinkedIn):** Even with auto sign-in or session reuse, you may still hit **2FA, device checks, CAPTCHAs, and risk blocks** that require **human steps**.
 
 ---
 

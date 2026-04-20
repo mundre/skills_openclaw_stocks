@@ -1,6 +1,6 @@
 ---
 name: openclaw-rpa
-description: "Record browser, Excel, Word & API actions once — replay without the LLM: faster, cheaper, no hallucinations. github.com/laziobird/openclaw-rpa . Supports computer-use automation: web clicks/fill/extract, local Excel (.xlsx via openpyxl), Word (.docx via python-docx), HTTP API calls (httpx GET/POST), and auto-login cookie reuse. · Triggers: #rpa #RPA #rpa-api #rpa-login #rpa-login-done #rpa-autologin #rpa-autologin-list #rpa-list #rpa-run #rpa-help"
+description: "Record browser, Excel, Word & API actions once — replay without the LLM: faster, cheaper, no hallucinations. github.com/laziobird/openclaw-rpa . Supports computer-use automation: web clicks/fill/extract, local Excel (.xlsx via openpyxl), Word (.docx via python-docx), HTTP API calls (httpx GET/POST), and auto-login cookie reuse. · Triggers: #rpa #RPA #rpa-api #rpa-login #rpa-login-done #rpa-autologin #rpa-autologin-list #rpa-list #rpa-run #rpa-help · Use when user says RPA, 录制自动化, browser automation, or asks to automate browser/file tasks."
 metadata:
   openclaw:
     emoji: "🤖"
@@ -83,8 +83,6 @@ Generated file is **ordinary Python** (`rpa/*.py`) — runs standalone with `pyt
 
 | Situation | Why | Workaround |
 |-----------|-----|------------|
-| Highly dynamic SPAs (heavy client-side routing) | Selectors shift between renders; snapshots may miss content | Use `dom_inspect` + `scroll` to locate stable selectors |
-| CAPTCHA / bot-detection (reCAPTCHA, hCaptcha) | Automation blocked; human verification required | — |
 | Login-gated flows (password / SMS OTP / slider / QR code) | Credentials and 2FA must be handled manually | **Use `#rpa-login` to log in once manually → cookies saved automatically → `#rpa-autologin` injects them on every future recording and replay, skipping the login flow entirely** |
 
 > **Tip:** on a new site, start with `goto` + `snapshot` to confirm the page structure is readable before building a full flow.

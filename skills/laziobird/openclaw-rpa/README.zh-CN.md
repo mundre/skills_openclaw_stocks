@@ -1,21 +1,58 @@
-# openclaw-rpa
+# 🚀 OpenClaw-RPA 
 
 **[English](README.md)** | 中文
 
-> **AI 录制一次，脚本永久复用 —— 回放时无需模型。**
+### **AI Agent 的“RPA 编译器”**
+**一次记录 → 永久重放为确定性 Python 脚本。彻底终结重复任务中的“大模型税”。**
 
-**openclaw-rpa** 是基于 LLM 的 RPA Agent 框架。你用自然语言描述任务，AI 在**真实的浏览器、Computer、API服务**里一步步执行、截图留证，最终将所有操作编译成**可独立运行的Python 脚本**——回放时不需要大模型、不依赖云服务、在Openclaw 自动选择自动化任务即可。
+[![许可证: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Playwright](https://img.shields.io/badge/powered%20by-Playwright-green)](https://playwright.dev/)
 
-## 可以自动化哪些任务
+---
 
-| 类别 | 典型场景 |
-|------|---------|
-| **浏览器操作** | 登录、导航、点击、填表、文本提取、排序/筛选 |
-| **HTTP API** | 调用任意 REST 接口（GET / POST），保存 JSON，API 密钥直接写入脚本 |
-| **Excel（`.xlsx`）** | 新建/更新工作簿、多 Sheet、表头、冻结首行、从 JSON 或其他文件动态写入行 |
-| **Word（`.docx`）** | 生成含表格的报告——无需安装 Microsoft Office |
-| **自动登录** | `#rpa-login` 保存一次 Cookie，后续录制和回放自动注入，跳过短信/滑块/扫码登录 |
-| **混合流程** | 以上任意组合在同一个录制任务中 |
+## 💡 为什么选择 OpenClaw-RPA？
+
+目前的 AI 网页、Computer Use Agent 虽然强大，但在生产环境中存在**本质缺陷**：
+* **“大模型税” (LLM Tax)：** 为什么要为了 Agent 点击一个它已经点过 100 次的“下载”按钮而重复支付 Token 费用？
+* **高延迟：** 等待大模型对固定的 UI 界面进行“推理”极其缓慢。
+* **不可控性：** 大模型每次运行结果都可能会产生幻觉，从而破坏稳定的工作流。
+
+**OpenClaw-RPA 弥补了这一鸿沟。** 利用大模型的智能来**发现并记录**一次工作流，然后将其编译为**独立的、高速运行的 Playwright 脚本**。此后运行，**Token 消耗永远为零**。
+
+---
+
+## ✨ 核心特性
+
+* **⚡ 零 Token 重放：** 将 Agent 的推理过程编译为纯 Python 代码。在日常重复任务中节省 100% 的推理成本。比如：在实时浏览器窗口中立即回放你录制的操作行为。
+* **🔑 会话保持与免登录 (#rpa-login)：** 手动解决一次 2FA、二维码或短信验证。工具会自动将 Cookie 注入到未来的所有无头（Headless）运行中。**永久绕过登录墙。**
+* **🌐 HTTP API 记录：** 在同一个可重放脚本中，将 REST `GET/POST` 请求与浏览器操作完美融合。
+* **📄 原生 Office 自动化：** 内置 `excel_write` 和 `word_write`。**无需安装 Microsoft Office。** 非常适合 Linux/Docker 环境。
+* **🔗 无缝集成：** 作为 OpenClaw 生态系统中的强大技能设计，同时生成标准的 Python/Playwright 代码。
+
+---
+
+## 🎥 有图有真相 (Show, Don't Tell)
+
+| **记录模式 (大模型思考中)** | **重放模式 (确定性脚本)** |
+| :--- | :--- |
+| *Agent 分析 DOM 并规划动作...* | *以原生代码速度执行...* |
+| 💸 **成本：** $$$ (消耗 Token) | 💰 **成本：** $0.00 (纯 Python) |
+| 🐢 **速度：** 缓慢 (需要推理) | 🚀 **速度：** 瞬间 (直接执行) |
+
+![shopping-hd-960p](https://github.com/user-attachments/assets/4c30d799-803e-458b-a496-ee5f38513da8)
+
+### 竞争优势 
+
+| 特性 | 传统 RPA (UIPath 等) | 纯 LLM Agent (Browser-use 等) | **OpenClaw-RPA (编译器模式)** |
+| :--- | :--- | :--- | :--- |
+| **开发成本** | **高** (人工编写选择器与逻辑) | **低** (自然语言描述) | **极低 (自动记录并编译)** |
+| **运行成本** | **高** (昂贵的商业授权) | **极高** (每次运行均消耗 Token) | **接近零 (原生 Python 脚本运行)** |
+| **执行速度** | **中等** | **缓慢** (受大模型推理延迟影响) | **极快 (代码级原生执行速度)** |
+| **稳定性** | **脆弱** (网页改版即失效) | **随机性** (存在模型幻觉风险) | **确定性 (高可靠代码执行)** |
+| **2FA 处理** | **极其复杂** | **昂贵** (需实时推理配合) | **简单 (Session 一次性捕获)** |
+| **部署环境** | **Windows & MS Office 依赖** | **灵活** (但运行成本高) | **云原生 (支持 Linux/Docker)** |
+| **技术架构** | 人工绘制流程图 | 实时在线推理 | **一次推理 → 编译 → 永久重放** |
 
 ## 工作原理
 
@@ -23,7 +60,7 @@
 你（自然语言描述任务）
       │
       ▼
-  #自动化机器人 / #rpa-api     ← 触发
+  #rpa / #RPA / #rpa-api     ← 触发
       │
       ▼
  AI 驱动真实 Chrome           ← record-step（每步截图留证）
@@ -56,7 +93,7 @@ git clone https://github.com/laziobird/openclaw-rpa.git
 cd openclaw-rpa && ./scripts/install.sh
 
 # 在 OpenClaw 对话中，选择触发词：
-#自动化机器人           # 纯网页流程
+#rpa                   # 纯网页流程
 #rpa-api               # 含 HTTP API 的流程
 #rpa-login <url>       # 保存登录会话（Cookie）
 #rpa-list              # 列出所有已录制任务
@@ -81,7 +118,7 @@ https://github.com/user-attachments/assets/d368a81e-425a-4830-bc29-fe11e89eda92
 
 **对话步骤**
 
-1. 发送 **`#rpa`** / **`#RPA`** / **`#自动化机器人`**（规则见 [**SKILL.md**](SKILL.md)、[**SKILL.zh-CN.md**](SKILL.zh-CN.md)「触发检测」）。
+1. 发送 **`#rpa`** / **`#RPA`**（规则见 [**SKILL.md**](SKILL.md)、[**SKILL.zh-CN.md**](SKILL.zh-CN.md)「触发检测」）。
 2. **一条消息两行**：第 1 行任务名（如 **`电商网站购物`**），第 2 行能力码（如 **`A`** 仅网页；含表格用 **`D`** 等），规则见 **SKILL.zh-CN.md**「ONBOARDING」。
 
 **任务提示词**
@@ -91,7 +128,7 @@ https://github.com/user-attachments/assets/d368a81e-425a-4830-bc29-fe11e89eda92
 3. 将**最贵的两件**商品加入购物车。  
 4. **退出登录**。
 
-录制协议（`record-start`、`record-step`、`plan-set`、`#结束录制` 等）见 [**SKILL.zh-CN.md**](SKILL.zh-CN.md)。**先看有哪些已录好的 RPA 可用**：发 **`#rpa-list`**；**再跑其中一个**：`#rpa-run:{任务名}`（新对话）或 `#运行:{任务名}` / `python3 rpa_manager.py run <任务名>`（当前会话）。
+录制协议（`record-start`、`record-step`、`plan-set`、`#end` 等）见 [**SKILL.zh-CN.md**](SKILL.zh-CN.md)。**先看有哪些已录好的 RPA 可用**：发 **`#rpa-list`**；**再跑其中一个**：`#rpa-run:{任务名}` 或 `python3 rpa_manager.py run <任务名>`。
 
 <a id="douban-movie-demo"></a>
 
@@ -103,7 +140,7 @@ https://github.com/user-attachments/assets/594c8970-2f11-4e2b-ae57-e563cafe6bbd
 
 **录屏中的对话步骤**
 
-1. 发送 **`#rpa`** / **`#RPA`** / **`#自动化机器人`**（规则见 [**SKILL.md**](SKILL.md)、[**SKILL.zh-CN.md**](SKILL.zh-CN.md)「触发检测」）。
+1. 发送 **`#rpa`** / **`#RPA`**（规则见 [**SKILL.md**](SKILL.md)、[**SKILL.zh-CN.md**](SKILL.zh-CN.md)「触发检测」）。
 2. 任务名示例：与 **`registry.json`** 中已有脚本对齐，如 **`豆瓣电影V6`**（`豆瓣电影v6.py`）、**`获取豆瓣电影数据`**（`获取豆瓣电影数据.py`）等。
 
 **任务提示词（豆瓣电影片段）**
@@ -152,6 +189,14 @@ API Parameters
 把 nvda_time_series_daily.json 和 nvda_news.txt 合并成 nvda.txt
 ```
 
+### 4、Airbnb 民宿竞品比价追踪机器人（网页 + 视觉识别 + Word）
+
+**场景：** 零代码打造一个能自动打开浏览器、提取 Airbnb 竞品价格与评分，并最终生成 Word 报告的 RPA 机器人。
+
+- **完整案例：** **[articles/scenario-airbnb-compare.md](articles/scenario-airbnb-compare.md)**
+- **说明：** 录制一次，自动生成 Python 脚本。以后每次运行直接跑底层代码，速度极快，且零 Token 消耗，不会产生 AI 幻觉。
+- **视觉模式处理 SPA：** Airbnb 是高度动态的单页应用（SPA），传统爬虫几乎无法处理。本案例引入**视觉识别**模式，AI 像人一样"看"页面来提取数据，无需依赖不稳定的 DOM 结构。视觉模型采用 [Qwen3-VL](https://github.com/QwenLM/Qwen3-VL)（阿里开源），Token 消耗极小，支持本地部署。
+
 ### 4、OpenClaw + 飞书/Lark：`#rpa-list`、`#rpa-run` 定时执行 RPA 自动化程序
 
 录屏演示在飞书/Lark 与 **OpenClaw-bot** 对话中的典型用法：
@@ -193,7 +238,7 @@ https://github.com/user-attachments/assets/514e2d74-f42a-4243-8d49-52931fe6c22e
 **财务 / 应付：** 云端 Mock **仅 GET** 拉待对账数据；**不回写 ERP**；与桌面 **发票 Excel** 在本地对账；最终输出带**表格**的 **Word（`.docx`）**。
 
 - **完整案例：** **[articles/scenario-ap-reconciliation.md](articles/scenario-ap-reconciliation.md)**  
-- **录制：** `#rpa-api` 或 `#自动化机器人`；能力码常用 **F**（表+Word）；步骤 2/3a 用 `excel_write`（`rows_from_json` / `rows_from_excel` 动态行），步骤 3b 用 `python_snippet` 注入匹配计算代码（录制时立即验证）。  
+- **录制：** `#rpa-api` 或 `#rpa`；能力码常用 **F**（表+Word）；步骤 2/3a 用 `excel_write`（`rows_from_json` / `rows_from_excel` 动态行），步骤 3b 用 `python_snippet` 注入匹配计算代码（录制时立即验证）。  
 - **`python_snippet` 设计原理：** **[articles/python-snippet-design.md](articles/python-snippet-design.md)**（执行环境、验证机制、完整 JSON 示例）。
 
 
@@ -231,7 +276,7 @@ python3 rpa_manager.py env-check
 
 **SSH 克隆：** `git@github.com:laziobird/openclaw-rpa.git`
 
-装好后请**新开 OpenClaw 会话**（或重载技能），以便加载 `**SKILL.md`**。触发词见 `**SKILL.md**`（如 `#RPA`、`#自动化机器人`）。
+装好后请**新开 OpenClaw 会话**（或重载技能），以便加载 `**SKILL.md`**。触发词见 `**SKILL.md**`（如 `#RPA`、`#rpa`）。
 
 ### `requirements.txt` 全量依赖是什么？
 
@@ -251,48 +296,8 @@ python3 rpa_manager.py env-check
 
 ## 高级配置
 
-**手动安装 · 网关 Python · 路径 · 发布**
-
-### 手动安装（不用 `install.sh`）
-
-```bash
-cd /path/to/openclaw-rpa
-python3 -m venv .venv && source .venv/bin/activate
-pip install -U pip && pip install -r requirements.txt
-python -m playwright install chromium
-```
-
-### 网关实际调用的 Python
-
-`rpa_manager.py` 使用 `**sys.executable**`，该解释器必须已装 **Playwright**。若网关用系统 `**python3`**，请在同一环境装依赖，或把工具指向：
-
-`~/.openclaw/workspace/skills/openclaw-rpa/.venv/bin/python`
-
-### 语言与 `config.json`
-
-- `**SKILL.md**` 中 `**localeConfig**` 指向 `**config.json**`
-- 若无 `**config.json**`，可按 `**SKILL.md**` 用 `**config.example.json**` 读 `locale`
-- 详见 `**LOCALE.md**`
-
-### `SKILL.*.md` 里的路径
-
-示例中的 `~/.openclaw/workspace/skills/openclaw-rpa/` 若与你的本机不一致，请改成实际技能目录。
-
-### 对外发布技能
-
-**[ClawHub — 发布 skill](https://clawhub.ai/publish-skill)**（绑定本 GitHub 仓库）。
-
-### 环境自检
-
-```bash
-python3 envcheck.py
-# 或
-python3 rpa_manager.py env-check
-```
-
-`record-start` / `run` 在可能时会自动安装 Chromium。
-
-
+手动安装、网关 Python、语言配置、路径、发布说明：
+**[articles/advanced-setup.zh-CN.md](articles/advanced-setup.zh-CN.md)**
 
 ---
 
@@ -326,56 +331,17 @@ python3 rpa_manager.py run wikipedia
 
 ## 调用 API 的录制（`api_call`）
 
-录制器支持 **`api_call`** 步骤：通过 **httpx** 发起 **GET/POST** 等请求，响应可选保存到桌面。字段说明见 [**SKILL.zh-CN.md**](SKILL.zh-CN.md) 中「单步录制协议」表格的 **`api_call`** 行；组合流程见 **典型场景 1**。
+录制器支持 **`api_call`** 步骤（通过 httpx 发 GET/POST，响应可选保存到桌面）。
 
-### API 说明
-
-<a id="api_call_notes"></a>
-
-面向**协助录制的 AI / 开发者**（终端、JSON、`record-step` 等在此说明；**普通用户照着说的任务提示词**见上文 **[案例 §3](#api-quotes-news-brief-zh)**）。
-
-1. **`api_call` 做什么**  
-   在录制会话里增加一步：**向指定 URL 发 HTTP 请求**（与当前浏览器页面无关），可选把返回内容写到桌面文件（如 **`save_response_to`**）。
-
-2. **密钥写入策略**  
-   在 `record-step` JSON 的 `params` 或 `headers` 中，用占位符 **`__ENV:环境变量名__`**；同时在同一步骤带上 **`"env": {"变量名": "真实密钥"}`** 字段：
-
-   ```json
-   {
-     "action": "api_call",
-     ...,
-     "params": {"apikey": "__ENV:ALPHAVANTAGE_API_KEY__", ...},
-     "env": {"ALPHAVANTAGE_API_KEY": "你的真实密钥"}
-   }
-   ```
-
-   代码生成器检测到 `env` 字段后，会把真实密钥**直接写入生成脚本**（如 `'apikey': '你的密钥'`）——回放时**无需 `export`**，脚本可直接运行。  
-   若不提供 `env`，则生成 `os.environ.get("变量名", "")`，运行前需手动 `export 变量名=…`。
-
-3. **本 README [案例 §3](#api-quotes-news-brief-zh) 对应的接口（Alpha Vantage 日线）**  
-   文档：[TIME_SERIES_DAILY](https://www.alphavantage.co/documentation/#daily)。`record-step` 典型写法：**`base_url`** + **`params`**（含 `function`、`symbol`、`outputsize` 等），`apikey` 填 **`"__ENV:ALPHAVANTAGE_API_KEY__"`**，`env` 填真实密钥，**`save_response_to`** 填输出文件名。
-
-**占位符小结：** 用 **`__ENV:变量名__`** + **`"env"` 字段**同时使用 → 密钥写入脚本，无需额外 `export`。
-
-### 案例：行情 + 新闻页 + 本地简报
-
-**给非技术用户看的任务提示词**见 **[案例 §3](#api-quotes-news-brief-zh)**；**接口与密钥**见 **[API 说明](#api_call_notes)**。同一录制任务可 **(1)** 拉行情 JSON 落盘，**(2)** 浏览器打开新闻页，**(3)** **`extract_text`** 写入同一简报文件名（追加规则见 [**典型场景 1**](SKILL.zh-CN.md#典型场景-1行情--新闻页--本地简报浏览器--api--文件)）。
+完整指南 — 密钥写入策略、env 字段说明、示例：
+**[articles/api-call-guide.zh-CN.md](articles/api-call-guide.zh-CN.md)**
 
 ---
-
-## 未来计划（规划中）
-
-以下能力**尚未发布**，仅说明项目方向。
-
-| 方向 | 说明 |
-|:-----|:-----|
-| **API 能力增强** | 在已有 **`api_call`**「录制 → 合成 → 回放」链路之上，提供更顺手的 **HTTP** 辅助（如鉴权模板、响应处理）等。 |
-| **✅ 自动登录 / Cookie 会话复用**（已发布） | `#rpa-login` 手动登录一次 → 自动保存 Cookie → `#rpa-autologin` 注入，录制与回放均无需重走登录流程。详见 **[articles/autologin-tutorial.md](articles/autologin-tutorial.md)**。 |
 
 **说明与边界**
 
 - **合规**：请遵守各网站服务条款与使用政策；本仓库不鼓励绕过风控或在禁止场景下抓取数据。
-- **强风控站点（如 LinkedIn）**：即便支持自动登录或会话复用，仍可能遇到 **2FA、设备验证、验证码、风控拦截**，需要 **人工介入**。目标是：在 **你的环境能维持稳定会话** 时，少录、少跑重复的登录流程；**不承诺**对所有平台都能长期无人值守。
+- **强风控站点（如 LinkedIn）**：即便支持自动登录或会话复用，仍可能遇到 **2FA、设备验证、验证码、风控拦截**，需要**人工介入**。
 
 ---
 
