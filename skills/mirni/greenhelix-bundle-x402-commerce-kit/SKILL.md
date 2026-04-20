@@ -1,6 +1,6 @@
 ---
 name: greenhelix-bundle-x402-commerce-kit
-version: "1.3.0"
+version: "1.3.1"
 description: "Launch a crypto-native storefront from scratch. Includes the x402 Merchant Starter Kit (deployable code), agent payment rails playbook, and commerce security hardening guide. Deploy in 15 minutes. 2 guides + production code."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,17 @@ tags: [bundle, code, x402, payments, security, starter-kit, guide, greenhelix, o
 executable: false
 install: none
 credentials: [GITHUB_TOKEN, WALLET_ADDRESS, DASHBOARD_SECRET, GREENHELIX_API_KEY, AGENT_SIGNING_KEY, STRIPE_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GITHUB_TOKEN
+        - WALLET_ADDRESS
+        - DASHBOARD_SECRET
+        - GREENHELIX_API_KEY
+        - AGENT_SIGNING_KEY
+        - STRIPE_API_KEY
+    primaryEnv: GITHUB_TOKEN
 ---
 # x402 Commerce Kit: Merchant Starter Kit + Payment Rails Guide + Security Hardening
 
