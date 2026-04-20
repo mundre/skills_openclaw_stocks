@@ -3,11 +3,16 @@
   "slug": "polymarket-macro-fear-index-trader",
   "displayName": "Polymarket Macro Fear Index Trader",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775317259115,
-    "commit": "https://github.com/openclaw/skills/commit/8e8a7ad1e4dd839e44de208e4f6cd0a94d4949bb"
+    "version": "0.0.2",
+    "publishedAt": 1776513452439,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775317259115,
+      "commit": "https://github.com/openclaw/skills/commit/8e8a7ad1e4dd839e44de208e4f6cd0a94d4949bb"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774892892265,
