@@ -48,8 +48,8 @@ node {baseDir}/bin/run.mjs --operation "<operation-id>" --token "$JUST_ONE_API_T
 - Required: `JUST_ONE_API_TOKEN`
 - This skill uses `JUST_ONE_API_TOKEN` only for authenticated Just One API requests.
 - Keep `JUST_ONE_API_TOKEN` private. Do not paste it into chat messages, screenshots, or logs.
-- Get a token from [Just One API Dashboard](https://dashboard.justoneapi.com/).
-- Authentication details: [Just One API Usage Guide](https://docs.justoneapi.com/en/usage).
+- Get a token from [Just One API Dashboard](https://dashboard.justoneapi.com/en/login?utm_source=clawhub.ai&utm_medium=referral&utm_campaign=justoneapi_toutiao&utm_content=project_link).
+- Authentication details: [Just One API Usage Guide](https://docs.justoneapi.com/en/?utm_source=clawhub.ai&utm_medium=referral&utm_campaign=justoneapi_toutiao&utm_content=project_link).
 
 ## Output Rules
 
