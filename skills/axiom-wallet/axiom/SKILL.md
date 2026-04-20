@@ -64,6 +64,8 @@ Use the MCP tools exposed by the server when available:
 - `list_transactions` — lists recent transactions (optional `cardId` filter, `limit`)
 - `get_payment_details` — issues a single-use virtual card for a purchase and charges the user's card on file. Requires `itemName`, `itemAmount` (dollars), `merchant` (`merchantName`, `merchantWebsite`), and `reasonForPurchase` (`userCommand`, `aiReasoning`). May fail if blocked by spending rules, if approval is required, or if the card on file is declined.
 - `create_receipt` — attaches receipt details to a completed transaction
+- `create_disposable_inbox` — creates a temporary email inbox for first-time buyer sign-ups or one-off accounts. Returns a `temporaryEmailID` and email address.
+- `read_inbox_messages` — reads messages from a disposable inbox (pass the `temporaryEmailID`). Use to fetch discount codes, verification emails, or order confirmations.
 
 ## Purchase workflow
 
@@ -75,6 +77,7 @@ When the user asks you to buy something, use this order:
 
 2. Complete all checkout steps that do not require payment.
    - Fill in name, email, shipping address, and any other required fields first.
+   - If the checkout already has a shipping address pre-filled (e.g. from a prior merchant account), compare it to the user's Axiom shipping address from `whoami`. If they do not match, stop and ask the user which address to use — do not silently accept the pre-filled one.
    - Advance through the checkout until the final step where payment details are needed to proceed.
    - The goal is to reach the final total (including shipping, tax, and fees) before requesting a card.
 
@@ -130,6 +133,14 @@ When the user asks you to buy something, use this order:
    { category: "purchase_complete", action: "Order confirmed", detail: "Order #7XC9R4NGX" }
    { category: "receipt_created", action: "Receipt attached" }
    ```
+
+## Purchase recipes
+
+When the user asks to buy something in a specific way (e.g. "with the first-time discount", "using a new account offer"), check whether a recipe matches the request. Recipes are specialized variants of the purchase workflow and live at `references/recipes/`. If a recipe matches, read its file and follow it instead of the default purchase workflow.
+
+Available recipes:
+
+- **First-Time Buyer Discount** — `references/recipes/first-time-discount.md`. Purchase an item using a first-time buyer discount by creating a disposable email for sign-up.
 
 ## Safety and behavior rules
 
