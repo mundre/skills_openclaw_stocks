@@ -13,8 +13,8 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
-# 数据目录
-BUSINESS_DATA_DIR = "/home/admin/.openclaw/workspace/agents/跨境电商财务分析-agent/data/1.业务和订单数据"
+# 数据目录（本地路径）
+BUSINESS_DATA_DIR = r"C:\Users\wwl\.openclaw\workspace-跨境电商\data\1.业务和订单数据"
 
 
 def parse_period(period):

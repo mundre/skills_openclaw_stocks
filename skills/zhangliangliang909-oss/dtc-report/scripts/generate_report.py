@@ -46,8 +46,8 @@ except ImportError:
 # 导入关键发现模块
 from key_findings import generate_key_findings
 
-# 数据目录（固定路径）
-DATA_DIR = "/home/admin/.openclaw/workspace/agents/跨境电商财务分析-agent/data"
+# 数据目录（本地路径）
+DATA_DIR = r"C:\Users\wwl\.openclaw\workspace-跨境电商\data"
 MGMT_REPORT_DIR = os.path.join(DATA_DIR, '4.经营管理报表')
 BUSINESS_DATA_DIR = os.path.join(DATA_DIR, '1.业务和订单数据')
 BUDGET_DIR = os.path.join(DATA_DIR, '6.2026 年预算数据')
@@ -223,16 +223,23 @@ def read_volume_data(period='2026-Q1', yoy=False, mom=False):
         'cumulative': {'b_volume': 0, 'c_volume': 0, 'd_volume': 0}
     }
     
-    # B/C 段箱量 - 从全链路表
+    # B/C 段箱量 - 从全链路表 (使用 read_only 模式节省内存)
     files = glob.glob(os.path.join(BUSINESS_DATA_DIR, '*全链路*.xlsx'))
     if files:
-        wb = openpyxl.load_workbook(files[0], data_only=True)
+        wb = openpyxl.load_workbook(files[0], data_only=True, read_only=True)
         ws = wb.active
         
-        for row in range(2, min(ws.max_row + 1, 50000)):
-            segment = ws.cell(row=row, column=11).value
-            volume = ws.cell(row=row, column=17).value
-            date_val = ws.cell(row=row, column=3).value
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            # row 是元组：(列 1, 列 2, 列 3, ...)
+            # 列 5=销售公司，列 11=订单服务项，列 3=业务日期，列 17=未去重集装箱箱量
+            sales_company = row[4] if len(row) > 4 else None  # 列 5
+            date_val = row[2] if len(row) > 2 else None  # 列 3
+            segment = row[10] if len(row) > 10 else None  # 列 11
+            volume = row[16] if len(row) > 16 else None  # 列 17
+            
+            # ⚠️ 2026-04-11 更新：仅统计销售公司=BWLDTC 的箱量
+            if not sales_company or str(sales_company).strip() != 'BWLDTC':
+                continue
             
             if segment and volume and date_val:
                 date_str = str(date_val)
@@ -264,10 +271,10 @@ def read_volume_data(period='2026-Q1', yoy=False, mom=False):
                     elif seg_str == 'C':
                         result['current']['c_volume'] += vol
     
-    # D 段箱量 - 从客户仓库统计表
+    # D 段箱量 - 从客户仓库统计表 (使用 read_only 模式节省内存)
     files = glob.glob(os.path.join(BUSINESS_DATA_DIR, '*客户仓库*.xlsx'))
     if files:
-        wb = openpyxl.load_workbook(files[0], data_only=True)
+        wb = openpyxl.load_workbook(files[0], data_only=True, read_only=True)
         ws = wb.active
         
         filename = os.path.basename(files[0])
@@ -281,9 +288,10 @@ def read_volume_data(period='2026-Q1', yoy=False, mom=False):
         
         actual_days = {f'{target_year}-01': 31, f'{target_year}-02': 28, f'{target_year}-03': 31}
         
-        for row in range(2, min(ws.max_row + 1, 50000)):
-            month = ws.cell(row=row, column=4).value
-            volume = ws.cell(row=row, column=8).value
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            # 列 4=业务月份，列 8=入库箱量
+            month = row[3] if len(row) > 3 else None
+            volume = row[7] if len(row) > 7 else None
             
             if month and volume:
                 month_str = str(month)
@@ -518,32 +526,15 @@ def read_revenue_profit_by_segment(period='2026-Q1', yoy=False, current_day=None
             result['current'][f'{segment_key}_revenue'] += rev_wan
             result['current'][f'{segment_key}_profit'] += prof_wan
     
-    # 当月未结束时的调整
-    if need_adjustment and end_day < 31:
-        # D 段：按天数折算
-        d_ratio = end_day / 31  # 3 月按 31 天算
-        result['current']['d_revenue'] *= d_ratio
-        result['current']['d_profit'] *= d_ratio
-        
-        # B 段/C 段：按上月单箱收入×本月箱量预估
-        # 读取上月数据计算单箱收入
-        prev_month = current_month - 1 if current_month > 1 else 12
-        prev_year = target_year if current_month > 1 else str(int(target_year) - 1)
-        
-        prev_monthly = read_monthly_revenue_profit_single_month(prev_year, prev_month)
-        
-        # 读取本月箱量
-        current_volume = read_volume_data(f'{target_year}-{current_month:02d}', yoy=False)
-        
-        # B 段预估
-        if current_volume['current']['b_volume'] > 0 and prev_monthly['b_revenue_per_box'] > 0:
-            result['current']['b_revenue'] = current_volume['current']['b_volume'] * prev_monthly['b_revenue_per_box']
-            result['current']['b_profit'] = current_volume['current']['b_volume'] * prev_monthly['b_profit_per_box']
-        
-        # C 段预估
-        if current_volume['current']['c_volume'] > 0 and prev_monthly['c_revenue_per_box'] > 0:
-            result['current']['c_revenue'] = current_volume['current']['c_volume'] * prev_monthly['c_revenue_per_box']
-            result['current']['c_profit'] = current_volume['current']['c_volume'] * prev_monthly['c_profit_per_box']
+    # 注意：文件名如"2025 年至 2026 年 3 月"表示完整月度数据，不再进行折算
+    # 仅当文件名明确显示"XX 月 XX 日"且日期<28 时才考虑折算
+    # 当前逻辑：不折算，直接使用原始数据
+    # if need_adjustment and end_day < 28:
+    #     # 仅当文件名显示日期<28 时才折算（如"3 月 20 日"）
+    #     # D 段：按天数折算
+    #     d_ratio = 31 / end_day  # 3 月按 31 天算
+    #     result['current']['d_revenue'] *= d_ratio
+    #     result['current']['d_profit'] *= d_ratio
     
     return result
 
@@ -738,7 +729,10 @@ def read_monthly_trend_data(months=6):
             except:
                 return (0, 0)
         
-        sorted_months = sorted(monthly_rev.keys(), key=parse_month)[-months:]
+        # 过滤掉 4 月及以后的月份（Q1 报告只显示到 3 月）
+        all_sorted = sorted(monthly_rev.keys(), key=parse_month)
+        filtered_months = [m for m in all_sorted if not (m.startswith('2026-4') or m.startswith('2026-04'))]
+        sorted_months = filtered_months[-months:] if len(filtered_months) >= months else filtered_months
         trend_data['months'] = sorted_months
         
         for m in sorted_months:
@@ -1005,15 +999,28 @@ def calculate_single_box_metrics(period='2026-Q1', months=6):
             # 解析月份
             if not date_val:
                 continue
-            date_str = str(date_val)
-            if len(date_str) >= 7:
-                parts = date_str.split('-')
-                if len(parts) >= 2:
-                    month_str = f"{parts[0].strip()}-{parts[1].strip().zfill(2)}"
+            
+            # 处理日期：支持 Excel 日期序列号、datetime、字符串
+            if isinstance(date_val, (int, float)):
+                # Excel 日期序列号
+                base_date = datetime(1899, 12, 30)
+                actual_date = base_date + timedelta(days=int(date_val))
+                month_str = f"{actual_date.year}-{actual_date.month}"
+            elif isinstance(date_val, datetime):
+                month_str = f"{date_val.year}-{date_val.month}"
+            else:
+                # 字符串格式（如'2026-03-23'）
+                date_str = str(date_val)
+                if len(date_str) >= 7 and '-' in date_str:
+                    parts = date_str.split('-')
+                    if len(parts) >= 2:
+                        year = parts[0].strip()
+                        month = parts[1].strip().lstrip('0')  # 去掉前导零
+                        month_str = f"{year}-{month}"
+                    else:
+                        continue
                 else:
                     continue
-            else:
-                continue
             
             cost_val = float(cost) if cost else 0
             profit_val = float(profit) if profit else 0
@@ -1026,9 +1033,11 @@ def calculate_single_box_metrics(period='2026-Q1', months=6):
         
         # 计算单箱指标（在 return 前）
         
-        # 构建近 N 个月数据
+        # 构建近 N 个月数据（过滤掉 4 月及以后的数据）
         all_months_sorted = sorted(monthly_data.keys(), key=lambda m: (int(m.split('-')[0]), int(m.split('-')[1])))
-        all_months = all_months_sorted[-months:] if len(all_months_sorted) > months else all_months_sorted
+        # 过滤掉 2026 年 4 月及以后的数据
+        filtered_months = [m for m in all_months_sorted if not (m.startswith('2026-4') or m.startswith('2026-04'))]
+        all_months = filtered_months[-months:] if len(filtered_months) > months else filtered_months
         
         monthly_result = {
             'months': all_months,
@@ -1151,15 +1160,9 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
     cumulative_revenue = sum(actual['cumulative'].get(f'{k}_revenue', 0) for k in ['b', 'c', 'd', 'ecom', 'other'])
     cumulative_profit = sum(actual['cumulative'].get(f'{k}_profit', 0) for k in ['b', 'c', 'd', 'ecom', 'other'])
     
-    # 当月收入/毛利折算（3 月截止到 30 日，按 31/30 折算）
-    current_month_revenue_adjusted = current_revenue * (31/30)
-    current_month_profit_adjusted = current_profit * (31/30)
-    
-    # 更新 actual 字典中的当月数据为折算后的值
-    for key in ['b_revenue', 'c_revenue', 'd_revenue', 'ecom_revenue', 'other_revenue']:
-        actual['current'][key] = actual['current'].get(key, 0) * (31/30)
-    for key in ['b_profit', 'c_profit', 'd_profit', 'ecom_profit', 'other_profit']:
-        actual['current'][key] = actual['current'].get(key, 0) * (31/30)
+    # 注意：文件名如"2025 年至 2026 年 3 月"表示完整月度数据，不再进行折算
+    # 仅当文件名明确显示"XX 月 XX 日"且日期<28 时才考虑折算
+    # 当前逻辑：不折算，直接使用原始数据
     
     # 同比汇总
     current_revenue_yoy = sum(actual_yoy['current'].get(f'{k}_revenue', 0) for k in ['b', 'c', 'd', 'ecom', 'other'])
@@ -1172,6 +1175,7 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
     
     # 准备图表数据
     months_json = json.dumps(trend_data.get('months', []))
+    months_12_json = json.dumps(warehouse_data.get('months_12', trend_data.get('months', [])))
     outbound_json = json.dumps(trend_data.get('outbound', []))
     # 单箱指标数据（近 6 个月：2025-10 至 2026-03）
     b_cost = single_box.get('b_cost', [0]*6)
@@ -1311,9 +1315,9 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                             <div class="detail">同比 {yoy_growth(cumulative_profit, cumulative_profit_yoy):+.1f}% | 预算 {fmt(budget.get('gross_profit_cumulative', 0))}万元</div>
                         </div>
                         <div class="kpi-card purple">
-                            <div class="label">3 月毛利（折算后）</div>
-                            <div class="value">{fmt(current_month_profit_adjusted)} 万元</div>
-                            <div class="detail">同比 {yoy_growth(current_profit, current_profit_yoy):+.1f}% | 毛利率 {(current_month_profit_adjusted/current_month_revenue_adjusted*100 if current_month_revenue_adjusted != 0 else 0):.1f}%</div>
+                            <div class="label">3 月毛利</div>
+                            <div class="value">{fmt(current_profit)} 万元</div>
+                            <div class="detail">同比 {yoy_growth(current_profit, current_profit_yoy):+.1f}% | 毛利率 {(current_profit/current_revenue*100 if current_revenue != 0 else 0):.1f}%</div>
                         </div>
                     </div>
                 </div>
@@ -1789,14 +1793,13 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                 </div>
             </div>
             
-            <!-- 客户年代分析 -->
-            {customer_vintage_section}
-            
             <div class="section">
                 <div class="section-title">四、客户与销售</div>
                 
+                {customer_vintage_section}
+                
                 <div class="subsection">
-                    <div class="subsection-title">4.1 客户开发数</div>
+                    <div class="subsection-title">4.3 客户开发数</div>
                     <table>
                         <thead>
                             <tr>
@@ -1831,101 +1834,50 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                 </div>
                 
                 <div class="subsection">
-                    <div class="subsection-title">4.2 分销售 D 段客户开户数</div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>销售</th>
-                                <th>当月新增</th>
-                                <th>当年累计</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-'''
-    
-    # 整理销售 D 段客户数据
-    all_sales = set()
-    for sales, customers in customer_data['sales_d_customers'].items():
-        all_sales.add(sales)
-    for sales, customers in customer_data.get('current_sales_d_customers', {}).items():
-        all_sales.add(sales)
-    
-    for sales in sorted(all_sales):
-        current_count = len(customer_data.get('current_sales_d_customers', {}).get(sales, set()))
-        cumulative_count = len(customer_data['sales_d_customers'].get(sales, set()))
-        html += f'''                            <tr>
-                                <td>{sales}</td>
-                                <td>{current_count}</td>
-                                <td>{cumulative_count}</td>
-                            </tr>
-'''
-    
-    total_current = sum(len(customers) for customers in customer_data.get('current_sales_d_customers', {}).values())
-    html += f'''                            <tr style="background: #f3f4f6; font-weight: 600;">
-                                <td>合计</td>
-                                <td>{total_current}</td>
-                                <td>{len(customer_data['cumulative']['d_customers'])}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="subsection">
-                    <div class="subsection-title">4.3 前十大客户贡献（累计）</div>
+                    <div class="subsection-title">4.4 前十大客户贡献</div>
                     <table>
                         <thead>
                             <tr>
                                 <th>排名</th>
                                 <th>客户名称</th>
                                 <th>累计收入（万元）</th>
-                                <th>累计毛利（万元）</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-'''
-    
-    for i, (name, rev, prof) in enumerate(top_customers, 1):
-        html += f'''                            <tr>
-                                <td>{i}</td>
-                                <td>{name}</td>
-                                <td>{fmt(rev)}</td>
-                                <td>{fmt(prof)}</td>
-                            </tr>
-'''
-    
-    html += f'''                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="subsection">
-                    <div class="subsection-title">4.4 前十大客户贡献（当月）</div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>排名</th>
-                                <th>客户名称</th>
+                                <th>累计毛利率</th>
                                 <th>当月收入（万元）</th>
-                                <th>当月毛利（万元）</th>
+                                <th>当月毛利率</th>
                             </tr>
                         </thead>
                         <tbody>
 '''
     
-    for i, (name, rev, prof) in enumerate(top_current_customers, 1):
+    # 创建客户数据字典用于合并
+    cumulative_dict = {name: {'revenue': rev, 'profit': prof} for name, rev, prof in top_customers}
+    current_dict = {name: {'revenue': rev, 'profit': prof} for name, rev, prof in top_current_customers}
+    
+    # 按累计收入排序展示
+    for i, (name, rev, prof) in enumerate(top_customers, 1):
+        cumulative_gross_margin = (prof / rev * 100) if rev > 0 else 0
+        current_data = current_dict.get(name, {'revenue': 0, 'profit': 0})
+        current_rev = current_data['revenue']
+        current_prof = current_data['profit']
+        current_gross_margin = (current_prof / current_rev * 100) if current_rev > 0 else 0
+        
         html += f'''                            <tr>
                                 <td>{i}</td>
                                 <td>{name}</td>
                                 <td>{fmt(rev)}</td>
-                                <td>{fmt(prof)}</td>
+                                <td>{cumulative_gross_margin:.2f}%</td>
+                                <td>{fmt(current_rev)}</td>
+                                <td>{current_gross_margin:.2f}%</td>
                             </tr>
 '''
     
     html += f'''                        </tbody>
                     </table>
+                    <div class="data-source">注：按累计收入排序；毛利率=毛利/收入×100%</div>
                 </div>
                 
                 <div class="subsection">
-                    <div class="subsection-title">4.4 前十大销售贡献</div>
+                    <div class="subsection-title">4.5 前十大销售贡献</div>
                     <table>
                         <thead>
                             <tr>
@@ -1952,7 +1904,7 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                 </div>
                 
                 <div class="subsection">
-                    <div class="subsection-title">4.5 前十大销售 D 段箱量排名</div>
+                    <div class="subsection-title">4.6 前十大销售 D 段箱量排名</div>
                     <table>
                         <thead>
                             <tr>
@@ -1990,6 +1942,7 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                                 <th>占比</th>
                                 <th>出库件数（件）</th>
                                 <th>占比</th>
+                                <th>自提比例</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1997,16 +1950,20 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
     
     total_containers = sum(d['inbound_containers'] for d in warehouse_data['by_country'].values())
     total_pieces = sum(d['outbound_pieces'] for d in warehouse_data['by_country'].values())
+    total_self_pickup = sum(d['self_pickup_pieces'] for d in warehouse_data['by_country'].values())
+    total_self_pickup_ratio = (total_self_pickup / total_pieces * 100) if total_pieces > 0 else 0
     
     for country, data in sorted(warehouse_data['by_country'].items(), key=lambda x: x[1]['inbound_containers'], reverse=True):
         container_pct = (data['inbound_containers'] / total_containers * 100) if total_containers else 0
         pieces_pct = (data['outbound_pieces'] / total_pieces * 100) if total_pieces else 0
+        self_pickup_ratio = data.get('self_pickup_ratio', 0)
         html += f'''                            <tr>
                                 <td>{country}</td>
                                 <td>{fmt_num(data['inbound_containers'])}</td>
                                 <td>{container_pct:.1f}%</td>
                                 <td>{fmt_num(data['outbound_pieces'])}</td>
                                 <td>{pieces_pct:.1f}%</td>
+                                <td>{self_pickup_ratio:.1f}%</td>
                             </tr>
 '''
     
@@ -2016,6 +1973,7 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                                 <td>100%</td>
                                 <td>{fmt_num(total_pieces)}</td>
                                 <td>100%</td>
+                                <td>{total_self_pickup_ratio:.1f}%</td>
                             </tr>
                         </tbody>
                     </table>
@@ -2023,7 +1981,6 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                 
                 <div class="subsection">
                     <div class="subsection-title">5.2 美国仓库分布（自营 vs 第三方）</div>
-                    <div class="data-source" style="margin-bottom: 10px;">注：以下数据为 Q1 累计数据（2026 年 1-3 月）</div>
                     <table>
                         <thead>
                             <tr>
@@ -2032,6 +1989,7 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                                 <th>占比</th>
                                 <th>出库件数（件）</th>
                                 <th>占比</th>
+                                <th>自提比例</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2041,20 +1999,23 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                                 <td>{(warehouse_data['us_warehouse']['self_run']['inbound_containers']/(warehouse_data['us_warehouse']['self_run']['inbound_containers']+warehouse_data['us_warehouse']['third_party']['inbound_containers'])*100) if (warehouse_data['us_warehouse']['self_run']['inbound_containers']+warehouse_data['us_warehouse']['third_party']['inbound_containers']) else 0:.1f}%</td>
                                 <td>{fmt_num(warehouse_data['us_warehouse']['self_run']['outbound_pieces'])}</td>
                                 <td>{(warehouse_data['us_warehouse']['self_run']['outbound_pieces']/(warehouse_data['us_warehouse']['self_run']['outbound_pieces']+warehouse_data['us_warehouse']['third_party']['outbound_pieces'])*100) if (warehouse_data['us_warehouse']['self_run']['outbound_pieces']+warehouse_data['us_warehouse']['third_party']['outbound_pieces']) else 0:.1f}%</td>
+                                <td>{warehouse_data['us_warehouse']['self_run'].get('self_pickup_ratio', 0):.1f}%</td>
                             </tr>
                             <tr>
-                                <td style="padding-left: 30px;">其中：美东</td>
+                                <td style="padding-left: 30px;">其中：美东自营仓</td>
                                 <td>{fmt_num(warehouse_data['us_warehouse']['self_run_by_region']['美东']['inbound_containers'])}</td>
                                 <td>{(warehouse_data['us_warehouse']['self_run_by_region']['美东']['inbound_containers']/warehouse_data['us_warehouse']['self_run']['inbound_containers']*100) if warehouse_data['us_warehouse']['self_run']['inbound_containers'] else 0:.1f}%</td>
                                 <td>{fmt_num(warehouse_data['us_warehouse']['self_run_by_region']['美东']['outbound_pieces'])}</td>
                                 <td>{(warehouse_data['us_warehouse']['self_run_by_region']['美东']['outbound_pieces']/warehouse_data['us_warehouse']['self_run']['outbound_pieces']*100) if warehouse_data['us_warehouse']['self_run']['outbound_pieces'] else 0:.1f}%</td>
+                                <td>{warehouse_data['us_warehouse']['self_run_by_region']['美东'].get('self_pickup_ratio', 0):.1f}%</td>
                             </tr>
                             <tr>
-                                <td style="padding-left: 30px;">美西</td>
+                                <td style="padding-left: 30px;">美西自营仓</td>
                                 <td>{fmt_num(warehouse_data['us_warehouse']['self_run_by_region']['美西']['inbound_containers'])}</td>
                                 <td>{(warehouse_data['us_warehouse']['self_run_by_region']['美西']['inbound_containers']/warehouse_data['us_warehouse']['self_run']['inbound_containers']*100) if warehouse_data['us_warehouse']['self_run']['inbound_containers'] else 0:.1f}%</td>
                                 <td>{fmt_num(warehouse_data['us_warehouse']['self_run_by_region']['美西']['outbound_pieces'])}</td>
                                 <td>{(warehouse_data['us_warehouse']['self_run_by_region']['美西']['outbound_pieces']/warehouse_data['us_warehouse']['self_run']['outbound_pieces']*100) if warehouse_data['us_warehouse']['self_run']['outbound_pieces'] else 0:.1f}%</td>
+                                <td>{warehouse_data['us_warehouse']['self_run_by_region']['美西'].get('self_pickup_ratio', 0):.1f}%</td>
                             </tr>
                             <tr style="background: #f3f4f6; font-weight: 600;">
                                 <td>第三方仓</td>
@@ -2062,45 +2023,24 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
                                 <td>{(warehouse_data['us_warehouse']['third_party']['inbound_containers']/(warehouse_data['us_warehouse']['self_run']['inbound_containers']+warehouse_data['us_warehouse']['third_party']['inbound_containers'])*100) if (warehouse_data['us_warehouse']['self_run']['inbound_containers']+warehouse_data['us_warehouse']['third_party']['inbound_containers']) else 0:.1f}%</td>
                                 <td>{fmt_num(warehouse_data['us_warehouse']['third_party']['outbound_pieces'])}</td>
                                 <td>{(warehouse_data['us_warehouse']['third_party']['outbound_pieces']/(warehouse_data['us_warehouse']['self_run']['outbound_pieces']+warehouse_data['us_warehouse']['third_party']['outbound_pieces'])*100) if (warehouse_data['us_warehouse']['self_run']['outbound_pieces']+warehouse_data['us_warehouse']['third_party']['outbound_pieces']) else 0:.1f}%</td>
+                                <td>{warehouse_data['us_warehouse']['third_party'].get('self_pickup_ratio', 0):.1f}%</td>
                             </tr>
-                            <tr>
-                                <td style="padding-left: 30px;">其中：美东</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['third_party_by_region']['美东']['inbound_containers'])}</td>
-                                <td>{(warehouse_data['us_warehouse']['third_party_by_region']['美东']['inbound_containers']/warehouse_data['us_warehouse']['third_party']['inbound_containers']*100) if warehouse_data['us_warehouse']['third_party']['inbound_containers'] else 0:.1f}%</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['third_party_by_region']['美东']['outbound_pieces'])}</td>
-                                <td>{(warehouse_data['us_warehouse']['third_party_by_region']['美东']['outbound_pieces']/warehouse_data['us_warehouse']['third_party']['outbound_pieces']*100) if warehouse_data['us_warehouse']['third_party']['outbound_pieces'] else 0:.1f}%</td>
+'''
+    for region in ['美东', '美西', '美南', '美国中西部']:
+        region_data = warehouse_data['us_warehouse']['third_party_by_region'][region]
+        if region_data['inbound_containers'] > 0 or region_data['outbound_pieces'] > 0:
+            html += f'''                            <tr>
+                                <td style="padding-left: 30px;">{region}第三方仓</td>
+                                <td>{fmt_num(region_data['inbound_containers'])}</td>
+                                <td>{(region_data['inbound_containers']/warehouse_data['us_warehouse']['third_party']['inbound_containers']*100) if warehouse_data['us_warehouse']['third_party']['inbound_containers'] else 0:.1f}%</td>
+                                <td>{fmt_num(region_data['outbound_pieces'])}</td>
+                                <td>{(region_data['outbound_pieces']/warehouse_data['us_warehouse']['third_party']['outbound_pieces']*100) if warehouse_data['us_warehouse']['third_party']['outbound_pieces'] else 0:.1f}%</td>
+                                <td>{region_data.get('self_pickup_ratio', 0):.1f}%</td>
                             </tr>
-                            <tr>
-                                <td style="padding-left: 30px;">美西</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['third_party_by_region']['美西']['inbound_containers'])}</td>
-                                <td>{(warehouse_data['us_warehouse']['third_party_by_region']['美西']['inbound_containers']/warehouse_data['us_warehouse']['third_party']['inbound_containers']*100) if warehouse_data['us_warehouse']['third_party']['inbound_containers'] else 0:.1f}%</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['third_party_by_region']['美西']['outbound_pieces'])}</td>
-                                <td>{(warehouse_data['us_warehouse']['third_party_by_region']['美西']['outbound_pieces']/warehouse_data['us_warehouse']['third_party']['outbound_pieces']*100) if warehouse_data['us_warehouse']['third_party']['outbound_pieces'] else 0:.1f}%</td>
-                            </tr>
-                            <tr>
-                                <td style="padding-left: 30px;">美南</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['third_party_by_region']['美南']['inbound_containers'])}</td>
-                                <td>{(warehouse_data['us_warehouse']['third_party_by_region']['美南']['inbound_containers']/warehouse_data['us_warehouse']['third_party']['inbound_containers']*100) if warehouse_data['us_warehouse']['third_party']['inbound_containers'] else 0:.1f}%</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['third_party_by_region']['美南']['outbound_pieces'])}</td>
-                                <td>{(warehouse_data['us_warehouse']['third_party_by_region']['美南']['outbound_pieces']/warehouse_data['us_warehouse']['third_party']['outbound_pieces']*100) if warehouse_data['us_warehouse']['third_party']['outbound_pieces'] else 0:.1f}%</td>
-                            </tr>
-                            <tr>
-                                <td style="padding-left: 30px;">美国中西部</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['third_party_by_region']['美国中西部']['inbound_containers'])}</td>
-                                <td>{(warehouse_data['us_warehouse']['third_party_by_region']['美国中西部']['inbound_containers']/warehouse_data['us_warehouse']['third_party']['inbound_containers']*100) if warehouse_data['us_warehouse']['third_party']['inbound_containers'] else 0:.1f}%</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['third_party_by_region']['美国中西部']['outbound_pieces'])}</td>
-                                <td>{(warehouse_data['us_warehouse']['third_party_by_region']['美国中西部']['outbound_pieces']/warehouse_data['us_warehouse']['third_party']['outbound_pieces']*100) if warehouse_data['us_warehouse']['third_party']['outbound_pieces'] else 0:.1f}%</td>
-                            </tr>
-                            <tr style="background: #e8f4fd; font-weight: 600;">
-                                <td>合计</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['self_run']['inbound_containers'] + warehouse_data['us_warehouse']['third_party']['inbound_containers'])}</td>
-                                <td>100.0%</td>
-                                <td>{fmt_num(warehouse_data['us_warehouse']['self_run']['outbound_pieces'] + warehouse_data['us_warehouse']['third_party']['outbound_pieces'])}</td>
-                                <td>100.0%</td>
-                            </tr>
-                        </tbody>
+'''
+    
+    html += '''                        </tbody>
                     </table>
-                </div>
                 </div>
                 
                 <div class="subsection">
@@ -2145,9 +2085,6 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
             
             <!-- AI 深度分析 -->
             {ai_analysis_section}
-            
-            <!-- 客户年代分析 -->
-            {customer_vintage_section}
             
             <div class="section">
                 <div class="section-title">六、关键发现</div>
@@ -2441,7 +2378,7 @@ def generate_html_report(actual, actual_yoy, budget, volume, volume_yoy, volume_
         new Chart(selfRunCtx, {{
             type: 'line',
             data: {{
-                labels: {months_json},
+                labels: {months_12_json},
                 datasets: [
                     {{
                         label: '美东自营仓入库',
@@ -2691,7 +2628,7 @@ def main():
     print('  读取收入/毛利数据（2025 年同比）...')
     actual_yoy = read_revenue_profit_by_segment(args.period, yoy=True)
     
-    print('  读取趋势数据（最近{args.trend_months}个月）...')
+    print(f'  读取趋势数据（最近{args.trend_months}个月）...')
     trend_data = read_monthly_trend_data(12)  # 近 12 个月
     if trend_data["months"]:
         print(f'    月份范围：{trend_data["months"][0]} 至 {trend_data["months"][-1]}')

@@ -15,8 +15,8 @@ from collections import defaultdict
 import os
 import glob
 
-# 数据目录
-BUSINESS_DATA_DIR = "/home/admin/.openclaw/workspace/agents/跨境电商财务分析-agent/data/1.业务和订单数据"
+# 数据目录（本地路径）
+BUSINESS_DATA_DIR = r"C:\Users\wwl\.openclaw\workspace-跨境电商\data\1.业务和订单数据"
 
 # 自营仓代码
 SELF_RUN_WAREHOUSES = ['USCAEA02', 'USNJHM01']
@@ -54,12 +54,12 @@ def read_warehouse_data(period='2026-Q1'):
     current_month, cumulative_months = parse_period(period)
     
     result = {
-        'by_country': defaultdict(lambda: {'inbound_containers': 0, 'outbound_pieces': 0}),
+        'by_country': defaultdict(lambda: {'inbound_containers': 0, 'outbound_pieces': 0, 'self_pickup_pieces': 0, 'self_pickup_ratio': 0}),
         'us_warehouse': {
-            'self_run': {'inbound_containers': 0, 'outbound_pieces': 0},
-            'third_party': {'inbound_containers': 0, 'outbound_pieces': 0},
-            'self_run_by_region': {region: {'inbound_containers': 0, 'outbound_pieces': 0} for region in US_REGIONS},
-            'third_party_by_region': {region: {'inbound_containers': 0, 'outbound_pieces': 0} for region in US_REGIONS}
+            'self_run': {'inbound_containers': 0, 'outbound_pieces': 0, 'self_pickup_pieces': 0, 'self_pickup_ratio': 0},
+            'third_party': {'inbound_containers': 0, 'outbound_pieces': 0, 'self_pickup_pieces': 0, 'self_pickup_ratio': 0},
+            'self_run_by_region': {region: {'inbound_containers': 0, 'outbound_pieces': 0, 'self_pickup_pieces': 0, 'self_pickup_ratio': 0} for region in US_REGIONS},
+            'third_party_by_region': {region: {'inbound_containers': 0, 'outbound_pieces': 0, 'self_pickup_pieces': 0, 'self_pickup_ratio': 0} for region in US_REGIONS}
         },
         'self_run_trend': {
             'USNJHM01': {'inbound': [], 'outbound': []},  # 美东自营仓
@@ -89,6 +89,7 @@ def read_warehouse_data(period='2026-Q1'):
     location_col = headers.get('仓库位置', 6)
     inbound_vol_col = headers.get('入库箱量', 8)
     outbound_pieces_col = headers.get('出库总件数', 19)
+    self_pickup_pieces_col = headers.get('客户自提件数', 37)  # AK 列
     month_col = headers.get('业务月份', 4)
     
     # 按月汇总
@@ -101,6 +102,7 @@ def read_warehouse_data(period='2026-Q1'):
         month = ws.cell(row=row, column=month_col).value
         inbound_vol = ws.cell(row=row, column=inbound_vol_col).value
         outbound_pieces = ws.cell(row=row, column=outbound_pieces_col).value
+        self_pickup_pieces = ws.cell(row=row, column=self_pickup_pieces_col).value if self_pickup_pieces_col else 0
         location = ws.cell(row=row, column=location_col).value
         
         if not month:
@@ -138,6 +140,7 @@ def read_warehouse_data(period='2026-Q1'):
         
         inbound = float(inbound_vol) if inbound_vol else 0
         outbound = float(outbound_pieces) if outbound_pieces else 0
+        self_pickup = float(self_pickup_pieces) if self_pickup_pieces else 0
         
         # 换算为柜量（1 柜=2TEU）
         inbound_containers = inbound / 2
@@ -149,57 +152,66 @@ def read_warehouse_data(period='2026-Q1'):
         if year == '2026' and month_num in cumulative_months:
             result['by_country'][country]['inbound_containers'] += inbound_containers
             result['by_country'][country]['outbound_pieces'] += outbound
+            result['by_country'][country]['self_pickup_pieces'] += self_pickup
         
         # 美国仓库区分自营/第三方，并按地区分类（只统计 2026 Q1）
         if country == '美国' and warehouse and year == '2026' and month_num in cumulative_months:
-            # 确定地区（根据仓库编码）
+            # 确定地区（优先使用仓库位置字段，其次使用仓库编码）
             region = None
-            if warehouse:
-                wh_str = str(warehouse)
+            
+            # 先尝试从仓库位置字段判断（注意：先判断"美国中西部"，再判断"美西"，避免"中西部"被误判为"美西"）
+            if location:
+                location_str = str(location).upper()
+                if '东' in location_str or 'NJ' in location_str or 'NY' in location_str or 'PA' in location_str:
+                    region = '美东'
+                elif '中西部' in location_str or 'IL' in location_str or 'OH' in location_str or 'MI' in location_str or 'IN' in location_str or 'CHI' in location_str:
+                    region = '美国中西部'
+                elif '西' in location_str or 'CA' in location_str or 'WA' in location_str or 'OR' in location_str:
+                    region = '美西'
+                elif '南' in location_str or 'TX' in location_str or 'GA' in location_str or 'FL' in location_str:
+                    region = '美南'
+            
+            # 如果位置字段无法判断，使用仓库编码（同样先判断中西部）
+            if not region and warehouse:
+                wh_str = str(warehouse).upper()
                 # 美东：NJ, NY, PA 等
                 if 'NJ' in wh_str or 'NY' in wh_str or 'PA' in wh_str:
                     region = '美东'
+                # 美国中西部：IL, OH, MI, IN, CHI 等
+                elif 'IL' in wh_str or 'OH' in wh_str or 'MI' in wh_str or 'IN' in wh_str or 'CHI' in wh_str:
+                    region = '美国中西部'
                 # 美西：CA, WA, OR 等
                 elif 'CA' in wh_str or 'WA' in wh_str or 'OR' in wh_str:
                     region = '美西'
                 # 美南：TX, GA, FL 等
                 elif 'TX' in wh_str or 'GA' in wh_str or 'FL' in wh_str:
                     region = '美南'
-                # 美国中西部：IL, OH, MI, IN 等
-                elif 'IL' in wh_str or 'OH' in wh_str or 'MI' in wh_str or 'IN' in wh_str or 'CHI' in wh_str:
-                    region = '美国中西部'
-                # 其他美国仓库
+                # 其他美国仓库（包含 US 但无地区标识）- 默认归到美东
                 elif 'US' in wh_str:
-                    region = '美东'  # 默认归到美东
-            
-            # 如果仓库编码无法判断，使用位置信息
-            if not region and location:
-                location_str = str(location)
-                if '东' in location_str or 'NJ' in location_str or 'NY' in location_str:
                     region = '美东'
-                elif '西' in location_str or 'CA' in location_str or 'LA' in location_str:
-                    region = '美西'
-                elif '南' in location_str or 'TX' in location_str or 'GA' in location_str:
-                    region = '美南'
-                elif '中西' in location_str or 'IL' in location_str or 'OH' in location_str or 'CHI' in location_str:
-                    region = '美国中西部'
-                else:
-                    region = '美东'  # 默认归到美东
+            
+            # 如果还是无法判断，默认归到美东
+            if not region:
+                region = '美东'
             
             if warehouse in SELF_RUN_WAREHOUSES:
                 result['us_warehouse']['self_run']['inbound_containers'] += inbound_containers
                 result['us_warehouse']['self_run']['outbound_pieces'] += outbound
+                result['us_warehouse']['self_run']['self_pickup_pieces'] += self_pickup
                 # 自营仓按地区统计
                 if region and region in US_REGIONS:
                     result['us_warehouse']['self_run_by_region'][region]['inbound_containers'] += inbound_containers
                     result['us_warehouse']['self_run_by_region'][region]['outbound_pieces'] += outbound
+                    result['us_warehouse']['self_run_by_region'][region]['self_pickup_pieces'] += self_pickup
             else:
                 result['us_warehouse']['third_party']['inbound_containers'] += inbound_containers
                 result['us_warehouse']['third_party']['outbound_pieces'] += outbound
+                result['us_warehouse']['third_party']['self_pickup_pieces'] += self_pickup
                 # 第三方仓按地区统计
                 if region and region in US_REGIONS:
                     result['us_warehouse']['third_party_by_region'][region]['inbound_containers'] += inbound_containers
                     result['us_warehouse']['third_party_by_region'][region]['outbound_pieces'] += outbound
+                    result['us_warehouse']['third_party_by_region'][region]['self_pickup_pieces'] += self_pickup
         
         # 月度趋势数据
         monthly_data[month_str][warehouse]['inbound'] += inbound_containers
@@ -210,9 +222,10 @@ def read_warehouse_data(period='2026-Q1'):
             self_run_monthly[month_str][warehouse]['inbound'] += inbound_containers
             self_run_monthly[month_str][warehouse]['outbound'] += outbound
     
-    # 整理趋势数据，取最近 6 个月
-    all_months = sorted(monthly_data.keys())
+    # 整理趋势数据，取最近 6 个月（使用正确的日期排序）
+    all_months = sorted(monthly_data.keys(), key=lambda m: (int(m.split('-')[0]), int(m.split('-')[1])))
     result['months'] = all_months[-6:] if len(all_months) > 6 else all_months
+    result['months_12'] = all_months[-12:] if len(all_months) > 12 else all_months  # 保存 12 个月用于自营仓趋势
     
     warehouses = set()
     for m in result['months']:
@@ -224,18 +237,37 @@ def read_warehouse_data(period='2026-Q1'):
             result['warehouse_trend'][wh]['inbound'].append(monthly_data[m][wh]['inbound'])
             result['warehouse_trend'][wh]['outbound'].append(monthly_data[m][wh]['outbound'])
     
-    # 整理自营仓趋势数据（近 12 个月）
-    all_months = sorted(self_run_monthly.keys(), key=lambda m: (int(m.split('-')[0]), int(m.split('-')[1])))
-    result['months'] = all_months[-12:] if len(all_months) > 12 else all_months
+    # 整理自营仓趋势数据（近 12 个月，但排除 4 月及以后）
+    all_months_12 = sorted(self_run_monthly.keys(), key=lambda m: (int(m.split('-')[0]), int(m.split('-')[1])))
+    # 过滤掉 4 月及以后的月份（Q1 报告只显示到 3 月）
+    filtered_months = [m for m in all_months_12 if not (m.startswith('2026-4') or m.startswith('2026-04'))]
+    result['months_12'] = filtered_months[-12:] if len(filtered_months) > 12 else filtered_months
     
     for wh in SELF_RUN_WAREHOUSES:
-        for m in result['months']:
+        for m in result['months_12']:
             if m in self_run_monthly and wh in self_run_monthly[m]:
                 result['self_run_trend'][wh]['inbound'].append(self_run_monthly[m][wh]['inbound'])
                 result['self_run_trend'][wh]['outbound'].append(self_run_monthly[m][wh]['outbound'])
             else:
                 result['self_run_trend'][wh]['inbound'].append(0)
                 result['self_run_trend'][wh]['outbound'].append(0)
+    
+    # 计算自提比例
+    for country, data in result['by_country'].items():
+        if data['outbound_pieces'] > 0:
+            data['self_pickup_ratio'] = data['self_pickup_pieces'] / data['outbound_pieces'] * 100
+    
+    if result['us_warehouse']['self_run']['outbound_pieces'] > 0:
+        result['us_warehouse']['self_run']['self_pickup_ratio'] = result['us_warehouse']['self_run']['self_pickup_pieces'] / result['us_warehouse']['self_run']['outbound_pieces'] * 100
+    
+    if result['us_warehouse']['third_party']['outbound_pieces'] > 0:
+        result['us_warehouse']['third_party']['self_pickup_ratio'] = result['us_warehouse']['third_party']['self_pickup_pieces'] / result['us_warehouse']['third_party']['outbound_pieces'] * 100
+    
+    for region in US_REGIONS:
+        if result['us_warehouse']['self_run_by_region'][region]['outbound_pieces'] > 0:
+            result['us_warehouse']['self_run_by_region'][region]['self_pickup_ratio'] = result['us_warehouse']['self_run_by_region'][region]['self_pickup_pieces'] / result['us_warehouse']['self_run_by_region'][region]['outbound_pieces'] * 100
+        if result['us_warehouse']['third_party_by_region'][region]['outbound_pieces'] > 0:
+            result['us_warehouse']['third_party_by_region'][region]['self_pickup_ratio'] = result['us_warehouse']['third_party_by_region'][region]['self_pickup_pieces'] / result['us_warehouse']['third_party_by_region'][region]['outbound_pieces'] * 100
     
     return result
 

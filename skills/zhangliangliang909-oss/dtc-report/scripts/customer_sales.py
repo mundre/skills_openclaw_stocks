@@ -3,8 +3,8 @@ from collections import defaultdict
 import os
 import glob
 
-# 数据目录
-BUSINESS_DATA_DIR = "/home/admin/.openclaw/workspace/agents/跨境电商财务分析-agent/data/1.业务和订单数据"
+# 数据目录（本地路径）
+BUSINESS_DATA_DIR = r"C:\Users\wwl\.openclaw\workspace-跨境电商\data\1.业务和订单数据"
 
 def parse_period(period):
     """解析期间参数"""
@@ -76,10 +76,10 @@ def read_customer_data(period='2026-Q1'):
         if year == 2026 and month in cumulative_months:
             seg_str = str(segment).strip() if segment else ''
             
-            # 判断业务段
+            # 判断业务段（电商集拼不属于 D 段）
             has_b = 'A' in seg_str or 'B' in seg_str
             has_c = 'C' in seg_str
-            has_d = 'D' in seg_str or '电商' in seg_str
+            has_d = ('D' in seg_str or seg_str == 'D') and '电商' not in seg_str and '集拼' not in seg_str
             
             if has_b:
                 result['cumulative']['b_customers'].add(customer)
@@ -126,7 +126,8 @@ def read_top_customers_and_sales(period='2026-Q1', top_n=10):
     """读取前十大客户和销售贡献
     
     返回：
-    - top_customers: [(客户名称，收入，毛利), ...]
+    - top_customers: [(客户名称，累计收入，累计毛利), ...]
+    - top_current_customers: [(客户名称，当月收入，当月毛利), ...]
     - top_sales: [(销售，收入，毛利), ...]
     - top_sales_d_volume: [(销售，D 段箱量), ...]
     """
@@ -165,8 +166,9 @@ def read_top_customers_and_sales(period='2026-Q1', top_n=10):
                 return True
         return False
     
-    # 汇总客户数据
-    customer_data = defaultdict(lambda: {'revenue': 0, 'profit': 0})
+    # 汇总客户数据（累计 + 当月）
+    customer_data = defaultdict(lambda: {'revenue': 0, 'profit': 0})  # 累计
+    customer_current_data = defaultdict(lambda: {'revenue': 0, 'profit': 0})  # 当月
     sales_data = defaultdict(lambda: {'revenue': 0, 'profit': 0})
     
     for row in range(2, min(ws.max_row + 1, 50000)):
@@ -213,15 +215,26 @@ def read_top_customers_and_sales(period='2026-Q1', top_n=10):
         if customer and not is_internal(customer):
             customer_data[customer]['revenue'] += float(revenue) if revenue else 0
             customer_data[customer]['profit'] += float(profit) if profit else 0
+            # 当月数据
+            if month_num == current_month:
+                customer_current_data[customer]['revenue'] += float(revenue) if revenue else 0
+                customer_current_data[customer]['profit'] += float(profit) if profit else 0
         
         # 销售数据不排除
         if sales:
             sales_data[sales]['revenue'] += float(revenue) if revenue else 0
             sales_data[sales]['profit'] += float(profit) if profit else 0
     
-    # 排序取 Top N（转换为万元）
+    # 排序取 Top N（转换为万元）- 按累计收入排序
     top_customers = sorted(
         [(name, data['revenue']/10000, data['profit']/10000) for name, data in customer_data.items()],
+        key=lambda x: x[1],
+        reverse=True
+    )[:top_n]
+    
+    # 当月 Top 客户（按当月收入排序）
+    top_current_customers = sorted(
+        [(name, data['revenue']/10000, data['profit']/10000) for name, data in customer_current_data.items()],
         key=lambda x: x[1],
         reverse=True
     )[:top_n]

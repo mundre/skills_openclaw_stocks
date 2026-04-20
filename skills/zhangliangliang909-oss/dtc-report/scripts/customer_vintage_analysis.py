@@ -13,8 +13,8 @@ import os
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-# 数据目录
-BUSINESS_DATA_DIR = "/home/admin/.openclaw/workspace/agents/跨境电商财务分析-agent/data/1.业务和订单数据"
+# 数据目录（本地路径）
+BUSINESS_DATA_DIR = r"C:\Users\wwl\.openclaw\workspace-跨境电商\data\1.业务和订单数据"
 
 
 def analyze_customer_vintage(period='2026-Q1'):
@@ -85,15 +85,22 @@ def read_customer_first_cooperation_year():
         if not customer or not first_year:
             continue
         
-        # 处理业务分段
+        # 处理业务分段（按逗号分割后逐个判断）
         segments = []
         seg_str = str(segment).strip() if segment else ''
-        if 'A' in seg_str or 'B' in seg_str:
-            segments.append('b')
-        if 'C' in seg_str:
-            segments.append('c')
-        if 'D' in seg_str or '电商' in seg_str or '集拼' in seg_str:
-            segments.append('d')
+        seg_list = [s.strip() for s in seg_str.split(',')]
+        
+        for s in seg_list:
+            if 'A' in s or 'B' in s:
+                if 'b' not in segments:
+                    segments.append('b')
+            if 'C' in s:
+                if 'c' not in segments:
+                    segments.append('c')
+            # D 段仅包含 D 段和 D，电商集拼/集拼/其他不属于 D 段
+            if ('D' in s or s == 'D') and '电商' not in s and '集拼' not in s:
+                if 'd' not in segments:
+                    segments.append('d')
         
         # 记录客户首次合作年份（分业务段）
         if customer not in customer_first_year:
@@ -115,19 +122,19 @@ def read_yearly_cooperation_customers(customer_first_year):
     """
     统计 2022-2026 年各年合作客户数
     
-    有正向收入即视为合作
+    新口径：按客户维度统计
+    - 只要客户该年有 B 段收入（>0），就算 B 段客户
+    - 只要客户该年有 C 段收入（>0），就算 C 段客户
+    - 只要客户该年有 D 段收入（>0），就算 D 段客户
+    - 同一客户可能同时出现在 B、C、D 段统计中
+    - 合计客户数去重
     """
-    yearly_customers = {
-        '2022': {'b': set(), 'c': set(), 'd': set()},
-        '2023': {'b': set(), 'c': set(), 'd': set()},
-        '2024': {'b': set(), 'c': set(), 'd': set()},
-        '2025': {'b': set(), 'c': set(), 'd': set()},
-        '2026': {'b': set(), 'c': set(), 'd': set()}
-    }
+    # 按客户汇总各年各业务段收入
+    customer_yearly_revenue = {}  # {customer: {year: {seg: revenue}}}
     
     files = glob.glob(os.path.join(BUSINESS_DATA_DIR, '*所有业务收入明细*.xlsx'))
     if not files:
-        return yearly_customers
+        return {}
     
     f = files[0]
     wb = openpyxl.load_workbook(f, data_only=True)
@@ -166,7 +173,8 @@ def read_yearly_cooperation_customers(customer_first_year):
             segments.append('b')
         if 'C 段' in seg_str or 'C' in seg_str or 'C+D' in seg_str:
             segments.append('c')
-        if 'D 段' in seg_str or 'D' in seg_str or '电商' in seg_str or '集拼' in seg_str:
+        # D 段仅包含 D 段和 D，电商集拼/集拼/其他不属于 D 段
+        if 'D 段' in seg_str or seg_str == 'D':
             segments.append('d')
         
         # 判断年份
@@ -184,9 +192,31 @@ def read_yearly_cooperation_customers(customer_first_year):
         if year not in ['2022', '2023', '2024', '2025', '2026']:
             continue
         
-        # 记录合作客户
+        # 按客户 + 年份 + 业务段汇总收入
+        if customer not in customer_yearly_revenue:
+            customer_yearly_revenue[customer] = {}
+        if year not in customer_yearly_revenue[customer]:
+            customer_yearly_revenue[customer][year] = {'b': 0, 'c': 0, 'd': 0}
+        
         for seg in segments:
-            yearly_customers[year][seg].add(customer)
+            customer_yearly_revenue[customer][year][seg] += float(revenue)
+    
+    # 统计各年合作客户数（只要该业务段收入>0，就算该业务段客户）
+    yearly_customers = {}
+    for year in ['2022', '2023', '2024', '2025', '2026']:
+        yearly_customers[year] = {'b': set(), 'c': set(), 'd': set()}
+        
+        for customer, year_data in customer_yearly_revenue.items():
+            if year not in year_data:
+                continue
+            
+            # 只要该业务段有收入，就算该业务段客户
+            if year_data[year]['b'] > 0:
+                yearly_customers[year]['b'].add(customer)
+            if year_data[year]['c'] > 0:
+                yearly_customers[year]['c'].add(customer)
+            if year_data[year]['d'] > 0:
+                yearly_customers[year]['d'].add(customer)
     
     # 统计各年客户数
     result = {}
@@ -250,22 +280,29 @@ def read_current_revenue_by_customer(period='2026-Q1'):
             segments.append('b')
         if 'C 段' in seg_str or 'C' in seg_str or 'C+D' in seg_str:
             segments.append('c')
-        if 'D 段' in seg_str or 'D' in seg_str or '电商' in seg_str or '集拼' in seg_str:
+        # D 段仅包含 D 段和 D，电商集拼/集拼/其他不属于 D 段
+        if 'D 段' in seg_str or seg_str == 'D':
             segments.append('d')
         
-        # 判断月份
+        # 判断月份（需要同时检查年份和月份）
         month_num = None
+        year = None
         if isinstance(month, (int, float)):
             base_date = datetime(1899, 12, 30)
             actual_date = base_date + timedelta(days=int(month))
             month_num = actual_date.month
+            year = actual_date.year
         elif isinstance(month, str) and '-' in month:
             try:
-                month_num = int(month.split('-')[1])
+                parts = month.split('-')
+                year = int(parts[0])
+                month_num = int(parts[1])
             except:
                 continue
         
-        if month_num not in cumulative_months:
+        # 检查年份（2026 年）和月份（1-3 月）
+        target_year = 2026 if period.startswith('2026') else 2025
+        if year != target_year or month_num not in cumulative_months:
             continue
         
         # 累加收入（转换为万元）
@@ -279,7 +316,7 @@ def analyze_revenue_contribution_by_vintage(customer_first_year, current_revenue
     """
     分析各年开发客户对本年收入的贡献
     
-    按客户首次合作年份分组，统计 2026 Q1 收入贡献
+    按客户首次合作年份分组，统计本期收入贡献
     """
     contribution = {
         '2022': {'b': 0, 'c': 0, 'd': 0, 'customers': set()},
@@ -290,21 +327,48 @@ def analyze_revenue_contribution_by_vintage(customer_first_year, current_revenue
         'unknown': {'b': 0, 'c': 0, 'd': 0, 'customers': set()}
     }
     
+    # 创建客户名称映射（标准化处理）
+    def normalize_name(name):
+        if not name:
+            return ''
+        # 去除空格和特殊字符
+        return str(name).strip().replace(' ', '').replace('(', '（').replace(')', '）')
+    
+    # 构建标准化名称映射
+    normalized_first_year = {}
+    for customer, years in customer_first_year.items():
+        normalized = normalize_name(customer)
+        normalized_first_year[normalized] = years
+    
+    matched_count = 0
+    unmatched_count = 0
+    
     for customer, revenue in current_revenue_by_customer.items():
-        # 获取客户首次合作年份
-        first_year = customer_first_year.get(customer, {})
+        # 获取客户首次合作年份（尝试标准化名称匹配）
+        normalized_customer = normalize_name(customer)
+        first_year = normalized_first_year.get(normalized_customer, customer_first_year.get(customer, {}))
+        
+        if not first_year and normalized_customer in normalized_first_year:
+            first_year = normalized_first_year[normalized_customer]
         
         for seg in ['b', 'c', 'd']:
             if revenue[seg] > 0:
                 # 确定年份
-                year = first_year.get(seg, None)
+                year = first_year.get(seg, None) if first_year else None
                 if year and str(year) in ['2022', '2023', '2024', '2025', '2026']:
                     vintage = str(year)
+                    matched_count += 1
                 else:
                     vintage = 'unknown'
+                    if first_year:
+                        matched_count += 1
+                    else:
+                        unmatched_count += 1
                 
                 contribution[vintage][seg] += revenue[seg]
                 contribution[vintage]['customers'].add(customer)
+    
+    print(f'    客户匹配：{matched_count}家已匹配，{unmatched_count}家未匹配')
     
     # 格式化结果
     result = {}
@@ -338,121 +402,110 @@ def parse_period(period):
 
 
 def format_customer_vintage_html(analysis_result):
-    """将客户年代分析结果格式化为 HTML"""
+    """将客户年代分析结果格式化为 HTML（只返回 subsection，不包含 section 标题）"""
     if not analysis_result:
         return ''
     
     html = '''
-    <div class="section">
-        <div class="section-title">四、客户与销售分析</div>
-        
         <div class="subsection">
-            <div class="subsection-title">4.1 客户开发数</div>
-            <table>
+            <div class="subsection-title">4.1 各年合作客户数统计</div>
+            <table style="width: auto; min-width: 500px;">
                 <thead>
                     <tr>
-                        <th>年份</th>
-                        <th>B 段客户数</th>
-                        <th>C 段客户数</th>
-                        <th>D 段客户数</th>
-                        <th>合计（去重）</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: left;">业务分段</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">2025 年</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">2026 年</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">合计</th>
                     </tr>
                 </thead>
                 <tbody>
 '''
     
     yearly = analysis_result.get('yearly_customers', {})
-    for year in ['2022', '2023', '2024', '2025', '2026']:
-        data = yearly.get(year, {})
+    for seg in ['b', 'c', 'd']:
+        seg_name = {'b': 'B 段', 'c': 'C 段', 'd': 'D 段'}[seg]
+        y2025 = yearly.get('2025', {}).get(seg, 0)
+        y2026 = yearly.get('2026', {}).get(seg, 0)
+        row_total = y2025 + y2026
         html += f'''
                     <tr>
-                        <td>{year}年</td>
-                        <td>{data.get('b', 0):,}</td>
-                        <td>{data.get('c', 0):,}</td>
-                        <td>{data.get('d', 0):,}</td>
-                        <td>{data.get('total', 0):,}</td>
+                        <td style="padding: 12px 15px; text-align: left;">{seg_name}</td>
+                        <td style="padding: 12px 15px; text-align: right;">{y2025:,}</td>
+                        <td style="padding: 12px 15px; text-align: right;">{y2026:,}</td>
+                        <td style="padding: 12px 15px; text-align: right;">{row_total:,}</td>
                     </tr>
 '''
     
+    # 合计行
+    total_2025 = yearly.get('2025', {}).get('total', 0)
+    total_2026 = yearly.get('2026', {}).get('total', 0)
+    grand_total = total_2025 + total_2026
     html += f'''
                     <tr style="background: #f3f4f6; font-weight: 600;">
-                        <td>合计</td>
-                        <td colspan="4">累计合作客户总数：{analysis_result.get('total_unique_customers', 0):,}家（去重）</td>
+                        <td style="padding: 12px 15px; text-align: left;">合计</td>
+                        <td style="padding: 12px 15px; text-align: right;">{total_2025:,}</td>
+                        <td style="padding: 12px 15px; text-align: right;">{total_2026:,}</td>
+                        <td style="padding: 12px 15px; text-align: right;">{grand_total:,}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
         
         <div class="subsection">
-            <div class="subsection-title">4.2 各年开发客户对本年收入的贡献（2026 Q1）</div>
-            <table>
+            <div class="subsection-title">4.2 各年开发客户对本期收入的贡献</div>
+            <table style="width: auto; min-width: 700px;">
                 <thead>
                     <tr>
-                        <th>首次合作年份</th>
-                        <th>B 段收入（万元）</th>
-                        <th>C 段收入（万元）</th>
-                        <th>D 段收入（万元）</th>
-                        <th>合计（万元）</th>
-                        <th>客户数</th>
-                        <th>占比</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: left;">业务分段</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">2022 年</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">2023 年</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">2024 年</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">2025 年</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">2026 年</th>
+                        <th style="background: #2563eb; color: white; padding: 12px 15px; text-align: right;">合计</th>
                     </tr>
                 </thead>
                 <tbody>
 '''
     
     vintage_data = analysis_result.get('revenue_contribution_by_vintage', {})
-    total_revenue = sum(vintage_data.get(v, {}).get('total_revenue', 0) for v in ['2022', '2023', '2024', '2025', '2026'])
     
-    for vintage in ['2022', '2023', '2024', '2025', '2026']:
-        data = vintage_data.get(vintage, {})
-        rev = data.get('total_revenue', 0)
-        percentage = (rev / total_revenue * 100) if total_revenue > 0 else 0
+    for seg in ['b', 'c', 'd']:
+        seg_name = {'b': 'B 段', 'c': 'C 段', 'd': 'D 段'}[seg]
+        row_total = 0
         html += f'''
                     <tr>
-                        <td>{vintage}年</td>
-                        <td>{data.get('b_revenue', 0):,.1f}</td>
-                        <td>{data.get('c_revenue', 0):,.1f}</td>
-                        <td>{data.get('d_revenue', 0):,.1f}</td>
-                        <td>{rev:,.1f}</td>
-                        <td>{data.get('customer_count', 0):,}</td>
-                        <td>{percentage:.1f}%</td>
+                        <td style="padding: 12px 15px; text-align: left; font-weight: 600;">{seg_name}</td>
+'''
+        for year in ['2022', '2023', '2024', '2025', '2026']:
+            rev = vintage_data.get(year, {}).get(f'{seg}_revenue', 0)
+            row_total += rev
+            html += f'''                        <td style="padding: 12px 15px; text-align: right;">{rev:,.1f}</td>
+'''
+        html += f'''                        <td style="padding: 12px 15px; text-align: right; font-weight: 600;">{row_total:,.1f}</td>
                     </tr>
 '''
     
-    # 未知年份
-    unknown_data = vintage_data.get('unknown', {})
-    if unknown_data.get('total_revenue', 0) > 0:
-        rev = unknown_data.get('total_revenue', 0)
-        percentage = (rev / total_revenue * 100) if total_revenue > 0 else 0
-        html += f'''
-                    <tr>
-                        <td>未知</td>
-                        <td>{unknown_data.get('b_revenue', 0):,.1f}</td>
-                        <td>{unknown_data.get('c_revenue', 0):,.1f}</td>
-                        <td>{unknown_data.get('d_revenue', 0):,.1f}</td>
-                        <td>{rev:,.1f}</td>
-                        <td>{unknown_data.get('customer_count', 0):,}</td>
-                        <td>{percentage:.1f}%</td>
-                    </tr>
-'''
-    
-    html += f'''
+    # 合计行
+    html += '''
                     <tr style="background: #f3f4f6; font-weight: 600;">
-                        <td>合计</td>
-                        <td>{sum(vintage_data.get(v, {}).get('b_revenue', 0) for v in ['2022', '2023', '2024', '2025', '2026']):,.1f}</td>
-                        <td>{sum(vintage_data.get(v, {}).get('c_revenue', 0) for v in ['2022', '2023', '2024', '2025', '2026']):,.1f}</td>
-                        <td>{sum(vintage_data.get(v, {}).get('d_revenue', 0) for v in ['2022', '2023', '2024', '2025', '2026']):,.1f}</td>
-                        <td>{total_revenue:,.1f}</td>
-                        <td>{sum(vintage_data.get(v, {}).get('customer_count', 0) for v in ['2022', '2023', '2024', '2025', '2026']):,}</td>
-                        <td>100.0%</td>
+                        <td style="padding: 12px 15px; text-align: left;">合计</td>
+'''
+    grand_total = 0
+    for year in ['2022', '2023', '2024', '2025', '2026']:
+        total = vintage_data.get(year, {}).get('total_revenue', 0)
+        grand_total += total
+        html += f'''                        <td style="padding: 12px 15px; text-align: right;">{total:,.1f}</td>
+'''
+    html += f'''                        <td style="padding: 12px 15px; text-align: right; font-weight: 600;">{grand_total:,.1f}</td>
                     </tr>
                 </tbody>
             </table>
-            <div class="data-source" style="margin-top: 10px;">
-                注：按客户首次合作年份分组，统计 2026 Q1 收入贡献；合计客户数可能大于实际客户数（因同一客户可能合作多个业务段）
+            <div class="data-source" style="margin-top: 10px; font-size: 12px; color: #6b7280;">
+                注：按客户首次合作年份分组，统计本期（2026 Q1）收入贡献（万元）；
+                同一客户可能合作多个业务段，因此各业务段客户数之和可能大于总客户数
             </div>
         </div>
-    </div>
 '''
     
     return html

@@ -9,8 +9,8 @@ import openpyxl
 import os
 import glob
 
-# 数据目录
-BUDGET_DIR = "/home/admin/.openclaw/workspace/agents/跨境电商财务分析-agent/data/6.2026 年预算数据"
+# 数据目录（本地路径）
+BUDGET_DIR = r"C:\Users\wwl\.openclaw\workspace-跨境电商\data\6.2026 年预算数据"
 
 
 def read_budget_volume(period='2026-Q1'):
