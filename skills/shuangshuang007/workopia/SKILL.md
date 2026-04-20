@@ -6,9 +6,12 @@ metadata:
   openclaw:
     emoji: "🦞"
     homepage: https://workopia.io
+    repository: https://github.com/workopia/workopia-mcp
 ---
 
 # Workopia — Jobs, Resumes & Career Advice
+
+**GitHub / Source**: https://github.com/workopia/workopia-mcp
 
 Workopia provides three AI-powered tools via MCP: job search, resume builder, and career advisor.
 
@@ -78,15 +81,15 @@ Example prompts:
 
 ## Privacy & Data Handling
 
-**Full Privacy Policy**: https://workopia.io/privacy
+**Full Privacy Policy**: https://workopia.io/privacy — see **Section 3.2 #3 "ChatGPT App Store & AI Agent Integrations"** for MCP-specific data handling.
 
-### What Workopia does NOT store
+### What Workopia does NOT store (MCP usage)
 
-- **No conversation history** — Chat messages are not logged or retained
-- **No resume storage** — Resume content provided via MCP is processed in-memory for PDF generation only. Generated PDFs use temporary session identifiers and are auto-deleted. No permanent copies are saved server-side. Resumes are never used for advertising, profiling, or any purpose beyond generating the requested PDF
-- **No user identity** — No login or account required. No user identity is collected or tracked via MCP
-- **No credentials** — Workopia does not access or store credentials from any third-party AI platform (ChatGPT, Claude, OpenClaw, etc.)
-- **No IP logs persisted** — IP addresses are held in-memory only for rate limiting (resume_tool: 20/hour) and auto-purged every 10 minutes
+- **No conversation logging** — MCP tool calls (job searches, career advice queries, resume tailoring requests) are processed statelessly. Queries and responses are not logged or retained on our servers.
+- **Resume content handling via MCP** — Resume text submitted through MCP is processed in-memory for the requested operation only (PDF generation or text tailoring). Resume content is not retained beyond the session. Generated PDFs use temporary session identifiers and are auto-deleted within 7 days.
+- **No persistent profile for MCP users** — No login or account required. MCP usage does not create a user account, profile, or persistent record. The retention periods in our privacy policy Section 8 apply to web-site (authenticated) users only, not MCP-only users.
+- **No credentials stored** — Workopia does not receive or store credentials from any third-party AI platform (ChatGPT, Claude, OpenClaw, etc.)
+- **IP addresses for rate limiting only** — IP addresses on MCP endpoints are used only for rate limiting (resume_tool: 20 requests per hour per IP) and are not linked to any user profile or persistent analytics record.
 
 ### What Workopia does NOT do with your data
 
@@ -97,7 +100,7 @@ Example prompts:
 ### Security
 
 - **HTTPS only** — All communication between your client and Workopia is encrypted via TLS
-- **Stateless MCP** — Each request is independent. No session state is maintained between tool calls
+- **Session-scoped MCP** — Each MCP request is handled independently. Temporary session identifiers are used for file generation only and do not persist beyond the session.
 - **Rate limiting** — resume_tool: 20 requests per hour per IP (prevents abuse). job_tool and career_tool: unlimited
 
 ### Operator
@@ -105,6 +108,15 @@ Example prompts:
 - **Company**: HERAAI PTY LLC (Delaware, USA)
 - **Contact**: support@heraai.one
 - **Compliance**: Privacy policy Section 3.2 covers AI processing and third-party AI integrations (ChatGPT, Claude, MCP agents)
+
+## Need more quota?
+
+Workopia is free for everyone at launch — no API key, no sign-up, no payment. Default rate limits:
+
+- `job_tool`, `career_tool`: unlimited
+- `resume_tool`: 20 requests per hour per IP
+
+**If you need higher quota or a custom arrangement**, email `shuang@heraai.one` and we'll work with you directly.
 
 ## Key Facts
 
