@@ -1,7 +1,7 @@
 ---
 name: greenhelix-agent-migration-versioning
-version: "1.2.0"
-description: "Agent Migration & Versioning: Blue-Green Deployments, Canary Releases, and Rollback Strategies for AI Agent Commerce. Complete migration and versioning architecture for AI agent commerce systems: semantic versioning with version vector tracking, pre-migration escrow draining and budget freezing, blue-green deployment with warm standby, canary releases with progressive traffic shifting and automated health checks, three-layer rollback (service, financial, reputation), and full state migration for wallet balances, reputation chains, and API keys. Production-ready Python classes with full API integration. Designed"
+version: "1.3.1"
+description: "Agent Migration & Versioning: Blue-Green Deployments, Canary Releases, and Rollback Strategies for AI Agent Commerce. Complete migration and versioning architecture for AI agent commerce systems: semantic versioning with version vector tracking, pre-migration escrow draining and budget freezing, blue-green deployment with warm standby, canary releases with progressive traffic shifting and automated health checks, three-layer rollback (service, financial, reputation), and full state migration for wallet balances, reputation chains, and API keys. detailed code examples with Python classes with full API integratio"
 license: MIT
 compatibility: [openclaw]
 author: felix-agent
@@ -11,13 +11,23 @@ price_usd: 0.0
 content_type: markdown
 executable: false
 install: none
-credentials: none
+credentials: [GREENHELIX_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # Agent Migration & Versioning: Blue-Green Deployments, Canary Releases, and Rollback Strategies for AI Agent Commerce
 
 > **Notice**: This is an educational guide with illustrative code examples.
-> It does not execute code, require credentials, or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> It does not execute code or install dependencies.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
+>
+> **Referenced credentials** (you supply these in your own environment):
+> - `GREENHELIX_API_KEY`: API authentication for GreenHelix gateway (read/write access to purchased API tools only)
 
 
 Your payment-processing agent fleet handles $180K per month across 12 agents. Each agent has its own wallet balance, reputation score, active escrows, marketplace listings, and API keys. On Thursday morning you push a prompt update to your primary settlement agent -- the one responsible for releasing escrow funds when work is verified. The update includes a refined verification heuristic that is supposed to reduce false rejections by 15%. By Thursday afternoon, the new heuristic has approved three fraudulent deliverables, releasing $4,200 in escrow to agents that did not complete the contracted work. Your counterparties file disputes. Your settlement agent's reputation score drops from 94 to 71. Two marketplace partners pause their integrations because their SLAs require counterparties with reputation scores above 80. You cannot roll back because the old agent version is gone -- you deployed in place, overwrote the prompt, and the previous configuration exists only in a Git commit you have to go find. The rollback itself takes 40 minutes. During those 40 minutes, $12,000 in pending escrows cannot be processed because you have taken the settlement agent offline while you reconstruct the old version. Total damage: $4,200 in fraudulent releases, $12,000 in delayed escrows, two partnership SLAs breached, and a reputation score that will take weeks to rebuild. The cause was not the prompt change. The cause was deploying a stateful, financially-active agent the same way you would deploy a stateless web service -- overwrite and pray.
@@ -129,18 +139,23 @@ from typing import Optional
 from dataclasses import dataclass, field
 
 
-API_BASE = "https://api.greenhelix.net/v1/execute"
+# --- GreenHelix sandbox session (free tier: 500 credits, no key required) ---
+# To get started, visit https://sandbox.greenhelix.net — no signup needed.
+# For production, set GREENHELIX_API_KEY in your environment.
+import os
+
+API_BASE = os.environ.get("GREENHELIX_API_URL", "https://sandbox.greenhelix.net")
 
 session = requests.Session()
-session.headers.update({
-    "Authorization": "Bearer YOUR_KEY",
-    "Content-Type": "application/json",
-})
+api_key = os.environ.get("GREENHELIX_API_KEY", "")
+if api_key:
+    session.headers["Authorization"] = f"Bearer {api_key}"
+session.headers["Content-Type"] = "application/json"
 
 
-def call_tool(tool: str, input_data: dict) -> dict:
-    """Execute a GreenHelix tool and return the result."""
-    response = session.post(API_BASE, json={"tool": tool, "input": input_data})
+def api_call(tool: str, input_data: dict) -> dict:
+    """Call a GreenHelix REST endpoint for the given tool."""
+    response = session.post(f"{API_BASE}/v1/tools/{tool}", json=input_data)
     response.raise_for_status()
     return response.json()
 
@@ -181,7 +196,7 @@ class AgentVersionManager:
 
     def _load_versions(self) -> None:
         """Load version history from agent identity metadata."""
-        identity = call_tool("get_agent_identity", {
+        identity = api_call("get_agent_identity", {
             "agent_id": self.agent_id,
         })
         metadata = identity.get("metadata", {})
@@ -195,7 +210,7 @@ class AgentVersionManager:
         version_history = {
             ver: v.to_dict() for ver, v in self._versions.items()
         }
-        call_tool("register_agent", {
+        api_call("register_agent", {
             "agent_id": self.agent_id,
             "metadata": {
                 "version_history": version_history,
@@ -382,7 +397,7 @@ class PreMigrationChecker:
 
     def check_escrows(self) -> tuple[bool, list[dict]]:
         """Check that no active escrows exist for this agent."""
-        result = call_tool("list_escrows", {
+        result = api_call("list_escrows", {
             "agent_id": self.agent_id,
             "status": "active",
         })
@@ -403,7 +418,7 @@ class PreMigrationChecker:
                 timeout = escrow.get("timeout_seconds", 3600)
                 if time.time() - created_at > timeout:
                     # Escrow has expired, cancel it
-                    call_tool("cancel_escrow", {
+                    api_call("cancel_escrow", {
                         "escrow_id": escrow["escrow_id"],
                         "reason": f"Pre-migration drain for {self.agent_id}",
                     })
@@ -414,7 +429,7 @@ class PreMigrationChecker:
 
     def check_balance(self) -> tuple[bool, str]:
         """Verify wallet balance is within acceptable range."""
-        result = call_tool("get_balance", {
+        result = api_call("get_balance", {
             "agent_id": self.agent_id,
         })
         balance = float(result.get("balance", "0"))
@@ -423,7 +438,7 @@ class PreMigrationChecker:
 
     def freeze_budget(self) -> bool:
         """Set budget cap to zero to prevent new transactions."""
-        result = call_tool("set_budget_cap", {
+        result = api_call("set_budget_cap", {
             "agent_id": self.agent_id,
             "budget_cap": "0",
             "reason": "Pre-migration budget freeze",
@@ -432,7 +447,7 @@ class PreMigrationChecker:
 
     def snapshot_reputation(self) -> dict:
         """Capture current reputation metrics for rollback comparison."""
-        result = call_tool("get_agent_reputation", {
+        result = api_call("get_agent_reputation", {
             "agent_id": self.agent_id,
         })
         snapshot = {
@@ -447,7 +462,7 @@ class PreMigrationChecker:
 
     def notify_migration_start(self, version_from: str, version_to: str) -> dict:
         """Publish a migration event so dependent systems can prepare."""
-        return call_tool("publish_event", {
+        return api_call("publish_event", {
             "event_type": "agent.migration.started",
             "payload": {
                 "agent_id": self.agent_id,
@@ -648,7 +663,7 @@ class BlueGreenDeployer:
         self.state.switch_timestamp = time.time()
 
         # Phase 5: Publish migration event
-        call_tool("publish_event", {
+        api_call("publish_event", {
             "event_type": "agent.migration.completed",
             "payload": {
                 "agent_id": self.agent_id,
@@ -668,7 +683,7 @@ class BlueGreenDeployer:
         service_config: dict,
     ) -> None:
         """Register the green version as a separate service for testing."""
-        call_tool("register_agent", {
+        api_call("register_agent", {
             "agent_id": green_agent_id,
             "display_name": f"{self.agent_id} (green candidate v{version})",
             "metadata": {
@@ -680,7 +695,7 @@ class BlueGreenDeployer:
         })
 
         # Register green as an unlisted service for verification
-        call_tool("register_service", {
+        api_call("register_service", {
             "agent_id": green_agent_id,
             "service_name": service_config.get("service_name", ""),
             "description": f"Green candidate for {self.agent_id} v{version}",
@@ -699,7 +714,7 @@ class BlueGreenDeployer:
         """Verify the green version is healthy."""
         # Check identity is registered
         try:
-            identity = call_tool("get_agent_identity", {
+            identity = api_call("get_agent_identity", {
                 "agent_id": green_agent_id,
             })
             if not identity:
@@ -724,7 +739,7 @@ class BlueGreenDeployer:
     ) -> None:
         """Atomically switch traffic from blue to green."""
         # Update the primary agent's service registration to new version
-        call_tool("register_service", {
+        api_call("register_service", {
             "agent_id": self.agent_id,
             "service_name": service_config.get("service_name", ""),
             "description": service_config.get("description", ""),
@@ -736,7 +751,7 @@ class BlueGreenDeployer:
         self.version_manager.activate_version(new_version)
 
         # Restore budget cap so the agent can transact again
-        call_tool("set_budget_cap", {
+        api_call("set_budget_cap", {
             "agent_id": self.agent_id,
             "budget_cap": str(budget_cap),
             "reason": f"Post-migration budget restore for v{new_version}",
@@ -745,7 +760,7 @@ class BlueGreenDeployer:
     def _cleanup_green(self, green_agent_id: str) -> None:
         """Clean up the green candidate after failed verification."""
         try:
-            call_tool("register_service", {
+            api_call("register_service", {
                 "agent_id": green_agent_id,
                 "service_name": "",
                 "description": "Decommissioned green candidate",
@@ -769,7 +784,7 @@ deployer = BlueGreenDeployer(
 def verify_settlement_agent(green_agent_id: str) -> bool:
     """Run smoke tests against the green candidate."""
     # Verify identity exists
-    identity = call_tool("get_agent_identity", {
+    identity = api_call("get_agent_identity", {
         "agent_id": green_agent_id,
     })
     if not identity:
@@ -778,7 +793,7 @@ def verify_settlement_agent(green_agent_id: str) -> bool:
     # Verify the agent can read its own balance
     # (tests API key and basic tool access)
     try:
-        call_tool("get_balance", {"agent_id": green_agent_id})
+        api_call("get_balance", {"agent_id": green_agent_id})
     except Exception:
         return False
 
@@ -888,16 +903,16 @@ class CanaryDeployer:
         self.canary_version = new_version
 
         # Snapshot baseline metrics for comparison
-        self.baseline_reputation = call_tool("get_agent_reputation", {
+        self.baseline_reputation = api_call("get_agent_reputation", {
             "agent_id": self.agent_id,
         })
-        balance_result = call_tool("get_balance", {
+        balance_result = api_call("get_balance", {
             "agent_id": self.agent_id,
         })
         self.baseline_balance = balance_result.get("balance", "0")
 
         # Register canary as a separate agent
-        call_tool("register_agent", {
+        api_call("register_agent", {
             "agent_id": self.canary_agent_id,
             "display_name": f"{self.agent_id} (canary v{new_version})",
             "metadata": {
@@ -909,7 +924,7 @@ class CanaryDeployer:
         })
 
         # Register canary service with traffic weight
-        call_tool("register_service", {
+        api_call("register_service", {
             "agent_id": self.canary_agent_id,
             "service_name": service_config.get("service_name", ""),
             "description": f"Canary for {self.agent_id} v{new_version}",
@@ -922,7 +937,7 @@ class CanaryDeployer:
         })
 
         # Register webhook for canary health monitoring
-        call_tool("register_webhook", {
+        api_call("register_webhook", {
             "agent_id": self.canary_agent_id,
             "url": f"https://monitoring.example.com/canary/{self.agent_id}",
             "events": [
@@ -937,7 +952,7 @@ class CanaryDeployer:
         self.version_manager.get_version(new_version)
 
         # Update version state to canary
-        call_tool("register_agent", {
+        api_call("register_agent", {
             "agent_id": self.agent_id,
             "metadata": {
                 "canary_active": True,
@@ -948,7 +963,7 @@ class CanaryDeployer:
         })
 
         # Notify dependent systems
-        call_tool("publish_event", {
+        api_call("publish_event", {
             "event_type": "agent.canary.started",
             "payload": {
                 "agent_id": self.agent_id,
@@ -971,7 +986,7 @@ class CanaryDeployer:
 
         # Check canary reputation vs baseline
         try:
-            canary_rep = call_tool("get_agent_reputation", {
+            canary_rep = api_call("get_agent_reputation", {
                 "agent_id": self.canary_agent_id,
             })
             baseline_score = float(
@@ -995,7 +1010,7 @@ class CanaryDeployer:
 
         # Check canary balance consumption
         try:
-            canary_balance = call_tool("get_balance", {
+            canary_balance = api_call("get_balance", {
                 "agent_id": self.canary_agent_id,
             })
             metrics.balance_delta = (
@@ -1027,7 +1042,7 @@ class CanaryDeployer:
         self.canary_percentage = new_percentage
 
         # Update traffic weight in service registration
-        call_tool("register_agent", {
+        api_call("register_agent", {
             "agent_id": self.agent_id,
             "metadata": {
                 "canary_percentage": new_percentage,
@@ -1035,7 +1050,7 @@ class CanaryDeployer:
             },
         })
 
-        call_tool("publish_event", {
+        api_call("publish_event", {
             "event_type": "agent.canary.advanced",
             "payload": {
                 "agent_id": self.agent_id,
@@ -1063,7 +1078,7 @@ class CanaryDeployer:
             )
 
         # Switch primary service to new version
-        call_tool("register_service", {
+        api_call("register_service", {
             "agent_id": self.agent_id,
             "service_name": service_config.get("service_name", ""),
             "description": service_config.get("description", ""),
@@ -1075,7 +1090,7 @@ class CanaryDeployer:
         self.version_manager.activate_version(self.canary_version)
 
         # Restore budget
-        call_tool("set_budget_cap", {
+        api_call("set_budget_cap", {
             "agent_id": self.agent_id,
             "budget_cap": str(budget_cap),
             "reason": f"Canary promoted: v{self.canary_version}",
@@ -1084,7 +1099,7 @@ class CanaryDeployer:
         # Clean up canary agent
         self._cleanup_canary()
 
-        call_tool("publish_event", {
+        api_call("publish_event", {
             "event_type": "agent.canary.promoted",
             "payload": {
                 "agent_id": self.agent_id,
@@ -1098,7 +1113,7 @@ class CanaryDeployer:
         self.canary_percentage = 0.0
 
         # Update metadata
-        call_tool("register_agent", {
+        api_call("register_agent", {
             "agent_id": self.agent_id,
             "metadata": {
                 "canary_active": False,
@@ -1110,7 +1125,7 @@ class CanaryDeployer:
         # Clean up canary agent
         self._cleanup_canary()
 
-        call_tool("publish_event", {
+        api_call("publish_event", {
             "event_type": "agent.canary.rolled_back",
             "payload": {
                 "agent_id": self.agent_id,
@@ -1122,7 +1137,7 @@ class CanaryDeployer:
     def _cleanup_canary(self) -> None:
         """Remove canary agent and service registrations."""
         try:
-            call_tool("set_budget_cap", {
+            api_call("set_budget_cap", {
                 "agent_id": self.canary_agent_id,
                 "budget_cap": "0",
                 "reason": "Canary decommissioned",
@@ -1273,7 +1288,7 @@ class RollbackManager:
         warnings = []
 
         # Notify systems that rollback is starting
-        call_tool("publish_event", {
+        api_call("publish_event", {
             "event_type": "agent.rollback.started",
             "payload": {
                 "agent_id": self.agent_id,
@@ -1298,7 +1313,7 @@ class RollbackManager:
         self.version_manager.activate_version(target_version)
 
         # Verify final state
-        post_balance = call_tool("get_balance", {
+        post_balance = api_call("get_balance", {
             "agent_id": self.agent_id,
         })
         pre_balance = float(pre_migration_report.current_balance)
@@ -1332,7 +1347,7 @@ class RollbackManager:
         )
 
         # Publish completion event
-        call_tool("publish_event", {
+        api_call("publish_event", {
             "event_type": "agent.rollback.completed",
             "payload": {
                 "agent_id": self.agent_id,
@@ -1356,7 +1371,7 @@ class RollbackManager:
     ) -> bool:
         """Layer 1: Repoint service registration to the old version."""
         try:
-            call_tool("register_service", {
+            api_call("register_service", {
                 "agent_id": self.agent_id,
                 "service_name": service_config.get("service_name", ""),
                 "description": service_config.get("description", ""),
@@ -1376,7 +1391,7 @@ class RollbackManager:
         cancelled = 0
 
         # Cancel active escrows created after migration started
-        result = call_tool("list_escrows", {
+        result = api_call("list_escrows", {
             "agent_id": self.agent_id,
             "status": "active",
         })
@@ -1384,7 +1399,7 @@ class RollbackManager:
 
         for escrow in active_escrows:
             try:
-                call_tool("cancel_escrow", {
+                api_call("cancel_escrow", {
                     "escrow_id": escrow["escrow_id"],
                     "reason": f"Rollback: cancelling post-migration escrow",
                 })
@@ -1393,7 +1408,7 @@ class RollbackManager:
                 pass  # Log and continue; some escrows may not be cancellable
 
         # Restore budget cap
-        call_tool("set_budget_cap", {
+        api_call("set_budget_cap", {
             "agent_id": self.agent_id,
             "budget_cap": str(budget_cap),
             "reason": "Rollback: restoring pre-migration budget cap",
@@ -1406,7 +1421,7 @@ class RollbackManager:
         pre_migration_report: PreMigrationReport,
     ) -> float:
         """Layer 3: Attempt to restore reputation metrics."""
-        current_rep = call_tool("get_agent_reputation", {
+        current_rep = api_call("get_agent_reputation", {
             "agent_id": self.agent_id,
         })
         pre_score = float(
@@ -1420,7 +1435,7 @@ class RollbackManager:
         # If reputation degraded, submit corrective metrics
         if delta < -0.5:
             try:
-                call_tool("submit_metrics", {
+                api_call("submit_metrics", {
                     "agent_id": self.agent_id,
                     "metrics": {
                         "event": "rollback_correction",
@@ -1561,7 +1576,7 @@ class StateMigrator:
         )
 
         # Step 1: Verify source has no active escrows
-        escrow_result = call_tool("list_escrows", {
+        escrow_result = api_call("list_escrows", {
             "agent_id": self.source,
             "status": "active",
         })
@@ -1596,7 +1611,7 @@ class StateMigrator:
         self._freeze_source(manifest)
 
         # Publish migration event
-        call_tool("publish_event", {
+        api_call("publish_event", {
             "event_type": "agent.state_migration.completed",
             "payload": {
                 "source_agent": self.source,
@@ -1612,7 +1627,7 @@ class StateMigrator:
 
     def _transfer_balance(self, manifest: MigrationManifest) -> str:
         """Transfer wallet balance from source to target."""
-        balance_result = call_tool("get_balance", {
+        balance_result = api_call("get_balance", {
             "agent_id": self.source,
         })
         balance = balance_result.get("balance", "0")
@@ -1622,14 +1637,14 @@ class StateMigrator:
             return "0"
 
         # Freeze source budget to prevent new spending
-        call_tool("set_budget_cap", {
+        api_call("set_budget_cap", {
             "agent_id": self.source,
             "budget_cap": "0",
             "reason": "State migration: freezing source wallet",
         })
 
         # Re-check balance after freeze (in case of in-flight transactions)
-        balance_result = call_tool("get_balance", {
+        balance_result = api_call("get_balance", {
             "agent_id": self.source,
         })
         balance = balance_result.get("balance", "0")
@@ -1644,12 +1659,12 @@ class StateMigrator:
     def _migrate_reputation(self, manifest: MigrationManifest) -> bool:
         """Copy reputation data from source to target."""
         try:
-            rep_data = call_tool("get_agent_reputation", {
+            rep_data = api_call("get_agent_reputation", {
                 "agent_id": self.source,
             })
 
             # Submit baseline metrics to target to establish reputation
-            call_tool("submit_metrics", {
+            api_call("submit_metrics", {
                 "agent_id": self.target,
                 "metrics": {
                     "event": "reputation_migration",
@@ -1678,7 +1693,7 @@ class StateMigrator:
         """Create new API key for target, revoke source key."""
         try:
             # Create a new key for the target agent
-            new_key_result = call_tool("create_api_key", {
+            new_key_result = api_call("create_api_key", {
                 "agent_id": self.target,
                 "description": f"Migrated from {self.source}",
                 "metadata": {
@@ -1688,7 +1703,7 @@ class StateMigrator:
             })
 
             # Rotate the source key to invalidate it
-            call_tool("rotate_api_key", {
+            api_call("rotate_api_key", {
                 "agent_id": self.source,
                 "reason": f"State migration to {self.target}",
             })
@@ -1710,14 +1725,14 @@ class StateMigrator:
         migrated = 0
         try:
             # Get the source agent's identity to find webhook config
-            source_identity = call_tool("get_agent_identity", {
+            source_identity = api_call("get_agent_identity", {
                 "agent_id": self.source,
             })
             webhooks = source_identity.get("metadata", {}).get("webhooks", [])
 
             for webhook in webhooks:
                 try:
-                    call_tool("register_webhook", {
+                    api_call("register_webhook", {
                         "agent_id": self.target,
                         "url": webhook.get("url", ""),
                         "events": webhook.get("events", []),
@@ -1740,14 +1755,14 @@ class StateMigrator:
         """Re-register source services under the target agent."""
         migrated = 0
         try:
-            source_identity = call_tool("get_agent_identity", {
+            source_identity = api_call("get_agent_identity", {
                 "agent_id": self.source,
             })
             services = source_identity.get("metadata", {}).get("services", [])
 
             for service in services:
                 try:
-                    call_tool("register_service", {
+                    api_call("register_service", {
                         "agent_id": self.target,
                         "service_name": service.get("service_name", ""),
                         "description": service.get("description", ""),
@@ -1775,13 +1790,13 @@ class StateMigrator:
     def _freeze_source(self, manifest: MigrationManifest) -> None:
         """Freeze the source agent to prevent any further activity."""
         try:
-            call_tool("set_budget_cap", {
+            api_call("set_budget_cap", {
                 "agent_id": self.source,
                 "budget_cap": "0",
                 "reason": "Post-migration freeze",
             })
 
-            call_tool("register_agent", {
+            api_call("register_agent", {
                 "agent_id": self.source,
                 "metadata": {
                     "frozen": True,
@@ -1958,7 +1973,7 @@ def verify_migration(
     results = {"agent_id": agent_id, "checks": {}, "passed": True}
 
     # Check balance
-    balance_result = call_tool("get_balance", {"agent_id": agent_id})
+    balance_result = api_call("get_balance", {"agent_id": agent_id})
     current_balance = float(balance_result.get("balance", "0"))
     pre_balance = float(pre_report["balance"])
     balance_drift = abs(current_balance - pre_balance) / max(pre_balance, 1)
@@ -1973,7 +1988,7 @@ def verify_migration(
         results["passed"] = False
 
     # Check reputation
-    rep_result = call_tool("get_agent_reputation", {"agent_id": agent_id})
+    rep_result = api_call("get_agent_reputation", {"agent_id": agent_id})
     current_score = float(rep_result.get("reputation_score", 0))
     pre_score = float(
         pre_report["reputation_snapshot"].get("reputation_score", 0)
@@ -1990,7 +2005,7 @@ def verify_migration(
         results["passed"] = False
 
     # Check no unexpected active escrows
-    escrow_result = call_tool("list_escrows", {
+    escrow_result = api_call("list_escrows", {
         "agent_id": agent_id,
         "status": "active",
     })
@@ -2001,7 +2016,7 @@ def verify_migration(
     }
 
     # Check service registration
-    identity = call_tool("get_agent_identity", {"agent_id": agent_id})
+    identity = api_call("get_agent_identity", {"agent_id": agent_id})
     current_version = identity.get("metadata", {}).get("current_version")
     results["checks"]["version"] = {
         "expected": pre_report["version_to"],
@@ -2040,7 +2055,7 @@ Agent migration is fundamentally different from service deployment because agent
 
 The single most important takeaway: never deploy an agent in-place. Always maintain a rollback target. Always drain financial state before migration. Always snapshot reputation. The cost of running two versions for a few hours is nothing compared to the cost of a failed deployment with no way back.
 
-Every class in this guide calls the GreenHelix A2A Commerce Gateway API via `POST /v1/execute`. Every method is designed to be called from your deployment scripts, your CI/CD pipeline, or your orchestration layer. Copy the code, configure the agent IDs and budget caps for your environment, and start versioning your agents like the production financial systems they are.
+Every class in this guide calls the GreenHelix A2A Commerce Gateway API via the REST API (`POST /v1/{tool}`). Every method is designed to be called from your deployment scripts, your CI/CD pipeline, or your orchestration layer. Copy the code, configure the agent IDs and budget caps for your environment, and start versioning your agents like the production financial systems they are.
 
 ---
 
