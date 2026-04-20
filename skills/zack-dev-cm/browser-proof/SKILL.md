@@ -2,6 +2,7 @@
 name: browser-proof
 description: Public ClawHub skill for capturing browser QA and debugging evidence as a machine-readable bundle with steps, artifacts, checks, and a shareable report.
 homepage: https://github.com/zack-dev-cm/browser-proof
+license: MIT-0
 user-invocable: true
 metadata: {"openclaw":{"homepage":"https://github.com/zack-dev-cm/browser-proof","skillKey":"browser-proof","requires":{"anyBins":["python3","python"]}}}
 ---
