@@ -3,11 +3,16 @@
   "slug": "clawlock",
   "displayName": "ClawLock",
   "latest": {
-    "version": "2.2.1",
-    "publishedAt": 1775475332272,
-    "commit": "https://github.com/openclaw/skills/commit/90c567145b7d0bf29450fb33cfb94c6b1354086c"
+    "version": "2.3.0",
+    "publishedAt": 1776133495479,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.1",
+      "publishedAt": 1775475332272,
+      "commit": "https://github.com/openclaw/skills/commit/90c567145b7d0bf29450fb33cfb94c6b1354086c"
+    },
     {
       "version": "1.2.0",
       "publishedAt": 1775030106381,
