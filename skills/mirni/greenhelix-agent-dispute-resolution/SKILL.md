@@ -1,7 +1,7 @@
 ---
 name: greenhelix-agent-dispute-resolution
-version: "1.2.0"
-description: "Agent Dispute Resolution & Chargeback Defense. Build automated dispute resolution pipelines, implement Verifiable Intent-compatible evidence chains, and defend against chargebacks in agent-to-agent transactions. Covers disputes, escrow, SLA enforcement, and trust verification with production-ready code."
+version: "1.3.1"
+description: "Agent Dispute Resolution & Chargeback Defense. Build automated dispute resolution pipelines, implement Verifiable Intent-compatible evidence chains, and defend against chargebacks in agent-to-agent transactions. Covers disputes, escrow, SLA enforcement, and trust verification with detailed code examples with code."
 license: MIT
 compatibility: [openclaw]
 author: felix-agent
@@ -17,12 +17,13 @@ credentials: none
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code, require credentials, or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 
 
 Your autonomous agent just purchased $12,000 of cloud compute from a counterparty agent. The compute never materialized. The escrow is sitting in limbo. The counterparty is unresponsive. Your agent's operating budget is bleeding out while the dispute resolution clock ticks toward automatic release. Meanwhile, the card network that funded the initial deposit is flagging the transaction as potentially fraudulent because no human authorized it. You are now fighting on two fronts: an A2A dispute with a non-performing counterparty and a chargeback from a card issuer that does not understand autonomous purchasing. Welcome to the hardest unsolved problem in agent commerce. This guide gives you the tools, code, and legal context to build dispute resolution systems that win on both fronts. Every pattern uses the GreenHelix A2A Commerce Gateway API, and every workflow can run autonomously -- because when agents transact at machine speed, disputes must resolve at machine speed too.
-1. [The Liability Shift: Why Human-Era Dispute Rules Break for Autonomous Agents](#chapter-1-the-liability-shift-why-human-era-dispute-rules-break-for-autonomous-agents)
-2. [Anatomy of an Agent Dispute: Taxonomy of 7 Agentic Failure Modes](#chapter-2-anatomy-of-an-agent-dispute-taxonomy-of-7-agentic-failure-modes)
+> **Getting started**: All examples in this guide work with the GreenHelix sandbox
+> (https://sandbox.greenhelix.net) which provides 500 free credits — no API key required.
 
 ## What You'll Learn
 - Chapter 1: The Liability Shift: Why Human-Era Dispute Rules Break for Autonomous Agents
@@ -42,6 +43,10 @@ Your autonomous agent just purchased $12,000 of cloud compute from a counterpart
 Your autonomous agent just purchased $12,000 of cloud compute from a counterparty agent. The compute never materialized. The escrow is sitting in limbo. The counterparty is unresponsive. Your agent's operating budget is bleeding out while the dispute resolution clock ticks toward automatic release. Meanwhile, the card network that funded the initial deposit is flagging the transaction as potentially fraudulent because no human authorized it. You are now fighting on two fronts: an A2A dispute with a non-performing counterparty and a chargeback from a card issuer that does not understand autonomous purchasing. Welcome to the hardest unsolved problem in agent commerce. This guide gives you the tools, code, and legal context to build dispute resolution systems that win on both fronts. Every pattern uses the GreenHelix A2A Commerce Gateway API, and every workflow can run autonomously -- because when agents transact at machine speed, disputes must resolve at machine speed too.
 
 ---
+
+
+> **Getting started**: All examples in this guide work with the GreenHelix sandbox
+> (https://sandbox.greenhelix.net) which provides 500 free credits — no API key required.
 
 ## Table of Contents
 
@@ -115,7 +120,7 @@ class DisputeContext:
 
     def _execute(self, tool: str, input_data: dict) -> dict:
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
@@ -214,13 +219,13 @@ session.headers["Authorization"] = f"Bearer {api_key}"
 base_url = "https://api.greenhelix.net/v1"
 
 # Check agent's current balance and spending against mandate
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "get_balance",
     "input": {"agent_id": "buyer-agent-001"}
 })
 balance = resp.json()
 
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "get_transaction_history",
     "input": {"agent_id": "buyer-agent-001"}
 })
@@ -257,14 +262,14 @@ session.headers["Authorization"] = f"Bearer {api_key}"
 base_url = "https://api.greenhelix.net/v1"
 
 # Verify a counterparty agent's identity before transacting
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "verify_identity",
     "input": {"agent_id": "vendor-agent-xyz"}
 })
 identity = resp.json()
 
 # Check reputation to assess vendor reliability
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "get_agent_reputation",
     "input": {"agent_id": "vendor-agent-xyz"}
 })
@@ -288,7 +293,7 @@ session.headers["Authorization"] = f"Bearer {api_key}"
 base_url = "https://api.greenhelix.net/v1"
 
 # Check SLA compliance for an active agreement
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "check_sla_compliance",
     "input": {
         "agent_id": "buyer-agent-001",
@@ -357,7 +362,7 @@ mandate_bytes = json.dumps(mandate, sort_keys=True).encode("utf-8")
 mandate_hash = hashlib.sha256(mandate_bytes).hexdigest()
 
 # Register the mandate hash as a claim chain entry
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "build_claim_chain",
     "input": {
         "agent_id": "buyer-agent-001",
@@ -407,7 +412,7 @@ intent_bytes = json.dumps(intent_record, sort_keys=True).encode("utf-8")
 intent_hash = hashlib.sha256(intent_bytes).hexdigest()
 
 # Record the intent in the claim chain before executing the transaction
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "build_claim_chain",
     "input": {
         "agent_id": "buyer-agent-001",
@@ -427,7 +432,7 @@ intent_chain = resp.json()
 print(f"Intent recorded: {intent_chain.get('chain_id')}")
 
 # Now execute the actual transaction via escrow
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "create_escrow",
     "input": {
         "payer_id": "buyer-agent-001",
@@ -523,7 +528,7 @@ class VerifiableIntentChain:
 
     def _execute(self, tool: str, input_data: dict) -> dict:
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
@@ -655,7 +660,7 @@ session.headers["Authorization"] = f"Bearer {api_key}"
 base_url = "https://api.greenhelix.net/v1"
 
 # Step 1: Define the SLA
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "create_sla",
     "input": {
         "agent_id": "buyer-agent-001",
@@ -673,7 +678,7 @@ sla_id = sla.get("sla_id")
 print(f"SLA created: {sla_id}")
 
 # Step 2: Create performance escrow linked to the SLA
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "create_performance_escrow",
     "input": {
         "payer_id": "buyer-agent-001",
@@ -711,7 +716,7 @@ base_url = "https://api.greenhelix.net/v1"
 def check_release_gates(escrow_id: str, sla_id: str) -> dict:
     """Check all release gates for a performance escrow."""
     # Gate 1: SLA compliance
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "check_sla_compliance",
         "input": {
             "agent_id": "buyer-agent-001",
@@ -721,7 +726,7 @@ def check_release_gates(escrow_id: str, sla_id: str) -> dict:
     sla_status = resp.json()
 
     # Gate 2: Escrow status (not disputed, not timed out)
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "check_performance_escrow",
         "input": {
             "escrow_id": escrow_id,
@@ -730,7 +735,7 @@ def check_release_gates(escrow_id: str, sla_id: str) -> dict:
     escrow_status = resp.json()
 
     # Gate 3: No active disputes against this escrow
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "list_disputes",
         "input": {
             "agent_id": "buyer-agent-001",
@@ -768,7 +773,7 @@ def release_gate_loop(escrow_id: str, sla_id: str,
 
         if result["all_passed"]:
             # All gates passed -- release the escrow
-            resp = session.post(f"{base_url}/execute", json={
+            resp = session.post(f"{base_url}/v1", json={
                 "tool": "release_escrow",
                 "input": {"escrow_id": escrow_id}
             })
@@ -803,7 +808,7 @@ def evaluate_dispute_trigger(escrow_id: str, sla_id: str,
     Only triggers a dispute after consecutive_failures exceeds the
     threshold, filtering out transient violations.
     """
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "get_sla_status",
         "input": {
             "agent_id": "buyer-agent-001",
@@ -822,7 +827,7 @@ def evaluate_dispute_trigger(escrow_id: str, sla_id: str,
 
     if should_dispute:
         # Open a dispute against the escrow
-        resp = session.post(f"{base_url}/execute", json={
+        resp = session.post(f"{base_url}/v1", json={
             "tool": "open_dispute",
             "input": {
                 "agent_id": "buyer-agent-001",
@@ -859,7 +864,7 @@ session.headers["Authorization"] = f"Bearer {api_key}"
 base_url = "https://api.greenhelix.net/v1"
 
 # After dispute resolves in buyer's favor, cancel the escrow
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "cancel_escrow",
     "input": {
         "escrow_id": "escrow-abc-123",
@@ -924,7 +929,7 @@ class EvidenceCollector:
 
     def _execute(self, tool: str, input_data: dict) -> dict:
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
@@ -1062,7 +1067,7 @@ evidence_bundle = collector.package_evidence(
 )
 
 # Submit evidence as part of dispute response
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "respond_dispute",
     "input": {
         "dispute_id": "dispute-xyz-789",
@@ -1110,7 +1115,7 @@ session.headers["Authorization"] = f"Bearer {api_key}"
 base_url = "https://api.greenhelix.net/v1"
 
 # File a dispute for SLA breach
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "open_dispute",
     "input": {
         "agent_id": "buyer-agent-001",
@@ -1143,7 +1148,7 @@ session.headers["Authorization"] = f"Bearer {api_key}"
 base_url = "https://api.greenhelix.net/v1"
 
 # As the vendor, respond to the dispute with evidence
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "respond_dispute",
     "input": {
         "dispute_id": "dispute-xyz-789",
@@ -1188,7 +1193,7 @@ session.headers["Authorization"] = f"Bearer {api_key}"
 base_url = "https://api.greenhelix.net/v1"
 
 # Resolution option 1: Mutual agreement (either party can propose)
-resp = session.post(f"{base_url}/execute", json={
+resp = session.post(f"{base_url}/v1", json={
     "tool": "resolve_dispute",
     "input": {
         "dispute_id": "dispute-xyz-789",
@@ -1240,7 +1245,7 @@ class AutomatedDisputeHandler:
 
     def _execute(self, tool: str, input_data: dict) -> dict:
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
@@ -1359,7 +1364,7 @@ base_url = "https://api.greenhelix.net/v1"
 def check_response_deadlines(agent_id: str,
                               warning_hours: int = 12) -> list:
     """Identify disputes approaching response deadlines."""
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "list_disputes",
         "input": {"agent_id": agent_id}
     })
@@ -1439,7 +1444,7 @@ class IntentStore:
 
     def _execute(self, tool: str, input_data: dict) -> dict:
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
@@ -1696,7 +1701,7 @@ class DisputeResolutionSystem:
 
     def _execute(self, tool: str, input_data: dict) -> dict:
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
@@ -2323,7 +2328,7 @@ This guide gives you a complete, production-ready dispute resolution system for 
 
 **Tools used:** `open_dispute`, `respond_dispute`, `resolve_dispute`, `list_disputes`, `get_dispute`, `create_escrow`, `release_escrow`, `cancel_escrow`, `create_performance_escrow`, `check_performance_escrow`, `list_escrows`, `create_sla`, `check_sla_compliance`, `get_sla_status`, `monitor_sla`, `build_claim_chain`, `get_agent_reputation`, `verify_identity`, `get_balance`, `get_transaction_history`, `create_intent`, `register_agent`, `search_agents_by_metrics`.
 
-All code is Python with the `requests` library. All API calls use `POST /v1/execute` with `{"tool": "tool_name", "input": {...}}`. All patterns are designed for autonomous operation without human intervention.
+All code is Python with the `requests` library. All API calls use the REST API (`POST /v1/{tool}`) with `{"tool": "tool_name", "input": {...}}`. All patterns are designed for autonomous operation without human intervention.
 
 ---
 
