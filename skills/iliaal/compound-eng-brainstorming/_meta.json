@@ -3,11 +3,16 @@
   "slug": "compound-eng-brainstorming",
   "displayName": "brainstorming",
   "latest": {
-    "version": "2.55.1",
-    "publishedAt": 1776004142887,
-    "commit": "https://github.com/openclaw/skills/commit/99a50a5472a7978bbead3a365d78232f4ae1dfc4"
+    "version": "2.56.1",
+    "publishedAt": 1776518923900,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.55.1",
+      "publishedAt": 1776004142887,
+      "commit": "https://github.com/openclaw/skills/commit/99a50a5472a7978bbead3a365d78232f4ae1dfc4"
+    },
     {
       "version": "2.53.0",
       "publishedAt": 1775433109539,
