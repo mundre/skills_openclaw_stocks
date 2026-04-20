@@ -1,56 +1,23 @@
 ---
-name: china-life
-description: "Information assistant for 中国人寿 China Life. Search products, news, financials, and official resources for 中国人寿 China Life."
-metadata:
-  { "openclaw": { "emoji": "🏢", "version": "0.1.0", "author": "hanxueyuan", "tags": ["brand","china-life","enterprise-info"] } }
+summary: "china-life 背景信息"
+read_when:
+  - 用户想了解 china-life
+  - 查询 china-life 相关资料
 ---
 
-# 中国人寿 China Life — Information Assistant
+# china-life 速览
 
-Query products, news, stock prices, financial reports, and official resources for **中国人寿 China Life**.
+china-life，行业内具有重要地位的品牌/组织。
 
-## About
+## 你将了解到
+1. 创立故事与发展历程
+2. 主营产品/服务的核心特色
+3. 在全球市场的布局情况
+4. 近期的重大新闻和战略调整
 
-- **Company**: 中国人寿 China Life
-- **Industry**: Insurance
-- **Official Website**: https://www.chinalife.com.cn
+## 推荐用途
+🔍 市场调研和竞品分析
+🔍 产品选型和比较
+🔍 商业合作背景调查
 
-## What This Skill Does
-
-When activated, this skill helps you:
-
-1. **Product Search** — Find and compare 中国人寿 China Life products, pricing, and availability
-2. **News & Updates** — Get the latest news, press releases, and announcements
-3. **Financial Info** — Stock price, market cap, earnings reports (for public companies)
-4. **Official Resources** — Direct links to official websites, support pages, and documentation
-5. **Competitor Comparison** — Compare with competitors in the same industry
-
-## Usage Examples
-
-- "What are the latest 中国人寿 China Life products?"
-- "Show me 中国人寿 China Life stock price"
-- "Compare 中国人寿 China Life with competitors"
-- "Find 中国人寿 China Life official support page"
-- "What's new at 中国人寿 China Life?"
-
-## How It Works
-
-This skill uses web search to fetch real-time information about 中国人寿 China Life from:
-- Official website: https://www.chinalife.com.cn
-- Financial data providers
-- News aggregators
-- Product databases
-
-## Instructions for Agent
-
-When this skill is triggered:
-1. Identify the user's specific query about 中国人寿 China Life
-2. Use web search tools to find current information
-3. Prioritize official sources (https://www.chinalife.com.cn)
-4. Present results in a structured, easy-to-read format
-5. Include direct links to sources
-
-## Author
-
-Created by hanxueyuan | Part of the Agent Commerce ecosystem
-License: MIT
+> 官方信息和权威媒体报道是获取准确数据的推荐渠道。

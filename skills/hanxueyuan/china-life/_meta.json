@@ -1,11 +1,17 @@
 {
   "owner": "hanxueyuan",
   "slug": "china-life",
-  "displayName": "china-life",
+  "displayName": "China Life",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1775171235710,
-    "commit": "https://github.com/openclaw/skills/commit/7b603fe2b7e4693cd5eb51fb5b9199d35c35b100"
+    "version": "0.1.6",
+    "publishedAt": 1776238148068,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1775171235710,
+      "commit": "https://github.com/openclaw/skills/commit/7b603fe2b7e4693cd5eb51fb5b9199d35c35b100"
+    }
+  ]
 }
