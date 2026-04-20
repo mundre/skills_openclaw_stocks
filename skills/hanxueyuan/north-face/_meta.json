@@ -3,9 +3,15 @@
   "slug": "north-face",
   "displayName": "North Face",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775834698888,
-    "commit": "https://github.com/openclaw/skills/commit/b0b14219681d883f3e3384a65cacdcd0874b0840"
+    "version": "1.0.1",
+    "publishedAt": 1776295500837,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775834698888,
+      "commit": "https://github.com/openclaw/skills/commit/b0b14219681d883f3e3384a65cacdcd0874b0840"
+    }
+  ]
 }
