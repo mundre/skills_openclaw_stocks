@@ -1,19 +1,13 @@
 ---
 name: multi-step-workflow
-version: 4.4.1
+version: 4.4.5
 description: "Professional SOP with Machine-Gated Planning, Native-CLI Config, and Audit-Hardened Private Sandbox Storage."
-metadata:
-  openclaw:
-    always: false
-    requires:
-      bins:
-        - node
-        - openclaw
-    storage:
-      - "/tmp/openclaw-workflow-* (Mode: 0700)"
-  clawdbot:
-    name: multi-step-workflow
-    version: 4.4.2
+homepage: "https://github.com/chyern/Agent-Skills"
+repository: "https://github.com/chyern/Agent-Skills.git"
+requires:
+  bins:
+    - node
+    - openclaw
 ---
 # Standard Task SOP (High-Trust Edition)
 
