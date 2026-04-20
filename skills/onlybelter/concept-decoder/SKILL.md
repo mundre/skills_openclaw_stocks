@@ -1,8 +1,9 @@
-# Concept Decoder — 抽象概念第一性原理解构器
+---
+name: "concept-decoder"
+description: "Deconstructs complex concepts with a layered, intuition-first pipeline (prereqs → motivation → analogies → math → connections → tests). Use when user asks 'what is X', wants intuition behind formulas, or feels stuck."
+---
 
-v1.0.0
-
-Creates layered, intuition-first explanations of complex, abstract, or formula-heavy scientific concepts using a six-layer first-principles cognitive pipeline. Use when the user wants to genuinely understand — not just recite — a difficult concept.
+# Concept Decoder
 
 ---
 
@@ -325,3 +326,15 @@ User: /decode replica symmetry breaking, deep
 - Always cite at least one key reference (seminal paper or standard textbook) per concept so the user can go deeper
 - **Adapt vocabulary** to the user's background as inferred from the Layer 0 interaction — a physicist and a biologist asking about "entropy" need different entry points
 - This skill does **not** require any external tools or API calls; it runs entirely on the model's language capabilities
+
+---
+
+## Input/Output
+
+### Input
+- A target concept (word/phrase) and optional context (domain, what the user already knows, what is confusing).
+- Optional depth preference (quick / standard / deep).
+
+### Output
+- A structured explanation following the six-layer workflow, calibrated to the user’s background and requested depth.
+- A small prerequisite map, clear intuition, minimal essential equations (if relevant), concept connections, and litmus-test questions.
