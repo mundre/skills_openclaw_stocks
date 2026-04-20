@@ -1,5 +1,5 @@
 #!/bin/bash
-# install.sh — self-improvement-loop v4.3 installer
+# install.sh — self-improvement-loop v4.4.8 installer
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,7 +9,6 @@ CANONICAL_HOOKS="${HOME}/.openclaw/hooks/self-improvement"
 SKILL_HOOKS="$SCRIPT_DIR/hooks"
 SKILL_SCRIPTS="$SCRIPT_DIR/scripts"
 LEARNINGS_DIR="$WORKSPACE/.learnings"
-DISTILL_SELF="$LEARNINGS_DIR/DISTILL-SELF.md"
 SKILL_CREATOR_SLUG="yixinli867/skill-creator-2"
 OPENCLAW_JSON="${HOME}/.openclaw/openclaw.json"
 
@@ -85,15 +84,22 @@ install_skill_creator() {
 }
 
 # ─────────────────────────────────────────────────────────────
-# 0. Pre-flight: skill-creator + channel detection
+# 0. Pre-flight: python3 + skill-creator + channel detection
 # ─────────────────────────────────────────────────────────────
 echo "=== self-improvement-loop v4.3 installer ==="
 echo ""
 
+if ! command -v python3 &>/dev/null; then
+    echo "[✗] python3 not found. This skill requires Python 3."
+    echo "    Install python3 and retry."
+    exit 1
+fi
+echo "[✓] python3: found"
+
 if is_skill_creator_installed; then
-    echo "[0/8] skill-creator: found, skipping"
+    echo "[✓] skill-creator: found, skipping"
 else
-    echo "[0/8] skill-creator: not found, installing..."
+    echo "[✓] skill-creator: not found, installing..."
     if install_skill_creator; then
         echo "  ✓ skill-creator installed"
     else
@@ -147,13 +153,12 @@ echo "  ✓ handler.js → $CANONICAL_HOOKS/"
 # ── 3. Install scripts ─────────────────────────────────
 echo ""
 echo "[3/8] Installing scripts..."
-for script in distill.sh archive.sh match-existing-skill.sh generate-skill-draft.sh; do
+for script in distill.sh archive.sh match-existing-skill.sh; do
     cp "$SKILL_SCRIPTS/$script" "$CANONICAL_DIR/$script" 2>/dev/null \
-        && echo "  ✓ $script" \
-        || echo "  - $script (not in package)"
+        && echo "  ✓ $script"
 done
 
-for py_script in distill_json.py write_notified.py reflect_self.py; do
+for py_script in distill_json.py write_notified.py; do
     cp "$SKILL_SCRIPTS/$py_script" "$CANONICAL_DIR/$py_script"
     echo "  ✓ $py_script"
 done
@@ -172,31 +177,16 @@ for f in LEARNINGS.md ERRORS.md FEATURE_REQUESTS.md; do
     fi
 done
 
-if [ ! -f "$DISTILL_SELF" ]; then
-    cat > "$DISTILL_SELF" << 'DISTILL_SELF_EOF'
-# DISTILL-SELF.md — distill self-improvement staging area
-
-> Maintained by distill.sh v4.2. Keep format intact when editing manually.
-
----
-
-*(no SELF-FIX entries yet)*
-DISTILL_SELF_EOF
-    echo "  ✓ DISTILL-SELF.md (created)"
-else
-    echo "  ✓ DISTILL-SELF.md (exists, skipped)"
-fi
-
 # ── 5. Register Hook ───────────────────────────────────
 echo ""
 echo "[5/8] Registering Hook..."
-if openclaw hook list 2>/dev/null | grep -q "self-improvement"; then
+if openclaw hooks list 2>/dev/null | grep -q "self-improvement"; then
     echo "  ✓ Hook already registered, skipped"
 else
-    openclaw hook set self-improvement "$CANONICAL_HOOKS/handler.js" 2>/dev/null \
+    openclaw hooks set self-improvement "$CANONICAL_HOOKS/handler.js" 2>/dev/null \
         && echo "  ✓ Hook registered" \
         || echo "  ⚠ Hook registration failed. Run manually:"
-    echo "    openclaw hook set self-improvement $CANONICAL_HOOKS/handler.js"
+    echo "    openclaw hooks set self-improvement $CANONICAL_HOOKS/handler.js"
 fi
 
 # ── 6. Setup Cron jobs ─────────────────────────────────
@@ -210,45 +200,48 @@ else
     echo "  ✓ Detected Telegram ID: $TELEGRAM_ID"
 fi
 
-if ! command -v python3 &>/dev/null; then
-    echo "  ⚠ python3 not found, skipping Cron setup."
-    echo "    Run manually: CHANNEL=$CHANNEL CHANNEL_ACCOUNT=$CHANNEL_ACCOUNT TELEGRAM_ID=$TELEGRAM_ID python3 $SKILL_SCRIPTS/setup_crons.py"
-else
-    CHANNEL="$CHANNEL" \
-    CHANNEL_ACCOUNT="$CHANNEL_ACCOUNT" \
-    TELEGRAM_ID="$TELEGRAM_ID" \
-        python3 "$SKILL_SCRIPTS/setup_crons.py"
-fi
+CHANNEL="$CHANNEL" \
+CHANNEL_ACCOUNT="$CHANNEL_ACCOUNT" \
+TELEGRAM_ID="$TELEGRAM_ID" \
+    python3 "$SKILL_SCRIPTS/setup_crons.py"
 
-# ── 7. Inject A/B/C to AGENTS.md ──────────────────────────
+# ── 7. Prompt user to inject A/B/C/D to AGENTS.md ──────────
 echo ""
-echo "[7/7] Injecting A/B/C handler to AGENTS.md..."
+echo "[7/8] A/B/C/D handler for AGENTS.md..."
 AGENTS_FILE="$WORKSPACE/AGENTS.md"
 AGENTS_FRAGMENT="$SKILL_SCRIPTS/agents-append.md"
 
 if [ ! -f "$AGENTS_FILE" ]; then
     echo "  ⚠ AGENTS.md not found at $AGENTS_FILE, skipping"
-elif grep -q "A/B/C 响应处理.*self-improvement 闭环" "$AGENTS_FILE" 2>/dev/null; then
-    echo "  ✓ A/B/C section already present, skipped"
+elif grep -q "A/B/C/D 响应处理.*self-improvement 闭环" "$AGENTS_FILE" 2>/dev/null; then
+    echo "  ✓ A/B/C/D section already present in AGENTS.md"
 else
-    cat "$AGENTS_FRAGMENT" >> "$AGENTS_FILE"
-    echo "  ✓ A/B/C section appended to AGENTS.md"
+    echo ""
+    echo "  ⚠ ACTION REQUIRED: Please append the following to your AGENTS.md"
+    echo "  ──────────────────────────────────────────────────────────"
+    echo "  Copy the content from:"
+    echo "    $AGENTS_FRAGMENT"
+    echo "  And append it to:"
+    echo "    $AGENTS_FILE"
+    echo "  ──────────────────────────────────────────────────────────"
+    echo ""
+    echo "Press ENTER after you have added it, or 's' to skip: "
+    read answer 2>/dev/null || answer=""
+    if [ "$answer" = "s" ] || [ "$answer" = "S" ]; then
+        echo "  ⚠ Skipped. You can add it manually later."
+    else
+        if grep -q "A/B/C/D 响应处理.*self-improvement 闭环" "$AGENTS_FILE" 2>/dev/null; then
+            echo "  ✓ A/B/C/D section confirmed in AGENTS.md"
+        else
+            cat "$AGENTS_FRAGMENT" >> "$AGENTS_FILE"
+            echo "  ✓ A/B/C/D section appended to AGENTS.md"
+        fi
+    fi
 fi
 
 # ── 8. Gateway restart reminder ─────────────────────────
 echo ""
 echo "[8/8] Gateway restart reminder..."
-echo ""
-echo "=== Installation complete ==="
-echo ""
-echo "⚠ Restart gateway to activate Hook:"
-echo "   openclaw gateway restart"
-echo ""
-echo "Verify distill:"
-echo "   bash $CANONICAL_DIR/distill.sh --check-only"
-echo ""
-echo "Check Cron status:"
-echo "   openclaw cron list | grep self-improvement"
 echo ""
 echo "=== Installation complete ==="
 echo ""

@@ -3,7 +3,6 @@
 # v4.3 — 纯机械：扫描 + 计数 + notification_state + raw entry 输出
 # 新增（v4.3）：notified / notification_count 字段读取，notification_trigger 计算
 # 新增（v4.3）：meta.explanation 修正 scan_mode 描述
-# 保留（v4.2）：reflect_self 自检机制
 # 设计原则：「脚本做机械，AI 做语义」
 #
 # Canonical Source: ~/.openclaw/workspace/scripts/self-improvement/distill.sh
@@ -14,22 +13,11 @@
 
 WORKSPACE="${HOME}/.openclaw/workspace"
 LEARNINGS_DIR="$WORKSPACE/.learnings"
-DISTILL_SELF="$LEARNINGS_DIR/DISTILL-SELF.md"
-REFLECT_PY="$WORKSPACE/scripts/self-improvement/reflect_self.py"
 THRESHOLD=2
 CHECK_ONLY=false
 
 [ "$1" = "--check-only" ] && CHECK_ONLY=true
 
-# ─────────────────────────────────────────────────────────────
-# reflect_self — v4.2：Python 实现，避免 bash 引号陷阱
-#   Step 0 (detect): 扫描 learnings，生成 distill.* self-fix 提案
-#   Step 4 (apply):  尝试自修复，报告 needs_human 条目
-# ─────────────────────────────────────────────────────────────
-reflect_self() {
-    local step="${1:-detect}"
-    python3 "$REFLECT_PY" "$step"
-}
 
 # ─────────────────────────────────────────────────────────────
 # json_escape — Python json.dumps 替代脆弱 sed 转义
@@ -118,6 +106,14 @@ scan_file() {
                     case "$line" in
                         *"- Pattern-Key:"*)
                             pk=$(echo "$line" | sed 's/^[^:]*: *//' | tr -d '[:space:]')
+                            # Pattern-Key format validation (v4.4.8): must be X.Y.Z
+                            if [ -n "$pk" ]; then
+                                dot_count=$(echo "$pk" | tr -cd '.' | wc -c)
+                                if [ "$dot_count" -ne 2 ]; then
+                                    # Not 3-part format — downgrade to category-only
+                                    pk=""
+                                fi
+                            fi
                             ;;
                         *)
                             # **Status**: value (两颗星 markdown 格式)
@@ -154,9 +150,6 @@ scan_file() {
 # v4.3 新增：notified / notification_count / notification_trigger 字段
 # ═══════════════════════════════════════════════════════════════
 if [ "$CHECK_ONLY" = true ]; then
-
-    # ── Step 0: 反射自检（distill 检测自身问题）─────────────
-    reflect_self detect
 
     # ── Step 1: 收集所有 pending entries ──────────────────
     # v4.3: 6字段输出（新增 notified_int, nc_int）
@@ -261,7 +254,7 @@ if [ "$CHECK_ONLY" = true ]; then
 
     # ── Step 5: 构建 JSON（v4.3 — 调用 Python 脚本）──────────
     DISTILL_JSON="$WORKSPACE/scripts/self-improvement/distill_json.py"
-    python3 "$DISTILL_JSON" "$PK_AGG" "$CAT_AGG" "$THRESHOLD" "$DISTILL_SELF"
+    python3 "$DISTILL_JSON" "$PK_AGG" "$CAT_AGG" "$THRESHOLD"
 
     rm -f "$ALL_ENTRIES" "$PK_ENTRIES" "$CAT_ENTRIES" "$PK_AGG" "$CAT_AGG"
     exit 0

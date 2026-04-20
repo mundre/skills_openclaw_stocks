@@ -242,12 +242,6 @@ if [ "$DRY_RUN" = true ]; then
     exit 0
 fi
 
-# ── write-notified 模式（v4.3 新增）────────────────────────────
-#   用法：archive.sh --write-notified <json_file>
-
-
-echo "Archiving $total_candidates entries..."
-
 # ── Execute: write JSONL ─────────────────────────────────────
 ARCHIVE_FILE="$ARCHIVE_DIR/$TODAY_MONTH.jsonl"
 touch "$ARCHIVE_FILE"

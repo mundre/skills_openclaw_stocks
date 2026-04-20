@@ -12,16 +12,14 @@
 **Status**: pending | resolved
 **Pattern-Key**: <source>.error.<identifier>
 
-### Error
-```
-错误信息
-```
+### 发生了什么
+[具体场景，说清楚在什么情况下、哪个环节出了问题]
 
-### Root Cause
-...
+### 根因是什么
+[为什么会发生，不是表面现象，是结构性原因]
 
-### Fix
-...
+### 下次如何避免
+[抽象成一条可操作的原则，可以迁移到类似情况]
 
 *---*
 ```
@@ -32,16 +30,16 @@
 
 ## [ERR-20260401-001] error
 **Logged**: 2026-04-01T00:00:00+08:00
-**Status**: pending
+**Status**: resolved
 **Pattern-Key**: tool.hook.keyword.missing
 
-### Error
-Hook 未检测到 "能不能" 关键词
+### 发生了什么
+Hook 把 "能不能帮我做某事" 当作错误关键词处理了，错误地发送了通知。
 
-### Root Cause
-handler.js ERROR_KEYWORDS 中不应包含 "能不能"（功能请求，非错误）
+### 根因是什么
+handler.js 的 ERROR_KEYWORDS 中不应包含 "能不能"，这是功能请求而非错误，但关键词匹配是字面匹配，没有语义判断。
 
-### Fix
-已修复，详见 handler.js
+### 下次如何避免
+关键词列表要区分"错误信号词"和"功能请求词"，避免字面匹配的误判。
 
 *---*

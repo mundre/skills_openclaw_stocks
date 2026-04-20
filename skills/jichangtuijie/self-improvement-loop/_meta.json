@@ -3,11 +3,16 @@
   "slug": "self-improvement-loop",
   "displayName": "Self Improvement Loop",
   "latest": {
-    "version": "4.3.8",
-    "publishedAt": 1776656413291,
-    "commit": "https://github.com/openclaw/skills/commit/172c61433d55422d82a9cbd9944db3f21608010f"
+    "version": "4.5.1",
+    "publishedAt": 1776685752408,
+    "commit": null
   },
   "history": [
+    {
+      "version": "4.3.8",
+      "publishedAt": 1776656413291,
+      "commit": "https://github.com/openclaw/skills/commit/172c61433d55422d82a9cbd9944db3f21608010f"
+    },
     {
       "version": "4.3.3",
       "publishedAt": 1776630395908,
