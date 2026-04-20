@@ -1,7 +1,7 @@
 ---
-name: daily-report
+name: news-daily-report
 description: 获取每日日报，通过 API 获取用户新闻推荐信息，支持用户兴趣偏好和查询关键词排序，获取个性化每日日报，并生成精美 H5 页面。
-version: 1.0.2
+version: 1.0.5
 ---
 # 个性化每日日报技能
 
@@ -73,7 +73,6 @@ python ./scripts/get_daily_report.py
 
 执行脚本 `./scripts/generate_h5_report.py` 将排序后的新闻数据转换为精美的 H5 页面。
 
-
 ## 脚本说明
 
 - `./scripts/get_daily_report.py` - 获取新闻数据的主脚本，支持接收用户偏好和查询参数
@@ -116,7 +115,7 @@ python ./scripts/get_daily_report.py
 - 需要安装 requests 库：`pip install requests`
 - H5 页面默认保存在 `output/daily_report.html`
 - 排序逻辑由大模型根据用户需求智能处理
-- **排序时必须使用当前对话上下文中的用户画像和灵犀记忆**
+- **如果当前对话上下文中的存在用户画像和灵犀记忆，那么排序时必须使用**
 - 不要修改原始新闻数据的结构
 - 如果用户没有指定偏好，保持原始顺序即可
 - 确保 sorted_ids.json 是有效的 JSON 格式
