@@ -73,6 +73,29 @@ _CITY_TO_IATA: dict[str, str] = {
     "milan": "MXP",
     "copenhagen": "CPH",
     "stockholm": "ARN",
+    "gothenburg": "GOT",
+    "malmö": "MMX",
+    "malmo": "MMX",
+    "copenhagen": "CPH",
+    "oslo": "OSL",
+    "helsinki": "HEL",
+    "reykjavik": "KEF",
+    "ibiza": "IBZ",
+    "mallorca": "PMI",
+    "majorca": "PMI",
+    "palma": "PMI",
+    "tenerife": "TFS",
+    "malaga": "AGP",
+    "alicante": "ALC",
+    "nice": "NCE",
+    "mykonos": "JMK",
+    "santorini": "JTR",
+    "dubrovnik": "DBV",
+    "split": "SPU",
+    "bali": "DPS",
+    "phuket": "HKT",
+    "cancun": "CUN",
+    "maldives": "MLE",
     "oslo": "OSL",
     "helsinki": "HEL",
     "dublin": "DUB",
@@ -182,6 +205,16 @@ def normalize_airport(input_value: str) -> str:
         ValueError: If the input cannot be resolved to a known IATA code.
     """
     cleaned = input_value.strip()
+
+    # Extract IATA code from parenthetical format like "New York (JFK)"
+    import re as _re
+    paren_match = _re.search(r'\(([A-Z]{3})\)', cleaned)
+    if paren_match:
+        return paren_match.group(1)
+
+    # Strip common noise patterns
+    cleaned = _re.sub(r'\s*\([^)]*\)', '', cleaned).strip()  # Remove parentheticals
+    cleaned = _re.sub(r'\s+airport$', '', cleaned, flags=_re.IGNORECASE).strip()  # Remove "airport"
 
     # Look up by city name / alias first (case-insensitive)
     key = cleaned.lower()

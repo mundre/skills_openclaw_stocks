@@ -60,10 +60,21 @@ class TestPlaceholderExecutor:
 
 
 class TestGetExecutor:
-    def test_default_is_placeholder(self) -> None:
+    def test_default_is_travelpayouts(self) -> None:
+        from zim.booking_executor import TravelpayoutsExecutor
         executor = get_executor()
-        assert isinstance(executor, PlaceholderExecutor)
+        assert isinstance(executor, TravelpayoutsExecutor)
 
     def test_explicit_placeholder(self) -> None:
         executor = get_executor("placeholder")
+        assert isinstance(executor, PlaceholderExecutor)
+
+    def test_explicit_travelpayouts(self) -> None:
+        from zim.booking_executor import TravelpayoutsExecutor
+        executor = get_executor("travelpayouts")
+        assert isinstance(executor, TravelpayoutsExecutor)
+
+    def test_env_var_placeholder(self, monkeypatch) -> None:
+        monkeypatch.setenv("ZIM_EXECUTOR", "placeholder")
+        executor = get_executor()
         assert isinstance(executor, PlaceholderExecutor)

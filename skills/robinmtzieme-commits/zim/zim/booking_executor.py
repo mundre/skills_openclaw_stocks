@@ -167,12 +167,89 @@ class PlaceholderExecutor(BookingExecutor):
         )
 
 
-def get_executor(provider: str = "placeholder") -> BookingExecutor:
+class TravelpayoutsExecutor(BookingExecutor):
+    """Executor that generates affiliate booking links via Travelpayouts.
+
+    Uses the affiliate link already present on each search result
+    (FlightResult.link, HotelResult.link, CarResult.link) and returns
+    a structured ExecutionPackage with booking instructions.
+
+    No real booking is made — the user is redirected to the affiliate URL
+    where they complete the booking directly with the provider.
+    """
+
+    def execute(self, request: BookingExecutionRequest) -> BookingExecutionResult:
+        import uuid as _uuid
+
+        link = request.provider_link
+        confirmation_code = f"TP-{_uuid.uuid4().hex[:8].upper()}"
+
+        logger.info(
+            "TravelpayoutsExecutor: booking %s (%s) via affiliate link: %s",
+            request.booking_id, request.category, link or "(none)",
+        )
+
+        instructions = {
+            "step_1": f"Click the booking link to open the {request.category} on {request.provider_name or 'provider'}'s site.",
+            "step_2": "Complete the booking using your traveler details.",
+            "step_3": f"Save your confirmation number and forward it to reference {request.booking_id}.",
+        }
+
+        return BookingExecutionResult(
+            booking_id=request.booking_id,
+            category=request.category,
+            provider_confirmation_code=confirmation_code,
+            provider_status="link_generated",
+            provider_name=request.provider_name,
+            provider_raw_response={
+                "booking_link": link,
+                "affiliate_ref": confirmation_code,
+                "instructions": instructions,
+                "traveler": {
+                    "first_name": request.traveler_first_name,
+                    "last_name": request.traveler_last_name,
+                    "email": request.traveler_email,
+                },
+            },
+            executed_at=datetime.now(UTC).isoformat(),
+        )
+
+    def check_status(self, booking_id: str, confirmation_code: str) -> BookingExecutionResult:
+        return BookingExecutionResult(
+            booking_id=booking_id,
+            category="unknown",
+            provider_confirmation_code=confirmation_code,
+            provider_status="link_generated",
+            error_message="Status must be confirmed externally via the provider confirmation email.",
+        )
+
+    def cancel(self, booking_id: str, confirmation_code: str) -> BookingExecutionResult:
+        return BookingExecutionResult(
+            booking_id=booking_id,
+            category="unknown",
+            provider_confirmation_code=confirmation_code,
+            provider_status="cancellation_requested",
+            error_message=(
+                "To cancel, contact the provider directly with your confirmation number. "
+                f"Reference: {confirmation_code}"
+            ),
+        )
+
+
+def get_executor(provider: str | None = None) -> BookingExecutor:
     """Factory: return the appropriate booking executor.
 
-    Currently only returns PlaceholderExecutor. When real provider
-    integrations are built, this will route by provider name.
+    Executor selection priority:
+    1. ``provider`` argument (if given)
+    2. ``ZIM_EXECUTOR`` environment variable
+    3. Default: travelpayouts
+
+    Valid values: ``travelpayouts`` | ``placeholder``
     """
-    # Future: match on provider name
-    # if provider == "amadeus": return AmadeusExecutor(...)
-    return PlaceholderExecutor()
+    import os as _os
+
+    name = provider or _os.environ.get("ZIM_EXECUTOR", "travelpayouts")
+    if name == "placeholder":
+        return PlaceholderExecutor()
+    # Default to TravelpayoutsExecutor (affiliate link flow)
+    return TravelpayoutsExecutor()

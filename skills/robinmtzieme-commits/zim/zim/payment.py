@@ -22,6 +22,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from zim.fees import FeeBreakdown, FeeSchedule, calculate_fee
+
 logger = logging.getLogger(__name__)
 
 
@@ -179,12 +181,27 @@ def build_line_items_from_itinerary(
     itinerary_hotels: list[dict],
     itinerary_cars: list[dict],
     nights: int = 1,
-) -> list[CheckoutLineItem]:
+    fee_schedule: Optional[FeeSchedule] = None,
+) -> tuple[list[CheckoutLineItem], FeeBreakdown]:
     """Build Stripe line items from the top-ranked result in each category.
 
     Only the recommended (first) item in each category is included.
+    A 'Zim Service Fee' line item is always appended as a transparent
+    separate charge — never hidden inside travel prices.
+
+    Args:
+        itinerary_flights: Ranked flight results from the itinerary.
+        itinerary_hotels:  Ranked hotel results from the itinerary.
+        itinerary_cars:    Ranked car results from the itinerary.
+        nights:            Number of hotel nights for rate multiplication.
+        fee_schedule:      Override fee schedule; uses default if None.
+
+    Returns:
+        Tuple of (line_items, fee_breakdown). line_items includes the
+        service fee as the final entry.
     """
     items: list[CheckoutLineItem] = []
+    subtotal_cents = 0
 
     if itinerary_flights:
         f = itinerary_flights[0]
@@ -194,33 +211,55 @@ def build_line_items_from_itinerary(
             airline = f.get("airline", "")
             if airline:
                 desc += f" ({airline})"
+            amount = int(price * 100)
             items.append(CheckoutLineItem(
                 description=desc,
-                amount_cents=int(price * 100),
+                amount_cents=amount,
                 category="flight",
             ))
+            subtotal_cents += amount
 
     if itinerary_hotels:
         h = itinerary_hotels[0]
         rate = h.get("nightly_rate_usd", 0)
         if rate > 0:
             desc = f"Hotel: {h.get('name', 'Hotel')} ({nights} night{'s' if nights > 1 else ''})"
+            amount = int(rate * 100)
             items.append(CheckoutLineItem(
                 description=desc,
-                amount_cents=int(rate * 100),
+                amount_cents=amount,
                 quantity=nights,
                 category="hotel",
             ))
+            subtotal_cents += amount * nights
 
     if itinerary_cars:
         c = itinerary_cars[0]
         price = c.get("price_usd_total", 0)
         if price > 0:
             desc = f"Car rental: {c.get('provider', 'Rental')} {c.get('vehicle_class', '')}"
+            amount = int(price * 100)
             items.append(CheckoutLineItem(
                 description=desc,
-                amount_cents=int(price * 100),
+                amount_cents=amount,
                 category="car",
             ))
+            subtotal_cents += amount
 
-    return items
+    # Always append the Zim service fee as a visible line item
+    subtotal_usd = subtotal_cents / 100.0
+    breakdown = calculate_fee(subtotal_usd, fee_schedule)
+    fee_cents = int(round(breakdown.fee_amount_usd * 100))
+
+    if fee_cents > 0:
+        items.append(CheckoutLineItem(
+            description=breakdown.fee_label,
+            amount_cents=fee_cents,
+            category="service_fee",
+        ))
+        logger.info(
+            "Service fee: $%.2f on $%.2f subtotal (type=%s)",
+            breakdown.fee_amount_usd, subtotal_usd, breakdown.fee_type,
+        )
+
+    return items, breakdown

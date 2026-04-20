@@ -1,17 +1,37 @@
 ---
 name: zim
-description: >
-  Agent travel middleware for searching flights, hotels, and car rentals, assembling
-  policy-aware itineraries, managing traveler preferences/policy, and preparing
-  payment-ready booking workflows. Includes a Python CLI/package plus shell search
-  scripts and references. Use when the user asks to search, compare, rank, assemble,
-  approve, or prepare booking for flights, hotels, accommodations, car rentals, or
-  full trips. Triggers on: "find me a flight", "search hotels in", "book a car",
-  "travel to", "flights from X to Y", "hotel in X", "rent a car", "compare flights",
-  "cheapest flight", "best hotel deal", "plan a trip", "assemble itinerary",
-  "travel approval", or any travel search / booking-prep query. NOT for:
-  visa/passport questions, travel insurance, or claiming a reservation is fully
-  ticketed/confirmed unless provider execution actually happened.
+description: >-
+  Agent travel middleware for searching flights, hotels, and car rentals,
+  assembling policy-aware itineraries, managing traveler preferences, and
+  preparing payment-ready booking workflows via Stripe Checkout.
+  Uses Travelpayouts affiliate API and SerpApi for search aggregation.
+  Includes a Python CLI/package, shell search scripts, and a WhatsApp
+  conversational agent. Use when the user asks to search, compare, rank,
+  assemble, approve, or prepare booking for flights, hotels, accommodations,
+  car rentals, or full trips.
+metadata:
+  openclaw:
+    requires:
+      bins: ["python3", "bash", "curl", "jq"]
+    capabilities:
+      - id: stripe_checkout
+        description: Creates Stripe Checkout sessions for payment collection (test mode by default)
+        scope: payment
+        requires_env: ["STRIPE_SECRET_KEY"]
+      - id: travelpayouts_search
+        description: Searches flights and hotels via Travelpayouts affiliate API
+        scope: search
+        requires_env: ["TRAVELPAYOUTS_TOKEN"]
+      - id: serpapi_search
+        description: Searches flights and hotels via SerpApi for Google Flights/Hotels results
+        scope: search
+        requires_env: ["SERPAPI_KEY"]
+    sensitive_env:
+      - STRIPE_SECRET_KEY
+      - STRIPE_WEBHOOK_SECRET
+      - TRAVELPAYOUTS_TOKEN
+      - SERPAPI_KEY
+      - OPENROUTER_API_KEY
 ---
 
 # Zim — Agent Travel Middleware
@@ -189,6 +209,36 @@ zim cars "Dubai Airport" 2026-04-15 2026-04-20 --car-class suv
 # Assemble full itinerary
 zim trip LHR DXB 2026-04-15 --return-date 2026-04-20 --mode business --human
 ```
+
+## WhatsApp Conversational Agent
+
+When handling travel messages on the **WhatsApp channel**, use the Zim WhatsApp agent for a smoother conversational experience with stateful multi-turn flows (search → select → confirm → book).
+
+### How to invoke
+
+```bash
+bash /home/ubuntu/.openclaw/workspace/zim/scripts/zim-wa.sh "<user message>" "whatsapp:<user_phone>"
+```
+
+This returns JSON: `{"response": "...", "success": true/false}`
+
+Send the `response` text back to the user on WhatsApp.
+
+### Conversation flow
+
+The WhatsApp agent maintains state per user automatically:
+1. User sends a natural language travel request → agent returns search results
+2. User replies with 1, 2, or 3 → agent shows selection summary, asks YES/NO
+3. User says YES → agent returns booking confirmation + deeplink
+4. User says CANCEL at any point → resets to fresh search
+
+State persists across calls via SQLite, so multi-message conversations work.
+
+### When to use the WhatsApp agent vs direct CLI
+
+- **WhatsApp channel messages** → use the WhatsApp agent (`zim-wa.sh`)
+- **Structured agent-to-agent requests** → use the Python CLI (`zim flights`, `zim hotels`)
+- **Quick searches for non-chat contexts** → use shell scripts (`search-flights.sh`)
 
 ## Agent workflow
 

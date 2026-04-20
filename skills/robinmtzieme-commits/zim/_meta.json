@@ -3,9 +3,15 @@
   "slug": "zim",
   "displayName": "Zim",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1775914258674,
-    "commit": "https://github.com/openclaw/skills/commit/a631bfe5e6d190462df5953f54d16a7158e0615b"
+    "version": "3.0.2",
+    "publishedAt": 1776678810449,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1775914258674,
+      "commit": "https://github.com/openclaw/skills/commit/a631bfe5e6d190462df5953f54d16a7158e0615b"
+    }
+  ]
 }

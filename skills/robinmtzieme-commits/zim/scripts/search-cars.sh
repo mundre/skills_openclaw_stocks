@@ -26,7 +26,7 @@ fi
 
 # --- URL-encode location ---
 if command -v python3 &>/dev/null; then
-  LOC_ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$LOCATION'))")
+  LOC_ENCODED=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$LOCATION")
 else
   LOC_ENCODED=$(echo "$LOCATION" | sed 's/ /+/g')
 fi
@@ -42,11 +42,12 @@ DO_DAY=$(echo "$RETURN" | cut -d- -f3)
 # --- Calculate rental days ---
 if command -v python3 &>/dev/null; then
   DAYS=$(python3 -c "
+import sys
 from datetime import datetime
-d1 = datetime.strptime('$PICKUP', '%Y-%m-%d')
-d2 = datetime.strptime('$RETURN', '%Y-%m-%d')
+d1 = datetime.strptime(sys.argv[1], '%Y-%m-%d')
+d2 = datetime.strptime(sys.argv[2], '%Y-%m-%d')
 print((d2-d1).days)
-")
+" "$PICKUP" "$RETURN")
 else
   DAYS="?"
 fi

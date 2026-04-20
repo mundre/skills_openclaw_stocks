@@ -28,7 +28,7 @@ DEFAULT_CURRENCY = "USD"
 DEFAULT_TIMEOUT = 15.0  # seconds
 DEFAULT_LIMIT = 10
 
-MARKER_FALLBACK = "714990"  # Account marker if token not available as marker
+MARKER_FALLBACK = os.environ.get("TRAVELPAYOUTS_MARKER", "")  # Account marker from env
 
 
 def _get_token() -> str:

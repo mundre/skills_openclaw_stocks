@@ -29,14 +29,14 @@ for cmd in python3; do
   fi
 done
 
-CITY_ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$CITY'))")
+CITY_ENCODED=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$CITY")
 MARKER="${TRAVELPAYOUTS_TOKEN:-openclaw}"
 
 HOTELLOOK_URL="https://search.hotellook.com/hotels?destination=${CITY_ENCODED}&checkIn=${CHECKIN}&checkOut=${CHECKOUT}&marker=${MARKER}&currency=${CURRENCY}"
 BOOKING_URL="https://www.booking.com/searchresults.html?ss=${CITY_ENCODED}&checkin=${CHECKIN}&checkout=${CHECKOUT}&selected_currency=${CURRENCY^^}"
 GOOGLE_HOTELS_URL="https://www.google.com/travel/hotels/${CITY_ENCODED}?checkin=${CHECKIN}&checkout=${CHECKOUT}&curr=${CURRENCY^^}"
 
-NIGHTS=$(python3 -c "from datetime import datetime; d1=datetime.strptime('$CHECKIN','%Y-%m-%d'); d2=datetime.strptime('$CHECKOUT','%Y-%m-%d'); print((d2-d1).days)")
+NIGHTS=$(python3 -c "import sys; from datetime import datetime; d1=datetime.strptime(sys.argv[1],'%Y-%m-%d'); d2=datetime.strptime(sys.argv[2],'%Y-%m-%d'); print((d2-d1).days)" "$CHECKIN" "$CHECKOUT")
 
 echo "🏨 Hotels in ${CITY}"
 echo "📅 Check-in: ${CHECKIN} | Check-out: ${CHECKOUT} (${NIGHTS} night(s))"
