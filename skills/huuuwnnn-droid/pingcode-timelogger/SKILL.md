@@ -58,12 +58,66 @@ Always try API first. Only fall back to browser when API auth fails.
 
 ## Core Workflow
 
+### Step 0: User Confirmation (Mandatory)
+
+Before creating anything, **always** present the full plan to the user and wait for explicit confirmation:
+
+1. Parse user input (task table or description)
+2. Organize into the correct structure (see Task Structure below)
+3. Output a clear summary: which story → which tasks → which sub-tasks → hours per item
+4. **Wait for user to say OK** before executing
+5. During execution, report progress in real-time (don't batch all updates to the end)
+
+### Task Structure
+
+Two modes depending on the project:
+
+#### Mode A: Flat (e.g., SMA project)
+Simple parent → child tasks. Each task is a direct sub-item under the parent story/task.
+
+#### Mode B: Phased (e.g., RD-IT project)
+Three-level structure aligned with delivery phases:
+
+```
+Story (需求)
+├── 前端开发 (task)         ← phase node, sub-tasks underneath
+│   ├── sub-task: feature A
+│   └── sub-task: feature B
+├── 后端开发 (task)         ← phase node, sub-tasks underneath
+│   └── sub-task: API work
+├── 自测 (task)             ← phase node, usually no children
+├── 联调 (task)             ← phase node
+├── 研发自扫 (task)         ← phase node
+├── 产品文档 (task)         ← phase node
+├── PRD文档 (task)          ← phase node
+├── 测试 (task)             ← phase node, may have children (test cases, test report)
+├── 上线准备 (task)         ← phase node, may have children (manual, release plan)
+└── 上线文档梳理 (task)     ← phase node
+```
+
+**Rules for Mode B**:
+- All phase nodes are **sibling tasks** under the story (not nested)
+- **Only 前端开发 and 后端开发** have sub-tasks for specific dev work
+- Other phases (自测, 联调, 文档, etc.) are usually single tasks
+- 测试 and 上线准备 **may** have sub-tasks if there are multiple deliverables
+- **Work hours go on the lowest level**: sub-tasks if they exist, otherwise directly on the phase task
+- Estimated hours (`estimated_workload`) = registered hours (same value)
+- If a phase task already exists under the story, reuse it; don't create duplicates
+
+**Determining the mode**: Check the project identifier prefix (SMA → Mode A, RD-IT → Mode B). If unclear, ask the user.
+
 ### Locate Target Parent
 
 User provides one of:
 - **PingCode URL**: Extract work item ID from URL path, e.g. `https://company.pingcode.com/pjm/projects/SMA/work-items/SMA-348` → look up `SMA-348`
 - **Work item identifier**: e.g. `SMA-348` → `GET /api/agile/work-items/SMA-348` to get `_id`
 - **Nothing specified**: Use `default_parent_id` from config
+
+For **Mode B**, also check existing children of the story:
+```
+GET {pingcode_url}/api/agile/work-items/{story_id}/children
+```
+Reuse existing phase tasks (e.g., if "后端开发" already exists, create sub-tasks under it).
 
 ### Create Sub-Tasks
 
@@ -113,6 +167,19 @@ Cookie: <from cookie_file>
 }
 ```
 
+### Set Estimated Workload
+
+```
+PUT {pingcode_url}/api/agile/work-items/{_id}/property
+Cookie: <from cookie_file>
+
+{"key": "estimated_workload", "value": <hours_as_number>}
+```
+
+**⚠️ The value is in HOURS (not seconds). Do NOT multiply by 3600.**
+
+Set estimated workload = registered hours (same value) on every task/sub-task that has hours logged.
+
 ### Log Work Hours
 
 ```
@@ -126,9 +193,12 @@ Cookie: <from cookie_file>
   "remaining_workload": 0,
   "register_date": <cst_midnight_unix_ts>,
   "work_category_id": "<category_id>",
-  "work_content": "<task description>"
+  "work_content": "<task description>",
+  "pilot_id": "<project_id>"
 }
 ```
+
+**⚠️ `pilot_id` is required — set it to the project's `_id` (same as `project_id`).**
 
 **work_category_id mapping** — read `references/category-ids.md` for the full list. Common: 研发=`5cb7e7fffda1ce4ca0050002`.
 
@@ -151,10 +221,13 @@ When user says "根据Git提交填工时" or similar:
 ## Important Rules
 
 - **Always confirm** the full task list with user before creating anything
+- **Report progress in real-time** — don't wait until the end to send all updates
 - **API endpoint is singular**: `/api/agile/work-item` for creation
 - **Never use Bearer token** — PingCode auth requires Cookie
-- **Status flow**: Only use "已完成", never "关闭"
+- **Status flow**: Only use "已完成", never "关闭". Must go: 打开→进行中→已完成 (two steps)
 - **Type matters**: Tasks (type=4) can have hours logged directly. User Stories (type=3) cannot — must create task sub-items under them
+- **estimated_workload unit is HOURS** — do NOT multiply by 3600
+- **pilot_id is required** for workload register — use the project_id
 - **Read-only for production data**: Never delete or modify existing work items without explicit user confirmation
 
 ## Error Handling
@@ -165,6 +238,8 @@ When user says "根据Git提交填工时" or similar:
 | Cookie expired | Ask user to re-export cookie or log in via browser |
 | Parent is Epic (type=2) | Cannot create task directly under Epic; find or create a User Story first |
 | work_category_id missing | Required field since 2026-04; always include it |
+| pilot_id not found | Add `pilot_id: <project_id>` to workload register request |
+| estimated_workload too large | Unit is hours, not seconds; do NOT multiply by 3600 |
 
 ## First-Time Setup Guide
 
