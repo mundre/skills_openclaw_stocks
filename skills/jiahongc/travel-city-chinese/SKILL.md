@@ -1,7 +1,12 @@
 ---
 name: travel-city-chinese
+version: 1.0.0
 description: 生成完整的中文城市旅行简报，面向中文读者，默认输出简体中文，并同时覆盖美国护照与中国护照的签证/入境说明。
-metadata: { "openclaw": { "emoji": "🌏", "requires": { "env": ["BRAVE_API_KEY"], "bins": ["curl", "gunzip", "python3"] } } }
+allowed-tools:
+  - WebSearch
+  - WebFetch
+  - AskUserQuestion
+metadata: { "openclaw": { "emoji": "🌏" } }
 ---
 
 # /travel-city-chinese — 中文城市旅行简报
@@ -31,23 +36,15 @@ metadata: { "openclaw": { "emoji": "🌏", "requires": { "env": ["BRAVE_API_KEY"
 
 ## Step 2: Research
 
-优先使用 Brave Search API 做实时研究，且它应当是**默认且必须优先尝试的检索方式**，最多 8 次搜索。
+优先使用**实时联网搜索**做研究，最多 8 次搜索。
 
-只有在 Brave 不可用、被限流、被拦截、认证失败，或明显无法返回所需结果时，才允许切换到用户当前环境里可用的其他实时搜索方式。发生切换时，不要依赖陈旧模型知识，必须在 `## 📋 信息可信度说明` 中正式说明原因。
+直接使用当前运行环境自带的 `WebSearch` / `WebFetch` 或其他可用的实时搜索方式。
 
-```bash
-curl -s "https://api.search.brave.com/res/v1/web/search?q=QUERY" \
-  -H "Accept: application/json" \
-  -H "Accept-Encoding: gzip" \
-  -H "X-Subscription-Token: $BRAVE_API_KEY" | gunzip 2>/dev/null || \
-curl -s "https://api.search.brave.com/res/v1/web/search?q=QUERY" \
-  -H "Accept: application/json" \
-  -H "X-Subscription-Token: $BRAVE_API_KEY"
-```
+只要当前环境存在可用的实时搜索能力，就不要依赖陈旧模型知识。只有在实时搜索不可用、被限流、被拦截、认证失败，或明显无法返回所需结果时，才允许写入部分未完全核实的信息，并且必须在 `## 📋 信息可信度说明` 中正式说明原因。
 
 ### 搜索节奏 — 并行优先
 
-**尽量并行发起搜索，减少总等待时间。** 将搜索分为 3 批并行组，每批内同时发起：
+**尽量并行发起搜索，减少总等待时间。** 将搜索分为 3 批并行组，每批内同时发起搜索工具调用：
 
 **第 1 批：** 目的地总览 + 天气/气候 + 景点/活动
 **第 2 批：** 美食 + 节庆/活动 + 机票价格（如有出发地）
@@ -190,8 +187,7 @@ curl -s "https://api.search.brave.com/res/v1/web/search?q=QUERY" \
 - **存在冲突**：不同来源说法不一致
 - **可能波动**：机票、汇率、政策、活动票价、开放时间等
 - 包含：`Research conducted: {today's date}`
-- 包含：`Brave Search API calls used: {count}/8`
-- 如果 Brave Search 没有使用，或只部分使用，必须正式说明原因
+- 包含：`Live search queries used: {count}/8`
 - 如果使用了其他实时搜索方式，必须明确写出替代方式名称
 - 必须说明中国护照签证信息是依据：目的地官方 / 中国使领馆官方 / 两者共同核实
 
