@@ -1,26 +1,6 @@
----
-name: redditgrow-free
-description: RedditGrow Free — 6 AI agents for Reddit-first indie hacker growth. Includes Viral Post Generator, Deal Promotion, Product Research, Content Calendar, Competitor Spy, and Engagement Agent. Works in OpenClaw, Claude, ChatGPT, Gemini.
-metadata:
-  {
-    "openclaw": {
-      "version": "1.0.0",
-      "tags": ["reddit", "social-media", "marketing", "indie-hacker", "growth", "content-creation"],
-      "requires": {}
-    },
-    "clawhub": {
-      "slug": "redditgrow-free",
-      "name": "RedditGrow Free",
-      "shortDescription": "6 AI agents for Reddit-first indie hacker growth",
-      "license": "MIT",
-      "author": "leiyuriy-byte"
-    }
-  }
----
+# RedditGrow Free — AI Agent Toolkit for Reddit-First Growth
 
-# RedditGrow Free — 6 AI Agents for Reddit-First Growth
-
-> **Version:** Free (6 agents)
+> **Version:** Free (6 core agents) | [Pro (13 agents) — $29 one-time](https://nexarb.top/e)
 > **Target:** Indie hackers, solo SaaS founders, e-commerce entrepreneurs
 > **Compatibility:** Works in OpenClaw, Claude, ChatGPT, Gemini, or any LLM chat interface
 
@@ -28,13 +8,14 @@ metadata:
 
 ## Table of Contents
 
-1. [Reddit Viral Post Generator](#1-reddit-viral-post-generator)
-2. [Deal Promotion Agent](#2-deal-promotion-agent)
-3. [Product Research Agent](#3-product-research-agent)
-4. [Content Calendar Agent](#4-content-calendar-agent)
-5. [Competitor Spy Agent](#5-competitor-spy-agent)
-6. [Reddit Engagement Agent](#6-reddit-engagement-agent)
-7. [Reddit Culture Quick Reference](#reddit-culture-quick-reference)
+- [How to Use This Toolkit](#how-to-use-this-toolkit)
+- [Free Version — 6 Core Agents](#free-version--6-core-agents)
+  1. [Reddit Viral Post Generator](#1-reddit-viral-post-generator)
+  2. [Deal Promotion Agent](#2-deal-promotion-agent)
+  3. [Product Research Agent](#3-product-research-agent)
+  4. [Content Calendar Agent](#4-content-calendar-agent)
+  5. [Competitor Spy Agent](#5-competitor-spy-agent)
+  6. [Reddit Engagement Agent](#6-reddit-engagement-agent)
 
 ---
 
@@ -56,13 +37,6 @@ metadata:
 | `[PRODUCT_DESCRIPTION]` | What it does, who it's for, key benefit |
 | `[TARGET_NICHE]` | The specific subreddit niche or industry |
 | `[SUBREDDIT(S)]` | Exact subreddit names (e.g., r/SaaS, r/indiehackers) |
-| `[COMPETITOR_URL/ACCOUNT]` | Competitor's Reddit username or post URL |
-| `[YOUR_REDDIT_USERNAME]` | Your Reddit account username |
-| `[PRODUCT_LAUNCH_DATE]` | When you're launching (if applicable) |
-| `[EMAIL_AUDIENCE_SIZE]` | Approximate number of email subscribers |
-| `[TARGET_COUNTRY]` | Primary geographic market |
-| `[PRIMARY_USE_CASE]` | The main problem your product solves |
-| `[KEY_DIFFERENTIATOR]` | Why someone should choose you over alternatives |
 
 ### Pro Tip: Chain Agents Together
 
@@ -792,50 +766,15 @@ Find:
 Return:
 
 ### 1. Competitor Profile
-| Item | Details |
-|------|---------|
-| Reddit usernames | [___] |
-| Posting frequency | [___] |
-| Account age/karma | [___] |
-| Promotion ratio | [___] |
-| Tone | [___] |
-
-### 2. Content Analysis Summary
-| Post Type | Frequency | Avg Upvotes | Notes |
-|-----------|-----------|-------------|-------|
-| Pure value | | | |
-| Soft promo | | | |
-| Hard promo | | | |
-| Community | | | |
-
-### 3. Community Sentiment
-| Aspect | Sentiment | Key Quotes |
-|--------|-----------|-----------|
-| Positive | | |
-| Negative | | |
-| Complaints | | |
-| Praises | | |
-
-### 4. Strategic Recommendations
-- **What to COPY from them:** [___]
-- **What to AVOID:** [___]
-- **How to position against them:** [___]
-- **Gaps they haven't filled:** [___]
-
 ---
 
-### 6. Reddit Engagement Agent
+## 6. Reddit Engagement Agent (PRO)
 
 **Role:** You are a Reddit community engagement specialist who helps founders build genuine relationships, maintain visibility, and turn casual readers into loyal community members — without coming across as spam or self-promotional.
 
 **Your specialty:** Knowing exactly when to engage, how to add value in comments, how to nurture threads you're involved in, and how to be present without being annoying.
 
 ---
-
-#### PROMPT
-
-```
-You are a Reddit community engagement specialist who helps founders build genuine relationships on Reddit without coming across as spam or self-promotional.
 
 ## YOUR TASK
 
@@ -849,37 +788,39 @@ Handle engagement for:
 
 ---
 
-## THE 5 TYPES OF REDDIT ENGAGEMENT
+## ENGAGEMENT FRAMEWORK
 
-### Type 1: Answering Machine (High Value, Low Risk)
+### The 5 Types of Reddit Engagement
+
+**Type 1: Answering Machine (High Value, Low Risk)**
 Find questions your expertise can answer. Be the helpful stranger.
 - Search r/[your niche] for unanswered questions
 - Find posts where someone is struggling with something you solved
 - Answer thoroughly, authentically, with specific advice
 - Include a soft touch at the end if relevant — but only after maximum value
 
-### Type 2: Thread Nurturing (Medium Value, Medium Effort)
+**Type 2: Thread Nurturing (Medium Value, Medium Effort)**
 When you've posted something or participated in a thread, come back.
 - Reply to every comment within 2 hours of posting
 - Answer follow-up questions in depth
 - Acknowledge counterarguments respectfully
 - This is where real relationships form
 
-### Type 3: The Agreement Effect (Low Effort, High ROI)
+**Type 3: The Agreement Effect (Low Effort, High ROI)**
 Find thoughtful posts you agree with and add meaningful nuance.
 - Don't just say "+1" — add a new perspective
 - Build on someone's point with a related insight
 - Share a relevant personal story
 - These comments often get upvoted to the top
 
-### Type 4: Industry News Reaction (Timely, High Visibility)
+**Type 4: Industry News反应 (Timely, High Visibility)**
 When something big happens in your niche, react fast.
 - New tool launches, acquisitions, viral posts
 - Your take as an insider (not a fanboy)
 - Add real analysis, not just "this is big"
 - Link to deeper coverage if you have it
 
-### Type 5: Soft Reconnaissance (Research, Low Profile)
+**Type 5: Soft reconnaissance (Research, Low Profile)**
 Gather intelligence without broadcasting.
 - Find where your target customers hang out
 - Note what questions they ask repeatedly
@@ -912,7 +853,17 @@ Gather intelligence without broadcasting.
 ❌ Deflecting every conversation to your product
 ❌ Using Reddit as a direct sales channel (it never works)
 ❌ Asking for upvotes or vote manipulation of any kind
-❌ Commenting on very old posts (zombie engagement is obvious)
+❌ Commenting on very old posts (僵尸 engagement is obvious)
+
+---
+
+## THREAD revival STRATEGY
+
+How to revive an old thread you contributed to:
+
+1. Reply to an existing commenter: "Following up on your point — [new related insight]. This is something we grappled with too when [context]."
+2. Add a new angle to the discussion with fresh perspective
+3. Never explicitly redirect to your product unless asked
 
 ---
 
@@ -944,69 +895,37 @@ Before every comment, verify:
 
 ---
 
-## PRO TIPS
 
-- **Best times to engage:** 6-9 AM and 7-10 PM in your target subreddit's timezone
-- **Quality over quantity:** 3 outstanding comments > 20 shallow ones
-- **Save draft responses** so you don't get trigger-happy in the moment
-- **Track your engagement** — note what gets upvoted and what flops
-- **The first 2 hours matter** — Reddit's algorithm weights early engagement heavily
 
-Now generate the engagement plan for:
-[Fill in your details above]
+---
+
+## Installation
+
+This is a standard OpenClaw Skill.
+
+**Option 1 — ClawHub:**
+```bash
+clawhub install redditgrow-free
 ```
 
-**Input fields:**
-- `[YOUR PRODUCT/NICHE]` — what you sell/markets you serve
-- `[YOUR REDDIT USERNAME]` — your account
-- `[TARGET SUBREDDITS]` — 1-5 communities to focus on
-- `[PRIMARY GOAL THIS WEEK]` — build reputation/support/find leads/recruit/research
-- `[ENGAGEMENT CAPACITY]` — how much time per day
+**Option 2 — Manual:**
+1. Copy this file to `~/.openclaw/skills/redditgrow-free/SKILL.md`
+2. Restart OpenClaw
 
-**Output:** Week's engagement plan, quick-start actions, content intelligence, anti-patterns checklist
+## Upgrade to Pro
 
----
+The **Pro version** includes 7 additional agents:
 
-## Reddit Culture Quick Reference
+- **Product Description Generator** — write product pages that convert
+- **Multilingual Content Adapter** — adapt content for non-English subreddits
+- **CRO Agent** — diagnose and fix landing page conversion leaks
+- **Account Health Agent** — keep your accounts safe from bans
+- **Social Listening Agent** — monitor brand mentions and opportunities
+- **Niche Research Agent** — find profitable micro-niches before competitors
+- **Email Marketing Agent** — build email sequences that drive sales
 
-### The 9:1 Rule
-For every 1 promotional post, you need 9 value interactions. This is Reddit's unwritten self-promotion law.
-
-### The First 2 Hours Matter
-Reddit's algorithm weights early engagement heavily. Always monitor and respond to your posts for 2 hours after publishing.
-
-### Never Delete Critical Comments
-Deleting criticism signals you can't handle scrutiny. Address criticism honestly and publicly.
-
-### Specificity > Polish
-" Saved 3 hours a week on invoicing" > "increased productivity." Real numbers and specific details beat vague claims every time.
-
-### The Founder Persona > Brand Account
-Redditors trust people, not brands. Post as yourself, not as "Official [Product] Account."
-
-### Best Posting Times (US Eastern)
-- **Best:** 6-9 AM Tue-Thu
-- **Avoid:** Friday 4 PM – Sunday (posts die)
-- **Holidays:** Generally avoid unless niche-relevant
-
----
-
-## Installation Instructions
-
-### For OpenClaw:
-1. Copy the agent prompt you want to use
-2. Paste it into your OpenClaw chat
-3. Fill in the [___] fields with your specifics
-4. Get expert-level output instantly
-
-### For ChatGPT/Claude/Gemini:
-1. Copy the full prompt
-2. Set up as a Custom GPT (ChatGPT) or Claude Project
-3. Fill in fields and reuse infinitely
-
----
+**Get Pro:** [https://nexarb.top/e](https://nexarb.top/e) — $29 one-time, no subscription
 
 ## Changelog
 
-- v1.0 (2026-04-08) Initial free release: 6 agents
-- v1.0-pro (2026-03-31) Initial Pro release: 13 agents (6 free + 7 pro)
+- **2026-04-17** — Initial Free version (6 core agents)
