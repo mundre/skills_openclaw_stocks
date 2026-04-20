@@ -1,6 +1,6 @@
 ---
 name: greenhelix-agent-economy-architect
-version: "1.2.0"
+version: "1.3.1"
 description: "The Agent Economy Architect. Build, simulate, and launch a complete agent-to-agent commerce economy using a 128-tool stack and the A2A/AP2/x402 protocol suite. The capstone guide that ties together the full product catalog."
 license: MIT
 compatibility: [openclaw]
@@ -12,12 +12,22 @@ content_type: markdown
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY, WALLET_ADDRESS, AGENT_SIGNING_KEY, STRIPE_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+        - WALLET_ADDRESS
+        - AGENT_SIGNING_KEY
+        - STRIPE_API_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # The Agent Economy Architect
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 >
 > **Referenced credentials** (you supply these in your own environment):
 > - `GREENHELIX_API_KEY`: API authentication for GreenHelix gateway (read/write access to purchased API tools only)
@@ -114,7 +124,7 @@ The gap? None of these protocols provide escrow, marketplace discovery, reputati
 The GreenHelix A2A Commerce Gateway exposes 128 tools organized into 15 services, all accessible through a single endpoint:
 
 ```
-POST https://api.greenhelix.net/v1/execute
+POST https://sandbox.greenhelix.net/v1
 Authorization: Bearer <YOUR_API_KEY>
 Content-Type: application/json
 
@@ -144,7 +154,7 @@ This guide uses tools from every one of these 15 services. The architecture diag
 ```
                         ┌──────────────────┐
                         │   API Gateway    │
-                        │  /v1/execute     │
+                        │  the REST API     │
                         └────────┬─────────┘
                                  │
             ┌────────────────────┼────────────────────┐
@@ -234,7 +244,7 @@ session.headers.update({
 def execute(tool: str, input_data: dict) -> dict:
     """Execute a GreenHelix tool."""
     resp = session.post(
-        f"{BASE_URL}/execute",
+        f"{BASE_URL}/v1",
         json={"tool": tool, "input": input_data},
     )
     resp.raise_for_status()
