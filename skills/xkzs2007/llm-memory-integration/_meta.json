@@ -1,13 +1,18 @@
 {
   "owner": "xkzs2007",
   "slug": "llm-memory-integration",
-  "displayName": "Llm Memory Integration",
+  "displayName": "Llm Memory V9",
   "latest": {
-    "version": "6.3.6",
-    "publishedAt": 1776262989512,
-    "commit": "https://github.com/openclaw/skills/commit/19697e9cc07785eae7b8bc8a9d235f8e50d30ccc"
+    "version": "9.0.1",
+    "publishedAt": 1776311127241,
+    "commit": null
   },
   "history": [
+    {
+      "version": "6.3.6",
+      "publishedAt": 1776262989512,
+      "commit": "https://github.com/openclaw/skills/commit/19697e9cc07785eae7b8bc8a9d235f8e50d30ccc"
+    },
     {
       "version": "5.2.30",
       "publishedAt": 1776236233085,

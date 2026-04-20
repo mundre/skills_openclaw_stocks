@@ -1,70 +1,31 @@
 {
-  "version": "2.4.0",
-  "description": "LLM Memory Integration 安装规范（v6.3.6 双包版本）",
-  
-  "dual_package": true,
-  "checksums": "checksums.txt",
-  
+  "version": "9.0.1",
+  "description": "LLM Memory Integration - 公开框架包。通过环境变量链接本地私有配置，实现公私分离。",
   "install": {
     "type": "source",
     "method": "copy",
-    "source": "src/",
-    "alternative": {
-      "type": "dist",
-      "method": "copy",
-      "source": "dist/",
-      "description": "安全版本，不包含高风险功能"
-    },
-    "description": "默认安装 src/ 版本（完整功能），可选安装 dist/ 版本（安全版本）"
+    "source": ".",
+    "description": "复制所有文件到技能目录"
   },
-  
-  "packages": {
-    "src": {
-      "description": "完整功能版本",
-      "features": [
-        "向量搜索（高性能，需启用 SQLite 扩展）",
-        "文本搜索（FTS5）",
-        "NUMA 优化（可选启用）",
-        "硬件检测（可选启用）"
-      ],
-      "high_risk_features": [
-        {
-          "name": "sqlite_extension",
-          "file": "src/optional/sqlite_extension.py",
-          "risk": "high",
-          "default": "disabled",
-          "enable": "ENABLE_SQLITE_EXTENSION=true"
-        },
-        {
-          "name": "subprocess_utils",
-          "file": "src/optional/subprocess_utils.py",
-          "risk": "medium",
-          "default": "disabled",
-          "enable": "ENABLE_SUBPROCESS=true"
-        }
-      ]
-    },
-    "dist": {
-      "description": "安全版本",
-      "features": [
-        "向量搜索（纯 Python，性能较低）",
-        "文本搜索（FTS5）"
-      ],
-      "high_risk_features": [],
-      "security": "无高风险功能"
-    }
+  "hooks": {
+    "postinstall": "hooks/bootstrap-extra-files.py",
+    "description": "本地链接钩子，将私有配置目录链接到工作区"
   },
-  
-  "security_improvements": {
-    "v6.3.6": {
-      "improved": "双包机制 + 功能分离",
-      "changes": [
-        "创建 src/optional/ 目录，存放高风险功能",
-        "创建 dist/ 目录，不包含高风险功能",
-        "所有高风险功能默认禁用",
-        "用户可选择安装 src/ 或 dist/ 版本"
-      ],
-      "benefit": "用户可根据安全需求选择版本，dist/ 版本应无 Suspicious 标记"
-    }
+  "security": {
+    "native_extensions": false,
+    "subprocess_calls": false,
+    "network_access": false,
+    "system_reads": false,
+    "api_key_required": false,
+    "note": "纯本地操作，无网络访问，无敏感信息，仅访问用户指定目录"
+  },
+  "envVars": {
+    "optional": ["CNB_PRIVATE_WORKSPACE"],
+    "description": "CNB_PRIVATE_WORKSPACE 指向本地私有配置目录"
+  },
+  "filesystem": {
+    "read": [],
+    "write": [],
+    "description": "仅访问用户通过 CNB_PRIVATE_WORKSPACE 指定的目录"
   }
 }
