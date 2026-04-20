@@ -3,9 +3,15 @@
   "slug": "governance-policies",
   "displayName": "AxonFlow Governance Policies",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1775503615869,
-    "commit": "https://github.com/openclaw/skills/commit/5c0eab2a557678cbe59b95dc5243e9d6227a1276"
+    "version": "1.5.2",
+    "publishedAt": 1776605944133,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1775503615869,
+      "commit": "https://github.com/openclaw/skills/commit/5c0eab2a557678cbe59b95dc5243e9d6227a1276"
+    }
+  ]
 }
