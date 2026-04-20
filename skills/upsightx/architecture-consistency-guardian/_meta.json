@@ -3,9 +3,15 @@
   "slug": "architecture-consistency-guardian",
   "displayName": "Architecture Consistency Guardian",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775714467911,
-    "commit": "https://github.com/openclaw/skills/commit/4472a0d13a32eb5f96a27c4e9d04c14caecb1095"
+    "version": "2.0.1",
+    "publishedAt": 1776163288785,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775714467911,
+      "commit": "https://github.com/openclaw/skills/commit/4472a0d13a32eb5f96a27c4e9d04c14caecb1095"
+    }
+  ]
 }
