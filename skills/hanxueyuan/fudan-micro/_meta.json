@@ -3,9 +3,15 @@
   "slug": "fudan-micro",
   "displayName": "Fudan Micro",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775834056917,
-    "commit": "https://github.com/openclaw/skills/commit/9ab52d16fe6a270983edd7eddf627aaa2cb06f35"
+    "version": "1.0.2",
+    "publishedAt": 1776238683985,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775834056917,
+      "commit": "https://github.com/openclaw/skills/commit/9ab52d16fe6a270983edd7eddf627aaa2cb06f35"
+    }
+  ]
 }
