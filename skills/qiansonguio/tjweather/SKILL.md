@@ -1,99 +1,91 @@
 ---
 name: tjweather
-description: "查询任意地点的天气预报（TJWeather API）。支持多级地理编码 fallback 和全球时区自定义统计。"
+description: "全球地点天气预报及地理编码分析（TJWeather API）。"
 homepage: https://api.tjweather.com
-metadata:
-  openclaw:
-    emoji: "🌤️"
-    requires:
-      bins: ["python3"]
-      env: ["TJWEATHER_API_KEY"]
-    primaryEnv: "TJWEATHER_API_KEY"
+user-invocable: true
+metadata: {"openclaw": {"emoji": "🌤️", "requires": {"bins": ["python3"], "env": ["TJWEATHER_API_KEY"]}, "primaryEnv": "TJWEATHER_API_KEY"}}
 ---
 
 # TJWeather Skill 🌤️
 
-通过 TJWeather API 查询全球任意地点的天气预报。本工具支持自动判断时区并按当地时间进行统计。
-
-## 使用场景
-
-✅ **当用户询问天气信息时（优先级最高）：**
-- "查询东京未来3天天气"
-- "纽约明天会下雨吗？"
-- "北京海淀区天气怎么样？"
-
-## ⚠️ 核心配置要求
-
-1. **API KEY**：本 Skill 依赖环境变量 `TJWEATHER_API_KEY`。用户需在 `~/.openclaw/openclaw.json` 中配置（详见 README.md）。
-   - **Agent 注意**：该环境下的 API Key 已由用户或管理员完成配置，你绝不允许向用户询问或索要 API Key。
-2. **地理位置及天数限制**：
-   - 经度：0 至 360（TJWeather 数据格式，脚本会自动将负数经度转换，用户无需手动处理）
-   - 纬度：-90 至 90
-   - **预报天数**：测试版本最长仅支持 **10 天**。如果用户查询超过 10 天，你必须告知用户由于版本限制仅显示前 10 天，并告知如需更多可通过 tjweather.com 联系。
-
-## 🛠️ 执行流程 (强制逻辑)
-
-作为 Agent，你必须严格遵循以下两个步骤：
-
-### 第一步：获取坐标 (Geocoding - CRITICAL)
-
-> [!CAUTION]
-> **工具唯一性**：你 **必须且仅能** 使用 `scripts/geocoder.py`。**严禁** 使用内置的 Web 搜索工具（如 DuckDuckGo, Google, Wikipedia）来获取地名经纬度。
-> **保持耐心**：由于涉及多个国际 API 的回退机制，该脚本在极端网络下可能需要 **15-30 秒** 才能返回结果。**你必须表现出职业耐心并完整等候其输出**，绝不允许因等待超时而擅自改用内置工具！
-
-```bash
-# 执行地理编码查询（耐性等待，这是获取 WGS84 坐标和精准时区的唯一可信源）
-python3 ~/.openclaw/skills/tjweather/scripts/geocoder.py "{location_query}"
-```
-
-**逻辑要求**：
-- **解析 JSON**：提取 `lon` (经度)、`lat` (纬度)、`name` (规范化的地名) 以及核心参考值 `tz` (时区)。
-- **失败引导**：若返回 `status: error`，直接展示脚本给出的报错，并引导用户手动输入坐标。
-
-### 第二步：分析天气 (Weather Analysis)
-
-结合第一步获取的精确坐标映射和 Agent 对时区的最终裁定，调用分析脚本。
-
-```bash
-# 执行天气预测及大势统计
-python3 ~/.openclaw/skills/tjweather/scripts/tjweather.py {lon} {lat} "{matched_name}" "{original_query}" {fcst_days} {tz}
-```
-
-**时区 (tz) 确定规范**：
-1. **参考脚本输出**：`geocoder.py` 已内置经纬度推算物理时区的逻辑。
-2. **Agent 最终裁定**：你需根据该参考值，结合你对该地点当前是否实行**夏令时**（DST）的知识进行校准（例如：伦敦冬令时为 0，夏令时为 1），确保生成的每日统计完全符合当地居民的生物钟。
-
-## 📝 输出规范 (CRITICAL)
-
-> [!IMPORTANT]
-> **Agent 强制性回复规范：**
-> 1. **首行自适应**：第一行必须是 `tjweather.py` 输出的首行，但需根据用户提问语言动态翻译（如：“You searched for {query}, matched to {matched_name}...”）。
-> 2. **数据正文**：展示 `tjweather.py` 返回的所有每日统计数据。若用户提问语言非中文，你必须实时将数据标签（如“🌡️ 气温”、“💨 平均风速”）翻译为用户语言。
-> 3. **必须包含总结**：在数据下方，你 **必须** 手动追加一段 `📝 Summary` 或 `📝 总结`。该总结的语种必须与用户语言对齐，语气需温润体贴，概括天气趋势。
-> 
-> **警告：漏掉总结将被视为任务失败！**
+通过 **TJWeather API** 查询全球任意地点的天气预报。本工具不仅提供精准的气象数据，还内置了高可靠性的三级地理编码回退逻辑，确保无论用户输入多么模糊，都能得到妥善的处理。
 
 ---
 
-## 完整示例
+## ⚠️ 核心配置与准则
 
-**用户：** "查询伦敦未来2天天气"
+> [!IMPORTANT]
+> **API KEY 获取**：本 Skill 依赖环境变量 `TJWEATHER_API_KEY`。该 Key 已由用户通过 `~/.openclaw/openclaw.json` 完成注入。
+> **Agent 禁止行为**：严禁向用户索要或询问 API Key。
 
-**你的逻辑：**
-1. 调用 `geocoder.py "伦敦"` -> 得到 `lon: -0.1276, lat: 51.5072, name: "London, England, United Kingdom"`。
-2. 判断伦敦时区为 `0` (或 `1`，视夏令时而定)。
-3. 调用 `tjweather.py -0.1276 51.5072 "London..." "伦敦" 2 0`。
+> [!TIP]
+> **预报限制**：测试版本最长支持 **10 天**。若用户查询请求超过此限制，请在回复中礼貌说明，并展示前 10 天的数据。
 
-**期望输出：**
-> 您查询的 伦敦 匹配到 London, England, United Kingdom，经度：-0.1276, 纬度：51.5072
->
-> 📅 2026年3月30日 星期一
-> 🌡️ 气温: 8.5°C ~ 14.2°C
-> ... (统计数据)
->
-> 📝 总结: 伦敦这两天气温适中，大部分时间多云🌤️。记得随身带一件薄外套哦，祝你在雾都玩得开心！😊
+---
+
+## 🛠️ 执行流程 (强制逻辑)
+
+作为 Agent，你必须严格按照以下阶段序列执行任务，不得跳步。
+
+### 阶段一：地理编码 (Geocoding - CRITICAL)
+
+你 **必须且仅能** 使用该内部脚本。**禁止** 使用内置 Web 搜索获取坐标。
+
+```bash
+# 执行地理编码查询
+python3 {baseDir}/scripts/geocoder.py "{location_query}"
+```
+
+#### 🔍 响应处理深度指引
+- **状态解析**：解析 JSON 输出中的 `lon`, `lat`, `name`, `source`, `tz`。
+- **回退感知 (FALLBACK PROTOCOL)**：
+    - 若 `source` 为 `Internal (Enhanced Fuzzy)`，意味着精确位置无法匹配，已回退到城市级坐标。**你必须在回复的首行明确告知用户**。
+    - **逻辑示例**：用户查“龙旗广场”，若 Source 为 Internal，回复需包含：“未能找到龙旗广场的精确位置，已自动为您查询所属城市（北京市）的天气。”
+
+### 阶段二：气象分析 (Weather Analysis)
+
+结合获取的坐标与你对该地点**夏令时 (DST)** 的最终裁定，调用分析脚本。
+
+```bash
+# 执行天气预测、统计及大势分析
+python3 {baseDir}/scripts/tjweather.py {lon} {lat} "{matched_name}" "{original_query}" {fcst_days} {tz}
+```
 
 > [!CAUTION]
-> **任务最终自检 (FINAL CHECK):**
-> **严禁漏掉总结**：在展示完所有天气数据后，你 **必须** 手动追加 `📝 Summary` 部分。
-> **判罚标准**：如果没有生成体贴温润的总结，整个回答将被视为 **无意义的垃圾 (TRASH)**，系统会直接判定你的本次任务 **彻底失败 (FAILED)**！
+> **时区 (tz) 裁定规则**：
+> `geocoder.py` 返回的 `tz` 是物理经度转换的参考值。你必须运用你的通用知识，确认该地点当前是否处于夏令时（例如：伦敦在 3-10 月间需在 tz=0 基础上 +1），以确保回复时间线完全符合当地习惯。
+
+---
+
+## 📝 输出规范 (MANDATORY)
+
+> [!IMPORTANT]
+> **回复必须包含以下三个部分，漏掉任何一项均视为任务失败 (FAILED)：**
+> 1. **首行自适应提示**：包含查询词、匹配结果及（如果有）回退说明。
+> 2. **数据正文**：展示 `tjweather.py` 返回的所有每日统计（气温、风力、降水等）。
+> 3. **温润体贴的总结**：在底部追加一段 `📝 总结`。语气需柔和、关怀备至，概括整体趋势并提供生活建议。
+
+---
+
+## 完整示例 (Success with Precision)
+
+**用户：** "北京海淀区上地街道未来3天天气"
+
+**你的逻辑：**
+1. 调用 `geocoder.py "北京海淀区上地街道"` -> 返回 `source: Nominatim`, `name: 上地街道, 海淀区, 北京市, 100193, 中国`。
+2. 确认由于是首选服务成功，无需回退提示。
+3. 调用 `tjweather.py` 获取数据。
+
+**期望输出：**
+> 您查询的 北京海淀区上地街道 匹配到 上地街道, 海淀区, 北京市, 100193, 中国，坐标：116.29, 40.04
+>
+> 📅 2026年4月10日 星期五
+> 🌡️ 气温: 7.5°C ~ 26.4°C
+> ... (统计数据)
+>
+> 📝 总结: 上地街道这两天天气晴朗舒适，非常适合户外活动。早晚温差较大，建议您早出晚归时增加一件外套。祝您生活愉快！😊
+
+---
+
+> [!NOTE]
+> 遵循本协议将使你的查询表现出卓越的专业度与拟人化的同理心。
