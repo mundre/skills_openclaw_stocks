@@ -3,11 +3,16 @@
   "slug": "harvard",
   "displayName": "Harvard",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1775983282956,
-    "commit": "https://github.com/openclaw/skills/commit/c2493e876b2d99be8e326a67a011f1517b556e9b"
+    "version": "2.0.1",
+    "publishedAt": 1776247311990,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1775983282956,
+      "commit": "https://github.com/openclaw/skills/commit/c2493e876b2d99be8e326a67a011f1517b556e9b"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775441562083,
