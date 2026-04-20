@@ -1,11 +1,17 @@
 {
   "owner": "sky-lv",
   "slug": "skylv-code-reviewer",
-  "displayName": "Code Reviewer",
+  "displayName": "Skylv Code Reviewer",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775873362977,
-    "commit": "https://github.com/openclaw/skills/commit/c5981bc8c49e4ca33720fb6352c9d416242afcc0"
+    "version": "1.0.3",
+    "publishedAt": 1776648321933,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775873362977,
+      "commit": "https://github.com/openclaw/skills/commit/c5981bc8c49e4ca33720fb6352c9d416242afcc0"
+    }
+  ]
 }
