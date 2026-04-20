@@ -14,8 +14,8 @@ import requests
 from pathlib import Path
 
 # API 配置
-BASE_URL = "https://staging.kocgo.vip/stage-api"
-FILE_UPLOAD_URL = "http://localhost:8080/system/fileUpload/upload"
+BASE_URL = "https://ai.deepsop.com/prod-api"
+FILE_UPLOAD_URL = f"{BASE_URL}/system/fileUpload/upload"
 
 # 环境配置
 API_KEY_ENV = "AI_ARTIST_TOKEN"
@@ -189,6 +189,35 @@ def create_voice(name, audio_url=None, audio_path=None, prefix="DeepSop", remark
         return None
 
 
+def get_balance():
+    """查询 K 币余额"""
+    url = f"{BASE_URL}/ai/vip/balance"
+
+    try:
+        response = requests.get(url, headers=get_headers(), timeout=30)
+        response.raise_for_status()
+        result = response.json()
+
+        if result.get("code") != 200:
+            print(f"[ERROR] 查询余额失败：{result.get('msg', '未知错误')}", file=sys.stderr)
+            return None
+
+        balance = result.get("data")
+        if balance is None:
+            print("[ERROR] 查询余额失败：返回数据缺少余额信息", file=sys.stderr)
+            return None
+
+        print(f"[INFO] 当前 K 币余额：{balance}")
+        return float(balance)
+
+    except (ValueError, TypeError):
+        print("[ERROR] 查询余额失败：余额数据格式异常", file=sys.stderr)
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"[ERROR] 查询余额出错：{e}", file=sys.stderr)
+        return None
+
+
 def synthesize_voice(text, voice_id=None, voice_name=None):
     """语音合成"""
     # 如果提供名称，先查询获取 ID
@@ -210,7 +239,15 @@ def synthesize_voice(text, voice_id=None, voice_name=None):
     if not voice_id:
         print("[ERROR] 必须提供 voice_id 或 voice_name", file=sys.stderr)
         return None
-    
+
+    balance = get_balance()
+    if balance is None:
+        return None
+
+    if balance <= 0:
+        print("[ERROR] K 币余额不足，无法进行语音合成，请先充值 K 币", file=sys.stderr)
+        return None
+
     payload = {
         "text": text,
         "id": voice_id

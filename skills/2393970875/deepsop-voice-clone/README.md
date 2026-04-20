@@ -6,7 +6,7 @@ AI Artist API 驱动的声音克隆与语音合成工具。
 
 ### 1. 获取 API Key
 
-访问 [https://staging.kocgo.vip/index](https://staging.kocgo.vip/index) 注册并登录，然后在控制台创建你的 API Key。
+访问 [https://ai.deepsop.com/](https://ai.deepsop.com/) 注册并登录，然后在控制台创建你的 API Key。
 
 ### 2. 设置 API Key
 

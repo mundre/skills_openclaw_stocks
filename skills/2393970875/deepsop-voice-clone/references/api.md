@@ -2,11 +2,11 @@
 
 ## 基础信息
 
-**Base URL:** `https://staging.kocgo.vip/stage-api`
+**Base URL:** `https://ai.deepsop.com/prod-api`
 
 **认证方式:** 所有请求需要在 Header 中携带 `x-api-key: <your_api_key>`
 
-**API Key 获取:** 访问 https://staging.kocgo.vip/index 注册登录后创建
+**API Key 获取:** 访问 https://ai.deepsop.com/ 注册登录后创建
 
 ---
 
@@ -213,7 +213,7 @@ Content-Type: multipart/form-data
 ### cURL 示例
 
 ```bash
-curl --location --request POST 'http://localhost:8080/system/fileUpload/upload' \
+curl --location --request POST 'https://ai.deepsop.com/prod-api/system/fileUpload/upload' \
 --header 'x-api-key: sk-your_api_key_here' \
 --form 'file=@"C:\Users\admin\Downloads\voice.mp3"'
 ```
