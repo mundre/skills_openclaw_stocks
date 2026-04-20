@@ -1,11 +1,17 @@
 {
   "owner": "sky-lv",
   "slug": "skylv-agent-builder",
-  "displayName": "Agent Builder",
+  "displayName": "Skylv Agent Builder",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1775887271773,
-    "commit": "https://github.com/openclaw/skills/commit/323c8323bba187db57ca225f13400b9891ba414f"
+    "version": "2.0.3",
+    "publishedAt": 1776648301188,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1775887271773,
+      "commit": "https://github.com/openclaw/skills/commit/323c8323bba187db57ca225f13400b9891ba414f"
+    }
+  ]
 }
