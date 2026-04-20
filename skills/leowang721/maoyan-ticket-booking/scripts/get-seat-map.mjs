@@ -10,7 +10,6 @@
  *   uuid       {string}  [可选] 设备 UUID
  *   deviceInfoByQQ {string} [可选] QQ设备信息
  */
- */
 import {
   CHANNEL_ID,
   ERROR_CODES,

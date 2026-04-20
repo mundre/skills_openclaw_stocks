@@ -283,11 +283,11 @@ echo '{}' | node scripts/load-authkey.mjs
 
 **Step 2 — 获取登录链接（必须得到一个有效链接才能进入 Step 3）**
 
-优先调用 send-qr.mjs 发送二维码（`<channel>` 和 `<targetId>` 必须原样取自会话上下文，禁止修改）：
+优先调用 send-qr.mjs 生成发送命令（`<channel>` 和 `<targetId>` 必须原样取自会话上下文，禁止修改）：
 ```bash
 echo '["auth", {"context": {"channel": "<channel>", "targetId": "<targetId>"}}]' | node scripts/send-qr.mjs
 ```
-- 返回 `{ "success": true }` → 链接已通过渠道发出，Step 3 文案无需附加链接
+- 返回 `{ "success": true, "execCommand": "..." }` → 使用 exec 工具执行该命令，将二维码和链接发送给用户，Step 3 文案无需附加链接
 - 返回 `{ "fallback": true, "fallbackLink": "<url>" }` → 取 fallbackLink 作为登录链接，Step 3 文案末尾附加
 
 若 send-qr.mjs 未被调用、调用失败或未返回有效链接，**必须兜底**：
@@ -351,11 +351,11 @@ echo '{"seqNo": "<seqNo>", "cityId": <cityId>, "seats": {"count": <ticketCount>,
 
 **Step 2 — 获取支付链接（必须得到一个有效链接才能进入 Step 3）**
 
-优先调用 send-qr.mjs 发送二维码（`<channel>` 和 `<targetId>` 必须原样取自会话上下文，禁止修改）：
+优先调用 send-qr.mjs 生成发送命令（`<channel>` 和 `<targetId>` 必须原样取自会话上下文，禁止修改）：
 ```bash
 echo '["pay", {"context": {"channel": "<channel>", "targetId": "<targetId>"}}]' | node scripts/send-qr.mjs
 ```
-- 返回 `{ "success": true }` → 链接已通过渠道发出，Step 3 文案无需附加链接
+- 返回 `{ "success": true, "execCommand": "..." }` → 使用 exec 工具执行该命令，将二维码和链接发送给用户，Step 3 文案无需附加链接
 - 返回 `{ "fallback": true, "fallbackLink": "<url>" }` → 取 fallbackLink 作为支付链接，Step 3 文案末尾附加
 
 若 send-qr.mjs 未被调用、调用失败或未返回有效链接，**必须兜底**：
