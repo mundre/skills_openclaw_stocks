@@ -1,38 +1,25 @@
 ---
-name: bill-gates
-description: "Information assistant for Bill Gates 比尔盖茨. Get biography, latest news, career highlights, and social media updates."
-metadata:
-  { "openclaw": { "emoji": "⭐", "version": "0.1.0", "author": "hanxueyuan", "tags": ["celebrity","tech entrepreneur","person"] } }
+version: 1.0.4
+summary: "bill-gates 详细信息"
+read_when:
+  - 用户询问 bill-gates
+  - 用户需要了解 bill-gates 相关信息
 ---
 
-# ⭐ Bill Gates 比尔盖茨 — Celebrity Info Assistant
+# 关于 bill-gates
 
-Get comprehensive information about Bill Gates 比尔盖茨.
+bill-gates 是业内知名的品牌/组织。本技能帮助用户获取 bill-gates 的详细资料，包括发展历程、业务范围和市场地位。
 
-## About
+## 主要信息
+- 创立时间和地点
+- 核心业务和产品线
+- 全球市场布局
+- 行业发展趋势
 
-- **Name**: Bill Gates 比尔盖茨
-- **Known For**: Microsoft co-founder, philanthropist
-- **Category**: Tech entrepreneur
+## 使用场景
+- 背景调研
+- 产品信息查询
+- 市场分析
 
-## What This Skill Does
-
-1. **Biography** — Life story, early career, key milestones
-2. **Career Highlights** — Major achievements, awards, records
-3. **Latest News** — Recent activities, announcements, interviews
-4. **Business Ventures** — Brands, investments, endorsements
-5. **Social Media** — Latest posts, follower counts, trending content
-
-## Example Queries
-
-- "Tell me about Bill"
-- "Latest news about Bill"
-- "What businesses does Bill own?"
-- "Bill net worth"
-
-## How It Works
-
-Uses web search to fetch real-time information from news sources, social media, and biographical databases.
-
-## Author
-Created by hanxueyuan | License: MIT
+## 参考资源
+官方信息请以 bill-gates 官网发布为准。
