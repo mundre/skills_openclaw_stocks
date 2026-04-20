@@ -1,6 +1,6 @@
 ---
 name: greenhelix-mcp-server-development
-version: "1.3.0"
+version: "1.3.1"
 description: "MCP Server Development & Monetization Guide: Build, Publish, and Profit from the Tool Integration Standard. Complete guide to building, publishing, and monetizing MCP servers. Covers the MCP specification, server development patterns, registry publishing, enterprise governance, and business models for the tool integration standard powering 10,000+ servers."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,12 @@ content_type: markdown
 executable: false
 install: none
 credentials: [STRIPE_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - STRIPE_API_KEY
+    primaryEnv: STRIPE_API_KEY
 ---
 # MCP Server Development & Monetization Guide: Build, Publish, and Profit from the Tool Integration Standard
 
