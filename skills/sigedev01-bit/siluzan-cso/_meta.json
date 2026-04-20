@@ -3,9 +3,15 @@
   "slug": "siluzan-cso",
   "displayName": "Siluzan Cso",
   "latest": {
-    "version": "1.1.8",
-    "publishedAt": 1775724496561,
-    "commit": "https://github.com/openclaw/skills/commit/abe4bb29cf60237888a9afbfe92e34333fe3f30d"
+    "version": "1.1.12",
+    "publishedAt": 1776412048886,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.8",
+      "publishedAt": 1775724496561,
+      "commit": "https://github.com/openclaw/skills/commit/abe4bb29cf60237888a9afbfe92e34333fe3f30d"
+    }
+  ]
 }
