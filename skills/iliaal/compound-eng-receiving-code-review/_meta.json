@@ -3,11 +3,16 @@
   "slug": "compound-eng-receiving-code-review",
   "displayName": "receiving-code-review",
   "latest": {
-    "version": "2.55.1",
-    "publishedAt": 1776004249396,
-    "commit": "https://github.com/openclaw/skills/commit/7191cf918a5cf94af76c3f1a165c477ac705f3e0"
+    "version": "2.56.1",
+    "publishedAt": 1776519027805,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.55.1",
+      "publishedAt": 1776004249396,
+      "commit": "https://github.com/openclaw/skills/commit/7191cf918a5cf94af76c3f1a165c477ac705f3e0"
+    },
     {
       "version": "2.53.0",
       "publishedAt": 1775523315733,
