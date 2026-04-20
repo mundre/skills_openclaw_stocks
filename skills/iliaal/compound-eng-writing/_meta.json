@@ -3,11 +3,16 @@
   "slug": "compound-eng-writing",
   "displayName": "writing",
   "latest": {
-    "version": "2.55.1",
-    "publishedAt": 1776004287767,
-    "commit": "https://github.com/openclaw/skills/commit/129d43cbb09059da12e78fb976aa6e331041a566"
+    "version": "2.56.1",
+    "publishedAt": 1776519071975,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.55.1",
+      "publishedAt": 1776004287767,
+      "commit": "https://github.com/openclaw/skills/commit/129d43cbb09059da12e78fb976aa6e331041a566"
+    },
     {
       "version": "2.53.0",
       "publishedAt": 1775526991863,
