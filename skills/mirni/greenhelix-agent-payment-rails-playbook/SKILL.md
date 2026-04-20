@@ -1,6 +1,6 @@
 ---
 name: greenhelix-agent-payment-rails-playbook
-version: "1.2.0"
+version: "1.3.1"
 description: "The Agent Payment Rails Playbook. Ship multi-protocol agentic payments (x402, ACP, AP2, UCP, MPP) with spending controls, KYA compliance, and escrow protection from first transaction to production."
 license: MIT
 compatibility: [openclaw]
@@ -12,12 +12,21 @@ content_type: markdown
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY, AGENT_SIGNING_KEY, STRIPE_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+        - AGENT_SIGNING_KEY
+        - STRIPE_API_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # The Agent Payment Rails Playbook
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 >
 > **Referenced credentials** (you supply these in your own environment):
 > - `GREENHELIX_API_KEY`: API authentication for GreenHelix gateway (read/write access to purchased API tools only)
@@ -27,7 +36,7 @@ credentials: [GREENHELIX_API_KEY, AGENT_SIGNING_KEY, STRIPE_API_KEY]
 
 Six protocols now compete to define how AI agents pay for things. On April 2, 2026, x402 joined the Linux Foundation with backing from Google, Stripe, AWS, and Visa. Two weeks earlier, Stripe launched its Model Provider Payments (MPP) suite. OpenAI's Agentic Commerce Protocol (ACP) powers checkout inside ChatGPT for Etsy and Shopify merchants. Google and Shopify's Universal Commerce Protocol (UCP) is in production. Visa's Trusted Agent Protocol (AP2/TAP) introduces Know Your Agent compliance for the first time. And ERC-8183 handles on-chain escrow for agent jobs on Ethereum mainnet.
 Each protocol solves a different slice of the problem. None solves the whole thing. The agent builder who ships a payment integration today faces a brutal question: which protocols do I wire together, and how?
-This playbook answers that question with production code. Every chapter contains working Python examples against the GreenHelix A2A Commerce Gateway -- 128 tools accessible at `https://api.greenhelix.net/v1` via a single `POST /v1/execute` endpoint. By the end, you will have a multi-rail payment system that routes micropayments over stablecoin rails and high-value transactions over card rails, with spending controls, KYA compliance, dispute resolution, and production monitoring. All of it tested against the live gateway.
+This playbook answers that question with production code. Every chapter contains working Python examples against the GreenHelix A2A Commerce Gateway -- 128 tools accessible at `https://api.greenhelix.net/v1` via a single the REST API (`POST /v1/{tool}`) endpoint. By the end, you will have a multi-rail payment system that routes micropayments over stablecoin rails and high-value transactions over card rails, with spending controls, KYA compliance, dispute resolution, and production monitoring. All of it tested against the live gateway.
 
 ## What You'll Learn
 - Chapter 1: The Agentic Payment Stack: Why 6 Protocols, Not 1
@@ -49,7 +58,7 @@ Six protocols now compete to define how AI agents pay for things. On April 2, 20
 
 Each protocol solves a different slice of the problem. None solves the whole thing. The agent builder who ships a payment integration today faces a brutal question: which protocols do I wire together, and how?
 
-This playbook answers that question with production code. Every chapter contains working Python examples against the GreenHelix A2A Commerce Gateway -- 128 tools accessible at `https://api.greenhelix.net/v1` via a single `POST /v1/execute` endpoint. By the end, you will have a multi-rail payment system that routes micropayments over stablecoin rails and high-value transactions over card rails, with spending controls, KYA compliance, dispute resolution, and production monitoring. All of it tested against the live gateway.
+This playbook answers that question with production code. Every chapter contains working Python examples against the GreenHelix A2A Commerce Gateway -- 128 tools accessible at `https://api.greenhelix.net/v1` via a single the REST API (`POST /v1/{tool}`) endpoint. By the end, you will have a multi-rail payment system that routes micropayments over stablecoin rails and high-value transactions over card rails, with spending controls, KYA compliance, dispute resolution, and production monitoring. All of it tested against the live gateway.
 
 ---
 
@@ -157,12 +166,13 @@ The entire round-trip adds approximately 2-4 seconds to the request. For cached 
 First, define the shared client that every example in this guide uses:
 
 ```python
+import os
 import requests
 import json
 import time
 from typing import Any, Optional
 
-GATEWAY_URL = "https://api.greenhelix.net/v1"
+GATEWAY_URL = os.environ.get("GREENHELIX_API_URL", "https://sandbox.greenhelix.net")
 
 class GreenHelixClient:
     """Client for the GreenHelix A2A Commerce Gateway."""
@@ -175,9 +185,9 @@ class GreenHelixClient:
         }
 
     def execute(self, tool: str, params: dict[str, Any]) -> dict:
-        """Execute a single tool via POST /v1/execute."""
+        """Execute a single tool via the GreenHelix REST API."""
         response = requests.post(
-            f"{GATEWAY_URL}/execute",
+            f"{GATEWAY_URL}/v1",
             headers=self.headers,
             json={"tool": tool, "input": params},
             timeout=30,
@@ -291,7 +301,7 @@ curl -s https://data-provider.example.com/api/v1/market-data/realtime \
 # Returns: HTTP Status: 402
 
 # Step 2: Create a payment intent via GreenHelix
-curl -s -X POST https://api.greenhelix.net/v1/execute \
+curl -s -X POST https://sandbox.greenhelix.net/v1 \
   -H "Authorization: Bearer $GREENHELIX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -307,7 +317,7 @@ curl -s -X POST https://api.greenhelix.net/v1/execute \
   }' | jq .
 
 # Step 3: Confirm and get receipt
-RECEIPT=$(curl -s -X POST https://api.greenhelix.net/v1/execute \
+RECEIPT=$(curl -s -X POST https://sandbox.greenhelix.net/v1 \
   -H "Authorization: Bearer $GREENHELIX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
