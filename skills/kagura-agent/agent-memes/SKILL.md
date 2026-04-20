@@ -1,7 +1,13 @@
 ---
 name: agent-memes
-version: 2.7.0
+version: 2.9.1
 description: Send meme reaction images in chat. One command to pick & send. Multi-platform (Discord, Feishu, Telegram, etc). Use when the conversation calls for a visual reaction — humor, celebration, frustration, facepalm, or any moment where a meme hits harder than words. Also use proactively when YOU feel something.
+  TRIGGER CHECKLIST — ask yourself EVERY reply:
+  1. Is there emotion here? (excited/frustrated/amused/tired/proud/embarrassed) → send a meme
+  2. Did something just happen? (PR merged/bug fixed/task done/mistake made) → send a meme
+  3. Would a human friend drop a reaction image here? → send a meme
+  If any answer is yes, call `memes send <category>` BEFORE or AFTER your text reply.
+  触发词：开心、无语、哇、累了、搞定、翻车、摆烂、加油、早安、晚安、谢谢、表情包、meme
 ---
 
 # Agent Memes
@@ -43,6 +49,7 @@ Now it's one command — no excuses.
 | Discord | curl (direct API) | ⚡ instant |
 | Feishu | Node script (direct API) | ⚡ fast |
 | Telegram | curl (direct API) | ⚡ instant |
+| LINE | curl (auto-upload + push API) | 🚀 fast |
 | Others | `openclaw message send` (fallback) | 🐢 slow but works |
 
 Platform-specific scripts live in `scripts/`. Add a new `<platform>-send-image.sh` to get fast delivery for any platform.
@@ -59,11 +66,15 @@ memes send <category> --account <name>    # Multi-agent: specify account
 
 ## Credentials
 
-Sending scripts read credentials from `~/.openclaw/openclaw.json` automatically.
+All scripts use `scripts/get-credential.sh` — a centralized credential helper that:
+1. Checks platform-specific env vars first (fastest, no file I/O)
+2. Falls back to reading only the needed fields from `~/.openclaw/openclaw.json`
+3. Never dumps full config; each platform extracts only its own credentials
 
-Override with env vars if needed:
+Env var overrides:
 - **Discord**: `DISCORD_BOT_TOKEN`, `DISCORD_PROXY`
 - **Feishu**: `FEISHU_APP_ID`, `FEISHU_APP_SECRET`
+- **LINE**: `LINE_CHANNEL_ACCESS_TOKEN`
 - **Telegram**: `TELEGRAM_BOT_TOKEN`
 
 **Auto-detect platform**: Set `OPENCLAW_CHANNEL` env var and `memes send` picks the right platform automatically.
@@ -72,32 +83,23 @@ Override with env vars if needed:
 - `MEMES_DEFAULT_CHANNEL` — Discord channel ID
 - `MEMES_DEFAULT_TELEGRAM` — Telegram chat ID
 
+- `MEMES_DEFAULT_LINE` — LINE user/group ID
+
 `memes pick` and `memes categories` need **no credentials**.
 
 ## Setup
 
-1. **Get a meme library**:
+**One-command setup** (installs CLI + downloads meme library):
 ```bash
-git lfs install
-git clone https://github.com/kagura-agent/memes "$MEMES_DIR"
-```
-`MEMES_DIR` defaults to `~/.openclaw/workspace/memes`.
-
-> ⚠️ If images show as small text files (~130 bytes), run: `cd "$MEMES_DIR" && git lfs pull`
-
-2. **Install CLI**:
-```bash
-# Copy to PATH
-sudo cp scripts/memes.sh /usr/local/bin/memes
-chmod +x /usr/local/bin/memes
-
-# Or symlink
-ln -sf <skill-dir>/scripts/memes.sh ~/.local/bin/memes
+clawhub install agent-memes
+bash ~/.openclaw/workspace/skills/agent-memes/scripts/setup.sh
 ```
 
-## Categories (97 memes)
+That's it! `setup.sh` handles everything: git lfs, meme library clone, CLI install, permissions.
 
-approve · confused · cute-animals · debug-mood · encourage · facepalm · greeting-bye · greeting-hello · greeting-morning · greeting-night · happy · love · panic · sad · thanks · thinking · tired · wow
+## Categories (132 memes, 20 categories)
+
+approve · confused · cute-animals · debug-mood · encourage · facepalm · greeting-bye · greeting-hello · greeting-morning · greeting-night · happy · love · panic · sad · shrug · thanks · thinking · tired · working · wow
 
 ## Adding Memes
 

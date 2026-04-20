@@ -15,14 +15,8 @@ CAPTION="${3:-}"
 if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
   TOKEN="$SLACK_BOT_TOKEN"
 else
-  TOKEN=$(node -e "
-const c=JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.openclaw/openclaw.json','utf8'));
-const accts=c.channels?.slack?.accounts||{};
-const name=Object.keys(accts)[0]||'';
-const t=accts[name]?.token||'';
-if(!t){console.error('No token found. Set SLACK_BOT_TOKEN or configure openclaw.json channels.slack');process.exit(1)}
-console.log(t);
-")
+  CREDENTIAL_HELPER="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")" )" && pwd)/get-credential.sh"
+  TOKEN=$(bash "$CREDENTIAL_HELPER" slack)
 fi
 
 PROXY="${SLACK_PROXY:-${https_proxy:-${HTTPS_PROXY:-}}}"

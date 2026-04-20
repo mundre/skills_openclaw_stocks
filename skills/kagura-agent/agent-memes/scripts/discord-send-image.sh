@@ -15,19 +15,10 @@ CAPTION="${3:-}"
 
 ACCOUNT="${DISCORD_ACCOUNT:-}"
 
-# Read bot token: env var preferred, fallback to openclaw config
-if [ -n "${DISCORD_BOT_TOKEN:-}" ]; then
-  TOKEN="$DISCORD_BOT_TOKEN"
-else
-  TOKEN=$(node -e "
-const c=JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.openclaw/openclaw.json','utf8'));
-const accts = c.channels?.discord?.accounts || {};
-const name = '${ACCOUNT}' || Object.keys(accts)[0] || '';
-const token = accts[name]?.token || '';
-if (!token) { console.error('No token found. Set DISCORD_BOT_TOKEN env var or configure openclaw.json'); process.exit(1); }
-console.log(token);
-")
-fi
+# Read bot token via centralized credential helper
+CREDENTIAL_HELPER="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")" )" && pwd)/get-credential.sh"
+export DISCORD_ACCOUNT="$ACCOUNT"
+TOKEN=$(bash "$CREDENTIAL_HELPER" discord)
 
 CURL_ARGS=(
   -s

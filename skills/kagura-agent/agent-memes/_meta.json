@@ -3,11 +3,16 @@
   "slug": "agent-memes",
   "displayName": "Agent Memes",
   "latest": {
-    "version": "2.7.0",
-    "publishedAt": 1775822611791,
-    "commit": "https://github.com/openclaw/skills/commit/2eadc16d9697691ee075b4a20ff5eee08f456c95"
+    "version": "2.11.0",
+    "publishedAt": 1776389486454,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.7.0",
+      "publishedAt": 1775822611791,
+      "commit": "https://github.com/openclaw/skills/commit/2eadc16d9697691ee075b4a20ff5eee08f456c95"
+    },
     {
       "version": "0.5.0",
       "publishedAt": 1775257284172,

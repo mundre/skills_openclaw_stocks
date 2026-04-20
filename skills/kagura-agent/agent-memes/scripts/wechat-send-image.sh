@@ -20,13 +20,8 @@ if [ -n "${WECHAT_CORP_ID:-}" ] && [ -n "${WECHAT_CORP_SECRET:-}" ]; then
   CORP_SECRET="$WECHAT_CORP_SECRET"
   AGENT_ID="${WECHAT_AGENT_ID:-}"
 else
-  read -r CORP_ID CORP_SECRET AGENT_ID < <(node -e "
-const c=JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.openclaw/openclaw.json','utf8'));
-const w=c.channels?.wechat||c.channels?.wecom||{};
-const id=w.corpId||w.corp_id||'';const s=w.corpSecret||w.corp_secret||'';const a=w.agentId||w.agent_id||'';
-if(!id||!s){console.error('Set WECHAT_CORP_ID+WECHAT_CORP_SECRET or configure openclaw.json channels.wechat');process.exit(1)}
-console.log(id+' '+s+' '+a);
-")
+  CREDENTIAL_HELPER="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")" )" && pwd)/get-credential.sh"
+  read -r CORP_ID CORP_SECRET AGENT_ID < <(bash "$CREDENTIAL_HELPER" wechat)
 fi
 
 PROXY="${WECHAT_PROXY:-${https_proxy:-${HTTPS_PROXY:-}}}"

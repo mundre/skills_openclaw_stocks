@@ -7,7 +7,9 @@ import { resolve } from 'path';
 import { homedir } from 'os';
 
 const API = 'https://open.feishu.cn/open-apis';
-const TOKEN_CACHE = '/tmp/feishu-token.json';
+// Secure token cache: user-private directory instead of world-readable /tmp
+const CACHE_DIR = resolve(homedir(), '.cache/agent-memes');
+const TOKEN_CACHE = resolve(CACHE_DIR, 'feishu-token.json');
 
 const [target, imagePath] = process.argv.slice(2);
 if (!target || !imagePath) {
@@ -15,25 +17,29 @@ if (!target || !imagePath) {
   process.exit(1);
 }
 
-// --- credentials (env vars preferred, fallback to openclaw.json) ---
+// --- credentials via centralized helper ---
+import { execSync } from 'child_process';
+import { mkdirSync } from 'fs';
+
 let appId = process.env.FEISHU_APP_ID;
 let appSecret = process.env.FEISHU_APP_SECRET;
 
 if (!appId || !appSecret) {
   try {
-    const configPath = resolve(homedir(), '.openclaw/openclaw.json');
-    const config = JSON.parse(readFileSync(configPath, 'utf8'));
-    const accounts = config.channels?.feishu?.accounts ?? {};
-    const acctName = process.env.FEISHU_ACCOUNT || Object.keys(accounts)[0];
-    const acct = accounts[acctName];
-    appId = acct?.appId;
-    appSecret = acct?.appSecret;
+    const helperPath = resolve(import.meta.dirname || new URL('.', import.meta.url).pathname, 'get-credential.sh');
+    const creds = execSync(`bash "${helperPath}" feishu`, { encoding: 'utf8' }).trim();
+    const parts = creds.split(' ');
+    appId = parts[0];
+    appSecret = parts[1];
   } catch {}
 }
 if (!appId || !appSecret) {
   console.error('Missing credentials. Set FEISHU_APP_ID + FEISHU_APP_SECRET env vars, or configure ~/.openclaw/openclaw.json');
   process.exit(1);
 }
+
+// Ensure secure cache directory exists (0700)
+try { mkdirSync(CACHE_DIR, { recursive: true, mode: 0o700 }); } catch {}
 
 // --- tenant_access_token (cached) ---
 async function getToken() {

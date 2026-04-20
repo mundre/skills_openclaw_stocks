@@ -1,9 +1,9 @@
 #!/bin/bash
-# Usage: line-send-image.sh <user_or_group_id> <image_url> [caption]
+# Usage: line-send-image.sh <user_or_group_id> <image_path_or_url> [caption]
 # Send an image via LINE Messaging API (push message).
 #
-# LINE image messages require publicly accessible URLs (originalContentUrl + previewImageUrl).
-# If you have a local file, upload it to a public URL first (e.g. imgur, S3, etc.).
+# Accepts both local file paths and public URLs.
+# Local files are auto-uploaded to catbox.moe (free, no auth, 200MB max).
 #
 # Env vars (all optional):
 #   LINE_CHANNEL_ACCESS_TOKEN - channel access token (preferred)
@@ -12,15 +12,27 @@
 
 set -euo pipefail
 
-TARGET_ID="${1:?Usage: line-send-image.sh <user_or_group_id> <image_url> [caption]}"
-IMAGE_URL="${2:?Missing image URL (must be a publicly accessible https URL)}"
+TARGET_ID="${1:?Usage: line-send-image.sh <user_or_group_id> <image_path_or_url> [caption]}"
+IMAGE_INPUT="${2:?Missing image path or URL}"
 CAPTION="${3:-}"
 
-# Validate URL
-if [[ ! "$IMAGE_URL" =~ ^https?:// ]]; then
-  echo "Error: IMAGE_URL must be a publicly accessible http(s) URL." >&2
-  echo "LINE does not support local file paths. Upload the image first." >&2
-  exit 1
+# If local file, upload to catbox.moe to get a public URL
+if [[ ! "$IMAGE_INPUT" =~ ^https?:// ]]; then
+  if [[ ! -f "$IMAGE_INPUT" ]]; then
+    echo "Error: File not found: $IMAGE_INPUT" >&2
+    exit 1
+  fi
+  PROXY="${LINE_PROXY:-${https_proxy:-${HTTPS_PROXY:-}}}"
+  UPLOAD_ARGS=(-s --max-time 30 -F "reqtype=fileupload" -F "time=24h" -F "fileToUpload=@$IMAGE_INPUT")
+  [[ -n "${PROXY:-}" ]] && UPLOAD_ARGS+=(-x "$PROXY")
+  IMAGE_URL=$(curl "${UPLOAD_ARGS[@]}" "https://litterbox.catbox.moe/resources/internals/api.php")
+  if [[ ! "$IMAGE_URL" =~ ^https:// ]]; then
+    echo "Error: Upload failed: $IMAGE_URL" >&2
+    exit 1
+  fi
+  echo "Uploaded: $IMAGE_URL" >&2
+else
+  IMAGE_URL="$IMAGE_INPUT"
 fi
 
 ACCOUNT="${LINE_ACCOUNT:-}"
@@ -29,14 +41,9 @@ ACCOUNT="${LINE_ACCOUNT:-}"
 if [ -n "${LINE_CHANNEL_ACCESS_TOKEN:-}" ]; then
   TOKEN="$LINE_CHANNEL_ACCESS_TOKEN"
 else
-  TOKEN=$(node -e "
-const c=JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.openclaw/openclaw.json','utf8'));
-const accts = c.channels?.line?.accounts || {};
-const name = '${ACCOUNT}' || Object.keys(accts)[0] || '';
-const token = accts[name]?.channelAccessToken || accts[name]?.token || '';
-if (!token) { console.error('No token found. Set LINE_CHANNEL_ACCESS_TOKEN or configure openclaw.json channels.line'); process.exit(1); }
-console.log(token);
-")
+  CREDENTIAL_HELPER="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")" )" && pwd)/get-credential.sh"
+  export LINE_ACCOUNT="$ACCOUNT"
+  TOKEN=$(bash "$CREDENTIAL_HELPER" line)
 fi
 
 # Build messages array

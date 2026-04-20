@@ -17,13 +17,8 @@ if [ -n "${QQ_BOT_TOKEN:-}" ]; then
   TOKEN="$QQ_BOT_TOKEN"
   APPID="${QQ_BOT_APPID:?QQ_BOT_APPID is required when using QQ_BOT_TOKEN}"
 else
-  read -r TOKEN APPID < <(node -e "
-const c=JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.openclaw/openclaw.json','utf8'));
-const q=c.channels?.qqbot||c.channels?.qq||{};
-const t=q.token||'';const a=q.appId||q.app_id||'';
-if(!t||!a){console.error('Set QQ_BOT_TOKEN+QQ_BOT_APPID or configure openclaw.json channels.qqbot');process.exit(1)}
-console.log(t+' '+a);
-")
+  CREDENTIAL_HELPER="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")" )" && pwd)/get-credential.sh"
+  read -r TOKEN APPID < <(bash "$CREDENTIAL_HELPER" qq)
 fi
 
 PROXY="${QQ_PROXY:-${https_proxy:-${HTTPS_PROXY:-}}}"

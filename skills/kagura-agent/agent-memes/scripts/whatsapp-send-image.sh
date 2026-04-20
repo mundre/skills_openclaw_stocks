@@ -17,13 +17,8 @@ if [ -n "${WHATSAPP_TOKEN:-}" ]; then
   TOKEN="$WHATSAPP_TOKEN"
   PHONE_ID="${WHATSAPP_PHONE_ID:?WHATSAPP_PHONE_ID is required when using WHATSAPP_TOKEN}"
 else
-  read -r TOKEN PHONE_ID < <(node -e "
-const c=JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.openclaw/openclaw.json','utf8'));
-const w=c.channels?.whatsapp||{};
-const t=w.token||'';const p=w.phoneId||w.phone_id||'';
-if(!t||!p){console.error('Set WHATSAPP_TOKEN+WHATSAPP_PHONE_ID or configure openclaw.json channels.whatsapp');process.exit(1)}
-console.log(t+' '+p);
-")
+  CREDENTIAL_HELPER="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")" )" && pwd)/get-credential.sh"
+  read -r TOKEN PHONE_ID < <(bash "$CREDENTIAL_HELPER" whatsapp)
 fi
 
 PROXY="${WHATSAPP_PROXY:-${https_proxy:-${HTTPS_PROXY:-}}}"
