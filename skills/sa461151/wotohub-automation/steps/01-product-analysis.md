@@ -60,7 +60,8 @@
 - 明确告诉用户抓取信息有限
 - 只基于已抓到的内容做保守总结
 - 不要编造页面不存在的商品信息
-- 触发用户补充信息流程，而不是硬失败
+- 如宿主具备 browser / web 能力，优先发起轻量 `hostUrlAnalysisRequest` 做二次取证与 `hostAnalysis` 回写
+- 若宿主侧也无法补取证，再进入用户补充信息流程，而不是硬失败
 
 抓取后要做两步：
 1. 先由脚本构造可分析输入
@@ -101,9 +102,11 @@
 
 1. 优先调用 `scripts/product_resolve.py`
 2. 由脚本负责页面抓取、平台解析、结构化提取
-3. 生成 `urlModelInput` 供上层模型输出 `url_model_analysis`
-4. 优先消费模型分析结果，补齐产品语义和营销理解
-5. 产出可直接进入搜索链路的结构化结果
+3. 若返回正常 URL 理解结果，直接消费 `analysis + productSummary`
+4. 若返回 `hostUrlAnalysisRequest`，宿主拿这个 request 做二次取证 / browser 分析
+5. 宿主只回写 `hostAnalysis + productSummary` 到原请求的 canonical 字段：`input.hostAnalysis`、`input.productSummary`
+6. 使用同一个 task 重新执行，而不是手搓 search payload 直接跳过理解层
+7. 产出可直接进入搜索链路的结构化结果
 
 ### 1.3 文字描述输入的标准流程
 
@@ -322,9 +325,9 @@ https://www.tiktok.com/shop/pdp/1729606769780232427
 ```
 
 期望处理方式：
-1. `web_fetch` 抓页面
-2. 从页面正文总结产品详情
-3. 归纳搜索条件
+1. 优先由 `scripts/product_resolve.py` 抓取页面、识别平台并抽取结构化字段
+2. 基于抽取结果构造 `urlModelInput`，再由宿主模型补全产品语义和营销理解
+3. 归纳搜索条件，并输出可进入后续 payload 编译链的结构化结果
 
 推荐输出：
 
@@ -376,7 +379,7 @@ https://www.tiktok.com/shop/pdp/1729606769780232427
 
 ## 注意事项
 
-- 链接输入时，优先相信 `web_fetch` 抓回来的正文，而不是凭域名猜商品
+- 链接输入时，优先相信 `scripts/product_resolve.py` 抓回来的正文与结构化抽取结果，而不是凭域名猜商品
 - 文本输入时，要做“营销理解 + 搜索扩写”，不能只抽几个词
 - 如果信息不足，要明确说“以下是基于当前输入推断的建议搜索条件”
 - 不要伪造价格、评分、销量、品牌等未出现的信息

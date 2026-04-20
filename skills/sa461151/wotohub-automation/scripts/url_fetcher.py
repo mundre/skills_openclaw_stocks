@@ -79,6 +79,10 @@ def fetch_url_text(url: str, timeout: int = 12, retries: int = 2, verify_tls: Op
             session.close()
             return {
                 'url': url,
+                'finalUrl': resp.url,
+                'statusCode': resp.status_code,
+                'contentType': resp.headers.get('Content-Type', ''),
+                'contentLength': len(html or ''),
                 'html': html,
                 'attempt': attempt + 1,
                 'headerProfile': attempt,

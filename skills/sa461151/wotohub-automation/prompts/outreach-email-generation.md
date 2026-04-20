@@ -19,6 +19,14 @@ Generate natural, low-AI-scent outreach emails for selected creators only.
 
 ```json
 {
+  "writeBackMetadata": {
+    "selectedCreatorCount": 10,
+    "generatedDraftCount": 10,
+    "uniqueBloggerIdCount": 10,
+    "missingBloggerIds": [],
+    "duplicateBloggerIds": [],
+    "unexpectedBloggerIds": []
+  },
   "items": [
     {
       "bloggerId": "string",
@@ -33,3 +41,10 @@ Generate natural, low-AI-scent outreach emails for selected creators only.
   ]
 }
 ```
+
+## Hard constraints
+
+- Return exactly one personalized draft per selected creator when information is sufficient.
+- `bloggerId` must map to the current creator only, do not copy another creator's id.
+- Do not duplicate the same full email body across multiple creators.
+- `writeBackMetadata` must honestly describe the batch, not the intended batch.

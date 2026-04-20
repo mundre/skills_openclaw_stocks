@@ -231,6 +231,8 @@ class TaskRunner:
             input_data["input"],
             mode=input_data.get("mode", "auto"),
             timeout=input_data.get("timeout", 12),
+            host_analysis=input_data.get("hostAnalysis") or input_data.get("modelAnalysis"),
+            product_summary=input_data.get("productSummary"),
         )
         return {
             "productSummary": result.get("productSummary", {}),

@@ -55,7 +55,7 @@ def normalize_reply_policy(*, mode: str, reply_send_policy: Optional[str]= None,
     }
 
 
-def execute_outreach_send(*, emails: list[dict[str, Any]], send_policy_info: dict[str, Any], token: Optional[str], brief: dict[str, Any], timing: str = "", creator_profiles_by_id: Optional[dict[str, dict[str, Any]]] = None) -> dict[str, Any]:
+def execute_outreach_send(*, emails: list[dict[str, Any]], send_policy_info: dict[str, Any], token: Optional[str], brief: dict[str, Any], timing: str = "", creator_profiles_by_id: Optional[dict[str, dict[str, Any]]] = None, draft_generation: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     summary = {
         "preparedCount": len(emails),
         "autoSendExecuted": False,
@@ -65,6 +65,17 @@ def execute_outreach_send(*, emails: list[dict[str, Any]], send_policy_info: dic
         "status": "prepared",
         "notes": "Campaign engine prepares outreach candidates but does not silently send them.",
     }
+    draft_generation = draft_generation or {}
+    draft_status = str(draft_generation.get("status") or "").strip()
+    draft_validation = draft_generation.get("validation") or {}
+    if draft_status == "host_drafts_identity_conflict":
+        summary.update({
+            "status": "blocked",
+            "notes": "Host draft write-back failed identity validation before send execution.",
+            "draftGenerationStatus": draft_status,
+            "draftValidation": draft_validation,
+        })
+        return summary
     if not emails:
         summary["notes"] = "No outreach emails prepared in this cycle."
         return summary
@@ -94,6 +105,8 @@ def execute_outreach_send(*, emails: list[dict[str, Any]], send_policy_info: dic
             "batchSummary": send_summary,
             "blocked": batch_payload.get("blocked"),
             "auditResults": batch_payload.get("auditResults") or [],
+            "draftGenerationStatus": draft_status or None,
+            "draftValidation": draft_validation or None,
         })
         return summary
     batch_result = send_batch(batch_payload, dry_run=False, timing=timing)
@@ -104,5 +117,7 @@ def execute_outreach_send(*, emails: list[dict[str, Any]], send_policy_info: dic
         "batchSummary": send_summary,
         "apiResult": batch_result.get("response"),
         "auditResults": batch_payload.get("auditResults") or [],
+        "draftGenerationStatus": draft_status or None,
+        "draftValidation": draft_validation or None,
     })
     return summary

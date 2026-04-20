@@ -46,16 +46,19 @@ def _load_json_or_text(value: str | None):
         return text
 
 
-def _load_json_list(path: Union[str, Path]) -> list[dict]:
+def _load_host_drafts_artifact(path: Union[str, Path]) -> dict:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if isinstance(data, list):
-        return data
+        return {"drafts": data, "metadata": {}}
     if isinstance(data, dict):
+        metadata = data.get("writeBackMetadata") or data.get("hostDraftsMetadataPerCycle") or data.get("host_drafts_metadata_per_cycle") or {}
+        if not isinstance(metadata, dict):
+            metadata = {}
         for key in ("items", "host_drafts_per_cycle", "hostDraftsPerCycle", "hostDrafts", "emailModelDrafts"):
             items = data.get(key)
             if isinstance(items, list):
-                return items
-    return []
+                return {"drafts": items, "metadata": metadata}
+    return {"drafts": [], "metadata": {}}
 
 
 def _write_json(path: Union[str, Path], payload: dict) -> None:
@@ -111,6 +114,7 @@ def main() -> int:
 
     runner = CampaignRunner()
     brief = _load_json(args.brief)
+    host_drafts_artifact = _load_host_drafts_artifact(args.host_bridge_drafts) if args.host_bridge_drafts else {"drafts": [], "metadata": {}}
 
     result = runner.run_cycle(
         args.campaign_id,
@@ -125,7 +129,8 @@ def main() -> int:
             "reviewRequired": args.review_required,
             "timing": args.timing,
             **({"hostAnalysisExecutor": _load_json_or_text(args.host_analysis_bridge_executor)} if args.host_analysis_bridge_executor else {}),
-            **({"host_drafts_per_cycle": _load_json_list(args.host_bridge_drafts)} if args.host_bridge_drafts else {}),
+            **({"host_drafts_per_cycle": host_drafts_artifact.get("drafts") or []} if args.host_bridge_drafts else {}),
+            **({"host_drafts_metadata_per_cycle": host_drafts_artifact.get("metadata") or {}} if args.host_bridge_drafts and host_drafts_artifact.get("metadata") else {}),
             **({"hostBridgeExecutor": _load_json_or_text(args.host_bridge_executor)} if args.host_bridge_executor else {}),
         },
     )

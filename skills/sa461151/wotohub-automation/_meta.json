@@ -3,9 +3,15 @@
   "slug": "wotohub-automation",
   "displayName": "WotoHub Automation",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1775728624494,
-    "commit": "https://github.com/openclaw/skills/commit/17a7a28220c26abb214a2a5ba4977e7fd1259ba4"
+    "version": "1.0.8",
+    "publishedAt": 1776322025021,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1775728624494,
+      "commit": "https://github.com/openclaw/skills/commit/17a7a28220c26abb214a2a5ba4977e7fd1259ba4"
+    }
+  ]
 }

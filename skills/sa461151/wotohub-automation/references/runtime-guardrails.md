@@ -40,8 +40,14 @@ Recommended request-layer fields:
 - `productSummary`
 - `hostDrafts`
 - `replyModelAnalysis`
+- campaign cycle write-back: `host_drafts_per_cycle`
 
 The skill may normalize these into internal runtime fields after input parsing.
+
+Practical rule:
+- new integrations, new bridge payloads, and new examples should use the canonical request-layer fields above
+- compatibility aliases remain accepted for migration only and should not be extended into new contracts
+- for the current alias map, see `references/alias-normalization-matrix.md`
 
 Compatibility aliases are migration-only:
 - `understanding`
@@ -67,6 +73,7 @@ Scheduled flows should keep semantic inputs and model analysis, then let the sta
 ### Send
 
 - `scheduled_cycle` defaults to `scheduled_send`
+- `scheduled_send` is the default real-send path for scheduled flows unless the caller explicitly changes policy or requires review
 - `single_cycle` and manual one-off runs default to `prepare_only`
 - if `review_required=true`, silent send is not allowed
 

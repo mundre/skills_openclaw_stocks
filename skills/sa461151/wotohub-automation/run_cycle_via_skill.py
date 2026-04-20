@@ -17,6 +17,9 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "scripts"))
+from router_launcher_env import ensure_router_executor_env
+
 SKILL_ENTRY = ROOT / "wotohub_skill.py"
 
 
@@ -68,6 +71,7 @@ def main() -> int:
     if metadata:
         req["metadata"] = metadata
 
+    env = ensure_router_executor_env(skill_root=ROOT, env=None)
     proc = subprocess.run(
         [sys.executable, str(SKILL_ENTRY)],
         input=json.dumps(req, ensure_ascii=False),
@@ -75,6 +79,7 @@ def main() -> int:
         capture_output=True,
         check=False,
         cwd=str(ROOT),
+        env=env,
     )
 
     stdout = (proc.stdout or "").strip()

@@ -20,7 +20,14 @@ from typing import Union
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPT_DIR.parent
+for path in (SCRIPT_DIR, SKILL_ROOT):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from api_campaign_runner import CampaignRunner
 
@@ -63,8 +70,7 @@ def main() -> int:
             drafts.append(_mock_draft_from_creator(creator, default_language=default_language))
 
     result = {
-        "writeBackField": ((payload.get("writeBack") or {}).get("field")) or "host_drafts_per_cycle",
-        "host_drafts_per_cycle": drafts,
+        **runner.build_host_drafts_writeback(bridge_payload=payload, drafts=drafts),
         "messageSamples": executor_example.get("messageSamples") or [],
         "mode": args.mode,
         "targetCount": len(payload.get("selectedCreators") or []),

@@ -510,6 +510,9 @@ class UpperLayerOrchestrator:
         for key in ("hostAnalysisExecutor", "host_analysis_executor", "hostSemanticExecutor", "host_semantic_executor"):
             if config.get(key):
                 return config.get(key)
+        env_default = os.environ.get("WOTOHUB_HOST_ANALYSIS_EXECUTOR") or os.environ.get("HOST_ANALYSIS_EXECUTOR")
+        if env_default:
+            return env_default
         return None
 
     def _describe_executor(self, executor_spec: Any) -> str:
@@ -735,6 +738,9 @@ class UpperLayerOrchestrator:
         for key in ("hostReplyAnalysisExecutor", "host_reply_analysis_executor", "hostReplyBridgeExecutor", "host_reply_bridge_executor"):
             if config.get(key):
                 return config.get(key)
+        env_default = os.environ.get("WOTOHUB_HOST_REPLY_ANALYSIS_EXECUTOR") or os.environ.get("HOST_REPLY_ANALYSIS_EXECUTOR")
+        if env_default:
+            return env_default
         return None
 
     def _extract_host_reply_analysis_payload(self, payload: Any) -> dict[str, Any]:
@@ -841,6 +847,9 @@ class UpperLayerOrchestrator:
         for key in ("hostDraftExecutor", "host_draft_executor", "hostBridgeExecutor", "host_bridge_executor"):
             if config.get(key):
                 return config.get(key)
+        env_default = os.environ.get("WOTOHUB_HOST_DRAFT_EXECUTOR") or os.environ.get("HOST_DRAFT_EXECUTOR")
+        if env_default:
+            return env_default
         return None
 
     def _extract_host_drafts_payload(self, payload: Any) -> dict[str, Any]:

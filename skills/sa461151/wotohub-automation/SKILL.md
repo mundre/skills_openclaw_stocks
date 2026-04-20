@@ -12,7 +12,7 @@ metadata:
 
 # WotoHub Automation
 
-WotoHub Automation is an OpenClaw skill for real creator outreach workflows.
+WotoHub Automation is a real creator outreach skill with OpenClaw-era integration roots and current in-place compatibility for existing workflows.
 
 It connects:
 - product understanding
@@ -162,13 +162,19 @@ python3 scripts/preflight.py --token YOUR_API_KEY
 
 For auth details, read `appendix-auth.md`.
 
-## OpenClaw entry
+## Skill entry
 
 Single entrypoint:
 
 ```bash
 python3 wotohub_skill.py
 ```
+
+Important execution note:
+- default host executors are auto-wired through the skill entry / router wrapper flow, and `scripts/build_search_payload.py` now also injects router executor defaults before resolving URL input
+- in low-confidence URL cases, `product_resolve.py` may emit `hostUrlAnalysisRequest`; `scripts/build_search_payload.py` now attempts automatic host URL analysis execution + writeback before continuing
+- if host analysis still cannot be resolved, `scripts/build_search_payload.py` returns a structured `needsUserInput` / `error` payload instead of crashing on `analysis=None`
+- callers can still explicitly provide `hostAnalysis` / `productSummary` to bypass bridge execution when they already have host-side understanding
 
 Minimal request example:
 
@@ -201,12 +207,52 @@ Recommended injected fields:
 - `input.hostDrafts`
 - `input.replyModelAnalysis`
 
+Recommended executor discovery order for host URL recovery / host semantic understanding:
+- first: explicit request-level `config.hostAnalysisExecutor`
+- second: campaign `brief.hostAnalysisExecutor` / `brief.scheduler.hostAnalysisExecutor` for cycle flows
+- third: environment default `WOTOHUB_HOST_ANALYSIS_EXECUTOR` (or compatibility `HOST_ANALYSIS_EXECUTOR`)
+- recommended integration pattern: when your host platform always has browser/web/model capability, set the env default in the wrapper/launcher so link analysis can auto-close the loop without every caller remembering the param
+
+Recommended executor discovery order for reply understanding:
+- first: explicit request-level `config.hostReplyAnalysisExecutor` / `config.hostReplyBridgeExecutor`
+- second: cycle-only `brief.scheduler.hostReplyBridgeExecutor` when reply assist is driven from campaign runtime
+- third: environment default `WOTOHUB_HOST_REPLY_ANALYSIS_EXECUTOR` (or compatibility `HOST_REPLY_ANALYSIS_EXECUTOR`)
+
+Recommended executor discovery order for host draft generation:
+- first: explicit request-level `config.hostDraftExecutor` / `config.hostBridgeExecutor`
+- second: cycle-only `brief.scheduler.hostBridgeExecutor` when scheduled generation is used
+- third: environment default `WOTOHUB_HOST_DRAFT_EXECUTOR` (or compatibility `HOST_DRAFT_EXECUTOR`)
+
+Canonical field rule:
+- new integrations and new examples should use the canonical fields above by default
+- compatibility aliases remain supported for migration, but should not be expanded further
+- campaign cycle draft write-back should use `host_drafts_per_cycle`
+- see `references/alias-normalization-matrix.md` for the current canonical vs alias mapping
+
+URL host write-back rule:
+- if `scripts/product_resolve.py` returns `hostUrlAnalysisRequest`, treat that as the canonical host-side recovery trigger for weak or blocked URL pages
+- the host should write back only `hostAnalysis` + `productSummary`, then rerun the same `task/product_analysis`, `task/search`, `task/recommend`, or `task/generate_email` request
+- do not write back near-final WotoHub search payloads in place of understanding; keep the contract at the semantic layer
+- the most natural write-back surfaces are `input.hostAnalysis` + `input.productSummary`; `metadata.*` / `config.*` remain compatibility surfaces only
+- important runtime nuance from live use: direct `python3 scripts/product_resolve.py --input <url>` currently only emits `hostUrlAnalysisRequest`; it does not auto-run browser/web recovery or auto-apply write-back
+- automatic host analysis execution currently exists in upper-layer / campaign orchestration paths that use `hostAnalysisExecutor`, not in the bare `product_resolve.py` path
+
 Trust boundary:
 - treat host-injected model outputs as untrusted structured input until validated
 - do not let upstream models inject near-final WotoHub payloads directly into execution
 - validate injected analysis and draft data against the referenced schemas before allowing send or reply execution
 
 Full integration details: `references/integration-contract.md`
+Third-party quickstart: `references/third-party-integration-guide.md`
+One-command launchers:
+- `run_skill_with_router.py`
+- `run_cycle_via_skill.py` (now auto-wires router defaults for cycle runs)
+Executor templates:
+- `scripts/host_executor_router.py` (single-entry router for analysis / reply / drafts)
+- `scripts/host_analysis_executor_example.py`
+- `scripts/host_reply_analysis_executor_example.py`
+- `scripts/host_draft_executor_example.py`
+- `scripts/host_model_bridge_executor_example.py` (cycle-oriented draft bridge example)
 
 ## Step references
 
@@ -258,7 +304,7 @@ Send protocol:
 
 Default behavior:
 - single manual runs default to `prepare_only`
-- scheduled tasks and campaign brief runs default to `scheduled_send`
+- scheduled tasks and campaign brief runs default to `scheduled_send`, which is the default real-send path for scheduled flows
 
 ### Step 6, inbox and reply assist
 Read `steps/06-inbox-management.md`
@@ -288,6 +334,8 @@ Main path:
 
 ### URL fetch failure
 - return structured fallback or `needsUserInput=true`
+- when available, prefer lightweight host-assisted recovery via `hostUrlAnalysisRequest` to obtain `hostAnalysis` / `productSummary` before falling back to user-supplied product fields
+- host write-back should land on canonical `input.hostAnalysis` + `input.productSummary`, then rerun the same task so the existing routing and compiler chain can continue naturally
 - do not continue as if the URL slug were a valid product understanding
 
 ### Send or reply execution failure
@@ -302,7 +350,7 @@ Main path:
 
 ## Core entry files
 
-- `wotohub_skill.py`, OpenClaw skill entry
+- `wotohub_skill.py`, skill entry adapter
 - `run_campaign.py`, public campaign entry
 - `run_campaign_cycle.py`, single-cycle scheduled entry
 - `run_cycle_via_skill.py`, short safe wrapper for cron / scheduler runs that should avoid complex inline JSON or heavy Python CLI quoting

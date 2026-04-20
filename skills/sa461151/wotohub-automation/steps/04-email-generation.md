@@ -115,7 +115,9 @@ Best regards,
 - 默认输出英文（包括 subject 和正文）；若用户明确指定语言，应优先由宿主模型生成目标语言 drafts；脚本 fallback 保持轻量保守，不作为完整多语言文案引擎
 - 默认先由宿主模型生成 `subject + htmlBody + plainTextBody`；没有 `host drafts` 时，不应静默 fallback
 - 脚本只在模型 drafts 缺失且操作者显式允许 fallback 时兜底
-- 若提供 `email_model_drafts`，每个 draft 应显式包含目标达人的 `bloggerId/besId`
+- 新接入默认应提供 `hostDrafts`；若走 campaign cycle write-back，则使用 `host_drafts_per_cycle`
+- 历史兼容入口如 `emailModelDrafts / hostEmailDrafts` 仍可吸收，但不应继续用于新示例或新接入
+- 若提供 host drafts，每个 draft 应显式包含目标达人的 `bloggerId/besId`
 - 当前 skill 不再依赖 `nickname` 绑定 model drafts；缺少达人 ID 的 draft 会直接回退到脚本兜底
 - 脚本 fallback 现提供最小可用的 `en/es/ja/ko` 标题与正文；高质量多语言仍建议由模型层生成
 

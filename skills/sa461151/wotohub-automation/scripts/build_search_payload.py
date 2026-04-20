@@ -2,6 +2,7 @@
 import argparse
 import html
 import json
+import os
 import re
 import sys
 from functools import lru_cache
@@ -80,6 +81,8 @@ BROAD_KEYWORD_TOKENS = {
 SEARCH_JUNK_PATTERNS = [
     r'\bwith email\b',
     r'\b(has|with) emails?\b',
+    r'\bconsumer product\b',
+    r'\bproduct from url\b',
     r'\bcreator(s)?\b',
     r'\binfluencer(s)?\b',
     r'\bblogger(s)?\b',
@@ -209,11 +212,12 @@ def _normalize_explicit_codes(values: Union[list[Any], Any], mapping: dict[str, 
 
 def normalize_platform(platform: Optional[str], source_host: Optional[str]= None) -> str:
     candidate = (platform or '').strip().lower()
-    if candidate in {'tiktok', 'youtube', 'instagram', 'amazon', 'shopify'}:
+    creator_platforms = {'tiktok', 'youtube', 'instagram'}
+    if candidate in creator_platforms:
         return candidate
     host = (source_host or '').lower()
     for suffix, mapped in DOMAIN_PLATFORM_MAP.items():
-        if host == suffix or host.endswith('.' + suffix):
+        if (host == suffix or host.endswith('.' + suffix)) and mapped in creator_platforms:
             return mapped
     return 'tiktok'
 
@@ -738,6 +742,70 @@ def run_search(payload: dict, token: Optional[str]= None, retry_fallbacks: bool 
     return output
 
 
+def _ensure_router_executor_defaults() -> None:
+    try:
+        from router_launcher_env import ensure_router_executor_env
+    except Exception:
+        return
+    os.environ.update(ensure_router_executor_env(skill_root=ROOT, env=os.environ))
+
+
+
+def _try_resolve_url_fallback_via_host_executor(raw_input: str, resolved: dict) -> tuple[Optional[dict], Optional[dict], Optional[dict]]:
+    host_request = (resolved or {}).get('hostUrlAnalysisRequest')
+    if not isinstance(host_request, dict) or not host_request:
+        return None, None, None
+
+    try:
+        from orchestrator import UpperLayerOrchestrator
+    except Exception as exc:
+        return None, None, {
+            'code': 'HOST_ANALYSIS_BRIDGE_IMPORT_FAILED',
+            'message': f'Failed to import orchestrator bridge: {exc}',
+            'details': {'hostUrlAnalysisRequest': host_request},
+        }
+
+    orchestrator = UpperLayerOrchestrator(token=None)
+    executor = orchestrator._get_host_analysis_executor(config={})
+    if not executor:
+        return None, None, {
+            'code': 'HOST_ANALYSIS_EXECUTOR_MISSING',
+            'message': 'URL fallback produced hostUrlAnalysisRequest, but no host analysis executor is configured.',
+            'details': {'hostUrlAnalysisRequest': host_request},
+        }
+
+    try:
+        payload = orchestrator._run_host_analysis_executor(request=host_request, executor_spec=executor)
+        extracted = orchestrator._extract_host_analysis_payload(payload)
+        analysis = extracted.get('analysis')
+        product_summary = extracted.get('productSummary')
+        if not isinstance(analysis, dict) or not analysis:
+            return None, None, {
+                'code': 'HOST_ANALYSIS_EXECUTOR_EMPTY',
+                'message': 'Host analysis executor ran but returned no usable analysis payload.',
+                'details': {
+                    'executor': orchestrator._describe_executor(executor),
+                    'hostUrlAnalysisRequest': host_request,
+                },
+            }
+
+        import product_resolve
+        rewritten = product_resolve.resolve_product(
+            raw_input,
+            timeout=0,
+            host_analysis=analysis,
+            product_summary=product_summary,
+        )
+        return rewritten.get('analysis'), rewritten.get('productSummary'), None
+    except Exception as exc:
+        return None, None, {
+            'code': 'HOST_ANALYSIS_EXECUTOR_FAILED',
+            'message': f'Host analysis executor failed: {exc}',
+            'details': {'hostUrlAnalysisRequest': host_request},
+        }
+
+
+
 def main():
     ap = argparse.ArgumentParser(description='Build clawSearch payload from natural language hints or resolved product input')
     ap.add_argument('--query', help='natural language search query')
@@ -769,23 +837,59 @@ def main():
     data, by_code, children, category_index = load_categories()
     region_keywords = load_region_keywords()
     lang_keywords = load_lang_keywords()
+    _ensure_router_executor_defaults()
 
     if args.input:
         import product_resolve
         resolved = product_resolve.resolve_product(args.input, timeout=args.resolve_timeout)
-        analysis = resolved['analysis']
+        analysis = resolved.get('analysis')
+        product_summary = resolved.get('productSummary')
+        bridge_error = None
+        bridge_resolved = False
+        if not isinstance(analysis, dict) or not analysis:
+            analysis, product_summary, bridge_error = _try_resolve_url_fallback_via_host_executor(args.input, resolved)
+            bridge_resolved = isinstance(analysis, dict) and bool(analysis)
         base_query = args.query or args.input
         resolved_fallback = (resolved or {}).get('fallback') or {}
-        if resolved_fallback.get('active'):
-            analysis['fallback'] = resolved_fallback
-        result = build_payload_from_analysis(base_query, analysis, args, region_keywords, lang_keywords, data, by_code, children, category_index)
-        result['resolved'] = {
-            'mode': resolved.get('mode'),
-            'resolvedFrom': resolved.get('resolvedFrom'),
-            'fetch': resolved.get('fetch'),
-            'resolvedProduct': resolved.get('resolvedProduct'),
-            'fallback': resolved.get('fallback'),
-        }
+        if not isinstance(analysis, dict) or not analysis:
+            result = {
+                'query': base_query,
+                'matchedCategories': [],
+                'payload': None,
+                'analysis': {
+                    'productSummary': product_summary or {},
+                    'searchConditions': {},
+                },
+                'resolved': {
+                    'mode': resolved.get('mode'),
+                    'resolvedFrom': resolved.get('resolvedFrom'),
+                    'fetch': resolved.get('fetch'),
+                    'resolvedProduct': resolved.get('resolvedProduct'),
+                    'fallback': resolved.get('fallback'),
+                    'hostUrlAnalysisRequest': resolved.get('hostUrlAnalysisRequest'),
+                },
+                'needsUserInput': True,
+                'error': bridge_error or {
+                    'code': 'PRODUCT_ANALYSIS_UNAVAILABLE',
+                    'message': 'Resolved product input did not produce usable analysis.',
+                    'details': {'fallback': resolved_fallback},
+                },
+            }
+        else:
+            analysis = dict(analysis)
+            if resolved_fallback.get('active') and not bridge_resolved:
+                analysis['fallback'] = resolved_fallback
+            if isinstance(product_summary, dict) and product_summary and not analysis.get('productSummary'):
+                analysis['productSummary'] = product_summary
+            result = build_payload_from_analysis(base_query, analysis, args, region_keywords, lang_keywords, data, by_code, children, category_index)
+            result['resolved'] = {
+                'mode': resolved.get('mode'),
+                'resolvedFrom': resolved.get('resolvedFrom'),
+                'fetch': resolved.get('fetch'),
+                'resolvedProduct': resolved.get('resolvedProduct'),
+                'fallback': resolved.get('fallback'),
+                'hostUrlAnalysisRequest': resolved.get('hostUrlAnalysisRequest'),
+            }
     else:
         query = html.unescape(args.query)
         q = query.lower()

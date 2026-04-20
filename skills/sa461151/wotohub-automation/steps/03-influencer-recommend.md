@@ -4,6 +4,11 @@
 
 根据产品特性、推广目标和预算，为用户提供个性化的红人推荐方案
 
+字段约定：
+- 推荐阶段新接入默认优先使用 canonical 上游字段，如 `hostAnalysis` / `productSummary`
+- 历史兼容字段仍可吸收，但不应继续扩散到新示例或新桥接契约
+- 字段映射参考 `references/alias-normalization-matrix.md`
+
 ## 执行步骤
 
 ### 3.1 分析产品特性
@@ -97,7 +102,7 @@
 - 先让用户从当前结果中选 3-5 位目标达人
 - 可直接回复推荐序号（如 `1,3,5`），也可直接给 `besId` 列表
 - 如果下一步要生成邀约邮件，请提醒用户同时补齐最小 brief：`productName`、`senderName`、`offerType`
-- 正式邮件生成默认应先准备宿主模型 drafts，再进入预览/发送
+- 正式邮件生成默认应先准备宿主模型 `hostDrafts`，campaign cycle write-back 则使用 `host_drafts_per_cycle`，再进入预览/发送
 - 邮件默认建议先走 `prepare_only` 预览，确认后再执行批量发送
 
 用户确认后，继续下一步。

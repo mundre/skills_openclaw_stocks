@@ -265,7 +265,106 @@ def _fallback_user_prompt() -> str:
     )
 
 
-def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bool = False) -> dict:
+def _build_host_url_analysis_request(
+    *,
+    url: str,
+    fallback_reason: str,
+    source_host: Optional[str]= None,
+    source_platform: Optional[str]= None,
+    resolved_product: Optional[dict]= None,
+    page_quality: Optional[dict]= None,
+    fetch: Optional[dict]= None,
+    error: Optional[str]= None,
+) -> dict:
+    resolved_product = resolved_product or {}
+    page_quality = page_quality or {}
+    fetch = fetch or {}
+    return {
+        'task': 'generate_host_analysis_for_url_product',
+        'mode': 'host_url_analysis_request',
+        'input': {
+            'url': url,
+            'fallbackReason': fallback_reason,
+            'fetchError': error,
+            'partialSignals': {
+                'sourceHost': source_host,
+                'sourcePlatform': source_platform,
+                'title': resolved_product.get('title') or resolved_product.get('productName'),
+                'description': resolved_product.get('description'),
+                'price': resolved_product.get('price'),
+                'brand': resolved_product.get('brand'),
+                'currency': resolved_product.get('currency'),
+                'imageUrl': resolved_product.get('imageUrl'),
+                'features': resolved_product.get('features') or [],
+            },
+            'pageQuality': page_quality,
+            'fetch': {
+                'sourceHost': source_host,
+                'sourcePlatform': source_platform,
+                'statusCode': fetch.get('statusCode'),
+                'finalUrl': fetch.get('finalUrl') or url,
+                'contentType': fetch.get('contentType'),
+                'contentLength': fetch.get('contentLength'),
+            },
+        },
+        'deliveryContract': {
+            'canonicalFields': ['hostAnalysis', 'productSummary'],
+            'doNotReturn': ['searchPayload', 'blogCateIds', 'regionList'],
+        },
+        'runtimeHints': {
+            'browserPreferred': True,
+            'doNotReturnSearchPayload': True,
+            'goal': 'recover_product_understanding_from_url',
+        },
+    }
+
+
+def _build_host_url_analysis_writeback_result(
+    *,
+    raw: str,
+    host_analysis: dict,
+    product_summary: Optional[dict]= None,
+) -> dict:
+    product_summary = product_summary or _model_to_product_summary(host_analysis)
+    product = (host_analysis or {}).get('product') or {}
+    marketing = (host_analysis or {}).get('marketing') or {}
+    host = urlparse(raw).netloc if is_url(raw) else None
+    source_platform = infer_source_platform(host or '') if host else None
+    resolved_product = {
+        'sourcePlatform': source_platform,
+        'sourceHost': host,
+        'title': _clean(product.get('productName') or product_summary.get('productName')),
+        'productName': _clean(product.get('productName') or product_summary.get('productName')),
+        'brand': _clean(product.get('brand') or product_summary.get('brand')),
+        'description': _clean(product.get('pageTitle') or product_summary.get('pageDescription')),
+        'price': product.get('price') or product_summary.get('priceHint'),
+        'currency': None,
+        'storeName': None,
+        'merchantName': None,
+        'imageUrl': None,
+        'productUrl': product.get('sourceUrl') or raw,
+        'features': product.get('features') or product_summary.get('sellingPoints') or [],
+        'platform': (marketing.get('platformPreference') or [None])[0],
+        'siteParser': 'host_url_analysis_writeback',
+    }
+    product_summary = dict(product_summary or {})
+    product_summary.setdefault('sourcePlatform', source_platform)
+    product_summary.setdefault('sourceHost', host)
+    product_summary.setdefault('productUrl', raw)
+    return {
+        'input': raw,
+        'mode': 'url',
+        'resolvedFrom': 'url_host_analysis_writeback',
+        'fetch': None,
+        'resolvedProduct': resolved_product,
+        'analysis': host_analysis,
+        'productSummary': product_summary,
+        'fallback': None,
+        'hostUrlAnalysisRequest': None,
+    }
+
+
+def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bool = False, host_analysis: Optional[dict]= None, product_summary: Optional[dict]= None) -> dict:
     raw = value.strip()
 
     # Validate input
@@ -289,6 +388,13 @@ def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bo
     actual_mode = mode
     if mode == 'auto':
         actual_mode = 'url' if is_url(raw) else 'text'
+
+    if actual_mode == 'url' and isinstance(host_analysis, dict) and host_analysis:
+        return _build_host_url_analysis_writeback_result(
+            raw=raw,
+            host_analysis=host_analysis,
+            product_summary=product_summary,
+        )
 
     if actual_mode == 'text':
         model_output = SemanticLayer.analyze_model(raw)
@@ -335,7 +441,9 @@ def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bo
         merged_brand = first_non_empty(parsed.get('brand'), parsed.get('merchantName'))
         store_name = first_non_empty(parsed.get('merchantName'))
 
-        synthesized_input = make_analysis_text(raw, merged_title, merged_description, text, brand=merged_brand, price=merged_price, features=parsed.get('features'))
+        cleaned_info = clean_url_page_text(text, raw)
+        analysis_text = cleaned_info.get('cleanedText') or text
+        synthesized_input = make_analysis_text(raw, merged_title, merged_description, analysis_text, brand=merged_brand, price=merged_price, features=parsed.get('features'))
         model_output = SemanticLayer.analyze_model(
             synthesized_input,
             url=raw,
@@ -359,7 +467,6 @@ def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bo
         product_summary['features'] = parsed.get('features') or []
         product_summary['merchantName'] = parsed.get('merchantName')
 
-        cleaned_info = clean_url_page_text(text, raw)
         resolved_product = {
             'sourcePlatform': source_platform,
             'sourceHost': host,
@@ -393,6 +500,12 @@ def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bo
             page_quality['quality'] = 'low'
         if page_quality.get('antiBotDetected') or page_quality.get('likelyNonProductPage'):
             prompt = _fallback_user_prompt()
+            fetch_summary = {
+                'statusCode': fetched.get('statusCode'),
+                'finalUrl': fetched.get('finalUrl') or raw,
+                'contentType': fetched.get('contentType'),
+                'contentLength': fetched.get('contentLength'),
+            }
             return {
                 'input': raw,
                 'mode': 'url',
@@ -403,6 +516,10 @@ def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bo
                     'sourcePlatform': source_platform,
                     'bodyTextPreview': text[:800],
                     'bodyTextLength': len(text),
+                    'statusCode': fetched.get('statusCode'),
+                    'finalUrl': fetched.get('finalUrl') or raw,
+                    'contentType': fetched.get('contentType'),
+                    'contentLength': fetched.get('contentLength'),
                     'siteParser': parsed.get('platform') or 'generic',
                     'fetchAttempt': fetched.get('attempt'),
                     'headerProfile': fetched.get('headerProfile'),
@@ -411,6 +528,15 @@ def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bo
                 'analysis': None,
                 'productSummary': None,
                 'pageQuality': page_quality,
+                'hostUrlAnalysisRequest': _build_host_url_analysis_request(
+                    url=raw,
+                    fallback_reason='url_page_low_confidence',
+                    source_host=host,
+                    source_platform=source_platform,
+                    resolved_product=resolved_product,
+                    page_quality=page_quality,
+                    fetch=fetch_summary,
+                ),
                 'fallback': {
                     'active': True,
                     'reason': 'url_page_low_confidence',
@@ -432,6 +558,10 @@ def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bo
                 'description': merged_description,
                 'bodyTextPreview': text[:1200],
                 'bodyTextLength': len(text),
+                'statusCode': fetched.get('statusCode'),
+                'finalUrl': fetched.get('finalUrl') or raw,
+                'contentType': fetched.get('contentType'),
+                'contentLength': fetched.get('contentLength'),
                 'siteParser': parsed.get('platform') or 'generic',
                 'fetchAttempt': fetched.get('attempt'),
                 'headerProfile': fetched.get('headerProfile'),
@@ -469,6 +599,25 @@ def resolve_product(value: str, mode: str = 'auto', timeout: int = 20, debug: bo
             },
             'analysis': None,
             'productSummary': None,
+            'hostUrlAnalysisRequest': _build_host_url_analysis_request(
+                url=raw,
+                fallback_reason='url_fetch_unavailable',
+                source_host=host,
+                source_platform=source_platform,
+                resolved_product={
+                    'sourcePlatform': source_platform,
+                    'sourceHost': host,
+                    'title': None,
+                    'brand': None,
+                    'description': None,
+                    'price': None,
+                    'currency': None,
+                    'imageUrl': None,
+                    'features': [],
+                },
+                fetch={'finalUrl': raw},
+                error=str(e),
+            ),
             'fallback': {
                 'active': True,
                 'reason': 'url_fetch_unavailable',

@@ -2,13 +2,13 @@
 
 你正在为 WotoHub Skill 处理一个**商品 URL 页面**。
 
-目标不是复述页面内容，而是把页面信息转换成可执行的 `model_analysis` 结构，供后续达人搜索使用。
+目标不是复述页面内容，而是把页面信息转换成可执行的标准产品理解结构，供后续达人搜索使用；在宿主注入层通常对应 `hostAnalysis`，进入 skill 内部后会归一到运行时分析结构。
 
 ## 核心原则
 
 - **理解交给模型**：你负责理解商品、卖点、受众、营销意图、内容方向。
 - **执行交给脚本**：脚本负责消费你的结构化输出、构造 payload、调用搜索接口。
-- 你的输出必须是**标准 `model_analysis` schema**。
+- 你的输出必须是**标准模型分析 schema**；如果由宿主直接注入，请优先按 canonical `hostAnalysis` 契约回写。
 
 ---
 
@@ -37,7 +37,7 @@
     "features": ["..."],
     "platform": "amazon | tiktok | shopify | ..."
   },
-  "instruction": "请根据以上 URL 页面信息，输出 model_analysis schema..."
+  "instruction": "请根据以上 URL 页面信息，输出标准模型分析 schema..."
 }
 ```
 
@@ -115,7 +115,7 @@
 
 ## 输出要求
 
-你必须输出 **标准 JSON**，结构遵循 `model_analysis` schema。
+你必须输出 **标准 JSON**，结构遵循当前 skill 的模型分析 schema。
 
 最低应包含：
 

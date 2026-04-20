@@ -99,6 +99,19 @@ def _og_tag(html: str, property_: str) -> Optional[str]:
     ])
 
 
+def _meta_name(html: str, name: str) -> Optional[str]:
+    return _meta_content(html, [
+        rf'(?is)<meta[^>]+name=["\']{name}["\'][^>]+content=["\']([^"\']+)["\']',
+        rf'(?is)<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']{name}["\']',
+    ])
+
+
+def _title_tag(html: str) -> Optional[str]:
+    return _meta_content(html, [
+        r'(?is)<title[^>]*>(.*?)</title>',
+    ])
+
+
 def _striptag(text: str) -> str:
     return re.sub(r"(?s)<[^>]+>", " ", text).strip()
 
@@ -467,6 +480,8 @@ def resolve_generic(html: str, text: str, url: str) -> dict[str, Any]:
     brand = None
     description = None
     price = None
+    image_url = None
+    currency = None
     if ld:
         title = _clean(ld.get("name"))
         brand_obj = ld.get("brand")
@@ -478,16 +493,24 @@ def resolve_generic(html: str, text: str, url: str) -> dict[str, Any]:
         offers = ld.get("offers")
         if isinstance(offers, list) and offers:
             price = _parse_price(offers[0].get("price"))
+            currency = _clean(offers[0].get("priceCurrency"))
         elif isinstance(offers, dict):
             price = _parse_price(offers.get("price"))
+            currency = _clean(offers.get("priceCurrency"))
+        image_obj = ld.get("image")
+        if isinstance(image_obj, list) and image_obj:
+            image_url = _clean(image_obj[0])
+        else:
+            image_url = _clean(image_obj)
     if not title:
-        title = _og_tag(html, "title")
+        title = _og_tag(html, "title") or _meta_name(html, "twitter:title") or _title_tag(html)
     if not description:
-        description = _og_tag(html, "description")
+        description = _og_tag(html, "description") or _meta_name(html, "description") or _meta_name(html, "twitter:description")
     if not price:
         price = _extract_price_from_text(text)
-    image_url = _og_tag(html, "image")
-    return _make_result("generic", title, brand, description, price, text, url, image_url, features=None)
+    if not image_url:
+        image_url = _og_tag(html, "image") or _meta_name(html, "twitter:image")
+    return _make_result("generic", title, brand, description, price, text, url, image_url, features=None, currency=currency)
 
 
 # ── 注册表 ───────────────────────────────────────────────────────────────────
@@ -528,6 +551,7 @@ def _make_result(
     url: str,
     image_url: Optional[str]= None,
     features: Optional[list]= None,
+    currency: Optional[str]= None,
 ) -> dict[str, Any]:
     return {
         "productName": title,
@@ -539,7 +563,7 @@ def _make_result(
         "imageUrl": image_url,
         "productUrl": url,
         "merchantName": None,
-        "currency": "USD" if price else None,
+        "currency": currency or ("USD" if price else None),
     }
 
 

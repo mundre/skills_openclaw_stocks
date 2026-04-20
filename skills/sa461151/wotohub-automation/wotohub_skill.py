@@ -105,31 +105,91 @@ def _extract_host_semantic_inputs(req: dict) -> dict:
     }
 
 
+def _run_upper_layer_once(req: dict) -> dict:
+    task_type = req.get("type")
+    input_data = req.get("input", {}) or {}
+    raw_input = input_data.get("input")
+    host_inputs = _extract_host_semantic_inputs(req)
+    request_passthrough = {
+        "campaignId": input_data.get("campaignId"),
+        "contactedBloggerIds": input_data.get("contactedBloggerIds"),
+        "pageSize": input_data.get("pageSize"),
+    }
+    from orchestrator import UpperLayerOrchestrator
+    orchestrator = UpperLayerOrchestrator(req.get("auth", {}).get("token"))
+    orchestrated = orchestrator.run_from_user_input(
+        raw_input,
+        explicit_task=task_type,
+        config=req.get("config", {}) or {},
+        host_analysis=host_inputs.get("host_analysis"),
+        host_product_summary=host_inputs.get("host_product_summary"),
+        host_drafts=host_inputs.get("host_drafts"),
+        host_reply_analysis=host_inputs.get("host_reply_analysis"),
+        host_search_results=host_inputs.get("host_search_results"),
+        request_passthrough=request_passthrough,
+    )
+    return {"orchestrator": orchestrator, "orchestrated": orchestrated}
+
+
+def _extract_host_url_analysis_request(orchestrated: dict) -> Optional[dict]:
+    result = (orchestrated or {}).get("result") or {}
+    if isinstance(result.get("hostUrlAnalysisRequest"), dict) and result.get("hostUrlAnalysisRequest"):
+        return result.get("hostUrlAnalysisRequest")
+    semantic_context = (orchestrated or {}).get("semanticContext") or {}
+    resolved = semantic_context.get("resolvedArtifacts") or {}
+    product_resolve = resolved.get("productResolve") or {}
+    request = product_resolve.get("hostUrlAnalysisRequest")
+    return request if isinstance(request, dict) and request else None
+
+
+def _maybe_auto_resolve_host_url_analysis(req: dict, orchestrator: object, orchestrated: dict) -> tuple[dict, Optional[dict]]:
+    request = _extract_host_url_analysis_request(orchestrated)
+    if not request:
+        return req, None
+    config = req.get("config", {}) or {}
+    executor = None
+    if hasattr(orchestrator, "_get_host_analysis_executor"):
+        executor = orchestrator._get_host_analysis_executor(config=config)
+    if not executor:
+        return req, {
+            "status": "no_executor_configured",
+            "request": request,
+        }
+    payload = orchestrator._run_host_analysis_executor(request=request, executor_spec=executor)
+    extracted = orchestrator._extract_host_analysis_payload(payload)
+    analysis = extracted.get("analysis")
+    product_summary = extracted.get("productSummary")
+    if not isinstance(analysis, dict) or not analysis:
+        return req, {
+            "status": "executor_returned_empty",
+            "request": request,
+            "executor": orchestrator._describe_executor(executor),
+        }
+    prepared_req = dict(req)
+    prepared_input = dict(prepared_req.get("input", {}) or {})
+    prepared_input["hostAnalysis"] = analysis
+    prepared_input["productSummary"] = product_summary or prepared_input.get("productSummary") or {}
+    prepared_req["input"] = prepared_input
+    return prepared_req, {
+        "status": "resolved_from_executor",
+        "request": request,
+        "executor": orchestrator._describe_executor(executor),
+        "hostAnalysis": analysis,
+        "productSummary": product_summary,
+    }
+
+
 def _maybe_handle_with_upper_layer(req: dict) -> Optional[dict]:
     if not _should_use_upper_layer(req):
         return None
     try:
-        task_type = req.get("type")
-        input_data = req.get("input", {}) or {}
-        raw_input = input_data.get("input")
-        host_inputs = _extract_host_semantic_inputs(req)
-        request_passthrough = {
-            "campaignId": input_data.get("campaignId"),
-            "contactedBloggerIds": input_data.get("contactedBloggerIds"),
-            "pageSize": input_data.get("pageSize"),
-        }
-        from orchestrator import UpperLayerOrchestrator
-        orchestrated = UpperLayerOrchestrator(req.get("auth", {}).get("token")).run_from_user_input(
-            raw_input,
-            explicit_task=task_type,
-            config=req.get("config", {}) or {},
-            host_analysis=host_inputs.get("host_analysis"),
-            host_product_summary=host_inputs.get("host_product_summary"),
-            host_drafts=host_inputs.get("host_drafts"),
-            host_reply_analysis=host_inputs.get("host_reply_analysis"),
-            host_search_results=host_inputs.get("host_search_results"),
-            request_passthrough=request_passthrough,
-        )
+        first_run = _run_upper_layer_once(req)
+        orchestrator = first_run.get("orchestrator")
+        orchestrated = first_run.get("orchestrated") or {}
+        auto_resolution = None
+        prepared_req, auto_resolution = _maybe_auto_resolve_host_url_analysis(req, orchestrator, orchestrated)
+        if auto_resolution and auto_resolution.get("status") == "resolved_from_executor":
+            orchestrated = (_run_upper_layer_once(prepared_req) or {}).get("orchestrated") or orchestrated
         return {
             "requestId": req.get("requestId"),
             "status": "success",
@@ -142,6 +202,7 @@ def _maybe_handle_with_upper_layer(req: dict) -> Optional[dict]:
                 "legacyInput": orchestrated.get("legacyInput"),
                 "route": orchestrated.get("route"),
                 "observations": orchestrated.get("observations"),
+                **({"hostUrlAnalysisAutoResolution": auto_resolution} if auto_resolution else {}),
             },
         }
     except Exception as e:

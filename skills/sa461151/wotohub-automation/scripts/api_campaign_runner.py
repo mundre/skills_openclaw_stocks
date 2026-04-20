@@ -267,6 +267,9 @@ class CampaignRunner:
             for key in ("hostAnalysisExecutor", "host_analysis_executor", "hostSemanticExecutor", "host_semantic_executor"):
                 if container.get(key):
                     return container.get(key)
+        env_default = os.environ.get("WOTOHUB_HOST_ANALYSIS_EXECUTOR") or os.environ.get("HOST_ANALYSIS_EXECUTOR")
+        if env_default:
+            return env_default
         return None
 
     def _build_host_analysis_request(self, *, campaign_id: str, brief: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
@@ -364,6 +367,7 @@ class CampaignRunner:
         draft_input = draft_generation.get("draftGenerationInput") or {}
         resolution = self._resolve_host_drafts_with_meta(draft_input, brief, config)
         generated_host_drafts = resolution.get("drafts") or []
+        generated_host_draft_metadata = resolution.get("metadata") or {}
         orchestration["attempted"] = True
         orchestration["hostDraftSource"] = resolution.get("source")
         if resolution.get("error"):
@@ -383,6 +387,8 @@ class CampaignRunner:
 
         rerun_brief = dict(brief or {})
         rerun_brief["host_drafts_per_cycle"] = generated_host_drafts
+        if generated_host_draft_metadata:
+            rerun_brief["host_drafts_metadata_per_cycle"] = generated_host_draft_metadata
         rerun_result = self._run_engine_once(
             run_engine_from_brief,
             campaign_id=campaign_id,
@@ -394,6 +400,7 @@ class CampaignRunner:
             "status": "rerun_completed",
             "hostDraftSource": resolution.get("source") or "runtime_host_model_bridge",
             "generatedDraftCount": len(generated_host_drafts),
+            "hostDraftMetadata": generated_host_draft_metadata,
         })
         rerun_result["runtimeOrchestration"] = orchestration
         return rerun_result
@@ -477,8 +484,9 @@ class CampaignRunner:
         4. otherwise return [] and keep waiting state
         """
         injected = config.get("hostDraftsPerCycle") or config.get("host_drafts_per_cycle")
+        injected_meta = config.get("hostDraftsMetadataPerCycle") or config.get("host_drafts_metadata_per_cycle")
         if isinstance(injected, list) and injected:
-            return {"drafts": injected, "source": "config_injected_host_drafts", "status": "resolved_from_config"}
+            return {"drafts": injected, "metadata": injected_meta if isinstance(injected_meta, dict) else {}, "source": "config_injected_host_drafts", "status": "resolved_from_config"}
 
         generator = config.get("hostDraftGenerator")
         if callable(generator):
@@ -495,7 +503,7 @@ class CampaignRunner:
                     "error": f"{type(exc).__name__}: {exc}",
                 }
             if isinstance(generated, list) and generated:
-                return {"drafts": generated, "source": "host_runtime_callable", "status": "resolved_from_callable"}
+                return {"drafts": generated, "metadata": {}, "source": "host_runtime_callable", "status": "resolved_from_callable"}
 
         bridge_executor = self._get_host_bridge_executor(config=config, brief=brief)
         if bridge_executor:
@@ -517,7 +525,8 @@ class CampaignRunner:
                 }
             if generated:
                 return {
-                    "drafts": generated,
+                    "drafts": generated.get("drafts") or [],
+                    "metadata": generated.get("metadata") or {},
                     "source": "host_bridge_executor",
                     "status": "resolved_from_executor",
                     "executor": self._describe_executor(bridge_executor),
@@ -529,7 +538,7 @@ class CampaignRunner:
                 "executor": self._describe_executor(bridge_executor),
             }
 
-        return {"drafts": [], "source": None, "status": "waiting_for_external_host_drafts"}
+        return {"drafts": [], "metadata": {}, "source": None, "status": "waiting_for_external_host_drafts"}
 
     def _build_host_draft_generator(self, config: dict[str, Any], brief: dict[str, Any]):
         """Build a host draft generator.
@@ -632,6 +641,9 @@ class CampaignRunner:
             for key in ("hostBridgeExecutor", "host_bridge_executor"):
                 if container.get(key):
                     return container.get(key)
+        env_default = os.environ.get("WOTOHUB_HOST_DRAFT_EXECUTOR") or os.environ.get("HOST_DRAFT_EXECUTOR")
+        if env_default:
+            return env_default
         return None
 
     def _get_host_reply_bridge_executor(self, *, config: dict[str, Any], brief: dict[str, Any]) -> Any:
@@ -645,6 +657,9 @@ class CampaignRunner:
             for key in ("hostReplyBridgeExecutor", "host_reply_bridge_executor"):
                 if container.get(key):
                     return container.get(key)
+        env_default = os.environ.get("WOTOHUB_HOST_REPLY_ANALYSIS_EXECUTOR") or os.environ.get("HOST_REPLY_ANALYSIS_EXECUTOR")
+        if env_default:
+            return env_default
         return None
 
     def _describe_executor(self, executor_spec: Any) -> str:
@@ -690,6 +705,15 @@ class CampaignRunner:
                 raise TypeError("host bridge executor must be string or dict")
 
             env = os.environ.copy()
+            pythonpath_parts: list[str] = []
+            existing_pythonpath = env.get("PYTHONPATH")
+            if existing_pythonpath:
+                pythonpath_parts.append(existing_pythonpath)
+            pythonpath_parts.extend([
+                str(skill_root),
+                str(skill_root / "scripts"),
+            ])
+            env["PYTHONPATH"] = os.pathsep.join(part for part in pythonpath_parts if part)
             for key, value in (env_overrides or {}).items():
                 env[str(key)] = str(value)
 
@@ -720,15 +744,18 @@ class CampaignRunner:
                 return self._extract_host_reply_analysis_from_payload(payload)
             return self._extract_host_drafts_from_payload(payload)
 
-    def _extract_host_drafts_from_payload(self, payload: Any) -> list[dict[str, Any]]:
+    def _extract_host_drafts_from_payload(self, payload: Any) -> dict[str, Any]:
         if isinstance(payload, list):
-            return self._normalize_host_draft_items(payload)
+            return {"drafts": self._normalize_host_draft_items(payload), "metadata": {}}
         if isinstance(payload, dict):
+            metadata = payload.get("writeBackMetadata") or payload.get("hostDraftsMetadataPerCycle") or payload.get("host_drafts_metadata_per_cycle") or {}
+            if not isinstance(metadata, dict):
+                metadata = {}
             for key in ("host_drafts_per_cycle", "hostDraftsPerCycle", "hostDrafts", "emailModelDrafts", "items"):
                 items = payload.get(key)
                 if isinstance(items, list):
-                    return self._normalize_host_draft_items(items)
-        return []
+                    return {"drafts": self._normalize_host_draft_items(items), "metadata": metadata}
+        return {"drafts": [], "metadata": {}}
 
     def _extract_host_reply_analysis_from_payload(self, payload: Any) -> Optional[dict[str, Any]]:
         if isinstance(payload, dict):
@@ -831,6 +858,14 @@ class CampaignRunner:
                 "acceptedAliases": ["host_drafts_per_cycle", "hostDraftsPerCycle", "hostDrafts", "emailModelDrafts"],
                 "canonicalField": "host_drafts_per_cycle",
                 "compatibilityAliasesOnly": True,
+                "requiredBatchMetadata": [
+                    "selectedCreatorCount",
+                    "generatedDraftCount",
+                    "uniqueBloggerIdCount",
+                    "missingBloggerIds",
+                    "duplicateBloggerIds",
+                    "unexpectedBloggerIds",
+                ],
             },
             "runtimeHints": {
                 "defaultLanguage": ((draft_input.get("outreachPolicy") or {}).get("emailLanguage")) or brief.get("language") or "en",
@@ -888,6 +923,8 @@ class CampaignRunner:
                 "field": ((request.get("deliveryContract") or {}).get("field")) or "host_drafts_per_cycle",
                 "acceptedAliases": ((request.get("deliveryContract") or {}).get("acceptedAliases")) or ["host_drafts_per_cycle"],
                 "requiredPerDraftFields": ((draft_input.get("outputContract") or {}).get("requiredPerDraftFields")) or ["bloggerId", "subject", "plainTextBody|htmlBody"],
+                "requiredBatchMetadata": ((request.get("deliveryContract") or {}).get("requiredBatchMetadata")) or ((draft_input.get("outputContract") or {}).get("requiredBatchMetadata")) or ["selectedCreatorCount", "generatedDraftCount", "uniqueBloggerIdCount", "missingBloggerIds", "duplicateBloggerIds", "unexpectedBloggerIds"],
+                "selectedCreatorIds": [str((item or {}).get("bloggerId") or (item or {}).get("besId") or (item or {}).get("bEsId") or (item or {}).get("id") or "") for item in creators if isinstance(item, dict)],
             },
         }
 
@@ -913,6 +950,46 @@ class CampaignRunner:
             {"role": "user", "content": json.dumps(task, ensure_ascii=False, indent=2)},
         ]
 
+    def build_host_drafts_writeback(
+        self,
+        *,
+        bridge_payload: dict[str, Any],
+        drafts: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        selected_creators = [item for item in (bridge_payload.get("selectedCreators") or []) if isinstance(item, dict)]
+        selected_ids = [
+            str(item.get("bloggerId") or item.get("besId") or item.get("bEsId") or item.get("id") or "").strip()
+            for item in selected_creators
+            if str(item.get("bloggerId") or item.get("besId") or item.get("bEsId") or item.get("id") or "").strip()
+        ]
+        normalized_drafts = self._normalize_host_draft_items(drafts or [])
+        returned_ids = [
+            str(item.get("bloggerId") or "").strip()
+            for item in normalized_drafts
+            if str(item.get("bloggerId") or "").strip()
+        ]
+        seen = set()
+        duplicate_ids: list[str] = []
+        for blogger_id in returned_ids:
+            if blogger_id in seen and blogger_id not in duplicate_ids:
+                duplicate_ids.append(blogger_id)
+            seen.add(blogger_id)
+        returned_id_set = set(returned_ids)
+        selected_id_set = set(selected_ids)
+        payload = {
+            "writeBackField": ((bridge_payload.get("writeBack") or {}).get("field")) or "host_drafts_per_cycle",
+            "host_drafts_per_cycle": normalized_drafts,
+            "writeBackMetadata": {
+                "selectedCreatorCount": len(selected_ids),
+                "generatedDraftCount": len(normalized_drafts),
+                "uniqueBloggerIdCount": len(returned_id_set),
+                "missingBloggerIds": [blogger_id for blogger_id in selected_ids if blogger_id not in returned_id_set],
+                "duplicateBloggerIds": duplicate_ids,
+                "unexpectedBloggerIds": [blogger_id for blogger_id in returned_ids if blogger_id not in selected_id_set],
+            },
+        }
+        return payload
+
     def build_host_model_executor_example(self, *, bridge_payload: dict[str, Any]) -> dict[str, Any]:
         creators = bridge_payload.get("selectedCreators") or []
         samples = []
@@ -936,6 +1013,14 @@ class CampaignRunner:
                 "subject": "string",
                 "htmlBody": "string",
                 "plainTextBody": "string",
+            },
+            "expectedWriteBackMetadata": {
+                "selectedCreatorCount": len(creators),
+                "generatedDraftCount": len(creators),
+                "uniqueBloggerIdCount": len(creators),
+                "missingBloggerIds": [],
+                "duplicateBloggerIds": [],
+                "unexpectedBloggerIds": [],
             },
         }
 

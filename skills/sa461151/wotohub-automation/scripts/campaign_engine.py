@@ -4,6 +4,8 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import re
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -85,6 +87,126 @@ def _creator_identity(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _creator_id(item: dict[str, Any]) -> str:
+    return str(item.get("bloggerId") or item.get("besId") or item.get("bEsId") or item.get("id") or "").strip()
+
+
+def _content_fingerprint(email: dict[str, Any]) -> str:
+    subject = re.sub(r"\s+", " ", str(email.get("subject") or "").strip()).lower()
+    plain = re.sub(
+        r"\s+",
+        " ",
+        str(email.get("plainTextBody") or email.get("body") or email.get("content") or "").strip(),
+    ).lower()
+    return f"{subject}\n{plain}".strip()
+
+
+def _align_host_drafts_to_selected_creators(
+    *,
+    selected_creators: list[dict[str, Any]],
+    host_drafts: list[dict[str, Any]],
+    draft_metadata: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    creator_map: dict[str, dict[str, Any]] = {}
+    creator_order: list[str] = []
+    for item in selected_creators or []:
+        if not isinstance(item, dict):
+            continue
+        blogger_id = _creator_id(item)
+        if not blogger_id or blogger_id in creator_map:
+            continue
+        creator_map[blogger_id] = _creator_identity(item)
+        creator_order.append(blogger_id)
+
+    normalized_drafts = [normalize_email_once(item) for item in prepare_emails_from_host_drafts(host_drafts)]
+    drafts_by_id: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    unexpected_ids: list[str] = []
+    for draft in normalized_drafts:
+        blogger_id = _creator_id(draft)
+        if not blogger_id:
+            continue
+        if blogger_id not in creator_map:
+            unexpected_ids.append(blogger_id)
+            continue
+        drafts_by_id[blogger_id].append(draft)
+
+    missing_ids = [blogger_id for blogger_id in creator_order if not drafts_by_id.get(blogger_id)]
+    duplicate_ids = [blogger_id for blogger_id, items in drafts_by_id.items() if len(items) > 1]
+
+    aligned_emails: list[dict[str, Any]] = []
+    for blogger_id in creator_order:
+        drafts = drafts_by_id.get(blogger_id) or []
+        if not drafts:
+            continue
+        draft = drafts[0]
+        creator = creator_map.get(blogger_id) or {}
+        merged = {
+            **creator,
+            **draft,
+            "bloggerId": blogger_id,
+            "nickname": creator.get("nickname") or draft.get("nickname"),
+            "bloggerName": creator.get("bloggerName") or draft.get("bloggerName") or creator.get("nickname"),
+            "channelName": creator.get("channelName") or draft.get("channelName") or creator.get("nickname"),
+            "platform": creator.get("platform") or draft.get("platform"),
+            "country": creator.get("country") or draft.get("country"),
+            "language": creator.get("language") or draft.get("language"),
+            "category": creator.get("category") or draft.get("category"),
+            "contentStyle": creator.get("contentStyle") or draft.get("contentStyle"),
+            "tagList": creator.get("tagList") or draft.get("tagList") or [],
+            "recentTopics": creator.get("recentTopics") or draft.get("recentTopics") or [],
+            "followers": creator.get("followers") or draft.get("followers") or creator.get("fansNum") or draft.get("fansNum"),
+            "fansNum": creator.get("followers") or draft.get("fansNum") or creator.get("fansNum") or draft.get("followers"),
+        }
+        aligned_emails.append(normalize_email_once(merged))
+
+    fingerprint_groups: dict[str, list[str]] = defaultdict(list)
+    for email in aligned_emails:
+        fingerprint = _content_fingerprint(email)
+        if not fingerprint:
+            continue
+        fingerprint_groups[fingerprint].append(str(email.get("bloggerId") or ""))
+    duplicate_content_groups = [ids for ids in fingerprint_groups.values() if len(ids) > 1]
+    metadata_mismatches: list[str] = []
+    draft_metadata = draft_metadata or {}
+    expected_selected_count = draft_metadata.get("selectedCreatorCount")
+    if expected_selected_count not in (None, "") and int(expected_selected_count) != len(creator_order):
+        metadata_mismatches.append("selectedCreatorCount_mismatch")
+    expected_generated_count = draft_metadata.get("generatedDraftCount")
+    if expected_generated_count not in (None, "") and int(expected_generated_count) != len(normalized_drafts):
+        metadata_mismatches.append("generatedDraftCount_mismatch")
+    expected_unique_count = draft_metadata.get("uniqueBloggerIdCount")
+    actual_unique_count = len(drafts_by_id)
+    if expected_unique_count not in (None, "") and int(expected_unique_count) != actual_unique_count:
+        metadata_mismatches.append("uniqueBloggerIdCount_mismatch")
+    declared_missing = sorted(str(x) for x in (draft_metadata.get("missingBloggerIds") or []))
+    if declared_missing and declared_missing != sorted(missing_ids):
+        metadata_mismatches.append("missingBloggerIds_mismatch")
+    declared_duplicates = sorted(str(x) for x in (draft_metadata.get("duplicateBloggerIds") or []))
+    if declared_duplicates and declared_duplicates != sorted(duplicate_ids):
+        metadata_mismatches.append("duplicateBloggerIds_mismatch")
+    declared_unexpected = sorted(str(x) for x in (draft_metadata.get("unexpectedBloggerIds") or []))
+    if declared_unexpected and declared_unexpected != sorted(set(unexpected_ids)):
+        metadata_mismatches.append("unexpectedBloggerIds_mismatch")
+
+    issues = {
+        "selectedCreatorCount": len(creator_order),
+        "inputDraftCount": len(normalized_drafts),
+        "alignedDraftCount": len(aligned_emails),
+        "missingCreatorIds": missing_ids,
+        "duplicateDraftCreatorIds": duplicate_ids,
+        "unexpectedDraftCreatorIds": sorted(set(unexpected_ids)),
+        "duplicateContentGroups": duplicate_content_groups,
+        "declaredWriteBackMetadata": draft_metadata,
+        "metadataMismatches": metadata_mismatches,
+    }
+    ok = not missing_ids and not duplicate_ids and not unexpected_ids and not duplicate_content_groups and not metadata_mismatches and len(aligned_emails) == len(creator_order)
+    return {
+        "ok": ok,
+        "emails": aligned_emails,
+        "issues": issues,
+    }
+
+
 def build_draft_generation_input(
     *,
     campaign_id: str,
@@ -119,6 +241,14 @@ def build_draft_generation_input(
             "field": "host_drafts_per_cycle",
             "acceptedAliases": ["host_drafts_per_cycle", "hostDraftsPerCycle"],
             "requiredPerDraftFields": ["bloggerId", "subject", "plainTextBody|htmlBody"],
+            "requiredBatchMetadata": [
+                "selectedCreatorCount",
+                "generatedDraftCount",
+                "uniqueBloggerIdCount",
+                "missingBloggerIds",
+                "duplicateBloggerIds",
+                "unexpectedBloggerIds",
+            ],
         },
     }
 
@@ -485,31 +615,32 @@ class CampaignEngine:
                 "draftGenerationInput": draft_generation_input,
             }
             injected_host_drafts = self.brief.get("host_drafts_per_cycle") or self.brief.get("hostDraftsPerCycle") or []
+            injected_host_draft_metadata = self.brief.get("host_drafts_metadata_per_cycle") or self.brief.get("hostDraftsMetadataPerCycle") or {}
             if injected_host_drafts and selected_creators:
-                target_ids = {
-                    str(item.get("bloggerId") or item.get("besId") or item.get("bEsId") or item.get("id"))
-                    for item in selected_creators
-                    if isinstance(item, dict) and (item.get("bloggerId") or item.get("besId") or item.get("bEsId") or item.get("id"))
-                }
-                generated = prepare_emails_from_host_drafts(injected_host_drafts)
-                generated = [normalize_email_once(item) for item in generated]
-                generated = [
-                    item for item in generated
-                    if str(item.get("bloggerId") or item.get("besId") or item.get("id")) in target_ids
-                ]
+                draft_alignment = _align_host_drafts_to_selected_creators(
+                    selected_creators=selected_creators,
+                    host_drafts=injected_host_drafts,
+                    draft_metadata=injected_host_draft_metadata if isinstance(injected_host_draft_metadata, dict) else {},
+                )
+                generated = draft_alignment.get("emails") or []
+                alignment_issues = draft_alignment.get("issues") or {}
+                alignment_ok = bool(draft_alignment.get("ok"))
                 result["draftGeneration"] = {
                     "mode": "host_model_per_cycle",
                     "needsHostDrafts": False,
                     "hostDraftsInjected": True,
                     "selectedCreatorCount": len(selected_creators),
                     "generatedDraftCount": len(generated),
-                    "status": "host_drafts_injected" if generated else "host_drafts_no_match",
-                    "nextRecommendedAction": None if generated else "Check creatorId alignment between selected creators and host drafts.",
+                    "status": "host_drafts_injected" if alignment_ok and generated else ("host_drafts_identity_conflict" if injected_host_drafts else "host_drafts_no_match"),
+                    "nextRecommendedAction": None if alignment_ok and generated else "Ensure host writes exactly one personalized draft per selected creator, with unique bloggerId values and no repeated full email bodies across creators.",
                     "draftGenerationInput": draft_generation_input,
+                    "validation": alignment_issues,
                 }
-                if generated:
+                if alignment_ok and generated:
                     search_result["emails"] = generated
                     per_cycle_host_drafts = injected_host_drafts
+                else:
+                    search_result.setdefault("nextRecommendedAction", "Fix host draft write-back mapping, then rerun scheduled_cycle.")
         if include_email_preview and not should_generate_email_preview:
             search_result.setdefault("nextRecommendedAction", "先确认目标达人，再生成邮件预览。")
             search_result.setdefault("emailPreviewDeferred", True)
@@ -526,6 +657,8 @@ class CampaignEngine:
             "payloadSource": search_result.get("payloadSource"),
             "perCycleDraftMode": draft_policy.get("mode"),
             "perCycleHostDraftsInjected": bool(per_cycle_host_drafts),
+            "draftGenerationStatus": (result.get("draftGeneration") or {}).get("status"),
+            "draftValidation": (result.get("draftGeneration") or {}).get("validation"),
             "error": search_error,
         }
         if search_error:
@@ -552,6 +685,7 @@ class CampaignEngine:
             brief=self.brief,
             timing=timing,
             creator_profiles_by_id=creator_profiles_by_id,
+            draft_generation=result.get("draftGeneration"),
         )
         self.state.update_cycle_section(cycle_no, "send", result["send"])
 

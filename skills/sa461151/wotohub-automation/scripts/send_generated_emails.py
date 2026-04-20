@@ -43,6 +43,7 @@ def build_batch_payload(
     skipped = []
     blocked = []
     audit_results = []
+    seen_blogger_ids = set()
 
     for email in generated:
         blogger_id = email.get("bloggerId")
@@ -50,6 +51,11 @@ def build_batch_payload(
         if not blogger_id:
             skipped.append({"nickname": nickname, "reason": "no bloggerId"})
             continue
+        blogger_id = str(blogger_id).strip()
+        if blogger_id in seen_blogger_ids:
+            blocked.append({"nickname": nickname, "bloggerId": blogger_id, "reason": "duplicate_bloggerId_in_send_batch"})
+            continue
+        seen_blogger_ids.add(blogger_id)
         draft_source = str(email.get("draftSource") or email.get("source") or "").strip().lower()
         style = str(email.get("style") or "").strip().lower()
         is_host_model = draft_source in {"host-model", "model-first", "host_model"} or style == "model-first"

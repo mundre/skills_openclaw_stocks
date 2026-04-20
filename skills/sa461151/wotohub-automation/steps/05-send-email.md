@@ -202,7 +202,8 @@ python3 scripts/send_generated_emails.py emails.json --timing "2026-03-26 10:00:
 - 单次任务默认先 `prepare_only`
 - 定时任务默认 `scheduled_send`
 - 若只想演练定时链路不发信，显式设置 `sendPolicy=prepare_only`
-- 如需真实发送，必须显式指定 send policy，不要把真实发送做成隐式默认
+- `scheduled_send` 在定时任务里就是默认真实发信；若不想真实发信，必须显式改成 `prepare_only`
+- 单次 / 手动场景如需真实发送，仍应显式指定 send policy，不要把手动真实发信做成隐式默认
 - 即使进入真实发送链路，默认也要求邮件来源是 `host-model drafts`；fallback 草稿需要额外显式授权
 
 ## 发信后必做动作

@@ -25,10 +25,13 @@ def to_product_analysis_input(ctx: dict[str, Any]) -> dict[str, Any]:
     product = ctx.get("productSignals") or {}
     urls = product.get("urls") or []
     raw_input = product.get("rawInput")
-    return {
+    resolved = ctx.get("resolvedArtifacts") or {}
+    return _compact_dict({
         "input": urls[0] if urls else raw_input,
         "mode": "url" if urls else "text",
-    }
+        "modelAnalysis": resolved.get("modelAnalysis"),
+        "productSummary": resolved.get("productSummary"),
+    })
 
 
 def _base_search_like_input(ctx: dict[str, Any], *, include_search_payload: bool = True) -> dict[str, Any]:

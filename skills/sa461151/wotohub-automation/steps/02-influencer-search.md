@@ -9,6 +9,11 @@
 - **执行脚本优先**：payload 编译、API 调用、错误回退、结果整理优先由脚本完成
 - **脚本 query/category 推断只作弱 fallback**：默认优先消费宿主模型已经给出的结构化 hints；脚本侧 query/category 推断只能在缺少宿主输出时作为弱 fallback，不应成为主路径
 
+字段约定：
+- 新接入默认应提供 canonical 字段，如 `hostAnalysis` / `productSummary`
+- 历史兼容字段仍可吸收，但不应继续扩散到新示例或新桥接契约
+- 如需完整映射，参考 `references/alias-normalization-matrix.md`
+
 ---
 
 ## 搜索规则
