@@ -3,9 +3,15 @@
   "slug": "birth-medical-cert-ocr",
   "displayName": "Birth Medical Cert Ocr",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776073225428,
-    "commit": "https://github.com/openclaw/skills/commit/9a228a4a878c9513118baa807eb6b195143cd58f"
+    "version": "1.0.3",
+    "publishedAt": 1776311351393,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776073225428,
+      "commit": "https://github.com/openclaw/skills/commit/9a228a4a878c9513118baa807eb6b195143cd58f"
+    }
+  ]
 }
