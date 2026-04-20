@@ -3,11 +3,16 @@
   "slug": "skill-kit",
   "displayName": "Skill Kit",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1775832553767,
-    "commit": "https://github.com/openclaw/skills/commit/86c8e65603dc6fc77c64fe7fdfa752ed703667fa"
+    "version": "0.1.2",
+    "publishedAt": 1776241657067,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1775832553767,
+      "commit": "https://github.com/openclaw/skills/commit/86c8e65603dc6fc77c64fe7fdfa752ed703667fa"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1775291032631,
