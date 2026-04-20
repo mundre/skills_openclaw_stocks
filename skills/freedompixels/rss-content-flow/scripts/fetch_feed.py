@@ -23,9 +23,6 @@ import re
 # 第1层：标准验证（优先）
 _SAFE_SSL_CTX = ssl.create_default_context()
 # 第2层：降级验证（标准证书失败时使用）
-_UNVERIFIED_SSL_CTX = ssl.create_default_context()
-_UNVERIFIED_SSL_CTX.check_hostname = False
-_UNVERIFIED_SSL_CTX.verify_mode = ssl.CERT_NONE
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
@@ -54,7 +51,7 @@ def fetch_rss(url, source_name="未知", limit=5, max_age_days=7):
         reason = getattr(e, 'reason', None)
         if isinstance(reason, ssl.SSLError):
             try:
-                with urlopen(url, timeout=15, context=_UNVERIFIED_SSL_CTX) as response:
+                with urlopen(url, timeout=15, context=ssl.create_default_context()) as response:
                     xml_content = response.read().decode("utf-8", errors="replace")
             except Exception as e2:
                 print(f"  ⚠️ 连接失败: {e2}", file=sys.stderr)

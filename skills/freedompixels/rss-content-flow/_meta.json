@@ -1,11 +1,17 @@
 {
   "owner": "freedompixels",
   "slug": "rss-content-flow",
-  "displayName": "RSS内容流AI分析",
+  "displayName": "RSS内容流引擎",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1776144749742,
-    "commit": "https://github.com/openclaw/skills/commit/e9c3af4a3e5f0d67b1498fbbf19dc522a902d729"
+    "version": "1.2.0",
+    "publishedAt": 1776442885890,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1776144749742,
+      "commit": "https://github.com/openclaw/skills/commit/e9c3af4a3e5f0d67b1498fbbf19dc522a902d729"
+    }
+  ]
 }
