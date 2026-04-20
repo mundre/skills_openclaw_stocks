@@ -4,6 +4,7 @@ import {
   coreAbi,
   getPublicRuntime,
   requireCoreAddress,
+  resolveWalletAddress,
   stringifyJson,
   toRecord,
   type ToolHandler,
@@ -27,8 +28,6 @@ import {
   type PredictionBetState,
   type TakerTaskState,
 } from "./agent-state.js";
-import { getWalletAddress } from "./config.js";
-
 type SyncArgs = { fromBlock?: string };
 
 function isoFromTs(ts?: unknown): string | undefined {
@@ -40,7 +39,7 @@ function isoFromTs(ts?: unknown): string | undefined {
 
 const sync_agent_state: ToolHandler = async (args) => {
   const { fromBlock } = (args ?? {}) as SyncArgs;
-  const walletAddress = getWalletAddress().toLowerCase();
+  const walletAddress = (await resolveWalletAddress()).toLowerCase();
   const { config, publicClient } = getPublicRuntime();
   const syncState = readSyncState();
   const currentBlock = await publicClient.getBlockNumber();
@@ -152,6 +151,7 @@ function handleTaskCreated(args: Record<string, unknown>, walletAddress: string,
     taskId: String(args.taskId),
     makerAddress: maker,
     mode: Number(args.mode) === 0 ? "SINGLE" : "MULTI",
+    isFiatSettlement: Boolean(args.isFiatSettlement),
     status: "OPEN",
     bountyToken: String(args.bountyToken),
     bounty: String(args.bounty),
@@ -187,6 +187,7 @@ function handleTaskAccepted(args: Record<string, unknown>, walletAddress: string
       taskId,
       maker: makerTask?.makerAddress ?? "",
       mode: makerTask?.mode ?? "UNKNOWN",
+      isFiatSettlement: makerTask?.isFiatSettlement ?? false,
       status: "ACCEPTED",
       bountyToken: makerTask?.bountyToken ?? "",
       bounty: makerTask?.bounty ?? "0",
@@ -222,6 +223,7 @@ function handleTaskSubmitted(args: Record<string, unknown>, walletAddress: strin
         taskId,
         maker: "",
         mode: "UNKNOWN",
+        isFiatSettlement: false,
         bountyToken: "",
         bounty: "0",
         deposit: "0",

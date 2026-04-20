@@ -13,11 +13,11 @@ import {
   requiredBigInt,
   requiredNumber,
   requiredString,
+  resolveWalletAddress,
   stringifyJson,
   toRecord,
   type ToolHandler,
 } from "./shared.js";
-import { getWalletAddress } from "./config.js";
 
 function findEventInLogs(logs: readonly Log[], abi: readonly unknown[], eventName: string): Record<string, unknown> | undefined {
   for (const log of logs) {
@@ -41,7 +41,7 @@ const accept_prediction_task: ToolHandler = async (args) => {
   }
 
   const maxPriceInput = requiredString(record, "maxPrice");
-  const { config, publicClient, walletClient, account } = getWriteRuntime();
+  const { config, publicClient, walletClient, account } = await getWriteRuntime();
   const coreAddress = requireCoreAddress(config);
   const predictionAddress = requirePredictionAddress(config);
 
@@ -86,7 +86,7 @@ const accept_prediction_task: ToolHandler = async (args) => {
 };
 
 const create_prediction_task: ToolHandler = async () => {
-  const { config, publicClient, walletClient, account } = getWriteRuntime();
+  const { config, publicClient, walletClient, account } = await getWriteRuntime();
   const hash = await walletClient.writeContract({
     address: requireCoreAddress(config),
     abi: coreAbi,
@@ -112,7 +112,7 @@ const create_prediction_task: ToolHandler = async () => {
 
 const claim_prediction_reward: ToolHandler = async (args) => {
   const roundId = requiredBigInt(toRecord(args), "roundId");
-  const { config, publicClient, walletClient, account } = getWriteRuntime();
+  const { config, publicClient, walletClient, account } = await getWriteRuntime();
   const hash = await walletClient.writeContract({
     address: requireCoreAddress(config),
     abi: coreAbi,
@@ -200,7 +200,7 @@ const get_prediction_round_info: ToolHandler = async (args) => {
 const get_prediction_user_bet: ToolHandler = async (args) => {
   const record = toRecord(args);
   const roundId = requiredBigInt(record, "roundId");
-  const user = record.user ? requiredAddress(record, "user") : getWalletAddress();
+  const user = record.user ? requiredAddress(record, "user") : await resolveWalletAddress();
   const { config, publicClient } = getPublicRuntime();
   const predictionAddress = requirePredictionAddress(config);
   const [shares, claimed] = await publicClient.readContract({

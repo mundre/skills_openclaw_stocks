@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
 
-import { createWalletClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-
-import { getPrivateKey, getRuntimeConfig, API_URL, API_KEY } from "./config.js";
+import { API_URL, API_KEY, getPrivateKey, getWalletAddress } from "./config.js";
 import { getPublicRuntime, stringifyJson, toRecord, type ToolHandler } from "./shared.js";
+import { privateKeyToAccount } from "viem/accounts";
 
 // ── Auth state persistence ────────────────────────────────────────────────────
 
@@ -77,9 +76,7 @@ function buildSiweMessage(p: {
 }
 
 function randomNonce(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  return crypto.randomBytes(16).toString("hex");
 }
 
 function requireApiBaseUrl(): string {
@@ -93,10 +90,10 @@ function requireApiKey(): string {
 // ── Tools ─────────────────────────────────────────────────────────────────────
 
 /**
- * siwe_login — 用私钥完成 SIWE 登录。
+ * siwe_login — 用当前运行钱包完成 SIWE 登录。
  *
  * 原理：
- *   1. 本地构造 EIP-4361 消息并用私钥签名
+ *   1. 本地构造 EIP-4361 消息并用当前运行钱包签名
  *   2. 调用 Supabase Auth 原生 Web3 接口 /auth/v1/token?grant_type=web3
  *   3. Supabase 验证签名、创建/复用用户、签发标准 Supabase session
  *   4. access_token + refresh_token 存入 ~/.moltx/auth.json
@@ -113,9 +110,6 @@ const siwe_login: ToolHandler = async (args) => {
   const record = toRecord(args ?? {});
   const baseUrl = requireApiBaseUrl();
   const apiKey = requireApiKey();
-
-  const account = privateKeyToAccount(getPrivateKey());
-  const config = getRuntimeConfig();
   const { publicClient } = getPublicRuntime();
   const chainId = await publicClient.getChainId();
 
@@ -130,22 +124,18 @@ const siwe_login: ToolHandler = async (args) => {
   const nonce = randomNonce();
   const issuedAt = new Date().toISOString();
 
+  const address = await getWalletAddress();
   const message = buildSiweMessage({
     domain,
-    address: account.address,
+    address,
     statement,
     uri,
     chainId,
     nonce,
     issuedAt,
   });
-
-  // Sign with private key (EIP-191 personal_sign)
-  const walletClient = createWalletClient({
-    account,
-    transport: http(config.rpcUrl),
-  });
-  const signature = await walletClient.signMessage({ message });
+  const account = privateKeyToAccount(getPrivateKey());
+  const signature = await account.signMessage({ message });
 
   // Call Supabase Auth native Web3 endpoint — no custom Edge Function needed
   const res = await fetch(`${baseUrl}/auth/v1/token?grant_type=web3`, {
@@ -170,11 +160,11 @@ const siwe_login: ToolHandler = async (args) => {
   if (!accessToken) throw new Error("No access_token returned from Supabase Auth");
 
   const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
-  writeStoredAuth({ accessToken, refreshToken, walletAddress: account.address, expiresAt });
+  writeStoredAuth({ accessToken, refreshToken, walletAddress: address, expiresAt });
 
   return stringifyJson({
     tool: "siwe_login",
-    walletAddress: account.address,
+    walletAddress: address,
     domain,
     uri,
     expiresAt,

@@ -54,7 +54,7 @@ async function writeCouncil(
   functionName: "commitVote" | "revealVote" | "finalizeCommit" | "finalizeReveal",
   args: readonly unknown[],
 ) {
-  const { config, publicClient, walletClient, account } = getWriteRuntime();
+  const { config, publicClient, walletClient, account } = await getWriteRuntime();
   const councilAddress = requireCouncilAddress(config);
   const hash = await walletClient.writeContract({
     address: councilAddress,

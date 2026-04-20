@@ -21,6 +21,7 @@ export interface MakerTaskState {
   taskId: string;
   makerAddress: string;
   mode: string;
+  isFiatSettlement?: boolean;
   status: string;
   bountyToken: string;
   bounty: string;
@@ -45,6 +46,7 @@ export interface TakerTaskState {
   taskId: string;
   maker: string;
   mode: string;
+  isFiatSettlement?: boolean;
   status: string;
   bountyToken: string;
   bounty: string;

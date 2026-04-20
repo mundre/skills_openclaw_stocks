@@ -1,8 +1,9 @@
 import { createRequire } from "node:module";
 
 import {
+  type Abi,
   createPublicClient,
-  createWalletClient,
+  encodeFunctionData,
   formatEther,
   formatUnits,
   getAddress,
@@ -11,11 +12,14 @@ import {
   isHex,
   parseEther,
   parseUnits,
-  zeroAddress,
   type PublicClient,
-  type WalletClient,
 } from "viem";
-import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
+import { base } from "viem/chains";
+import { privateKeyToAccount } from "viem/accounts";
+import {
+  createBundlerClient,
+  toSimple7702SmartAccount,
+} from "viem/account-abstraction";
 
 import {
   DEFAULT_CORE_ADDRESS,
@@ -23,6 +27,8 @@ import {
   DEFAULT_PREDICTION_ADDRESS,
   getPrivateKey,
   getRuntimeConfig,
+  getWalletAddress,
+  PAYMASTER_URL,
   readRuntimeConfig,
   type RuntimeConfig,
 } from "./config.js";
@@ -44,8 +50,18 @@ export type ToolHandler = (args: unknown) => Promise<string>;
 export type WriteRuntime = {
   config: RuntimeConfig;
   publicClient: PublicClient;
-  walletClient: WalletClient;
-  account: PrivateKeyAccount;
+  walletClient: {
+    writeContract: (options: {
+      address: `0x${string}`;
+      abi: readonly unknown[];
+      functionName: string;
+      args: readonly unknown[];
+      value?: bigint;
+      account?: unknown;
+      chain?: unknown;
+    }) => Promise<`0x${string}`>;
+  };
+  account: { address: `0x${string}` };
 };
 
 export function stringifyJson(value: unknown): string {
@@ -248,40 +264,107 @@ export function getPublicRuntime() {
   return { config, publicClient };
 }
 
-export function getWriteRuntime(): WriteRuntime {
+export async function getWriteRuntime(): Promise<WriteRuntime> {
   const config = readRuntimeConfig();
-  const account = privateKeyToAccount(getPrivateKey());
+  const localAccount = privateKeyToAccount(getPrivateKey());
+
+  // Untyped client with Base chain — needed for smart account signing (chain.id)
+  const chainClient = createPublicClient({
+    chain: base,
+    transport: http(config.rpcUrl),
+  });
+
+  // Generic public client returned in WriteRuntime for reads and receipt polling
   const publicClient = createPublicClient({
     transport: http(config.rpcUrl),
   });
-  const walletClient = createWalletClient({
-    account,
-    transport: http(config.rpcUrl),
+
+  const smartAccount = await toSimple7702SmartAccount({
+    client: chainClient as any,
+    owner: localAccount,
   });
 
-  return { config, publicClient, walletClient, account };
+  const bundlerClient = createBundlerClient({
+    account: smartAccount,
+    client: chainClient as any,
+    transport: http(PAYMASTER_URL),
+    paymaster: true,
+  });
+
+  const walletClient = {
+    writeContract: async ({
+      address,
+      abi,
+      functionName,
+      args,
+      value,
+    }: {
+      address: `0x${string}`;
+      abi: readonly unknown[];
+      functionName: string;
+      args: readonly unknown[];
+      value?: bigint;
+      account?: unknown;
+      chain?: unknown;
+    }): Promise<`0x${string}`> => {
+      // EIP-7702: pre-sign authorization if EOA not yet delegated.
+      // viem's prepareUserOperation only inserts stub r/s values — we must
+      // supply a real signed authorization so the bundler can verify it.
+      const isDeployed = await smartAccount.isDeployed();
+      let authorization: Awaited<ReturnType<typeof localAccount.signAuthorization>> | undefined;
+      if (!isDeployed && smartAccount.authorization) {
+        const nonce = await chainClient.getTransactionCount({
+          address: localAccount.address,
+        });
+        authorization = await localAccount.signAuthorization({
+          address: smartAccount.authorization.address,
+          chainId: base.id,
+          nonce,
+        });
+      }
+
+      const userOpHash = await bundlerClient.sendUserOperation({
+        calls: [
+          {
+            to: address,
+            data: encodeFunctionData({
+              abi: abi as Abi,
+              functionName,
+              args,
+            }),
+            value: value ?? 0n,
+          },
+        ],
+        ...(authorization ? { authorization } : {}),
+      });
+      const opReceipt = await bundlerClient.waitForUserOperationReceipt({
+        hash: userOpHash,
+      });
+      return opReceipt.receipt.transactionHash;
+    },
+  };
+
+  return {
+    config,
+    publicClient,
+    walletClient,
+    account: { address: getAddress(localAccount.address) },
+  };
+}
+
+export async function resolveWalletAddress(): Promise<`0x${string}`> {
+  return getWalletAddress();
 }
 
 export function requireCoreAddress(config: RuntimeConfig): `0x${string}` {
-  if (config.coreAddress === DEFAULT_CORE_ADDRESS) {
-    throw new Error("coreAddress placeholder has not been replaced yet");
-  }
-
   return config.coreAddress;
 }
 
 export function requireCouncilAddress(config: RuntimeConfig): `0x${string}` {
-  if (!config.councilAddress || config.councilAddress === DEFAULT_COUNCIL_ADDRESS) {
-    throw new Error("councilAddress placeholder has not been replaced yet");
-  }
-
   return config.councilAddress;
 }
 
 export function requirePredictionAddress(config: RuntimeConfig): `0x${string}` {
-  if (!config.predictionAddress || config.predictionAddress === DEFAULT_PREDICTION_ADDRESS) {
-    throw new Error("predictionAddress placeholder has not been replaced yet");
-  }
 
   return config.predictionAddress;
 }

@@ -14,7 +14,7 @@ const DEFAULT_IDENTITY_ADDRESS = "0xb16aA007A5F0C6dE1A69D0D81412BA6d77c685Ab" as
  */
 const is_registered: ToolHandler = async () => {
   const { publicClient } = getPublicRuntime();
-  const wallet = getWalletAddress();
+  const wallet = await getWalletAddress();
 
   const registered = await publicClient.readContract({
     address: DEFAULT_IDENTITY_ADDRESS,
@@ -38,8 +38,8 @@ const is_registered: ToolHandler = async () => {
  */
 const register_identity: ToolHandler = async () => {
   const { publicClient } = getPublicRuntime();
-  const { walletClient, account } = getWriteRuntime();
-  const wallet = getWalletAddress();
+  const { walletClient, account } = await getWriteRuntime();
+  const wallet = await getWalletAddress();
 
   // Check first to give a clear message
   const already = await publicClient.readContract({

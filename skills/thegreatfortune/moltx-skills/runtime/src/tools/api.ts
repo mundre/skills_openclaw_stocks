@@ -1,4 +1,4 @@
-import { getWalletAddress, API_URL, API_KEY } from "./config.js";
+import { API_URL, API_KEY, getWalletAddress } from "./config.js";
 import {
   coreAbi,
   getPublicRuntime,
@@ -15,7 +15,7 @@ import {
 import {
   type JsonValue,
   type RequirementJson,
-  prepareRequirementForTask,
+  normalizeRequirementJson,
   verifyRequirementHash,
 } from "./requirement.js";
 import { getStoredJwt } from "./siwe.js";
@@ -36,29 +36,7 @@ type ApiConfig = {
 
 type SyncTaskPayload = {
   taskId: string;
-  makerAddress: string;
-  bountyToken: string;
-  bounty: string;
-  deposit: string;
-  mode: "SINGLE" | "MULTI";
-  maxTakers: number;
-  minTakerLevel: number;
-  acceptDeadline: string;
-  submitDeadline: string;
-  requirementHash: string;
   requirementJson: RequirementJson;
-  onchainRequirementHash?: string;
-  deliveryPrivate: boolean;
-  categoryId?: number;
-};
-
-type SyncSubmissionPayload = {
-  taskId: string;
-  takerAddress: string;
-  submitTime: string;
-  deliveryRef: string;
-  deliveryNotes?: string;
-  deliveryFiles?: JsonValue;
 };
 
 type SyncDisputePayload = {
@@ -82,6 +60,10 @@ function readApiConfig(): ApiConfig {
     apiKey: API_KEY,
     jwt,
   };
+}
+
+function hasApiBaseConfig(): boolean {
+  return readApiConfig().url.trim() !== "";
 }
 
 function requireApiConfig(): ApiConfig {
@@ -163,10 +145,6 @@ function parseJsonLike(value: unknown, key: string): JsonValue | undefined {
   throw new Error(`${key} must be valid JSON`);
 }
 
-function toIsoFromUnixSeconds(seconds: string | number | bigint): string {
-  return new Date(Number(seconds) * 1000).toISOString();
-}
-
 async function fetchOnchainRequirementHash(taskId: string): Promise<string> {
   const { config, publicClient } = getPublicRuntime();
   const task = await publicClient.readContract({
@@ -183,84 +161,48 @@ async function fetchOnchainRequirementHash(taskId: string): Promise<string> {
 }
 
 export async function maybeSyncTaskToApi(payload: SyncTaskPayload): Promise<ApiSyncResult> {
-  if (!readApiConfig()) {
+  if (!hasApiBaseConfig()) {
     return {
       attempted: false,
       success: false,
-      skippedReason: "MOLTX_API_URL not set",
+      skippedReason: "API base URL not configured",
     };
   }
 
   try {
-    const prepared = prepareRequirementForTask(payload.requirementJson, payload.requirementHash);
-    const onchainRequirementHash =
-      payload.onchainRequirementHash ?? await fetchOnchainRequirementHash(payload.taskId);
-    if (onchainRequirementHash.toLowerCase() !== prepared.requirementHash.toLowerCase()) {
-      throw new Error("on-chain requirementHash does not match canonical requirementJson");
+    // 调用 submit-task-details Edge Function，由它做链上验证 + 写入数据库
+    const config = requireApiConfig();
+    const response = await fetch(`${config.url}/functions/v1/submit-task-details`, {
+      method: "POST",
+      headers: buildApiHeaders(config, true),
+      body: JSON.stringify({
+        taskId: payload.taskId,
+        requirementJson: payload.requirementJson,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`submit-task-details failed (${response.status}): ${body}`);
     }
-    await apiRpc("rpc_create_task", {
-      p_task_id: Number(payload.taskId),
-      p_maker_address: payload.makerAddress.toLowerCase(),
-      p_bounty_token: payload.bountyToken.toLowerCase(),
-      p_bounty: payload.bounty,
-      p_deposit: payload.deposit,
-      p_mode: payload.mode,
-      p_max_takers: payload.maxTakers,
-      p_min_taker_level: payload.minTakerLevel,
-      p_accept_deadline: payload.acceptDeadline,
-      p_submit_deadline: payload.submitDeadline,
-      p_requirement_hash: prepared.requirementHash,
-      p_onchain_requirement_hash: onchainRequirementHash,
-      p_requirement_json: prepared.requirementJson,
-      p_delivery_private: payload.deliveryPrivate,
-      p_category_id: payload.categoryId,
-    });
-    return { attempted: true, success: true, endpoint: "rpc_create_task" };
+
+    return { attempted: true, success: true, endpoint: "submit-task-details" };
   } catch (error) {
     return {
       attempted: true,
       success: false,
-      endpoint: "rpc_create_task",
-      error: error instanceof Error ? error.message : "unknown api sync error",
-    };
-  }
-}
-
-export async function maybeSyncSubmissionToApi(payload: SyncSubmissionPayload): Promise<ApiSyncResult> {
-  if (!readApiConfig()) {
-    return {
-      attempted: false,
-      success: false,
-      skippedReason: "MOLTX_API_URL not set",
-    };
-  }
-
-  try {
-    await apiRpc("rpc_create_submission", {
-      p_task_id: Number(payload.taskId),
-      p_taker_address: payload.takerAddress.toLowerCase(),
-      p_submit_time: payload.submitTime,
-      p_delivery_ref: payload.deliveryRef,
-      p_delivery_notes: payload.deliveryNotes,
-      p_delivery_files: payload.deliveryFiles,
-    });
-    return { attempted: true, success: true, endpoint: "rpc_create_submission" };
-  } catch (error) {
-    return {
-      attempted: true,
-      success: false,
-      endpoint: "rpc_create_submission",
+      endpoint: "submit-task-details",
       error: error instanceof Error ? error.message : "unknown api sync error",
     };
   }
 }
 
 export async function maybeSyncDisputeToApi(payload: SyncDisputePayload): Promise<ApiSyncResult> {
-  if (!readApiConfig()) {
+  if (!hasApiBaseConfig()) {
     return {
       attempted: false,
       success: false,
-      skippedReason: "MOLTX_API_URL not set",
+      skippedReason: "API base URL not configured",
     };
   }
 
@@ -359,30 +301,11 @@ const sync_task_to_api: ToolHandler = async (args) => {
   if (record.requirementJson === undefined) {
     throw new Error("requirementJson must be provided");
   }
-  const makerAddress = optionalString(record, "makerAddress") ?? getWalletAddress();
-  const mode = requiredString(record, "mode");
-  const prepared = prepareRequirementForTask(
-    record.requirementJson,
-    optionalString(record, "requirementHash"),
-  );
-  const onchainRequirementHash = await fetchOnchainRequirementHash(taskId);
 
+  // 只需要 taskId + requirementJson，其他字段由 submit-task-details Edge Function 从链上读取
   return stringifyJson(await maybeSyncTaskToApi({
     taskId,
-    makerAddress,
-    bountyToken: requiredString(record, "bountyToken"),
-    bounty: requiredString(record, "bounty"),
-    deposit: optionalString(record, "deposit") ?? "0",
-    mode: mode === "0" || mode.toUpperCase() === "SINGLE" ? "SINGLE" : "MULTI",
-    maxTakers: Number(requiredBigInt(record, "maxTakers")),
-    minTakerLevel: Number(requiredBigInt(record, "minTakerLevel")),
-    acceptDeadline: toIsoFromUnixSeconds(requiredBigInt(record, "acceptDeadline")),
-    submitDeadline: toIsoFromUnixSeconds(requiredBigInt(record, "submitDeadline")),
-    requirementHash: prepared.requirementHash,
-    requirementJson: prepared.requirementJson,
-    onchainRequirementHash,
-    deliveryPrivate: Boolean(record.deliveryPrivate),
-    categoryId: record.categoryId === undefined ? undefined : Number(requiredBigInt(record, "categoryId")),
+    requirementJson: normalizeRequirementJson(record.requirementJson),
   }));
 };
 
@@ -430,23 +353,11 @@ const verify_task_requirement: ToolHandler = async (args) => {
   );
 };
 
-const sync_submission_to_api: ToolHandler = async (args) => {
-  const record = toRecord(args);
-  return stringifyJson(await maybeSyncSubmissionToApi({
-    taskId: requiredBigInt(record, "taskId").toString(),
-    takerAddress: optionalString(record, "takerAddress") ?? getWalletAddress(),
-    submitTime: requiredString(record, "submitTime"),
-    deliveryRef: requiredString(record, "deliveryRef"),
-    deliveryNotes: optionalString(record, "deliveryNotes"),
-    deliveryFiles: parseJsonLike(record.deliveryFiles, "deliveryFiles"),
-  }));
-};
-
 const sync_dispute_to_api: ToolHandler = async (args) => {
   const record = toRecord(args);
   return stringifyJson(await maybeSyncDisputeToApi({
     taskId: requiredBigInt(record, "taskId").toString(),
-    takerAddress: optionalString(record, "takerAddress") ?? getWalletAddress(),
+    takerAddress: optionalString(record, "takerAddress") ?? await getWalletAddress(),
     makerAddress: requiredString(record, "makerAddress"),
     evidenceIpfsHash: requiredString(record, "evidenceIpfsHash"),
     commitDeadline: requiredString(record, "commitDeadline"),
@@ -465,7 +376,7 @@ const sync_dispute_to_api: ToolHandler = async (args) => {
 const store_evidence_key: ToolHandler = async (args) => {
   const record = toRecord(args);
   const taskId = Number(requiredBigInt(record, "taskId"));
-  const takerAddress = optionalString(record, "takerAddress") ?? getWalletAddress();
+  const takerAddress = optionalString(record, "takerAddress") ?? await getWalletAddress();
   const encryptedKey = requiredString(record, "encryptedKey");
 
   await apiRpc("rpc_store_evidence_key", {
@@ -505,7 +416,6 @@ export const apiTools: Record<string, ToolHandler> = {
   list_disputes,
   store_evidence_key,
   sync_dispute_to_api,
-  sync_submission_to_api,
   sync_task_to_api,
   verify_task_requirement,
 };

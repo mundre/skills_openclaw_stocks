@@ -19,6 +19,9 @@ export const DEFAULT_CORE_ADDRESS = "0xfeBB259e83Bb133E87Ee85A48DC205c8043B3A99"
 export const DEFAULT_COUNCIL_ADDRESS = "0x545e8f8d77dC3FAA74cee11572Dc4BAF35c6Ca0d" as `0x${string}`;
 export const DEFAULT_PREDICTION_ADDRESS = "0xE348e71B3D9b8e0420E74a3FB1Ec022b80a27F83" as `0x${string}`;
 export const DEFAULT_IDENTITY_ADDRESS = "0xb16aA007A5F0C6dE1A69D0D81412BA6d77c685Ab" as `0x${string}`;
+export const DEFAULT_VAULT_ADDRESS = "0x372290907d22544cfa0f75dfe1FCE0eBfcE18cd2" as `0x${string}`;
+
+export const PAYMASTER_URL = "https://api.pimlico.io/v2/8453/rpc?apikey=pim_2V2Kb734c4mRdagDnBGdHc";
 
 // ── API constants (operator-configured, not user-facing) ─────────────────────
 export const API_URL = "https://eplsuascoclomzejttgz.supabase.co";

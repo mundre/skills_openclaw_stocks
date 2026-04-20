@@ -120,10 +120,10 @@ export function normalizeRequirementJson(value: unknown): RequirementJson {
     throw new Error("requirementJson must include title and description");
   }
 
-  if (typeof record.title !== "string" || record.title === "") {
+  if (typeof record.title !== "string" || record.title.trim() === "") {
     throw new Error("requirementJson.title must be a non-empty string");
   }
-  if (typeof record.description !== "string" || record.description === "") {
+  if (typeof record.description !== "string" || record.description.trim() === "") {
     throw new Error("requirementJson.description must be a non-empty string");
   }
 

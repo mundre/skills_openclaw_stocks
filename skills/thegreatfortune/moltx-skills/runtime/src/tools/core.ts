@@ -13,6 +13,7 @@ import {
   modeLabel,
   numberFromUnknown,
   optionalAddress,
+  optionalBoolean,
   optionalHex32,
   optionalString,
   parseValue,
@@ -23,17 +24,17 @@ import {
   requiredNumber,
   requiredString,
   requireCoreAddress,
+  resolveWalletAddress,
   statusLabel,
   stringifyJson,
   toRecord,
   tupleField,
   type ToolHandler,
 } from "./shared.js";
-import { getRuntimeConfig, getWalletAddress, setRuntimeConfig, type RuntimeConfig } from "./config.js";
+import { getRuntimeConfig, setRuntimeConfig, DEFAULT_VAULT_ADDRESS, type RuntimeConfig } from "./config.js";
 import { hashTextKeccak } from "./hash.js";
 import {
   maybeSyncDisputeToApi,
-  maybeSyncSubmissionToApi,
   maybeSyncTaskToApi,
 } from "./api.js";
 import {
@@ -104,6 +105,7 @@ type TaskStruct = {
   lastAcceptTime: bigint;
   requirementHash: `0x${string}`;
   deliveryPrivate: boolean;
+  isFiatSettlement: boolean;
 };
 
 type TakerStateStruct = {
@@ -138,6 +140,7 @@ function parseTaskStruct(value: unknown): TaskStruct {
     lastAcceptTime: bigintFromUnknown(tupleField(value, 15, "lastAcceptTime"), "lastAcceptTime"),
     requirementHash: tupleField(value, 16, "requirementHash") as `0x${string}`,
     deliveryPrivate: Boolean(tupleField(value, 17, "deliveryPrivate")),
+    isFiatSettlement: Boolean(tupleField(value, 18, "isFiatSettlement")),
   };
 }
 
@@ -178,6 +181,7 @@ function normalizeTask(taskId: bigint, task: TaskStruct) {
     lastAcceptTime: task.lastAcceptTime,
     requirementHash: task.requirementHash,
     deliveryPrivate: task.deliveryPrivate,
+    isFiatSettlement: task.isFiatSettlement,
   };
 }
 
@@ -286,7 +290,7 @@ async function getDisputeWindow(
 }
 
 async function sendCoreTransaction(functionName: string, args: readonly unknown[], value?: bigint) {
-  const { config, publicClient, walletClient, account } = getWriteRuntime();
+  const { config, publicClient, walletClient, account } = await getWriteRuntime();
   const coreAddress = requireCoreAddress(config);
   const hash = await walletClient.writeContract({
     address: coreAddress,
@@ -303,7 +307,7 @@ async function sendCoreTransaction(functionName: string, args: readonly unknown[
 }
 
 async function resolveDefaultOwner(record: Record<string, unknown>, config: RuntimeConfig) {
-  return optionalAddress(record, "owner") ?? config.walletAddress ?? getWalletAddress();
+  return optionalAddress(record, "owner") ?? config.walletAddress ?? await resolveWalletAddress();
 }
 
 function parseJsonField(record: Record<string, unknown>, key: string): JsonValue | undefined {
@@ -403,7 +407,7 @@ const get_token_allowance: ToolHandler = async (args) => {
   const token = requiredAddress(record, "token");
   const { config, publicClient } = getPublicRuntime();
   const owner = await resolveDefaultOwner(record, config);
-  const spender = optionalAddress(record, "spender") ?? requireCoreAddress(config);
+  const spender = optionalAddress(record, "spender") ?? DEFAULT_VAULT_ADDRESS;
   const [symbol, decimals, allowance] = await Promise.all([
     readTokenSymbol(publicClient, token),
     readTokenDecimals(publicClient, token),
@@ -429,8 +433,8 @@ const get_token_allowance: ToolHandler = async (args) => {
 const approve_token: ToolHandler = async (args) => {
   const record = toRecord(args);
   const token = requiredAddress(record, "token");
-  const { config, publicClient, walletClient, account } = getWriteRuntime();
-  const spender = optionalAddress(record, "spender") ?? requireCoreAddress(config);
+  const { config, publicClient, walletClient, account } = await getWriteRuntime();
+  const spender = optionalAddress(record, "spender") ?? DEFAULT_VAULT_ADDRESS;
   const decimals = await readTokenDecimals(publicClient, token);
   const amountInput = optionalString(record, "amount");
   const amount = amountInput ? parseValue(amountInput, decimals) : maxUint256;
@@ -555,7 +559,7 @@ const get_current_emission_rate: ToolHandler = async () => {
 const get_task_decision_plan: ToolHandler = async (args) => {
   const record = toRecord(args);
   const taskId = requiredBigInt(record, "taskId");
-  const walletAddress = getWalletAddress();
+  const walletAddress = await resolveWalletAddress();
   const explicitTaker = optionalAddress(record, "taker");
   const taker = explicitTaker ?? walletAddress;
   const { config, publicClient } = getPublicRuntime();
@@ -665,6 +669,7 @@ const create_task: ToolHandler = async (args) => {
     requiredBigInt(record, "submitDeadline"),
     preparedRequirement.requirementHash,
     requiredBoolean(record, "deliveryPrivate"),
+    optionalBoolean(record, "isFiatSettlement") ?? false,
   ]);
 
   const taskId = extractTaskIdFromReceipt(receipt);
@@ -672,23 +677,10 @@ const create_task: ToolHandler = async (args) => {
   if (onchainTask.requirementHash.toLowerCase() !== preparedRequirement.requirementHash.toLowerCase()) {
     throw new Error("on-chain requirementHash does not match canonical requirementJson after createTask");
   }
-  const makerAddress = getWalletAddress();
+  // 只传 taskId + requirementJson，其他字段由 submit-task-details Edge Function 从链上读取
   const apiSync = await maybeSyncTaskToApi({
     taskId: taskId.toString(),
-    makerAddress,
-    bountyToken,
-    bounty: bounty.toString(),
-    deposit: deposit.toString(),
-    mode: requiredNumber(record, "mode") === 0 ? "SINGLE" : "MULTI",
-    maxTakers: requiredNumber(record, "maxTakers"),
-    minTakerLevel: requiredNumber(record, "minTakerLevel"),
-    acceptDeadline: new Date(Number(requiredBigInt(record, "acceptDeadline")) * 1000).toISOString(),
-    submitDeadline: new Date(Number(requiredBigInt(record, "submitDeadline")) * 1000).toISOString(),
-    requirementHash: preparedRequirement.requirementHash,
     requirementJson: preparedRequirement.requirementJson,
-    onchainRequirementHash: onchainTask.requirementHash,
-    deliveryPrivate: requiredBoolean(record, "deliveryPrivate"),
-    categoryId: record.categoryId === undefined ? undefined : requiredNumber(record, "categoryId"),
   });
 
   return stringifyJson({
@@ -722,27 +714,16 @@ const cancel_task: ToolHandler = async (args) => {
 const submit_completion: ToolHandler = async (args) => {
   const record = toRecord(args);
   const taskId = requiredBigInt(record, "taskId");
-  const { publicClient } = getPublicRuntime();
   const deliveryRef = optionalHex32(record, "deliveryRef") ?? await hashTextKeccak({
     text: requiredString(record, "deliveryText"),
   });
   const { hash, receipt } = await sendCoreTransaction("submitCompletion", [taskId, deliveryRef]);
-  const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
-  const apiSync = await maybeSyncSubmissionToApi({
-    taskId: taskId.toString(),
-    takerAddress: getWalletAddress(),
-    submitTime: new Date(Number(block.timestamp) * 1000).toISOString(),
-    deliveryRef,
-    deliveryNotes: optionalString(record, "deliveryNotes"),
-    deliveryFiles: parseJsonField(record, "deliveryFiles"),
-  });
 
   return stringifyJson({
     tool: "submit_completion",
     contractFunction: "submitCompletion",
     taskId,
     deliveryRef,
-    apiSync,
     txHash: hash,
     status: receipt.status,
     blockNumber: receipt.blockNumber,
@@ -801,7 +782,7 @@ const raise_dispute: ToolHandler = async (args) => {
   const revealDeadline = new Date((Number(block.timestamp) + 48 * 60 * 60) * 1000).toISOString();
   const apiSync = await maybeSyncDisputeToApi({
     taskId: taskId.toString(),
-    takerAddress: getWalletAddress(),
+    takerAddress: await resolveWalletAddress(),
     makerAddress: task.maker,
     evidenceIpfsHash: evidenceIPFSHash,
     commitDeadline,
@@ -899,7 +880,7 @@ const get_claimable_moltx: ToolHandler = async (args) => {
   const record = toRecord(args ?? {});
   const { config, publicClient } = getPublicRuntime();
   const coreAddress = requireCoreAddress(config);
-  const user = (optionalAddress(record, "address") ?? getWalletAddress()) as `0x${string}`;
+  const user = (optionalAddress(record, "address") ?? await resolveWalletAddress()) as `0x${string}`;
 
   // Read Settlement address from Core's public getter
   const settlementAddress = await publicClient.readContract({

@@ -9,8 +9,8 @@ import {
   getPublicRuntime,
   predictionAbi,
   requirePredictionAddress,
+  resolveWalletAddress,
 } from "./shared.js";
-import { getWalletAddress } from "./config.js";
 
 type ToolHandler = (args: unknown) => Promise<string>;
 
@@ -85,7 +85,7 @@ const get_my_prediction_bets: ToolHandler = async (args) => {
     // Verify claimability on-chain: round must be settled AND user must not have claimed yet.
     const { config, publicClient } = getPublicRuntime();
     const predictionAddress = requirePredictionAddress(config);
-    const user = getWalletAddress();
+    const user = await resolveWalletAddress();
 
     // Deduplicate roundIds to avoid redundant RPC calls
     const uniqueRoundIds = [...new Set(bets.map(b => b.roundId))];
