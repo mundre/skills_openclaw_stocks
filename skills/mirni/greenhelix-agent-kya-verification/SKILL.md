@@ -1,6 +1,6 @@
 ---
 name: greenhelix-agent-kya-verification
-version: "1.2.0"
+version: "1.3.1"
 description: "Know Your Agent (KYA) Implementation Playbook. Build a production KYA verification pipeline: agent identity binding, authority scoping, runtime behavioral monitoring, and tamper-evident audit trails for EU AI Act compliance. Includes detailed Python code examples for every pattern."
 license: MIT
 compatibility: [openclaw]
@@ -12,12 +12,19 @@ content_type: markdown
 executable: false
 install: none
 credentials: [AGENT_SIGNING_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - AGENT_SIGNING_KEY
+    primaryEnv: AGENT_SIGNING_KEY
 ---
 # Know Your Agent (KYA) Implementation Playbook
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 >
 > **Referenced credentials** (you supply these in your own environment):
 > - `AGENT_SIGNING_KEY`: Cryptographic signing key for agent identity (Ed25519 key pair for request signing)
@@ -171,7 +178,7 @@ def register_agent_with_kya(agent_metadata: dict) -> dict:
     This is called when an operator submits an agent for onboarding.
     """
     # Step 1: Register the agent identity
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "register_agent",
         "input": {
             "agent_id": agent_metadata["agent_id"],
@@ -191,7 +198,7 @@ def register_agent_with_kya(agent_metadata: dict) -> dict:
     registration = resp.json()
 
     # Step 2: Log the registration event for audit
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "log_event",
         "input": {
             "agent_id": agent_metadata["agent_id"],
@@ -224,7 +231,7 @@ def verify_agent_identity(agent_id: str, challenge: str, signature: str) -> dict
     before the agent is permitted to transact.
     """
     # Step 1: Retrieve the registered identity
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_identity",
         "input": {
             "agent_id": agent_id
@@ -236,7 +243,7 @@ def verify_agent_identity(agent_id: str, challenge: str, signature: str) -> dict
         return {"verified": False, "reason": "no_public_key_registered"}
 
     # Step 2: Platform-side signature verification
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "verify_agent",
         "input": {
             "agent_id": agent_id,
@@ -248,7 +255,7 @@ def verify_agent_identity(agent_id: str, challenge: str, signature: str) -> dict
 
     # Step 3: Update identity with verification status
     if verification.get("verified"):
-        session.post(f"{base_url}/execute", json={
+        session.post(f"{base_url}/v1", json={
             "tool": "update_agent",
             "input": {
                 "agent_id": agent_id,
@@ -261,7 +268,7 @@ def verify_agent_identity(agent_id: str, challenge: str, signature: str) -> dict
         })
 
         # Log successful verification
-        session.post(f"{base_url}/execute", json={
+        session.post(f"{base_url}/v1", json={
             "tool": "log_event",
             "input": {
                 "agent_id": agent_id,
@@ -326,7 +333,7 @@ def establish_operator_linkage(agent_id: str, operator_data: dict,
     }
 
     # Update agent metadata with operator linkage
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "update_agent",
         "input": {
             "agent_id": agent_id,
@@ -340,7 +347,7 @@ def establish_operator_linkage(agent_id: str, operator_data: dict,
     })
 
     # Log the linkage event
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "log_event",
         "input": {
             "agent_id": agent_id,
@@ -426,7 +433,7 @@ def create_authority_scope(agent_id: str, permissions: dict) -> dict:
     Define the authority scope for a verified agent.
     This creates an SLA that serves as the agent's permission boundary.
     """
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "create_sla",
         "input": {
             "provider_id": "platform",
@@ -452,7 +459,7 @@ def create_authority_scope(agent_id: str, permissions: dict) -> dict:
     sla = resp.json()
 
     # Log authority scope creation
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "log_event",
         "input": {
             "agent_id": agent_id,
@@ -482,7 +489,7 @@ def enforce_budget_caveat(agent_id: str, transaction_amount: float,
     its authority boundaries.
     """
     # Retrieve the agent's authority SLA
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "monitor_sla",
         "input": {
             "agent_id": agent_id
@@ -491,7 +498,7 @@ def enforce_budget_caveat(agent_id: str, transaction_amount: float,
     sla_status = resp.json()
 
     # Retrieve spending analytics
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "get_analytics",
         "input": {
             "agent_id": agent_id,
@@ -526,7 +533,7 @@ def enforce_budget_caveat(agent_id: str, transaction_amount: float,
 
     if violations:
         # Log the caveat violation
-        session.post(f"{base_url}/execute", json={
+        session.post(f"{base_url}/v1", json={
             "tool": "log_event",
             "input": {
                 "agent_id": agent_id,
@@ -574,7 +581,7 @@ def verify_delegation_authority(delegator_id: str, delegate_id: str,
     scope must be a subset of the delegator's scope.
     """
     # Get delegator's current authority
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "monitor_sla",
         "input": {
             "agent_id": delegator_id
@@ -588,7 +595,7 @@ def verify_delegation_authority(delegator_id: str, delegate_id: str,
         return {"authorized": False, "reason": "delegation_not_permitted"}
 
     # Check delegation depth
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_identity",
         "input": {"agent_id": delegator_id}
     })
@@ -620,7 +627,7 @@ def verify_delegation_authority(delegator_id: str, delegate_id: str,
     })
 
     # Update delegate metadata with delegation chain info
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "update_agent",
         "input": {
             "agent_id": delegate_id,
@@ -635,7 +642,7 @@ def verify_delegation_authority(delegator_id: str, delegate_id: str,
     })
 
     # Log the delegation
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "log_event",
         "input": {
             "agent_id": delegator_id,
@@ -671,7 +678,7 @@ def collect_behavioral_baseline(agent_id: str, window_hours: int = 168) -> dict:
     Called periodically during the agent's probationary period.
     """
     # Get agent's metrics over the baseline window
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "get_analytics",
         "input": {
             "agent_id": agent_id,
@@ -682,7 +689,7 @@ def collect_behavioral_baseline(agent_id: str, window_hours: int = 168) -> dict:
     analytics = resp.json()
 
     # Get reputation data for behavioral signals
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_reputation",
         "input": {
             "agent_id": agent_id
@@ -691,7 +698,7 @@ def collect_behavioral_baseline(agent_id: str, window_hours: int = 168) -> dict:
     reputation = resp.json()
 
     # Get SLA compliance status
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "monitor_sla",
         "input": {
             "agent_id": agent_id
@@ -712,7 +719,7 @@ def collect_behavioral_baseline(agent_id: str, window_hours: int = 168) -> dict:
     }
 
     # Store baseline in agent metadata
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "update_agent",
         "input": {
             "agent_id": agent_id,
@@ -737,7 +744,7 @@ def detect_behavioral_anomalies(agent_id: str, current_metrics: dict) -> dict:
     Returns anomaly scores and triggered alerts.
     """
     # Retrieve stored baseline
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_identity",
         "input": {"agent_id": agent_id}
     })
@@ -809,7 +816,7 @@ def detect_behavioral_anomalies(agent_id: str, current_metrics: dict) -> dict:
 
     # Log anomalies if detected
     if alerts:
-        session.post(f"{base_url}/execute", json={
+        session.post(f"{base_url}/v1", json={
             "tool": "log_event",
             "input": {
                 "agent_id": agent_id,
@@ -849,7 +856,7 @@ def enforce_policy(agent_id: str, anomaly_result: dict) -> dict:
     if high_count >= 2:
         # Critical: multiple high-severity anomalies -> suspend
         action = "suspend"
-        session.post(f"{base_url}/execute", json={
+        session.post(f"{base_url}/v1", json={
             "tool": "update_agent",
             "input": {
                 "agent_id": agent_id,
@@ -864,14 +871,14 @@ def enforce_policy(agent_id: str, anomaly_result: dict) -> dict:
     elif high_count == 1:
         # High: single high-severity -> reduce limits
         action = "reduce_limits"
-        resp = session.post(f"{base_url}/execute", json={
+        resp = session.post(f"{base_url}/v1", json={
             "tool": "monitor_sla",
             "input": {"agent_id": agent_id}
         })
         current_sla = resp.json()
         current_max = current_sla.get("terms", {}).get("max_transaction_amount", 0)
 
-        session.post(f"{base_url}/execute", json={
+        session.post(f"{base_url}/v1", json={
             "tool": "update_agent",
             "input": {
                 "agent_id": agent_id,
@@ -888,7 +895,7 @@ def enforce_policy(agent_id: str, anomaly_result: dict) -> dict:
         action = "flag_for_review"
 
     # Log the enforcement action
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "log_event",
         "input": {
             "agent_id": agent_id,
@@ -918,7 +925,7 @@ def execute_kill_switch(agent_id: str, reason: str, operator_id: str) -> dict:
     timestamp = time.time()
 
     # Step 1: Revoke the agent identity
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "revoke_agent",
         "input": {
             "agent_id": agent_id,
@@ -929,7 +936,7 @@ def execute_kill_switch(agent_id: str, reason: str, operator_id: str) -> dict:
     revocation = resp.json()
 
     # Step 2: Capture full audit trail before any cleanup
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "get_audit_trail",
         "input": {
             "agent_id": agent_id
@@ -938,7 +945,7 @@ def execute_kill_switch(agent_id: str, reason: str, operator_id: str) -> dict:
     audit_trail = resp.json()
 
     # Step 3: Run compliance check to document state at revocation
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "check_compliance",
         "input": {
             "agent_id": agent_id
@@ -947,7 +954,7 @@ def execute_kill_switch(agent_id: str, reason: str, operator_id: str) -> dict:
     compliance_state = resp.json()
 
     # Step 4: Log the kill switch activation
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "log_event",
         "input": {
             "agent_id": agent_id,
@@ -1055,7 +1062,7 @@ def log_kya_event(agent_id: str, event_type: KYAEventType,
         }
     }
 
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "log_event",
         "input": event
     })
@@ -1075,7 +1082,7 @@ def build_kya_claim_chain(agent_id: str) -> dict:
     tamper-evidence over the audit trail.
     """
     # Submit current KYA metrics before building chain
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "submit_metrics",
         "input": {
             "agent_id": agent_id,
@@ -1091,7 +1098,7 @@ def build_kya_claim_chain(agent_id: str) -> dict:
     })
 
     # Build the claim chain
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "build_claim_chain",
         "input": {
             "agent_id": agent_id
@@ -1125,27 +1132,27 @@ def generate_audit_package(agent_id: str) -> dict:
     anomaly history, and cryptographic verification chain.
     """
     # Collect all audit components in parallel (shown sequentially for clarity)
-    identity_resp = session.post(f"{base_url}/execute", json={
+    identity_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_identity",
         "input": {"agent_id": agent_id}
     })
 
-    reputation_resp = session.post(f"{base_url}/execute", json={
+    reputation_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_reputation",
         "input": {"agent_id": agent_id}
     })
 
-    audit_resp = session.post(f"{base_url}/execute", json={
+    audit_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_audit_trail",
         "input": {"agent_id": agent_id}
     })
 
-    chain_resp = session.post(f"{base_url}/execute", json={
+    chain_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_claim_chains",
         "input": {"agent_id": agent_id}
     })
 
-    compliance_resp = session.post(f"{base_url}/execute", json={
+    compliance_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_compliance_report",
         "input": {"agent_id": agent_id}
     })
@@ -1225,7 +1232,7 @@ def run_eu_ai_act_compliance_check(agent_id: str) -> dict:
     Check an agent's KYA status against EU AI Act requirements.
     Returns a compliance report with pass/fail for each article.
     """
-    resp = session.post(f"{base_url}/execute", json={
+    resp = session.post(f"{base_url}/v1", json={
         "tool": "check_compliance",
         "input": {
             "agent_id": agent_id,
@@ -1236,7 +1243,7 @@ def run_eu_ai_act_compliance_check(agent_id: str) -> dict:
     compliance = resp.json()
 
     # Supplement with platform-side checks
-    identity_resp = session.post(f"{base_url}/execute", json={
+    identity_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_identity",
         "input": {"agent_id": agent_id}
     })
@@ -1287,14 +1294,14 @@ def run_fca_compliance_check(agent_id: str) -> dict:
     Check an agent's KYA status against FCA principles for
     agents that handle payments or interact with UK consumers.
     """
-    identity_resp = session.post(f"{base_url}/execute", json={
+    identity_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_identity",
         "input": {"agent_id": agent_id}
     })
     identity = identity_resp.json()
     metadata = identity.get("metadata", {})
 
-    sla_resp = session.post(f"{base_url}/execute", json={
+    sla_resp = session.post(f"{base_url}/v1", json={
         "tool": "monitor_sla",
         "input": {"agent_id": agent_id}
     })
@@ -1349,14 +1356,14 @@ def run_cma_compliance_check(agent_id: str) -> dict:
     Check an agent's KYA status against CMA consumer law
     requirements for AI agents interacting with consumers.
     """
-    identity_resp = session.post(f"{base_url}/execute", json={
+    identity_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_identity",
         "input": {"agent_id": agent_id}
     })
     identity = identity_resp.json()
     metadata = identity.get("metadata", {})
 
-    reputation_resp = session.post(f"{base_url}/execute", json={
+    reputation_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_reputation",
         "input": {"agent_id": agent_id}
     })
@@ -1428,7 +1435,7 @@ def run_multi_jurisdictional_kya_check(agent_id: str,
     }
 
     # Generate compliance report via GreenHelix
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "get_compliance_report",
         "input": {
             "agent_id": agent_id,
@@ -1530,25 +1537,25 @@ def compute_kya_reputation_score(agent_id: str) -> dict:
     with per-dimension breakdowns.
     """
     # Gather all trust signals
-    reputation_resp = session.post(f"{base_url}/execute", json={
+    reputation_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_reputation",
         "input": {"agent_id": agent_id}
     })
     reputation = reputation_resp.json()
 
-    trust_resp = session.post(f"{base_url}/execute", json={
+    trust_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_trust_score",
         "input": {"agent_id": agent_id}
     })
     trust = trust_resp.json()
 
-    chain_resp = session.post(f"{base_url}/execute", json={
+    chain_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_claim_chains",
         "input": {"agent_id": agent_id}
     })
     chains = chain_resp.json()
 
-    analytics_resp = session.post(f"{base_url}/execute", json={
+    analytics_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_analytics",
         "input": {
             "agent_id": agent_id,
@@ -1558,7 +1565,7 @@ def compute_kya_reputation_score(agent_id: str) -> dict:
     })
     analytics = analytics_resp.json()
 
-    sla_resp = session.post(f"{base_url}/execute", json={
+    sla_resp = session.post(f"{base_url}/v1", json={
         "tool": "monitor_sla",
         "input": {"agent_id": agent_id}
     })
@@ -1568,7 +1575,7 @@ def compute_kya_reputation_score(agent_id: str) -> dict:
     dimensions = {}
 
     # Identity strength (20% weight)
-    identity_resp = session.post(f"{base_url}/execute", json={
+    identity_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_agent_identity",
         "input": {"agent_id": agent_id}
     })
@@ -1640,7 +1647,7 @@ def compute_kya_reputation_score(agent_id: str) -> dict:
     }
 
     # Update the trust score on the platform
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "set_trust_score",
         "input": {
             "agent_id": agent_id,
@@ -1650,7 +1657,7 @@ def compute_kya_reputation_score(agent_id: str) -> dict:
     })
 
     # Submit as metrics for claim chain inclusion
-    session.post(f"{base_url}/execute", json={
+    session.post(f"{base_url}/v1", json={
         "tool": "submit_metrics",
         "input": {
             "agent_id": agent_id,
@@ -1732,7 +1739,7 @@ def evaluate_revocation(agent_id: str) -> dict:
     )
 
     # Get recent anomaly history
-    audit_resp = session.post(f"{base_url}/execute", json={
+    audit_resp = session.post(f"{base_url}/v1", json={
         "tool": "get_audit_trail",
         "input": {"agent_id": agent_id}
     })
@@ -1859,7 +1866,7 @@ class KYAPipeline:
 
     def _execute(self, tool: str, input_data: dict) -> dict:
         """Execute a GreenHelix tool and return the response."""
-        resp = self.session.post(f"{self.base_url}/execute", json={
+        resp = self.session.post(f"{self.base_url}/v1", json={
             "tool": tool,
             "input": input_data
         })
