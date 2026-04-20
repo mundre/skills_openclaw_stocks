@@ -3,9 +3,15 @@
   "slug": "using-arch-compiler",
   "displayName": "Using Architecture Compiler",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775853678492,
-    "commit": "https://github.com/openclaw/skills/commit/6096a682cb8a15b2b5e99329c1137fc11b9266c3"
+    "version": "1.0.2",
+    "publishedAt": 1776193399581,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775853678492,
+      "commit": "https://github.com/openclaw/skills/commit/6096a682cb8a15b2b5e99329c1137fc11b9266c3"
+    }
+  ]
 }
