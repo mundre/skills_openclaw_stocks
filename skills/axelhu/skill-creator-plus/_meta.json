@@ -3,9 +3,15 @@
   "slug": "skill-creator-plus",
   "displayName": "Skill Creator Plus",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1775037124033,
-    "commit": "https://github.com/openclaw/skills/commit/18222a2b3b1bc5f79147c37dbedde5a31ffabfab"
+    "version": "1.2.2",
+    "publishedAt": 1776162071335,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1775037124033,
+      "commit": "https://github.com/openclaw/skills/commit/18222a2b3b1bc5f79147c37dbedde5a31ffabfab"
+    }
+  ]
 }
