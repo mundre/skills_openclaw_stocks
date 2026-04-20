@@ -7,6 +7,13 @@
 - Do not infer the right choice only from a matching domain, environment name, or the fact that one option "looks production"
 - If a wrong selection was made or the previous sync was interrupted, rerun `sync` and confirm each step again before proceeding
 
+## Execution Environment
+
+- Run Playwright-driven commands outside the sandbox by default: `analyze`, `validate-schema --check-selectors`, and `preview`.
+- Run `sync` outside the sandbox as well.
+- If one of those commands was started in a sandbox and behaves oddly, rerun it outside the sandbox before debugging the site or GTM setup itself.
+- Run prompt-driven `sync` in an interactive TTY from the start. If the command cannot use a TTY, provide all target IDs explicitly with `--account-id`, `--container-id`, and `--workspace-id`; do not first run non-interactive sync and wait for a prompt failure.
+
 ## OAuth Failure
 
 - Ensure GTM API is enabled: https://console.cloud.google.com/apis/library/tagmanager.googleapis.com
@@ -14,15 +21,16 @@
 - If you see an error like `listen EPERM 127.0.0.1`, treat it as an environment issue rather than a GTM configuration problem and rerun the authorization step outside the sandbox.
 - Clear cached tokens and retry:
   ```bash
-  node dist/cli.js auth-clear --context-file <artifact-dir>/gtm-context.json
+  event-tracking auth-clear --context-file <artifact-dir>/gtm-context.json
   ```
   Or clear every URL-scoped cache under a chosen root:
   ```bash
-  node dist/cli.js auth-clear --output-root <output-root>
+  event-tracking auth-clear --output-root <output-root>
   ```
 
 ## No Events Fire in Preview
 
+- Confirm `preview` was run outside the sandbox before investigating selectors or GTM config.
 - The `preview` command automatically detects whether the target site has GTM installed.
 - If the container is not found, it will prompt to either re-sync to the correct container or inject GTM during preview.
 - If zero events fire even with injection, verify that the GTM public ID in `gtm-context.json` is correct.

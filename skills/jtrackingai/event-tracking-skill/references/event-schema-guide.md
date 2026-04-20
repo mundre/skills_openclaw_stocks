@@ -6,11 +6,17 @@ Detailed rules for Step 3 - generating the GA4 event schema.
 
 Run `confirm-page-groups` after page-group review, then run `prepare-schema` to derive a compact schema context from `site-analysis.json`:
 ```bash
-node dist/cli.js confirm-page-groups <artifact-dir>/site-analysis.json
-node dist/cli.js prepare-schema <artifact-dir>/site-analysis.json
+event-tracking confirm-page-groups <artifact-dir>/site-analysis.json
+event-tracking prepare-schema <artifact-dir>/site-analysis.json
 ```
 
 `prepare-schema` will stop if the current `pageGroups` snapshot has not been explicitly confirmed yet.
+
+If the crawl detected a real GTM container on the live site, run the live baseline audit first:
+
+```bash
+event-tracking analyze-live-gtm <artifact-dir>/site-analysis.json
+```
 
 Read `<artifact-dir>/schema-context.json` and analyze:
 - Detected `platform` metadata (`generic` or `shopify`)
@@ -18,6 +24,7 @@ Read `<artifact-dir>/schema-context.json` and analyze:
 - Deduplicated interactive elements per group (with `occurrences` count)
 - Per-group features (`hasSearchForm`, `hasVideoPlayer`)
 - `representativeHtml` on each group for DOM context
+- `existingTrackingBaseline` when available, including existing live event names, current live tracking issues, and schema goals
 
 If the site is Shopify, also read `<artifact-dir>/shopify-schema-template.json`. It contains the baseline ecommerce custom events that should usually be kept unless the storefront truly does not use that part of the funnel.
 
@@ -42,9 +49,36 @@ That review file also gives a recommendation status for each event:
 
 Also refer to `ga4-event-guidelines.md` for naming conventions and standard parameters.
 
+## Design Principles
+
+When generating or revising the schema, work as a senior event tracking designer.
+
+The target is a reviewable GA4 / GTM tracking plan that is:
+
+- standards-aligned: naming, trigger choices, and parameter design should follow common GA4 / GTM practice
+- business-relevant: every event should map to a meaningful user action, funnel milestone, or decision signal
+- comprehensive: cover the important journeys, not just the easiest clicks to detect
+- accurate: selectors, trigger intent, and parameter meaning should be specific enough to implement and QA
+- maintainable: prefer stable patterns, reusable definitions, and clean naming over fragile one-off tracking
+
+Aim for broad coverage of meaningful interactions without turning the schema into noise.
+Favor events that help reporting, optimization, QA, or operational debugging.
+Avoid vanity events, duplicate events, and low-signal interactions that are unlikely to inform decisions.
+
+Use this coverage checklist when deciding whether the plan is complete enough:
+
+- primary conversion points
+- major CTA intent and response actions
+- important lead-capture, signup, login, or request forms
+- meaningful discovery and navigation milestones
+- key funnel transitions and completion steps
+- important failure, error, or edge-state events when they matter to business analysis
+
 ## Event Generation Rules
 
 - **Deduplication (strict)**: every `eventName` must be unique across the schema. Merge same-name events (broaden `pageUrlPattern` to `""`) or rename to distinguish intent.
+- **Live baseline first**: when `existingTrackingBaseline` is present, treat it as the current production baseline. Reuse existing live event names when the intent already matches, and add new events only where the live setup has real gaps.
+- **Solve live problems, do not just add events**: each new event or parameter upgrade should address a specific live tracking issue such as missing coverage, inconsistent naming, sparse context, or fragmented reporting targets.
 - **Global elements first**: Process the `global_elements` group (contentType `global`) **before** other groups. Shared header, footer, and nav elements get `pageUrlPattern: ""` and are generated **exactly once**. Other groups **skip** elements with `parentSection` of `header`, `footer`, or `nav`.
 - Do **not** generate default `page_view` or `scroll` events. The GTM configuration tag already sends `page_view`, and `scroll` is usually auto-collected by GA4 Enhanced Measurement.
 - Only add a custom scroll-depth event if there is a clear analysis need. If you do, use a distinct custom event name such as `scroll_depth`, not the reserved `scroll`.
@@ -54,6 +88,9 @@ Also refer to `ga4-event-guidelines.md` for naming conventions and standard para
 - Merge events with the same semantic meaning across pages
 - Event names: snake_case, max 40 chars, descriptive
 - Parameters: always include `page_location: {{Page URL}}` and relevant GTM built-in variables
+- Prefer events that can be clearly explained in business language during review
+- Prefer parameter sets that support both reporting and QA, not just implementation convenience
+- Reuse and upgrade strong live events when possible, but do not carry forward weak or ambiguous legacy design
 
 ## Shopify Branch
 
@@ -127,10 +164,11 @@ Write to `<artifact-dir>/event-schema.json`:
 
 After writing the schema, validate it with selector checking enabled (default):
 ```bash
-node dist/cli.js validate-schema <artifact-dir>/event-schema.json --check-selectors
+event-tracking validate-schema <artifact-dir>/event-schema.json --check-selectors
 ```
 
 The `--check-selectors` flag launches a browser and verifies each CSS selector actually matches a DOM element on the live site. **Always use it** — it catches selector mismatches before they silently fail in production.
+Run selector checking outside sandboxed environments by default. Do not first attempt the Playwright check inside the sandbox and then retry after interception.
 
 If the site requires login to access some pages (and those selectors can't be verified), note which events are behind auth walls and manually verify them during the preview step.
 
@@ -138,7 +176,7 @@ For Shopify schemas, selector checking still applies to `click` and `form_submit
 
 For lightweight syntax-only validation (no browser):
 ```bash
-node dist/cli.js validate-schema <artifact-dir>/event-schema.json
+event-tracking validate-schema <artifact-dir>/event-schema.json
 ```
 
 The `generate-gtm` command also runs validation automatically.
@@ -172,6 +210,19 @@ Preferred display style for parameters:
 - optimize for readability in chat / terminal output, not spreadsheet-style normalization
 
 Also share the generated `event-spec.md` when available.
+
+When a live GTM baseline exists, the review must also explain:
+
+- which live events are being reused
+- which tracking gaps are being filled
+- what current live tracking problems this schema solves
+- what benefits the new schema brings for reporting, QA, or maintenance
+
+After the user approves the final schema snapshot, record that approval with:
+
+```bash
+event-tracking confirm-schema <artifact-dir>/event-schema.json
+```
 
 This is a required approval gate:
 
