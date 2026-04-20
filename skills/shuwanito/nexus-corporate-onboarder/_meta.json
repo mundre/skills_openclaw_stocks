@@ -3,9 +3,15 @@
   "slug": "nexus-corporate-onboarder",
   "displayName": "nexus-corporate-onboarder",
   "latest": {
-    "version": "2.1.0",
-    "publishedAt": 1775128416735,
-    "commit": "https://github.com/openclaw/skills/commit/6de9df4502ddc3fad0ded842c79efbd191962daf"
+    "version": "2.1.1",
+    "publishedAt": 1776620078527,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.1.0",
+      "publishedAt": 1775128416735,
+      "commit": "https://github.com/openclaw/skills/commit/6de9df4502ddc3fad0ded842c79efbd191962daf"
+    }
+  ]
 }

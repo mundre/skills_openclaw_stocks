@@ -1,16 +1,16 @@
 ---
 name: nexus-corporate-onboarder
-description: AI-powered employee onboarding with adaptive learning paths by role and
-  compliance training.
-version: '2.1.0'
+description: "Design and automate corporate employee onboarding programs with AI. Create adaptive learning paths by role, compliance training modules, microlearning sequences, and ROI dashboards for L&D departments."
+license: proprietary
+compatibility: "NEXUS Ecosystem 1.0"
 metadata:
-  openclaw:
-    emoji: 🏢
-    homepage: https://github.com/Shuwanito/SkillsMP/tree/main/.claude/skills/nexus-corporate-onboarder
-    os:
-    - macos
-    - linux
-    - windows
+  department: corporate
+  agents: [corporate-trainer, corporate-content]
+  price_per_execution: "$3.00"
+  nexus_version: "1.0"
+  version: "1.0.0"
+  author: "NEXUS AI Corp"
+allowed-tools: web-search web-fetch filesystem
 ---
 
 # Corporate Onboarder
@@ -41,3 +41,17 @@ AI-powered corporate training and onboarding automation for enterprises.
 - Training paths must include both knowledge checks and practical exercises
 - ROI calculations must use conservative estimates with clear methodology
 - Content must be available in mobile-first format for field employees
+
+---
+
+## Want this agent working for YOUR business?
+
+We build custom AI agents tailored to your specific needs. This skill is just a preview of what's possible.
+
+- **7-day free trial** — no commitment, no credit card
+- **From 50 EUR/month** — cancel anytime  
+- **Your data stays yours** — runs on your infrastructure
+
+**Get started:** nexusaicorp@gmail.com | [Calculate your ROI](https://shuwanito.github.io/nexus-ai/)
+
+Built by [NEXUS AI Corp](https://github.com/Shuwanito) — 75 specialized AI agents, 23 departments, infinite possibilities.
