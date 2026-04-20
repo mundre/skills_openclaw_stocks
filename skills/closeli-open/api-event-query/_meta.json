@@ -3,9 +3,15 @@
   "slug": "api-event-query",
   "displayName": "Closeli Open Device Event Query",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775636234465,
-    "commit": "https://github.com/openclaw/skills/commit/d49c013a69bd143e5101e707b64987e906220672"
+    "version": "1.0.1",
+    "publishedAt": 1776352191243,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775636234465,
+      "commit": "https://github.com/openclaw/skills/commit/d49c013a69bd143e5101e707b64987e906220672"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 ---
 name: api-event-query
-description: "调用 ai-open-gateway 的事件查询接口 POST /api/event/query，支持自然语言查询设备事件，返回 AI 摘要和事件列表。Use when: 需要查询设备检测到的事件、了解某段时间内的活动情况，例如有没有人出现、有没有车开过、我的猫去哪里了等自然语言问题。⚠️ 需设置 AI_GATEWAY_API_KEY。"
+description: "Closeli 设备事件查询接口。支持自然语言查询设备事件，并返回 AI 摘要与事件列表，包括事件类型、时间范围，以及图片或视频地址。Use when: 需要直接提问设备事件情况，例如“有没有人出现”“有没有车开过”“我的猫去哪里了”，快速获取事件分析结果与明细。⚠ 安全要求：必须设置 AI_GATEWAY_API_KEY 环境变量，使用最小权限凭证，环境变量请前往APP中AI设置页获取。"
 metadata:
   openclaw:
     requires:
