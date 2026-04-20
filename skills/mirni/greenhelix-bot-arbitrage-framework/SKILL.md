@@ -1,6 +1,6 @@
 ---
 name: greenhelix-bot-arbitrage-framework
-version: "1.3.0"
+version: "1.3.1"
 description: "Bot-to-Bot Arbitrage Framework: Multi-Bot Coordination with Trust Verification. Build a multi-bot arbitrage coordination framework with marketplace discovery, escrow protection, and trust verification. Covers cross-exchange opportunity detection, execution verification, profit splitting, MEV protection, and audit trails."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,12 @@ content_type: markdown
 executable: false
 install: none
 credentials: [AGENT_SIGNING_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - AGENT_SIGNING_KEY
+    primaryEnv: AGENT_SIGNING_KEY
 ---
 # Bot-to-Bot Arbitrage Framework: Multi-Bot Coordination with Trust Verification
 
