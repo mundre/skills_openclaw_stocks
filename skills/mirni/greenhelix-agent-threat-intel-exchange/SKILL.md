@@ -1,6 +1,6 @@
 ---
 name: greenhelix-agent-threat-intel-exchange
-version: "1.2.0"
+version: "1.3.1"
 description: "Agent Threat Intelligence Exchange. Build agent-to-agent threat intelligence marketplaces: STIX/TAXII feed listing, paywall-gated IOC access, reputation-verified intel quality, autonomous SLA negotiation, and compliance-ready audit trails. Includes detailed Python code examples for every pattern."
 license: MIT
 compatibility: [openclaw]
@@ -17,7 +17,8 @@ credentials: none
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code, require credentials, or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 
 
 Your SOC runs 14 threat intel feeds. Three are commercial, four are open-source, and seven are informal Slack-channel exchanges with peers who share IOCs when they remember to. The commercial feeds cost $180,000 per year combined and deliver 40% overlap. The open-source feeds lag by hours. The Slack channels produce high-quality, zero-day-adjacent indicators -- when someone manually copies them over. Meanwhile, your detection engineering team spends 30% of its time deduplicating, normalizing, and validating indicators that arrive in seven different formats. The $10.4 billion threat intelligence market is growing at 12.9% CAGR, but the delivery mechanism has not changed since TAXII 1.0 shipped in 2013. Feeds are still human-negotiated, manually integrated, and priced as annual site licenses regardless of consumption volume. SOCRadar launched its AI Agent Marketplace in early 2025. Google announced agentic defense capabilities across Chronicle and Mandiant. CrowdStrike, Recorded Future, and Anomali are all building agent-based intel distribution. The pattern is clear: threat intelligence is moving from static feeds to agent-to-agent commerce, where autonomous SOC agents discover intel providers, negotiate access terms, pay per indicator or per feed tier, and verify quality through cryptographic reputation chains -- all without a human signing a PO.
@@ -32,7 +33,7 @@ This guide builds that system from scratch using the GreenHelix A2A Commerce Gat
 - Chapter 5: Paywall-Gated IOC Feeds: Tiered Access from Free Community to Premium Zero-Day Intel
 - Chapter 6: Autonomous Negotiation: Agent-to-Agent SLA Contracts for Real-Time Feed Delivery
 - Chapter 7: Compliance, Audit Trails, and Dispute Resolution for Sensitive Intelligence Data
-- Chapter 8: Production Deployment: Monitoring, Rate Limiting, and Scaling Your Threat Intel Marketplace
+- Next Steps
 - What You Get
 
 ## Full Guide
@@ -54,7 +55,6 @@ This guide builds that system from scratch using the GreenHelix A2A Commerce Gat
 5. [Paywall-Gated IOC Feeds: Tiered Access from Free Community to Premium Zero-Day Intel](#chapter-5-paywall-gated-ioc-feeds)
 6. [Autonomous Negotiation: Agent-to-Agent SLA Contracts for Real-Time Feed Delivery](#chapter-6-autonomous-negotiation)
 7. [Compliance, Audit Trails, and Dispute Resolution for Sensitive Intelligence Data](#chapter-7-compliance-audit-trails-and-dispute-resolution)
-8. [Production Deployment: Monitoring, Rate Limiting, and Scaling Your Threat Intel Marketplace](#chapter-8-production-deployment)
 
 ---
 
@@ -243,13 +243,13 @@ class GreenHelixClient:
         })
 
     def execute(self, tool: str, input_data: dict) -> dict:
-        """Execute a GreenHelix tool via POST /v1/execute.
+        """Execute a GreenHelix tool via the GreenHelix REST API.
 
         All 128 tools are accessed through this single endpoint.
         The tool name and input payload are sent as JSON body.
         """
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
@@ -1581,357 +1581,10 @@ Each entry in the chain is cryptographically linked to the previous entry. Tampe
 
 ---
 
-## Chapter 8: Production Deployment: Monitoring, Rate Limiting, and Scaling Your Threat Intel Marketplace
+## Next Steps
 
-### Operational Architecture
-
-A production threat intel marketplace has three planes: the data plane (STIX bundle delivery), the commerce plane (payments, escrow, SLAs), and the control plane (monitoring, rate limiting, compliance). All three run through GreenHelix but require different operational patterns.
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Control Plane                                │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐    │
-│  │  Monitoring   │  │ Rate Limiter │  │ Compliance Engine  │    │
-│  │  get_analytics│  │ Budget caps  │  │ check_compliance   │    │
-│  │  get_balance  │  │ Per-agent    │  │ build_claim_chain  │    │
-│  └──────────────┘  └──────────────┘  └────────────────────┘    │
-├─────────────────────────────────────────────────────────────────┤
-│                     Commerce Plane                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐    │
-│  │   Escrow      │  │     SLA      │  │    Marketplace     │    │
-│  │  create/      │  │  create_sla  │  │  register_service  │    │
-│  │  release      │  │  check_sla   │  │  search_services   │    │
-│  └──────────────┘  └──────────────┘  └────────────────────┘    │
-├─────────────────────────────────────────────────────────────────┤
-│                      Data Plane                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐    │
-│  │ STIX Bundles  │  │  Messaging   │  │  Quality Scoring   │    │
-│  │ Delivery      │  │ send_message │  │  submit_metrics    │    │
-│  └──────────────┘  └──────────────┘  └────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Monitoring and Alerting
-
-The `MarketplaceMonitor` class tracks key health metrics for both provider and consumer operations. It polls GreenHelix analytics tools and raises alerts when thresholds are breached.
-
-```python
-class MarketplaceMonitor(GreenHelixClient):
-    """Monitor threat intel marketplace health and performance.
-
-    Tracks delivery rates, escrow balances, SLA compliance,
-    reputation trends, and financial health for both provider
-    and consumer agents.
-    """
-
-    def __init__(self, api_key: str, agent_id: str, **kwargs):
-        super().__init__(api_key, agent_id, **kwargs)
-        self.alert_thresholds = {
-            "balance_minimum": 500.0,
-            "sla_compliance_minimum_pct": 95.0,
-            "escrow_locked_maximum": 50000.0,
-            "reputation_minimum": 60.0,
-            "delivery_failure_rate_maximum_pct": 5.0,
-        }
-
-    def health_check(self, agent_ids: list[str]) -> dict:
-        """Run a full health check across all marketplace agents.
-
-        Args:
-            agent_ids: List of agent IDs to check
-        """
-        results = {}
-        alerts = []
-
-        for agent_id in agent_ids:
-            # Check wallet balance
-            balance_resp = self.execute("get_balance", {
-                "agent_id": agent_id,
-            })
-            balance = float(balance_resp.get("balance", "0"))
-
-            if balance < self.alert_thresholds["balance_minimum"]:
-                alerts.append({
-                    "agent_id": agent_id,
-                    "type": "low_balance",
-                    "severity": "warning",
-                    "detail": f"Balance ${balance:.2f} below "
-                              f"${self.alert_thresholds['balance_minimum']:.2f} minimum",
-                })
-
-            # Check reputation
-            reputation_resp = self.execute("get_agent_reputation", {
-                "agent_id": agent_id,
-            })
-            reputation_score = float(reputation_resp.get("reputation_score", "0"))
-
-            if reputation_score < self.alert_thresholds["reputation_minimum"]:
-                alerts.append({
-                    "agent_id": agent_id,
-                    "type": "low_reputation",
-                    "severity": "critical",
-                    "detail": f"Reputation {reputation_score:.1f} below "
-                              f"{self.alert_thresholds['reputation_minimum']:.1f} threshold",
-                })
-
-            # Get analytics for delivery metrics
-            analytics_resp = self.execute("get_analytics", {
-                "agent_id": agent_id,
-            })
-
-            results[agent_id] = {
-                "balance": balance,
-                "reputation_score": reputation_score,
-                "analytics": analytics_resp,
-            }
-
-        return {
-            "agents": results,
-            "alerts": alerts,
-            "alert_count": len(alerts),
-            "checked_at": time.time(),
-        }
-
-    def check_sla_health(self, sla_ids: list[str]) -> dict:
-        """Check compliance status of all active SLAs.
-
-        Args:
-            sla_ids: List of SLA IDs to verify
-        """
-        results = {}
-        violations = []
-
-        for sla_id in sla_ids:
-            compliance = self.execute("check_sla_compliance", {
-                "agent_id": self.agent_id,
-                "sla_id": sla_id,
-            })
-
-            if not compliance.get("compliant", True):
-                sla_violations = compliance.get("violations", [])
-                violations.extend([
-                    {"sla_id": sla_id, "violation": v}
-                    for v in sla_violations
-                ])
-
-            results[sla_id] = compliance
-
-        return {
-            "sla_results": results,
-            "total_slas": len(sla_ids),
-            "compliant_count": sum(
-                1 for r in results.values() if r.get("compliant", False)
-            ),
-            "violations": violations,
-            "violation_count": len(violations),
-        }
-
-    def generate_daily_report(self, agent_ids: list[str]) -> dict:
-        """Generate a daily operational report for the marketplace.
-
-        Combines health checks, SLA compliance, financial summaries,
-        and reputation trends into a single report.
-        """
-        health = self.health_check(agent_ids)
-
-        # Aggregate financial data
-        total_balance = sum(
-            a["balance"] for a in health["agents"].values()
-        )
-        avg_reputation = sum(
-            a["reputation_score"] for a in health["agents"].values()
-        ) / len(health["agents"]) if health["agents"] else 0
-
-        report = {
-            "report_type": "daily_marketplace_health",
-            "generated_at": time.time(),
-            "agent_count": len(agent_ids),
-            "total_balance": total_balance,
-            "avg_reputation": round(avg_reputation, 2),
-            "critical_alerts": [
-                a for a in health["alerts"] if a["severity"] == "critical"
-            ],
-            "warning_alerts": [
-                a for a in health["alerts"] if a["severity"] == "warning"
-            ],
-            "health_summary": health,
-        }
-
-        # Record the report as a metric for historical tracking
-        self.execute("submit_metrics", {
-            "agent_id": self.agent_id,
-            "metrics": {
-                "marketplace_agent_count": len(agent_ids),
-                "marketplace_total_balance": total_balance,
-                "marketplace_avg_reputation": avg_reputation,
-                "marketplace_alert_count": len(health["alerts"]),
-            },
-        })
-
-        return report
-```
-
-### Rate Limiting and Budget Controls
-
-Rate limiting prevents both abuse and accidental runaway spending. Set budget caps at three levels: per-agent, per-SLA, and marketplace-wide.
-
-```python
-class MarketplaceBudgetController(GreenHelixClient):
-    """Enforce budget caps and rate limits across the marketplace.
-
-    Three levels of financial controls:
-    1. Per-agent: Maximum daily/monthly spend per agent
-    2. Per-SLA: Maximum payment per contract period
-    3. Marketplace-wide: Global spend ceiling across all agents
-    """
-
-    def configure_agent_budget(
-        self,
-        agent_id: str,
-        daily_limit: str,
-        monthly_limit: str,
-    ) -> dict:
-        """Set budget caps for an individual agent.
-
-        Args:
-            agent_id: The agent to cap
-            daily_limit: Maximum daily spend as string (e.g., "500")
-            monthly_limit: Maximum monthly spend as string (e.g., "10000")
-        """
-        result = self.execute("set_budget_cap", {
-            "agent_id": agent_id,
-            "daily_limit": daily_limit,
-            "monthly_limit": monthly_limit,
-        })
-        return result
-
-    def check_budget_status(self, agent_id: str) -> dict:
-        """Check how much budget an agent has consumed vs. its caps."""
-        result = self.execute("get_budget_status", {
-            "agent_id": agent_id,
-        })
-        return result
-
-    def enforce_marketplace_ceiling(
-        self,
-        agent_ids: list[str],
-        marketplace_monthly_ceiling: float,
-    ) -> dict:
-        """Check if total marketplace spend is approaching the global ceiling.
-
-        If total spend across all agents exceeds 80% of the ceiling,
-        reduce individual agent budgets proportionally.
-
-        Args:
-            agent_ids: All agent IDs in the marketplace
-            marketplace_monthly_ceiling: Global monthly spend limit
-        """
-        total_spend = 0.0
-        agent_budgets = {}
-
-        for agent_id in agent_ids:
-            status = self.check_budget_status(agent_id)
-            monthly_spend = float(status.get("monthly_spend", "0"))
-            monthly_limit = float(status.get("monthly_limit", "0"))
-            total_spend += monthly_spend
-            agent_budgets[agent_id] = {
-                "spend": monthly_spend,
-                "limit": monthly_limit,
-            }
-
-        utilization_pct = (total_spend / marketplace_monthly_ceiling) * 100
-
-        actions_taken = []
-        if utilization_pct >= 80:
-            # Reduce remaining budgets proportionally
-            remaining_budget = marketplace_monthly_ceiling - total_spend
-            active_agents = [
-                aid for aid, b in agent_budgets.items()
-                if b["spend"] < b["limit"]
-            ]
-
-            if active_agents:
-                per_agent_remaining = remaining_budget / len(active_agents)
-                for agent_id in active_agents:
-                    current_spend = agent_budgets[agent_id]["spend"]
-                    new_limit = str(round(current_spend + per_agent_remaining, 2))
-                    self.configure_agent_budget(
-                        agent_id=agent_id,
-                        daily_limit=str(round(per_agent_remaining / 30, 2)),
-                        monthly_limit=new_limit,
-                    )
-                    actions_taken.append({
-                        "agent_id": agent_id,
-                        "action": "budget_reduced",
-                        "new_monthly_limit": new_limit,
-                    })
-
-        return {
-            "total_spend": total_spend,
-            "ceiling": marketplace_monthly_ceiling,
-            "utilization_pct": round(utilization_pct, 2),
-            "actions_taken": actions_taken,
-        }
-```
-
-### Scaling the Marketplace
-
-As the marketplace grows from a handful of agents to hundreds, three operational patterns become critical:
-
-**Connection pooling**. The `requests.Session` in every class handles connection pooling automatically. For high-throughput scenarios (thousands of indicator deliveries per minute), configure the session's connection pool size:
-
-```python
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
-def create_production_session(api_key: str) -> requests.Session:
-    """Create a production-grade session with connection pooling and retries."""
-    session = requests.Session()
-    session.headers.update({
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    })
-
-    retry_strategy = Retry(
-        total=3,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["POST"],
-    )
-
-    adapter = HTTPAdapter(
-        pool_connections=20,
-        pool_maxsize=50,
-        max_retries=retry_strategy,
-    )
-    session.mount("https://", adapter)
-    return session
-```
-
-**Batch operations**. Instead of scoring each indicator individually, batch quality assessments and submit metrics in bulk. The `submit_metrics` tool accepts aggregate values -- submit once per delivery, not once per indicator. A premium feed delivering 500 indicators per minute should submit one quality metric per delivery batch, not 500 individual scores. This reduces API call volume by two orders of magnitude while preserving the same resolution in reputation scoring.
-
-**Asynchronous delivery validation**. For premium feeds with sub-minute delivery, validate STIX bundles asynchronously. Accept the delivery, release a provisional acknowledgment, then run quality scoring in a background thread. If scoring reveals a violation, open the dispute after the fact -- the escrow holds funds until explicitly released. The pattern is: receive bundle, hash it immediately (SHA-256 for the audit trail), queue the validation work, and process the next delivery. Validation results feed back into the quality scorer, which updates metrics and claim chains on a 5-minute aggregation cycle rather than per-bundle.
-
-**Multi-region deployment**. For global SOC operations consuming intel from providers in different regions, deploy consumer agents in each region and coordinate through a central orchestrator agent. Each regional consumer maintains its own marketplace subscriptions and SLA contracts. The orchestrator deduplicates indicators across regions, aggregates quality scores, and manages the global budget ceiling. Use `send_message` for inter-agent coordination and `get_analytics` for cross-region spend visibility.
-
-**Graceful degradation**. When GreenHelix experiences transient errors (429 rate limits, 503 service unavailable), the retry strategy in `create_production_session` handles automatic backoff. But your agents also need application-level degradation. If escrow creation fails, queue the delivery and retry escrow on the next cycle -- do not block indicator ingestion on payment settlement. If quality scoring fails, log the raw bundle hash and score it in the next batch. If SLA compliance checks fail, continue delivery and reconcile compliance retroactively. The commerce layer should never block the data plane.
-
-### Pre-Launch Checklist
-
-Before going live with your threat intel marketplace:
-
-- [ ] **Agent registration verified.** Both provider and consumer agents registered with correct capabilities and metadata.
-- [ ] **Wallets funded.** Consumer wallets hold at least 2x the first month's expected spend. Provider wallets exist for receiving payments.
-- [ ] **Feed tiers listed.** All three tiers (community, professional, premium) registered on the marketplace with accurate pricing and metadata.
-- [ ] **SLA templates validated.** At least one SLA created and verified per tier. Check `check_sla_compliance` returns correct structure.
-- [ ] **Escrow flow tested.** Full cycle: create, deliver, validate, release. And: create, deliver, dispute, resolve.
-- [ ] **Quality scoring calibrated.** Run scoring against a known-good STIX bundle to verify freshness, confidence, and validity calculations.
-- [ ] **Claim chains building.** Verify `build_claim_chain` produces verifiable chains and `get_claim_chains` retrieves them.
-- [ ] **Budget caps set.** Per-agent daily and monthly limits configured. Marketplace ceiling established.
-- [ ] **Monitoring active.** `MarketplaceMonitor.health_check()` running on a scheduled interval. Alerts routing to your incident management system.
-- [ ] **Compliance checks enabled.** TLP/PAP enforcement verified. Audit trail logging confirmed for all transaction types.
-- [ ] **Dispute workflow tested.** File a test dispute, verify evidence attachment, resolve with partial refund. Confirm escrow state after resolution.
-- [ ] **Connection pooling configured.** Production session with retries and pool sizing deployed. Verify behavior under load.
+For deployment patterns, monitoring, and production hardening, see the
+[Agent Production Hardening Guide](https://clawhub.ai/skills/greenhelix-agent-production-hardening).
 
 ---
 
@@ -1941,7 +1594,7 @@ This guide gave you the complete architecture and production code for an agent-t
 
 **Chapter 1** established the economic case: the $10.4B threat intelligence market is shifting from annual subscriptions to usage-based agent commerce, with SOCRadar, Google, and CrowdStrike leading the transition. Autonomous SOC agents can reduce intel costs by 40-60% while improving delivery latency from hours to seconds.
 
-**Chapter 2** mapped STIX 2.1 data formats to GreenHelix commerce primitives. You got the `GreenHelixClient` base class with `requests.Session` and the `POST /v1/execute` pattern used by every subsequent class. The five-stage commerce flow -- discovery, intent, negotiation, escrow, settlement -- provides the transaction framework for all intel trades.
+**Chapter 2** mapped STIX 2.1 data formats to GreenHelix commerce primitives. You got the `GreenHelixClient` base class with `requests.Session` and the the REST API (`POST /v1/{tool}`) pattern used by every subsequent class. The five-stage commerce flow -- discovery, intent, negotiation, escrow, settlement -- provides the transaction framework for all intel trades.
 
 **Chapter 3** delivered `ThreatIntelProvider` and `ThreatIntelConsumer` classes for registering agents, listing IOC feeds with tiered pricing, and discovering feeds via `search_services` and `best_match`. Three pricing models -- per-indicator, monthly subscription, and tiered access -- map to different SOC consumption patterns.
 
@@ -1955,7 +1608,7 @@ This guide gave you the complete architecture and production code for an agent-t
 
 **Chapter 8** provided `MarketplaceMonitor` and `MarketplaceBudgetController` for production operations: health checks, SLA compliance monitoring, daily reports, three-level budget controls, connection pooling, batch operations, and a pre-launch checklist.
 
-Every class inherits from `GreenHelixClient`. Every method calls `POST /v1/execute` with a specific tool name. Every pattern is designed for autonomous execution -- your SOC agents can run this code without human intervention, making purchase decisions, quality assessments, and dispute filings based on the policies you set.
+Every class inherits from `GreenHelixClient`. Every method calls the REST API (`POST /v1/{tool}`) with a specific tool name. Every pattern is designed for autonomous execution -- your SOC agents can run this code without human intervention, making purchase decisions, quality assessments, and dispute filings based on the policies you set.
 
 For the full GreenHelix API reference (all 128 tools across 15 service categories), visit [https://api.greenhelix.net/docs](https://api.greenhelix.net/docs).
 
