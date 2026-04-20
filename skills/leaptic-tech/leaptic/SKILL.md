@@ -82,35 +82,42 @@ curl -sS -X GET "${base_url}" \
 
 **Headers:** `App-Key: <app_key>`
 
-**Response:** JSON object. On success, `code` is `0`, `msg` is `"success"`, and `data.devices` is an array of device records. Each response includes `traceId`. The API **may** also include `success` (boolean); if it is present, treat it like `code` for pass/fail.
+**Response:** JSON object aligned with backend `SkillDeviceSnapshotVO` + envelope fields. `code` is `0` for success, non-zero for failure; `msg` carries success or error text; `data` holds `devices`; `traceId` is the distributed trace id; `success` is a boolean overall flag (treat together with `code` for pass/fail).
 
 ### Top-level fields
 
-| Field     | Type             | Description                          |
-| --------- | ---------------- | ------------------------------------ |
-| code      | integer          | `0` indicates success in the example |
-| msg       | string           | Human-readable message               |
-| data      | object           | Payload; contains `devices`          |
-| traceId   | string           | Request correlation id               |
-| success   | boolean (optional) | Overall success flag when returned |
+| Field     | Type    | Description |
+| --------- | ------- | ----------- |
+| code      | integer (int32) | Status code: `0` = success, any other value = failure |
+| msg       | string  | Success or error message |
+| data      | object  | `SkillDeviceSnapshotVO`; contains `devices` (see below) |
+| traceId   | string  | Distributed trace id for request correlation |
+| success   | boolean | Overall success flag |
 
-### `data.devices[]` item fields
+### `data` payload (`SkillDeviceSnapshotVO`)
+
+| Field    | Type | Description |
+| -------- | ---- | ----------- |
+| devices  | array of **DeviceItem** | One element per bound device |
+
+### `DeviceItem` fields (`data.devices[]`)
 
 | Field                 | Type            | Description |
 | --------------------- | --------------- | ----------- |
 | sn                    | string          | Device serial number |
-| batteryLevel          | integer \| null | Battery level percentage; `null` if unavailable |
-| isCharging            | integer         | Charging: `1` yes, `0` no |
-| totalStorage          | string          | Total storage, human-readable (e.g. `0.00GB`) |
-| usedStorage           | string          | Used storage, human-readable (e.g. `0.00GB`) |
-| freeStorageMinutes    | string          | Estimated remaining recordable time, display string (e.g. `604 min`; wording may vary by locale) |
-| videoCount            | integer         | Total video count |
-| videoDurationMinutes  | string          | Total video duration, display string (e.g. `1 min`; wording may vary by locale) |
-| videoSizeGb           | string          | Total video size, human-readable (e.g. `0.69GB`) |
-| photoCount            | integer         | Total photo count |
-| latestShootTime       | string          | Last capture time, display string (e.g. `2026-04-07 16:56:58`; format may vary by locale) |
+| batteryLevel          | integer (int32) \| null | Battery level percentage; `null` = unavailable |
+| isCharging            | integer (int32) | Charging: `1` = yes, `0` = no |
+| totalStorage          | string          | Total capacity (**GB**), string in API |
+| usedStorage           | string          | Used storage (**GB**), string in API |
+| freeStorageMinutes    | string          | Estimated remaining recordable time (**minutes**), string (encoding may include a unit suffix depending on deployment) |
+| videoCount            | integer (int32) | Total video count |
+| videoDurationMinutes  | string          | Total video duration (**minutes**), string |
+| videoSizeGb           | string          | Total video size (**GB**), string |
+| photoCount            | integer (int32) | Total photo count |
+| freePhotoCount        | integer (int32) | Remaining number of photos that can be taken |
+| latestShootTime       | string          | Most recent capture time; format **`yyyy-MM-dd HH:mm:ss`** |
 
-Several fields are **presentation strings** for UI; exact wording, units, and time format depend on product locale.
+Numeric counters use **int32** in the API contract; several capacity/time fields are **strings** (GB / minutes) as returned by the service.
 
 ### Example success body
 
@@ -131,6 +138,7 @@ Several fields are **presentation strings** for UI; exact wording, units, and ti
         "videoDurationMinutes": "1 min",
         "videoSizeGb": "0.69GB",
         "photoCount": 1,
+        "freePhotoCount": 0,
         "latestShootTime": "2026-04-07 16:56:58"
       }
     ]
@@ -140,7 +148,7 @@ Several fields are **presentation strings** for UI; exact wording, units, and ti
 }
 ```
 
-If `code` is not `0`, or if `success` is present and not `true`, treat as failure and surface `msg` (and `traceId` if useful) to the user.
+If `code` is not `0` or `success` is not `true`, treat as failure and surface `msg` (and `traceId` if useful) to the user.
 
 ## Error handling
 
