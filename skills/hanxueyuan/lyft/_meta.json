@@ -3,9 +3,15 @@
   "slug": "lyft",
   "displayName": "Lyft",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775781263698,
-    "commit": "https://github.com/openclaw/skills/commit/0e9ade0703879f2c702ec8c73b49500b7e3e6bb1"
+    "version": "1.0.1",
+    "publishedAt": 1776295424652,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775781263698,
+      "commit": "https://github.com/openclaw/skills/commit/0e9ade0703879f2c702ec8c73b49500b7e3e6bb1"
+    }
+  ]
 }
