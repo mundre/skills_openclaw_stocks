@@ -4,7 +4,7 @@ description: Procedural knowledge for on-chain blockchain analysis using the ope
 license: MIT
 metadata:
   author: openscan
-  version: "0.0.1"
+  version: "0.0.3"
 ---
 
 # OpenScan Blockchain Analysis
@@ -38,6 +38,7 @@ export PATH="$(npm prefix -g)/bin:$PATH"
 | Command | Description | Impact |
 |---------|-------------|--------|
 | `openscan tx-history` | Transaction history for an address | HIGH |
+| `openscan analyze-tx` | Analyze a single tx: call tree, addresses, contracts, prestate, raw trace | HIGH |
 | `openscan gas-price` | Gas price history for a network | MEDIUM |
 | `openscan token-balance` | Token balance history | HIGH |
 | `openscan address-type` | Detect address type (EOA/contract) | LOW |
