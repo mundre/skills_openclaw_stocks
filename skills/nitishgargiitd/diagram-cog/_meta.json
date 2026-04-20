@@ -3,11 +3,16 @@
   "slug": "diagram-cog",
   "displayName": "Diagram Cog",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1776042042833,
-    "commit": "https://github.com/openclaw/skills/commit/e7d2decd55c110807d727e0897586a5441defe92"
+    "version": "1.0.5",
+    "publishedAt": 1776187930612,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1776042042833,
+      "commit": "https://github.com/openclaw/skills/commit/e7d2decd55c110807d727e0897586a5441defe92"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775452027596,

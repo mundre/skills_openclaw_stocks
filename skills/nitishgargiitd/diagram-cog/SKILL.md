@@ -1,6 +1,6 @@
 ---
 name: diagram-cog
-description: "AI diagram generator — flowcharts, system architecture, mind maps, org charts, ER diagrams, sequence diagrams, Gantt charts, network diagrams. Describe your system in plain English, get interactive zoomable diagrams or print-ready PDFs. No Visio, no Lucidchart. Powered by CellCog's frontier coding agent and app deployment infrastructure."
+description: "AI diagram generation powered by CellCog. Flowcharts, system architecture, mind maps, org charts, ER diagrams, sequence diagrams, Gantt charts, network diagrams. Describe your system in plain English, get interactive diagrams or print-ready PDFs."
 metadata:
   openclaw:
     emoji: "🔀"
@@ -32,7 +32,7 @@ result = client.create_chat(
 )
 ```
 
-**Cursor / Claude Code / Other agents (blocks until done):**
+**All agents except OpenClaw (blocks until done):**
 ```python
 from cellcog import CellCogClient
 client = CellCogClient(agent_provider="openclaw|cursor|claude-code|codex|...")
@@ -310,6 +310,6 @@ CellCog defaults to interactive HTML — the whole point is diagrams you can exp
 
 ## If CellCog is not installed
 
-**Cursor:** Run `/cellcog-setup` to install and authenticate.
-**OpenClaw:** Run `clawhub install cellcog` for SDK setup.
-**Other agents:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
+Run `/cellcog-setup` (or `/cellcog:cellcog-setup` depending on your tool) to install and authenticate.
+**OpenClaw users:** Run `clawhub install cellcog` instead.
+**Manual setup:** `pip install -U cellcog` and set `CELLCOG_API_KEY`. See the **cellcog** skill for SDK reference.
