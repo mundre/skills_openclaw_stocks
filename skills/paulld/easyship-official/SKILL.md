@@ -12,6 +12,7 @@ tools:
   - get_shipment
   - delete_shipment
   - cancel_shipment
+  - create_label
   - get_shipment_documents
   - list_pickups
   - get_pickup
@@ -43,7 +44,7 @@ metadata:
         - EASYSHIP_API_ACCESS_TOKEN
 ---
 
-> v0.3.1 — 24 tools across shipping, tracking, pickups, billing, address validation, and analytics.
+> v0.4.0 — 25 tools across shipping, tracking, pickups, billing, address validation, and analytics.
 
 ## Shipping rates
 
@@ -80,6 +81,16 @@ The primary tool for creating shipments and buying labels.
 - `list_shipments` — filter by state, date range, country, etc. Supports label_state, delivery_state, shipment_state filters.
 - `delete_shipment` — removes a shipment that hasn't shipped yet.
 - `cancel_shipment` — cancels a shipped shipment (only if label failed or shipment not yet in transit).
+
+### create_label
+
+The preferred way to buy a label for an existing shipment. Use this instead of passing `buy_label` via `update_shipment`.
+
+**Required input:** `easyship_shipment_id`.
+
+**Optional:** `courier_service_id` (omit to auto-select), `format` (url/pdf/png/zpl, default "url"), `label`/`commercial_invoice`/`packing_slip` page sizes, `remarks`.
+
+**After calling:** Find the `shipping_documents` entry with `"category": "label"` and present its URL as a clickable link. Include packing slip and commercial invoice URLs if present.
 
 ### get_shipment_documents
 
