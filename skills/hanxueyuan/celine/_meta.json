@@ -3,9 +3,15 @@
   "slug": "celine",
   "displayName": "Celine",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776138319866,
-    "commit": "https://github.com/openclaw/skills/commit/be35fb117fb98668cc8284e83410d6fbbc67b061"
+    "version": "1.0.6",
+    "publishedAt": 1776238076310,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776138319866,
+      "commit": "https://github.com/openclaw/skills/commit/be35fb117fb98668cc8284e83410d6fbbc67b061"
+    }
+  ]
 }
