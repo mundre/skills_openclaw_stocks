@@ -3,11 +3,16 @@
   "slug": "compound-eng-md-docs",
   "displayName": "md-docs",
   "latest": {
-    "version": "2.55.1",
-    "publishedAt": 1776004194705,
-    "commit": "https://github.com/openclaw/skills/commit/a640256c528eabde1865b2fcb11754b9c1e4b6a2"
+    "version": "2.56.1",
+    "publishedAt": 1776518973199,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.55.1",
+      "publishedAt": 1776004194705,
+      "commit": "https://github.com/openclaw/skills/commit/a640256c528eabde1865b2fcb11754b9c1e4b6a2"
+    },
     {
       "version": "2.53.0",
       "publishedAt": 1775440554821,
