@@ -3,9 +3,15 @@
   "slug": "versace",
   "displayName": "Versace",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775830225402,
-    "commit": "https://github.com/openclaw/skills/commit/0a1f38fecc4e27863e25053929ac9f6333cf2caf"
+    "version": "1.0.3",
+    "publishedAt": 1776533967251,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775830225402,
+      "commit": "https://github.com/openclaw/skills/commit/0a1f38fecc4e27863e25053929ac9f6333cf2caf"
+    }
+  ]
 }
