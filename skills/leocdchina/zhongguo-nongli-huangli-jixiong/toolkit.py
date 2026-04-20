@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 """toolkit.py — Unified Huangli toolkit.
 
-Canonical usage (recommended from any project/root directory):
-  python3 skills/zhongguo-nongli-huangli-jixiong/toolkit.py by-date YYYY-MM-DD
-  python3 skills/zhongguo-nongli-huangli-jixiong/toolkit.py batch START_DATE END_DATE [--filter ACTIVITY]
-  python3 skills/zhongguo-nongli-huangli-jixiong/toolkit.py search KEYWORD [--year YYYY | --start YYYY-MM-DD --end YYYY-MM-DD]
-
-Short usage (only when current directory is this installed skill folder):
-  python3 toolkit.py by-date YYYY-MM-DD
-  python3 toolkit.py batch START_DATE END_DATE [--filter ACTIVITY]
-  python3 toolkit.py search KEYWORD [--year YYYY | --start YYYY-MM-DD --end YYYY-MM-DD]
+Usage:
+  python toolkit.py by-date YYYY-MM-DD
+  python toolkit.py batch START_DATE END_DATE [--filter ACTIVITY]
+  python toolkit.py search KEYWORD [--year YYYY | --start YYYY-MM-DD --end YYYY-MM-DD]
 """
 import argparse
 import json
