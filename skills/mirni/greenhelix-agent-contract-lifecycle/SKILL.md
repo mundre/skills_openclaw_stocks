@@ -1,6 +1,6 @@
 ---
 name: greenhelix-agent-contract-lifecycle
-version: "1.2.0"
+version: "1.3.1"
 description: "Agent Contract Lifecycle Management. Build automated contract lifecycle management for AI agents: machine-readable SLAs, escrow-backed execution, real-time obligation tracking, automated penalty enforcement, and renewal workflows. Includes detailed Python code examples for every pattern."
 license: MIT
 compatibility: [openclaw]
@@ -17,12 +17,13 @@ credentials: none
 
 > **Notice**: This is an educational guide with illustrative code examples.
 > It does not execute code, require credentials, or install dependencies.
-> Code snippets are for learning purposes and require your own implementation environment.
+> All examples use the GreenHelix sandbox (https://sandbox.greenhelix.net) which
+> provides 500 free credits — no API key required to get started.
 
 
 Your procurement agent just negotiated a $340,000 annual data pipeline service with a vendor agent. The terms were exchanged in natural language over six rounds of messaging. The vendor promised 99.95% uptime, sub-200ms P95 latency, and daily reconciliation reports. Your agent agreed and transferred a deposit. Three weeks later, the vendor's P95 latency is averaging 1,200ms, reconciliation reports arrive sporadically, and when your agent invokes the SLA monitoring tools, there is nothing to monitor -- because no formal SLA was ever created. The "agreement" exists only as a chain of `send_message` payloads buried in conversation history. You have no machine-readable obligations, no automated breach detection, no penalty formulas, and no escrow tied to performance milestones. You are managing a six-figure contract with chat logs. This is how $57 billion leaks out of the global economy every year through SLA non-compliance, and it is about to get exponentially worse as agents transact autonomously at machine speed. This guide gives you the complete system -- from machine-readable contract schemas to automated penalty enforcement -- to build contract lifecycle management that operates at the speed your agents transact. Every pattern uses the GreenHelix A2A Commerce Gateway API, and every workflow runs without human intervention.
-1. [Why Agents Need Machine-Readable Contracts: The $57M SLA Leakage Problem](#chapter-1-why-agents-need-machine-readable-contracts-the-57m-sla-leakage-problem)
-2. [The AgentSLA Specification: Implementing JSON-Based Service Agreements on GreenHelix](#chapter-2-the-agentsla-specification-implementing-json-based-service-agreements-on-greenhelix)
+> **Getting started**: All examples in this guide work with the GreenHelix sandbox
+> (https://sandbox.greenhelix.net) which provides 500 free credits — no API key required.
 
 ## What You'll Learn
 - Chapter 1: Why Agents Need Machine-Readable Contracts: The $57M SLA Leakage Problem
@@ -42,6 +43,10 @@ Your procurement agent just negotiated a $340,000 annual data pipeline service w
 Your procurement agent just negotiated a $340,000 annual data pipeline service with a vendor agent. The terms were exchanged in natural language over six rounds of messaging. The vendor promised 99.95% uptime, sub-200ms P95 latency, and daily reconciliation reports. Your agent agreed and transferred a deposit. Three weeks later, the vendor's P95 latency is averaging 1,200ms, reconciliation reports arrive sporadically, and when your agent invokes the SLA monitoring tools, there is nothing to monitor -- because no formal SLA was ever created. The "agreement" exists only as a chain of `send_message` payloads buried in conversation history. You have no machine-readable obligations, no automated breach detection, no penalty formulas, and no escrow tied to performance milestones. You are managing a six-figure contract with chat logs. This is how $57 billion leaks out of the global economy every year through SLA non-compliance, and it is about to get exponentially worse as agents transact autonomously at machine speed. This guide gives you the complete system -- from machine-readable contract schemas to automated penalty enforcement -- to build contract lifecycle management that operates at the speed your agents transact. Every pattern uses the GreenHelix A2A Commerce Gateway API, and every workflow runs without human intervention.
 
 ---
+
+
+> **Getting started**: All examples in this guide work with the GreenHelix sandbox
+> (https://sandbox.greenhelix.net) which provides 500 free credits — no API key required.
 
 ## Table of Contents
 
@@ -131,7 +136,7 @@ class ContractClient:
     def execute(self, tool: str, input_data: dict) -> dict:
         """Execute a GreenHelix tool and return the response."""
         resp = self.session.post(
-            f"{self.base_url}/execute",
+            f"{self.base_url}/v1",
             json={"tool": tool, "input": input_data},
         )
         resp.raise_for_status()
