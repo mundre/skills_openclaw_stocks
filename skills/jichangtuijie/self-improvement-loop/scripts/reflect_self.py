@@ -3,7 +3,8 @@
 import os, re, sys, subprocess
 from datetime import datetime, timezone
 
-WORKSPACE = "/home/morav/.openclaw/workspace"
+import os
+WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
 LEARNINGS_DIR = os.path.join(WORKSPACE, ".learnings")
 DISTILL_SELF = os.path.join(LEARNINGS_DIR, "DISTILL-SELF.md")
 

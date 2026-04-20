@@ -7,7 +7,7 @@
 #   (no args)   — Silent 执行：预览 + 自动归档，无交互
 #   (no args)   — 执行归档（先 dry-run 显示摘要，等待确认）
 
-WORKSPACE="/home/morav/.openclaw/workspace"
+WORKSPACE="${HOME}/.openclaw/workspace"
 LEARNINGS_DIR="$WORKSPACE/.learnings"
 ARCHIVE_DIR="$LEARNINGS_DIR/archive"
 TIMESTAMP=$(date '+%Y-%m-%dT%H:%M:%S+08:00')

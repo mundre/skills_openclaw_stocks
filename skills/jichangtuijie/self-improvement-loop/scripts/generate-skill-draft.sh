@@ -3,7 +3,7 @@
 # Usage: ./generate-skill-draft.sh "<pattern_name>" [category]
 # Outputs SKILL.md compatible content to stdout
 
-WORKSPACE="/home/morav/.openclaw/workspace"
+WORKSPACE="${HOME}/.openclaw/workspace"
 LEARNINGS_DIR="$WORKSPACE/.learnings"
 PATTERN_NAME="${1:-}"
 CATEGORY="${2:-unknown}"

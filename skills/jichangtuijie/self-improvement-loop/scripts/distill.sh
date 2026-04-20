@@ -12,7 +12,7 @@
 #   (no args)      — Full report, writes text to /tmp/distill-report-YYYYMMDD.txt
 #   --check-only   — Fast JSON to stdout (for Cron heartbeat check)
 
-WORKSPACE="/home/morav/.openclaw/workspace"
+WORKSPACE="${HOME}/.openclaw/workspace"
 LEARNINGS_DIR="$WORKSPACE/.learnings"
 DISTILL_SELF="$LEARNINGS_DIR/DISTILL-SELF.md"
 REFLECT_PY="$WORKSPACE/scripts/self-improvement/reflect_self.py"

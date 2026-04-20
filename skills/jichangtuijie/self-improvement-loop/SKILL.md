@@ -1,14 +1,13 @@
 ---
 name: self-improvement-loop
-version: 4.3.2
+version: 4.3.8
 description: |
-  openclaw self-evolution loop — Hook captures feedback, distill detects patterns,
-  threshold triggers notification, user decides A/B/C, AI creates/updates skills.
-  Auto-detects the first available channel from openclaw.json (Telegram, Discord, ...).
-  Architecture: skill package + install.sh → canonical scripts → Cron scheduler.
+  openclaw self-evolution loop — beyond Hermes Growth, strengthening self-growth and skill systems with controllable optimization.
+  Hook captures feedback, distill refines pattern detection, threshold triggers notification,
+  user decides A/B/C, AI skill generation and updates. Auto-detects first available channel from openclaw.json.
 ---
 
-# self-improvement-loop v4.3.2
+# self-improvement-loop v4.3.8
 
 Automated experience → pattern → skill evolution loop.
 
@@ -75,9 +74,9 @@ count >= 2 + (notified == null OR notified == false OR notification_count < coun
 When the Cron sends a notification to the auto-detected channel and the user replies A / B / C:
 
 1. Cron writes context to `~/.openclaw/workspace/.learnings/.pending_notifications/<ts>_<pattern>.json`
-2. User replies on Telegram
+2. User replies on that channel
 3. Main session receives and processes the reply
-4. A/B/C handler: reads pending JSON → executes skill-creator (A/B) or marks dormant (C)
+4. A/B/C handler (in `AGENTS.md`): reads pending JSON → executes skill-creator (A/B) or marks dormant (C)
 
 ## Installation
 
@@ -131,5 +130,9 @@ $HOME/.openclaw/hooks/self-improvement/
 |---------|------|--------|
 | v4.3 | 2026-04-20 | distill_json.py (Python JSON), write_notified.py (write-back-first) |
 | v4.3.2 | 2026-04-20 | Channel auto-detection: install.sh scans openclaw.json for available channels |
+| v4.3.6 | 2026-04-20 | A/B/C handler in AGENTS.md (not HEARTBEAT); install.sh removed HEARTBEAT append |
+| v4.3.7 | 2026-04-20 | install.sh appends A/B/C handler to AGENTS.md on install |
+| v4.3.8 | 2026-04-20 | Hardcoded paths replaced with $HOME / os.path.expanduser |
+| v4.3.4 | 2026-04-20 | Description updated with Hermes Growth reference |
 | v4.2 | 2026-04-20 | pending_only, reflect_self, self-check mechanism |
 | v4.0 | 2026-04-19 | Script/AI split, match-existing-skill mechanical-only, archive silent |

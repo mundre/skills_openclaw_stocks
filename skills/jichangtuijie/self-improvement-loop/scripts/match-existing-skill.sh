@@ -13,7 +13,7 @@ if [ -z "$PATTERN" ]; then
     exit 0
 fi
 
-SKILLS_DIR="/home/morav/.openclaw/workspace/skills"
+SKILLS_DIR="${HOME}/.openclaw/workspace/skills"
 
 # 提取匹配关键词：pattern 的最后一段 + 全部（去点）
 KEYWORD=$(echo "$PATTERN" | rev | cut -d. -f1 | rev)

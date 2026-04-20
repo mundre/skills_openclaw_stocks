@@ -91,9 +91,9 @@ echo "=== self-improvement-loop v4.3 installer ==="
 echo ""
 
 if is_skill_creator_installed; then
-    echo "[0/7] skill-creator: found, skipping"
+    echo "[0/8] skill-creator: found, skipping"
 else
-    echo "[0/7] skill-creator: not found, installing..."
+    echo "[0/8] skill-creator: not found, installing..."
     if install_skill_creator; then
         echo "  ✓ skill-creator installed"
     else
@@ -104,7 +104,7 @@ fi
 
 # Detect available channels
 echo ""
-echo "[0/7] Detecting notification channels..."
+echo "[0/8] Detecting notification channels..."
 CHANNEL_LIST=$(detect_channel)
 CHANNEL_COUNT=$(echo "$CHANNEL_LIST" | grep -c ":" || echo 0)
 
@@ -131,7 +131,7 @@ fi
 
 # ── 1. Create directories ───────────────────────────────
 echo ""
-echo "[1/7] Creating directories..."
+echo "[1/8] Creating directories..."
 mkdir -p "$CANONICAL_DIR"
 mkdir -p "$CANONICAL_HOOKS"
 mkdir -p "$LEARNINGS_DIR"
@@ -140,13 +140,13 @@ echo "  ✓ directories created"
 
 # ── 2. Install Hook ────────────────────────────────────
 echo ""
-echo "[2/7] Installing Hook..."
+echo "[2/8] Installing Hook..."
 cp "$SKILL_HOOKS/handler.js" "$CANONICAL_HOOKS/handler.js"
 echo "  ✓ handler.js → $CANONICAL_HOOKS/"
 
 # ── 3. Install scripts ─────────────────────────────────
 echo ""
-echo "[3/7] Installing scripts..."
+echo "[3/8] Installing scripts..."
 for script in distill.sh archive.sh match-existing-skill.sh generate-skill-draft.sh; do
     cp "$SKILL_SCRIPTS/$script" "$CANONICAL_DIR/$script" 2>/dev/null \
         && echo "  ✓ $script" \
@@ -161,7 +161,7 @@ echo "  ✓ all scripts → $CANONICAL_DIR/"
 
 # ── 4. Initialize learnings files ──────────────────────
 echo ""
-echo "[4/7] Initializing learnings files..."
+echo "[4/8] Initializing learnings files..."
 for f in LEARNINGS.md ERRORS.md FEATURE_REQUESTS.md; do
     target="$LEARNINGS_DIR/$f"
     if [ ! -f "$target" ]; then
@@ -189,7 +189,7 @@ fi
 
 # ── 5. Register Hook ───────────────────────────────────
 echo ""
-echo "[5/7] Registering Hook..."
+echo "[5/8] Registering Hook..."
 if openclaw hook list 2>/dev/null | grep -q "self-improvement"; then
     echo "  ✓ Hook already registered, skipped"
 else
@@ -201,7 +201,7 @@ fi
 
 # ── 6. Setup Cron jobs ─────────────────────────────────
 echo ""
-echo "[6/7] Setting up Cron jobs..."
+echo "[6/8] Setting up Cron jobs..."
 TELEGRAM_ID=$(detect_telegram_id)
 if [ -z "$TELEGRAM_ID" ]; then
     echo "  ⚠ Could not auto-detect Telegram user ID."
@@ -220,9 +220,35 @@ else
         python3 "$SKILL_SCRIPTS/setup_crons.py"
 fi
 
-# ── 7. Gateway restart reminder ─────────────────────────
+# ── 7. Inject A/B/C to AGENTS.md ──────────────────────────
 echo ""
-echo "[7/7] Gateway restart reminder..."
+echo "[7/7] Injecting A/B/C handler to AGENTS.md..."
+AGENTS_FILE="$WORKSPACE/AGENTS.md"
+AGENTS_FRAGMENT="$SKILL_SCRIPTS/agents-append.md"
+
+if [ ! -f "$AGENTS_FILE" ]; then
+    echo "  ⚠ AGENTS.md not found at $AGENTS_FILE, skipping"
+elif grep -q "A/B/C 响应处理.*self-improvement 闭环" "$AGENTS_FILE" 2>/dev/null; then
+    echo "  ✓ A/B/C section already present, skipped"
+else
+    cat "$AGENTS_FRAGMENT" >> "$AGENTS_FILE"
+    echo "  ✓ A/B/C section appended to AGENTS.md"
+fi
+
+# ── 8. Gateway restart reminder ─────────────────────────
+echo ""
+echo "[8/8] Gateway restart reminder..."
+echo ""
+echo "=== Installation complete ==="
+echo ""
+echo "⚠ Restart gateway to activate Hook:"
+echo "   openclaw gateway restart"
+echo ""
+echo "Verify distill:"
+echo "   bash $CANONICAL_DIR/distill.sh --check-only"
+echo ""
+echo "Check Cron status:"
+echo "   openclaw cron list | grep self-improvement"
 echo ""
 echo "=== Installation complete ==="
 echo ""
