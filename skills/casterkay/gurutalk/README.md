@@ -2,6 +2,8 @@
 
 # 大师云 (GuruTalk)
 
+你的大師朋友圈
+
 > *"如果能随时让 Elon Musk 为你的系统设计做优化，让 Charlie Munger 为你的商业决策做「反向思考」排雷，世界会怎样？"*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
