@@ -3,9 +3,15 @@
   "slug": "prd-generator-cc",
   "displayName": "PRD Generator",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775532283471,
-    "commit": "https://github.com/openclaw/skills/commit/12ce00fe5bfa2e965b7caf014d5740a7b12b92a3"
+    "version": "1.0.3",
+    "publishedAt": 1776255200266,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775532283471,
+      "commit": "https://github.com/openclaw/skills/commit/12ce00fe5bfa2e965b7caf014d5740a7b12b92a3"
+    }
+  ]
 }
