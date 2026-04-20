@@ -25,7 +25,8 @@ metadata: {"openclaw":{"emoji":"🗺️","requires":{"bins":["node"]},"os":["lin
 5. **正确调用 CLI 构建**：
    - 单城市：`npx trip-packer build -d xxx.json -o xxx-map.html`
    - 多城市：多次 `-d`，可用 `--default-city` 指定默认城市
-6. **必须交付 HTML**：每次 `build` 成功后，向用户汇报产物文件路径、文件大小，并提示可直接用浏览器打开查看。
+   - 若需要同时生成分享图片，追加 `--images`，会在 HTML 同目录下自动生成 `xxx-map-panorama.png`（全景横图）和 `xxx-map-itinerary-vertical.png`（完整竖图）
+6. **必须交付产物**：每次 `build` 成功后，向用户汇报产物文件路径、文件大小，并提示可直接用浏览器打开查看。若使用了 `--images`，需一并汇报两张 PNG 的路径和大小。
 7. **不污染源码**：不要直接修改仓库 `src/data/` 下的硬编码数据文件（如 `seoul.json`），除非用户明确指令这么做。
 8. **鼓励迭代**：先做一个最小可行版本（2 天、3-4 个地点），验证并构建出 HTML 让用户看到效果，再逐步扩展。
 
