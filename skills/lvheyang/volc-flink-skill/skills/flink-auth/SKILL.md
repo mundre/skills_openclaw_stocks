@@ -121,7 +121,7 @@ volc_flink logout
 
 #### 3.1 使用不同的配置目录
 
-**为每个账号创建独立的配置目录**：
+**为每个账号创建独立的配置目录（推荐，避免复制凭证文件）**：
 ```bash
 # 账号 A 的配置目录
 ~/.volc_flink/account_a/
@@ -135,32 +135,22 @@ volc_flink logout
 
 #### 3.2 账号切换流程
 
-**步骤 1：保存当前账号配置**
+**步骤 1：切换到目标账号（使用环境变量选择配置目录）**
 ```bash
-# 备份当前配置到账号目录
-cp -r ~/.volc_flink ~/.volc_flink/account_current/
-```
+# 选择账号目录作为配置目录（不会修改/覆盖其他账号的目录内容）
+export VOLC_FLINK_CONFIG_DIR=~/.volc_flink/account_<目标账号>
 
-**步骤 2：切换到目标账号**
-```bash
-# 检查目标账号是否已配置
-ls ~/.volc_flink/account_<目标账号>/
-
-# 如果已配置，直接切换
-cp -r ~/.volc_flink/account_<目标账号>/* ~/.volc_flink/
-
-# 如果未配置，引导用户登录
+# 如该账号目录尚未登录过，执行一次交互式登录
 volc_flink login
-# 登录后保存到账号目录
-cp -r ~/.volc_flink ~/.volc_flink/account_<目标账号>/
 ```
 
-**步骤 3：验证切换结果**
+**步骤 2：验证切换结果**
 ```bash
 # 查看当前配置
 volc_flink config show
 
-# 确认切换成功
+# 确认登录状态（不回显明文密钥）
+volc_flink login status
 ```
 
 #### 3.3 账号列表管理
@@ -270,14 +260,12 @@ volc_flink config show
 
 ### 配置目录管理
 ```bash
-# 备份当前配置
-cp -r ~/.volc_flink ~/.volc_flink/backup_$(date +%Y%m%d_%H%M%S)/
-
 # 列出所有账号配置
 ls -la ~/.volc_flink/ | grep account_
 
-# 切换到指定账号
-cp -r ~/.volc_flink/account_<账号名>/* ~/.volc_flink/
+# 切换到指定账号（推荐：通过环境变量选择配置目录，不做复制覆盖）
+export VOLC_FLINK_CONFIG_DIR=~/.volc_flink/account_<账号名>
+volc_flink login status
 ```
 
 ---

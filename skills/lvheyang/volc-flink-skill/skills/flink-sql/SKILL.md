@@ -31,6 +31,29 @@ credentials:
 
 执行任何会改变草稿/任务状态的动作前，必须先完成 `COMMON.md` 的 Scope & Identity，并遵循 `COMMON_MUTATION.md` 中的 Risk Confirmation、变更前检查和操作后验证规则。
 
+### 0.1 模板与参考（推荐入口）
+
+Flink SQL 的连接器模板与最佳实践示例统一放在本技能的 `assets/` 下（从 `flink-template` 迁入），文档链接统一放在 `references/` 下：
+
+- 模板：
+  - `assets/kafka.md`
+  - `assets/paimon.md`
+  - `assets/tls.md`
+  - `assets/tos.md`
+  - `assets/bytehouse-cdw.md`
+  - `assets/bytehouse-ce.md`
+- 参考：
+  - `references/kafka.md`
+  - `references/paimon.md`
+  - `references/tls.md`
+  - `references/tos.md`
+  - `references/bytehouse-cdw.md`
+  - `references/bytehouse-ce.md`
+  - `references/connectors.md`
+  - `references/volc_flink_commands.md`
+
+说明：`references/connectors.md` 汇总外部官方文档链接。
+
 ### 1. 信息提取与版本归一化（关键）
 
 从用户提问中提取并**显式确认**以下信息（缺一不可时必须先问清楚）：
@@ -333,146 +356,6 @@ volc_flink jobs events -i <任务ID>
 
 ## 💡 后续建议
 [后续使用建议]
-```
-
----
-
-## 常用 Flink SQL 模板
-
-### Kafka 源表模板
-
-```sql
-CREATE TABLE source_table (
-  -- 字段定义
-) WITH (
-  'connector' = 'kafka',
-  'topic' = 'topic-name',
-  'properties.bootstrap.servers' = 'kafka-server:9092',
-  'properties.group.id' = 'group-id',
-  'scan.startup.mode' = 'latest-offset',
-  'format' = 'json'
-);
-```
-
-### Paimon 目标表模板
-
-```sql
-CREATE TABLE sink_table (
-  -- 字段定义
-) WITH (
-  'connector' = 'paimon',
-  'path' = 'tos://bucket/path',
-  'warehouse' = 'tos://bucket/path',
-  'auto-create' = 'true'
-);
-```
-
-### 带 Watermark 的流处理
-
-```sql
-CREATE TABLE source_table (
-  -- 字段定义
-  event_time TIMESTAMP(3),
-  WATERMARK FOR event_time AS event_time - INTERVAL '5' SECOND
-) WITH (
-  -- 连接器配置
-);
-```
-
----
-
-## 常用 volc_flink 命令速查
-
-### 项目管理
-```bash
-# 列举项目
-volc_flink projects list
-
-# 查看项目详情
-volc_flink projects detail <项目名>
-```
-
-### 草稿管理
-```bash
-# 列举草稿目录
-volc_flink drafts dirs
-
-# 列举草稿
-volc_flink drafts apps
-
-# 创建草稿（SQL 任务）
-volc_flink drafts create \
-  -n <草稿名称> \
-  --directory <目录名称> \
-  --job-type FLINK_STREAMING_SQL \
-  --engine-version <engine_version> \
-  --sql "<SQL 代码>"
-
-# 获取草稿内容
-volc_flink drafts content -i <草稿ID>
-
-# 更新草稿内容
-volc_flink drafts update -i <草稿ID> --sql "<新的 SQL 代码>"
-
-# 设置草稿参数
-volc_flink drafts params set -i <草稿ID> --kv <key>=<value>
-
-# 发布草稿
-volc_flink drafts publish -i <草稿ID> --resource-pool <资源池名称>
-```
-
-### 任务管理
-```bash
-# 列举任务（支持搜索）
-volc_flink jobs list --search <关键词>
-
-# 获取任务详情（使用任务 ID）
-volc_flink jobs detail -i <任务ID>
-
-# 启动任务
-volc_flink jobs start -i <任务ID>
-
-# 停止任务
-volc_flink jobs stop -i <任务ID>
-
-# 重启任务（带状态监控）
-volc_flink jobs restart -i <任务ID> --inspect
-
-# 扩容/缩容任务
-volc_flink jobs rescale -i <任务ID> --parallelism <并行度> --tm-cpu <CPU> --tm-mem-ratio 1:4 --tm-slots <slot数> --inspect
-
-# 查询任务历史实例
-volc_flink jobs instances -i <任务ID>
-
-# 查询任务运行事件
-volc_flink jobs events -i <任务ID>
-
-# 获取任务日志
-volc_flink monitor logs -i <任务ID>
-
-# 查询任务指标
-volc_flink jobs metrics -i <任务ID>
-
-# 输出任务运维与 FlinkUI 地址
-volc_flink jobs ui -i <任务ID>
-
-# 快照操作
-volc_flink jobs savepoint -i <任务ID>
-
-# 查询快照列表
-volc_flink jobs savepoints -i <任务ID>
-```
-
-### 监控与日志
-```bash
-# 查询任务运行事件
-volc_flink monitor events -i <任务ID>
-
-# 查询任务日志
-volc_flink monitor logs -i <任务ID>
-
-# FlinkUI 查询
-volc_flink monitor flinkui -i <任务ID>
 ```
 
 ---

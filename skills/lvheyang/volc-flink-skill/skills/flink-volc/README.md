@@ -19,7 +19,7 @@
 | **🚀 任务开发** | flink-sql | ✅ 已完成 | SQL 任务创建、开发、部署、调试 |
 | | flink-validate | ✅ 已完成 | SQL 语法校验、预发布验证 |
 | | flink-jar | ✅ 已完成 | JAR 任务创建、部署、调试 |
-| | flink-template | ✅ 已完成 | SQL 模板库、最佳实践、代码片段 |
+| | flink-cdc | ✅ 已完成 | CDC YAML 任务创建、模板生成、发布、调试 |
 | **⚙️ 任务运维** | flink-sre | ✅ 已完成 | 启动、停止、重启、扩容、缩容、配置修改 |
 | | flink-savepoint | ✅ 已完成 | 快照创建、查询、恢复、删除 |
 | | flink-batch | ✅ 已完成 | 批处理任务管理、调度、历史记录 |
@@ -37,7 +37,7 @@
 | **🏗️ 项目与配置管理** | 3 | 0 | 3 | 100% |
 | **💾 资源管理** | 3 | 0 | 3 | 100% |
 | **🔌 连接管理** | 1 | 0 | 1 | 100% |
-| **🚀 任务开发** | 4 | 0 | 4 | 100% |
+| **🚀 任务开发** | 5 | 0 | 5 | 100% |
 | **⚙️ 任务运维** | 3 | 0 | 3 | 100% |
 | **📊 任务监控与诊断** | 3 | 0 | 3 | 100% |
 | **总计** | **18** | **0** | **18** | **100%** | ✅
@@ -64,7 +64,7 @@
 4. **开始使用其他技能**
    - 资源管理：`flink-catalog`、`flink-resource-pool`、`flink-dependency`
    - 连接管理：`flink-conn`
-   - 任务开发：`flink-sql`、`flink-validate`
+   - 任务开发：`flink-sql`、`flink-validate`、`flink-jar`、`flink-cdc`
    - 任务运维：`flink-sre`、`flink-savepoint`
    - 监控诊断：`flink-monitor`、`flink-diagnostic`、`flink-performance`
 
@@ -176,15 +176,13 @@
 - JAR 任务配置
 - JAR 任务调试
 
-#### flink-template
+#### flink-cdc
 **状态**：✅ 已完成
 **核心功能**：
-- SQL 模板库
-- 最佳实践
-- 常见场景解决方案
-- 代码片段快速生成
-
----
+- CDC YAML 模板生成
+- CDC 草稿创建
+- CDC 任务发布与调试
+- MySQL 到 Paimon/StarRocks/Doris/Kafka/ByteHouse CDW 同步模板
 
 ### ⚙️ 任务运维
 

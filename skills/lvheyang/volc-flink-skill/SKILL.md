@@ -68,14 +68,15 @@ credentials:
 
 ### 🚀 任务开发类
 **触发关键词**：
-- 创建 SQL、开发 SQL、部署 SQL、调试 SQL、SQL 任务、SQL 开发、SQL 部署、校验 SQL、语法检查、validate、JAR 任务、模板、template、最佳实践、常用场景、代码片段、快速创建
-- "创建 SQL 任务"、"开发 SQL"、"部署任务"、"校验 SQL"、"语法检查"、"JAR 任务"、"模板"、"最佳实践"
+- 创建 SQL、开发 SQL、部署 SQL、调试 SQL、SQL 任务、SQL 开发、SQL 部署、校验 SQL、语法检查、validate、JAR 任务、CDC 任务、CDC YAML、Pipeline、MySQL CDC、整库同步、分库分表同步、模板、template、最佳实践、常用场景、代码片段、快速创建
+- "创建 SQL 任务"、"开发 SQL"、"部署任务"、"校验 SQL"、"语法检查"、"JAR 任务"、"创建 CDC 任务"、"生成 CDC YAML"、"MySQL 到 Paimon"、"MySQL 到 StarRocks"、"模板"、"最佳实践"
 
 **路由到**：
 - SQL 开发部署 → `flink-sql`
 - SQL 语法校验 → `flink-validate`
 - JAR 任务 → `flink-jar`
-- 模板/最佳实践 → `flink-template`
+- CDC 任务 / CDC YAML / Pipeline 模板 → `flink-cdc`
+- 模板/最佳实践（只读：输出 `flink-sql/assets/` + `flink-sql/references/`，不做创建/发布）→ `flink-sql`
 
 ---
 
@@ -110,9 +111,10 @@ credentials:
 | 登录/安装/升级 CLI vs 默认项目/TOS 路径配置 | `flink-volc` / `flink-config` | 如果动作是安装、升级、登录、退出、查看 CLI 版本，走 `flink-volc`；如果动作是设置默认项目、查看配置、设置 TOS 路径，走 `flink-config` |
 | 查看日志/指标/事件 vs 深入排障 | `flink-monitor` / `flink-diagnostic` | 如果动作是查看、监控、查询日志/事件/指标，走 `flink-monitor`；如果动作是分析错误原因、定位根因、排查失败/OOM/checkpoint timeout，走 `flink-diagnostic` |
 | 性能优化 vs 故障诊断 | `flink-performance` / `flink-diagnostic` | 如果动作是调优并行度、内存、checkpoint、反压，走 `flink-performance`；如果动作是解释失败原因或故障归因，走 `flink-diagnostic` |
-| 生成模板/示例 SQL vs 创建/更新真实任务 | `flink-template` / `flink-sql` | 如果动作是要模板、示例、最佳实践、代码片段，走 `flink-template`；如果动作是创建、修改、发布、调试真实 SQL 任务，走 `flink-sql` |
+| 生成模板/示例 SQL vs 创建/更新真实任务 | `flink-sql` | 两类都走 `flink-sql`：如果只是要模板/示例/最佳实践，则只读输出 `flink-sql/assets/` + `flink-sql/references/`；如果是创建/修改/发布/调试真实任务，则按 `COMMON_MUTATION.md` 执行变更流程 |
 | SQL 校验 vs SQL 开发部署 | `flink-validate` / `flink-sql` | 如果动作是校验语法、预发布检查，走 `flink-validate`；如果动作是创建、更新、发布、启动任务，走 `flink-sql` |
-| Kafka 连接配置/消费调试 vs Kafka SQL 模板 | `flink-conn` / `flink-template` | 如果动作是配置 Instance/Endpoint、消费消息、抽样数据，走 `flink-conn`；如果动作是生成 Kafka Source/Sink SQL 模板，走 `flink-template` |
+| CDC YAML / CDC 草稿任务 vs SQL/JAR 任务 | `flink-cdc` / `flink-sql` / `flink-jar` | 如果用户目标是 CDC pipeline YAML、`--type cdc`、MySQL->Paimon/StarRocks/Doris/Kafka/ByteHouse CDW 同步，走 `flink-cdc`；SQL/JAR 仍分别走 `flink-sql` / `flink-jar` |
+| Kafka 连接配置/消费调试 vs Kafka SQL 模板 | `flink-conn` / `flink-sql` | 如果动作是配置 Instance/Endpoint、消费消息、抽样数据，走 `flink-conn`；如果动作是生成 Kafka Source/Sink SQL 模板，走 `flink-sql`（只读模板输出） |
 | 任务启停/扩缩容/改参数 vs 快照恢复/删除 | `flink-sre` / `flink-savepoint` | 如果动作是 stop/restart/rescale/update params，走 `flink-sre`；如果动作是创建、查询、恢复、删除快照，走 `flink-savepoint` |
 
 ---
@@ -179,7 +181,7 @@ credentials:
 - ✅ **flink-sql** - SQL 任务创建、开发、部署、调试
 - ✅ **flink-validate** - SQL 语法校验、预发布验证
 - ✅ **flink-jar** - JAR 任务创建、部署、调试
-- ✅ **flink-template** - SQL 模板库、最佳实践、代码片段
+- ✅ **flink-cdc** - CDC YAML 任务创建、模板生成、发布、调试
 
 ### ⚙️ 任务运维（3/3）✅
 - ✅ **flink-sre** - 启动、停止、重启、扩容、缩容、配置修改

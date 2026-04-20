@@ -25,6 +25,7 @@ skills/
 │   ├── flink-sql/
 │   ├── flink-validate/
 │   ├── flink-jar/
+│   ├── flink-cdc/
 │   ├── flink-sre/
 │   ├── flink-savepoint/
 │   ├── flink-monitor/
@@ -65,7 +66,7 @@ skills/
 | **🚀 任务开发** | flink-sql | ✅ 已完成 | SQL 任务创建、开发、部署、调试 |
 | | flink-validate | ✅ 已完成 | SQL 语法校验、预发布验证 |
 | | flink-jar | ✅ 已完成 | JAR 任务创建、部署、调试 |
-| | flink-template | ✅ 已完成 | SQL 模板库、最佳实践、代码片段 |
+| | flink-cdc | ✅ 已完成 | CDC YAML 任务创建、模板生成、发布、调试 |
 | **⚙️ 任务运维** | flink-sre | ✅ 已完成 | 启动、停止、重启、扩容、缩容、配置修改 |
 | | flink-savepoint | ✅ 已完成 | 快照创建、查询、恢复、删除 |
 | | flink-batch | ✅ 已完成 | 批处理任务管理、调度、历史记录 |
@@ -83,7 +84,7 @@ skills/
 | **🏗️ 项目与配置管理** | 3 | 0 | 3 | 100% |
 | **💾 资源管理** | 3 | 0 | 3 | 100% |
 | **🔌 连接管理** | 1 | 0 | 1 | 100% |
-| **🚀 任务开发** | 4 | 0 | 4 | 100% |
+| **🚀 任务开发** | 5 | 0 | 5 | 100% |
 | **⚙️ 任务运维** | 3 | 0 | 3 | 100% |
 | **📊 任务监控与诊断** | 3 | 0 | 3 | 100% |
 | **总计** | **18** | **0** | **18** | **100%** | ✅
@@ -155,11 +156,12 @@ skills/
 
 ### 🚀 任务开发类
 **触发关键词**：
-- 创建 SQL、开发 SQL、部署 SQL、调试 SQL、SQL 任务、SQL 开发、SQL 部署、校验 SQL、语法检查、validate
+- 创建 SQL、开发 SQL、部署 SQL、调试 SQL、SQL 任务、SQL 开发、SQL 部署、校验 SQL、语法检查、validate、CDC 任务、CDC YAML、Pipeline、MySQL CDC、整库同步、分库分表同步
 
 **路由到**：
 - SQL 开发部署 → `flink-sql`
 - SQL 语法校验 → `flink-validate`
+- CDC 任务 / CDC YAML / Pipeline 模板 → `flink-cdc`
 
 ---
 
@@ -234,7 +236,7 @@ skills/
 
 ## ✅ 所有技能已完成！
 
-### 🎉 完整技能列表（18/18，100% 覆盖率）
+### 🎉 完整技能列表（19/19，100% 覆盖率）
 
 ### 🔧 volc_flink 工具管理（1/1）
 - ✅ **flink-volc** - 安装、更新、登录、配置工具
@@ -256,7 +258,7 @@ skills/
 - ✅ **flink-sql** - SQL 任务创建、开发、部署、调试
 - ✅ **flink-validate** - SQL 语法校验、预发布验证
 - ✅ **flink-jar** - JAR 任务创建、部署、调试
-- ✅ **flink-template** - SQL 模板库、最佳实践、代码片段
+- ✅ **flink-cdc** - CDC YAML 任务创建、模板生成、发布、调试
 
 ### ⚙️ 任务运维（3/3）
 - ✅ **flink-sre** - 启动、停止、重启、扩容、缩容、配置修改

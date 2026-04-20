@@ -295,11 +295,9 @@ export VOLC_FLINK_CONFIG_DIR=~/.volc_flink/account_a
 
 #### 5.2 使用配置文件备份
 ```bash
-# 备份当前配置
-cp ~/.volc_flink/config.json ~/.volc_flink/config_account_a.json
-
-# 恢复账号 A 的配置
-cp ~/.volc_flink/config_account_a.json ~/.volc_flink/config.json
+# 不推荐通过拷贝配置文件进行“账号切换”，因为配置目录通常包含凭据信息，复制/覆盖容易误操作与泄露。
+# 推荐用 VOLC_FLINK_CONFIG_DIR 为不同账号隔离配置目录（见 5.1）。
+:
 ```
 
 ---
