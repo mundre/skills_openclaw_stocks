@@ -3,9 +3,15 @@
   "slug": "five-guys",
   "displayName": "Five Guys",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775659659305,
-    "commit": "https://github.com/openclaw/skills/commit/59e31f0e0e57b99f601c85020ebf6ad59b7a8618"
+    "version": "1.0.1",
+    "publishedAt": 1776238645435,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775659659305,
+      "commit": "https://github.com/openclaw/skills/commit/59e31f0e0e57b99f601c85020ebf6ad59b7a8618"
+    }
+  ]
 }
