@@ -3,11 +3,16 @@
   "slug": "compound-eng-debugging",
   "displayName": "debugging",
   "latest": {
-    "version": "2.55.1",
-    "publishedAt": 1776004161254,
-    "commit": "https://github.com/openclaw/skills/commit/655855bdba4ef103d6b9fa4cac709f53bf21bb7f"
+    "version": "2.56.1",
+    "publishedAt": 1776518942034,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.55.1",
+      "publishedAt": 1776004161254,
+      "commit": "https://github.com/openclaw/skills/commit/655855bdba4ef103d6b9fa4cac709f53bf21bb7f"
+    },
     {
       "version": "2.55.0",
       "publishedAt": 1775869201156,
