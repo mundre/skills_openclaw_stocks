@@ -3,9 +3,15 @@
   "slug": "alibabacloud-milvus-manage",
   "displayName": "Alibabacloud Milvus Manage",
   "latest": {
-    "version": "0.0.1",
-    "publishedAt": 1775715927447,
-    "commit": "https://github.com/openclaw/skills/commit/6942639903026764149b7366959df2d873e536a0"
+    "version": "0.0.2",
+    "publishedAt": 1776685849208,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.1",
+      "publishedAt": 1775715927447,
+      "commit": "https://github.com/openclaw/skills/commit/6942639903026764149b7366959df2d873e536a0"
+    }
+  ]
 }
