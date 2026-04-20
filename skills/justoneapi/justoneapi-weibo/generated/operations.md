@@ -128,6 +128,30 @@ No request body.
 
 - `default`: default response
 
+## `getUserVideoListV1`
+
+- Method: `GET`
+- Path: `/api/weibo/get-user-video-list/v1`
+- Summary: User Video List
+- Description: Get Weibo user Video list data (waterfall), including pagination cursor for next page.
+- Tags: `Weibo`
+
+### Parameters
+
+| Name | In | Required | Type | Default | Description |
+| --- | --- | --- | --- | --- | --- |
+| `token` | `query` | yes | `string` | n/a | API access token. |
+| `uid` | `query` | yes | `string` | n/a | Weibo User ID (UID). |
+| `cursor` | `query` | no | `string` | n/a | Pagination cursor returned by the previous response. |
+
+### Request body
+
+No request body.
+
+### Responses
+
+- `default`: default response
+
 ## `getWeiboDetailsV1`
 
 - Method: `GET`
@@ -192,6 +216,15 @@ No request body.
 | `endDay` | `query` | yes | `string` | n/a | End Day (yyyy-MM-dd). |
 | `endHour` | `query` | yes | `integer` | n/a | End Hour (0-23). |
 | `hotSort` | `query` | no | `boolean` | `false` | Hot sort, true for hot sort, false for time sort. Default is false. |
+| `contains` | `query` | no | `string` | `ALL` | Contains filter for the result set.
+
+Available Values:
+- `ALL`: All
+- `PICTURE`: Has Picture
+- `VIDEO`: Has Video
+- `MUSIC`: Has Music
+- `LINK`: Has Link |
+| enum | values | no | n/a | n/a | `ALL`, `PICTURE`, `VIDEO`, `MUSIC`, `LINK` |
 | `page` | `query` | no | `integer` | `1` | Page number, starting with 1. |
 
 ### Request body

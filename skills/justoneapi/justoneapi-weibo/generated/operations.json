@@ -247,6 +247,52 @@
       ]
     },
     {
+      "description": "Get Weibo user Video list data (waterfall), including pagination cursor for next page.",
+      "method": "GET",
+      "operationId": "getUserVideoListV1",
+      "parameters": [
+        {
+          "defaultValue": null,
+          "description": "API access token.",
+          "enumValues": [],
+          "location": "query",
+          "name": "token",
+          "required": true,
+          "schemaType": "string"
+        },
+        {
+          "defaultValue": null,
+          "description": "Weibo User ID (UID).",
+          "enumValues": [],
+          "location": "query",
+          "name": "uid",
+          "required": true,
+          "schemaType": "string"
+        },
+        {
+          "defaultValue": null,
+          "description": "Pagination cursor returned by the previous response.",
+          "enumValues": [],
+          "location": "query",
+          "name": "cursor",
+          "required": false,
+          "schemaType": "string"
+        }
+      ],
+      "path": "/api/weibo/get-user-video-list/v1",
+      "requestBody": null,
+      "responses": [
+        {
+          "description": "default response",
+          "statusCode": "default"
+        }
+      ],
+      "summary": "User Video List",
+      "tags": [
+        "Weibo"
+      ]
+    },
+    {
       "description": "Get Weibo post Details data, including media, author metadata, and engagement counts, for post analysis, archiving, and campaign monitoring.",
       "method": "GET",
       "operationId": "getWeiboDetailsV1",
@@ -378,6 +424,21 @@
           "name": "hotSort",
           "required": false,
           "schemaType": "boolean"
+        },
+        {
+          "defaultValue": "ALL",
+          "description": "Contains filter for the result set.\n\nAvailable Values:\n- `ALL`: All\n- `PICTURE`: Has Picture\n- `VIDEO`: Has Video\n- `MUSIC`: Has Music\n- `LINK`: Has Link",
+          "enumValues": [
+            "ALL",
+            "PICTURE",
+            "VIDEO",
+            "MUSIC",
+            "LINK"
+          ],
+          "location": "query",
+          "name": "contains",
+          "required": false,
+          "schemaType": "string"
         },
         {
           "defaultValue": 1,
