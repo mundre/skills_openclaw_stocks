@@ -1,195 +1,356 @@
 ---
-name: flyai-skipticket
-description: 使用 FlyAI 搜索中国国内弃程票（隐藏城市票）。只对比直飞价格和弃程票价格，刨除普通中转票。当用户明确说要找"弃程票"、"隐藏城市票"、"跳城票"时触发。
-license: MIT
+name: skill-creator
+description: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.
+license: Complete terms in LICENSE.txt
 ---
 
-# FlyAI 弃程票搜索
+# Skill Creator
 
-## 核心定义
+This skill provides guidance for creating effective skills.
 
-### 弃程票 vs 中转票
+## About Skills
 
-| 类型 | 定义 | 示例 |
-|-----|------|------|
-| **弃程票** | **中转城市 = 实际目的地**，在中转城市下机，放弃后续航段 | 想去西安，买北京→西安→长沙，在西安下机 |
-| **中转票** | **最终目的地 = 实际目的地**，正常完成全部行程 | 想去长沙，买北京→西安→长沙，在长沙下机 |
+Skills are modular, self-contained packages that extend Claude's capabilities by providing
+specialized knowledge, workflows, and tools. Think of them as "onboarding guides" for specific
+domains or tasks—they transform Claude from a general-purpose agent into a specialized agent
+equipped with procedural knowledge that no model can fully possess.
 
-**本技能只关注弃程票**，不推荐普通中转票。
+### What Skills Provide
 
-## 什么是弃程票
+1. Specialized workflows - Multi-step procedures for specific domains
+2. Tool integrations - Instructions for working with specific file formats or APIs
+3. Domain expertise - Company-specific knowledge, schemas, business logic
+4. Bundled resources - Scripts, references, and assets for complex and repetitive tasks
 
-**弃程票**（Hidden City Ticketing）是指购买一张联程机票，但实际目的地是中转城市，在中转城市下机后放弃后续航段。
+## Core Principles
 
-**原理**：航空公司有时会将"经 A 地中转到 B 地"的联程票定价，低于"直飞 A 地"的机票。
+### Concise is Key
 
-**示例**：
-- 直飞：北京 → 西安 ¥800
-- 联程：北京 → 西安 → 长沙 ¥500
-- **弃程策略**：购买联程票，在西安下机，放弃西安→长沙段，省¥300
+The context window is a public good. Skills share the context window with everything else Claude needs: system prompt, conversation history, other Skills' metadata, and the actual user request.
 
-## ⚠️ 重要风险提示
+**Default assumption: Claude is already very smart.** Only add context Claude doesn't already have. Challenge each piece of information: "Does Claude really need this explanation?" and "Does this paragraph justify its token cost?"
 
-使用弃程票前**必须**告知用户：
+Prefer concise examples over verbose explanations.
 
-1. **不可托运行李** - 行李直挂最终目的地，只能手提行李
-2. **后续航段取消** - 放弃任何非最后一段，航空公司会取消所有后续航段（含返程）
-3. **常旅客风险** - 可能影响里程、会员资格，甚至被禁飞
-4. **航班变动风险** - 如原航班取消，航司可能改签不经过实际目的地的航线
-5. **违反承运合同** - 虽不违法，但违反航司合同条款
+### Set Appropriate Degrees of Freedom
 
-**最佳实践**：仅用于单程票，或往返票的回程最后一段。
+Match the level of specificity to the task's fragility and variability:
 
-## 搜索策略
+**High freedom (text-based instructions)**: Use when multiple approaches are valid, decisions depend on context, or heuristics guide the approach.
 
-### 输入
-- 用户实际出发地：如北京
-- 用户实际目的地：如西安（这是弃程票的中转城市）
+**Medium freedom (pseudocode or scripts with parameters)**: Use when a preferred pattern exists, some variation is acceptable, or configuration affects behavior.
 
-### 搜索逻辑
+**Low freedom (specific scripts, few parameters)**: Use when operations are fragile and error-prone, consistency is critical, or a specific sequence must be followed.
+
+Think of Claude as exploring a path: a narrow bridge with cliffs needs specific guardrails (low freedom), while an open field allows many routes (high freedom).
+
+### Anatomy of a Skill
+
+Every skill consists of a required SKILL.md file and optional bundled resources:
 
 ```
-直飞搜索：出发地 → 实际目的地
-
-弃程票搜索：出发地 → 实际目的地 → 更远城市
-           （中转城市 = 实际目的地）
+skill-name/
+├── SKILL.md (required)
+│   ├── YAML frontmatter metadata (required)
+│   │   ├── name: (required)
+│   │   └── description: (required)
+│   └── Markdown instructions (required)
+└── Bundled Resources (optional)
+    ├── scripts/          - Executable code (Python/Bash/etc.)
+    ├── references/       - Documentation intended to be loaded into context as needed
+    └── assets/           - Files used in output (templates, icons, fonts, etc.)
 ```
 
-### 备选中转城市选择策略
+#### SKILL.md (required)
 
-**"更远城市"Y 的选择原则**：
+Every SKILL.md consists of:
 
-#### 策略 1：目的地附近省份的省会城市
+- **Frontmatter** (YAML): Contains `name` and `description` fields. These are the only fields that Claude reads to determine when the skill gets used, thus it is very important to be clear and comprehensive in describing what the skill is, and when it should be used.
+- **Body** (Markdown): Instructions and guidance for using the skill. Only loaded AFTER the skill triggers (if at all).
 
-对于实际目的地 X，选择 X 周边省份的省会作为 Y：
+#### Bundled Resources (optional)
 
-| 实际目的地 X | 附近省份省会 Y |
-|-------------|---------------|
-| 西安（陕西） | 成都（四川）、重庆（直辖市）、兰州（甘肃）、银川（宁夏）、太原（山西）、郑州（河南）、武汉（湖北） |
-| 成都（四川） | 重庆、昆明（云南）、贵阳（贵州）、西安（陕西）、兰州（甘肃） |
-| 重庆 | 成都、贵阳、昆明、西安、兰州 |
-| 武汉（湖北） | 长沙（湖南）、郑州（河南）、合肥（安徽）、南昌（江西）、西安（陕西） |
-| 长沙（湖南） | 武汉、广州（广东）、南宁（广西）、贵阳、南昌 |
-| 郑州（河南） | 武汉、西安、太原、石家庄、济南（山东） |
-| 济南（山东） | 郑州、石家庄（河北）、太原、北京、天津 |
-| 南京（江苏） | 上海、杭州（浙江）、合肥、武汉、郑州 |
-| 杭州（浙江） | 上海、南京、福州（福建）、南昌、合肥 |
-| 广州（广东） | 南宁（广西）、海口（海南）、福州、南昌、长沙 |
-| 昆明（云南） | 贵阳、成都、重庆、南宁、拉萨（西藏） |
-| 厦门（福建） | 福州、杭州、上海、南昌、广州 |
+##### Scripts (`scripts/`)
 
-#### 策略 2：本省份的热门城市/旅游城市
+Executable code (Python/Bash/etc.) for tasks that require deterministic reliability or are repeatedly rewritten.
 
-对于实际目的地 X（非省会），选择本省份的省会或热门旅游城市作为 Y：
+- **When to include**: When the same code is being rewritten repeatedly or deterministic reliability is needed
+- **Example**: `scripts/rotate_pdf.py` for PDF rotation tasks
+- **Benefits**: Token efficient, deterministic, may be executed without loading into context
+- **Note**: Scripts may still need to be read by Claude for patching or environment-specific adjustments
 
-| 实际目的地 X | 本省热门城市 Y |
-|-------------|---------------|
-| 青岛（山东） | 济南、烟台、威海 |
-| 大连（辽宁） | 沈阳、丹东 |
-| 厦门（福建） | 福州、泉州 |
-| 深圳（广东） | 广州、珠海 |
-| 宁波（浙江） | 杭州、温州 |
-| 苏州（江苏） | 南京、无锡 |
-| 北海（广西） | 南宁、桂林 |
-| 三亚（海南） | 海口 |
-| 丽江（云南） | 昆明、大理、西双版纳 |
-| 桂林（广西） | 南宁、柳州 |
-| 珠海（广东） | 广州、深圳 |
-| 烟台（山东） | 济南、青岛 |
-| 威海（山东） | 济南、青岛 |
+##### References (`references/`)
 
-#### 策略 3：跨省热门旅游城市
+Documentation and reference material intended to be loaded as needed into context to inform Claude's process and thinking.
 
-一些热门旅游城市本身就是很好的"更远城市"选项：
+- **When to include**: For documentation that Claude should reference while working
+- **Examples**: `references/finance.md` for financial schemas, `references/mnda.md` for company NDA template, `references/policies.md` for company policies, `references/api_docs.md` for API specifications
+- **Use cases**: Database schemas, API documentation, domain knowledge, company policies, detailed workflow guides
+- **Benefits**: Keeps SKILL.md lean, loaded only when Claude determines it's needed
+- **Best practice**: If files are large (>10k words), include grep search patterns in SKILL.md
+- **Avoid duplication**: Information should live in either SKILL.md or references files, not both. Prefer references files for detailed information unless it's truly core to the skill—this keeps SKILL.md lean while making information discoverable without hogging the context window. Keep only essential procedural instructions and workflow guidance in SKILL.md; move detailed reference material, schemas, and examples to references files.
 
-| 热门旅游城市 Y | 可作为 Y 的中转城市 X |
-|---------------|---------------------|
-| 北海（广西） | 南宁、桂林、贵阳、昆明 |
-| 三亚（海南） | 海口、广州、南宁 |
-| 丽江（云南） | 昆明、大理、成都、重庆 |
-| 西双版纳（云南） | 昆明、成都、重庆 |
-| 厦门（福建） | 福州、杭州、上海 |
-| 青岛（山东） | 济南、北京、上海 |
-| 大连（辽宁） | 沈阳、北京 |
-| 桂林（广西） | 南宁、贵阳、长沙 |
+##### Assets (`assets/`)
 
-### FlyAI 搜索命令示例
+Files not intended to be loaded into context, but rather used within the output Claude produces.
+
+- **When to include**: When the skill needs files that will be used in the final output
+- **Examples**: `assets/logo.png` for brand assets, `assets/slides.pptx` for PowerPoint templates, `assets/frontend-template/` for HTML/React boilerplate, `assets/font.ttf` for typography
+- **Use cases**: Templates, images, icons, boilerplate code, fonts, sample documents that get copied or modified
+- **Benefits**: Separates output resources from documentation, enables Claude to use files without loading them into context
+
+#### What to Not Include in a Skill
+
+A skill should only contain essential files that directly support its functionality. Do NOT create extraneous documentation or auxiliary files, including:
+
+- README.md
+- INSTALLATION_GUIDE.md
+- QUICK_REFERENCE.md
+- CHANGELOG.md
+- etc.
+
+The skill should only contain the information needed for an AI agent to do the job at hand. It should not contain auxilary context about the process that went into creating it, setup and testing procedures, user-facing documentation, etc. Creating additional documentation files just adds clutter and confusion.
+
+### Progressive Disclosure Design Principle
+
+Skills use a three-level loading system to manage context efficiently:
+
+1. **Metadata (name + description)** - Always in context (~100 words)
+2. **SKILL.md body** - When skill triggers (<5k words)
+3. **Bundled resources** - As needed by Claude (Unlimited because scripts can be executed without reading into context window)
+
+#### Progressive Disclosure Patterns
+
+Keep SKILL.md body to the essentials and under 500 lines to minimize context bloat. Split content into separate files when approaching this limit. When splitting out content into other files, it is very important to reference them from SKILL.md and describe clearly when to read them, to ensure the reader of the skill knows they exist and when to use them.
+
+**Key principle:** When a skill supports multiple variations, frameworks, or options, keep only the core workflow and selection guidance in SKILL.md. Move variant-specific details (patterns, examples, configuration) into separate reference files.
+
+**Pattern 1: High-level guide with references**
 
 ```markdown
-# 直飞
-使用 flyai 搜索：北京 → 西安，日期 2026-04-10
+# PDF Processing
 
-# 弃程票（西安是中转城市 = 实际目的地）
-# 策略 1：附近省份省会
-使用 flyai 搜索：北京 → 成都，中转 西安，日期 2026-04-10
-使用 flyai 搜索：北京 → 重庆，中转 西安，日期 2026-04-10
-使用 flyai 搜索：北京 → 长沙，中转 西安，日期 2026-04-10
-使用 flyai 搜索：北京 → 郑州，中转 西安，日期 2026-04-10
+## Quick start
 
-# 策略 2：本省热门城市（如果西安是省内城市）
-# （西安是省会，此策略不适用）
+Extract text with pdfplumber:
+[code example]
+
+## Advanced features
+
+- **Form filling**: See [FORMS.md](FORMS.md) for complete guide
+- **API reference**: See [REFERENCE.md](REFERENCE.md) for all methods
+- **Examples**: See [EXAMPLES.md](EXAMPLES.md) for common patterns
 ```
 
-**注意**：FlyAI 搜索时，目的地是联程票的最终目的地 Y，中转城市是用户实际想去的地方 X。
+Claude loads FORMS.md, REFERENCE.md, or EXAMPLES.md only when needed.
 
-## 输出格式
+**Pattern 2: Domain-specific organization**
 
-只展示直飞 vs 弃程票对比，**不展示普通中转票**：
+For Skills with multiple domains, organize content by domain to avoid loading irrelevant context:
+
+```
+bigquery-skill/
+├── SKILL.md (overview and navigation)
+└── reference/
+    ├── finance.md (revenue, billing metrics)
+    ├── sales.md (opportunities, pipeline)
+    ├── product.md (API usage, features)
+    └── marketing.md (campaigns, attribution)
+```
+
+When a user asks about sales metrics, Claude only reads sales.md.
+
+Similarly, for skills supporting multiple frameworks or variants, organize by variant:
+
+```
+cloud-deploy/
+├── SKILL.md (workflow + provider selection)
+└── references/
+    ├── aws.md (AWS deployment patterns)
+    ├── gcp.md (GCP deployment patterns)
+    └── azure.md (Azure deployment patterns)
+```
+
+When the user chooses AWS, Claude only reads aws.md.
+
+**Pattern 3: Conditional details**
+
+Show basic content, link to advanced content:
 
 ```markdown
-## ✈️ 北京→西安 弃程票搜索
+# DOCX Processing
 
-### 直飞价格
-| 航班 | 价格 | 时间 |
-|-----|------|------|
-| 南航 CZ8805 | ¥500 | 06:50-08:55 |
+## Creating documents
 
-### 弃程票选项（中转城市=西安）
-| 联程路线 | 价格 | 相比直飞 | 节省 |
-|---------|------|---------|------|
-| 北京→西安→长沙 | ¥770 | +¥270 | ❌ 无优惠 |
-| 北京→西安→昆明 | ¥960 | +¥460 | ❌ 无优惠 |
+Use docx-js for new documents. See [DOCX-JS.md](DOCX-JS.md).
 
-### 结论
-❌ 本次搜索未发现弃程票优惠，直飞最便宜。
+## Editing documents
+
+For simple edits, modify the XML directly.
+
+**For tracked changes**: See [REDLINING.md](REDLINING.md)
+**For OOXML details**: See [OOXML.md](OOXML.md)
 ```
 
-### 发现弃程票优惠时
+Claude reads REDLINING.md or OOXML.md only when the user needs those features.
 
-```markdown
-## ✈️ 北京→北海 弃程票搜索
+**Important guidelines:**
 
-### 直飞价格
-| 航班 | 价格 | 时间 |
-|-----|------|------|
-| 中联航 KN5879 | ¥790 | 14:45-18:35 |
+- **Avoid deeply nested references** - Keep references one level deep from SKILL.md. All reference files should link directly from SKILL.md.
+- **Structure longer reference files** - For files longer than 100 lines, include a table of contents at the top so Claude can see the full scope when previewing.
 
-### 弃程票选项（中转城市=上海/成都）
-| 联程路线 | 价格 | 相比直飞 | 节省 |
-|---------|------|---------|------|
-| 北京→上海→北海 | ¥580 | -¥210 | ✅ 省 27% |
-| 北京→成都→北海 | ¥600 | -¥190 | ✅ 省 24% |
+## Skill Creation Process
 
-### 推荐
-✅ 北京→上海→北海 ¥580，可在上海下机，省¥210
-⚠️ 风险提示：不可托运、仅限单程、可能影响会员资格
+Skill creation involves these steps:
+
+1. Understand the skill with concrete examples
+2. Plan reusable skill contents (scripts, references, assets)
+3. Initialize the skill (run init_skill.py)
+4. Edit the skill (implement resources and write SKILL.md)
+5. Package the skill (run package_skill.py)
+6. Iterate based on real usage
+
+Follow these steps in order, skipping only if there is a clear reason why they are not applicable.
+
+### Step 1: Understanding the Skill with Concrete Examples
+
+Skip this step only when the skill's usage patterns are already clearly understood. It remains valuable even when working with an existing skill.
+
+To create an effective skill, clearly understand concrete examples of how the skill will be used. This understanding can come from either direct user examples or generated examples that are validated with user feedback.
+
+For example, when building an image-editor skill, relevant questions include:
+
+- "What functionality should the image-editor skill support? Editing, rotating, anything else?"
+- "Can you give some examples of how this skill would be used?"
+- "I can imagine users asking for things like 'Remove the red-eye from this image' or 'Rotate this image'. Are there other ways you imagine this skill being used?"
+- "What would a user say that should trigger this skill?"
+
+To avoid overwhelming users, avoid asking too many questions in a single message. Start with the most important questions and follow up as needed for better effectiveness.
+
+Conclude this step when there is a clear sense of the functionality the skill should support.
+
+### Step 2: Planning the Reusable Skill Contents
+
+To turn concrete examples into an effective skill, analyze each example by:
+
+1. Considering how to execute on the example from scratch
+2. Identifying what scripts, references, and assets would be helpful when executing these workflows repeatedly
+
+Example: When building a `pdf-editor` skill to handle queries like "Help me rotate this PDF," the analysis shows:
+
+1. Rotating a PDF requires re-writing the same code each time
+2. A `scripts/rotate_pdf.py` script would be helpful to store in the skill
+
+Example: When designing a `frontend-webapp-builder` skill for queries like "Build me a todo app" or "Build me a dashboard to track my steps," the analysis shows:
+
+1. Writing a frontend webapp requires the same boilerplate HTML/React each time
+2. An `assets/hello-world/` template containing the boilerplate HTML/React project files would be helpful to store in the skill
+
+Example: When building a `big-query` skill to handle queries like "How many users have logged in today?" the analysis shows:
+
+1. Querying BigQuery requires re-discovering the table schemas and relationships each time
+2. A `references/schema.md` file documenting the table schemas would be helpful to store in the skill
+
+To establish the skill's contents, analyze each concrete example to create a list of the reusable resources to include: scripts, references, and assets.
+
+### Step 3: Initializing the Skill
+
+At this point, it is time to actually create the skill.
+
+Skip this step only if the skill being developed already exists, and iteration or packaging is needed. In this case, continue to the next step.
+
+When creating a new skill from scratch, always run the `init_skill.py` script. The script conveniently generates a new template skill directory that automatically includes everything a skill requires, making the skill creation process much more efficient and reliable.
+
+Usage:
+
+```bash
+scripts/init_skill.py <skill-name> --path <output-directory>
 ```
 
-## 何时使用本 Skill
+The script:
 
-- 用户明确说要找"弃程票"、"隐藏城市票"、"跳城票"
-- 用户说"想在 XX 中转下机"
-- 用户预算有限，明确接受弃程票风险
+- Creates the skill directory at the specified path
+- Generates a SKILL.md template with proper frontmatter and TODO placeholders
+- Creates example resource directories: `scripts/`, `references/`, and `assets/`
+- Adds example files in each directory that can be customized or deleted
 
-## 何时不使用
+After initialization, customize or remove the generated SKILL.md and example files as needed.
 
-- 用户只是想找便宜的中转票（正常完成全程）
-- 用户需要托运行李
-- 用户需要往返票
-- 用户是航司高级会员
+### Step 4: Edit the Skill
 
-## 参考资源
+When editing the (newly-generated or existing) skill, remember that the skill is being created for another instance of Claude to use. Include information that would be beneficial and non-obvious to Claude. Consider what procedural knowledge, domain-specific details, or reusable assets would help another Claude instance execute these tasks more effectively.
 
-- 详细风险评估：见 `references/risk-assessment.md`
-- 中国国内热门中转枢纽：见 `references/hub-cities.md`
-- 航空公司政策汇总：见 `references/airline-policies.md`
+#### Learn Proven Design Patterns
+
+Consult these helpful guides based on your skill's needs:
+
+- **Multi-step processes**: See references/workflows.md for sequential workflows and conditional logic
+- **Specific output formats or quality standards**: See references/output-patterns.md for template and example patterns
+
+These files contain established best practices for effective skill design.
+
+#### Start with Reusable Skill Contents
+
+To begin implementation, start with the reusable resources identified above: `scripts/`, `references/`, and `assets/` files. Note that this step may require user input. For example, when implementing a `brand-guidelines` skill, the user may need to provide brand assets or templates to store in `assets/`, or documentation to store in `references/`.
+
+Added scripts must be tested by actually running them to ensure there are no bugs and that the output matches what is expected. If there are many similar scripts, only a representative sample needs to be tested to ensure confidence that they all work while balancing time to completion.
+
+Any example files and directories not needed for the skill should be deleted. The initialization script creates example files in `scripts/`, `references/`, and `assets/` to demonstrate structure, but most skills won't need all of them.
+
+#### Update SKILL.md
+
+**Writing Guidelines:** Always use imperative/infinitive form.
+
+##### Frontmatter
+
+Write the YAML frontmatter with `name` and `description`:
+
+- `name`: The skill name
+- `description`: This is the primary triggering mechanism for your skill, and helps Claude understand when to use the skill.
+  - Include both what the Skill does and specific triggers/contexts for when to use it.
+  - Include all "when to use" information here - Not in the body. The body is only loaded after triggering, so "When to Use This Skill" sections in the body are not helpful to Claude.
+  - Example description for a `docx` skill: "Comprehensive document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction. Use when Claude needs to work with professional documents (.docx files) for: (1) Creating new documents, (2) Modifying or editing content, (3) Working with tracked changes, (4) Adding comments, or any other document tasks"
+
+Do not include any other fields in YAML frontmatter.
+
+##### Body
+
+Write instructions for using the skill and its bundled resources.
+
+### Step 5: Packaging a Skill
+
+Once development of the skill is complete, it must be packaged into a distributable .skill file that gets shared with the user. The packaging process automatically validates the skill first to ensure it meets all requirements:
+
+```bash
+scripts/package_skill.py <path/to/skill-folder>
+```
+
+Optional output directory specification:
+
+```bash
+scripts/package_skill.py <path/to/skill-folder> ./dist
+```
+
+The packaging script will:
+
+1. **Validate** the skill automatically, checking:
+
+   - YAML frontmatter format and required fields
+   - Skill naming conventions and directory structure
+   - Description completeness and quality
+   - File organization and resource references
+
+2. **Package** the skill if validation passes, creating a .skill file named after the skill (e.g., `my-skill.skill`) that includes all files and maintains the proper directory structure for distribution. The .skill file is a zip file with a .skill extension.
+
+If validation fails, the script will report the errors and exit without creating a package. Fix any validation errors and run the packaging command again.
+
+### Step 6: Iterate
+
+After testing the skill, users may request improvements. Often this happens right after using the skill, with fresh context of how the skill performed.
+
+**Iteration workflow:**
+
+1. Use the skill on real tasks
+2. Notice struggles or inefficiencies
+3. Identify how SKILL.md or bundled resources should be updated
+4. Implement changes and test again
