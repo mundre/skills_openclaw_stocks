@@ -1,5 +1,5 @@
 ---
-version: 1.0.6
+version: 1.0.10
 ---
 
 # 尸狗·警觉魄 (Shi Gou - Security Sentinel)

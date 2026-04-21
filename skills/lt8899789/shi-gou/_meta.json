@@ -3,11 +3,16 @@
   "slug": "shi-gou",
   "displayName": "Shi Gou",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1776299355469,
-    "commit": "https://github.com/openclaw/skills/commit/929d29f5d1478595f3b9fe4b2850bb967e92bf58"
+    "version": "1.0.10",
+    "publishedAt": 1776731942981,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1776299355469,
+      "commit": "https://github.com/openclaw/skills/commit/929d29f5d1478595f3b9fe4b2850bb967e92bf58"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1776196865451,
