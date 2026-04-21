@@ -1,6 +1,6 @@
 ---
 name: greenhelix-trading-bot-audit-trail
-version: "1.3.0"
+version: "1.3.1"
 description: "Tamper-Proof Audit Trails for Trading Bots. EU AI Act, MiFID II, and SEC 17a-4 compliance audit trail implementation for autonomous trading bots. Includes detailed Python code examples with full API integration."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,12 @@ content_type: markdown
 executable: false
 install: none
 credentials: [AGENT_SIGNING_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - AGENT_SIGNING_KEY
+    primaryEnv: AGENT_SIGNING_KEY
 ---
 # Tamper-Proof Audit Trails for Trading Bots
 
