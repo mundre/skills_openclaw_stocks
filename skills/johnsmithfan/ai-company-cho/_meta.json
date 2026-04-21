@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-cho",
-  "displayName": "Ai Company Cho",
+  "displayName": "AI Company CHO (EN)",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1776126377009,
-    "commit": "https://github.com/openclaw/skills/commit/44d12fc59d2d0b1f261feb3235f35458f5dbe0ec"
+    "version": "2.2.0-en2",
+    "publishedAt": 1776678481707,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1776126377009,
+      "commit": "https://github.com/openclaw/skills/commit/44d12fc59d2d0b1f261feb3235f35458f5dbe0ec"
+    }
+  ]
 }
