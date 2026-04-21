@@ -3,9 +3,15 @@
   "slug": "xhsmander",
   "displayName": "xhsmander",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775891250322,
-    "commit": "https://github.com/openclaw/skills/commit/0d3f61f9b9d749544e300f843937944d968a75d9"
+    "version": "1.0.1",
+    "publishedAt": 1776238506184,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775891250322,
+      "commit": "https://github.com/openclaw/skills/commit/0d3f61f9b9d749544e300f843937944d968a75d9"
+    }
+  ]
 }
