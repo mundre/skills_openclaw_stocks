@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-cfo",
-  "displayName": "Ai Company Cfo",
+  "displayName": "AI Company CFO (EN)",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1776126308657,
-    "commit": "https://github.com/openclaw/skills/commit/d6edd12dbe35a0c55093fd6248cf55c5d354fc4e"
+    "version": "2.5.0-en2",
+    "publishedAt": 1776678467366,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1776126308657,
+      "commit": "https://github.com/openclaw/skills/commit/d6edd12dbe35a0c55093fd6248cf55c5d354fc4e"
+    }
+  ]
 }
