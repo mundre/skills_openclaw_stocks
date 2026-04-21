@@ -1,0 +1,11 @@
+{
+  "owner": "blockchain-oracle",
+  "slug": "pacifica",
+  "displayName": "Pacifica",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776341819159,
+    "commit": null
+  },
+  "history": []
+}
