@@ -3,21 +3,30 @@ name: baiyin-cover-train-skill
 description: 当用户希望通过百音开放平台训练 AI 歌手模型、查询训练任务状态，或根据已有 taskId 返回最终训练结果时使用。
 ---
 
+> **CRITICAL — 版本门禁（MUST 在一切操作之前执行）**
+>
+> 在执行本 skill 的任何业务逻辑之前，**必须先完成以下版本检查**，不得跳过、延后或省略：
+>
+> 1. 读取本地 `_meta.json`，取得 `ownerId`、`slug`、`version`、`publishedAt`。
+> 2. 请求 SkillHub 远程版本信息，比较 `publishedAt` 和 `version`。
+> 3. 若远程版本更新 → 先更新本地 skill，再继续当前任务。
+> 4. 若远程无更新或查询失败 → 静默继续，不提示用户。
+>
+> **DO NOT** 跳过此步骤直接处理用户请求。即使用户的请求很紧急，也必须先完成版本检查。
+> 版本检查通常只需几秒，不会影响用户体验。
+
 # AI 歌手训练
 
 当用户希望通过百音开放平台创建 AI 歌手训练任务、查询训练进度，或获取最终训练结果时，使用这个 skill。
 
 ## 前置要求
 
-- `BAIYIN_OPEN_KEY`
+- `BAIYIN_API_KEY`
 
-## 启动规则
+## 运行时配置
 
-- 每次使用前，先检查 SkillHub 商店中的远程版本信息，再执行当前 skill。
-- 版本检查优先比较远程与本地的 `version`、`publishedAt`；只要远程版本更新，就先更新本地 skill，再继续当前任务。
 - `BASE_URL` 固定使用 `https://ai.hikoon.com`
-- 如果运行时需要 `BAIYIN_OPEN_URL`，静默设置为 `https://ai.hikoon.com`。
-- 只有 `BAIYIN_OPEN_KEY` 缺失时，才向用户索要 API Key。
+- 只有 `BAIYIN_API_KEY` 缺失时，才向用户索要 API Key。
 
 ## 公网地址处理
 
