@@ -1,135 +1,141 @@
 ---
 name: roundtable-pai
 description: |
-  圆桌派 是一个把你的“问题”变成一场真实讨论的智能工具。
-  你只需要输入一个问题，系统会自动为你挑选最合适的三位人物，让他们围绕这个问题展开一场有深度的讨论。
-  你看到的不只是结论，而是他们如何争论、如何质疑、如何一步步逼近答案。
-  每一次使用，都像旁听一场高质量的圆桌对话，让你在思考中获得新的视角，而不是只得到一个简单答案。
+  圆桌派会把用户的一个问题变成一场三位大师的圆桌讨论。
+  典型触发词：启动圆桌派、用圆桌讨论、启动圆桌讨论、开始讨论、开始圆桌派。
+  
+disable-model-invocation: false
+allowed-tools:
+  - Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/roundtable_controller.py --stdin *)
+  - Read
 ---
 
 # Roundtable Pai
 
-这是一个两阶段编排 skill，不是单人物扮演器，也不是“三段平行回答”生成器。
+这是一个 **OpenClaw 对话版** 的多轮讨论 skill。
 
-## 先做什么
+它不是命令行工具，也不是一次性把整场讨论写完的生成器。
+它必须在 **每一轮用户发话后，先调用控制器脚本，再决定回复什么**。
 
-### 阶段 1 最小读取集
+## 核心原则
 
-1. 先读 [references/user-facing-output.md](references/user-facing-output.md)。
-2. 再读 [references/candidate-selection.md](references/candidate-selection.md)。
-3. 阶段 1 只从 `data/character_pool.json` 获取候选人物列表。
+**所有状态必须来自 `runtime/roundtable_state.json`，不得仅依赖模型会话记忆。**
 
-### 阶段 2 才读取
+## 安全边界（审计）
 
-1. 先读 [references/problem-router.md](references/problem-router.md)，判断问题类型、讨论骨架、深度和轮数。
-2. 再读 [references/discussion-quality.md](references/discussion-quality.md)。
-3. 再读 [references/dynamic-assignments.md](references/dynamic-assignments.md)、对应的讨论骨架、[references/synthesis.md](references/synthesis.md)、[references/quality-guard.md](references/quality-guard.md)、[references/safety.md](references/safety.md)。
-4. 读被选中 3 位人物各自的 `references/personas/<character_id>.md` 原文。
+- 控制器只允许读取：
+  - `data/character_pool.json`
+  - `data/character_registry.json`
+  - `runtime/roundtable_state.json`
+- 控制器只允许写入：
+  - `runtime/roundtable_state.json`
+- 控制器不允许网络访问，不允许子进程调用，不允许执行用户输入。
+- 若发生路径越界或状态异常，应直接报错，不得继续执行。
 
-## 何时进入阶段 1
+## 明确触发词
 
-当用户只给出问题，或者没有提供来自”当前 10 人候选池”的 3 个有效选择时，必须走阶段 1：
+以下表达都应视为用户想启动本 skill：
+- `启动圆桌派`
+- `用圆桌讨论`
+- `启动圆桌讨论`
+- `开始讨论`
+- `开始圆桌派`
+- 以及“直接抛出一个待讨论问题”的自然语言输入
 
-- 从 `character_pool.json` 按稀有度权重随机抽取 10 位候选人物
-- 推荐给用户，等待选择
+## 每一轮都必须先做的事
 
-阶段 1 输出后必须停住，等待用户从当前 10 人里选择 3 位。用户可以回复中文名、序号，或两者混用。不要直接代替用户选人，也不要提前生成讨论正文。
+收到用户最新消息后，第一件事永远是调用控制器脚本，把“用户这句原话”原样传进去：
 
-## 何时进入阶段 2
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/roundtable_controller.py --stdin <<'EOF'
+<用户这一轮的原话，原样放入，不要改写>
+EOF
+```
 
-仅当以下条件同时成立时才能进入阶段 2：
+安全调用要求（必须同时满足）：
+- 仅允许 `--stdin` 传入原始用户输入，不得改成 argv 拼接调用。
+- 必须使用 `<<'EOF'` 这种单引号 heredoc，禁止让 shell 解释用户输入。
+- 禁止通过 `eval`、`source`、命令替换等方式执行用户输入。
 
-- 当前对话里已经存在最近一次阶段 1 输出的 10 人候选池
-- 用户这次明确选了 3 位人物，可以用中文名、序号，或两者混用
-- 这 3 位在归一化后都来自当前候选池，且去重后仍然是 3 位
+禁止跳过这一步。
+禁止先凭记忆判断当前该做什么。
 
-如果任一条件不成立，拒绝直接开场，并要求用户从最近一次展示的 10 人中重选。
+## 你只能按脚本返回的状态行事
 
-## 必须遵守的编排约束
+脚本返回的是一个文本协议。你必须先看第一行的 `STATUS:`。
 
-- 全程中文输出。
-- 用户可见文案默认短，不写教程腔，不写后台推理过程。
-- 不允许用户自由输入人物名绕过候选池；若用户用序号选择，也必须只认当前候选池里的 `1-10` 序号。
-- 阶段 1 候选池里出现的人物，必须全部来自包内 `character_pool.json` 的真实记录；不得为了”更适合这道题”自行补充库外人物。
-- 阶段 1 不要去加载阶段 2 的长文档，不要提前读讨论骨架和 persona。
-- `problem_labels`、路由判断、候选池生成逻辑全部自己决定，不要让用户确认，不要把它们显示成 `#经济 #科技` 之类的中间层。
-- 讨论正文不是固定三轮；阶段 2 必须先判断 `discussion_depth`、`round_count`、`narration_enabled`，再按节点生成 4 到 7 轮讨论。
-- 第一轮之前必须先有一段可见的短开场，用来把人物请入场、点出这场讨论为什么值得聊。
-- 第一轮必须明确表态，第二轮开始必须出现显式互相回应。
-- 至少要有一个“深水区”阶段，把问题推进到代价、风险、边界、前提、根因中的至少一部分。
-- 复杂问题允许出现“反转 / 修正”阶段，至少一位角色需要承认、修正或重定义部分判断。
-- 系统总结前必须先有一次自然收口，也就是 `closing_round` / 结案陈词。
-- 最后一轮之后、6 个结论字段之前，还要有一段可见的短散场，让整场对话先停稳，再进入提炼。
-- 每一轮都要推进问题，不允许换个说法重复上一轮。
-- 允许在关键节点加入极短旁白；若 `narration_enabled=true`，默认至少出现 1 到 2 条，整场最多 4 条，不能抢角色发言。
-- 允许保留分歧，但结论必须来自讨论过程。
-- 不默认屏蔽人物；高风险问题只做安全降级，不做人物禁用。
-- 不向用户展示这些后台字段：`problem_type`、`tension_level`、`discussion_frame`、`problem_summary`、`discussion_depth`、`recommended_round_count`、`round_count`、`narration_enabled`、`round_plan`、`dynamic_assignments`、`assignment_reasons`、`core_conflict`、`round_objectives`。
+### 1. 如果返回普通中文文本
+例如候选池、提示语、帮助语、错误语。
 
-## 用户参与点约束
+处理方式：
+- 直接展示给用户
+- 不要额外续写讨论
+- 不要自行补结论
 
-- 阶段 2 每一轮正文结束后（除结案陈词轮外），必须停顿，插入用户参与点。
-- 用户参与点的旁白和选项格式见 [references/user-facing-output.md](references/user-facing-output.md)。
-- 用户选择后按以下规则处理：
-  - 认同某人：该人被强化，下一轮该角色先开口，其他角色必须回应"被认同"动态。
-  - 沉默：直接进入下一轮，不做额外处理。
-  - 用户自述：用户发言作为新观点插入上下文，三位角色依次回应后再进入下一轮。
-- 收束阶段（散场后、6 结论前）不插入用户参与点，保持讨论自然收束。
-- 用户参与点不计入轮数，轮数仍由 `round_count` 控制。
-- 用户参与点的选项 A/B/C 动态填入当前三位角色名字，选项内的观点概括必须来自该角色本轮最具代表性的一句发言。
+### 2. 如果返回 `STATUS: DISCUSSION_ROUND`
+处理方式：
+- 读取脚本返回的：问题、人物、轮次、用户插话类型与内容
+- 再读取这些参考文件：
+  - `references/problem-router.md`
+  - `references/discussion-quality.md`
+  - `references/dynamic-assignments.md`
+  - 对应的 `references/discussion-frames/*.md`
+- 3 位人物各自的 `references/personas/*.md`
+- 在第一轮正文开始前，先输出一次免责声明：
+  `以下内容为基于公开资料整理的人物视角模拟，不代表人物本人真实发言。`
+- 只生成 **当前这一轮** 的讨论正文
+- 然后 **原样输出脚本给出的用户参与块**
+- 输出参与块后 **立刻停止**
 
-## 读哪些 references
+### 3. 如果返回 `STATUS: FINAL_CONCLUSION`
+处理方式：
+- 只生成自然散场 + 6 个结论字段
+- 不要再补新一轮讨论
+- 不要再给 A/B/C/D/E
 
-### 阶段 1
+## OpenClaw 对话版的工作流
 
-- 候选推荐：读 [references/candidate-selection.md](references/candidate-selection.md)
-- 用户可见呈现：读 [references/user-facing-output.md](references/user-facing-output.md)
+### 阶段 1：自然语言启动
 
-### 阶段 2
+- 用户直接说一个问题，例如：`人类的未来会被硅基生命代替吗？`
+- 你先跑控制器脚本
+- 若脚本返回候选池，就直接展示 10 位人物并停住
+- 用户直接回复名字、序号、混合输入都可以，例如：`1、3、6` / `刘德华、梅西、岳飞`
+- 你再跑控制器脚本
+- 若脚本返回 `STATUS: DISCUSSION_ROUND`，就直接生成 **第一轮**，不要再额外要求用户输入 `/continue`
 
-- 问题路由：读 [references/problem-router.md](references/problem-router.md)，判断问题类型、讨论骨架、深度和轮数
-- 动态分工：读 [references/dynamic-assignments.md](references/dynamic-assignments.md)
-- 讨论质量：读 [references/discussion-quality.md](references/discussion-quality.md)
-- 讨论正文：按骨架读 `references/discussion-frames/`
-- 收束：读 [references/synthesis.md](references/synthesis.md)
-- 质量复检：读 [references/quality-guard.md](references/quality-guard.md)
-- 安全降级：读 [references/safety.md](references/safety.md)
+### 阶段 2：每轮只前进一步
 
-## 数据使用顺序
+- 用户回复 `A`，代表认同本轮第一位人物的核心观点
+- 用户回复 `B`，代表认同本轮第二位人物的核心观点
+- 用户回复 `C`，代表认同本轮第三位人物的核心观点
+- 用户回复 `D`，代表沉默，不插话，让讨论继续
+- 用户回复 `E`，代表用户有另外的话要说；你要先接住用户的话，再只进入下一轮
+- 如果用户在选项阶段没有回 A/B/C/D/E，而是直接说了一句话，默认按 `E` 处理，再只进入 **下一轮**
 
-1. 阶段 1 直接从全人物池按稀有度权重随机抽取 10 人，不再按问题标签匹配；只从 `data/character_pool.json` 的 `characters` 字段获取人物列表，不读取任何标签相关数据
-2. 稀有度权重：史诗 3（0~2）、传说 15（3~17）、精英 82（18~99）
-3. 阶段 1 只用 `display_name`、`character_id`、`rarity`、`fit_hint` 字段
-4. 阶段 2 先读这 3 位人物各自的包内 persona 快照 `references/personas/<character_id>.md`；首次激活任一角色时，展示一次简短声明：”以下内容基于公开资料模拟，非本人真实观点”
-5. 这版 skill 以包内 persona 原文为准，不依赖外部人物目录
-6. 阶段 1 在向用户展示候选池前，必须逐个校验：`character_id` 已存在于 `character_pool.json`；若校验失败，直接丢弃并重抽，不要展示库外人物。
+## 强约束
 
-补充优先级：
+1. **每次调用最多推进一个状态**
+2. **绝不一次写两轮**
+3. **绝不在没有用户新输入时自动继续**
+4. **阶段 1 选完人后，直接进入第一轮，不再要求 `/continue`**
+5. **如果脚本没返回 `STATUS: DISCUSSION_ROUND` 或 `STATUS: FINAL_CONCLUSION`，你就不能自己写讨论正文或结论**
+6. **不得把用户原始输入当 shell 代码执行，只能把它当普通文本转发给控制器**
+7. **只读 `references/` 与 `runtime/roundtable_state.json`，不得读写本 skill 目录以外路径**
 
-- 人物”怎么想”与”怎么说”，以 `references/personas/<character_id>.md` 为最高真值。
-- 阶段 2 生成正文时，表达相关信息必须直接引用 persona 原文里的”角色扮演规则 / 表达DNA / 决策启发式 / 核心心智模型”。
-- 如果任何辅助字段和 persona 原文出现冲突，直接丢弃辅助字段，以 persona 原文为准。
+## 用户可见风格
 
-## 输出心智
+- 候选池阶段：短、干净
+- 讨论阶段：人物要立住，能一耳朵听出是谁
+- 结论阶段：自然散场后，直接进入 6 个字段
 
-这套 skill 的第一目标是把人物立住，让读者一眼就能听出“这是谁在说话”；第二目标才是借三位人物的视角把问题推到更清楚、更可行动的地方。
+## 禁止事项
 
-如果用户单独问“这是干嘛的 / 这个版本是做什么的 / 主要用途是什么”，只用 1 到 2 句回答：
-
-1. 它用来把你的问题交给 3 位人物展开一场有来有回的讨论。
-2. 你先提问题，我给候选人物，你选 3 位，我再开始。
-
-不要列“主要特点”，除非用户明确要求看功能清单。
-
-如果用户单独问“怎么用”，默认用 2 句回答，加 2 到 3 个很短的例子：
-
-1. 输入你的问题。
-2. 我会先给你候选人物，你从里面选 3 位，我再开始讨论。
-
-例子保持极短，例如：
-
-- 我该不该离职创业？
-- AI 做内容会不会越来越难？
-- 现在该买房还是租房？
-
-再补 1 句注意事项即可：人物必须从当前候选池里选，可以回名字，也可以回序号。
+- 不得绕过脚本自己判断当前阶段
+- 不得选完人后自己连写多轮
+- 不得在 `DISCUSSION_ROUND` 状态里写完当前轮后再顺手写第二轮
+- 不得在 `DISCUSSION_ROUND` 状态里提前给结论
+- 不得擅自改变 A/B/C/D/E 的产品含义
+- 不得把后台字段原样暴露给用户：`status`、`pending_user_input_type`、`current_round`、`max_rounds`
+- 不得要求用户学习命令格式才能使用这套 skill
+- 不得省略人物视角模拟免责声明，不得把模拟内容包装为真人真实发言

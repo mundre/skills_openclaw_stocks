@@ -3,9 +3,15 @@
   "slug": "roundtable-pai",
   "displayName": "Roundtable Pai",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1776224201486,
-    "commit": "https://github.com/openclaw/skills/commit/8e0102059260fefacf2945f5695c232d7d7fb7da"
+    "version": "1.6.5",
+    "publishedAt": 1776402232537,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1776224201486,
+      "commit": "https://github.com/openclaw/skills/commit/8e0102059260fefacf2945f5695c232d7d7fb7da"
+    }
+  ]
 }

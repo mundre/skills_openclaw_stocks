@@ -26,7 +26,7 @@
 - 已判定的问题类型
 - 已判定的讨论骨架
 - 三位角色的最小索引信息
-- 三位角色各自 persona 原文里的“角色扮演规则 / 表达DNA”
+- 三位角色各自 persona 原文里的“人物使用规则 / 表达DNA”
 - 该题最重要的 3 到 5 个关键变量
 
 任务：
@@ -49,50 +49,4 @@
 - per_role_focus
 - per_role_voice_anchor
 - per_role_voice_do_not_flatten
-- user_participation_triggers
 ```
-
-## 用户参与状态传递
-
-当用户在某轮做出选择后，下一轮生成前需要向骨架 prompt 注入以下上下文。
-
-### 用户认同某人时
-
-```text
-context_update:
-  user_alignment: [角色ID]
-  alignment_round: [轮次]
-  other_roles_must_respond: true
-  responding_to: "user_alignment_dynamic"
-```
-
-**下一轮生成要求：**
-1. 先由被认同者延续他的核心判断，简短强化（1-2句即可）
-2. 再由其他角色正面回应"用户认同[角色]"这个动态，可以挑战、补充或部分认同
-3. 然后推进本轮核心议题
-
-### 用户自述时
-
-```text
-context_update:
-  user_statement: [用户发言原文]
-  statement_round: [轮次]
-  all_roles_must_respond: true
-  responding_to: "user_statement"
-```
-
-**下一轮生成要求：**
-1. 三位角色先依次正面回应用户发言（各1-2句）
-2. 回应时要体现各自角色特色：芒格从逻辑和风险角度、丘吉尔从历史和意志角度、乔布斯从产品和人本角度（根据实际角色调整）
-3. 然后继续推进本轮核心议题
-
-### 用户沉默时
-
-```text
-context_update:
-  user_silent: true
-  continue_to_next_round: true
-```
-
-**下一轮生成要求：**
-直接按原计划生成下一轮，无额外上下文注入。
