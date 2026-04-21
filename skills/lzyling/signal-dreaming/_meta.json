@@ -1,11 +1,17 @@
 {
   "owner": "lzyling",
   "slug": "signal-dreaming",
-  "displayName": "Signal Dreaming",
+  "displayName": "Memory Dreaming",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776056744385,
-    "commit": "https://github.com/openclaw/skills/commit/a951eb5458156261fc5cb196430329bad6d85dbf"
+    "version": "1.2.0",
+    "publishedAt": 1776556878760,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776056744385,
+      "commit": "https://github.com/openclaw/skills/commit/a951eb5458156261fc5cb196430329bad6d85dbf"
+    }
+  ]
 }

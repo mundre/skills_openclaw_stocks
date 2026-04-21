@@ -38,7 +38,7 @@ Set up an isolated agentTurn cron that runs while your human is asleep:
   "payload": {
     "kind": "agentTurn",
     "timeoutSeconds": 900,
-    "message": "Run a memory dream consolidation. Find and read references/dream-protocol.md inside the memory-dreaming skill (check your skillDirs; common locations: skills/memory-dreaming/ or ~/.openclaw/skills/memory-dreaming/). Workspace root: <YOUR_WORKSPACE_PATH>. End your final response with a one-line dream summary — the cron delivery mechanism will auto-announce it."
+    "message": "Run a memory dream consolidation. Find and read references/dream-protocol.md inside the signal-dreaming skill (check your skillDirs; common locations: skills/signal-dreaming/ or ~/.openclaw/skills/signal-dreaming/). Workspace root: <YOUR_WORKSPACE_PATH>. End your final response with a one-line dream summary — the cron delivery mechanism will auto-announce it."
   },
   "delivery": { "mode": "announce", "channel": "<CHANNEL_TYPE>", "to": "<CHANNEL_ID>" }
 }
@@ -66,6 +66,23 @@ The dream protocol reads `totalScore` to rank candidates. Snippets with `totalSc
 | **Settle** | ✅ MEMORY.md + dream-log.md | Trim index, write diary entry |
 
 Phase 1 is always read-only. An error in Sense never corrupts files.
+
+
+## Compatibility with OpenClaw 2026.4.15+
+
+OpenClaw 2026.4.15 changed the built-in **memory-core Dreaming** default from `inline` to `separate` mode. This is a **different system** from this skill:
+
+| | memory-core built-in Dreaming | signal-dreaming (this skill) |
+|---|---|---|
+| Trigger | Heartbeat (automated) | Cron agentTurn |
+| Output | `DREAMS.md` / `memory/dreaming/{phase}/` | `memory/dream-log.md` + L2 files |
+| Signal source | Internal | `memory/.dreams/short-term-recall.json` |
+
+**These two systems are independent.** You can use this skill whether or not built-in Dreaming is enabled.
+
+If you use **both**:
+- Keep built-in Dreaming in `separate` mode (default in 2026.4.15+). This keeps `memory/YYYY-MM-DD*.md` clean so this skill sees only real session notes.
+- If you're on an older version with `inline` mode, the protocol will skip `## Light Sleep` / `## REM Sleep` phase blocks when scanning daily logs.
 
 ## Key Rules
 

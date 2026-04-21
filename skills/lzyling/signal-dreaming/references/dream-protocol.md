@@ -20,7 +20,7 @@ Read `memory/dream-log.md` to find the last dream timestamp by locating the most
 
 **Skip condition**: last dream was `< 20 hours ago` AND no new `memory/YYYY-MM-DD*.md` files exist with dates after the last dream.
 
-If skipping: append `<!-- SKIP · YYYY-MM-DD HH:MM · reason -->` to dream-log.md and stop.
+If skipping: use `exec` to append `<!-- SKIP · YYYY-MM-DD HH:MM · reason -->` to `<WORKSPACE_ROOT>/memory/dream-log.md` and stop. Always use absolute paths — never `~`.
 
 Manual triggers always bypass the guardian.
 
@@ -33,6 +33,7 @@ Manual triggers always bypass the guardian.
 **Distinguishing file types:**
 - **Daily logs**: match `memory/YYYY-MM-DD*.md` (e.g. `2026-04-13.md`, `2026-04-13-clash-fix.md`)
 - **L2 topic files**: `memory/<topic>.md` files that do NOT match a date pattern (e.g. `memory/clash-verge.md`, `memory/business.md`)
+- **⛔ Not daily logs**: `memory/dreaming/**` (built-in memory-core Dreaming output, 2026.4.15+ separate mode) — do NOT process these as daily logs or L2 files; skip entirely
 
 ### 1. Read recall signals
 
@@ -48,10 +49,11 @@ If the file does **not** exist (new agent, never used memory_search):
 
 ### 2. Scan recent logs
 
-- List all daily log files (`memory/YYYY-MM-DD*.md`)
+- List all daily log files (`memory/YYYY-MM-DD*.md`) — **exclude** anything under `memory/dreaming/**` (built-in Dreaming output; not user session notes)
 - Determine the last dream date from dream-log.md by finding the most recent `## 🌙 Dream #` heading and reading its timestamp
 - **First run** (dream-log.md is empty or has no Dream entries): treat all existing daily logs as candidates; last dream date = epoch (process everything)
 - Identify files with date-based names **on or after** the last dream date (use `>=` not `>` — same-day logs must be included)
+- If a daily log contains `## Light Sleep` or `## REM Sleep` blocks (built-in Dreaming `inline` mode output, pre-2026.4.15 or opted in), **skip those sections** — they are not user session notes
 
 ### 3. Identify L2 update candidates
 
@@ -95,6 +97,8 @@ Process the priority list from Phase 1. **Do not modify MEMORY.md, dream-log.md,
 
 Write current MEMORY.md content → `memory/.dream-backup.md` (overwrite).
 
+**⚠️ Path guidance**: Always use absolute paths derived from the workspace root (e.g. `/path/to/workspace/MEMORY.md`). Never use `~`-prefixed paths in tool calls — isolated sessions may not resolve them. Use the workspace root passed in the task message.
+
 ### 2. Rewrite/trim MEMORY.md
 
 - Target: ≤ 8KB (hard cap; note in dream-log if approaching 10KB — manual cleanup may be needed)
@@ -109,7 +113,11 @@ Count the number of `## 🌙 Dream #` lines in dream-log.md. The new entry is N+
 
 ### 4. Append to dream-log.md (Markdown — not JSON)
 
-```markdown
+**⚠️ Tool guidance**: Use `exec` with a heredoc to append — **never** use the `edit` tool for appending (it requires exact text replacement and will fail on append). Replace `<WORKSPACE_ROOT>` with the absolute path from the task message.
+
+```bash
+cat >> <WORKSPACE_ROOT>/memory/dream-log.md << 'DREAM_EOF'
+
 ## 🌙 Dream #<NUMBER> · YYYY-MM-DD HH:MM
 
 **Trigger**: <auto|manual>
@@ -126,6 +134,7 @@ Count the number of `## 🌙 Dream #` lines in dream-log.md. The new entry is N+
 
 ### Note
 (One honest sentence about what was found or how it felt)
+DREAM_EOF
 ```
 
 ### 5. Trim dream-log.md
