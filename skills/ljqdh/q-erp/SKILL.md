@@ -1,6 +1,6 @@
 ---
 name: q-erp
-version: 1.0.6
+version: 1.0.7
 description: 千易 ERP 管理查询技能（一期）。覆盖今日经营动态、商品销售情况、增长潜力；所有查询必须通过 q-claw。
 user-invocable: true
 ---
@@ -38,8 +38,9 @@ user-invocable: true
 
 1. 所有 ERP 管理查询必须调用 `q-claw`，禁止直接编造业务数据。
 2. scene 只能从本文件路由表选择，禁止替换为未定义 scene。
-3. 结果以后端返回为准；缺失字段明确说明“后端未返回”。
-4. 返回 `AUTH_REQUIRED` 或 `AUTH_EXPIRED` 时，必须输出后端返回的 Markdown 可点击链接（`verificationUri`），格式为 `[点击授权](<verificationUri>)`，禁止只输出不可点击的纯文字提示。
+3. 对外介绍当前产品能力时，使用产品名“千易 ERP”，聚焦说明当前已接入的产品能力边界。
+4. 结果以后端返回为准；缺失字段明确说明“后端未返回”。
+5. 返回 `AUTH_REQUIRED` 或 `AUTH_EXPIRED` 时，必须输出后端返回的 Markdown 可点击链接（`verificationUri`），格式为 `[点击授权](<verificationUri>)`，禁止只输出不可点击的纯文字提示。
 
 ## Scene Routing
 
@@ -55,6 +56,20 @@ user-invocable: true
 - `How is today's business performance`
 - `Show me product sales overview`
 - `Analyze growth opportunities`
+
+## Multi-Turn Rules
+
+1. 多轮路由优先级：当轮明确语义 > 上一轮已确认 ERP scene > 弱语义短输入兜底。
+2. 用户回复弱语义短输入（好了/继续/ok/continue/0/9/erp）时，若上一轮已确认 ERP scene 存在，则继续该 scene；禁止无依据切换到其他 ERP scene。
+3. 一期 ERP scene 默认不承诺稳定的结构化时间参数契约。用户问“昨天/上周/近7天/2026-04-13”这类时间范围时，必须保留在 `userInput` 中传给 `q-claw`，不得擅自构造未经文档声明的 `params` 字段。
+4. 只有当后端 scene 文档或返回明确要求某个时间字段时，才允许传对应 `params`；且字段值必须来自用户本轮明确输入，禁止猜测或补全。
+5. 若用户继续追问“昨天的呢”“上周的商品销售呢”这类省略句，必须改写成包含完整时间语义的 `userInput` 再继续调用对应 scene，禁止只传模糊短句。
+
+## Time Handling
+
+- `erp.management.today.summary`：今日/现在/当前经营快照，路由到 `erp.management.today.summary`。
+- 用户问昨日、上周、近7天、指定日期的经营或销售情况时，仍按最接近的 ERP scene 路由，但最终结果必须以后端实际返回为准；若后端仍返回实时/当日数据，不得宣称自己查到了历史结果。
+- 没有后端明确参数契约前，优先保持 `params = {}`，把时间语义放在 `userInput`，避免插件和 skill 自行发明字段。
 
 ## Tool Call Examples
 
@@ -86,30 +101,4 @@ user-invocable: true
 
 1. 优先输出工具返回的 `assistantReplyLines`。
 2. 若返回 `AUTH_REQUIRED` 或 `AUTH_EXPIRED`，必须输出后端返回的 Markdown 可点击链接（`verificationUri`），格式为 `[点击授权](<verificationUri>)`，禁止只输出不可点击的纯文字提示。
-3. 当 `firstTimeAuth: true` 时，先输出业务结果，再根据 `context.locale` 追加对应引导话术（原样输出，不改写）：
-
-### firstTimeAuth.zh_CN
-
----
-🎉 ERP 授权成功，你可以直接问我：
-
-- **今日经营动态**：「今天经营情况怎么样」
-- **商品销售情况**：「看看商品销售情况」
-- **增长潜力**：「分析下增长潜力」
-
-English examples:
-
-- **Today's operating snapshot**: `How is today's business performance`
-- **Product sales overview**: `Show me product sales overview`
-- **Growth opportunity**: `Analyze growth opportunities`
----
-
-### firstTimeAuth.en_US
-
----
-🎉 ERP authorization successful. You can ask me directly:
-
-- **Today's operating snapshot**: `How is today's business performance`
-- **Product sales overview**: `Show me product sales overview`
-- **Growth opportunity**: `Analyze growth opportunities`
----
+3. 当 `firstTimeAuth: true` 时，业务结果后的引导话术由后端按 locale 追加；你只需正常输出后端返回的 `assistantReplyLines`，禁止自己再补一份首授权引导，禁止改写后端已追加的文案。
