@@ -9,13 +9,15 @@ metadata: {"openclaw": {"emoji": "📞", "requires": {"env": ["OPENCAWL_API_KEY"
 
 Gives your Claw a phone number. Make and manage outbound and inbound phone calls via the OpenCawl API, with live telephony handled by ElevenLabs and Twilio.
 
+**Security:** This skill only uses credentials and URLs you configure (`OPENCAWL_API_KEY`, optional completion or gateway webhooks). It does not read unrelated files on your machine. Outbound HTTPS requests go to your configured OpenCawl API base URL and to webhook URLs you supply.
+
 ## Setup
 
 1. Sign up at https://opencawl.com
-2. Generate an API key at https://opencawl.com/dashboard/keys
-3. Set `OPENCAWL_API_KEY` in your environment or via `skills.entries.opencawl.apiKey` in `~/.openclaw/openclaw.json`
-4. Install this skill: `openclaw skills install opencawl`
-5. Run `/opencawl setup` to provision a phone number and get the ElevenLabs webhook/tool configuration
+2. Copy the setup command from onboarding and run it in your OpenClaw terminal: `openclaw skills install opencawl --key <your OpenCawl API key>`
+3. Wait for the OpenCawl dashboard to show your Claw as connected
+4. If you prefer manual config, set `OPENCAWL_API_KEY` in your environment or via `skills.entries.opencawl.apiKey` in `~/.openclaw/openclaw.json`
+5. Run `/opencawl setup` when you want the detailed number, inbound, and webhook/tool configuration report
 
 ---
 
@@ -192,7 +194,7 @@ To let the shared ElevenLabs agent perform real work during live calls, configur
     "entries": {
       "opencawl": {
         "enabled": true,
-        "apiKey": "sk-cawl-...",
+        "apiKey": "<your OpenCawl API key>",
         "env": {
           "OPENCAWL_API_URL": "https://opencawl.com",
           "OPENCAWL_DEFAULT_PERSONA": "professional-friendly",

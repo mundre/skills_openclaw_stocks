@@ -201,7 +201,7 @@ Dashboard session auth required.
   "inbound_prompt": "You are OpenCawl for this user. Confirm tasks before acting.",
   "inbound_first_message": "OpenCawl. What do you need?",
   "gateway_webhook": "https://your-gateway.example.com/webhooks/opencawl",
-  "gateway_token": "secret-token"
+  "gateway_token": "<your-gateway-token>"
 }
 ```
 
