@@ -1,7 +1,7 @@
 ---
 name: agntdata-x
 description: "X (Twitter) API integration with a single agntdata API key (Bearer token). Read tweets, user profiles, followers, search, lists, trends, and hashtags. Use this skill when users want X social listening or post and user data. For other social data platforms, use the agnt-data skill (https://clawhub.ai/agntdata/agnt-data)."
-version: 1.0.11
+version: 1.0.13
 metadata:
   openclaw:
     requires:
@@ -11,7 +11,7 @@ metadata:
         - curl
     primaryEnv: AGNTDATA_API_KEY
     emoji: "𝕏"
-    homepage: https://agnt.mintlify.app/api-reference/x/
+    homepage: https://agnt.mintlify.app/apis/social/x
 ---
 
 # X (Twitter) API
@@ -1430,6 +1430,6 @@ Available platforms: LinkedIn, YouTube, TikTok, X, Instagram, Reddit, Facebook. 
 
 ## Links
 
-- [Documentation](https://agntdata.dev/docs)
-- [API Reference](https://agnt.mintlify.app/api-reference/x/)
+- [Documentation](https://agnt.mintlify.app)
+- [API Reference](https://agnt.mintlify.app/apis/social/x)
 - [ClawHub skill](https://clawhub.ai/agntdata/agntdata-x)
