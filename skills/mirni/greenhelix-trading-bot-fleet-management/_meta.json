@@ -3,9 +3,15 @@
   "slug": "greenhelix-trading-bot-fleet-management",
   "displayName": "Trading Bot Fleet Management: Unified Control for Multi-Bot Operations",
   "latest": {
-    "version": "1.3.0",
-    "publishedAt": 1776133721250,
-    "commit": "https://github.com/openclaw/skills/commit/032ca31573f31c895ac62f439b110b1f254ae8cf"
+    "version": "1.3.1",
+    "publishedAt": 1776237297495,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.3.0",
+      "publishedAt": 1776133721250,
+      "commit": "https://github.com/openclaw/skills/commit/032ca31573f31c895ac62f439b110b1f254ae8cf"
+    }
+  ]
 }

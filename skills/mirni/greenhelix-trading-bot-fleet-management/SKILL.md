@@ -1,6 +1,6 @@
 ---
 name: greenhelix-trading-bot-fleet-management
-version: "1.3.0"
+version: "1.3.1"
 description: "Trading Bot Fleet Management: Unified Control for Multi-Bot Operations. Build a fleet management layer for 10+ trading bots with per-bot identity isolation, permission scoping, health monitoring, coordinated deployments, SLA tracking, and cost allocation. Includes detailed Python code examples with full API integration."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,12 @@ content_type: markdown
 executable: false
 install: none
 credentials: [AGENT_SIGNING_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - AGENT_SIGNING_KEY
+    primaryEnv: AGENT_SIGNING_KEY
 ---
 # Trading Bot Fleet Management: Unified Control for Multi-Bot Operations
 
