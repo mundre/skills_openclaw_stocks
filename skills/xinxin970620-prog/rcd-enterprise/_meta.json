@@ -3,9 +3,15 @@
   "slug": "rcd-enterprise",
   "displayName": "睿查得-企业信息查询",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776073474307,
-    "commit": "https://github.com/openclaw/skills/commit/af5b814a6889202dd1ab9803951694a0194d64d2"
+    "version": "1.0.4",
+    "publishedAt": 1776667867520,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776073474307,
+      "commit": "https://github.com/openclaw/skills/commit/af5b814a6889202dd1ab9803951694a0194d64d2"
+    }
+  ]
 }

@@ -1,137 +1,142 @@
 ---
-name: enterprise-query
-description: 封装东方微银企业查询API，支持通过企业名称/统一社会信用代码/组织机构代码/企业注册号查询34种企业数据类别；当用户需要查询企业信息并获取原始JSON响应时使用。
+name: rcd-enterprise
+description: 通过关键词和分类查询企业信息；包含企业基本信息、股东、高管等34个分类。
 dependency:
   python:
-    - coze-workload-identity>=0.1.0
-license: MIT-0
+    - requests>=2.28.0
 ---
 
-# 企业查询接口封装
+# 企业信息查询
 
 ## 任务目标
-- 本 Skill 用于：封装东方微银企业信息查询API接口
-- 能力包含：通过企业标识查询多维度企业数据
-- 触发条件：用户需要查询企业信息（企业名称/统一社会信用代码/组织机构代码/企业注册号）
+- 本 Skill 用于:通过关键词和分类参数查询企业详细信息
+- 能力包含:查询企业基本信息、股东信息、高管信息、变更记录、年报数据等34种企业信息类型
+- 触发条件:用户表达需要查询某企业的工商信息、股东、高管、变更、年报等需求
+
+## API密钥获取
+
+搜索并关注【睿查得】服务号，在后台留言 **【获取 API_KEY】**，即可领取您的 API 密钥。
+
+获取密钥后：
+- 首次设置 API_KEY，请直接输入：设置 API_KEY=xxx
+- 如需修改 API_KEY，请直接输入：修改 API_KEY=xxx
 
 ## 前置准备
-- 依赖说明：
-  ```
-  coze-workload-identity>=0.1.0
-  ```
-- API密钥配置：
-  使用环境变量 `COZE_DFZY_ENTERPRISE_API_7627013027870851122` 存储API密钥
+- 依赖说明:requests 库用于 HTTP 请求
+- API_KEY 配置:消费者需要提供自己的 API_KEY，该值会直接传递给接口用于身份验证
 
 ## 操作步骤
+- 标准流程:
+  1. 分析用户问题，提取企业名称作为 `keyword`
+  2. 识别用户关注的信息类型，在 `references/category-map.md` 中查找对应的 `category` 编号
+  3. 获取消费者提供的 `API_KEY`
+  4. 调用脚本执行查询
+     - 脚本调用示例:`python scripts/query.py --keyword "南京水利公司" --category "01" --API_KEY "ABC123"`
+  5. **直接将脚本返回的 JSON 数据原样输出给用户，不进行任何修饰、分析或格式化**
 
-### 标准查询流程
+## Category 识别规则
 
-1. **确定查询参数**
-   - `keyword`：企业标识（必填），支持以下格式：
-     - 企业名称
-     - 统一社会信用代码
-     - 组织机构代码
-     - 企业注册号
-   - `category`：数据类别编号（必填），34种类别见 [references/category_list.md](references/category_list.md)
+根据用户问题中的关键词匹配对应的 category：
 
-2. **调用查询脚本**
-   ```bash
-   python /workspace/projects/enterprise-query/scripts/query_enterprise.py --keyword <企业标识> --category <类别编号>
-   ```
+**全部映射：**
 
-3. **获取原始JSON响应**
-   - 脚本直接返回API的原始JSON响应，不进行任何数据处理
-   - 响应格式由API决定，包含 `code`、`data`、`msg` 等字段
+**基本信息类**
+- "基本信息"、"注册信息"、"工商信息" → 01
+- "分支机构"、"分公司"、"分店" → 02
+- "经营异常"、"异常名录"、"异常记录" → 07
 
-## 资源索引
+**关联人员信息类**
+- "高管"、"管理人员"、"董事"、"监事"、"法人" → 03
+- "股东"、"出资"、"持股比例" → 04
+- "法定代表人其他任职"、"法人其他公司" → 10
+- "法定代表人对外投资"、"法人投资" → 11
 
-### 必要脚本
-- [scripts/query_enterprise.py](scripts/query_enterprise.py)
-  - 用途：封装东方微银API调用
-  - 参数：
-    - `--keyword`：企业标识（企业名称/统一社会信用代码/组织机构代码/企业注册号）
-    - `--category`：数据类别编号（01-34）
-  - 输出：原始JSON响应（原样返回，不做任何处理）
+**投资与股权类**
+- "对外投资"、"投资的子公司"、"控股公司" → 08
+- "股权冻结"、"冻结股权" → 09
+- "股权出质基本信息"、"质押信息"、"出质记录" → 12
+- "股权出质变更"、"质押变更" → 13
+- "股权出质注销"、"质押注销" → 14
 
-### 领域参考
-- [references/category_list.md](references/category_list.md)
-  - 何时读取：确定查询类别时
-  - 内容：34种企业数据类别的编号和名称对照表
+**风险与异常类**
+- "变更记录"、"变更历史"、"什么时候变更"、"变更了什么" → 05
+- "清算信息"、"清算状态"、"是否清算" → 06
 
-- [references/data_dictionary.md](references/data_dictionary.md)
-  - 何时读取：理解字段含义时
-  - 内容：数据字典说明，帮助理解API返回字段的含义
+**动产抵押类**
+- "动产抵押抵押物信息"、"抵押物详情" → 15
+- "动产抵押登记信息"、"抵押登记" → 16
+- "动产抵押被担保主债权信息"、"担保债权" → 17
+- "动产抵押抵押权人信息"、"抵押权人" → 18
+- "动产抵押基本信息"、"动产抵押" → 19
+- "动产抵押注销信息"、"抵押注销" → 20
+- "动产抵押变更信息"、"抵押变更" → 21
 
-### 参考资产
-- [assets/data_dictionary.xlsx](assets/data_dictionary.xlsx)
-  - 用途：完整的数据字典，包含所有字段的详细说明
+**行政处罚与年报类**
+- "行政处罚"、"处罚记录" → 22
+- "年报企业基本信息"、"年报基本信息" → 23
+- "年报企业认缴出资信息"、"年报认缴" → 24
+- "年报企业实缴出资信息"、"年报实缴" → 25
+- "年报股权变更信息"、"年报股权变更" → 26
+- "年报企业网站信息"、"年报网站" → 27
+- "年报企业社会保险信息"、"年报社保" → 28
+- "年报企业对外投资信息"、"年报对外投资" → 29
+- "年报企业对外提供保证担保信息"、"年报担保" → 30
+- "年报企业修改年报信息"、"年报修改记录" → 31
 
-## 注意事项
-
-- **原样返回**：脚本不对API响应做任何格式化、分析或计算，直接输出原始JSON
-- **错误处理**：脚本会处理HTTP请求错误和API业务错误，通过退出码和错误信息反馈
-- **数据字典**：仅作为参考文档，脚本不使用数据字典进行任何处理
-- **参数验证**：脚本会验证必需参数是否存在，但不验证参数内容的合法性
+**历史信息类**
+- "企业历史主要人员信息"、"历史高管"、"历史人员变更" → 32
+- "企业历史股东信息"、"历史股东"、"历史股东变更" → 33
+- "企业历史对外投资信息"、"历史对外投资"、"历史投资变更" → 34
 
 ## 使用示例
+- 示例1:查询企业基本信息
+  - 场景/输入:用户说"帮我查询南京水利公司的基本信息"
+  - keyword:"南京水利公司"
+  - category:"01"（企业基本信息）
+  - API_KEY:"消费者提供的API_KEY"
+  - 脚本调用:`python scripts/query.py --keyword "南京水利公司" --category "01" --API_KEY "ABC123"`
+  - 预期产出:**直接返回接口的原始 JSON 数据，不做任何处理**
 
-### 示例1：查询企业股东信息
-```bash
-# 查询企业"14079200A000046"的股东信息（类别01）
-python /workspace/projects/enterprise-query/scripts/query_enterprise.py \
-  --keyword "14079200A000046" \
-  --category "01"
-```
+- 示例2:查询股东信息
+  - 场景/输入:用户说"查一下腾讯的股东信息"
+  - keyword:"腾讯"
+  - category:"04"（企业股东及出资信息）
+  - API_KEY:"消费者提供的API_KEY"
+  - 脚本调用:`python scripts/query.py --keyword "腾讯" --category "04" --API_KEY "ABC123"`
+  - 预期产出:**直接返回接口的原始 JSON 数据，不做任何处理**
 
-### 示例2：查询企业基本信息
-```bash
-# 查询企业"北京某某科技有限公司"的基本信息（类别00）
-python /workspace/projects/enterprise-query/scripts/query_enterprise.py \
-  --keyword "北京某某科技有限公司" \
-  --category "00"
-```
+- 示例3:查询高管信息
+  - 场景/输入:用户说"查看阿里的高管都有谁"
+  - keyword:"阿里"
+  - category:"03"（企业主要管理人员信息）
+  - API_KEY:"消费者提供的API_KEY"
+  - 脚本调用:`python scripts/query.py --keyword "阿里" --category "03" --API_KEY "ABC123"`
+  - 预期产出:**直接返回接口的原始 JSON 数据，不做任何处理**
 
-### 示例3：查询企业经营状况
-```bash
-# 查询企业经营状况（类别14）
-python /workspace/projects/enterprise-query/scripts/query_enterprise.py \
-  --keyword "911101085923434345" \
-  --category "14"
-```
+- 示例4:查询变更记录
+  - 场景/输入:用户说"华为最近有什么变更"
+  - keyword:"华为"
+  - category:"05"（企业变更信息）
+  - API_KEY:"消费者提供的API_KEY"
+  - 脚本调用:`python scripts/query.py --keyword "华为" --category "05" --API_KEY "ABC123"`
+  - 预期产出:**直接返回接口的原始 JSON 数据，不做任何处理**
 
-## 响应示例
+- 示例5:查询年报数据
+  - 场景/输入:用户说"查一下字节跳动去年的年报"
+  - keyword:"字节跳动"
+  - category:"23"（年报企业基本信息）
+  - API_KEY:"消费者提供的API_KEY"
+  - 脚本调用:`python scripts/query.py --keyword "字节跳动" --category "23" --API_KEY "ABC123"`
+  - 预期产出:**直接返回接口的原始 JSON 数据，不做任何处理**
 
-API返回的原始JSON格式（脚本原样返回）：
+## 资源索引
+- 脚本:见 [scripts/query.py](scripts/query.py)(用途与参数:接收 keyword、category 和 API_KEY 参数，调用企业信息查询接口，**原样返回接口的 JSON 响应数据**)
+- 参考:见 [references/category-map.md](references/category-map.md)(用途:包含完整的34个category映射表及使用说明，智能体需根据用户问题在此文件中查找对应的category编号)
 
-```json
-{
-    "code": 200,
-    "data": {
-        "gudong_now": [
-            {
-                "country": "",
-                "conform": "货币",
-                "currency": "人民币元",
-                "subconam": "1600.0",
-                "conprop": "80.00%",
-                "inv": "张永爱",
-                "invtype": "自然人股东",
-                "subdate": "2029-08-18"
-            },
-            {
-                "country": "",
-                "conform": "货币",
-                "currency": "人民币元",
-                "subconam": "400.0",
-                "conprop": "20.00%",
-                "inv": "江君",
-                "invtype": "自然人股东",
-                "subdate": "2029-08-18"
-            }
-        ]
-    },
-    "msg": "请求成功"
-}
-```
-
-**重要**：此为原始响应，脚本不进行任何字段解析、格式化或计算。
+## 注意事项
+- keyword 参数为必填项，从用户问题中提取企业名称
+- category 参数为必选项，必须根据用户问题准确选择对应的编号
+- **API_KEY 参数为必填项，需要从消费者配置中获取，该值会直接传递给接口**
+- **脚本返回的 JSON 数据必须原样输出给用户，不进行任何修饰、分析、总结或格式化**
+- 当用户问题不明确时，优先使用 category="01" 查询基本信息，然后根据返回结果引导用户细化需求
+- 完整的 category 映射表包含34种信息类型，在 references/category-map.md 中查阅
