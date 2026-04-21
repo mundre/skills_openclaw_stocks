@@ -8,6 +8,7 @@ The blueprint should:
 - be specific enough for bootstrap
 - keep conventions explicit
 - avoid hiding any Team protocol inside the plugin
+- make participant readiness explicit when the Team depends on multiple agents
 - be minimal enough that the user can understand and approve it
 
 ## Required sections
@@ -27,6 +28,10 @@ For each participant include:
 - role
 - responsibilities
 - whether it is human, agent, or mixed
+- OpenClaw status: `existing`, `to-create`, or `user-confirmed only`
+- ClawMem status: `configured`, `bootstrap-on-first-use`, or `blocked`
+
+If a template has a minimum participant shape, say whether the current environment already satisfies it.
 
 ### 3. Repo Plan
 
@@ -69,15 +74,17 @@ Do not create duplicate sources of truth.
 ### 7. Bootstrap Plan
 
 List the exact order of work:
-1. inspect existing state
-2. create missing org / repo / team objects
-3. set access
-4. materialize the canonical artifact
-5. seed the first workflow object if needed
+1. inspect current participants and existing state
+2. prepare missing participants if required and supported by the runtime
+3. create missing org / repo / team objects
+4. set access
+5. materialize the canonical artifact
+6. seed the first workflow object if needed
 
 ### 8. Verification Plan
 
 Include:
+- participant readiness checks
 - structural checks
 - access checks
 - workflow happy-path check
