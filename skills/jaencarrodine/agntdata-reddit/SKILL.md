@@ -1,7 +1,7 @@
 ---
 name: agntdata-reddit
 description: "Reddit API integration with a single agntdata API key (Bearer token). Read subreddit metadata, posts, threads, users, and search. Use this skill when users want Reddit community or thread data. For other social data platforms, use the agnt-data skill (https://clawhub.ai/agntdata/agnt-data)."
-version: 1.0.11
+version: 1.0.13
 metadata:
   openclaw:
     requires:
@@ -11,7 +11,7 @@ metadata:
         - curl
     primaryEnv: AGNTDATA_API_KEY
     emoji: "🤖"
-    homepage: https://agnt.mintlify.app/api-reference/reddit/
+    homepage: https://agnt.mintlify.app/apis/social/reddit
 ---
 
 # Reddit API
@@ -804,6 +804,6 @@ Available platforms: LinkedIn, YouTube, TikTok, X, Instagram, Reddit, Facebook. 
 
 ## Links
 
-- [Documentation](https://agntdata.dev/docs)
-- [API Reference](https://agnt.mintlify.app/api-reference/reddit/)
+- [Documentation](https://agnt.mintlify.app)
+- [API Reference](https://agnt.mintlify.app/apis/social/reddit)
 - [ClawHub skill](https://clawhub.ai/agntdata/agntdata-reddit)
