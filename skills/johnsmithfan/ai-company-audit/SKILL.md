@@ -1,64 +1,90 @@
 ---
-name: "ai-company-audit"
-version: 1.0.0
-description: "跨Agent审计日志规范（7类日志 + 合规检查点 + 审计追踪标准）"
-triggers: ["audit log", "compliance", "audit trail", "logging standard", "审计日志", "合规检查", "审计追踪", "日志规范"]
+name: "AI Company Audit"
+slug: "ai-company-audit"
+version: "1.0.0"
+homepage: "https://clawhub.com/skills/ai-company-audit"
+description: "跨Agentaudit日志standard。7类日志（决策/操作/错误/security/性能/访问/data）+ compliance检查点 + audittrackstandard，适配fully AI companygovernframework。"
+license: MIT-0
+tags: [ai-company, audit, compliance, logging, governance, audit-trail]
+triggers:
+  - audit log
+  - compliance
+  - audit trail
+  - logging standard
+  - audit日志
+  - compliance检查
+  - audittrack
+  - 日志standard
 interface:
   inputs:
-    type: "object"
-    schema: |
-      {
-        "log_type": "decision|action|error|security|performance|access|data",
-        "agent_id": "string (optional)",
-        "date_range": "object (from/to)"
-      }
+    type: object
+    schema:
+      type: object
+      properties:
+        log_type:
+          type: string
+          enum: [decision, action, error, security, performance, access, data]
+          description: audit日志类型
+        agent_id:
+          type: string
+          description: Agent编号（可选）
+        date_range:
+          type: object
+          properties:
+            from: string
+            to: string
   outputs:
-    type: "object"
-    schema: |
-      {
-        "logs": "array of log entries",
-        "compliance_status": "object",
-        "anomalies": "array"
-      }
+    type: object
+    schema:
+      type: object
+      properties:
+        logs:
+          type: array
+          description: 日志条目数组
+        compliance_status:
+          type: object
+          description: compliance状态
+        anomalies:
+          type: array
+          description: 异常列表
   errors:
-    - code: "AUDIT_001"
+    - code: AUDIT_001
       message: "Log entry missing required fields"
       action: "Enforce schema: timestamp/agent/action/result"
-dependencies:
-  skills: ["ai-company-governance", "ai-company-registry"]
-  cli: []
 permissions:
   files: []
   network: []
   commands: []
   mcp: []
+dependencies:
+  skills: [ai-company-hq, ai-company-registry, ai-company-conflict]
+  cli: []
 quality:
-  saST: "✅Pass"
-  vetter: "✅Approved"
+  saST: Pass
+  vetter: Approved
   idempotent: true
 metadata:
-  license: "MIT-0"
-  author: "ai-company@workspace"
-  securityStatus: "✅Vetted"
-  layer: "AGENT"
-  size: "SMALL"
-  parent: "ai-company"
-  split_from: "2026-04-14"
+  category: governance
+  layer: AGENT
+  cluster: ai-company
+  maturity: STABLE
+  license: MIT-0
+  standardized: true
 ---
 
-# Audit Logging Standard — 审计日志规范
+# Audit Logging Standard — audit日志standard
 
-## 7类审计日志
+## 7类audit日志
 
 | Log Type | Description | Retention |
 |----------|-------------|----------|
-| Decision | 战略/战术决策记录 | 2 years |
-| Action | Agent 执行的操作 | 90 days |
+| Decision | strategy/战术决策record | 2 years |
+| Action | Agent execute的操作 | 90 days |
 | Error | 系统异常和错误 | 90 days |
-| Security | 认证/授权/安全事件 | 2 years |
-| Performance | 延迟/吞吐量/KPI | 30 days |
-| Access | 数据访问记录 | 2 years |
-| Data | 数据变更历史 | 7 years |
+| Security | authenticate/authorize/security incident | 2 years |
+| Performance | latency/吞吐量/KPI | 30 days |
+| Access | data访问record | 2 years |
+| Data | data变更历史 | 7 years |
 
 ## Log Entry Schema
 
@@ -82,20 +108,20 @@ log_entry:
 
 | Checkpoint | Standard | Enforcement |
 |-----------|---------|-------------|
-| P0 SLA 达成 | 95% P0 事件在 SLA 内完成 | CQO 监控 |
-| 敏感数据标注 | 所有 PII 字段含 `[敏感]` 标注 | CISO 审计 |
-| 跨 Agent 审计追踪 | trace_id 贯穿完整调用链 | CTO 技术实现 |
-| 审计日志不可篡改 | append-only + hash chain | CTO 技术实现 |
-| 审计日志保留期 | 详见上表（7类）| CTO 存储策略 |
+| P0 SLA 达成 | 95% P0 event在 SLA 内完成 | CQO monitor |
+| 敏感data标注 | 所有 PII 字段含 `[敏感]` 标注 | CISO audit |
+| 跨 Agent audittrack | trace_id 贯穿完整调用链 | CTO 技术实现 |
+| audit日志不可篡改 | append-only + hash chain | CTO 技术实现 |
+| audit日志保留期 | 详见上表（7类）| CTO storestrategy |
 
 ## P0 Incident Compliance
 
-| P0 标准 | 响应要求 | 审计要求 |
+| P0 standard | respond要求 | audit要求 |
 |---------|---------|---------|
-| 响应时间 | 15 分钟内初始响应 | 时间戳记录 |
+| respond时间 | 15 分钟内初始respond | 时间戳record |
 | CEO 通报 | 立即通报 | 决策日志 |
-| 根因分析 | 48 小时内完成 | 分析报告存档 |
-| 改进项 | 7 天内入 backlog | 追踪记录 |
+| 根因analyze | 48 小时内完成 | analyzereport存档 |
+| improve项 | 7 天内入 backlog | trackrecord |
 
 ## Audit Log Storage Policy
 

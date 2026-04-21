@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-audit",
-  "displayName": "AI Company Audit",
+  "displayName": "AI Company Audit (EN)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776101149892,
-    "commit": "https://github.com/openclaw/skills/commit/c51d2074c9853e9eb5a7be0ca7c080950d20128d"
+    "version": "1.0.0-en2",
+    "publishedAt": 1776678521383,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776101149892,
+      "commit": "https://github.com/openclaw/skills/commit/c51d2074c9853e9eb5a7be0ca7c080950d20128d"
+    }
+  ]
 }
