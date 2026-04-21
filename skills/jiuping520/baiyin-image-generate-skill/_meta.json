@@ -3,9 +3,15 @@
   "slug": "baiyin-image-generate-skill",
   "displayName": "baiyin-image-generate-skill",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776226162661,
-    "commit": "https://github.com/openclaw/skills/commit/c08bf2ea1d6af476be50902a70343bb9ad386bc3"
+    "version": "1.0.4",
+    "publishedAt": 1776679298796,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776226162661,
+      "commit": "https://github.com/openclaw/skills/commit/c08bf2ea1d6af476be50902a70343bb9ad386bc3"
+    }
+  ]
 }
