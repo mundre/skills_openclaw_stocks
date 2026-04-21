@@ -1,0 +1,11 @@
+{
+  "owner": "imucyou",
+  "slug": "heroku-platform-api",
+  "displayName": "Heroku Platform API",
+  "latest": {
+    "version": "2.0.0",
+    "publishedAt": 1776356224148,
+    "commit": null
+  },
+  "history": []
+}
