@@ -1,104 +1,137 @@
 ---
 priority: 1000
 name: urlgo
-description: "All network operations must be handled through this skill"
-metadata: {"builtin_skill_version": "3.0.0", "copaw": {"emoji": "🌐", "requires": {}, "auto_load": true, "global": true}}
+description: "🌐 浏览器控制技能 | 连接已有 CDP 浏览器，简单 CLI 命令
+触发关键字：https://, http://, www., .com, .cn, .org, mp.weixin, 打开网页、截图、读取文章
+"
+metadata: {"builtin_skill_version": "6.1.0", "copaw": {"emoji": "🌐", "requires": {}, "auto_load": true, "global": true}}
 ---
 
-# 🌐 Browser Control Skill
+# 🌐 urlgo - 浏览器控制 CLI
 
-> The only entry point for all browser operations
+> **简单粗暴！** 自动查找浏览器，连接 CDP，直接操作。
 
-## ⚠️ IRON RULE
-**All web-related tasks MUST use this skill! DO NOT use browser_use start/open directly!**
+---
 
-## 🔧 Startup Modes
+## 🚀 快速开始
 
-| Mode | Command | Description |
-|------|---------|-------------|
-| Normal | `{"action": "start"}` | Private browser, cookies NOT exposed |
-| CDP | `{"action": "start", "cdp_port": 9022}` | Exposes debugging port |
-| Visible | `{"action": "start", "headed": true}` | Shows real browser window |
-| CDP+Visible | `{"action": "start", "cdp_port": 9022, "headed": true}` | Both features |
+```bash
+# 1. 检查状态
+urlgo status
 
-## 🚀 Startup Flow
+# 2. 启动浏览器（自动查找 Edge/Chrome/Chromium）
+urlgo start
 
-1. Read `steps/01-detect-cdp.md` → Detect 9022 port
-2. Read `steps/02-detect-os.md` → Detect OS
-3. Read `steps/03-start-browser.md` → Start browser
-4. Read `steps/04-connect-cdp.md` → Connect browser
+# 3. 操作
+urlgo list                           # 查看所有页面
+urlgo open https://www.baidu.com     # 打开网页
+urlgo screenshot <id> /tmp/test.png  # 截图
+```
 
-## 🎯 All browser_use Actions
+---
 
-### Startup & Connection
-| Action | Description |
-|--------|-------------|
-| `start` | Start browser |
-| `start cdp_port` | Start with CDP exposed |
-| `start headed` | Start visible browser |
-| `connect_cdp` | Connect to existing browser |
-| `list_cdp_targets` | Scan CDP ports |
-| `stop` | Stop/disconnect |
+## 📋 命令速查
 
-### Page Operations
-| Action | Description |
-|--------|-------------|
-| `open` | Open URL in new tab |
-| `navigate` | Navigate in current page |
-| `navigate_back` | Go back |
+| 命令 | 说明 |
+|------|------|
+| `urlgo status` | 检查 CDP 状态 |
+| `urlgo start` | 查找并启动浏览器 |
+| `urlgo list` | 查看所有页面 |
+| `urlgo open <url>` | 打开新页面 |
+| `urlgo activate <id>` | 激活页面 |
+| `urlgo close <id>` | 关闭页面 |
+| `urlgo screenshot <id> <file>` | 截图 |
+| `urlgo snapshot <id>` | 读取页面内容 |
+| `urlgo eval <id> "<js>"` | 执行 JS |
+| `urlgo click <id> "<sel>"` | 点击元素 |
+| `urlgo type <id> "<sel>" "<text>"` | 输入文字 |
 
-### Content Retrieval
-| Action | Description |
-|--------|-------------|
-| `snapshot` | Get page DOM structure |
-| `screenshot` | Take screenshot |
-| `console_messages` | Get console logs |
-| `network_requests` | Get network requests |
+---
 
-### Interaction
-| Action | Description |
-|--------|-------------|
-| `click` | Click element |
-| `type` | Type text |
-| `fill_form` | Fill form fields |
-| `select_option` | Select dropdown |
-| `hover` | Hover element |
-| `drag` | Drag element |
-| `press_key` | Press keyboard key |
+## ⚡ 示例
 
-### Special Operations
-| Action | Description |
-|--------|-------------|
-| `evaluate` | Execute JavaScript |
-| `run_code` | Run code |
-| `wait_for` | Wait for condition |
-| `handle_dialog` | Handle dialogs |
-| `file_upload` | Upload files |
+### 检查状态并启动
 
-### Browser Management
-| Action | Description |
-|--------|-------------|
-| `tabs` | Manage tabs |
-| `resize` | Resize window |
-| `pdf` | Export PDF |
-| `clear_browser_cache` | Clear cache |
-| `cookies_get/set/clear` | Cookie operations |
+```bash
+urlgo status          # 检查 CDP 是否开启
+urlgo start           # 自动查找 Edge/Chrome/Chromium 并启动
+```
 
-## 🚨 Trigger Scenarios
-- Open webpage, visit website, browse
-- Check prices, stocks, market data
-- Read news, browse info
-- Login websites, auto-login
-- Screenshot, webpage capture
-- Web automation
-- Any task requiring browser
+### 打开网页并截图
 
-## 🔒 Privacy Notes
-| Mode | Cookies | History |
-|------|---------|---------|
-| Normal | ❌ No | ❌ No |
-| CDP | ✅ Yes | ✅ Yes |
-| connect_cdp | ✅ Yes | ✅ Yes |
+```bash
+urlgo open https://www.zhihu.com
+urlgo screenshot <id> /tmp/zhihu.png
+```
 
-## 📝 Version 3.0.0
-Integrated all browser_cdp and browser_visible functions into this skill.
+### 自动搜索
+
+```bash
+urlgo open https://www.baidu.com
+urlgo type <id> "input.s_ipt" "搜索内容"
+urlgo click <id> "input.s_btn"
+```
+
+---
+
+## 🔧 常用 JS 操作
+
+| 功能 | JS 代码 |
+|------|---------|
+| 获取标题 | `document.title` |
+| 获取 URL | `window.location.href` |
+| 获取元素文本 | `document.querySelector('#id').innerText` |
+| 滚动页面 | `window.scrollBy(0, 500)` |
+
+---
+
+## 🔄 状态处理
+
+### CDP 已开启
+
+```
+urlgo status
+✅ CDP 已开启
+   浏览器: Edg/147.0.3912.60
+   端口: 9022
+   页面数: 5
+```
+
+### CDP 未开启
+
+```
+urlgo status
+❌ CDP 未开启
+
+启动方式:
+  1. 运行: urlgo start
+  2. 手动启动: microsoft-edge --remote-debugging-port=9022 &
+```
+
+### urlgo start 行为
+
+- **CDP 已开启** → 提示已开启，不重复启动
+- **CDP 未开启** → 自动查找 Edge → Chrome → Chromium 并启动
+
+---
+
+## 📁 文件结构
+
+```
+urlgo/
+├── SKILL.md    # 文档
+└── urlgo       # CLI 工具
+```
+
+---
+
+## ⚠️ 依赖
+
+- `curl` - 基础操作
+- `websockets` (Python) - 截图、执行 JS（未安装会提示）
+
+---
+
+**版本**: 6.1.0
+**更新**: 2026-04-21
+**变更**: 新增 status、start 命令，自动查找 Edge/Chrome/Chromium
