@@ -1,6 +1,6 @@
 ---
 name: story-invite-poster
-description: Say "Help me install the ClawHub skill story-invite-poster" to your local agent, then create custom invitation posters from photos and event details.
+description: Say "Help me install this skill from https://clawhub.ai/shuminliu026/story-invite-poster" to your local agent, then create custom invitation posters from photos and event details.
 ---
 
 # Story Invite Poster
