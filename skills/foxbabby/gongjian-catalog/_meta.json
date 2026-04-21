@@ -3,9 +3,15 @@
   "slug": "gongjian-catalog",
   "displayName": "臻选顾问",
   "latest": {
-    "version": "1.20260413.1456",
-    "publishedAt": 1776063394291,
-    "commit": "https://github.com/openclaw/skills/commit/8435ebf87debb97566f460b966229ed865075bdd"
+    "version": "1.20260419.1133",
+    "publishedAt": 1776569607326,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.20260413.1456",
+      "publishedAt": 1776063394291,
+      "commit": "https://github.com/openclaw/skills/commit/8435ebf87debb97566f460b966229ed865075bdd"
+    }
+  ]
 }
