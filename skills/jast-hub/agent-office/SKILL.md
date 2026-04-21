@@ -1,9 +1,9 @@
 ---
 name: agent-office
-description: "Agent Office：创建本地 AI 员工、office worker、AI employee 与 multi-agent office team。每个员工以独立 HTTP Worker 运行，支持 openclaw / hermes / deerflow / cli / stub 五种引擎，适合 office automation、agent worker 管理与团队协作。"
+description: "Agent Office：创建本地 AI 员工、office worker、AI employee 与 multi-agent office team。每个员工以独立 HTTP Worker 运行，支持 openclaw / hermes / deerflow / cli / external / stub 六种引擎，适合 office automation、agent worker 管理与团队协作。"
 homepage: https://clawhub.com
 tags: [productivity, automation, multi-agent, office, worker, ai-employee]
-version: 1.4.2
+version: "1.5.1"
 requirements:
   cli:
     - openclaw
@@ -77,6 +77,7 @@ bash scripts/apply_preset.sh 编程公司 --dry-run
 | `hermes` | Hermes 生态员工 | `hermes agent --json --message` |
 | `deerflow` | 外包型复杂任务 | 复用共享 DeerFlow runtime，并以内嵌 DeerFlow 团队执行链完成任务 |
 | `cli` | 接大多数本地 CLI 员工 | 按 profile 调用 `codex` / `claude` / `aider` / `gemini` / `opencode` |
+| `external` | 接入已在运行的现有 agent / worker | 把现成 HTTP worker 桥接成员工，保留上游设定与记忆 |
 | `stub` | 测试、占位 | 不启动真实进程 |
 
 ### CLI 员工说明
@@ -87,7 +88,7 @@ bash scripts/apply_preset.sh 编程公司 --dry-run
 
 | profile | 实际工具 | 传参方式 |
 |---------|----------|----------|
-| `codex` | OpenAI Codex CLI | 标准输入 |
+| `codex` | OpenAI Codex CLI | 标准输入，默认走 `codex exec --skip-git-repo-check` |
 | `claude-code` | Claude Code | 标准输入 |
 | `aider` | Aider | `--message` |
 | `gemini-cli` | Gemini CLI | 标准输入 |
@@ -104,7 +105,31 @@ bash scripts/apply_preset.sh 编程公司 --dry-run
 python3 scripts/add_worker.py --list-cli-profiles
 bash scripts/add_worker.sh 小扣 cli code --cli-profile codex
 bash scripts/add_worker.sh 小克 cli code --cli-profile claude-code --workspace ~/projects/demo
-bash scripts/add_worker.sh 小助 cli general --cli-cmd "codex exec" --cli-args "--model gpt-5.4"
+bash scripts/add_worker.sh 小助 cli general --cli-cmd "codex exec --skip-git-repo-check" --cli-args "--model gpt-5.4"
+```
+
+Codex 员工要点：
+
+- 不直接跑裸 `codex`，而是默认使用非交互模式 `codex exec`
+- 默认补 `--skip-git-repo-check`，避免员工工作目录不是 trusted git repo 时直接失败
+- 需要指定模型时，只追加自己的参数，例如 `--cli-args "--model gpt-5.4"`
+
+### External 员工说明
+
+`external` 引擎用于接入已经在本机某个端口跑着的现有 worker / agent，而不是重新创建一个新员工内核。
+
+它的运行规则是：
+
+- 上游 worker 保持原本的身份、workspace、长期记忆与系统提示
+- Agent Office 只在办公室侧创建一个桥接员工
+- 派单时会附加只读共享记忆上下文，再转发给上游
+- 移除桥接员工时，不会删除上游 worker
+
+常用命令：
+
+```bash
+bash scripts/add_worker.sh 外挂小龙 external general --external-upstream-port 18750
+bash scripts/add_worker.sh 外挂小龙 external general --external-upstream-url http://127.0.0.1:18750
 ```
 
 ### DeerFlow 员工说明
@@ -212,6 +237,7 @@ mkdir -p ~/.hermes/office/workers/{worker_id}/logs
 | `hermes` | `templates/hermes_prompt.md` |
 | `deerflow` | `templates/deerflow_prompt.md` |
 | `cli` | `templates/cli_prompt.md` |
+| `external` | `templates/external_prompt.md` |
 | `stub` | `templates/stub_prompt.md` |
 
 模板变量包括：

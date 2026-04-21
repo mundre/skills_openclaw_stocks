@@ -1,6 +1,6 @@
 # Agent Office
 
-一句话加员工，构建本地 AI office、office worker、AI employee 团队。员工以独立 HTTP Worker 形式运行，支持 `openclaw`、`hermes`、`deerflow`、`cli`、`stub` 五种引擎。
+一句话加员工，构建本地 AI office、office worker、AI employee 团队。员工以独立 HTTP Worker 形式运行，支持 `openclaw`、`hermes`、`deerflow`、`cli`、`external`、`stub` 六种引擎。
 
 ## 包名与目录名
 
@@ -43,6 +43,7 @@ cd /path/to/agent-office
 bash scripts/add_worker.sh 小龙 openclaw research
 bash scripts/add_worker.sh 小扣 cli code --cli-profile codex
 bash scripts/add_worker.sh 小D deerflow complex
+bash scripts/add_worker.sh 外挂小龙 external general --external-upstream-port 18750
 ```
 
 应用团队预设：
@@ -86,6 +87,7 @@ bash scripts/remove_worker.sh xiaolong
 | `hermes` | Hermes 生态任务 | 通过 `hermes agent` 执行，并在员工工作目录运行 |
 | `deerflow` | 外包型复杂任务 | 自动安装或复用共享 DeerFlow runtime，并以单个员工身份调起内嵌 DeerFlow 团队执行链 |
 | `cli` | 接主流本地 CLI 员工 | 按 profile 调用对应 CLI，可接 Codex / Claude Code / Aider / Gemini CLI / OpenCode |
+| `external` | 接入已在运行的现有 agent / worker | 保留上游原设定和记忆不动，在办公室里挂一个桥接员工并注入共享记忆上下文 |
 | `stub` | 测试 / 占位 | 不启动真实进程，直接返回模拟结果 |
 
 ## CLI 员工
@@ -96,7 +98,7 @@ bash scripts/remove_worker.sh xiaolong
 
 | profile | 工具 | 说明 |
 |------|------|------|
-| `codex` | OpenAI Codex CLI | 默认 profile，走标准输入 |
+| `codex` | OpenAI Codex CLI | 默认走 `codex exec --skip-git-repo-check`，适合后台 worker 非交互调用 |
 | `claude-code` | Claude Code | 走标准输入 |
 | `aider` | Aider | 使用 `--message` 传任务 |
 | `gemini-cli` | Gemini CLI | 走标准输入 |
@@ -116,10 +118,22 @@ bash scripts/add_worker.sh 小克 cli code --cli-profile claude-code --workspace
 bash scripts/add_worker.sh 小助 cli general --cli-profile aider
 ```
 
+Codex 员工的默认接法已经内置为：
+
+```text
+codex exec --skip-git-repo-check
+```
+
+原因：
+
+- worker_server 是后台 HTTP worker，不能依赖交互式 TTY，所以不能直接跑裸 `codex`
+- 员工工作目录通常不是 trusted git repo，默认补 `--skip-git-repo-check` 更稳
+- 如需指定模型，只需要追加你自己的参数，例如 `--cli-args "--model gpt-5.4"`
+
 如果你的机器上用了自定义包装命令，也可以覆盖：
 
 ```bash
-bash scripts/add_worker.sh 小试 cli code --cli-cmd "codex exec" --cli-args "--model gpt-5.4" --workspace ~/projects/demo
+bash scripts/add_worker.sh 小试 cli code --cli-cmd "codex exec --skip-git-repo-check" --cli-args "--model gpt-5.4" --workspace ~/projects/demo
 ```
 
 说明：
@@ -128,6 +142,31 @@ bash scripts/add_worker.sh 小试 cli code --cli-cmd "codex exec" --cli-args "--
 - `--cli-timeout` 可覆盖默认超时
 - `--cli-cmd` 适合你本机已经封装好命令的情况
 - `cli` 员工不会注册成 openclaw agent，而是由 `worker_server.py` 直接调本地 CLI
+
+## 外挂现有员工
+
+`external` 引擎适合把已经在本机跑起来的现有 agent / worker 直接挂进 Agent Office，当成一名办公室员工来派单。
+
+典型场景：
+
+- 你本机 `18750` 端口已经跑着一个 openclaw / 其他兼容 worker
+- 你不想改它原有的 workspace、系统提示、长期记忆
+- 但你想让办公室给它派单，并在派单时附带共享记忆上下文
+
+使用方式：
+
+```bash
+bash scripts/add_worker.sh 外挂小龙 external general --external-upstream-port 18750
+# 或
+bash scripts/add_worker.sh 外挂小龙 external general --external-upstream-url http://127.0.0.1:18750
+```
+
+说明：
+
+- `external` 员工是办公室里的桥接代理，不会重写上游 agent 的设置
+- 共享记忆只在办公室转发任务时作为附加上下文注入
+- 移除 `external` 员工时，只会删除办公室这层代理，不会动上游进程
+- 上游需要兼容 `GET /health`、`POST /tasks`、`GET /tasks/{id}` 这套 HTTP 协议
 
 ## DeerFlow 员工
 
@@ -177,7 +216,7 @@ export AGENT_OFFICE_DEERFLOW_UPDATE_ON_ADD=1
 
 1. 中文名字转 `worker_id`，并分配端口。
 2. 在 `templates/` 中选模板，渲染成员工专属 `SOUL.md`。
-3. 为 `openclaw` / `hermes` 员工注册对应 agent workspace；`cli` 员工写入 CLI 配置；`deerflow` 员工自动准备共享 runtime、独立 home 与 runtime config。
+3. 为 `openclaw` / `hermes` 员工注册对应 agent workspace；`cli` 员工写入 CLI 配置；`deerflow` 员工自动准备共享 runtime、独立 home 与 runtime config；`external` 员工写入上游桥接配置。
 4. 启动 `worker_server.py`。
 5. 严格检查 `http://127.0.0.1:{port}/health` 是否返回 `200` 且 `{"status":"ok"}`。
 6. 写入 `office_state.json`。
@@ -228,6 +267,7 @@ export AGENT_OFFICE_DEERFLOW_UPDATE_ON_ADD=1
 | 添加 `deerflow` 员工时报缺少自动安装依赖 | 本机没有 `git` 或 `uv` | 先安装 `git` / `uv`，再重试 |
 | DeerFlow 员工能启动但任务失败 | DeerFlow runtime 配置或上游模型配置有误 | 查看 `workers/{worker_id}/logs/worker.log`，必要时执行 `bash scripts/update_deerflow_runtime.sh` 后重试 |
 | 添加 `cli` 员工时报 profile 不可用 | 对应 CLI 不在 PATH，或命令覆盖写错 | 先执行 `python3 scripts/add_worker.py --list-cli-profiles`，再检查 `which codex` / `which claude` 等 |
+| 添加 `external` 员工时报无法连通上游 | 上游端口未启动，或不兼容 HTTP worker 协议 | 先检查上游 `GET /health` 是否返回 `{"status":"ok"}` |
 | 添加时报 `没有可用端口` | 5011-5020 端口池耗尽 | 先移除不用的员工 |
 | 员工能创建但任务失败 | `worker_id` / agent 未注册完整 | 重新添加该员工，让脚本重新注册 |
 
@@ -241,6 +281,7 @@ export AGENT_OFFICE_DEERFLOW_UPDATE_ON_ADD=1
 
 | 版本 | 日期 | 更新 |
 |------|------|------|
+| 1.5.0 | 2026-04-16 | 新增 `external` 引擎，可把已在运行的现有 agent / worker 作为桥接员工接入办公室；保留上游设定与记忆不动，并在办公室侧注入共享记忆 |
 | 1.4.2 | 2026-04-14 | 修复 DeerFlow 沙箱挂载范围过宽导致可能串读其他员工目录的问题；当前只暴露 `/mnt/workspace` 与 `/mnt/worker`，并补充隔离验证 |
 | 1.4.1 | 2026-04-13 | 修正 `1.4.0` 中误写到 DeerFlow 模板与文档里的旧调试说明；恢复与当前内嵌 runtime 架构一致的 DeerFlow 员工说明 |
 | 1.3.0 | 2026-04-13 | `deerflow` 引擎改为技能内嵌 DeerFlow runtime；支持共享 runtime、每员工独立 home/config、`update_deerflow_runtime` 更新脚本；不再依赖外部 `deerflow-worker` 网关 |

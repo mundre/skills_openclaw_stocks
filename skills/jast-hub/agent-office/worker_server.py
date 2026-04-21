@@ -24,6 +24,7 @@ import time
 import uuid
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
+from urllib import error, request
 
 SKILL_DIR = Path(__file__).resolve().parent
 if str(SKILL_DIR) not in sys.path:
@@ -48,7 +49,7 @@ CLI_PROFILES = {
     "codex": {
         "display_name": "OpenAI Codex CLI",
         "executables": ("codex",),
-        "base_args": (),
+        "base_args": ("exec", "--skip-git-repo-check"),
         "prompt_mode": "stdin",
         "prompt_flag": "",
         "timeout": 600,
@@ -86,6 +87,8 @@ CLI_PROFILES = {
         "timeout": 600,
     },
 }
+EXTERNAL_DEFAULT_TIMEOUT = 300
+EXTERNAL_DEFAULT_POLL_INTERVAL = 2.0
 ROLE_DESCRIPTIONS = {
     "research": "竞品调研、信息收集、事实核查与资料整理",
     "code": "脚本开发、代码实现、问题排查与技术修复",
@@ -306,6 +309,9 @@ class WorkerServer(HTTPServer):
         deerflow_reasoning_effort="",
         deerflow_recursion_limit=0,
         deerflow_timeout=0,
+        external_upstream_url="",
+        external_poll_interval=0.0,
+        external_timeout=0,
     ):
         super().__init__(("127.0.0.1", port), WorkerHandler)
         self.worker_id = worker_id
@@ -330,6 +336,11 @@ class WorkerServer(HTTPServer):
             deerflow_recursion_limit or DEERFLOW_DEFAULT_RECURSION_LIMIT
         )
         self.deerflow_timeout = deerflow_timeout or DEERFLOW_DEFAULT_TIMEOUT
+        self.external_upstream_url = (external_upstream_url or "").rstrip("/")
+        self.external_poll_interval = (
+            external_poll_interval or EXTERNAL_DEFAULT_POLL_INTERVAL
+        )
+        self.external_timeout = external_timeout or EXTERNAL_DEFAULT_TIMEOUT
 
     def execute_task(self, task_id, title, description):
         """执行任务"""
@@ -368,6 +379,9 @@ class WorkerServer(HTTPServer):
                 role = self._guess_role(description)
                 prompt = self._build_prompt(role, title, description, memory_matches)
                 result_content = self._run_cli(prompt)
+
+            elif self.worker_engine == "external":
+                result_content = self._run_external(title, description, memory_matches)
 
             else:
                 result_content = f"[未知引擎: {self.worker_engine}]"
@@ -473,6 +487,19 @@ class WorkerServer(HTTPServer):
             sections.append(f"{index}. {title} | worker={worker} | room={room}")
             sections.append(str(content)[:400])
         return "\n".join(sections)
+
+    def _build_external_description(self, title, description, memory_matches=None):
+        sections = [
+            f"这是 Agent Office 转发给外部员工 {self.worker_name} 的任务。",
+            "请保持你原有身份、设定和长期记忆，不要把自己重置成新的角色。",
+            "",
+            "任务标题：" + (title or "(无标题)"),
+            "任务描述：" + (description or "(无描述)"),
+            "",
+            "办公室补充上下文：",
+            self._build_shared_memory_context(memory_matches),
+        ]
+        return "\n".join(sections).strip()
 
     def _build_deerflow_prompt(self, title, description, memory_matches=None):
         template_text = ""
@@ -697,6 +724,76 @@ class WorkerServer(HTTPServer):
         except FileNotFoundError:
             return f"[CLI 未安装] {profile['display_name']}"
 
+    def _external_request(self, method, path, payload=None, timeout=15):
+        if not self.external_upstream_url:
+            raise RuntimeError("external upstream url 未配置")
+
+        url = f"{self.external_upstream_url}{path}"
+        body = None
+        headers = {}
+        if payload is not None:
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            headers["Content-Type"] = "application/json"
+        req = request.Request(url, data=body, headers=headers, method=method.upper())
+        with request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8")
+            return resp.status, json.loads(raw) if raw else {}
+
+    def _extract_result_content(self, payload):
+        if not isinstance(payload, dict):
+            return str(payload)
+        result = payload.get("result")
+        if isinstance(result, dict):
+            content = result.get("content")
+            if content:
+                return str(content)
+        if payload.get("summary"):
+            return str(payload["summary"])
+        return json.dumps(payload, ensure_ascii=False)
+
+    def _run_external(self, title, description, memory_matches=None):
+        forwarded_description = self._build_external_description(
+            title,
+            description,
+            memory_matches,
+        )
+        try:
+            _, submit_payload = self._external_request(
+                "POST",
+                "/tasks",
+                {
+                    "title": title or "Agent Office 转发任务",
+                    "description": forwarded_description,
+                },
+                timeout=min(15, self.external_timeout),
+            )
+            upstream_task_id = submit_payload.get("task_id")
+            if not upstream_task_id:
+                return "[external执行失败] 上游未返回 task_id"
+
+            deadline = time.time() + self.external_timeout
+            while time.time() < deadline:
+                _, task_payload = self._external_request(
+                    "GET",
+                    f"/tasks/{upstream_task_id}",
+                    timeout=min(15, self.external_timeout),
+                )
+                status = task_payload.get("status")
+                if status == "done":
+                    return self._extract_result_content(task_payload)
+                if status == "error":
+                    return self._extract_result_content(task_payload)
+                time.sleep(self.external_poll_interval)
+            return f"[external执行超时] after {self.external_timeout}s"
+        except error.HTTPError as exc:
+            return f"[external执行失败] HTTP {exc.code}"
+        except error.URLError as exc:
+            return f"[external执行失败] {exc.reason}"
+        except json.JSONDecodeError:
+            return "[external执行失败] 上游返回了非 JSON 响应"
+        except Exception as exc:
+            return f"[external执行失败] {exc}"
+
 
 def main():
     parser = argparse.ArgumentParser(description="Agent Office Worker Server")
@@ -704,7 +801,7 @@ def main():
     parser.add_argument("--worker-id", required=True, help="员工工号")
     parser.add_argument("--name", required=True, help="员工名字")
     parser.add_argument("--role", default="general", help="职责关键词")
-    parser.add_argument("--engine", default="stub", help="引擎类型: stub|openclaw|hermes|deerflow|cli")
+    parser.add_argument("--engine", default="stub", help="引擎类型: stub|openclaw|hermes|deerflow|cli|external")
     parser.add_argument("--prompt", default="", help="prompt文件路径")
     parser.add_argument("--workspace-dir", default="", help="员工工作目录")
     parser.add_argument("--cli-profile", default="codex", help="CLI profile")
@@ -719,6 +816,9 @@ def main():
     parser.add_argument("--deerflow-reasoning-effort", default="", help="DeerFlow reasoning effort")
     parser.add_argument("--deerflow-recursion-limit", type=int, default=0, help="DeerFlow recursion limit")
     parser.add_argument("--deerflow-timeout", type=int, default=0, help="DeerFlow 任务超时")
+    parser.add_argument("--external-upstream-url", default="", help="external 引擎上游 URL")
+    parser.add_argument("--external-poll-interval", type=float, default=0.0, help="external 引擎轮询间隔")
+    parser.add_argument("--external-timeout", type=int, default=0, help="external 引擎超时")
     args = parser.parse_args()
 
     print(f"🚀 启动 {args.name} (引擎:{args.engine}, 端口:{args.port})")
@@ -742,6 +842,9 @@ def main():
         deerflow_reasoning_effort=args.deerflow_reasoning_effort,
         deerflow_recursion_limit=args.deerflow_recursion_limit,
         deerflow_timeout=args.deerflow_timeout,
+        external_upstream_url=args.external_upstream_url,
+        external_poll_interval=args.external_poll_interval,
+        external_timeout=args.external_timeout,
     )
     print(f"✅ {args.name} 已就绪 on http://127.0.0.1:{args.port}")
     print(f"   健康检查: http://127.0.0.1:{args.port}/health")

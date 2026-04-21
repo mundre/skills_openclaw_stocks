@@ -3,9 +3,15 @@
   "slug": "agent-office",
   "displayName": "Agent Office",
   "latest": {
-    "version": "1.4.2",
-    "publishedAt": 1776122725486,
-    "commit": "https://github.com/openclaw/skills/commit/30547d420890caaf2eb768d8d19d983fac686132"
+    "version": "1.5.1",
+    "publishedAt": 1776386457273,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.4.2",
+      "publishedAt": 1776122725486,
+      "commit": "https://github.com/openclaw/skills/commit/30547d420890caaf2eb768d8d19d983fac686132"
+    }
+  ]
 }

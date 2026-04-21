@@ -48,6 +48,7 @@ ENGINE_TEMPLATES = {
     "hermes": "hermes_prompt.md",
     "deerflow": "deerflow_prompt.md",
     "cli": "cli_prompt.md",
+    "external": "external_prompt.md",
     "stub": "stub_prompt.md",
 }
 
@@ -65,6 +66,7 @@ ENGINE_TIMEOUTS = {
     "hermes": 120,
     "deerflow": 300,
     "cli": 600,
+    "external": 300,
     "stub": 30,
 }
 
@@ -72,7 +74,7 @@ CLI_PROFILES = {
     "codex": {
         "display_name": "OpenAI Codex CLI",
         "executables": ("codex",),
-        "base_args": (),
+        "base_args": ("exec", "--skip-git-repo-check"),
         "prompt_mode": "stdin",
         "prompt_flag": "",
         "timeout": 600,
@@ -239,6 +241,31 @@ def worker_healthcheck(port: int, timeout: int = 5) -> bool:
         return False
 
 
+def normalize_external_upstream_url(url: str, port: int = 0) -> str:
+    raw = (url or "").strip()
+    if not raw and port:
+        raw = f"http://127.0.0.1:{port}"
+    if not raw:
+        return ""
+    if "://" not in raw:
+        raw = f"http://{raw}"
+    return raw.rstrip("/")
+
+
+def external_upstream_ready(url: str, timeout: int = 5) -> bool:
+    if not url:
+        return False
+    health_url = f"{normalize_external_upstream_url(url)}/health"
+    try:
+        with request.urlopen(health_url, timeout=timeout) as resp:
+            if resp.status != 200:
+                return False
+            payload = json.loads(resp.read().decode("utf-8"))
+            return payload.get("status") == "ok"
+    except (error.URLError, error.HTTPError, TimeoutError, json.JSONDecodeError, ValueError):
+        return False
+
+
 # ════════════════════════════════════════════════════════════
 # 核心逻辑
 # ════════════════════════════════════════════════════════════
@@ -283,7 +310,12 @@ def check_duplicate(state: dict, name: str, worker_id: str, engine: str):
             pass  # 网络/进程问题不阻塞
 
 
-def check_engine(engine: str, cli_profile: str = "codex", cli_cmd: str = "") -> bool:
+def check_engine(
+    engine: str,
+    cli_profile: str = "codex",
+    cli_cmd: str = "",
+    external_upstream_url: str = "",
+) -> bool:
     """检测引擎是否可用。只检测，不安装；未安装时提示用户手动安装。"""
     if engine == "stub":
         print("📦 stub 模式无需安装（纯模拟，不启动真实进程）")
@@ -326,6 +358,17 @@ def check_engine(engine: str, cli_profile: str = "codex", cli_cmd: str = "") -> 
         print("   请先安装对应 CLI，或通过 --cli-cmd 指定可执行命令。")
         return False
 
+    if engine == "external":
+        if not external_upstream_url:
+            print("❌ external 引擎需要 --external-upstream-url 或 --external-upstream-port")
+            return False
+        if external_upstream_ready(external_upstream_url):
+            print(f"✅ external 引擎可用（上游: {normalize_external_upstream_url(external_upstream_url)}）")
+            return True
+        print(f"❌ external 引擎无法连通上游: {normalize_external_upstream_url(external_upstream_url)}")
+        print("   需要上游 worker 兼容 /health 与 /tasks HTTP 协议。")
+        return False
+
     return True
 
 
@@ -337,6 +380,7 @@ def write_soul(
     engine: str,
     port: int,
     cli_profile: str = "",
+    external_upstream_url: str = "",
 ):
     """生成 SOUL.md（基于 templates/ 渲染）"""
     template_name = ENGINE_TEMPLATES.get(engine, "openclaw_prompt.md")
@@ -363,6 +407,7 @@ def write_soul(
             "ENGINE": engine,
             "CLI_PROFILE": cli_profile or "-",
             "CLI_PROFILE_DISPLAY": cli_profile_display(cli_profile) if cli_profile else "-",
+            "EXTERNAL_UPSTREAM_URL": external_upstream_url or "-",
         },
     )
     with open(worker_dir / "SOUL.md", "w", encoding="utf-8") as f:
@@ -430,6 +475,9 @@ def start_worker(
     deerflow_reasoning_effort: str = "",
     deerflow_recursion_limit: int = 0,
     deerflow_timeout: int = 0,
+    external_upstream_url: str = "",
+    external_poll_interval: float = 2.0,
+    external_timeout: int = 0,
 ):
     """启动 worker HTTP 服务器"""
     if engine == "stub":
@@ -470,6 +518,12 @@ def start_worker(
                 "--deerflow-recursion-limit", str(deerflow_recursion_limit or DEERFLOW_DEFAULT_RECURSION_LIMIT),
                 "--deerflow-timeout", str(deerflow_timeout or DEERFLOW_DEFAULT_TIMEOUT),
             ]
+        if engine == "external":
+            cmd += [
+                "--external-upstream-url", external_upstream_url,
+                "--external-poll-interval", str(external_poll_interval or 2.0),
+                "--external-timeout", str(external_timeout or ENGINE_TIMEOUTS["external"]),
+            ]
         proc = subprocess.Popen(
             cmd,
             stdout=lf, stderr=subprocess.STDOUT
@@ -497,8 +551,12 @@ def create_worker(
     cli_timeout: int = 0,
     workspace_override: str = "",
     deerflow_update_runtime: bool = False,
+    external_upstream_url: str = "",
+    external_upstream_port: int = 0,
+    external_timeout: int = 0,
+    external_poll_interval: float = 2.0,
 ) -> dict:
-    valid_engines = ("openclaw", "hermes", "deerflow", "cli", "stub")
+    valid_engines = ("openclaw", "hermes", "deerflow", "cli", "external", "stub")
     if engine not in valid_engines:
         raise ValueError(f"未知引擎: {engine}，支持: {', '.join(valid_engines)}")
 
@@ -508,7 +566,17 @@ def create_worker(
     state = load_state()
     check_duplicate(state, name, worker_id, engine)
 
-    if not check_engine(engine, cli_profile=cli_profile, cli_cmd=cli_cmd):
+    normalized_external_upstream = normalize_external_upstream_url(
+        external_upstream_url,
+        port=external_upstream_port,
+    )
+
+    if not check_engine(
+        engine,
+        cli_profile=cli_profile,
+        cli_cmd=cli_cmd,
+        external_upstream_url=normalized_external_upstream,
+    ):
         raise RuntimeError("引擎未就绪，无法添加员工。请先安装对应 CLI 再重试。")
 
     port = alloc_port(state)
@@ -555,6 +623,7 @@ def create_worker(
         engine,
         port,
         cli_profile=cli_profile if engine == "cli" else "",
+        external_upstream_url=normalized_external_upstream if engine == "external" else "",
     )
 
     # ── 注册 openclaw agent ────────────────────────────
@@ -596,6 +665,15 @@ def create_worker(
                 "deerflow_timeout": DEERFLOW_DEFAULT_TIMEOUT,
             }
         )
+    if engine == "external":
+        config.update(
+            {
+                "external_upstream_url": normalized_external_upstream,
+                "external_timeout": external_timeout or ENGINE_TIMEOUTS["external"],
+                "external_poll_interval": external_poll_interval or 2.0,
+                "external_mode": "bridge",
+            }
+        )
     with open(worker_dir / "config.json", "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
 
@@ -616,6 +694,8 @@ def create_worker(
         state["workers"][worker_id]["cli_profile"] = cli_profile
     if engine == "deerflow":
         state["workers"][worker_id]["deerflow_home"] = deerflow_home
+    if engine == "external":
+        state["workers"][worker_id]["external_upstream_url"] = normalized_external_upstream
     alloc_port_commit(state, port)
     save_state(state)
     print("✅ 状态中心已更新")
@@ -641,6 +721,9 @@ def create_worker(
         deerflow_reasoning_effort=config.get("deerflow_reasoning_effort", DEERFLOW_DEFAULT_REASONING_EFFORT),
         deerflow_recursion_limit=config.get("deerflow_recursion_limit", DEERFLOW_DEFAULT_RECURSION_LIMIT),
         deerflow_timeout=config.get("deerflow_timeout", DEERFLOW_DEFAULT_TIMEOUT),
+        external_upstream_url=config.get("external_upstream_url", ""),
+        external_poll_interval=config.get("external_poll_interval", 2.0),
+        external_timeout=config.get("external_timeout", ENGINE_TIMEOUTS["external"]),
     )
 
     # ── 更新状态 ──────────────────────────────────────
@@ -659,6 +742,7 @@ def create_worker(
         "workspace_dir": workspace_dir,
         "cli_profile": cli_profile if engine == "cli" else "",
         "deerflow_runtime_root": config.get("deerflow_runtime_root", ""),
+        "external_upstream_url": config.get("external_upstream_url", ""),
     }
 
 
@@ -668,7 +752,7 @@ def create_worker(
 def main():
     parser = argparse.ArgumentParser(description="Add an Agent Office worker")
     parser.add_argument("name", nargs="?", help="员工名字")
-    parser.add_argument("engine", nargs="?", help="引擎: openclaw | hermes | deerflow | cli | stub")
+    parser.add_argument("engine", nargs="?", help="引擎: openclaw | hermes | deerflow | cli | external | stub")
     parser.add_argument("role", nargs="?", help="职责关键词")
     parser.add_argument("--worker-id", default="", help="手动指定 worker_id")
     parser.add_argument("--workspace", default="", help="真实执行工作目录；默认使用员工目录")
@@ -677,6 +761,10 @@ def main():
     parser.add_argument("--cli-args", default="", help="追加给 cli 引擎的参数")
     parser.add_argument("--cli-timeout", type=int, default=0, help="cli 引擎超时秒数")
     parser.add_argument("--deerflow-update-runtime", action="store_true", help="添加 deerflow 员工前先更新共享 runtime")
+    parser.add_argument("--external-upstream-url", default="", help="external 引擎上游 URL，例如 http://127.0.0.1:18750")
+    parser.add_argument("--external-upstream-port", type=int, default=0, help="external 引擎上游端口，例如 18750")
+    parser.add_argument("--external-timeout", type=int, default=0, help="external 引擎整单超时秒数")
+    parser.add_argument("--external-poll-interval", type=float, default=2.0, help="external 引擎轮询间隔秒数")
     parser.add_argument("--list-cli-profiles", action="store_true", help="列出内置 CLI profiles")
     args = parser.parse_args()
 
@@ -688,10 +776,11 @@ def main():
 
     if not args.name or not args.engine or not args.role:
         print("❌ 用法: python3 add_worker.py <名字> <引擎> <角色> [可选参数]")
-        print("   引擎: openclaw | hermes | deerflow | cli | stub")
+        print("   引擎: openclaw | hermes | deerflow | cli | external | stub")
         print("   示例: python3 add_worker.py 小龙 openclaw research")
         print("         python3 add_worker.py 小D deerflow complex")
         print("         python3 add_worker.py 小克 cli code --cli-profile claude-code")
+        print("         python3 add_worker.py 外挂小龙 external general --external-upstream-port 18750")
         sys.exit(1)
 
     try:
@@ -706,6 +795,10 @@ def main():
             cli_timeout=args.cli_timeout,
             workspace_override=args.workspace,
             deerflow_update_runtime=args.deerflow_update_runtime,
+            external_upstream_url=args.external_upstream_url,
+            external_upstream_port=args.external_upstream_port,
+            external_timeout=args.external_timeout,
+            external_poll_interval=args.external_poll_interval,
         )
     except ValueError as e:
         print(f"❌ {e}")
@@ -728,6 +821,8 @@ def main():
         print(f"   CLI Profile: {result.get('cli_profile', 'codex')}")
     if result["engine"] == "deerflow":
         print(f"   DeerFlow Runtime: {result.get('deerflow_runtime_root', '-')}")
+    if result["engine"] == "external":
+        print(f"   Upstream: {result.get('external_upstream_url', '-')}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 

@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
+from urllib import error
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "worker_server.py"
@@ -70,20 +71,49 @@ class WorkerServerTests(unittest.TestCase):
         self.assertEqual(cmd[:3], ["/usr/local/bin/aider", "--model", "sonnet"])
         self.assertEqual(cmd[-2:], ["--message", "fix bug"])
 
+    def test_build_cli_command_uses_codex_exec_defaults(self):
+        server = worker_server.WorkerServer.__new__(worker_server.WorkerServer)
+        server.cli_cmd = ""
+        server.cli_args = "--model gpt-5.4"
+
+        with mock.patch.object(worker_server, "shutil") as shutil_mock:
+            shutil_mock.which.return_value = "/usr/local/bin/codex"
+            cmd = worker_server.WorkerServer._build_cli_command(
+                server,
+                worker_server.get_cli_profile("codex"),
+                "hello cli",
+            )
+
+        self.assertEqual(
+            cmd,
+            [
+                "/usr/local/bin/codex",
+                "exec",
+                "--skip-git-repo-check",
+                "--model",
+                "gpt-5.4",
+            ],
+        )
+
     def test_run_cli_uses_stdin_profile(self):
         server = worker_server.WorkerServer.__new__(worker_server.WorkerServer)
         server.cli_profile = "codex"
-        server.cli_cmd = "codex exec"
+        server.cli_cmd = ""
         server.cli_args = ""
         server.cli_timeout = 123
         server.workspace_dir = "/tmp"
 
         completed = mock.Mock(returncode=0, stdout="cli ok", stderr="")
-        with mock.patch.object(worker_server.subprocess, "run", return_value=completed) as run_mock:
-            result = worker_server.WorkerServer._run_cli(server, "hello cli")
+        with mock.patch.object(worker_server, "shutil") as shutil_mock:
+            shutil_mock.which.return_value = "/usr/local/bin/codex"
+            with mock.patch.object(worker_server.subprocess, "run", return_value=completed) as run_mock:
+                result = worker_server.WorkerServer._run_cli(server, "hello cli")
 
         self.assertEqual(result, "cli ok")
-        self.assertEqual(run_mock.call_args.args[0], ["codex", "exec"])
+        self.assertEqual(
+            run_mock.call_args.args[0],
+            ["/usr/local/bin/codex", "exec", "--skip-git-repo-check"],
+        )
         self.assertEqual(run_mock.call_args.kwargs["input"], "hello cli")
 
     def test_build_deerflow_prompt_includes_shared_memory(self):
@@ -144,6 +174,81 @@ class WorkerServerTests(unittest.TestCase):
         cmd = run_mock.call_args.args[0]
         self.assertEqual(Path(cmd[1]), worker_server.DEERFLOW_RUNTIME_RUNNER)
         self.assertIn("--config", cmd)
+
+    def test_build_external_description_includes_shared_memory(self):
+        server = worker_server.WorkerServer.__new__(worker_server.WorkerServer)
+        server.worker_name = "外挂小龙"
+        description = server._build_external_description(
+            "同步办公室状态",
+            "看看最近任务",
+            [
+                {
+                    "title": "办公室规则",
+                    "worker": "manager",
+                    "room": "office",
+                    "summary_text": "优先参考共享记忆，不改上游员工设定",
+                }
+            ],
+        )
+        self.assertIn("外挂小龙", description)
+        self.assertIn("同步办公室状态", description)
+        self.assertIn("优先参考共享记忆", description)
+
+    def test_run_external_submits_and_polls_upstream_worker(self):
+        server = worker_server.WorkerServer.__new__(worker_server.WorkerServer)
+        server.worker_name = "外挂小龙"
+        server.external_upstream_url = "http://127.0.0.1:18750"
+        server.external_timeout = 20
+        server.external_poll_interval = 0
+
+        with mock.patch.object(
+            worker_server.WorkerServer,
+            "_external_request",
+            side_effect=[
+                (202, {"task_id": "up-1", "status": "pending"}),
+                (
+                    200,
+                    {
+                        "task_id": "up-1",
+                        "status": "done",
+                        "result": {"content": "上游完成", "format": "markdown"},
+                    },
+                ),
+            ],
+        ) as request_mock:
+            result = server._run_external(
+                "接入测试",
+                "请返回当前状态",
+                [{"summary_text": "共享记忆：最近有新任务"}],
+            )
+
+        self.assertEqual(result, "上游完成")
+        first_call = request_mock.call_args_list[0]
+        self.assertEqual(first_call.args[:2], ("POST", "/tasks"))
+        forwarded_description = first_call.args[2]["description"]
+        self.assertIn("共享记忆：最近有新任务", forwarded_description)
+
+    def test_run_external_handles_upstream_http_error(self):
+        server = worker_server.WorkerServer.__new__(worker_server.WorkerServer)
+        server.worker_name = "外挂小龙"
+        server.external_upstream_url = "http://127.0.0.1:18750"
+        server.external_timeout = 20
+        server.external_poll_interval = 0
+
+        with mock.patch.object(
+            worker_server.WorkerServer,
+            "_external_request",
+            side_effect=error.HTTPError(
+                url="http://127.0.0.1:18750/tasks",
+                code=500,
+                msg="boom",
+                hdrs=None,
+                fp=None,
+            ),
+        ):
+            result = server._run_external("接入测试", "请返回当前状态", [])
+
+        self.assertIn("HTTP 500", result)
 
 
 if __name__ == "__main__":
