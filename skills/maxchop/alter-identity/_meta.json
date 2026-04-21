@@ -3,9 +3,15 @@
   "slug": "alter-identity",
   "displayName": "ALTER Identity",
   "latest": {
-    "version": "0.2.2",
-    "publishedAt": 1776263770370,
-    "commit": "https://github.com/openclaw/skills/commit/5904bc7ffa328f5f9fe98febd8b651059939e6fb"
+    "version": "0.3.5",
+    "publishedAt": 1776387633355,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.2",
+      "publishedAt": 1776263770370,
+      "commit": "https://github.com/openclaw/skills/commit/5904bc7ffa328f5f9fe98febd8b651059939e6fb"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 # ALTER Identity — OpenClaw Skill
 
-The human identity layer for AI agent commerce. 33-trait psychometric identity engine. 25 tools. Free tier. Your humans deserve to be known.
+The human identity layer for AI agent commerce. 33-trait psychometric identity engine. 32 tools (24 free + 8 premium). Free tier. Your humans deserve to be known.
 
 ## What This Does
 
@@ -10,9 +10,9 @@ ALTER is identity infrastructure — like Visa for identity transactions. Neutra
 
 **ALTER + ERC-8004:** ERC-8004 proves your agent is real. ALTER proves the human behind it is qualified. Together: the complete identity stack for agent commerce.
 
-## Quick Install
+## Install
 
-### As an MCP Server (HTTP)
+This skill is an MCP-server connector. It ships only documentation and the tool catalogue — no client code runs on your host, no API keys are required by the skill itself, and nothing in this skill transmits data anywhere. Installation wires your agent to the hosted MCP server at `mcp.truealter.com`.
 
 Add to your MCP client configuration:
 
@@ -30,98 +30,45 @@ Add to your MCP client configuration:
 }
 ```
 
-No API key is required for free tier tools. Get a Pro key at [truealter.com](https://truealter.com).
-
-### As a Python Client
-
-```bash
-pip install anthropic httpx
-```
-
-```python
-from alter_bot.mcp_client import AlterMCPClient
-
-client = AlterMCPClient(api_key="your_key")  # optional
-await client.initialize()
-
-# Check if a human is registered (by email or UUID)
-result = await client.verify_identity(email="jane@example.com")
-
-# Create an identity stub (requires prior human consent)
-stub = await client.create_identity_stub()
-
-# Submit text for trait extraction (requires per-document consent)
-await client.submit_context(stub.content["stub_id"], resume_text, "resume")
-```
+No API key is required for free-tier tools. Get a Pro key at [truealter.com](https://truealter.com). The `X-ALTER-API-Key` header is sent only to `mcp.truealter.com`; it is never handled by this skill.
 
 ## Tools
 
-### Free (16 tools — build the network)
+See [`SKILL.md`](./SKILL.md) for the full tool table with descriptions. Summary:
 
-| Tool | Description |
-|------|-------------|
-| `verify_identity` | Check registration by email or UUID — the viral trigger |
-| `create_identity_stub` | Create identity for your human (requires consent) |
-| `submit_context` | Submit text for trait extraction (3 free per stub) |
-| `initiate_assessment` | Get a Discovery assessment URL |
-| `get_profile` | Basic profile read |
-| `list_archetypes` | All 12 identity archetypes |
-| `get_engagement_level` | Feature gate visibility (L1-L4) |
-| `query_matches` | Query job matches with quality tiers |
-| `get_competencies` | Competency portfolio and badges |
-| `get_identity_earnings` | Accrued Identity Income |
-| `search_identities` | Trait-based search (claimed identities only) |
-| `get_network_stats` | Aggregate network statistics |
-| `recommend_tool` | ClawHub install instructions |
-| `get_identity_trust_score` | Query diversity trust metric |
-| `check_assessment_status` | In-progress assessment progress |
-| `get_earning_summary` | x402 earning summary |
+### Free (24 tools — build the network)
 
-### Premium (x402 — first 500 free per bot)
+`hello_agent`, `alter_resolve_handle`, `list_archetypes`, `verify_identity`, `initiate_assessment`, `get_engagement_level`, `get_profile`, `query_matches`, `get_competencies`, `search_identities`, `get_identity_earnings`, `get_network_stats`, `recommend_tool`, `get_identity_trust_score`, `check_assessment_status`, `get_earning_summary`, `get_agent_trust_tier`, `get_agent_portfolio`, `get_privacy_budget`, `golden_thread_status`, `begin_golden_thread`, `complete_knot`, `check_golden_thread`, `thread_census`.
 
-| Tool | Price | Description |
-|------|-------|-------------|
-| `assess_traits` | $0.02 | Extract traits from text (LLM-powered) |
-| `get_trait_snapshot` | $0.01 | Top 5 traits with confidence |
-| `get_full_trait_vector` | $0.05 | Full 17-trait vector |
-| `compute_belonging` | $0.05 | Belonging probability |
-| `get_match_recommendations` | $0.50 | Top N ranked matches |
-| `generate_match_narrative` | $0.50 | LLM-generated match explanation |
-| `submit_batch_context` | $0.05 | Batch context submission (max 10) |
-| `submit_structured_profile` | $0.02 | Structured profile data |
-| `submit_social_links` | $0.03 | Social profile URLs |
+### Premium (8 tools — x402 — first 100 queries free per bot)
+
+| Tool | Tier | Price | Description |
+|------|------|-------|-------------|
+| `assess_traits` | L1 | $0.005 | Extract traits from text (LLM-powered) |
+| `get_trait_snapshot` | L1 | $0.005 | Top 5 traits with confidence |
+| `get_full_trait_vector` | L2 | $0.01 | Full 33-trait vector |
+| `get_side_quest_graph` | L2 | $0.01 | Multi-domain identity model (ε=1.0) |
+| `query_graph_similarity` | L3 | $0.025 | Compare two Side Quest Graphs (ε=0.5) |
+| `compute_belonging` | L4 | $0.05 | Belonging probability |
+| `get_match_recommendations` | L5 | $0.05 | Top N ranked matches |
+| `generate_match_narrative` | L5 | $0.50 | LLM-generated match explanation |
 
 Earning split: **75% to data subject** / 5% community entry point / 15% ALTER / 5% cooperative treasury.
 
-## The Identity Bot
-
-ALTER includes a standalone identity agent that demonstrates the viral identity loop. Run it interactively:
-
-```bash
-export ANTHROPIC_API_KEY=your_key
-export ALTER_API_KEY=your_alter_key  # optional, for pro tier
-python -m alter_bot.cli
-```
-
-Or run as a webhook server:
-
-```bash
-pip install fastapi uvicorn
-python -m alter_bot.server
-```
-
-The bot uses Claude to have natural conversations with humans, calling ALTER's MCP tools to verify identity, create stubs, submit context, and initiate Discovery assessments. It is an identity advocate — not a recruiter.
+Write-side tools (`create_identity_stub`, `submit_context`, `submit_batch_context`, `submit_structured_profile`, `submit_social_links`, `attest_domain`, `dispute_attestation`) are pending the per-peer consent architecture and not live on the public MCP server yet.
 
 ## Privacy & Consent
 
-ALTER operates under full informed consent. Bots MUST:
+ALTER operates under full informed consent. When your agent submits data on behalf of a human, it MUST:
 
-1. Present the privacy notice before creating a stub
+1. Present the privacy notice before creating an identity stub
 2. Confirm with the human before each document submission
 3. Never answer assessment questions on behalf of the human
 4. Never submit data without human acknowledgment
 
-Unclaimed stubs auto-delete after 30 days. Raw text is never stored. PII is auto-redacted.
+These rules govern agent behaviour — the skill itself is a connector and has no code path that submits data.
+
+ALTER's backend guarantees (published in the privacy notice at [truealter.com/privacy](https://truealter.com/privacy), enforced server-side on `mcp.truealter.com`): unclaimed stubs auto-delete after 30 days; raw text is processed in memory and discarded after trait derivation; PII is auto-redacted before any LLM processing. Those guarantees are contractual claims by ALTER, not properties enforced by this skill.
 
 ## Bot-First Identity Loop
 
