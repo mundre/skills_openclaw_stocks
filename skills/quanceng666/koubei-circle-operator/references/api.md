@@ -46,9 +46,26 @@
 
 ---
 
-## 2. SQL 查询
+## 2. 批量发送站内信(私信)
+
+请使用以下命令发送私信
+--users 为用户ID列表，若单用户请写成[userId]
+--message 为私信内容，必须使用 UTF-8字符集传递
+
+**使用方式**:
+```bash
+node scripts/openclaw.js station-mail --users=[12,34,56] --message="这是一条社区通知"
+```
+
+---
+
+## 3. SQL 查询
 
 **接口地址**: `POST {{host}}/openclaw/query?key={{openclaw_key}}`
+
+---
+
+## 4. SQL 查询
 
 **请求头**:
 ```

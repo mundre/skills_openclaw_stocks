@@ -408,6 +408,22 @@ async function getUploadResources(uploadId) {
   return result;
 }
 
+// 批量发送站内信
+async function sendStationMail(userIds, message) {
+  console.log('批量发送站内信:');
+  console.log(`  接收用户数：${userIds.length}`);
+  console.log(`  消息内容：${message}`);
+  
+  const data = {
+    user_ids: userIds,
+    message: message
+  };
+  
+  const result = await request('POST', '/openclaw/station-mail/send', data);
+  console.log('✅ 发送成功！');
+  return result;
+}
+
 // 主程序
 const cmd = process.argv[2];
 
@@ -505,6 +521,37 @@ if (cmd === 'init') {
     process.exit(1);
   }
   getUploadResources(uploadId).catch(e => console.error('错误:', e.message));
+} else if (cmd === 'station-mail') {
+  // 解析参数：--users=[1,2,3] --message="xxx"
+  let users = null;
+  let message = null;
+  
+  for (let i = 3; i < process.argv.length; i++) {
+    if (process.argv[i].startsWith('--users=')) {
+      try {
+        users = JSON.parse(process.argv[i].substring(8));
+      } catch (e) {
+        console.error('无效的 users 格式，必须是 JSON 数组');
+        process.exit(1);
+      }
+    } else if (process.argv[i].startsWith('--message=')) {
+      message = process.argv[i].substring(10);
+    }
+  }
+  
+  if (!users || !Array.isArray(users) || users.length === 0) {
+    console.error('请提供用户 ID 数组');
+    console.error('用法：node scripts/openclaw.js station-mail --users=[12,34,56] --message="消息内容"');
+    process.exit(1);
+  }
+  
+  if (!message) {
+    console.error('请提供消息内容');
+    console.error('用法：node scripts/openclaw.js station-mail --users=[12,34,56] --message="消息内容"');
+    process.exit(1);
+  }
+  
+  sendStationMail(users, message).catch(e => console.error('错误:', e.message));
 } else {
   console.log('OpenClaw CLI 工具');
   console.log('');
@@ -518,6 +565,7 @@ if (cmd === 'init') {
   console.log('  thread-likes <id> [p] [n]  获取帖子点赞列表 (页码 p, 每页 n 条)');
   console.log('  publish <json>          普通发帖（文字贴）');
   console.log('  publish-hot <json>      热议话题发帖（文字贴）');
+  console.log('  station-mail            批量发送站内信');
   console.log('  upload-page             生成图床上传链接');
   console.log('  upload-resource <id>    获取已上传的资源列表');
   console.log('');
@@ -528,6 +576,7 @@ if (cmd === 'init') {
   console.log('  node scripts/openclaw.js thread-likes 12136 1 20');
   console.log('  node scripts/openclaw.js publish \'{"user_id":12,"type":1,"topic_id":3,"title":"标题","message":"内容"}\'');
   console.log('  node scripts/openclaw.js publish-hot \'{"user_id":12,"type":1,"hot_say_id":8,"title":"标题","message":"内容"}\'');
+  console.log('  node scripts/openclaw.js station-mail --users=[12,34,56] --message="这是一条社区通知"');
   console.log('  node scripts/openclaw.js upload-image ./image.jpg');
   console.log('  node scripts/openclaw.js upload-image "data:image/jpeg;base64,/9j/4AAQSkZJRg..."');
   console.log('  node scripts/openclaw.js upload-video ./video.mp4');
