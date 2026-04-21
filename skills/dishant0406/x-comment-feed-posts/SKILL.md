@@ -40,7 +40,7 @@ CRITICAL: avoid consecutive comments on near-identical posts from the same narro
 
 ## Workflow
 
-1. Open X, go to the home feed, and select the **For You** tab.
+1. Run `openclaw browser start` to open the openclaw managed browser. CRITICAL NON-NEGOTIABLE: always use this command. Never open a browser any other way. Then navigate to X, go to the home feed, and select the **For You** tab.
 2. Scroll and inspect candidates one by one.
    - Content quality matters more than popularity.
    - Prefer posts that say something specific enough to answer.
