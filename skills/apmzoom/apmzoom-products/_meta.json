@@ -1,0 +1,11 @@
+{
+  "owner": "apmzoom",
+  "slug": "apmzoom-products",
+  "displayName": "APM 상품 라이브러리 검색 API",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1776497092397,
+    "commit": null
+  },
+  "history": []
+}
