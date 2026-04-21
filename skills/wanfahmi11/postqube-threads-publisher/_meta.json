@@ -3,9 +3,15 @@
   "slug": "postqube-threads-publisher",
   "displayName": "PostQube Threads Publisher",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1775925923581,
-    "commit": "https://github.com/openclaw/skills/commit/f28106f66ecf303a5c347d39b004618dab27c45a"
+    "version": "1.1.1",
+    "publishedAt": 1776169420699,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1775925923581,
+      "commit": "https://github.com/openclaw/skills/commit/f28106f66ecf303a5c347d39b004618dab27c45a"
+    }
+  ]
 }
