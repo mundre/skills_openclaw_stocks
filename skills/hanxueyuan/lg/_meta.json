@@ -3,11 +3,16 @@
   "slug": "lg",
   "displayName": "Lg",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776300256397,
-    "commit": "https://github.com/openclaw/skills/commit/afc80de9a4c511c59ef745def50f993029a105a8"
+    "version": "1.0.3",
+    "publishedAt": 1776533820771,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776300256397,
+      "commit": "https://github.com/openclaw/skills/commit/afc80de9a4c511c59ef745def50f993029a105a8"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1776295982926,
