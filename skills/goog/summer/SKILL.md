@@ -1,13 +1,13 @@
 ---
 name: summer
-description: "Display a beautiful time dashboard showing a live summer countdown to Jun 21, 2026 at 1:24:30 am (the summer solstice), today's sunrise/sunset times in China (Beijing), and current time info. Use this skill whenever the user asks about summer countdown, days until summer, summer solstice 2026, sunrise or sunset in China, Beijing sunrise, time until summer, or wants a time/seasonal clock widget. Also trigger when the user asks how long until summer, when does summer start, what time is sunrise in China, or any combination of summer + time + China topics."
+description: "Display a beautiful time dashboard showing a live summer countdown to the summer solstice, today's sunrise/sunset times in China (Beijing), and current time info. Use this skill whenever the user asks about summer countdown, days until summer, summer solstice 2026, sunrise or sunset in China, Beijing sunrise, time until summer, or wants a time/seasonal clock widget. Also trigger when the user asks how long until summer, when does summer start, what time is sunrise in China, or any combination of summer + time + China topics."
 ---
 
 # Summer Time Skill — Summer Countdown + China Sunrise
 
 This skill renders a live interactive time dashboard with three main panels:
 
-1. **Summer Countdown** — live ticking countdown to June 21, 2026 at 01:24:30 (the summer solstice, sourced from timeanddate.com)
+1. **Summer Countdown** — live ticking countdown to summer Solstice by API
 2. **China Sunrise/Sunset** — today's sunrise and sunset times for Beijing, China (fetched via open-meteo / sunrise-sunset API)
 3. **Current Time** — today's date and a live clock
 
@@ -16,8 +16,8 @@ This skill renders a live interactive time dashboard with three main panels:
 Create an `.html` file and present it. The file must:
 
 ### Summer Countdown Target
-- Target datetime: **June 21, 2026 at 01:24:30 local time**
-- Source: Summer Countdown – Countdown to Jun 21, 2026 1:24:30 am (timeanddate.com)
+- Target datetime: fetch the UTC Solstice time from https://aa.usno.navy.mil/api/seasons?year=2026
+- Source: Summer Countdown – Countdown to target datetime
 - Display: days, hours, minutes, seconds — all ticking live with `setInterval`
 
 ### Beijing Sunrise Data
@@ -68,7 +68,7 @@ setInterval(tick, 1000);
 ```
 
 ## Important notes
-- The summer solstice countdown target is **fixed**: June 21, 2026 01:24:30 — do not make this user-configurable unless asked
+- The summer solstice countdown target is **fetched** from API
 - Sunrise data is **fetched live** from the API each page load
 - All times display in **24h format** with leading zeros
 - Day length = sunset minus sunrise in hours and minutes
