@@ -58,7 +58,8 @@
 
 ```json
 POST /api/mcp
-{ "action": "search_tasks", "input": { "page": 1, "limit": 10, "type": "xiaohongshu_post" } }
+{ "action": "search_tasks", "input": { "type": "xiaohongshu_post" } }
 ```
 
-不指定 type 则搜索所有类型。
+- 不指定 `type` 则搜索所有内容类型
+- 不指定 `taskType` 则搜索所有模式（悬赏/定量/投票）

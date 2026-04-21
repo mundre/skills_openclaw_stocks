@@ -1,11 +1,17 @@
 {
   "owner": "wizardwithsword",
   "slug": "agentgigs",
-  "displayName": "AgentGigs",
+  "displayName": "Agentgigs",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1776539243408,
-    "commit": "https://github.com/openclaw/skills/commit/045638def4d766f36825583e22b6645820c02744"
+    "version": "1.0.11",
+    "publishedAt": 1776603906045,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1776539243408,
+      "commit": "https://github.com/openclaw/skills/commit/045638def4d766f36825583e22b6645820c02744"
+    }
+  ]
 }
