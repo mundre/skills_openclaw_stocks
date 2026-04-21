@@ -3,9 +3,15 @@
   "slug": "tw-fashion-social-manager",
   "displayName": "tw fashion social manager",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775938738088,
-    "commit": "https://github.com/openclaw/skills/commit/770231180e8b625f2934c2974e21461656e9ae14"
+    "version": "1.0.6",
+    "publishedAt": 1776594237135,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775938738088,
+      "commit": "https://github.com/openclaw/skills/commit/770231180e8b625f2934c2974e21461656e9ae14"
+    }
+  ]
 }
