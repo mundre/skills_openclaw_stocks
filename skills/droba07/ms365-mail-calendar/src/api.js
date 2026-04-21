@@ -30,7 +30,12 @@ async function getUnreadEmails(top = 10) {
 }
 
 async function readEmail(id) {
-  return graph(`/me/messages/${id}?$select=id,subject,from,toRecipients,receivedDateTime,body,isRead`);
+  const msg = await graph(`/me/messages/${id}?$select=id,subject,from,toRecipients,receivedDateTime,body,isRead,hasAttachments`);
+  if (msg.hasAttachments) {
+    const att = await graph(`/me/messages/${id}/attachments?$select=id,name,contentType,size,isInline`);
+    msg.attachments = (att?.value || []).filter(a => !a.isInline);
+  }
+  return msg;
 }
 
 async function sendEmail(to, subject, body, cc = null) {

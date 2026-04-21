@@ -1,11 +1,17 @@
 {
   "owner": "droba07",
   "slug": "ms365-mail-calendar",
-  "displayName": "Ms365 Mail Calendar",
+  "displayName": "Microsoft 365 Email & Calendar",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1776243941732,
-    "commit": "https://github.com/openclaw/skills/commit/c4b887f2903362df530196277cfdeff7f6e87439"
+    "version": "1.2.0",
+    "publishedAt": 1776352014574,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1776243941732,
+      "commit": "https://github.com/openclaw/skills/commit/c4b887f2903362df530196277cfdeff7f6e87439"
+    }
+  ]
 }

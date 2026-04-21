@@ -37,21 +37,48 @@ async function run() {
       const subcmd = positional[1] || 'inbox';
       if (subcmd === 'inbox') {
         const emails = await getEmails(parseInt(flags.top || '10'));
-        for (const e of emails) {
+        for (let i = 0; i < emails.length; i++) {
+          const e = emails[i];
           const read = e.isRead ? ' ' : '●';
-          console.log(`${read} ${e.receivedDateTime?.slice(0, 16)}  ${e.from?.emailAddress?.name || e.from?.emailAddress?.address}  ${e.subject}`);
+          console.log(`${read} [${i + 1}] ${e.receivedDateTime?.slice(0, 16)}  ${e.from?.emailAddress?.name || e.from?.emailAddress?.address}  ${e.subject}  (${e.id})`);
         }
       } else if (subcmd === 'unread') {
         const emails = await getUnreadEmails(parseInt(flags.top || '10'));
-        for (const e of emails) {
-          console.log(`● ${e.receivedDateTime?.slice(0, 16)}  ${e.from?.emailAddress?.name || e.from?.emailAddress?.address}  ${e.subject}`);
+        for (let i = 0; i < emails.length; i++) {
+          const e = emails[i];
+          console.log(`● [${i + 1}] ${e.receivedDateTime?.slice(0, 16)}  ${e.from?.emailAddress?.name || e.from?.emailAddress?.address}  ${e.subject}  (${e.id})`);
         }
       } else if (subcmd === 'read') {
-        const email = await readEmail(positional[2]);
+        const ref = positional[2];
+        let email;
+        if (!ref) {
+          // No arg = read latest
+          const emails = await getEmails(1);
+          if (!emails.length) { console.log('No emails.'); break; }
+          email = await readEmail(emails[0].id);
+        } else if (/^\d+$/.test(ref) && parseInt(ref) <= 100) {
+          // Numeric index (1-based) = fetch inbox and pick Nth
+          const idx = parseInt(ref);
+          const emails = await getEmails(idx);
+          if (idx > emails.length) { console.error(`Only ${emails.length} emails found.`); process.exit(1); }
+          email = await readEmail(emails[idx - 1].id);
+        } else {
+          // Full message ID
+          email = await readEmail(ref);
+        }
         console.log(`From: ${email.from?.emailAddress?.address}`);
         console.log(`To: ${email.toRecipients?.map(r => r.emailAddress?.address).join(', ')}`);
         console.log(`Subject: ${email.subject}`);
         console.log(`Date: ${email.receivedDateTime}`);
+        if (email.hasAttachments && email.attachments?.length) {
+          console.log(`Attachments (${email.attachments.length}):`);
+          for (const a of email.attachments) {
+            const size = a.size > 1024*1024 ? `${(a.size/1024/1024).toFixed(1)}MB` : a.size > 1024 ? `${(a.size/1024).toFixed(0)}KB` : `${a.size}B`;
+            console.log(`  📎 ${a.name} (${size}, ${a.contentType})`);
+          }
+        } else if (email.hasAttachments) {
+          console.log(`Attachments: yes (inline only)`);
+        }
         console.log(`\n${email.body?.content}`);
       } else if (subcmd === 'send') {
         if (!flags.to || !flags.subject || !flags.body) {
@@ -62,8 +89,10 @@ async function run() {
         console.log('Email sent.');
       } else if (subcmd === 'search') {
         const results = await searchEmails(positional[2] || flags.query, parseInt(flags.top || '10'));
-        for (const e of results) {
-          console.log(`${e.receivedDateTime?.slice(0, 16)}  ${e.from?.emailAddress?.address}  ${e.subject}`);
+        for (let i = 0; i < results.length; i++) {
+          const e = results[i];
+          const read = e.isRead ? ' ' : '●';
+          console.log(`${read} [${i + 1}] ${e.receivedDateTime?.slice(0, 16)}  ${e.from?.emailAddress?.address}  ${e.subject}  (${e.id})`);
         }
       }
       break;
