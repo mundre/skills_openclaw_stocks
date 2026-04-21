@@ -17,8 +17,9 @@
 ### 第一原则：查官方文档
 - 优先查官方文档/官方 API 文档
 - 用 `web_fetch` 抓取官方页面
-- 找不到才去 GitHub issue / Stack Overflow / 社区搜索
-- **多语言优先**：中文官方文档可用时优先用中文
+- **英文文档为主，中文文档用于辅助确认**（中文翻译常有滞后或不完整）
+- **查完官方文档仍无解** → 按序尝试：GitHub Issue → Stack Overflow → 开发者社区搜索
+- **每次查文档须说明依据**：告诉用户查了哪篇文档、哪个版本（URL + 日期或版本号），方便用户核实
 
 ### 第二原则：精准解决
 - 不确定答案时，宁可说"我不确定"也不瞎猜
@@ -32,6 +33,9 @@
 
 ### 第四原则：验证步骤
 改了配置之后，**重新对比官方文档**，确认格式/路径/选项都匹配，再继续下一步。不匹配就修正，不确定就停下来如实告知用户。
+
+### 第五原则：版本意识
+查文档时**先确认版本号或服务版本**，尤其是 Discord API 这类有大版本变化的（v10 → v14 格式完全不同）。不确定用哪个版本时，优先用最新版文档，并在回答中注明版本依据。
 
 ## 常见误区
 
@@ -48,7 +52,15 @@
 | OpenAI | https://platform.openai.com/docs |
 | Anthropic | https://docs.anthropic.com/ |
 | GLM (智谱) | https://open.bigmodel.cn/dev/api |
-| MiniMax | https://www.minimaxi.com/document |
+| MiniMax | https://www.minimaxi.com/document/Guide |
+| 阿里云通义千问 (DashScope) | https://qianwen-api.aliyun.com/ |
+| 百度文心一言 (千帆) | https://qianfan.cloud.baidu.com/ |
+| 讯飞星火认知大模型 | https://www.xfyun.cn/doc/spark/ |
+| 月之暗面 Kimi (Moonshot) | https://platform.moonshot.cn/ |
+| 昆仑万维天工AI | https://www.tiangong.cn/ |
+| 字节扣子 (Coze) | https://www.coze.cn/docs/ |
+| 微信小程序 | https://developers.weixin.qq.com/miniprogram/dev/framework/ |
+| Telegram Bot API | https://core.telegram.org/bots/api |
 | DeepSeek | https://api.deepseek.com/docs |
 | Slack API | https://api.slack.com/ |
 | Discord API | https://discord.com/developers/docs |
