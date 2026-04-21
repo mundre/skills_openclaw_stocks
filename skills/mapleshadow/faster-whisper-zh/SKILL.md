@@ -43,67 +43,46 @@ metadata:
 - 培训录音转文字材料
 - 视频字幕生成
 - 播客内容转录
+- 语音转文字
+- 音频转文字
 
 ### 基本转录
 ```bash
-# 更改变量HF_HOME，用于定义大模型默认下载目录，易于维护和容器环境的管理
 export HF_HOME=/config/huggingface
-# 更改变量HF_ENDPOINT，定义为huggingface官方中国镜像，此镜像为官方镜像
 export HF_ENDPOINT=https://hf-mirror.com
-# 激活虚拟环境
-source .venv/bin/activate
-# 执行转录
-./scripts/transcribe.py audio.mp3
-# 关闭虚拟环境
-deactivate
+.venv/bin/python3 scripts/transcribe.py
 ```
 
 ### 高级选项
-- **指定模型**: `./scripts/transcribe.py audio.mp3 --model large-v3-turbo`
-- **词级时间戳**: `./scripts/transcribe.py audio.mp3 --word-timestamps`
-- **JSON 输出**: `./scripts/transcribe.py audio.mp3 --json`
-- **语音活动检测（静音去除）**: `./scripts/transcribe.py audio.mp3 --vad`
-- **指定语言**: `./scripts/transcribe.py audio.mp3 --language zh`
-- **GPU 加速**: `./scripts/transcribe.py audio.mp3 --device cuda`
-- **CPU 优化**: `./scripts/transcribe.py audio.mp3 --device cpu --compute-type int8`
+- **指定模型**: `.venv/bin/python3 scripts/transcribe.py audio.mp3 --model large-v3-turbo`
+- **词级时间戳**: `.venv/bin/python3 scripts/transcribe.py audio.mp3 --word-timestamps`
+- **JSON 输出**: `.venv/bin/python3 scripts/transcribe.py audio.mp3 --json`
+- **语音活动检测（静音去除）**: `.venv/bin/python3 scripts/transcribe.py audio.mp3 --vad`
+- **指定语言**: `.venv/bin/python3 scripts/transcribe.py audio.mp3 --language zh`
+- **GPU 加速**: `.venv/bin/python3 scripts/transcribe.py audio.mp3 --device cuda`
+- **CPU 优化**: `.venv/bin/python3 scripts/transcribe.py audio.mp3 --device cpu --compute-type int8`
 
 ### 完整命令示例
 
 ```bash
 # 中文转录，使用 GPU 加速
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-./scripts/transcribe.py 会议录音.mp3 --language zh --device cuda --compute-type float16
-deactivate
+.venv/bin/python3 scripts/transcribe.py 会议录音.mp3 --language zh --device cuda --compute-type float16
 
 # 英文转录，包含词级时间戳
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-./scripts/transcribe.py interview.wav --language en --word-timestamps --json
-deactivate
+.venv/bin/python3 scripts/transcribe.py interview.wav --language en --word-timestamps --json
 
 # 快速 CPU 转录，优化性能
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-./scripts/transcribe.py audio.m4a --device cpu --compute-type int8 --model distil-large-v3
-deactivate
+.venv/bin/python3 scripts/transcribe.py audio.m4a --device cpu --compute-type int8 --model distil-large-v3
 
 # 批量处理脚本
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-./scripts/batch_transcribe.sh /path/to/audio/files/
-deactivate
+.venv/bin/python3 scripts/batch_transcribe.sh /path/to/audio/files/
 ```
 
 ## 可用模型
 
-- `distil-large-v3` (默认): 速度和准确性的最佳平衡
-- `large-v3-turbo`: 推荐用于多语言或最高准确度任务
+- `large-v3-turbo` (默认):推荐用于多语言或最高准确度任务
 - `large-v3`: 原始大模型，准确度最高
+- `distil-large-v3`: 速度和准确性的最佳平衡
 - `medium`: 中等大小，平衡性能
 - `small`: 小型模型，速度快
 - `base`: 基础模型，资源需求最低
@@ -114,9 +93,9 @@ deactivate
 
 | 模型 | 大小 | 推荐用途 | 硬件要求 |
 |------|------|----------|----------|
-| `distil-large-v3` | 756MB | 通用中文转录 | 中等配置 |
 | `large-v3-turbo` | 1.5GB | 专业级转录 | 高性能 GPU |
 | `medium` | 1.5GB | 平衡性能 | 普通配置 |
+| `distil-large-v3` | 756MB | 通用中文转录 | 中等配置 |
 | `small` | 500MB | 快速转录 | 低配置 |
 | `tiny` | 150MB | 实时转录 | 最低配置 |
 
@@ -125,35 +104,19 @@ deactivate
 ### GPU 加速配置
 ```bash
 # NVIDIA GPU (CUDA)
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-./scripts/transcribe.py audio.mp3 --device cuda --compute-type float16
-deactivate
+.venv/bin/python3 scripts/transcribe.py audio.mp3 --device cuda --compute-type float16
 
 # Apple Silicon (macOS)
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-./scripts/transcribe.py audio.mp3 --device mps
-deactivate
+.venv/bin/python3 scripts/transcribe.py audio.mp3 --device mps
 ```
 
 ### CPU 优化配置
 ```bash
 # 高性能 CPU
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-./scripts/transcribe.py audio.mp3 --device cpu --compute-type int8 --beam-size 3
-deactivate
+.venv/bin/python3 scripts/transcribe.py audio.mp3 --device cpu --compute-type int8 --beam-size 3
 
 # 低资源环境
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-./scripts/transcribe.py audio.mp3 --device cpu --compute-type int8 --model small --beam-size 1
-deactivate
+.venv/bin/python3 scripts/transcribe.py audio.mp3 --device cpu --compute-type int8 --model small --beam-size 1
 ```
 
 ## 故障排除
@@ -202,7 +165,7 @@ deactivate
 # 设置 HuggingFace 缓存目录（避免重复下载）
 export HF_HOME=/config/huggingface
 
-# 使用国内镜像加速下载（否则难以下载模型）
+# 使用国内镜像加速下载
 export HF_ENDPOINT=https://hf-mirror.com
 
 # 设置 PyTorch CUDA 版本（如有需要）
@@ -252,12 +215,9 @@ done
 
 ## 更新日志
 
-### v1.0.3 (2026-04-15)
-- 初始中文版本发布
-- 完整的中文文档和说明
-- 优化了默认配置（中文语言，国内镜像）
-- 添加了详细的故障排除指南
-- 提供了性能优化建议
+### v1.0.5 (2026-04-16)
+- 重新调整命令
+- 原需激活虚拟环境更改为直接执行虚拟环境的python3
 
 ## 技术支持
 

@@ -65,7 +65,7 @@ detect_hardware() {
         echo "✓ 检测到 Apple Silicon"
         DEFAULT_DEVICE="cpu"
         DEFAULT_COMPUTE_TYPE="int8"
-        DEFAULT_MODEL="distil-large-v3"
+        DEFAULT_MODEL="large-v3-turbo"
         return
     fi
     
@@ -74,7 +74,7 @@ detect_hardware() {
         MEM_GB=$(free -g | awk '/^Mem:/ {print $2}')
         if [ "$MEM_GB" -ge 16 ]; then
             echo "✓ 检测到大内存系统: ${MEM_GB}GB"
-            DEFAULT_MODEL="distil-large-v3"
+            DEFAULT_MODEL="large-v3-turbo"
         else
             echo "⚠️  检测到有限内存: ${MEM_GB}GB"
             DEFAULT_MODEL="small"
@@ -92,7 +92,7 @@ detect_hardware() {
 
 # 会议录音配置（中文，高准确度）
 conference_config() {
-    DEFAULT_MODEL="distil-large-v3"
+    DEFAULT_MODEL="large-v3-turbo"
     DEFAULT_LANGUAGE="zh"
     DEFAULT_BEAM_SIZE=5
     echo "已应用会议录音配置"
@@ -138,17 +138,17 @@ generate_command() {
     local audio_file="$1"
     local output_file="$2"
     
-    local cmd="./scripts/transcribe.py \"$audio_file\""
+    local cmd=".venv/bin/python3 scripts/transcribe.py \"$audio_file\""
     cmd="$cmd --model \"$DEFAULT_MODEL\""
     cmd="$cmd --language \"$DEFAULT_LANGUAGE\""
     cmd="$cmd --device \"$DEFAULT_DEVICE\""
     cmd="$cmd --compute-type \"$DEFAULT_COMPUTE_TYPE\""
     cmd="$cmd --beam-size \"$DEFAULT_BEAM_SIZE\""
-    
+
     if [ -n "$output_file" ]; then
         cmd="$cmd --output \"$output_file\""
     fi
-    
+
     echo "$cmd"
 }
 

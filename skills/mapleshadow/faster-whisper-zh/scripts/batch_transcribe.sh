@@ -115,7 +115,7 @@ else
     echo "警告: 未找到虚拟环境，尝试直接使用 Python"
 fi
 
-# 设置环境变量（大模型默认下载目录和huggingface国内官方镜像加速）
+# 设置环境变量（国内镜像加速）
 export HF_HOME=/config/huggingface
 export HF_ENDPOINT=https://hf-mirror.com
 

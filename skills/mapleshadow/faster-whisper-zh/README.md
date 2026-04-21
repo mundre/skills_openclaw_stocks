@@ -1,6 +1,6 @@
 # Faster-Whisper 中文版
 
-基于 faster-whisper 的高性能本地语音转文字工具的中文优化版本。
+基于 faster-whisper 的高性能本地语音转文字工具的中文优化版本。音频转文字、语音转文字等需求，均可通过该技能实现。
 
 ## 版本特点
 
@@ -57,38 +57,24 @@ cd faster-whisper-zh
 ### 2. 基本使用
 ```bash
 # 设置环境变量（国内用户推荐）
-# 更改变量HF_HOME，用于定义大模型默认下载目录，易于维护和容器环境的管理
-# 更改变量HF_ENDPOINT，定义为huggingface官方中国镜像，此镜像为官方镜像
 export HF_HOME=/config/huggingface
 export HF_ENDPOINT=https://hf-mirror.com
 
-# 激活虚拟环境
-source .venv/bin/activate
-
-# 转录音频文件
-./scripts/transcribe.py 音频文件.mp3
-
-# 停用虚拟环境
-deactivate
+# 转录音频文件（使用的是虚拟环境内的python3，因此不需要刻意激活虚拟环境）
+.venv/bin/python3 scripts/transcribe.py --model large-v3-turbo --language zh 音频文件.mp3
 ```
 
 ### 3. 批量处理
 ```bash
-# 处理目录中的所有音频文件
+# 设置环境变量（国内用户推荐）
 export HF_HOME=/config/huggingface
 export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
 
-./scripts/batch_transcribe.sh ./audio_files
+# 处理目录中的所有音频文件
+.venv/bin/python3 scripts/batch_transcribe.sh ./audio_files
 
 # 使用 GPU 加速批量处理
-export HF_HOME=/config/huggingface
-export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-
-./scripts/batch_transcribe.sh --device cuda --model large-v3-turbo ./recordings
-
-deactivate
+.venv/bin/python3 scripts/batch_transcribe.sh --device cuda --model large-v3-turbo ./recordings
 ```
 
 ## 配置说明
@@ -108,8 +94,8 @@ export CUDA_VISIBLE_DEVICES=0
 ### 转录参数
 ```bash
 # 模型选择
---model distil-large-v3      # 默认，平衡速度与准确性
---model large-v3-turbo       # 最高准确度，支持多语言
+--model large-v3-turbo      # （默认）最高准确度，支持多语言
+--model distil-large-v3      #平衡速度与准确性
 --model small                # 快速转录，资源需求低
 
 # 语言设置
@@ -134,59 +120,43 @@ export CUDA_VISIBLE_DEVICES=0
 ```bash
 export HF_HOME=/config/huggingface
 export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-
-./scripts/transcribe.py 会议录音.mp3 \
+.venv/bin/python3 scripts/transcribe.py 会议录音.mp3 \
   --model large-v3-turbo \
   --language zh \
   --word-timestamps \
   --output 会议纪要.txt
-
-deactivate
 ```
 
 ### 访谈录音整理
 ```bash
 export HF_HOME=/config/huggingface
 export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-
-./scripts/transcribe.py 访谈.wav \
+.venv/bin/python3 scripts/transcribe.py 访谈.wav \
   --model large-v3-turbo \
   --language zh \
   --json \
   --output 访谈记录.json
-
-deactivate
 ```
 
 ### 实时语音转写
 ```bash
 export HF_HOME=/config/huggingface
 export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-
-./scripts/transcribe.py 实时音频.m4a \
+.venv/bin/python3 scripts/transcribe.py 实时音频.m4a \
   --model small \
   --device cpu \
   --compute-type int8 \
   --beam-size 3
-
-deactivate
 ```
 
 ### 批量处理会议录音
 ```bash
 export HF_HOME=/config/huggingface
 export HF_ENDPOINT=https://hf-mirror.com
-source .venv/bin/activate
-
-./scripts/batch_transcribe.sh ./会议录音 \
+.venv/bin/python3 scripts/batch_transcribe.sh ./会议录音 \
   --model large-v3-turbo \
   --language zh \
   --output ./转录结果
-
-deactivate  
 ```
 
 ## 性能建议
@@ -197,7 +167,7 @@ deactivate
 | 高端 GPU (RTX 4090) | large-v3-turbo | 20-30x 实时 |
 | 中端 GPU (RTX 3060) | distil-large-v3 | 10-15x 实时 |
 | Apple Silicon M2 | distil-large-v3 | 3-5x 实时 |
-| 高性能 CPU (i7/i9) | small/large-v3-turbo | 1-3x 实时 |
+| 高性能 CPU (i7/i9) | small/distil-large-v3 | 1-3x 实时 |
 | 普通 CPU | small/tiny | 0.5-1x 实时 |
 
 ### 内存要求
