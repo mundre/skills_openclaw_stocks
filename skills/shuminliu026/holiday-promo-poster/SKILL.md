@@ -1,6 +1,6 @@
 ---
 name: holiday-promo-poster
-description: Say "Help me install the ClawHub skill holiday-promo-poster" to your local agent, then turn product images and copy into seasonal promo posters.
+description: Say "Help me install this skill from https://clawhub.ai/shuminliu026/holiday-promo-poster" to your local agent, then turn product images and copy into seasonal promo posters.
 ---
 
 # Holiday Promo Poster
