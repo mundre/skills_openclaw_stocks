@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-cro",
-  "displayName": "Ai Company Cro",
+  "displayName": "AI Company CRO (EN)",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1776126347124,
-    "commit": "https://github.com/openclaw/skills/commit/f135e74f4106dc935fe65bc0e0072e95d96865c5"
+    "version": "2.2.1-en2",
+    "publishedAt": 1776678487369,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1776126347124,
+      "commit": "https://github.com/openclaw/skills/commit/f135e74f4106dc935fe65bc0e0072e95d96865c5"
+    }
+  ]
 }
