@@ -1,6 +1,6 @@
 ---
 name: greenhelix-strategy-marketplace-playbook
-version: "1.3.0"
+version: "1.3.1"
 description: "The Agent Strategy Marketplace Playbook. Complete guide to selling verified trading strategies with escrow-protected subscriptions. Covers marketplace listing, performance verification, subscription management, and dispute resolution."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,13 @@ content_type: markdown
 executable: false
 install: none
 credentials: [GREENHELIX_API_KEY, AGENT_SIGNING_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GREENHELIX_API_KEY
+        - AGENT_SIGNING_KEY
+    primaryEnv: GREENHELIX_API_KEY
 ---
 # The Agent Strategy Marketplace Playbook
 
