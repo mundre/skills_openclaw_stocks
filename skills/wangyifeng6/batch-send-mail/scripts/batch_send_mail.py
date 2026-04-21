@@ -22,6 +22,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+from email.header import Header
+import urllib.parse
 import configparser
 import os
 from pathlib import Path
@@ -121,6 +123,7 @@ def substitute_variables(template, variables):
     """替换模板中的变量
 
     变量格式: {variable1}, {variable2}, ... 或 {v1}, {v2}, ...
+    替换后自动移除空行（变量为空导致的空白行）
     """
     result = template
 
@@ -132,14 +135,23 @@ def substitute_variables(template, variables):
         result = result.replace(placeholder1, value_str)
         result = result.replace(placeholder2, value_str)
 
-    return result
+    # 移除空行（只包含空白字符的行），处理变量为空的情况
+    lines = result.splitlines()
+    non_empty_lines = [line for line in lines if line.strip() != ""]
+    # 保留原换行格式
+    return '\n'.join(non_empty_lines)
 
 
-def create_message(email_addr, variables, template, subject, sender_email, is_html=False, attachments=None):
+def create_message(email_addr, cc_list, variables, template, subject, sender_email, is_html=False, attachments=None):
     """创建邮件消息"""
     msg = MIMEMultipart()
     msg['From'] = sender_email
     msg['To'] = email_addr
+
+    # 添加抄送人（如果有）
+    if cc_list and len(cc_list) > 0:
+        msg['Cc'] = ', '.join(cc_list)
+
     msg['Subject'] = subject
 
     # 替换变量
@@ -161,10 +173,23 @@ def create_message(email_addr, variables, template, subject, sender_email, is_ht
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(f.read())
             encoders.encode_base64(part)
-            part.add_header(
-                'Content-Disposition',
-                f'attachment; filename="{os.path.basename(attach_path)}"'
-            )
+
+            # 正确处理中文文件名（RFC 2231 编码）
+            filename = os.path.basename(attach_path)
+            try:
+                # 尝试 RFC 2231 编码，兼容大多数邮箱客户端
+                filename_encoded = urllib.parse.quote(filename)
+                part.add_header(
+                    'Content-Disposition',
+                    f'attachment; filename*=UTF-8\'\'{filename_encoded}'
+                )
+            except Exception:
+                # 降级方案：使用传统编码
+                part.add_header(
+                    'Content-Disposition',
+                    f'attachment; filename="{filename}"'
+                )
+
             msg.attach(part)
 
     return msg, content
@@ -179,6 +204,20 @@ def preview_message(email_addr, content, index):
     print("-" * 60)
     print()
 
+
+def clean_email(email_str):
+    """清理邮箱地址中的特殊Unicode字符，只保留合法ASCII字符"""
+    # 替换各种Unicode连字符/空格为普通ASCII
+    email_clean = email_str
+    # 非断字连字符 U+2011 → 普通减号
+    email_clean = email_clean.replace('\u2011', '')
+    # 不换行空格 U+00A0 → 普通空格
+    email_clean = email_clean.replace('\u00A0', ' ')
+    # 其他非ASCII字符去掉
+    email_clean = ''.join(c for c in email_clean if ord(c) < 128)
+    # 去掉开头的非字母数字字符（清理残留的横线空格）
+    email_clean = email_clean.strip().lstrip('-_ ').strip()
+    return email_clean
 
 def send_emails(df, template, args):
     """发送邮件主逻辑"""
@@ -211,19 +250,34 @@ def send_emails(df, template, args):
 
     # 逐个处理
     for idx, row in df.iterrows():
-        # 第一列是邮箱
-        email_addr = str(row.iloc[0])
-        if pd.isna(row.iloc[0]) or '@' not in email_addr:
-            print(f"[{idx+1}] 跳过无效邮箱: {email_addr}")
+        # 第一列是收件人邮箱
+        email_addr = str(row.iloc[0]) if pd.notna(row.iloc[0]) else ""
+        email_addr = clean_email(email_addr)
+        if not email_addr or '@' not in email_addr:
+            print(f"[{idx+1}] 跳过无效邮箱: {email_addr} (原始: {row.iloc[0]})")
             failed += 1
             continue
 
-        # 剩余列是变量
-        variables = row.iloc[1:].tolist()
+        # 第二列是抄送人列表（用 | 分割），为空则无抄送
+        cc_list = []
+        if df.shape[1] >= 2:
+            cc_str = str(row.iloc[1]) if pd.notna(row.iloc[1]) else ""
+            if cc_str and cc_str.strip():
+                # 对每个抄送人也清理
+                for cc in cc_str.split('|'):
+                    cc_clean = clean_email(cc)
+                    if cc_clean:
+                        cc_list.append(cc_clean)
+
+        # 第三列及以后是模板变量
+        if df.shape[1] >= 3:
+            variables = row.iloc[2:].tolist()
+        else:
+            variables = []
 
         # 创建消息
         msg, content = create_message(
-            email_addr, variables, template,
+            email_addr, cc_list, variables, template,
             args.subject, args.sender_email,
             args.html, args.attachments
         )
@@ -236,11 +290,15 @@ def send_emails(df, template, args):
 
         # 实际发送
         try:
-            server.send_message(msg)
-            print(f"[{idx+1}] ✓ 成功发送给 {email_addr}")
+            # 收集所有收件人：主送 + 抄送
+            all_recipients = [email_addr] + cc_list
+            server.send_message(msg, to_addrs=all_recipients)
+            cc_info = f" (抄送: {', '.join(cc_list)})" if cc_list else ""
+            print(f"[{idx+1}] ✓ 成功发送给 {email_addr}{cc_info}")
             success += 1
         except Exception as e:
-            print(f"[{idx+1}] ✗ 发送失败 {email_addr}: {e}")
+            cc_info = f" (抄送: {', '.join(cc_list)})" if cc_list else ""
+            print(f"[{idx+1}] ✗ 发送失败 {email_addr}{cc_info}: {e}")
             failed += 1
 
     if not args.dry_run:
@@ -327,13 +385,17 @@ def main():
     print(f"使用配置文件: {CONFIG_PATH}")
 
     # 检查模板变量数量与表格列数是否匹配
-    table_variable_count = df.shape[1] - 1  # 减去第一列邮箱
+    table_variable_count = df.shape[1] - 2  # 减去第一列收件人邮箱 + 第二列抄送
+    # 如果只有两列（只有邮箱和抄送，没有变量），变量数为0
+    if table_variable_count < 0:
+        table_variable_count = 0
     template_variable_count = count_template_variables(template)
 
     if table_variable_count != template_variable_count:
         print()
         print(f"⚠️  警告: 模板变量数量与表格变量列数不匹配")
-        print(f"    表格中变量列数: {table_variable_count} (除第一列邮箱外)")
+        print(f"    表格格式: 第一列=收件人邮箱, 第二列=抄送人列表(|分隔), 第三列及以后=模板变量")
+        print(f"    表格中变量列数: {table_variable_count} (除收件人邮箱和抄送列外)")
         print(f"    模板中找到变量: {template_variable_count} 个")
         print(f"    请检查表格和模板是否匹配")
         print()
