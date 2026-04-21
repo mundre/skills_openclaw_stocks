@@ -1,11 +1,13 @@
 ---
 name: ai-prompt-optimizer
 slug: skylv-ai-prompt-optimizer
-version: 1.0.0
-description: "AI 提示词自动优化器。基于 A/B 测试和性能数据，自动优化提示词，提升输出质量和降低 Token 消耗。Triggers: prompt optimizer, improve prompt, prompt engineering, A/B testing, prompt optimization."
+version: 1.0.2
+description: AI prompt auto-optimizer. A/B tests prompts and auto-improves output quality while reducing token costs. Triggers: prompt optimization, prompt engineering, reduce tokens.
 author: SKY-lv
 license: MIT
 tags: [prompt, optimization, ab-testing, engineering, ai]
+keywords: prompt, optimization, llm, gpt
+triggers: ai prompt optimizer
 ---
 
 # AI Prompt Optimizer — 提示词自动优化器
@@ -364,3 +366,9 @@ prompt: |
 - 自动：检测 prompt、optimize、improve、A/B testing 相关关键词
 - 手动：/prompt-optimizer, /optimize-prompt, /ab-test
 - 短语：优化提示词、改进 prompt、A/B 测试
+
+## Usage
+
+1. Install the skill
+2. Configure as needed
+3. Run with OpenClaw
