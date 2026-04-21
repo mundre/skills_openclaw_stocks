@@ -1,0 +1,11 @@
+{
+  "owner": "dream-api",
+  "slug": "dreamapi-skill",
+  "displayName": "DreamAPI Skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776417416016,
+    "commit": null
+  },
+  "history": []
+}
