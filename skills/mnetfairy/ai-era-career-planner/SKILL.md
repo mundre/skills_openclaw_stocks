@@ -1,6 +1,8 @@
 ---
 name: ai-era-career-planner
 description: AI时代职业规划师技能。专为AI时代职场变化而设计，帮助用户应对AI带来的职业冲击与机遇。当用户询问职业规划、职业建议、选专业、职场转型、未来就业方向时触发。功能包括：收集用户基本信息、霍兰德职业兴趣测评、职业价值观分析、AI时代职业影响评估（高危/中危/低危分级），并输出完整的个性化职业规划报告。关键词：职业规划、选专业、工作建议、做什么工作好、职业转型、AI时代职业、AI替代、哪些工作会被AI取代。
+version: 2.0.0
+---
 
 # AI时代职业规划师
 
@@ -12,7 +14,11 @@ description: AI时代职业规划师技能。专为AI时代职场变化而设计
 
 ## 工作流程
 
-### 第一步：收集信息（对话引导）
+### 第一步：渐进式信息收集（对话引擎）
+
+**核心原则**：不要一次性抛出所有问题。根据用户所处阶段选择入口，用1个问题开始，渐进深入。
+
+读取 `references/flow_engine.md` 获取完整对话节点设计。
 
 用轻松自然的对话收集以下信息，不要用生硬表格：
 
@@ -33,17 +39,25 @@ description: AI时代职业规划师技能。专为AI时代职场变化而设计
 
 ### 第二步：霍兰德测评 + 价值观判断
 
-读取 `references/assessment.md`，根据用户回答判断：
+读取多个参考文件，综合判断：
 
-1. **霍兰德代码**（6种职业兴趣类型组合，如"RIA"、"SEC"）
-2. **核心职业价值观**（成就感/人际关系/自主性/稳定性/成长性）
-3. **个人优势关键词**
+1. **霍兰德代码** -> `references/assessment.md`
+2. **MBTI类型**（16型）-> `references/mbti.md`
+3. **职业锚**（8种核心驱动力）-> `references/career_anchor.md`
+4. **核心职业价值观**
+5. **个人优势关键词**
 
 ---
 
-### 第三步：AI影响评估
+### 第三步：AI影响评估 + 数据支持
 
-读取 `references/ai_career_impact.md`，对候选职业方向进行AI风险标注：
+读取 `references/ai_career_impact.md` 进行AI风险标注。同时读取：
+- `references/salary_data.md` - 薪资参考
+- `references/job_demand.md` - 岗位需求趋势
+- `references/industry_trends.md` - 行业趋势
+- `references/education_paths.md` - 学习路径
+
+推荐职业时，标注「薪资范围（城市）」和「需求趋势」。
 
 - 🔴 **高危**：未来5年可能被AI大幅替代
 - 🟡 **中危**：AI改变工作方式，但不易完全替代
@@ -62,6 +76,8 @@ description: AI时代职业规划师技能。专为AI时代职场变化而设计
 • 昵称/代号：（若用户提供）
 • 当前阶段：
 • 霍兰德代码：
+• MBTI类型：
+• 职业锚：
 • 核心价值观：
 
 【职业方向推荐】（3个备选）
@@ -152,3 +168,44 @@ description: AI时代职业规划师技能。专为AI时代职场变化而设计
 - 不推荐用户去考公务员除非他们主动问
 - 不把自己的价值观强加给用户（有人就是喜欢稳定）
 - 不在用户情绪低落时给出"你应该辞职"这类激进建议
+
+
+---
+
+## 报告自动生成（v1.4新增）
+
+运行 `scripts/report_generator.py --data '{}'` 自动生成 Markdown 报告。
+
+---
+
+## 行业专项模块（v1.5新增）
+
+当用户涉及以下行业时，读取对应文件：
+- `references/industries/tech_career.md` - 互联网/AI/程序员
+- `references/industries/healthcare.md` - 医疗/健康
+- `references/industries/finance.md` - 金融/银行/保险
+- `references/industries/education.md` - 教育/培训
+- `references/industries/creative.md` - 创意/内容创作
+- `references/industries/manufacturing.md` - 制造/供应链/新能源
+
+---
+
+## 纵向追踪与复盘（v1.6新增）
+
+生成报告后，读取 `references/tracker_system.md` 建立用户追踪档案：
+- 自动记录用户规划摘要和关键里程碑
+- 30天后主动跟进复盘
+- 追踪结果存入用户 memory 文件
+
+---
+
+## 生态集成（v2.0新增）
+
+读取 `references/integrations.md` 了解与外部系统的连接方式：
+- AgentMail：报告自动发送用户邮箱
+- agent-reach：职业方向资讯定期推送
+- MEMORY.md：用户规划档案长期沉淀
+- Tavily API：实时招聘数据增强报告
+- 多语言：英文报告支持
+
+v2.0 需要额外配置 API Keys（AgentMail、Tavily）
