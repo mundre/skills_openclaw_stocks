@@ -1,0 +1,11 @@
+{
+  "owner": "ide-rea",
+  "slug": "image-recognize",
+  "displayName": "Baidu image recognize",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776329307716,
+    "commit": null
+  },
+  "history": []
+}
