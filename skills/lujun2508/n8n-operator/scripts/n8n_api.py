@@ -56,27 +56,29 @@ class N8nClient:
     
     def create_workflow(self, workflow_data: Dict) -> Dict:
         """Create new workflow"""
-        # Remove read-only fields that n8n API doesn't accept on create
         clean_data = workflow_data.copy()
-        clean_data.pop('active', None)
-        clean_data.pop('id', None)
+        for field in ('active', 'id', 'tags', 'staticData', 'shared', 'activeVersion', 'pinData'):
+            clean_data.pop(field, None)
         return self._request('POST', 'workflows', json=clean_data)
     
     def update_workflow(self, workflow_id: str, workflow_data: Dict) -> Dict:
-        """Update existing workflow"""
-        return self._request('PATCH', f'workflows/{workflow_id}', json=workflow_data)
+        """Update existing workflow (PUT = full replacement in n8n 2.x)"""
+        clean_data = workflow_data.copy()
+        for field in ('active', 'id', 'tags', 'staticData', 'shared', 'activeVersion', 'pinData'):
+            clean_data.pop(field, None)
+        return self._request('PUT', f'workflows/{workflow_id}', json=clean_data)
     
     def delete_workflow(self, workflow_id: str) -> Dict:
         """Delete workflow"""
         return self._request('DELETE', f'workflows/{workflow_id}')
     
     def activate_workflow(self, workflow_id: str) -> Dict:
-        """Activate workflow"""
-        return self._request('PATCH', f'workflows/{workflow_id}', json={'active': True})
-    
+        """Activate workflow (n8n 2.x: POST /activate)"""
+        return self._request('POST', f'workflows/{workflow_id}/activate', json={})
+
     def deactivate_workflow(self, workflow_id: str) -> Dict:
-        """Deactivate workflow"""
-        return self._request('PATCH', f'workflows/{workflow_id}', json={'active': False})
+        """Deactivate workflow (n8n 2.x: POST /deactivate)"""
+        return self._request('POST', f'workflows/{workflow_id}/deactivate')
     
     # Executions
     def list_executions(self, workflow_id: str = None, limit: int = 20) -> List[Dict]:
@@ -192,13 +194,17 @@ class N8nClient:
         }
         
         for execution in executions:
-            status = execution.get('finished')
-            if status:
+            status = execution.get('status', '')
+            if status == 'success':
                 stats['successful'] += 1
-            else:
+            elif status == 'error':
                 stats['failed'] += 1
                 error = execution.get('data', {}).get('resultData', {}).get('error', {}).get('message', 'Unknown error')
                 stats['error_patterns'][error] = stats['error_patterns'].get(error, 0) + 1
+            elif execution.get('finished'):
+                stats['successful'] += 1
+            else:
+                stats['failed'] += 1
             
             # Execution time
             start = execution.get('startedAt')

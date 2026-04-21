@@ -2,6 +2,7 @@
 
 > 6 种经典工作流架构模式，每种包含完整 JSON 示例和设计要点。
 > Agent 应根据用户需求选择匹配的模式，然后在此基础上定制。
+> **所有示例已适配 n8n 2.x（移除 active/tags/staticData 等只读字段）。**
 
 ---
 
@@ -41,7 +42,8 @@ Webhook → 验证 → 转换 → 响应/通知
       "parameters": {
         "httpMethod": "POST",
         "path": "process-order",
-        "responseMode": "responseNode",
+        "responseMode": "lastNode",
+        "responseData": "lastNode",
         "options": {}
       },
       "id": "webhook-001",
@@ -104,26 +106,22 @@ Webhook → 验证 → 转换 → 响应/通知
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, orderId: $json.orderId }) }}",
-        "options": { "responseCode": "200" }
+        "jsCode": "return [{ json: { success: true, orderId: $json.orderId } }];"
       },
       "id": "respond-001",
       "name": "Success Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [1130, 200]
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Missing orderId' }) }}",
-        "options": { "responseCode": "400" }
+        "jsCode": "return [{ json: { success: false, error: 'Missing orderId' } }];"
       },
       "id": "respond-002",
       "name": "Error Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [690, 400]
     }
   ],
@@ -138,9 +136,14 @@ Webhook → 验证 → 转换 → 响应/通知
     "Format Data": { "main": [[{ "node": "Send Slack", "type": "main", "index": 0 }]] },
     "Send Slack": { "main": [[{ "node": "Success Response", "type": "main", "index": 0 }]] }
   },
-  "active": false
+  "settings": {
+    "saveManualExecutions": true,
+    "executionOrder": "v1"
+  }
 }
 ```
+
+> **n8n 2.x 关键：** 此模式使用 `responseMode: "lastNode"`，最后一个 Code 节点的返回值自动成为 HTTP 响应。不需要 `respondToWebhook` 节点。
 
 ---
 
@@ -254,7 +257,10 @@ Schedule → HTTP Request → IF(有新数据?) → Process → Notify
     },
     "Split Items": { "main": [[{ "node": "Notify", "type": "main", "index": 0 }]] }
   },
-  "active": false
+  "settings": {
+    "saveManualExecutions": true,
+    "executionOrder": "v1"
+  }
 }
 ```
 
@@ -350,7 +356,10 @@ Schedule → Read DB → Transform → Write DB → Log
     "Transform": { "main": [[{ "node": "Write Target", "type": "main", "index": 0 }]] },
     "Write Target": { "main": [[{ "node": "Log Result", "type": "main", "index": 0 }]] }
   },
-  "active": false
+  "settings": {
+    "saveManualExecutions": true,
+    "executionOrder": "v1"
+  }
 }
 ```
 
@@ -433,7 +442,10 @@ Chat Trigger → AI Agent(Model + Memory + Tools) → Response
       "ai_memory": [[{ "node": "Window Buffer Memory", "type": "ai_memory", "index": 0 }]]
     }
   },
-  "active": false
+  "settings": {
+    "saveManualExecutions": true,
+    "executionOrder": "v1"
+  }
 }
 ```
 
@@ -493,7 +505,7 @@ Schedule → Fetch Data → Process → Format → Send Report
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst report = {\n  date: $now.minus({days: 1}).format('yyyy-MM-dd'),\n  totalUsers: data.totalUsers,\n  activeUsers: data.activeUsers,\n  revenue: data.revenue,\n  topPages: data.pages.slice(0, 5).map(p => p.path + ' (' + p.views + ' views)').join('\\n')\n};\nreturn [{ json: report }];"
+        "jsCode": "const data = $input.first().json;\nconst report = {\n  date: $now.minus({days: 1}).format('yyyy-MM-dd'),\n  totalUsers: data.totalUsers,\n  activeUsers: data.activeUsers,\n  revenue: data.revenue\n};\nreturn [{ json: report }];"
       },
       "id": "code-001",
       "name": "Build Report",
@@ -506,7 +518,7 @@ Schedule → Fetch Data → Process → Format → Send Report
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "a1", "name": "report", "value": "={{ '*Daily Report - ' + $json.date + '*\\n\\nUsers: ' + $json.totalUsers + ' (Active: ' + $json.activeUsers + ')\\nRevenue: $' + $json.revenue + '\\n\\n*Top Pages:*\\n' + $json.topPages }}", "type": "string" }
+            { "id": "a1", "name": "report", "value": "={{ '*Daily Report - ' + $json.date + '*\\n\\nUsers: ' + $json.totalUsers + ' (Active: ' + $json.activeUsers + ')\\nRevenue: $' + $json.revenue }}", "type": "string" }
           ]
         },
         "options": {}
@@ -538,23 +550,30 @@ Schedule → Fetch Data → Process → Format → Send Report
     "Build Report": { "main": [[{ "node": "Format Message", "type": "main", "index": 0 }]] },
     "Format Message": { "main": [[{ "node": "Send to Slack", "type": "main", "index": 0 }]] }
   },
-  "active": false
+  "settings": {
+    "saveManualExecutions": true,
+    "executionOrder": "v1"
+  }
 }
 ```
 
 ---
 
-## 模式 6：分批处理
+## 模式 6：分批处理 ⚠️ 含 Wait 节点风险
 
 **架构：**
 ```
-Trigger → Split In Batches → Process Each Batch → Wait(Done) → Aggregate
+Trigger → Split In Batches → Process Each Batch → Delay → (循环回 Split)
+                                      ↓ (done)
+                                 Aggregate
 ```
 
 **适用场景：**
 - 批量发送通知
 - 大量数据 API 写入（受 API 速率限制）
 - 批量数据库更新
+
+> ⚠️ **Wait 节点风险警告：** Wait for Callback 节点可能导致工作流无法激活。以下示例使用简单延迟 Wait，风险较低。如果遇到激活问题，改用 Code 节点的 `setTimeout` 替代。
 
 **完整 JSON 示例：**
 
@@ -613,11 +632,13 @@ Trigger → Split In Batches → Process Each Batch → Wait(Done) → Aggregate
       }
     },
     {
-      "parameters": { "amount": 1, "unit": "seconds" },
-      "id": "wait-001",
+      "parameters": {
+        "jsCode": "await new Promise(r => setTimeout(r, 1000));\nreturn $input.all();"
+      },
+      "id": "delay-001",
       "name": "Rate Limit Delay",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [910, 500]
     }
   ],
@@ -634,15 +655,19 @@ Trigger → Split In Batches → Process Each Batch → Wait(Done) → Aggregate
     "Send Batch Notification": { "main": [[{ "node": "Rate Limit Delay", "type": "main", "index": 0 }]] },
     "Rate Limit Delay": { "main": [[{ "node": "Split In Batches", "type": "main", "index": 0 }]] }
   },
-  "active": false
+  "settings": {
+    "saveManualExecutions": true,
+    "executionOrder": "v1"
+  }
 }
 ```
 
-**⚠️ Split In Batches 的连接关键点：**
-- `main[0]`（done 输出）连接到"全部完成后的处理"
+**Split In Batches 的连接关键点：**
+- `main[0]`（done 输出）连接到"全部完成后的处理"（本例为空 = 不做后续处理）
 - `main[1]`（each batch 输出）连接到循环体
 - 循环体最后一个节点必须连回 Split In Batches 形成循环
-- Rate Limit Delay 返回 Split In Batches → 触发下一批
+
+**替代 Wait 节点的方案：** 用 Code 节点 `await new Promise(r => setTimeout(r, 1000))` 替代 Wait 节点，避免激活问题。
 
 ---
 
@@ -668,10 +693,11 @@ Trigger → Split In Batches → Process Each Batch → Wait(Done) → Aggregate
 - [ ] 每个节点的 name 在 connections 中正确引用
 - [ ] Webhook 路径唯一不冲突
 - [ ] 错误处理已配置（Error Workflow 或 continueOnFail）
+- [ ] 不包含只读字段（active/tags/staticData/shared/pinData）
 
 ### 交付阶段
-- [ ] 激活工作流
+- [ ] 激活工作流（POST /activate）
+- [ ] 等待 1-2 秒确保路由注册
 - [ ] 提供工作流 ID
 - [ ] 提供 Webhook URL（如有）
 - [ ] 展示首次执行结果
-- [ ] 记录到用户文档中

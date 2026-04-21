@@ -14,7 +14,8 @@
   "parameters": {
     "httpMethod": "POST",
     "path": "my-endpoint",
-    "responseMode": "onReceived",
+    "responseMode": "lastNode",
+    "responseData": "lastNode",
     "options": {}
   },
   "id": "REPLACE-WITH-UUID",
@@ -25,10 +26,10 @@
 }
 ```
 
-**responseMode 选项：**
-- `onReceived` — 立即响应 200（推荐异步场景）
-- `lastNode` — 等工作流执行完后返回最后一个节点的输出
-- `responseNode` — 使用 Respond to Webhook 节点自定义响应
+**responseMode 选项（n8n 2.x）：**
+- `lastNode` — 等工作流执行完后返回最后一个节点的输出（**推荐**）
+- `onReceived` — 立即响应 200（异步场景）
+- `responseNode` — 使用 Respond to Webhook 节点自定义响应（⚠️ n8n 2.x 中容易报 `Unused Respond to Webhook node found` 错误，不推荐）
 
 ### 2. Schedule（定时触发器）
 
@@ -452,6 +453,7 @@
     },
     "sendBody": true,
     "specifyBody": "json",
+    "jsonParameters": false,
     "jsonBody": "={{ JSON.stringify($json) }}",
     "options": {
       "response": {
@@ -474,6 +476,12 @@
   }
 }
 ```
+
+**HTTP Request JSON Body 配置（实测验证，关键）：**
+- `sendBody: true` — 启用请求体
+- `specifyBody: "json"` — 使用 JSON 格式
+- `jsonParameters: false` — **必须设为 false！设为 true 直接崩溃**
+- `jsonBody: "={{ {...} }}"` — 用表达式传递 JSON 对象
 
 **HTTP Request 常用配置：**
 
@@ -504,7 +512,7 @@
 }
 ```
 
-> ⚠️ **n8n 2.x 注意：** 如果 Webhook 节点的 `responseMode` 设为 `"lastNode"`，不要使用此节点！最后一个节点的返回值会自动作为 HTTP 响应。`respondToWebhook` 只在 `responseMode` 为 `"responseNode"` 时使用，否则会报 `Unused Respond to Webhook node found` 错误。推荐用 `n8n-nodes-base.code` 节点作为最后一个节点来返回响应数据。
+> ⚠️ **n8n 2.x 严重警告：** 如果 Webhook 节点的 `responseMode` 设为 `"lastNode"`，**绝对不要**使用此节点！最后一个节点的返回值会自动作为 HTTP 响应。`respondToWebhook` 只在 `responseMode` 为 `"responseNode"` 时可用，否则会报 `Unused Respond to Webhook node found` 错误。**推荐统一使用 `responseMode: "lastNode"` + Code 节点返回响应数据**，避免使用 respondToWebhook 节点。
 
 ---
 
@@ -731,7 +739,7 @@
 
 ## 八、辅助节点
 
-### 29. Wait（等待/延迟）
+### 29. Wait（等待/延迟）⚠️ 高风险
 
 ```json
 {
@@ -746,6 +754,8 @@
   "position": [470, 300]
 }
 ```
+
+> ⚠️ **实战教训：Wait 节点（特别是 Wait for Callback）可能导致工作流无法激活！** 如果遇到 `triggerCount: 0` 或激活失败，优先检查 Wait 节点。替代方案：用 Code 节点 + `await new Promise(r => setTimeout(r, 5000))` 或 IF 分支判断替代 Wait for Callback。
 
 ### 30. No Operation（空操作/占位）
 

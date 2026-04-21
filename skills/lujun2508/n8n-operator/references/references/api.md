@@ -1,156 +1,165 @@
-# n8n API Reference
+# n8n API 参考 (n8n 2.x)
 
-## Authentication
+## 认证方式
 
-The n8n API uses API key authentication via the `X-N8N-API-KEY` header.
+n8n API 使用 `X-N8N-API-KEY` 头进行 API Key 认证。
 
-API keys are managed in the n8n UI:
+API Key 在 n8n 界面管理：
 - Settings → API
 - User profile → API
 
-## Base URL
+## 基础 URL
 
-`N8N_BASE_URL`
+`{N8N_BASE_URL}/api/v1`
 
-Default: `${N8N_BASE_URL}$/api/v1`
+## 端点一览
 
-## Endpoints
+### 工作流（Workflows）
 
-### Workflows
-
-#### List Workflows
+#### 列出工作流
 ```
 GET /workflows
-Query params: ?active=true|false
+Query params: ?active=true|false&cursor=string&limit=number
 ```
 
-Response:
-```json
-{
-  "data": [
-    {
-      "id": "123",
-      "name": "My Workflow",
-      "active": true,
-      "createdAt": "2026-01-14T10:00:00.000Z",
-      "updatedAt": "2026-01-14T12:00:00.000Z"
-    }
-  ]
-}
-```
-
-#### Get Workflow
+#### 获取工作流详情
 ```
 GET /workflows/{id}
 ```
 
-#### Create Workflow
+#### 创建工作流
 ```
 POST /workflows
-Body: workflow JSON
+Body: workflow JSON (不要包含 active, tags, staticData, shared, pinData)
 ```
 
-#### Update Workflow
+#### 更新工作流
 ```
-PATCH /workflows/{id}
-Body: partial workflow JSON
-```
-
-#### Activate/Deactivate
-```
-PATCH /workflows/{id}
-Body: {"active": true|false}
+PUT /workflows/{id}
+Body: 完整 workflow JSON (PUT = 全量替换，n8n 2.x 不支持 PATCH)
 ```
 
-#### Delete Workflow
+#### 激活工作流
+```
+POST /workflows/{id}/activate
+Body: {} 或留空
+```
+
+#### 停用工作流
+```
+POST /workflows/{id}/deactivate
+```
+
+#### 删除工作流
 ```
 DELETE /workflows/{id}
 ```
 
-### Executions
+### 执行记录（Executions）
 
-#### List Executions
+#### 列出执行记录
 ```
-GET /executions?limit=20&workflowId={id}
-```
-
-Response:
-```json
-{
-  "data": [
-    {
-      "id": "456",
-      "finished": true,
-      "mode": "trigger",
-      "startedAt": "2026-01-14T12:00:00.000Z",
-      "stoppedAt": "2026-01-14T12:00:05.000Z",
-      "workflowId": "123",
-      "status": "success"
-    }
-  ]
-}
+GET /executions?limit=20&workflowId={id}&status=success|error|running
 ```
 
-#### Get Execution
+#### 获取执行记录详情
 ```
 GET /executions/{id}
 ```
 
-#### Delete Execution
+#### 删除执行记录
 ```
 DELETE /executions/{id}
 ```
 
-#### Manual Execution
+#### 重试执行
+```
+POST /executions/{id}/retry
+Body: {"loadWorkflow": true}
+```
+
+#### 手动执行
 ```
 POST /workflows/{id}/execute
 Body: {"data": {...}}
 ```
 
-## Common Patterns
+### 凭证（Credentials）
 
-### List Active Workflows
-```bash
-python3 scripts/n8n_api.py list-workflows --active true --pretty
+#### 列出凭证
+```
+GET /credentials
 ```
 
-### Get Workflow Details
-```bash
-python3 scripts/n8n_api.py get-workflow --id <workflow-id> --pretty
+#### 创建凭证
+```
+POST /credentials
+Body: {"name": "...", "type": "httpHeaderAuth", "data": {...}}
 ```
 
-### Activate/Deactivate Workflow
+## 常用模式
+
+### 列出已激活的工作流
 ```bash
-python3 scripts/n8n_api.py activate --id <workflow-id>
-python3 scripts/n8n_api.py deactivate --id <workflow-id>
+curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  "$N8N_BASE_URL/api/v1/workflows?active=true&limit=50"
 ```
 
-### List Recent Executions
+### 获取工作流详情
 ```bash
-python3 scripts/n8n_api.py list-executions --limit 10 --pretty
+curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  "$N8N_BASE_URL/api/v1/workflows/{id}"
 ```
 
-### Manually Execute Workflow
+### 激活/停用工作流
 ```bash
-python3 scripts/n8n_api.py execute --id <workflow-id>
+# 激活
+curl -s -X POST -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{}" "$N8N_BASE_URL/api/v1/workflows/{id}/activate"
+
+# 停用
+curl -s -X POST -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  "$N8N_BASE_URL/api/v1/workflows/{id}/deactivate"
 ```
 
-With data:
+### 触发 Webhook
 ```bash
-python3 scripts/n8n_api.py execute --id <workflow-id> --data '{"key": "value"}'
+# 正式环境 webhook（用 webhookId，不是 path 参数）
+curl -s -X POST "$N8N_BASE_URL/webhook/{webhookId}" \
+  -H "Content-Type: application/json" \
+  -d '{"key":"value"}'
+
+# 测试 webhook
+curl -s -X POST "$N8N_BASE_URL/webhook-test/{path}" \
+  -H "Content-Type: application/json" \
+  -d '{"key":"value"}'
 ```
 
-## Error Handling
+### 健康检查
+```bash
+ACTIVE=$(curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  "$N8N_BASE_URL/api/v1/workflows?active=true" | jq ".data | length")
 
-HTTP status codes:
-- `200` - Success
-- `400` - Bad request
-- `401` - Unauthorized (invalid API key)
-- `404` - Not found
-- `500` - Server error
+FAILED=$(curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  "$N8N_BASE_URL/api/v1/executions?status=error&limit=100" \
+  | jq '[.data[] | select(.startedAt > (now - 86400 | todate))] | length')
 
-## Environment Variables
+echo "Active workflows: $ACTIVE | Failed (24h): $FAILED"
+```
 
-Required:
-- `N8N_API_KEY` - n8n API key
-- `N8N_BASE_URL` - Base URL 
+## 错误处理
+
+HTTP 状态码：
+- `200` - 成功
+- `400` - 错误请求（检查 body 中是否有只读字段）
+- `401` - 未授权（API Key 无效）
+- `404` - 未找到
+- `405` - 方法不允许（n8n 2.x 不支持 PATCH）
+- `500` - 服务器错误
+
+## 环境变量
+
+必填：
+- `N8N_API_KEY` - n8n API Key
+- `N8N_BASE_URL` - 基础 URL（如 http://localhost:5678）
