@@ -1,0 +1,11 @@
+{
+  "owner": "hackstoic",
+  "slug": "hkipo-snapshot-extractor",
+  "displayName": "HK IPO Snapshot Extractor",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776355955767,
+    "commit": null
+  },
+  "history": []
+}
