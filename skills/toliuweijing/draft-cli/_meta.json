@@ -1,11 +1,17 @@
 {
   "owner": "toliuweijing",
   "slug": "draft-cli",
-  "displayName": "Draft CLI",
+  "displayName": "Draft Cli",
   "latest": {
-    "version": "1.5.4",
-    "publishedAt": 1776239470999,
-    "commit": "https://github.com/openclaw/skills/commit/74862f068c9aebe695c29fc8ad325f9416dcd913"
+    "version": "1.5.10",
+    "publishedAt": 1776745520463,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.5.4",
+      "publishedAt": 1776239470999,
+      "commit": "https://github.com/openclaw/skills/commit/74862f068c9aebe695c29fc8ad325f9416dcd913"
+    }
+  ]
 }

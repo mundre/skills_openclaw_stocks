@@ -1,12 +1,29 @@
 ---
 name: draft-cli
+version: "1.5.10"
 description: >
   Manage and interact with "Draft" pages and documents using the @innosage/draft-cli.
-  Use this skill whenever the user explicitly asks to read, create, list, patch, or append content to a "Draft page", "Draft doc", or their "Draft workspace" (e.g., "my draft page named 'Founder Sync'", "all the pages I have in my draft workspace", "Draft CLI").
+  Use this skill whenever the user explicitly asks to read, create, list, patch, append, publish, or review comments on a "Draft page", "Draft doc", or via the "Draft CLI" (e.g., "my draft page named 'Founder Sync'", "publish this Draft page", "read public comments on this Draft preview URL", "Draft CLI").
   This connects to the Draft PWA (draft.innosage.co) via a local daemon to read or modify living documents.
   DO NOT use this skill for generalized writing tasks where "draft" is used as a verb (e.g., "draft an email", "draft a response") or when referring to local markdown/text files with "draft" in the name (e.g., "draft.md", "investor_update_draft.md"). Only use when interacting with the actual InnoSage Draft web application or Draft CLI tool.
   When triggered, ALWAYS follow the "Connection First" operational pattern: check status before any other command, and start the background server if it is not running.
-metadata: {"clawdbot":{"emoji":"📝","requires":{"bins":["draft"]},"install":[{"id":"npm","kind":"node","package":"@innosage/draft-cli","bins":["draft"],"label":"Install draft-cli (npm)"}]}}
+metadata:
+  clawdis:
+    emoji: "📝"
+    requires:
+      bins:
+        - "draft"
+    install:
+      - id: "npm"
+        kind: "node"
+        package: "@innosage/draft-cli"
+        bins:
+          - "draft"
+        label: "Install draft-cli (npm)"
+    envVars:
+      - name: "GLOBAL_INVITE_CODE"
+        required: false
+        description: "The invite code used to publish Draft pages safely. Defaults to `innosage` during the free beta publish flow."
 ---
 
 # Draft CLI Skill
@@ -20,19 +37,22 @@ This skill requires specific permissions to interact with the Draft PWA and your
 | Scope | Capability | Rationale |
 | :--- | :--- | :--- |
 | **Network** | `https://draft.innosage.co` | Required for the daemon to communicate with the Draft PWA. |
-| **Filesystem** | Local `.md` files | Only accessed in `workspace` mode for direct repo-backed editing. |
 | **Processes** | `draft` binary | Used to manage the local daemon and execute operational commands. |
 
 ## Setup and Connection
 
 Before running Draft CLI commands, ensure `draft` is available on your PATH (see Install panel).
 
-### Operational Pattern: Always Check Connection First
+### Operational Pattern: Check Connection First for Live Page Commands
 
-To ensure a stable session, you MUST follow this sequence before executing any functional Draft command (like `ls`, `cat`, `create`, etc.):
+Exception:
+- `draft public-comments ...` is a hosted read path and does **not** require the local daemon, browser pairing, or a `draft status` handshake.
+- Use the daemon-first pattern for `draft page ...` and other live Draft page transport commands.
+
+To ensure a stable session, you MUST follow this sequence before executing any live Draft page command (like `page ls`, `page cat`, `page create`, `page append`, `page patch`, etc.):
 
 1.  **Check Status**: Start with `draft status --json` unless the user explicitly wants human-readable output.
-2.  **Handle Daemon Offline**: If status reports `DAEMON_OFFLINE`, run `draft start-server --mode local` (or `--mode workspace --workspace <root>` ONLY if you have a local file path and are co-located).
+2.  **Handle Daemon Offline**: If status reports `DAEMON_OFFLINE`, run `draft start-server`.
 3.  **Handle Browser Missing**: If status reports `BROWSER_NOT_CONNECTED`, run `draft daemon [url]` (the currently implemented pairing/retarget command) to re-open or re-pair the browser tab.
 4.  **Verify**: Run `draft status --json` again and only proceed once the state is `READY`.
 5.  **Respect Environment URLs**: The `--app <url>` argument defaults to production (`https://draft.innosage.co/`). Only pass a staging or development URL when the user explicitly asks for that environment.
@@ -42,10 +62,8 @@ To ensure a stable session, you MUST follow this sequence before executing any f
 # 1. Start with machine-readable status
 draft status --json
 
-# 2a. If the daemon is offline, start it. Choose mode based on environment:
-# - REMOTE/OPENCLAW: always use --mode local
-# - LOCAL/REPO: use --mode workspace --workspace $(pwd)
-draft start-server --mode local
+# 2a. If the daemon is offline, start it
+draft start-server
 
 # 2b. If the daemon is running but the browser is missing, pair a tab
 draft daemon
@@ -58,6 +76,37 @@ draft status --json
 > The Draft CLI uses one daemon and one active browser-backed session at a time. `draft start-server` starts the daemon, but it does not by itself prove that the browser paired successfully. Always trust `draft status` over startup copy before issuing read/write commands.
 > For agent lifecycle control, prefer `draft start-server` and `draft stop-server`. Keep `draft daemon` as the active pairing/retarget command when status shows no browser or when you need to retarget the connected tab.
 
+### Hosted Read Pattern for Public Page Comments
+
+Public comments are stored in a hosted sidecar store and read directly from the hosted API.
+For these commands:
+
+- Do **not** start with `draft status`.
+- Do **not** require `draft start-server`.
+- Do **not** require a paired browser tab.
+
+Preferred commands:
+
+```bash
+# URL-first path
+draft public-comments list --url 'https://draft.innosage.co/#/preview/<page_id>?mode=static'
+
+# Page-ID path
+draft public-comments list --page-id <page_id>
+
+# Explicit snapshot pin only when needed
+draft public-comments list --page-id <page_id> --publish-version <published_at_iso>
+
+# Inspect one comment in detail
+draft public-comments get <comment_id> --url 'https://draft.innosage.co/#/preview/<page_id>?mode=static'
+```
+
+Resolution behavior:
+
+- `list --url` accepts published URLs and preview URLs.
+- `list --page-id <page_id>` auto-resolves the publish version.
+- Use `--publish-version` only when you must pin an exact snapshot.
+
 ### Agent-Friendly Structured Output
 
 When the task is being executed by an agent or automation, prefer machine-readable output for operational commands and mutations:
@@ -65,9 +114,7 @@ When the task is being executed by an agent or automation, prefer machine-readab
 ```bash
 draft status --json
 draft page ls --json
-draft open path/to/file.md --json
 draft page create "My New Page Title" --json
-draft workspace comments path/to/file.md --json
 draft page append <id> "More content" --json
 draft page replace <id> --heading "Status" --json
 draft page patch <id> --json
@@ -82,65 +129,32 @@ Prefer the JSON workflow for branching and retries:
 - Use JSON mutation responses to capture created page IDs and publish URLs without scraping terminal prose.
 - Keep human-readable commands for manual inspection or when the user explicitly wants prose output.
 
-### Workspace-Backed Open
-
-For **local co-located agents** working on repo-backed markdown, prefer the workspace-backed flow over manual page-ID discovery:
-
-```bash
-draft status --json
-draft open path/to/file.md --json
-```
-
-Use `draft open <path> --json` as the canonical entrypoint for file-backed review work. It binds or reuses a durable document/page mapping, opens the Draft review surface for that file, and is the preferred `EDITOR_NOT_READY` recovery when the task starts from a local file path.
-
-> [!TIP]
-> **When to use workspace mode**: Only when the agent is co-located on the same machine as the user AND the task starts from a local `.md` file path. This unlocks `draft open <path>` for file-bound review tasks.
-
-> [!CAUTION]
-> **Remote/OpenClaw agents**: Do NOT use workspace mode. It requires a shared filesystem. In remote environments, workspace mode blocks `draft page publish` and may require user intervention to recover. Use `--mode local` instead.
-
-In workspace mode, the local markdown file is the source of truth. The Draft page is the review surface, and persisted comment artifacts are the durable review/control layer.
-
 ### Troubleshooting
 
 Treat `draft status` as the authoritative diagnosis step before retrying a failed command.
 
 - `DAEMON_OFFLINE`: the local daemon is not running.
-  Run `draft start-server --mode local`, then re-run `draft status`.
+  Run `draft start-server`, then re-run `draft status`.
 - `BROWSER_NOT_CONNECTED`: the daemon is running, but no Draft browser tab is paired.
   Run `draft daemon` (pairing/retarget), then re-run `draft status`.
 - `REQUEST_TIMEOUT`: the connected browser session did not respond in time.
   Run `draft status` to confirm the session is still connected before retrying.
 - `EDITOR_NOT_READY`: a browser tab is connected, but no writable editor is mounted.
-  If the task starts from a local file path, run `draft open <path> --json`, then re-run `draft status --json`.
-  If `draft open <path> --json` succeeds and `draft status --json` shows the connected `clients[].route` correctly retargeted to `/#/local?file=...` but the state is still `EDITOR_NOT_READY`, treat that as an app-side editor mount failure rather than a daemon pairing failure.
-  In that case, inspect the browser UI for workspace render errors such as `Page Not Found`, confirm the app actually mounted a writable editor, and avoid looping `draft start-server` or `draft daemon` blindly.
-  If you are in a legacy page-centric flow and already have a target page ID, mount a real page route in the connected tab (`https://draft.innosage.co/#/page/<id>`) and re-run `draft status --json`.
-  If you do not have a page ID yet in a legacy flow, run `draft page ls --json` first, then mount the page route and re-run `draft status --json`.
-- `PAGE_NOT_FOUND`: the provided page ID does not exist in the connected workspace.
-  For example, running `draft page comments does-not-exist-9999 --json` will return a `PAGE_NOT_FOUND` error because the ID `does-not-exist-9999` was **not found** in the workspace.
+  Mount a real page route in the connected tab (`https://draft.innosage.co/#/page/<id>`), then re-run `draft status --json`.
+  If you do not have a page ID yet, run `draft page ls --json` first to discover the page ID before route-mounting.
+- `PAGE_NOT_FOUND`: the provided page ID does not exist in the connected page set.
+  For example, running `draft page comments does-not-exist-9999 --json` will return a `PAGE_NOT_FOUND` error because the ID `does-not-exist-9999` was **not found**.
   Run `draft page ls --json` to confirm the correct page ID.
-- `UNBOUND_DOCUMENT`: the requested path or `document_id` is not currently bound in the active workspace.
-  Run `draft open <path> --json`, then retry `draft workspace comments <path> --json`.
-- Workspace-scope/input rejection: the requested path resolves outside the daemon's active workspace root.
-  Re-run the command from the correct workspace root and use a path under that root. Do not assume `/tmp` or another directory is valid unless the daemon was started there.
 
 Preferred recovery sequence:
 
-- If `draft status` says `DAEMON_OFFLINE`, run `draft start-server --mode local`, then re-check `draft status`.
-  (Use `--mode workspace --workspace <root>` only for co-located file-bound review tasks)
+- If `draft status` says `DAEMON_OFFLINE`, run `draft start-server`, then re-check `draft status`.
 - If `draft status` says `BROWSER_NOT_CONNECTED`, run `draft daemon` to re-open or re-pair the browser tab, then re-check `draft status`.
 - If a live command returns `REQUEST_TIMEOUT`, do not retry blindly. Run `draft status` first.
-- If `draft status` or a mutation error indicates `EDITOR_NOT_READY` for a local file workflow, run `draft open <path> --json`, then re-run `draft status --json` before retrying reads or writes.
-- If `draft open <path> --json` succeeded and `draft status --json` shows the expected `clients[].route` for that file but still reports `EDITOR_NOT_READY`, stop treating this as a daemon reconnection problem.
-  Diagnose the app surface instead:
-  confirm the GUI is on `/#/local?file=...`, check whether the page shows `Page Not Found` or another workspace load error, and restart the local app if the running build may be stale.
-- If `draft status` or a mutation error indicates `EDITOR_NOT_READY` in a legacy page-centric flow, mount a real page route in the connected tab (`https://draft.innosage.co/#/page/<id>`), then re-run `draft status --json` before retrying writes.
+- If `draft status` or a mutation error indicates `EDITOR_NOT_READY`, mount a real page route in the connected tab (`https://draft.innosage.co/#/page/<id>`), then re-run `draft status --json` before retrying writes.
   If needed, use `draft page ls --json` to discover the page ID before route-mounting.
 - Do not treat `draft page create` as the primary `EDITOR_NOT_READY` fix. Recover editor readiness first, then run the intended command.
-- If `draft workspace comments <path|document_id|page_id> --json` returns `UNBOUND_DOCUMENT`, bind the file first with `draft open <path> --json`.
-- If a workspace command fails because the path is outside the active workspace root, correct the working directory or path before retrying.
-- If the daemon looks stuck or the wrong tab is attached, run `draft stop-server`, then restart with `draft start-server --mode local`.
+- If the daemon looks stuck or the wrong tab is attached, run `draft stop-server`, then restart with `draft start-server`.
 - If the user explicitly wants staging or another environment, reuse the same URL consistently for both `draft start-server --app [url]` and `draft daemon [url]`.
 - If `draft status --json` shows `READY` but the connected `clients[].origin` does not match the requested environment, stop the server and reconnect to the requested URL before making changes.
 - In CI or headless sessions, browser auto-launch may be skipped. Treat that as a diagnosis cue, then pair from a desktop session and verify with `draft status --json`.
@@ -155,7 +169,7 @@ The Draft CLI uses conventional command structures.
 
 ### Listing and Reading
 
-To see all available pages in the user's Draft workspace:
+To see all available Draft pages:
 
 ```bash
 # Requires active connection
@@ -174,19 +188,7 @@ draft page cat <id>
 draft page cat <id> --format raw
 ```
 
-### Persisted Comment Artifacts
-
-For workspace-backed files, prefer the persisted artifact read path:
-
-```bash
-draft workspace comments <path|document_id|page_id> --json
-```
-
-This is the preferred machine-readable read path for human comments on workspace-bound files. The JSON payload includes top-level metadata like `document_id`, `page_id`, `source_path`, and `comments[]`. Each comment record can include fields like `comment_id`, `body`, `status`, `author`, `created_at`, `anchor`, and `anchor_status`.
-
-Use this flow when the user starts from a repo file path or a workspace-bound document and you want to read review feedback without switching your source of truth away from local markdown.
-
-### Legacy Page Annotations
+### Reading Page Annotations (Comments)
 
 > [!NOTE]
 > "Comments" in Draft are annotation highlights attached to text spans. The CLI exposes them as
@@ -209,15 +211,50 @@ draft page comment <comment_id> <page_id> --json
 
 Output includes `note`, `anchor_text`, and a `bounded_context` object with `before` and `after` fields. Use `bounded_context.before + anchor_text + bounded_context.after` to locate the exact edit site before patching.
 
-### Creating Annotations (Comments)
+### Reading Public Page Comments
 
-Use `draft workspace annotate` to create a new comment on a selected text span. In workspace mode, you can pass the workspace file path instead of the page ID.
+> [!NOTE]
+> This is the hosted public-review path, not the live page-annotation path above.
+> Use `draft public-comments ...` when comments were created on a public or preview page.
+> These comments are bound to a published snapshot and stored outside the live page transport.
+
+To list public comments for a public or preview URL:
 
 ```bash
-# Basic annotation (Workspace mode - preferred)
-draft workspace annotate path/to/file.md --anchor "scalable infrastructure" --note "Specify AWS or GCP" --json
+draft public-comments list --url 'https://draft.innosage.co/#/preview/<page_id>?mode=static'
+```
 
-# Basic annotation (Legacy local mode)
+To list public comments when only the page ID is known:
+
+```bash
+draft public-comments list --page-id <page_id>
+```
+
+To inspect a single public comment with bounded context:
+
+```bash
+draft public-comments get <comment_id> --url 'https://draft.innosage.co/#/preview/<page_id>?mode=static'
+```
+
+Machine-readable forms:
+
+```bash
+draft public-comments list --url 'https://draft.innosage.co/#/preview/<page_id>?mode=static' --json
+draft public-comments list --page-id <page_id> --json
+draft public-comments get <comment_id> --json
+```
+
+What the agent should expect:
+
+- `list` output includes comment ID, thread state, author, quote, and body preview.
+- `get` output includes page ID, publish version, offsets, body, and bounded context.
+
+### Creating Annotations (Comments)
+
+Use `draft page annotate` to create a new comment on a selected text span.
+
+```bash
+# Basic annotation
 draft page annotate <page_id> --anchor "scalable infrastructure" --note "Specify AWS or GCP" --json
 ```
 
@@ -225,8 +262,8 @@ When the anchor text appears more than once, disambiguate with surrounding conte
 
 ```bash
 # Disambiguate repeated anchors with nearby prefix/suffix context
-draft workspace annotate path/to/file.md --anchor "status" --before "The current " --note "Needs update" --json
-draft workspace annotate path/to/file.md --anchor "status" --after " is blocked" --note "Needs update" --json
+draft page annotate <page_id> --anchor "status" --before "The current " --note "Needs update" --json
+draft page annotate <page_id> --anchor "status" --after " is blocked" --note "Needs update" --json
 ```
 
 Use `--before` and/or `--after` whenever the anchor is ambiguous or repeated in the same page.
@@ -243,12 +280,11 @@ To publish a page to the web:
 
 ```bash
 # This will make the page publicly accessible via a unique URL.
-# NOTE: For free beta testing, you MUST provide an invite code.
-# You can use the --invite-code flag (RECOMMENDED):
-draft page publish <id> --invite-code innosage
+# Free beta publish flow defaults to `innosage` when no invite code is provided.
+draft page publish <id> --invite-code "${GLOBAL_INVITE_CODE:-innosage}"
 
-# OR set the environment variable:
-# GLOBAL_INVITE_CODE=innosage draft page publish <id>
+# If you want to spell out the free beta code directly, this is equivalent:
+draft page publish <id> --invite-code innosage
 ```
 
 To append content to the END of a page. You can pass the content as a string, but for multiline Markdown, it is usually safer and much more robust to pipe it via `stdin`:
@@ -315,6 +351,33 @@ cat patch.diff | draft page patch <id>
 > ```bash
 > draft page cat <id> | sed '1,4d' | sed '$d' | sed 's/ \[:: User Note: [^:]* :\]//g' > /tmp/before.md
 > ```
+
+### Inserting and Managing Images
+
+You can use the CLI to insert images from local files, update their alignment or width, and delete them.
+To insert an image into a page:
+
+```bash
+# Insert an image with default alignment (left) and default width
+draft page insert-image <id> /path/to/local/image.png --json
+
+# Insert an image with specific alignment and width
+draft page insert-image <id> /path/to/local/image.jpg --align center --width 500 --json
+```
+
+The output JSON will include a `local_id` (e.g., `local_id: "img-abc1234"`). **Save this `local_id`**, as it is required to update or delete the image.
+
+To update the alignment or width of an existing image block:
+
+```bash
+draft page update-image <id> <local_id> --align right --json
+```
+
+To delete an existing image block:
+
+```bash
+draft page delete-image <id> <local_id> --json
+```
 
 ## Common Workflows
 
@@ -400,7 +463,7 @@ Only do this when the user explicitly asks for a non-production Draft environmen
 ```bash
 draft status --json
 draft stop-server
-draft start-server --mode local --app https://markdown-editor-staging.web.app/
+draft start-server --app https://markdown-editor-staging.web.app/
 draft status --json
 draft daemon https://markdown-editor-staging.web.app/
 draft status --json
@@ -408,14 +471,12 @@ draft status --json
 
 **6. Publishing a Page**
 
-Always use `--mode local` when the primary goal is to publish a page. Workspace mode blocks reachability to the publish endpoint.
-
 ```bash
 # 1. Stop any existing server to ensure a clean start in local mode
 draft stop-server
 
 # 2. Connect in local mode (safest for publish)
-draft start-server --mode local
+draft start-server
 draft daemon
 draft status --json # Verify READY state before proceeding
 
