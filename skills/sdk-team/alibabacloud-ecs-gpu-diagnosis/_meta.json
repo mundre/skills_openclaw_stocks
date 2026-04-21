@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-ecs-gpu-diagnosis",
+  "displayName": "Alibabacloud Ecs Gpu Diagnosis",
+  "latest": {
+    "version": "0.0.1-beta.1",
+    "publishedAt": 1776305538867,
+    "commit": null
+  },
+  "history": []
+}
