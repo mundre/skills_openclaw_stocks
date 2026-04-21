@@ -3,9 +3,15 @@
   "slug": "alvis-adaptive-reasoning",
   "displayName": "Adaptive Reasoning",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776070316277,
-    "commit": "https://github.com/openclaw/skills/commit/f719386281f9efc02f4a56f7033dd25b3e4fd085"
+    "version": "2.0.0",
+    "publishedAt": 1776237301748,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776070316277,
+      "commit": "https://github.com/openclaw/skills/commit/f719386281f9efc02f4a56f7033dd25b3e4fd085"
+    }
+  ]
 }

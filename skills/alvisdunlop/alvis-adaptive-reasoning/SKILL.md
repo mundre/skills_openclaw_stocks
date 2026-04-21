@@ -29,10 +29,10 @@ Score the request 0-10 on these dimensions:
 
 | Score | Action |
 |-------|--------|
-| ≤2 | Stay fast. No reasoning needed. |
+| �? | Stay fast. No reasoning needed. |
 | 3-5 | Standard response. Light internal deliberation. |
 | 6-7 | Consider `/reasoning on` or pause to think explicitly. |
-| ≥8 | **Activate extended thinking.** Complex problem warrants it. |
+| �? | **Activate extended thinking.** Complex problem warrants it. |
 
 ## Activation (Automatic)
 
@@ -40,17 +40,17 @@ Score the request 0-10 on these dimensions:
 
 | Score | Action |
 |-------|--------|
-| ≤5 | Respond normally. No change. |
+| �? | Respond normally. No change. |
 | 6-7 | Enable reasoning silently. Add 🧠 at end of response. |
-| ≥8 | Enable reasoning. Add 🧠🔥 at end of response. |
+| �? | Enable reasoning. Add 🧠🔥 at end of response. |
 
 ### Visual Indicator
 
 Always append the reasoning icon at the **very end** of your response:
 
 - **Score 6-7:** `🧠` (thinking mode active)
-- **Score ≥8:** `🧠🔥` (deep thinking mode)
-- **Score ≤5:** No icon (fast mode)
+- **Score �?:** `🧠🔥` (deep thinking mode)
+- **Score �?:** No icon (fast mode)
 
 ### How to Activate
 
@@ -74,28 +74,28 @@ After completing a complex task, optionally disable to save tokens on follow-ups
 
 **Low complexity (score: 1)**
 > "What time is it in Tokyo?"
-→ Simple lookup. Answer immediately. No icon.
+�?Simple lookup. Answer immediately. No icon.
 
 **Medium complexity (score: 4)**
 > "Refactor this function to be more readable"
-→ Standard response with brief explanation. No icon.
+�?Standard response with brief explanation. No icon.
 
 **High complexity (score: 7)**
 > "Design a caching strategy for this API with these constraints..."
-→ Enable reasoning. Thoughtful response ends with: 🧠
+�?Enable reasoning. Thoughtful response ends with: 🧠
 
 **Very high complexity (score: 9)**
 > "Debug why this distributed system has race conditions under load"
-→ Enable extended thinking. Deep analysis ends with: 🧠🔥
+�?Enable extended thinking. Deep analysis ends with: 🧠🔥
 
 ## Integration
 
 This skill runs as mental preprocessing. No external tools needed.
 
 For explicit control:
-- `/reasoning on` — Enable extended thinking
-- `/reasoning off` — Disable (faster responses)
-- `/status` — Check current reasoning state
+- `/reasoning on` �?Enable extended thinking
+- `/reasoning off` �?Disable (faster responses)
+- `/status` �?Check current reasoning state
 
 ## When NOT to Escalate
 
@@ -107,6 +107,7 @@ For explicit control:
 
 ## Auto-Downgrade
 
-After completing a complex task (score ≥6), if the next message is simple (score ≤3):
+After completing a complex task (score �?), if the next message is simple (score �?):
 - Silently disable reasoning to save tokens
 - Resume normal fast responses
+
