@@ -4,11 +4,11 @@ import re, sys
 from pathlib import Path
 from datetime import date
 
-from lib.config import BASE_DIR, CATEGORIES, CATEGORY_META, SITE_NAME, _CFG, load_index, save_index, strip_emoji, add_ids
+from lib.config import BASE_DIR, SITE_NAME, _CFG, load_index, save_index, strip_emoji, add_ids
 
 def generate_page_html(page_info, base_url, no_chrome=False):
     cat = page_info.get("category", "")
-    cat_name = CATEGORIES.get(cat, "其他") if cat else ""
+    cat_name = cat or ""
     body = add_ids(page_info["body"])
     page_style = page_info.get("style", "")
     style_tag = f"\n  <style>\n    {page_style}\n  </style>" if page_style else ""
@@ -77,7 +77,7 @@ def generate_page_html(page_info, base_url, no_chrome=False):
         chrome_header = f'''
     <header class="report-header">
       <div class="report-header__breadcrumb">
-        <a href="../" target="_top">🏠</a>
+        <a href="../" target="_top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></a>
         <span>{cat_name}</span>
       </div>
       <div class="report-header__meta">

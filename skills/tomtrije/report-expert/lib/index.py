@@ -4,7 +4,7 @@ import json, re, sys, subprocess
 from pathlib import Path
 from datetime import date
 
-from lib.config import (BASE_DIR, CATEGORIES, CATEGORY_META, DIST_DIR, SITE_URL, SITE_NAME, _CFG,
+from lib.config import (BASE_DIR, DIST_DIR, SITE_URL, SITE_NAME, _CFG,
                          INDEX_FILE, load_index, save_index, sync_to_deploy)
 from lib.page import copy_assets
 
@@ -154,7 +154,7 @@ def scan_and_rebuild():
     if use_ai:
         print(f"\n🤖 AI 分类中...")
         # Build a prompt with all pages
-        cat_list = ", ".join(CATEGORIES.keys())
+        cat_list = "(无限制)"
         for p in pages:
             fpath = None
             for d in scan_dirs:
@@ -181,7 +181,7 @@ def scan_and_rebuild():
                     capture_output=True, text=True, timeout=30
                 )
                 ai_cat = result.stdout.strip().lower()
-                if ai_cat in CATEGORIES:
+                if ai_cat:
                     old_cat = p["category"]
                     p["category"] = ai_cat
                     if old_cat != ai_cat:
@@ -201,19 +201,22 @@ def scan_and_rebuild():
             except Exception as e:
                 print(f"  ⚠️ {p['filename']}: AI 分类失败 ({e})")
 
-    # Build categories from actual pages found
+    # Build categories from actual pages + preserve existing config
+    existing_data = load_index()
+    existing_cats = existing_data.get("categories", {})
     categories = {}
     for p in pages:
         cat = p["category"]
         if cat not in categories:
-            meta = CATEGORY_META.get(cat, {})
-            categories[cat] = {
-                "name": CATEGORIES.get(cat, cat),
-                "icon": meta.get("icon", "📄"),
-                "description": meta.get("desc", ""),
-            }
-            if "c" in meta:
-                categories[cat]["color"] = {"c": meta["c"], "b": meta["b"]}
+            categories[cat] = {"name": cat}  # default: use category key as display name
+    # Merge existing categories config (only icon/description/color, not name if it's same as key)
+    for cat, cfg in existing_cats.items():
+        if cat in categories:
+            for k, v in cfg.items():
+                if k == "name" and v == cat:
+                    continue  # skip fallback name (same as key)
+                if v:
+                    categories[cat][k] = v
 
     # Merge preserved external pages, deduplicate by URL
     scanned_urls = {p.get("url", "") for p in pages if p.get("url")}

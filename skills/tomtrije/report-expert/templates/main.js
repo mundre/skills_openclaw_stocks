@@ -57,6 +57,13 @@
     // Generate TOC from headings
     var content = document.querySelector('.page-body');
     if (!content) return;
+    // Auto-assign IDs to headings that lack them
+    content.querySelectorAll('h2, h3').forEach(function(h, i) {
+      if (!h.id) {
+        var base = h.textContent.trim().replace(/[^\w\u4e00-\u9fff]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+        h.id = base || ('heading-' + i);
+      }
+    });
     var headings = content.querySelectorAll('h2[id], h3[id]');
     if (!headings.length) { sidebar.style.display = 'none'; toggle.style.display = 'none'; return; }
 
@@ -117,103 +124,99 @@
     });
   }
 
-  /* --- Subcategory Pill Filter --- */
-  function initSubPills() {
-    var pills = document.querySelectorAll('.sub-pill[data-filter]');
-    var rows = document.querySelectorAll('.row[data-reveal]');
-    if (!pills.length || !rows.length) return;
-
-    pills.forEach(function(pill) {
-      pill.addEventListener('click', function(e) {
-        e.preventDefault();
-        var filter = pill.getAttribute('data-filter');
-
-        // Update active state
-        pills.forEach(function(p) { p.classList.remove('sub-pill--active'); });
-        pill.classList.add('sub-pill--active');
-
-        // Filter rows
-        rows.forEach(function(row) {
-          var subTag = row.querySelector('.row-sub');
-          var rowSub = subTag ? subTag.textContent.trim() : '';
-          if (filter === 'all') {
-            row.style.display = '';
-          } else if (filter === '') {
-            row.style.display = rowSub ? 'none' : '';
-          } else {
-            row.style.display = (rowSub === filter) ? '' : 'none';
-          }
-        });
-      });
+  /* --- Back to Top --- */
+  function initBackToTop() {
+    var btn = document.querySelector('.back-to-top');
+    if (!btn) return;
+    window.addEventListener('scroll', function() {
+      btn.classList.toggle('back-to-top--visible', window.pageYOffset > 400);
+    });
+    btn.addEventListener('click', function() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 
-  /* --- Unified Header / Footer Injection --- */
-  function initUnifiedChrome() {
-    // Only apply to report pages (identified by .report-wrap)
-    if (!document.querySelector('.report-wrap')) return;
-    var HOME = 'https://www.rego.vip/claw/';
-    var BRAND = '传琪';
-    var HOME_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
-    var CHEVRON_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
-    var isInIframe = window.self !== window.top;
+  /* --- Chart Zoom / Lightbox --- */
+  function initChartZoom() {
+    // Auto-inject zoom buttons into chart-boxes that lack one
+    document.querySelectorAll('.chart-box:not(:has(.chart-box__zoom-btn))').forEach(function(box) {
+      var btn = document.createElement('button');
+      btn.className = 'chart-box__zoom-btn';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>';
+      btn.title = '放大查看';
+      btn.style.cssText = 'position:absolute;top:8px;right:8px;z-index:10;opacity:0.7;cursor:pointer;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px;';
+      box.style.position = 'relative';
+      box.appendChild(btn);
+    });
 
-    // --- Detect if loaded inside iframe viewer ---
-    function navigateHome(e) {
-      if (isInIframe) {
-        // Notify parent to close viewer instead of navigating inside iframe
-        try { window.parent.postMessage({ type: 'claw-navigate-home' }, '*'); } catch(ex) {}
-        e.preventDefault();
+    // Also inject zoom buttons for ECharts divs
+    document.querySelectorAll('div[id$="Chart"], .echart, [id*="chart"]').forEach(function(el) {
+      if (el.closest('.chart-box') || el.querySelector('.chart-box__zoom-btn')) return;
+      var btn = document.createElement('button');
+      btn.className = 'chart-box__zoom-btn';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>';
+      btn.title = '放大查看';
+      btn.style.cssText = 'position:absolute;top:8px;right:8px;z-index:10;opacity:0.7;cursor:pointer;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px;';
+      el.style.position = 'relative';
+      el.appendChild(btn);
+    });
+
+    // Inject zoom buttons for mermaid diagrams
+    document.querySelectorAll('.mermaid, pre.mermaid').forEach(function(el) {
+      if (el.closest('.chart-box') || el.querySelector('.chart-box__zoom-btn')) return;
+      var wrapper = document.createElement('div');
+      wrapper.className = 'mermaid-zoom-wrap';
+      wrapper.style.cssText = 'position:relative;display:inline-block;';
+      el.parentNode.insertBefore(wrapper, el);
+      wrapper.appendChild(el);
+      var btn = document.createElement('button');
+      btn.className = 'chart-box__zoom-btn';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>';
+      btn.title = '放大查看';
+      btn.style.cssText = 'position:absolute;top:8px;right:8px;z-index:10;opacity:0.7;cursor:pointer;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px;';
+      wrapper.appendChild(btn);
+    });
+
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.chart-box__zoom-btn, .chart-zoom-wrap__btn');
+      if (!btn) return;
+      var box = btn.closest('.chart-box, .chart-zoom-wrap, .mermaid-zoom-wrap, div[id$="Chart"], .echart, [id*="chart"]');
+      if (!box) return;
+      e.preventDefault(); e.stopPropagation();
+      var overlay = document.createElement('div');
+      overlay.className = 'chart-zoom-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:32px;box-sizing:border-box;animation:fadeIn .2s ease;';
+      var style = document.createElement('style');
+      style.textContent = '@keyframes fadeIn{from{opacity:0}to{opacity:1}}';
+      overlay.appendChild(style);
+      // For ECharts: create fresh instance with original option
+      if (typeof echarts !== 'undefined') {
+        var origInstance = echarts.getInstanceByDom(box);
+        if (origInstance) {
+          var opt = origInstance.getOption();
+          var container = document.createElement('div');
+          container.style.cssText = 'max-width:95vw;max-height:90vh;width:90vw;height:70vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);box-sizing:border-box;';
+          var chartDiv = document.createElement('div');
+          chartDiv.style.cssText = 'width:100%;height:100%;box-sizing:border-box;';
+          container.appendChild(chartDiv);
+          overlay.appendChild(container);
+          document.body.appendChild(overlay);
+          setTimeout(function(){
+            var newInst = echarts.init(chartDiv);
+            newInst.setOption(opt);
+            var closeFn = function() { newInst.dispose(); overlay.remove(); };
+            overlay.addEventListener('click', function(ev) { if (ev.target === overlay) closeFn(); });
+            document.addEventListener('keydown', function handler(ev) { if (ev.key === 'Escape') { closeFn(); document.removeEventListener('keydown', handler); } });
+          }, 100);
+          return;
+        }
       }
-      // If not in iframe, let the default link behavior work
-    }
-
-    // --- Fix breadcrumb: normalize all report-header breadcrumbs ---
-    var bc = document.querySelector('.report-header__breadcrumb');
-    if (bc) {
-      var existingLink = bc.querySelector('a[href]');
-      if (existingLink) {
-        existingLink.href = HOME;
-        existingLink.innerHTML = HOME_SVG;
-        existingLink.setAttribute('aria-label', '返回首页');
-        existingLink.addEventListener('click', navigateHome);
-      }
-      // Ensure chevron separator exists before the last child
-      if (!bc.querySelector('svg[width="14"]')) {
-        var sepSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        sepSvg.setAttribute('viewBox', '0 0 24 24');
-        sepSvg.setAttribute('width', '14');
-        sepSvg.setAttribute('height', '14');
-        sepSvg.setAttribute('fill', 'none');
-        sepSvg.setAttribute('stroke', 'currentColor');
-        sepSvg.setAttribute('stroke-width', '2');
-        sepSvg.setAttribute('stroke-linecap', 'round');
-        sepSvg.setAttribute('stroke-linejoin', 'round');
-        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', 'm9 18 6-6-6-6');
-        sepSvg.appendChild(path);
-        bc.insertBefore(sepSvg, bc.lastElementChild);
-      }
-    }
-
-    // --- Fix footer: remove all existing footers, inject unified one ---
-    document.querySelectorAll('.page-footer').forEach(function(f) { f.remove(); });
-    document.querySelectorAll('div[style*="text-align:center"][style*="padding:24px"]').forEach(function(f) { f.remove(); });
-
-    var footer = document.createElement('footer');
-    footer.className = 'page-footer';
-    footer.innerHTML =
-      '<div class="page-footer__logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>' +
-      '<span class="page-footer__sep"></span>' +
-      '<a href="' + HOME + '" class="page-footer__link">' + BRAND + '</a>' +
-      '<span class="page-footer__sep"></span>' +
-      '<span>\u00A9 ' + new Date().getFullYear() + '</span>';
-    footer.querySelector('.page-footer__link').addEventListener('click', navigateHome);
-    document.body.appendChild(footer);
-
-    // --- Fix: ensure content is visible immediately (no hidden state) ---
-    document.querySelectorAll('[data-reveal]').forEach(function(el) {
-      el.classList.add('revealed');
+      var clone = box.cloneNode(true);
+      clone.style.cssText = 'max-width:95vw;max-height:90vh;width:90vw;overflow:auto;background:#fff;border-radius:12px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.4);';
+      overlay.appendChild(clone);
+      overlay.addEventListener('click', function(ev) { if (ev.target === overlay) overlay.remove(); });
+      document.addEventListener('keydown', function handler(ev) { if (ev.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); } });
+      document.body.appendChild(overlay);
     });
   }
 
@@ -222,8 +225,8 @@
     initScrollReveal();
     initTOC();
     initScrollProgress();
-    initSubPills();
-    initUnifiedChrome();
+    initBackToTop();
+    initChartZoom();
   });
 })();
 

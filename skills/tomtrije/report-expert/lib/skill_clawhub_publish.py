@@ -33,20 +33,38 @@ def publish_to_clawhub(version=None, changelog=""):
     # Sync version and regenerate index.html
     _sync_version(skill_dir, version)
 
+    import shutil, tempfile
+
     print(f"📦 发布到 ClawHub: {slug} v{version}")
 
-    # Build clawhub publish command
-    cmd = ["clawhub", "publish", str(skill_dir)]
-    if version:
-        cmd.extend(["--version", version])
-    if changelog:
-        cmd.extend(["--changelog", changelog])
+    # Temporarily exclude dist/ and backups/ to stay under 20MB limit
+    exclude_dirs = ["dist", "backups"]
+    moved = []
+    for d in exclude_dirs:
+        p = skill_dir / d
+        if p.is_dir():
+            tmp = Path(tempfile.mkdtemp()) / d
+            shutil.move(str(p), str(tmp))
+            moved.append((tmp, p))
+            print(f"  ⏳ 临时移除 {d}/")
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    print(result.stdout)
-    if result.returncode != 0:
-        print(result.stderr)
-        print("❌ ClawHub 发布失败")
-        sys.exit(1)
-    else:
-        print(f"✅ ClawHub 发布成功: {slug} v{version}")
+    try:
+        # Build clawhub publish command
+        cmd = ["clawhub", "publish", str(skill_dir)]
+        if version:
+            cmd.extend(["--version", version])
+        if changelog:
+            cmd.extend(["--changelog", changelog])
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        print(result.stdout)
+        if result.returncode != 0:
+            print(result.stderr)
+            print("❌ ClawHub 发布失败")
+            sys.exit(1)
+        else:
+            print(f"✅ ClawHub 发布成功: {slug} v{version}")
+    finally:
+        for tmp, orig in moved:
+            shutil.move(str(tmp), str(orig))
+            print(f"  ✅ 已恢复 {orig.name}/")

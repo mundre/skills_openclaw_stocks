@@ -57,6 +57,13 @@
     // Generate TOC from headings
     var content = document.querySelector('.page-body');
     if (!content) return;
+    // Auto-assign IDs to headings that lack them
+    content.querySelectorAll('h2, h3').forEach(function(h, i) {
+      if (!h.id) {
+        var base = h.textContent.trim().replace(/[^\w\u4e00-\u9fff]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+        h.id = base || ('heading-' + i);
+      }
+    });
     var headings = content.querySelectorAll('h2[id], h3[id]');
     if (!headings.length) { sidebar.style.display = 'none'; toggle.style.display = 'none'; return; }
 
@@ -129,12 +136,97 @@
     });
   }
 
+  /* --- Chart Zoom / Lightbox --- */
+  function initChartZoom() {
+    // Auto-inject zoom buttons into chart-boxes that lack one
+    document.querySelectorAll('.chart-box:not(:has(.chart-box__zoom-btn))').forEach(function(box) {
+      var btn = document.createElement('button');
+      btn.className = 'chart-box__zoom-btn';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>';
+      btn.title = '放大查看';
+      btn.style.cssText = 'position:absolute;top:8px;right:8px;z-index:10;opacity:0.7;cursor:pointer;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px;';
+      box.style.position = 'relative';
+      box.appendChild(btn);
+    });
+
+    // Also inject zoom buttons for ECharts divs
+    document.querySelectorAll('div[id$="Chart"], .echart, [id*="chart"]').forEach(function(el) {
+      if (el.closest('.chart-box') || el.querySelector('.chart-box__zoom-btn')) return;
+      var btn = document.createElement('button');
+      btn.className = 'chart-box__zoom-btn';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>';
+      btn.title = '放大查看';
+      btn.style.cssText = 'position:absolute;top:8px;right:8px;z-index:10;opacity:0.7;cursor:pointer;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px;';
+      el.style.position = 'relative';
+      el.appendChild(btn);
+    });
+
+    // Inject zoom buttons for mermaid diagrams
+    document.querySelectorAll('.mermaid, pre.mermaid').forEach(function(el) {
+      if (el.closest('.chart-box') || el.querySelector('.chart-box__zoom-btn')) return;
+      var wrapper = document.createElement('div');
+      wrapper.className = 'mermaid-zoom-wrap';
+      wrapper.style.cssText = 'position:relative;display:inline-block;';
+      el.parentNode.insertBefore(wrapper, el);
+      wrapper.appendChild(el);
+      var btn = document.createElement('button');
+      btn.className = 'chart-box__zoom-btn';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>';
+      btn.title = '放大查看';
+      btn.style.cssText = 'position:absolute;top:8px;right:8px;z-index:10;opacity:0.7;cursor:pointer;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px;';
+      wrapper.appendChild(btn);
+    });
+
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.chart-box__zoom-btn, .chart-zoom-wrap__btn');
+      if (!btn) return;
+      var box = btn.closest('.chart-box, .chart-zoom-wrap, .mermaid-zoom-wrap, div[id$="Chart"], .echart, [id*="chart"]');
+      if (!box) return;
+      e.preventDefault(); e.stopPropagation();
+      var overlay = document.createElement('div');
+      overlay.className = 'chart-zoom-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:32px;box-sizing:border-box;animation:fadeIn .2s ease;';
+      var style = document.createElement('style');
+      style.textContent = '@keyframes fadeIn{from{opacity:0}to{opacity:1}}';
+      overlay.appendChild(style);
+      // For ECharts: create fresh instance with original option
+      if (typeof echarts !== 'undefined') {
+        var origInstance = echarts.getInstanceByDom(box);
+        if (origInstance) {
+          var opt = origInstance.getOption();
+          var container = document.createElement('div');
+          container.style.cssText = 'max-width:95vw;max-height:90vh;width:90vw;height:70vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);box-sizing:border-box;';
+          var chartDiv = document.createElement('div');
+          chartDiv.style.cssText = 'width:100%;height:100%;box-sizing:border-box;';
+          container.appendChild(chartDiv);
+          overlay.appendChild(container);
+          document.body.appendChild(overlay);
+          setTimeout(function(){
+            var newInst = echarts.init(chartDiv);
+            newInst.setOption(opt);
+            var closeFn = function() { newInst.dispose(); overlay.remove(); };
+            overlay.addEventListener('click', function(ev) { if (ev.target === overlay) closeFn(); });
+            document.addEventListener('keydown', function handler(ev) { if (ev.key === 'Escape') { closeFn(); document.removeEventListener('keydown', handler); } });
+          }, 100);
+          return;
+        }
+      }
+      var clone = box.cloneNode(true);
+      clone.style.cssText = 'max-width:95vw;max-height:90vh;width:90vw;overflow:auto;background:#fff;border-radius:12px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.4);';
+      overlay.appendChild(clone);
+      overlay.addEventListener('click', function(ev) { if (ev.target === overlay) overlay.remove(); });
+      document.addEventListener('keydown', function handler(ev) { if (ev.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); } });
+      document.body.appendChild(overlay);
+    });
+  }
+
   /* --- Init --- */
   document.addEventListener('DOMContentLoaded', function() {
     initScrollReveal();
     initTOC();
     initScrollProgress();
     initBackToTop();
+    initChartZoom();
   });
 })();
 

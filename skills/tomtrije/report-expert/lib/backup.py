@@ -95,11 +95,17 @@ def update_pages():
         date_str = date_m.group(1) if date_m else date.today().isoformat()
 
         # Extract body (from page-body div)
-        body_m = re.search(r'<div class="page-body"[^>]*>(.*)</div>\s*<footer', html, re.DOTALL)
+        # Extract body content between page-body and footer
+        # Use non-greedy match, then strip trailing wrapper closings
+        body_m = re.search(r'<div class="page-body"[^>]*>(.*?)<footer', html, re.DOTALL)
         if not body_m:
             print(f"  ⏭️  {rel} — 无法提取内容，跳过")
             continue
         body = body_m.group(1).strip()
+        # Remove trailing </div>s that close report-wrap/page-body wrappers
+        body = body.rstrip()
+        while body.endswith('</div>'):
+            body = body[:-6].rstrip()
         body = strip_emoji(body)
         body = re.sub(r'<h1[^>]*>.*?</h1>', '', body, flags=re.DOTALL)
         body = re.sub(r'<header[^>]*>.*?</header>', '', body, flags=re.DOTALL)

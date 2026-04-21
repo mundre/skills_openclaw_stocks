@@ -213,6 +213,15 @@ curl -sI "${REPO}/deploy.py" | head -1
 
 ## 分类体系
 
+### 分类命名规范
+
+1. **双标识格式**：创建报告或新建分类时，必须使用 `英文标识 + 中文名称` 的双标识体系
+2. **路径使用英文标识**：文件存储路径、URL 路径、索引过滤字段均使用英文标识（如 `research`、`analysis`）
+3. **展示使用中文名称**：索引页面、用户界面展示时使用中文名称（如「深度研究」「数据分析」）
+4. **逻辑执行用英文标识**：代码中的分类判断、过滤、路由等逻辑全部基于英文标识
+
+### 现有分类
+
 | key | 名称 | 说明 |
 |-----|------|------|
 | research | 深度研究 | 系统性调研与分析 |
@@ -243,9 +252,74 @@ python3 deploy.py update
 python3 deploy.py backup [list|restore <name>]
 ```
 
+## 索引管理操作规范
+
+当用户从索引页管理模式生成指令后，执行对应的索引管理操作：
+
+### 移动分类
+- **只修改 index.json 中的 category 字段，不要移动实际文件**
+- 修改后必须执行 `python3 deploy.py update` 部署更新
+
+```python
+# 修改 category 示例
+import json
+f = 'dist/index.json'
+d = json.load(open(f))
+for p in d['pages']:
+    if p['filename'] == 'xxx.html':
+        p['category'] = 'target-category'
+json.dump(d, open(f, 'w'), ensure_ascii=False, indent=2)
+```
+
+### 删除页面
+- 删除源文件（`REPORT_LOCAL_DIR` 下对应路径）和 dist 中的副本
+- 执行 `python3 deploy.py rebuild_index` 重建索引并部署
+
+### 操作后必须部署
+- **移动分类** → `python3 deploy.py update`
+- **删除页面** → `python3 deploy.py rebuild_index`
+- 不部署 = 没生效
+
+---
+
 ## 部署前检查清单
 
 每份报告部署前必须逐项确认：
+
+### 🔍 成果物 Review（部署前必须执行）
+
+**生成 HTML 后、部署前，必须对产出物执行自动化 review：**
+
+```bash
+# 1. div 闭合校验（必须完全相等）
+OPEN=$(grep -c '<div' FILE); CLOSE=$(grep -c '</div>' FILE); echo "div: $OPEN open / $CLOSE close"; [ "$OPEN" = "$CLOSE" ] && echo "✅ PASS" || echo "❌ FAIL"
+
+# 2. 检查重复嵌套 report-wrap
+PATTERN=$(grep -c 'class="report-wrap"' FILE); [ "$PATTERN" -le 1 ] && echo "✅ PASS" || echo "❌ FAIL: $PATTERN report-wrap found"
+
+# 3. 检查重复 page-body
+PATTERN=$(grep -c 'class="page-body"' FILE); [ "$PATTERN" -le 1 ] && echo "✅ PASS" || echo "❌ FAIL: $PATTERN page-body found"
+
+# 4. 检查重复 scroll-progress / toc-sidebar / toc-toggle
+for CLS in scroll-progress toc-sidebar toc-toggle; do PATTERN=$(grep -c "$CLS" FILE); [ "$PATTERN" -le 1 ] && echo "✅ $CLS" || echo "❌ FAIL: $CLS x$PATTERN"; done
+
+# 5. 检查是否有手写 footer
+grep -q 'class="page-footer"' FILE && echo "❌ FAIL: 手写 footer detected" || echo "✅ PASS"
+
+# 6. 检查标题是否为中文（标题应在 h1.report-header__title 中）
+TITLE=$(grep -o 'report-header__title">[^<]*<' FILE | sed 's/.*>\(.*\)</.*/\1/')
+echo "标题: $TITLE"
+
+# 7. 检查深色背景
+grep -qP 'background[^;]*#0[0-9a-f]|background[^;]*#1[0-9a-f]' FILE && echo "❌ FAIL: 深色背景" || echo "✅ PASS"
+
+# 8. 检查 page-body 中是否有 script 标签
+# （允许 body 底部的 script，但 page-body 内容区不应有）
+```
+
+**review 失败时必须修复后再部署，不可跳过此步骤。**
+
+### 部署检查项
 
 - [ ] 使用 base.css + main.js（引用 `../styles/base.css` 和 `../scripts/main.js`）
 - [ ] 包含 toc-sidebar + toc-toggle + scroll-progress 元素
@@ -254,7 +328,7 @@ python3 deploy.py backup [list|restore <name>]
 - [ ] report-header__breadcrumb 只需写结构（a + span），链接和 SVG 图标由 JS 自动填充
 - [ ] 分类标签带 SVG 图标，日期带 SVG 日历图标
 - [ ] 内容包裹在 report-wrap > report-header + page-body 中
-- [ ] h2/h3 有 id 属性供大纲跳转
+- [ ] h2/h3 有 id 属性供大纲跳转（main.js 会自动补 id，但建议模板中直接写上）
 - [ ] **不要手写 `<footer class="page-footer">`**，JS 会自动注入统一页脚（logo + 传琪 + 年份）
 - [ ] **没有使用任何 emoji 作为图标或 UI 元素**
 - [ ] 配色使用 base.css 变量（`var(--c-xxx)`），没有硬编码颜色
@@ -273,7 +347,7 @@ python3 deploy.py backup [list|restore <name>]
 
 - `templates/base.css` — 设计系统样式（v6.1 底色层级）
 - `templates/index.html` — 首页模板（含 iframe viewer）
-- `scripts/main.js` — 交互系统（TOC、滚动进度、渐入动画）
+- `scripts/main.js` — 交互系统（TOC、滚动进度、渐入动画、图表放大 Lightbox）
 - `deploy.py` — CLI 入口（参数解析与命令分发）
 - `lib/config.py` — 配置加载、四组部署目标常量、工具函数
 - `lib/page.py` — 页面 HTML 生成与部署
@@ -299,6 +373,10 @@ python3 deploy.py backup [list|restore <name>]
 - `openclaw` — AI 自动分类功能（`--ai` 模式，可选）
 - `clawhub` — ClawHub 发布 CLI（`skill-clawhub-publish` 命令）
 
+### ClawHub 发布注意
+- **⚠️ 发布前必须排除 `dist/` 和 `backups/` 目录**，否则超过 20MB 限制会失败
+- `skill-clawhub-publish` 已内置自动临时移除逻辑，但需确认生效
+
 ### 升级安全
 - 升级从 `manifest.json` 的 `repository` 字段指定的远端下载文件
 - 所有文件经过 SHA256 校验，校验失败会拒绝写入
@@ -310,6 +388,8 @@ python3 deploy.py backup [list|restore <name>]
 - 建议使用最小权限 token（仅需 Cloudflare Pages 编辑权限）
 
 ## 图表与可视化规范
+
+> **图表放大功能**：main.js 已内置图表放大（Lightbox）功能，支持 chart-box、ECharts div、Mermaid 流程图。手机端按钮始终可见。ECharts 弹层会重新创建实例确保正确渲染。
 
 报告页面内置三种图表引擎，按需选用：
 
@@ -429,6 +509,19 @@ document.addEventListener('DOMContentLoaded', function() {
 | 需要动画效果 | ECharts | 内置丰富动画和交互 |
 | 多图表混排 | ECharts | 统一风格，配色一致 |
 
+### ⚠️ 常见错误检查清单（每次生成后必须检查）
+
+| # | 问题 | 正确做法 | 后果 |
+|---|------|---------|------|
+| 1 | Mermaid 用 `<mermaid>` 标签 | 必须用 `<pre class="mermaid">` | 图表不渲染 |
+| 2 | `mermaid.initialize()` 在 CDN 加载前调用 | 必须在 `<script src="mermaid.min.js">` 之后调用 | ReferenceError |
+| 3 | Mermaid 外层 div 设置了 background 色 | 外层容器不设背景色，让 Mermaid 自身控制渲染 | 底色污染/白块 |
+| 4 | ECharts 容器 div 没设高度 | 必须 `style="width:100%;height:400px"` 或用 CSS 设固定高度 | 图表不渲染（高度为0） |
+| 5 | ECharts CDN 放在 body 底部但初始化用 DOMContentLoaded | CDN 放 head 同步加载，初始化用 DOMContentLoaded | 加载时序可能出错 |
+| 6 | 多个图表用了相同 id | 每个 ECharts 容器 id 必须唯一 | 只渲染第一个 |
+| 7 | 子 agent 输出完整 HTML 页面 | 子 agent 只输出 style + body 内容片段 | report-wrap/page-body 双重嵌套 |
+| 8 | style 标签残留到 page-body 内 | style 必须在 head 中，body 中不得有 style | 样式异常/白屏 |
+
 ### 脚本加载顺序（严格遵守）
 
 ```
@@ -456,3 +549,5 @@ document.addEventListener('DOMContentLoaded', function() {
 - deploy.py 会自动给文件名加日期前缀
 - **外部页面**需要额外创建独立 Cloudflare Pages 项目并部署，然后用 `add` 命令加入索引
 - 首页的 iframe viewer 会自动识别外部 URL（`url` 字段以 http 开头且域名不同），用 iframe 内嵌打开
+- 管理模式下支持拖拽页面到侧边栏分类进行移动、勾选删除，操作完成后生成组合指令
+- 管理模式下按 ESC 退出管理模式，取消所有未提交的操作

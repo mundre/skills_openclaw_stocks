@@ -11,26 +11,7 @@ DIST_DIR = BASE_DIR / "dist"
 # 技能目录是唯一工作台。DIST_DIR 是技能 dist/，所有整理/索引/备份都在这里操作。
 # 部署目录（REPORT_LOCAL_DIR）纯粹是同步目标，通过 sync_to_deploy() 推送。
 
-CATEGORIES = {
-    "research": "深度研究",
-    "analysis": "数据分析",
-    "summary": "内容摘要",
-    "comparison": "对比评测",
-    "tutorial": "教程指南",
-    "project": "项目作品",
-    "other": "其他",
-}
 
-# 分类展示配置（颜色/图标/描述统一管理）
-CATEGORY_META = {
-    "research": {"icon": "🔍", "desc": "系统性调研与深度分析报告", "c": "var(--c-amber)", "b": "var(--c-amber-light)"},
-    "analysis": {"icon": "📊", "desc": "数据驱动的分析洞察", "c": "var(--c-green)", "b": "var(--c-green-light)"},
-    "project": {"icon": "🛠️", "desc": "开发项目与互动作品", "c": "var(--c-accent)", "b": "var(--c-accent-light)"},
-    "summary": {"icon": "📝", "desc": "信息整理与要点提炼", "c": "var(--c-purple)", "b": "var(--c-purple-light)"},
-    "comparison": {"icon": "⚖️", "desc": "产品、方案或工具的横向对比", "c": "var(--c-accent)", "b": "var(--c-accent-light)"},
-    "tutorial": {"icon": "📖", "desc": "操作指南与最佳实践", "c": "var(--c-orange)", "b": "var(--c-orange-light)"},
-    "other": {"icon": "📎", "desc": "未分类内容", "c": "var(--c-text-muted)", "b": "var(--c-surface-alt)"},
-}
 
 # ── TOOLS.md 配置读取 ──
 _TOOLS_PATH = Path.home() / ".openclaw/workspace/TOOLS.md"

@@ -533,11 +533,15 @@ tr:hover td { background: var(--c-accent-light); }
 .chart-zoom-wrap__btn:hover { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 .chart-zoom-wrap__btn svg { width: 16px; height: 16px; color: var(--c-text-secondary, #64748b); }
 
-/* mermaid specific */
+/* ⚠️ IMPORTANT: Mermaid 背景色必须为白色，禁止覆盖！
+   外层 .mermaid-wrap 和内部 SVG 节点都强制白色背景，
+   防止被页面其他样式或自定义 class 污染底色。
+   如需修改容器外观，请用 border/padding/margin，不要改 background。 */
 .mermaid-wrap {
   max-width: 800px; margin: var(--space-xl) auto;
   border: 1px solid var(--c-border); border-radius: var(--radius-lg);
-  background: var(--c-surface); position: relative;
+  background: #ffffff !important; /* ⚠️ DO NOT OVERRIDE */
+  position: relative;
   text-align: center;
   overflow: visible;
 }
@@ -545,6 +549,8 @@ tr:hover td { background: var(--c-accent-light); }
   max-width: 100%; width: auto; height: auto;
 }
 .mermaid-wrap pre { background: transparent !important; color: inherit !important; padding: 0 !important; }
+pre.mermaid,
+.mermaid { background: #ffffff !important; /* ⚠️ DO NOT OVERRIDE */ }
 .mermaid svg { max-width: 100% !important; height: auto !important; background: transparent !important; }
 .mermaid svg rect[class*="node"],
 .mermaid svg rect[class*="cluster"],

@@ -4,7 +4,7 @@ import re, sys, shutil
 from pathlib import Path
 from datetime import date
 
-from lib.config import (CATEGORIES, SITE_NAME, REPORT_LOCAL_DIR, BASE_DIR,
+from lib.config import (SITE_NAME, REPORT_LOCAL_DIR, BASE_DIR,
                         DIST_DIR, load_index, save_index, strip_emoji, sync_to_deploy)
 from lib.page import generate_page_html
 
@@ -43,10 +43,6 @@ def deploy(category, html_file, title=None, desc=None):
     3. 更新 DIST_DIR/index.json
     4. sync_to_deploy() 推到部署目录
     """
-    if category not in CATEGORIES:
-        print(f"❌ 未知分类: {category}")
-        print(f"   可选: {', '.join(CATEGORIES.keys())}")
-        sys.exit(1)
     src = Path(html_file)
     if not src.exists():
         print(f"❌ 文件不存在: {html_file}")
@@ -63,22 +59,6 @@ def deploy(category, html_file, title=None, desc=None):
         body = html
     body = strip_emoji(body)
 
-    # ── 强制校验 ──
-    div_open = len(re.findall(r'<div[\s>]', html))
-    div_close = html.count('</div>')
-    if div_open != div_close:
-        print(f"❌ div 不平衡: <div>={div_open} </div>={div_close}，部署中止")
-        sys.exit(1)
-    if html.count('class="report-wrap"') > 1:
-        c = html.count('class="report-wrap"'); print(f"❌ 重复 report-wrap ({c}个)，部署中止")
-        sys.exit(1)
-    if html.count('class="page-body"') > 1:
-        c = html.count('class="page-body"'); print(f"❌ 重复 page-body ({c}个)，部署中止")
-        sys.exit(1)
-    if '<footer' in html:
-        print(f"❌ 检测到手写 <footer>，部署中止")
-        sys.exit(1)
-
     # Extract style
     style_match = re.search(r'<style>(.*?)</style>', html, re.DOTALL)
     page_style = style_match.group(1).strip() if style_match else ""
@@ -90,6 +70,11 @@ def deploy(category, html_file, title=None, desc=None):
     body = re.sub(r'<header[^>]*>.*?</header>', '', body, flags=re.DOTALL)
     body = re.sub(r'<footer[^>]*>.*?</footer>', '', body, flags=re.DOTALL)
     body = re.sub(r'<h1[^>]*>.*?</h1>', '', body, flags=re.DOTALL)
+    body = re.sub(r'<button[^>]*back-to-top[^>]*>.*?</button>', '', body, flags=re.DOTALL)
+    body = re.sub(r'<div[^>]*class="scroll-progress"[^>]*></div>', '', body)
+    body = re.sub(r'<aside[^>]*class="toc-sidebar"[^>]*>.*?</aside>', '', body, flags=re.DOTALL)
+    body = re.sub(r'<button[^>]*class="toc-toggle"[^>]*>.*?</button>', '', body, flags=re.DOTALL)
+    body = re.sub(r'<script[^>]*main\.js[^>]*></script>', '', body)
 
     changed = True
     while changed:
@@ -101,6 +86,19 @@ def deploy(category, html_file, title=None, desc=None):
                 changed = True
             else:
                 body = re.sub(rf'<div class="{cls}"[^>]*>\s*</div>', '', body)
+
+    # ── 强制校验（清理之后）──
+    div_open = len(re.findall(r'<div[\s>]', body))
+    div_close = body.count('</div>')
+    if div_open != div_close:
+        print(f"❌ div 不平衡: <div>={div_open} </div>={div_close}，部署中止")
+        sys.exit(1)
+    if body.count('class="report-wrap"') > 1:
+        c = body.count('class="report-wrap"'); print(f"❌ 重复 report-wrap ({c}个)，部署中止")
+        sys.exit(1)
+    if body.count('class="page-body"') > 1:
+        c = body.count('class="page-body"'); print(f"❌ 重复 page-body ({c}个)，部署中止")
+        sys.exit(1)
 
     if not title:
         title_match = re.search(r'<title>(.*?)</title>', html)
@@ -159,7 +157,6 @@ def deploy(category, html_file, title=None, desc=None):
     synced = sync_to_deploy()
 
     print(f"✅ 部署成功")
-    print(f"   分类: {CATEGORIES.get(category, category)} ({category})")
     print(f"   标题: {title}")
     print(f"   日期: {today}")
     print(f"   工作台: dist/{category}/{filename}")
