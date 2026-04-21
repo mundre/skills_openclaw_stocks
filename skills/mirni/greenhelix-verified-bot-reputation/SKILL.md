@@ -1,6 +1,6 @@
 ---
 name: greenhelix-verified-bot-reputation
-version: "1.3.0"
+version: "1.3.1"
 description: "Verified Trading Bot Reputation: Building Cryptographic PnL Proof. Build unforgeable cryptographic PnL proof for your trading bot using Ed25519 signatures and Merkle claim chains. Includes detailed Python code examples with full API integration."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,12 @@ content_type: markdown
 executable: false
 install: none
 credentials: [AGENT_SIGNING_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - AGENT_SIGNING_KEY
+    primaryEnv: AGENT_SIGNING_KEY
 ---
 # Verified Trading Bot Reputation: Building Cryptographic PnL Proof
 
