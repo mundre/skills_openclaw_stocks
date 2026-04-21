@@ -5,7 +5,7 @@ description: >
   It lives in a purpose-built environment for creative work, orchestrates the latest AI models, has craft
   specializations, does agentic video editing, and delivers standalone assets or timeline-assembled videos.
   Works for one-off tasks or as a creative employee in any agent-to-agent workflow.
-version: 1.0.1
+version: 1.0.3
 metadata:
   openclaw:
     requires:
@@ -48,6 +48,7 @@ Get your API key at https://eversince.ai/app/settings. Once you have a key, you 
 ```bash
 curl -X POST https://eversince.ai/api/v1/projects \
   -H "Authorization: Bearer $EVERSINCE_API_KEY" \
+  -H "X-Eversince-Source: plugin" \
   -H "Content-Type: application/json" \
   -d '{
     "brief": "Your creative brief here",
@@ -71,7 +72,8 @@ Response (202):
 
 ```bash
 curl https://eversince.ai/api/v1/projects/PROJECT_ID \
-  -H "Authorization: Bearer $EVERSINCE_API_KEY"
+  -H "Authorization: Bearer $EVERSINCE_API_KEY" \
+  -H "X-Eversince-Source: plugin"
 ```
 
 Poll until the status reaches `idle`, `failed`, or `cancelled`. The status can be one of:
@@ -148,7 +150,7 @@ The brief is your primary input. The agent makes all creative decisions from it 
 | `craft` | `auto`, `general`, `cinema`, `animation`, `ugc`, `music`, `photography`, `motion-graphics` | `auto` |
 | `video_model` | Specific video model ID (see `GET /models`). Models expose capability flags (`supports_multi_shot`, `supports_camera_motion`, `has_sound`, etc.) for informed selection | Agent decides |
 | `image_model` | Specific image model ID (see `GET /models`). Models expose capability flags (`supports_reference_images`, `max_reference_images`, etc.) for informed selection | Agent decides |
-| `agent_model` | `opus` or `sonnet` | `opus` |
+| `agent_model` | `opus-4.7`, `opus-4.6`, or `sonnet-4.6` | `opus-4.7` |
 | `expected_output` | `assembled` (rendered video from timeline), `assets` (standalone assets, no render) | Auto-detected |
 | `webhook_url` | URL for status change notifications | None |
 | `idempotency_key` | Unique string to prevent duplicate projects on retries | None |
@@ -217,6 +219,7 @@ See [references/api-reference.md](references/api-reference.md) for webhook event
 ```bash
 curl -X POST https://eversince.ai/api/v1/estimate-cost \
   -H "Authorization: Bearer $EVERSINCE_API_KEY" \
+  -H "X-Eversince-Source: plugin" \
   -H "Content-Type: application/json" \
   -d '{"operations": [
     {"tool": "generate_image", "model": "nano-banana-pro", "count": 2},
@@ -231,7 +234,8 @@ Returns `total_credits` and per-item breakdown. Tools: `generate_image`, `genera
 
 ```bash
 curl https://eversince.ai/api/v1/account/credit-packages \
-  -H "Authorization: Bearer $EVERSINCE_API_KEY"
+  -H "Authorization: Bearer $EVERSINCE_API_KEY" \
+  -H "X-Eversince-Source: plugin"
 ```
 
 Returns `packages[]` with `credits`, `price`, and `purchase_url` for each option.
@@ -282,6 +286,7 @@ When iteration is complete and the user wants to continue working in the Eversin
 ```bash
 curl -X PATCH https://eversince.ai/api/v1/projects/PROJECT_ID/settings \
   -H "Authorization: Bearer $EVERSINCE_API_KEY" \
+  -H "X-Eversince-Source: plugin" \
   -H "Content-Type: application/json" \
   -d '{"mode": "none"}'
 ```
