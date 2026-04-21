@@ -1,11 +1,13 @@
 ---
 name: "multi-agent-orchestrator"
 slug: skylv-multi-agent-orchestrator
-version: 1.0.0
-description: "多Agent编排系统设计助手。设计Agent协作、任务分配、消息路由、状态管理。触发词：多agent、编排、协作、agent系统。"
+version: 1.0.2
+description: Multi-agent orchestration designer. Designs agent collaboration, task routing, and state management. Triggers: multi-agent, agent orchestration, agent collaboration.
 author: SKY-lv
 license: MIT-0
 tags: [multi, openclaw, agent]
+keywords: openclaw, skill, automation, ai-agent
+triggers: multi agent orchestrator
 ---
 
 # Multi-Agent Orchestrator
@@ -324,3 +326,9 @@ async debate(topic: string, rounds = 3) {
 3. **超时控制**：防止某个Agent卡死
 4. **熔断机制**：失败次数过多自动降级
 5. **可观测性**：完整日志和追踪
+
+## Usage
+
+1. Install the skill
+2. Configure as needed
+3. Run with OpenClaw
