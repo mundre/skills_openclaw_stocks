@@ -1,7 +1,7 @@
 ---
 name: agent-analytics-autoresearch
 description: "Run an autoresearch-style growth loop for landing pages, onboarding, pricing, and experiment candidates. Collect or read analytics snapshots, preserve product truth, generate/critique/synthesize variants, blind-rank with Borda scoring, and output two review-ready A/B test variants. Works with any analytics data; best with Agent Analytics CLI/API."
-version: 1.0.1
+version: 1.0.6
 author: dannyshmueli
 license: MIT
 repository: https://github.com/Agent-Analytics/agent-analytics-skill
@@ -42,6 +42,10 @@ Use the regular `agent-analytics` skill for general setup, tracking installation
 
 Do not edit production copy, product code, or live experiment setup while running the loop unless the user explicitly asks. Produce reviewable artifacts first.
 
+Default mode is review-only: generate variants, log rounds, and write `final_variants.md`.
+
+After explicit human approval, continue into the outer experiment loop when requested: implement the approved variant or variants, create the experiment, run it, measure it with Agent Analytics or another analytics source, save the results as the next snapshot, and start the next autoresearch run from evidence.
+
 ## Inputs
 
 The loop needs:
@@ -57,6 +61,8 @@ The loop needs:
 - drift constraints
 
 Agent Analytics is preferred, but not required. Accept any evidence source: Agent Analytics CLI/API, PostHog, GA4, Mixpanel, SQL, CSV exports, product logs, dashboard screenshots summarized by the user, or hand-written notes.
+
+When Agent Analytics is the evidence source, use project context as the self-improving product memory for the loop. Read `context get <project>` before collecting a snapshot, fold `project_context` into the product truth and metric definitions, and keep activation/event meaning separate per project or domain. After a human correction, scanner result, completed experiment, or repeated measured finding, update context only with durable product truth. Save activation definitions, event meanings, stable goals, and confirmed interpretations; skip weekly numbers, temporary spikes, pasted reports, PII, and unconfirmed guesses.
 
 ## Quick Start
 
@@ -87,9 +93,11 @@ Load these files only when needed:
 - `references/program.md` - exact loop instructions.
 - `references/brief-template.md` - project brief template.
 - `references/final-variants-template.md` - final output template.
-- `references/results-header.tsv` - exact `results.tsv` header.
+- `references/results-header.txt` - exact `results.tsv` header.
 
 ## Loop Shape
+
+### Inner Autoresearch Loop
 
 1. Define the surface, control, audience, product truth, metric, proxy, and guardrails.
 2. Collect or read a dated analytics snapshot.
@@ -103,20 +111,41 @@ Load these files only when needed:
 10. Repeat several rounds.
 11. Write `final_variants.md` with two distinct variants and the recommended experiment shape.
 
+### Outer Experiment Loop
+
+Only run this phase when the user explicitly approves implementation or experiment setup.
+
+1. Implement the approved variant or variants in the target product surface.
+2. Create the experiment with a control and the approved candidate variants.
+3. Verify tracking for the primary metric, proxy metric, and guardrails.
+4. Let the experiment collect real behavior for the requested window.
+5. Pull experiment results, screenshots or changed-copy notes, funnel movement, guardrails, and data limitations into a new snapshot.
+6. Start the next inner autoresearch loop from that measured evidence.
+
+The outer loop prevents the LLM panel from becoming the final judge. LLMs generate and criticize, humans approve risk, and users decide what worked.
+
 ## Agent Analytics Snapshot
 
 Use the official CLI when collecting live Agent Analytics data:
 
 ```bash
-npx @agent-analytics/cli@0.5.12 insights "$PROJECT_SLUG" --period 7d
-npx @agent-analytics/cli@0.5.12 pages "$PROJECT_SLUG" --since 7d
-npx @agent-analytics/cli@0.5.12 funnel "$PROJECT_SLUG" --steps "page_view,$PROXY_EVENT,$PRIMARY_EVENT" --since 7d
-npx @agent-analytics/cli@0.5.12 events "$PROJECT_SLUG" --event "$PROXY_EVENT" --days 7 --limit 50
-npx @agent-analytics/cli@0.5.12 events "$PROJECT_SLUG" --event "$PRIMARY_EVENT" --days 7 --limit 50
-npx @agent-analytics/cli@0.5.12 experiments list "$PROJECT_SLUG"
+npx --yes @agent-analytics/cli@0.5.20 insights "$PROJECT_SLUG" --period 7d
+npx --yes @agent-analytics/cli@0.5.20 pages "$PROJECT_SLUG" --since 7d
+npx --yes @agent-analytics/cli@0.5.20 funnel "$PROJECT_SLUG" --steps "page_view,$PROXY_EVENT,$PRIMARY_EVENT" --since 7d
+npx --yes @agent-analytics/cli@0.5.20 events "$PROJECT_SLUG" --event "$PROXY_EVENT" --days 7 --limit 50
+npx --yes @agent-analytics/cli@0.5.20 events "$PROJECT_SLUG" --event "$PRIMARY_EVENT" --days 7 --limit 50
+npx --yes @agent-analytics/cli@0.5.20 experiments list "$PROJECT_SLUG"
 ```
 
 If login is needed, prefer the regular `agent-analytics` skill's browser approval or detached login guidance.
+
+Before interpreting the snapshot, also read the compact project memory:
+
+```bash
+npx --yes @agent-analytics/cli@0.5.20 context get "$PROJECT_SLUG"
+```
+
+If the autoresearch run reveals durable product truth that should guide future analytics, use the regular `agent-analytics` skill's project context workflow to read the existing context, merge the compact update, and write it back. Do not store raw round notes or time-bound metric values as project context.
 
 ## Scoring
 

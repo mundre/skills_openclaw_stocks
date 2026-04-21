@@ -3,9 +3,15 @@
   "slug": "agent-analytics-autoresearch",
   "displayName": "Agent Analytics Autoresearch",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776287346511,
-    "commit": "https://github.com/openclaw/skills/commit/55d89947bc52bde9c948fca98d7449d9364666ba"
+    "version": "1.0.6",
+    "publishedAt": 1776631905675,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776287346511,
+      "commit": "https://github.com/openclaw/skills/commit/55d89947bc52bde9c948fca98d7449d9364666ba"
+    }
+  ]
 }
