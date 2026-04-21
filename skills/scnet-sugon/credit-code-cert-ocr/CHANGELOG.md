@@ -13,3 +13,13 @@
 
 ### 优化
 - update channelTag
+
+## [1.0.2] - 2025-04-15
+
+### 优化
+- update ClawHub 的安全扫描
+
+## [1.0.3] - 2025-04-16
+
+### 优化
+- update ClawHub 的安全扫描V1
