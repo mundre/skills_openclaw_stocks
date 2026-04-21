@@ -1,11 +1,17 @@
 {
   "owner": "freedompixels",
   "slug": "cn-qrcode-generator",
-  "displayName": "中文二维码生成器",
+  "displayName": "二维码生成工具",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776205940325,
-    "commit": "https://github.com/openclaw/skills/commit/2e50a0dbcfbabad5e2aa62afc3f72d068079c631"
+    "version": "1.1.0",
+    "publishedAt": 1776642950141,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776205940325,
+      "commit": "https://github.com/openclaw/skills/commit/2e50a0dbcfbabad5e2aa62afc3f72d068079c631"
+    }
+  ]
 }
