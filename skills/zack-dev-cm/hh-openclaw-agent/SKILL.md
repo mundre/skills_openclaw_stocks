@@ -2,6 +2,7 @@
 name: hh-openclaw-agent
 description: Public OpenClaw skill for preparing a reviewed hh.ru application packet, executing the browser flow in a logged-in profile, and capturing one auditable submission bundle.
 homepage: https://github.com/zack-dev-cm/hh-openclaw-agent
+license: MIT-0
 user-invocable: true
 metadata: {"openclaw":{"homepage":"https://github.com/zack-dev-cm/hh-openclaw-agent","skillKey":"hh-openclaw-agent","requires":{"anyBins":["python3","python"]}}}
 ---
