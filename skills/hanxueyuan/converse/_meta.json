@@ -3,9 +3,15 @@
   "slug": "converse",
   "displayName": "Converse",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775909999332,
-    "commit": "https://github.com/openclaw/skills/commit/edf6709d5e0c7dcd82bdaaa19b1e52ec7b89f64c"
+    "version": "1.0.5",
+    "publishedAt": 1776238343473,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775909999332,
+      "commit": "https://github.com/openclaw/skills/commit/edf6709d5e0c7dcd82bdaaa19b1e52ec7b89f64c"
+    }
+  ]
 }
