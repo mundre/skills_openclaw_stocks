@@ -173,6 +173,9 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# generated
+bin/
 GITIGNORE
   success "Created \`.gitignore\`"
 else

@@ -2,7 +2,7 @@
 name: agent-changelog
 description: Advanced handling for agent-changelog requests (history, diffs, restores, rollbacks, snapshots) using git and OpenClaw scripts with clear, user-focused summaries and outputs.
 user-invocable: true
-metadata: {"openclaw":{"requires":{"bins":["git","jq","node"],"env":["OPENCLAW_WORKSPACE","OPENCLAW_CONFIG"]}}}
+metadata: {"openclaw":{"requires":{"bins":["git","jq","node"],"env":["OPENCLAW_WORKSPACE","OPENCLAW_CONFIG","PROMPTLAYER_API_KEY"]}}}
 ---
 
 # Agent Changelog
@@ -17,6 +17,7 @@ Use this skill when the user asks about:
 - Rolling back or restoring files
 - Taking or inspecting snapshots or status
 - Setting up or verifying auto-versioning
+- Pulling a specific version or label from PromptLayer
 
 ## Response Framework
 
@@ -37,10 +38,10 @@ Use this skill when the user asks about:
 	- Prefer `restore` for single-file fixes; use `rollback` only when the user wants to revert everything.
 	- If the target commit is ambiguous, ask a clarification question.
 
-5. **Guide GitHub onboarding for setup.**
-	- After `setup`, proactively ask: "ok do you want help with github?"
-	- If yes, walk them through GitHub onboarding with no extra setup steps required on their side.
-	- Confirm account status, git identity, auth method, and remote configuration.
+5. **Guide sync onboarding after setup.**
+	- After `setup`, proactively ask: "ok want help with github or promptlayer? (pick one)"
+	- If yes, walk them through the chosen provider with no extra setup steps required on their side.
+	- Confirm account status, credentials, and configuration for the selected provider.
 
 ## Output Style
 
@@ -56,7 +57,7 @@ Use this skill when the user asks about:
 
 - **Casual history or diff:** use a small git window (last 5-10 commits) and include stat output.
 - **Slash commands:** use the scripts in `setup.sh` and `scripts/` with the user-provided arguments.
-- **Setup:** run the setup script, then ask "ok do you want help with github?" and proceed if they confirm.
+- **Setup:** run the setup script, then ask "ok want help with github or promptlayer?" and proceed if they confirm.
 - **Restore or rollback:** locate the commit via `log`, then perform the change after showing what will be modified.
 - **Semantic summary:** before every commit, run a quick diff and generate a sparse one-line summary of what changed and why (e.g. "added rate-limit rule to AGENTS.md, updated memory skill"). Always pass it via `--summary` and always include it in any history output presented to the user.
 - **Log output:** `log.sh` outputs raw structured data — present it conversationally based on what the user asked. Don't dump raw script output. Format each entry using the `│`-prefixed box style (same as status output), one entry per block.
@@ -66,7 +67,7 @@ Use this skill when the user asks about:
 Use this only for explicit `/agent-changelog` invocations, and return stdout verbatim.
 
 - `setup` -> `bash {baseDir}/setup.sh`
-- `setup` follow-up -> GitHub onboarding guidance
+- `setup` follow-up -> Sync onboarding guidance (GitHub or PromptLayer)
 - `status` -> `bash {baseDir}/scripts/status.sh`
 - `log` -> `bash {baseDir}/scripts/log.sh [count]`
 - `diff` -> `bash {baseDir}/scripts/diff.sh [commit] [commit2]`
@@ -74,6 +75,10 @@ Use this only for explicit `/agent-changelog` invocations, and return stdout ver
 - `restore` -> `bash {baseDir}/scripts/restore.sh <file> <commit> ["reason"]`
 - `commit` (user-requested) -> `bash {baseDir}/scripts/commit.sh --manual ["message"] [--summary "one-line semantic summary"]`
 - `commit` (cron-triggered) -> `bash {baseDir}/scripts/commit.sh [--summary "one-line semantic summary"]`
+- `pull from promptlayer` -> `node {baseDir}/scripts/pl-pull.js`
+- `pull from promptlayer version <n>` -> `node {baseDir}/scripts/pl-pull.js --version <n>`
+- `pull from promptlayer label <label>` -> `node {baseDir}/scripts/pl-pull.js --label <label>`
+- `pull from promptlayer version <n> reason <text>` -> `node {baseDir}/scripts/pl-pull.js --version <n> --reason "<text>"`
 
 ## Auto-Versioning Overview
 
@@ -94,5 +99,20 @@ Use this flow after setup to help users connect the workspace to GitHub. The use
 2. **Git identity.** Ensure `user.name` and `user.email` are set for commits.
 3. **Auth method.** Offer SSH or HTTPS; proceed with their preference.
 4. **Remote and verify.** Ensure an `origin` remote exists and verify access.
-5. **Next action.** Create or select the GitHub repo, then push or fetch as needed.
+5. **Enable sync.** Set `github.enabled = true` in `<workspace>/.agent-changelog.json` to activate auto-push on each batch commit.
+6. **Next action.** Create or select the GitHub repo, then push or fetch as needed.
+
+## PromptLayer Onboarding (Setup Add-on)
+
+Use this flow after setup to help users connect the workspace to PromptLayer. Keep it conversational like the GitHub flow and ensure they pick PromptLayer (not both).
+
+1. **Intent.** Confirm they want PromptLayer sync for this workspace.
+2. **API key.** Ask for the API key and set it as `PROMPTLAYER_API_KEY` in their environment (e.g. shell profile or OpenClaw env config). The scripts read it from the environment; do not write the raw key value into any config file.
+3. **Collection choice.** Ask whether to connect to an existing collection or create a new one.
+4. **Dependency check.** PromptLayer pulls require `unzip` (macOS/Linux) or PowerShell `Expand-Archive` (Windows).
+5. **Config.** Collection metadata (`collectionId`, `skillName`, `provider`) is stored in `.agent-changelog.json` in the workspace — the scripts handle this automatically. The only openclaw.json entry written is the SecretRef: `skills.entries.agent-changelog.apiKey = { source: "env", provider: "default", id: "PROMPTLAYER_API_KEY" }`.
+6. **Connect.**
+	- Existing: run `node {baseDir}/scripts/pl-pull.js --connect <name-or-id>`
+	- New: run `node {baseDir}/scripts/pl-init.js` after setting `promptlayer.skillName`
+7. **Confirm.** Verify the collection ID and explain that future batch commits sync to PromptLayer.
 
