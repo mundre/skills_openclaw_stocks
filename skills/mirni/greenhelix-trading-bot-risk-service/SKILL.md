@@ -1,6 +1,6 @@
 ---
 name: greenhelix-trading-bot-risk-service
-version: "1.3.0"
+version: "1.3.1"
 description: "Trading Bot Risk-as-a-Service: Real-Time Portfolio Risk Monitoring for Multi-Exchange Operations. Build a cross-exchange, cross-strategy real-time portfolio risk monitoring system with webhooks, event bus, and SLA compliance enforcement. Covers drawdown alerts, correlation monitoring, liquidation proximity, circuit breakers, and production deployment."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,12 @@ content_type: markdown
 executable: false
 install: none
 credentials: [AGENT_SIGNING_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - AGENT_SIGNING_KEY
+    primaryEnv: AGENT_SIGNING_KEY
 ---
 # Trading Bot Risk-as-a-Service: Real-Time Portfolio Risk Monitoring for Multi-Exchange Operations
 
