@@ -30,7 +30,7 @@
 5. 若接口报 401/403，提示用户更新本地 API key，而不是把 key 回显到聊天里。
 6. 安装后优先执行 `scripts/smoke_test.py` 验证快照、市场状态与 K 线链路是否可用。
 7. 单次查询优先走 `scripts/run_query.py`，避免每次重复手写接口调用逻辑。
-8. 若后续改为动态换 token，再补 `/security/get_token` 的刷新逻辑。
+8. `/security/get_token` 已不再作为当前 market skill 的鉴权流程；统一使用外部配置 Bearer token。
 
 ## Error Handling
 

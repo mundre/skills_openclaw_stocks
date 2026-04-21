@@ -12,7 +12,6 @@ except ImportError:  # pragma: no cover
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-DEFAULT_MARKET_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzZWN1cml0aWVzLW9wZW4tYXBpIiwiZ3JvdXBfbm8iOiIxMDEwMTM1MjAiLCJvcGVuX2hrX3N0b2NrX3N0YXR1cyI6IjAiLCJvcGVuX3VzX3N0b2NrX3N0YXR1cyI6IjAifQ.cZEYiilI2nYwEbcBJmPG9oAIq6hYZhIwz9uEZsQ0cBM'
 SECRETS_FILES = [
     WORKSPACE / '.secrets' / 'noah-market.env',
     Path.home() / '.openclaw' / '.secrets' / 'noah-market.env',
@@ -37,7 +36,7 @@ for _env_file in SECRETS_FILES:
 class NoahQuoteClient:
     def __init__(self, base_url: Optional[str] = None, token: Optional[str] = None, timeout: int = 15):
         self.base_url = (base_url or os.getenv('NOAH_API_BASE_URL', 'https://securities-open-api.noahgroup.com')).rstrip('/') + '/'
-        self.token = token or os.getenv('NOAH_MARKET_APIKEY', '') or os.getenv('NOAH_MARKET_TOKEN', '') or DEFAULT_MARKET_TOKEN
+        self.token = token or os.getenv('NOAH_MARKET_APIKEY', '') or os.getenv('NOAH_MARKET_TOKEN', '')
         self.timeout = timeout
         if not self.base_url:
             raise ValueError('NOAH_API_BASE_URL is missing')

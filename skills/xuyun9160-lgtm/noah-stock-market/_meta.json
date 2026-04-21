@@ -3,9 +3,15 @@
   "slug": "noah-stock-market",
   "displayName": "Noah Stock Market",
   "latest": {
-    "version": "1.2.4",
-    "publishedAt": 1776220458486,
-    "commit": "https://github.com/openclaw/skills/commit/95909088fc1134bfde6c029ddb628e4708ea80ce"
+    "version": "1.2.10",
+    "publishedAt": 1776267409155,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.4",
+      "publishedAt": 1776220458486,
+      "commit": "https://github.com/openclaw/skills/commit/95909088fc1134bfde6c029ddb628e4708ea80ce"
+    }
+  ]
 }

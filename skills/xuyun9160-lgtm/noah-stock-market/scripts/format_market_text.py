@@ -326,13 +326,76 @@ def format_shareholder_inc_red_hold(summary: Dict[str, Any]) -> str:
     return '\n'.join(lines)
 
 
-def format_stock_filter(summary: Dict[str, Any]) -> str:
+
+def format_wealth_balance_list(summary: Dict[str, Any]) -> str:
     items = summary.get('items') or []
     if not items:
-        return '条件选股无结果'
-    lines = [f'条件选股：共命中 {summary.get("count") or 0} 条']
+        return '暂无余额列表数据'
+    lines = [
+        f'余额列表：共 {summary.get("count") or 0} 个币种',
+        f'账户现金总额：{_num(summary.get("total_cash_balance_amount"))}',
+    ]
     for i, x in enumerate(items[:10], 1):
-        lines.append(
-            f'{i}）{x.get("name") or "-"}（{x.get("symbol") or "-"}）｜最新价{_num(x.get("last_price"))}｜涨跌幅{_num(x.get("change_pct"))}%｜成交额{_num(x.get("turnover"))}'
-        )
+        lines.append(f'{i}）币种{x.get("currency") or "-"}｜现金余额{_num(x.get("cash_balance_amount"))}｜总余额{_num(x.get("balance_amount"))}｜冻结{_num(x.get("cash_frozen_amount"))}')
     return '\n'.join(lines)
+
+
+
+def format_wealth_cash_total_asset(summary: Dict[str, Any]) -> str:
+    items = summary.get('items') or []
+    if not items:
+        return '暂无现金类资产数据'
+    lines = [f'现金类资产：共 {summary.get("count") or 0} 个币种（以下为各币种资产，未做汇率换算）']
+    for i, x in enumerate(items[:10], 1):
+        lines.append(f'{i}）币种{x.get("currency") or "-"}｜总资产{_num(x.get("total_asset"))}｜当日收益{_num(x.get("day_profit"))}｜累计收益{_num(x.get("total_asset_profit"))}｜待确认{_num(x.get("total_confirming_amount"))}｜冻结{_num(x.get("total_freeze_amount"))}')
+    return '\n'.join(lines)
+
+
+def format_wealth_fixed_income(summary: Dict[str, Any]) -> str:
+    lines = [
+        '固收资产汇总：',
+        f'目标币种：{summary.get("currency") or "-"}',
+        f'总资产：{_num(summary.get("total_asset"))}',
+        f'待确认金额：{_num(summary.get("total_confirming_amount"))}',
+        f'持有收益：{_num(summary.get("total_holding_profit"))}',
+        f'累计收益：{_num(summary.get("total_profit"))}',
+        f'在途交易笔数：{_num(summary.get("total_transaction_count"))}',
+        f'产品类型/币种分组数：{_num(summary.get("group_count"))}',
+    ]
+    return '\n'.join(lines)
+
+
+def format_wealth_private_contract_asset_list(summary: Dict[str, Any]) -> str:
+    items = summary.get('items') or []
+    if not items:
+        return '暂无私募资产数据'
+    lines = [
+        f'私募资产：共 {summary.get("total_contract_count") or summary.get("count") or 0} 个合同（接口汇总币种：{summary.get("currency") or "-"}）',
+        f'总资产：{_num(summary.get("total_asset"))}',
+        f'已确认资产：{_num(summary.get("total_confirmed_asset"))}',
+        f'累计投入：{_num(summary.get("total_input_amount"))}',
+        f'累计浮盈亏：{_num(summary.get("total_float_profit"))}',
+    ]
+    for i, x in enumerate(items[:10], 1):
+        lines.append(f'{i}）{x.get("product_name") or "-"}｜类别{x.get("asset_class_desc") or "-"}｜币种{x.get("currency") or "-"}｜资产{_num(x.get("asset"))}｜确认资产{_num(x.get("confirmed_asset"))}｜浮盈亏{_num(x.get("float_profit"))}')
+    return '\n'.join(lines)
+
+
+def format_wealth_total_asset(summary: Dict[str, Any]) -> str:
+    return '\n'.join([
+        '总资产（接口汇总口径）：',
+        f'汇总币种：{summary.get("currency") or "-"}',
+        f'总资产：{_num(summary.get("total_asset"))}',
+        f'现金资产：{_num(summary.get("cash_asset"))}',
+        f'公募基金资产：{_num(summary.get("fund_asset"))}',
+        f'私募资产：{_num(summary.get("private_asset"))}',
+        f'银行定存资产：{_num(summary.get("bank_deposit_asset"))}',
+        f'票据/结构化资产：{_num(summary.get("note_asset"))}',
+        f'持仓金额：{_num(summary.get("hold_total_holding_amount"))}',
+        f'持仓收益：{_num(summary.get("hold_total_holding_profit"))}',
+        f'待确认金额：{_num(summary.get("hold_total_confirming_amount"))}',
+        f'冻结金额：{_num(summary.get("hold_total_freeze_amount"))}',
+        '说明：以上汇总值来自接口返回口径。',
+    ])
+
+

@@ -474,20 +474,119 @@ def summarize_shareholder_inc_red_hold(items: List[Dict[str, Any]]) -> Dict[str,
     }
 
 
-def summarize_stock_filter(items: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+def summarize_wealth_balance_list(data: Any) -> Dict[str, Any]:
+    x = data if isinstance(data, dict) else {}
+    items = x.get('cashBalanceList') or []
     normalized = []
-    for x in items:
+    for item in items:
         normalized.append({
-            'symbol': normalize_symbol(x.get('code') or x.get('stock_code') or x.get('uniqueCode')),
-            'name': x.get('name') or x.get('stock_name'),
-            'last_price': x.get('cur_price') or x.get('last_price') or x.get('price'),
-            'change_pct': x.get('change_rate') or x.get('change_pct'),
-            'turnover': x.get('turnover'),
-            'volume': x.get('volume'),
-            'market_val': x.get('total_market_val') or x.get('market_val'),
-            'raw': x,
+            'currency': item.get('currency'),
+            'cash_balance_amount': item.get('cashBalanceAmount'),
+            'balance_amount': item.get('balanceAmount'),
+            'cash_frozen_amount': item.get('cashFrozenAmount'),
+            'last_modified_date': item.get('lastModifiedDate'),
+            'raw': item,
         })
     return {
+        'group_no': x.get('groupNo'),
+        'total_cash_balance_amount': x.get('totalCrashBalanceAmount'),
         'count': len(normalized),
         'items': normalized[:20],
+        'raw': x,
     }
+
+
+
+def summarize_wealth_cash_total_asset(data: Any) -> Dict[str, Any]:
+    x = data if isinstance(data, dict) else {}
+    profit_items = x.get('profit') or []
+    normalized = []
+    for item in profit_items:
+        normalized.append({
+            'currency': item.get('currency'),
+            'total_asset': item.get('totalAsset'),
+            'day_profit': item.get('dayProfit'),
+            'total_asset_profit': item.get('totalAssetProfit'),
+            'total_confirming_amount': item.get('totalConfirmingAmount'),
+            'total_freeze_amount': item.get('totalFreezeAmount'),
+            'total_transaction_count': item.get('totalTransactionCount'),
+            'raw': item,
+        })
+    return {'count': len(normalized), 'items': normalized[:20], 'raw': x}
+
+
+def summarize_wealth_fixed_income(data: Any) -> Dict[str, Any]:
+    x = data if isinstance(data, dict) else {}
+    total = x.get('totalDto') or {}
+    groups = x.get('productTypeCurrencyList') or []
+    return {
+        'currency': total.get('currency'),
+        'total_asset': total.get('totalAsset'),
+        'total_confirming_amount': total.get('totalConfirmingAmount'),
+        'total_holding_profit': total.get('totalHoldingProfit'),
+        'total_profit': total.get('totalProfit'),
+        'total_transaction_count': total.get('totalTransactionCount'),
+        'group_count': len(groups),
+        'groups': groups[:10],
+        'raw': x,
+    }
+
+
+def summarize_wealth_private_contract_asset_list(data: Any) -> Dict[str, Any]:
+    x = data if isinstance(data, dict) else {}
+    contracts = ((x.get('contractAssetItemList') or {}).get('r')) or []
+    normalized = []
+    for item in contracts:
+        normalized.append({
+            'contract_code': item.get('contractCode'),
+            'product_name': item.get('contractNameCn') or item.get('contractNameEn'),
+            'asset_class_desc': item.get('assetClassDesc') or item.get('assetClassDescEn'),
+            'currency': item.get('currency'),
+            'asset': item.get('asset'),
+            'confirmed_asset': item.get('confirmedAsset'),
+            'input_amount': item.get('inputAmount'),
+            'output_amount': item.get('outputAmount'),
+            'invested_amount': item.get('investedAmount'),
+            'fee': item.get('fee'),
+            'float_profit': item.get('floatProfit'),
+            'ineffective_amount': item.get('ineffectiveAmount'),
+            'is_close': item.get('isClose'),
+            'raw': item,
+        })
+    return {
+        'currency': x.get('currency'),
+        'total_asset': x.get('totalAsset'),
+        'total_confirmed_asset': x.get('totalConfirmedAsset'),
+        'total_input_amount': x.get('totalInputAmount'),
+        'total_output_amount': x.get('totalOutputAmount'),
+        'total_float_profit': x.get('totalFloatProfit'),
+        'total_ineffective_amount': x.get('totalIneffectiveAmount'),
+        'total_contract_count': x.get('totalContractCount'),
+        'count': len(normalized),
+        'items': normalized[:20],
+        'raw': x,
+    }
+
+
+def summarize_wealth_total_asset(data: Any) -> Dict[str, Any]:
+    x = data if isinstance(data, dict) else {}
+    total = x.get('totalAsset') or {}
+    hold = x.get('holdShareList') or {}
+    return {
+        'currency': hold.get('currency') or total.get('currency'),
+        'total_asset': total.get('totalAsset'),
+        'cash_asset': total.get('cashAsset'),
+        'fund_asset': total.get('fundAsset'),
+        'private_asset': total.get('privateAsset'),
+        'bank_deposit_asset': total.get('bankDepositAsset'),
+        'note_asset': total.get('noteAsset'),
+        'hold_total_holding_amount': hold.get('totalHoldingAmount'),
+        'hold_total_holding_profit': hold.get('totalHoldingProfit'),
+        'hold_total_confirming_amount': hold.get('totalConfirmingAmount'),
+        'hold_total_freeze_amount': hold.get('totalFreezeAmount'),
+        'hold_total_invested_amount': hold.get('totalInvestedAmount'),
+        'raw': x,
+    }
+
+

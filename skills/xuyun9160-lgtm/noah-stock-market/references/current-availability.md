@@ -16,6 +16,11 @@
 | Rank | Ready | 已按 `references/enum.yaml#/QuoteSortField` 严格取枚举值验证通过 |
 | Finance HK / US | Ready | 已验证 `/infos/get_finance_hk_infos` 与 `/infos/get_finance_us_infos` 可用；调用时需使用 `DateTypeConvertUtil` 的 `x-enum-varnames`（如 `DT4`） |
 | Shareholder Inc/Red Hold | Ready | 已验证 `/infos/shareholder_inc_red_hold` 与 `/infos/shareholder_inc_red_hold_by_ucode` 可用；调用时需使用 `ShareholderRedHoldEnum` 的 `x-enum-varnames`（如 `EVENT_DATE`） |
+| Wealth Balance List | Routed | 已接入 `/wealth/balance_list`，等待统一联调验证 |
+| Wealth Cash Total Asset | Routed | 已接入 `/wealth/cash_total_asset`，等待统一联调验证 |
+| Wealth Fixed Income | Routed | 已接入 `/wealth/fixed_income`，等待统一联调验证 |
+| Wealth Private Contract Asset List | Routed | 已接入 `/wealth/query_private_contract_asset_list`，等待统一联调验证 |
+| Wealth Total Asset | Routed | 已接入 `/wealth/total_asset`，等待统一联调验证 |
 
 ## Notes
 

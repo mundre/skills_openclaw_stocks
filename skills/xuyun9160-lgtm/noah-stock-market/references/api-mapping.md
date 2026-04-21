@@ -86,9 +86,6 @@
 - 排行榜
   - `/rank/get_stock_rank`
 
-- 条件选股
-  - `/quote/get_stock_filter`
-
 - IPO 列表
   - `/quote/get_ipo_list`
 

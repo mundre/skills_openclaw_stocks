@@ -21,6 +21,11 @@ from summarize_market import (
     summarize_ticker,
     summarize_trading_days,
     summarize_us_analysis,
+    summarize_wealth_balance_list,
+    summarize_wealth_cash_total_asset,
+    summarize_wealth_fixed_income,
+    summarize_wealth_private_contract_asset_list,
+    summarize_wealth_total_asset,
 )
 from format_market_text import (
     format_basicinfo,
@@ -37,6 +42,11 @@ from format_market_text import (
     format_ticker,
     format_trading_days,
     format_us_analysis,
+    format_wealth_balance_list,
+    format_wealth_cash_total_asset,
+    format_wealth_fixed_income,
+    format_wealth_private_contract_asset_list,
+    format_wealth_total_asset,
 )
 
 
@@ -125,6 +135,36 @@ def build_params(intent: str, symbol: str, **kwargs) -> Dict[str, Any]:
             'shareholder': ensure_enum_varname('ShareholderRedHoldEnum', kwargs.get('shareholder', 'EVENT_DATE')),
             'order_code': ensure_enum('SortDir', kwargs.get('order_code', 'DESCEND')),
         }
+    if intent == 'wealth_balance_list':
+        return {}
+    if intent == 'wealth_cash_total_asset':
+        return {}
+    if intent == 'wealth_fixed_income':
+        payload = {}
+        if kwargs.get('productStatus') or kwargs.get('product_status'):
+            payload['productStatus'] = kwargs.get('productStatus') or kwargs.get('product_status')
+        if kwargs.get('productTypeList') or kwargs.get('product_type_list'):
+            raw = kwargs.get('productTypeList') or kwargs.get('product_type_list')
+            payload['productTypeList'] = [x.strip() for x in raw.split(',') if x.strip()]
+        if kwargs.get('toCcy') or kwargs.get('to_ccy'):
+            payload['toCcy'] = kwargs.get('toCcy') or kwargs.get('to_ccy')
+        for k in ['showCcyListItem','showCcyTotalAsset','showTotalAsset','showTotalTransactionCount']:
+            raw = kwargs.get(k) or kwargs.get(k.lower())
+            if raw is not None:
+                payload[k] = str(raw).lower() in ('1','true','yes','y')
+        return payload
+    if intent == 'wealth_private_contract_asset_list':
+        payload = {
+            'toCurrency': kwargs.get('toCurrency') or kwargs.get('to_currency') or 'USD',
+            'queryType': kwargs.get('queryType') or kwargs.get('query_type'),
+            'isPaging': str(kwargs.get('isPaging', kwargs.get('is_paging', 'true'))).lower() in ('1','true','yes','y'),
+        }
+        raw_status = kwargs.get('positionStatus') or kwargs.get('position_status')
+        if raw_status:
+            payload['positionStatus'] = [x.strip() for x in raw_status.split(',') if x.strip()]
+        return payload
+    if intent == 'wealth_total_asset':
+        return {'toCurrency': kwargs.get('toCurrency') or kwargs.get('to_currency') or 'USD'}
     raise ValueError(f'unsupported intent: {intent}')
 
 
@@ -134,7 +174,7 @@ def run(intent: str, raw_symbol: str, **kwargs) -> Dict[str, Any]:
     else:
         symbol = normalize_symbol(raw_symbol) or raw_symbol
     client = NoahQuoteClient()
-    supported = {'snapshot', 'market_state', 'global_state', 'intraday', 'ticker', 'broker_queue', 'kline', 'capital_flow', 'basicinfo', 'trading_days', 'us_analysis', 'rank', 'ipo_list', 'financial_hk', 'financial_us', 'shareholder_inc_red_hold', 'shareholder_inc_red_hold_by_ucode'}
+    supported = {'snapshot', 'market_state', 'global_state', 'intraday', 'ticker', 'broker_queue', 'kline', 'capital_flow', 'basicinfo', 'trading_days', 'us_analysis', 'rank', 'ipo_list', 'financial_hk', 'financial_us', 'shareholder_inc_red_hold', 'shareholder_inc_red_hold_by_ucode', 'wealth_balance_list', 'wealth_cash_total_asset', 'wealth_fixed_income', 'wealth_private_contract_asset_list', 'wealth_total_asset'}
     if intent not in supported:
         return {'ok': False, 'message': f'unsupported intent: {intent}', 'symbol': symbol}
 
@@ -156,10 +196,18 @@ def run(intent: str, raw_symbol: str, **kwargs) -> Dict[str, Any]:
         'financial_us': '/infos/get_finance_us_infos',
         'shareholder_inc_red_hold': '/infos/shareholder_inc_red_hold',
         'shareholder_inc_red_hold_by_ucode': '/infos/shareholder_inc_red_hold_by_ucode',
+        'wealth_balance_list': '/wealth/balance_list',
+        'wealth_cash_total_asset': '/wealth/cash_total_asset',
+        'wealth_fixed_income': '/wealth/fixed_income',
+        'wealth_private_contract_asset_list': '/wealth/query_private_contract_asset_list',
+        'wealth_total_asset': '/wealth/total_asset',
     }
 
     params = build_params(intent, symbol, **kwargs)
-    result = client.get(path_map[intent], params)
+    if intent in {'wealth_fixed_income', 'wealth_private_contract_asset_list'}:
+        result = client.post(path_map[intent], params)
+    else:
+        result = client.get(path_map[intent], params)
     out = {
         'ok': result['ok'],
         'http_status': result['http_status'],
@@ -249,6 +297,26 @@ def run(intent: str, raw_symbol: str, **kwargs) -> Dict[str, Any]:
         summary = summarize_shareholder_inc_red_hold(data)
         out['summary'] = summary
         out['text'] = format_shareholder_inc_red_hold(summary)
+    elif intent == 'wealth_balance_list':
+        summary = summarize_wealth_balance_list(data)
+        out['summary'] = summary
+        out['text'] = format_wealth_balance_list(summary)
+    elif intent == 'wealth_cash_total_asset':
+        summary = summarize_wealth_cash_total_asset(data)
+        out['summary'] = summary
+        out['text'] = format_wealth_cash_total_asset(summary)
+    elif intent == 'wealth_fixed_income':
+        summary = summarize_wealth_fixed_income(data)
+        out['summary'] = summary
+        out['text'] = format_wealth_fixed_income(summary)
+    elif intent == 'wealth_private_contract_asset_list':
+        summary = summarize_wealth_private_contract_asset_list(data)
+        out['summary'] = summary
+        out['text'] = format_wealth_private_contract_asset_list(summary)
+    elif intent == 'wealth_total_asset':
+        summary = summarize_wealth_total_asset(data)
+        out['summary'] = summary
+        out['text'] = format_wealth_total_asset(summary)
     else:
         out['text'] = '查询成功，但当前没有可展示的数据。'
     return out
