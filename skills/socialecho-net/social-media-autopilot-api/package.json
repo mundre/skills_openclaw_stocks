@@ -1,8 +1,8 @@
 {
-  "name": "social-media-autopilot",
-  "version": "1.0.2",
+  "name": "socialecho-social-media-management-agent",
+  "version": "1.1.0",
   "type": "module",
-  "description": "CLI helpers for Social media autopilot external APIs",
+  "description": "CLI helpers for SocialEcho social media management external APIs",
   "author": "SocialEcho Team",
   "license": "MIT",
   "engines": {
@@ -12,7 +12,11 @@
     "socialecho-team": "./team.js",
     "socialecho-account": "./account.js",
     "socialecho-article": "./article.js",
-    "socialecho-report": "./report.js"
+    "socialecho-report": "./report.js",
+    "socialecho-upload-url": "./upload-url.js",
+    "socialecho-reddit-communities": "./reddit-communities.js",
+    "socialecho-pinterest-boards": "./pinterest-boards.js",
+    "socialecho-publish-article": "./publish-article.js"
   },
   "files": [
     "SKILL.md",
@@ -24,13 +28,22 @@
     "account.js",
     "article.js",
     "report.js",
+    "upload-url.js",
+    "reddit-communities.js",
+    "pinterest-boards.js",
+    "publish-article.js",
+    "publish-payload.example.json",
     ".env.example"
   ],
   "scripts": {
     "team": "node ./team.js",
     "account": "node ./account.js",
     "article": "node ./article.js",
-    "report": "node ./report.js"
+    "report": "node ./report.js",
+    "upload-url": "node ./upload-url.js",
+    "reddit-communities": "node ./reddit-communities.js",
+    "pinterest-boards": "node ./pinterest-boards.js",
+    "publish-article": "node ./publish-article.js"
   },
   "dependencies": {}
 }
