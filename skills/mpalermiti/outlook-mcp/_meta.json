@@ -1,11 +1,17 @@
 {
   "owner": "mpalermiti",
   "slug": "outlook-mcp",
-  "displayName": "Outlook MCP",
+  "displayName": "Outlook Mcp",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1776144309343,
-    "commit": "https://github.com/openclaw/skills/commit/249edeff523caf4a6411450f93ef7579d083267b"
+    "version": "1.4.1",
+    "publishedAt": 1776488849763,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1776144309343,
+      "commit": "https://github.com/openclaw/skills/commit/249edeff523caf4a6411450f93ef7579d083267b"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 ---
 name: outlook-mcp
-description: MCP server for Microsoft Outlook personal accounts. 51 tools — mail, calendar, contacts, to-do, drafts, attachments, folders, threading, batch ops.
+description: MCP server for Microsoft Outlook personal accounts. 52 tools — mail, calendar, contacts, to-do, drafts, attachments, folders, threading, batch ops, Focused Inbox.
 homepage: https://github.com/mpalermiti/outlook-mcp
 metadata:
   openclaw:
@@ -41,18 +41,10 @@ Provides AI agents with full access to mail, calendar, contacts, and tasks via M
      "read_only": true
    }
    ```
-4. **Register in OpenClaw config:**
-   ```json
-   {
-     "mcp": {
-       "servers": {
-         "outlook": {
-           "command": "uv",
-           "args": ["--directory", "/path/to/outlook-mcp", "run", "outlook-mcp"]
-         }
-       }
-     }
-   }
+4. **Register with OpenClaw** (writes to `mcp.servers` in `~/.openclaw/openclaw.json`):
+   ```bash
+   openclaw mcp set outlook '{"command":"uv","args":["--directory","/path/to/outlook-mcp","run","outlook-mcp"]}'
+   openclaw mcp list   # verify
    ```
 5. **Authenticate on the host:**
    ```bash
@@ -82,6 +74,7 @@ Provides AI agents with full access to mail, calendar, contacts, and tasks via M
 - `outlook_flag_message` — Set follow-up flag
 - `outlook_categorize_message` — Set categories
 - `outlook_mark_read` — Mark read or unread
+- `outlook_reclassify_message` — Move between Focused Inbox and Other
 
 ### Calendar
 - `outlook_list_events` — List events in date range (expands recurring)

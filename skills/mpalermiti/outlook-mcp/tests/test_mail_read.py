@@ -31,6 +31,9 @@ def _make_mock_message(**overrides):
     msg.flag = MagicMock()
     msg.flag.flag_status = MagicMock(value=overrides.get("flag", "notFlagged"))
     msg.conversation_id = overrides.get("conversation_id", "conv123")
+    msg.inference_classification = MagicMock(
+        value=overrides.get("classification", "focused")
+    )
     # Body for read_message
     msg.body = MagicMock()
     msg.body.content = overrides.get("body_content", "<p>Hello</p>")
@@ -142,6 +145,55 @@ class TestListInbox:
         result = await list_inbox(mock_client, count=1)
         assert result["has_more"] is True
 
+    @pytest.mark.asyncio
+    async def test_list_inbox_classification_filter_adds_odata(self):
+        """classification="focused" adds inferenceClassification filter to query."""
+        mock_client = _make_folder_mock([])
+        await list_inbox(mock_client, classification="focused")
+
+        call_kwargs = (
+            mock_client.me.mail_folders.by_mail_folder_id.return_value
+            .messages.get.call_args
+        )
+        qp = call_kwargs.kwargs["request_configuration"].query_parameters
+        assert qp.filter is not None
+        assert "inferenceClassification eq 'focused'" in qp.filter
+
+    @pytest.mark.asyncio
+    async def test_list_inbox_classification_other(self):
+        """classification="other" is allowed."""
+        mock_client = _make_folder_mock([])
+        await list_inbox(mock_client, classification="other")
+
+        call_kwargs = (
+            mock_client.me.mail_folders.by_mail_folder_id.return_value
+            .messages.get.call_args
+        )
+        qp = call_kwargs.kwargs["request_configuration"].query_parameters
+        assert "inferenceClassification eq 'other'" in qp.filter
+
+    @pytest.mark.asyncio
+    async def test_list_inbox_classification_invalid(self):
+        """Invalid classification raises ValueError."""
+        mock_client = _make_folder_mock([])
+        with pytest.raises(ValueError, match="classification"):
+            await list_inbox(mock_client, classification="bogus")
+
+    @pytest.mark.asyncio
+    async def test_list_inbox_classification_combines_with_other_filters(self):
+        """classification filter combines with unread_only via 'and'."""
+        mock_client = _make_folder_mock([])
+        await list_inbox(mock_client, unread_only=True, classification="focused")
+
+        call_kwargs = (
+            mock_client.me.mail_folders.by_mail_folder_id.return_value
+            .messages.get.call_args
+        )
+        qp = call_kwargs.kwargs["request_configuration"].query_parameters
+        assert "isRead eq false" in qp.filter
+        assert "inferenceClassification eq 'focused'" in qp.filter
+        assert " and " in qp.filter
+
 
 class TestReadMessage:
     @pytest.mark.asyncio
@@ -187,15 +239,25 @@ class TestSearchMail:
         mock_client.me.mail_folders.by_mail_folder_id.assert_called_with("inbox")
 
 
+def _make_folder(folder_id: str, name: str, *, total=0, unread=0, parent_id=None, children=0):
+    """Build a MagicMock that stands in for a Graph MailFolder entity."""
+    f = MagicMock()
+    f.id = folder_id
+    f.display_name = name
+    f.total_item_count = total
+    f.unread_item_count = unread
+    f.parent_folder_id = parent_id
+    f.child_folder_count = children
+    return f
+
+
 class TestListFolders:
     @pytest.mark.asyncio
     async def test_list_folders_returns_folders(self):
-        """list_folders returns folder list with counts."""
-        mock_folder = MagicMock()
-        mock_folder.id = "folder123"
-        mock_folder.display_name = "Inbox"
-        mock_folder.total_item_count = 42
-        mock_folder.unread_item_count = 5
+        """list_folders returns folder list with counts, parent_id, child_count."""
+        mock_folder = _make_folder(
+            "folder123", "Inbox", total=42, unread=5, parent_id="root", children=2
+        )
 
         mock_client = MagicMock()
         mock_client.me.mail_folders.get = AsyncMock(
@@ -207,3 +269,60 @@ class TestListFolders:
         assert result["folders"][0]["name"] == "Inbox"
         assert result["folders"][0]["total"] == 42
         assert result["folders"][0]["unread"] == 5
+        assert result["folders"][0]["parent_id"] == "root"
+        assert result["folders"][0]["child_count"] == 2
+
+    @pytest.mark.asyncio
+    async def test_list_folders_recursive_walks_subfolders(self):
+        """recursive=True returns the full folder tree via BFS walk."""
+        inbox = _make_folder("inbox_id", "Inbox", parent_id="root", children=0)
+        receipts = _make_folder("receipts_id", "Receipts", parent_id="root", children=1)
+        domains = _make_folder("domains_id", "Domains", parent_id="receipts_id", children=0)
+
+        mock_client = MagicMock()
+        mock_client.me.mail_folders.get = AsyncMock(
+            return_value=MagicMock(value=[inbox, receipts], odata_next_link=None)
+        )
+        child_builder = MagicMock()
+        child_builder.child_folders.get = AsyncMock(
+            return_value=MagicMock(value=[domains], odata_next_link=None)
+        )
+        mock_client.me.mail_folders.by_mail_folder_id = MagicMock(return_value=child_builder)
+
+        result = await list_folders(mock_client, recursive=True)
+        names = {f["name"] for f in result["folders"]}
+        assert names == {"Inbox", "Receipts", "Domains"}
+        assert result["count"] == 3
+        assert result["has_more"] is False
+        # Only the folder with children triggers a child_folders fetch.
+        mock_client.me.mail_folders.by_mail_folder_id.assert_called_once_with("receipts_id")
+
+    @pytest.mark.asyncio
+    async def test_list_folders_recursive_paginates_child_folders(self):
+        """Child-folder listings follow odata_next_link so >10 subfolders are returned."""
+        inbox = _make_folder("inbox_id", "Inbox", parent_id="root", children=15)
+
+        page1 = [_make_folder(f"c{i}", f"Child{i}", parent_id="inbox_id") for i in range(10)]
+        page2 = [_make_folder(f"c{i}", f"Child{i}", parent_id="inbox_id") for i in range(10, 15)]
+
+        mock_client = MagicMock()
+        mock_client.me.mail_folders.get = AsyncMock(
+            return_value=MagicMock(value=[inbox], odata_next_link=None)
+        )
+        child_builder = MagicMock()
+        # First page has nextLink; with_url(...)  returns a builder whose get() returns page2.
+        page1_response = MagicMock(value=page1, odata_next_link="https://next-page")
+        page2_response = MagicMock(value=page2, odata_next_link=None)
+        next_page_builder = MagicMock()
+        next_page_builder.get = AsyncMock(return_value=page2_response)
+        child_builder.child_folders.get = AsyncMock(return_value=page1_response)
+        child_builder.child_folders.with_url = MagicMock(return_value=next_page_builder)
+        mock_client.me.mail_folders.by_mail_folder_id = MagicMock(return_value=child_builder)
+
+        result = await list_folders(mock_client, recursive=True)
+        names = {f["name"] for f in result["folders"]}
+        # Inbox + 15 children
+        assert len(result["folders"]) == 16
+        assert "Inbox" in names
+        assert {f"Child{i}" for i in range(15)}.issubset(names)
+        child_builder.child_folders.with_url.assert_called_once_with("https://next-page")

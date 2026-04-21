@@ -20,13 +20,14 @@ MCP server for Microsoft Outlook personal accounts via Microsoft Graph API.
 Give your AI agent full Outlook access. Example prompts that just work:
 
 - *"Summarize my unread email from the past 24 hours and flag anything time-sensitive."*
+- *"What's in my Focused Inbox right now? Anything in Other that looks like it belongs up top?"*
 - *"Any shipping updates in my inbox? Track what I'm waiting on and when it's supposed to arrive."*
 - *"Scan my email for upcoming subscription renewals — what's about to auto-charge in the next two weeks?"*
 - *"I've got a trip to Seattle next week — check my calendar for the itinerary and create a To Do task with a packing checklist."*
 - *"Draft a reply to the last message from my sister saying I'll call her this weekend."*
 - *"Move all newsletter and promotional email from this week to a 'Read Later' folder — batch 20 at a time."*
 
-The server exposes 51 discrete tools so the agent can compose its own workflow — read, triage, write, schedule, track tasks — without hardcoded macros.
+The server exposes 52 discrete tools so the agent can compose its own workflow — read, triage, write, schedule, track tasks — without hardcoded macros.
 
 ## Works With
 
@@ -41,12 +42,12 @@ Listed on the [official MCP Registry](https://registry.modelcontextprotocol.io/v
 
 ## Features
 
-**51 tools** across 13 categories:
+**52 tools** across 13 categories:
 
 - **Auth (1)** -- auth status check (login is via CLI)
-- **Mail Read (4)** -- list inbox, read message, search (KQL), list folders
+- **Mail Read (4)** -- list inbox (with Focused Inbox filter), read message, search (KQL), list folders
 - **Mail Write (3)** -- send, reply/reply-all, forward
-- **Mail Triage (5)** -- move, delete (soft by default), flag, categorize, mark read/unread
+- **Mail Triage (6)** -- move, delete (soft by default), flag, categorize, mark read/unread, reclassify (Focused Inbox)
 - **Calendar Read (2)** -- list events (with recurring expansion), get event details
 - **Calendar Write (4)** -- create, update, delete, RSVP (accept/decline/tentative)
 - **Contacts (6)** -- list, search, get, create, update, delete
@@ -164,7 +165,21 @@ The only required field is `client_id`. Everything else has sensible defaults. S
 }
 ```
 
-For **OpenClaw**, register under `mcp.servers` in `~/.openclaw/openclaw.json` and restart the gateway.
+**For OpenClaw**, use the `openclaw mcp` CLI — it writes to `mcp.servers` in `~/.openclaw/openclaw.json` for you:
+
+```bash
+# If installed from PyPI:
+openclaw mcp set outlook '{"command":"outlook-mcp"}'
+
+# If installed from source:
+openclaw mcp set outlook '{"command":"uv","args":["--directory","/path/to/outlook-mcp","run","outlook-mcp"]}'
+
+# Verify:
+openclaw mcp list
+openclaw mcp show outlook --json
+```
+
+Restart the OpenClaw gateway after registering. See the [OpenClaw MCP docs](https://docs.openclaw.ai/cli/mcp) for SSE/HTTP transport variants.
 
 ### Authenticate
 
@@ -200,10 +215,10 @@ uv run outlook-mcp serve    # Start MCP server (default, used by OpenClaw/Claude
 
 | Tool | Description |
 |------|-------------|
-| `outlook_list_inbox` | List messages in a folder. Filter by read status, sender, date range. Pagination via `skip`. |
+| `outlook_list_inbox` | List messages in a folder. `folder` accepts display names, well-known names, or Graph IDs. Filter by read status, sender, date range, Focused Inbox classification. Pagination via `skip`. |
 | `outlook_read_message` | Get full message by ID. Format: `text`, `html`, or `full` (both). |
-| `outlook_search_mail` | Search mail using KQL query. Optionally scope to a folder. |
-| `outlook_list_folders` | List all mail folders with total and unread counts. |
+| `outlook_search_mail` | Search mail using KQL query. Optionally scope to a folder by name or ID. |
+| `outlook_list_folders` | List mail folders with counts, `parent_id`, and `child_count`. Pass `recursive=true` to walk the full folder tree (subfolders included). |
 
 ### Mail Write
 
@@ -222,6 +237,7 @@ uv run outlook-mcp serve    # Start MCP server (default, used by OpenClaw/Claude
 | `outlook_flag_message` | Set follow-up flag: `flagged`, `complete`, or `notFlagged`. |
 | `outlook_categorize_message` | Set categories on a message. |
 | `outlook_mark_read` | Mark a message as read or unread. |
+| `outlook_reclassify_message` | Move a message between Focused Inbox and Other (`focused` / `other`). |
 
 ### Calendar Read
 
@@ -293,7 +309,7 @@ uv run outlook-mcp serve    # Start MCP server (default, used by OpenClaw/Claude
 |------|-------------|
 | `outlook_list_thread` | Get all messages in a conversation thread. |
 | `outlook_copy_message` | Copy a message to another folder. |
-| `outlook_batch_triage` | Batch move/flag/categorize/mark_read (max 20 per call). |
+| `outlook_batch_triage` | Batch move/flag/categorize/mark_read (max 20 per call). Single Graph `/$batch` round-trip — 10-20× faster than per-message calls for large triage. |
 
 ### User and Admin
 
@@ -403,9 +419,9 @@ uv run outlook-mcp
 
 ## Roadmap
 
-- **Focused Inbox** -- list Focused/Other tab, override classification
 - **Out-of-Office** -- get/set automatic replies
 - **Inbox Rules** -- list, create, delete rules
+- **Focused Inbox overrides** -- per-sender rules (always Focused/Other for X)
 - **Advanced mail** -- raw MIME export, internet message headers
 - **Calendar** -- cancel event (with attendee notification)
 - **Checklists** -- checklist items on To Do tasks

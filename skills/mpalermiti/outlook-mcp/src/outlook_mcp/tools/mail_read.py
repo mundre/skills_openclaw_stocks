@@ -4,13 +4,17 @@ from __future__ import annotations
 
 from typing import Any
 
+from outlook_mcp.folder_resolver import (
+    fetch_all_child_folders,
+    fetch_all_top_level_folders,
+    resolve_folder_id,
+)
 from outlook_mcp.pagination import apply_pagination, build_request_config, wrap_nextlink
 from outlook_mcp.validation import (
     sanitize_kql,
     sanitize_output,
     validate_datetime,
     validate_email,
-    validate_folder_name,
     validate_graph_id,
 )
 
@@ -44,6 +48,11 @@ def _format_message_summary(msg: Any) -> dict:
             msg.importance.value if hasattr(msg.importance, "value") else str(msg.importance)
         )
 
+    classification = ""
+    ic = getattr(msg, "inference_classification", None)
+    if ic:
+        classification = ic.value if hasattr(ic, "value") else str(ic)
+
     return {
         "id": msg.id,
         "subject": sanitize_output(msg.subject or "(no subject)"),
@@ -57,7 +66,11 @@ def _format_message_summary(msg: Any) -> dict:
         "categories": list(msg.categories or []),
         "flag": flag_status,
         "conversation_id": msg.conversation_id or "",
+        "classification": classification,
     }
+
+
+VALID_CLASSIFICATIONS = {"focused", "other"}
 
 
 async def list_inbox(
@@ -70,16 +83,21 @@ async def list_inbox(
     before: str | None = None,
     skip: int = 0,
     cursor: str | None = None,
+    classification: str | None = None,
 ) -> dict:
-    """List messages in a folder."""
+    """List messages in a folder.
+
+    classification: filter by Focused Inbox classification — "focused" or "other".
+    None means no filter (both).
+    """
     count = _clamp(count, 1, 100)
-    folder = validate_folder_name(folder)
+    folder = await resolve_folder_id(graph_client, folder)
 
     query_params = apply_pagination({}, count, cursor)
     query_params["$orderby"] = "receivedDateTime desc"
     query_params["$select"] = (
         "id,subject,from,receivedDateTime,isRead,importance,"
-        "bodyPreview,hasAttachments,categories,flag,conversationId"
+        "bodyPreview,hasAttachments,categories,flag,conversationId,inferenceClassification"
     )
 
     # If cursor provided, it already set $skip — ignore the manual skip param
@@ -100,6 +118,13 @@ async def list_inbox(
     if before:
         safe_before = validate_datetime(before)
         filters.append(f"receivedDateTime le {safe_before}")
+    if classification is not None:
+        if classification not in VALID_CLASSIFICATIONS:
+            raise ValueError(
+                f"Invalid classification '{classification}'. "
+                f"Must be one of: {sorted(VALID_CLASSIFICATIONS)}"
+            )
+        filters.append(f"inferenceClassification eq '{classification}'")
 
     if filters:
         query_params["$filter"] = " and ".join(filters)
@@ -221,7 +246,7 @@ async def search_mail(
     )
 
     if folder:
-        folder = validate_folder_name(folder)
+        folder = await resolve_folder_id(graph_client, folder)
         from msgraph.generated.users.item.mail_folders.item.messages import (
             messages_request_builder as folder_mrb,
         )
@@ -253,31 +278,56 @@ async def search_mail(
     }
 
 
+def _folder_to_dict(f: Any) -> dict:
+    return {
+        "id": f.id,
+        "name": sanitize_output(f.display_name or ""),
+        "total": f.total_item_count or 0,
+        "unread": f.unread_item_count or 0,
+        "parent_id": getattr(f, "parent_folder_id", None),
+        "child_count": getattr(f, "child_folder_count", 0) or 0,
+    }
+
+
 async def list_folders(
     graph_client: Any,
     cursor: str | None = None,
+    recursive: bool = False,
 ) -> dict:
-    """List all mail folders."""
-    query_params = apply_pagination({}, count=50, cursor=cursor)
+    """List mail folders.
 
+    Default: top-level folders only, paginated. Set `recursive=True` to return
+    the full folder tree (BFS walk of subfolders) — pagination is disabled in
+    recursive mode; all folders are returned in one response.
+    """
     from msgraph.generated.users.item.mail_folders.mail_folders_request_builder import (
         MailFoldersRequestBuilder,
     )
 
+    if recursive:
+        collected: list[dict] = []
+        queue: list[Any] = await fetch_all_top_level_folders(graph_client)
+        while queue:
+            f = queue.pop(0)
+            collected.append(_folder_to_dict(f))
+            if (getattr(f, "child_folder_count", 0) or 0) > 0:
+                children = await fetch_all_child_folders(graph_client, f.id)
+                queue.extend(children)
+
+        return {
+            "folders": collected,
+            "count": len(collected),
+            "has_more": False,
+            "cursor": None,
+        }
+
+    query_params = apply_pagination({}, count=50, cursor=cursor)
     req_config = build_request_config(
         MailFoldersRequestBuilder.MailFoldersRequestBuilderGetQueryParameters, query_params
     )
     response = await graph_client.me.mail_folders.get(request_configuration=req_config)
 
-    folders = []
-    for f in response.value or []:
-        folders.append({
-            "id": f.id,
-            "name": sanitize_output(f.display_name or ""),
-            "total": f.total_item_count or 0,
-            "unread": f.unread_item_count or 0,
-        })
-
+    folders = [_folder_to_dict(f) for f in (response.value or [])]
     return {
         "folders": folders,
         "count": len(folders),

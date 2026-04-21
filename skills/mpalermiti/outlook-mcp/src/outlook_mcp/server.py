@@ -96,12 +96,18 @@ async def outlook_list_inbox(
     before: str | None = None,
     skip: int = 0,
     cursor: str | None = None,
+    classification: str | None = None,
 ) -> dict:
-    """List messages in a folder with filtering by read status, sender, and date range."""
+    """List messages. Filters: read status, sender, date, Focused Inbox classification.
+
+    `folder` accepts display names ("Junk Email", "Sent Items", "TLDR"), well-known
+    names ("inbox", "junkemail", "sentitems"), or Graph IDs. Prefer names — do not
+    cache or transcribe Graph IDs across turns.
+    """
     client = _get_graph_client(ctx)
     return await mail_read.list_inbox(
         client.sdk_client, folder, count, unread_only, from_address, after, before, skip,
-        cursor=cursor,
+        cursor=cursor, classification=classification,
     )
 
 
@@ -124,16 +130,32 @@ async def outlook_search_mail(
     folder: str | None = None,
     cursor: str | None = None,
 ) -> dict:
-    """Search mail using KQL query. Query is automatically sanitized."""
+    """Search mail using KQL query. Query is automatically sanitized.
+
+    `folder` accepts display names ("Junk Email", "TLDR"), well-known names,
+    or Graph IDs. Prefer names — do not cache or transcribe Graph IDs across turns.
+    """
     client = _get_graph_client(ctx)
     return await mail_read.search_mail(client.sdk_client, query, count, folder, cursor=cursor)
 
 
 @mcp.tool()
-async def outlook_list_folders(ctx: Context, cursor: str | None = None) -> dict:
-    """List all mail folders with message counts."""
+async def outlook_list_folders(
+    ctx: Context,
+    cursor: str | None = None,
+    recursive: bool = False,
+) -> dict:
+    """List mail folders with message counts, parent ID, and child count.
+
+    Default returns top-level folders only. Pass `recursive=True` to walk the
+    full folder tree — use this when searching for subfolders or mapping the
+    hierarchy. Each folder includes `parent_id` so callers can reconstruct the
+    tree.
+    """
     client = _get_graph_client(ctx)
-    return await mail_read.list_folders(client.sdk_client, cursor=cursor)
+    return await mail_read.list_folders(
+        client.sdk_client, cursor=cursor, recursive=recursive
+    )
 
 
 # ── Mail Write Tools ────────────────────────────────────
@@ -202,7 +224,11 @@ async def outlook_move_message(
     message_id: str,
     folder: str,
 ) -> dict:
-    """Move a message to a folder."""
+    """Move a message to a folder.
+
+    `folder` accepts display names ("Junk Email", "Archive", "TLDR"), well-known
+    names ("inbox", "deleteditems"), or Graph IDs. Prefer names.
+    """
     client = _get_graph_client(ctx)
     config = _get_config(ctx)
     return await mail_triage.move_message(
@@ -263,6 +289,20 @@ async def outlook_mark_read(
     config = _get_config(ctx)
     return await mail_triage.mark_read(
         client.sdk_client, message_id, is_read, config=config
+    )
+
+
+@mcp.tool()
+async def outlook_reclassify_message(
+    ctx: Context,
+    message_id: str,
+    classification: str,
+) -> dict:
+    """Reclassify a message's Focused Inbox placement. classification: "focused" or "other"."""
+    client = _get_graph_client(ctx)
+    config = _get_config(ctx)
+    return await mail_triage.reclassify_message(
+        client.sdk_client, message_id, classification, config=config
     )
 
 
@@ -714,7 +754,10 @@ async def outlook_copy_message(
     message_id: str,
     folder: str,
 ) -> dict:
-    """Copy a message to a folder."""
+    """Copy a message to a folder.
+
+    `folder` accepts display names, well-known names, or Graph IDs. Prefer names.
+    """
     client = _get_graph_client(ctx)
     config = _get_config(ctx)
     return await mail_thread.copy_message(

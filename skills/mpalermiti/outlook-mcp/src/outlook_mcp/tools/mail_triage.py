@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 from outlook_mcp.config import Config
+from outlook_mcp.folder_resolver import resolve_folder_id
 from outlook_mcp.permissions import CATEGORY_MAIL_TRIAGE, check_permission
-from outlook_mcp.validation import validate_folder_name, validate_graph_id
+from outlook_mcp.validation import validate_graph_id
 
 
 async def move_message(
@@ -19,7 +20,7 @@ async def move_message(
     """Move a message to a folder."""
     check_permission(config, CATEGORY_MAIL_TRIAGE, "outlook_move_message")
     message_id = validate_graph_id(message_id)
-    folder = validate_folder_name(folder)
+    folder = await resolve_folder_id(graph_client, folder)
 
     from msgraph.generated.users.item.messages.item.move.move_post_request_body import (
         MovePostRequestBody,
@@ -121,3 +122,38 @@ async def mark_read(
 
     await graph_client.me.messages.by_message_id(message_id).patch(msg)
     return {"status": "updated", "is_read": is_read}
+
+
+async def reclassify_message(
+    graph_client: Any,
+    message_id: str,
+    classification: str,
+    *,
+    config: Config,
+) -> dict:
+    """Reclassify a message's Focused Inbox classification.
+
+    classification: "focused" or "other"
+    """
+    check_permission(config, CATEGORY_MAIL_TRIAGE, "outlook_reclassify_message")
+    message_id = validate_graph_id(message_id)
+
+    valid = ("focused", "other")
+    if classification not in valid:
+        raise ValueError(f"classification must be one of {valid}; got {classification}")
+
+    from msgraph.generated.models.inference_classification_type import (
+        InferenceClassificationType,
+    )
+    from msgraph.generated.models.message import Message
+
+    type_map = {
+        "focused": InferenceClassificationType.Focused,
+        "other": InferenceClassificationType.Other,
+    }
+
+    msg = Message()
+    msg.inference_classification = type_map[classification]
+
+    await graph_client.me.messages.by_message_id(message_id).patch(msg)
+    return {"status": "reclassified", "classification": classification}
