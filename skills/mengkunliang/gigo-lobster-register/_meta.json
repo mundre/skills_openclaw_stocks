@@ -3,9 +3,15 @@
   "slug": "gigo-lobster-register",
   "displayName": "GIGO · Lobster Register",
   "latest": {
-    "version": "1.2.3",
-    "publishedAt": 1776170831141,
-    "commit": "https://github.com/openclaw/skills/commit/8a53bb2b71d8188ed67bf6f9a8902b93c7cc2d1e"
+    "version": "1.2.4",
+    "publishedAt": 1776261655155,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.3",
+      "publishedAt": 1776170831141,
+      "commit": "https://github.com/openclaw/skills/commit/8a53bb2b71d8188ed67bf6f9a8902b93c7cc2d1e"
+    }
+  ]
 }
