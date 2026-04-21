@@ -1,0 +1,11 @@
+{
+  "owner": "sgfa005",
+  "slug": "api-merchant-fee",
+  "displayName": "API Merchant Fee",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776351974767,
+    "commit": null
+  },
+  "history": []
+}
