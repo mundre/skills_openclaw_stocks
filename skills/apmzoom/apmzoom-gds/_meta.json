@@ -1,0 +1,11 @@
+{
+  "owner": "apmzoom",
+  "slug": "apmzoom-gds",
+  "displayName": "APM 상품 관리 API",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776403875475,
+    "commit": null
+  },
+  "history": []
+}
