@@ -1,6 +1,13 @@
 ---
 name: word-comments-extractor
 description: Extract comments from Word documents and format them into standardized review opinions. Auto-matches page numbers, agent-powered semantic polishing. Designed for investment banking QC, legal review, and document audit scenarios.
+platforms: ["win32"]
+binaries: ["Microsoft Word"]
+install:
+  steps:
+    - description: "Install pywin32 Python package"
+      command: "python -m pip install pywin32"
+  note: "Microsoft Word must be installed manually by the user. This skill requires Word COM interface for page number retrieval."
 ---
 
 # Word Comments Extractor

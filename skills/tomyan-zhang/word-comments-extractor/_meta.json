@@ -3,9 +3,15 @@
   "slug": "word-comments-extractor",
   "displayName": "Word Comments Extractor",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776244995965,
-    "commit": "https://github.com/openclaw/skills/commit/bbb1fa5d178cda756c74ef9570eec5c7e285db94"
+    "version": "1.0.2",
+    "publishedAt": 1776347648198,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776244995965,
+      "commit": "https://github.com/openclaw/skills/commit/bbb1fa5d178cda756c74ef9570eec5c7e285db94"
+    }
+  ]
 }
