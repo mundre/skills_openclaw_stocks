@@ -1,0 +1,11 @@
+{
+  "owner": "maximedogawa",
+  "slug": "news-orf",
+  "displayName": "ORF news",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776451224707,
+    "commit": null
+  },
+  "history": []
+}
