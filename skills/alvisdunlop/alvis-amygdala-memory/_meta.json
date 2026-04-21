@@ -1,11 +1,17 @@
 {
   "owner": "alvisdunlop",
   "slug": "alvis-amygdala-memory",
-  "displayName": "Amygdala Memory",
+  "displayName": "Alvis Amygdala Memory",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1776244935375,
-    "commit": "https://github.com/openclaw/skills/commit/a4365c9fba37c20e11650898e3e926a4be3ef46e"
+    "version": "1.0.5",
+    "publishedAt": 1776317634915,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1776244935375,
+      "commit": "https://github.com/openclaw/skills/commit/a4365c9fba37c20e11650898e3e926a4be3ef46e"
+    }
+  ]
 }
