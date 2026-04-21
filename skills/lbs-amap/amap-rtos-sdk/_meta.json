@@ -1,0 +1,11 @@
+{
+  "owner": "lbs-amap",
+  "slug": "amap-rtos-sdk",
+  "displayName": "Map RTOS SDK - 高德官方嵌入式地图 SDK Skill",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1776420459182,
+    "commit": null
+  },
+  "history": []
+}
