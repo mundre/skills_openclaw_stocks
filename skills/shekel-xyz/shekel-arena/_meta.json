@@ -3,9 +3,15 @@
   "slug": "shekel-arena",
   "displayName": "Shekel Arena",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1776277137229,
-    "commit": "https://github.com/openclaw/skills/commit/7900001afc16d811998cf9202dc55e9fdb9721bf"
+    "version": "1.0.9",
+    "publishedAt": 1776697487122,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1776277137229,
+      "commit": "https://github.com/openclaw/skills/commit/7900001afc16d811998cf9202dc55e9fdb9721bf"
+    }
+  ]
 }
