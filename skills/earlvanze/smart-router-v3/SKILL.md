@@ -1,92 +1,92 @@
 ---
 name: smart-router-v3
-description: Dynamic AI model router with intent classification and automatic provider discovery
-version: 3.0.0
+description: Intent-based AI model router that classifies requests and routes to the best provider. Auto-discovers OpenClaw providers and model lists from openclaw.json, skips self-recursion, and scores candidates dynamically by intent. Runs as a systemd service on port 8788. Use when configuring, debugging, or modifying the smart-router service.
 ---
 
-# Smart Router V2
+# Smart Router V3
 
-HTTP server that routes AI requests to optimal models based on intent classification with **dynamic provider discovery**.
+HTTP server on `:8788` that routes OpenAI-compatible chat requests to the optimal provider based on intent classification.
 
-## Features
+## Active Providers
 
-- **Dynamic Discovery**: Automatically reads available providers from `~/.openclaw/openclaw.json`
-- **Intent Classification**: Routes based on task type (CODE, ANALYSIS, CREATIVE, REALTIME, GENERAL)
-- **Automatic Fallback**: Tries providers in priority order until success
-- **Zero-config**: Works out of the box with OpenClaw provider config
+Providers are discovered from `~/.openclaw/openclaw.json` at startup.
 
-## Installation
+Rules:
+- skips the router's own `smart-router` provider entry to avoid recursion
+- resolves `${ENV_VAR}` values for `baseUrl` and `apiKey`
+- includes OpenClaw gateway `openai-codex` as a virtual provider when the auth profile exists
+- recognizes Google Gemini providers from `generativelanguage.googleapis.com`
+- auto-discovers Google models when the provider exists but `models` is empty in `openclaw.json`
+- normalizes `anthropic` or Anthropic-hosted `anthropic-messages` providers onto the local Dario proxy at `localhost:3456`
+- starts the Dario user service when Anthropic compatibility is needed and the service is not already running
+- supports temporary provider suppression via `SMART_ROUTER_DISABLED_PROVIDERS=name1,name2`
 
-```bash
-# Clone and run
-python3 router.py --port 8788
-
-# Or use systemd
-systemctl --user enable smart-router.service
-systemctl --user start smart-router.service
-```
-
-## API
-
-### Health Check
-```
-GET /health
-```
-Returns discovered providers:
-```json
-{"status": "ok", "providers": ["ollama", "ollama-cyber", "openrouter", "claude-cli"]}
-```
-
-### Chat Completions
-```
-POST /v1/chat/completions
-```
-OpenAI-compatible endpoint with automatic routing.
+`GET /health` shows:
+- `configured`: all discovered providers
+- `providers`: reachable providers with model lists
+- `disabled`: providers suppressed by env
 
 ## Routing Logic
 
-| Intent    | Priority Chain                          |
-|-----------|----------------------------------------|
-| CODE      | claude-cli → ollama → ollama-cyber     |
-| ANALYSIS  | claude-cli → ollama → ollama-cyber     |
-| CREATIVE  | ollama → claude-cli                     |
-| REALTIME  | ollama → openrouter                     |
-| GENERAL   | ollama → claude-cli → ollama-cyber     |
+The router no longer uses a hardcoded provider whitelist.
 
-## Intent Detection
+Flow:
+- detect intent from the latest user message
+- estimate complexity from prompt length
+- score every reachable provider/model pair from `openclaw.json`
+- for `GENERAL`, blend static heuristics with persisted empirical latency stats by provider and model
+- rank candidates by API type, model-name hints, complexity, and measured latency
+- attempt the top `SMART_ROUTER_MAX_PROVIDER_ATTEMPTS` candidates in order
 
-Automatically classifies user messages:
+Intent scoring is generic, for example:
+- code and analysis strongly favor Anthropic/OpenAI-style reasoning models
+- general/realtime requests prefer fast direct providers first
+- general traffic learns from real successful request latency over time, with light exploration for cold providers/models
+- complex prompts boost larger reasoning models and penalize mini/haiku-class models
 
-- **CODE**: `write`, `debug`, `fix`, `function`, code blocks (```)
-- **ANALYSIS**: `analyze`, `explain`, `compare`, `research`, `why`
-- **CREATIVE**: `create`, `brainstorm`, `imagine`, `design`, `story`
-- **REALTIME**: `now`, `today`, `current`, `latest`, `price`, `weather`
-- **GENERAL**: Default for unmatched patterns
+Intent is detected by keyword matching on the latest user message. Complexity is estimated by word count.
 
-## Configuration
+## API
 
-Reads providers from OpenClaw config:
-- `~/.openclaw/openclaw.json` → `models.providers`
-- Supports: ollama, openai-completions, anthropic-messages APIs
-- Automatically skips `smart-router` (self-reference)
+- `GET /health` — JSON with reachable providers, configured providers, and disabled providers
+- `POST /v1/chat/completions` — OpenAI-compatible; routes automatically
 
-## Files
+## Notes
 
-- `router.py` — Main HTTP routing server (V3 with dynamic discovery)
-- `SKILL.md` — This documentation
-- `_meta.json` — Metadata
+- `openai-codex` is kept as an optional bridge, not a required first hop.
+- Anthropic compatibility is provided through Dario, so `anthropic` can stay in `openclaw.json` while routing locally through `dario`.
+- The repo `systemd` unit is template-style and expects local machine values in `~/.config/smart-router/smart-router.env`.
+- Empirical latency memory is persisted at `~/.cache/smart-router-v3/latency-stats.json` by default.
+- When the OpenClaw gateway model-set path is unhealthy, the helper falls back to running without provider/model overrides instead of failing hard.
+- If any provider starts misbehaving, suppress it with `SMART_ROUTER_DISABLED_PROVIDERS` instead of editing the router.
+- GitHub workflows now include CI syntax checks and CodeQL analysis for Python + JavaScript.
+- See `BRANCH_PROTECTION.md` for the exact required-check setup on GitHub.
 
-## Changelog
+## Install
 
-### v2.0.0 (2026-04-11)
-- Added dynamic provider discovery from OpenClaw config
-- Removed hardcoded endpoints
-- Added `/health` endpoint showing discovered providers
-- Improved error handling and fallback logic
+Install the user service from the repo copy:
 
-### v1.0.0
-- Initial release with hardcoded routing
+```bash
+mkdir -p ~/.config/systemd/user ~/.config/smart-router
+cp systemd/smart-router.service ~/.config/systemd/user/smart-router.service
+cp systemd/smart-router.env.example ~/.config/smart-router/smart-router.env
+# edit ~/.config/smart-router/smart-router.env for your machine
+systemctl --user daemon-reload
+systemctl --user enable --now smart-router.service
+```
 
-## License
+Notes:
+- the repo unit is now env-driven and does not hardcode your home path, Node version, or workspace location
+- set `SMART_ROUTER_HOME` to the actual repo path on your machine
+- optionally set `SMART_ROUTER_PATH_PREFIX` if your Python, Node, or Dario bins are not already on PATH
 
-MIT
+If an Anthropic provider is detected and Dario is not installed yet, install Dario first:
+- GitHub: https://github.com/askalf/dario
+
+## Service
+
+```bash
+systemctl --user status smart-router
+systemctl --user restart smart-router
+journalctl --user -u smart-router -f   # live logs
+```
