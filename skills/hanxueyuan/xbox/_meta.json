@@ -3,9 +3,15 @@
   "slug": "xbox",
   "displayName": "Xbox",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775917679553,
-    "commit": "https://github.com/openclaw/skills/commit/3c88c874d85aff34b80017899d8b32cb2bfae126"
+    "version": "1.0.1",
+    "publishedAt": 1776295750957,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775917679553,
+      "commit": "https://github.com/openclaw/skills/commit/3c88c874d85aff34b80017899d8b32cb2bfae126"
+    }
+  ]
 }
