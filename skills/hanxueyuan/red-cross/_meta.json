@@ -3,9 +3,15 @@
   "slug": "red-cross",
   "displayName": "Red Cross",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775974329965,
-    "commit": "https://github.com/openclaw/skills/commit/af824252ca7eae7b6511189661df5a8e347bdf5c"
+    "version": "1.0.3",
+    "publishedAt": 1776533932209,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775974329965,
+      "commit": "https://github.com/openclaw/skills/commit/af824252ca7eae7b6511189661df5a8e347bdf5c"
+    }
+  ]
 }
