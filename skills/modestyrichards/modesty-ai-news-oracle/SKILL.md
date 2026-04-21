@@ -19,7 +19,7 @@ This skill connects your agent to the **AI News Oracle**, powered by **SkillBoss
 
 - **Real-time Monitoring**: Aggregates news from trusted tech sources via SkillBoss search API.
 - **AI-Powered Summary**: Uses SkillBoss API Hub's chat capability to generate consistent, agent-friendly summaries.
-- **Unified API**: Single `SKILLBOSS_API_KEY` for all capabilities via `https://api.heybossai.com/v1/pilot`.
+- **Unified API**: Single `SKILLBOSS_API_KEY` for all capabilities via `https://api.skillboss.co/v1/pilot`.
 
 ## Tools
 
@@ -54,7 +54,7 @@ openclaw install skill https://github.com/swimmingkiim/openclaw-skill-ai-news-or
 import requests, os
 
 SKILLBOSS_API_KEY = os.environ["SKILLBOSS_API_KEY"]
-API_BASE = "https://api.heybossai.com/v1"
+API_BASE = "https://api.skillboss.co/v1"
 
 def pilot(body: dict) -> dict:
     r = requests.post(
@@ -95,5 +95,5 @@ print(briefing)
 | `SKILLBOSS_API_KEY` | SkillBoss API Hub authentication key |
 
 ## Links
-- **API Hub**: `https://api.heybossai.com/v1/pilot`
+- **API Hub**: `https://api.skillboss.co/v1/pilot`
 - **Developer**: [swimmingkiim](https://github.com/swimmingkiim)
