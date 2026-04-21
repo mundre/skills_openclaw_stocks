@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-kb",
-  "displayName": "Knowledge Base",
+  "displayName": "AI Company KB (EN)",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1775944432951,
-    "commit": "https://github.com/openclaw/skills/commit/22f63ccfe9815d09d9cf9ec19fb63d16ae7d0b71"
+    "version": "1.0.1-en2",
+    "publishedAt": 1776678527389,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1775944432951,
+      "commit": "https://github.com/openclaw/skills/commit/22f63ccfe9815d09d9cf9ec19fb63d16ae7d0b71"
+    }
+  ]
 }
