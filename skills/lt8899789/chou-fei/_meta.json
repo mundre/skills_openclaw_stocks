@@ -3,9 +3,15 @@
   "slug": "chou-fei",
   "displayName": "Chou Fei",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1776196894743,
-    "commit": "https://github.com/openclaw/skills/commit/287fc9f6c9d414d4b780ca3d8936468e8551de66"
+    "version": "1.0.10",
+    "publishedAt": 1776731975717,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1776196894743,
+      "commit": "https://github.com/openclaw/skills/commit/287fc9f6c9d414d4b780ca3d8936468e8551de66"
+    }
+  ]
 }

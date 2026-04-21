@@ -1,5 +1,5 @@
 ---
-version: 1.0.5
+version: 1.0.10
 ---
 
 # 臭肺·吐纳魄 (Chou Fei - Respiration)
