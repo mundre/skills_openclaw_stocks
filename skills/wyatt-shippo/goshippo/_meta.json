@@ -1,0 +1,11 @@
+{
+  "owner": "wyatt-shippo",
+  "slug": "goshippo",
+  "displayName": "Shippo Clawhub Skill",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1776436245883,
+    "commit": null
+  },
+  "history": []
+}
