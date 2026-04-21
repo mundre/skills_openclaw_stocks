@@ -72,7 +72,7 @@ Official colors:
 - default FPS: `12`
 - default GIF scale: `1x`
 - default canvas size: `250x250`
-- default vertical placement: centered on the canvas vertical axis
+- default body placement: centered on the canvas vertical axis and anchored `3px` upward
 - default gotchi zoom: `100%`
 - supported zoom sizes: `25%`, `50%`, `100%`
 
@@ -175,6 +175,7 @@ When using this skill, report:
 - default output canvas: `250x250`
 - `--frame-size 80` crops each source sprite frame to `80x80` before layout
 - `--canvas-size 250` controls the final output canvas per frame
+- hands and pets do not shift the body anchor used for placement
 - Telegram/chat prompts can say `80x80 cropped canvas` or `tight crop` when they want a tighter source crop
 
 ## Zoom behavior

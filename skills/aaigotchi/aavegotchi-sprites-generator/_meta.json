@@ -3,9 +3,15 @@
   "slug": "aavegotchi-sprites-generator",
   "displayName": "aavegotchi-sprites-generator",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1776057838071,
-    "commit": "https://github.com/openclaw/skills/commit/dd75494ae3da612603fe462660efc5304ec5b6fc"
+    "version": "0.1.1",
+    "publishedAt": 1776276329274,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1776057838071,
+      "commit": "https://github.com/openclaw/skills/commit/dd75494ae3da612603fe462660efc5304ec5b6fc"
+    }
+  ]
 }

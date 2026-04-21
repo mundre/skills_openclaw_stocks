@@ -6,6 +6,7 @@ AAIgotchi skill wrapper around [`gotchi-generator`](https://github.com/aavegotch
 
 - Generates sprite-sheet PNGs with the official `gotchi-generator` package
 - Generates animated GIFs from sprite sheet rows
+- Uses the current official social-ready defaults: idle GIF output, `250x250` canvas, common background, and the tuned body anchor
 - Applies deterministic rarity background colors or transparent output
 - Accepts either a full gotchi JSON file or slot-based CLI flags
 - Supports friendly aliases for collaterals, eye presets, and sprite filename drift
@@ -23,7 +24,7 @@ npm install
 ```bash
 npm run test:sample
 node ./scripts/render-gotchi-sprite.mjs --id 999002 --collateral ETH --eye-shape common --body "Witchy Cloak"
-node ./scripts/render-gotchi-sprite.mjs --id 999003 --collateral ETH --eye-shape common --body "Witchy Cloak" --background mythical --gif-rows all
+node ./scripts/render-gotchi-sprite.mjs --id 999003 --collateral ETH --eye-shape common --body "Witchy Cloak" --background mythical --canvas-size 250 --gif-rows idle
 ```
 
 ## Usage
@@ -47,6 +48,7 @@ node ./scripts/render-gotchi-sprite.mjs \
   --body "Witchy Cloak" \
   --background godlike \
   --gif-rows idle \
+  --canvas-size 250 \
   --output-dir ./output/custom
 ```
 
@@ -68,10 +70,19 @@ bash ./scripts/show-gotchi-sprite.sh \
   --collateral ETH \
   --eye-shape common \
   --eye-color common \
-  --body "Witchy Cloak" \
-  --background mythical \
-  --frame-size 80
+  --body "Witchy Cloak"
 ```
+
+## Official output defaults
+
+- default chat output: animated idle GIF
+- default background: `common` (`#806AFB`)
+- supported background overrides: `uncommon`, `rare`, `legendary`, `mythical`, `godlike`, `transparent`
+- default source frame size: `100x100`
+- default output canvas: `250x250`
+- default gotchi zoom: `100%`
+- default body placement: centered on the canvas vertical axis and anchored `3px` upward
+- hand items and pets do not change the body anchor
 
 ## Supported CLI flags
 
@@ -100,6 +111,8 @@ bash ./scripts/show-gotchi-sprite.sh \
 - `--gif-zoom <25|50|100>`
 - `--frame-size <1-100>`
 - `--gif-frame-size <1-100>`
+- `--canvas-size <number>`
+- `--gif-canvas-size <number>`
 - `--fps <number>`
 - `--no-gif`
 - `--verbose`
@@ -141,6 +154,7 @@ You can still pass the explicit upstream values directly if you want tighter con
 
 - default frame size: `100x100`
 - `--frame-size 80` crops each sprite frame canvas down to `80x80` without scaling the gotchi art
+- default output canvas stays `250x250` unless you override it with `--canvas-size`
 - use this when you want the sprite to read larger in Telegram/GIF playback
 - chat prompts can request `80x80 cropped canvas`, `tight crop`, or similar wording
 
@@ -150,6 +164,12 @@ You can still pass the explicit upstream values directly if you want tighter con
 - `--zoom 50` centers the gotchi at half-size in each frame
 - `--zoom 25` centers the gotchi at quarter-size in each frame
 - chat prompts can request `25% zoom` or `50% zoom`
+
+## Delivery notes
+
+- Telegram/OpenClaw should send animated results as the actual `.gif` file when the user asks for animation
+- static replies can still use the PNG sheet
+- the manifest records the chosen background, source frame size, output canvas size, zoom, and GIF rows
 
 ## Notes
 
