@@ -1,11 +1,17 @@
 {
   "owner": "deanpeng-dotcom",
   "slug": "web123",
-  "displayName": "Web123",
+  "displayName": "web123",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1775916787592,
-    "commit": "https://github.com/openclaw/skills/commit/442745b859489eba940573c4a439591be91a1b8b"
+    "version": "1.1.1",
+    "publishedAt": 1776488452626,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1775916787592,
+      "commit": "https://github.com/openclaw/skills/commit/442745b859489eba940573c4a439591be91a1b8b"
+    }
+  ]
 }
