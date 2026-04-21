@@ -1,11 +1,17 @@
 {
   "owner": "erongcao",
   "slug": "ai-model-team",
-  "displayName": "Ai Model Team",
+  "displayName": "AI Model Team",
   "latest": {
-    "version": "2.9.0",
-    "publishedAt": 1776279592923,
-    "commit": "https://github.com/openclaw/skills/commit/5512ad49141e778204dae1aac3a6925400d75acd"
+    "version": "2.9.2",
+    "publishedAt": 1776336864276,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.9.0",
+      "publishedAt": 1776279592923,
+      "commit": "https://github.com/openclaw/skills/commit/5512ad49141e778204dae1aac3a6925400d75acd"
+    }
+  ]
 }
