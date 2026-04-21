@@ -1,3 +1,10 @@
+---
+description: Automatically creates bidirectional links between related notes
+keywords: openclaw, skill, automation, ai-agent
+name: skylv-note-linking
+triggers: note linking
+---
+
 # SKILL.md — note-linking
 
 > Auto-discover hidden connections between your notes. Bidirectional links, knowledge graphs, and semantic link suggestions — without plugins.
@@ -174,3 +181,9 @@ For embedding-free similarity, use:
 - `skylv-knowledge-graph` — if you want full graph visualization
 - `skylv-file-versioning` — version your note graph over time
 - `skylv-ai-prompt-optimizer` — optimize your note-taking prompts
+
+## Usage
+
+1. Install the skill
+2. Configure as needed
+3. Run with OpenClaw
