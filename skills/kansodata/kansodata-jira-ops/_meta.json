@@ -1,0 +1,11 @@
+{
+  "owner": "kansodata",
+  "slug": "kansodata-jira-ops",
+  "displayName": "Kansodata Jira Ops",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776440084912,
+    "commit": null
+  },
+  "history": []
+}
