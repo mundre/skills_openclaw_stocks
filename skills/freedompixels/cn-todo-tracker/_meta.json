@@ -1,11 +1,17 @@
 {
   "owner": "freedompixels",
   "slug": "cn-todo-tracker",
-  "displayName": "中文待办事项管理",
+  "displayName": "任务清单追踪",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776038454996,
-    "commit": "https://github.com/openclaw/skills/commit/e17e02c7ca4041b9fbd206f5f754d9f134623b12"
+    "version": "1.1.0",
+    "publishedAt": 1776611776789,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776038454996,
+      "commit": "https://github.com/openclaw/skills/commit/e17e02c7ca4041b9fbd206f5f754d9f134623b12"
+    }
+  ]
 }
