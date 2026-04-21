@@ -1,0 +1,11 @@
+{
+  "owner": "piaoleaf",
+  "slug": "weixinpay-skill",
+  "displayName": "SKILL接入微信支付，收款码生成",
+  "latest": {
+    "version": "1.0.7",
+    "publishedAt": 1776397485174,
+    "commit": null
+  },
+  "history": []
+}
