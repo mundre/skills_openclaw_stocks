@@ -1,10 +1,10 @@
-# FEATURE_REQUESTS.md — 功能需求
+# FEATURE_REQUESTS.md — Feature Requests
 
-> 由 self-improvement-loop skill 管理。
+> Managed by self-improvement-loop skill.
 
 ---
 
-## 模板格式
+## Template Format (Do Not Delete)
 
 ```markdown
 ## [FEAT-YYYYMMDD-NNN] feature
@@ -12,34 +12,40 @@
 **Status**: pending | resolved
 **Pattern-Key**: <source>.feature.<identifier>
 
-### 发生了什么
-[缺少什么能力导致什么问题]
+### What Happened
+[What capability is missing and what problem it causes]
 
-### 根因是什么
-[为什么这个能力缺失]
+### Root Cause
+[Why this capability is missing — design gap or oversight]
 
-### 下次如何避免
-[如何确保这个能力被正确实现和验证]
+### How To Avoid Next Time
+[How to ensure this capability is correctly designed and validated]
+
+**Tags**: 
+**Recurrence-Count**: 
 
 *---*
 ```
 
 ---
 
-## 示例（可删除）
+## Examples (delete after reading)
 
 ## [FEAT-20260401-001] feature
 **Logged**: 2026-04-01T00:00:00+08:00
 **Status**: pending
-**Pattern-Key**: workflow.auto-commit.conditional
+**Pattern-Key**: workflow.auto_commit.conditional
 
-### 发生了什么
-auto-commit 脚本每次都提交所有变更，无法选择性忽略 .log 等临时文件，导致 commit 历史噪音大。
+### What Happened
+The auto-commit script commits all changes every time, with no way to selectively ignore .log or other temporary files, creating noisy commit history.
 
-### 根因是什么
-脚本设计时没有考虑 ignore 机制，没有预留扩展点。
+### Root Cause
+The script was designed without an ignore/exclude mechanism and no extension points were预留.
 
-### 下次如何避免
-自动化脚本需要预留 ignore/exclude 扩展点，并明确记录哪些文件类型不应进入 commit。
+### How To Avoid Next Time
+Automation scripts must include ignore/exclude extension points and clearly document which file types should not enter the commit.
+
+**Tags**: 
+**Recurrence-Count**: 
 
 *---*

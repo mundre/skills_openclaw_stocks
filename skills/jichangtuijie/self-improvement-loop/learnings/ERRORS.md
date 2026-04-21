@@ -1,10 +1,10 @@
-# ERRORS.md — 命令 / 集成错误记录
+# ERRORS.md — Command / Integration Errors
 
-> 由 self-improvement-loop skill 管理。
+> Managed by self-improvement-loop skill.
 
 ---
 
-## 模板格式
+## Template
 
 ```markdown
 ## [ERR-YYYYMMDD-NNN] error
@@ -12,34 +12,40 @@
 **Status**: pending | resolved
 **Pattern-Key**: <source>.error.<identifier>
 
-### 发生了什么
-[具体场景，说清楚在什么情况下、哪个环节出了问题]
+### What Happened
+[Specific scenario — describe what happened and in what context]
 
-### 根因是什么
-[为什么会发生，不是表面现象，是结构性原因]
+### Root Cause
+[Why it happened — structural reason, not surface symptom]
 
-### 下次如何避免
-[抽象成一条可操作的原则，可以迁移到类似情况]
+### How To Avoid Next Time
+[One actionable principle that can transfer to similar situations]
+
+**Tags**: 
+**Recurrence-Count**: 
 
 *---*
 ```
 
 ---
 
-## 示例（可删除）
+## Examples (delete after reading)
 
 ## [ERR-20260401-001] error
 **Logged**: 2026-04-01T00:00:00+08:00
 **Status**: resolved
 **Pattern-Key**: tool.hook.keyword.missing
 
-### 发生了什么
-Hook 把 "能不能帮我做某事" 当作错误关键词处理了，错误地发送了通知。
+### What Happened
+The hook misclassified "能不能帮我做某事" as an error keyword, triggering a false error notification.
 
-### 根因是什么
-handler.js 的 ERROR_KEYWORDS 中不应包含 "能不能"，这是功能请求而非错误，但关键词匹配是字面匹配，没有语义判断。
+### Root Cause
+The ERROR_KEYWORDS list in handler.js contained "能不能", which is a feature request signal, not an error signal. Keyword matching is literal, not semantic.
 
-### 下次如何避免
-关键词列表要区分"错误信号词"和"功能请求词"，避免字面匹配的误判。
+### How To Avoid Next Time
+Separate error signals from feature-request signals in keyword lists. Literal matching without semantic context causes false positives.
+
+**Tags**: 
+**Recurrence-Count**: 
 
 *---*

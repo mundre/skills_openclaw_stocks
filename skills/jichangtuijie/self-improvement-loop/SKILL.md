@@ -1,13 +1,13 @@
 ---
 name: self-improvement-loop
-version: 4.5.1
+version: 4.6.1
 description: |
   openclaw self-evolution loop — beyond Hermes Growth, strengthening self-growth and skill systems with controllable optimization.
   Hook captures feedback, distill refines pattern detection, threshold triggers notification,
   user decides A/B/C/D, AI skill generation and updates. Auto-detects first available channel from openclaw.json.
 ---
 
-# self-improvement-loop v4.5.1
+# self-improvement-loop v4.6.1
 
   openclaw self-evolution loop — beyond Hermes Growth, strengthening self-growth and skill systems with controllable optimization.
   Hook captures feedback, distill refines pattern detection, threshold triggers notification,
@@ -267,6 +267,15 @@ bash ~/.openclaw/workspace/scripts/self-improvement/distill.sh --check-only
 ---
 
 ## Changelog
+
+### v4.6.1 — archive.sh Bug Fixes (2026-04-20)
+
+- **count_archived_occurrences grep pattern**: fixed JSON escaping issue — pattern `"\"pattern_key:\"$pk\""` → `"pattern_key.*$pk"`; also removed `|| echo 0` in favor of `[ -z "$result" ] && result=0`
+- **json_escape()**: new bash function using Python json.dumps for proper JSON string escaping (handles newlines, quotes, backslashes)
+- **Header conditional**: "Archive Dry-Run" vs "Archive" now reflects actual DRY_RUN flag state
+- **JSONL cleanup**: fixed multiline JSON entries causing parse errors in archive
+
+### v4.5.1og
 
 ### v4.5.1
 - 统一三段式模板（发生了什么 / 根因 / 下次如何避免）替换 LEARNINGS/ERRORS/FEATURE_REQUESTS 原有字段；Phase 1 记录原则字段名对齐模板

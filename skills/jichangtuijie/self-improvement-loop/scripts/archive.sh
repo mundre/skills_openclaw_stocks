@@ -1,11 +1,12 @@
 #!/bin/bash
 # archive.sh — Self-improvement Hot/Cold ETL
-# v4.0 — silent 模式：无交互确认，dry-run 预览后自动执行
+# v4.6 — silent 模式：dry-run 预览后自动执行
+# v4.6 新增：recurrence_count 由归档时统计历史 JSONL 计算，不依赖 AI
 # 设计原则：「脚本做机械，AI 做语义」
 # Modes:
 #   --dry-run   — 只输出预览，不写入文件
 #   (no args)   — Silent 执行：预览 + 自动归档，无交互
-#   (no args)   — 执行归档（先 dry-run 显示摘要，等待确认）
+#   --write-notified — 由 self-improvement-check 调用，写回 notified 状态
 
 WORKSPACE="${HOME}/.openclaw/workspace"
 LEARNINGS_DIR="$WORKSPACE/.learnings"
@@ -27,11 +28,31 @@ if [ "$1" = "--write-notified" ]; then
     exit $?
 fi
 
-
-
-
 # ── Ensure archive dir exists ────────────────────────────────
 mkdir -p "$ARCHIVE_DIR"
+
+# ── Count how many times a Pattern-Key has appeared in archived JSONL files ──
+# Called during archive to compute Recurrence-Count automatically
+count_archived_occurrences() {
+    local pk="$1"
+    # Empty PK = each entry is unique
+    [ -z "$pk" ] && echo "1" && return
+    # Count occurrences of this PK in all existing archive JSONL files
+    local count=0
+    for jsonl_file in "$ARCHIVE_DIR"/*.jsonl; do
+        [ -f "$jsonl_file" ] || continue
+        local result
+        result=$(grep -c "pattern_key.*$pk" "$jsonl_file" 2>/dev/null)
+        [ -z "$result" ] && result=0
+        count=$(( count + result ))
+    done
+    echo "$(( count + 1 ))"  # +1 because this entry will also be archived
+}
+
+# Escape string for JSON output (handles newlines, quotes, backslashes)
+json_escape() {
+    python3 -c "import sys,json; s=sys.stdin.read(); print(json.dumps(s)[1:-1])"
+}
 
 # ── Source file → source tag mapping ─────────────────────────
 source_tag() {
@@ -56,9 +77,7 @@ normalize_outcome() {
 extract_field() {
     local entry="$1"
     local field="$2"
-    # Handle two formats: ### Field (value on next line) or **Field**: value (same line)
     local val
-    # Try: ### Field (value on next line)
     val=$(echo "$entry" | awk -v f="### $field" 'index($0,f)==1{getline; print}')
     [ -z "$val" ] && val=$(echo "$entry" | awk -v f="$field" 'index($0,f)==1{ sub(/.*:[[:space:]]*/,""); print }')
     echo "$val" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
@@ -67,7 +86,6 @@ extract_field() {
 extract_meta() {
     local entry="$1"
     local key="$2"
-    # Handle: - Key: value (standard) or **Key**: value (bold inline)
     local val
     val=$(echo "$entry" | grep "^[[:space:]]*- $key:" | sed 's/.*:[[:space:]]*//')
     [ -z "$val" ] && val=$(echo "$entry" | grep "^[[:space:]]*\*\*$key" | sed 's/.*\*://')
@@ -97,43 +115,36 @@ process_file() {
                             outcome=$(normalize_outcome "$current_status")
                             local logged_at resolved_at archived_at
                             logged_at=$(extract_meta "$entry_lines" "Logged")
-                            # resolved_at: use archived_at as proxy (entry doesn't store resolve time)
                             resolved_at="$TIMESTAMP"
                             local pattern_key entry_id_short title_text
                             pattern_key=$(extract_meta "$entry_lines" "Pattern-Key")
                             entry_id_short=$(echo "$entry_id" | sed 's/^## \[//;s/\].*//')
                             title_text=$(echo "$entry_id" | sed -n 's/^## \[[^]]*] //p')
-                            summary=$(extract_field "$entry_lines" "Summary")
-                            details=$(extract_field "$entry_lines" "Details")
-                            suggested_action=$(extract_field "$entry_lines" "Suggested Action")
+                            summary=$(extract_field "$entry_lines" "What Happened")
+                            details=$(extract_field "$entry_lines" "Root Cause")
+                            suggested_action=$(extract_field "$entry_lines" "How To Avoid Next Time")
                             tags_str=$(extract_meta "$entry_lines" "Tags")
-                            local recurrence
-                            recurrence=$(extract_meta "$entry_lines" "Recurrence-Count")
+                            # recurrence_count: computed from historical archive JSONL (v4.6)
+                            local recurrence_count
+                            recurrence_count=$(count_archived_occurrences "$pattern_key")
 
-                            # Escape JSON strings
-                            summary=${summary//\\/\\\\}
-                            summary=${summary//\"/\\\"}
-                            details=${details//\\/\\\\}
-                            details=${details//\"/\\\"}
-                            suggested_action=${suggested_action//\\/\\\\}
-                            suggested_action=${suggested_action//\"/\\\"}
-                            tags_str=${tags_str//\\/\\\\}
-                            tags_str=${tags_str//\"/\\\"}
-                            title_text=${title_text//\\/\\\\}
-                            title_text=${title_text//\"/\\\"}
-                            pattern_key=${pattern_key//\\/\\\\}
-                            pattern_key=${pattern_key//\"/\\\"}
+                            # Escape JSON strings (using json_escape for proper newline/quote handling)
+                            summary=$(json_escape <<< "$summary")
+                            details=$(json_escape <<< "$details")
+                            suggested_action=$(json_escape <<< "$suggested_action")
+                            tags_str=$(json_escape <<< "$tags_str")
+                            title_text=$(json_escape <<< "$title_text")
+                            pattern_key=$(json_escape <<< "$pattern_key")
 
-                            # Build tags JSON array
                             if [ -n "$tags_str" ]; then
                                 local tag_json
-                                tag_json=$(echo "$tags_str" | sed "s/, *//g; s/^/\"/; s/$/\"/; s/\"/\\\"\"/g" | tr '\n' ',' | sed 's/,$//')
-                                tag_json="[${tag_json}]"
+                                tag_json=$(echo "$tags_str" | sed "s/, */\",\"/g; s/^/\"/; s/$/\"/")
+                                tag_json="[$tag_json]"
                             else
                                 tag_json="[]"
                             fi
 
-                            echo "{\"archived_at\":\"$TIMESTAMP\",\"source_file\":\"$src_tag\",\"outcome\":\"$outcome\",\"entry_id\":\"$entry_id_short\",\"pattern_key\":\"$pattern_key\",\"category\":\"$entry_cat\",\"logged_at\":\"$logged_at\",\"resolved_at\":\"$resolved_at\",\"title\":\"$title_text\",\"summary\":\"$summary\",\"details\":\"$details\",\"suggested_action\":\"$suggested_action\",\"tags\":$tag_json,\"recurrence_count\":$recurrence}"
+                            echo "{\"archived_at\":\"$TIMESTAMP\",\"source_file\":\"$src_tag\",\"outcome\":\"$outcome\",\"entry_id\":\"$entry_id_short\",\"pattern_key\":\"$pattern_key\",\"category\":\"$entry_cat\",\"logged_at\":\"$logged_at\",\"resolved_at\":\"$resolved_at\",\"title\":\"$title_text\",\"summary\":\"$summary\",\"details\":\"$details\",\"suggested_action\":\"$suggested_action\",\"tags\":$tag_json,\"recurrence_count\":$recurrence_count}"
                             ;;
                     esac
                 fi
@@ -170,19 +181,20 @@ process_file() {
                 pattern_key=$(extract_meta "$entry_lines" "Pattern-Key")
                 entry_id_short=$(echo "$entry_id" | sed 's/^## \[//;s/\].*//')
                 title_text=$(echo "$entry_id" | sed -n 's/^## \[[^]]*] //p')
-                summary=$(extract_field "$entry_lines" "Summary")
-                details=$(extract_field "$entry_lines" "Details")
-                suggested_action=$(extract_field "$entry_lines" "Suggested Action")
+                summary=$(extract_field "$entry_lines" "What Happened")
+                details=$(extract_field "$entry_lines" "Root Cause")
+                suggested_action=$(extract_field "$entry_lines" "How To Avoid Next Time")
                 tags_str=$(extract_meta "$entry_lines" "Tags")
-                local recurrence
-                recurrence=$(extract_meta "$entry_lines" "Recurrence-Count")
+                # recurrence_count: computed from historical archive JSONL (v4.6)
+                local recurrence_count
+                recurrence_count=$(count_archived_occurrences "$pattern_key")
 
-                summary=${summary//\\/\\\\}; summary=${summary//\"/\\\"}
-                details=${details//\\/\\\\}; details=${details//\"/\\\"}
-                suggested_action=${suggested_action//\\/\\\\}; suggested_action=${suggested_action//\"/\\\"}
-                tags_str=${tags_str//\\/\\\\}; tags_str=${tags_str//\"/\\\"}
-                title_text=${title_text//\\/\\\\}; title_text=${title_text//\"/\\\"}
-                pattern_key=${pattern_key//\\/\\\\}; pattern_key=${pattern_key//\"/\\\"}
+                summary=$(json_escape <<< "$summary")
+                details=$(json_escape <<< "$details")
+                suggested_action=$(json_escape <<< "$suggested_action")
+                tags_str=$(json_escape <<< "$tags_str")
+                title_text=$(json_escape <<< "$title_text")
+                pattern_key=$(json_escape <<< "$pattern_key")
 
                 if [ -n "$tags_str" ]; then
                     tag_json=$(echo "$tags_str" | sed "s/, */\",\"/g; s/^/\"/; s/$/\"/")
@@ -191,7 +203,7 @@ process_file() {
                     tag_json="[]"
                 fi
 
-                echo "{\"archived_at\":\"$TIMESTAMP\",\"source_file\":\"$src_tag\",\"outcome\":\"$outcome\",\"entry_id\":\"$entry_id_short\",\"pattern_key\":\"$pattern_key\",\"category\":\"$entry_cat\",\"logged_at\":\"$logged_at\",\"resolved_at\":\"$resolved_at\",\"title\":\"$title_text\",\"summary\":\"$summary\",\"details\":\"$details\",\"suggested_action\":\"$suggested_action\",\"tags\":$tag_json,\"recurrence_count\":$recurrence}"
+                echo "{\"archived_at\":\"$TIMESTAMP\",\"source_file\":\"$src_tag\",\"outcome\":\"$outcome\",\"entry_id\":\"$entry_id_short\",\"pattern_key\":\"$pattern_key\",\"category\":\"$entry_cat\",\"logged_at\":\"$logged_at\",\"resolved_at\":\"$resolved_at\",\"title\":\"$title_text\",\"summary\":\"$summary\",\"details\":\"$details\",\"suggested_action\":\"$suggested_action\",\"tags\":$tag_json,\"recurrence_count\":$recurrence_count}"
                 ;;
         esac
     fi
@@ -215,7 +227,11 @@ for file in "$LEARNINGS_DIR/LEARNINGS.md" "$LEARNINGS_DIR/ERRORS.md" "$LEARNINGS
 done
 
 # ── Dry-run: show preview and exit ──────────────────────────
-echo "=== Archive Dry-Run — $(date '+%Y-%m-%d %H:%M:%S') ==="
+if [ "$DRY_RUN" = true ]; then
+    echo "=== Archive Dry-Run — $(date '+%Y-%m-%d %H:%M:%S') ==="
+else
+    echo "=== Archive — $(date '+%Y-%m-%d %H:%M:%S') ==="
+fi
 echo "Archive dir: $ARCHIVE_DIR"
 echo "Target file: $ARCHIVE_DIR/$TODAY_MONTH.jsonl"
 echo ""

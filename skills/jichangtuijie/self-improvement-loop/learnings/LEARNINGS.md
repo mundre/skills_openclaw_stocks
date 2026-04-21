@@ -1,10 +1,10 @@
-# LEARNINGS.md — 经验教训 / 最佳实践 / 洞察
+# LEARNINGS.md — Corrections / Best Practices / Insights
 
-> 由 self-improvement-loop skill 管理。手动编辑请保持 `## [ID] category` 标题行格式完整。
+> Managed by self-improvement-loop skill. When editing manually, keep the `## [ID] category` header format intact.
 
 ---
 
-## 模板格式
+## Template Format (Do Not Delete)
 
 ```markdown
 ## [LRN-YYYYMMDD-NNN] correction|best_practice|insight
@@ -12,34 +12,40 @@
 **Status**: pending | active | in_progress | resolved | promoted | dormant
 **Pattern-Key**: <source>.<type>.<identifier>
 
-### 发生了什么
-[具体场景，1-2句话，说清楚在什么情况下、哪个环节出了问题]
+### What Happened
+[Specific scenario in 1-2 sentences — describe what happened and in what context]
 
-### 根因是什么
-[为什么会发生，不是表面现象，是结构性原因]
+### Root Cause
+[Why it happened — structural reason, not surface symptom]
 
-### 下次如何避免
-[抽象成一条可操作的原则，可以迁移到类似情况]
+### How To Avoid Next Time
+[One actionable principle that can transfer to similar situations]
+
+**Tags**: 
+**Recurrence-Count**: 
 
 *---*
 ```
 
 ---
 
-## 示例（可删除）
+## Examples (delete after reading)
 
 ## [LRN-20260401-001] correction
 **Logged**: 2026-04-01T00:00:00+08:00
 **Status**: pending
 **Pattern-Key**: workflow.redundancy.multi_path_different_oversight
 
-### 发生了什么
-为同一功能设计了两条路径：一条由 AI 在 memory-daily-distill 中直接升华，另一条走 A/B/C/D 用户确认路径。
+### What Happened
+Two paths were designed for the same function: one where the AI directly promotes insights in memory-daily-distill, and another that follows the A/B/C/D user-confirmation path.
 
-### 根因是什么
-没有在设计阶段识别"同一结果只有一条路径"的原则，导致监督层级不统一。
+### Root Cause
+There was no design-level check for "only one path per outcome with consistent user oversight." This led to a path with weaker supervision bypassing the main path's authority.
 
-### 下次如何避免
-新增工作流路径前，先问"这条路径和现有路径是否做同一件事？用户监督层级是否一致？"如果答案是"是" → 合并路径。
+### How To Avoid Next Time
+Before adding a new workflow path, ask: "Does this path do the same thing as an existing one? Do the oversight levels match?" If yes — merge the paths.
+
+**Tags**: 
+**Recurrence-Count**: 
 
 *---*
