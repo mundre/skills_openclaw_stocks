@@ -1,11 +1,17 @@
 {
   "owner": "alisa-xh",
   "slug": "ditiansui",
-  "displayName": "滴天髓",
+  "displayName": "Ditiansui Publish",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775985404616,
-    "commit": "https://github.com/openclaw/skills/commit/3773fcc96b66b9c8fa5db2d0fcc10fbfbb908b00"
+    "version": "1.0.1",
+    "publishedAt": 1776504141607,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775985404616,
+      "commit": "https://github.com/openclaw/skills/commit/3773fcc96b66b9c8fa5db2d0fcc10fbfbb908b00"
+    }
+  ]
 }

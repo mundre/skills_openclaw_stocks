@@ -1,27 +1,27 @@
-# 滴天髓八字分析
+# 滴天髓 - BaZi Destiny Analysis
 
-基于刘伯温注的滴天髓经典命理分析技能包，支持八字分析、命理预测等功能。
+Ancient Chinese BaZi (八字) fate analysis powered by AI, based on Liu Bowei's classic 滴天髓.
 
-## 功能特点
+## Features
 
-- 八字排盘：根据生辰八字自动排盘
-- 命理分析：基于滴天髓刘伯温注解进行深度分析
-- 命格解读：解读命格特点、五行喜忌
-- 运势预测：分析大运流年运势变化
+- **BaZi Chart**: Automatic Chinese birth chart calculation (年/月/日/时四柱八字)
+- **Fate Analysis**: Deep analysis based on Liu Bowei's 滴天髓 annotations
+- **Life Pattern**: Decode your destiny, Five Elements likes/dislikes
+- **Fortune Prediction**: Analyze current luck cycles and yearly trends
+- **Decision Making**: Get guidance for important life decisions
 
-## 使用方法
+## English Keywords
+BaZi, Chinese astrology, 八字, fortune telling, fate prediction, Chinese divination, Liu Bowei, 滴天髓, life analysis, Ming dynasty classic, Five Elements, 五行, destiny reading, Chinese zodiac, birth chart, horoscope, 易经, feng shui guidance
 
-1. 安装技能包后，在对话中使用触发词
-2. 输入你的出生时间（年月日时）
-3. 获取详细的八字命理分析报告
+## Usage
 
-## 授权说明
+1. Install the skill package
+2. Input your birth date and time (year/month/day/hour)
+3. Receive detailed BaZi analysis report
+4. Get personalized fortune guidance
 
-本技能包需要授权码才能使用。请联系客服微信 csmm-01 获取授权码。
+## Author
+@alisa-xh | ClawHub AI Skill Marketplace
 
-首次使用时，系统会提示你输入授权码。输入后即可正常使用。
-
-## 技术支持
-
-客服微信：csmm-01
-支持时间：周一至周日 9:00-21:00
+## License
+MIT-0 - Free to use, modify, and redistribute
