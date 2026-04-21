@@ -3,9 +3,15 @@
   "slug": "insight-ecom-oracle",
   "displayName": "insight-ecom-oracle",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776185925270,
-    "commit": "https://github.com/openclaw/skills/commit/2bdec1168e08be5a6647c17febb4360d774633f0"
+    "version": "1.0.2",
+    "publishedAt": 1776300294690,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776185925270,
+      "commit": "https://github.com/openclaw/skills/commit/2bdec1168e08be5a6647c17febb4360d774633f0"
+    }
+  ]
 }
