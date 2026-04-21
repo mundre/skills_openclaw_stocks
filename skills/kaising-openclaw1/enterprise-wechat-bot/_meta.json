@@ -1,0 +1,11 @@
+{
+  "owner": "kaising-openclaw1",
+  "slug": "enterprise-wechat-bot",
+  "displayName": "Wechat Automation",
+  "latest": {
+    "version": "0.3.0",
+    "publishedAt": 1776399555048,
+    "commit": null
+  },
+  "history": []
+}
