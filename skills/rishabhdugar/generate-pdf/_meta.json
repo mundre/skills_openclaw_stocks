@@ -1,0 +1,11 @@
+{
+  "owner": "rishabhdugar",
+  "slug": "generate-pdf",
+  "displayName": "Generate PDF from HTML",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776438286066,
+    "commit": null
+  },
+  "history": []
+}
