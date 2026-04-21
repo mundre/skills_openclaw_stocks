@@ -3,9 +3,15 @@
   "slug": "cisco",
   "displayName": "Cisco",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776153370143,
-    "commit": "https://github.com/openclaw/skills/commit/fc86f74efc9b5b8e9b6035e4c23e8eab9208817c"
+    "version": "1.0.5",
+    "publishedAt": 1776533690148,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776153370143,
+      "commit": "https://github.com/openclaw/skills/commit/fc86f74efc9b5b8e9b6035e4c23e8eab9208817c"
+    }
+  ]
 }
