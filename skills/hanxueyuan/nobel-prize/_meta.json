@@ -3,9 +3,15 @@
   "slug": "nobel-prize",
   "displayName": "Nobel Prize",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775979046889,
-    "commit": "https://github.com/openclaw/skills/commit/9b2838a99bdeb2befe5827a03e849613d8fbfaa8"
+    "version": "1.0.1",
+    "publishedAt": 1776295497510,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775979046889,
+      "commit": "https://github.com/openclaw/skills/commit/9b2838a99bdeb2befe5827a03e849613d8fbfaa8"
+    }
+  ]
 }
