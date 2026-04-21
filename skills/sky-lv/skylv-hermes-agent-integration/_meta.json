@@ -1,11 +1,17 @@
 {
   "owner": "sky-lv",
   "slug": "skylv-hermes-agent-integration",
-  "displayName": "Hermes Agent Integration",
+  "displayName": "Skylv Hermes Agent Integration",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775886207266,
-    "commit": "https://github.com/openclaw/skills/commit/545689b3ad8c24f26716f54dff04b1755c7746b7"
+    "version": "1.0.3",
+    "publishedAt": 1776648347618,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775886207266,
+      "commit": "https://github.com/openclaw/skills/commit/545689b3ad8c24f26716f54dff04b1755c7746b7"
+    }
+  ]
 }
