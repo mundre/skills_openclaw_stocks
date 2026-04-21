@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-conflict",
-  "displayName": "AI Company Conflict",
+  "displayName": "AI Company Conflict (EN)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776101157660,
-    "commit": "https://github.com/openclaw/skills/commit/479d8b3586bd5d25192cb743afe1a546199fc625"
+    "version": "1.0.0-en2",
+    "publishedAt": 1776678524613,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776101157660,
+      "commit": "https://github.com/openclaw/skills/commit/479d8b3586bd5d25192cb743afe1a546199fc625"
+    }
+  ]
 }
