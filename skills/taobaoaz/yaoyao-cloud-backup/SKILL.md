@@ -1,6 +1,6 @@
 ---
 name: yaoyao-cloud-backup
-version: 1.0.0-dev
+version: 1.0.1
 description: |
   云端与外部备份同步套件
   【首次自动引导】安装后首次访问即自动引导配置
@@ -98,8 +98,29 @@ description: |
 
 **步骤**：
 1. 确保 NAS 已开启 SMB/Samba 服务
-2. 在 NAS 上创建共享文件夹（如 memory）
-3. 告诉我 NAS 的 IP 地址和登录信息，我帮你配置
+2. 在 NAS 上创建共享文件夹（如 memory 或 家庭共享）
+3. 告诉我 NAS 的 IP 地址、共享名称和登录信息，我帮你配置
+
+**凭证配置**：在 `~/.openclaw/credentials/secrets.env` 中添加：
+```bash
+SAMBA_HOST=192.168.10.216
+SAMBA_USER=你的用户名
+SAMBA_PASS=你的密码
+SAMBA_SHARE=家庭共享
+SAMBA_PORT=445
+SAMBA_REMOTE_PATH=/
+```
+
+**依赖**：pysmb（自动安装）
+
+**使用**：
+```bash
+# 上传到所有已配置的云服务（包括Samba）
+python3 scripts/unified_sync.py --upload
+
+# 查看状态
+python3 scripts/unified_sync.py --status
+```
 
 ### 选择 4：SFTP 📡
 
@@ -185,6 +206,9 @@ S3_BUCKET=你的 bucket 名称
 # IMA 知识库
 IMA_OPENAPI_CLIENTID=xxx
 IMA_OPENAPI_APIKEY=xxx
+
+# Samba/NAS（配置文件：config/samba.json）
+# 详见上方"选择 3：Samba/NAS"章节
 ```
 
 ---

@@ -1,11 +1,17 @@
 {
   "owner": "taobaoaz",
   "slug": "yaoyao-cloud-backup",
-  "displayName": "Yaoyao Cloud Backup Homo",
+  "displayName": "Yaoyao Cloud Backup V2",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775996030587,
-    "commit": "https://github.com/openclaw/skills/commit/b646cf255b7918ce86f33d1ccc51aab371bb6622"
+    "version": "1.0.1",
+    "publishedAt": 1776263083604,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775996030587,
+      "commit": "https://github.com/openclaw/skills/commit/b646cf255b7918ce86f33d1ccc51aab371bb6622"
+    }
+  ]
 }

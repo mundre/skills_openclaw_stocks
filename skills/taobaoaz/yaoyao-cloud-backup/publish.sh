@@ -45,7 +45,7 @@ echo "✅ 版本号更新为 $VERSION"
 # 步骤3: 发布到 ClaWHub
 echo ""
 echo "📤 步骤3: 发布到 ClaWHub..."
-clawhub publish skills/yaoyao-cloud-backup --version "$VERSION"
+clawhub publish . --slug yaoyao-cloud-backup --version "$VERSION"
 
 # 步骤4: 隐藏
 echo ""
