@@ -3,9 +3,15 @@
   "slug": "bosszhipin",
   "displayName": "BossZhiPin",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1776215948403,
-    "commit": "https://github.com/openclaw/skills/commit/ce60f46d513d99b7c4300e2d100bda19ed4beac2"
+    "version": "1.0.3",
+    "publishedAt": 1776217314427,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1776215948403,
+      "commit": "https://github.com/openclaw/skills/commit/ce60f46d513d99b7c4300e2d100bda19ed4beac2"
+    }
+  ]
 }
