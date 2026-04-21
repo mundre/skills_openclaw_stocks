@@ -1,11 +1,17 @@
 {
   "owner": "somebodyrepo",
   "slug": "digital-gov-consultant",
-  "displayName": "digital-gov-consultant",
+  "displayName": "digital gov consultant",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1776147072680,
-    "commit": "https://github.com/openclaw/skills/commit/187f0caeedc8a7f2d4bc08313a3408282572fe77"
+    "version": "1.0.7",
+    "publishedAt": 1776649418507,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1776147072680,
+      "commit": "https://github.com/openclaw/skills/commit/187f0caeedc8a7f2d4bc08313a3408282572fe77"
+    }
+  ]
 }
