@@ -1,11 +1,17 @@
 {
   "owner": "linwumeng",
   "slug": "cfc-disclosure-monitor",
-  "displayName": "消金信披采集",
+  "displayName": "Cfc Disclosure Monitor",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775910565168,
-    "commit": "https://github.com/openclaw/skills/commit/0968538b8ac749ad78425f2a58e85a53bfe685ad"
+    "version": "4.5.0",
+    "publishedAt": 1776423864226,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775910565168,
+      "commit": "https://github.com/openclaw/skills/commit/0968538b8ac749ad78425f2a58e85a53bfe685ad"
+    }
+  ]
 }
