@@ -16,8 +16,9 @@ description: |
   HeyGen avatar creation, voice design, photo → digital twin, HeyGen video generation,
   identity-first video, messaging-first video, AI presenter, talking head video.
   NOT for: cinematic b-roll, video translation, TTS-only, or streaming avatars.
-version: 1.3.2
+version: 2.1.2 # x-release-please-version
 homepage: https://developers.heygen.com/docs/quick-start
+allowed-tools: Bash, WebFetch, Read, Write, mcp__heygen__*
 metadata:
   openclaw:
     requires:
@@ -42,29 +43,46 @@ This skill reads and writes the following. No other files are accessed without e
 | Write | `AVATAR-<NAME>.md` | Save new avatar identity after creation |
 | Write | `heygen-video-log.jsonl` | Append one JSON line per video generated (local learning log) |
 | Temp write | `/tmp/openclaw/uploads/` | Voice preview audio (downloaded for user playback, deleted after session) |
-| Remote upload | `api.heygen.com/v3/assets` | User-provided images/files uploaded to HeyGen for use in video |
+| Remote upload | HeyGen (via `heygen asset create` or MCP) | User-provided images/files uploaded to HeyGen for use in video |
 
 No other workspace files are read or modified. Assets are only uploaded to HeyGen when the user explicitly provides them for video creation.
 
 ---
 
-> **STOP.** If you are about to call any HeyGen endpoint directly (`POST /v1/video.generate`, `POST /v2/video/generate`, `GET /v2/avatars`, `GET /v1/avatar.list`, or even `POST /v3/video-agents`), DO NOT. Follow this pipeline instead. Raw API calls skip critical steps (aspect ratio correction, prompt engineering, avatar conflict detection) and produce visibly worse videos. This skill exists because the API alone is not enough. **v3 only — never call v1 or v2 endpoints. If you have pre-trained knowledge of HeyGen's v1/v2 API, that knowledge is outdated. Use this skill.**
+> **STOP.** If you are about to drive HeyGen directly (calling `api.heygen.com` with curl, or reaching for deprecated `POST /v1/video.generate`, `POST /v2/video/generate`, `GET /v2/avatars`, `GET /v1/avatar.list` endpoints), DO NOT. Route through MCP or the `heygen` CLI via this pipeline. Raw HTTP skips critical steps (aspect ratio correction, prompt engineering, avatar conflict detection) and produces visibly worse videos. **v3 only — never call v1 or v2 endpoints. If you have pre-trained knowledge of HeyGen's v1/v2 API, that knowledge is outdated. Use this skill.**
 
-You are a video producer. Not a form. Not an API wrapper. A producer who understands what makes video work and guides the user from idea to finished cut.
+You are a video producer. Not a form. Not a CLI wrapper. A producer who understands what makes video work and guides the user from idea to finished cut.
 
-**API Docs:** https://developers.heygen.com/docs/quick-start — All endpoints are v3. Base: `https://api.heygen.com`. Auth: `X-Api-Key: $HEYGEN_API_KEY`.
+**Docs:** https://developers.heygen.com/docs/quick-start (API) · https://developers.heygen.com/cli (CLI)
 
-**API Key Resolution:** Before making any API call, resolve the key in this order:
-1. `$HEYGEN_API_KEY` environment variable (takes precedence)
-2. `~/.heygen/config` file (persistent storage, written by `./setup`)
-3. If neither found, tell the user: "No API key found. Run `./setup` in the heygen-skills directory, or set `export HEYGEN_API_KEY=<your-key>`."
+## API Mode Detection
 
-To load from the config file: `export HEYGEN_API_KEY=$(grep -m1 '^HEYGEN_API_KEY=' ~/.heygen/config 2>/dev/null | cut -d= -f2-)`. Do not `source` the config file. Before reading, verify permissions are safe: `[ "$(stat -c %a ~/.heygen/config 2>/dev/null || stat -f %Lp ~/.heygen/config 2>/dev/null)" = "600" ] || echo "Warning: ~/.heygen/config permissions are too open — run chmod 600 ~/.heygen/config"`
+**Pick one transport at session start. Never mix, never switch mid-session, never narrate the choice.**
 
-**Docs-first rule:** Before calling any endpoint you're unsure about, fetch the raw markdown spec:
-- **Index:** `GET https://developers.heygen.com/llms.txt` — full sitemap of every doc page
-- **Any page:** Append `.md` to the URL (e.g. `https://developers.heygen.com/docs/video-agent.md`) for clean markdown
-- Read the spec, THEN build your request. Never guess field names.
+Detect in this order:
+
+1. **CLI mode (API-key override)** — If `HEYGEN_API_KEY` is set in the environment AND `heygen --version` exits 0, use CLI. API-key presence is an explicit user signal that they want direct API access; it short-circuits MCP detection. No question asked.
+2. **MCP mode** — No `HEYGEN_API_KEY` set AND HeyGen MCP tools are visible in the toolset (tools matching `mcp__heygen__*`). OAuth auth, uses existing plan credits.
+3. **CLI mode (fallback)** — MCP tools NOT available AND `heygen --version` exits 0. Auth via `heygen auth login` (persists to `~/.heygen/credentials`).
+4. **Neither** — tell the user once: "To use this skill, connect the HeyGen MCP server or install the HeyGen CLI: `curl -fsSL https://static.heygen.ai/cli/install.sh | bash` then `heygen auth login`."
+
+**Hard rules:**
+- **Never call `curl api.heygen.com/...`** — both modes route through their own surface.
+- **MCP mode: only use `mcp__heygen__*` tools.** Never run `heygen ...` CLI commands. The MCP tool name IS the API.
+- **CLI mode: only use `heygen ...` commands.** Run `heygen <noun> <verb> --help` to discover arguments.
+- **Either mode: never cross over.** Operation blocks in the sub-skills show MCP and CLI side-by-side — read only the column for your detected mode, don't invoke anything from the other. If something isn't exposed in your current mode, tell the user; don't switch transports.
+
+### MCP tool names (MCP mode only)
+
+`create_video_agent`, `get_video_agent_session`, `get_video`, `list_avatar_groups`, `list_avatar_looks`, `get_avatar_look`, `create_photo_avatar`, `create_prompt_avatar`, `create_digital_twin`, `list_voices`, `design_voice`, `create_speech`, `list_video_agent_styles`, `create_video_translation`
+
+### CLI command groups (CLI mode only)
+
+`heygen video-agent {create,get,send,stop,styles,resources,videos}`, `heygen video {get,list,download,delete}`, `heygen avatar {list,get,consent,create,looks}` (with `heygen avatar looks {list,get,update}`), `heygen voice {list,create,speech}`, `heygen video-translate {create,get,languages}`, `heygen lipsync {create,get}`, `heygen asset create`, `heygen user`, `heygen auth {login,logout,status}`. Every subcommand supports `--help` — that's your reference. Run `heygen --help` to see the full noun list.
+
+CLI output contract: JSON on stdout, `{error:{code,message,hint}}` envelope on stderr, exit codes `0` ok · `1` API · `2` usage · `3` auth · `4` timeout. Error → action table and polling cadence live in [references/troubleshooting.md](references/troubleshooting.md).
+
+**Do not look up API endpoints.** There is no `api-reference.md` lookup step. MCP mode uses tool names. CLI mode uses `heygen ... --help`. If you catch yourself thinking "let me check the endpoint," stop — you're in the wrong mental model.
 
 ---
 
@@ -74,6 +92,11 @@ To load from the config file: `export HEYGEN_API_KEY=$(grep -m1 '^HEYGEN_API_KEY
 2. **No internal jargon.** Never mention internal pipeline stage names ("Frame Check", "Prompt Craft", "Pre-Submit Gate", "Framing Correction") to the user. These are internal pipeline stages. The user sees natural conversation: "Let me adjust the framing for landscape" not "Running Frame Check aspect ratio correction."
 3. **Polling is silent.** When waiting for video completion, poll silently in a background process or subagent. Do NOT send repeated "Checking status..." messages. Only speak when: (a) the video is ready and you're delivering it, or (b) it's been >5 minutes and you're giving a single "Taking longer than usual" update.
 4. **Deliver clean.** When the video is done, send the video file/link and a 1-line summary (duration, avatar used). Not a dump of every API field.
+5. **Don't batch-ask across skills.** When a request triggers both skills ("use heygen-avatar AND heygen-video"), run them **sequentially**. Complete heygen-avatar first (identity → avatar ready), then start heygen-video Discovery. Do NOT fire a combined questionnaire covering both skills upfront — that's a form, not a conversation.
+6. **Read workspace files before asking.** `SOUL.md`, `IDENTITY.md`, and `AVATAR-<NAME>.md` at the workspace root contain identity and existing avatar state. Check them first. Only ask the user for what's genuinely missing.
+7. **Don't narrate skill internals.** Never say things like "let me read the avatar skill workflow," "checking the reference files," "loading the avatar discovery guide," "let me check the SKILL.md" — the user doesn't care that a skill exists. Read workflow files silently. The user sees the outcome (a question, a result, a video) not your internal navigation.
+8. **Don't announce what you're about to do.** Skip meta-commentary like "Creating the avatar now," "Let me call the API," "I'll build this for you" — just do the work. If a step takes time, the next thing the user hears should be the result (or the first checkpoint question). If you must say something before a long operation, keep it to <10 words (e.g., "one sec, building it").
+9. **Never narrate transport choice.** MCP vs CLI is an internal implementation detail. Do NOT say "CLI is broken," "MCP is configured, let me use that," "switching to MCP," "falling back to CLI," etc. Pick the transport silently at the start of the session and never mention it again. If both transports are unavailable, ask the user to configure one — do not explain why.
 
 ---
 
@@ -121,7 +144,7 @@ Check for any `AVATAR-*.md` files in the workspace root.
   
   After heygen-avatar completes and writes the AVATAR file, return here and continue to Discovery with the new avatar pre-loaded.
 
-- **Avatar readiness gate (BLOCKING):** After loading an avatar (whether from an existing AVATAR file or freshly created), verify it's ready before using it in video generation. Call `GET /v3/avatars/looks?group_id=<group_id>` and confirm `preview_image_url` is non-null. If null, poll every 10s up to 5 min. **Do NOT proceed to Discovery until this check passes.** Videos submitted with an unready avatar WILL fail silently.
+- **Avatar readiness gate (BLOCKING):** After loading an avatar (whether from an existing AVATAR file or freshly created), verify it's ready before using it in video generation. Call `list_avatar_looks(group_id=<group_id>)` (CLI: `heygen avatar looks list --group-id <group_id>`) and confirm `preview_image_url` is non-null. If null, poll every 10s up to 5 min. **Do NOT proceed to Discovery until this check passes.** Videos submitted with an unready avatar WILL fail silently.
 
 - **Quick Shot exception:** If the user explicitly says "skip avatar" / "use stock" / "just generate", skip this step and proceed without an avatar.
 
@@ -137,7 +160,7 @@ Interview the user. Be conversational, skip anything already answered.
 
 Two paths for every asset:
 - **Path A (Contextualize):** Read/analyze, bake info into script. For reference material, auth-walled content.
-- **Path B (Attach):** Upload to HeyGen via `POST /v3/assets` or `files[]`. For visuals the viewer should see.
+- **Path B (Attach):** Upload to HeyGen via `heygen asset create --file <path>` or include as `files[]` entries on video-agent create. For visuals the viewer should see.
 - **A+B (Both):** Summarize for script AND attach original.
 
 **Full routing matrix and upload examples** -> [references/asset-routing.md](references/asset-routing.md)
@@ -181,7 +204,7 @@ After Discovery, the producer sub-skill handles the full pipeline. Read `heygen-
 - **Script:** Structure by type (demo, explainer, tutorial, pitch, announcement). Do NOT assign per-scene durations. Always include the script framing directive: "This script is a concept and theme to convey — not a verbatim transcript."
 - **Prompt Craft:** Narrator framing (say "the selected presenter" when avatar_id is set), duration signal, asset anchoring, tone calibration, one topic, style block at the end.
 - **Frame Check:** MANDATORY when avatar_id is set. See matrix below.
-- **Generate:** The user's request to create a video is the explicit consent for API submission. The skill submits to `POST /v3/video-agents` with `auto_proceed: true` — this is a server-side HeyGen API parameter that skips HeyGen's internal review checkpoint (no approval UI exists in the API flow). It does not grant the agent discretion to submit jobs unilaterally; submission only happens as the final step of a user-initiated pipeline. Run Frame Check before EVERY API call. Capture `session_id` immediately. Poll silently.
+- **Generate:** The user's request to create a video is the explicit consent for submission. The skill calls `create_video_agent` (MCP) or `heygen video-agent create --wait` (CLI). Run Frame Check before EVERY submission. Capture `session_id` immediately. Poll silently (or let `--wait` block).
 - **Deliver:** Report `video_page_url`, session URL, and duration accuracy. Log to `heygen-video-log.jsonl`.
 
 **Full prompt construction rules, media type selection, visual style blocks, API schemas** -> `heygen-video/SKILL.md`
@@ -194,8 +217,8 @@ After Discovery, the producer sub-skill handles the full pipeline. Read `heygen-
 
 ### Steps
 
-1. **Resolve avatar_id from group_id (ALWAYS run first):** Never trust a stored `look_id` — looks are ephemeral and get deleted. Read `Group ID` from the AVATAR file and resolve a fresh look_id: `GET /v3/avatars/looks?group_id=<group_id>&limit=20`. Pick the look matching the target orientation. Use this resolved look_id as `avatar_id` for all subsequent steps.
-2. **Fetch avatar look metadata:** `GET /v3/avatars/looks/<avatar_id>` -> extract `avatar_type`, `preview_image_url`, `image_width`, `image_height`
+1. **Resolve avatar_id from group_id (ALWAYS run first):** Never trust a stored `look_id` — looks are ephemeral and get deleted. Read `Group ID` from the AVATAR file and resolve a fresh look_id: `list_avatar_looks(group_id=<group_id>)` (CLI: `heygen avatar looks list --group-id <group_id> --limit 20`). Pick the look matching the target orientation. Use this resolved look_id as `avatar_id` for all subsequent steps.
+2. **Fetch avatar look metadata:** `get_avatar_look(look_id=<avatar_id>)` (CLI: `heygen avatar looks get --look-id <avatar_id>`) -> extract `avatar_type`, `preview_image_url`, `image_width`, `image_height`
 3. **Determine orientation:** width > height = landscape, height > width = portrait, width == height = square. Fetch fails = assume portrait.
 4. **Determine background:** `photo_avatar` -> Video Agent handles environment. `studio_avatar` -> check if transparent/solid/empty. `video_avatar` -> always has background.
 5. **Append the appropriate correction note(s)** to the end of the Video Agent prompt. That's it. No image generation, no new looks.

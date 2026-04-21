@@ -1,57 +1,68 @@
 ---
 name: heygen-avatar
 description: |
-  Create a persistent HeyGen avatar that looks and sounds like a specific person — the user,
-  the agent, or any named character — powered by HeyGen Avatar V technology.
-  Upload a photo → HeyGen builds a digital twin → reuse across unlimited videos.
-  Use when: (1) someone wants to appear in a video as themselves ("I want my face in a video",
-  "create my HeyGen avatar", "build a digital twin of me"), (2) setting up a HeyGen identity
-  before making videos or sending video messages — the correct FIRST step for new users,
-  (3) "create my avatar", "design an avatar", "give me a consistent look across my videos",
-  "bring yourself to life", "set up my identity on HeyGen", "set up my HeyGen identity",
-  "get started with HeyGen", "help me get started with AI video".
+  Create a persistent HeyGen avatar — a reusable face + voice identity for the agent,
+  the user, or any named character — powered by HeyGen Avatar V technology.
+  Prompt-based creation by default (description → HeyGen builds it); photo upload is
+  optional for real-person digital twins.
+  Use when: (1) giving the agent a face + voice so it can present videos
+  ("bring yourself to life", "create your avatar", "give yourself an avatar",
+  "design a presenter", "set up an avatar", "let's make an avatar"),
+  (2) the user wants to appear in videos as themselves ("create my avatar",
+  "I want my face in a video", "digital twin of me", "build me an avatar"),
+  (3) building a named character presenter ("create an avatar called Cleo",
+  "design a character named X"), (4) establishing HeyGen identity before making videos —
+  the correct FIRST step when no avatar exists yet.
   Chain signal: when the user says both an identity/avatar action AND a video action in the same
-  request ("design an avatar AND make a video", "set up my identity THEN create a video",
+  request ("create an avatar AND make a video", "set up identity THEN create a video",
   "design a presenter AND immediately record"), run heygen-avatar first, then heygen-video.
   Returns avatar_id + voice_id — pass directly to heygen-video to create HeyGen videos.
   NOT for: generating videos (use heygen-video), translating videos, or TTS-only tasks.
-argument-hint: "[photo_url_or_description]"
+argument-hint: "[name_or_description]"
+allowed-tools: Bash, WebFetch, Read, Write, mcp__heygen__*
 ---
 
 # HeyGen Avatar Designer
 
 Create and manage HeyGen avatars for anyone: the agent, the user, or named characters. Handles identity extraction, avatar generation, voice selection, and saves everything to `AVATAR-<NAME>.md` for consistent reuse.
 
-## Before You Start (Claude Code only)
+## Start Here (Critical)
+
+**Default target = the agent.** The primary use of this skill is giving the agent a face + voice so it can present videos. Route to "user" only on explicit "my avatar" / "me" / "my photo" language. When in doubt, make the agent's avatar.
+
+**Do NOT batch-ask questions.** No "give me a photo, voice preference, duration, target platform, tone, key message" all at once. Walk phases in order. Each phase asks at most one or two things at a time.
+
+**For agent avatars: read SOUL.md and IDENTITY.md first, then go straight to prompt-based creation.** Do NOT ask the user for a photo or appearance details first. The agent's identity lives in those workspace files. Only ask the user for traits that are genuinely missing.
+
+**Prompt-based is the default creation path.** Photo is opt-in, only relevant when the user explicitly wants a real-person digital twin of themselves. Agents and named characters almost always use prompt-based creation.
+
+## Before You Start (environment detection)
 
 Try to read `SOUL.md` from the workspace root.
 
-- **Found** → OpenClaw environment. Skip this section entirely and go straight to Phase 0.
-- **Not found** → Claude Code environment. Say this before anything else:
-
-First, fetch the user's existing HeyGen avatars: `GET https://api.heygen.com/v3/avatars` (no query params — the endpoint returns private avatars for the authenticated key). Parse the `data` array.
+- **Found** → OpenClaw environment. Skip this entire section and go straight to Phase 0. Workspace-native identity (SOUL.md, IDENTITY.md) will drive agent onboarding.
+- **Not found** → Claude Code environment, no workspace identity files. Still go to Phase 0 next — do NOT skip ahead to listing user avatars or asking the user for a photo.
 
 **⚠️ AVATAR file caveat:** Ignore any AVATAR-*.md files found in the workspace that belong to a *different* person or agent (e.g., AVATAR-Eve.md when creating an avatar for Claude). Only use an AVATAR file if its name matches the subject you're creating for right now.
 
-If the user **has existing avatars** (non-empty `data` array), present them as numbered options and ask which to use or whether to create a new one. Communicate in `user_language`.
+**⚠️ Do NOT fetch HeyGen avatars yet.** That's a Phase 0 sub-step (only after target detection). Fetching before Phase 0 causes the agent to frame the conversation around "your existing avatars" when the default should be creating one for the agent itself.
 
-If the user has **no existing avatars** (empty `data`), tell them none were found and offer to create one with a few quick questions. Mention the OpenClaw `SOUL.md` shortcut for future reference. Communicate in `user_language`.
+## API Mode Detection
 
-Wait for their answer before proceeding.
+**Mode selection is silent.** Detect once at the start of the session, pick a mode, move on. Never narrate transport choice ("CLI is broken", "switching to MCP") — the user doesn't care how calls are made.
 
-**Required:** `HEYGEN_API_KEY`. Resolved in order: (1) env var, (2) `~/.heygen/config` file (`export HEYGEN_API_KEY=$(grep -m1 '^HEYGEN_API_KEY=' ~/.heygen/config 2>/dev/null | cut -d= -f2-)`). Do not `source` the config file. Verify permissions before reading: `[ "$(stat -c %a ~/.heygen/config 2>/dev/null || stat -f %Lp ~/.heygen/config 2>/dev/null)" = "600" ] || echo "Warning: config permissions too open — run chmod 600 ~/.heygen/config"`. If still unset, tell the user to run `./setup` or `export HEYGEN_API_KEY=<key>`.
-**API:** v3 only. Base: `https://api.heygen.com`. Never use v1 or v2 endpoints.
+**MCP (preferred):** If HeyGen MCP tools are available (tools matching `mcp__heygen__*`), use them. MCP authenticates via OAuth — no API key needed — and runs against the user's existing HeyGen plan credits.
 
-**Required headers on every API request — no exceptions:**
-```
-X-Api-Key: $HEYGEN_API_KEY
-User-Agent: HeyGen-Skills/1.3.6 (OpenClaw; heygen-skills)
-X-HeyGen-Source: openclaw-skill
-```
+**CLI fallback:** If MCP tools are not available AND the `heygen` binary runs cleanly (`heygen --version` exits 0), use it. Auth: `HEYGEN_API_KEY` env OR `heygen auth login` (persists to `~/.heygen/credentials`). If the CLI is missing, errors on `--version`, or auth is not set, silently skip it — do not retry MCP.
+
+**Neither available:** Only if MCP is unavailable AND the CLI doesn't work, tell the user once: "To use this skill, connect the HeyGen MCP server or install the HeyGen CLI: `curl -fsSL https://static.heygen.ai/cli/install.sh | bash` then `heygen auth login`."
+
+**API:** v3 only. Never call v1 or v2 endpoints.
 
 **Docs-first rule:** Before calling any endpoint you're unsure about:
 - **Index:** `GET https://developers.heygen.com/llms.txt` — full sitemap
 - **Any page:** Append `.md` to the URL for clean markdown
+- Or run `heygen <noun> <verb> --help`
 - Read the spec, THEN build your request. Never guess field names.
 
 ## Avatar File Convention
@@ -93,7 +104,7 @@ Format:
 - Looks: landscape=<look_id>, portrait=<look_id>, square=<look_id>
 - Last Synced: <ISO timestamp>
 
-⚠️ look_ids are ephemeral — always resolve fresh from group_id at runtime via GET /v3/avatars/looks?group_id=<id>. Never hardcode look_id as the primary avatar reference.
+⚠️ look_ids are ephemeral — always resolve fresh from group_id at runtime via `heygen avatar looks list --group-id <id>` (or MCP `list_avatar_looks`). Never hardcode look_id as the primary avatar reference.
 ```
 
 **Top sections** (Appearance, Voice) are portable natural language. Any platform can use them.
@@ -107,46 +118,67 @@ Start every invocation with:
 
 ## Workflow
 
+**DO NOT batch-ask questions upfront.** Walk phases in order. Each phase asks at most one thing at a time, and only if needed.
+
 ### Phase 0 — Who Are We Creating?
 
-Determine the target identity:
+See the Start Here block above for the default-to-agent rule. Only route to "user" or "named character" when the phrasing is unambiguous.
 
-1. **Agent** — user says "create your avatar", "bring yourself to life" → read IDENTITY.md for name, then check `AVATAR-<NAME>.md`. If IDENTITY.md is not found (Claude Code environment), walk the user through designing from scratch with a few quick questions about appearance and voice.
-2. **User** — user says "create my avatar", "make me an avatar" → ask for their name, check `AVATAR-<NAME>.md`
-3. **Named character** — user says "create an avatar called Cleo" → check `AVATAR-CLEO.md`
+Routing signals (in priority order):
 
-If the AVATAR file exists and has a HeyGen section filled in:
-> "You already have an avatar set up. Want to add a new look, update it, or start fresh?"
+1. **User** (explicit only) — "create **my** avatar", "make **me** an avatar", "I want my face in a video", "a digital twin of **me**", "based on **my** photo". Requires a possessive pronoun referring to the user OR explicit mention of their photo. Ask for their name if not obvious.
+2. **Named character** (explicit only) — "create an avatar called Cleo", "design a character named X", "build a presenter named Y" → use the given name.
+3. **Agent** (default) — everything else: "create your avatar", "bring yourself to life", "set up an avatar", "let's make an avatar", "create an avatar", "design a presenter", "I want you to appear in videos", or any ambiguous phrasing. Read `IDENTITY.md` for name.
 
-If the AVATAR file exists but HeyGen section is empty: proceed to Reference Photo Nudge.
-If no AVATAR file exists: proceed to Phase 1.
+**When unsure, default to agent.** Do NOT ask the user for their name, appearance, or voice on an ambiguous request — that's the wrong first move. If after reading IDENTITY.md + SOUL.md the intent still feels ambiguous, ask one short clarifying question to disambiguate (phrase it naturally — something like "quick check: this avatar is for you, or for me?").
 
-### Reference Photo Nudge (First-Time Only)
+Then check `AVATAR-<NAME>.md` at the workspace root:
 
-Before generating anything, ask if they have a reference image. Photo avatars produce significantly better face consistency across videos than prompt-generated ones.
+- **AVATAR file exists + HeyGen section filled in** → "You already have an avatar set up. Want to add a new look, update it, or start fresh?" Wait for answer.
+- **AVATAR file exists but HeyGen section empty** → skip to Phase 2.
+- **No AVATAR file** → proceed to Phase 1.
 
-Ask if they have a reference photo, explaining that a headshot or clear face photo gives much better results than text-only generation. Offer to skip for prompt-based creation. Communicate in `user_language`.
+**Optional existing-avatar check** (only useful on the user path when the user might already have avatars in their HeyGen account). If Phase 0 target = **user** AND no `AVATAR-<USER>.md` exists, list their HeyGen avatars first:
 
-This applies to ALL targets (agent, user, named character). For agents, check if a reference photo path already exists in the AVATAR file's Appearance section or in IDENTITY.md before asking.
+**MCP:** `list_avatar_groups(ownership=private)`
+**CLI:** `heygen avatar list --ownership private`
 
-- **Photo provided** → upload via `POST /v3/assets`, then use Type B (photo) creation in Phase 2
-- **Skip** → use Type A (prompt) creation in Phase 2
+If the list is non-empty, present the options and ask which to use or whether to create new. If empty, proceed to Phase 1. Skip this check entirely for agent and named-character targets — those live in AVATAR-*.md, not the HeyGen catalog.
 
 ### Phase 1 — Identity Extraction
 
-**For the agent:** Try to read `SOUL.md`, `IDENTITY.md`, and existing `AVATAR-<NAME>.md` from the workspace. If found, extract appearance and voice traits automatically. If not found (e.g. Claude Code environment), skip to conversational onboarding — ask the user to describe the agent's appearance and voice instead.
+**Order matters. Files first, questions second. Prompt-based creation is the default path — photo is an opt-in upgrade.**
 
-**For users/named characters:** Conversational onboarding. Ask naturally about their appearance (age, hair, general vibe) and voice (calm, energetic, accent). Not as a form — be conversational. Communicate in `user_language`.
+**For the agent** (Phase 0 target = agent):
+1. Read `SOUL.md`, `IDENTITY.md`, and any existing `AVATAR-<NAME>.md` from the workspace root.
+2. If SOUL.md or IDENTITY.md is found → extract appearance and voice traits silently. Do NOT ask the user "describe your appearance" — the agent IS the subject, and its identity lives in those files. **If the files describe only personality / values with no physical description, do NOT hallucinate traits.** Ask the user conversationally for the missing appearance traits only (one or two at a time).
+3. If neither file is found (e.g., Claude Code environment with no workspace identity) → ask the user to describe the agent's appearance and voice conversationally.
+4. Proceed directly to **Type A (prompt) creation** in Phase 2 by default. Do NOT ask for a photo unless the user volunteers one or explicitly asks for photo realism — agents almost always use prompt-based creation.
 
-Write `AVATAR-<NAME>.md` with the Appearance and Voice sections filled in. Leave HeyGen section empty.
+**For users/named characters** (Phase 0 target = user or named):
+- Conversational onboarding. Ask naturally about appearance and voice — one or two questions at a time, not a form. Communicate in `user_language`.
+- **User path only:** after the onboarding Q&A, run the Reference Photo Nudge below.
+- **Named character path:** skip the nudge, go straight to Type A (prompt) creation.
 
-Then proceed to the **Reference Photo Nudge** before Phase 2.
+Write `AVATAR-<NAME>.md` with the Appearance and Voice sections filled in. Leave the HeyGen section empty until Phase 2 succeeds.
+
+### Reference Photo Nudge (user path only)
+
+Only run this step when Phase 0 target = **user** (real-person digital twin) OR when the user explicitly asks for photo realism.
+
+- Check AVATAR file's Appearance → Reference field first. If a photo is already on file, skip asking and use it.
+- Otherwise, ask one sentence: *"Got a headshot? It gives better face consistency for videos of you. I can also generate from your description — just say 'skip.'"*
+
+Branch:
+- **Photo provided** → upload via MCP `upload_asset` or `heygen asset create --file <path>`, then Type B (photo) creation in Phase 2.
+- **Skip** → Type A (prompt) creation in Phase 2.
+
+For agents and named characters, skip this entire step — go straight to Type A (prompt) creation.
+
 
 ### Phase 2 — Avatar Creation
 
-**API:** `POST https://api.heygen.com/v3/avatars`
-
-Two modes via the same endpoint:
+Two modes:
 
 **Mode 1 — New character** (omit `avatar_group_id`):
 Creates a brand new character with its own group.
@@ -157,38 +189,21 @@ Adds a variation to an existing character. Read the Group ID from the AVATAR fil
 Two creation types:
 
 **Type A — From prompt (AI-generated appearance):**
-```json
-{
-  "type": "prompt",
-  "name": "<name>",
-  "prompt": "<appearance prompt, max 1000 chars>",
-  "avatar_group_id": "<optional — Mode 2 only>"
-}
-```
+
+**MCP:** `create_prompt_avatar(name=<name>, prompt=<appearance>, avatar_group_id=<optional>)`
+**CLI:** `heygen avatar create -d '{"type":"prompt","name":"...","prompt":"...","avatar_group_id":"..."}'` (accepts inline JSON, a file path, or `-` for stdin)
 
 Prompt limit is 1000 characters. Be descriptive — include style, features, expression, lighting. The API spec says 200 but the actual enforced limit is 1000.
 
 **Type B — From reference image:**
-```json
-{
-  "type": "photo",
-  "name": "<name>",
-  "file": { "type": "url", "url": "https://..." },
-  "avatar_group_id": "<optional — Mode 2 only>"
-}
-```
+
+**MCP:** `create_photo_avatar(name=<name>, file=<file_object>, avatar_group_id=<optional>)`
+**CLI:** `heygen avatar create -d '{"type":"photo","name":"...","file":{"type":"url","url":"..."},"avatar_group_id":"..."}'`
 
 File options for Type B:
 - `{ "type": "url", "url": "https://..." }` — public image URL
-- `{ "type": "asset_id", "asset_id": "<id>" }` — from asset upload
+- `{ "type": "asset_id", "asset_id": "<id>" }` — from `heygen asset create --file <path>`
 - `{ "type": "base64", "media_type": "image/png", "data": "<base64>" }` — inline
-
-To upload a local file first:
-```
-POST https://api.heygen.com/v3/assets
-Content-Type: multipart/form-data
-Body: file=@<photo_path>
-```
 
 **Response:** Returns `avatar_item.id` (look ID) and `avatar_item.group_id` (character identity).
 
@@ -221,17 +236,12 @@ Find matching voices via semantic search using the Voice section from the AVATAR
 
 **Language matching:** The voice design prompt should specify the target language from `user_language`. Example for Japanese: `"A calm, warm female voice. Professional but approachable. Japanese speaker."` This ensures semantic search returns voices in the correct language.
 
-```bash
-POST https://api.heygen.com/v3/voices
-{
-  "prompt": "<built from AVATAR Voice section: tone, accent, energy, personality. Include target language.>",
-  "seed": 0
-}
-```
+**MCP:** `design_voice(prompt=<voice description>, seed=0)`
+**CLI:** `heygen voice create --prompt "..." --seed 0` (also accepts `--gender`, `--locale`)
 
 Returns 3 voice options per seed. Present all 3 with inline audio previews:
-- Download each `preview_audio_url`: `curl -sL "<url>" -o /tmp/voice-design-<n>.mp3`
-- Send as audio attachment: `message(action:send, media:"/tmp/voice-design-<n>.mp3", caption:"Option <n>: <voice_name> — <gender>, <language>")` so it plays inline in Telegram/Discord
+- Download each `preview_audio_url` to a temp path (any standard download method works — no HeyGen auth needed, these are public S3 URLs)
+- Send as audio attachment: `message(action:send, media:"<path>", caption:"Option <n>: <voice_name> — <gender>, <language>")` so it plays inline in Telegram/Discord
 - After all previews sent, present selection buttons
 
 ⛔ **STOP. Wait for the user to pick a voice via buttons or text. Do NOT select a voice yourself or proceed to Phase 4 until the user explicitly chooses.**
@@ -247,9 +257,8 @@ Increment `seed` and call again. Different seeds give completely different voice
 
 Browse HeyGen's existing voice library:
 
-```
-GET https://api.heygen.com/v3/voices
-```
+**MCP:** `list_voices(type=private)` then `list_voices(type=public, language=<lang>, gender=<gender>)`
+**CLI:** `heygen voice list --type private` / `heygen voice list --type public --language <lang> --gender <gender>`
 
 1. Read the Voice section from the AVATAR file
 2. Filter by gender and language
@@ -271,7 +280,7 @@ Update the HeyGen section of `AVATAR-<NAME>.md` to match the canonical format:
 - Looks: <orientation>=<avatar_item.id> (e.g., landscape=<look_id>, portrait=<look_id>)
 - Last Synced: <ISO timestamp>
 
-⚠️ look_ids are ephemeral — always resolve fresh from group_id at runtime via GET /v3/avatars/looks?group_id=<id>. Never hardcode look_id as the primary avatar reference.
+⚠️ look_ids are ephemeral — always resolve fresh from group_id at runtime via `heygen avatar looks list --group-id <id>` (or MCP `list_avatar_looks`). Never hardcode look_id as the primary avatar reference.
 ```
 
 Confirm the avatar is saved and that other skills (like heygen-video) will pick it up automatically. Communicate in `user_language`.
@@ -280,14 +289,8 @@ Confirm the avatar is saved and that other skills (like heygen-video) will pick 
 
 If the user wants to see their avatar in action:
 
-```json
-POST https://api.heygen.com/v3/video-agents
-{
-  "avatar_id": "<avatar_id>",
-  "voice_id": "<voice_id>",
-  "prompt": "<short greeting in the video language>"
-}
-```
+**MCP:** `create_video_agent(avatar_id=<avatar_id>, voice_id=<voice_id>, prompt=<greeting>)`
+**CLI:** `heygen video-agent create --avatar-id <id> --voice-id <id> --prompt "..." --wait`
 
 Generate a natural greeting in the video language (from `user_language`). Examples: English "Hi, I'm [name]. Nice to meet you!", Japanese "[name]です。はじめまして！", Spanish "Hola, soy [name]. ¡Mucho gusto!", Korean "안녕하세요, [name]입니다. 만나서 반갑습니다!"
 
@@ -306,18 +309,11 @@ Each iteration updates the AVATAR file. The file is always the source of truth.
 
 ## UX Rules
 
-**Be interactive at decision points, silent everywhere else.**
-
-- At checkpoints (avatar approval, voice selection): STOP and wait for user input. Never auto-select.
-- Between checkpoints: work silently. Do not narrate your reasoning, list parameters, or explain what you're about to do.
-- After the user picks a voice: save the file and confirm. One message. Don't recap the journey.
+**Be interactive at checkpoints, silent everywhere else.** Stop and wait at avatar approval and voice selection. Between checkpoints, work silently — don't narrate reasoning or explain next steps. After voice pick: save + confirm in one message.
 
 ## Video Producer Integration
 
-`heygen-video` reads AVATAR files for group_id and voice_id:
-- "Make a video with Eve" → reads `AVATAR-EVE.md` → gets Group ID + Voice ID → resolves fresh look_id at runtime
-- "Make a video with Ken" → reads `AVATAR-KEN.md`
-- No AVATAR file found → falls back to stock avatars or asks user
+`heygen-video` reads AVATAR files for group_id and voice_id. "Make a video with Eve" → reads `AVATAR-EVE.md` → gets Group ID + Voice ID → resolves fresh look_id at runtime. No AVATAR file → falls back to stock avatars or asks user.
 
 ## Error Handling
 

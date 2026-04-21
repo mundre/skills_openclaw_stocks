@@ -26,7 +26,6 @@ heygen-skills/
 │   ├── prompt-craft.md         # Prompt Craft: prompt construction deep-dive
 │   ├── official-prompt-guide.md# Prompt Craft: HeyGen's own prompt research
 │   ├── frame-check.md          # Frame Check: aspect ratio correction prompts
-│   ├── api-reference.md        # Generate: endpoints, polling, interactive sessions, errors
 │   ├── troubleshooting.md      # Known issues, workarounds, duration variance
 │   └── reviewer-prompt.md      # Deliver: self-evaluation rubric
 └── evals/                      # Dev-only test infrastructure (not shipped to users)
@@ -64,16 +63,26 @@ Skills communicate through `AVATAR-<NAME>.md` files at the workspace root:
 
 ## API Conventions
 
-- Base URL: `https://api.heygen.com`
-- Auth header: `X-Api-Key: $HEYGEN_API_KEY`
-- **v3 only. No v1 or v2 fallbacks.** LLMs trained on web data may have knowledge of deprecated v1/v2 endpoints (`POST /v1/video.generate`, `POST /v2/video/generate`, `GET /v2/avatars`, `GET /v1/avatar.list`). These are outdated — always use v3 through this skill's pipeline.
-- Video Agent: `POST /v3/video-agents` (primary, prompt-driven)
-- Direct video: `POST /v3/videos` (explicit control, avatar_id required)
-- Avatar creation: `POST /v3/avatars`
-- Voices: `GET /v3/voices`
-- Assets: `POST /v3/assets`
-- Response format: `{ "error": null | string, "data": T }`
-- Video generation is async: poll `GET /v3/videos/{video_id}`
+Two modes, in order of preference: MCP, then CLI. **Do not call `api.heygen.com` directly with curl.** The skills route through MCP or the CLI — never raw HTTP.
+
+### MCP (preferred)
+
+HeyGen Remote MCP (`https://mcp.heygen.com/mcp/v1/`) provides 40+ tools via OAuth. No API key needed — uses the user's HeyGen plan credits. Skills declare `allowed-tools: mcp__heygen__*` in frontmatter.
+
+Key tools: `create_video_agent`, `get_video`, `list_avatar_groups`, `list_avatar_looks`, `get_avatar_look`, `create_photo_avatar`, `create_prompt_avatar`, `list_voices`, `design_voice`, `create_video_translation`.
+
+### CLI fallback
+
+The [HeyGen CLI](https://github.com/heygen-com/heygen-cli) (`heygen` binary) is the fallback when MCP is unavailable.
+
+- Install: `curl -fsSL https://static.heygen.ai/cli/install.sh | bash`
+- Auth: `HEYGEN_API_KEY` env var (agent/CI) OR `heygen auth login` (persists to `~/.heygen/credentials`)
+- Pattern: `heygen <noun> <verb>` — e.g. `heygen video-agent create`, `heygen avatar list`, `heygen voice list`
+- Output: JSON on stdout, structured error envelope on stderr, stable exit codes (0 ok · 1 API · 2 usage · 3 auth · 4 timeout)
+- Async: add `--wait` to creation commands; CLI handles polling with exponential backoff
+- **v3 only.** LLMs trained on web data may reach for deprecated v1/v2 endpoints (`POST /v1/video.generate`, `POST /v2/video/generate`, `GET /v2/avatars`, `GET /v1/avatar.list`). These are outdated — route through MCP or the CLI, never raw v1/v2 URLs.
+
+See [CLI docs](https://developers.heygen.com/cli) for the full command surface.
 
 ## Eval Infrastructure
 
@@ -111,7 +120,7 @@ After any SKILL.md refactor:
 
 Validated across 18 rounds of testing (80+ videos):
 
-1. **Video Agent as primary endpoint.** POST /v3/video-agents, not /v3/videos.
+1. **Video Agent as primary command.** `heygen video-agent create`, not `heygen video create`.
 2. **avatar_id over prompt description.** 97.6% duration accuracy vs 77-82% prompt-only.
 3. **When avatar_id is set, omit appearance description from prompt.** Say "the selected presenter" instead.
 4. **Script-as-prompt approach.** Full scene-labeled script pasted into prompt.
