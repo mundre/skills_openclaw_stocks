@@ -1,0 +1,11 @@
+{
+  "owner": "yanara-osm",
+  "slug": "osm-p2p-hybrid",
+  "displayName": "osm-p2p-hybrid",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776338297415,
+    "commit": null
+  },
+  "history": []
+}
