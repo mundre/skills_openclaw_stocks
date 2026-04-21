@@ -3,9 +3,15 @@
   "slug": "meta-ads-scale-campaign",
   "displayName": "Meta Ads Scale Campaign",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776191055562,
-    "commit": "https://github.com/openclaw/skills/commit/6b7f0f5073a364b561ca793c6e2acb1b83e0f753"
+    "version": "1.1.0",
+    "publishedAt": 1776307247509,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776191055562,
+      "commit": "https://github.com/openclaw/skills/commit/6b7f0f5073a364b561ca793c6e2acb1b83e0f753"
+    }
+  ]
 }
