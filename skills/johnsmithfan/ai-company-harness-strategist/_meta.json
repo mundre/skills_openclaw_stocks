@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-harness-strategist",
-  "displayName": "Ai Company Harness Strategist",
+  "displayName": "AI Company Harness Strategist (EN)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776359363759,
-    "commit": "https://github.com/openclaw/skills/commit/c62ed5ad8b2a60f64acca5e5ef7b7ce4ec08a04e"
+    "version": "1.0.0-en2",
+    "publishedAt": 1776678543461,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776359363759,
+      "commit": "https://github.com/openclaw/skills/commit/c62ed5ad8b2a60f64acca5e5ef7b7ce4ec08a04e"
+    }
+  ]
 }
