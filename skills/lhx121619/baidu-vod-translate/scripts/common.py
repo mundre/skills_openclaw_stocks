@@ -15,6 +15,7 @@ import os
 import sys
 import hmac
 import hashlib
+import time
 import urllib.parse
 import requests
 import subprocess
@@ -42,9 +43,15 @@ def get_credentials():
     sk = os.environ.get("BAIDU_VOD_SK", "")
     
     if not ak or not sk:
-        print("错误: 请设置环境变量 BAIDU_VOD_AK 和 BAIDU_VOD_SK")
-        print("示例: export BAIDU_VOD_AK='your_ak'")
-        print("      export BAIDU_VOD_SK='your_sk'")
+        print("\n" + "=" * 50)
+        print("⚠️  未检测到百度云 VOD 凭证，请先设置环境变量：")
+        print()
+        print("  export BAIDU_VOD_AK='你的 Access Key'")
+        print("  export BAIDU_VOD_SK='你的 Secret Key'")
+        print()
+        print("💡 提示：AK/SK 可在百度智能云控制台 → 右上角头像 →")
+        print("       'Access Key 管理' 中获取。")
+        print("=" * 50 + "\n")
         sys.exit(1)
     
     return ak, sk
@@ -214,16 +221,14 @@ def apply_upload(ak, sk, video_name, debug=False):
 
 
 def upload_file(upload_url, video_path, debug=False):
-    """上传文件"""
-    with open(video_path, 'rb') as f:
-        video_data = f.read()
-    
-    file_size = len(video_data) / (1024 * 1024)
+    """上传文件（流式上传，避免大文件 OOM）"""
+    file_size = os.path.getsize(video_path) / (1024 * 1024)
     if debug:
-        print(f"文件大小: {file_size:.2f} MB")
-    
+        print(f"文件大小: {file_size:.2f} MB，使用流式上传...")
+
     headers = {"Content-Type": "video/mp4"}
-    response = requests.put(upload_url, data=video_data, headers=headers, timeout=600)
+    with open(video_path, 'rb') as f:
+        response = requests.put(upload_url, data=f, headers=headers, timeout=600)
     
     if response.status_code in [200, 100]:
         if debug:
@@ -290,7 +295,6 @@ def create_translate_project(ak, sk, name=None, description="", project_type="Sh
     Returns:
         str: 项目ID
     """
-    import time
     project_name = name or f"translate_{int(time.time())}"
     uri = "/v2/translation/project"
     json_data = {
@@ -563,7 +567,7 @@ def wait_for_task(ak, sk, task_id, project_id, max_retries=120, interval=10, deb
         dict: 任务结果
     """
     import time
-    
+
     for i in range(max_retries):
         time.sleep(interval)
         
@@ -615,7 +619,7 @@ def check_bdpan_logged_in():
             text=True,
             timeout=10
         )
-        return "已登录" in result.stdout
+        return result.returncode == 0 and "已登录" in result.stdout
     except:
         return False
 
@@ -712,8 +716,8 @@ def parse_area_string(area_str):
             "height": int(parts[3])
         }
         if len(parts) >= 6:
-            area["start"] = float(parts[4])
-            area["end"] = float(parts[5])
+            area["startTimeInMillisecond"] = int(float(parts[4]) * 1000)
+            area["endTimeInMillisecond"] = int(float(parts[5]) * 1000)
         return area
     return None
 
