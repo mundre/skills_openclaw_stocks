@@ -1,11 +1,13 @@
 ---
 name: "mcp-server-builder"
 slug: skylv-mcp-server-builder
-version: 1.0.0
-description: "MCP (Model Context Protocol) 服务器开发助手。从零构建 MCP 服务器、工具、提示模板。触发词：mcp、服务器、协议、工具构建。"
+version: 1.0.2
+description: MCP (Model Context Protocol) server builder. Scaffolds MCP servers, tools, and prompt templates from scratch. Triggers: mcp server, model context protocol, mcp tools.
 author: SKY-lv
 license: MIT-0
 tags: [mcp, openclaw, agent]
+keywords: mcp, server, protocol, scaffolding
+triggers: mcp server builder
 ---
 
 # MCP Server Builder
@@ -302,3 +304,9 @@ npx @modelcontextprotocol/inspector npm run dev
 3. **日志记录**：使用 `console.error` 记录关键事件
 4. **性能**：长时间操作使用流式响应
 5. **安全**：不记录敏感信息，定期清理日志
+
+## Usage
+
+1. Install the skill
+2. Configure as needed
+3. Run with OpenClaw
