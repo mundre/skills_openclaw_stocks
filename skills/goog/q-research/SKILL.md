@@ -41,6 +41,7 @@ Step 6 · Write a 5-bullet summary of what was learned
 
 ```bash
 pip install requests markitdown
+pip install curl_cffi beautifulsoup4 lxml fake-useragent
 chmod +x scripts/owl.py
 cp scripts/owl.py /usr/local/bin/owl
 
@@ -57,7 +58,7 @@ owl "LoRA fine-tuning" --category cs.LG --output report.md
 owl "protein structure prediction" --since year
 owl "quantum error correction" --arxiv-n 8
 ```
-or 
+For Windows user: 
 ```
 python  scripts/owl.py "AI agent RAG" --arxiv-n 8 --output report.md
 ```

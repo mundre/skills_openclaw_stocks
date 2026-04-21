@@ -37,7 +37,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime
-
+import web_fetcher
 # ── ANSI ──────────────────────────────────────────────────────────────────────
 
 _TTY = sys.stdout.isatty()
@@ -628,9 +628,9 @@ def main() -> None:
         # Fetch page content for top 2 results
         for r in results[:2]:
             if r.get("url"):
-                content = fetch_page(r["url"], max_chars=4_000)
+                content = web_fetcher.quick_fetch(r["url"])
                 if content:
-                    r["page_content"] = content
+                    r["page_content"] = content[:4000]
         web_results[search_type] = results
         ok(f"{len(results)} results for '{search_type}'")
         for r in results[:3]:
