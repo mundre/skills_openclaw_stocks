@@ -1,6 +1,6 @@
 ---
 name: greenhelix-nhi-security-agents
-version: "1.3.0"
+version: "1.3.1"
 description: "Non-Human Identity Security for AI Agents. Complete guide to securing non-human identities in AI agent deployments. Covers NHI lifecycle management, credential rotation, workload identity federation, machine-to-machine authentication patterns, Microsoft Agent Governance Toolkit integration, zero-trust for agents, and compliance frameworks for the $7.4B NHI market."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,13 @@ content_type: markdown
 executable: false
 install: none
 credentials: [AGENT_SIGNING_KEY, STRIPE_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - AGENT_SIGNING_KEY
+        - STRIPE_API_KEY
+    primaryEnv: AGENT_SIGNING_KEY
 ---
 # Non-Human Identity Security for AI Agents
 
