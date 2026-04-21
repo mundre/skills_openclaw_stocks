@@ -1,69 +1,67 @@
-# Mad SEO Writer Tools
+# Mad SEO Manager V6 Tools
 
-Mad SEO Writer provides a surgical suite of strategic and editorial tools for high-impact content growth.
+Mad SEO Manager provides a surgical suite of strategic and editorial tools for 2026-level content growth and AI visibility.
 
-## Core High-Rank Workflows
+## 📊 Strategic Planning & AI Visibility
 
-### mad_seo:research_strategy
-Generates a deep strategic plan for a topic based on **Skyscraper 2.0**, **Topic Cluster** (Hub-and-Spoke), and **Entity Grounding** models.
+### `mad_seo:generate_roadmap` [UPGRADED]
+Generates a persistent **12-Month Strategic Growth Roadmap**.
+- **niche** (string): The industry/specialty.
+- **location** (string): Target geography (City/Region/Global).
+- **core_services** (string): List of primary offerings.
+- **returns**: Creates a persistent `/root/.openclaw/shared/PROJECT_STRATEGY.json`.
+
+### `mad_seo:analyze_share_of_voice` [NEW]
+Calculates the brand's citation percentage across AI search engines (Gemini, Perplexity, etc.).
+- **domain** (string): The brand's domain.
+- **topics** (string[]): Key topics to check.
+- **returns**: "AI Citation Score" and top competitor citations.
+
+### `mad_seo:research_strategy` [UPGRADED]
+Conducts **Omnichannel 3.0** research including SERP analysis and **Social Discovery** (Reddit/Forums).
 - **topic** (string): The target keyword or topic.
-- **returns**: A strategic research brief including content gaps, competitor weaknesses, and primary entity definitions for GEO.
-
-### mad_seo:draft_article
-Generates a fully GEO-optimized and EEAT-compliant long-form article using **Sentence Chunking** and **Experience Mandates**.
-- **topic** (string): Topic or research brief.
-- **target_keyword** (string): Primary keyword to rank for.
-- **word_count** (number, optional): Minimum word count (1,500 for standard, 2,500+ for pillars).
-- **returns**: The drafted article with title options, meta description, FAQ section, and a Semantic Summary Table.
-
-### mad_seo:site_wide_intelligence
-Performs a GLOBAL SITE INTELLIGENCE AUDIT including competitive analysis and internal linking.
-- **sitemap_url** (string): The URL of the XML sitemap.
-- **gsc_property** (string): The GSC property URL to correlate with.
-- **returns**: Individualreports in '/root/.openclaw/shared/audits/', a global '/root/.openclaw/shared/ENTITY_MAP.md', and a '/root/.openclaw/shared/LINKING_QUEUE.md'.
-- **requires**: 'scrapling-official' and 'api-gateway' skills.
-
-### mad_seo:plan_content
-Generates a 4-week Editorial Calendar based on exhaustive Top-10 resilient research.
-- **seed_topic** (string): The main topic or pillar theme.
-- **frequency** (number, optional): Articles per week (default: 3).
-- **competitor_url** (string, optional): Target a specific competitor for surgical gap analysis.
-- **returns**: A persistent '/root/.openclaw/shared/CALENDAR.md' file with topic cluster mapping.
-- **requires**: 'scrapling-official' for resilient competitor intelligence.
-
-### mad_seo:performance_audit
-Analyzes real-world performance data from Google Search Console and GA4 to identify optimization opportunities.
-- **site_url** (string): The URL of the property in GSC.
-- **ga_property_id** (string, optional): The GA4 property ID for session/conversion data.
-- **returns**: A prioritized SEO Action List based on live metrics.
-- **requires**: 'api-gateway' for Google API connectivity.
-
-### mad_seo:audit_eeat
-Performs the **70-point Scientific SEO & EEAT Audit**. Focuses on AI Citation Likelihood and HCU Experience markers.
-- **file_path** (string): Path to the draft file.
-- **returns**: Audit report with a 0-70 score and the "Top 10 High-Impact Citation Killers."
-
-### mad_seo:content_refresh
-Analyzes a draft or URL to develop a **GEO-focused Refresh Strategy** to maintain freshness and reclaim lost AI citations.
-- **target** (string): URL or local file path to analyze.
-- **returns**: A refresh checklist focused on "Quotable Facts" and entity re-verification.
+- **returns**: Strategic brief with "Social Proof" points and entity grounding.
 
 ---
 
-## Specialized Publishing Helpers
+## ✍️ High-Authority Content Workflows
 
-### mad_seo:headline_pro
-Generates high-CTR, GEO-grounded headlines using the **Title Formula** library.
-- **topic** (string): The article topic or current title to optimize.
-- **returns**: 10+ headline variations with CTR analysis.
+### `mad_seo:draft_article` [UPGRADED]
+Generates GEO-optimized and EEAT-compliant content with **Multimodal Asset** instructions.
+- **topic** (string): Topic or research brief.
+- **target_keyword** (string): Primary keyword.
+- **word_count** (number, optional).
+- **returns**: Draft with "Multimodal Log" for required charts, tables, and evidence.
 
-### mad_seo:snippet_optimizer
-Formats specific content blocks to maximize **AI Citation Likelihood** for definitions, lists, and tables.
-- **text** (string): The section text to optimize.
-- **type** (string): The snippet type (e.g., "list", "table", "definition").
-- **returns**: Formatted markdown with chunked sentences and 2-column tables.
+### `mad_seo:audit_eeat` [UPGRADED]
+Performs a Scientific Audit with **Fabrication Guard** and **Citation Clarity** scoring.
+- **file_path** (string): Path to the draft file.
+- **returns**: 0-70 score and "Fabrication Alert" if fake stories are detected.
 
-### mad_seo:metadata_suite
-Generates optimized Meta Titles, Meta Descriptions, and Slug recommendations.
-- **topic** (string): The article topic and keywords.
-- **returns**: Reusable metadata block with front-loaded keywords and clear CTAs.
+### `mad_seo:site_wide_intelligence`
+Performs a Global Site Audit overlaying sitemaps with GSC metrics.
+- **sitemap_url** (string): XML sitemap URL.
+- **gsc_property** (string): GSC property URL.
+- **returns**: Persistent entity maps and linking queues.
+
+---
+
+## 🛠️ Specialized Helpers
+
+### `mad_seo:performance_audit`
+Analyzes GSC/GA4 data to find "High Impression / Low CTR" optimization opportunities for the Roadmap.
+- **site_url** (string): GSC property URL.
+- **ga_property_id** (string, optional).
+
+### `mad_seo:generate_schema`
+Generates GEO-optimized JSON-LD schema (Article, FAQ, HowTo).
+- **content_path** (string): Path to the draft.
+- **type** (string): Schema type.
+
+### `mad_seo:audit_author`
+EEAT Entity Audit for authors to build niche authority signals.
+- **name** (string): Author name.
+- **bio** (string): Author bio.
+
+---
+*Created with surgical precision at Mad Labs.*

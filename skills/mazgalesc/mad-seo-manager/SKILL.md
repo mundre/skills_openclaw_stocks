@@ -1,60 +1,46 @@
-# Mad SEO Manager 🚀
+# Mad SEO Manager 🚀 (V6.0.0)
 
-**Mad SEO Manager** is the ultimate autonomous content and authority engine for OpenClaw. It transforms the standard SEO writing process into a director-level management workflow, optimized for **Google HCU** and **2026-level GEO (Generative Engine Optimization)**.
+**Mad SEO Manager** is the ultimate autonomous content and authority engine for OpenClaw. Built for the **2026 SEO/GEO Landscape**, it transforms the standard SEO writing process into a director-level management workflow oriented toward **Omnichannel Authority** and **Multimodal Attribution**.
 
-## 🎯 Core Capabilities
-- **Global Site Intelligence Engine (V5)**: Builds a site-wide Knowledge Graph (ENTITY_MAP) to autonomously recommend surgical internal links.
-- **Competitive SERP Analyst**: Fetch and correlate the Top 5 competitors for every article to identify content and authority gaps.
-- **Performance-Driven Logic**: Bridges with GSC/GA4 to prioritize optimizations for high-impression / low-CTR pages.
-- **EEAT-Surgical Writing**: Enforces a 70-point quality audit focused on AI Citation Likelihood and Experience markers.
+## 🎯 Core Capabilities (V6)
+- **Omnichannel Intelligence**: Beyond Google; researches Reddit, YouTube, and specialized forums to capture real-world intent and "Social Proof".
+- **Global Site Memory (ENTITY_MAP)**: Builds a site-wide Knowledge Graph to autonomously recommend surgical internal links and detect "Topical Voids".
+- **Dynamic Growth Strategy**: Generates and maintains a persistent `PROJECT_STRATEGY.json` 12-month roadmap that self-corrects based on performance.
+- **Multimodal Attribution**: Enforces the inclusion of original evidence (Data tables, custom charts, screenshots) to secure "Primary Citation" status in AI Overviews.
+- **EEAT-Surgical Auditing**: 70-point audit now includes a "Fabrication Guard" and "AI Citation Score" analysis.
 
-## 🛠️ Tools & Triggers
+## 🛠️ Unified Tool Suite
+
+### `mad_seo:generate_roadmap`
+Generates a persistent 12-month growth plan using the **Priority Quick-Win** formula (Volume + Business Value / Difficulty).
+*Trigger: "Predict my growth roadmap for [Niche]"*
 
 ### `mad_seo:research_strategy`
-*Trigger: "Build a cluster for [Topic]"*
-Generates Skyscraper 2.0 plans and Hub-and-Spoke authority maps.
+Performs **Omnichannel 3.0 Analysis**. Scrapes SERP Top-10 AND community sentiment from platforms like Reddit.
+*Trigger: "Omnichannel research for [Topic]"*
+
+### `mad_seo:analyze_share_of_voice` [NEW]
+Analyzes AI search responses (Gemini, Perplexity) to calculate your brand's **AI Citation Score**.
+*Trigger: "Analyze my share of AI voice"*
 
 ### `mad_seo:draft_article`
-*Trigger: "Write a pillar post about [Topic]"*
-Generates 1,500-2,500+ word articles with Answer-First formatting and 7 GEO Factors.
+Generates GEO-optimized, multimodal content. Includes instructions for specific visual evidence to be created.
+*Trigger: "Write an SEO pillar post about [Topic]"*
 
-### `mad_seo:plan_content`
-*Trigger: "Design a content plan for [Topic]"*
-Performs exhaustive Top-10 resilient research and generates a persistent `CALENDAR.md`.
+### `mad_seo:audit_eeat`
+Performs a Scientific Audit with V6 standards, focusing on **Fabrication Detection** and **Citable Clarity**.
+*Trigger: "Audit my content for fabrication"*
 
 ### `mad_seo:site_wide_intelligence`
-*Trigger: "Run a deep intelligence audit on [Sitemap]"*
-Performs a data-correlated audit: overlays sitemap URLs with live GSC metrics and generates individual `/audits/[slug].md` reports.
+Deep audit linking Sitemap URLs to GSC metrics and generating individual optimization prescriptions.
+*Trigger: "Run a site-wide intelligence audit"*
 
-### `mad_seo:performance_audit`
-*Trigger: "Analyze my search performance"*
-Bridges GSC/GA4 data to find "High Impression / Low CTR" optimization opportunities.
-
-## 🧩 Dependencies (For Manager Features)
+## 🧩 Dependencies
 > [!IMPORTANT]
-> To unlock the autonomous V3 features, the following skills must be installed in the agent workspace:
-> 1. **`api-gateway`** — Required for Search Console & Analytics data.
-> 2. **`scrapling-official`** — Required for resilient rendering and Top-10 analysis.
-> 3. **`agent-browser-clawdbot`** — Recommended for deep competitor research.
-
-## 📖 Usage Guide
-For detailed instructions on customizing the Brand Voice or setting up the API Bridge, refer to the included `GUIDE.md`.
-
-## 🛡️ Compliance & Responsible Use
-- **Authorized Audits Only**: The `site_wide_audit` tool should only be used on websites you own or have explicit permission to audit.
-- **Public Data Research**: Planning tools are designed for analyzing **publicly available** competitive search data.
-- **Terms of Service**: Users are responsible for ensuring that all automated discovery and research tasks comply with the target site's `robots.txt` and Terms of Service.
-- **Data Privacy**: No personal or sensitive data is collected or processed by this skill.
-
-### `mad_seo:onboard`
-*Trigger: "Onboard me" or "What can you do?"*
-Launches the interactive Manager Dashboard and checks for dependency health.
+> To unlock V6 features, the following skills are required:
+> 1. **`api-gateway`** — GSC/GA4 Data access.
+> 2. **`scrapling-official`** — Social discovery (Reddit/Forums).
+> 3. **`agent-browser`** — Live AI search analysis.
 
 ---
-*Created with surgical precision at Mad Labs.*
-
-## 🛡️ Technical Requirements & Security
-To maintain professional stability and security, this skill requires the following:
-- **Mandatory Dependencies**: `api-gateway` (for GSC/GA4 access) and `scrapling-official` (for resilient research).
-- **Filesystem Permissions**: Requires write access to `/root/.openclaw/shared/` to store persistent site-wide entity maps, editorial calendars, and linking queues.
-- **Privacy Policy**: This skill does NOT store or manage credentials. All GSC/GA4 access is delegated to your local `api-gateway` skill. All scraping is performed via authorized sitemaps.
+*Generated by the Mad Labs Automation Suite.*

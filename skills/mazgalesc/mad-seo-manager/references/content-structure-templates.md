@@ -1,144 +1,76 @@
-# Content Structure Templates
+# Content Structure Templates V6
 
-Markdown templates for common SEO content types. Customize section headings and content while maintaining the structural framework.
+Markdown templates for common SEO content types. Optimized for **2026 Multimodal Attribution** and **HCU Compliance**.
 
-## Blog Post (Informational)
+---
 
-**Target word count**: 1,200-1,800 words
-**Primary goal**: Educate and inform, build authority, rank for informational queries
+## Blog Post (Authority/Omnichannel)
+
+**Target word count**: 1,500-2,500 words
+**V6 Standards**: Multimodal assets (Original Data), Social Proof (Reddit citations).
 
 ```markdown
-# [Primary Keyword in H1] - [Benefit or Hook]
+# [Primary Keyword in H1] - [Unique Benefit/Take]
 
-[Opening hook - 1 compelling sentence that grabs attention]
+[Opening Relationship Anchor - 1 sentence defining the Topic as a part of a larger Entity/Category]
 
-[Problem statement - describe the pain point or challenge your reader faces]
+[Social Discovery Hook - "Our team analyzed discussions on [Reddit/Forums] and found that most users struggle with [Pain Point]..."]
 
-[Promise - explain what readers will learn or gain from this post]
+[Promise - specific learning outcome]
 
-In this guide, you'll discover:
-- [Key takeaway 1]
-- [Key takeaway 2]
-- [Key takeaway 3]
+## Key Takeaways: [Topic] Summary
+| Component | Status/Verdict | AI Relationship |
+|-----------|----------------|-----------------|
+| [Fact 1]  | [Measure]      | [A is-a B]      |
+| [Fact 2]  | [Measure]      | [B owns C]      |
 
-## What Is [Topic]?
+## What Is [Topic]? (The Entity Definition)
 
-[Clear definition in 40-60 words - GEO-optimized]
+[Clear definition in 40-60 words - each sentence a standalone fact]
 
-[Expanded explanation with context]
+[**Omnichannel Proof**: "Contrary to common belief in the [Topic] community, our testing reveals..."]
 
-[Why this matters - relevance to reader]
+## Why [Topic] Matters in [Year]
 
-## Why [Topic] Matters
+[Benefit with supporting evidence]
 
-[Benefit 1 with supporting evidence]
+> [!TIP]
+> **Multimodal Evidence**: [Insert Chart Description: Comparison of [Topic] vs Competitors based on our Q1 Testing].
 
-[Benefit 2 with supporting evidence]
+## [Sub-topic 1]
 
-[Benefit 3 with supporting evidence]
+[Detailed explanation with expert take]
 
-> **Key Insight**: [Highlighted important point or statistic]
-
-## [Secondary Keyword or Main Section 1]
-
-[Introduction to this section]
-
-### [Sub-topic 1]
-
-[Detailed explanation]
-
-**Key points**:
-- Point 1
-- Point 2
-- Point 3
-
-### [Sub-topic 2]
-
-[Detailed explanation]
-
-[Example or case study]
-
-## [Secondary Keyword or Main Section 2]
-
-[Section introduction]
-
-| Factor | Description | Impact |
-|--------|-------------|--------|
-| [Factor 1] | [Description] | High/Medium/Low |
-| [Factor 2] | [Description] | High/Medium/Low |
-| [Factor 3] | [Description] | High/Medium/Low |
-
-[Additional explanation]
-
-## [Secondary Keyword or Main Section 3]
-
-[Content for this section]
-
-**Best practices**:
-1. [Practice 1 with explanation]
-2. [Practice 2 with explanation]
-3. [Practice 3 with explanation]
-
-## Common Mistakes to Avoid
-
-### [Mistake 1]
-
-[Why this is a mistake]
-[How to avoid it]
-
-### [Mistake 2]
-
-[Why this is a mistake]
-[How to avoid it]
-
-### [Mistake 3]
-
-[Why this is a mistake]
-[How to avoid it]
+### Community Verdict
+[Summarize Reddit/Forum sentiment here to build 2026-level authority]
 
 ## Frequently Asked Questions
 
-### [Question from PAA or common query]?
+### [Question from PAA/AI Sub-queries]?
 
 [Direct answer in 40-60 words]
 
-[Optional: Additional context]
+## Conclusion: The Final Verdict on [Topic]
 
-### [Question 2]?
+[Recap + Knowledge Graph Anchor]
 
-[Direct answer]
-
-### [Question 3]?
-
-[Direct answer]
-
-## Conclusion
-
-[Recap key points - include primary keyword]
-
-[Final insight or takeaway]
-
-[Clear call-to-action: next step for reader]
-
----
-
-**Related reading**: [Internal link 1] | [Internal link 2] | [Internal link 3]
+[Call-to-Action]
 ```
 
-**Internal links**: 3-5 contextual links to related content
-**External links**: 2-3 links to authoritative sources
-**Keywords**: Primary in H1, first 100 words, conclusion; secondary in H2s
-**GEO-optimization**: Definition block, FAQ section, quotable statistics
-
 ---
 
-## Comparison Article ("[A] vs [B]")
+## GEO-First Pillar Page (V6 Optimized)
 
-**Target word count**: 1,500-2,500 words
-**Primary goal**: Help readers choose between options, rank for comparison queries
+**Target word count**: 3,000-5,000+ words
+**Primary goal**: Become the "Universal Truth" source for AI engines.
 
 ```markdown
-# [Option A] vs [Option B]: Which Is Better for [Use Case]?
+# The Ultimate V6 Guide to [Entity] ([Year])
+
+[Entity Grounding - "This guide clarifies the relationship between [Entity] and [Broader Category]."]
+
+[Multimodal Log - 3+ Custom Graphics Required]
+```
 
 [Hook - present the comparison dilemma]
 
