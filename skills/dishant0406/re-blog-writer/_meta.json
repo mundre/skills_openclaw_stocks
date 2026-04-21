@@ -3,9 +3,15 @@
   "slug": "re-blog-writer",
   "displayName": "Re Blog Writer",
   "latest": {
-    "version": "1.0.9",
-    "publishedAt": 1776026185921,
-    "commit": "https://github.com/openclaw/skills/commit/d1b2bd5f6c5378b901082b06e10386e5ceaa9b5b"
+    "version": "1.1.1",
+    "publishedAt": 1776316144075,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.9",
+      "publishedAt": 1776026185921,
+      "commit": "https://github.com/openclaw/skills/commit/d1b2bd5f6c5378b901082b06e10386e5ceaa9b5b"
+    }
+  ]
 }

@@ -42,17 +42,17 @@ Start each chunk differently. Use one of these openers:
 - "the problem isn't what you think..."
 
 Within each chunk:
-- Explain the idea in two short paragraphs
+- Explain the idea across 2-3 short paragraphs. Each paragraph is 2-3 sentences maximum.
 - Tell a mini-story about it failing or confusing you
 - Address one question people have
 - Show one surprising detail you wish you had known
 
 Paragraph rhythm inside chunks:
-- Never go more than 4 sentences without a break
+- Hard limit: 3 sentences per paragraph. Break and start a new paragraph.
 - Add a 1-sentence paragraph for emphasis
 - Talk directly to the reader every few paragraphs
 
-Use 2-3 formatting devices total across all chunks. See writing-style.md for bold punch lines, short lists, and small headings.
+Use rich markdown elements throughout. See writing-style.md for the full list: bold punch lines, short lists, blockquotes, numbered steps, inline code, comparison tables, small headings, and horizontal rules. Aim for at least one element every 200 words.
 
 ---
 

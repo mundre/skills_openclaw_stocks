@@ -25,11 +25,15 @@ Never use these:
 
 ## Paragraph rhythm
 
-- Never go more than 4 sentences without a line break.
+- Keep each paragraph to 2-3 sentences max. No exceptions.
+- Never go more than 3 sentences before a line break. Hard limit.
 - Throw in a 1-sentence paragraph for emphasis 2-3 times per post.
 - Every few paragraphs, talk directly to the reader: "look," "here's what i mean," "you've probably done this."
+- More paragraphs, shorter paragraphs. Do not consolidate sentences just because they are related.
 
-## Formatting devices (use 2-3 times per post total)
+## Formatting devices (use richly throughout — aim for at least one every 200 words)
+
+Do not write wall-to-wall paragraphs. Break the visual flow regularly with one of these.
 
 **Bold punch lines:** When you hit a key point, make it stand alone in bold.
 Example: `i spent three hours on this. Three hours for a one-line config change.`
@@ -43,10 +47,24 @@ Here's what broke:
 - i got a 500 error that meant nothing
 ```
 
+**Numbered steps:** Use when sequence matters. 3-5 steps max. Each step is one sentence.
+
+**Blockquotes:** Use for a sharp insight, a real quote, or a moment of emphasis.
+Example:
+```
+> the tool isn't the problem. the workflow is.
+```
+
+**Inline code or command snippets:** Use when referencing a specific command, file, or value. Do not explain it to death.
+
+**Comparison table:** Use once per post when comparing two options. 2-3 rows, 2-3 columns. Keep cell text short.
+
 **Small headings:** Use a short, plain heading every 200-300 words.
 Make them direct, not clever.
 Good: "Why the dns method fails"
 Bad: "The DNS Dilemma: A Comprehensive Analysis"
+
+**Horizontal rule (`---`):** Use sparingly (1-2 times) to signal a major shift in the narrative. Not between every section.
 
 ## Self-editing checklist
 
@@ -58,6 +76,8 @@ Run this before saving the file:
 - [ ] Confirm at least 3 sentences start with "and" or "but."
 - [ ] Make sure there is at least one embarrassing or honest personal detail.
 - [ ] Check that no section reads like a disguised list.
+- [ ] Confirm no paragraph has more than 3 sentences. Fix any that do.
+- [ ] Confirm rich markdown elements (bold, lists, blockquotes, headings, tables, code) appear at least once every 200 words.
 - [ ] Confirm 2-3 bold punch lines or short lists exist. Add them if not.
 - [ ] Check that small plain headings appear every 200-300 words. Add if missing.
 - [ ] Confirm there is one off-topic tangent (Part 3). It must be present.
