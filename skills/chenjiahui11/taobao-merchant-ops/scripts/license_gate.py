@@ -1,31 +1,28 @@
 #!/usr/bin/env python3
+"""
+远程授权专用：仅通过授权服务器 /api/activate、/api/check 校验，不包含本地签名校验。
+"""
 from __future__ import annotations
 
-import base64
 import hashlib
-import hmac
 import json
 import os
 import platform
 import time
 import uuid
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
+from app_errors import LicenseError
 
-LICENSE_PREFIX = "TMO1"
-MASTER_SECRET = os.environ.get(
-    "TMO_MASTER_SECRET", "715aff55c00443469726f2007efd244ddb01d28f91dd7d9771586c12f0ef5755"
+# 默认授权服务（可被环境变量 TMO_LICENSE_SERVER 覆盖）
+_DEFAULT_LICENSE_SERVER = "http://120.27.202.105:8000"
+_LICENSE_ENV = os.environ.get("TMO_LICENSE_SERVER")
+LICENSE_SERVER_URL = (_LICENSE_ENV if _LICENSE_ENV is not None and _LICENSE_ENV.strip() != "" else _DEFAULT_LICENSE_SERVER).rstrip(
+    "/"
 )
-
-
-def _b64u_encode(raw: bytes) -> str:
-    return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
-
-
-def _b64u_decode(text: str) -> bytes:
-    pad = "=" * ((4 - len(text) % 4) % 4)
-    return base64.urlsafe_b64decode((text + pad).encode("ascii"))
 
 
 def machine_fingerprint() -> str:
@@ -35,38 +32,6 @@ def machine_fingerprint() -> str:
     mac = str(uuid.getnode())
     raw = f"{node}|{system}|{machine}|{mac}".encode("utf-8", errors="ignore")
     return hashlib.sha256(raw).hexdigest()[:24]
-
-
-def _sign_payload(payload_b64: str) -> str:
-    sig = hmac.new(
-        MASTER_SECRET.encode("utf-8"),
-        payload_b64.encode("utf-8"),
-        hashlib.sha256,
-    ).digest()
-    return _b64u_encode(sig[:18])
-
-
-def parse_and_verify_key(card_key: str) -> dict[str, Any]:
-    parts = (card_key or "").strip().split(".")
-    if len(parts) != 3:
-        raise ValueError("卡密格式错误")
-    prefix, payload_b64, sig = parts
-    if prefix != LICENSE_PREFIX:
-        raise ValueError("卡密前缀错误")
-    if not hmac.compare_digest(_sign_payload(payload_b64), sig):
-        raise ValueError("卡密签名无效")
-    payload = json.loads(_b64u_decode(payload_b64).decode("utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError("卡密载荷类型错误")
-    return payload
-
-
-def _activation_seal(data: dict[str, Any]) -> str:
-    body = {k: v for k, v in data.items() if k != "seal"}
-    text = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return _b64u_encode(
-        hmac.new(MASTER_SECRET.encode("utf-8"), text.encode("utf-8"), hashlib.sha256).digest()[:18]
-    )
 
 
 def _load_json(path: Path) -> dict[str, Any] | None:
@@ -84,59 +49,152 @@ def _save_json(path: Path, data: dict[str, Any]) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _derive_expire_ts(payload: dict[str, Any], activated_at: int) -> int:
-    if payload.get("exp") is not None:
-        return int(payload["exp"])
-    if payload.get("days") is not None:
-        return activated_at + int(payload["days"]) * 86400
-    plan = str(payload.get("plan") or "").lower().strip()
-    days_map = {"day": 1, "month": 30, "year": 365}
-    return activated_at + days_map.get(plan, 1) * 86400
-
-
 def _fmt_ts(ts: int) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(ts)))
 
 
-def ensure_license(license_file: Path, key_from_cli: str = "") -> dict[str, Any]:
+def _http_post_json(url: str, payload: dict[str, Any], timeout: float = 10.0) -> dict[str, Any]:
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            text = resp.read().decode("utf-8")
+            data = json.loads(text or "{}")
+            return data if isinstance(data, dict) else {}
+    except urllib.error.HTTPError as exc:
+        try:
+            text = exc.read().decode("utf-8")
+            data = json.loads(text or "{}")
+            if isinstance(data, dict) and "detail" in data:
+                raise LicenseError(f"授权服务器错误: {data['detail']}") from exc
+        except Exception:
+            pass
+        raise LicenseError(f"授权服务器响应异常 (HTTP {exc.code})，请稍后重试。") from exc
+    except urllib.error.URLError as exc:
+        raise LicenseError("无法连接授权服务器，请检查服务器是否可访问或稍后重试。") from exc
+
+
+def _remote_activate(card_key: str, machine_fp: str) -> dict[str, Any]:
+    if not LICENSE_SERVER_URL:
+        raise LicenseError("未配置授权服务器地址，请设置环境变量 TMO_LICENSE_SERVER。")
+    url = f"{LICENSE_SERVER_URL}/api/activate"
+    data = _http_post_json(url, {"card_key": card_key, "machine_fp": machine_fp})
+    if (data.get("status") or "").lower() != "ok":
+        msg = str(data.get("message") or "卡密激活失败，请确认卡密是否正确或联系卖家。")
+        raise LicenseError(msg)
+    return data
+
+
+def _remote_check(machine_fp: str, card_key: str | None = None) -> dict[str, Any]:
+    if not LICENSE_SERVER_URL:
+        raise LicenseError("未配置授权服务器地址，请设置环境变量 TMO_LICENSE_SERVER。")
+    url = f"{LICENSE_SERVER_URL}/api/check"
+    payload: dict[str, Any] = {"machine_fp": machine_fp}
+    if card_key:
+        payload["card_key"] = card_key
+    data = _http_post_json(url, payload)
+    if (data.get("status") or "").lower() != "ok":
+        msg = str(data.get("message") or "授权校验失败，请重新输入卡密或联系卖家。")
+        raise LicenseError(msg)
+    return data
+
+
+def load_license_status(license_file: Path) -> dict[str, Any]:
     now = int(time.time())
     fp = machine_fingerprint()
     act = _load_json(license_file)
-    if act:
-        if str(act.get("seal") or "") != _activation_seal(act):
-            raise SystemExit("授权文件已损坏或被篡改，请重新激活。")
-        if str(act.get("machine_fp") or "") != fp:
-            raise SystemExit("授权绑定到其他机器，请使用本机卡密重新激活。")
-        if int(act.get("expires_at") or 0) <= now:
-            raise SystemExit(f"卡密已过期（到期时间: {_fmt_ts(int(act.get('expires_at') or 0))}）")
-        return act
+    if not act:
+        return {
+            "status": "missing",
+            "license_file": str(license_file),
+            "machine_fp": fp,
+        }
+    ver = int(act.get("version") or 0)
+    if ver < 2:
+        return {
+            "status": "legacy_local",
+            "license_file": str(license_file),
+            "machine_fp": fp,
+            "message": "检测到旧版本地授权文件，请删除该文件后使用服务器卡密重新激活。",
+        }
+    if str(act.get("machine_fp") or "") != fp:
+        return {
+            "status": "wrong_machine",
+            "license_file": str(license_file),
+            "machine_fp": fp,
+            "bound_machine_fp": str(act.get("machine_fp") or ""),
+        }
+    expires_at = int(act.get("expires_at") or 0)
+    if expires_at <= now:
+        return {
+            "status": "expired",
+            "license_file": str(license_file),
+            "machine_fp": fp,
+            "expires_at": expires_at,
+            "expires_at_text": _fmt_ts(expires_at),
+            "plan": str(act.get("plan") or ""),
+        }
+    return {
+        "status": "valid",
+        "license_file": str(license_file),
+        "machine_fp": fp,
+        "expires_at": expires_at,
+        "expires_at_text": _fmt_ts(expires_at),
+        "activated_at": int(act.get("activated_at") or 0),
+        "plan": str(act.get("plan") or ""),
+    }
+
+
+def ensure_license(license_file: Path, key_from_cli: str = "") -> dict[str, Any]:
+    if not LICENSE_SERVER_URL:
+        raise LicenseError("未配置授权服务器地址，请设置环境变量 TMO_LICENSE_SERVER。")
+
+    now = int(time.time())
+    fp = machine_fingerprint()
+    act = _load_json(license_file)
+
+    if act and int(act.get("version") or 0) < 2:
+        raise LicenseError(
+            "检测到旧版本地授权文件，本版本仅支持服务器卡密。\n"
+            f"请手动删除后重新激活：\n  {license_file}"
+        )
+
+    if act and str(act.get("machine_fp") or "") == fp:
+        try:
+            remote = _remote_check(fp, card_key=str(act.get("key") or ""))
+            act["plan"] = remote.get("plan") or act.get("plan") or "custom"
+            expires = int(remote.get("expires_at") or act.get("expires_at") or now)
+            act["expires_at"] = expires
+            _save_json(license_file, act)
+            return act
+        except LicenseError:
+            pass
 
     key = (key_from_cli or "").strip()
     if not key:
-        print("未发现授权文件，请输入卡密（支持日卡/月卡/年卡）：")
+        print("未发现有效授权，请输入卡密（由卖家提供）：")
         key = input("Card Key: ").strip()
     if not key:
-        raise SystemExit("未输入卡密，已退出。")
+        raise LicenseError("未输入卡密，已退出。")
 
-    payload = parse_and_verify_key(key)
-    nbf = int(payload.get("nbf") or 0)
-    if nbf and now < nbf:
-        raise SystemExit(f"卡密未到生效时间（生效时间: {_fmt_ts(nbf)}）")
-
-    expires_at = _derive_expire_ts(payload, now)
-    if expires_at <= now:
-        raise SystemExit("卡密已过期，无法激活。")
+    remote = _remote_activate(key, fp)
+    expires_at = int(remote.get("expires_at") or 0)
+    if not expires_at or expires_at <= now:
+        raise LicenseError("卡密已过期或授权异常，请联系卖家处理。")
 
     act = {
-        "version": 1,
+        "version": 2,
         "key": key,
-        "plan": str(payload.get("plan") or "custom"),
+        "plan": str(remote.get("plan") or "custom"),
         "machine_fp": fp,
         "activated_at": now,
-        "expires_at": int(expires_at),
+        "expires_at": expires_at,
     }
-    act["seal"] = _activation_seal(act)
     _save_json(license_file, act)
     print(f"授权激活成功，方案: {act['plan']}，到期: {_fmt_ts(act['expires_at'])}")
     return act
-

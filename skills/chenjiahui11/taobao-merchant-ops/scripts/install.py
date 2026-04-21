@@ -26,6 +26,8 @@ SYSTEM_PACKAGES = [
     "playwright>=1.40.0",
 ]
 
+REQUIREMENTS_FILE = Path(__file__).resolve().parents[1] / "requirements.txt"
+
 # ─────────────────────────────────────────────
 # 全局解释器
 # ─────────────────────────────────────────────
@@ -125,6 +127,18 @@ def install_packages(packages: list[str]) -> None:
         )
 
 
+def load_packages() -> list[str]:
+    if not REQUIREMENTS_FILE.exists():
+        return SYSTEM_PACKAGES
+    packages = []
+    for line in REQUIREMENTS_FILE.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        packages.append(line)
+    return packages or SYSTEM_PACKAGES
+
+
 def install_playwright_browsers() -> None:
     """安装 Playwright 浏览器"""
     print("\n[*] 安装 Playwright Chromium 浏览器 (约 150MB)...")
@@ -220,7 +234,7 @@ def main() -> int:
     if fix_mode:
         print("\n[*] 修复模式")
 
-    install_packages(SYSTEM_PACKAGES)
+    install_packages(load_packages())
     install_playwright_browsers()
     verify_install()
 

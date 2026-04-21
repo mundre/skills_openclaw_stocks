@@ -1,114 +1,75 @@
 ---
 name: taobao-merchant-ops
-description: 淘宝商家运营自动化技能。功能一：数据板块（查看昨日核心数据：销售额/访客数/转化率/客单价/退款率；检查付费推广：直通车/引力魔方花费/成交/ROI/点击率/平均点击成本；对比竞店竞品；记录异常指标）；功能二：巡店与基础检查（检查店铺前台页面/评价问大家/后台违规提醒/旺旺客服对话/发货时效）。支持日卡/月卡/年卡激活。
-metadata:
-  openclaw:
-    emoji: "🛍️"
-  triggers:
-    - "运行淘宝运营"
-    - "运行淘宝商家"
-    - "执行淘宝运营"
-    - "淘宝运营"
-    - "激活卡密"
-    - "激活淘宝卡密"
-    - "我的卡密"
-    - "淘宝卡密"
+description: 淘宝商家运营自动化客户使用说明。包含功能介绍、安装步骤、卡密激活方式、运行方法和购买信息。
 ---
 
-> 企业开发·定制技能请联系微信：CChenJ_
-> 日卡 9.9元：https://www.zhufaka.cn/item/tgcsid
-> 月卡 399元：https://www.zhufaka.cn/item/i6wfue
-> 年卡 3500元：https://www.zhufaka.cn/item/x8ancz
+# Taobao Merchant Ops 客户使用说明
 
-# Taobao Merchant Ops（客户运行包）
+**版本：1.0.7**
 
-淘宝商家运营自动化。下载后一键安装依赖，首次运行需激活卡密。
+淘宝商家运营自动化客户运行包。
 
-## 功能说明
+主要功能：
+- 数据板块：查看昨日核心数据、推广数据、竞店竞品对比、异常指标记录
+- 巡店与基础检查：检查前台页面、评价问大家、后台提醒、客服对话、发货时效
 
-### 一、数据板块
-- 查看并统计昨日核心数据：销售额、访客数、转化率、客单价、退款率等
-- 检查付费推广数据：直通车/引力魔方等渠道的花费、成交、ROI、点击率、平均点击成本等
-- 对比竞店/竞品：用生意参谋看竞品流量、价格、活动变化
-- 记录异常指标：转化率突然下降、退款率异常升高、SKU库存告急等
+## 购买卡密
 
-### 二、巡店与基础检查
-- 检查店铺前台：首页、详情页、活动页是否正常显示，优惠券/秒杀是否生效
-- 查看评价与问大家：重点关注新的差评或负面提问，判断是否需要紧急处理
-- 检查店铺后台：是否有违规提醒、退款/投诉工单、官方活动报名通知
-- 查看旺旺客服与消费者对话：了解昨天咨询情况、客诉问题
-- 检查发货时效：超时未发货订单反馈促客服尽快处理
+- 日卡 9.9元：https://www.zhufaka.cn/item/tgcsid
+- 月卡 399元：https://www.zhufaka.cn/item/i6wfue
+- 年卡 3500元：https://www.zhufaka.cn/item/x8ancz
+- 定制/联系：微信 CChenJ_
 
-## 安装依赖（免费）
+## 安装依赖
 
-用户说"安装淘宝运营"或"安装依赖"时，引导运行：
+在项目目录下运行：
 
 ```bash
-cd taobao-merchant-ops-customer/scripts
+cd scripts
 python install.py
 ```
 
 ## 激活卡密
 
-当用户提供卡密时（如"TMO1.xxx"或"激活卡密 TMO1.xxx"），自动执行激活：
+首次运行需要激活卡密，可直接运行：
 
 ```bash
-python scripts/run_taobao_merchant_ops.py --card-key "用户提供的卡密"
+python scripts/run_taobao_merchant_ops.py --card-key "你的卡密"
 ```
 
-激活成功后告知用户到期时间。
+如果不带 `--card-key`，程序会在首次运行时提示手动输入卡密。
 
-## 运行运营
-
-当用户说"运行淘宝运营"、"执行巡店"等触发词时：
+## 开始运行
 
 ```bash
 python scripts/run_taobao_merchant_ops.py
 ```
 
-执行过程中实时展示每一步进展（capture → inspection → parse），完成后读取输出结果并呈现给用户。
-
-## 运营选项
+## 常用运行方式
 
 ```bash
-# 只跑数据抓取（跳过巡检）
-python run_taobao_merchant_ops.py --skip-inspection
+# 只跑数据抓取
+python scripts/run_taobao_merchant_ops.py --skip-inspection
 
 # 只跑巡检
-python run_taobao_merchant_ops.py --skip-capture --skip-parse
+python scripts/run_taobao_merchant_ops.py --skip-capture --skip-parse
 ```
 
-## 查看到期时间
-
-当用户问"卡密什么时候到期"时，引导用户运行：
+## 常用检查命令
 
 ```bash
+# 查看机器码
 python scripts/run_taobao_merchant_ops.py --show-machine-id
+
+# 查看授权状态
+python scripts/run_taobao_merchant_ops.py --license-status
+
+# 运行环境自检
+python scripts/run_taobao_merchant_ops.py --doctor
 ```
-
-## 设置定时任务
-
-当用户说"设置每日提醒"、"帮我定时运行淘宝运营"、"每天自动执行"时，为用户创建 cron 任务：
-
-- **每日自动运营**：每天早上 9:00 自动运行完整流程，结果推送展示给用户
-- **到期提醒**：每日检查卡密到期时间，剩余 ≤3 天时主动提醒用户续费
-
-用户确认后，用以下 cron 表达式创建：
-
-```
-# 每日 9:00 自动运行
-cron: "0 9 * * *"
-
-# 每天 10:00 检查卡密到期
-cron: "0 10 * * *"
-```
-
-定时任务说明：
-- 卡密未激活时，仅提醒激活，不执行运营
-- 卡密已过期时，提醒续费，不执行运营
-- 运营结果实时输出，用户可在 OpenClaw 对话中查看
 
 ## 注意事项
 
-- 卡密与机器指纹绑定，换电脑需重新激活
-- 本技能仅供数据参考，不构成运营建议
+- 卡密与机器指纹绑定，换电脑通常需要重新激活
+- 首次运行前请先安装依赖和 Playwright 浏览器
+- 本工具结果仅供运营参考
