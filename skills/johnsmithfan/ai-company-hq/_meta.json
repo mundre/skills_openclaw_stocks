@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-hq",
-  "displayName": "Ai Company Hq",
+  "displayName": "AI Company HQ (EN)",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1776126410219,
-    "commit": "https://github.com/openclaw/skills/commit/c17a19f95cfc3c96a75934ac873d93a939b4d0f7"
+    "version": "1.6.0-en2",
+    "publishedAt": 1776678379773,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1776126410219,
+      "commit": "https://github.com/openclaw/skills/commit/c17a19f95cfc3c96a75934ac873d93a939b4d0f7"
+    }
+  ]
 }
