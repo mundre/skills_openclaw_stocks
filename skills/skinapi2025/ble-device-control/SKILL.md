@@ -10,7 +10,7 @@ description: "Control BLE devices via airctl CLI. MUST invoke when user mentions
 > **Guidelines:**
 > 1. **Consult the Command Reference below first.** All common airctl commands and their syntax are documented here.
 > 2. **Follow the Decision Tree** to determine which workflow to execute. Do not skip steps.
-> 3. **If a command is not found in this document**, verify it with `airctl --help` before using it. The Command Reference covers all common operations; however, airctl may have additional commands not listed here.
+> 3. **If a command is not found in this document**, verify it with `airctl --help` before using it.
 > 4. **Check prerequisites first** before any BLE operation.
 > 5. **Validate all user-provided inputs** before passing them to airctl commands. See Input Validation below.
 
@@ -31,6 +31,7 @@ All user-provided inputs must be validated before being used in airctl commands 
 **UUID** — Must match standard BLE UUID format: 4-digit short or 8-4-4-4-12 full format.
 - Valid regex: `^[0-9A-Fa-f]{4}$` or `^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$`
 - Example valid: `2A19`, `00002A19-0000-1000-8000-00805F9B34FB`
+- Both short and full UUID formats are supported in all commands.
 - If invalid: reject the input and ask the user to provide a valid UUID.
 
 **Handle** — Must be a positive integer.
@@ -73,7 +74,7 @@ If airctl is not installed, **ask the user** to install it before proceeding. Pr
 pip install git+https://github.com/skinapi2025/AirCtl.git
 ```
 
-> **Note:** Do NOT automatically run `pip install` without user confirmation. The user should verify the package source and approve the installation. Installing directly from the GitHub repository ensures the package origin matches the provenance above.
+> **Note:** Do NOT automatically run `pip install` without user confirmation. The user should verify the package source and approve the installation.
 
 After installation, verify the package origin:
 
@@ -105,13 +106,16 @@ User mentions Bluetooth/BLE device operation?
 │   │   → Follow Workflow 3 (Write Characteristic)
 │   │
 │   ├─ "Scan" / "Find" / "Discover" devices
-│   │   → Run: airctl ble scan -t 10
+│   │   → Run: `airctl ble scan -t 10`
 │   │
 │   ├─ "Subscribe" / "Notify" / "Monitor"
 │   │   → Follow Workflow 4 Step 3 (Subscribe)
 │   │
 │   ├─ "Disconnect"
-│   │   → Run: airctl ble disconnect <address>
+│   │   → Run: `airctl ble disconnect <address>`
+│   │
+│   ├─ "Battery" / "Heart rate" / "Device info"
+│   │   → Use Device Profile commands: `airctl device battery/heart-rate/device-info <address>`
 │   │
 │   └─ Other BLE operation
 │       → Look up the command in the Command Reference section below
@@ -228,6 +232,31 @@ airctl ble task start-read heart_rate -u <readable_uuid> -i 5
 ```
 Use caution — reading may have side effects on some devices.
 
+## Workflow 5: LLM Snapshot Polling
+
+**When an AI agent needs to monitor BLE events without streaming:**
+
+**Step 1:** Subscribe to notifications (returns immediately):
+```bash
+airctl ble notify subscribe <address> -u <uuid>
+```
+
+**Step 2:** Poll for recent events using snapshot query (returns immediately):
+```bash
+airctl ble events --last 5
+```
+
+**Step 3:** Repeat step 2 as needed to check for new events.
+
+**Alternative:** Use periodic read tasks with result snapshots:
+```bash
+airctl ble task start-read <address> -u 2A19 -i 5
+# Returns: {"task_id": "abc123", "type": "periodic_read"}
+
+airctl ble task result abc123 --last 5
+# Returns: {"task_id": "abc123", "results": [...], "count": 5}
+```
+
 ## Command Reference
 
 **All common airctl commands are documented below.** If you need a command not listed here, verify it with `airctl --help` or `airctl ble --help`.
@@ -241,9 +270,9 @@ airctl daemon stop
 airctl daemon restart
 ```
 
-The daemon starts automatically. Use these only for troubleshooting.
+The daemon starts automatically for BLE operations. Use these only for troubleshooting.
 
-### Scan
+### BLE Scan
 
 ```bash
 airctl ble scan -t 10
@@ -256,7 +285,7 @@ Scan output (JSON):
 {"devices": [{"address": "AA:BB:CC:DD:EE:FF", "name": "Heart Rate", "rssi": -45, "service_uuids": ["180D"]}], "count": 1}
 ```
 
-### Connect / Disconnect / List
+### BLE Connect / Disconnect / List
 
 ```bash
 airctl ble connect <address> [-t 30] [-a alias]
@@ -264,7 +293,7 @@ airctl ble disconnect <address>
 airctl ble list
 ```
 
-### GATT Exploration
+### BLE GATT Exploration
 
 ```bash
 airctl ble services <address>
@@ -277,14 +306,16 @@ Characteristics output (JSON):
 {"characteristics": [{"uuid": "2A37", "handle": 10, "properties": ["notify", "read"], "service_uuid": "180D"}]}
 ```
 
-### Read
+### BLE Read
 
 ```bash
 airctl ble read <address> -u <uuid> [-f hex|base64|text]
 airctl ble read <address> -H <handle> [-f hex|base64|text]
 ```
 
-### Write
+Both short UUID (`2A19`) and full UUID (`00002a19-0000-1000-8000-00805f9b34fb`) are supported.
+
+### BLE Write
 
 ```bash
 airctl ble write <address> -u <uuid> -d "hex:010203"
@@ -294,17 +325,27 @@ airctl ble write <address> -u <uuid> -d "hex:01" --response
 
 Data format prefixes: `hex:` (e.g., `hex:010203`), `text:` (e.g., `text:hello`), `base64:` (e.g., `base64:AQID`), or no prefix (treated as hex).
 
-### Notifications
+### BLE Notifications
 
 ```bash
 airctl ble notify subscribe <address> -u <uuid>
 airctl ble notify unsubscribe <address> -u <uuid>
-airctl ble events [-a address] [-t type]
 ```
 
-Event types: `notification`, `disconnection`, `periodic_read`, `periodic_write`, `periodic_scan`
+### BLE Event Snapshots (LLM-friendly)
 
-### Background Tasks
+```bash
+airctl ble events --last 5                        # Last 5 events (returns immediately)
+airctl ble events --last 10 --address <addr>      # Filter by device address
+airctl ble events --last 5 --type notification     # Filter by event type
+airctl ble events --last 5 -h                     # Human-readable output
+```
+
+Event types: `device_connected`, `device_disconnected`, `notification`, `periodic_read`, `periodic_write`, `periodic_scan`, `task_error`
+
+> **Important:** Without `--last`, `airctl ble events` streams continuously and never returns. Always use `--last N` for LLM/agent usage.
+
+### BLE Background Tasks
 
 ```bash
 airctl ble task start-read <address> -u <uuid> -i 5
@@ -313,6 +354,17 @@ airctl ble task start-write <address> -u <uuid> -d "hex:01" -i 10
 airctl ble task start-scan -i 30 -t 5
 airctl ble task list
 airctl ble task stop <task_id>
+airctl ble task result <task_id> --last 5         # Query task results (snapshot)
+```
+
+### Device Profiles
+
+```bash
+airctl device battery <address>              # Battery percentage (0x180F)
+airctl device device-info <address>           # Device info (0x180A)
+airctl device heart-rate <address>            # Heart rate (0x180D)
+airctl device heart-rate <address> --subscribe
+airctl device heart-rate <address> --duration 60
 ```
 
 ### Configuration
@@ -326,12 +378,6 @@ airctl config preset list
 airctl config preset get uart
 airctl config preset set <name> --service <uuid> --char <uuid>
 airctl config preset remove <name>
-```
-
-### Diagnostics
-
-```bash
-airctl doctor check
 ```
 
 ## Common GATT UUIDs
@@ -356,6 +402,7 @@ airctl doctor check
 | "Device not connected" | Not connected yet | Run `airctl ble connect` first |
 | "Daemon not running" | Daemon stopped | Run `airctl daemon start` or let it auto-start |
 | "Command not found" | airctl not installed or outdated | Verify with `airctl --version`, reinstall if needed |
+| "Device disconnected unexpectedly" | BLE device dropped connection | Reconnect with `airctl ble connect`, use periodic read task to keep alive |
 
 ## Platform Requirements
 
