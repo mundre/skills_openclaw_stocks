@@ -1,6 +1,6 @@
 ---
 name: greenhelix-x402-merchant-cookbook
-version: "1.3.0"
+version: "1.3.1"
 description: "The x402 Merchant Integration Cookbook: Put Any API Behind a Crypto Paywall in Under an Hour. Practical recipes for integrating x402 payments into any web service. Covers Express.js middleware, FastAPI integration, Cloudflare Workers, payment verification, settlement, and production deployment patterns."
 license: MIT
 compatibility: [openclaw]
@@ -12,6 +12,14 @@ content_type: markdown
 executable: false
 install: none
 credentials: [WALLET_ADDRESS, AGENT_SIGNING_KEY, STRIPE_API_KEY]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - WALLET_ADDRESS
+        - AGENT_SIGNING_KEY
+        - STRIPE_API_KEY
+    primaryEnv: WALLET_ADDRESS
 ---
 # The x402 Merchant Integration Cookbook: Put Any API Behind a Crypto Paywall in Under an Hour
 
