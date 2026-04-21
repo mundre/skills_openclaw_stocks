@@ -2,114 +2,365 @@
 name: resumex
 version: 2.0.0
 description: >
-  Manage your Resumex resume directly from Telegram or any OpenClaw-connected chat.
-  Read, add, edit, and delete experience, education, skills, projects, achievements,
-  and profile details — all through natural conversation. Tailor your resume to a job
-  description using your own AI. Send your resume summary to Telegram. All AI processing
-  runs on your agent; Resumex is a pure data API.
-author: Resumex
+  Manage your Resumex resume and automatically apply to jobs — all through natural conversation.
+  Fetches your live resume from Resumex, uses built-in web search to find best-matched jobs,
+  presents a ranked list for your approval, auto-fills job application forms via a local
+  Playwright helper script, and logs every application to the Resumex Job Tracker.
+  Also handles full resume editing: experience, education, skills, projects, achievements,
+  profile fields, AI tailoring, and Telegram delivery.
+author: Atharva Badgujar
+homepage: https://resumex.dev
+repository: https://github.com/atharva-badgujar/resume-builder/tree/main/openclaw-skill/resumex
 license: MIT
+env:
+  RESUMEX_API_KEY:
+    required: true
+    description: Your personal Resumex API key (rx_...). Sent ONLY to resumex.dev/api/v1/*.
+  TELEGRAM_BOT_TOKEN:
+    required: false
+    description: Telegram bot token. Sent ONLY to api.telegram.org when you explicitly request resume delivery.
+  TELEGRAM_CHAT_ID:
+    required: false
+    description: Your Telegram chat ID. Used only as a local message destination — not transmitted separately.
+  AUTO_APPLY_MODE:
+    required: false
+    default: "false"
+    description: Set true to skip per-job confirmation. Use with caution — applications are submitted without review.
+  HEADLESS_BROWSER:
+    required: false
+    default: "true"
+    description: Set false to show the browser window while applying. Local flag only — not transmitted.
 metadata:
-  openclaw: {"requires":{"env":["RESUMEX_API_KEY"],"bins":["python3","curl"]},"user-invocable":true,"tags":["resume","career","pdf","telegram","productivity"]}
+  openclaw: {"requires":{"env":["RESUMEX_API_KEY"],"bins":["python3","pip3"]},"user-invocable":true,"tags":["resume","career","jobs","auto-apply","job-search","job-tracker","automation","productivity","telegram"]}
 ---
 
-# Resumex — Resume Manager Skill
+# Resumex — Resume Manager + Auto Job Application Agent
 
-Connect your [Resumex](https://resumex.dev) account and manage your entire resume through
-natural conversation — in Telegram, or any OpenClaw-connected channel.
+You are connected to Resumex (https://resumex.dev) — a resume management platform with a REST API.
+You have two core capabilities:
 
-> **Architecture in one line:**
-> Resumex stores your data. Your agent's LLM does all the thinking. Your Telegram bot delivers messages.
+1. **Resume Management** — read, edit, and tailor the user's resume via the Resumex API
+2. **Auto Job Application** — search for jobs, get user approval, and auto-fill application forms
+
+> **Architecture:** Resumex stores data. You (the agent LLM) do all reasoning and coordination. The Playwright helper script (`job_applier.py`) handles browser automation for form filling. Your built-in search finds jobs.
 
 ---
 
-## 🔑 One-Time Setup (2 minutes)
+## 🔒 Privacy & Security Notice
 
-**Step 1 — Get your API key:**
-1. Sign in at [resumex.dev](https://resumex.dev)
-2. Go to **Dashboard → Resumex API**
-3. Click **Generate API Key** → copy the `rx_...` key
+**Before doing anything on the user's behalf, be transparent about these points if they ask:**
 
-**Step 2 — Set environment variables in your OpenClaw agent:**
+- **Outbound calls:** This skill makes calls to `resumex.dev/api/v1/*` (resume data) and — only when requested — `api.telegram.org` (Telegram delivery). No other outbound calls are made.
+- **Local browser:** `job_applier.py` runs a Playwright browser locally on the user's machine. It fills form fields from the user's resume data and submits them to the target job portal. No data passes through Resumex servers during this step.
+- **No stealth:** `playwright-stealth` is NOT used. The browser is transparent and can be detected by job portals. If blocked, it returns `manual_required` and the user applies manually.
+- **No auto-submit by default:** `AUTO_APPLY_MODE` defaults to `false`. Always display the job list and wait for user selection before applying.
+- **Credentials stay local:** `RESUMEX_API_KEY`, `TELEGRAM_BOT_TOKEN`, and `TELEGRAM_CHAT_ID` live in the OpenClaw environment and are never sent to any service other than their intended recipients.
+- **Full privacy policy:** See [PRIVACY.md](PRIVACY.md) in this skill directory.
+- **Security guide:** See [SECURITY.md](SECURITY.md) — addresses every OpenClaw review flag.
+- **Source:** https://github.com/atharva-badgujar/resume-builder/tree/main/openclaw-skill/resumex
+
+If the user ever asks "what does this skill send to Resumex?" or "what data do you access?" — answer using the exact table in PRIVACY.md. Never speculate.
+
+---
+
+## 🔑 One-Time Setup
+
+### Step 1 — Get Resumex API Key
+1. Sign in at https://resumex.dev
+2. Go to **Dashboard → Resumex API** → click **Generate API Key**
+3. Copy the `rx_...` key
+
+### Step 2 — Set Environment Variables in OpenClaw
 ```
 RESUMEX_API_KEY=rx_your_key_here
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token     # optional — needed for Telegram delivery
-TELEGRAM_CHAT_ID=your_chat_id                  # optional — your personal Telegram chat ID
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token   # optional — for Telegram delivery
+TELEGRAM_CHAT_ID=your_chat_id               # optional — for Telegram delivery
+AUTO_APPLY_MODE=false                        # set true to skip per-job confirmation
+HEADLESS_BROWSER=true                        # set false to watch the browser
 ```
 
-> **Get your Telegram Bot Token:** Message [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token.
-> **Get your Chat ID:** Message [@userinfobot](https://t.me/userinfobot) on Telegram → it replies with your chat ID.
-> **API reference:** [resumex.dev/api-docs](https://resumex.dev/api-docs)
+### Step 3 — Install Playwright (for auto-apply)
+
+On first use of auto-apply, run these commands. **Recommend the user installs in a virtualenv for isolation:**
+
+```bash
+# Recommended: use a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate    # Windows: .venv\Scripts\activate
+
+# Install dependencies (~10MB package + ~300MB Chromium browser binary)
+pip3 install -r {baseDir}/requirements.txt
+python3 -m playwright install chromium
+```
+
+If pip3 is not found, try `pip` instead.
+
+> ⚠️ **Disk usage note:** Playwright downloads a full Chromium browser binary (~300 MB) stored in `~/.cache/ms-playwright/`. Inform the user before running this command.
+>
+> ℹ️ **No stealth:** `playwright-stealth` is NOT installed. The automated browser is transparent and detectable by job portals. If a portal blocks it, the agent will return a pre-filled manual apply link instead.
+
+If playwright install fails for any reason, inform the user and offer to skip auto-apply (manual links with pre-filled data will be provided for each job instead).
 
 ---
 
 ## 💬 What You Can Say
 
-Write naturally — no special syntax required:
+### 🤖 Auto Job Application Agent
 
-### Profile
-| Say... | Effect |
+| Say...                                   | What happens |
 |---|---|
-| *"Show my resume"* | Display full resume summary |
-| *"What's my profile?"* | Show personal info section |
-| *"Update my phone to +91 98765 43210"* | Edit phone field |
-| *"Change my location to Pune, India"* | Edit location |
-| *"Update my LinkedIn URL"* | Edit LinkedIn |
-| *"Rewrite my summary for a senior backend role"* | AI rewrites summary, saves it |
+| *"Find me jobs"*                         | Full flow: onboarding → search → approve → apply → track |
+| *"Search for [role] jobs in [location]"* | Search only — show list, no applying |
+| *"Apply to jobs for me"*                 | Use saved preferences, skip setup if done |
+| *"Set my job search preferences"*        | Re-run the onboarding questions |
+| *"Show my job applications"*             | List jobs logged in Resumex Job Tracker |
 
-### Experience
-| Say... | Effect |
-|---|---|
-| *"Add a job: SWE at Google, Jan 2024–Present"* | Add new experience entry |
-| *"Update my role at Infosys — change end date to Dec 2023"* | Edit existing experience |
-| *"Remove my internship at XYZ"* | Delete experience entry |
-| *"Show my experience"* | List all work history |
+### ✏️ Resume Management
 
-### Education
-| Say... | Effect |
+| Say...                                          | Effect |
 |---|---|
-| *"Add B.Tech CS at SPPU, 2019–2023, CGPA 8.5"* | Add education entry |
-| *"Update my degree at SPPU — fix the end year to 2024"* | Edit education entry |
-| *"Remove my 10th standard entry"* | Delete education entry |
-
-### Skills
-| Say... | Effect |
-|---|---|
-| *"Add Python, Docker, Redis to my skills"* | Add to default Skills category |
-| *"Add React under Frameworks"* | Add to named category |
-| *"Remove Docker from my skills"* | Delete a specific skill |
-| *"Delete the Frameworks category"* | Delete entire skill group |
-
-### Projects
-| Say... | Effect |
-|---|---|
-| *"Add a project: RAG Chatbot — built with LangChain..."* | Add project entry |
-| *"Update my RAG Chatbot project description"* | Edit project |
-| *"Remove the Code Cleaner project"* | Delete project entry |
-
-### Achievements
-| Say... | Effect |
-|---|---|
-| *"Add achievement: Winner at Smart India Hackathon 2024"* | Add achievement entry |
-| *"Remove the football achievement"* | Delete achievement entry |
-
-### Tailoring & Delivery
-| Say... | Effect |
-|---|---|
-| *"Tailor my resume for: [paste JD]"* | AI rewrites summary + experience bullets to match JD |
-| *"Send me my resume on Telegram"* | Sends formatted resume summary to your Telegram |
+| *"Show my resume"*                              | Full resume summary |
+| *"Update my phone to +91 98765 43210"*          | Edit profile field |
+| *"Add a job: SWE at Google, Jan 2024–Present"*  | Add experience |
+| *"Remove my internship at XYZ"*                 | Delete experience (confirm first) |
+| *"Add Python, Docker to my skills"*             | Add skills |
+| *"Tailor my resume for: [paste JD]"*            | AI rewrite for job description |
+| *"Send me my resume on Telegram"*               | Send formatted summary via Telegram |
 
 ---
 
-## 🔧 Tool Reference
+## 🤖 AUTO JOB APPLICATION AGENT
+
+### STEP 1 — Onboarding (run once, then save preferences)
+
+When the user says "find me jobs", "apply to jobs", or similar, FIRST check if you have saved preferences from a previous conversation. If not, ask the user these questions **one section at a time** (not all at once):
+
+```
+🎯 Job Search Setup (answer a few quick questions)
+
+1. What role are you looking for? (e.g. Software Engineer, Data Analyst)
+2. How many years of experience do you have? (0 / 1-2 / 3-5 / 5-8 / 8+)
+3. Preferred locations? (e.g. Bangalore, Mumbai — or type "Remote")
+4. Open to remote jobs? (yes/no)
+5. Employment type? (Full-time / Part-time / Contract / Internship)
+6. Any specific industries? (optional — e.g. Fintech, SaaS — press Enter to skip)
+7. Minimum salary expectation? (optional — e.g. 12 LPA, $120k — press Enter to skip)
+8. Job portals to search? (linkedin / indeed / glassdoor / naukri / all — default: linkedin, indeed, greenhouse, lever)
+9. Max jobs to show? (default: 10)
+```
+
+Save the user's answers in memory for this session. Tell the user:
+> ✅ Preferences saved! I'll remember these for future searches.
+
+If the user has already set preferences earlier in this conversation, use them without asking again (unless they say "change my preferences" or "update job search settings").
+
+---
+
+### STEP 2 — Fetch Resume from Resumex
+
+Fetch the user's live resume data:
+
+```bash
+curl -s -X GET https://resumex.dev/api/v1/agent \
+  -H "Authorization: Bearer $RESUMEX_API_KEY"
+```
+
+Parse:
+```
+workspace = response.data
+activeResume = workspace.resumes.find(r => r.id === workspace.activeResumeId)
+resumeData = activeResume.data
+```
+
+Extract these fields for job matching:
+- `resumeData.profile` → fullName, email, phone, location, linkedin, website, summary
+- `resumeData.skills[]` → flatten all skill names
+- `resumeData.experience[]` → recent roles and companies
+- `resumeData.education[]` → degrees and institutions
+
+---
+
+### STEP 3 — Search for Jobs (use your built-in search tool)
+
+**USE YOUR BUILT-IN WEB SEARCH** to find job listings. Do NOT rely on external scripts for search.
+
+Construct targeted search queries based on user preferences + resume:
+
+```
+"[role]" "[location]" site:linkedin.com/jobs
+"[role]" "[location]" site:indeed.com
+"[role]" "[location]" site:greenhouse.io
+"[role]" "[location]" site:lever.co
+```
+
+For each portal the user selected, run a search query. Run **4 searches maximum** (one per portal). Collect the results and filter to actual job listing URLs.
+
+**Match scoring** — For each result, estimate a relevance score (0–100) based on:
+- Role keyword match (+10 per keyword hit)
+- Location match (+8)
+- Remote match if user wants remote (+5)
+- Level match vs experience years (senior/junior alignment ±15)
+- Industry match (+5 per match)
+
+Sort results by score descending. Take top `max_results` (default: 10).
+
+**If search returns no good results**, tell the user:
+> 🔍 My built-in search didn't find strong matches. You can try:
+> 1. Broadening your location (e.g. "India" instead of "Pune")
+> 2. Simplifying the role title (e.g. "engineer" instead of "backend engineer")
+> 3. Searching directly at linkedin.com/jobs or indeed.com
+
+---
+
+### STEP 4 — Present Jobs for User Approval
+
+Show the ranked job list in this format:
+
+```
+═══════════════════════════════════════════════════════════
+  🔍  Found [N] jobs matching your profile
+═══════════════════════════════════════════════════════════
+
+  [01] Software Engineer — Backend
+       🏢 Google  |  📍 Bangalore, India  |  🔗 LinkedIn
+       Match: ████████░░ 82%
+       📝 "Join our team building scalable backend systems..."
+       🌐 https://linkedin.com/jobs/view/...
+
+  [02] SWE II — Platform
+       🏢 Flipkart  |  📍 Remote  |  🔗 Greenhouse
+       Match: ███████░░░ 71%
+       ...
+
+─────────────────────────────────────────────────────────
+  Which jobs should I apply to?
+  Type: "1,3,5" | "all" | "none" | "skip"
+```
+
+Wait for user response. Parse their selection:
+- Numbers like `"1,3"` → apply to those jobs
+- `"all"` → apply to all listed jobs
+- `"none"` or `"skip"` → don't apply, end session
+
+If `AUTO_APPLY_MODE=true` is set in env, skip this step and apply to all automatically.
+
+> ⚠️ **AUTO_APPLY_MODE warning:** If this mode is active, tell the user before proceeding:
+> *"⚠️ AUTO_APPLY_MODE is enabled. I will apply to all [N] jobs without asking for per-job confirmation. Applications submitted this way cannot be undone. Should I continue?"*
+> Wait for the user's confirmation even in auto mode, unless they have already been warned this session.
+
+---
+
+### STEP 5 — Auto-Apply via Browser Helper
+
+> **Privacy note:** The resume data passed here (name, email, phone, location, LinkedIn) is passed directly as CLI arguments to the local script. It goes to the job portal's form — nowhere else. The script makes no calls to Resumex or any other service.
+
+For each approved job, run the Playwright helper:
+
+```bash
+python3 {baseDir}/job_applier.py \
+  --url "[JOB_URL]" \
+  --name "[resumeData.profile.fullName]" \
+  --email "[resumeData.profile.email]" \
+  --phone "[resumeData.profile.phone]" \
+  --location "[resumeData.profile.location]" \
+  --linkedin "[resumeData.profile.linkedin]" \
+  --website "[resumeData.profile.website]" \
+  --summary "[resumeData.profile.summary first 300 chars]" \
+  --headless "$HEADLESS_BROWSER"
+```
+
+The script will return a JSON result on stdout:
+```json
+{
+  "status": "applied" | "manual_required" | "failed",
+  "notes": "...",
+  "filled_url": "https://..."
+}
+```
+
+**Handle each result:**
+
+- `"applied"` ✅ → Tell user: *"✅ Applied to [Role] at [Company] successfully!"*
+- `"manual_required"` 📎 → Tell user:
+  > 📎 **[Role] at [Company]** requires a PDF resume or complex form.
+  > I've pre-filled what I can. Please complete manually:
+  > 🔗 [filled_url]
+  > Your data: [Name] | [Email] | [Phone] | [LinkedIn]
+- `"failed"` ❌ → Tell user: *"❌ Could not auto-apply to [Role] at [Company]. Please apply manually: [url]"*
+
+**If python3/playwright is not available:** Skip the script, and instead provide the user with a pre-filled summary to copy-paste:
+
+> 📋 **Apply manually to: [Role] at [Company]**
+> 🔗 [JOB_URL]
+>
+> Copy this info when filling the form:
+> - Name: [fullName]
+> - Email: [email]
+> - Phone: [phone]
+> - Location: [location]
+> - LinkedIn: [linkedin]
+> - Website: [website]
+> - Summary: [first 200 chars of summary]
+
+Add a 3-second pause between applications to avoid rate limiting.
+
+---
+
+### STEP 6 — Log to Resumex Job Tracker
+
+After every application attempt (success OR manual), log to the Resumex Job Tracker:
+
+```bash
+curl -s -X POST https://resumex.dev/api/v1/jobs \
+  -H "Authorization: Bearer $RESUMEX_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job": {
+      "id": "job-[unix_timestamp_ms]",
+      "company": "[company]",
+      "role": "[title]",
+      "status": "Applied",
+      "dateApplied": "[YYYY-MM-DD]",
+      "location": "[location]",
+      "link": "[url]",
+      "notes": "[result notes]",
+      "priority": "Medium",
+      "source": "[portal name]",
+      "lastUpdated": "[ISO timestamp]"
+    }
+  }'
+```
+
+Confirm: *"📊 Logged to your Job Tracker. View at https://resumex.dev/app → Job Tracker tab."*
+
+---
+
+### STEP 7 — Final Summary
+
+After processing all approved jobs, show a summary table:
+
+```
+═══════════════════════════════════════════════════
+  🎉  Application Summary
+═══════════════════════════════════════════════════
+
+  ✅  Applied automatically: [N]
+  📎  Manual action needed:  [N]
+  ❌  Failed:                [N]
+
+  ✅  Software Engineer @ Google — Applied
+  📎  SWE II @ Flipkart — PDF required → [link]
+  ❌  Backend Dev @ XYZ — Browser error
+
+  📊  All logged to Resumex Job Tracker.
+      View: https://resumex.dev/app → Job Tracker tab
+```
+
+---
+
+## ✏️ RESUME MANAGEMENT TOOLS
 
 All API calls go to `https://resumex.dev/api/v1/agent` with header `Authorization: Bearer $RESUMEX_API_KEY`.
-
-**Two safe update methods:**
-- **PATCH** `{"patch": {...}}` → updates only specified fields. Use for profile fields and skills. Always prefer PATCH over POST when possible.
-- **POST** `{"workspace": <full_json>}` → replaces the entire workspace. Required when modifying arrays (experience, education, projects, achievements). Always fetch fresh data immediately before a POST.
-
----
 
 ### `resumex_get` — Fetch resume
 
@@ -118,59 +369,35 @@ curl -s -X GET https://resumex.dev/api/v1/agent \
   -H "Authorization: Bearer $RESUMEX_API_KEY"
 ```
 
-**Parse the response:**
-```
-workspace = response.data
-activeResume = workspace.resumes.find(r => r.id === workspace.activeResumeId)
-resumeData = activeResume.data
-```
+Parse: `workspace.resumes.find(r => r.id === workspace.activeResumeId).data`
 
 `resumeData` contains: `profile`, `experience[]`, `education[]`, `skills[]`, `projects[]`, `achievements[]`
-
-Display to user as clean Markdown, grouped by section.
 
 ---
 
 ### `resumex_update_profile` — Edit profile fields
 
-**Editable fields:** `fullName`, `email`, `phone`, `location`, `website`, `linkedin`, `github`, `summary`
+**Editable:** `fullName`, `email`, `phone`, `location`, `website`, `linkedin`, `github`, `summary`
 
-1. PATCH only the changed field(s) — never touch others:
 ```bash
 curl -s -X PATCH https://resumex.dev/api/v1/agent \
   -H "Authorization: Bearer $RESUMEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"patch": {"profile": {"phone": "+91 98765 43210"}}}'
 ```
-2. Confirm: `✅ Phone updated to +91 98765 43210.`
 
----
-
-### `resumex_rewrite_summary` — AI-rewrite profile summary
-
-1. Fetch resume with `resumex_get`.
-2. Using your LLM, rewrite `resumeData.profile.summary` for the requested role/tone.
-   - 2–3 sentences, active voice, role-specific keywords, no generic buzzwords.
-3. Show the user the new summary and ask for confirmation before saving.
-4. On confirmation, PATCH:
-```bash
-curl -s -X PATCH https://resumex.dev/api/v1/agent \
-  -H "Authorization: Bearer $RESUMEX_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"patch": {"profile": {"summary": "<rewritten summary>"}}}'
-```
-5. Confirm: `✅ Summary updated.`
+Confirm: `✅ Phone updated to +91 98765 43210.`
 
 ---
 
 ### `resumex_add_experience` — Add work experience
 
-1. Extract from user: company, role, location, startDate, endDate, description/bullets.
-2. If no description given, use your LLM to generate 2–3 impact-oriented bullet points for the role.
-3. Build the entry:
+1. Extract: company, role, location, startDate, endDate, description/bullets.
+2. If no description given, use your LLM to generate 2–3 impact-oriented bullet points.
+3. Build entry:
 ```json
 {
-  "id": "exp-<unix_timestamp_ms>",
+  "id": "exp-[unix_timestamp_ms]",
   "company": "Google",
   "role": "Software Engineer",
   "location": "Bangalore, India",
@@ -179,46 +406,39 @@ curl -s -X PATCH https://resumex.dev/api/v1/agent \
   "description": "• Built X achieving Y\n• Led Z resulting in W"
 }
 ```
-4. Fetch workspace. **Prepend** the new entry to `resumeData.experience[]`.
-5. POST the full modified workspace back:
+4. Fetch workspace → prepend to `resumeData.experience[]` → POST full workspace:
 ```bash
 curl -s -X POST https://resumex.dev/api/v1/agent \
   -H "Authorization: Bearer $RESUMEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"workspace": <FULL_WORKSPACE_JSON>}'
 ```
-6. Confirm: `✅ Added Software Engineer at Google.`
 
 ---
 
-### `resumex_edit_experience` — Edit an existing experience entry
+### `resumex_edit_experience` — Edit an experience entry
 
-1. Fetch workspace. Find the experience entry by company name or role (case-insensitive match).
-2. If multiple matches, ask user to clarify which one.
-3. Apply only the user's requested changes to that entry (e.g., fix dates, update bullets).
-4. POST the full modified workspace back.
-5. Confirm what changed: `✅ Updated end date for Google → Dec 2024.`
+1. Fetch workspace. Find entry by company/role (case-insensitive).
+2. If multiple matches, ask user to clarify.
+3. Apply only the requested changes. POST full modified workspace.
+4. Confirm what changed.
 
 ---
 
 ### `resumex_delete_experience` — Remove an experience entry
 
-1. Fetch workspace. Find the entry by company/role name.
-2. If multiple matches, ask user to clarify.
-3. **Show the entry to the user and ask for confirmation before deleting.**
-4. On confirmation, remove the entry from `resumeData.experience[]`.
-5. POST the full modified workspace back.
-6. Confirm: `✅ Removed [Role] at [Company].`
+1. Fetch workspace. Find entry. **Show it and ask for confirmation before deleting.**
+2. On confirmation, remove from `resumeData.experience[]`. POST full workspace.
+3. Confirm: `✅ Removed [Role] at [Company].`
 
 ---
 
 ### `resumex_add_education` — Add education
 
-1. Extract: institution, degree, field, startDate, endDate, score, scoreType (CGPA or Percentage).
-2. Build:
+Build:
 ```json
 {
-  "id": "edu-<unix_timestamp_ms>",
+  "id": "edu-[unix_timestamp_ms]",
   "institution": "Savitribai Phule Pune University",
   "degree": "B.Tech Computer Science",
   "startDate": "2019",
@@ -227,167 +447,118 @@ curl -s -X POST https://resumex.dev/api/v1/agent \
   "scoreType": "CGPA"
 }
 ```
-3. Fetch workspace. Prepend to `resumeData.education[]`. POST full workspace.
-4. Confirm: `✅ Added B.Tech CS at SPPU.`
+Fetch workspace → prepend → POST full workspace.
 
 ---
 
-### `resumex_edit_education` — Edit an education entry
+### `resumex_edit_education` / `resumex_delete_education`
 
-1. Fetch workspace. Find entry by institution or degree name.
-2. Apply only the requested changes.
-3. POST full modified workspace. Confirm what changed.
-
----
-
-### `resumex_delete_education` — Remove an education entry
-
-1. Fetch workspace. Find entry. Show it to user and confirm before deleting.
-2. Remove from `resumeData.education[]`. POST full workspace.
-3. Confirm: `✅ Removed [Degree] from [Institution].`
+Same pattern as experience — find by institution/degree, modify, POST full workspace.
 
 ---
 
 ### `resumex_add_skill` — Add skills
 
-1. Extract skill names and optional category from user message. Default category: `"Skills"`.
-2. Fetch workspace. Check `resumeData.skills[]` (each item: `{id, category, skills: string[]}`).
-3. **If category exists** (case-insensitive): merge new skills in, deduplicating.
-4. **If category does not exist**: create `{ "id": "sk-<timestamp>", "category": "...", "skills": [...] }` and append.
-5. PATCH only the skills array:
+1. Extract skill names and optional category. Default category: `"Skills"`.
+2. Fetch workspace. Check `resumeData.skills[]` (each: `{id, category, skills: string[]}`).
+3. If category exists: merge, deduplicate. If not: create new `{id: "sk-[timestamp]", category, skills}`.
+4. PATCH:
 ```bash
 curl -s -X PATCH https://resumex.dev/api/v1/agent \
   -H "Authorization: Bearer $RESUMEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"patch": {"skills": <UPDATED_SKILLS_ARRAY>}}'
 ```
-6. Confirm: `✅ Added Python, Docker to Skills.`
 
 ---
 
-### `resumex_delete_skill` — Remove a skill or skill category
+### `resumex_delete_skill` — Remove skill or category
 
-1. Fetch workspace.
-2. **Remove single skill:** Find the category containing the skill (case-insensitive). Remove the skill from the `skills[]` array. If the category becomes empty, remove the whole category object.
-3. **Remove category:** Remove the entire category object from `resumeData.skills[]`.
-4. PATCH the updated skills array back.
-5. Confirm: `✅ Removed Docker from Skills.` or `✅ Deleted Frameworks category.`
+Fetch → modify skills array → PATCH back. Confirm what was removed.
 
 ---
 
 ### `resumex_add_project` — Add a project
 
-1. Extract: name, description, tags/technologies, link (optional).
-2. Build:
 ```json
 {
-  "id": "proj-<unix_timestamp_ms>",
-  "name": "RAG-Based Smart Attendance Chatbot",
-  "description": "Built a Chat with your Data system using RAG to automate attendance queries, reducing admin time by 40%.",
-  "tags": ["RAG", "NLP", "Python"],
+  "id": "proj-[unix_timestamp_ms]",
+  "name": "RAG-Based Chatbot",
+  "description": "Built a Chat with Data system using RAG...",
+  "tags": ["RAG", "Python", "LangChain"],
   "link": "https://github.com/..."
 }
 ```
-3. Fetch workspace. Prepend to `resumeData.projects[]`. POST full workspace.
-4. Confirm: `✅ Added project: RAG-Based Smart Attendance Chatbot.`
+Fetch → prepend to `resumeData.projects[]` → POST.
 
 ---
 
-### `resumex_edit_project` — Edit a project
+### `resumex_edit_project` / `resumex_delete_project`
 
-1. Fetch workspace. Find project by name (case-insensitive).
-2. Apply only the user's requested changes. POST full workspace.
-3. Confirm what changed.
+Find by name → modify → POST. Confirm before deleting.
 
 ---
 
-### `resumex_delete_project` — Remove a project
+### `resumex_add_achievement` — Add achievement
 
-1. Fetch workspace. Find project by name. Show it and ask for confirmation.
-2. Remove from `resumeData.projects[]`. POST full workspace.
-3. Confirm: `✅ Removed project: [Name].`
-
----
-
-### `resumex_add_achievement` — Add an achievement
-
-1. Extract: title, description (optional), year (optional).
-2. Build:
 ```json
 {
-  "id": "ach-<unix_timestamp_ms>",
+  "id": "ach-[unix_timestamp_ms]",
   "title": "Winner — Smart India Hackathon 2024",
-  "description": "National-level hackathon with 500+ competing teams.",
+  "description": "National-level, 500+ teams.",
   "year": "2024"
 }
 ```
-3. Fetch workspace. Append to `resumeData.achievements[]`. POST full workspace.
-4. Confirm: `✅ Added achievement: Winner — Smart India Hackathon 2024.`
-
----
-
-### `resumex_delete_achievement` — Remove an achievement
-
-1. Fetch workspace. Find achievement by title. Show it and confirm before deleting.
-2. Remove from `resumeData.achievements[]`. POST full workspace.
-3. Confirm: `✅ Removed achievement: [Title].`
+Fetch → append to `resumeData.achievements[]` → POST.
 
 ---
 
 ### `resumex_tailor` — Tailor resume to a job description
 
-> All AI reasoning happens in your agent. Resumex only stores the final result.
-
-1. If the user hasn't pasted a JD, ask: *"Please paste the job description you'd like to tailor for."*
+1. Ask user to paste the job description if not already provided.
 2. Fetch resume with `resumex_get`.
-3. **Using your LLM** (not Resumex), do:
-   - **Rewrite summary:** 2–3 sentences aligned to the JD's key stack/domain. Active voice, no filler phrases.
-   - **Rewrite experience bullets:** Surface JD keywords and impact phrases. **Do not fabricate or add facts** — only re-emphasize what's already there.
-   - **Review skills:** Identify skills mentioned in the JD that the user doesn't have listed. Surface them as suggestions and ask before adding.
-4. Show a **before/after diff of the summary** to the user. Ask if they want to review full experience changes too.
+3. **Using your LLM**, rewrite:
+   - `profile.summary` — 2–3 sentences aligned to JD keywords, active voice
+   - `experience` bullets — surface JD keywords, do NOT fabricate facts
+   - Suggest missing skills from JD; ask before adding
+4. Show **before/after diff of summary** to user. Ask for confirmation.
 5. On confirmation, PATCH:
 ```bash
 curl -s -X PATCH https://resumex.dev/api/v1/agent \
   -H "Authorization: Bearer $RESUMEX_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "patch": {
-      "profile": {"summary": "<rewritten>"},
-      "experience": [<rewritten experience array>]
-    }
-  }'
+  -d '{"patch": {"profile": {"summary": "<rewritten>"}, "experience": [<rewritten array>]}}'
 ```
-6. Confirm: `✅ Resume tailored for [Job Title] at [Company].`
 
 ---
 
 ### `resumex_send_telegram` — Send resume to Telegram
 
-1. Fetch resume with `resumex_get`.
-2. Format a clean resume summary message (see `send_pdf.py` for formatter logic).
-3. Run the helper script:
+Run:
 ```bash
 python3 {baseDir}/send_pdf.py \
   --api-key "$RESUMEX_API_KEY" \
   --chat-id "$TELEGRAM_CHAT_ID" \
   --bot-token "$TELEGRAM_BOT_TOKEN"
 ```
-4. If `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` are not set, print the formatted resume to stdout and tell the user:
-   > *"Here's your resume summary. To get the full PDF, open [resumex.dev/app](https://resumex.dev/app) → click Download PDF or press Ctrl+P → Save as PDF."*
 
-**Note:** Resumex does not generate PDFs server-side. The PDF workflow is:
-`Resumex data → your agent → Telegram message + portfolio link → user opens link → Ctrl+P → PDF`
+If `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` are not set, print the formatted resume to the chat and say:
+> *"Here's your resume summary. To get the PDF: open https://resumex.dev/app → Download PDF, or open your portfolio → Ctrl+P → Save as PDF."*
 
 ---
 
-## ⚠️ Important Rules for the Agent
+## ⚙️ Agent Rules
 
-1. **Always fetch fresh data immediately before any POST.** Never reuse a workspace fetched earlier in the conversation — the user may have made changes via the web app in between.
-2. **Prefer PATCH over POST** for profile fields and skills. Only use POST (full workspace) when modifying arrays.
-3. **Always confirm before deleting anything.** Show the item to be deleted and require explicit user confirmation.
-4. **Never fabricate data.** When tailoring, only rephrase what already exists.
-5. **Match entries by fuzzy name** when the user refers to a company/role — e.g. "my Google job" should match `"company": "Google"`.
-6. **When multiple entries match**, list them and ask the user to clarify before proceeding.
+1. **Always run the onboarding questions** if job search preferences are not yet set for this session.
+2. **Always fetch fresh resume data** via `GET /api/v1/agent` before any search/apply session.
+3. **Never auto-submit without user approval** unless `AUTO_APPLY_MODE=true` is set.
+4. **For PDF-required or Workday portals**: provide the pre-filled data to the user — never fail silently.
+5. **Always POST to `/api/v1/jobs`** after every application attempt (success or manual).
+6. **If job_applier.py is not available**: provide the user with pre-filled copy-paste data for manual apply.
+7. **Use your built-in search tool** for job discovery — do not try DuckDuckGo or external APIs from within the SKILL.
+8. **For resume editing**: always fetch fresh data before any POST. Prefer PATCH over POST for profile/skills.
+9. **Always confirm before deleting** any resume entry.
+10. **Match entries by fuzzy name** — "my Google job" → `"company": "Google"`.
 
 ---
 
@@ -396,18 +567,19 @@ python3 {baseDir}/send_pdf.py \
 | Error | Cause | Fix |
 |---|---|---|
 | `401 Invalid API Key` | Key wrong or revoked | Dashboard → Resumex API → Regenerate Key |
-| `404 No resume found` | No active resume exists | Open resumex.dev/app and save your profile first |
-| `HTTP 500` with SQL hint | Admin setup incomplete | Admin must run `api_keys_setup.sql` in Supabase |
-| Telegram send fails | Bad token or chat ID | Verify `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` env vars |
-| POST overwrites data | Stale workspace used | Always re-fetch before POST — see Rule #1 above |
+| `404 No resume found` | No active resume | Open resumex.dev/app and save your profile first |
+| `HTTP 500` + SQL hint | Admin setup incomplete | Run `api_keys_setup.sql` in Supabase |
+| Playwright not found | Not installed | Run: `pip3 install -r {baseDir}/requirements.txt && python3 -m playwright install chromium` |
+| No jobs found | Search returned nothing | Try broader role/location, or search portals directly |
+| Job Tracker POST fails | Non-fatal | Warn user, continue — offer to retry tracker POST separately |
 
 ---
 
-## 🔒 Security
+## 🔒 Security & Privacy
 
-- `RESUMEX_API_KEY` is scoped to your account only.
-- `TELEGRAM_BOT_TOKEN` lives in your OpenClaw environment — Resumex never sees it.
-- `TELEGRAM_CHAT_ID` lives in your OpenClaw environment — Resumex never sees it.
-- All AI work runs locally in your agent. Resumex only stores what you explicitly send.
-- Revoke agent access anytime: **Dashboard → Resumex API → Revoke Key.**
-- Edits appear live at [resumex.dev](https://resumex.dev) immediately after saving.
+- `RESUMEX_API_KEY` is scoped to your account only
+- `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` live in your OpenClaw environment — Resumex never sees them
+- Browser automation runs **locally on your machine** — resume data stays local
+- Resumex never calls any LLM or AI API on your behalf
+- Revoke API access anytime: **Dashboard → Resumex API → Revoke**
+- Edits appear live at https://resumex.dev immediately after saving

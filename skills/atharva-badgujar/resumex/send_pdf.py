@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Resumex → Telegram Resume Sender
-Part of the Resumex OpenClaw Skill v2.0.0
+Part of the Resumex OpenClaw Skill v1.0.1
 
 Fetches your active resume via the Resumex API and sends a formatted
 summary to a Telegram chat. Falls back to stdout if no bot token is set.
