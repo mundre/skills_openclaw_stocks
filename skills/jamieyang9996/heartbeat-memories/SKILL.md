@@ -1,133 +1,259 @@
 ---
-name: hbm-memory-system
-description: |
-  HBM Memory System - A comprehensive local memory management system for OpenClaw.
-  Includes five core memory banks, semantic search, RAG optimization, and heartbeat recall.
-  Use when user mentions memory, recall, HBM, memory banks, or needs to manage personal memory system.
+name: Heartbeat Memories
+slug: heartbeat-memories
+version: 1.0.0
+author: JamieYang9996
+description: >
+  Heartbeat-Memories (HBM) - A fully local long-term memory system for OpenClaw.
+  Features five memory banks (Goals/Experience/Emotions/Session/Version) + heartbeat recall mechanism.
+  No API keys, no token consumption, 100% local operation.
+triggers:
+  - "memory system, long-term memory, help me recall"
+  - "save this, check goals, how did we solve this"
+  - "mood recording, habit observation"
+  - "记忆系统, 长期记忆, 帮我回忆"
+  - "记下来, 查看目标, 上次怎么解决的"
+  - "心情记录, 习惯观察"
 ---
 
-# HBM Memory System Skill
+# Heartbeat-Memories (HBM) - OpenClaw Skill
 
-This skill provides guidance for managing the HBM (Human Brain Model) memory system in OpenClaw.
+**Solving the pain points of scattered memory files and emotionless AI responses**  
+Through **five specialized memory banks** + **heartbeat recall simulation dialogue**, making your OpenClaw truly understand you, remember you, and build exclusive emotional connections.
 
-## Overview
+## 🚀 One-Click Installation (Manual)
 
-The HBM project is a modular memory system consisting of five core memory banks:
-
-1. **Goals Memory Bank** (`memory/目标记忆库/GOALS.md`) - Tracks user goals (completed/ongoing/pending)
-2. **Session Memory Bank** (`memory/会话记忆库/YYYY-MM-DD.md`) - Daily conversation summaries
-3. **Version Memory Bank** (`memory/版本记忆库/CHANGELOG.md`) - System change and upgrade records
-4. **Experience Memory Bank** (`memory/经验记忆库/TIPS.md`) - Technical problem-solving experiences
-5. **Emotion Memory Bank** (`memory/情感记忆库/DAILY_EMOTIONS.md`) - User emotion and habit tracking
-
-Additional components:
-- **Semantic Search Database** (`memory/语义搜索_db/`) - ChromaDB vector database for natural language queries
-- **Heartbeat Recall System** (`memory/心跳回忆/`) - Human-like interaction mechanism
-- **RAG Optimization** - Retrieval Augmented Generation combining memory banks with AI generation
-
-## How to Use
-
-### Accessing Memory Banks
-
-Use the following commands to read memory banks:
-
+### Option 1: Install via Git
 ```bash
-# View today's session record
-cat memory/会话记忆库/$(date +%Y-%m-%d).md
+# Clone the repository
+git clone https://github.com/JamieYang9996/Heartbeat-Memories.git
 
-# View current goals
-cat memory/目标记忆库/GOALS.md
+# Copy to OpenClaw skills directory (adjust path as needed)
+cp -r Heartbeat-Memories ~/.openclaw/skills/heartbeat-memories
 
-# View technical experiences
-cat memory/经验记忆库/TIPS.md
-
-# View emotion records
-cat memory/情感记忆库/DAILY_EMOTIONS.md
-
-# View version history
-cat memory/版本记忆库/CHANGELOG.md
+# Initialize the memory system
+cd ~/.openclaw/skills/heartbeat-memories && python3 scripts/hbm_init.py
 ```
 
-### Using Semantic Search
+### Option 2: Manual installation
+1. Download this skill folder
+2. Place it in your OpenClaw skills directory: `~/.openclaw/skills/`
+3. Run initialization: `python3 scripts/hbm_init.py`
 
-The semantic search system allows natural language queries across all memory banks:
-
+### Option 3: Via ClawHub (if published)
 ```bash
-# Use the memory_search tool (via OpenClaw)
-memory_search "query about previous work"
-
-# Then use memory_get to retrieve specific snippets
-memory_get "path/to/memory/file.md" from=10 lines=5
+openclaw skill install heartbeat-memories
 ```
 
-### Heartbeat Recall System
-
-The heartbeat recall system provides human-like interaction by occasionally asking memory-related questions:
-
-- Trigger conditions: Daily conversations, task completion, 3-day unmentioned goals
-- Frequency: Limited to 3 times per day (excluding holidays)
-- Style: Uses single ❤️ emoji, concise and focused
-
-### RAG Optimization
-
-The RAG system enhances responses by retrieving relevant information from memory banks:
-
-- Token limit control: Configurable result count and deduplication
-- Speed optimization: Memory caching mechanism
-- Log management: Monthly automatic compression
-
-## Maintenance Tasks
-
-### Daily Tasks (see HEARTBEAT.md)
-
-- Check if yesterday's session record was generated
-- Check for version logs needing archiving
-- Check memory banks for user feedback areas
-- Check for overdue goals requiring reminders
-- Check for unrecorded emotional fluctuations
-
-### Weekly Tasks
-
-- Review weekly experiences every Sunday
-- Clean temporary files
-- Check storage space
-
-### Monthly Tasks
-
-- Archive old session records (keep last 3 months)
-- Backup memory data
-- Generate monthly memory review report
-
-## Scripts
-
-The `scripts/local_memory_system_v2.py` script provides command-line utilities for managing the memory system:
+## 🔄 Update
 
 ```bash
-# Start interactive interface
-python3 scripts/local_memory_system_v2.py
+# Update from Git
+cd ~/.openclaw/skills/heartbeat-memories && git pull origin main
 
-# Add new experience
-add_exp "Problem description" "Solution details" --highlight
-
-# Add new goal
-add_goal "New goal" "Background reason" "Temporary solution"
-
-# Semantic search
-search "keywords"
+# Re-initialize if needed
+python3 scripts/hbm_init.py --upgrade
 ```
 
-## Important Notes
+## 🩺 System Diagnostics
 
-- **Privacy**: Memory banks contain personal data. Do not share in group chats.
-- **Security**: Never record passwords or API keys in memory files.
-- **Backup**: Regular backups are recommended (automated via cron).
-- **Token Management**: Be mindful of token usage when retrieving large memory sections.
+```bash
+# Run diagnostic check
+cd ~/.openclaw/skills/heartbeat-memories && python3 scripts/hbm_doctor.py
+```
 
-## References
+## 📁 System Architecture
 
-- `MEMORY.md` - Complete memory system overview
-- `HEARTBEAT.md` - Periodic task checklist
-- `memory/` - Directory structure and data files
+```
+heartbeat-memories/
+├── SKILL.md                    # This file
+├── README.md                   # Detailed documentation
+├── memory/                     # Memory bank templates
+│   ├── 目标记忆库/GOALS_template.md
+│   ├── 经验记忆库/TIPS_template.md  
+│   ├── 情感记忆库/DAILY_EMOTIONS_template.md
+│   ├── 会话记忆库/YYYY-MM-DD_template.md
+│   ├── 版本记忆库/CHANGELOG_template.md
+│   └── 心跳回忆/心跳回忆机制.md
+├── scripts/                    # Core scripts
+│   ├── hbm_init.py            # Initialization script
+│   ├── local_memory_system_v2.py
+│   └── rag_system.py
+├── config/                     # Configuration files
+│   └── hbm_config_template.json
+└── requirements.txt            # Python dependencies
+```
+
+## 🎯 Core Features
+
+### 1. Five Memory Banks (Automatic Recording)
+- **Goals Memory**: Tracks user goals with P0/P1/P2 priorities
+- **Experience Memory**: Records technical problems and solutions
+- **Emotion Memory**: Analyzes user emotions and habit preferences
+- **Session Memory**: Daily conversation summaries (10:1 compression ratio)
+- **Version Memory**: System change history records
+
+### 2. Semantic Search (Vector Retrieval)
+- Based on ChromaDB vector database
+- Natural language query of memory content
+- Local model: all-MiniLM-L6-v2 (80MB, auto-download from ModelScope)
+
+### 3. Heartbeat Recall Emotional Interaction (Core Innovation)
+**Solves AI's lengthy, emotionless responses by mimicking human conversation for long-term connections**
+
+#### 🎭 Highly Realistic Human Interaction
+- **Smart Triggering**: AI actively recalls like a friend (e.g., "By the way, remember last week's 'seaside café' 'sunset' 'photos', did you end up going?")
+- **Natural Conversation Flow**: Randomly inserts memories during daily chats (30% probability), avoiding mechanical feel
+- **Emotional Intelligence**: Analyzes user emotional state, adjusts interaction style
+
+#### ⚙️ Flexible Configurable System
+- **Configurable Probabilities**: Each trigger scene has adjustable probability (30%/50%/100%)
+- **Frequency Control**: Daily limits, minimum intervals, special holiday rules
+- **Scene Customization**: Supports daily conversation, task completion, forgotten goals, holiday care, etc.
+- **Sensitive Day Avoidance**: Automatically avoids sensitive holidays like Qingming Festival
+
+#### 🌱 Long-term Cultivation & Exclusivity
+- **Habit Learning**: Records user work patterns, preferred topics, common keywords
+- **Exclusive Memories**: Builds personalized memory bank based on historical conversations
+- **Progressive Optimization**: Continuously optimizes trigger timing and wording through silent review
+- **Emotional Evolution**: AI understands users better over time, building real "long-term relationships"
+
+### 4. RAG Retrieval Augmentation (Optional)
+- Improves answer accuracy and relevance
+- Retrieves context from memory banks
+- Configurable switch controls (default: OFF)
+
+## 🔧 Usage
+
+### Basic Usage (Out-of-the-box)
+After installation, Heartbeat-Memories automatically:
+1. Records important conversations to memory banks
+2. Responds to trigger words for retrieval
+3. Maintains memory bank integrity
+
+### Common Trigger Word Examples
+```
+User: "Save this, I want to learn Python"
+AI: ✅ Recorded to Goals Memory
+
+User: "How did we solve that server issue last time?"
+AI: 🔍 Retrieved solution from Experience Memory...
+
+User: "Check my goals for today"
+AI: 📄 Reading from Goals Memory...
+
+User: "Help me recall things we discussed last week"
+AI: ❤️ Remember last week's "seaside café"...
+```
+
+### Advanced Configuration (Optional)
+```bash
+# 1. Modify configuration
+vim ~/.openclaw/skills/heartbeat-memories/config/hbm_config.json
+
+# 2. Custom memory location
+export HBM_MEMORY_PATH="~/my-memories"
+```
+
+## ⚙️ Technical Specifications
+
+| Component | Specification | Description |
+|-----------|---------------|-------------|
+| **Vector Database** | ChromaDB + SQLite | Fully local storage |
+| **Text Vectorization** | all-MiniLM-L6-v2 | 384 dimensions, 80MB |
+| **Model Download Source** | ModelScope (China mirror) | Fast and stable |
+| **Storage Format** | Markdown (.md) | Human readable |
+| **Cross-platform Support** | Windows/Linux/macOS | Auto-adapts paths |
+| **Dependencies** | Python 3.8+ | chromadb, sentence-transformers |
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Q: No response after installation?**
+A: Ensure correct directory: `~/.openclaw/skills/heartbeat-memories/`, restart OpenClaw.
+
+**Q: Model download failed?**
+A: Manual download: `python3 scripts/download_model.py`, or use mirror sources.
+
+**Q: Insufficient storage space?**
+A: Memory bank files are small, vector model 80MB, RAG logs auto-compress monthly.
+
+**Q: Cross-platform compatibility?**
+A: Adapted for Windows (WSL/Git Bash), Linux, macOS, auto-detects system.
+
+### Diagnostic Commands
+```bash
+# Check Heartbeat-Memories status
+cd ~/.openclaw/skills/heartbeat-memories && python3 scripts/hbm_init.py --check
+
+# View memory banks
+ls -la ~/.openclaw/skills/heartbeat-memories/memory/
+
+# Test semantic search
+python3 scripts/local_memory_system_v2.py --test
+```
+
+## 📈 Advanced Features
+
+### RAG System Optimization (Optional)
+- **Token Limit & Deduplication**: Prevents overly long answers (default: OFF)
+- **Memory Cache**: Improves retrieval speed (default: OFF)
+- **Log Compression**: Auto-compresses log files monthly
+
+### Custom Extensions
+```python
+# Extend new memory bank types
+# Add new collections in scripts/local_memory_system_v2.py
+
+# Custom trigger logic
+# Modify trigger conditions in 心跳回忆/心跳回忆机制.md
+```
+
+## 🛡️ Security & Privacy Statement (Required by ClawHub)
+
+### ✅ 100% Local Operation
+- All data stored locally on user's machine
+- No data uploaded to any servers
+- No API calls to external services
+
+### ✅ No Automatic Background Processes
+- **No cron jobs** - All operations are manually triggered by user or OpenClaw
+- **No system services** - No daemons or background processes
+- **No auto-start** - Does not run automatically on system boot
+
+### ✅ No Privilege Escalation
+- Operates only within skill directory and user workspace
+- Does not access system files or other user directories
+- All file operations are within permitted scope
+
+### ✅ Transparent Installation
+- All dependencies listed in requirements.txt
+- No silent installation of packages
+- Clear prompts for user confirmation
+
+### ✅ Data Ownership
+- Users own all their memory data
+- Can export/backup memory banks at any time
+- Can completely uninstall without data loss (manual backup recommended)
+
+## 🤝 Contribution & Feedback
+
+### GitHub Repository
+- Project URL: https://github.com/JamieYang9996/Heartbeat-Memories
+- Issues: Report problems or suggest features
+- Pull Requests: Code contributions welcome
+
+### Community Support
+- OpenClaw Discord: https://discord.com/invite/clawd
+- Chinese discussion: Telegram/WeChat groups (if available)
+
+## 📝 License
+
+MIT License - See LICENSE file
 
 ---
-*This skill is part of the HBM project, designed to make OpenClaw more personalized and context-aware.*
+
+**Heartbeat-Memories gives your OpenClaw true long-term memory, making it a smarter assistant that truly understands you!**
+
+*Last updated: 2026-03-25*

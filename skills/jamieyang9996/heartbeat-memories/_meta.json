@@ -3,9 +3,15 @@
   "slug": "heartbeat-memories",
   "displayName": "心跳回忆",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776192589614,
-    "commit": "https://github.com/openclaw/skills/commit/782123a917ba18a01c432bf12ce8ef7b220c465c"
+    "version": "2.0.0",
+    "publishedAt": 1776277886682,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776192589614,
+      "commit": "https://github.com/openclaw/skills/commit/782123a917ba18a01c432bf12ce8ef7b220c465c"
+    }
+  ]
 }

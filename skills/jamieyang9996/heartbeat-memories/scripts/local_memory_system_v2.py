@@ -1,214 +1,223 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-本地记忆系统 - 使用外部指定 ONNX 模型
-==========================================
-避免 ChromaDB 自动下载 onnx.tar.gz 的问题
+Local Memory System v2
+Lightweight semantic search system for Heartbeat-Memories
 """
 
-import chromadb
+import os
+import json
+import time
 from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Optional
-from sentence_transformers import SentenceTransformer
-import sys
-
-# ==================== 配置区域 ====================
-
-WORKSPACE_PATH = Path("/home/admin/.openclaw/workspace")
-MEMORY_DB_PATH = WORKSPACE_PATH / "memory/语义搜索_db"
-MODEL_PATH = "/home/admin/.openclaw/workspace/models/all-MiniLM-L6-v2/sentence-transformers/all-MiniLM-L6-v2"
-
-# ==================== 向量化器 (使用本地已下载的模型) ====================
-
-class LocalSentenceTransformerEF:
-    """自定义 Embedding Function，使用已下载的 all-MiniLM-L6-v2"""
-    
-    def __init__(self):
-        print(f"\n加载本地模型：{MODEL_PATH}")
-        self.model = SentenceTransformer(MODEL_PATH, trust_remote_code=True)
-        print(f"✓ 模型加载成功！向量维度：{self.model.get_sentence_embedding_dimension()}")
-    
-    def __call__(self, input):
-        if isinstance(input, str):
-            input = [input]
-        embeddings = self.model.encode(input, show_progress_bar=False)
-        return embeddings.tolist()
-
-
-# ==================== 核心类定义 ====================
+from typing import List, Dict, Any, Optional
+import chromadb
+from chromadb.config import Settings
 
 class LocalMemorySystem:
-    """本地语义记忆系统 - 使用指定的 ONNX 模型"""
+    """Local memory system using ChromaDB"""
     
-    def __init__(self):
-        """初始化 ChromaDB 客户端和集合"""
-        # 创建 ChromaDB 实例但不启用自动向量化
-        client = chromadb.PersistentClient(
-            path=str(MEMORY_DB_PATH),
-            settings=chromadb.config.Settings(
-                anonymized_telemetry=False,
-                allow_reset=True
+    def __init__(self, memory_path: str = "memory"):
+        """
+        Initialize the memory system
+        
+        Args:
+            memory_path: Path to memory directory (relative to skill root)
+        """
+        self.memory_path = Path(memory_path)
+        self.vector_db_path = self.memory_path / "vector_db"
+        self.config_path = Path("config") / "hbm_config.json"
+        
+        # Load configuration
+        self.config = self.load_config()
+        
+        # Initialize ChromaDB client
+        self.chroma_client = None
+        self.collection = None
+        
+        print(f"🧠 Local Memory System v2")
+        print(f"📁 Memory path: {self.memory_path}")
+        print(f"📁 Vector DB: {self.vector_db_path}")
+    
+    def load_config(self) -> Dict[str, Any]:
+        """Load configuration from file"""
+        if self.config_path.exists():
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        else:
+            # Default configuration
+            return {
+                "semantic_search": {
+                    "enabled": True,
+                    "model_name": "all-MiniLM-L6-v2",
+                    "max_results": 5,
+                    "similarity_threshold": 0.7
+                }
+            }
+    
+    def initialize_database(self):
+        """Initialize ChromaDB database"""
+        if not self.config.get("semantic_search", {}).get("enabled", True):
+            print("⚠️ Semantic search disabled in config")
+            return False
+        
+        try:
+            # Create persistent ChromaDB client
+            self.chroma_client = chromadb.PersistentClient(
+                path=str(self.vector_db_path),
+                settings=Settings(anonymized_telemetry=False)
             )
-        )
-        
-        # 创建 5 个记忆集合
-        self.collections = {
-            "对话记录": client.get_or_create_collection(name="conversations_local", metadata={"description": "每日会话梗概"}),
-            "系统版本": client.get_or_create_collection(name="system_changelog_local", metadata={"description": "版本更新记录"}),
-            "经验教训": client.get_or_create_collection(name="experiences_local", metadata={"description": "问题与解决方案"}),
-            "待办目标": client.get_or_create_collection(name="goals_local", metadata={"description": "用户目标跟踪"}),
-            "想法灵感": client.get_or_create_collection(name="ideas_local", metadata={"description": "创意想法收集"})
-        }
-        
-        # 初始化向量化器
-        self.embedding_fn = LocalSentenceTransformerEF()
-        
-        print("✅ 本地记忆系统初始化完成！")
-        print(f"   数据库路径：{MEMORY_DB_PATH}")
-        print(f"   ONNX 模型：{MODEL_PATH}")
-        
-    def add_experience(self, problem: str, solution: str, is_highlighted: bool = False):
-        """添加经验教训"""
-        collection = self.collections["经验教训"]
-        
-        record_text = f"[{datetime.now().strftime('%Y-%m-%d %H:%M')}]\n问题：{problem}\n\n解决方案：{solution}"
-        meta = {
-            "highlighted": is_highlighted,
-            "created_at": datetime.now().isoformat(),
-            "type": "经验教训"
-        }
-        
-        # 获取向量表示
-        vectors = self.embedding_fn([record_text])
-        
-        collection.add(
-            documents=[record_text],
-            metadatas=[meta],
-            ids=[f"exp_{len(record_text)}_{hash(record_text) % 10000}"],
-            embeddings=vectors
-        )
-        print(f"✓ 已添加经验 [{'⭐高亮' if is_highlighted else '普通'}]")
-        
-    def add_goal(self, goal: str, background: str, reason: str, temporary_solution: str):
-        """添加目标"""
-        collection = self.collections["待办目标"]
-        
-        created_at = datetime.now().strftime("%Y-%m-%d")
-        record_text = f"[{created_at}]\n目标：{goal}\n\n背景：{background}\n原因：{reason}\n暂时方案：{temporary_solution}"
-        meta = {
-            "goal_summary": goal[:50],
-            "created_date": created_at,
-            "status": "pending",
-            "type": "待办目标"
-        }
-        
-        # 获取向量表示
-        vectors = self.embedding_fn([record_text])
-        
-        collection.add(
-            documents=[record_text],
-            metadatas=[meta],
-            ids=[f"goal_{len(record_text)}_{hash(record_text) % 10000}"],
-            embeddings=vectors
-        )
-        print(f"✓ 已添加目标：{goal[:30]}...")
-        
-    def add_idea(self, idea: str, context: str):
-        """添加灵感想法"""
-        collection = self.collections["想法灵感"]
-        
-        created_at = datetime.now().strftime("%Y-%m-%d")
-        record_text = f"[{created_at}]\n灵感：{idea}\n\n背景：{context}"
-        meta = {
-            "idea_summary": idea[:50],
-            "context": context[:50],
-            "created_date": created_at,
-            "type": "想法灵感"
-        }
-        
-        # 获取向量表示
-        vectors = self.embedding_fn([record_text])
-        
-        collection.add(
-            documents=[record_text],
-            metadatas=[meta],
-            ids=[f"idea_{len(record_text)}_{hash(record_text) % 10000}"],
-            embeddings=vectors
-        )
-        print(f"✓ 已添加灵感：{idea[:30]}...")
-        
-    def search_memories(self, query: str, top_k: int = 5, memory_type: Optional[str] = None) -> List[Dict]:
-        """语义搜索所有记忆"""
-        results = []
-        
-        target_types = [memory_type] if memory_type else list(self.collections.keys())
-        
-        # 将查询转换为向量
-        query_vector = self.embedding_fn([query])[0]
-        
-        for mem_type in target_types:
-            if mem_type not in self.collections:
-                continue
-                
-            collection = self.collections[mem_type]
             
-            if collection.count() > 0:
-                result = collection.query(
-                    query_embeddings=[query_vector],
-                    n_results=min(top_k // len(self.collections), collection.count()),
-                    include=["documents", "metadatas", "distances"]
-                )
-                
-                for i, doc in enumerate(result["documents"][0]):
-                    results.append({
-                        "type": mem_type,
-                        "content": doc,
-                        "metadata": result["metadatas"][0][i] if result["metadatas"] else {},
-                        "similarity": 1 - result["distances"][0][i] if result["distances"] else 0
+            # Get or create collection
+            collection_name = "hbm_memories"
+            try:
+                self.collection = self.chroma_client.get_collection(collection_name)
+                print(f"✅ Loaded existing collection: {collection_name}")
+            except:
+                self.collection = self.chroma_client.create_collection(collection_name)
+                print(f"✅ Created new collection: {collection_name}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Failed to initialize ChromaDB: {e}")
+            return False
+    
+    def add_memory(self, content: str, metadata: Dict[str, Any], id: Optional[str] = None):
+        """Add a memory to the vector database"""
+        if not self.collection:
+            if not self.initialize_database():
+                return False
+        
+        try:
+            if id is None:
+                id = f"memory_{int(time.time())}_{hash(content) % 10000}"
+            
+            self.collection.add(
+                documents=[content],
+                metadatas=[metadata],
+                ids=[id]
+            )
+            
+            print(f"✅ Added memory: {id}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Failed to add memory: {e}")
+            return False
+    
+    def search_memories(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Search memories by semantic similarity"""
+        if not self.collection:
+            if not self.initialize_database():
+                return []
+        
+        try:
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=limit
+            )
+            
+            # Format results
+            formatted_results = []
+            if results['documents']:
+                for i in range(len(results['documents'][0])):
+                    formatted_results.append({
+                        'content': results['documents'][0][i],
+                        'metadata': results['metadatas'][0][i] if results['metadatas'] else {},
+                        'distance': results['distances'][0][i] if results['distances'] else 0.0,
+                        'id': results['ids'][0][i] if results['ids'] else f"result_{i}"
                     })
-        
-        # 按相似度排序
-        results.sort(key=lambda x: x["similarity"], reverse=True)
-        return results[:top_k]
-        
-    def list_all_memories(self, memory_type: Optional[str] = None):
-        """列出所有记忆内容"""
-        print("\n📋 记忆库列表:")
-        target_types = [memory_type] if memory_type else list(self.collections.keys())
-        
-        for mem_type in target_types:
-            if mem_type not in self.collections:
-                continue
             
-            collection = self.collections[mem_type]
-            count = collection.count()
-            print(f"\n  • {mem_type}: {count} 条记录")
+            print(f"🔍 Found {len(formatted_results)} results for query: {query[:50]}...")
+            return formatted_results
             
-            # 显示最新 3 条
-            if count > 0:
-                result = collection.get(limit=3, include=["documents", "metadatas"])
-                for i, doc in enumerate(result["documents"]):
-                    preview = doc.replace("\n", " ").replace(" ", "")[:80] + "..."
-                    print(f"    [{i+1}] {preview}")
+        except Exception as e:
+            print(f"❌ Search failed: {e}")
+            return []
+    
+    def list_collections(self):
+        """List all collections in the database"""
+        if not self.chroma_client:
+            if not self.initialize_database():
+                return []
+        
+        try:
+            collections = self.chroma_client.list_collections()
+            return [col.name for col in collections]
+        except Exception as e:
+            print(f"❌ Failed to list collections: {e}")
+            return []
+    
+    def get_stats(self):
+        """Get database statistics"""
+        if not self.collection:
+            if not self.initialize_database():
+                return {"status": "not_initialized"}
+        
+        try:
+            count = self.collection.count()
+            return {
+                "status": "active",
+                "collection_count": count,
+                "vector_db_path": str(self.vector_db_path),
+                "config": self.config.get("semantic_search", {})
+            }
+        except Exception as e:
+            return {"status": f"error: {str(e)}"}
 
+def main():
+    """Command-line interface"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Local Memory System v2")
+    parser.add_argument("--init", action="store_true", help="Initialize database")
+    parser.add_argument("--search", help="Search query")
+    parser.add_argument("--add", help="Add memory content")
+    parser.add_argument("--stats", action="store_true", help="Show statistics")
+    parser.add_argument("--list", action="store_true", help="List collections")
+    
+    args = parser.parse_args()
+    
+    memory_system = LocalMemorySystem()
+    
+    if args.init:
+        print("🚀 Initializing database...")
+        success = memory_system.initialize_database()
+        print("✅ Initialization successful" if success else "❌ Initialization failed")
+    
+    elif args.search:
+        print(f"🔍 Searching for: {args.search}")
+        results = memory_system.search_memories(args.search)
+        for i, result in enumerate(results, 1):
+            print(f"\n[{i}] {result['content'][:100]}...")
+            print(f"   Distance: {result['distance']:.4f}")
+            if result['metadata']:
+                print(f"   Metadata: {result['metadata']}")
+    
+    elif args.add:
+        print(f"➕ Adding memory: {args.add[:50]}...")
+        metadata = {
+            "type": "manual_add",
+            "timestamp": time.time(),
+            "source": "cli"
+        }
+        success = memory_system.add_memory(args.add, metadata)
+        print("✅ Added successfully" if success else "❌ Failed to add")
+    
+    elif args.stats:
+        stats = memory_system.get_stats()
+        print("📊 Database Statistics:")
+        for key, value in stats.items():
+            print(f"  {key}: {value}")
+    
+    elif args.list:
+        collections = memory_system.list_collections()
+        print("📁 Collections:")
+        for col in collections:
+            print(f"  • {col}")
+    
+    else:
+        parser.print_help()
 
 if __name__ == "__main__":
-    print("=" * 70)
-    print("OpenClaw 本地记忆系统 v2.0 - 使用本地已下载模型")
-    print("=" * 70)
-    
-    # 初始化系统
-    system = LocalMemorySystem()
-    
-    print("\n📋 可用命令:")
-    print("  add_exp <问题> <解决方案> [--highlight]")
-    print("  add_goal <目标> <背景> <原因> <暂时方案>")
-    print("  add_idea <灵感> <背景>")
-    print("  search <关键词> ([类型])")
-    print("  list ([类型])")
-    print("\n示例:")
-    print("  add_exp \"网络慢\" \"改用 ModelScope\" --highlight")
-    print("  add_goal \"学习 Python\" \"工作需要\" \"提升技能\" \"每天学 1 小时\"")
-    print("  search ChromaDB")
-    print("  list 经验教训")
+    main()
