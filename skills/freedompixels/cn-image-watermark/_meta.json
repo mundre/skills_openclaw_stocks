@@ -3,9 +3,15 @@
   "slug": "cn-image-watermark",
   "displayName": "图片水印工具",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776205968446,
-    "commit": "https://github.com/openclaw/skills/commit/0c13c7da9ed2b5c1139a9821dd1a81bcfa2f01ae"
+    "version": "1.1.0",
+    "publishedAt": 1776642822022,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776205968446,
+      "commit": "https://github.com/openclaw/skills/commit/0c13c7da9ed2b5c1139a9821dd1a81bcfa2f01ae"
+    }
+  ]
 }
