@@ -1,27 +1,26 @@
 #!/bin/bash
-# PPT to Video v2.0 测试脚本
+# Test script for ppt-video skill
+# 使用环境变量或相对路径
 
-echo "=== PPT to Video v2.0 测试 ==="
-echo ""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_DIR="${HOME}/.openclaw/workspace"
 
-# 测试 1: 帮助信息（无参数）
-echo "测试 1: 无参数运行（应报错）"
-/home/Vincent/node-24.14.0-lts/bin/node /home/Vincent/.openclaw/workspace/skills/ppt-video/scripts/generate.js
-echo ""
+# 使用环境变量或默认值
+NODE_BIN="${NODE_BIN:-node}"
+INPUT_DIR="${INPUT_DIR:-$WORKSPACE_DIR/wechat_articles/daily/presentation/2026-04-11}"
 
-# 测试 2: 指定输入目录
-echo "测试 2: 指定输入目录"
-INPUT_DIR="/home/Vincent/.openclaw/workspace/wechat_articles/daily/presentation/2026-04-11"
-if [ -d "$INPUT_DIR" ]; then
-  echo "输入目录存在：$INPUT_DIR"
-  /home/Vincent/node-24.14.0-lts/bin/node /home/Vincent/.openclaw/workspace/skills/ppt-video/scripts/generate.js \
-    --input "$INPUT_DIR" \
-    --project-name test_2026_04_11 \
-    --ai-rewrite=false \
-    --cleanup=false
+echo "Running ppt-video generation test..."
+echo "Input directory: $INPUT_DIR"
+
+# 动态获取 node 路径
+if [ -x "$NODE_BIN" ]; then
+    NODE_CMD="$NODE_BIN"
+elif command -v node &> /dev/null; then
+    NODE_CMD="node"
 else
-  echo "输入目录不存在，跳过测试"
+    echo "Error: Node.js not found"
+    exit 1
 fi
-echo ""
 
-echo "=== 测试完成 ==="
+# 执行生成脚本
+$NODE_CMD "$SCRIPT_DIR/scripts/generate.js" --input "$INPUT_DIR" --output "$SCRIPT_DIR/output/"

@@ -65,54 +65,80 @@ function scanInputDir(inputDir) {
   
   const result = { ppt: null, scripts: [], scriptsRewritten: [] };
   
-  // 递归扫描目录
-  function scanDir(dir) {
-    try {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
+  // 优先方案：从 notes/ 目录读取讲稿（避免重复）
+  const notesDir = path.join(inputDir, 'notes');
+  if (fs.existsSync(notesDir)) {
+    console.log('📝 从 notes/ 目录读取讲稿');
+    const notesFiles = fs.readdirSync(notesDir)
+      .filter(f => f.startsWith('slide_') && (f.endsWith('.md') || f.endsWith('.txt')))
+      .sort();
+    notesFiles.forEach(f => {
+      result.scripts.push(path.join(notesDir, f));
+    });
+  }
+  
+  // 降级方案：递归扫描目录（仅当 notes/ 不存在时）
+  if (result.scripts.length === 0) {
+    console.log('⚠️  未找到 notes/，扫描整个目录');
+    
+    function scanDir(dir) {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
         
-        if (entry.isDirectory()) {
-          // 跳过隐藏目录和临时目录
-          if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
-            scanDir(fullPath);
-          }
-        } else if (entry.isFile()) {
-          const ext = path.extname(entry.name).toLowerCase();
-          const name = entry.name.toLowerCase();
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
           
-          // PPT 文件
-          if (['.pptx', '.ppt', '.pdf'].includes(ext)) {
-            result.ppt = fullPath;
-          }
-          
-          // 讲稿文件（支持多种命名格式）
-          if (ext === '.md' || ext === '.txt') {
-            // 已改写讲稿（优先）
-            if (dir.includes('scripts_rewritten')) {
-              if (/^\d+[_\-\.]/.test(name) || /^\d+\.md$/.test(name)) {
-                result.scriptsRewritten.push(fullPath);
-              }
+          if (entry.isDirectory()) {
+            // 跳过隐藏目录和临时目录
+            if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
+              scanDir(fullPath);
             }
-            // 原始讲稿（降级）
-            else if (/^\d+[_\-\.]/.test(name) || 
-                     /^\d+\.md$/.test(name) ||
-                     name.includes('讲稿') || 
-                     name.includes('script') ||
-                     name.includes('封面') ||
-                     name.includes('摘要')) {
-              result.scripts.push(fullPath);
+          } else if (entry.isFile()) {
+            const ext = path.extname(entry.name).toLowerCase();
+            const name = entry.name.toLowerCase();
+            
+            // PPT 文件
+            if (['.pptx', '.ppt', '.pdf'].includes(ext)) {
+              result.ppt = fullPath;
+            }
+            
+            // 讲稿文件（支持多种命名格式）
+            if (ext === '.md' || ext === '.txt') {
+              // 已改写讲稿（优先）
+              if (dir.includes('scripts_rewritten')) {
+                if (/^\d+[_\-\.]/.test(name) || /^\d+\.md$/.test(name)) {
+                  result.scriptsRewritten.push(fullPath);
+                }
+              }
+              // 原始讲稿（降级）
+              else if (/^\d+[_\-\.]/.test(name) || 
+                       /^\d+\.md$/.test(name) ||
+                       name.includes('讲稿') || 
+                       name.includes('script') ||
+                       name.includes('封面') ||
+                       name.includes('摘要')) {
+                result.scripts.push(fullPath);
+              }
             }
           }
         }
+      } catch (e) {
+        // 忽略权限错误
       }
-    } catch (e) {
-      // 忽略权限错误
+    }
+    
+    scanDir(inputDir);
+  } else {
+    // 从 notes/ 读取时，PPT 文件单独查找
+    const pptFiles = ['presentation.pptx', 'presentation_compatible.pptx', 'output.pptx'];
+    for (const ppt of pptFiles) {
+      const pptPath = path.join(inputDir, ppt);
+      if (fs.existsSync(pptPath)) {
+        result.ppt = pptPath;
+        break;
+      }
     }
   }
-  
-  scanDir(inputDir);
   
   // 排序讲稿文件（按文件名数字排序）
   result.scripts.sort((a, b) => {
@@ -178,9 +204,49 @@ function detectStyle(text) {
 }
 
 // ========== 阶段 3: PPT 截图 ==========
-async function screenshotSlides(pptPath, outputDir) {
+async function screenshotSlides(pptPath, outputDir, projectDir) {
   fs.mkdirSync(outputDir, { recursive: true });
   const screenshots = [];
+  
+  // 优先方案：直接从 svg_final/ 生成 PNG（完美保留中文字体）
+  const svgFinalDir = path.join(projectDir, 'svg_final');
+  if (fs.existsSync(svgFinalDir)) {
+    console.log('📐 使用 svg_final/ 直接生成 PNG（完美字体渲染）');
+    const svgFiles = fs.readdirSync(svgFinalDir)
+      .filter(f => f.endsWith('.svg'))
+      .sort();
+    
+    for (let i = 0; i < svgFiles.length; i++) {
+      const svgFile = svgFiles[i];
+      const svgPath = path.join(svgFinalDir, svgFile);
+      const pngPath = path.join(outputDir, String(i + 1).padStart(2, '0') + '-page.png');
+      
+      try {
+        // 使用 Inkscape 或 ImageMagick 转换 SVG 为 PNG
+        // 优先尝试 Inkscape（质量更好）
+        try {
+          execSync('inkscape --export-type=png --export-width=1280 --export-height=720 --export-filename="' + pngPath + '" "' + svgPath + '"', { timeout: 60000 });
+        } catch (e) {
+          // 降级使用 ImageMagick
+          execSync('convert -density 300 -resize 1280x720 -background none "' + svgPath + '" "' + pngPath + '"', { timeout: 60000 });
+        }
+        
+        if (fs.existsSync(pngPath) && fs.statSync(pngPath).size > 0) {
+          screenshots.push(pngPath);
+        }
+      } catch (e) {
+        console.warn('  ⚠️  SVG 转 PNG 失败（' + svgFile + '）：' + e.message);
+      }
+    }
+    
+    if (screenshots.length > 0) {
+      console.log('✅ 从 svg_final/ 生成 ' + screenshots.length + ' 页 PNG');
+      return screenshots;
+    }
+  }
+  
+  // 降级方案：从 PPTX 转换
+  console.log('⚠️  未找到 svg_final/，使用 PPTX 转换方案');
   
   if (pptPath.endsWith('.pptx') || pptPath.endsWith('.ppt')) {
     try {
@@ -229,15 +295,18 @@ async function synthesizeTTS(scripts, voiceConfig, audioDir) {
   
   for (let i = 0; i < scripts.length; i++) {
     const audioFile = path.join(audioDir, 'audio_' + String(i + 1).padStart(2, '0') + '.mp3');
-    const script = scripts[i];
+    const scriptPath = scripts[i];
     
-    if (!script || script.trim() === '') {
+    if (!scriptPath || scriptPath.trim() === '') {
       audioFiles.push(null);
       continue;
     }
     
+    // 读取文件内容
+    let scriptContent = fs.readFileSync(scriptPath, 'utf-8');
+    
     // 清理文本（移除 markdown，适合 TTS）
-    const cleanText = script
+    const cleanText = scriptContent
       .replace(/#{1,6}\s+/g, '')
       .replace(/\*\*/g, '')
       .replace(/\*/g, '')
@@ -247,23 +316,44 @@ async function synthesizeTTS(scripts, voiceConfig, audioDir) {
       .replace(/\s+/g, ' ')
       .replace(/"/g, '\\"');
     
-    try {
-      execSync(
-        'edge-tts --text "' + cleanText + '" --voice ' + voiceConfig.voice + ' --rate ' + voiceConfig.rate + ' --write-media "' + audioFile + '"',
-        { stdio: 'pipe', timeout: 120000 }
-      );
-      
-      if (fs.existsSync(audioFile) && fs.statSync(audioFile).size > 0) {
-        audioFiles.push(audioFile);
-        const sizeKB = Math.round(fs.statSync(audioFile).size / 1024);
-        const duration = getAudioDuration(audioFile).toFixed(1);
-        console.log('  ✓ 第 ' + (i + 1) + '页 ' + sizeKB + 'KB ' + duration + 's');
-      } else {
-        audioFiles.push(null);
+    // 重试机制：最多重试 3 次
+    let success = false;
+    let lastError = null;
+    
+    for (let retry = 0; retry < 3 && !success; retry++) {
+      if (retry > 0) {
+        console.log('  🔄 第 ' + (i + 1) + '页 重试 ' + retry + '/3...');
+        // 重试前等待 1 秒
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-    } catch (e) {
+      
+      try {
+        execSync(
+          'edge-tts --text "' + cleanText + '" --voice ' + voiceConfig.voice + ' --rate ' + voiceConfig.rate + ' --write-media "' + audioFile + '"',
+          { stdio: 'pipe', timeout: 120000 }
+        );
+        
+        if (fs.existsSync(audioFile) && fs.statSync(audioFile).size > 0) {
+          audioFiles.push(audioFile);
+          const sizeKB = Math.round(fs.statSync(audioFile).size / 1024);
+          const duration = getAudioDuration(audioFile).toFixed(1);
+          console.log('  ✓ 第 ' + (i + 1) + '页 ' + sizeKB + 'KB ' + duration + 's');
+          success = true;
+        } else {
+          lastError = new Error('生成的音频文件为空');
+        }
+      } catch (e) {
+        lastError = e;
+        // 清理失败的文件
+        if (fs.existsSync(audioFile)) {
+          fs.unlinkSync(audioFile);
+        }
+      }
+    }
+    
+    if (!success) {
       audioFiles.push(null);
-      console.warn('  ⚠️  第 ' + (i + 1) + '页 TTS 失败：' + e.message);
+      console.warn('  ⚠️  第 ' + (i + 1) + '页 TTS 失败（重试 3 次后放弃）：' + lastError.message);
     }
   }
   
@@ -377,7 +467,7 @@ async function main() {
   // 阶段 3: PPT 截图
   console.log('\n=== 阶段 3: PPT 截图 ===');
   const tempDir = path.join(inputDir, '.ppt_video_temp');
-  const screenshots = await screenshotSlides(scanResult.ppt, tempDir);
+  const screenshots = await screenshotSlides(scanResult.ppt, tempDir, inputDir);
   console.log('✅ 共 ' + screenshots.length + ' 页截图');
   
   if (screenshots.length === 0) {

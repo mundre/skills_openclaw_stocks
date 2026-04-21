@@ -1,11 +1,17 @@
 {
   "owner": "vincentlau2046-sudo",
   "slug": "ppt-video",
-  "displayName": "PPT to Video",
+  "displayName": "Ppt Video",
   "latest": {
-    "version": "3.2.0",
-    "publishedAt": 1775920848719,
-    "commit": "https://github.com/openclaw/skills/commit/9e87f201834ba7523ef566fe68d4cf854942de37"
+    "version": "1.4.1",
+    "publishedAt": 1776445962312,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "3.2.0",
+      "publishedAt": 1775920848719,
+      "commit": "https://github.com/openclaw/skills/commit/9e87f201834ba7523ef566fe68d4cf854942de37"
+    }
+  ]
 }
