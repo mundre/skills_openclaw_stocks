@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "militia-training",
-  "displayName": "民兵军事训练智能助手",
+  "displayName": "Militia Training (EN)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776180621489,
-    "commit": "https://github.com/openclaw/skills/commit/6e40a51a91e9e92eb7d3168d5866749993a4c1e5"
+    "version": "1.0.0-en2",
+    "publishedAt": 1776678591189,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776180621489,
+      "commit": "https://github.com/openclaw/skills/commit/6e40a51a91e9e92eb7d3168d5866749993a4c1e5"
+    }
+  ]
 }
