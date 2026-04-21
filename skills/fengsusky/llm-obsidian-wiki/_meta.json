@@ -3,9 +3,15 @@
   "slug": "llm-obsidian-wiki",
   "displayName": "LLM Wiki — Build a Compounding Knowledge Base with LLMs",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1776062607534,
-    "commit": "https://github.com/openclaw/skills/commit/a851c191984328ddbfeb7ec53e0df99a90631818"
+    "version": "1.0.2",
+    "publishedAt": 1776516460097,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1776062607534,
+      "commit": "https://github.com/openclaw/skills/commit/a851c191984328ddbfeb7ec53e0df99a90631818"
+    }
+  ]
 }
