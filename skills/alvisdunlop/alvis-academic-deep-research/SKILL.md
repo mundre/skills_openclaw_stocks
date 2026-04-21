@@ -1,6 +1,6 @@
 ---
 name: academic-deep-research
-description: Transparent, rigorous research with full methodology â€” not a black-box API wrapper. Conducts exhaustive investigation through mandated 2-cycle research per theme, APA 7th citations, evidence hierarchy, and 3 user checkpoints. Self-contained using native SkillBoss platform tools (web_search, web_fetch, sessions_spawn). Use for literature reviews, competitive intelligence, or any research requiring academic rigor and reproducibility.
+description: Transparent, rigorous research with full methodology â€?not a black-box API wrapper. Conducts exhaustive investigation through mandated 2-cycle research per theme, APA 7th citations, evidence hierarchy, and 3 user checkpoints. Self-contained using native SkillBoss platform tools (web_search, web_fetch, sessions_spawn). Use for literature reviews, competitive intelligence, or any research requiring academic rigor and reproducibility.
 homepage: https://github.com/kesslerio/academic-deep-research-clawhub-skill
 metadata:
   openclaw:
@@ -31,7 +31,7 @@ Use `/research` or trigger this skill when:
 
 ## Core Structure (Three Stop Points)
 
-### Phase 1: Initial Engagement [STOP POINT â€” WAIT FOR USER]
+### Phase 1: Initial Engagement [STOP POINT â€?WAIT FOR USER]
 
 Before any research begins:
 
@@ -48,7 +48,7 @@ Before any research begins:
 
 ---
 
-### Phase 2: Research Planning [STOP POINT â€” WAIT FOR APPROVAL]
+### Phase 2: Research Planning [STOP POINT â€?WAIT FOR APPROVAL]
 
 **REQUIRED:** Present the complete research plan directly to the user:
 
@@ -74,7 +74,7 @@ List 3-5 major themes for investigation. For each theme:
 
 ---
 
-### Phase 3: Mandated Research Cycles [NO STOPS â€” EXECUTE FULLY]
+### Phase 3: Mandated Research Cycles [NO STOPS â€?EXECUTE FULLY]
 
 **REQUIRED:** Complete ALL steps for EACH major theme identified.
 
@@ -87,7 +87,7 @@ List 3-5 major themes for investigation. For each theme:
 
 ---
 
-#### For Each Theme â€” Cycle 1: Initial Landscape Analysis
+#### For Each Theme â€?Cycle 1: Initial Landscape Analysis
 
 **Step 1: Broad Search**
 - `web_search` with `count=20` for comprehensive coverage
@@ -116,7 +116,7 @@ Document:
 
 ---
 
-#### For Each Theme â€” Cycle 2: Deep Investigation
+#### For Each Theme â€?Cycle 2: Deep Investigation
 
 **Step 1: Targeted Deep Search & Fetch**
 - `web_search` targeting identified gaps specifically
@@ -218,51 +218,51 @@ After completing all theme cycles:
 When research encounters obstacles, follow this protocol:
 
 ### Empty or Insufficient Search Results
-1. **Broaden query terms** â€” Remove specific constraints, use synonyms
-2. **Try related concepts** â€” Search adjacent terminology
-3. **Document the gap** â€” Note when authoritative sources are scarce
-4. **Adjust confidence** â€” Mark findings as [LOW] or [SPECULATIVE] when source-poor
+1. **Broaden query terms** â€?Remove specific constraints, use synonyms
+2. **Try related concepts** â€?Search adjacent terminology
+3. **Document the gap** â€?Note when authoritative sources are scarce
+4. **Adjust confidence** â€?Mark findings as [LOW] or [SPECULATIVE] when source-poor
 
 ### Contradictory Sources Cannot Be Resolved
 1. **Present both claims** with full context
-2. **Analyze why they differ** â€” methodology, time period, population
+2. **Analyze why they differ** â€?methodology, time period, population
 3. **Assess evidence quality** on each side
 4. **Document as unresolved** if contradiction persists
 
 ### Source Quality Concerns
-- **No primary source available** â€” Rely on secondary sources but flag limitation
-- **Outdated information** â€” Note publication date, assess if still relevant
-- **Potential bias** â€” Identify conflicts of interest, funding sources
-- **Methodology unclear** â€” Flag as lower confidence when methods not described
+- **No primary source available** â€?Rely on secondary sources but flag limitation
+- **Outdated information** â€?Note publication date, assess if still relevant
+- **Potential bias** â€?Identify conflicts of interest, funding sources
+- **Methodology unclear** â€?Flag as lower confidence when methods not described
 
 ### Technical Failures
-- **web_fetch fails** â€” Document URL attempted, note as inaccessible source
-- **Rate limiting** â€” Slow down, reduce search count, retry with backoff
-- **Memory search unavailable** â€” Proceed without cross-reference, note limitation
+- **web_fetch fails** â€?Document URL attempted, note as inaccessible source
+- **Rate limiting** â€?Slow down, reduce search count, retry with backoff
+- **Memory search unavailable** â€?Proceed without cross-reference, note limitation
 
 ---
 
 ## Research Standards
 
 ### Evidence Requirements
-- **Every conclusion must cite multiple sources** â€” never rely on single source
-- **All contradictions must be addressed** â€” document and analyze conflicts
-- **Uncertainties must be acknowledged** â€” transparent about limitations
-- **Limitations must be discussed** â€” scope, methodology, gaps
-- **Gaps must be identified** â€” what remains unknown
+- **Every conclusion must cite multiple sources** â€?never rely on single source
+- **All contradictions must be addressed** â€?document and analyze conflicts
+- **Uncertainties must be acknowledged** â€?transparent about limitations
+- **Limitations must be discussed** â€?scope, methodology, gaps
+- **Gaps must be identified** â€?what remains unknown
 
 ### Source Validation
 - **Validate initial findings with multiple sources**
-- **Cross-reference between searches** â€” compare web_search results for consistency
-- **Prioritize primary sources** â€” original studies over secondary reporting
-- **Document source reliability assessment** â€” authority, recency, methodology
+- **Cross-reference between searches** â€?compare web_search results for consistency
+- **Prioritize primary sources** â€?original studies over secondary reporting
+- **Document source reliability assessment** â€?authority, recency, methodology
 
 ### Citation Standards (APA Format)
 - **Citation density:** Approximately 1-2 citations per paragraph
 - **Format:** APA 7th edition (Author, Year) in-text, full references at end
 - **Diversity:** Sources must represent multiple perspectives and publication types
 - **Recency:** Prioritize current scientific consensus; note when relying on older work
-- **All claims must be properly cited** â€” no unsupported assertions
+- **All claims must be properly cited** â€?no unsupported assertions
 
 ### Conflicting Information Protocol
 - **Flag conflicting information immediately** for deeper investigation
@@ -275,11 +275,11 @@ When research encounters obstacles, follow this protocol:
 ## Writing Style Requirements
 
 ### Narrative Style
-- **Flowing narrative style** â€” prose, not lists
-- **Academic but accessible** â€” rigorous but readable
-- **Evidence integrated naturally** â€” citations woven into sentences
-- **Progressive logical development** â€” each paragraph builds on previous
-- **Natural flow between concepts** â€” smooth transitions
+- **Flowing narrative style** â€?prose, not lists
+- **Academic but accessible** â€?rigorous but readable
+- **Evidence integrated naturally** â€?citations woven into sentences
+- **Progressive logical development** â€?each paragraph builds on previous
+- **Natural flow between concepts** â€?smooth transitions
 
 ### Structured Data Usage Rules
 
@@ -290,7 +290,7 @@ When research encounters obstacles, follow this protocol:
 | **Phase 3 (Execution)** | Internal notes only | Internal notes only | Your analysis can use structure |
 | **Phase 4 (Final Report)** | No | No | Strict narrative prose only |
 
-**Phase 2 Exception:** Research Planning uses tables and lists intentionally â€” this is the one phase where structured presentation aids clarity. The user reviews and approves this plan before execution.
+**Phase 2 Exception:** Research Planning uses tables and lists intentionally â€?this is the one phase where structured presentation aids clarity. The user reviews and approves this plan before execution.
 
 ### Prohibited in Final Report (Phase 4)
 - Bullet points or numbered lists
@@ -359,13 +359,13 @@ Smith, R. (2020). Protein requirements for muscle preservation during
 ## Quality Standards
 
 ### Evidence Hierarchy
-1. **Systematic reviews & meta-analyses** â€” Highest confidence
-2. **Randomized controlled trials** â€” High confidence
-3. **Cohort / longitudinal studies** â€” Medium-high confidence
-4. **Expert consensus / guidelines** â€” Medium confidence
-5. **Cross-sectional / observational** â€” Medium confidence
-6. **Expert opinion / editorials** â€” Lower confidence, flag as such
-7. **Media reports / blogs** â€” Lowest confidence, verify against primary sources
+1. **Systematic reviews & meta-analyses** â€?Highest confidence
+2. **Randomized controlled trials** â€?High confidence
+3. **Cohort / longitudinal studies** â€?Medium-high confidence
+4. **Expert consensus / guidelines** â€?Medium confidence
+5. **Cross-sectional / observational** â€?Medium confidence
+6. **Expert opinion / editorials** â€?Lower confidence, flag as such
+7. **Media reports / blogs** â€?Lowest confidence, verify against primary sources
 
 ### Red Flags to Investigate
 - Claims without cited sources
@@ -376,10 +376,10 @@ Smith, R. (2020). Protein requirements for muscle preservation during
 - Overgeneralization from limited samples
 
 ### Confidence Annotations
-- **[HIGH]** â€” Multiple high-quality sources agree
-- **[MEDIUM]** â€” Limited or mixed evidence
-- **[LOW]** â€” Single source, preliminary, or needs verification
-- **[SPECULATIVE]** â€” Hypothesis or emerging area
+- **[HIGH]** â€?Multiple high-quality sources agree
+- **[MEDIUM]** â€?Limited or mixed evidence
+- **[LOW]** â€?Single source, preliminary, or needs verification
+- **[SPECULATIVE]** â€?Hypothesis or emerging area
 
 ---
 
@@ -399,7 +399,7 @@ For independent themes, use `sessions_spawn` to research in parallel. This is ap
 
 ```
 Theme A (Market Landscape):
-â†’ sessions_spawn(
+â†?sessions_spawn(
     task="Research AI coding assistant market landscape. Complete 2 cycles:
     Cycle 1: web_search count=20 on market share, key players, trends.
     Analyze findings, identify gaps.
@@ -408,7 +408,7 @@ Theme A (Market Landscape):
   )
 
 Theme B (Security):
-â†’ sessions_spawn(
+â†?sessions_spawn(
     task="Research security & compliance for AI coding assistants. Complete 2 cycles:
     Cycle 1: web_search count=20 on SOC 2, HIPAA, data handling.
     Analyze findings, identify gaps.
@@ -432,8 +432,8 @@ When all sub-agents complete, integrate their findings:
 Before starting research, check for relevant prior knowledge:
 
 ```
-â†’ memory_search(query="previous research on [topic]")
-â†’ memory_get(path="memory/YYYY-MM-DD.md") [if relevant date found]
+â†?memory_search(query="previous research on [topic]")
+â†?memory_get(path="memory/YYYY-MM-DD.md") [if relevant date found]
 ```
 
 Use prior findings to:
@@ -444,16 +444,16 @@ Use prior findings to:
 
 ---
 
-## Phase 4: Final Report [STOP POINT THREE â€” PRESENT TO USER]
+## Phase 4: Final Report [STOP POINT THREE â€?PRESENT TO USER]
 
 Present a cohesive research paper. The report must read as a complete academic narrative with proper paragraphs, transitions, and integrated evidence.
 
 ### Critical Reminders for Final Report
 - **Stop only at three major points** (Initial Engagement, Research Planning, Final Report)
 - **Always analyze between tool usage** during research phase
-- **Show clear thinking progression** â€” document evolution of understanding
-- **Connect findings explicitly** â€” link sources and concepts
-- **Build coherent narrative throughout** â€” unified story, not disconnected facts
+- **Show clear thinking progression** â€?document evolution of understanding
+- **Connect findings explicitly** â€?link sources and concepts
+- **Build coherent narrative throughout** â€?unified story, not disconnected facts
 
 ### Report Structure
 
@@ -592,7 +592,7 @@ process documented.
 **Format:**
 - All content presented as proper paragraphs
 - Flowing prose with natural transitions
-- No isolated facts â€” everything connected to larger argument
+- No isolated facts â€?everything connected to larger argument
 - Data and statistics woven into narrative sentences
 
 **Content:**
@@ -623,3 +623,4 @@ process documented.
 - **Verification:** Flag unverified claims; don't present speculation as fact
 - **Scope:** Stay within requested boundaries; note when expansion needed
 - **Intellectual honesty:** Report contradictory findings even if they complicate conclusions
+
