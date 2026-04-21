@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "ai-company-generalization",
-  "displayName": "Ai Company Generalization",
+  "displayName": "AI Company Generalization (EN)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776106673160,
-    "commit": "https://github.com/openclaw/skills/commit/176ad2bc4f9282d9029cfe9ca988498d4ac3be25"
+    "version": "1.0.0-en2",
+    "publishedAt": 1776678529926,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776106673160,
+      "commit": "https://github.com/openclaw/skills/commit/176ad2bc4f9282d9029cfe9ca988498d4ac3be25"
+    }
+  ]
 }

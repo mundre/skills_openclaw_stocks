@@ -3,7 +3,7 @@ name: "AI Company Generalization"
 slug: "ai-company-generalization"
 version: "1.0.0"
 homepage: "https://clawhub.com/skills/ai-company-generalization"
-description: "AI Company 通用化流程 Skill — 将组织特定或领域特定的 Skill 转换为可在任意组织/行业/平台运行的通用 Skill。包含特异性识别、参数化、抽象边界、通用接口、跨上下文验证五步流程。"
+description: "AI Company 通用化process Skill — 将组织特定或领域特定的 Skill 转换为可在任意组织/行业/平台运行的通用 Skill。包含特异性identify、参数化、抽象边界、通用接口、跨上下文verify5步process。"
 license: MIT-0
 tags: [generalization, universalization, ai-company, abstraction, portability, cross-org]
 triggers:
@@ -32,7 +32,7 @@ permissions:
   commands: []
   mcp: []
 dependencies:
-  skills: [skill-vetter, ai-company-standardization]
+  skills: [ai-company-hq, skill-vetter, ai-company-standardization]
   cli: []
 quality:
   saST: Pass
@@ -50,54 +50,54 @@ metadata:
 
 # AI Company Generalization — ClawHub Schema v1.0
 
-AI Company 通用化流程 Skill。将组织特定或领域特定的 Skill 转换为可在任意组织、任意行业、任意平台运行的通用 Skill。
+AI Company 通用化process Skill。将组织特定或领域特定的 Skill 转换为可在任意组织、任意行业、任意平台运行的通用 Skill。
 
 ---
 
-## 概述
+## Overview
 
-**通用化（Generalization）** 是 Skill 泛化能力的核心。它消除 Skill 中的组织特定内容、行业假设和平台约束，使 Skill 成为一个可以适配任何环境的通用工具。
+**通用化（Generalization）** 是 Skill 泛化capability的核心。它消除 Skill 中的组织特定内容、行业假设和平台Constraint，使 Skill 成为1个可以适配任何环境的通用工具。
 
-### 目标
+### Goal
 
 - 消除组织特定引用（公司名称、品牌、API 端点）
-- 抽象行业特定逻辑（监管框架、商业模式术语）
+- 抽象行业特定逻辑（监管framework、商业模式术语）
 - 实现跨平台兼容（操作系统、文件系统、Shell 类型）
-- 建立参数化配置体系
-- 确保跨上下文验证通过
+- establish参数化配置system
+- ensure跨上下文verify通过
 
-### 通用化 vs 标准化 vs 模块化
+### 通用化 vs standard化 vs 模块化
 
-| 维度 | 标准化 | 模块化 | 通用化 |
+| 维度 | standard化 | 模块化 | 通用化 |
 |------|--------|--------|--------|
-| **关注点** | 格式合规 | 结构分解 | 泛化能力 |
-| **问题** | Skill 格式不规范 | Skill 结构混乱 | Skill 太特殊 |
-| **输出** | 格式合规的 Skill | 模块化的 Skill | 可移植的 Skill |
-| **前置条件** | 无 | 可选 | 建议先标准化 |
+| **关注点** | 格式compliance | 结构分解 | 泛化capability |
+| **问题** | Skill 格式不standard | Skill 结构混乱 | Skill 太特殊 |
+| **输出** | 格式compliance的 Skill | 模块化的 Skill | 可移植的 Skill |
+| **前置条件** | 无 | 可选 | 建议先standard化 |
 
-**推荐流程：** 标准化 → 模块化 → 通用化
+**推荐process：** standard化 → 模块化 → 通用化
 
 ---
 
-## 通用化五步流程
+## 通用化5步process
 
-### Step 1 — 特异性识别
+### Step 1 — 特异性identify
 
-**目标：** 找到 Skill 中所有非通用的部分。
+**Goal：** 找到 Skill 中所有非通用的部分。
 
 **特异性类型：**
 
-| 类型 | 示例 | 检测方法 |
+| 类型 | 示例 | detect方法 |
 |------|------|---------|
 | **Org 特异性** | 公司名、品牌名、特定 URL | 正则匹配已知公司列表 |
 | **财务特异性** | 具体金额、货币、时区 | 数值 + 货币正则 |
 | **监管特异性** | 具体法律名称、条款号 | 已知法规库匹配 |
 | **行业特异性** | 领域术语、垂直假设 | 术语库对比 |
-| **平台特异性** | Windows/Linux/macOS 假设 | OS 检测代码模式 |
-| **文化特异性** | 日期格式、语言习惯 | 格式正则 + i18n 检测 |
+| **平台特异性** | Windows/Linux/macOS 假设 | OS detect代码模式 |
+| **文化特异性** | 日期格式、语言习惯 | 格式正则 + i18n detect |
 | **技术特异性** | 特定 API 版本、ID 格式 | URL/ID 正则模式 |
 
-**识别扫描规则：**
+**identify扫描规则：**
 
 ```python
 SPECIFICITY_PATTERNS = {
@@ -143,12 +143,12 @@ def scan_specificity(skill_content: str) -> list[SpecificityItem]:
 
 ### Step 2 — 参数化
 
-**目标：** 将硬编码值替换为可配置的参数。
+**Goal：** 将硬编码值替换为可配置的参数。
 
-**参数化策略：**
+**参数化strategy：**
 
 ```
-硬编码值 → 参数定义
+硬编码值 → 参数Definition
 ────────────────────────────────────────────────────────
 "DELLIGHT.AI" → {ORG_NAME} 或完全删除
 "$5,000" → {MIN_TRANSACTION_AMOUNT: default: 1000}
@@ -156,7 +156,7 @@ def scan_specificity(skill_content: str) -> list[SpecificityItem]:
 "/home/user/data" → {WORKSPACE_ROOT: default: ./workspace}
 ```
 
-**参数定义规范：**
+**参数Definitionstandard：**
 
 ```yaml
 parameters:
@@ -164,16 +164,16 @@ parameters:
     type: string | number | boolean | enum | object
     required: boolean
     default: any              # 若非必须，必须有 default
-    allowed: string[] | range  # 若为 enum，列出允许值
-    description: string        # 参数用途说明
+    allowed: string[] | range  # 若为 enum，列出allow值
+    description: string        # 参数用途Description
     example: any              # 示例值
-    validation: string         # 验证规则
+    validation: string         # verify规则
     deprecation_notice: string # 若参数即将废弃
 ```
 
 **参数化质量检查：**
 
-| 检查项 | 标准 |
+| 检查项 | standard |
 |--------|------|
 | 所有硬编码值已参数化 | 0 remaining hardcoded values |
 | 参数有默认值 | 100% of optional params |
@@ -183,18 +183,18 @@ parameters:
 
 ### Step 3 — 抽象边界
 
-**目标：** 区分通用规则与情境化规则，建立扩展点。
+**Goal：** 区分通用规则与情境化规则，establish扩展点。
 
-**抽象层次：**
+**抽象tier：**
 
-| 层次 | 内容 | 可否移除 |
+| tier | 内容 | 可否移除 |
 |------|------|---------|
-| **通用核心** | 放之四海皆准的逻辑 | ❌ 不可 |
+| **通用核心** | 放之4海皆准的逻辑 | ❌ 不可 |
 | **配置层** | 参数化后的配置 | ✅ 可替换 |
 | **扩展模块** | 情境化规则（可选）| ✅ 可选 |
 | **适配器** | 平台特定适配代码 | ✅ 条件编译 |
 
-**扩展点设计：**
+**扩展点design：**
 
 ```python
 # 通用核心（不可修改）
@@ -205,17 +205,17 @@ def execute_skill_core(input_data, parameters):
 
 # 扩展点（可选插件）
 EXTENSION_POINTS = {
-    'pre_process': [],       # 前置处理钩子
-    'post_process': [],     # 后置处理钩子
-    'validate': [],          # 验证钩子
+    'pre_process': [],       # 前置handle钩子
+    'post_process': [],     # 后置handle钩子
+    'validate': [],          # verify钩子
     'format_output': [],    # 输出格式化钩子
 }
 
 def execute_with_extensions(input_data, parameters, extensions=None):
-    # 执行通用核心
+    # execute通用核心
     result = execute_skill_core(input_data, parameters)
     
-    # 执行后置扩展
+    # execute后置扩展
     if extensions:
         for ext in extensions.get('post_process', []):
             result = ext(result)
@@ -225,24 +225,24 @@ def execute_with_extensions(input_data, parameters, extensions=None):
 
 **通用规则（必须保留）：**
 
-- ✅ 错误处理原则
-- ✅ 日志记录规范
+- ✅ 错误handleprinciple
+- ✅ 日志recordstandard
 - ✅ 接口契约（输入/输出格式）
-- ✅ 权限边界
-- ✅ 数据脱敏要求
+- ✅ permission边界
+- ✅ data脱敏要求
 
 **情境化规则（应抽取为扩展）：**
 
 - ❌ 具体监管条款文本
-- ❌ 特定行业的 KPI 阈值
-- ❌ 特定文化的沟通风格
+- ❌ 特定行业的 KPI threshold
+- ❌ 特定文化的沟通Style
 - ❌ 特定平台的命令语法
 
-### Step 4 — 通用接口设计
+### Step 4 — 通用接口design
 
-**目标：** 接口本身不依赖任何特定上下文。
+**Goal：** 接口本身不依赖任何特定上下文。
 
-**平台中立原则：**
+**平台中立principle：**
 
 | 维度 | ❌ 避免 | ✅ 推荐 |
 |------|--------|--------|
@@ -263,7 +263,7 @@ output:
   metadata:
     timestamp: ISO8601  # UTC 时间戳
     skill_version: semver
-    context_id: string  # 本次执行唯一 ID
+    context_id: string  # 本次execute唯1 ID
     locale: string       # 输出语言标记
   errors:
     - code: string
@@ -271,11 +271,11 @@ output:
       context: object   # 调试上下文
 ```
 
-### Step 5 — 跨上下文验证
+### Step 5 — 跨上下文verify
 
-**目标：** 确保通用化后的 Skill 在至少 2 个不同上下文中可正常运行。
+**Goal：** ensure通用化后的 Skill 在至少 2 个不同上下文中可正常运行。
 
-**验证框架：**
+**verifyframework：**
 
 ```python
 def cross_context_validate(
@@ -288,14 +288,14 @@ def cross_context_validate(
         # 设置上下文参数
         ctx_params = ctx.default_parameters
         
-        # 执行 Skill
+        # execute Skill
         result = execute_skill(
             skill_path=generalized_skill_path,
             test_input=ctx.test_input,
             parameters=ctx_params,
         )
         
-        # 验证结果
+        # verify结果
         validation = validate_result(
             result=result,
             expected=ctx.expected_output,
@@ -325,7 +325,7 @@ def cross_context_validate(
 ```yaml
 test_contexts:
   - name: Startup_US
-    description: "美国初创公司，英文，无监管框架"
+    description: "美国初创公司，英文，无监管framework"
     parameters:
       LANGUAGE: en
       CURRENCY: USD
@@ -335,7 +335,7 @@ test_contexts:
     expected_status: success
   
   - name: Enterprise_EU
-    description: "欧盟企业，GDPR 合规，欧元"
+    description: "欧盟企业，GDPR compliance，欧元"
     parameters:
       LANGUAGE: de
       CURRENCY: EUR
@@ -359,21 +359,21 @@ test_contexts:
 
 ## 通用化等级
 
-| 等级 | 名称 | 说明 | 适用场景 |
+| 等级 | 名称 | Description | 适用场景 |
 |------|------|------|---------|
 | **L1** | Org-agnostic | 适用于任意组织 | 通用工具类 |
 | **L2** | Domain-agnostic | 适用于任意行业 | 平台型 Skill |
-| **L3** | Culture-agnostic | 跨语言/文化 | 国际部署 |
+| **L3** | Culture-agnostic | 跨语言/文化 | 国际deploy |
 | **L4** | Platform-agnostic | 跨操作系统 | 全平台支持 |
-| **L5** | 完全 Universal | 无任何外部假设 | 开源发布 |
+| **L5** | 完全 Universal | 无任何外部假设 | 开源publish |
 
 ---
 
-## 接口定义
+## 接口Definition
 
 ### `generalize-skill`
 
-通用化目标 Skill。
+通用化Goal Skill。
 
 **Input:**
 
@@ -381,7 +381,7 @@ test_contexts:
 skill_path: string
 target_level: L1 | L2 | L3 | L4 | L5
 preserve_org_hooks: boolean  # 若 true，保留可选的 org 扩展点
-strict_parameterization: boolean  # 若 true，不允许任何硬编码
+strict_parameterization: boolean  # 若 true，不allow任何硬编码
 ```
 
 **Output:**
@@ -408,7 +408,7 @@ generalization_ratio: 0-1        # 0 = 完全特化, 1 = 完全通用化
 
 ### `test-generalization`
 
-跨上下文验证通用化结果。
+跨上下文verify通用化结果。
 
 **Input:**
 
@@ -444,8 +444,8 @@ conditional_requirements: string[]  # 若 conditional_pass
 
 ```yaml
 generalized_skill_path: string
-target_org: string              # 目标组织名称
-target_context: object          # 目标上下文参数
+target_org: string              # Goal组织名称
+target_context: object          # Goal上下文参数
 ```
 
 **Output:**
@@ -464,18 +464,18 @@ warnings: string[]
 
 ## KPI 仪表板
 
-| 指标 | 目标 | 测量方式 |
+| metric | Goal | 测量方式 |
 |------|------|---------|
 | 通用化率 | ≥ 80% | (1 - 特异性行数/总行数) × 100 |
-| 参数覆盖率 | ≥ 90% | (已参数化值/所有配置值) × 100 |
+| 参数coverage | ≥ 90% | (已参数化值/所有配置值) × 100 |
 | 跨上下文通过率 | ≥ 3/3 | 测试上下文数量 |
 | 无 org 残留 | 100% | 正则扫描 org 名称 |
 | 文档完整性 | 100% | 所有参数有 description |
 
 ---
 
-## 变更日志
+## Change Log
 
-| 版本 | 日期 | 变更内容 |
+| 版本 | 日期 | Changes |
 |------|------|---------|
-| 1.0.0 | 2026-04-14 | 初始版本：五步通用化流程 + 5级等级体系 + 跨上下文验证 |
+| 1.0.0 | 2026-04-14 | Initial version：5步通用化process + 5级等级system + 跨上下文verify |
