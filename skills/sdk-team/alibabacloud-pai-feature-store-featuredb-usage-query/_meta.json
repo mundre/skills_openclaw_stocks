@@ -3,9 +3,15 @@
   "slug": "alibabacloud-pai-feature-store-featuredb-usage-query",
   "displayName": "Alibabacloud Pai Feature Store Featuredb Usage Query",
   "latest": {
-    "version": "0.0.1",
-    "publishedAt": 1776160796703,
-    "commit": "https://github.com/openclaw/skills/commit/7000bdc4591dabb226cf7414bd1095f4832b228a"
+    "version": "0.0.2",
+    "publishedAt": 1776685758552,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.1",
+      "publishedAt": 1776160796703,
+      "commit": "https://github.com/openclaw/skills/commit/7000bdc4591dabb226cf7414bd1095f4832b228a"
+    }
+  ]
 }
