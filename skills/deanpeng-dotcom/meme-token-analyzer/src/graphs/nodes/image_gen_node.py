@@ -24,7 +24,7 @@ def image_gen_node(
     
     try:
         # Read image generation config
-        cfg_file = os.path.join(os.getenv("COZE_WORKSPACE_PATH"), "config/image_gen_cfg.json")
+        cfg_file = os.path.join(os.getenv("COZE_WORKSPACE_PATH", ""), "config/image_gen_cfg.json")
         with open(cfg_file, 'r', encoding='utf-8') as fd:
             img_cfg = json.load(fd)
         
@@ -54,9 +54,12 @@ def image_gen_node(
             return ImageGenNodeOutput(generated_image_url=image_url)
         else:
             error_msg = "; ".join(response.error_messages) if response.error_messages else "Unknown error"
-            logger.error(f"Image generation failed: {error_msg}")
-            raise Exception(f"Image generation failed: {error_msg}")
+            logger.warning(f"Image generation returned no URL: {error_msg}")
+            # Degrade gracefully: return empty URL instead of raising
+            return ImageGenNodeOutput(generated_image_url="")
             
     except Exception as e:
-        logger.error(f"Image generation error: {str(e)}", exc_info=True)
-        raise
+        # Degrade gracefully: return empty URL instead of raising
+        # This prevents the entire workflow from crashing when image generation fails
+        logger.error(f"Image generation failed, degrading to text-only analysis: {str(e)}", exc_info=True)
+        return ImageGenNodeOutput(generated_image_url="")

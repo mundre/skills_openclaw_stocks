@@ -3,9 +3,15 @@
   "slug": "meme-token-analyzer",
   "displayName": "Meme Token Analyzer",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775957548406,
-    "commit": "https://github.com/openclaw/skills/commit/e97588bbfaec19f532b0a7e4d6c60ce9e1902771"
+    "version": "1.0.2",
+    "publishedAt": 1776406001358,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775957548406,
+      "commit": "https://github.com/openclaw/skills/commit/e97588bbfaec19f532b0a7e4d6c60ce9e1902771"
+    }
+  ]
 }

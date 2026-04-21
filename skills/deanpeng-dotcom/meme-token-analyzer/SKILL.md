@@ -1,21 +1,12 @@
 ---
 name: meme-token-analyzer
-version: 1.0.0
+version: 1.0.2
 description: "Meme Token Analyzer workflow with web search, image generation, data cleaning, and multimodal analysis to output wealth gene detection reports. Use this skill when analyzing meme token sentiment, generating prediction images, and producing professional investment analysis reports. Supports multi-dimensional analysis, intelligent detection, and humorous professional reporting."
 author: AntalphaAI
 license: MIT
 requires: [python-3.12]
-keywords: [meme, token, crypto, cryptocurrency, sentiment-analysis, image-generation, multimodal, ai, langgraph, wealth-gene]
-metadata:
-  repository: https://github.com/AntalphaAI/Meme-Token-Analyzer
-  install:
-    type: python
-    command: pip install -r requirements.txt
-  env:
-    - name: COZE_WORKSPACE_PATH
-      description: Workspace path for configuration files
-      required: true
-      sensitive: false
+keywords: [meme, token, sentiment-analysis, image-generation, multimodal, ai, langgraph, wealth-gene, meme-coin-analysis]
+metadata: {"repository":"https://github.com/AntalphaAI/Meme-Token-Analyzer","install":{"type":"python","command":"pip install -r requirements.txt"},"env":[{"name":"COZE_WORKSPACE_PATH","description":"Workspace path for configuration files","required":true,"sensitive":false}],"disclaimer":"This skill only uses COZE_WORKSPACE_PATH. It does NOT use COZE_BUCKET_ENDPOINT_URL, PGDATABASE_URL, or any storage/database credentials."}
 ---
 
 # Meme Token Analyzer Skill
@@ -221,14 +212,16 @@ def analyze_before_trade(token_name):
 
 ## Security Notes
 
+- **Disclaimer**: This skill is an **analysis and entertainment tool only**. It does NOT execute trades, access wallets, connect to blockchain networks, or handle any financial transactions. All crypto/meme token references are for sentiment analysis purposes only.
 - **External Requests**: This skill makes requests to external APIs:
   - Web search APIs (via coze-coding-dev-sdk)
   - Image generation APIs (via coze-coding-dev-sdk)
   - LLM APIs (doubao-seed-1-6-vision-250815)
-- **Data Handling**: Token names and search results are sent to external APIs for analysis
+- **Data Handling**: Token names and search results are sent to external APIs for analysis. No wallet keys, private keys, or financial credentials are ever requested or stored.
 - **File Persistence**: No local file persistence, all operations are stateless
 - **Sensitive Data**: No API keys stored locally, all handled via SDK
 - **Input Validation**: Token names are validated and sanitized before use
+- **No Storage Dependencies**: This skill does NOT use S3, database, or any persistent storage. All `src/storage/` code and related dependencies (boto3, sqlalchemy, etc.) have been removed from the skill package.
 
 ## Best Practices
 

@@ -68,9 +68,11 @@ def clean_data_node(
             if max_year < current_year - 1:  # Data is older than 1 year
                 stale_data_warning = f"\n\n⚠️ **Data Freshness Alert**: Latest search results are from {max_year}. Data may be outdated for accurate trend analysis."
                 logger.warning(f"Stale data detected: latest result from {max_year}")
+            else:
+                stale_data_warning = f"\n\n✅ **Data Freshness**: Search results are current (latest from {max_year})."
         else:
-            # No publish_time found in results
-            stale_data_warning = "\n\n⚠️ **Note**: Publication dates not available in search results."
+            # No publish_time found in results — use unified freshness alert wording
+            stale_data_warning = "\n\n⚠️ **Data Freshness Alert**: Publication dates not available in search results. Data freshness cannot be verified for accurate trend analysis."
         
         # Add AI summary if available
         if state.search_summary:
