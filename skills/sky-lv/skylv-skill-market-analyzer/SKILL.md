@@ -1,11 +1,13 @@
 ---
 name: skill-market-analyzer
 slug: skylv-skill-market-analyzer
-version: 1.0.0
-description: "ClawHub 技能市场数据分析。热门技能追踪、趋势预测、竞品分析、定价策略。Triggers: skill market, clawhub analysis, market trends, competitor analysis, skill pricing."
+version: 1.0.2
+description: ClawHub skill market analyzer. Tracks trending skills, competitor analysis, and pricing strategy insights. Triggers: skill market, clawhub analytics, skill trends.
 author: SKY-lv
 license: MIT
 tags: [clawhub, market-analysis, data, trends, competitor]
+keywords: openclaw, skill, automation, ai-agent
+triggers: skill market analyzer
 ---
 
 # Skill Market Analyzer — ClawHub 市场数据分析
@@ -300,3 +302,9 @@ def pricing_recommendation(skill_type: str, features: list, target_audience: str
 - 自动：检测 market、analysis、trends、competitor、pricing 相关关键词
 - 手动：/skill-market, /market-analysis, /competitor-analysis
 - 短语：市场分析、竞品分析、趋势预测、定价策略
+
+## Usage
+
+1. Install the skill
+2. Configure as needed
+3. Run with OpenClaw
