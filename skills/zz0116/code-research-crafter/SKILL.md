@@ -1,7 +1,13 @@
 ---
 name: code-research-crafter
-description: A complete 6-phase workflow for researching codebases, designing enhancement proposals, and publishing RFCs to GitHub. Covers code analysis, academic research, solution design, documentation generation, and RFC publication.
-version: 1.0.0
+description: >
+  Research codebases and craft professional RFC proposals for GitHub publication.
+  Use when: user wants to analyze a codebase and propose enhancements, write an RFC,
+  research a technical problem with academic rigor, design an architecture proposal,
+  submit a proposal to an open-source project, or create a structured improvement plan.
+  NOT for: simple code reviews, bug fixing, general Q&A, quick code searches, or one-off questions.
+version: 1.1.0
+context: fork
 metadata:
   openclaw:
     emoji: "🔬"
@@ -9,189 +15,145 @@ metadata:
     requires:
       bins:
         - git
+        - gh
 ---
 
 # Code Research Crafter
 
 Craft comprehensive research proposals from code analysis to GitHub RFC publication.
 
-## Overview
-
-This skill provides a complete 6-phase workflow for deep codebase research and professional proposal crafting:
-
-1. **Code Analysis** - Understanding existing implementation through systematic exploration
-2. **Academic Research** - Finding relevant papers, algorithms, and prior art
-3. **Community Analysis** - Reviewing GitHub issues, discussions, and maintainer feedback
-4. **Solution Design** - Architecture design with data models and phased implementation plans
-5. **Documentation** - Generating structured technical documents (Chinese/English)
-6. **RFC Publication** - Writing and submitting professional RFCs to GitHub
-
-## When to Use
-
-Use this skill when you need to:
-- Analyze an open-source codebase and propose enhancements
-- Research technical problems with academic rigor
-- Design system architectures with evidence-based decisions
-- Create professional RFCs for open-source communities
-- Document complex technical proposals with proper citations
-
 ## Workflow
 
 ### Phase 1: Problem Discovery & Code Analysis
 
-**Step 1: Identify the target area**
-- Search for relevant files in the codebase using glob patterns
-- Look for GitHub issues related to the topic
-- Check existing documentation (docs/, README, etc.)
+1. Ask the user for the target codebase (URL or local path) and the research topic. If neither is provided, do not proceed — ask the user to clarify.
+2. Map the project structure: use `glob **/*.{ts,js,py,go,rs,java}` based on the detected language. Read `README.md`, `CONTRIBUTING.md`, and docs in `docs/` for context.
+3. Search for topic-relevant files: `grep "[keyword]" src/**` to locate key implementations.
+4. Read the top relevant files and document findings in `research-context.md`:
+   - **Code Map**: file paths and their roles (table format)
+   - **Problem List**: each problem with `file:line` reference and severity (high/medium/low)
+   - **Metrics**: quantified issues (e.g., "3/10 modules lack error handling", "40% of functions have no tests")
+5. Search existing GitHub issues: `gh issue list -R [repo] --search "[topic]" --limit 20`.
 
-**Step 2: Deep code analysis**
-```bash
-# Find relevant source files
-glob **/[module]*/**/*.ts
-glob **/[component]*.ts
-
-# Read key implementation files
-read src/[module]/[key-file].ts
-
-# Search for specific patterns
-grep "[pattern]" src/**/*.ts
-```
-
-**Step 3: Document findings**
-- Note current architecture limitations
-- Identify specific code locations and their roles
-- Quantify problems (e.g., "50% of files lack documentation")
+**Error handling**: If the codebase is inaccessible, ask for an alternative URL or local path. If the topic is too broad, narrow down with the user before proceeding.
 
 ### Phase 2: Academic & Community Research
 
-**Step 1: Search for academic papers**
-- Use WebSearch to find relevant research papers
-- Focus on papers from 2024-2025
-- Look for algorithms, data structures, and approaches
+1. Load `references/academic-research-guide.md` for search methodology.
+2. Use WebSearch for academic papers: `"site:arxiv.org [topic] 2024 2025"`, `"site:scholar.google.com [topic]"`.
+3. Use WebFetch to read top 3-5 relevant papers and extract: algorithms, data structures, evaluation methods.
+4. Search GitHub discussions: `gh api repos/[owner]/[repo]/discussions --jq '.[].title'` (if discussions are enabled).
+5. Analyze community sentiment from issues: note pain points, feature requests, and maintainer feedback patterns.
+6. Append findings to `research-context.md` under sections:
+   - **Academic Insights**: algorithms, approaches, evaluation metrics
+   - **Community Pulse**: top pain points, requested features, maintainer stance
+   - **Gaps**: current implementation vs. best practices
 
-**Step 2: Analyze GitHub community**
-- Search for related issues and discussions
-- Check maintainer responses and feedback
-- Identify pain points from user comments
-
-**Step 3: Extract key insights**
-- Document relevant algorithms and approaches
-- Note community sentiment and feature requests
-- Identify gaps between current implementation and best practices
+**Error handling**: If no academic papers are found, note the gap and proceed with community research only. If the repo has no issues/discussions, focus on academic research and documentation review.
 
 ### Phase 3: Solution Design
 
-**Step 1: Define design principles**
-- Evidence-based: Reference specific code locations
-- Academic rigor: Cite recent papers
-- Human-centered: Use organization analogies
-- Cost-aware: Track token/performance implications
+1. Load `references/architecture-patterns.md` for proven design patterns.
+2. Define evidence-based design principles derived from Phase 1-2 findings.
+3. Design a layered architecture:
+   - **Layer 1 — Foundation**: data collection and storage
+   - **Layer 2 — Enhancement**: core features building on Foundation
+   - **Layer 3 — Intelligence**: AI/ML capabilities on accumulated data
+   - **Layer 4 — Governance**: control, monitoring, and policy enforcement
+4. Define data models: dual-track (user-defined/static + system-learned/dynamic).
+5. Plan phased implementation with milestones:
+   - Phase 1 → Foundation (weeks 1-4)
+   - Phase 2 → Enhancement (weeks 5-8)
+   - Phase 3 → Intelligence (weeks 9-12)
+   - Phase 4 → Governance (weeks 13-16)
+6. Document trade-offs: migration path, backward compatibility, performance cost, risk assessment.
 
-**Step 2: Architect the solution**
-- Design layered architecture (Foundation → Enhancement → Intelligence → Governance)
-- Define data models (dual-track: user-defined + system-learned)
-- Plan visibility tiers (private/team/global)
-
-**Step 3: Plan implementation phases**
-- Phase 1: Foundation (data collection)
-- Phase 2: Enhancement (builds on Phase 1)
-- Phase 3: Intelligence (AI/ML on data)
-- Phase 4: Governance (control/monitoring)
+**Checkpoint**: Present the proposed solution design to the user. Wait for approval before proceeding. If the user requests changes, iterate on the design and re-present.
 
 ### Phase 4: Documentation Generation
 
-**Step 1: Create structured documents**
-- Use python-docx for professional formatting
-- Include table of contents, headers, and proper structure
-- Add citations and references
+1. Determine language needs:
+   - If the target project's primary language is Chinese → generate bilingual (Chinese + English) documents
+   - If the target project is international → generate English-only documents
+   - Always generate the RFC in English (the lingua franca of open source)
+2. Generate a structured technical document using python-docx (if available) or markdown:
+   - Include: table of contents, numbered headings, citations, references section
+   - Use consistent terminology throughout
+   - Save as `proposal.md` (and `proposal.docx` if python-docx is available)
 
-**Step 2: Generate bilingual versions**
-- Create English version for international communities
-- Create Chinese version for local stakeholders
-- Ensure consistent terminology
+### Phase 5: RFC Writing
 
-### Phase 5: English RFC Writing
+1. Load `references/rfc-template.md` for the standard RFC template.
+2. Write the RFC in English with these required sections:
+   ```
+   # RFC: [Title]
 
-**Step 1: Structure the RFC**
-```markdown
-# RFC: [Title]
+   ## Metadata
+   - Author: [name]
+   - Date: [YYYY-MM-DD]
+   - Status: Draft
+   - Related Issues: #[issue numbers]
 
-## Problem Statement
-[Quantified problem with code evidence]
+   ## Problem Statement
+   [Quantified problem with code evidence and metrics]
 
-## Prior Art
-[Academic research and existing solutions]
+   ## Prior Art
+   [Academic research, existing solutions, and community context]
 
-## Proposed Solution
-[Architecture, data models, implementation phases]
+   ## Proposed Solution
+   [Architecture, data models, API design, implementation phases]
 
-## Trade-offs
-[Cost analysis, migration path, risks]
+   ## Trade-offs
+   [Cost analysis, migration path, backward compatibility, risks]
 
-## Call for Collaboration
-[How to get involved]
-```
+   ## Open Questions
+   [Unresolved decisions needing community input]
 
-**Step 2: Follow community conventions**
-- Use existing RFCs as templates
-- Reference GitHub issues and discussions
-- Include code examples and diagrams
+   ## Call for Collaboration
+   [How to get involved, what help is needed]
+   ```
+3. Include code examples (with syntax highlighting) and ASCII architecture diagrams.
+4. Reference specific GitHub issues and discussions using `#123` format.
+5. Self-review: verify every claim has a citation (code location or paper reference).
 
 ### Phase 6: GitHub Publication
 
-**Step 1: Prepare the RFC**
-- Create markdown file in appropriate location
-- Ensure proper formatting and links
-- Add relevant labels
+1. Check authentication: `gh auth status`. If not authenticated, provide setup instructions and ask the user to configure.
+2. Save the RFC as `rfc-[slug].md` in the project's `docs/` or `proposals/` directory.
+3. Create a GitHub issue:
+   ```bash
+   gh issue create -R [owner]/[repo] \
+     --title "RFC: [Title]" \
+     --body-file rfc-[slug].md \
+     --label "enhancement" --label "RFC"
+   ```
+4. If `gh` CLI is unavailable, try GitHub API via `curl`:
+   ```bash
+   curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+     https://api.github.com/repos/[owner]/[repo]/issues \
+     -d '{"title":"RFC: [Title]","body":"[RFC content]","labels":["enhancement","RFC"]}'
+   ```
+5. If all CLI options fail, output the RFC markdown with manual submission instructions:
+   - URL to create issue: `https://github.com/[owner]/[repo]/issues/new`
+   - Suggested title and labels
+   - Full RFC content to paste
+6. Reference related issues in the created issue body. Do NOT tag maintainers unless the user explicitly asks.
 
-**Step 2: Submit to GitHub**
-- Create issue or discussion with RFC content
-- Reference related issues
-- Tag relevant maintainers
+## Output Artifacts
 
-**Step 3: Engage the community**
-- Respond to comments and questions
-- Update RFC based on feedback
-- Track implementation progress
-
-## Output Examples
-
-### Memory Consolidation RFC
-Combines Zettelkasten + PPR + Sleep Consolidation approaches for knowledge management.
-
-### Multi-Agent Collaboration RFC
-Features Capability Profiling and Shared Blackboard architecture for agent coordination.
-
-### Temporal Decay Bug Fixes
-Expands date pattern recognition in configuration interfaces.
+| Artifact | Format | Description |
+|----------|--------|-------------|
+| `research-context.md` | Markdown | Running document updated through Phases 1-3 |
+| `proposal.md` / `proposal.docx` | MD/DOCX | Structured technical document |
+| `rfc-[slug].md` | Markdown | RFC in standard format |
+| GitHub Issue | Web | Link to published RFC |
 
 ## Best Practices
 
-1. **Quote specific code locations** - Always reference file paths and line numbers
-2. **Quantify problems** - Use metrics like "50% of files" or "3x performance improvement"
-3. **Cite recent research** - Prefer papers from 2024-2025
-4. **Use analogies** - Make complex concepts accessible with organization/workflow analogies
-5. **Design for adoption** - Include migration paths and gradual rollout plans
-6. **Track costs** - Document token usage, performance implications, and resource requirements
-7. **Engage early** - Reference existing issues and invite collaboration from the start
-
-## Success Metrics
-
-A successful Code Research Crafter output should:
-- ✅ Receive community engagement (comments, reactions)
-- ✅ Quantify problems with code evidence
-- ✅ Reference academic research
-- ✅ Provide phased, actionable implementation plans
-- ✅ Be clear for all audiences (technical and non-technical)
-
-## Tools & Resources
-
-- **Code Analysis**: `glob`, `grep`, `read`
-- **Academic Research**: `WebSearch`, `WebFetch`
-- **Documentation**: `python-docx` for professional document generation
-- **Publication**: `browser_use_desktop` for GitHub submission
-- **Version Control**: `desktop_terminal_execute` for Git operations
-
-## License
-
-MIT License - See LICENSE.txt for details.
+1. **Quote specific code locations** — always reference file paths and line numbers
+2. **Quantify problems** — use metrics like "50% of files" or "3x performance improvement"
+3. **Cite recent research** — prefer papers from 2024-2025
+4. **Design for adoption** — include migration paths and gradual rollout plans
+5. **Track costs** — document token usage, performance implications, and resource requirements
+6. **Engage early** — reference existing issues and invite collaboration from the start
+7. **Self-review citations** — verify every claim has a code location or paper reference
