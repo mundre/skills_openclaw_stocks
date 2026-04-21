@@ -1,0 +1,11 @@
+{
+  "owner": "freedompixels",
+  "slug": "cn-batch-image-editor",
+  "displayName": "批量图片编辑器",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1776642736195,
+    "commit": null
+  },
+  "history": []
+}
