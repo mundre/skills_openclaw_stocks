@@ -3,9 +3,15 @@
   "slug": "unilever",
   "displayName": "Unilever",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775917695340,
-    "commit": "https://github.com/openclaw/skills/commit/2c8c7beb787d1fc153ab9dc7fc123d44cce56e23"
+    "version": "1.0.3",
+    "publishedAt": 1776533960332,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775917695340,
+      "commit": "https://github.com/openclaw/skills/commit/2c8c7beb787d1fc153ab9dc7fc123d44cce56e23"
+    }
+  ]
 }
