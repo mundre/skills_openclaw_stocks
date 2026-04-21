@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Veritier MCP Integration Test
-==============================
+Veritier MCP Integration Test (v2)
+====================================
 Verifies that your Veritier MCP stdio proxy is correctly configured
 and can communicate with the Veritier API.
 
@@ -18,14 +18,17 @@ Usage:
      python veritier_mcp_test.py
 
 Expected output:
-  ✓ Initialize: server=veritier-proxy v1.0.0
-  ✓ Tools discovered: ['verify_text']
-  ✓ Verification result:
+  ✓ Initialize: server=veritier-proxy v2.0.0
+  ✓ Tools discovered: ['extract_text', 'extract_document', 'verify_text', 'verify_document']
+  ✓ extract_text result:
+    - The Eiffel Tower is located in Paris, France.
+    - The Eiffel Tower stands 330 metres tall.
+  ✓ verify_text result:
     Claim: 'The Eiffel Tower is located in Berlin.'
     Verdict: False
     Confidence: 1.0
-    Explanation: The Eiffel Tower is located in Paris, France, not Berlin.
-    Sources: https://...
+    ...
+  ✓ All checks passed! Your MCP integration is working correctly.
 
 More info: https://veritier.ai/docs#mcp
 """
@@ -35,6 +38,8 @@ import json
 import os
 import sys
 from pathlib import Path
+
+EXPECTED_TOOLS = ["extract_text", "extract_document", "verify_text", "verify_document"]
 
 
 async def test_mcp_proxy():
@@ -74,44 +79,60 @@ async def test_mcp_proxy():
         return json.loads(line.decode()) if line else None
 
     try:
-        # Step 1: Initialize
+        # [1] Initialize MCP session
         await send({
             "jsonrpc": "2.0", "id": 1, "method": "initialize",
             "params": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {},
-                "clientInfo": {"name": "veritier-mcp-test", "version": "1.0"}
+                "clientInfo": {"name": "veritier-mcp-test", "version": "2.0"}
             }
         })
         init = await recv(timeout=15)
         server_info = init["result"]["serverInfo"]
         print(f"✓ Initialize: server={server_info['name']} v{server_info['version']}")
 
-        # Step 2: Send initialized notification
+        # [2] Confirm initialization
         await send({"jsonrpc": "2.0", "method": "notifications/initialized"})
 
-        # Step 3: List tools
+        # [3] Discover available tools
         await send({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         tools = await recv(timeout=10)
         tool_names = [t["name"] for t in tools["result"]["tools"]]
         print(f"✓ Tools discovered: {tool_names}")
 
-        if "verify_text" not in tool_names:
-            print("✗ Error: 'verify_text' tool not found.")
+        missing = [t for t in EXPECTED_TOOLS if t not in tool_names]
+        if missing:
+            print(f"✗ Error: Missing expected tools: {missing}")
             sys.exit(1)
 
-        # Step 4: Call verify_text with a known false claim
+        # [4] Action: Extract claims
+        extract_text = "The Eiffel Tower is located in Paris, France. It stands 330 metres tall."
+        print(f"\n⏳ Extracting claims from: \"{extract_text}\"")
+
+        await send({
+            "jsonrpc": "2.0", "id": 3, "method": "tools/call",
+            "params": {"name": "extract_text", "arguments": {"text": extract_text}}
+        })
+        result = await recv(timeout=60)
+        content = result["result"]["content"][0]["text"]
+
+        print(f"✓ extract_text result:\n")
+        for line in content.split("\n"):
+            print(f"  {line}")
+
+        # [5] Action: Verify claims (with a known false statement)
         test_claim = "The Eiffel Tower is located in Berlin."
         print(f"\n⏳ Verifying: \"{test_claim}\"")
 
         await send({
-            "jsonrpc": "2.0", "id": 3, "method": "tools/call",
+            "jsonrpc": "2.0", "id": 4, "method": "tools/call",
             "params": {"name": "verify_text", "arguments": {"text": test_claim}}
         })
-        result = await recv(timeout=90)
+        result = await recv(timeout=120)
         content = result["result"]["content"][0]["text"]
 
-        print(f"✓ Verification result:\n")
+        print(f"✓ verify_text result:\n")
         for line in content.split("\n"):
             print(f"  {line}")
 
@@ -131,6 +152,6 @@ async def test_mcp_proxy():
 
 if __name__ == "__main__":
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("  Veritier MCP Integration Test")
+    print("  Veritier MCP Integration Test v2")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
     asyncio.run(test_mcp_proxy())

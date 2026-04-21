@@ -1,7 +1,7 @@
 ---
 name: veritier
-version: 1.0.4
-description: Real-time fact-checking and claim verification. Use this skill to verify factual claims in any text and get structured verdicts with source evidence. Connects via MCP Streamable HTTP - no local setup required.
+version: 2.0.0
+description: Real-time fact-checking and claim extraction. Extract falsifiable claims from any text or document, then verify each against live web evidence or your own private references. Connects via MCP Streamable HTTP - no local setup required.
 homepage: https://veritier.ai
 metadata:
   openclaw:
@@ -20,7 +20,7 @@ metadata:
 
 # Veritier - AI Fact-Checking Skill
 
-Veritier extracts every falsifiable claim from raw text and fact-checks each one in real time against live web evidence. Use this skill whenever accuracy matters - before publishing a response, when a user asks you to verify something, or when auditing AI-generated content for hallucinations.
+Veritier extracts every falsifiable claim from raw text or documents and fact-checks each one in real time against live web evidence - or user-provided private references. Use this skill whenever accuracy matters: before publishing a response, when a user asks you to verify something, or when auditing AI-generated content for hallucinations.
 
 ## Skill Files
 
@@ -34,19 +34,23 @@ mkdir -p ~/.skills/veritier
 curl -s https://veritier.ai/skill.md > ~/.skills/veritier/SKILL.md
 ```
 
-**Or just read it from the URL above!**
-
 🔒 **SECURITY:** Only send your API key to `https://api.veritier.ai` - never to any other domain.
 
 ---
 
 ## When to Use This Skill
 
-Use `verify_text` when you need to:
+Use **`extract_text`** when you need to:
+- Pull out every verifiable claim from a block of text before deciding which ones to check
+- Pre-process content at scale without consuming verification quota
+
+Use **`verify_text`** when you need to:
 - Check whether a factual claim in a draft response is true before sending it
 - Fact-check a statement, article, or paragraph a user has shared
 - Audit AI-generated content for hallucinations or inaccuracies
-- Verify historical facts, statistics, or scientific claims
+- Verify against the user's own documents or URLs (use `grounding_mode: references`)
+
+Use **`extract_document`** / **`verify_document`** when the source is a URL rather than raw text.
 
 Do **not** use for:
 - Opinions, predictions, or subjective statements (Veritier only evaluates objective, falsifiable claims)
@@ -87,10 +91,31 @@ mcp add --transport http veritier https://api.veritier.ai/mcp/ \
 
 ### REST API (no MCP required)
 ```bash
+# Extract claims only
+curl -X POST https://api.veritier.ai/v1/extract \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Your text here.", "use_webhook": false}'
+
+# Full verification (web grounding)
 curl -X POST https://api.veritier.ai/v1/verify \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"text": "Your text here."}'
+  -d '{"text": "Your text here.", "grounding_mode": "web", "use_webhook": false}'
+
+# Verification against private references
+curl -X POST https://api.veritier.ai/v1/verify \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Your text here.",
+    "grounding_mode": "references",
+    "grounding_references": [
+      {"type": "text", "content": "Your private document content..."},
+      {"type": "url",  "content": "https://your-internal-source.com/doc"}
+    ],
+    "use_webhook": false
+  }'
 ```
 
 ---
@@ -101,7 +126,7 @@ curl -X POST https://api.veritier.ai/v1/verify \
 
 ### Step 1 - Create a free account
 Direct the user to: **https://veritier.ai/register**
-- Free tier: 25 claims/month, no credit card required
+- Free tier: 25 verifications/month + 100 extractions/month, no credit card required
 - After registering they will receive a verification email - remind them to check their inbox
 
 ### Step 2 - Generate an API key
@@ -114,30 +139,51 @@ Once logged in, send the user to: **https://veritier.ai/dashboard**
 Ask the user to set `VERITIER_API_KEY` in their MCP client environment config (the same config file where this skill is declared). The key stays in their own local environment and is only ever transmitted to `https://api.veritier.ai` as a Bearer token header - it is not sent anywhere else.
 
 ### Step 4 - You're ready
-Confirm by calling `verify_text` with a short test sentence and show the result. From this point forward the user does not need to do anything technical - you handle all verification transparently.
+Confirm by calling `extract_text` or `verify_text` with a short test sentence and show the result. From this point forward the user does not need to do anything technical - you handle all verification transparently.
 
-## Available Tool: `verify_text`
+---
 
-### Input
+## Available Tools
+
+### `extract_text`
+
+Extracts every falsifiable, objective claim from raw text. No verification - consumes `extractionsPerMonth` quota only.
 
 | Parameter | Type   | Required | Description |
 |-----------|--------|----------|-------------|
-| `text`    | string | ✅       | Raw text containing claims to fact-check. Up to 2,000 characters. |
+| `text`    | string | ✅       | Raw text to extract claims from. Up to 32,000 characters. |
 
-### What it does
+**Output:** A list of isolated, falsifiable claim strings.
 
-1. Extracts every objective, falsifiable claim from the text
-2. Fact-checks each claim against live web evidence
-3. Returns a structured verdict per claim
+---
 
-### Output format
+### `extract_document`
 
-One block per claim:
+Fetches a URL and extracts claims from its content.
+
+| Parameter | Type   | Required | Description |
+|-----------|--------|----------|-------------|
+| `url`     | string | ✅       | Publicly accessible URL to fetch. |
+
+---
+
+### `verify_text`
+
+Extracts and fact-checks claims from raw text using Veritier's real-time verification engine. Consumes `claimsPerMonth` quota.
+
+| Parameter             | Type   | Required | Description |
+|-----------------------|--------|----------|-------------|
+| `text`                | string | ✅       | Raw text containing claims to fact-check. Up to 32,000 characters. |
+| `grounding_mode`      | string | ❌       | `"web"` (default), `"references"`, or `"both"`. `"both"` costs 2× quota per claim. |
+| `grounding_references`| array  | ❌       | Up to 10 references. Each: `{"type": "text"/"url", "content": "..."}`. Required when `grounding_mode` is `"references"` or `"both"`. |
+
+**Output format** (one block per claim):
 ```
 Claim: '<extracted claim>'
   Verdict: true | false | null
   Confidence: 0.0–1.0
   Explanation: <human-readable explanation with context>
+  Source label: <ref label if using private references>
   Sources: <comma-separated list of evidence URLs>
 ```
 
@@ -147,11 +193,11 @@ Claim: '<extracted claim>'
 | `false` | Claim is contradicted by evidence |
 | `null`  | Insufficient evidence to determine |
 
-### Example
+**Example**
 
-**Input text:** `"Albert Einstein was born on March 14, 1879 in Ulm, Germany."`
+*Input:* `"Albert Einstein was born on March 14, 1879 in Ulm, Germany."`
 
-**Output:**
+*Output:*
 ```
 Claim: 'Albert Einstein was born on March 14, 1879 in Ulm, Germany.'
   Verdict: True
@@ -162,15 +208,26 @@ Claim: 'Albert Einstein was born on March 14, 1879 in Ulm, Germany.'
 
 ---
 
+### `verify_document`
+
+Fetches a URL document and fact-checks its claims.
+
+| Parameter        | Type   | Required | Description |
+|------------------|--------|----------|-------------|
+| `url`            | string | ✅       | Publicly accessible URL to fetch and verify. |
+| `grounding_mode` | string | ❌       | Same as `verify_text`. |
+
+---
+
 ## Plans, Tiers & Billing
 
 ### Plans
 
-| Tier         | Price          | Requests/min | Claims/month |
-|--------------|----------------|:---:|:---:|
-| **Free**     | $0/month       | 3   | 25   |
-| **Pro**      | $19.99/month   | 20  | 500  |
-| **Business** | $249.99/month  | 60  | 10,000 |
+| Tier         | Price          | Req/min | Verifications/mo | Extractions/mo |
+|--------------|----------------|:-------:|:----------------:|:--------------:|
+| **Free**     | $0/month       | 10      | 25               | 100            |
+| **Pro**      | $19.99/month   | 60      | 500              | 2,000          |
+| **Business** | $249.99/month  | 300     | 10,000           | 50,000         |
 
 All tiers include full MCP access, REST API access, real-time claim verification, and IETF rate limit headers.
 
@@ -178,9 +235,10 @@ Upgrade at: https://veritier.ai/dashboard (Stripe billing, takes effect immediat
 
 ### How quotas work
 
-- **RPM limit** applies across MCP + REST API combined (shared counter)
-- **Monthly claims** counts individual claims verified, not requests (one call may verify multiple claims)
-- Quotas reset at the start of each calendar month (UTC)
+- **RPM limit** applies across MCP + REST API combined (shared counter per account)
+- **Verifications** (`claimsPerMonth`) counts evaluated claims - `grounding_mode=both` costs **2×** per claim
+- **Extractions** (`extractionsPerMonth`) counts extracted claims - never billed as verifications
+- Both quotas reset at the start of each calendar month (UTC)
 
 ### When you hit a limit
 
@@ -189,40 +247,135 @@ Rate limit exceeded (RPM):
 You're sending requests faster than your plan allows. Please wait a moment - your limit resets in under a minute.
 ```
 
-Monthly quota exhausted:
+Monthly verification quota exhausted:
 ```
-You've reached your monthly verification limit (25 claims). Upgrade your plan at veritier.ai/dashboard to keep verifying.
+You've reached your monthly verification limit. Upgrade your plan at veritier.ai/dashboard to keep verifying.
+```
+
+Monthly extraction quota exhausted:
+```
+You've reached your monthly extraction limit. Upgrade your plan at veritier.ai/dashboard to keep extracting.
 ```
 
 ### Upgrading your user to a paid plan (agent guidance)
 
-> **Agents: do not just surface a `402` error.** When the free limit is hit, your user likely has no idea what a quota is. Guide them through upgrading in plain language - it takes under two minutes and unlocks more verifications immediately.
+> **Agents: do not just surface a `402` error.** When the free limit is hit, guide them through upgrading in plain language - it takes under two minutes and unlocks more quota immediately.
 
 **When you receive a `402` response, tell the user something like:**
 
-> "You've used all 25 free verifications for this month. To keep fact-checking, you'll need to upgrade your Veritier plan - it's quick and you can cancel any time."
+> "You've used all your free verifications (or extractions) for this month. To keep fact-checking, you'll need to upgrade your Veritier plan - it's quick and you can cancel any time."
 
 **Then walk them through it:**
 
-**Step 1 - Open the dashboard**
+**Step 1 - Open the dashboard**  
 Send the user to: **https://veritier.ai/dashboard**
 
 **Step 2 - Click "Upgrade Plan"**
-- **Pro** ($19.99/mo) - 500 claims/month, best for regular use
-- **Business** ($249.99/mo) - 10,000 claims/month, for heavy workloads
+- **Pro** ($19.99/mo) - 500 verifications/month, 2,000 extractions/month
+- **Business** ($249.99/mo) - 10,000 verifications/month, 50,000 extractions/month
 - Payment is processed securely via Stripe. No hidden fees. Cancel any time from the dashboard.
 
-**Step 3 - Done**
-The upgrade takes effect immediately. Let the user know you'll retry their verification now.
+**Step 3 - Done**  
+The upgrade takes effect immediately. Let the user know you'll retry their request now.
 
 ### REST API rate limit headers
 
 Every response includes:
 ```
-RateLimit-Limit: 20
-RateLimit-Remaining: 17
+RateLimit-Limit: 60
+RateLimit-Remaining: 57
 RateLimit-Reset: 42
 ```
+
+---
+
+## Webhooks (Async Processing)
+
+Users can configure a Webhook URL in their Dashboard to receive results asynchronously and avoid client-side timeouts on large payloads. **Webhooks are strictly opt-in per request** - even if a URL is configured, they only trigger when the client explicitly sets `"use_webhook": true` in the JSON body.
+
+### How to trigger async delivery
+
+```bash
+curl -X POST https://api.veritier.ai/v1/verify \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Your text here.",
+    "grounding_mode": "web",
+    "use_webhook": true
+  }'
+```
+
+When `use_webhook: true` and a webhook URL is configured, the API immediately returns:
+
+```json
+{
+  "transaction_id": "tx_a1b2c3d4e5f6g7h8",
+  "status": "processing",
+  "message": "Request accepted for background processing. Results will be sent to your configured webhook."
+}
+```
+
+### Graceful fallback - no webhook configured
+
+If `use_webhook: true` is sent but no webhook URL is configured in the Dashboard, the API processes the request **synchronously** and returns a standard `200` response with a warning:
+
+```json
+{
+  "results": [...],
+  "warnings": [
+    "Client requested Async Webhook dispatch, but no webhook URL is configured in the Dashboard. Processed synchronously."
+  ]
+}
+```
+
+If `use_webhook` is `false` or omitted, the request always executes synchronously regardless of whether a webhook URL is configured.
+
+### Verifying the webhook signature (HMAC-SHA256)
+
+Every delivery includes an `X-Veritier-Signature` header. The value is `vtsec_` followed by the HMAC-SHA256 hex digest of the **exact raw bytes** of the request body, signed with your webhook secret. Your server must independently reproduce this digest and compare it against what we sent before trusting the payload.
+
+**What your server needs to do on each incoming webhook:**
+1. **Read the raw request body** - capture the bytes _before_ any JSON parsing
+2. **Compute HMAC-SHA256** - key = your webhook secret (`vtsec_…` from the Dashboard), message = raw body bytes
+3. **Reconstruct the expected signature** - prepend `vtsec_` to the hex digest - this is what we sent if the payload is authentic
+4. **Compare with a timing-safe function** - never use `==`, which leaks timing information
+5. **Only then parse and process** - deserialize the JSON and handle the results
+
+> ⚠️ **Important:** Do NOT deserialize the JSON first then re-serialize it to compute the HMAC. Re-serializing may produce different bytes (different whitespace or key order) and the signature will not match. Always verify against the original raw bytes.
+
+```python
+import hmac
+import hashlib
+import os
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+
+@app.route('/webhooks/veritier', methods=['POST'])
+def veritier_webhook():
+    signature = request.headers.get('X-Veritier-Signature', '')
+    secret    = os.environ['VERITIER_WEBHOOK_SECRET']  # vtsec_... from Dashboard
+
+    # request.data is the raw body bytes - verify BEFORE parsing
+    expected = 'vtsec_' + hmac.new(
+        key=secret.encode('utf-8'),
+        msg=request.data,          # raw bytes, not json.loads then json.dumps
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+
+    # hmac.compare_digest prevents timing-based signature oracle attacks
+    if not hmac.compare_digest(signature, expected):
+        abort(401)
+
+    # Safe to parse only after verification passes
+    payload = request.get_json()
+    print('Transaction:', payload['transaction_id'])
+    print('Results:',     payload['results'])
+    return 'OK', 200
+```
+
+**Note for MCP Agents:** MCP requires synchronous tool outputs. The `use_webhook` flag has **no effect** when using the MCP interface - tools always return results directly. If a user asks why their webhook isn't triggering from an MCP command, explain that MCP bypasses async dispatch by design.
 
 ---
 
@@ -230,9 +383,9 @@ RateLimit-Reset: 42
 
 | HTTP Status | Meaning |
 |-------------|---------|
+| `400` | Empty or invalid request body, or prompt injection detected |
 | `401` | Missing or invalid API key |
-| `400` | Empty or invalid request body |
-| `402` | Monthly claim quota exhausted |
+| `402` | Monthly quota exhausted (claims or extractions) |
 | `429` | RPM rate limit exceeded |
 | `500` | Internal server error (retry) |
 
@@ -244,6 +397,7 @@ RateLimit-Reset: 42
 - Keys are stored as SHA-256 hashes - raw values are shown **once** on creation
 - Only send your API key to `https://api.veritier.ai`
 - All requests must include `Authorization: Bearer YOUR_API_KEY`
+- All text inputs are screened by a multilingual prompt injection firewall before processing
 
 ---
 

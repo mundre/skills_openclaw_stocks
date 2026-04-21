@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """
-Veritier MCP Proxy - Standalone
-================================
+Veritier MCP Proxy - Standalone (v2)
+=====================================
 A lightweight stdio proxy that connects any MCP-compatible AI agent
 to the Veritier fact-checking API.
+
+Tools exposed:
+  - extract_text      (consumes extractionsPerMonth quota)
+  - extract_document  (consumes extractionsPerMonth quota)
+  - verify_text       (consumes claimsPerMonth quota)
+  - verify_document   (consumes claimsPerMonth quota)
 
 Setup:
   1. pip install mcp httpx anyio
@@ -58,27 +64,140 @@ if not API_KEY:
     sys.exit(1)
 
 
+def _auth_headers() -> dict:
+    return {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {API_KEY}",
+    }
+
+
+def _format_results(data: dict) -> str:
+    results = []
+    for res in data.get("results", []):
+        block = (
+            f"Claim: '{res.get('claim')}'\n"
+            f"  Verdict: {res.get('verdict')}\n"
+            f"  Confidence: {res.get('confidence_score')}\n"
+            f"  Explanation: {res.get('explanation')}"
+        )
+        if res.get("source_label"):
+            block += f"\n  Source label: {res.get('source_label')}"
+        sources = ", ".join(res.get("source_urls", []))
+        block += f"\n  Sources: {sources or 'N/A'}"
+        results.append(block)
+    if data.get("warnings"):
+        results.append("Warnings: " + "; ".join(data["warnings"]))
+    return "\n\n".join(results) if results else "No falsifiable claims found in the text."
+
+
 @server.list_tools()
 async def handle_list_tools() -> list[types.Tool]:
     return [
         types.Tool(
-            name="verify_text",
+            name="extract_text",
             description=(
-                "Extracts falsifiable claims from raw text and fact-checks them "
-                "using Veritier's real-time verification engine. Returns structured "
-                "verdicts with explanations and source URIs."
+                "Extracts every falsifiable claim from raw text without verifying them. "
+                "Returns a list of isolated, objective statements. "
+                "Consumes extractionsPerMonth quota (cheaper than verification)."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "text": {
                         "type": "string",
-                        "description": "The raw text containing claims to be fact-checked.",
+                        "description": "Raw text to extract claims from. Up to 32,000 characters.",
                     }
                 },
                 "required": ["text"],
             },
-        )
+        ),
+        types.Tool(
+            name="extract_document",
+            description=(
+                "Fetches a publicly accessible URL and extracts falsifiable claims from its content. "
+                "Consumes extractionsPerMonth quota."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "Publicly accessible URL to fetch and extract claims from.",
+                    }
+                },
+                "required": ["url"],
+            },
+        ),
+        types.Tool(
+            name="verify_text",
+            description=(
+                "Extracts falsifiable claims from raw text and fact-checks them using "
+                "Veritier's real-time verification engine. Returns structured verdicts with "
+                "explanations and source URIs. Consumes claimsPerMonth quota. "
+                "grounding_mode='both' costs 2x quota per claim."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "Raw text containing claims to be fact-checked. Up to 32,000 characters.",
+                    },
+                    "grounding_mode": {
+                        "type": "string",
+                        "enum": ["web", "references", "both"],
+                        "description": "Grounding strategy. 'web' uses live internet search (default). 'references' uses provided sources only. 'both' uses both (2x quota cost per claim).",
+                    },
+                    "grounding_references": {
+                        "type": "array",
+                        "description": "Up to 10 private references to ground claims against. Required when grounding_mode is 'references' or 'both'.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string", "enum": ["text", "url"]},
+                                "content": {"type": "string"}
+                            },
+                            "required": ["type", "content"]
+                        }
+                    }
+                },
+                "required": ["text"],
+            },
+        ),
+        types.Tool(
+            name="verify_document",
+            description=(
+                "Fetches a publicly accessible URL document and fact-checks its claims. "
+                "Consumes claimsPerMonth quota."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "Publicly accessible URL to fetch and verify.",
+                    },
+                    "grounding_mode": {
+                        "type": "string",
+                        "enum": ["web", "references", "both"],
+                        "description": "Grounding strategy. Defaults to 'web'.",
+                    },
+                    "grounding_references": {
+                        "type": "array",
+                        "description": "Up to 10 private references. Required when grounding_mode is 'references' or 'both'.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string", "enum": ["text", "url"]},
+                                "content": {"type": "string"}
+                            },
+                            "required": ["type", "content"]
+                        }
+                    }
+                },
+                "required": ["url"],
+            },
+        ),
     ]
 
 
@@ -86,44 +205,82 @@ async def handle_list_tools() -> list[types.Tool]:
 async def handle_call_tool(
     name: str, arguments: dict | None
 ) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
-    if name != "verify_text":
-        raise ValueError(f"Unknown tool: {name}")
-
-    if not arguments or "text" not in arguments:
-        raise ValueError("Missing 'text' argument")
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {API_KEY}",
-    }
+    args = arguments or {}
 
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{API_URL}/v1/verify",
-                json={"text": arguments["text"]},
-                headers=headers,
-                timeout=60.0,
-            )
-            resp.raise_for_status()
-            data = resp.json()
 
-        results = []
-        for res in data.get("results", []):
-            results.append(
-                f"Claim: '{res.get('claim')}'\n"
-                f"  Verdict: {res.get('verdict')}\n"
-                f"  Confidence: {res.get('confidence_score')}\n"
-                f"  Explanation: {res.get('explanation')}\n"
-                f"  Sources: {', '.join(res.get('source_urls', [])) or 'N/A'}"
-            )
+            if name == "extract_text":
+                if "text" not in args:
+                    raise ValueError("Missing 'text' argument")
+                resp = await client.post(
+                    f"{API_URL}/v1/extract",
+                    json={"text": args["text"]},
+                    headers=_auth_headers(),
+                    timeout=60.0,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                claims = data.get("claims", [])
+                text = "\n".join(f"- {c}" for c in claims) if claims else "No claims found."
+                if data.get("warnings"):
+                    text += "\n\nWarnings: " + "; ".join(data["warnings"])
+                return [types.TextContent(type="text", text=text)]
 
-        return [
-            types.TextContent(
-                type="text",
-                text="\n\n".join(results) if results else "No falsifiable claims found in the text.",
-            )
-        ]
+            elif name == "extract_document":
+                if "url" not in args:
+                    raise ValueError("Missing 'url' argument")
+                resp = await client.post(
+                    f"{API_URL}/v1/extract",
+                    json={"document": {"type": "url", "content": args["url"]}},
+                    headers=_auth_headers(),
+                    timeout=60.0,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                claims = data.get("claims", [])
+                text = "\n".join(f"- {c}" for c in claims) if claims else "No claims found."
+                if data.get("warnings"):
+                    text += "\n\nWarnings: " + "; ".join(data["warnings"])
+                return [types.TextContent(type="text", text=text)]
+
+            elif name == "verify_text":
+                if "text" not in args:
+                    raise ValueError("Missing 'text' argument")
+                payload: dict = {"text": args["text"]}
+                if "grounding_mode" in args:
+                    payload["grounding_mode"] = args["grounding_mode"]
+                if "grounding_references" in args:
+                    payload["grounding_references"] = args["grounding_references"]
+                resp = await client.post(
+                    f"{API_URL}/v1/verify",
+                    json=payload,
+                    headers=_auth_headers(),
+                    timeout=120.0,
+                )
+                resp.raise_for_status()
+                return [types.TextContent(type="text", text=_format_results(resp.json()))]
+
+            elif name == "verify_document":
+                if "url" not in args:
+                    raise ValueError("Missing 'url' argument")
+                payload = {"document": {"type": "url", "content": args["url"]}}
+                if "grounding_mode" in args:
+                    payload["grounding_mode"] = args["grounding_mode"]
+                if "grounding_references" in args:
+                    payload["grounding_references"] = args["grounding_references"]
+                resp = await client.post(
+                    f"{API_URL}/v1/verify",
+                    json=payload,
+                    headers=_auth_headers(),
+                    timeout=120.0,
+                )
+                resp.raise_for_status()
+                return [types.TextContent(type="text", text=_format_results(resp.json()))]
+
+            else:
+                raise ValueError(f"Unknown tool: {name}")
+
     except httpx.HTTPStatusError as e:
         return [
             types.TextContent(
@@ -144,7 +301,7 @@ async def main():
             write_stream,
             InitializationOptions(
                 server_name="veritier-proxy",
-                server_version="1.0.0",
+                server_version="2.0.0",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},

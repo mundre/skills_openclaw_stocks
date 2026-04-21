@@ -2,7 +2,7 @@
 
 Real-time claim verification for any MCP-compatible AI agent. Veritier extracts every falsifiable statement from text and validates each one against live web evidence, returning a structured verdict, confidence score, and source URLs.
 
-- **Free tier** - 25 claims/month, no credit card required
+- **Free tier** - 25 verifications & 100 extractions/month, no credit card required
 - **Homepage** - https://veritier.ai
 - **Full docs** - https://veritier.ai/docs
 
@@ -80,36 +80,36 @@ python scripts/veritier_mcp_test.py
 
 Expected output:
 ```
-✓ Initialize: server=veritier-proxy v1.0.0
-✓ Tools discovered: ['verify_text']
-✓ Verification result:
+✓ Initialize: server=veritier-proxy v2.0.0
+✓ Tools discovered: ['extract_text', 'extract_document', 'verify_text', 'verify_document']
+✓ extract_text result:
+  - The Eiffel Tower is located in Paris, France.
+  - The Eiffel Tower stands 330 metres tall.
+✓ verify_text result:
 
   Claim: 'The Eiffel Tower is located in Berlin.'
     Verdict: False
-    Confidence: 1.0
-    Explanation: The Eiffel Tower is located in Paris, France, not Berlin.
-    Sources: https://...
+    ...
 
 ✓ All checks passed! Your MCP integration is working correctly.
 ```
 
 ---
 
-## The `verify_text` Tool
+## Available Tools
 
-Once connected, your agent has access to one tool:
+Once connected, your agent has access to the following tools:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `text` | string | Yes | Any text containing claims to fact-check. Up to 2,000 characters. |
+- **`extract_text`** / **`extract_document`**: Extracts every falsifiable, objective claim from raw text or a URL without verifying them. Uses extractions quota.
+- **`verify_text`** / **`verify_document`**: Extracts and fact-checks claims from raw text or a URL using Veritier's real-time verification engine. Uses verifications quota.
 
-**Response:** One result object per claim extracted:
+For `verify` tools, the response format is one block per claim:
 
 ```
-Claim: '<statement>'
+Claim: '<extracted claim>'
   Verdict: true | false | null
   Confidence: 0.0-1.0
-  Explanation: <plain-language rationale>
+  Explanation: <human-readable explanation with context>
   Sources: <comma-separated evidence URLs>
 ```
 
@@ -118,6 +118,8 @@ Claim: '<statement>'
 | `true` | Supported by evidence |
 | `false` | Contradicted by evidence |
 | `null` | Insufficient evidence to determine |
+
+*Webhooks for async processing are fully supported - see [veritier.ai/docs](https://veritier.ai/docs).*
 
 ---
 
@@ -135,11 +137,11 @@ Your agent can do all of this on your behalf:
 
 ## Plans
 
-| Tier | Price | Claims/month | Req/min |
-|------|-------|:---:|:---:|
-| Free | $0 | 25 | 3 |
-| Pro | $19.99/mo | 500 | 20 |
-| Business | $249.99/mo | 10,000 | 60 |
+| Tier | Price | Req/min | Verifications/mo | Extractions/mo |
+|------|-------|:---:|:---:|:---:|
+| Free | $0 | 10 | 25 | 100 |
+| Pro | $19.99/mo | 60 | 500 | 2,000 |
+| Business | $249.99/mo | 300 | 10,000 | 50,000 |
 
 Upgrade at https://veritier.ai/dashboard - takes effect immediately.
 
