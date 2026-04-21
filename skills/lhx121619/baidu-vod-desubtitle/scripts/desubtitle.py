@@ -96,30 +96,47 @@ def process_video(ak, sk, video_path, mode="global", model_type="v4",
     # 构建擦除参数
     desubtitle_params = None
     
+    if mode == "global" and time_range and not areas:
+        print("        ✗ global 模式单独指定 --time-range 不支持，请改用 manual 模式")
+        print("           或通过 --areas 指定区域后配合 --time-range 使用")
+        return None
+
     if mode == "manual" or (mode == "global" and areas):
         # 自定义区域擦除或全局模式带区域
         if not areas:
             print("        ✗ manual 模式需要指定 --areas 参数")
             return None
-        
-        area_list = []
+
+        # 按是否带内嵌时间戳分组
+        timed_areas = []   # 有内嵌时间戳的区域 → 各自独立成 param
+        global_areas = []  # 无内嵌时间戳的区域 → 归入同一个 param
+
         for area_str in areas:
             area = parse_area_string(area_str)
             if area:
-                area_list.append(area)
-        
-        if not area_list:
+                if area.pop("has_time"):
+                    timed_areas.append(area)
+                else:
+                    global_areas.append(area)
+
+        desubtitle_params = []
+
+        # 无时间戳区域归入一个 param（可叠加顶层 time_range）
+        if global_areas:
+            param = {"areaList": global_areas}
+            if time_range:
+                param["startTimeInMillisecond"] = time_range[0]
+                param["endTimeInMillisecond"] = time_range[1]
+            desubtitle_params.append(param)
+
+        # 每个带时间戳的区域各自独立成 param
+        for area in timed_areas:
+            param = {"areaList": [area]}
+            desubtitle_params.append(param)
+
+        if not desubtitle_params:
             print("        ✗ 区域参数解析失败")
             return None
-        
-        param = {"areaList": area_list}
-        
-        # 添加时间范围
-        if time_range:
-            param["startTimeInMillisecond"] = time_range[0]
-            param["endTimeInMillisecond"] = time_range[1]
-        
-        desubtitle_params = [param]
         
     elif time_range:
         # 仅时间范围
