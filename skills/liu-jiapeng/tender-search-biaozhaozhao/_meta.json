@@ -3,9 +3,15 @@
   "slug": "tender-search-biaozhaozhao",
   "displayName": "招投标快捷检索引擎-标找找",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776255623297,
-    "commit": "https://github.com/openclaw/skills/commit/b73ec3715536e3c6d47a91d80f0632ab78c328d9"
+    "version": "1.0.2",
+    "publishedAt": 1776338511580,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776255623297,
+      "commit": "https://github.com/openclaw/skills/commit/b73ec3715536e3c6d47a91d80f0632ab78c328d9"
+    }
+  ]
 }
