@@ -1,11 +1,13 @@
 ---
 name: agency-agents
 slug: skylv-agency-agents
-version: 1.0.0
+version: 1.0.2
 description: "193 AI Expert Agents for OpenClaw. Engineering, Design, Marketing, Product, and China Market specialists. Triggers: agency agents, AI experts, expert roles, ai specialists, 193 agents."
 author: SKY-lv
 license: MIT
 tags: [agency-agents, experts, agents, openclaw, ai-roles]
+keywords: openclaw, skill, automation, ai-agent
+triggers: agency agents
 ---
 
 # Agency Agents — 193 个 AI 专家角色库
@@ -221,3 +223,9 @@ npx agency-orchestrator run workflow.yaml --input "创建一个电商首页"
 - 自动：检测智能体、专家、角色相关关键词
 - 手动：/agency-agents, /experts, /agents
 - 短语：激活专家、用智能体、多智能体协作
+
+## Usage
+
+1. Install the skill
+2. Configure as needed
+3. Run with OpenClaw

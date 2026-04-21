@@ -1,11 +1,17 @@
 {
   "owner": "sky-lv",
   "slug": "skylv-agency-agents",
-  "displayName": "Agency Agents",
+  "displayName": "Skylv Agency Agents",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775886206802,
-    "commit": "https://github.com/openclaw/skills/commit/4fee03d5007ab5deed6955c376470b016568930b"
+    "version": "1.0.3",
+    "publishedAt": 1776648296331,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775886206802,
+      "commit": "https://github.com/openclaw/skills/commit/4fee03d5007ab5deed6955c376470b016568930b"
+    }
+  ]
 }
