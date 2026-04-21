@@ -3,9 +3,15 @@
   "slug": "helmet",
   "displayName": "Helmet",
   "latest": {
-    "version": "0.2.0",
-    "publishedAt": 1776152866265,
-    "commit": "https://github.com/openclaw/skills/commit/94906799d3ec0888b4764499f4349d937f4c8fa8"
+    "version": "0.3.1",
+    "publishedAt": 1776417889033,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.0",
+      "publishedAt": 1776152866265,
+      "commit": "https://github.com/openclaw/skills/commit/94906799d3ec0888b4764499f4349d937f4c8fa8"
+    }
+  ]
 }
