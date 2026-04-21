@@ -1,11 +1,17 @@
 {
   "owner": "johnsmithfan",
   "slug": "military-civilian-talent",
-  "displayName": "军地两用人才智能助手",
+  "displayName": "Military Civilian Talent (EN)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776179541196,
-    "commit": "https://github.com/openclaw/skills/commit/0208897f8b7d7089cc088bab8a1b168988061aaf"
+    "version": "1.0.0-en2",
+    "publishedAt": 1776678588271,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776179541196,
+      "commit": "https://github.com/openclaw/skills/commit/0208897f8b7d7089cc088bab8a1b168988061aaf"
+    }
+  ]
 }
