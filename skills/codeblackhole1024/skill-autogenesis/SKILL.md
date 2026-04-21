@@ -1,7 +1,7 @@
 ---
 name: skill-autogenesis
-description: Review completed work, summarize reusable procedures, identify recurring workflow patterns, and propose or maintain skills using documented lifecycle rules and verification gates. Built for agents that need structured procedural memory in Hermes, OpenClaw, or similar tool-using environments.
-version: 1.2.1
+description: Review completed work, summarize reusable procedures, identify recurring workflow patterns, and decide whether to create a skill, patch an existing skill, store a memory note, or do nothing. Built for agents that need structured procedural memory in Hermes, OpenClaw, or similar tool-using environments without confusing abstract rules with reusable procedures.
+version: 1.3.2
 author: Agent Skill Master
 license: MIT
 metadata:
@@ -12,14 +12,16 @@ metadata:
 
 # Skill Autogenesis
 
-Turn repeated successful work into reusable skills.
+Turn repeated successful work into reusable procedural memory.
+
+Default stance: evaluate first. Do not turn every solved task, preference, or policy note into a new skill.
 
 This skill makes the agent do five things during normal task execution:
 1. Analyze what was just done.
-2. Summarize the reusable procedure.
-3. Track whether the same pattern keeps recurring.
+2. Summarize the reusable procedure if one actually exists.
+3. Track whether the same procedure keeps recurring.
 4. Apply `skill_manage`-style lifecycle rules for create, patch, edit, write_file, and remove_file behavior.
-5. Recommend or create a skill when the repetition threshold is met, the workflow is stable, and the environment policy allows it.
+5. Choose the lightest correct persistence action: create a skill, patch an existing skill, store a compact memory note, or do nothing.
 
 This skill is inspired by Hermes Agent's agent-managed skill behavior and its guidance to save complex or non-trivial workflows as skills. Source links are listed in `references/sources.md`.
 
@@ -36,7 +38,7 @@ Load this skill early in a session if automatic skill creation is desired.
 
 ## Operating Contract
 
-When this skill is active, treat every substantial task as a candidate for procedural learning.
+When this skill is active, treat every substantial task as a candidate for procedural learning, not as an automatic instruction to create a new skill.
 
 A task becomes a skill candidate when at least one of these is true:
 - the workflow required 5 or more meaningful tool calls
@@ -45,7 +47,9 @@ A task becomes a skill candidate when at least one of these is true:
 - the same intent appears 3 or more times in the current session or in session history
 - the user explicitly asks for automation, reuse, codification, or standardization
 
-Do not create a skill for trivial one-step work, ephemeral conversation-only advice, or highly project-specific context that will not generalize.
+A skill candidate is only a review target. The default output of the review is a classification decision, not a file write.
+
+Do not create a skill for trivial one-step work, ephemeral conversation-only advice, highly project-specific context that will not generalize, or abstract policy notes that are better stored in memory or prompts.
 
 ## Quick Reference
 
@@ -56,17 +60,62 @@ Use this decision rule after every meaningful success:
    - inputs and prerequisites
    - exact procedure
    - verification
-2. Classify the workflow:
+2. Decide what kind of knowledge was produced:
+   - executable procedure
+   - preference or policy note
+   - one-off result with no reusable pattern
+3. Classify the workflow:
    - one-off
    - reusable but not frequent yet
    - frequent and stable
-3. Estimate recurrence evidence:
+4. Estimate recurrence evidence:
    - current-session repetition count
    - past-session repetition count if `session_search` exists
    - explicit user preference for reuse
-4. If the workflow is frequent and stable, create a skill immediately.
-5. If the workflow is reusable but not frequent enough, store a compact memory note if memory exists.
-6. If the workflow is not stable yet, wait and keep observing.
+5. If the result is an executable procedure and it is frequent and stable, create or patch a skill.
+6. If the result is reusable but not frequent enough, store a compact memory note if memory exists.
+7. If the result is a preference, boundary, or policy note, update memory or prompts instead of creating a skill.
+8. If the workflow is not stable yet, wait and keep observing.
+
+## Decision Matrix
+
+Use this routing table before any persistence action:
+
+- executable procedure + stable + verified + recurring -> create or patch a skill
+- executable procedure + promising but not frequent yet -> store a compact memory note or keep observing
+- user preference, approval boundary, naming convention, style rule, or governance note -> update memory or prompts, not a skill
+- one-off result, temporary conclusion, or incomplete hypothesis -> no persistence yet
+
+Hard stop rules:
+- If `knowledge_type=preference`, never call `skill_manage(create)` or `skill_manage(edit)`.
+- If `knowledge_type=policy`, never call `skill_manage(create)` unless the output also contains a complete executable procedure with trigger, ordered actions, and verification.
+- If `recommended_action` is `memory`, `prompt`, or `none`, do not write or modify any skill files.
+- When in doubt between procedure and policy, classify as non-skill first and require stronger evidence before writing files.
+
+## Output Contract
+
+Before creating or updating anything, produce an internal decision record with these fields:
+- knowledge_type: procedure | preference | policy | one_off
+- recurrence: none | possible | confirmed
+- stability: low | medium | high
+- verification: missing | partial | passed
+- recommended_action: create | patch | memory | prompt | none
+
+Use this exact template internally before any persistence action:
+
+Classification:
+- knowledge_type:
+- recurrence:
+- stability:
+- verification:
+- recommended_action:
+
+Reason:
+- why this is or is not an executable reusable procedure
+- why the selected persistence layer is the lightest correct one
+
+Only `recommended_action=create` or `recommended_action=patch` may lead to skill file updates.
+If any field is missing, default to `recommended_action=none` until the classification is complete.
 
 ## Procedure
 
@@ -80,6 +129,11 @@ After any meaningful success, extract:
 - the verification signals that proved success
 
 Write the summary in concise operational language, not narrative prose.
+
+Before doing anything persistent, ask one discriminator question:
+- Did this task produce an executable reusable procedure, or did it only produce a rule, preference, constraint, or one-off conclusion?
+
+If it did not produce an executable reusable procedure, do not create a skill from it.
 
 ### Phase 2. Detect recurrence
 
@@ -96,9 +150,23 @@ Treat recurrence as confirmed when any of these rules match:
 - the user explicitly requests automatic reuse
 - the workflow is long, stable, and clearly generic enough for future reuse
 
+Recurrence alone is not enough. A repeated preference or governance note is still not a skill unless it defines a reusable executable procedure.
+
 ### Phase 3. Decide whether to create a skill
 
+Run this checklist in order. All checks must pass before create or patch.
+
+Checklist:
+1. Is the result an executable procedure rather than a rule, preference, or policy statement?
+2. Does it have a clear trigger condition?
+3. Does it contain ordered actions another agent can actually execute?
+4. Does it define at least one verification signal?
+5. Is it stable enough to repeat without relying on accidental context?
+6. Is it free of secrets, temporary identifiers, and mostly user-specific data?
+7. Would storing it as memory or prompt guidance lose important procedural detail?
+
 Create a skill only when all conditions hold:
+- the result is an executable procedure, not merely a rule, preference, or policy statement
 - the workflow has a clear trigger condition
 - the steps are deterministic enough to be followed again
 - verification criteria are known
@@ -107,17 +175,28 @@ Create a skill only when all conditions hold:
 
 If the conditions are not met, do not force a skill.
 
+Route non-skill outcomes to the right storage layer:
+- user preference or communication style -> user memory
+- durable environment fact or project convention -> memory
+- agent governance or default behavior -> prompt or runtime config
+- unfinished hypothesis or weak pattern -> no persistence yet
+
 ### Phase 4. Apply `skill_manage` lifecycle logic
 
 When `skill_manage` or an equivalent skill API exists, use the same action-selection logic instead of treating every change as a new skill.
 
 Action selection rules:
-- use `create` when no related skill exists and the workflow is frequent, stable, and reusable
-- use `patch` for targeted fixes, missing steps, corrected commands, improved verification, or recurring pitfalls
+- use `create` when no related skill exists and the workflow is frequent, stable, reusable, and classified as `knowledge_type=procedure`
+- use `patch` for targeted fixes, missing steps, corrected commands, improved verification, or recurring pitfalls in an existing procedural skill
 - use `edit` only when the skill structure must be reorganized substantially and targeted patching is no longer clean
 - use `write_file` to add or update supporting files such as references, templates, scripts, assets, and human-facing docs
 - use `remove_file` to delete obsolete supporting files that would otherwise mislead later runs
 - use `delete` only with explicit user approval, because deletion is destructive
+
+Hard stop enforcement:
+- never use `create` for preferences, policy notes, approval boundaries, style guidance, or naming conventions by themselves
+- never use `patch` or `edit` to convert a non-procedural rule into a fake skill
+- if the best destination is memory or prompt, stop the skill lifecycle here and use that destination instead
 
 Default policy:
 - prefer `patch` over `edit`
@@ -127,7 +206,7 @@ Default policy:
 
 ### Phase 5. Create the skill
 
-If `skill_manage` exists, create a new skill only when the recurrence threshold is met, the workflow has passed verification, and the active environment allows autonomous skill creation.
+If `skill_manage` exists, create a new skill only when the recurrence threshold is met, the workflow has passed verification, the active environment allows autonomous skill creation, and the decision record says `knowledge_type=procedure`.
 If the environment uses a different skill API, map the same lifecycle actions semantically.
 If no skill creation capability exists, produce a complete `SKILL.md` draft and `README.md` draft for the user or parent agent to save.
 
@@ -214,6 +293,10 @@ Default thresholds:
 - create after 3 confirmed repetitions of substantially the same workflow
 - create immediately when the user explicitly asks for reusable cross-agent behavior
 
+Hard gate before any create action:
+- the outcome must be an executable reusable procedure with concrete steps, tools, and verification
+- if the outcome is only a rule, preference, guardrail, naming convention, approval boundary, or abstract heuristic, do not create a new skill from it
+
 Lifecycle policy:
 - choose `create` only when no suitable skill exists yet
 - choose `patch` as the default update action
@@ -247,6 +330,9 @@ If running in OpenClaw or another agent framework:
 - Do not duplicate an existing skill just because the wording changed.
 - Do not save raw conversation summaries as skills. Convert them into executable procedure.
 - Do not overfit a skill to one repository, hostname, or credential set unless the user requested a local-only skill.
+- Do not mistake a rule for a skill. A rule says what should be true. A skill says when to act, what to do, and how to verify it worked.
+- Do not create a skill for user preferences, approval requirements, naming conventions, or communication style. Store those in memory or prompts.
+- Do not use `skill_manage(create)` as a generic persistence tool. If the outcome is policy-like, preference-like, or one-off, creating a skill is the wrong action.
 
 ## Verification
 
@@ -259,6 +345,8 @@ A newly created or updated skill is considered valid only when all checks pass:
 6. The content contains no secrets or temporary identifiers.
 7. A README is generated alongside the skill package when file support exists.
 8. Source links are attached when the skill references external behavior or framework semantics.
+9. The internal classification record exists and ends with `recommended_action=create` or `recommended_action=patch`.
+10. The checklist in Phase 3 passed completely.
 
 ## Sources
 
