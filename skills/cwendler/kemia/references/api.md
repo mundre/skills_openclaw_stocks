@@ -9,8 +9,9 @@ Base URL: `https://kemia.byte5.ai` (or your self-hosted instance)
 The enrollment flow creates a new kemia instance and returns an API key. No shared secrets required.
 
 ```
-POST /api/v1/enroll           → { enrollUrl, pollUrl }     (no auth)
+POST /api/v1/enroll              → { enrollUrl, pollUrl }  (no auth)
 GET  /api/v1/enroll/:code/status → { status, apiKey? }     (no auth, code is auth)
+POST /api/v1/enroll/:code/ack    → { status: "acked" }     (no auth, code is auth)
 ```
 
 ### Bearer Token (all other endpoints)
@@ -39,7 +40,8 @@ POST /api/v1/enroll
 ```json
 {
   "name": "My Instance",
-  "orchestrator": "openclaw"
+  "orchestrator": "openclaw",
+  "fingerprint": "sha256:abc123..."
 }
 ```
 
@@ -47,6 +49,7 @@ POST /api/v1/enroll
 |-------|------|---------|-------------|
 | `name` | string | "My Instance" | Display name for the kemia instance |
 | `orchestrator` | string | "openclaw" | Orchestrator type: `"openclaw"`, `"paperclip"`, or custom |
+| `fingerprint` | string | *(none)* | Optional stable ID for this machine (e.g. `sha256(hostname + workspace_path)`). If it matches an existing instance, the confirm page offers Re-Auth instead of silently creating a duplicate. Max 200 chars. |
 
 **Response (200):**
 ```json
@@ -76,7 +79,7 @@ GET /api/v1/enroll/:code/status
 { "status": "pending" }
 ```
 
-**Response (completed — API key returned once):**
+**Response (completed — API key returned within the retention window):**
 ```json
 {
   "status": "completed",
@@ -85,12 +88,40 @@ GET /api/v1/enroll/:code/status
 }
 ```
 
-The API key is returned **exactly once**. After the first successful poll, it is nulled from the database. Store it securely.
+The API key is retrievable for a short retention window (5 minutes) after
+confirmation. Within that window, repeated polls return the same key — this
+lets a client that crashes mid-save recover without re-enrolling. After the
+window elapses, the next poll clears the stored key and returns without it:
+
+```json
+{ "status": "completed", "instanceId": "clxyz..." }
+```
+
+Clients that have persisted the key should call `POST .../ack` to clear it
+server-side immediately, rather than waiting out the window.
 
 **Response (expired):**
 ```json
 { "status": "expired" }
 ```
+
+### Step 4 (optional): Ack the stored key
+
+```
+POST /api/v1/enroll/:code/ack
+```
+
+**Auth:** None (the code IS the auth; rate-limited: 30/min per IP)
+
+Signals that the client has persisted the API key and the server may clear
+its stored (encrypted) copy now. Idempotent.
+
+**Response (200):**
+```json
+{ "status": "acked" }
+```
+
+**Response (409):** Enrollment not yet completed.
 
 ---
 
