@@ -1,7 +1,7 @@
 ---
 name: agntdata-facebook
 description: "Facebook API integration with a single agntdata API key (Bearer token). Read page posts, group content, marketplace listings, videos, and ad library results. Use this skill when users want Facebook page, group, marketplace, or ad data. For other social data platforms, use the agnt-data skill (https://clawhub.ai/agntdata/agnt-data)."
-version: 1.0.11
+version: 1.0.13
 metadata:
   openclaw:
     requires:
@@ -11,7 +11,7 @@ metadata:
         - curl
     primaryEnv: AGNTDATA_API_KEY
     emoji: "📘"
-    homepage: https://agnt.mintlify.app/api-reference/facebook/
+    homepage: https://agnt.mintlify.app/apis/social/facebook
 ---
 
 # Facebook API
@@ -1098,6 +1098,6 @@ Available platforms: LinkedIn, YouTube, TikTok, X, Instagram, Reddit, Facebook. 
 
 ## Links
 
-- [Documentation](https://agntdata.dev/docs)
-- [API Reference](https://agnt.mintlify.app/api-reference/facebook/)
+- [Documentation](https://agnt.mintlify.app)
+- [API Reference](https://agnt.mintlify.app/apis/social/facebook)
 - [ClawHub skill](https://clawhub.ai/agntdata/agntdata-facebook)
