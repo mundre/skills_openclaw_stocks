@@ -1,7 +1,7 @@
 ---
 name: ai-readme-manager
 description: Manages AI_README.md files so AI agents remember your project conventions across every session
-version: 1.3.0
+version: 1.3.3
 metadata:
   openclaw:
     install:
@@ -24,12 +24,12 @@ Before this skill works, you must register the MCP server with OpenClaw:
 
 On macOS/Linux:
 ```bash
-openclaw mcp set ai-readme-manager '{"command":"npx","args":["-y","ai-readme-mcp@1.3.0"]}'
+openclaw mcp set ai-readme-manager '{"command":"npx","args":["-y","ai-readme-mcp@1.3.3"]}'
 ```
 
 On Windows (cmd):
 ```cmd
-openclaw mcp set ai-readme-manager "{\"command\":\"npx\",\"args\":[\"-y\",\"ai-readme-mcp@1.3.0\"]}"
+openclaw mcp set ai-readme-manager "{\"command\":\"npx\",\"args\":[\"-y\",\"ai-readme-mcp@1.3.3\"]}"
 ```
 
 **Option 2: Edit config file**
@@ -41,7 +41,7 @@ Add to `~/.openclaw/openclaw.json`:
     "servers": {
       "ai-readme-manager": {
         "command": "npx",
-        "args": ["-y", "ai-readme-mcp@1.3.0"]
+        "args": ["-y", "ai-readme-mcp@1.3.3"]
       }
     }
   }
@@ -60,6 +60,7 @@ Call `get_context_for_file` before any code-related task — editing, creating, 
 - `init_ai_readme` — initialize and populate empty AI_README files in a project
 - `update_ai_readme` — record new conventions or architectural decisions
 - `validate_ai_readmes` — check quality and token efficiency of all AI_README files
+- `compress_ai_readme` — remove filler language from an AI_README file to reduce token footprint
 - `discover_ai_readmes` — scan and list all AI_README files in a project
 
 ## Instructions
