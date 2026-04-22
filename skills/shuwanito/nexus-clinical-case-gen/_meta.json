@@ -1,0 +1,11 @@
+{
+  "owner": "shuwanito",
+  "slug": "nexus-clinical-case-gen",
+  "displayName": "healthcare, medical, clinical-cases, pubmed, differential-diagnosis, cme",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776620198074,
+    "commit": null
+  },
+  "history": []
+}
