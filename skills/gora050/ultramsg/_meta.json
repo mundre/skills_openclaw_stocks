@@ -3,11 +3,16 @@
   "slug": "ultramsg",
   "displayName": "Ultramsg",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775167008331,
-    "commit": "https://github.com/openclaw/skills/commit/70f33bf0b5a460744d2e49728df81c31699e9198"
+    "version": "1.0.3",
+    "publishedAt": 1776860757327,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775167008331,
+      "commit": "https://github.com/openclaw/skills/commit/70f33bf0b5a460744d2e49728df81c31699e9198"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774339433796,
