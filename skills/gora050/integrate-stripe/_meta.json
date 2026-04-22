@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "integrate-stripe",
+  "displayName": "Stripe",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776772111446,
+    "commit": null
+  },
+  "history": []
+}
