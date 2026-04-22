@@ -1,0 +1,11 @@
+{
+  "owner": "webpenbot",
+  "slug": "police-qualification-exam",
+  "displayName": "警察执法资格考试助手",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776692029407,
+    "commit": null
+  },
+  "history": []
+}
