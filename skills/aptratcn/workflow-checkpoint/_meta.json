@@ -1,0 +1,11 @@
+{
+  "owner": "aptratcn",
+  "slug": "workflow-checkpoint",
+  "displayName": "Workflow Checkpoint",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776728385062,
+    "commit": null
+  },
+  "history": []
+}
