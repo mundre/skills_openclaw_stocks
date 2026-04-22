@@ -1,0 +1,11 @@
+{
+  "owner": "snazar-faberlens",
+  "slug": "datadog-hardened",
+  "displayName": "Datadog Hardened",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776835303040,
+    "commit": null
+  },
+  "history": []
+}
