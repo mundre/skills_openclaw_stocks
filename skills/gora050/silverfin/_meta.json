@@ -3,11 +3,16 @@
   "slug": "silverfin",
   "displayName": "Silverfin",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775170679298,
-    "commit": "https://github.com/openclaw/skills/commit/5194a7c85e3e4e8140ca5870e8aacda3716719ed"
+    "version": "1.0.3",
+    "publishedAt": 1776866030012,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775170679298,
+      "commit": "https://github.com/openclaw/skills/commit/5194a7c85e3e4e8140ca5870e8aacda3716719ed"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1775088298888,
