@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "hootsuite-integration",
+  "displayName": "Hootsuite",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776790976680,
+    "commit": null
+  },
+  "history": []
+}
