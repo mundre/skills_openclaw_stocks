@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "circleci-config-validator",
+  "displayName": "CircleCI Config Validator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776737151317,
+    "commit": null
+  },
+  "history": []
+}
