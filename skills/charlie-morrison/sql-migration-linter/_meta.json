@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "sql-migration-linter",
+  "displayName": "SQL Migration Linter",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776469632143,
+    "commit": null
+  },
+  "history": []
+}
