@@ -1,0 +1,11 @@
+{
+  "owner": "agents365-ai",
+  "slug": "bbc-skill",
+  "displayName": "Bbc Skill",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1776591329257,
+    "commit": null
+  },
+  "history": []
+}
