@@ -26,7 +26,7 @@ const ffprobePath = resolveFfprobe();  // throws if not found
 
 **Resolution order:**
 1. `FFMPEG_PATH` env var
-2. System FFmpeg (`which` / `where`)
+2. System FFmpeg — found by walking `PATH` directories with `fs.accessSync` (no shell invocation)
 3. `require('ffmpeg-static')` bundled binary
 
 ---
@@ -178,19 +178,8 @@ ffprobe -v error -show_streams -of json input.mp4 | node -e "
 ```
 
 ### Node.js usage
-```js
-const { path: ffprobePath } = require('ffprobe-static');
-const { execFile } = require('child_process');
-const util = require('util');
-const execFileAsync = util.promisify(execFile);
 
-async function probe(file) {
-  const { stdout } = await execFileAsync(ffprobePath, [
-    '-v', 'error', '-show_format', '-show_streams', '-of', 'json', file
-  ]);
-  return JSON.parse(stdout);
-}
-```
+See `templates/node_patterns.txt` for a copy-paste `probe()` / `getDuration()` implementation using `child_process.execFile` in your own project code.
 
 ---
 
@@ -251,49 +240,9 @@ ffmpeg -i input.mp4 -c:v h264_videotoolbox -q:v 60 output.mp4
 
 ---
 
-## Node.js `child_process` Patterns
+## Node.js Integration Patterns
 
-### Spawn with stderr progress
-```js
-const { spawn } = require('child_process');
-
-function ffmpegSpawn(ffmpegPath, args, { onProgress } = {}) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(ffmpegPath, ['-y', ...args], { stdio: ['ignore', 'ignore', 'pipe'] });
-    let stderr = '';
-    proc.stderr.on('data', chunk => {
-      stderr += chunk;
-      if (onProgress) {
-        const m = chunk.toString().match(/time=(\S+)/);
-        if (m) onProgress(m[1]);
-      }
-    });
-    proc.on('close', code => {
-      if (code === 0) resolve();
-      else reject(new Error(`ffmpeg exited ${code}\n${stderr.slice(-2000)}`));
-    });
-  });
-}
-```
-
-### Machine-readable progress via `-progress`
-```js
-const args = [
-  '-i', 'input.mp4',
-  '-c:v', 'libx264', '-crf', '23',
-  '-progress', 'pipe:1',   // progress to stdout
-  '-loglevel', 'error',    // suppress verbose stderr
-  'output.mp4'
-];
-const proc = spawn(ffmpegPath, ['-y', ...args], { stdio: ['ignore', 'pipe', 'inherit'] });
-proc.stdout.on('data', d => {
-  for (const line of d.toString().split('\n')) {
-    const [k, v] = line.split('=');
-    if (k === 'out_time') console.log('Progress:', v);
-    if (k === 'progress' && v === 'end') console.log('Done');
-  }
-});
-```
+Copy-paste patterns for spawn, progress reporting, ffprobe, and fluent-ffmpeg are in `templates/node_patterns.txt`. Use `scripts/resolve_ffmpeg.js` to get the binary path, then invoke FFmpeg with `child_process.spawn` in your own project.
 
 ---
 

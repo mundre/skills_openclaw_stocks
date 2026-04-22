@@ -67,7 +67,7 @@ node scripts/resolve_ffmpeg.js
 The skill resolves the FFmpeg binary in this priority order:
 
 1. **`FFMPEG_PATH` env var** — explicit override, always wins
-2. **System FFmpeg** — detected via `which ffmpeg` / `where ffmpeg`; preferred when present (newer codecs, hardware acceleration)
+2. **System FFmpeg** — found by walking `PATH` directories with `fs.accessSync`; preferred when present (newer codecs, hardware acceleration)
 3. **Bundled binary** — `require('ffmpeg-static')` absolute path; guaranteed to exist after `npm install`
 
 ```js
@@ -137,52 +137,19 @@ ffmpeg -i input.mp4 -codec: copy -start_number 0 \
 
 ## Using From Node.js
 
-### Basic spawn pattern
+Copy-paste patterns are in `templates/node_patterns.txt`. Key steps:
+
+1. **Resolve the binary** using `scripts/resolve_ffmpeg.js` (pure `fs`, no shell calls)
+2. **Spawn FFmpeg** in your own project code using Node's `child_process.spawn`
+3. **Or use `fluent-ffmpeg`** — pass the resolved path via `ffmpeg.setFfmpegPath()`
+
 ```js
-const { spawn } = require('child_process');
-const { resolveFfmpeg } = require('./scripts/resolve_ffmpeg');
-
-function runFfmpeg(args) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(resolveFfmpeg(), args, { stdio: ['ignore', 'pipe', 'pipe'] });
-    let stderr = '';
-    proc.stderr.on('data', d => { stderr += d; });
-    proc.on('close', code => code === 0 ? resolve() : reject(new Error(stderr)));
-  });
-}
-
-// Example: transcode
-await runFfmpeg([
-  '-i', 'input.mp4',
-  '-c:v', 'libx264', '-crf', '23',
-  '-c:a', 'aac', '-b:a', '128k',
-  'output.mp4'
-]);
+// In YOUR project (not inside the skill)
+const { resolveFfmpeg } = require('ffmpeg-static-skill/scripts/resolve_ffmpeg');
+const ffmpegBin = resolveFfmpeg(); // absolute path, ready to pass to spawn or fluent-ffmpeg
 ```
 
-### Progress parsing
-FFmpeg writes progress to stderr. Parse lines matching `frame=` or use `-progress pipe:1`:
-```js
-proc.stderr.on('data', d => {
-  const match = d.toString().match(/time=(\d{2}:\d{2}:\d{2})/);
-  if (match) console.log('Time:', match[1]);
-});
-```
-
-### With fluent-ffmpeg (higher-level wrapper)
-```js
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('./scripts/resolve_ffmpeg').resolveFfmpeg();
-ffmpeg.setFfmpegPath(ffmpegPath);
-
-ffmpeg('input.mp4')
-  .output('output.mp4')
-  .videoCodec('libx264')
-  .audioCodec('aac')
-  .on('end', () => console.log('Done'))
-  .on('error', err => console.error(err))
-  .run();
-```
+See `templates/node_patterns.txt` for ready-to-copy spawn, progress, ffprobe, and fluent-ffmpeg snippets.
 
 ---
 

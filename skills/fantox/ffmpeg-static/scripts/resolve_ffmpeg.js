@@ -19,20 +19,27 @@
 
 'use strict';
 
-const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Walk PATH entries directly — no shell invocation needed.
 function findSystemBinary(name) {
-  try {
-    const cmd = process.platform === 'win32' ? `where ${name}` : `which ${name}`;
-    const result = execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] })
-      .toString()
-      .trim()
-      .split(/\r?\n/)[0];
-    if (result && fs.existsSync(result)) return result;
-  } catch {
-    // not found on PATH
+  const pathEnv = process.env.PATH || process.env.Path || '';
+  const dirs = pathEnv.split(path.delimiter).filter(Boolean);
+  const exts = process.platform === 'win32'
+    ? (process.env.PATHEXT || '.EXE;.CMD;.BAT').split(';')
+    : [''];
+
+  for (const dir of dirs) {
+    for (const ext of exts) {
+      const candidate = path.join(dir, name + ext);
+      try {
+        fs.accessSync(candidate, fs.constants.X_OK);
+        return candidate;
+      } catch {
+        // not in this directory
+      }
+    }
   }
   return null;
 }
