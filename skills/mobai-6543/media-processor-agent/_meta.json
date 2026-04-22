@@ -1,0 +1,11 @@
+{
+  "owner": "mobai-6543",
+  "slug": "media-processor-agent",
+  "displayName": "media-processor",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1776478312766,
+    "commit": null
+  },
+  "history": []
+}
