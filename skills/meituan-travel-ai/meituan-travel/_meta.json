@@ -1,0 +1,11 @@
+{
+  "owner": "meituan-travel-ai",
+  "slug": "meituan-travel",
+  "displayName": "meituan-travel",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776743213338,
+    "commit": null
+  },
+  "history": []
+}
