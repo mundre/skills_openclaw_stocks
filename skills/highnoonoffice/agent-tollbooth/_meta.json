@@ -1,0 +1,11 @@
+{
+  "owner": "highnoonoffice",
+  "slug": "agent-tollbooth",
+  "displayName": "Agent Tollbooth",
+  "latest": {
+    "version": "2.2.0",
+    "publishedAt": 1776636825172,
+    "commit": null
+  },
+  "history": []
+}
