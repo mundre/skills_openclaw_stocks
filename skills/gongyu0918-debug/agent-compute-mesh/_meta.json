@@ -1,0 +1,11 @@
+{
+  "owner": "gongyu0918-debug",
+  "slug": "agent-compute-mesh",
+  "displayName": "Agent 算力分布网络 / Agent Compute Mesh",
+  "latest": {
+    "version": "0.1.2",
+    "publishedAt": 1776581331796,
+    "commit": null
+  },
+  "history": []
+}
