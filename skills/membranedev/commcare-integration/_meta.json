@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "commcare-integration",
+  "displayName": "Commcare",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776830608294,
+    "commit": null
+  },
+  "history": []
+}
