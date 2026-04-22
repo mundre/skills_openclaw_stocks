@@ -1,0 +1,11 @@
+{
+  "owner": "wzp2026",
+  "slug": "learning-content-generator",
+  "displayName": "基于输入知识图谱个性生成节点学习内容",
+  "latest": {
+    "version": "2.3.1",
+    "publishedAt": 1776824117982,
+    "commit": null
+  },
+  "history": []
+}
