@@ -6,8 +6,9 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 START = "<!-- agent-travel:suggestions:start -->"
@@ -15,9 +16,9 @@ END = "<!-- agent-travel:suggestions:end -->"
 TOP_LEVEL_REQUIRED = {
     "generated_at",
     "expires_at",
-    "budget",
     "search_mode",
     "tool_preference",
+    "source_scope",
     "thread_scope",
     "problem_fingerprint",
     "advisory_only",
@@ -31,28 +32,40 @@ ITEM_REQUIRED = {
     "solves_point",
     "new_idea",
     "fit_reason",
+    "match_reasoning",
     "version_scope",
     "do_not_apply_when",
 }
-ISO_FIELDS = {"generated_at", "expires_at"}
-INJECTION_MARKERS = ("ignore previous", "override system", "bypass guard", "ignore all")
+ALLOWED_LEVELS = {"low", "medium", "high"}
+ALLOWED_TOOL_PREFERENCES = {"public-only", "all-available", "custom"}
+ALLOWED_VISIBILITY = {"silent_until_relevant", "show_on_next_relevant_turn"}
+ALLOWED_SOURCE_SCOPE_PARTS = {"primary", "secondary", "tertiary"}
+ALLOWED_TRIGGER_REASONS = {
+    "heartbeat",
+    "scheduled",
+    "task_end",
+    "failure_recovery",
+    "idle_fallback",
+}
+ALLOWED_REUSE_GATES = {"min_4_of_5_axes_and_ttl_valid"}
+SUGGESTION_LIMITS = {"low": 1, "medium": 3, "high": 5}
+MAX_TTL = timedelta(days=14)
+FINGERPRINT_HASH_PATTERN = re.compile(r"^(?:h64|sha256):[0-9a-f]{64}$")
+MATCH_AXES = {
+    "host",
+    "version",
+    "symptom",
+    "constraint_pattern",
+    "desired_next_outcome",
+}
+MATCH_AXIS_ALIASES = {
+    "constraint": "constraint_pattern",
+}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("path", help="Path to suggestions.md")
-    parser.add_argument(
-        "--max-suggestions",
-        type=int,
-        default=5,
-        help="Maximum active suggestions allowed",
-    )
-    parser.add_argument(
-        "--max-ttl-days",
-        type=int,
-        default=30,
-        help="Maximum allowed TTL in days",
-    )
+    parser.add_argument("path", help="Path to a markdown file containing suggestion markers")
     return parser.parse_args()
 
 
@@ -63,9 +76,263 @@ def fail(errors: list[str]) -> int:
 
 
 def parse_iso(value: str) -> datetime:
+    if not value.strip():
+        raise ValueError("timestamp must be non-empty")
     if value.endswith("Z"):
         value = value[:-1] + "+00:00"
-    return datetime.fromisoformat(value)
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("timestamp must include a timezone offset")
+    return parsed
+
+
+def normalize_part(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
+
+
+def split_scope(value: str) -> set[str]:
+    return {normalize_part(part) for part in re.split(r"[^A-Za-z0-9]+", value) if part.strip()}
+
+
+def canonicalize_axis(axis: str) -> str:
+    normalized = normalize_part(axis)
+    return MATCH_AXIS_ALIASES.get(normalized, normalized)
+
+
+def parse_evidence_source(item: str) -> tuple[str, str]:
+    label, separator, reference = str(item).partition(":")
+    normalized_label = normalize_part(label)
+    normalized_reference = reference.strip().lower() if separator else ""
+    if normalized_reference:
+        parsed = urlparse(normalized_reference)
+        if parsed.scheme and parsed.netloc:
+            normalized_reference = f"{parsed.netloc}{parsed.path}".rstrip("/")
+    return normalized_label, normalized_reference
+
+
+def parse_block(path: Path) -> tuple[dict[str, str], list[dict[str, object]], list[str]]:
+    text = path.read_text(encoding="utf-8")
+    start = text.rfind(START)
+    end = text.rfind(END)
+    if start == -1 or end == -1 or end <= start:
+        return {}, [], ["missing or invalid agent-travel markers"]
+
+    block = text[start + len(START) : end].strip()
+    lines = [line.rstrip() for line in block.splitlines()]
+    errors: list[str] = []
+    top_level: dict[str, str] = {}
+    suggestions: list[dict[str, object]] = []
+    current: dict[str, object] | None = None
+    current_evidence: list[str] | None = None
+    current_match_reasoning: list[str] | None = None
+
+    key_pattern = re.compile(r"^([a-z_]+):\s*(.*)$")
+    heading_pattern = re.compile(r"^##\s+suggestion-\d+\s*$")
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line or line.startswith("# agent-travel suggestions"):
+            continue
+        if heading_pattern.match(line):
+            current = {"evidence": [], "match_reasoning": []}
+            suggestions.append(current)
+            current_evidence = None
+            current_match_reasoning = None
+            continue
+        if line == "evidence:":
+            if current is None:
+                errors.append("found evidence block before any suggestion heading")
+                continue
+            current_evidence = current["evidence"]  # type: ignore[assignment]
+            current_match_reasoning = None
+            continue
+        if line == "match_reasoning:":
+            if current is None:
+                errors.append("found match_reasoning block before any suggestion heading")
+                continue
+            current_match_reasoning = current["match_reasoning"]  # type: ignore[assignment]
+            current_evidence = None
+            continue
+        if line.startswith("- "):
+            if current_evidence is not None:
+                current_evidence.append(line[2:].strip())
+                continue
+            if current_match_reasoning is not None:
+                current_match_reasoning.append(line[2:].strip())
+                continue
+            errors.append(f"unexpected list item outside block: {line}")
+            continue
+
+        match = key_pattern.match(line)
+        if not match:
+            errors.append(f"unrecognized line: {line}")
+            current_evidence = None
+            current_match_reasoning = None
+            continue
+
+        key, value = match.groups()
+        current_evidence = None
+        current_match_reasoning = None
+        if current is None:
+            top_level[key] = value
+        else:
+            current[key] = value
+
+    return top_level, suggestions, errors
+
+
+def suggestion_limit(top_level: dict[str, str]) -> int | None:
+    values = []
+    for key in ("budget", "search_mode"):
+        value = top_level.get(key)
+        if value in SUGGESTION_LIMITS:
+            values.append(SUGGESTION_LIMITS[value])
+    return min(values) if values else None
+
+
+def validate_top_level(top_level: dict[str, str], suggestion_count: int) -> list[str]:
+    errors: list[str] = []
+    missing = sorted(TOP_LEVEL_REQUIRED - set(top_level))
+    if missing:
+        errors.append(f"missing top-level fields: {', '.join(missing)}")
+        return errors
+
+    if top_level.get("advisory_only", "").lower() != "true":
+        errors.append("advisory_only must be true")
+    if top_level.get("thread_scope") != "active_conversation_only":
+        errors.append("thread_scope must be active_conversation_only")
+    for field in sorted(TOP_LEVEL_REQUIRED - {"advisory_only"}):
+        if not top_level.get(field, "").strip():
+            errors.append(f"{field} must be non-empty")
+
+    budget = top_level.get("budget", "")
+    if budget and budget not in ALLOWED_LEVELS:
+        errors.append("budget must be one of: low, medium, high")
+    search_mode = top_level.get("search_mode", "")
+    if search_mode not in ALLOWED_LEVELS:
+        errors.append("search_mode must be one of: low, medium, high")
+    if budget and search_mode and budget != search_mode:
+        errors.append("budget must match search_mode when both are present")
+    tool_preference = top_level.get("tool_preference", "")
+    if tool_preference not in ALLOWED_TOOL_PREFERENCES:
+        errors.append("tool_preference must be one of: all-available, custom, public-only")
+
+    source_scope = split_scope(top_level.get("source_scope", ""))
+    if "primary" not in source_scope:
+        errors.append("source_scope must include primary")
+    invalid_source_scope = sorted(source_scope - ALLOWED_SOURCE_SCOPE_PARTS)
+    if invalid_source_scope:
+        errors.append(f"source_scope contains unsupported tiers: {', '.join(invalid_source_scope)}")
+
+    visibility = top_level.get("visibility")
+    if visibility and visibility not in ALLOWED_VISIBILITY:
+        errors.append("visibility must be one of: show_on_next_relevant_turn, silent_until_relevant")
+
+    trigger_reason = top_level.get("trigger_reason")
+    if trigger_reason and trigger_reason not in ALLOWED_TRIGGER_REASONS:
+        errors.append(
+            "trigger_reason must be one of: failure_recovery, heartbeat, idle_fallback, scheduled, task_end"
+        )
+
+    reuse_gate = top_level.get("reuse_gate")
+    if reuse_gate and reuse_gate not in ALLOWED_REUSE_GATES:
+        errors.append("reuse_gate must be: min_4_of_5_axes_and_ttl_valid")
+
+    fingerprint_hash = top_level.get("fingerprint_hash", "")
+    if fingerprint_hash and not FINGERPRINT_HASH_PATTERN.fullmatch(fingerprint_hash):
+        errors.append("fingerprint_hash must be formatted as h64:<64 lowercase hex chars>")
+
+    fingerprint_parts = [part.strip() for part in top_level.get("problem_fingerprint", "").split("|") if part.strip()]
+    if len(fingerprint_parts) < 4:
+        errors.append("problem_fingerprint must contain at least 4 non-empty segments")
+
+    if {"generated_at", "expires_at"} <= set(top_level):
+        try:
+            generated = parse_iso(top_level["generated_at"])
+            expires = parse_iso(top_level["expires_at"])
+            if expires <= generated:
+                errors.append("expires_at must be later than generated_at")
+            if expires - generated > MAX_TTL:
+                errors.append("expires_at must be within 14 days of generated_at")
+        except (TypeError, ValueError) as exc:
+            errors.append(f"invalid ISO date: {exc}")
+
+    limit = suggestion_limit(top_level)
+    if limit is not None and suggestion_count > limit:
+        errors.append(f"{budget or search_mode} allows at most {limit} suggestion(s)")
+
+    return errors
+
+
+def validate_suggestion(
+    index: int,
+    suggestion: dict[str, object],
+    declared_source_scope: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    missing = sorted(ITEM_REQUIRED - set(suggestion))
+    if missing:
+        errors.append(f"suggestion-{index} is missing fields: {', '.join(missing)}")
+        return errors
+
+    for field in sorted(ITEM_REQUIRED - {"match_reasoning"}):
+        value = str(suggestion.get(field, "")).strip()
+        if not value:
+            errors.append(f"suggestion-{index} field {field} must be non-empty")
+
+    confidence = str(suggestion.get("confidence", ""))
+    if confidence not in ALLOWED_LEVELS:
+        errors.append(f"suggestion-{index} confidence must be one of: low, medium, high")
+
+    evidence = suggestion.get("evidence", [])
+    if not isinstance(evidence, list) or len(evidence) < 2:
+        errors.append(f"suggestion-{index} needs at least 2 evidence items")
+    else:
+        evidence_tiers = set()
+        evidence_sources = set()
+        for item in evidence:
+            if ":" not in str(item):
+                errors.append(f"suggestion-{index} evidence items must use source_label: reference format")
+                break
+            label, source_key = parse_evidence_source(str(item))
+            if not label or not source_key:
+                errors.append(f"suggestion-{index} evidence items must include a non-empty source label and reference")
+                break
+            tier = label.split("_", 1)[0]
+            evidence_tiers.add(tier)
+            evidence_sources.add(source_key)
+            if tier not in declared_source_scope:
+                errors.append(
+                    f"suggestion-{index} evidence tier {tier} must be declared in source_scope"
+                )
+        if "primary" not in evidence_tiers:
+            errors.append(f"suggestion-{index} needs at least 1 primary evidence item")
+        if not any(tier != "primary" for tier in evidence_tiers):
+            errors.append(f"suggestion-{index} needs at least 1 non-primary cross-validation evidence item")
+        if len(evidence_sources) < 2:
+            errors.append(f"suggestion-{index} needs at least 1 independent evidence source")
+
+    match_reasoning = suggestion.get("match_reasoning", [])
+    if not isinstance(match_reasoning, list) or len(match_reasoning) < 4:
+        errors.append(f"suggestion-{index} needs at least 4 match_reasoning items")
+    else:
+        axes = set()
+        for item in match_reasoning:
+            if ":" not in str(item):
+                errors.append(f"suggestion-{index} match_reasoning items must use axis: explanation format")
+                break
+            axis, explanation = str(item).split(":", 1)
+            normalized_axis = canonicalize_axis(axis)
+            if normalized_axis not in MATCH_AXES:
+                continue
+            if not explanation.strip():
+                errors.append(f"suggestion-{index} match_reasoning explanations must be non-empty")
+                break
+            axes.add(normalized_axis)
+        if len(axes) < 4:
+            errors.append(f"suggestion-{index} needs at least 4 distinct match_reasoning axes")
+
+    return errors
 
 
 def main() -> int:
@@ -74,147 +341,23 @@ def main() -> int:
     if not path.exists():
         return fail([f"file not found: {path}"])
 
-    text = path.read_text(encoding="utf-8")
-    start = text.find(START)
-    end = text.find(END)
-    if start == -1 or end == -1 or end <= start:
-        return fail(["missing or invalid agent-travel markers"])
+    try:
+        top_level, suggestions, errors = parse_block(path)
+    except OSError as exc:
+        return fail([f"failed to read {path}: {exc}"])
 
-    block = text[start + len(START) : end].strip()
-    lines = [line.rstrip() for line in block.splitlines()]
-
-    errors: list[str] = []
-    top_level: dict[str, str] = {}
-    suggestions: list[dict[str, object]] = []
-    current: dict[str, object] | None = None
-    current_evidence: list[str] | None = None
-
-    key_pattern = re.compile(r"^([a-z_]+):\s*(.+)$")
-    heading_pattern = re.compile(r"^##\s+suggestion-\d+\s*$")
-
-    for raw_line in lines:
-        line = raw_line.strip()
-        if not line or line.startswith("# agent-travel suggestions"):
-            continue
-        if heading_pattern.match(line):
-            current = {"evidence": []}
-            suggestions.append(current)
-            current_evidence = None
-            continue
-        if line == "evidence:":
-            if current is None:
-                errors.append("found evidence block before any suggestion heading")
-                continue
-            current_evidence = current["evidence"]  # type: ignore[assignment]
-            continue
-        if line.startswith("- "):
-            if current_evidence is None:
-                errors.append(f"unexpected evidence item outside evidence block: {line}")
-                continue
-            current_evidence.append(line[2:].strip())
-            continue
-
-        match = key_pattern.match(line)
-        if not match:
-            errors.append(f"unrecognized line: {line}")
-            current_evidence = None
-            continue
-
-        key, value = match.groups()
-        current_evidence = None
-        if current is None:
-            top_level[key] = value
-        else:
-            current[key] = value
-
-    missing_top = sorted(TOP_LEVEL_REQUIRED - set(top_level))
-    if missing_top:
-        errors.append(f"missing top-level fields: {', '.join(missing_top)}")
-
-    if top_level.get("advisory_only", "").lower() != "true":
-        errors.append("advisory_only must be true")
-    if top_level.get("thread_scope", "") != "active_conversation_only":
-        errors.append("thread_scope must be active_conversation_only")
-
-    for key in ISO_FIELDS & set(top_level):
-        try:
-            top_level[key] = parse_iso(top_level[key]).isoformat()
-        except ValueError as exc:
-            errors.append(f"{key} is not valid ISO-8601: {exc}")
-
-    if {"generated_at", "expires_at"} <= set(top_level):
-        generated = parse_iso(top_level["generated_at"])
-        expires = parse_iso(top_level["expires_at"])
-        ttl_days = (expires - generated).total_seconds() / 86400
-        if ttl_days <= 0:
-            errors.append("expires_at must be later than generated_at")
-        if ttl_days > args.max_ttl_days:
-            errors.append(
-                f"TTL is {ttl_days:.2f} days, which exceeds --max-ttl-days={args.max_ttl_days}"
-            )
-
+    errors.extend(validate_top_level(top_level, len(suggestions)))
     if not suggestions:
         errors.append("no suggestions found")
-    if len(suggestions) > args.max_suggestions:
-        errors.append(
-            f"found {len(suggestions)} suggestions, which exceeds --max-suggestions={args.max_suggestions}"
-        )
 
+    declared_source_scope = split_scope(top_level.get("source_scope", ""))
     for index, suggestion in enumerate(suggestions, start=1):
-        missing = sorted(ITEM_REQUIRED - set(suggestion))
-        if missing:
-            errors.append(
-                f"suggestion-{index} is missing fields: {', '.join(missing)}"
-            )
-        evidence = suggestion.get("evidence", [])
-        if not isinstance(evidence, list) or len(evidence) < 2:
-            errors.append(f"suggestion-{index} needs at least 2 evidence items")
-        if isinstance(evidence, list):
-            official_present = any(
-                item.startswith("official:") or item.startswith("official_discussion:")
-                for item in evidence
-            )
-            if not official_present:
-                errors.append(
-                    f"suggestion-{index} needs at least 1 official or official_discussion evidence item"
-                )
-        hint = str(suggestion.get("hint", ""))
-        if any(marker in hint.lower() for marker in INJECTION_MARKERS):
-            errors.append(f"suggestion-{index} hint contains policy-overriding language")
-
-        rationale_values = {
-            key: str(suggestion.get(key, "")).strip()
-            for key in (
-                "solves_point",
-                "new_idea",
-                "fit_reason",
-                "version_scope",
-                "do_not_apply_when",
-            )
-        }
-        for key, value in rationale_values.items():
-            if len(value) < 12:
-                errors.append(
-                    f"suggestion-{index} {key} is too short to be actionable"
-                )
-            lowered = value.lower()
-            if any(marker in lowered for marker in INJECTION_MARKERS):
-                errors.append(
-                    f"suggestion-{index} {key} contains policy-overriding language"
-                )
-
-        if len(set(rationale_values.values())) < len(rationale_values):
-            errors.append(
-                f"suggestion-{index} rationale and guard fields must carry different information"
-            )
+        errors.extend(validate_suggestion(index, suggestion, declared_source_scope))
 
     if errors:
         return fail(errors)
 
-    print(
-        f"OK: validated {len(suggestions)} suggestion(s) in {path}",
-        file=sys.stdout,
-    )
+    print(f"OK: validated {len(suggestions)} suggestion(s) in {path}")
     return 0
 
 

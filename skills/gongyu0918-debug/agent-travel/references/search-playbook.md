@@ -4,12 +4,24 @@ Use this file when `agent-travel` needs to turn local context into a safe search
 
 Default behavior:
 
-- `search_mode = medium`
-- `tool_preference = all-available`
+- `search_mode = low`
+- `tool_preference = public-only`
 - `thread_scope = active_conversation_only`
-- `active_thread_window = 72h`
+- `active_conversation_window = 24h`
+- `quiet_after_user_action = 20m`
+- `quiet_after_agent_action = 5m`
+- `repeat_fingerprint_cooldown = 12h`
+- `max_runs_per_thread_per_day = 1`
+- `max_runs_per_user_per_day = 3`
+- `visibility = silent_until_relevant`
 
-Use every search surface the host exposes unless the user narrowed the search.
+Use public search surfaces by default. Expand to private or internal search surfaces only when the user explicitly asks for that scope.
+
+For cron or scheduled travel, derive the search plan from workflow facts instead of user mood:
+
+- logs, alerts, backlog deltas, docs drift, release notes, inbox summaries
+- stable error fragments, version labels, service names, and maintenance goals
+- neutral host-generated prompt text when the run was not created from a manual user prompt
 
 ## Problem Fingerprint
 
@@ -20,152 +32,59 @@ Build the smallest fingerprint that still distinguishes the issue:
 - `symptom`: what is failing
 - `error_fragment`: 5-20 words from the most stable error text
 - `attempted_fixes`: short list of what already failed
-- `constraints`: platform, policy, budget, or safety limits
+- `constraints`: platform, policy, search-mode, or safety limits
 - `goal`: what would count as a useful hint on the next task
 
-Do not include secrets, full file contents, customer data, or long private paths.
+Do not include secrets, full file contents, customer data, private repo names when not public, long private paths, or raw secret values.
 
-## Query Templates
+If the current fingerprint hash matches the last stored fingerprint hash and the previous run is still inside `repeat_fingerprint_cooldown`, skip the trip and reuse the existing advisory note until the cooldown or TTL expires.
 
-Start with one of these and tighten only when needed:
+## Micro-Travel Query Policy
 
-1. Exact error plus version:
-   - `"exact error fragment" product version`
-2. Symptom plus component:
-   - `product component symptom version`
-3. Regression after upgrade:
-   - `product version old_version new_version regression symptom`
-4. Config mismatch:
-   - `product config_key symptom version`
-5. Official page discovery:
-   - `site:official.domain product symptom`
+- `low`: 1 query, `primary` first, keep at most 1 suggestion
+- `medium`: up to 3 queries, `primary + 2 secondary` surfaces, keep at most 3 suggestions
+- `high`: up to 5 queries, `primary + secondary + limited tertiary`, keep at most 5 suggestions
 
-Use the exact error only when it is stable and non-sensitive.
 Use version labels whenever the toolchain moves quickly.
-Add the user's wording plus one community alias when the product has strong jargon drift.
+
+## Do Not Include In Search Query
+
+- secrets
+- private repo names when not public
+- private file paths
+- customer names
+- full code blocks
+- access secrets
+- internal URLs
 
 ## Search Coverage Matrix
 
-Meet this minimum surface coverage before keeping advice:
+- `primary`: official docs, release notes, official discussions
+- `secondary`: search engines, GitHub issues, Stack Overflow
+- `tertiary`: forums, blogs, social media
 
-- `low`: official docs plus 1 of search engine, forum, or official discussion
-- `medium`: official docs plus any 2 of official discussion, search engine, forum, social
-- `high`: official docs, official discussion, plus any 3 of search engine, forum, social, release notes
-
-If the host exposes more tools, prefer breadth before depth on the first pass.
+- `low`: `primary` only, or `primary + 1 secondary` when the problem is ambiguous
+- `medium`: `primary + any 2 secondary surfaces`, add `tertiary` only when secondary recall is weak
+- `high`: `primary + any 2 secondary surfaces + up to 2 tertiary surfaces`
 
 ## Source Order
 
-Search in this order:
+1. `primary`: official documentation
+2. `primary`: official release notes or changelogs
+3. `primary`: official issue trackers or discussions
+4. `secondary`: search engines for broader discovery
+5. `secondary`: GitHub issues, Stack Overflow, or maintained Q&A posts with version details
+6. `tertiary`: forum threads, blog posts, social summaries, and chat-community workaround signals
 
-1. Official documentation
-2. Official release notes or changelogs
-3. Official issue trackers or discussions
-4. Search engines for broader discovery
-5. Maintained forum threads, Q&A posts, and blog posts with version details
-6. Social media or chat-community summaries for recent workaround signals
-7. Aggregated answers only when they link back to primary sources
-
-Drop pages that read like copied AI output without citations.
-
-For host-specific travel, include the relevant official surfaces:
-
-- OpenClaw docs and discussions
-- Hermes docs and discussions
-- Claude Code docs and discussions
-- Codex docs and discussions
-
-For every kept suggestion, official documentation or official maintainer guidance is mandatory.
+For every kept suggestion, at least 1 evidence item from `primary` is mandatory.
 
 ## Distillation Frame
 
-For every kept suggestion, write these three fields before keeping it:
+Every kept suggestion must define:
 
-- `solves_point`: name the concrete blocker, decision, or confusion inside the active thread
-- `new_idea`: name the additional path or framing that external search added for this user
-- `fit_reason`: name why the suggestion fits the current constraints, versions, and toolchain
-
-Drop any suggestion that cannot answer all three precisely.
-
-## Relevance Gate
-
-Keep a candidate only when it matches at least 4 of these 5 axes:
-
-1. Host or product family
-2. Version or release neighborhood
-3. Symptom or blocker
-4. Constraint pattern
-5. Desired next outcome
-
-When two candidates disagree, prefer the one with tighter version match and tighter constraint match.
-
-## Hard Answer Guard
-
-Every kept suggestion must also define:
-
-- `version_scope`: the versions, releases, or freshness window where it should hold
-- `do_not_apply_when`: the clearest mismatch condition that should block reuse
-
-If either field would be vague, the suggestion is too weak to keep.
-
-## Tool Policy
-
-Use all available search and fetch capabilities by default:
-
-- built-in web search
-- site-specific search
-- issue and discussion search
-- forum or community search
-- social search
-- direct page fetch or reader tools
-
-If the host only exposes one search path, use it plus direct page fetches.
-If the user specifies a narrower tool preference, obey it and record the preference in the suggestion block.
-
-## Coverage Checklist
-
-Before storing any suggestion, confirm that this pass covered:
-
-- 1 official document page
-- 1 official discussion, issue, or maintainer answer when available
-- 1 broad web discovery source
-- 1 community forum, Q&A, or blog source when available
-- 1 social source when recency matters
-
-`low` budget may stop after official docs plus 1 community surface.
-`medium` budget should cover official docs plus at least 2 community surfaces.
-`high` budget should cover official docs, official discussions, search engines, forums, and social signals unless a category is unavailable.
-
-## Evidence Grading
-
-- High: official doc plus official release note, or official doc plus matching maintainer fix, or official doc plus 2 independent community confirmations
-- Medium: official doc plus community confirmation, or official maintainer answer plus forum confirmation, or official release note plus matching community report
-- Low: single forum answer, blog post without versions, copied snippets without provenance
-
-Only store medium or high.
-
-## Redaction Rules
-
-Apply all of these before web search:
-
-- replace tokens and IDs with placeholders
-- collapse private paths to a generic component name
-- keep pasted code under 120 characters
-- strip internal hostnames and customer names
-- convert stack traces into a short error fragment plus top frame
-
-## Distillation Rules
-
-Every kept hint should answer four questions:
-
-1. When does this apply?
-2. What is the likely change or fix?
-3. What manual check confirms it?
-4. Why is it worth trying next time?
-
-Keep the final hint short enough to fit in a small advisory block.
-
-Also answer these two filters before keeping it:
-
-5. Does it directly serve the active conversation?
-6. Does it fit the current user's constraint, stack, and likely next step?
+- `solves_point`
+- `new_idea`
+- `fit_reason`
+- `match_reasoning`
+- `version_scope`
+- `do_not_apply_when`

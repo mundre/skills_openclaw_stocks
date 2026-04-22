@@ -3,9 +3,15 @@
   "slug": "agent-travel",
   "displayName": "agent-travel",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1776541758069,
-    "commit": "https://github.com/openclaw/skills/commit/1c2eee919d32040a0e8dd55774b33349b29fdaee"
+    "version": "0.2.7",
+    "publishedAt": 1776783605951,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1776541758069,
+      "commit": "https://github.com/openclaw/skills/commit/1c2eee919d32040a0e8dd55774b33349b29fdaee"
+    }
+  ]
 }
