@@ -1,0 +1,11 @@
+{
+  "owner": "cn-big-cabbage",
+  "slug": "claude-flow",
+  "displayName": "Skill",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776818518300,
+    "commit": null
+  },
+  "history": []
+}
