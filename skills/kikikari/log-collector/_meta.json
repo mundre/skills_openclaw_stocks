@@ -1,0 +1,11 @@
+{
+  "owner": "kikikari",
+  "slug": "log-collector",
+  "displayName": "Log Collector",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776514470407,
+    "commit": null
+  },
+  "history": []
+}
