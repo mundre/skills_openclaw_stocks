@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "zenefits-integration",
+  "displayName": "Zenefits",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776791085385,
+    "commit": null
+  },
+  "history": []
+}
