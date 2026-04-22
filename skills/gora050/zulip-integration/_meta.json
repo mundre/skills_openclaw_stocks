@@ -3,11 +3,16 @@
   "slug": "zulip-integration",
   "displayName": "Zulip",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775170021192,
-    "commit": "https://github.com/openclaw/skills/commit/dbe34e2924be95e20a47722a1ecf7a32a7de72cc"
+    "version": "1.0.3",
+    "publishedAt": 1776885588267,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775170021192,
+      "commit": "https://github.com/openclaw/skills/commit/dbe34e2924be95e20a47722a1ecf7a32a7de72cc"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774944226172,
