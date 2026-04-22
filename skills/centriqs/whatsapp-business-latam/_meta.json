@@ -1,0 +1,11 @@
+{
+  "owner": "centriqs",
+  "slug": "whatsapp-business-latam",
+  "displayName": "WhatsApp Business LATAM (Cloud API)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776486072385,
+    "commit": null
+  },
+  "history": []
+}
