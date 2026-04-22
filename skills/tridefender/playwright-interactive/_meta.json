@@ -1,0 +1,11 @@
+{
+  "owner": "tridefender",
+  "slug": "playwright-interactive",
+  "displayName": "Playwright Interactive",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776548168042,
+    "commit": null
+  },
+  "history": []
+}
