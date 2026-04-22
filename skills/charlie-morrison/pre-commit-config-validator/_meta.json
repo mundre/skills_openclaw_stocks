@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "pre-commit-config-validator",
+  "displayName": "Pre-commit Config Validator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776731634740,
+    "commit": null
+  },
+  "history": []
+}
