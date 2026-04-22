@@ -1,0 +1,11 @@
+{
+  "owner": "bjmrcft-hash",
+  "slug": "multi-agent-config-manager",
+  "displayName": "Multi Agent Config Manager",
+  "latest": {
+    "version": "7.2.0",
+    "publishedAt": 1776743301875,
+    "commit": null
+  },
+  "history": []
+}
