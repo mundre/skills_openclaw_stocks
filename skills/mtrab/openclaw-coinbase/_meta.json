@@ -1,0 +1,11 @@
+{
+  "owner": "mtrab",
+  "slug": "openclaw-coinbase",
+  "displayName": "Coinbase",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776681086209,
+    "commit": null
+  },
+  "history": []
+}
