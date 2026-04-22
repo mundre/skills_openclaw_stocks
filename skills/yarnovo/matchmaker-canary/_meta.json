@@ -1,0 +1,11 @@
+{
+  "owner": "yarnovo",
+  "slug": "matchmaker-canary",
+  "displayName": "matchmaker — 共享交友资料库 + agent 查询 + 异步消息",
+  "latest": {
+    "version": "0.1.0-canary.2",
+    "publishedAt": 1776764620605,
+    "commit": null
+  },
+  "history": []
+}
