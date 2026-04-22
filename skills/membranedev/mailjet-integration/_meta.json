@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "mailjet-integration",
+  "displayName": "Mailjet",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776805509949,
+    "commit": null
+  },
+  "history": []
+}
