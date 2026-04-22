@@ -1,0 +1,11 @@
+{
+  "owner": "quochungto",
+  "slug": "bookforge-transaction-isolation-level-auditor",
+  "displayName": "Transaction Isolation Level Auditor",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776762037002,
+    "commit": null
+  },
+  "history": []
+}
