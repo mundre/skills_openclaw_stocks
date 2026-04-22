@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "integrate-posthog",
+  "displayName": "Posthog",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776784140456,
+    "commit": null
+  },
+  "history": []
+}
