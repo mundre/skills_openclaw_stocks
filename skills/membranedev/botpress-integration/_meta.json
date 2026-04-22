@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "botpress-integration",
+  "displayName": "Botpress",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776812673421,
+    "commit": null
+  },
+  "history": []
+}
