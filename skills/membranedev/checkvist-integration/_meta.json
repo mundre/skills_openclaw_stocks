@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "checkvist-integration",
+  "displayName": "Checkvist",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776798280511,
+    "commit": null
+  },
+  "history": []
+}
