@@ -32,7 +32,12 @@ metadata:
 
 ## 配套 skill（informational）
 
-本 skill 是 `aws-wechat-article-*` 一条龙公众号套件的素材与预设环节（入口 `aws-wechat-article-main`）。完整说明见 [源码仓库](https://github.com/aiworkskills/wechat-article-skills)。
+本 skill 是 `aws-wechat-article-*` 一条龙公众号套件的**素材与预设环节**（入口 `aws-wechat-article-main`）。
+
+- **单独安装可用**：素材入库 / `.aws` 预设导入两个脚本都不依赖兄弟 skill，只要 `.aws-article/` 目录就能工作。
+- 其他 skill 读取 `.aws-article/assets/stock/images/` 和 `.aws-article/presets/` 里由本 skill 管理的资源，属套件协同；需结合写稿/配图/排版等 skill 使用。
+
+完整 9 slug 清单见 [源码仓库](https://github.com/aiworkskills/wechat-article-skills)。
 
 | 能力 | 说明 |
 |------|------|
