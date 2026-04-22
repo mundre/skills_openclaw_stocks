@@ -1,0 +1,11 @@
+{
+  "owner": "cn-big-cabbage",
+  "slug": "langextract",
+  "displayName": "Skill",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776818496952,
+    "commit": null
+  },
+  "history": []
+}
