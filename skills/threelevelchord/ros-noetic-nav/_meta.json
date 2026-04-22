@@ -1,0 +1,11 @@
+{
+  "owner": "threelevelchord",
+  "slug": "ros-noetic-nav",
+  "displayName": "ROS Noetic Navigation",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776510076401,
+    "commit": null
+  },
+  "history": []
+}
