@@ -1,0 +1,11 @@
+{
+  "owner": "iamjameskeane",
+  "slug": "openclaw-sonar",
+  "displayName": "Perplexity Sonar via Openrouter in CLI",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776776342539,
+    "commit": null
+  },
+  "history": []
+}
