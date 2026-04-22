@@ -3,11 +3,16 @@
   "slug": "teamcamp",
   "displayName": "Teamcamp",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775164948537,
-    "commit": "https://github.com/openclaw/skills/commit/d3c4d583418e8a204f26af4aa38b2fbe5728b5dc"
+    "version": "1.0.3",
+    "publishedAt": 1776858831476,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775164948537,
+      "commit": "https://github.com/openclaw/skills/commit/d3c4d583418e8a204f26af4aa38b2fbe5728b5dc"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773932601676,
