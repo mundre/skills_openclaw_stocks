@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-dataworks-data-governance",
+  "displayName": "Alibabacloud Dataworks Data Governance",
+  "latest": {
+    "version": "0.0.1-beta.1",
+    "publishedAt": 1776750659850,
+    "commit": null
+  },
+  "history": []
+}
