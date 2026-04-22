@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-pai-eas-service-diagnose",
+  "displayName": "Alibabacloud Pai Eas Service Diagnose",
+  "latest": {
+    "version": "0.0.1-beta.1",
+    "publishedAt": 1776824127668,
+    "commit": null
+  },
+  "history": []
+}
