@@ -3,11 +3,16 @@
   "slug": "timecamp-integration",
   "displayName": "Timecamp",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1775169370498,
-    "commit": "https://github.com/openclaw/skills/commit/c3bb01e329ab246a0d49f58a5d4777da1f73bacb"
+    "version": "1.0.3",
+    "publishedAt": 1776864191465,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1775169370498,
+      "commit": "https://github.com/openclaw/skills/commit/c3bb01e329ab246a0d49f58a5d4777da1f73bacb"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1774825443936,
