@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "chatsonic-integration",
+  "displayName": "Chatsonic",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776798160887,
+    "commit": null
+  },
+  "history": []
+}
