@@ -3,11 +3,16 @@
   "slug": "autonomous-improvement-loop",
   "displayName": "Autonomous Improvement Loop",
   "latest": {
-    "version": "7.4.0",
-    "publishedAt": 1776563737513,
-    "commit": "https://github.com/openclaw/skills/commit/fa27e1d7be2b97dcd9f5ed41333fd852a3523758"
+    "version": "8.13.24",
+    "publishedAt": 1776787703304,
+    "commit": null
   },
   "history": [
+    {
+      "version": "7.4.0",
+      "publishedAt": 1776563737513,
+      "commit": "https://github.com/openclaw/skills/commit/fa27e1d7be2b97dcd9f5ed41333fd852a3523758"
+    },
     {
       "version": "7.3.0",
       "publishedAt": 1776563667270,

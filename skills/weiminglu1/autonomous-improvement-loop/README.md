@@ -1,6 +1,6 @@
 # Autonomous Improvement Loop
 
-**One agent. One project. Cron-driven autonomous improvement queue.**
+**One agent. One project. Cron-driven AI PM loop.**
 
 [![ClawHub](https://img.shields.io/badge/Install-ClawHub-6B57FF?style=flat-square)](https://clawhub.ai/skills/autonomous-improvement-loop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
@@ -24,10 +24,10 @@ A skill for [OpenClaw](https://github.com/openclaw/openclaw) agents that turns y
 Once installed and configured:
 
 - Your agent continuously improves your project on a schedule (cron-driven)
-- All improvement tasks go through an AI-prioritized queue (HEARTBEAT.md)
-- Every completed task → commit → optional verification → report
-- Queue stays full automatically — the scanner keeps finding new tasks
-- The agent never loses context — it remembers the queue across sessions
+- All work flows through `ROADMAP.md` plus full plans in `plans/TASK-xxx.md`
+- Every completed task is recorded in roadmap Done Log
+- PM planner keeps choosing the next concrete task
+- The agent never loses context across sessions
 
 ---
 
@@ -37,11 +37,20 @@ After installation, interact with the loop via these commands:
 
 | Command | Action |
 |---------|--------|
-| `a-start` | Start hosting: create the cron job |
-| `a-stop` | Stop hosting: remove the cron job |
-| `a-add <content>` | Add a user requirement to the queue |
-| `a-scan` | Rescan the project, refresh the queue (non-user tasks only) |
-| `a-clear` | Clear all non-user tasks from the queue |
+| `a-adopt <path>` | Take over an existing project (auto-detect + configure + start) |
+| `a-onboard <path>` | Bootstrap a brand-new project from scratch |
+| `a-status [path]` | Check project readiness |
+| `a-start` | Start cron hosting (create the cron job) |
+| `a-stop` | Stop cron hosting (remove the cron job) |
+| `a-add <content>` | Create a user-sourced `TASK-xxx` plan |
+| `a-current` | Show current task and full plan doc |
+| `a-queue` | Alias to `a-current` |
+| `a-log [-n N]` | Show recent roadmap Done Log entries |
+| `a-plan [--force]` | Generate the next PM task and full plan doc |
+| `a-refresh` | Alias to `a-plan` |
+| `a-trigger [--force]` | Execute current roadmap task and record Done Log |
+| `a-config get <key>` | Read a config value |
+| `a-config set <key> <value>` | Write a config value |
 
 Commands are routed through OpenClaw's skill system — send them as messages and the skill parses the leading `a-` prefix automatically.
 
@@ -65,25 +74,30 @@ clawhub install autonomous-improvement-loop
 
 ```bash
 # Take over an existing project (any type)
-python scripts/init.py adopt ~/Projects/MY_PROJECT
+python scripts/init.py a-adopt ~/Projects/MY_PROJECT
 
 # Bootstrap a brand-new project (prompts for project type)
-python scripts/init.py onboard ~/Projects/MyProject
+python scripts/init.py a-onboard ~/Projects/MyProject
 
-# Check project readiness and queue
-python scripts/init.py status ~/Projects/MY_PROJECT
+# Check project readiness
+python scripts/init.py a-status ~/Projects/MY_PROJECT
 ```
 
 | Subcommand | Use case |
 |-----------|----------|
-| `adopt` | Take over an existing project, preserve existing queue, create cron |
-| `onboard` | Bootstrap a new project with type-appropriate directory structure |
-| `status` | Show readiness checklist, queue contents, cron status |
-| `start` | Start cron hosting (create cron job from config.md) |
-| `stop` | Stop cron hosting (remove cron job) |
-| `add` | Add a user requirement to the queue |
-| `scan` | Trigger a queue scan via project_insights.py |
-| `clear` | Clear non-user tasks from the queue |
+| `a-adopt` | Take over an existing project and create cron |
+| `a-onboard` | Bootstrap a new project with type-appropriate directory structure |
+| `a-status` | Show readiness checklist, roadmap status, cron status |
+| `a-start` | Start cron hosting (create cron job from config.md) |
+| `a-stop` | Stop cron hosting (remove cron job) |
+| `a-add` | Create a user-sourced `TASK-xxx` plan |
+| `a-current` | Show current task and full plan doc |
+| `a-queue` | Alias to `a-current` |
+| `a-log` | Show recent roadmap Done Log entries (`-n N` for count) |
+| `a-plan` | Generate next PM task and full plan doc |
+| `a-refresh` | Alias to `a-plan` |
+| `a-trigger` | Execute current roadmap task and record Done Log |
+| `a-config` | Read/write config values (`get`/`set`) |
 
 ### 3. Cron starts automatically
 
@@ -94,35 +108,45 @@ After `adopt` or `start`, the cron job runs every 30 minutes automatically.
 ## How It Works
 
 ```
-Cron fires (every 30 min)
+Cron fires (every 30 min) or you run a-trigger
     │
     ▼
-Acquire cron_lock — prevent concurrent runs
+Read ROADMAP.md current task
     │
     ▼
-project_insights.py — auto-detect project type, generate improvement ideas
-    │  includes "inspire" bucket with type-specific creative questions
+Open plans/TASK-xxx.md full plan
     │
     ▼
-Pick top task from queue (highest score, not yet done)
+Agent executes the current task
     │
     ▼
-Agent implements the task → git commit
+Run verification_command from config.md (optional)
     │
     ▼
-verify_and_revert.py — run verification_command from config.md
-  • pass       → mark done, push
-  • fail       → auto-revert commit, push
-  • unverified → mark unverified, notify (no verification_command set)
+Append Done Log entry in ROADMAP.md
     │
     ▼
-Telegram report + update HEARTBEAT.md
-    │
-    ▼
-Queue refreshed if below minimum
+Promote reserved user task or generate next PM task
 ```
 
 ---
+
+## Task Rhythm
+
+PM-generated tasks follow a simple default rhythm:
+
+`idea → improve → improve → idea → improve → improve`
+
+This rhythm is stored in `ROADMAP.md` via:
+
+- `next_default_type`
+- `improves_since_last_idea`
+- `current_plan_path`
+- `reserved_user_task_id`
+
+### User task priority
+
+User tasks created through `a-add` take priority over PM-generated tasks, but they do **not** interrupt a task already marked `doing`.
 
 ## Verification & Rollback
 
@@ -155,11 +179,9 @@ project_kind: generic   # software | writing | video | research | generic
 repo: https://github.com/OWNER/REPO
 agent_id: YOUR_AGENT_ID
 chat_id: YOUR_TELEGRAM_CHAT_ID
-project_language:      # optional: zh = Chinese queue output, en = English, empty = follow agent preference
+project_language:      # optional: zh = Chinese roadmap output, en = English, empty = follow agent preference
 
 verification_command:   # empty = no auto-verification
-publish_command:        # optional: runs after successful task
-
 cron_schedule: "*/30 * * * *"
 cron_timeout: 3600
 cron_job_id:
@@ -174,20 +196,27 @@ Language resolution order is:
 
 ---
 
-## Queue Format (HEARTBEAT.md)
+## ROADMAP Format
 
-```
-| # | Type | Score | Content | Detail | Source | Status | Created |
-|---|------|-------|---------|--------|--------|--------|---------|
-| 1 | improve | 72 | [[Improve]] Add unit tests | Full reasoning here... | scanner | done | 2026-04-18 |
+`ROADMAP.md` stores exactly one current task plus the execution history.
+
+```markdown
+## Current Task
+| task_id | type | source | title | status | created |
+| TASK-001 | idea | pm | Improve CLI onboarding | pending | 2026-04-21 |
+
+## Rhythm State
+| field | value |
+| next_default_type | improve |
+| improves_since_last_idea | 1 |
+| current_plan_path | plans/TASK-001.md |
+| reserved_user_task_id |  |
+
+## Done Log
+| time | task_id | type | source | title | result | commit |
 ```
 
-- **Type**: `improve` | `feature` | `fix` | `wizard` | `user`
-- **Score**: 1–100 (higher = more urgent; user requests = 100)
-- **Source**: `scanner` | `user` | `agent`
-- **Status**: `pending` | `done` | `skip`
-- **Content**: ≤30-character summary for cron reporting
-- **Detail**: Full original intent / analysis rationale; user requests recorded verbatim, AI-generated tasks include complete reasoning
+Each task also has a full plan doc in `plans/TASK-xxx.md`, including goal, context, scope, execution plan, acceptance criteria, verification, and risks.
 
 ---
 
@@ -202,7 +231,7 @@ The skill maintains a `PROJECT.md` file at the skill root. It stores a type-awar
 - Recent activity log
 - Open-ended inspiration questions (type-specific)
 
-The project description is updated after each completed task so the agent always has fresh context.
+The project description (type, positioning, features, architecture, inspire questions) is captured at adopt/onboard time. It serves as the agent's long-term context for the project, separate from the execution log in `ROADMAP.md`.
 
 ---
 
@@ -210,25 +239,10 @@ The project description is updated after each completed task so the agent always
 
 | Script | Purpose |
 |--------|---------|
-| `init.py` | adopt / onboard / status / start / stop / add / scan / clear |
-| `project_insights.py` | Scan project, generate type-specific improvement candidates |
-| `priority_scorer.py` | Score queue entries (supports user request insertion) |
+| `init.py` | Main CLI and roadmap-driven PM flow |
+| `roadmap.py` | ROADMAP.md parsing and writing |
+| `task_ids.py` | Stable `TASK-xxx` id allocation |
+| `task_planner.py` | PM planner for next default task |
+| `plan_writer.py` | Write full `plans/TASK-xxx.md` docs |
+| `project_md.py` | Generate PROJECT.md from current project tree |
 | `verify_and_revert.py` | Run verification, rollback on failure |
-| `run_status.py` | Read/write Run Status section |
-| `bootstrap.py` | Legacy helper for old Python software projects |
-| `queue_scanner.py` | **Legacy** — redirects to `project_insights.py` |
-| `rollback_if_unstable.py` | **Legacy** — redirects to `verify_and_revert.py` |
-| `verify_cli_docs.py` | Check CLI docs are in sync with --help output |
-
----
-
-## Migrating from v4 / v5
-
-- `queue_scanner.py` → replaced by `project_insights.py` (same CLI interface, generic buckets)
-- `rollback_if_unstable.py` → replaced by `verify_and_revert.py` (reads `verification_command` from config)
-- `config.md` fields `version_file`, `cli_name`, `docs_dir` → removed (no longer required)
-- `config.md` new fields: `project_kind`, `verification_command`, `publish_command`
-- `project_language` replaces per-command `--zh` flags
-- Queue format now includes `Detail` field for full intent capture
-- Command system (`a-start`, `a-stop`, `a-add`, `a-scan`, `a-clear`) added via skill router
-- `PROJECT.md` added for type-aware project description

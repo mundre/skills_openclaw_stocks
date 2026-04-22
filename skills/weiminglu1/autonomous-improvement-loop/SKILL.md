@@ -1,14 +1,14 @@
 ---
 name: autonomous-improvement-loop
-description: Universal continuous improvement loop for any project. Agent-driven queue, cron scheduler, type-aware scanner, command system (a-start/stop/add/scan/clear), Detail field for full intent capture, inspire bucket for creative discovery. Works for software, writing, video, research, and generic projects. Install: clawhub install autonomous-improvement-loop
+description: Universal AI PM loop for any project. Maintains ROADMAP.md with one current task, full plans in plans/TASK-xxx.md, PM-generated next-task planning, user-priority task insertion, roadmap-driven execution, and 11 core commands plus aliases. Works for software, writing, video, research, and generic projects. Install: clawhub install autonomous-improvement-loop
 ---
 
 # Autonomous Improvement Loop — Skill Reference
 
 ## Overview
 
-This skill drives a **Universal Continuous Improvement Loop** for any long-running project:
-**Maintain task queue → Pick highest priority → Execute → Verify → Record → Repeat**
+This skill drives a **Universal AI PM Loop** for any long-running project:
+**Plan current task → Execute → Verify → Record → Pick next task → Repeat**
 
 Type-agnostic: works for software, writing, video, research, or generic projects.
 
@@ -18,7 +18,7 @@ Type-agnostic: works for software, writing, video, research, or generic projects
 
 ### Project Types
 
-The skill auto-detects your project type via `project_insights.py`. You can also set `project_kind` in `config.md`:
+The skill auto-detects your project type heuristically during setup. You can also set `project_kind` in `config.md`:
 
 | Type | Indicators | Description |
 |------|-----------|-------------|
@@ -32,68 +32,60 @@ The skill auto-detects your project type via `project_insights.py`. You can also
 
 ```
 ┌─────────────────────┐
-│  Cron fires (30 min) │
+│  Cron fires / manual │
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
-│ Acquire cron_lock   │  ← prevent concurrent runs
+│ Read ROADMAP.md     │
+│ current task + plan │
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
-│ project_insights.py │  ← scan project, generate candidates
+│ Execute current task│
+│ from plans/TASK-xxx │
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
-│ Pick top queue task  │  ← highest score, not done yet
+│ Record Done Log     │
+│ and promote next    │
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
-│ Agent executes      │  ← git commit
-└─────────┬───────────┘
-          ▼
-┌─────────────────────┐
-│ verify_and_revert.py│  ← verify → pass / fail → revert
-└─────────┬───────────┘
-          ▼
-┌─────────────────────┐
-│ Report + update     │  ← Telegram + HEARTBEAT.md
-│ Queue refreshed    │
+│ PM planner chooses  │
+│ next concrete task  │
 └─────────────────────┘
 ```
 
 ---
 
-## HEARTBEAT.md Structure
+## ROADMAP.md Structure
 
 ```
-## Run Status        ← runtime state
-## Queue            ← task queue (working area)
+## Current Task     ← exactly one current task
+## Rhythm State     ← next_default_type + counters + plan path
+## PM Notes         ← lightweight operator notes
 ## Done Log         ← completed tasks
----
 ```
 
-### Run Status Fields
+### Current Task Fields
 
 | Field | Description |
 |-------|-------------|
-| `last_run_time` | ISO timestamp of last run |
-| `last_run_commit` | Git hash of last commit |
-| `last_run_result` | `pass` \| `fail` \| `unverified` |
-| `last_run_task` | Description of last task |
-| `cron_lock` | `true` = someone is editing queue, skip this run |
-| `mode` | `bootstrap` \| `normal` |
-| `rollback_on_fail` | `true` = auto-revert on verification failure |
+| `task_id` | `TASK-001` style stable id |
+| `type` | `idea` or `improve` |
+| `source` | `pm` or `user` |
+| `title` | human-readable task title |
+| `status` | `pending` \| `doing` \| `done` |
+| `created` | creation date |
 
-### Queue Fields
+### Rhythm State Fields
 
 | Field | Description |
 |-------|-------------|
-| `Type` | `improve` \| `feature` \| `fix` \| `wizard` \| `user` |
-| `Score` | 1–100 (higher = more urgent; user requests auto → 100) |
-| `Source` | `scanner` \| `user` \| `agent` |
-| `Status` | `pending` \| `done` \| `skip` |
-| `Content` | ≤30-character summary for cron reporting |
-| `Detail` | Full original intent / analysis rationale; user requests recorded verbatim, AI-generated tasks include complete reasoning |
+| `next_default_type` | next PM-generated task type |
+| `improves_since_last_idea` | 2:1 idea/improve rhythm counter |
+| `current_plan_path` | active `plans/TASK-xxx.md` path |
+| `reserved_user_task_id` | queued user task when a doing task must not be interrupted |
 
 ---
 
@@ -101,11 +93,12 @@ The skill auto-detects your project type via `project_insights.py`. You can also
 
 | Script | Role | Interface |
 |--------|------|----------|
-| `init.py` | Setup: adopt / onboard / status | CLI |
-| `project_insights.py` | Scan project, generate candidates | `--project`, `--heartbeat`, `--language`, `--refresh`, `--min` |
-| `priority_scorer.py` | Score queue entries | stdin/stdout |
-| `verify_and_revert.py` | Verify task, rollback on failure | `--project`, `--heartbeat`, `--commit`, `--task` |
-| `run_status.py` | Read/write Run Status | `--heartbeat`, `read`/`write` |
+| `init.py` | Setup + roadmap / PM commands | CLI |
+| `project_md.py` | Generate PROJECT.md from current project tree | `--project`, `--output`, `--language`, `--repo` |
+| `roadmap.py` | ROADMAP.md data model + parsing/writing | module |
+| `task_ids.py` | Stable `TASK-xxx` id allocation | module |
+| `plan_writer.py` | Write full `plans/TASK-xxx.md` docs | module |
+| `task_planner.py` | PM planner for next default task | module |
 
 ---
 
@@ -122,30 +115,29 @@ Any shell command works. The skill is language-agnostic.
 
 ## User Request Insertion
 
-Users insert tasks via message → directly written to HEARTBEAT.md Queue with score=100 (forced to #1).
+Users insert tasks via `a-add` → written as full `plans/TASK-xxx.md` docs with `source=user`. User tasks take priority over PM-generated tasks, but do not interrupt a task already marked `doing`.
 
 ---
 
 ## Scripts Reference
 
 ```
-# Scan once, append best candidate
-python project_insights.py --project . --heartbeat HEARTBEAT.md --language en
+# Generate next PM task
+python init.py a-plan
 
-# Keep scanning until queue has at least N items
-python project_insights.py --project . --heartbeat HEARTBEAT.md --language en --refresh --min 5
+# Show current task + full plan
+python init.py a-current
 
-# Verify and auto-revert on failure
-python verify_and_revert.py \
-  --project /path/to/project \
-  --heartbeat HEARTBEAT.md \
-  --commit <git-hash> \
-  --task "description of what was done"
+# Add user task
+python init.py a-add "Implement dark mode support"
+
+# Execute current task
+python init.py a-trigger --force
 
 # Setup
-python init.py adopt ~/Projects/MY_PROJECT
-python init.py onboard ~/Projects/MY_PROJECT
-python init.py status ~/Projects/MY_PROJECT
+python init.py a-adopt ~/Projects/MY_PROJECT
+python init.py a-onboard ~/Projects/MyProject
+python init.py a-status ~/Projects/MY_PROJECT
 ```
 
 ## Command System
@@ -154,10 +146,19 @@ The skill is invoked via OpenClaw's skill router. Incoming message text is parse
 
 | Command | Action |
 |---------|--------|
-| `a-start` | Start hosting: create the cron job |
-| `a-stop` | Stop hosting: remove the cron job |
-| `a-add <content>` | Add a user requirement to the queue |
-| `a-scan` | Rescan the project, refresh the queue (non-user tasks only) |
-| `a-clear` | Clear all non-user tasks from the queue |
+| `a-adopt <path>` | Take over an existing project (auto-detect + configure + start) |
+| `a-onboard <path>` | Bootstrap a brand-new project from scratch |
+| `a-status [path]` | Check project readiness |
+| `a-start` | Start cron hosting (create the cron job) |
+| `a-stop` | Stop cron hosting (remove the cron job) |
+| `a-add <content>` | Create a user-sourced `TASK-xxx` + full plan doc |
+| `a-current` | Show current task + full plan doc |
+| `a-queue` | Alias to `a-current` |
+| `a-log [-n N]` | Show recent roadmap Done Log entries |
+| `a-plan [--force]` | Generate the next PM task + full plan doc |
+| `a-refresh` | Alias to `a-plan` |
+| `a-trigger [--force]` | Execute current roadmap task and record Done Log |
+| `a-config get <key>` | Read a config value |
+| `a-config set <key> <value>` | Write a config value |
 
 When a user sends a message, the skill parses the first `a-` prefix command; the remaining text is treated as arguments.

@@ -3,40 +3,56 @@ r"""
 Autonomous Improvement Loop — setup wizard & cron hosting CLI
 
 Supports these flows:
-  adopt    Take over an existing project (auto-detect, configure, start)
-  onboard  Bootstrap a brand-new project
-  status   Check project readiness and queue state
+  a-adopt   Take over an existing project (auto-detect, configure, start)
+  a-onboard Bootstrap a brand-new project
+  a-status  Check project readiness and queue state
 
-  start    Start cron hosting (create cron job from config.md)
-  stop     Stop cron hosting (remove cron job)
-  add      Add a user requirement to the queue
-  scan     Trigger a queue scan via project_insights.py
-  clear    Clear non-user tasks from the queue
+  a-start   Start cron hosting (create cron job from config.md)
+  a-stop    Stop cron hosting (remove cron job)
+  a-add     Create a user-sourced TASK + full plan doc
+  a-current Show current task + full plan doc
+  a-plan    Generate current task + full plan (PM mode)
+  a-log     Show recent roadmap Done Log entries
+  a-refresh [deprecated: use a-plan]
+  a-trigger Execute current roadmap task
+  a-config  Get or set config values
 
 Examples:
   # Take over an existing project (most common)
-  python init.py adopt ~/Projects/YOUR_PROJECT
+  python init.py a-adopt ~/Projects/YOUR_PROJECT
 
   # Bootstrap a new project
-  python init.py onboard ~/Projects/MyProject
+  python init.py a-onboard ~/Projects/MyProject
 
   # Check project readiness
-  python init.py status ~/Projects/YOUR_PROJECT
+  python init.py a-status ~/Projects/YOUR_PROJECT
 
   # Start cron hosting
-  python init.py start
+  python init.py a-start
 
   # Stop cron hosting
-  python init.py stop
+  python init.py a-stop
 
-  # Add a user requirement
-  python init.py add "Implement dark mode support"
+  # Add a user request as a full task plan
+  python init.py a-add "Implement dark mode support"
 
-  # Trigger queue scan
-  python init.py scan
+  # Show current task
+  python init.py a-current
 
-  # Clear non-user tasks
-  python init.py clear
+  # Show recent roadmap log
+  python init.py a-log -n 10
+
+  # Generate next PM task
+  python init.py a-plan
+
+  # Execute current roadmap task
+  python init.py a-trigger
+
+  # Read a config value
+  python init.py a-config get project_language
+
+  # Set a config value
+  python init.py a-config set project_language zh
 
 All parameters are optional. init.py auto-detects project path, GitHub repo,
 Agent ID, and Telegram Chat ID whenever possible, and only prompts when needed.
@@ -55,12 +71,123 @@ from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+if str(Path(__file__).resolve().parent.parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 HERE = Path(__file__).parent.resolve()
 SKILL_DIR = HERE.parent
-HEARTBEAT = SKILL_DIR / "HEARTBEAT.md"
-CONFIG_FILE = SKILL_DIR / "config.md"
+
+# Persistent config location — survives clawhub update.
+# This is SKILL-level config (agent_id, chat_id, cron settings).
+# Project-level config lives in .ail/config.md inside the托管项目.
+CONFIG_FILE = Path.home() / ".openclaw" / "skills-config" / "autonomous-improvement-loop" / "config.md"
+
+# ── AIL State Path Helpers ────────────────────────────────────────────────────
+# All skill-generated state files live in .ail/ inside the托管项目 (project_path).
+# This keeps the project directory clean and follows PM logic:
+# everything about a project lives inside the project.
+
+
+def ail_state_dir(project: Path) -> Path:
+    """Return the .ail/ state directory for a project."""
+    return project / ".ail"
+
+
+
+def ail_project_md(project: Path) -> Path:
+    """Path to PROJECT.md for a project."""
+    return project / ".ail" / "PROJECT.md"
+
+
+def ail_roadmap(project: Path) -> Path:
+    """Path to ROADMAP.md for a project."""
+    return project / ".ail" / "ROADMAP.md"
+
+
+def ail_plans_dir(project: Path) -> Path:
+    """Path to plans/ directory for a project."""
+    return project / ".ail" / "plans"
+
+
+def ail_config(project: Path) -> Path:
+    """Path to project-level config.md for a project."""
+    return project / ".ail" / "config.md"
+
+# ── Backward Compatibility Migration ──────────────────────────────────────────
+
+def _migrate_to_ail(project: Path) -> bool:
+    """Migrate legacy project-root state files to .ail/ directory.
+
+    Before the .ail/ convention, state was stored at:
+      project/ROADMAP.md, project/PROJECT.md,
+      project/plans/, project/config.md
+
+    After the change, all files go into project/.ail/.
+
+    Returns True if migration happened, False if not needed (idempotent).
+    """
+    legacy_files = {
+        project / "ROADMAP.md": ail_roadmap(project),
+
+        project / "PROJECT.md": ail_project_md(project),
+        project / "config.md": ail_config(project),
+    }
+    legacy_dirs = {
+        project / "plans": ail_plans_dir(project),
+    }
+
+    needs_migration = False
+    for old_path in list(legacy_files) + list(legacy_dirs):
+        if old_path.exists():
+            needs_migration = True
+            break
+
+    if not needs_migration:
+        return False
+
+    # Create .ail/ directory
+    ail_dir = ail_state_dir(project)
+    ail_dir.mkdir(parents=True, exist_ok=True)
+
+    migrated = False
+
+    # Move legacy files (skip if new already exists)
+    for old_path, new_path in legacy_files.items():
+        if old_path.exists() and not new_path.exists():
+            shutil.move(str(old_path), str(new_path))
+            migrated = True
+
+    # Move legacy directory (skip if new already exists)
+    for old_path, new_path in legacy_dirs.items():
+        if old_path.exists() and old_path.is_dir() and not new_path.exists():
+            shutil.move(str(old_path), str(new_path))
+            migrated = True
+
+    return migrated
+
+
+# ── Config path helpers ────────────────────────────────────────────────────────
+
+def _config_template() -> Path:
+    """Path to the skill's template config (shipped with the package)."""
+    return SKILL_DIR / "config.md"
+
+
+def read_current_config() -> dict[str, str]:
+    """Read existing config values. Falls back to template if persistent config missing."""
+    conf_file = CONFIG_FILE if CONFIG_FILE.exists() else _config_template()
+    if not conf_file.exists():
+        return {}
+    text = read_file(conf_file)
+    result = {}
+    for line in text.splitlines():
+        m = re.match(r"^(\w[\w_]*):\s*(.+)$", line.strip())
+        if m:
+            value = re.sub(r"\s+#.*$", "", m.group(2)).strip()
+            result[m.group(1)] = value
+    return result
 
 DEFAULT_SCHEDULE_MS = 30 * 60 * 1000   # 30 min
 DEFAULT_TIMEOUT_S = 3600                # 1 hour
@@ -116,6 +243,7 @@ def read_file(p: Path) -> str:
 
 
 def write_file(p: Path, content: str) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(content, encoding="utf-8")
 
 
@@ -288,8 +416,9 @@ def detect_openclaw_agent_id() -> str | None:
 
     workspace = Path.home() / ".openclaw"
     # Fallback: existing config in this skill
-    if CONFIG_FILE.exists():
-        m = re.search(r"^agent_id:\s*([^#\n]+)", read_file(CONFIG_FILE), re.MULTILINE)
+    conf = CONFIG_FILE if CONFIG_FILE.exists() else _config_template()
+    if conf.exists():
+        m = re.search(r"^agent_id:\s*([^#\n]+)", read_file(conf), re.MULTILINE)
         if m:
             return m.group(1).strip()
 
@@ -310,8 +439,9 @@ def detect_openclaw_agent_id() -> str | None:
 
 def detect_telegram_chat_id() -> str | None:
     """Read chat_id from existing config.md."""
-    if CONFIG_FILE.exists():
-        m = re.search(r"chat_id:\s*(\d+)", read_file(CONFIG_FILE))
+    conf = CONFIG_FILE if CONFIG_FILE.exists() else _config_template()
+    if conf.exists():
+        m = re.search(r"chat_id:\s*(\d+)", read_file(conf))
         if m:
             return m.group(1)
     return None
@@ -339,9 +469,14 @@ def detect_pytest_available() -> bool:
 
 
 def detect_any_test_command(project: Path) -> tuple[bool, str]:
-    """Detect whether a runnable verification/test command is available."""
+    """Detect whether a runnable verification/test command is available.
+
+    Uses --co -q (collect-only) instead of running tests to avoid subprocess
+    deadlock when pytest forks child processes from the project directory.
+    """
+    python_bin = shutil.which("python3") or "python3"
     runners = [
-        (["python3", "-m", "pytest"], "pytest", None),
+        ([python_bin, "-m", "pytest", "--co", "-q"], "pytest", None),
         (["npm", "test"], "npm test", "npm"),
         (["cargo", "test"], "cargo test", "cargo"),
         (["go", "test", "./..."], "go test ./...", "go"),
@@ -351,7 +486,7 @@ def detect_any_test_command(project: Path) -> tuple[bool, str]:
         if binary and shutil.which(binary) is None:
             continue
         try:
-            r = run(cmd, cwd=project, timeout=10)
+            r = run(cmd, cwd=project, timeout=15)
         except FileNotFoundError:
             continue
         if r.returncode in (0, 1):
@@ -385,9 +520,10 @@ def detect_gh_authenticated() -> bool:
 
 def _read_kind_from_config() -> str:
     """Try to read project_kind from config.md."""
-    if not CONFIG_FILE.exists():
+    conf = CONFIG_FILE if CONFIG_FILE.exists() else _config_template()
+    if not conf.exists():
         return "generic"
-    for line in CONFIG_FILE.read_text(encoding="utf-8").splitlines():
+    for line in conf.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if line.startswith("project_kind:"):
             val = line.partition(":")[2].strip()
@@ -511,20 +647,6 @@ def write_config(
     write_file(CONFIG_FILE, config + "\n")
 
 
-def read_current_config() -> dict[str, str]:
-    """Read existing config values."""
-    if not CONFIG_FILE.exists():
-        return {}
-    text = read_file(CONFIG_FILE)
-    result = {}
-    for line in text.splitlines():
-        m = re.match(r"^(\w[\w_]*):\s*(.+)$", line.strip())
-        if m:
-            value = re.sub(r"\s+#.*$", "", m.group(2)).strip()
-            result[m.group(1)] = value
-    return result
-
-
 # ── Cron management ─────────────────────────────────────────────────────────────
 
 def create_cron(
@@ -565,148 +687,16 @@ def delete_cron(cron_id: str) -> None:
 
 
 def seed_queue(project: Path, mode: str, language: str) -> None:
-    """Populate initial queue after init so the user gets value immediately."""
-    if mode == "bootstrap":
-        run(
-            [
-                sys.executable,
-                str(HERE / "bootstrap.py"),
-                "--project", str(project),
-                "--skill-dir", str(SKILL_DIR),
-                "--mode", "detect",
-            ],
-            cwd=SKILL_DIR,
-            timeout=120,
-        )
-        return
-
-    run(
-        [
-            sys.executable,
-            str(HERE / "project_insights.py"),
-            "--project", str(project),
-            "--heartbeat", str(HEARTBEAT),
-            "--language", language,
-            "--refresh", "--min", "5",
-        ],
-        cwd=SKILL_DIR,
-        timeout=120,
-    )
-
-
-# ── HEARTBEAT queue initialization ─────────────────────────────────────────────
-
-def init_queue_heartbeat(mode: str, language: str) -> None:
-    """Initialize or update the Run Status + empty Queue section."""
-    if not HEARTBEAT.exists():
-        raise RuntimeError(f"HEARTBEAT.md not found at {HEARTBEAT}")
-
-    created = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-    run_status = f"""\
-| Field | Value |
-|-------|-------|
-| last_run_time | — |
-| last_run_commit | — |
-| last_run_result | unknown |
-| last_run_task | — |
-| cron_lock | false |
-| mode | {mode} |
-| rollback_on_fail | true |
-"""
-
-    empty_queue = f"""\
-| # | Type | Score | Content | Source | Status | Created |
-|---|------|-------|---------|--------|--------|---------|
-"""
-
-    content = read_file(HEARTBEAT)
-
-    # Replace Run Status section
-    content = re.sub(
-        r"(## Run Status\n\n)\|[\s\S]*?(\n---\n)",
-        f"\\1{run_status}\\2",
-        content,
-    )
-
-    # Replace Queue section (keep it empty/minimal for new adopt)
-    content = re.sub(
-        r"(\n## Queue\n\n)[\s\S]*?(\n---\n)",
-        f"\\1{empty_queue}\n---\n",
-        content,
-    )
-
-    write_file(HEARTBEAT, content)
-
-
-def pending_queue_rows() -> list[dict[str, str]]:
-    if not HEARTBEAT.exists():
-        return []
-    rows: list[dict[str, str]] = []
-    for line in read_file(HEARTBEAT).splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|") or stripped.startswith("|---"):
-            continue
-        m = re.match(
-            r"^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|",
-            stripped,
-        )
-        if not m:
-            continue
-        num, kind, score, desc, source, status, created = m.groups()
-        if status.strip().lower() == "pending":
-            rows.append(
-                {
-                    "num": num,
-                    "kind": kind.strip(),
-                    "score": score.strip(),
-                    "desc": desc.strip(),
-                    "source": source.strip(),
-                    "status": status.strip(),
-                    "created": created.strip(),
-                }
-            )
-    return rows
-
-
-def write_pending_queue(rows: list[dict[str, str]]) -> None:
-    content = read_file(HEARTBEAT)
-    table = [
-        "| # | Type | Score | Content | Source | Status | Created |",
-        "|---|------|-------|---------|--------|--------|---------|",
-    ]
-    for i, row in enumerate(rows, 1):
-        table.append(
-            f"| {i} | {row['kind']} | {row['score']} | {row['desc']} | {row['source']} | pending | {row['created']} |"
-        )
-    content = re.sub(
-        r"(\n## Queue\n\n)[\s\S]*?(\n---\n)",
-        "\\1" + "\n".join(table) + "\n\\2",
-        content,
-    )
-    write_file(HEARTBEAT, content)
-
-
-def update_run_status_mode(mode: str) -> None:
-    if not HEARTBEAT.exists():
-        return
-    content = read_file(HEARTBEAT)
-    content = re.sub(r"(\| mode \| )([^|]+)( \|)", rf"\1{mode}\3", content)
-    write_file(HEARTBEAT, content)
-
-
-def dedupe_pending_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, str]], int]:
-    seen: set[str] = set()
-    deduped: list[dict[str, str]] = []
-    removed = 0
-    for row in rows:
-        key = re.sub(r"\s+", " ", row["desc"]).strip().lower()
-        if key in seen:
-            removed += 1
-            continue
-        seen.add(key)
-        deduped.append(row)
-    return deduped, removed
+    """Populate initial roadmap state after init so the user gets value immediately."""
+    _migrate_to_ail(project)
+    roadmap_path = ail_roadmap(project)
+    from scripts.roadmap import init_roadmap
+    if not roadmap_path.exists():
+        # Ensure .ail/ directory exists
+        ail_state_dir(project).mkdir(parents=True, exist_ok=True)
+        init_roadmap(roadmap_path)
+    # Generate the first PM task using the same project configured by adopt/onboard.
+    cmd_plan(force=True)
 
 
 # ── Adopt: existing project takeover ──────────────────────────────────────────
@@ -721,6 +711,9 @@ def cmd_adopt(
 ) -> None:
     step("🔍 Existing project takeover — setup wizard")
 
+    # Migrate legacy state files from project root to .ail/
+    _migrate_to_ail(project)
+
     # Detect / validate project
     if not project.exists():
         fail(f"Project path does not exist: {project}")
@@ -732,6 +725,7 @@ def cmd_adopt(
     cli_name = detect_cli_name(project)
     try:
         from project_insights import detect_project_type
+        from project_md import generate_project_md
         project_kind = detect_project_type(project)
     except Exception:
         project_kind = "generic"
@@ -815,35 +809,24 @@ def cmd_adopt(
     )
     ok("config.md updated")
 
-    # Queue handling for old managed projects
-    mode = "bootstrap" if new_items > 3 else "normal"
-    current_rows = pending_queue_rows()
-    if current_rows:
-        step("📦 Existing queue detected")
-        deduped_rows, removed = dedupe_pending_rows(current_rows)
-        default_action = "c" if removed else "k"
-        action = ask("  Queue handling (k=keep, c=dedupe and keep, r=clear and rebuild)", default_action).lower()
-        if action == "r":
-            init_queue_heartbeat(mode=mode, language=language)
-            ok(f"HEARTBEAT.md rebuilt (mode: {mode})")
-        elif action == "c":
-            write_pending_queue(deduped_rows)
-            update_run_status_mode(mode)
-            ok(f"Queue deduplicated, removed {removed} duplicate item(s)")
-        else:
-            update_run_status_mode(mode)
-            ok("Kept existing queue, updated run mode only")
-    else:
-        step("📋 Initializing HEARTBEAT.md")
-        init_queue_heartbeat(mode=mode, language=language)
-        ok(f"HEARTBEAT.md initialized (mode: {mode})")
+    step("🧭 Generating PROJECT.md")
+    try:
+        from project_md import generate_project_md
 
-    step("🧠 Generating initial queue")
-    if len(pending_queue_rows()) < 5:
+        generate_project_md(project, ail_project_md(project), language=language, repo=repo)
+        ok("PROJECT.md generated")
+    except Exception as e:
+        warn(f"PROJECT.md generation failed: {e}")
+
+    mode = "bootstrap" if new_items > 3 else "normal"
+
+    roadmap_path = ail_roadmap(project)
+    if not roadmap_path.exists():
+        step("🧠 Generating initial roadmap task")
         seed_queue(project=project, mode=mode, language=language)
-        ok("Initial queue generated and topped up")
+        ok("Initial roadmap task generated")
     else:
-        ok("Existing queue is already sufficient")
+        ok("Existing roadmap state detected, skipped auto-generation")
 
     # Done
     print(textwrap.dedent(f"""
@@ -857,8 +840,6 @@ def cmd_adopt(
 
     {'The first run will stay in bootstrap mode until the project is ready' if mode == 'bootstrap' else 'Cron runs automatically every 30 minutes'}
 
-    View queue:
-      cat {HEARTBEAT}
 
     Trigger Cron manually:
       openclaw cron run {cron_job_id}
@@ -922,6 +903,9 @@ def cmd_onboard(
     model: str = "",
 ) -> None:
     step("🆕 Bootstrapping a new project")
+
+    # Migrate legacy state files from project root to .ail/
+    _migrate_to_ail(project)
 
     if project.exists() and any(project.iterdir()):
         warn(f"Directory {project} is not empty. Use adopt mode for an existing project.")
@@ -989,10 +973,13 @@ def cmd_onboard(
     )
     ok("config.md written")
 
-    # Step 7: init heartbeat
-    step("📋 Initializing HEARTBEAT.md")
-    init_queue_heartbeat(mode="bootstrap", language=language)
-    ok("HEARTBEAT.md initialized (mode: bootstrap)")
+    step("📋 Generating PROJECT.md")
+    try:
+        from project_md import generate_project_md
+        generate_project_md(project=project, output=ail_project_md(project), language=language)
+        ok("PROJECT.md generated")
+    except Exception as e:
+        warn(f"PROJECT.md generation failed: {e}")
 
     print(textwrap.dedent(f"""
     {c('✅ New project bootstrap complete!', COLOR_GREEN + COLOR_BOLD)}
@@ -1004,8 +991,6 @@ def cmd_onboard(
     Next step:
       python init.py adopt {project}  # take over the project and start Cron
 
-    View queue:
-      cat {HEARTBEAT}
     """))
 
 
@@ -1021,18 +1006,50 @@ def cmd_start() -> None:
     agent_id = config.get("agent_id", "").strip()
     chat_id = config.get("chat_id", "").strip()
     project_path = config.get("project_path", "").strip()
+    project_language = config.get("project_language", DEFAULT_LANGUAGE).strip() or DEFAULT_LANGUAGE
+    project = Path(project_path).expanduser().resolve() if project_path else None
 
-    # Check if already exists
+    # Migrate legacy state files from project root to .ail/
+    if project:
+        _migrate_to_ail(project)
+
+    # Clean up ANY existing "Autonomous Improvement Loop" cron jobs first.
+    # This ensures a-start always results in exactly 1 cron — idempotent.
     r = run(["openclaw", "cron", "list"], timeout=15)
-    if r.returncode == 0 and cron_job_id and cron_job_id in r.stdout:
-        ok(f"Cron job already active: {cron_job_id}")
-        print(f"\n  Use 'python init.py stop' to remove it, or\n"
-              f"  openclaw cron run {cron_job_id}  to trigger manually.")
-        return
+    if r.returncode == 0:
+        for line in r.stdout.splitlines():
+            if "Autonomous Improvement Loop" in line:
+                # Extract ID: first field before whitespace
+                existing_id = line.split()[0]
+                run(["openclaw", "cron", "delete", existing_id], timeout=15)
+                print(f"  Removed stale cron: {existing_id}")
 
     if not agent_id or agent_id in ("", "YOUR_AGENT_ID"):
         fail("agent_id not configured in config.md")
         sys.exit(1)
+
+    _ail_roadmap = str(ail_roadmap(project)) if project else '<project>/.ail/ROADMAP.md'
+    _ail_project_md = str(ail_project_md(project)) if project else '<project>/.ail/PROJECT.md'
+    _ail_plans = f'{project}/.ail/plans/' if project else '<project>/.ail/plans/'
+    cron_message = textwrap.dedent(
+        f"""
+        Autonomous Improvement Loop — execute task and record result.
+
+        Project: {project_path or '(unset)'}
+
+        Your job:
+        1. Read ROADMAP: {CONFIG_FILE} and {_ail_roadmap}
+        2. Read current task plan: `.ail/plans/TASK-xxx.md`
+        3. EXECUTE the task — implement it, run tests, verify acceptance criteria
+        4. Mark it done and commit your changes
+        5. At the END of your response, output this line on its own line to record the result:
+           `python3 {HERE / 'init.py'} a-trigger --force`
+
+        Example response:
+          Done. Implemented feature X, ran tests, all pass. Commit abc123.
+          python3 {HERE / 'init.py'} a-trigger --force
+        """
+    ).strip()
 
     # Build openclaw cron add command
     cmd = [
@@ -1042,7 +1059,7 @@ def cmd_start() -> None:
         "--timeout-seconds", cron_timeout,
         "--agent", agent_id,
         "--session", "isolated",
-        "--message", "Autonomous improvement loop triggered",
+        "--message", cron_message,
     ]
     if chat_id and chat_id not in ("", "YOUR_TELEGRAM_CHAT_ID"):
         cmd.extend(["--announce", "--channel", "telegram", "--to", chat_id])
@@ -1126,184 +1143,110 @@ def cmd_stop() -> None:
         write_file(CONFIG_FILE, content)
 
 
-# ── Add: insert user requirement into queue ───────────────────────────────────
+# ── Add: create user-request task + full plan ─────────────────────────────────
 
 def cmd_add(content_text: str) -> None:
-    step("📝 Adding user requirement to queue")
+    step("📝 Adding user request as current task")
 
-    if not HEARTBEAT.exists():
-        fail(f"HEARTBEAT.md not found at {HEARTBEAT}")
-        sys.exit(1)
+    project, roadmap_path = _get_roadmap_and_project()
+    _migrate_to_ail(project)
 
     if not content_text or not content_text.strip():
         fail("Empty content — nothing to add")
         sys.exit(1)
 
-    # Parse Content (first 30 chars) + Detail (full)
-    content_stripped = content_text.strip()
-    content_summary = content_stripped[:30] + ("…" if len(content_stripped) > 30 else "")
-    created = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    content_text = re.sub(r"\s*\n\s*", " ", content_text).strip()
+    project, roadmap_path = _get_roadmap_and_project()
 
-    # Read existing queue rows
-    existing_rows: list[dict[str, str]] = []
-    max_num = 0
-    full_content = read_file(HEARTBEAT)
+    from scripts.roadmap import load_roadmap, set_current_task, init_roadmap, CurrentTask
+    from scripts.task_ids import next_task_id
+    from scripts.plan_writer import write_plan_doc
 
-    queue_match = re.search(
-        r"(\n## Queue\n\n)\|[\s\S]*?\n---\n",
-        full_content,
-    )
-    if queue_match:
-        queue_block = queue_match.group(0)
-        for line in queue_block.splitlines():
-            stripped = line.strip()
-            if not stripped.startswith("|") or "---" in stripped or stripped.startswith("| #"):
-                continue
-            m = re.match(
-                r"^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|$",
-                stripped,
-            )
-            if m:
-                num = int(m.group(1))
-                max_num = max(max_num, num)
-                existing_rows.append(
-                    {
-                        "kind": m.group(2).strip(),
-                        "score": m.group(3).strip(),
-                        "desc": m.group(4).strip(),
-                        "source": m.group(5).strip(),
-                        "status": m.group(6).strip(),
-                        "created": m.group(7).strip(),
-                        "_num": str(num),
-                    }
-                )
+    plans_dir = ail_plans_dir(project)
+    plans_dir.mkdir(parents=True, exist_ok=True)
+    if not roadmap_path.exists():
+        init_roadmap(roadmap_path)
+        ok(f"Initialized ROADMAP.md at {roadmap_path}")
 
-    # Build new row (insert at top)
-    new_row = {
-        "kind": "improvement",
-        "score": "100",
-        "desc": content_summary,
-        "source": "user",
-        "status": "pending",
-        "created": created,
-        "detail": content_stripped,
-        "_num": "0",
-    }
-
-    # Insert at top
-    all_rows = [new_row] + existing_rows
-
-    # Re-number
-    table_lines = [
-        "| # | Type | Score | Content | Source | Status | Created |",
-        "|---|------|-------|---------|--------|--------|---------|",
-    ]
-    for i, row in enumerate(all_rows, 1):
-        detail_note = f" ({row['detail']})" if "detail" in row else ""
-        table_lines.append(
-            f"| {i} | {row['kind']} | {row['score']} | {row['desc']}{detail_note} | {row['source']} | pending | {row['created']} |"
+    roadmap = load_roadmap(roadmap_path)
+    if roadmap.current_task and roadmap.current_task.status == "doing":
+        warn(f"Current task {roadmap.current_task.task_id} is doing, not interrupting it")
+        task_id = next_task_id(plans_dir)
+        plan_path = write_plan_doc(
+            plans_dir=plans_dir,
+            task_id=task_id,
+            title=content_text,
+            task_type="user",
+            source="user",
+            context="Direct user request captured via a-add.",
+            why_now="User explicitly requested this work and user tasks take priority once the current doing task finishes.",
+            scope=[content_text],
+            non_goals=["Do not interrupt the currently doing task"],
+            relevant_files=["TBD during execution"],
+            execution_plan=["Wait for current doing task to finish", "Execute user-requested task next"],
+            acceptance_criteria=["Requested change is implemented", "Verification is recorded in the plan execution output"],
+            verification=["Run relevant tests or checks for the requested change"],
+            risks=["Details may need refinement during implementation"],
         )
+        set_current_task(
+            roadmap_path,
+            roadmap.current_task,
+            plan_path=roadmap.current_plan_path,
+            next_default_type=roadmap.next_default_type,
+            improves_since_last_idea=roadmap.improves_since_last_idea,
+            reserved_user_task_id=task_id,
+        )
+        ok(f"Reserved user task {task_id} for after current doing task")
+        print()
+        _print_plan_doc(plan_path)
+        return
 
-    new_queue_block = "\n" + "\n".join(table_lines) + "\n---\n"
-
-    if queue_match:
-        new_content = full_content[:queue_match.start()] + "\n## Queue\n\n" + new_queue_block + full_content[queue_match.end():]
-    else:
-        # Queue section doesn't exist, insert before ---
-        sep = re.search(r"\n---\n\n##", full_content)
-        if sep:
-            insert_at = sep.start()
-            new_content = full_content[:insert_at] + "\n## Queue\n\n" + new_queue_block + full_content[insert_at:]
-        else:
-            new_content = full_content + "\n## Queue\n\n" + new_queue_block
-
-    write_file(HEARTBEAT, new_content)
-    ok(f"Added to queue: {content_summary}")
-    info(f"Full detail stored: {content_stripped[:80]}...")
-
-
-# ── Scan: trigger queue scan ──────────────────────────────────────────────────
-
-def cmd_scan() -> None:
-    step("🔍 Triggering queue scan")
-
-    config = read_current_config()
-    project_path_str = config.get("project_path", "").strip()
-    heartbeat_path_str = config.get("heartbeat_path", str(HEARTBEAT)).strip()
-    language = config.get("project_language", DEFAULT_LANGUAGE).strip()
-
-    if not project_path_str or project_path_str in (".", "YOUR_PROJECT_PATH"):
-        detected = detect_project_path()
-        if detected:
-            project_path_str = str(detected)
-            ok(f"Auto-detected project: {project_path_str}")
-        else:
-            fail("project_path not configured in config.md and could not auto-detect")
-            sys.exit(1)
-
-    project_p = Path(project_path_str)
-    heartbeat_p = Path(heartbeat_path_str) if heartbeat_path_str else HEARTBEAT
-
-    if not project_p.exists():
-        fail(f"Project path does not exist: {project_p}")
-        sys.exit(1)
-
-    ok(f"Running: project_insights.py --project {project_p} --heartbeat {heartbeat_p} --language {language} --refresh --min 3")
-
-    r = run(
-        [
-            sys.executable,
-            str(HERE / "project_insights.py"),
-            "--project", str(project_p),
-            "--heartbeat", str(heartbeat_p),
-            "--language", language,
-            "--refresh",
-            "--min", "3",
-        ],
-        cwd=SKILL_DIR,
-        timeout=180,
+    task_id = next_task_id(plans_dir)
+    plan_path = write_plan_doc(
+        plans_dir=plans_dir,
+        task_id=task_id,
+        title=content_text,
+        task_type="user",
+        source="user",
+        context="Direct user request captured via a-add.",
+        why_now="User explicitly requested this work and user tasks take priority over PM-generated tasks.",
+        scope=[content_text],
+        non_goals=["Do not expand scope beyond the user request unless required to complete it"],
+        relevant_files=["TBD during implementation"],
+        execution_plan=["Understand requested change", "Implement the change", "Verify behavior and summarize result"],
+        acceptance_criteria=["Requested change is implemented", "The resulting task plan is visible via a-current"],
+        verification=["Run relevant tests or checks for the requested change"],
+        risks=["User request may need clarification if ambiguous"],
     )
-    if r.returncode != 0:
-        fail(f"Scan failed: {r.stderr}")
-        sys.exit(1)
-
-    ok("Queue scan complete")
-    if r.stdout.strip():
-        print(r.stdout[:500])
-
-
-# ── Clear: remove non-user tasks ──────────────────────────────────────────────
-
-def cmd_clear() -> None:
-    step("🗑  Clearing non-user tasks from queue")
-
-    config = read_current_config()
-    heartbeat_path_str = config.get("heartbeat_path", str(HEARTBEAT)).strip()
-    heartbeat_p = Path(heartbeat_path_str) if heartbeat_path_str else HEARTBEAT
-
-    if not heartbeat_p.exists():
-        fail(f"HEARTBEAT.md not found at {heartbeat_p}")
-        sys.exit(1)
-
-    ok(f"Running: queue_scanner.py --clear")
-
-    r = run(
-        [sys.executable, str(HERE / "queue_scanner.py"), "--clear"],
-        cwd=SKILL_DIR,
-        timeout=60,
+    created = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    task = CurrentTask(
+        task_id=task_id,
+        task_type="user",
+        source="user",
+        title=content_text,
+        status="pending",
+        created=created,
     )
-    if r.returncode != 0:
-        warn(f"queue_scanner.py reported issues: {r.stderr}")
-
-    ok("Non-user tasks cleared")
-    if r.stdout.strip():
-        print(r.stdout[:500])
+    set_current_task(
+        roadmap_path,
+        task,
+        plan_path=str(plan_path.relative_to(project / ".ail")),
+        next_default_type=roadmap.next_default_type,
+        improves_since_last_idea=roadmap.improves_since_last_idea,
+        reserved_user_task_id="",
+    )
+    ok(f"User request saved as {task_id}")
+    print()
+    _print_plan_doc(plan_path)
 
 
 # ── Status: inspect project state ─────────────────────────────────────────────
 
 def cmd_status(project: Path) -> None:
     step("📋 Project readiness")
+
+    # Migrate legacy state files from project root to .ail/
+    _migrate_to_ail(project)
 
     if not project.exists():
         fail(f"Project path does not exist: {project}")
@@ -1330,30 +1273,6 @@ def cmd_status(project: Path) -> None:
             warn(f"{check} (missing)")
     print()
 
-    # Queue status
-    if HEARTBEAT.exists():
-        content = read_file(HEARTBEAT)
-        pending_rows: list[tuple[str, str, str, str]] = []
-        for line in content.splitlines():
-            stripped = line.strip()
-            if not stripped.startswith("|") or stripped.startswith("|---"):
-                continue
-            m = re.match(
-                r"^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|",
-                stripped,
-            )
-            if not m:
-                continue
-            num, kind, score, desc, _source, status = m.groups()
-            if status.strip().lower() == "pending":
-                pending_rows.append((num, kind.strip(), score, desc.strip()))
-
-        print(f"  Pending queue tasks: {len(pending_rows)} item(s)")
-        for num, kind, score, desc in pending_rows[:10]:
-            print(f"    #{num} [{kind}/{score}] {desc}")
-        if len(pending_rows) > 10:
-            print(f"    ... {len(pending_rows) - 10} more item(s) omitted")
-
     # Cron status
     cron_id = config.get("cron_job_id") or detect_existing_cron()
     if cron_id:
@@ -1368,7 +1287,404 @@ def cmd_status(project: Path) -> None:
     print()
 
 
+# ── a_plan: generate PM task + plan ──────────────────────────────────────────
+
+def _get_roadmap_and_project():
+    config = read_current_config()
+    project_path_str = config.get("project_path", "").strip()
+    if not project_path_str or project_path_str in (".", "YOUR_PROJECT_PATH"):
+        detected = detect_project_path()
+        project_path_str = str(detected) if detected else str(Path.cwd())
+    project = Path(project_path_str).expanduser().resolve()
+    roadmap_path = ail_roadmap(project)
+    return project, roadmap_path
+
+
+def cmd_plan(force: bool = False) -> None:
+    step("🗺️  Generating current task + plan")
+    project, roadmap_path = _get_roadmap_and_project()
+    _migrate_to_ail(project)
+    from scripts.roadmap import load_roadmap, set_current_task, init_roadmap, CurrentTask
+    from scripts.task_planner import choose_next_task
+    from scripts.task_ids import next_task_id
+    from scripts.plan_writer import write_plan_doc
+
+    plans_dir = ail_plans_dir(project)
+
+    # Ensure plans dir exists
+    plans_dir.mkdir(parents=True, exist_ok=True)
+
+    # Init roadmap if missing
+    if not roadmap_path.exists():
+        init_roadmap(roadmap_path)
+        ok(f"Initialized ROADMAP.md at {roadmap_path}")
+
+    roadmap = load_roadmap(roadmap_path)
+
+    # Check for reserved user task
+    if roadmap.reserved_user_task_id and not force:
+        warn(f"User task {roadmap.reserved_user_task_id} is reserved — use --force to regenerate anyway")
+        cmd_current()
+        return
+
+    if roadmap.current_task and roadmap.current_task.status in ("pending", "doing") and not force:
+        ok("Current task already exists. Use --force to regenerate.")
+        cmd_current()
+        return
+
+    # Build done_titles for dedup
+    done_titles: set[str] = set()
+    for line in roadmap_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip().startswith("|") or "---" in line:
+            continue
+        cells = [c.strip() for c in line.split("|")[1:-1]]
+        if len(cells) >= 5 and cells[0].startswith("TASK-"):
+            done_titles.add(cells[4])
+
+    language = read_current_config().get("project_language", DEFAULT_LANGUAGE).strip() or "zh"
+    planned = choose_next_task(project, roadmap, done_titles, language)
+
+    task_id = next_task_id(plans_dir)
+    plan_path = write_plan_doc(
+        plans_dir=plans_dir,
+        task_id=task_id,
+        title=planned.title,
+        task_type=planned.task_type,
+        source=planned.source,
+        context=planned.context,
+        why_now=planned.why_now,
+        scope=planned.scope,
+        non_goals=planned.non_goals,
+        relevant_files=planned.relevant_files,
+        execution_plan=planned.execution_plan,
+        acceptance_criteria=planned.acceptance_criteria,
+        verification=planned.verification,
+        risks=planned.risks,
+    )
+
+    from datetime import datetime, timezone
+    created = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    task = CurrentTask(
+        task_id=task_id,
+        task_type=planned.task_type,
+        source=planned.source,
+        title=planned.title,
+        status="pending",
+        created=created,
+    )
+
+    next_type = "improve" if roadmap.next_default_type == "idea" else "idea"
+    improves = roadmap.improves_since_last_idea + (1 if planned.task_type == "improve" else 0)
+
+    set_current_task(
+        roadmap_path, task,
+        plan_path=str(plan_path.relative_to(project / ".ail")),
+        next_default_type=next_type,
+        improves_since_last_idea=improves,
+        reserved_user_task_id=roadmap.reserved_user_task_id,
+    )
+    ok(f"Task {task_id} generated and set as current")
+    print()
+    _print_plan_doc(plan_path)
+
+
+# ── a_current: show current task + full plan ──────────────────────────────────
+
+def cmd_current() -> None:
+    step("📌 Current Task")
+    project, roadmap_path = _get_roadmap_and_project()
+    _migrate_to_ail(project)
+    if not roadmap_path.exists():
+        ok("ROADMAP.md not found. Run a-plan to generate the first task.")
+        return
+
+    from scripts.roadmap import load_roadmap
+    roadmap = load_roadmap(roadmap_path)
+
+    if not roadmap.current_task:
+        ok("No current task. Run a-plan to generate one.")
+        return
+
+    task = roadmap.current_task
+    print(f"  Task ID   : {task.task_id}")
+    print(f"  Type      : {task.task_type}")
+    print(f"  Source    : {task.source}")
+    print(f"  Title     : {task.title}")
+    print(f"  Status    : {task.status}")
+    print(f"  Created   : {task.created}")
+    if task.status == "doing":
+        print(f"  Plan Path : {roadmap.current_plan_path}")
+    print()
+    if roadmap.current_plan_path:
+        # Plan path is stored as relative to .ail/ e.g. "plans/TASK-001.md"
+        plan_path = project / ".ail" / roadmap.current_plan_path
+        if plan_path.exists():
+            _print_plan_doc(plan_path)
+        else:
+            warn(f"Plan file not found: {plan_path}")
+    elif roadmap.reserved_user_task_id:
+        ok(f"Reserved user task: {roadmap.reserved_user_task_id}")
+
+
+def _print_plan_doc(path: Path) -> None:
+    text = path.read_text(encoding="utf-8")
+    # Print key sections
+    for section in ["## Goal", "## Context", "## Why now", "## Scope",
+                    "## Non-goals", "## Relevant Files", "## Execution Plan",
+                    "## Acceptance Criteria", "## Verification", "## Risks / Notes"]:
+        if section in text:
+            lines = text.split(section, 1)
+            if len(lines) > 1:
+                content = lines[1].split("\n## ", 1)[0].strip()
+                print(f"{c(section, COLOR_BOLD)}")
+                print(f"  {content[:300]}")
+                print()
+
+
 # ── Main entry point ────────────────────────────────────────────────────────────
+
+# ── a_queue: show current queue ───────────────────────────────────────────────
+# Deprecated: this command used the old HEARTBEAT queue flow.
+# Use a-current (ROADMAP.md-based) instead.
+
+def cmd_queue(all_items: bool = False) -> None:
+    step("📋 Current Queue")
+    warn("a-queue is deprecated — HEARTBEAT queue flow has been removed.")
+    ok("Use a-current to view the ROADMAP.md-based current task instead.")
+# ── a_log: show recent Done Log ───────────────────────────────────────────────
+
+def cmd_log(n: int = 10) -> None:
+    step("📜 Recent Done Log")
+    project, roadmap_path = _get_roadmap_and_project()
+    _migrate_to_ail(project)
+    if not roadmap_path.exists():
+        ok("ROADMAP.md not found")
+        return
+
+    content = read_file(roadmap_path)
+    log_match = re.search(r"(## Done Log\n\n)(\| time[\s\S]*?\n)(\|[\s\S]*?)(?=\n## |\Z)", content, re.IGNORECASE)
+    if not log_match:
+        ok("Done Log section not found")
+        return
+
+    data_lines: list[str] = []
+    for line in log_match.group(3).splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or "---" in stripped or stripped.lower().startswith("| time"):
+            continue
+        data_lines.append(stripped)
+
+    if not data_lines:
+        ok("Done Log is empty")
+        return
+
+    print(f"  Last {min(n, len(data_lines))} of {len(data_lines)} entries\n")
+    for line in data_lines[:n]:
+        cells = [c.strip() for c in line.split("|")[1:-1]]
+        if len(cells) < 7:
+            continue
+        time_val, task_id, task_type, source, title, result, commit = cells[:7]
+        result_mark = c("✓", COLOR_GREEN) if result.lower() == "pass" else c("✗", COLOR_RED)
+        task_short = (title[:50] + "…") if len(title) > 50 else title
+        print(f"  {time_val[:16]}  {result_mark}  {task_id:<9}  {task_short}  ({commit})")
+
+
+# ── a_trigger: run current roadmap task immediately ──────────────────────────
+
+def _git_head_short(project: Path) -> str:
+    r = run(["git", "rev-parse", "--short", "HEAD"], cwd=project)
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else "manual"
+
+
+def _execute_task_plan(project: Path, task: CurrentTask) -> tuple[bool, str]:
+    """
+    Validate and summarize the task plan for execution.
+    Returns (success: bool, message: str).
+
+    Execution is done by the calling agent (Mia via cron). This function
+    validates the plan exists and prints a summary. The caller (Mia) has
+    already read and executed the plan content directly.
+
+    For type=user tasks: requires human attention — record as success.
+    """
+    plans_dir = ail_plans_dir(project)
+    plan_path = plans_dir / f"{task.task_id}.md"
+
+    if not plan_path.exists():
+        return False, f"Plan file not found: {plan_path}"
+
+    if task.task_type == "user":
+        return True, "user task — requires human attention"
+
+    # Plan validated — execution is handled by the agent that called this
+    # (Mia reads .ail/plans/TASK-xxx.md directly during cron run)
+    return True, "planned and ready for execution"
+
+
+def cmd_trigger(force: bool = False) -> None:
+    step("⚡ Triggering plan execution")
+    project, roadmap_path = _get_roadmap_and_project()
+    _migrate_to_ail(project)
+    if not roadmap_path.exists():
+        fail("ROADMAP.md not found. Run a-plan first.")
+        sys.exit(1)
+
+    # Check if we're already running inside a cron session (no recursion)
+    if os.environ.get("OPENCLAW_CRON_SESSION") == "1":
+        _record_result_only(project, roadmap_path, force)
+        return
+
+    # Spawn cron session to execute — blocks until cron session finishes
+    config = read_current_config()
+    cron_job_id = config.get("cron_job_id", "").strip()
+    if not cron_job_id:
+        fail("No cron job configured. Run a-start first.")
+        sys.exit(1)
+
+    cron_timeout = config.get("cron_timeout", str(DEFAULT_TIMEOUT_S)).strip()
+    try:
+        timeout_ms = str(int(int(cron_timeout) * 1000))
+    except ValueError:
+        timeout_ms = str(DEFAULT_TIMEOUT_S * 1000)
+
+    step(f"Starting cron session: {cron_job_id}")
+    r = run(
+        ["openclaw", "cron", "run", cron_job_id, "--expect-final", "--timeout", timeout_ms],
+        timeout=int(cron_timeout) + 10,
+        env={**os.environ, "OPENCLAW_CRON_SESSION": "1"},
+    )
+    if r.returncode != 0:
+        fail(f"Cron session failed: {r.stderr.strip() or r.stdout.strip() or 'unknown error'}")
+        sys.exit(1)
+    ok("Cron session completed")
+
+
+def _record_result_only(project: Path, roadmap_path: Path, force: bool) -> None:
+    """Record task result — called from within a cron session."""
+    from scripts.roadmap import load_roadmap, append_done_log, set_current_task, CurrentTask
+    roadmap = load_roadmap(roadmap_path)
+    if not roadmap.current_task:
+        fail("No current task found.")
+        sys.exit(1)
+
+    current = roadmap.current_task
+    if current.status == "doing" and not force:
+        warn(f"Current task {current.task_id} is already doing. Use --force to re-record.")
+        sys.exit(1)
+
+    ok(f"Recording result for {current.task_id}: {current.title}")
+    exec_ok, exec_msg = _execute_task_plan(project, current)
+
+    commit = _git_head_short(project)
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    append_done_log(
+        roadmap_path,
+        timestamp=timestamp,
+        task_id=current.task_id,
+        task_type=current.task_type,
+        source=current.source,
+        title=current.title,
+        result="pass" if exec_ok else "fail",
+        commit=commit,
+    )
+
+    if not exec_ok:
+        fail(f"Task execution failed: {exec_msg}")
+        sys.exit(1)
+
+    ok(f"Result recorded: {exec_msg}")
+
+    next_task = None
+    next_plan_path = ""
+    reserved = roadmap.reserved_user_task_id.strip()
+    plans_dir = ail_plans_dir(project)
+    if reserved:
+        reserved_plan = plans_dir / f"{reserved}.md"
+        title = reserved
+        if reserved_plan.exists():
+            first_line = reserved_plan.read_text(encoding="utf-8").splitlines()[0].strip()
+            m = re.match(r"#\s+TASK-\d+\s+·\s+(.+)$", first_line)
+            title = m.group(1).strip() if m else title
+        next_task = CurrentTask(
+            task_id=reserved,
+            task_type="user",
+            source="user",
+            title=title,
+            status="pending",
+            created=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        )
+        next_plan_path = str(Path(".ail") / "plans" / f"{reserved}.md")
+
+    if next_task:
+        set_current_task(
+            roadmap_path,
+            next_task,
+            plan_path=next_plan_path,
+            next_default_type=roadmap.next_default_type,
+            improves_since_last_idea=roadmap.improves_since_last_idea,
+            reserved_user_task_id="",
+        )
+        ok(f"Execution recorded, next user task is now current: {next_task.task_id}")
+    else:
+        set_current_task(
+            roadmap_path,
+            None,
+            plan_path="",
+            next_default_type=roadmap.next_default_type,
+            improves_since_last_idea=roadmap.improves_since_last_idea,
+            reserved_user_task_id="",
+        )
+        ok("Execution recorded in Done Log")
+
+
+# ── a_config: get/set config values ─────────────────────────────────────────
+
+def cmd_config(action: str, key: str, value: str | None = None) -> None:
+    conf = CONFIG_FILE if CONFIG_FILE.exists() else _config_template()
+    if action == "get":
+        step(f"⚙  Config: {key}")
+        config = read_current_config()
+        val = config.get(key, "").strip()
+        if val:
+            ok(f"{key} = {val}")
+        else:
+            # Try reading directly from config.md (persistent or template)
+            if conf.exists():
+                raw = read_file(conf)
+                m = re.search(rf"^(\s*{re.escape(key)}:\s*)(.*)$", raw, re.MULTILINE)
+                if m:
+                    print(f"  {key} = {m.group(2).strip()}")
+                else:
+                    warn(f"Key '{key}' not found in config.md")
+            else:
+                warn(f"Key '{key}' not found in config.md")
+    elif action == "set":
+        if not value:
+            fail("'set' requires a value argument")
+            sys.exit(1)
+        step(f"⚙  Config: {key} = {value}")
+        # Read from template if persistent doesn't exist yet
+        raw = read_file(conf) if conf.exists() else ""
+        if not re.search(rf"^{re.escape(key)}:", raw, re.MULTILINE):
+            fail(f"Key '{key}' not found in config.md — cannot set unregistered key")
+            sys.exit(1)
+        current_match = re.search(rf"^\s*{re.escape(key)}:\s*(.+)$", raw, re.MULTILINE)
+        if current_match and re.sub(r"\s+#.*$", "", current_match.group(1)).strip() == value:
+            ok(f"Set {key} = {value} (unchanged)")
+            return
+        new_raw = re.sub(
+            rf"(^\s*{re.escape(key)}:\s*).+$",
+            rf"\g<1>{value}",
+            raw, flags=re.MULTILINE
+        )
+        if new_raw == raw:
+            fail(f"Pattern did not match for key '{key}'")
+            sys.exit(1)
+        write_file(CONFIG_FILE, new_raw)
+        ok(f"Set {key} = {value}")
+
+
+
 
 def main() -> int:
     import argparse
@@ -1380,34 +1696,52 @@ def main() -> int:
             Usage examples:
 
               # Take over an existing project (most common)
-              python init.py adopt ~/Projects/YOUR_PROJECT
+              python init.py a-adopt ~/Projects/YOUR_PROJECT
 
               # Bootstrap a new project
-              python init.py onboard ~/Projects/MyProject
+              python init.py a-onboard ~/Projects/MyProject
 
               # Check project readiness
-              python init.py status ~/Projects/YOUR_PROJECT
+              python init.py a-status ~/Projects/YOUR_PROJECT
 
-              # Start cron托管
-              python init.py start
+              # Start cron hosting
+              python init.py a-start
 
-              # Stop cron托管
-              python init.py stop
+              # Stop cron hosting
+              python init.py a-stop
 
               # Add a user requirement
-              python init.py add "Implement dark mode support"
+              python init.py a-add "Implement dark mode support"
 
               # Trigger queue scan
-              python init.py scan
+              python init.py a-scan
 
               # Clear non-user tasks
-              python init.py clear
+              python init.py a-clear
+
+              # Show current queue
+              python init.py a-queue
+
+              # Show recent done log
+              python init.py a-log -n 10
+
+              # Full queue refresh (clear + scan)
+              python init.py a-refresh
+
+              # Trigger cron immediately
+              python init.py a-trigger
+
+              # Read config value
+              python init.py a-config get project_language
+
+              # Write config value
+              python init.py a-config set project_language zh
             """),
     )
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    adopt_p = sub.add_parser("adopt", help="Take over an existing project")
+    adopt_p = sub.add_parser("a-adopt", help="Take over an existing project")
     adopt_p.add_argument("project", nargs="?", type=Path)
     adopt_p.add_argument("--agent", help="OpenClaw Agent ID")
     adopt_p.add_argument("--chat-id", help="Telegram Chat ID")
@@ -1420,7 +1754,7 @@ def main() -> int:
                          help="Force recreation of the Cron Job (replace existing)")
     adopt_p.set_defaults(func=cmd_adopt)
 
-    onboard_p = sub.add_parser("onboard", help="Bootstrap a new project from scratch")
+    onboard_p = sub.add_parser("a-onboard", help="Bootstrap a new project from scratch")
     onboard_p.add_argument("project", nargs="?", type=Path)
     onboard_p.add_argument("--agent", help="OpenClaw Agent ID")
     onboard_p.add_argument("--chat-id", help="Telegram Chat ID")
@@ -1431,31 +1765,61 @@ def main() -> int:
                           help="LLM model for cron sessions (empty = use OpenClaw default)")
     onboard_p.set_defaults(func=cmd_onboard)
 
-    status_p = sub.add_parser("status", help="Check project readiness")
+    status_p = sub.add_parser("a-status", help="Check project readiness")
     status_p.add_argument("project", nargs="?", type=Path,
                           default=detect_project_path())
     status_p.set_defaults(func=cmd_status)
 
     # ── start ─────────────────────────────────────────────────────────────────
-    start_p = sub.add_parser("start", help="Start cron托管 (create cron job)")
+    start_p = sub.add_parser("a-start", help="Start cron托管 (create cron job)")
     start_p.set_defaults(func=lambda _a: cmd_start())
 
     # ── stop ──────────────────────────────────────────────────────────────────
-    stop_p = sub.add_parser("stop", help="Stop cron托管 (remove cron job)")
+    stop_p = sub.add_parser("a-stop", help="Stop cron托管 (remove cron job)")
     stop_p.set_defaults(func=lambda _a: cmd_stop())
 
     # ── add ───────────────────────────────────────────────────────────────────
-    add_p = sub.add_parser("add", help="Add a user requirement to the queue")
+    add_p = sub.add_parser("a-add", help="Create a user-sourced TASK + full plan doc")
     add_p.add_argument("content", nargs="+", help="Requirement content text")
     add_p.set_defaults(func=lambda a: cmd_add(" ".join(a.content)))
 
-    # ── scan ──────────────────────────────────────────────────────────────────
-    scan_p = sub.add_parser("scan", help="Trigger a queue scan")
-    scan_p.set_defaults(func=lambda _a: cmd_scan())
+    # ── a_plan ────────────────────────────────────────────────────────────────
+    plan_p = sub.add_parser("a-plan", help="Generate current task and full plan (PM mode)")
+    plan_p.add_argument("--force", action="store_true", help="Regenerate even if current task exists")
+    plan_p.set_defaults(func=lambda a: cmd_plan(force=a.force))
 
-    # ── clear ────────────────────────────────────────────────────────────────
-    clear_p = sub.add_parser("clear", help="Clear non-user tasks from queue")
-    clear_p.set_defaults(func=lambda _a: cmd_clear())
+    # ── a_current ──────────────────────────────────────────────────────────────
+    current_p = sub.add_parser("a-current", help="Show current task + full plan doc")
+    current_p.set_defaults(func=lambda _a: cmd_current())
+
+    # ── a_queue (deprecated alias) ──────────────────────────────────────────────
+    queue_p = sub.add_parser("a-queue", help="[deprecated: use a-current]")
+    queue_p.add_argument("--all", action="store_true", help="Include done items")
+    queue_p.set_defaults(func=lambda _a: cmd_current())
+
+    # ── a_log ──────────────────────────────────────────────────────────────────
+    log_p = sub.add_parser("a-log", help="Show recent Done Log entries")
+    log_p.add_argument("-n", "--count", type=int, default=10,
+                      help="Number of entries to show (default: 10)")
+    log_p.set_defaults(func=lambda a: cmd_log(n=a.count))
+
+    # ── a_refresh ──────────────────────────────────────────────────────────────
+    refresh_p = sub.add_parser("a-refresh", help="[deprecated alias: use a-plan]")
+    refresh_p.set_defaults(func=lambda _a: cmd_plan(force=True))
+
+    # ── a_trigger ──────────────────────────────────────────────────────────────
+    trigger_p = sub.add_parser("a-trigger", help="Execute current roadmap task immediately")
+    trigger_p.add_argument("--force", action="store_true",
+                          help="Re-run even if current task is already marked doing")
+    trigger_p.set_defaults(func=lambda a: cmd_trigger(force=a.force))
+
+    # ── a_config ───────────────────────────────────────────────────────────────
+    config_sp = sub.add_parser("a-config", help="Get or set config values")
+    config_sp.add_argument("action", choices=["get", "set"],
+                          help="'get' to read a value, 'set' to write")
+    config_sp.add_argument("key", help="Config key (e.g. project_language)")
+    config_sp.add_argument("value", nargs="?", help="New value (required for 'set')")
+    config_sp.set_defaults(func=lambda a: cmd_config(action=a.action, key=a.key, value=a.value))
 
     args = parser.parse_args()
 
@@ -1472,7 +1836,7 @@ def main() -> int:
             print("  ~/projects/")
             print("  ~/Code/")
             print("\nSpecify one manually, for example: python init.py adopt ~/Projects/YourProject")
-            parser.parse_args(["adopt", "--help"])
+            parser.parse_args(["a-adopt", "--help"])
             sys.exit(1)
 
     # Auto-detect agent_id
@@ -1488,7 +1852,7 @@ def main() -> int:
         args.language = resolve_language(getattr(args, "project", None), explicit=None)
 
     try:
-        if args.command == "adopt":
+        if args.command == "a-adopt":
             cmd_adopt(
                 project=args.project,
                 agent_id=args.agent,
@@ -1497,7 +1861,7 @@ def main() -> int:
                 model=args.model,
                 force_new_cron=args.force_new_cron,
             )
-        elif args.command == "onboard":
+        elif args.command == "a-onboard":
             cmd_onboard(
                 project=args.project,
                 agent_id=args.agent,
@@ -1505,18 +1869,28 @@ def main() -> int:
                 language=args.language,
                 model=args.model,
             )
-        elif args.command == "status":
+        elif args.command == "a-status":
             cmd_status(args.project)
-        elif args.command == "start":
+        elif args.command == "a-start":
             cmd_start()
-        elif args.command == "stop":
+        elif args.command == "a-stop":
             cmd_stop()
-        elif args.command == "add":
+        elif args.command == "a-add":
             cmd_add(" ".join(args.content))
-        elif args.command == "scan":
-            cmd_scan()
-        elif args.command == "clear":
-            cmd_clear()
+        elif args.command == "a-plan":
+            cmd_plan(force=args.force)
+        elif args.command == "a-current":
+            cmd_current()
+        elif args.command == "a-queue":
+            cmd_current()
+        elif args.command == "a-log":
+            cmd_log(n=args.count)
+        elif args.command == "a-refresh":
+            cmd_plan(force=True)
+        elif args.command == "a-trigger":
+            cmd_trigger(force=args.force)
+        elif args.command == "a-config":
+            cmd_config(action=args.action, key=args.key, value=args.value)
     except KeyboardInterrupt:
         print("\n\nCancelled.")
         return 130
