@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "integrate-vercel",
+  "displayName": "Vercel",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776783908709,
+    "commit": null
+  },
+  "history": []
+}
