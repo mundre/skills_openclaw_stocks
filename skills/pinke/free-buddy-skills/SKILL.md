@@ -1,6 +1,6 @@
 ---
 title: "Free Buddy Skills"
-summary: "一键配置 opencode.ai 免费 AI 模型到 WorkBuddy"
+summary: "一键配置 opencode.ai 免费 AI 模型到 WorkBuddy,无需 API Key"
 read_when:
   - 用户需要配置免费 AI 模型
   - 用户提到"免费模型"、"opencode"、"free model"
@@ -27,6 +27,12 @@ read_when:
 1. **查询免费模型**: 从 opencode.ai 获取最新的免费模型列表
 2. **自动配置**: 将免费模型添加到 `~/.workbuddy/models.json`
 3. **定期更新**: 保持模型配置的时效性
+
+## 权限说明
+
+- **无需 API Key**: 使用公开的 `"public"` 作为 API Key
+- **无需认证**: opencode.ai 免费模型无需登录
+- **仅本地操作**: 只读取和写入本地的 `~/.workbuddy/models.json`
 
 ## 快速使用
 
@@ -87,7 +93,7 @@ curl -sS https://opencode.ai/zen/v1/models | jq '.data[] | select(.id | contains
   "name": "模型显示名称",
   "vendor": "OpenCode AI",
   "url": "https://opencode.ai/zen/v1/chat/completions",
-  "apiKey": "public",
+  "apiKey": "使用 public (无需真实密钥)",
   "maxInputTokens": 262144,
   "supportsToolCall": true,
   "supportsImages": false,
@@ -117,5 +123,5 @@ curl -sS https://opencode.ai/zen/v1/models | jq '.data[] | select(.id | contains
 
 1. opencode.ai 的免费模型使用 `"public"` 作为 API Key
 2. 所有免费模型共享同一个端点: `https://opencode.ai/zen/v1/chat/completions`
-3. 建议定期检查模型列表是否有更新
-4. 如果模型配置已存在,不要重复添加
+3. 脚本需要用户确认后才会修改配置文件
+4. 非交互模式下运行将跳过自动添加,需手动确认
