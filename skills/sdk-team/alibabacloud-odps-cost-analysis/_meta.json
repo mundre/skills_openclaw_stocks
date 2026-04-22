@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-odps-cost-analysis",
+  "displayName": "Alibabacloud Odps Cost Analysis",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1776824092844,
+    "commit": null
+  },
+  "history": []
+}
