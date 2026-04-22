@@ -3,9 +3,15 @@
   "slug": "socket-integration",
   "displayName": "Socket",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775466276041,
-    "commit": "https://github.com/openclaw/skills/commit/530a085b99a0bfeb3dfdf1f2ea270bd800ac6e80"
+    "version": "1.0.1",
+    "publishedAt": 1776898264084,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775466276041,
+      "commit": "https://github.com/openclaw/skills/commit/530a085b99a0bfeb3dfdf1f2ea270bd800ac6e80"
+    }
+  ]
 }
