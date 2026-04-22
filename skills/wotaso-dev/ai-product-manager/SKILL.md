@@ -1,162 +1,172 @@
 ---
 name: product-manager-skill
-description: Turn analytics and customer signals into prioritized product decisions, PRD drafts, experiment plans, and implementation-ready GitHub backlog issues.
+description: OpenClaw-first AI product manager for turning analytics, revenue, crash, store, and feedback signals into execution-ready proposals and backlog work.
 license: MIT
 homepage: https://github.com/wotaso/analyticscli-skills
-metadata: {"author":"wotaso","version":"0.3.0","openclaw":{"emoji":"📌","homepage":"https://github.com/wotaso/analyticscli-skills"}}
+metadata: {"author":"wotaso","version":"1.0.12","analyticscli-target":"@analyticscli/cli","analyticscli-supported-range":">=0.1.2-preview.0 <0.2.0","openclaw":{"emoji":"📌","homepage":"https://github.com/wotaso/analyticscli-skills","requires":{"bins":["node","analyticscli"]},"install":[{"id":"analyticscli-cli","kind":"node","package":"@analyticscli/cli@preview","bins":["analyticscli"],"label":"Install AnalyticsCLI CLI (npm package @analyticscli/cli@preview)"}]}}
 ---
 
-# Product Manager Skill
+# AI Product Manager
 
 ## Use This Skill When
 
-- you need to prioritize product opportunities from analytics signals
-- you want concise PM outputs that engineering can execute directly
-- you need a PRD or experiment brief with measurable success criteria
-- you need a decision memo with tradeoffs and recommendation
-- you want analytics + code context converted into prioritized GitHub issues
+- you want OpenClaw to turn product signals into execution-ready backlog work
+- you need one workflow across analytics, RevenueCat, Sentry/GlitchTip, feedback, store signals, and repo context
+- you want the deterministic work to live in a standalone `openclaw` CLI and OpenClaw to stay the AI/chat layer
+- you want delivery configurable between OpenClaw chat handoff, GitHub issues, and draft pull requests
 
-## Core Rules
+## Preferred Runtime
 
-- Always state assumptions explicitly before recommendations.
-- Prioritize with an `impact x confidence x effort` rationale.
-- Tie every recommendation to at least one measurable KPI.
-- Keep scope bounded: max 3 major opportunities or max 3-5 generated issues per pass.
-- Avoid generic advice without concrete scope and acceptance criteria.
-- Mark low-confidence conclusions clearly if data quality is weak.
-- For implementation outputs, include explicit file/module hypotheses.
-- For autopilot mode, run a preflight checklist and list missing dependencies/secrets explicitly.
+Prefer the standalone `openclaw` CLI as the runtime surface.
 
-## Required Inputs
+- Setup path: `openclaw setup --config openclaw.config.json`
+- Primary path: `openclaw start --config openclaw.config.json`
+- Local monorepo path: `pnpm --filter @analyticscli/openclaw-cli dev -- start`
+- Legacy copied-runtime scripts under `scripts/openclaw-growth-*.mjs` remain fallback-only for older OpenClaw workspaces
 
-- problem statement or objective
-- at least one data source summary (analytics, feedback, revenue, errors)
+The CLI is intentionally non-AI. OpenClaw should stay the only conversational and implementation layer.
+Use the CLI to gather signals, generate proposals, schedule checks, and send deliveries.
+If the user later asks OpenClaw to implement a proposal, OpenClaw should inspect the generated drafts and then use OpenClaw itself to do the work.
 
-## Optional Inputs
+## Mandatory Baseline
 
-- constraints (timeline, team capacity, dependencies)
-- strategic context (OKRs, business goals, target segment)
-- existing roadmap or in-flight initiatives
-- repository root (for file/module mapping when generating issue drafts)
-- GitHub repo + token (only when issue auto-creation is requested)
+Before autopilot runs, these are non-negotiable:
 
-## Autopilot Preconditions (Mandatory)
+- `analyticscli` CLI available
+- target repo checkout readable via `project.repoRoot`
+- a writable `openclaw.config.json`
+- `sources.analytics` enabled
 
-Before running issue generation/autopilot mode, verify and report:
+GitHub is optional unless GitHub delivery is enabled.
+`project.githubRepo` and `GITHUB_TOKEN` become hard requirements only when the CLI should auto-create GitHub issues or pull requests.
 
-- Data sources:
-  - `analytics_summary.json` (required)
-  - `revenuecat_summary.json` (recommended for monetization decisions)
-  - `sentry_summary.json` (recommended for stability prioritization)
-  - `feedback_summary.json` (optional, but high value)
-- Code-readiness:
-  - `--repo-root` points to the target repository checkout
-  - agent user has read access to the codebase
-  - if needed, restrict scan with `--code-roots apps,packages`
-- Runtime dependencies:
-  - `node` for analyzer/runner
-  - `analyticscli` CLI for analytics data extraction
-  - optional charting: `python3` + `matplotlib`
-- Secrets:
-  - `GITHUB_TOKEN` (required when `--create-issues`)
-  - `ANALYTICSCLI_READONLY_TOKEN`
-  - `REVENUECAT_API_KEY`
-  - `SENTRY_AUTH_TOKEN`
-  - optional `FEEDBACK_API_TOKEN`
+## AnalyticsCLI CLI Install Protocol
 
-If anything is missing, stop autopilot and return a concrete "missing items" list with where to obtain each value.
+If `analyticscli` is missing, OpenClaw must install it directly from the scoped npm package.
 
-## Standard Output Format
+Do not search npm for `analyticscli`.
+Do not search npm for `analyticsscli`.
+Those are binary names or typos, not package names.
 
-Return results in this order:
-
-1. `Executive Summary` (3-5 lines)
-2. `Top Opportunities` (max 3, ranked)
-3. `Recommendation` (single preferred path + why)
-4. `Execution Scope` (in-scope, out-of-scope, dependencies)
-5. `KPIs And Targets` (baseline, target, measurement window)
-6. `Acceptance Criteria` (implementation-ready)
-7. `Risks And Mitigations`
-8. `Next 7-Day Plan`
-
-If the user explicitly asks for issue generation/autopilot mode, return this format instead:
-
-1. `Executive Summary` (3-5 lines)
-2. `Top Issue Drafts` (3-5, ranked)
-3. `Recommendation` (single preferred execution path)
-4. `Execution Order` (week 1 sequencing)
-5. `Risks And Guardrails`
-
-Each issue draft must include:
-
-- `Problem`
-- `Evidence`
-- `Affected Files / Modules`
-- `Proposed Implementation`
-- `Expected Impact`
-- `Confidence`
-- optional PR prompt
-
-## Output Quality Bar
-
-- recommendations are testable within one iteration cycle
-- each KPI has a concrete time window
-- acceptance criteria can be copied into engineering tickets
-- risk section includes at least one rollback or guardrail condition
-- in issue mode, each issue has clear file/module hypotheses and measurable impact
-
-## Anti-Patterns
-
-- broad strategy talk without operational next steps
-- recommendations that ignore technical or business constraints
-- “improve UX” phrasing without affected flow/module hypothesis
-
-## Local Autopilot Commands And Checks
-
-Preflight:
+Use this exact package:
 
 ```bash
-node scripts/openclaw-growth-preflight.mjs --config data/openclaw-growth-engineer/config.json
+npm install -g @analyticscli/cli@preview
 ```
 
-Generate issue drafts:
+Then verify:
 
 ```bash
-node scripts/openclaw-growth-engineer.mjs \
-  --analytics data/openclaw-growth-engineer/analytics_summary.example.json \
-  --revenuecat data/openclaw-growth-engineer/revenuecat_summary.example.json \
-  --sentry data/openclaw-growth-engineer/sentry_summary.example.json \
-  --repo-root . \
-  --max-issues 4
+command -v analyticscli
+analyticscli --help
 ```
 
-Optional chart generation (`matplotlib`) + manifest:
+If global npm installs are blocked, use the bundled helper from the installed skill root:
 
 ```bash
-python3 scripts/openclaw-growth-charts.py \
-  --analytics data/openclaw-growth-engineer/analytics_summary.example.json \
-  --out-dir data/openclaw-growth-engineer/charts \
-  --manifest data/openclaw-growth-engineer/charts.manifest.json
+bash skills/ai-product-manager/scripts/install-analyticscli-cli.sh
 ```
 
-Optional auto-create GitHub issues:
+The bundled helper automatically falls back from global npm install to a user-local npm prefix at `~/.local/analyticscli-npm` when global install fails with permissions errors.
 
-```bash
-GITHUB_TOKEN=ghp_xxx node scripts/openclaw-growth-engineer.mjs \
-  --analytics data/openclaw-growth-engineer/analytics_summary.example.json \
-  --revenuecat data/openclaw-growth-engineer/revenuecat_summary.example.json \
-  --sentry data/openclaw-growth-engineer/sentry_summary.example.json \
-  --repo-root . \
-  --chart-manifest data/openclaw-growth-engineer/charts.manifest.json \
-  --create-issues \
-  --repo owner/repo \
-  --labels ai-growth,autogenerated,product
-```
+Only ask the user for help if both direct npm install and the bundled helper fail with a concrete permission or network error.
+
+## Delivery Modes
+
+The CLI can write proposals to one or more targets:
+
+- `deliveries.openclawChat.enabled = true`: write `.openclaw/chat/latest.md` and `.openclaw/chat/latest.json` for OpenClaw to pick up in chat
+- `deliveries.github.mode = "issue"` with `deliveries.github.autoCreate = true`: create implementation-ready GitHub issues
+- `deliveries.github.mode = "pull_request"` with `deliveries.github.autoCreate = true`: create draft PRs that add `.openclaw/proposals/...md` proposal files to the repo
+
+## Connector Model
+
+Built-in channels:
+
+- `analytics`
+- `revenuecat`
+- `sentry`
+- `feedback`
+  default command path: `analyticscli feedback summary --format json`
+  default cursor behavior: first run `--last 30d`, later runs `--since <lastCollectedAt>` unless the command already sets explicit time flags
+
+Additional connectors:
+
+- configure `sources.extra[]`
+- each extra connector can use `mode=file` or `mode=command`
+- preferred output is shared `signals[]`
+- crash-style tools may use `issues[]`
+- feedback-style tools may use `items[]`
+
+## Feedback Rules
+
+- Always include a stable `locationId` for feedback collection points
+- Always include a human-readable `originName` for where the feedback originated in the product
+- Prefer AnalyticsCLI feedback retrieval via `analyticscli feedback summary --format json` instead of maintaining a second feedback definition
+- The SDK should track lightweight feedback submission events without sending raw feedback text into analytics events
+
+## Feedback Source Memory
+
+- The CLI should persist per-source cursor state, especially for the built-in `feedback` source
+- Default behavior must avoid accidental historical re-fetches
+- If `sources.feedback.cursorMode = "auto_since_last_fetch"` and the command has no explicit `--since`, `--until`, or `--last`, the CLI should auto-append a bounded window
+- Re-fetching older history should always be a conscious action by changing the command or resetting cursor state
+
+## Startup Protocol
+
+When the user says `start`, `run`, or `kick off`:
+
+1. First make sure `analyticscli` exists. If not, install it with `npm install -g @analyticscli/cli@preview` or run `bash skills/ai-product-manager/scripts/install-analyticscli-cli.sh`.
+2. Prefer the CLI entrypoint:
+   - `openclaw setup --config openclaw.config.json`
+3. Then run:
+   - `openclaw start --config openclaw.config.json`
+4. If the standalone `openclaw` CLI is unavailable but this ClawHub skill is installed, bootstrap the bundled runtime once:
+   - `bash skills/ai-product-manager/scripts/bootstrap-openclaw-workspace.sh`
+   - confirm `scripts/openclaw-growth-start.mjs` now exists
+   - `node scripts/openclaw-growth-start.mjs --config data/openclaw-growth-engineer/config.json`
+5. In this monorepo, use the workspace dev entrypoint when `openclaw` is not installed globally:
+   - `pnpm --filter @analyticscli/openclaw-cli dev -- start`
+6. Run portable checks first when setup is incomplete:
+   - `command -v analyticscli`
+   - `analyticscli projects list`
+   - detect `project.githubRepo` from git remote when possible
+   - verify `GITHUB_TOKEN` only if GitHub delivery is enabled
+7. If preflight fails, return only a concrete blocker checklist
+8. If preflight passes, continue with `openclaw run --config openclaw.config.json`
+
+## Proposal Strategy
+
+The CLI config should expose `strategy.proposalMode`:
+
+- `mandatory`: only strongest, clearly evidenced fixes and must-have requests
+- `balanced`: default mix of necessary fixes and moderate product ideas
+- `creative`: still evidence-led, but more willing to suggest bolder experiments or feature ideas
+
+## Output Rules
+
+- max 3-5 proposals per pass
+- each proposal must include measurable impact and file/module hypotheses
+- each proposal must say what should change
+- low-confidence findings must be marked explicitly
+- when GitHub delivery is disabled, proposals should still be fully usable via the OpenClaw chat outbox
+
+## Required Secrets
+
+- `GITHUB_TOKEN`
+  required only when GitHub issue or pull-request delivery is enabled
+- `ANALYTICSCLI_READONLY_TOKEN`
+  recommended
+- `REVENUECAT_API_KEY`
+  recommended for RevenueCat command/API mode
+- `SENTRY_AUTH_TOKEN`
+  recommended for Sentry command/API mode
+- optional connector-specific `secretEnv` per `sources.extra[]`
 
 ## References
 
 - [README](README.md)
-- [Required Secrets](references/required-secrets.md)
 - [Setup And Scheduling](references/setup-and-scheduling.md)
+- [Required Secrets](references/required-secrets.md)
 - [Input Schema](references/input-schema.md)
 - [Issue Template](references/issue-template.md)

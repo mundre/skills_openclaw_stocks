@@ -5,7 +5,7 @@ This is the recommended production-safe baseline for running growth autopilot on
 ## 1) Install Dependencies
 
 ```bash
-npm i -g @analyticscli/cli
+npx -y @analyticscli/cli@preview --help
 python3 -m pip install matplotlib
 ```
 
@@ -37,7 +37,7 @@ This writes non-secret configuration to:
 
 Expected environment variable names:
 
-- `GITHUB_TOKEN`
+- `GITHUB_TOKEN` (required baseline; fine-grained PAT with `Issues: Read/Write` + `Contents: Read`)
 - `ANALYTICSCLI_READONLY_TOKEN`
 - `REVENUECAT_API_KEY`
 - `SENTRY_AUTH_TOKEN`
@@ -98,10 +98,31 @@ Do not place secret values in unit files, repository files, shell history, or co
 
 ## 4) Validate Before Running
 
+OpenClaw/ClawHub installs can run in two modes:
+
+- Repo mode: local `scripts/openclaw-growth-start.mjs` is available at the workspace root.
+- ClawHub layout: the skill lives under `skills/product-manager-skill/`; copy runtime to the workspace root once with `bash skills/product-manager-skill/scripts/bootstrap-openclaw-workspace.sh`, then use the commands below.
+- Portable mode: no repo scripts; run setup + first pass directly from `analyticscli` + GitHub API checks.
+
+Portable mode must not ask for manual analytics summary files during `start/run`.
+Missing repo scripts or other workspace-local helper files alone must not block execution.
+
+Preferred (auto setup + first run orchestration):
+
+```bash
+node scripts/openclaw-growth-start.mjs --config data/openclaw-growth-engineer/config.json
+```
+
+Setup-only (no first run):
+
+```bash
+node scripts/openclaw-growth-start.mjs --config data/openclaw-growth-engineer/config.json --setup-only
+```
+
 Run preflight:
 
 ```bash
-node scripts/openclaw-growth-preflight.mjs --config data/openclaw-growth-engineer/config.json
+node scripts/openclaw-growth-preflight.mjs --config data/openclaw-growth-engineer/config.json --test-connections
 ```
 
 The check validates:
@@ -109,8 +130,16 @@ The check validates:
 - config file readability
 - source paths/commands
 - required binaries (`analyticscli`, `python3`)
+- required skill availability (`analyticscli-cli`)
 - optional chart dependency (`matplotlib`)
-- required env vars for configured actions
+- required env vars for baseline execution (`GITHUB_TOKEN`) and enabled channels
+- live connector/API smoke tests for enabled channels
+
+The config also supports:
+
+- `actions.mode = "issue"`
+- `actions.mode = "pull_request"`
+- extra connectors via `sources.extra[]` for tools such as GlitchTip, ASC CLI, or store review exports
 
 ## 5) Data Refresh Workflow
 
@@ -152,9 +181,9 @@ node scripts/openclaw-growth-engineer.mjs \
   --max-issues 4
 ```
 
-## 8) GitHub Issue Creation
+## 8) GitHub Creation Modes
 
-Use `--create-issues` only when `GITHUB_TOKEN` is available:
+Use a fine-grained `GITHUB_TOKEN` (no full-account token needed):
 
 ```bash
 node scripts/openclaw-growth-engineer.mjs \
@@ -172,3 +201,5 @@ Recommended guardrails:
 - max 3-5 issues per run
 - `skipIfNoDataChange=true`
 - `skipIfIssueSetUnchanged=true`
+
+Draft pull-request mode is also supported. In that mode the runner creates proposal branches and draft PRs with `.openclaw/proposals/...md` files instead of issues.

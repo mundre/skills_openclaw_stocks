@@ -86,8 +86,17 @@ The analyzer accepts flexible JSON, but this shape is recommended for reliable i
       "count": 14,
       "channel": "support_tickets",
       "comment": "Users ask for a faster path to first result",
+      "locations": [
+        { "location_id": "onboarding/profile_step", "count": 9 },
+        { "location_id": "onboarding/permissions_gate", "count": 5 }
+      ],
       "keywords": ["onboarding", "friction", "first value"]
     }
   ]
 }
 ```
+
+## `sources.extra[]` connectors
+
+Extra connectors should prefer the shared `signals[]` shape.
+Crash-style tools may use `issues[]`; feedback/review tools may use `items[]`.
