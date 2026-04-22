@@ -1,0 +1,11 @@
+{
+  "owner": "centriqs",
+  "slug": "argentina-fiscal-calendar",
+  "displayName": "Argentina Fiscal Calendar (ARCA)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776485313446,
+    "commit": null
+  },
+  "history": []
+}
