@@ -1,0 +1,5 @@
+﻿User-agent: *
+Disallow: /notice
+Disallow: /products/11111111emr
+Disallow: /theme
+Disallow: /themes
