@@ -1,0 +1,11 @@
+{
+  "owner": "bwgao",
+  "slug": "ashare-analyzer",
+  "displayName": "A股综合分析报告",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776852348009,
+    "commit": null
+  },
+  "history": []
+}
