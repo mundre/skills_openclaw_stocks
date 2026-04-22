@@ -1,0 +1,21 @@
+{
+  "name": "cooltrade-openclaw-skills",
+  "version": "1.2.1",
+  "description": "CoolTrade Agent Skills for OpenClaw. Fetch deep market quotes, financial fundamentals, global index, futures, financial news, and AI-generated daily A-share market reports.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "openclaw",
+    "skill",
+    "clawhub",
+    "finance",
+    "trading",
+    "cooltrade",
+    "market",
+    "a-share"
+  ],
+  "author": "CoolTrade",
+  "license": "MIT"
+}

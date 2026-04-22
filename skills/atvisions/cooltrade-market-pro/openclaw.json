@@ -1,0 +1,93 @@
+{
+  "credentials": [
+    {
+      "name": "COOLTRADE_API_KEY",
+      "displayName": "CoolTrade API Key",
+      "description": "Your personal CoolTrade API key (starts with sk-). Get yours at https://cooltrade.xyz → API Keys.",
+      "required": true
+    }
+  ],
+  "skills": [
+    {
+      "name": "cooltrade_stock_quote",
+      "description": "Get deep market quote and financial fundamentals for any A-share stock (China Market). Provide stock name or code.",
+      "type": "http",
+      "config": {
+        "method": "GET",
+        "url": "https://api.cooltrade.xyz/api/market/agent-skills/{{COOLTRADE_API_KEY}}/ashare/quote/",
+        "params": {
+          "stock": "{{query}}"
+        }
+      }
+    },
+    {
+      "name": "cooltrade_stock_news",
+      "description": "Monitor the latest relevant news, market announcements, and abnormal movements for specified China A-share stocks. Provide stock name or code.",
+      "type": "http",
+      "config": {
+        "method": "GET",
+        "url": "https://api.cooltrade.xyz/api/market/agent-skills/{{COOLTRADE_API_KEY}}/ashare/news/",
+        "params": {
+          "stock": "{{query}}"
+        }
+      }
+    },
+    {
+      "name": "cooltrade_financials",
+      "description": "Fetch core financial and valuation parameters (EPS, ROE, P/E, debt ratios, etc.) for China A-share companies to analyze deep fundamentals. Provide stock name or code.",
+      "type": "http",
+      "config": {
+        "method": "GET",
+        "url": "https://api.cooltrade.xyz/api/market/agent-skills/{{COOLTRADE_API_KEY}}/ashare/financials/",
+        "params": {
+          "stock": "{{query}}"
+        }
+      }
+    },
+    {
+      "name": "cooltrade_index",
+      "description": "Get daily quotes and trends for global/China market indexes (e.g. SSE, SZSE, NASDAQ) to evaluate macroeconomic environment. Provide index name or code.",
+      "type": "http",
+      "config": {
+        "method": "GET",
+        "url": "https://api.cooltrade.xyz/api/market/agent-skills/{{COOLTRADE_API_KEY}}/global/index/",
+        "params": {
+          "index": "{{query}}"
+        }
+      }
+    },
+    {
+      "name": "cooltrade_us_stock",
+      "description": "Get market quotes and recent daily performance for US stocks (e.g. AAPL, TSLA). Provide US stock name or ticker symbol.",
+      "type": "http",
+      "config": {
+        "method": "GET",
+        "url": "https://api.cooltrade.xyz/api/market/agent-skills/{{COOLTRADE_API_KEY}}/us_stock/quote/",
+        "params": {
+          "stock": "{{query}}"
+        }
+      }
+    },
+    {
+      "name": "cooltrade_futures",
+      "description": "Get market prices, open interest (OI), and trends for domestic China futures contracts (commodities, financial futures). Provide futures product name or contract code.",
+      "type": "http",
+      "config": {
+        "method": "GET",
+        "url": "https://api.cooltrade.xyz/api/market/agent-skills/{{COOLTRADE_API_KEY}}/futures/quote/",
+        "params": {
+          "symbol": "{{query}}"
+        }
+      }
+    },
+    {
+      "name": "cooltrade_daily_report",
+      "description": "Generate today's A-share market daily briefing — an AI-distilled summary of market sentiment, main themes, key events, risk alerts, and tomorrow's outlook. Call this when the user asks for a daily report, market summary, or today's market recap.",
+      "type": "http",
+      "config": {
+        "method": "GET",
+        "url": "https://api.cooltrade.xyz/api/market/agent-skills/{{COOLTRADE_API_KEY}}/daily-report/"
+      }
+    }
+  ]
+}
