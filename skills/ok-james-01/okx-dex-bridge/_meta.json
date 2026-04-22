@@ -1,0 +1,11 @@
+{
+  "owner": "ok-james-01",
+  "slug": "okx-dex-bridge",
+  "displayName": "Okx Dex Bridge",
+  "latest": {
+    "version": "2.4.0",
+    "publishedAt": 1776778732142,
+    "commit": null
+  },
+  "history": []
+}
