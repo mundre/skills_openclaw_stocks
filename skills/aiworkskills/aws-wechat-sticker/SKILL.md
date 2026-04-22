@@ -34,7 +34,12 @@ metadata:
 
 ## 配套 skill（informational）
 
-本 skill 属 `aws-wechat-article-*` 一条龙公众号套件（贴图/多图推送专用分支；入口 `aws-wechat-article-main`）。完整说明见 [源码仓库](https://github.com/aiworkskills/wechat-article-skills)。
+本 skill 属 `aws-wechat-article-*` 一条龙公众号套件的**贴图/多图推送专用分支**（入口 `aws-wechat-article-main`）。本 skill **不含自己的脚本**，生图复用 `../aws-wechat-article-images/scripts/image_create.py`，发布复用 `../aws-wechat-article-publish/scripts/publish.py`。
+
+- **至少需要同时安装** `aws-wechat-article-images` 才能生图；若要走发布链路，还需装 `aws-wechat-article-publish`。
+- 单独安装本 skill 时会因缺少兄弟脚本而无法生图或发布；本 skill 内仅做工作流编排与文案/风格约定。
+
+完整 9 slug 清单见 [源码仓库](https://github.com/aiworkskills/wechat-article-skills)。
 
 ## 路由
 
