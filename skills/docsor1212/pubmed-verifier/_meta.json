@@ -1,0 +1,11 @@
+{
+  "owner": "docsor1212",
+  "slug": "pubmed-verifier",
+  "displayName": "Pubmed Verifier",
+  "latest": {
+    "version": "2.1.4",
+    "publishedAt": 1776701808188,
+    "commit": null
+  },
+  "history": []
+}
