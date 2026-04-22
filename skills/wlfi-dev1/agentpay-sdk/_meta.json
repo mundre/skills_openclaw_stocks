@@ -1,0 +1,11 @@
+{
+  "owner": "wlfi-dev1",
+  "slug": "agentpay-sdk",
+  "displayName": "AgentPay SDK",
+  "latest": {
+    "version": "0.3.1",
+    "publishedAt": 1776698247693,
+    "commit": null
+  },
+  "history": []
+}
