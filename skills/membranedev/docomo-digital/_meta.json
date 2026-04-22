@@ -3,9 +3,15 @@
   "slug": "docomo-digital",
   "displayName": "Docomo Digital",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775275435312,
-    "commit": "https://github.com/openclaw/skills/commit/c1c05835b2464872b80c1761b7f12f96c3e75547"
+    "version": "1.0.1",
+    "publishedAt": 1776882606407,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775275435312,
+      "commit": "https://github.com/openclaw/skills/commit/c1c05835b2464872b80c1761b7f12f96c3e75547"
+    }
+  ]
 }
