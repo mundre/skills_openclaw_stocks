@@ -1,0 +1,11 @@
+{
+  "owner": "peand-rover",
+  "slug": "free-video-generation-from-prompt",
+  "displayName": "Free Video Generation From Prompt",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776789680544,
+    "commit": null
+  },
+  "history": []
+}
