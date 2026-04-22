@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "output": {
+    "latest_path": "~/.openclaw/workspace/memory/autoresearch-latest.md",
+    "archive_path": "~/.openclaw/workspace/memory/autoresearch-archive.md"
+  },
+  "defaults": {
+    "max_items_per_source": 10,
+    "max_report_items_per_section": 5,
+    "http_timeout_seconds": 15,
+    "hn_scan_depth": 60
+  },
+  "tracks": {
+    "ai": {
+      "display_name": "AI & Agents",
+      "arxiv_categories": ["cs.AI", "cs.MA", "cs.CL", "cs.LG"],
+      "arxiv_keywords": [
+        "agent", "autonomous", "LLM", "large language model",
+        "multi-agent", "reasoning", "tool use", "planning",
+        "RLHF", "self-improvement", "code generation"
+      ],
+      "github_languages": ["python", "rust", "typescript"],
+      "github_topics": [
+        "ai-agent", "llm", "autonomous-agent", "langchain",
+        "autogen", "crew-ai", "claude", "openai", "reasoning"
+      ],
+      "hn_keywords": [
+        "AI", "GPT", "Claude", "Gemini", "LLM", "agent",
+        "autonomous", "reasoning", "transformer", "Anthropic",
+        "OpenAI", "DeepMind", "open source model", "language model",
+        "neural", "diffusion", "fine-tune", "fine tuning"
+      ],
+      "web_queries": [
+        "AI agent framework news 2026",
+        "LLM breakthrough this week",
+        "autonomous AI agents latest developments"
+      ],
+      "max_items_per_source": 10
+    },
+    "crypto": {
+      "display_name": "Crypto & DeFi",
+      "arxiv_categories": ["cs.CR", "cs.DC", "q-fin.CP"],
+      "arxiv_keywords": [
+        "blockchain", "DeFi", "decentralized finance",
+        "smart contract", "MEV", "zero knowledge",
+        "rollup", "consensus", "token economics",
+        "cryptocurrency", "Ethereum", "proof of stake"
+      ],
+      "github_languages": ["solidity", "rust", "typescript"],
+      "github_topics": [
+        "blockchain", "defi", "ethereum", "solana",
+        "smart-contract", "web3", "zero-knowledge",
+        "rollup", "substrate", "cosmos", "bitcoin",
+        "cryptocurrency", "nft", "dao"
+      ],
+      "hn_keywords": [
+        "crypto", "blockchain", "DeFi", "Ethereum",
+        "Bitcoin", "Solana", "zero knowledge", "rollup",
+        "stablecoin", "MEV", "token", "web3",
+        "NFT", "DAO", "Layer 2", "L2", "ZK proof"
+      ],
+      "web_queries": [
+        "DeFi protocol news this week 2026",
+        "blockchain infrastructure developments",
+        "crypto regulatory news latest"
+      ],
+      "max_items_per_source": 10
+    },
+    "devtools": {
+      "display_name": "Developer Tools",
+      "arxiv_categories": ["cs.SE", "cs.PL"],
+      "arxiv_keywords": [
+        "developer tools", "IDE", "code completion",
+        "static analysis", "build system", "debugging",
+        "testing framework", "continuous integration",
+        "program synthesis", "refactoring", "type inference"
+      ],
+      "github_languages": ["rust", "go", "typescript", "python"],
+      "github_topics": [
+        "developer-tools", "cli", "terminal", "editor",
+        "lsp", "linter", "formatter", "build-tool",
+        "testing", "devops", "container", "wasm",
+        "compiler", "debugger", "profiler", "package-manager"
+      ],
+      "hn_keywords": [
+        "developer tool", "CLI", "terminal", "Rust",
+        "Go", "IDE", "editor", "neovim", "VSCode",
+        "build system", "container", "Docker", "Nix",
+        "testing", "CI/CD", "devops", "database",
+        "compiler", "debugger", "profiler", "formatter",
+        "open source", "release", "launch"
+      ],
+      "web_queries": [
+        "new developer tools 2026",
+        "Rust CLI tools trending",
+        "best new open source devtools this week"
+      ],
+      "max_items_per_source": 10
+    }
+  }
+}
