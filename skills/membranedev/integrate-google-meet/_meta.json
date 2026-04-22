@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "integrate-google-meet",
+  "displayName": "Google Meet",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776776747646,
+    "commit": null
+  },
+  "history": []
+}
