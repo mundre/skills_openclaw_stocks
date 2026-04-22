@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "harvest-integration",
+  "displayName": "Harvest",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776812595426,
+    "commit": null
+  },
+  "history": []
+}
