@@ -1,0 +1,11 @@
+{
+  "owner": "kirkraman",
+  "slug": "jx-news-aggregator",
+  "displayName": "news-aggregator",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776678973426,
+    "commit": null
+  },
+  "history": []
+}
