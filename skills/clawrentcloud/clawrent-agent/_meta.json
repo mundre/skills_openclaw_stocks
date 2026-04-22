@@ -1,0 +1,11 @@
+{
+  "owner": "clawrentcloud",
+  "slug": "clawrent-agent",
+  "displayName": "Clawrent",
+  "latest": {
+    "version": "0.1.5",
+    "publishedAt": 1776540480507,
+    "commit": null
+  },
+  "history": []
+}
