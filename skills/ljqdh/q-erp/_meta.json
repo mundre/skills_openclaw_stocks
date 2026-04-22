@@ -3,11 +3,16 @@
   "slug": "q-erp",
   "displayName": "Q Erp",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1776214981837,
-    "commit": "https://github.com/openclaw/skills/commit/2ae5438a6848eb865c76971ade8c88863b0591f6"
+    "version": "1.0.11",
+    "publishedAt": 1776871317962,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1776214981837,
+      "commit": "https://github.com/openclaw/skills/commit/2ae5438a6848eb865c76971ade8c88863b0591f6"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1776163271697,
