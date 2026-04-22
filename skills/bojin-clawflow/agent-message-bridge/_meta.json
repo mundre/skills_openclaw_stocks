@@ -1,0 +1,11 @@
+{
+  "owner": "bojin-clawflow",
+  "slug": "agent-message-bridge",
+  "displayName": "Agent Message Bridge",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776503447889,
+    "commit": null
+  },
+  "history": []
+}
