@@ -1,0 +1,11 @@
+{
+  "owner": "jackfeng0614-prog",
+  "slug": "local-vector-store",
+  "displayName": "Local Vector Store",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776567448476,
+    "commit": null
+  },
+  "history": []
+}
