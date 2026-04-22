@@ -1,0 +1,11 @@
+{
+  "owner": "linux2010",
+  "slug": "hope-client",
+  "displayName": "Hope Client",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776695068497,
+    "commit": null
+  },
+  "history": []
+}
