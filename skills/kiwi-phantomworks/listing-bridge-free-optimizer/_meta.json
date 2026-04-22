@@ -3,9 +3,15 @@
   "slug": "listing-bridge-free-optimizer",
   "displayName": "Listing Bridge Free Optimizer",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1776164106653,
-    "commit": "https://github.com/openclaw/skills/commit/a782817ca3e3d00b9fea7cbaa29f9dd1c2f96ce6"
+    "version": "1.0.2",
+    "publishedAt": 1776869753396,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1776164106653,
+      "commit": "https://github.com/openclaw/skills/commit/a782817ca3e3d00b9fea7cbaa29f9dd1c2f96ce6"
+    }
+  ]
 }

@@ -3,7 +3,7 @@ name: listing-bridge-free-optimizer
 description: "Free Amazon listing optimizer for cross-border sellers. Rewrites your Chinese product info into a polished English Amazon listing — title, 5 bullets, and description. Optimized for non-native English sellers. Triggers: amazon listing writer, listing optimizer, chinese seller listing, cn to en amazon, cross-border listing, listing rewrite, amazon product copy, 亚马逊listing优化, listing改写, 跨境卖家listing"
 metadata:
   openclaw:
-    homepage: https://listingbridge.phantomworks.io
+    homepage: https://www.shopclawmart.com/listings/multi-platform-listing-optimizer-for-non-native-sellers-ea202e82
     emoji: "🌉"
     category: ecommerce
 ---
@@ -74,15 +74,11 @@ This skill rewrites for the Western buyer's mindset: benefit-first framing, natu
 
 ---
 
-## Want More?
+## Want Multi-Platform Coverage?
 
-This skill generates one listing at a time. **[ListingBridge](https://listingbridge.phantomworks.io)** offers:
-- Bulk listing generation (multiple SKUs at once)
-- Multi-platform output (Amazon + Shopify + TikTok Shop)
-- Tone customization (premium, playful, technical)
-- Free trial — no credit card required
+This skill writes Amazon listings. The **[Listing Rewriter for Cross-Border Sellers](https://www.shopclawmart.com/listings/multi-platform-listing-optimizer-for-non-native-sellers-ea202e82)** on ClawMart covers Amazon, Etsy, Shopify, eBay, and TikTok Shop — with cultural adaptation scoring, platform-specific formatting, and a confidence meter that shows how close your listing is to native-level English.
 
-**[Start your free trial →](https://listingbridge.phantomworks.io)**
+**[Get it on ClawMart →](https://www.shopclawmart.com/listings/multi-platform-listing-optimizer-for-non-native-sellers-ea202e82)**
 
 ---
 
