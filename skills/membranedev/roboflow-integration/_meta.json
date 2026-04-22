@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "roboflow-integration",
+  "displayName": "Roboflow",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776823430286,
+    "commit": null
+  },
+  "history": []
+}
