@@ -1,0 +1,11 @@
+{
+  "owner": "clamepending",
+  "slug": "videomemory",
+  "displayName": "VideoMemory",
+  "latest": {
+    "version": "0.1.15",
+    "publishedAt": 1776833261748,
+    "commit": null
+  },
+  "history": []
+}
