@@ -1,0 +1,11 @@
+{
+  "owner": "gawainchin",
+  "slug": "openrouter-vision-skill",
+  "displayName": "OpenRouter Vision Agent",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776516852584,
+    "commit": null
+  },
+  "history": []
+}
