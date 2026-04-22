@@ -1,0 +1,11 @@
+{
+  "owner": "tujinsama",
+  "slug": "invoice-ocr-extractor",
+  "displayName": "发票票据识别虾",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776672041870,
+    "commit": null
+  },
+  "history": []
+}
