@@ -1,0 +1,11 @@
+{
+  "owner": "fuller-stack-dev",
+  "slug": "marp-data-summarizer",
+  "displayName": "Marp Slide Deck Generator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776910525441,
+    "commit": null
+  },
+  "history": []
+}
