@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "amazon-elasticsearch-integration",
+  "displayName": "Amazon Elasticsearch",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776891836814,
+    "commit": null
+  },
+  "history": []
+}
