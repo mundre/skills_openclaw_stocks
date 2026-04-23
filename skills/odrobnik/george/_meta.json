@@ -1,13 +1,18 @@
 {
   "owner": "odrobnik",
   "slug": "george",
-  "displayName": "George",
+  "displayName": "George Banking Automation",
   "latest": {
-    "version": "1.5.3",
-    "publishedAt": 1772570409900,
-    "commit": "https://github.com/openclaw/skills/commit/0020cd533477de5341079a969a0656fd795721dd"
+    "version": "1.5.4",
+    "publishedAt": 1776879083853,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.3",
+      "publishedAt": 1772570409900,
+      "commit": "https://github.com/openclaw/skills/commit/0020cd533477de5341079a969a0656fd795721dd"
+    },
     {
       "version": "1.5.2",
       "publishedAt": 1771539073498,
