@@ -1,0 +1,11 @@
+{
+  "owner": "nim42",
+  "slug": "arxiv-semantic-search",
+  "displayName": "ArXiv Semantic Search",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776926213287,
+    "commit": null
+  },
+  "history": []
+}
