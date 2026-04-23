@@ -3,11 +3,16 @@
   "slug": "internal-linking-optimizer",
   "displayName": "Internal Linking Optimizer",
   "latest": {
-    "version": "8.0.0",
-    "publishedAt": 1776184672863,
-    "commit": "https://github.com/openclaw/skills/commit/c22d1927eebe3d71f6c46a5404409999d9c0ca06"
+    "version": "9.1.0",
+    "publishedAt": 1776940446512,
+    "commit": null
   },
   "history": [
+    {
+      "version": "8.0.0",
+      "publishedAt": 1776184672863,
+      "commit": "https://github.com/openclaw/skills/commit/c22d1927eebe3d71f6c46a5404409999d9c0ca06"
+    },
     {
       "version": "7.2.0",
       "publishedAt": 1775475028821,
