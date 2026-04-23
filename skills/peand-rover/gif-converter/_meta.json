@@ -1,0 +1,11 @@
+{
+  "owner": "peand-rover",
+  "slug": "gif-converter",
+  "displayName": "Gif Converter",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776915212546,
+    "commit": null
+  },
+  "history": []
+}
