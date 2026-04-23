@@ -12,9 +12,18 @@ description: >
 emoji: "🪞"
 homepage: https://agentspace.so
 license: MIT
+clawdis:
+  requires:
+    bins:
+      - codex
+      - python3
+    config:
+      - ~/.codex/sessions
 ---
 
 # 🪞 GPT Image 2 — Image Generation via Your ChatGPT Subscription
+
+[agentspace.so](https://agentspace.so) · [GitHub](https://github.com/agentspace-so/skills/tree/main/gpt-image-2)
 
 Generate images with **GPT Image 2** (ChatGPT Images 2.0) inside your agent, using your existing ChatGPT Plus or Pro subscription — **no separate OpenAI access, no Fal or Replicate tokens, no per-image billing.**
 
