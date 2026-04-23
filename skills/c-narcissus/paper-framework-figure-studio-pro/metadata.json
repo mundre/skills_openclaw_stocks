@@ -1,0 +1,17 @@
+{
+  "display_name": "Paper Framework Figure Studio Pro",
+  "slug": "paper-framework-figure-studio-pro",
+  "version": "1.1.0",
+  "category": "Research",
+  "license": "MIT-0",
+  "tags": [
+    "scientific-figures",
+    "framework-diagram",
+    "paper-writing",
+    "visual-communication",
+    "computer-science",
+    "research-workflow"
+  ],
+  "short_description": "Multi-round co-designer for reviewer-friendly paper framework diagrams and method overview figures for top-tier CS papers.",
+  "tagline": "Iteratively design publication-ready paper framework figures with human approval at every round."
+}
