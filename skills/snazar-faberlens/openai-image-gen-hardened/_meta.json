@@ -1,0 +1,11 @@
+{
+  "owner": "snazar-faberlens",
+  "slug": "openai-image-gen-hardened",
+  "displayName": "Openai Image Gen Hardened",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776931222162,
+    "commit": null
+  },
+  "history": []
+}
