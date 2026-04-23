@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "q2-integration",
+  "displayName": "Q2",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776902625539,
+    "commit": null
+  },
+  "history": []
+}
