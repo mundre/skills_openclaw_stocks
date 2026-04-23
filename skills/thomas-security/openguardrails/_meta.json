@@ -1,0 +1,11 @@
+{
+  "owner": "thomas-security",
+  "slug": "openguardrails",
+  "displayName": "OpenGuardrails",
+  "latest": {
+    "version": "6.8.20",
+    "publishedAt": 1773291603877,
+    "commit": null
+  },
+  "history": []
+}
