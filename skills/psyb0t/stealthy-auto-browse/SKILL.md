@@ -84,16 +84,19 @@ Uses Playwright's DOM events. Faster, uses CSS selectors/XPath, but detectable.
 
 ### Which To Use
 
-- **Bot detection?** System input. Always.
-- **No detection?** Playwright input is fine.
-- **Fill forms stealthily?** `system_click` to focus, then `system_type`.
+- **Clicking:** always try `click` with a CSS selector first — fast and reliable.
+  Only use `system_click` if the site detects DOM events and blocks them.
+  `system_click` requires `calibrate` first or coordinates will be wrong.
+- **Typing:** `fill` for inputs (fast). `system_type` for stealth when bot detection is active.
+- **No bot detection?** Playwright input (`click`, `fill`) is fine.
+- **Bot detection confirmed?** System input + `calibrate` first.
 
 ## Typical Workflow
 
 1. `goto` → load the page
 2. `get_text` → read what's on the page
-3. `get_interactive_elements` → find buttons/inputs with x,y coordinates
-4. `system_click` / `system_type` / `send_key` → interact
+3. `get_interactive_elements` → find buttons/inputs with selectors and x,y coords
+4. `click` (CSS selector) → interact; fall back to `system_click` only if needed
 5. `wait_for_element` / `wait_for_text` → wait for results
 6. `get_text` → verify
 
@@ -319,13 +322,15 @@ Connect any MCP-compatible client to that URL. All actions from the HTTP API are
 
 If `AUTH_TOKEN` is set, connect to `http://localhost:8080/mcp/?auth_token=<key>`.
 
-Works in both standalone and cluster mode — HAProxy routes MCP traffic with the same sticky sessions.
+Works in both standalone and cluster mode. In cluster mode, only `run_script` is available (same restriction as HTTP API).
 
 ## Cluster Mode
 
 Run multiple browser instances behind HAProxy with a request queue, sticky sessions, and Redis cookie sync. For setup see [references/setup.md](references/setup.md).
 
 Entry point is `http://localhost:8080` — same API. HAProxy queues requests when all instances are busy instead of returning errors.
+
+**Script-only enforcement (v1.0.0+):** When `NUM_REPLICAS > 1`, both the HTTP API and MCP server only allow `run_script`, `ping`, and `sleep`. All other individual actions are rejected. Use `run_script` to bundle multiple actions into a single atomic request — one request = one routing decision = one browser instance handles the entire sequence. All actions remain available as steps inside `run_script`.
 
 **Sticky sessions:** HAProxy sets an `INSTANCEID` cookie. Send it back on subsequent requests to keep routing to the same browser instance. All browser state (tabs, DOM, JS, local storage) lives on that specific container — only cookies sync via Redis.
 
@@ -469,11 +474,12 @@ In cluster mode, each engine gets its own browser instance for true parallelism.
 
 ## Tips
 
-1. **Always `get_interactive_elements` before clicking** — don't guess coordinates
-2. **System input for stealth** — `system_click`, `system_type`, `send_key`
-3. **`get_text` first, screenshots second** — text is faster and smaller
-4. **Match TZ to IP location** — timezone mismatch is a detection signal
-5. **Resize screenshots with `?whLargest=512`** — full resolution is huge
+1. **Read text, not pixels** — always try `get_text` or `get_html` first; screenshots are last resort
+2. **Screenshots: use `whLargest=512`** — full resolution wastes tokens; fine detail is rarely needed
+3. **Prefer `click` with CSS selector** — reliable and fast; use `system_click` only when site blocks DOM events
+4. **`calibrate` before `system_click`** — without it, coordinates are wrong and clicks miss
+5. **Always `get_interactive_elements` before clicking** — gets both selectors and coordinates
+6. **Match TZ to IP location** — timezone mismatch is a detection signal
 6. **Wait conditions over sleep** — `wait_for_element`, `wait_for_text`, `wait_for_url`
 7. **`handle_dialog` BEFORE the trigger** — dialogs are auto-accepted otherwise
 8. **`calibrate` after fullscreen** — coordinate mapping shifts
