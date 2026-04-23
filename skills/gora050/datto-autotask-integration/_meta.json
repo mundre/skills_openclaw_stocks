@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "datto-autotask-integration",
+  "displayName": "Datto Autotask",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776877709310,
+    "commit": null
+  },
+  "history": []
+}
