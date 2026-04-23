@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "clockwork-integration",
+  "displayName": "Clockwork",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776870327620,
+    "commit": null
+  },
+  "history": []
+}
