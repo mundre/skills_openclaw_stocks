@@ -1,0 +1,5 @@
+[
+  {"label":"home","route":"/","expectText":"Your inbox is a queue"},
+  {"label":"how-it-works","route":"/how-it-works","expectText":"How it works"},
+  {"label":"security","route":"/security","expectText":"Security"}
+]

@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0b0a08;
+  --fg: #f6f2ea;
+  --muted: #bfb7ab;
+  --panel: rgba(255, 255, 255, 0.06);
+  --panel-strong: rgba(255, 255, 255, 0.09);
+  --stroke: rgba(255, 255, 255, 0.10);
+  --accent: #f2b84b;
+  --accent-2: #ff6a4a;
+  --shadow: 0 20px 70px rgba(0, 0, 0, 0.55);
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body), ui-sans-serif, system-ui;
+}
+
+::selection {
+  background: rgba(242, 184, 75, 0.35);
+}
+
+/* Subtle “paper-night” grain + gradient mesh (no images needed). */
+.grain {
+  position: relative;
+}
+
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background:
+    radial-gradient(1200px 700px at 10% 0%, rgba(242, 184, 75, 0.16), transparent 55%),
+    radial-gradient(900px 600px at 90% 20%, rgba(255, 106, 74, 0.12), transparent 60%),
+    radial-gradient(800px 500px at 60% 100%, rgba(120, 210, 255, 0.12), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 45%);
+  pointer-events: none;
+  filter: saturate(1.05);
+}
+
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+}
+
+/* Focus visible, always. */
+:focus-visible {
+  outline: 2px solid rgba(242, 184, 75, 0.85);
+  outline-offset: 2px;
+}

@@ -1,0 +1,5 @@
+[
+  {"label":"home","route":"/","expectText":"Make the system"},
+  {"label":"principles","route":"/principles","expectText":"Principles"},
+  {"label":"workflows","route":"/workflows","expectText":"Workflows"}
+]

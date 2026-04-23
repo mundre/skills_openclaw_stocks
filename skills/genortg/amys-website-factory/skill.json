@@ -1,0 +1,10 @@
+{
+  "id": "amys-website-factory",
+  "name": "AMY's Website Factory",
+  "version": "0.1.0",
+  "description": "Self-contained website factory skill: scaffold, build, test, deploy websites",
+  "author": "AMY",
+  "entry": "index.js",
+  "tags": ["website","factory","scaffold","deploy"]
+}
+
