@@ -1,30 +1,38 @@
-# BlogBurst — AI Content Generation for OpenClaw
+# BlogBurst — Replace your freelance social media manager
 
-✍️ Generate blog posts, repurpose content into social media posts, and discover trending topics — all from your OpenClaw assistant.
+Your AI social media operator. Writes, posts, replies, learns what works — on Twitter, Bluesky, Telegram, Discord. Does the same tactical job as a $500-1,500/month freelance SMM, for $29-99/month.
+
+Drive it from your existing Claude / MCP workflow — no separate dashboard to learn.
 
 ## What it does
 
-- **Blog Generation**: Give it a topic, get a full blog post with title, content, meta description, and tags
-- **Content Repurposing**: Paste a URL or text → get ready-to-post content for Twitter, LinkedIn, Reddit, Threads, Bluesky, and more
-- **Trending Topics**: Discover what's hot on HackerNews, Reddit, Google Trends, and Product Hunt — filtered by your niche
-- **Multi-Platform**: Supports 9 platforms with platform-specific formatting and character limits
+- **Posts for you**: 1-3x/day across Twitter, Bluesky, Telegram, Discord
+- **Replies for you**: likes, replies, follows relevant accounts in your niche
+- **Learns for you**: tracks what works, adjusts tone/topic/timing every week
+- **Measures for you**: views, followers, engagement trends
+- **Audits for you**: SEO + GEO (AI search) — see if Perplexity/ChatGPT surface you
 
 ## Quick Start
 
-1. Get your free API key at [blogburst.ai/dashboard/api-keys](https://blogburst.ai/dashboard/api-keys)
+1. Get your API key at [blogburst.ai/dashboard/api-keys](https://blogburst.ai/dashboard/api-keys) (7-day Pro trial, no credit card)
 2. Set `BLOGBURST_API_KEY` in your OpenClaw environment
-3. Ask your assistant: *"Find trending AI topics and draft Twitter posts for each"*
+3. Ask your assistant: *"Turn on auto-pilot, 2 posts a day on Twitter and Bluesky"*
 
 ## Example Prompts
 
-- "Write a blog post about remote work productivity tips"
-- "Turn this article into a LinkedIn post and a tweet: https://example.com/article"
-- "What's trending in marketing right now? Draft some content ideas"
-- "Create a week's worth of social media content about SaaS growth"
+- "Replace my social media manager — write me 3 tweets about my launch"
+- "Turn on auto-pilot, 2 posts per day on Twitter + Bluesky"
+- "How did my posts perform this week?"
+- "Reply to anyone who mentioned my brand today"
+- "Run a brand audit — does ChatGPT know about my product?"
 
 ## Pricing
 
-Free plan includes 50 generations/month. See [blogburst.ai/pricing](https://blogburst.ai/pricing) for Pro plans.
+- **Solo** $29/mo — Bluesky + Telegram + Twitter content gen (copy-paste)
+- **Growth** $49/mo — Full Twitter automation
+- **Pro** $99/mo — +GEO audits, multi-account, unlimited engagement
+
+All plans include a 7-day Pro trial. See [blogburst.ai/pricing](https://blogburst.ai/pricing).
 
 ## Links
 

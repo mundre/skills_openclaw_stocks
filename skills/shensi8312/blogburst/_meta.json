@@ -3,11 +3,16 @@
   "slug": "blogburst",
   "displayName": "Blogburst",
   "latest": {
-    "version": "4.0.0",
-    "publishedAt": 1775561729798,
-    "commit": "https://github.com/openclaw/skills/commit/6f61f80ddc55d7da54a02d5912320e288a9eadf3"
+    "version": "3.2.3",
+    "publishedAt": 1776930436707,
+    "commit": null
   },
   "history": [
+    {
+      "version": "4.0.0",
+      "publishedAt": 1775561729798,
+      "commit": "https://github.com/openclaw/skills/commit/6f61f80ddc55d7da54a02d5912320e288a9eadf3"
+    },
     {
       "version": "2.0.1",
       "publishedAt": 1774951860853,
