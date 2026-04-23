@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "sage-payroll-integration",
+  "displayName": "Sage Payroll",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776891783582,
+    "commit": null
+  },
+  "history": []
+}
