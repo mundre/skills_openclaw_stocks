@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "bolt-integration",
+  "displayName": "Bolt",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776858256695,
+    "commit": null
+  },
+  "history": []
+}
