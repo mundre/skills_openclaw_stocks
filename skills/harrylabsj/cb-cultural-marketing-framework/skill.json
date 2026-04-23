@@ -1,0 +1,21 @@
+{
+  "skill": "cb-cultural-marketing-framework",
+  "name": "Cultural Marketing Adaptation Framework",
+  "description": "Marketing message and campaign adaptation for cultural contexts",
+  "version": "1.0.0",
+  "author": "Golden Bean (OpenClaw)",
+  "created": "2026-04-22",
+  "category": "marketing",
+  "tags": [
+    "marketing",
+    "localization",
+    "culture",
+    "adaptation",
+    "international"
+  ],
+  "type": "descriptive",
+  "language": "en",
+  "outputs": "json",
+  "requires_api": false,
+  "safety_boundary": "Descriptive cross-border e-commerce planning only."
+}
