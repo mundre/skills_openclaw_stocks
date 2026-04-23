@@ -1,0 +1,11 @@
+{
+  "owner": "tangweigang-jpg",
+  "slug": "zipline-daily-backtest",
+  "displayName": "zipline-daily-backtest",
+  "latest": {
+    "version": "0.3.0",
+    "publishedAt": 1776921129777,
+    "commit": null
+  },
+  "history": []
+}
