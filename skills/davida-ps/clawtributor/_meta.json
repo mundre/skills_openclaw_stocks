@@ -3,11 +3,16 @@
   "slug": "clawtributor",
   "displayName": "clawtributor",
   "latest": {
-    "version": "0.0.4",
-    "publishedAt": 1776172108759,
-    "commit": "https://github.com/openclaw/skills/commit/e953aa179ceca2687a5de52a8e6f8dc50e96f019"
+    "version": "0.0.5",
+    "publishedAt": 1776384399530,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.0.4",
+      "publishedAt": 1776172108759,
+      "commit": "https://github.com/openclaw/skills/commit/e953aa179ceca2687a5de52a8e6f8dc50e96f019"
+    },
     {
       "version": "0.0.3",
       "publishedAt": 1770331043624,
