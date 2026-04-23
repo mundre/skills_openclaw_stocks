@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-sas-multiaccount-manage",
+  "displayName": "Alibabacloud Sas Multiaccount Manage",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1776843885067,
+    "commit": null
+  },
+  "history": []
+}
