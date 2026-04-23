@@ -1,0 +1,11 @@
+{
+  "owner": "nacmonad",
+  "slug": "graph-rag-builder",
+  "displayName": "GraphRAGBuilder",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776866819840,
+    "commit": null
+  },
+  "history": []
+}
