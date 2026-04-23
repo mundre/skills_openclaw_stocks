@@ -1,6 +1,6 @@
 # 📦 Kami Package Detection
 
-> Get notified the moment a package arrives at your door.
+> A free skill by **Kami SmartHome** — get notified the moment a package arrives at your door.
 
 Monitor your RTSP camera feed for packages, parcels, backpacks, handbags, and suitcases using YOLOv8-World ONNX inference. When detected, outputs the object class and bounding box as structured JSON to stdout.
 

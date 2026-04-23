@@ -1,7 +1,7 @@
 ---
 name: kami-package-detection
-description: Get notified the moment a package arrives at your door. Detect packages, parcels, and bags from RTSP camera streams using YOLOv8-World ONNX inference, returns object class and bounding box as JSON.
-version: 1.0.0
+description: A free skill by Kami SmartHome. Get notified the moment a package arrives at your door. Detects packages, parcels, and bags from RTSP camera streams using AI vision.
+version: 1.0.2
 author: kami-smarthome
 tags:
   - smart-home
