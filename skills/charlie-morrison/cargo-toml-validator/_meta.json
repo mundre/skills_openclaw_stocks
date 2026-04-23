@@ -1,0 +1,11 @@
+{
+  "owner": "charlie-morrison",
+  "slug": "cargo-toml-validator",
+  "displayName": "Cargo.toml Validator",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776901738543,
+    "commit": null
+  },
+  "history": []
+}
