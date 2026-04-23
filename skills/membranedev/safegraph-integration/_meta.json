@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "safegraph-integration",
+  "displayName": "Safegraph",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776866688231,
+    "commit": null
+  },
+  "history": []
+}
