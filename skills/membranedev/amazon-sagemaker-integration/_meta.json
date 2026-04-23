@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "amazon-sagemaker-integration",
+  "displayName": "Amazon Sagemaker",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776870383742,
+    "commit": null
+  },
+  "history": []
+}
