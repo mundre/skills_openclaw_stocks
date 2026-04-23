@@ -3,11 +3,16 @@
   "slug": "rank-tracker",
   "displayName": "Rank Tracker",
   "latest": {
-    "version": "8.0.0",
-    "publishedAt": 1776184680557,
-    "commit": "https://github.com/openclaw/skills/commit/49328a37fdf41c00da27bf11d42f5939e6588d92"
+    "version": "9.1.0",
+    "publishedAt": 1776940447762,
+    "commit": null
   },
   "history": [
+    {
+      "version": "8.0.0",
+      "publishedAt": 1776184680557,
+      "commit": "https://github.com/openclaw/skills/commit/49328a37fdf41c00da27bf11d42f5939e6588d92"
+    },
     {
       "version": "7.2.0",
       "publishedAt": 1775475037518,
