@@ -15,8 +15,16 @@
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir, homedir } from 'node:os';
-import { exec } from 'node:child_process';
+import open from 'open';
 import { fileURLToPath } from 'node:url';
+
+const DIM_META = {
+  code_safety:          { icon: 'find_in_page', name: 'Skill & Code Safety', zh: '技能与代码安全' },
+  credential_safety:    { icon: 'key',          name: 'Credential & Secrets', zh: '凭证与密钥安全' },
+  network_exposure:     { icon: 'lan',          name: 'Network & System', zh: '网络与系统暴露' },
+  runtime_protection:   { icon: 'shield',       name: 'Runtime Protection', zh: '运行时防护' },
+  web3_safety:          { icon: 'token',        name: 'Web3 Safety', zh: 'Web3 安全' },
+};
 
 // Try to load favicon from agentguard-server or fallback
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,13 +37,27 @@ for (const p of iconPaths) {
   if (existsSync(p)) { faviconB64 = readFileSync(p).toString('base64'); break; }
 }
 
-let input = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { input += chunk; });
-process.stdin.on('end', () => {
-  try { generateReport(JSON.parse(input)); }
-  catch (err) { process.stderr.write(`Error: ${err.message}\n`); process.exit(1); }
-});
+// Support --file <path> argument to read JSON from file (cross-platform friendly)
+const fileArgIdx = process.argv.indexOf('--file');
+if (fileArgIdx !== -1 && process.argv[fileArgIdx + 1]) {
+  const filePath = process.argv[fileArgIdx + 1];
+  try {
+    const content = readFileSync(filePath, 'utf8');
+    generateReport(JSON.parse(content));
+  } catch (err) {
+    process.stderr.write(`Error reading ${filePath}: ${err.message}\n`);
+    process.exit(1);
+  }
+} else {
+  // Fallback: read JSON from stdin (pipe)
+  let input = '';
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', (chunk) => { input += chunk; });
+  process.stdin.on('end', () => {
+    try { generateReport(JSON.parse(input)); }
+    catch (err) { process.stderr.write(`Error: ${err.message}\n`); process.exit(1); }
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -73,13 +95,7 @@ function getTier(score) {
   ])};
 }
 
-const DIM_META = {
-  code_safety:          { icon: 'find_in_page', name: 'Skill & Code Safety', zh: '技能与代码安全' },
-  credential_safety:    { icon: 'key',          name: 'Credential & Secrets', zh: '凭证与密钥安全' },
-  network_exposure:     { icon: 'lan',          name: 'Network & System', zh: '网络与系统暴露' },
-  runtime_protection:   { icon: 'shield',       name: 'Runtime Protection', zh: '运行时防护' },
-  web3_safety:          { icon: 'token',        name: 'Web3 Safety', zh: 'Web3 安全' },
-};
+
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -730,7 +746,8 @@ function generateReport(data) {
     autoRecs.push({ severity: 'LOW', text: 'Enable auto-scan on session start: export AGENTGUARD_AUTO_SCAN=1', zh: '启用会话启动时自动扫描：export AGENTGUARD_AUTO_SCAN=1' });
 
   // Merge: user recs first, then auto recs (dedup by text similarity)
-  const allRecs = [...recommendations];
+  // Guard against malformed entries where text may be undefined (#37)
+  const allRecs = recommendations.filter(r => r && typeof r.text === 'string');
   for (const ar of autoRecs) {
     if (!allRecs.some(r => r.text.toLowerCase().includes(ar.text.slice(0, 30).toLowerCase()))) {
       allRecs.push(ar);
@@ -747,11 +764,10 @@ function generateReport(data) {
       const sc = sevColor(sev);
       const zhText = r.zh || r.text;
       return `
-      <div class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#262a31]/30 transition-colors group">
+      <div class="flex items-center gap-3 px-4 py-3 rounded-lg">
         <span class="w-5 text-xs font-headline font-bold text-[#849588]/60">${i+1}</span>
         <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide text-white shrink-0" style="background:${sc}">${sev}</span>
         <span class="text-sm text-[#b9cbbd] leading-snug rec-text" data-en="${esc(r.text)}" data-zh="${esc(zhText)}">${esc(r.text)}</span>
-        <span class="material-symbols-outlined text-sm text-[#849588]/0 group-hover:text-[#849588]/50 transition-colors ml-auto shrink-0">chevron_right</span>
       </div>`;
     }).join('')}</div>`
     : '<div class="text-center py-12 text-[#849588]" data-i18n="no_recs">No recommendations.</div>';
@@ -759,12 +775,7 @@ function generateReport(data) {
   // ── AI Analysis report ──
   const analysisText = data.analysis || '';
   const analysisHtml = analysisText
-    ? `<div class="relative group">
-        <div class="bg-[#0a0e14] border border-[#3a4a3f]/10 rounded-xl p-5 text-sm text-[#b9cbbd] leading-relaxed whitespace-pre-line" id="analysisText">${esc(analysisText)}</div>
-        <button onclick="copyReport()" id="copyBtn" class="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-[#262a31] border border-[#3a4a3f]/30 rounded-lg text-[11px] font-semibold text-[#849588] hover:text-[#dfe2eb] hover:border-[#849588]/50 transition-all opacity-0 group-hover:opacity-100">
-          <span class="material-symbols-outlined text-sm" id="copyIcon">content_copy</span><span id="copyLabel" data-i18n="copy_report">Copy Report</span>
-        </button>
-      </div>`
+    ? `<div class="bg-[#0a0e14] border border-[#3a4a3f]/10 rounded-xl p-5 text-sm text-[#b9cbbd] leading-relaxed whitespace-pre-line" id="analysisText">${esc(analysisText)}</div>`
     : '';
 
   // ── Health status label ──
@@ -919,6 +930,9 @@ body{background:#0a0e14;color:#dfe2eb;font-family:'Inter',sans-serif}
             <p class="text-[10px] font-label uppercase tracking-[0.2em] text-[#849588] mb-1" data-i18n="sec_analysis">Security Analysis</p>
             <h1 class="text-2xl font-headline font-bold text-[#f5fff5] tracking-tight flex items-center gap-3">
               <span class="material-symbols-outlined" style="color:${tier.color}">analytics</span><span data-i18n="diag_report">Diagnostic Report</span>
+              <button onclick="copyReport()" id="copyBtn" class="flex items-center gap-1 px-2 py-1 bg-[#262a31] border border-[#3a4a3f]/30 rounded-lg text-[11px] font-semibold text-[#849588] hover:text-[#dfe2eb] hover:border-[#849588]/50 transition-all ml-1">
+                <span class="material-symbols-outlined text-sm" id="copyIcon">content_copy</span><span id="copyLabel" class="hidden sm:inline" data-i18n="copy_report">Copy Report</span>
+              </button>
             </h1>
           </div>
           <div class="bg-[#262a31] border border-[#3a4a3f]/15 rounded-lg px-4 py-2 flex items-center gap-2">
@@ -1036,7 +1050,7 @@ body{background:#0a0e14;color:#dfe2eb;font-family:'Inter',sans-serif}
   i18n.zh.quote=quotes_zh['${tier.grade}']||quotes_zh.B;
   i18n.en.quote='"${tier.quote.replace(/'/g,"\\'")}\"';
 
-  let curLang='en';
+  let curLang=(${JSON.stringify(data.analysis||'')}).match(/[\u4e00-\u9fff]/) ? 'zh' : 'en';
   window.toggleLang=function(){
     curLang=curLang==='en'?'zh':'en';
     document.getElementById('langLabel').textContent=curLang==='en'?'中文':'EN';
@@ -1053,6 +1067,22 @@ body{background:#0a0e14;color:#dfe2eb;font-family:'Inter',sans-serif}
       if(t)el.textContent=t;
     });
   };
+
+  // Apply initial language on load (auto-detect Chinese from analysis content)
+  if(curLang==='zh'){
+    document.getElementById('langLabel').textContent='EN';
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const key=el.getAttribute('data-i18n');
+      if(key==='findings_range'){
+        const range=el.getAttribute('data-range'),total=el.getAttribute('data-total');
+        el.textContent='发现 — '+range+' / 共 '+total;
+      } else if(i18n.zh[key]!=null)el.textContent=i18n.zh[key];
+    });
+    document.querySelectorAll('.finding-dim,.finding-text,.clean-dims,.rec-text').forEach(el=>{
+      const t=el.getAttribute('data-zh');
+      if(t)el.textContent=t;
+    });
+  }
 
   // Dimension data for share card (must be before shareReport)
   const _dims=${JSON.stringify(Object.fromEntries(Object.entries(DIM_META).map(([k])=>[k,dimensions[k]||{score:null,na:false}])))};
@@ -1334,11 +1364,22 @@ body{background:#0a0e14;color:#dfe2eb;font-family:'Inter',sans-serif}
 
   const outPath = join(tmpdir(), `agentguard-checkup-${Date.now()}.html`);
   writeFileSync(outPath, html, 'utf8');
-  console.log(outPath);
 
-  const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-  exec(`${cmd} "${outPath}"`, (err) => {
-    if (err) process.stderr.write(`Could not open browser: ${err.message}\n`);
+  // Skip browser open for headless/bot environments (Qclaw, OpenClaw, CI)
+  const isHeadless = process.env.OPENCLAW_STATE_DIR || process.env.QCLAW || process.env.CI;
+
+  // Flush stdout before doing anything else — on Windows/Linux in non-TTY/pipe
+  // mode, console.log() is non-blocking and process.exit() can terminate before
+  // the buffer is flushed, causing the caller (Claude) to receive an empty path.
+  // Flush stdout before doing anything else — on Windows/Linux in non-TTY/pipe
+  // mode, console.log() is non-blocking and process.exit() can terminate before
+  // the buffer is flushed, causing the caller (Claude) to receive an empty path.
+  process.stdout.write(outPath + '\n', () => {
+    if (!isHeadless) {
+      open(outPath).catch(err => process.stderr.write(`Could not open browser: ${err.message}\n`));
+    }
+    // Hard exit after 3s — guards against exec child process hanging and
+    // blocking Node from exiting naturally (e.g. xdg-open on misconfigured Linux).
+    setTimeout(() => process.exit(0), 3000).unref();
   });
-  setTimeout(() => process.exit(0), 2000);
 }

@@ -1,20 +1,52 @@
 ---
 name: agentguard
-description: GoPlus AgentGuard — AI agent security guard. Run /agentguard checkup for a full security health check: scans all installed skills, checks credentials, permissions, and network exposure, then delivers an HTML report directly to you. Also use for scanning third-party code, blocking dangerous commands, preventing data leaks, evaluating action safety, and running daily security patrols.
+description: GoPlus AgentGuard — AI agent security guard. Run /agentguard checkup for a full security health check, scans all installed skills, checks credentials, permissions, and network exposure, then delivers an HTML report directly to you. Also use for scanning third-party code, blocking dangerous commands, preventing data leaks, evaluating action safety, and running daily security patrols.
 license: MIT
 compatibility: Requires Node.js 18+. Optional GoPlus API credentials for enhanced Web3 simulation.
 metadata:
   author: GoPlusSecurity
   version: "1.1"
   optional_env: "GOPLUS_API_KEY, GOPLUS_API_SECRET (for Web3 transaction simulation only)"
+filesystem-access:
+  - path: "~/.ssh/"
+    access: read-only
+    reason: "Credential safety audit — check directory permissions (stat only, no key content read)"
+  - path: "~/.gnupg/"
+    access: read-only
+    reason: "Credential safety audit — check directory permissions (stat only)"
+  - path: "~/.claude/"
+    access: read-only
+    reason: "Discover installed skills and read security hook configuration"
+  - path: "~/.openclaw/"
+    access: read-only
+    reason: "Discover installed skills and read OpenClaw config for patrol checks"
+  - path: "~/.qclaw/"
+    access: read-only
+    reason: "Discover installed skills in QClaw environments"
+  - path: "~/.agentguard/"
+    access: read-write
+    reason: "Read/write audit log (audit.jsonl) and protection level config (config.json)"
 user-invocable: true
-allowed-tools: Read, Grep, Glob, Bash(node scripts/trust-cli.ts *) Bash(node scripts/action-cli.ts *) Bash(node scripts/checkup-report.js) Bash(openclaw *) Bash(ss *) Bash(lsof *) Bash(ufw *) Bash(iptables *) Bash(crontab *) Bash(systemctl list-timers *) Bash(find *) Bash(stat *) Bash(env) Bash(sha256sum *)
+allowed-tools: Read, Write, Grep, Glob, Bash(node *trust-cli.ts *) Bash(node *action-cli.ts *) Bash(*checkup-report.js) Bash(echo *checkup-report.js) Bash(cat *checkup-report.js) Bash(openclaw *) Bash(ss *) Bash(lsof *) Bash(ufw *) Bash(iptables *) Bash(crontab *) Bash(systemctl list-timers *) Bash(find *) Bash(stat *) Bash(env) Bash(sha256sum *) Bash(node *) Bash(cd *)
 argument-hint: "[scan|action|patrol|trust|report|config|checkup] [args...]"
 ---
 
 # GoPlus AgentGuard — AI Agent Security Framework
 
 You are a security auditor powered by the GoPlus AgentGuard framework. Route the user's request based on the first argument.
+
+## Important: Resolving Script Paths
+
+All commands in this skill reference `scripts/` as a relative path. You **MUST** resolve this to the absolute path of this skill's directory before running any command. To find the skill directory:
+
+1. This SKILL.md file's parent directory **is** the skill directory
+2. If this file is at `/path/to/agentguard/SKILL.md`, then scripts are at `/path/to/agentguard/scripts/`
+3. Before running any `node scripts/...` command, **always `cd` into the skill directory first**, or use the full absolute path
+
+Example: if this SKILL.md is at `~/.openclaw/skills/agentguard/SKILL.md`, run:
+```bash
+cd ~/.openclaw/skills/agentguard && node scripts/checkup-report.js
+```
 
 ## Command Routing
 
@@ -76,7 +108,7 @@ For each rule, use Grep to search the relevant file types. Record every match wi
 | 21 | TROJAN_DISTRIBUTION | CRITICAL | md | Trojanized binary download + password + execute |
 | 22 | SUSPICIOUS_PASTE_URL | HIGH | all | URLs to paste sites (pastebin, glot.io, etc.) |
 | 23 | SUSPICIOUS_IP | MEDIUM | all | Hardcoded public IPv4 addresses |
-| 24 | SOCIAL_ENGINEERING | MEDIUM | md | Pressure language + execution instructions |
+| 24 | SOCIAL_ENGINEERING | HIGH | md | Pressure language + execution instructions |
 
 ### Risk Level Calculation
 
@@ -271,7 +303,7 @@ Detect tampered or unregistered skill packages by comparing file hashes against 
 Scan workspace files for leaked secrets using AgentGuard's own detection patterns.
 
 **Steps**:
-1. Use Grep to scan `$OC/workspace/` (especially `memory/` and `logs/`) with patterns from:
+1. Use Grep to scan `$OC/workspace/` **recursively, covering all agent subdirectories** (e.g. all `workspace-agent-*/` directories, not just the current agent's workspace) with patterns from:
    - scan-rules.md Rule 7 (PRIVATE_KEY_PATTERN): `0x[a-fA-F0-9]{64}` in quotes
    - scan-rules.md Rule 8 (MNEMONIC_PATTERN): BIP-39 word sequences, `seed_phrase`, `mnemonic`
    - scan-rules.md Rule 5 (READ_SSH_KEYS): SSH key file references in workspace
@@ -597,89 +629,129 @@ Run a comprehensive agent health checkup across 6 security dimensions. Generates
 
 ### Step 1: Data Collection
 
+**IMPORTANT: You MUST run ALL 7 checks below — not just the skill scan. The checkup covers 5 security dimensions, not just code scanning. Do NOT skip checks 2–7.**
+
 Run these checks in parallel where possible. These are **universal agent security checks** — they apply to any Claude Code or OpenClaw environment, regardless of whether AgentGuard is installed.
 
-1. **Discover & scan installed skills**: Glob `~/.claude/skills/*/SKILL.md` and `~/.openclaw/skills/*/SKILL.md`. For each discovered skill, **run `/agentguard scan <skill_path>`** using the scan subcommand logic (24 detection rules). Collect the scan results (risk level, findings count, risk tags) for each skill.
-2. **Credential file permissions**: `stat` on `~/.ssh/`, `~/.gnupg/`, and if OpenClaw: `stat` on `$OC/openclaw.json`, `$OC/devices/paired.json`
-3. **Sensitive credential scan (DLP)**: Use Grep to scan workspace memory/logs directories for leaked secrets:
-   - Private keys: `0x[a-fA-F0-9]{64}`, `-----BEGIN.*PRIVATE KEY-----`
-   - Mnemonics: sequences of 12+ BIP-39 words, `seed_phrase`, `mnemonic`
-   - API keys/tokens: `AKIA[0-9A-Z]{16}`, `gh[pousr]_[A-Za-z0-9_]{36}`, plaintext passwords
-4. **Network exposure**: Run `lsof -i -P -n 2>/dev/null | grep LISTEN` or `ss -tlnp 2>/dev/null` to check for dangerous open ports (Redis 6379, Docker API 2375, MySQL 3306, MongoDB 27017 on 0.0.0.0)
-5. **Scheduled tasks audit**: Check `crontab -l 2>/dev/null` for suspicious entries containing `curl|bash`, `wget|sh`, or accessing `~/.ssh/`
-6. **Environment variable exposure**: Run `env` and check for sensitive variable names (`PRIVATE_KEY`, `MNEMONIC`, `SECRET`, `PASSWORD`) — detect presence only, mask values
-7. **Runtime protection check**: Check if security hooks exist in `~/.claude/settings.json`, check for audit logs at `~/.agentguard/audit.jsonl`
+1. **[REQUIRED] Discover & scan installed skills** (→ feeds Dimension 1: Code Safety): Glob ALL of the following paths for `*/SKILL.md`:
+   - `~/.claude/skills/*/SKILL.md`
+   - `~/.openclaw/skills/*/SKILL.md`
+   - `~/.openclaw/workspace/skills/*/SKILL.md`
+   - `~/.qclaw/skills/*/SKILL.md`
+   - `~/.qclaw/workspace/skills/*/SKILL.md`
+
+   For **every** discovered skill, **run `/agentguard scan <skill_path>`** using the scan subcommand logic (24 detection rules). Do NOT skip any skill regardless of how many are found. Collect the scan results (risk level, findings count, risk tags) for each skill.
+2. **[REQUIRED] Credential file permissions** (→ feeds Dimension 2: Credential Safety): Platform-aware check — behavior differs by OS:
+   - **macOS/Linux**: Run `stat -f '%Lp' <path> 2>/dev/null || stat -c '%a' <path> 2>/dev/null` on `~/.ssh/`, `~/.gnupg/`, and if OpenClaw: on `$OC/openclaw.json`, `$OC/devices/paired.json`. **If the command returns empty output, the directory does not exist — treat as N/A (award full points), do NOT flag as a failure.**
+   - **Windows**: `stat` is not available. Use `icacls <path>` to check ACLs instead. If the directory does not exist, treat as N/A (award full points). If it exists, check that the ACL grants access only to the current user (no `Everyone`, `Users`, or `Authenticated Users` with write/read access). Flag as FAIL only if the directory exists AND the ACL is overly permissive.
+3. **[REQUIRED] Sensitive credential scan / DLP** (→ feeds Dimension 2: Credential Safety): Use Grep to scan **all** agent workspace directories for leaked secrets. This MUST cover the entire workspace root, not just the current agent's directory:
+   - For OpenClaw / QClaw: scan `~/.openclaw/workspace/` and `~/.qclaw/workspace/` recursively — this includes **all** `workspace-agent-*/` subdirectories, not just the current agent's workspace
+   - For Claude Code: scan `~/.claude/` recursively
+   - Patterns to detect:
+     - Private keys: `0x[a-fA-F0-9]{64}`, `-----BEGIN.*PRIVATE KEY-----`
+     - Mnemonics: sequences of 12+ BIP-39 words, `seed_phrase`, `mnemonic`
+     - API keys/tokens: `AKIA[0-9A-Z]{16}`, `gh[pousr]_[A-Za-z0-9_]{36}`, plaintext passwords
+   - **Important**: Use the workspace *root* directory as the scan target (e.g. `~/.qclaw/workspace/`), not a specific agent subdirectory. All sibling `workspace-agent-*` directories must be included.
+4. **[REQUIRED] Network exposure** (→ feeds Dimension 3: Network & System): Run `lsof -i -P -n 2>/dev/null | grep LISTEN` or `ss -tlnp 2>/dev/null` to check for dangerous open ports (Redis 6379, Docker API 2375, MySQL 3306, MongoDB 27017 on 0.0.0.0)
+5. **[REQUIRED] Scheduled tasks audit** (→ feeds Dimension 3: Network & System): Check `crontab -l 2>/dev/null` for suspicious entries containing `curl|bash`, `wget|sh`, or accessing `~/.ssh/`
+6. **[REQUIRED] Environment variable exposure** (→ feeds Dimension 3: Network & System): Run `env` and check for sensitive variable names (`PRIVATE_KEY`, `MNEMONIC`, `SECRET`, `PASSWORD`) — detect presence only, mask values
+7. **[REQUIRED] Runtime protection check** (→ feeds Dimension 4: Runtime Protection): Check if security hooks exist in `~/.claude/settings.json` or `~/.openclaw/openclaw.json`, check for audit logs at `~/.agentguard/audit.jsonl`
 
 ### Step 2: Score Calculation
 
-Checklist-based scoring across 6 security dimensions. **Every failed check = 1 finding with severity and description.**
+**Additive scoring**: Each dimension starts at **0**. For each check that **passes**, add the listed points. Maximum is 100 per dimension. **Every failed check = 1 finding with severity and description.**
 
 #### Dimension 1: Skill & Code Safety (weight: 25%)
 
-Uses AgentGuard's 24-rule scan engine (`/agentguard scan`) to audit each installed skill.
+Uses AgentGuard's 24-rule scan engine (`/agentguard scan`) to audit each installed skill. Start at base 100 and **deduct** for findings:
 
-| Check | Score | If failed → finding |
-|-------|-------|---------------------|
-| All skills scanned with risk level LOW | +40 | For each skill with findings, add per-finding: "<rule_id> in <skill>:<file>:<line>" with its severity |
-| No CRITICAL scan findings across all skills | +30 | "CRITICAL: <rule_id> detected in <skill>" (CRITICAL) |
-| No HIGH scan findings across all skills | +30 | "HIGH: <rule_id> detected in <skill>" (HIGH) |
+- Base score: **100**
+- Each CRITICAL finding: **−15**
+- Each HIGH finding: **−8**
+- Each MEDIUM finding: **−3**
+- Floor at **0** (never negative)
 
-Deductions from base 100: each CRITICAL finding −15, HIGH −8, MEDIUM −3. Floor at 0.
+For each finding, add: `"<rule_id> in <skill>:<file>:<line>"` with its severity.
 
-If no skills installed: score = 70, add finding: "No third-party skills installed — no code to audit" (LOW).
+**False-positive suppression**: When the scanned skill is `agentguard` itself (skill path contains `agentguard`), suppress `READ_ENV_SECRETS` findings — AgentGuard reads environment variables as part of its own configuration detection, which is expected behaviour and not a security risk. Do not deduct points or list these as findings in the report.
+
+If no skills installed: score = **70**, add finding: "No third-party skills installed — no code to audit" (LOW).
 
 #### Dimension 2: Credential & Secret Safety (weight: 25%)
 
-Checks for leaked credentials and permission hygiene.
+Checks for leaked credentials and permission hygiene. Start at **0**, add points for each check that **passes** (total possible = 100):
 
-| Check | Score | If failed → finding |
-|-------|-------|---------------------|
-| `~/.ssh/` permissions are 700 or stricter | +25 | "~/.ssh/ permissions too open (<actual>) — should be 700" (HIGH) |
-| `~/.gnupg/` permissions are 700 or stricter | +15 | "~/.gnupg/ permissions too open (<actual>) — should be 700" (MEDIUM) |
-| No private keys (hex 0x..64, PEM) found in skill code or workspace | +25 | "Plaintext private key found in <location>" (CRITICAL) |
-| No mnemonic phrases found in skill code or workspace | +20 | "Plaintext mnemonic found in <location>" (CRITICAL) |
-| No API keys/tokens (AWS AKIA.., GitHub gh*_) found in skill code | +15 | "API key/token found in <location>" (HIGH) |
+| Check | Points if PASS | If FAIL → finding |
+|-------|---------------|-------------------|
+| `~/.ssh/` permissions are 700 or stricter | **+25** | "~/.ssh/ permissions too open (<actual>) — should be 700" (HIGH) |
+| `~/.gnupg/` permissions are 700 or stricter | **+15** | "~/.gnupg/ permissions too open (<actual>) — should be 700" (MEDIUM) |
+
+**Permission check rules (to avoid false positives):**
+- **Directory does not exist** (stat/icacls returns empty or "file not found"): Treat as N/A — award the points. A missing `~/.ssh/` or `~/.gnupg/` is not a security risk.
+- **Windows**: Use `icacls` instead of `stat`. Award full points if directory doesn't exist. Flag as FAIL only if directory exists AND ACL grants access to `Everyone`, `Users`, or `Authenticated Users`.
+- **macOS/Linux**: Flag as FAIL only when the directory exists AND stat returns a numeric value AND that value is greater than 700.
+| No private keys (hex 0x..64, PEM) found in skill code or workspace | **+25** | "Plaintext private key found in <location>" (CRITICAL) |
+| No mnemonic phrases found in skill code or workspace | **+20** | "Plaintext mnemonic found in <location>" (CRITICAL) |
+| No API keys/tokens (AWS AKIA.., GitHub gh*_) found in skill code | **+15** | "API key/token found in <location>" (HIGH) |
 
 #### Dimension 3: Network & System Exposure (weight: 20%)
 
-Checks for dangerous network exposure and system-level risks.
+Checks for dangerous network exposure and system-level risks. Start at **0**, add points for each check that **passes** (total possible = 100):
 
-| Check | Score | If failed → finding |
-|-------|-------|---------------------|
-| No high-risk ports exposed on 0.0.0.0 (Redis/Docker/MySQL/MongoDB) | +35 | "Dangerous port exposed: <service> on 0.0.0.0:<port>" (HIGH) |
-| No suspicious cron jobs (curl\|bash, wget\|sh, accessing ~/.ssh/) | +30 | "Suspicious cron job: <command>" (HIGH) |
-| No sensitive env vars with dangerous names (PRIVATE_KEY, MNEMONIC) | +20 | "Sensitive env var exposed: <name>" (MEDIUM) |
-| OpenClaw config files have proper permissions (600) if applicable | +15 | "OpenClaw config <file> permissions too open" (MEDIUM) |
+| Check | Points if PASS | If FAIL → finding |
+|-------|---------------|-------------------|
+| No high-risk ports exposed on 0.0.0.0 (Redis/Docker/MySQL/MongoDB) | **+35** | "Dangerous port exposed: <service> on 0.0.0.0:<port>" (HIGH) |
+| No suspicious cron jobs (curl\|bash, wget\|sh, accessing ~/.ssh/) | **+30** | "Suspicious cron job: <command>" (HIGH) |
+| No sensitive env vars with dangerous names (PRIVATE_KEY, MNEMONIC) | **+20** | "Sensitive env var exposed: <name>" (MEDIUM) |
+| OpenClaw config files have proper permissions (600) if applicable | **+15** | "OpenClaw config <file> permissions too open" (MEDIUM) |
+
+**Example**: If no dangerous ports (+35), no suspicious cron (+30), but env var `PRIVATE_KEY` found (+0), and not OpenClaw (+15 skip, give points) → score = 35 + 30 + 0 + 15 = **80**.
 
 #### Dimension 4: Runtime Protection (weight: 15%)
 
-Checks whether the agent has active security monitoring.
+Checks whether the agent has active security monitoring. Start at **0**, add points for each check that **passes** (total possible = 100):
 
-| Check | Score | If failed → finding |
-|-------|-------|---------------------|
-| Security hooks/guards installed (AgentGuard, custom hooks, etc.) | +40 | "No security hooks installed — actions are unmonitored" (HIGH) |
-| Security audit log exists with recent events | +30 | "No security audit log — no threat history available" (MEDIUM) |
-| Skills have been security-scanned at least once | +30 | "Installed skills have never been security-scanned" (MEDIUM) |
+| Check | Points if PASS | If FAIL → finding |
+|-------|---------------|-------------------|
+| Security hooks/guards installed (AgentGuard, custom hooks, etc.) | **+40** | "No security hooks installed — actions are unmonitored" (HIGH) |
+| Security audit log exists with recent events | **+30** | "No security audit log — no threat history available" (MEDIUM) |
+| Skills have been security-scanned at least once | **+30** | "Installed skills have never been security-scanned" (MEDIUM) |
 
 #### Dimension 5: Web3 Safety (weight: 15% if applicable)
 
-Only if Web3 usage is detected (env vars like `GOPLUS_API_KEY`, `CHAIN_ID`, `RPC_URL`, or web3-related skills installed). Otherwise `{ "score": null, "na": true }`.
+Only if Web3 usage is detected (env vars like `GOPLUS_API_KEY`, `CHAIN_ID`, `RPC_URL`, or web3-related skills installed). Otherwise `{ "score": null, "na": true }`. Start at **0**, add points for each check that **passes** (total possible = 100):
 
-| Check | Score | If failed → finding |
-|-------|-------|---------------------|
-| No wallet-draining patterns (approve+transferFrom) in skill code | +40 | "Wallet-draining pattern detected in <skill>" (CRITICAL) |
-| No unlimited token approval patterns in skill code | +30 | "Unlimited approval pattern detected in <skill>" (HIGH) |
-| Transaction security API configured (GoPlus or equivalent) | +30 | "No transaction security API — Web3 calls are unverified" (MEDIUM) |
+| Check | Points if PASS | If FAIL → finding |
+|-------|---------------|-------------------|
+| No wallet-draining patterns (approve+transferFrom) in skill code | **+40** | "Wallet-draining pattern detected in <skill>" (CRITICAL) |
+| No unlimited token approval patterns in skill code | **+30** | "Unlimited approval pattern detected in <skill>" (HIGH) |
+| Transaction security API configured (GoPlus or equivalent) | **+30** | "No transaction security API — Web3 calls are unverified" (MEDIUM) |
 
-#### Composite Score
+#### Composite Score Calculation
 
-Weighted average of all applicable dimensions. If Web3 Safety is N/A, redistribute its 15% weight proportionally.
+Calculate the weighted average of all applicable dimensions:
 
-Determine tier:
-- 90–100 → Tier **S** (JACKED)
-- 70–89 → Tier **A** (Healthy)
-- 50–69 → Tier **B** (Tired)
-- 0–49 → Tier **F** (Critical)
+```
+composite_score = (code_safety × 0.25) + (credential_safety × 0.25) + (network_exposure × 0.20) + (runtime_protection × 0.15) + (web3_safety × 0.15)
+```
+
+If Web3 Safety is N/A, redistribute its 15% weight proportionally across the other 4 dimensions:
+```
+composite_score = (code_safety × 0.294) + (credential_safety × 0.294) + (network_exposure × 0.235) + (runtime_protection × 0.176)
+```
+
+Round to the nearest integer.
+
+**Tier assignment (MUST use these exact thresholds):**
+
+| Score Range | Tier | Label |
+|-------------|------|-------|
+| **90–100** | **S** | JACKED |
+| **70–89** | **A** | Healthy |
+| **50–69** | **B** | Tired |
+| **0–49** | **F** | Critical |
+
+**Example**: code_safety=100, credential_safety=80, network_exposure=85, runtime_protection=30, web3=N/A → composite = (100×0.294)+(80×0.294)+(85×0.235)+(30×0.176) = 29.4+23.5+20.0+5.3 = **78** → Tier **A** (Healthy).
 
 ### Step 3: Generate Analysis Report
 
@@ -695,6 +767,18 @@ Based on all collected data and findings, write a **comprehensive security analy
 This report goes into the `"analysis"` field of the JSON output.
 
 Also generate a list of actionable recommendations as `{ "severity": "...", "text": "..." }` objects for the structured view.
+
+### Pre-Step-4 Validation
+
+**Before assembling the JSON, verify you have collected data for ALL 5 dimensions:**
+
+- [ ] `code_safety` — from Step 1 check 1 (skill scanning)
+- [ ] `credential_safety` — from Step 1 checks 2 + 3 (permissions + DLP)
+- [ ] `network_exposure` — from Step 1 checks 4 + 5 + 6 (ports + cron + env vars)
+- [ ] `runtime_protection` — from Step 1 check 7 (hooks + audit log)
+- [ ] `web3_safety` — from Step 2 (only if Web3 detected, otherwise `{ "score": null, "na": true }`)
+
+**If any dimension is missing data, go back and run the missing checks. Do NOT submit a report with only code_safety filled in.**
 
 ### Step 4: Generate Report
 
@@ -721,16 +805,21 @@ Assemble the results into a JSON object and pipe it to the report generator:
 }
 ```
 
-Execute:
+Execute the report generator. **Use the `--file` method for cross-platform compatibility** (the `echo | pipe` method fails on Windows due to shell quoting differences):
+
+1. First, write the JSON to a temporary file using the Write tool (e.g. `/tmp/agentguard-checkup-data.json`)
+2. Then run (remember to `cd` into the skill directory first — see "Resolving Script Paths" above):
 ```bash
-echo '<json>' | node scripts/checkup-report.js
+cd <skill_directory> && node scripts/checkup-report.js --file /tmp/agentguard-checkup-data.json
 ```
 
-The script outputs the HTML file path to stdout and opens it in the browser automatically.
+The script outputs the HTML file path to stdout (e.g. `/tmp/agentguard-checkup-1234567890.html`). Capture this path — you will need it for delivery in Step 6.
 
-### Step 5: Terminal Summary
+> **Note**: The script also supports stdin pipe (`echo '<json>' | node scripts/checkup-report.js`) but this may fail on Windows cmd.exe where single quotes are not string delimiters. Always prefer `--file`.
 
-After the report generates, output a brief summary in the terminal:
+### Step 5: Terminal Summary (REQUIRED)
+
+**You MUST output this summary after the report generates.** This is the primary output the user sees. Do NOT skip this step — always show the score, dimension table, and report path:
 
 ```
 ## 🦞 GoPlus AgentGuard Health Checkup
@@ -750,32 +839,58 @@ After the report generates, output a brief summary in the terminal:
 **Full visual report**: <path> (opened in browser)
 
 💡 Top recommendation: <first recommendation text>
+
+### Next Steps
+(Only include this section if there are HIGH or CRITICAL findings.)
+
+List each HIGH or CRITICAL finding as a plain-language suggestion — no commands, no JSON, no technical details. One sentence per item. Ask the user to confirm if they'd like help with any of them.
+
+Format:
 ```
+⚠️ A few things need your attention:
+1. 🔴 <plain description of critical issue and why it matters>
+2. 🟠 <plain description of high issue and why it matters>
+...
+
+Reply with the number(s) you'd like help with and I'll walk you through it.
+```
+
+Examples of plain-language descriptions:
+- No hooks: "Security monitoring isn't active — AgentGuard can't block threats in real-time until hooks are configured."
+- Unregistered skills: "10 installed skills haven't been security-reviewed — they're running with no trust level assigned."
+- SSH permissions: "Your SSH key folder has loose permissions — other processes on this machine could potentially read your private keys."
+- Plaintext credential: "A private key or API token was found in plain text in a file — it should be removed and rotated."
 
 ### Step 6: Deliver the Report to the User
 
-After printing the terminal summary, deliver the HTML report file to the user. Detect the current channel and use the most appropriate method:
+After printing the terminal summary, deliver the HTML report file. You **MUST** always output the `MEDIA:` token, and then also deliver via the appropriate channel method.
 
-**Detection logic** — infer from context clues:
-- If the `Write` tool is available and you can write to `~/Desktop` or `~/Downloads` → you are in **Claude Code (local)**
-- If you can produce artifact/file outputs (rich UI, download button) → you are in **Claude.ai web**
-- If neither is clearly available → you are in **API / headless mode**
+#### 6a. MEDIA token (required — always do this)
 
-**Delivery by channel:**
+Output the following line on its **own line** in your response:
 
-1. **Claude Code (local desktop)**
-   - Use the `Write` tool to copy the HTML to `~/Desktop/agentguard-checkup-<YYYY-MM-DD>.html`
-   - Tell the user: "✅ Report saved to your Desktop: `agentguard-checkup-<date>.html` — double-click to open it in your browser."
-   - The browser should already be open from Step 4. If not, run `open ~/Desktop/agentguard-checkup-<date>.html` (macOS) or `xdg-open` (Linux).
+```
+MEDIA:<file_path>
+```
 
-2. **Claude.ai web**
-   - Read the generated HTML file using the `Read` tool, then output the full HTML content as a **code artifact** (language: `html`) so the user can preview it inline or download it.
-   - Tell the user: "✅ Your report is attached above — click the download icon to save it."
+For example: `MEDIA:/tmp/agentguard-checkup-1234567890.html`
 
-3. **API / headless / MCP**
-   - Read the generated HTML file and return the full content inline, prefixed with:
-     `<!-- AgentGuard Checkup Report | Score: <n>/100 | <date> -->`
-   - Also print the file path so the caller can retrieve it from disk.
+This is how platforms like OpenClaw automatically deliver the file as a Telegram/Discord/WhatsApp attachment via `sendDocument`. The platform strips this line from visible text — the user won't see it. **Always output this regardless of what channel you think you're in.**
+
+#### 6b. Channel-specific delivery (in addition to MEDIA token)
+
+**Claude Code (local desktop)**
+- The browser should already be open from Step 4.
+- Also copy to Desktop: `cp <file_path> ~/Desktop/agentguard-checkup-$(date +%Y-%m-%d).html`
+- Tell the user: "✅ Report saved to your Desktop and opened in browser."
+
+**Claude.ai web**
+- Read the generated HTML file and output it as a **code artifact** (language: `html`).
+- Tell the user: "✅ Your report is attached above — click the download icon to save it."
+
+**API / headless / Telegram / other**
+- The `MEDIA:` token above handles file delivery automatically.
+- Also print the file path for reference.
 
 Regardless of channel, always end with:
 ```
