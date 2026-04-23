@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "hostaway-integration",
+  "displayName": "Hostaway",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1776884717315,
+    "commit": null
+  },
+  "history": []
+}
