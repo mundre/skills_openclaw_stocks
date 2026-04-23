@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "mendix-integration",
+  "displayName": "Mendix",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776866620238,
+    "commit": null
+  },
+  "history": []
+}
