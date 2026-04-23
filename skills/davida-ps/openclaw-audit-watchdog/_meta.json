@@ -3,11 +3,16 @@
   "slug": "openclaw-audit-watchdog",
   "displayName": "openclaw-audit-watchdog",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1776172123796,
-    "commit": "https://github.com/openclaw/skills/commit/84df5255df17b4e5247229c8d6ca1835d1b379d5"
+    "version": "0.1.4",
+    "publishedAt": 1776409815307,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1776172123796,
+      "commit": "https://github.com/openclaw/skills/commit/84df5255df17b4e5247229c8d6ca1835d1b379d5"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1772018831675,
