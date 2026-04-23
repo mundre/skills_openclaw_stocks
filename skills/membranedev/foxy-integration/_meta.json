@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "foxy-integration",
+  "displayName": "Foxy",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776837784752,
+    "commit": null
+  },
+  "history": []
+}
