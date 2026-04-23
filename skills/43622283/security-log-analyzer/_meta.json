@@ -1,0 +1,11 @@
+{
+  "owner": "43622283",
+  "slug": "security-log-analyzer",
+  "displayName": "安全事件日志调查助手",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776865868306,
+    "commit": null
+  },
+  "history": []
+}
