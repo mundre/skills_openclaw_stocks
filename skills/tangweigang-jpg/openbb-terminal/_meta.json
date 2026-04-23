@@ -1,0 +1,11 @@
+{
+  "owner": "tangweigang-jpg",
+  "slug": "openbb-terminal",
+  "displayName": "openbb-terminal",
+  "latest": {
+    "version": "0.3.0",
+    "publishedAt": 1776902152965,
+    "commit": null
+  },
+  "history": []
+}
