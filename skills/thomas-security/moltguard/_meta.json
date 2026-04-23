@@ -1,0 +1,11 @@
+{
+  "owner": "thomas-security",
+  "slug": "moltguard",
+  "displayName": "MoltGuard - Security & Antivirus & Guardrails",
+  "latest": {
+    "version": "6.8.16",
+    "publishedAt": 1773211534466,
+    "commit": null
+  },
+  "history": []
+}
