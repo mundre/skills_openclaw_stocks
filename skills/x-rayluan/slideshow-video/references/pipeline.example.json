@@ -1,0 +1,128 @@
+{
+  "slug": "money-habits-01",
+  "caption": "3 money habits that quietly changed my life 💸",
+  "hashtags": ["#moneytips", "#personalfinance", "#selfimprovement"],
+  "defaultImageQuery": "moody money lifestyle",
+  "video": {
+    "enabled": true,
+    "secondsPerSlide": 3,
+    "fps": 30,
+    "zoom": true,
+    "fade": 0.35
+  },
+  "audio": {
+    "path": "./audio/lofi-bed.mp3",
+    "volume": 0.2
+  },
+  "slides": [
+    {
+      "imageQuery": "luxury wallet desk",
+      "overlay": 118,
+      "text": [
+        {
+          "text": "3 money habits",
+          "size": 96,
+          "bold": true,
+          "y": 790,
+          "maxWidth": 900
+        },
+        {
+          "text": "that quietly changed my life",
+          "size": 70,
+          "y": 930,
+          "maxWidth": 920
+        }
+      ]
+    },
+    {
+      "imageQuery": "minimal budgeting workspace",
+      "text": [
+        {
+          "text": "I stopped spending first.",
+          "size": 78,
+          "bold": true,
+          "y": 860,
+          "maxWidth": 880
+        },
+        {
+          "text": "Saving became automatic after payday.",
+          "size": 54,
+          "y": 1010,
+          "maxWidth": 860
+        }
+      ]
+    },
+    {
+      "imageQuery": "cash savings aesthetic",
+      "text": [
+        {
+          "text": "Habit 1: pay yourself first",
+          "size": 70,
+          "bold": true,
+          "y": 860,
+          "maxWidth": 920
+        },
+        {
+          "text": "Move the money before life gets a vote.",
+          "size": 50,
+          "y": 1010,
+          "maxWidth": 860
+        }
+      ]
+    },
+    {
+      "imageQuery": "credit card cancel minimal",
+      "text": [
+        {
+          "text": "Habit 2: kill silent subscriptions",
+          "size": 66,
+          "bold": true,
+          "y": 860,
+          "maxWidth": 920
+        },
+        {
+          "text": "Recurring charges love being ignored.",
+          "size": 50,
+          "y": 1010,
+          "maxWidth": 860
+        }
+      ]
+    },
+    {
+      "imageQuery": "quiet morning no spend",
+      "text": [
+        {
+          "text": "Habit 3: set one no-spend day",
+          "size": 68,
+          "bold": true,
+          "y": 860,
+          "maxWidth": 920
+        },
+        {
+          "text": "A tiny rule beats vague guilt every time.",
+          "size": 50,
+          "y": 1010,
+          "maxWidth": 860
+        }
+      ]
+    },
+    {
+      "imageQuery": "save post phone aesthetic",
+      "text": [
+        {
+          "text": "Save this for later",
+          "size": 84,
+          "bold": true,
+          "y": 850,
+          "maxWidth": 900
+        },
+        {
+          "text": "Follow for more money systems",
+          "size": 56,
+          "y": 980,
+          "maxWidth": 900
+        }
+      ]
+    }
+  ]
+}
