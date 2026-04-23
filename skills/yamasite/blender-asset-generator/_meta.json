@@ -1,0 +1,11 @@
+{
+  "owner": "yamasite",
+  "slug": "blender-asset-generator",
+  "displayName": "Blender 资产生成",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1776926394722,
+    "commit": null
+  },
+  "history": []
+}
