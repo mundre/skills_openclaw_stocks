@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "ikas-integration",
+  "displayName": "Ikas",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776858338400,
+    "commit": null
+  },
+  "history": []
+}
