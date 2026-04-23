@@ -3,11 +3,16 @@
   "slug": "section11",
   "displayName": "Section 11: Endurance Training Coach (Intervals.icu)",
   "latest": {
-    "version": "1.0.12",
-    "publishedAt": 1772651762463,
-    "commit": "https://github.com/openclaw/skills/commit/96a25dc66f0b568d95b55acdc774ab85359b3789"
+    "version": "1.0.13",
+    "publishedAt": 1776711388600,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.12",
+      "publishedAt": 1772651762463,
+      "commit": "https://github.com/openclaw/skills/commit/96a25dc66f0b568d95b55acdc774ab85359b3789"
+    },
     {
       "version": "1.0.9",
       "publishedAt": 1772367465895,
