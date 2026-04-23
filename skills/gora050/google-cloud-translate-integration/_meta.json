@@ -1,0 +1,11 @@
+{
+  "owner": "gora050",
+  "slug": "google-cloud-translate-integration",
+  "displayName": "Google Cloud Translate",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776870783196,
+    "commit": null
+  },
+  "history": []
+}
