@@ -1,0 +1,11 @@
+{
+  "owner": "jkobject",
+  "slug": "orchestration-setups",
+  "displayName": "high perf orchestration a la oh my codex & gastown",
+  "latest": {
+    "version": "0.1.2",
+    "publishedAt": 1776861967347,
+    "commit": null
+  },
+  "history": []
+}
