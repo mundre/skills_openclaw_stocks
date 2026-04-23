@@ -1,13 +1,18 @@
 {
   "owner": "adibirzu",
   "slug": "openclaw-security-monitor",
-  "displayName": "Openclaw Security Monitor",
+  "displayName": "OpenClaw Security Monitor",
   "latest": {
-    "version": "4.2.1",
-    "publishedAt": 1773604101001,
-    "commit": "https://github.com/openclaw/skills/commit/6b00b07228b194df72bb6e03746e65e4bd02e9a3"
+    "version": "5.2.1",
+    "publishedAt": 1776620875866,
+    "commit": null
   },
   "history": [
+    {
+      "version": "4.2.1",
+      "publishedAt": 1773604101001,
+      "commit": "https://github.com/openclaw/skills/commit/6b00b07228b194df72bb6e03746e65e4bd02e9a3"
+    },
     {
       "version": "3.4.0",
       "publishedAt": 1772464992309,
