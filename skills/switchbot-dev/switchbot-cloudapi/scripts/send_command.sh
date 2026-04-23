@@ -5,7 +5,7 @@ set -euo pipefail
 DEVICE_ID=${1:?Usage: send_command.sh <deviceId> <command> [parameter]}
 COMMAND=${2:?Usage: send_command.sh <deviceId> <command> [parameter]}
 PARAMETER=${3:-default}
-BASE="${SWITCHBOT_BASE_URL:-https://api.switch-bot.com}"
+BASE="https://api.switch-bot.com"
 T=$(date +%s%3N)
 NONCE=$(uuidgen)
 SIGN=$(printf "%s%s%s" "$SWITCHBOT_TOKEN" "$T" "$NONCE" | openssl dgst -sha256 -hmac "$SWITCHBOT_SECRET" -binary | openssl base64)

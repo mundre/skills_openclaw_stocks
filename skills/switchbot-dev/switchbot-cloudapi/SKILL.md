@@ -1,6 +1,18 @@
 ---
 name: switchbot-openapi
-description: Control and query SwitchBot devices using the official OpenAPI (v1.1). Use when the user asks to list SwitchBot devices, get device status, or send commands (turn on/off, press, set mode, lock/unlock, curtain open %, IR air conditioner, lights, fans, robot vacuums, keypads, etc.). Requires SWITCHBOT_TOKEN and SWITCHBOT_SECRET.
+description: Control and query SwitchBot devices using the official OpenAPI (v1.1). Use when the user asks to list SwitchBot devices, get device status, send commands, or query families/rooms/homes. Requires SWITCHBOT_TOKEN and SWITCHBOT_SECRET.
+metadata:
+  openclaw:
+    requires:
+      env:
+        - SWITCHBOT_TOKEN
+        - SWITCHBOT_SECRET
+      bins:
+        - node
+        - curl
+        - openssl
+        - jq
+        - uuidgen
 ---
 
 # SwitchBot OpenAPI Skill
@@ -58,6 +70,11 @@ This skill equips the agent to operate SwitchBot devices via HTTPS requests to t
 - Volume: `node scripts/switchbot_cli.js cmd <deviceId> setVolume --param=50`
 - Self clean (S10/S20): `node scripts/switchbot_cli.js cmd <deviceId> selfClean --param=1`
 
+**Weather Station:**
+- Set custom quote: `node scripts/switchbot_cli.js cmd <deviceId> customQuote --param="大海啊，你好多的水啊！"`
+  (Max 100 characters; displayed on the AI Recommendations page)
+- Remove custom quote: `node scripts/switchbot_cli.js cmd <deviceId> cancelCustom --param=default`
+
 **Blind Tilt:**
 - Set position: `node scripts/switchbot_cli.js cmd <deviceId> setPosition --param="up;60"`
 - Fully open: `node scripts/switchbot_cli.js cmd <deviceId> fullyOpen`
@@ -97,6 +114,9 @@ This skill equips the agent to operate SwitchBot devices via HTTPS requests to t
 
 **AI Art Frame:**
 - Next/Previous: `node scripts/switchbot_cli.js cmd <deviceId> next` / `previous`
+- Upload image (URL): `node scripts/switchbot_cli.js cmd <deviceId> uploadImage --param='{"imageUrl":"https://example.com/photo.jpg"}'`
+- Upload image (Base64): `node scripts/switchbot_cli.js cmd <deviceId> uploadImage --param='{"imageBase64":"<base64_string>"}'`
+- ⚠️ `imageUrl` and `imageBase64` are mutually exclusive. Max 10 images; statusCode 402 = limit reached.
 
 **Keypad / Keypad Touch / Keypad Vision / Keypad Vision Pro:**
 - Create passcode: `node scripts/switchbot_cli.js cmd <deviceId> createKey --param='{"name":"Guest","type":"permanent","password":"12345678"}'`
@@ -149,6 +169,34 @@ Command body format:
 }
 ```
 For IR "Others" (DIY) devices, use `"commandType": "customize"`.
+
+## Querying Families & Rooms
+
+The OpenAPI does not have a dedicated families/rooms endpoint. Instead, extract this info from the device list response (`GET /v1.1/devices`).
+
+Each device in `deviceList` includes:
+- `familyName` — the family/home it belongs to
+- `roomID` — room identifier (`"defaultRoom"` means no specific room assigned)
+- `roomName` — room display name (`null` if default room)
+
+**When the user asks about families, homes, or rooms:**
+
+1. Call `node scripts/switchbot_cli.js list` to get the full device list
+2. Group devices by `familyName` to get all families
+3. Within each family, group by `roomName` (treat `null`/`"defaultRoom"` as "未分配房间")
+4. Present the family → room → device hierarchy
+
+Example output format:
+```
+🏠 Home
+  └─ 未分配房间: 设备A, 设备B, ...
+  └─ 客厅: 设备C, ...
+
+🏠 测试
+  └─ 未分配房间: 设备D, ...
+```
+
+**Note:** IR remote devices (`infraredRemoteList`) only have `hubDeviceId`, no `familyName`/`roomName`. To determine their family, match their `hubDeviceId` to a device in `deviceList` and use that device's family.
 
 ## Agent Guidelines
 

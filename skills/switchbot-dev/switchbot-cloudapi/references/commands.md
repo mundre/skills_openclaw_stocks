@@ -190,11 +190,18 @@ Same commands as Air Purifier VOC.
 | toggle | default | toggle state |
 | setBrightness | `{0-100}` | set brightness |
 
+### Weather Station
+| Command | Parameter | Description |
+|---------|-----------|-------------|
+| customQuote | `"<text>"` (max 100 chars) | Set a personalized quote displayed on the AI Recommendations page |
+| cancelCustom | default | Remove custom quote and restore default display |
+
 ### AI Art Frame
 | Command | Parameter | Description |
 |---------|-----------|-------------|
 | next | default | switch to next image |
 | previous | default | switch to previous image |
+| uploadImage | `{"imageUrl":"<url>"}` or `{"imageBase64":"<base64>"}` | upload an image to the Art Frame. `imageUrl` and `imageBase64` are mutually exclusive (pick one). Base64 supports optional `data:image/...;base64,` prefix. statusCode 402 = image limit reached (max 10), delete via App first. |
 
 ### Robot Vacuum Cleaner S1 / S1 Plus
 | Command | Parameter | Description |

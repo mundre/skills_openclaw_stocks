@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const https = require('https');
 
 function baseUrl() {
-  return process.env.SWITCHBOT_BASE_URL || 'https://api.switch-bot.com';
+  return 'https://api.switch-bot.com';
 }
 
 function headers() {
