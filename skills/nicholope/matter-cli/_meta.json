@@ -1,0 +1,11 @@
+{
+  "owner": "nicholope",
+  "slug": "matter-cli",
+  "displayName": "Matter CLI",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1776915518175,
+    "commit": null
+  },
+  "history": []
+}
