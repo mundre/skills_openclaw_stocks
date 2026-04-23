@@ -1,5 +1,7 @@
 #!/bin/bash
-# rocky-know-how 搜经验诀窍 v2.0.0
+# rocky-know-how 搜经验诀窍 v2.8.3
+SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # 用法: search.sh [选项] <关键词1> [关键词2]...
 #       search.sh --all              显示所有
 #       search.sh --preview "关键词"  只显示摘要
@@ -10,6 +12,33 @@
 #       search.sh --global "关键词"   搜所有workspace
 #       search.sh --since YYYY-MM-DD  按日期过滤
 #       search.sh --layer hot|warm|cold  按层搜索
+#       search.sh --semantic "关键词"  语义搜索（基于向量）
+
+# R1 fix: 路径穿越校验函数
+# N13 fix: 精确匹配路径穿越组件 .. 和 ..\ 而非宽泛匹配
+validate_name() {
+  local name="$1"
+  # 检测路径穿越: ../ 或 ..\ 或 /../ 或 \..\
+  if [[ "$name" == *../* || "$name" == *..\\* || "$name" == */../* || "$name" == *\\..\\* ]]; then
+    echo "❌ 无效名称: 包含非法字符"
+    return 1
+  fi
+  # 检测 shell 特殊字符
+  case "$name" in
+    *\`*|*\$*)
+      echo "❌ 无效名称: 包含非法字符"
+      return 1 ;;
+  esac
+  return 0
+}
+
+# 转义 grep 正则特殊字符，防止正则注入和 DoS
+escape_grep() {
+  printf '%s' "$1" | sed 's/[[\.*^$+?{|()]/\\&/g'
+}
+
+# 限制输入长度，防止资源耗尽
+MAX_INPUT_LEN=1000
 
 MAX_RESULTS=10
 SINCE_DATE=""
@@ -21,6 +50,7 @@ FILTER_AREA=""
 FILTER_DOMAIN=""
 FILTER_PROJECT=""
 FILTER_LAYER=""
+SEMANTIC=false  # 默认关闭语义搜索，需 --semantic 显式启用
 KEYWORDS=()
 
 while [[ $# -gt 0 ]]; do
@@ -29,12 +59,15 @@ while [[ $# -gt 0 ]]; do
     --preview)     PREVIEW=true; shift ;;
     --global)      GLOBAL=true; shift ;;
     --since)       SINCE_DATE="$2"; shift 2 ;;
+    --limit)         MAX_RESULTS="$2"; shift 2 ;;
     --max-results) MAX_RESULTS="$2"; shift 2 ;;
     --tag)         FILTER_TAG="$2"; shift 2 ;;
     --area)        FILTER_AREA="$2"; shift 2 ;;
     --domain)      FILTER_DOMAIN="$2"; shift 2 ;;
     --project)     FILTER_PROJECT="$2"; shift 2 ;;
     --layer)       FILTER_LAYER="$2"; shift 2 ;;
+    --semantic)    SEMANTIC=true; shift ;;
+    --no-semantic) SEMANTIC=false; shift ;;
     -h|--help)
       echo "用法: search.sh [选项] <关键词...>"
       echo "  --all              显示所有"
@@ -46,7 +79,9 @@ while [[ $# -gt 0 ]]; do
       echo "  --layer hot|warm|cold  按层搜索"
       echo "  --global           搜所有workspace"
       echo "  --since YYYY-MM-DD 按日期过滤"
-      echo "  --max-results N    最多显示N条（默认10）"
+      echo "  --limit N          最多显示N条（默认10）"\n"  --max-results N    同上，别名"
+      echo "  --semantic         启用语义搜索（默认关闭，需显式开启）"
+      echo "  --no-semantic      禁用语义搜索"
       exit 0 ;;
     -*)  echo "未知选项: $1"; exit 1 ;;
     *)   KEYWORDS+=("$1"); shift ;;
@@ -59,16 +94,16 @@ if [ ${#KEYWORDS[@]} -eq 1 ] && echo "${KEYWORDS[0]}" | grep -q ' '; then
   KEYWORDS=("${SPLIT_KW[@]}")
 fi
 
-# 动态获取状态目录（适配多网关实例）
-get_state_dir() {
-  if [ -n "$OPENCLAW_STATE_DIR" ]; then
-    echo "$OPENCLAW_STATE_DIR"
-  else
-    echo "$HOME/.openclaw"
+# 限制关键词长度，防止资源耗尽
+for i in "${!KEYWORDS[@]}"; do
+  if [ ${#KEYWORDS[$i]} -gt $MAX_INPUT_LEN ]; then
+    KEYWORDS[$i]="${KEYWORDS[$i]:0:$MAX_INPUT_LEN}"
   fi
-}
+done
+
+source "$SKILL_DIR/lib/common.sh"
 STATE_DIR=$(get_state_dir)
-SHARED_DIR="$STATE_DIR/.learnings"
+SHARED_DIR=$(get_shared_dir)
 ERRORS_FILE="$SHARED_DIR/experiences.md"
 
 # 新版 layered 存储路径
@@ -97,8 +132,11 @@ extract_blocks() {
       prev=$line
       continue
     fi
-    sed -n "${prev},$((line-1))p" "$file" > "$TMPDIR_KH/block_${block_idx}.md"
-    block_idx=$((block_idx+1))
+    # 检查是否相邻（line <= prev 时范围为负，跳过）
+    if [ "$line" -gt "$prev" ]; then
+      sed -n "${prev},$((line-1))p" "$file" > "$TMPDIR_KH/block_${block_idx}.md"
+      block_idx=$((block_idx+1))
+    fi
     prev=$line
   done
   local total=$(wc -l < "$file" | tr -d ' ')
@@ -142,7 +180,9 @@ score_block() {
     local total_kw=$kw_len
     local hit=0
     for kw in "${KEYWORDS[@]}"; do
-      grep -qi --color=never "$kw" "$block_file" && hit=$((hit+1))
+      # 转义关键词防止正则注入
+      local escaped_kw=$(escape_grep "$kw")
+      grep -qi --color=never "$escaped_kw" "$block_file" && hit=$((hit+1))
     done
     [ $hit -eq 0 ] && echo "0" && return
     score=$hit
@@ -186,6 +226,12 @@ search_experiences_file() {
   local count=$(extract_blocks "$file")
   [ -z "$count" ] && return 1
   [ "$count" -eq 0 ] && return 1
+  # R7 fix: 大量条目时限制临时文件数，避免 fd 耗尽
+  # N6 fix: 改为 stdout 输出，确保用户能看到提示
+  if [ "$count" -gt 500 ]; then
+    echo "⚠️ 条目数 ${count} 较多，仅搜索前500条"
+    count=500
+  fi
 
   local found=0
   local total_kw=${#KEYWORDS[@]:-0}
@@ -201,10 +247,10 @@ search_experiences_file() {
 
   [ ! -f "$TMPDIR_KH/scores.txt" ] && return 1
 
-  { sort -rn -k1,1 "$TMPDIR_KH/scores.txt" | head -$MAX_RESULTS; } 2>/dev/null | while read -r s idx; do
+  while read -r s idx; do
     print_block "$TMPDIR_KH/block_${idx}.md" "$s" "$total_kw"
     found=$((found+1))
-  done
+  done < <(sort -rn -k1 "$TMPDIR_KH/scores.txt" 2>/dev/null | head -$MAX_RESULTS)
 
   return 0
 }
@@ -215,15 +261,17 @@ format_all() {
   [ ! -f "$file" ] && return
 
   awk '
-    /^## \[EXP-/ { id=$0; area=""; tags=""; created=""; problem="" }
-    /^\*\*Area\*\*:/ { sub(/^\*\*Area\*\*: /,""); area=$0 }
-    /^\*\*Tags\*\*:/ { sub(/^\*\*Tags\*\*: /,""); tags=$0 }
-    /^\*\*Created\*\*:/ { sub(/^\*\*Created\*\*: /,""); created=$0 }
-    /^### 问题$/ { getline; problem=$0 }
-    /^---$/ && id!="" {
+    /^## \[EXP-/ { id=$0; area=""; tags=""; created=""; problem=""; next }
+    /^\*\*Area\*\*:/ { sub(/^\*\*Area\*\*: /,""); area=$0; next }
+    /^\*\*Tags\*\*:/ { sub(/^\*\*Tags\*\*: /,""); tags=$0; next }
+    /^\*\*Created\*\*:/ { sub(/^\*\*Created\*\*: /,""); created=$0; next }
+    /^### 问题$/ { getline; problem=$0; next }
+    /^---/ && id!="" {
       printf "%s\n  Area: %s | Tags: %s | 创建: %s\n  问题: %s\n---\n\n", id, area, tags, created, problem
       id=""
     }
+    # 容错: 忽略无法解析的行，不中断处理
+    { next }
   ' "$file"
 }
 
@@ -248,7 +296,8 @@ search_layered_file() {
 
     local score=0
     for kw in "${KEYWORDS[@]}"; do
-      echo "$line" | grep -qi --color=never "$kw" && score=$((score+1))
+      local escaped_kw=$(escape_grep "$kw")
+      echo "$line" | grep -qi --color=never "$escaped_kw" && score=$((score+1))
     done
 
     if [ $score -gt 0 ]; then
@@ -266,10 +315,11 @@ search_layered_file() {
 
 # --all 模式
 if $SHOW_ALL; then
+  any_content=0
   echo "=== 全部经验诀窍 ==="
   echo ""
   echo "─── v1 主数据 (experiences.md) ───"
-  [ -f "$ERRORS_FILE" ] && format_all "$ERRORS_FILE"
+  [ -f "$ERRORS_FILE" ] && { format_all "$ERRORS_FILE"; any_content=1; }
   echo ""
   echo "─── HOT 层 (memory.md) ───"
   [ -f "$MEMORY_FILE" ] && cat "$MEMORY_FILE" || echo "  (空)"
@@ -290,41 +340,83 @@ if $SHOW_ALL; then
       echo ""
     done
   fi
-  exit 0
+  if [ "$any_content" = "1" ]; then
+    exit 0
+  else
+    echo "(无数据)"
+    exit 1
+  fi
 fi
 
 # 层过滤模式
 if [ -n "$FILTER_LAYER" ]; then
+  layer_has_content=0
   case "$FILTER_LAYER" in
     hot)
       echo "─── HOT: memory.md ───"
-      [ -f "$MEMORY_FILE" ] && cat "$MEMORY_FILE" || echo "(空)"
+      if [ -f "$MEMORY_FILE" ] && [ -s "$MEMORY_FILE" ]; then
+        cat "$MEMORY_FILE"
+        layer_has_content=1
+      else
+        echo "(空)"
+      fi
       ;;
     warm)
       echo "─── WARM: domains/ + projects/ ───"
-      [ -d "$DOMAINS_DIR" ] && ls "$DOMAINS_DIR"/*.md 2>/dev/null && for f in "$DOMAINS_DIR"/*.md; do
-        [ -f "$f" ] && echo "📄 $(basename "$f"):" && cat "$f" && echo ""
-      done
-      [ -d "$PROJECTS_DIR" ] && for f in "$PROJECTS_DIR"/*.md; do
-        [ -f "$f" ] && echo "📄 $(basename "$f"):" && cat "$f" && echo ""
-      done
+      if [ -d "$DOMAINS_DIR" ] && [ "$(ls -A "$DOMAINS_DIR"/*.md 2>/dev/null)" ]; then
+        for f in "$DOMAINS_DIR"/*.md; do
+          [ -f "$f" ] && echo "📄 $(basename "$f"):" && cat "$f" && echo "" && layer_has_content=1
+        done
+      fi
+      if [ -d "$PROJECTS_DIR" ] && [ "$(ls -A "$PROJECTS_DIR"/*.md 2>/dev/null)" ]; then
+        for f in "$PROJECTS_DIR"/*.md; do
+          [ -f "$f" ] && echo "📄 $(basename "$f"):" && cat "$f" && echo "" && layer_has_content=1
+        done
+      fi
+      [ "$layer_has_content" = "0" ] && echo "(空)"
       ;;
     cold)
       echo "─── COLD: archive/ ───"
-      [ -d "$ARCHIVE_DIR" ] && find "$ARCHIVE_DIR" -name "*.md" -exec echo "📦 {}:" \; -exec head -10 {} \; 2>/dev/null || echo "(空)"
+      if [ -d "$ARCHIVE_DIR" ] && [ "$(find "$ARCHIVE_DIR" -name "*.md" 2>/dev/null)" ]; then
+        find "$ARCHIVE_DIR" -name "*.md" -exec echo "📦 {}:" \; -exec head -10 {} \; 2>/dev/null
+        layer_has_content=1
+      else
+        echo "(空)"
+      fi
       ;;
   esac
-  exit 0
+  if [ "$layer_has_content" = "1" ]; then
+    exit 0
+  else
+    exit 1
+  fi
 fi
 
 # Domain 搜索（无关键词时直接展示全部内容）
 if [ -n "$FILTER_DOMAIN" ]; then
+  # R1 fix: 校验 domain 名称，防止路径穿越
+  if ! validate_name "$FILTER_DOMAIN"; then exit 1; fi
   echo "─── Domain: ${FILTER_DOMAIN} ───"
   domain_file="$DOMAINS_DIR/${FILTER_DOMAIN}.md"
   if [ -f "$domain_file" ]; then
     if [ ${#KEYWORDS[@]} -eq 0 ]; then
-      # 无关键词：直接展示文件全部内容
+      # 无关键词：展示 domain 文件 + experiences.md 中 Area 匹配的条目
       cat "$domain_file"
+      echo ""
+      echo "─── Domain: ${FILTER_DOMAIN} (experiences.md 中 Area:${FILTER_DOMAIN} 的条目) ───"
+      if [ -f "$ERRORS_FILE" ]; then
+        # H1 fix: 转义双引号，防止破坏 awk 脚本中的双引号平衡
+        safe_area=$(printf '%s' "$FILTER_DOMAIN" | sed 's/"/\\"/g')
+        awk -v area="$safe_area" '
+          BEGIN { in_block=0 }
+          /^## \[EXP-/ { id=$0; in_block=1; area_match=0 }
+          /^\*\*Area\*\*:/ { sub(/^\*\*Area\*\*: /,""); if ($0 == area) area_match=1 }
+          /^---$/ && in_block && area_match { print id; in_block=0 }
+          /^---$/ && in_block && !area_match { in_block=0 }
+        ' "$ERRORS_FILE" | while read -r entry; do
+          echo "  $entry"
+        done
+      fi
       exit 0
     else
       # 有关键词：走搜索逻辑
@@ -337,6 +429,8 @@ fi
 
 # Project 搜索（无关键词时直接展示全部内容）
 if [ -n "$FILTER_PROJECT" ]; then
+  # R1 fix: 校验 project 名称，防止路径穿越
+  if ! validate_name "$FILTER_PROJECT"; then exit 1; fi
   echo "─── Project: ${FILTER_PROJECT} ───"
   project_file="$PROJECTS_DIR/${FILTER_PROJECT}.md"
   if [ -f "$project_file" ]; then
@@ -354,7 +448,7 @@ if [ -n "$FILTER_PROJECT" ]; then
 fi
 
 # 需要关键词或过滤条件
-if [ ${#KEYWORDS[@]} -eq 0 ] && [ -z "$FILTER_TAG" ] && [ -z "$FILTER_AREA" ] && [ -z "$FILTER_DOMAIN" ] && [ -z "$FILTER_PROJECT" ] && [ -z "$FILTER_LAYER" ] && [ -z "$SHOW_ALL" ] && [ -z "$SINCE_DATE" ]; then
+if [ ${#KEYWORDS[@]} -eq 0 ] && [ -z "$FILTER_TAG" ] && [ -z "$FILTER_AREA" ] && [ -z "$FILTER_DOMAIN" ] && [ -z "$FILTER_PROJECT" ] && [ -z "$FILTER_LAYER" ] && [ -z "$SINCE_DATE" ] && ! $SEMANTIC; then
   echo "用法: search.sh [选项] <关键词...>"
   echo "提示: 用 --tag / --area / --domain / --project / --layer 过滤，或输入关键词搜索"
   exit 1
@@ -388,5 +482,58 @@ if [ -d "$PROJECTS_DIR" ]; then
   done
 fi
 
-[ $total_found -eq 0 ] && [ $layered_found -eq 0 ] && echo "经验诀窍未找到相关记录" && exit 1
+# 搜索 COLD 层（archive/），递归子目录
+if [ -d "$ARCHIVE_DIR" ] && [ ${#KEYWORDS[@]} -gt 0 ]; then
+  while IFS= read -r -d '' f; do
+    search_layered_file "$f" "archive/${f#$ARCHIVE_DIR/}" && layered_found=1
+  done < <(find "$ARCHIVE_DIR" -name "*.md" -type f -print0 2>/dev/null)
+fi
+
+# ============ 语义搜索（基于向量） ============
+semantic_found=0
+if $SEMANTIC; then
+  source "$SKILL_DIR/lib/vectors.sh" 2>/dev/null
+  
+  # 检测向量功能是否可用
+  vector_func_exists=false
+  vector_api_available=false
+  
+  if declare -f vector_check >/dev/null 2>&1; then
+    vector_func_exists=true
+    if vector_check; then
+      vector_api_available=true
+    fi
+  fi
+  
+  if ! $vector_func_exists || ! $vector_api_available; then
+    echo "⚠️  向量搜索不可用（LM Studio 未运行或无 embedding 模型），使用关键词搜索"
+  else
+    vector_init "$STATE_DIR"
+    
+    # 首次语义搜索：如果索引为空或不存在，自动构建
+    if [ ! -f "$VECTOR_DIR/index.jsonl" ] || [ ! -s "$VECTOR_DIR/index.jsonl" ]; then
+      echo "📦 首次语义搜索，正在构建向量索引..."
+      vector_reindex_all "$ERRORS_FILE"
+    fi
+    
+    # 合并所有关键词作为查询
+    QUERY=$(IFS=' '; echo "${KEYWORDS[*]}")
+    echo ""
+    echo "─── 语义搜索结果 ───"
+    semantic_result=$(vector_search "$QUERY" 5 0.6)
+    if [ -n "$semantic_result" ]; then
+      echo "$semantic_result" | while IFS='|' read score id area text; do
+        echo "  📊 [$score] $id [$area] $text"
+      done
+      semantic_found=1
+    fi
+  fi
+fi
+
+# 如果关键词和语义搜索都没有结果，退出
+if [ $total_found -eq 0 ] && [ $layered_found -eq 0 ] && [ $semantic_found -eq 0 ]; then
+  echo "经验诀窍未找到相关记录"
+  exit 1
+fi
+
 exit 0

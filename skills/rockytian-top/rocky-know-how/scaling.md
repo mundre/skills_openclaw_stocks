@@ -1,12 +1,12 @@
-# 扩展规则
+# 扩展规则 (v2.8.6)
 
 ## 规模阈值
 
 | 规模 | 条目数 | 策略 |
 |------|--------|------|
-| 小 | <100 | 单一 memory.md，无需命名空间 |
+| 小 | <100 | 单一 memory.md（≤100 行），无需命名空间 |
 | 中 | 100-500 | 拆分到 domains/，基本索引 |
-| 大 | 500-2000 | 完整命名空间层级，积极压缩 |
+| 大 | 500-2000 | 完整命名空间层级，积极压缩（**v2.8.6+ memory.md 自动截断**） |
 | 超大 | >2000 | 按年归档，HOT 层只保留摘要 |
 
 ## 何时拆分
@@ -16,7 +16,7 @@
 - 主题有 10+ 个不同纠正
 - 用户明确分离上下文（"for work..."，"in this project..."）
 
-## 压缩规则
+## 压缩规则 (v2.8.6)
 
 ### 合并相似纠正
 
@@ -41,9 +41,9 @@
 - Marcus emails: bullets ≤5, no jargon, BLUF, AM preferred
 ```
 
-### 带上下文归档
+### 带上下文归档 (v2.8.6)
 
-当移动到 COLD 时：
+当移动到 COLD 时，保留项目上下文：
 ```markdown
 ## Archived 2026-02
 
@@ -55,9 +55,52 @@
 Reason: Project completed, patterns unlikely to apply
 ```
 
+### memory.md 自动截断 (v2.8.6 Bug #4 修复)
+
+compact.sh 完成后，自动截断 memory.md 至最新 **100 行**：
+```bash
+# 保留尾部 100 行
+tail -100 memory.md > memory.md.tmp && mv memory.md.tmp memory.md
+```
+
+当前状态：memory.md = **18 行**（符合 ≤100 标准）✅
+
+---
+
 ## 索引维护
 
 `index.md` 跟踪所有命名空间：
+
+| 文件 | 行数 | 最后更新 | 状态 |
+|------|------|---------|------|
+| memory.md | 18 | 2026-04-24 | HOT |
+| experiences.md | 1116 | 2026-04-24 | COLD |
+| domains/infra.md | 32 | 2026-04-23 | WARM |
+| ... | ... | ... | ... |
+
+---
+
+## 压缩时机
+
+- **手动**: 运行 `compact.sh`
+- **自动**: 心跳检查（如果 memory.md >100 行）
+- **会话结束**: before_reset Hook 触发
+
+## 压缩流程 (v2.8.6)
+
+1. 分析 experiences.md（去重、合并）
+2. **生成草稿**（before_compaction Hook）
+   → 保存会话状态到 `.compaction-state.tmp`
+3. 压缩 experiences.md（去重 51 个条目）
+4. **截断 memory.md 至 ≤100 行**（Bug #4 修复）
+5. 更新 index.md
+6. **记录会话总结**（after_compaction Hook）→ `session-summaries.md`
+
+> **注意**: "生成草稿" 指保存会话上下文，不是最终经验。正式经验需通过 `record.sh` 手动写入。
+
+---
+
+**最后更新**: 2026-04-24 v2.8.6
 ```markdown
 # 记忆索引
 

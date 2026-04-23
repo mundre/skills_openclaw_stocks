@@ -1,165 +1,153 @@
 # 📚 rocky-know-how
 
-> OpenClaw Learning Knowledge Skill — Search on failure, write after solving, learnings shared across agents
+> OpenClaw 经验积累技能 v2.8.14  
+> 核心理念：**搜索失败时，记录解决后经验，团队共享复用**
 
-[English](./README_EN.md) | 中文
+[English](./README_EN.md) | [完整指南](./SKILL-GUIDE.md) | [架构设计](./ARCHITECTURE.md)
 
-## ✨ 功能特性
+---
 
-- 🔍 **智能搜索** — 多关键词 AND 匹配 + 相关度评分排序
-- 🏷️ **标签/领域筛选** — `--tag` `--area` 精确过滤
-- 🔄 **自动去重** — 问题文本 + Tags 组合去重
-- 📝 **同步原生记忆** — 写入 memory/*.md，memory_search 可搜
-- 🌙 **Dreaming 整合** — 标记注释，供 Dreaming 阶段分析
-- 📊 **Tag晋升铁律** — 同 Tag ≥3次自动写入 TOOLS.md
-- 📥 **历史导入** — 从 memory/*.md 批量提取教训
-- 🗄️ **自动归档** — 超过30天自动归档，适合 cron
-- 🌐 **跨 agent 共享** — 全局存储，所有 agent 通用
+## 🎯 核心创新（重点突出）
 
-## 🔒 安全保障
+### 1. 🤖 Hook 全自动草稿审核（v2.8.14 新增）
 
-| 措施 | 说明 |
-|------|------|
-| 不执行系统命令 | 只读写本地文件 |
-| 无敏感数据收集 | 只存储经验文本 |
-| 无网络请求 | 纯本地操作 |
-| 代码开源可审查 | MIT 许可证 |
-| 路径动态获取 | 不硬编码用户路径 |
-
-## 📦 脚本列表
-
-| 脚本 | 说明 |
-|------|------|
-| search.sh | 搜索经验（相关度排序、标签/领域筛选、摘要模式） |
-| record.sh | 写入经验（去重、dry-run、Dreaming标记） |
-| stats.sh | 统计面板（条目数、Area/Tag分布） |
-| promote.sh | Tag晋升检查（≥3次自动写TOOLS.md） |
-| import.sh | 从 memory/*.md 批量导入历史教训 |
-| archive.sh | 归档旧条目（手动/auto模式） |
-| clean.sh | 清理工具（测试条目/旧索引） |
-| install.sh | 安装脚本 |
-| uninstall.sh | 卸载脚本 |
-
-## 🚀 安装
-
-### 架构：一套安装，全团队共享
-
+**before_reset Hook 触发后自动完成**：
 ```
-~/.openclaw/.learnings/          ← 数据和脚本，所有 agent 共用一份
-├── experiences.md               ← 经验数据库
-├── memory.md                    ← HOT 层
-├── domains/                    ← 领域隔离
-└── projects/                   ← 项目隔离
+任务失败 → 尝试解决 → 成功
+    ↓
+before_reset Hook 触发
+    ↓
+1. 自动生成草稿 (drafts/draft-*.json)
+2. 自动调用 auto-review.sh
+3. 自动审核 → 搜索同类 → 新增/追加
+4. 自动写入 experiences.md ✅
+5. 自动归档草稿 ✅
 ```
 
-**数据只需安装一次**，所有 agent 共享同一份经验库。
+**无需人工干预，端到端全自动！**
 
-**Hook 配置需要每个 agent 单独做**（如果想让 agent 在对话中自动看到"先搜经验"提醒）。
+### 2. 🔍 向量搜索双引擎
 
-### ClawHub（推荐）
+- LM Studio 可用时 → 向量语义搜索
+- LM Studio 不可用 → 关键词搜索（自动降级）
+- 搜索结果相关度排序
+
+### 3. 📊 Tag 晋升铁律
+
+- 同一 Tag 7天内使用 ≥3 次
+- 自动晋升到 TOOLS.md
+- 常用问题快速访问
+
+---
+
+## 🚀 快速开始
+
+### 安装（一键）
 ```bash
 openclaw skills install rocky-know-how
 ```
 
-### 手动安装
-```bash
-git clone https://github.com/rockytian-top/skill.git
-cd skill/rocky-know-how
-bash scripts/install.sh
-```
-
-### Hook 自动配置 ✅
-
-install.sh 会自动将 hook 路径添加到 `openclaw.json` 的 `extraDirs`，**无需手动配置**。
-
-配置后重启 gateway：
-```bash
-openclaw gateway restart
-```
-
-如需手动配置（不推荐），参考 rocky-know-how/setup.md。
-
-## 📖 用法
-
 ### 搜索经验
 ```bash
-# 多关键词搜索（相关度排序）
-bash scripts/search.sh "排查" "网站"
-
-# 按标签搜索（AND逻辑）
-bash scripts/search.sh --tag "troubleshooting,vps"
-
-# 按领域搜索
-bash scripts/search.sh --area infra
-
-# 摘要模式
-bash scripts/search.sh --preview "关键词"
-
-# 查看全部
-bash scripts/search.sh --all
+bash ~/.openclaw/skills/rocky-know-how/scripts/search.sh nginx 502
 ```
 
-### 写入经验
+### 写入经验（手动）
 ```bash
-# 正常写入
-bash scripts/record.sh "问题" "踩坑过程" "正确方案" "预防措施" "tag1,tag2" "area"
-
-# 预览不写入
-bash scripts/record.sh --dry-run "问题" "踩坑" "方案" "预防" "tags"
+bash ~/.openclaw/skills/rocky-know-how/scripts/record.sh \
+  "问题描述" "踩坑过程" "正确方案" "预防措施" "tag1,tag2" "area"
 ```
 
-### 导入/归档
+### 全自动草稿审核（Hook 自动调用）
 ```bash
-# 从 memory 导入历史教训
-bash scripts/import.sh --dry-run    # 先预览
-bash scripts/import.sh              # 实际导入
-
-# 手动归档
-bash scripts/archive.sh --dry-run   # 先预览
-bash scripts/archive.sh             # 实际归档
-
-# 自动归档（适合 cron/heartbeat）
-bash scripts/archive.sh --auto
+# 无需手动运行！before_reset Hook 自动触发
+# auto-review.sh 扫描草稿 → 审核 → 写入 → 归档
 ```
 
-## 🔄 核心循环
+---
+
+## 📦 脚本列表
+
+| 脚本 | 说明 | 触发方式 |
+|------|------|----------|
+| **auto-review.sh** | 🤖 全自动草稿审核（**推荐**） | Hook 自动调用 |
+| search.sh | 搜索经验 | 手动 |
+| record.sh | 写入新经验 | 手动 |
+| summarize-drafts.sh | 扫描草稿生成建议 | 手动 |
+| append-record.sh | 追加到已有经验 | auto-review.sh 调用 |
+| update-record.sh | 更新已有经验 | 手动 |
+| promote.sh | Tag 晋升检查 | cron/手动 |
+| compact.sh | 压缩去重 | cron/手动 |
+| archive.sh | 归档旧数据 | cron/手动 |
+
+---
+
+## 🔄 完整工作流
 
 ```
-接到任务 → 正常执行
-    ↓
-失败≥2次 → 搜经验诀窍（search.sh）
-    ├── 有答案 → 按答案执行
-    └── 没答案 → 继续尝试直到成功
-    ↓
-成功后 → 写入经验诀窍（record.sh）
-    ↓
-同步到 memory/*.md → memory_search 可搜到
-    ↓
-同Tag≥3次 → 晋升到 TOOLS.md（promote.sh）
+┌─────────────────────────────────────────────────────────────┐
+│ 阶段1: 自动草稿生成（Hook）                                 │
+├─────────────────────────────────────────────────────────────┤
+│ before_reset 触发 → generateDraft() → drafts/draft-*.json │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 阶段2: 自动审核写入（Hook 调用 auto-review.sh）           │
+├─────────────────────────────────────────────────────────────┤
+│ 扫描草稿 → 提取关键词 → 搜索同类 → 新增/追加 → 归档      │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 🔒 安全与性能
+
+| 特性 | 说明 |
+|------|------|
+| 并发安全 | `.write_lock` 目录锁 |
+| 输入验证 | ID格式、路径、长度全检查 |
+| 正则转义 | 防注入攻击 |
+| 路径穿越检测 | `../` 和 `\` 全面拦截 |
+| 自动降级 | LM Studio 不可用自动切关键词 |
+
+---
 
 ## 📂 存储结构
 
 ```
 ~/.openclaw/.learnings/
-├── experiences.md          ← 经验数据（全局共享）
-└── archive/                ← 归档目录
-    └── YYYY-MM/            ← 按月归档
+├── experiences.md          ← 主经验库
+├── memory.md              ← HOT层（≤100行）
+├── domains/               ← WARM层（领域隔离）
+│   ├── infra.md           ← 运维相关
+│   ├── code.md            ← 开发相关
+│   └── global.md          ← 通用
+├── drafts/                ← 草稿（Hook 自动生成）
+│   └── archive/           ← 已处理草稿归档
+└── vectors/               ← 向量索引
 ```
 
-## 🔧 兼容性
+---
 
-- ✅ macOS bash 3.x（不用 `=~`，不用 GNU 扩展）
-- ✅ Node.js 18+（CommonJS，无 TypeScript 依赖）
-- ✅ macOS / Linux
-- ✅ OpenClaw 2026.4.x+
+## 📖 版本历史
 
-## 📄 许可证
+| 版本 | 日期 | 亮点 |
+|------|------|------|
+| **v2.8.14** | 2026-04-24 | 🤖 **Hook 全自动集成**（核心创新） |
+| v2.8.13 | 2026-04-24 | 根目录文档更新 |
+| v2.8.12 | 2026-04-24 | 全自动测试验证通过 |
+| v2.8.11 | 2026-04-24 | SKILL-GUIDE.md 完整指南 |
+| v2.8.10 | 2026-04-24 | auto-review.sh 全自动审核 |
+| v2.8.9 | 2026-04-24 | ARCHITECTURE.md 架构设计 |
 
-[MIT License](./LICENSE)
+---
 
 ## 🔗 链接
 
 - [ClawHub](https://clawhub.ai/skills/rocky-know-how)
-- [GitHub](https://github.com/rockytian-top/openclaw-rocky-skills)
-- [Gitee](https://gitee.com/rocky_tian/skill)
+- [GitHub](https://github.com/rockytian-top/skill.git)
+- [Gitee](https://gitee.com/rocky_tian/skill.git)
+
+---
+
+**维护人**: 大颖 (fs-daying) | **版本**: v2.8.14

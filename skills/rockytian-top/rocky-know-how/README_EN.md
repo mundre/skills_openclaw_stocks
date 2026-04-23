@@ -1,140 +1,153 @@
 # 📚 rocky-know-how
 
-> OpenClaw experience & know-how skill — auto-search on repeated failures, auto-record on success, shared across all agents
+> OpenClaw Learning Knowledge Skill v2.8.14  
+> Core: **Search on failure, write after solving, learnings shared across agents**
 
-[中文](./README.md) | English
+[English](./README_EN.md) | [Complete Guide](./SKILL-GUIDE.md) | [Architecture](./ARCHITECTURE.md)
 
-## ✨ Features
+---
 
-- 🔍 **Smart Search** — Multi-keyword AND matching + relevance scoring
-- 🏷️ **Tag/Area Filter** — `--tag` and `--area` for precise filtering
-- 🔄 **Auto Dedup** — Question text + Tags combination deduplication
-- 📝 **Native Memory Sync** — Writes to memory/*.md, searchable via memory_search
-- 🌙 **Dreaming Integration** — Annotated markers for Dreaming phase analysis
-- 📊 **Tag Promotion** — Same Tag ≥3 times auto-writes to TOOLS.md
-- 📥 **Historical Import** — Batch extract lessons from memory/*.md
-- 🗄️ **Auto Archive** — Auto-archive entries older than 30 days
-- 🌐 **Cross-Agent Sharing** — Global storage, all agents share the same data
+## 🎯 Core Innovations
 
-## 🔒 Security
+### 1. 🤖 Hook Fully Automatic Draft Review (v2.8.14 NEW)
 
-| Measure | Description |
-|---------|-------------|
-| No system commands | Only reads/writes local files |
-| No sensitive data | Only stores experience text |
-| No network requests | Pure local operations |
-| Open source auditable | MIT License |
-| Dynamic paths | No hardcoded user paths |
+**before_reset Hook automatically triggers**:
+```
+Task fails → Try solutions → Success
+    ↓
+before_reset Hook triggers
+    ↓
+1. Auto generate draft (drafts/draft-*.json)
+2. Auto call auto-review.sh
+3. Auto review → Search similar → Create/Append
+4. Auto write to experiences.md ✅
+5. Auto archive draft ✅
+```
 
-## 📦 Scripts
+**Zero manual intervention, fully end-to-end automated!**
 
-| Script | Description |
-|--------|-------------|
-| search.sh | Search experiences (relevance scoring, tag/area filter, preview mode) |
-| record.sh | Record experience (dedup, dry-run, Dreaming markers) |
-| stats.sh | Statistics dashboard (entry count, Area/Tag distribution) |
-| promote.sh | Tag promotion check (≥3 times auto-writes TOOLS.md) |
-| import.sh | Batch import historical lessons from memory/*.md |
-| archive.sh | Archive old entries (manual/auto mode) |
-| clean.sh | Cleanup tool (test entries/old index) |
-| install.sh | Install script |
-| uninstall.sh | Uninstall script |
+### 2. 🔍 Dual Search Engines
 
-## 🚀 Installation
+- LM Studio available → Vector semantic search
+- LM Studio unavailable → Keyword search (auto-fallback)
+- Results ranked by relevance
 
-### ClawHub (Recommended)
+### 3. 📊 Tag Promotion Rule
+
+- Same Tag used ≥3 times in 7 days
+- Auto-promote to TOOLS.md
+- Fast access to common issues
+
+---
+
+## 🚀 Quick Start
+
+### Install (One-command)
 ```bash
 openclaw skills install rocky-know-how
 ```
 
-### Manual
+### Search Experience
 ```bash
-git clone https://github.com/rockytian-top/openclaw-rocky-skills.git
-cd openclaw-rocky-skills/rocky-know-how
-bash scripts/install.sh
+bash ~/.openclaw/skills/rocky-know-how/scripts/search.sh nginx 502
 ```
 
-## 📖 Usage
-
-### Search
+### Write Experience (Manual)
 ```bash
-# Multi-keyword search (relevance scoring)
-bash scripts/search.sh "debug" "website"
-
-# By tags (AND logic)
-bash scripts/search.sh --tag "troubleshooting,vps"
-
-# By area
-bash scripts/search.sh --area infra
-
-# Preview mode
-bash scripts/search.sh --preview "keyword"
-
-# List all
-bash scripts/search.sh --all
+bash ~/.openclaw/skills/rocky-know-how/scripts/record.sh \
+  "Problem" "Error encountered" "Solution" "Prevention" "tag1,tag2" "area"
 ```
 
-### Record
+### Fully Automatic Draft Review (Hook Auto-triggered)
 ```bash
-# Normal record
-bash scripts/record.sh "Problem" "What went wrong" "Solution" "Prevention" "tag1,tag2" "area"
-
-# Dry-run (preview only)
-bash scripts/record.sh --dry-run "Problem" "Mistakes" "Solution" "Prevention" "tags"
+# No manual run needed! before_reset Hook triggers automatically
+# auto-review.sh: scan → review → write → archive
 ```
 
-### Import / Archive
-```bash
-# Import from memory
-bash scripts/import.sh --dry-run    # Preview first
-bash scripts/import.sh              # Actual import
+---
 
-# Manual archive
-bash scripts/archive.sh --dry-run   # Preview
-bash scripts/archive.sh             # Archive
+## 📦 Script List
 
-# Auto archive (for cron/heartbeat)
-bash scripts/archive.sh --auto
+| Script | Description | Trigger |
+|--------|-------------|---------|
+| **auto-review.sh** | 🤖 **Fully Automatic Draft Review** (Recommended) | Hook auto |
+| search.sh | Search experiences | Manual |
+| record.sh | Write new experience | Manual |
+| summarize-drafts.sh | Scan drafts, generate suggestions | Manual |
+| append-record.sh | Append to existing experience | Called by auto-review.sh |
+| update-record.sh | Update existing experience | Manual |
+| promote.sh | Tag promotion check | Cron/Manual |
+| compact.sh | Compress & deduplicate | Cron/Manual |
+| archive.sh | Archive old data | Cron/Manual |
+
+---
+
+## 🔄 Complete Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Stage 1: Auto Draft Generation (Hook)                       │
+├─────────────────────────────────────────────────────────────┤
+│ before_reset triggers → generateDraft() → drafts/draft-*.json│
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Stage 2: Auto Review & Write (Hook calls auto-review.sh)   │
+├─────────────────────────────────────────────────────────────┤
+│ Scan drafts → Extract keywords → Search similar → Create/Append→Archive │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## 🔄 Core Loop
+---
 
-```
-Task received → Execute normally
-    ↓
-Failed ≥2 times → Search experiences (search.sh)
-    ├── Found → Follow the solution
-    └── Not found → Keep trying until success
-    ↓
-Success → Record experience (record.sh)
-    ↓
-Sync to memory/*.md → searchable via memory_search
-    ↓
-Same Tag ≥3 times → Promote to TOOLS.md (promote.sh)
-```
+## 🔒 Security & Performance
 
-## 📂 Storage
+| Feature | Description |
+|---------|-------------|
+| Concurrent Safety | `.write_lock` directory lock |
+| Input Validation | ID format, path, length checks |
+| Regex Escaping | Prevent injection |
+| Path Traversal Detection | `../` and `\` blocked |
+| Auto Fallback | Switch to keyword if LM Studio unavailable |
+
+---
+
+## 📂 Storage Structure
 
 ```
 ~/.openclaw/.learnings/
-├── experiences.md          ← Experience data (globally shared)
-└── archive/                ← Archive directory
-    └── YYYY-MM/            ← Monthly archives
+├── experiences.md          ← Main experience database
+├── memory.md              ← HOT layer (≤100 lines)
+├── domains/               ← WARM layer (domain isolated)
+│   ├── infra.md
+│   ├── code.md
+│   └── global.md
+├── drafts/                ← Drafts (Hook auto-generated)
+│   └── archive/           ← Processed draft archive
+└── vectors/               ← Vector index
 ```
 
-## 🔧 Compatibility
+---
 
-- ✅ macOS bash 3.x (no `=~`, no GNU extensions)
-- ✅ Node.js 18+ (CommonJS, no TypeScript dependency)
-- ✅ macOS / Linux
-- ✅ OpenClaw 2026.4.x+
+## 📖 Version History
 
-## 📄 License
+| Version | Date | Highlights |
+|---------|------|------------|
+| **v2.8.14** | 2026-04-24 | 🤖 **Hook Fully Automatic Integration** |
+| v2.8.13 | 2026-04-24 | Root docs update |
+| v2.8.12 | 2026-04-24 | Full auto test verified |
+| v2.8.11 | 2026-04-24 | SKILL-GUIDE.md complete guide |
+| v2.8.10 | 2026-04-24 | auto-review.sh auto review |
+| v2.8.9 | 2026-04-24 | ARCHITECTURE.md architecture design |
 
-[MIT License](./LICENSE)
+---
 
 ## 🔗 Links
 
 - [ClawHub](https://clawhub.ai/skills/rocky-know-how)
-- [GitHub](https://github.com/rockytian-top/openclaw-rocky-skills)
-- [Gitee](https://gitee.com/rocky_tian/skill)
+- [GitHub](https://github.com/rockytian-top/skill.git)
+- [Gitee](https://gitee.com/rocky_tian/skill.git)
+
+---
+
+**Maintainer**: 大颖 (fs-daying) | **Version**: v2.8.14

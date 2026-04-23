@@ -1,242 +1,68 @@
 ---
 name: rocky-know-how
 slug: rocky-know-how
-version: 2.0.0
+version: 2.8.10
 homepage: https://clawhub.ai/skills/rocky-know-how
-description: "Learning knowledge skill v2 — Aligns with self-improving. Search learnings when failing 2+ times, write after solving. Layered storage (HOT/WARM/COLD), auto-promotion/demotion, namespace isolation, corrections log, reflections, heartbeat integration."
-changelog: "v2.0.0: Full architecture refactor, aligned with self-improving: layered storage, auto-promotion/demotion, namespace isolation, corrections log, reflections, heartbeat integration. New: demote.sh, compact.sh, index.md, reflections.md, corrections.md, boundaries.md, scaling.md."
+description: "Learning knowledge skill v2.8.9 — Search learnings when failing 2+ times, write after solving. Layered storage (HOT/WARM/COLD), auto-promotion/demotion, 4-event hook integration. Core innovations: (1) Auto-draft mechanism (two-phase: draft→review→formal), (2) Vector search with LM Studio, (3) Auto-fallback when no embedding model. Fixes: H1 (regex injection), H2 (path traversal), concurrent write lock, format_all robustness, OPENCLAW_STATE_DIR support. v2.8.12 adds full test verification + SKILL-GUIDE.md (20KB) complete guide - fully automated documentation (ARCHITECTURE.md)."
+changelog: |
+  v2.8.12: ✅ 完整体测试验证通过。全自动草稿→审核→写入→归档→搜索流程确认正常。测试草稿 draft-test-1776966700 成功写入 EXP-20260424-002，搜索 'git conflict' 匹配度 2/2 第一位。新增 SKILL-GUIDE.md (20KB) 完整使用指南，12章节覆盖安装→使用→架构→运维。老公要求"完完整整、认认真真测试"，现已验证通过。
+  v2.8.11: 新增 SKILL-GUIDE.md (20KB) - 完整技能使用指南。12章节：技能概述/架构设计/数据存储/脚本详解/Hook机制/标签晋升/分层存储/安全机制/流程图/场景示例/故障排查/最佳实践。
+  v2.8.10: 🆕 新增 auto-review.sh - 全自动草稿审核写入脚本。草稿→AI判断→同类检测→自动新增/追加→experiences.md。解决 summarize-drafts.sh 只生成建议的问题。测试验证：草稿 draft-1776958084440-qad5k6 成功写入 EXP-20260424-001。老公要求'全自动'，现已实现。
+  v2.8.8: 文档重大更正 - 明确两阶段机制（自动草稿→审核→正式写入），纠正"自动写入"误导描述。更新11个文件：README/README_EN/advanced-features/learning/operations/QUICKSTART/HOOK/INDEX/FAQ/scaling/heartbeat-rules。新增Q4.5（草稿vs正式区别），重写Q5-Q7，补充草稿审核完整流程。
+  v2.8.7: 文档统一 - 批量更新所有文档中的版本号引用为2.8.6（13个文件，50+处更新）
+  v2.8.6: 文档完善 - 新增 INDEX.md（文档导航地图）和 FAQ.md（17个常见问题解答），根目录说明文档完整
+  v2.8.4: 文档完善 - 新增 QUICKSTART.md，详细说明自动写入流程、触发条件、使用场景、验证步骤
+  v2.8.3: 安全修复 (H1/H2)，compact.sh memory.md压缩优化，memory.md 111→18行
+  v2.5.1: 退回简单版，不使用hook注入
 metadata: {"openclaw":{"emoji":"📚","requires":{"bins":[]},"os":["darwin","linux","win32"]}}
 ---
 
 ## When to Use
 
-- Task failed 2+ times → Search learnings (search.sh)
+- Task failed 2+ times → Search learnings: use `search.sh` script
 - Solved the problem → Write lesson (record.sh)
-- Same Tag 3x in 30 days → Promote to HOT (promote.sh)
+- Same Tag 3x in 7 days → Promote to HOT (promote.sh)
+- Same Tag not used 30+ days → Demote to WARM (demote.sh)
+- Session compaction → Auto-create draft (before_compaction hook)
 - Task completed → Self-reflect (reflections.md)
-- On heartbeat → Conservative maintenance (heartbeat-rules.md)
 
 ## Architecture
 
-Learnings stored at `~/.openclaw/.learnings/`, fully aligned with self-improving layered architecture:
+Learnings stored at `~/.openclaw/.learnings/`:
+- `experiences.md` - Main data file (v1 compatible)
+- `memory.md` - HOT layer (≤100 lines, always loaded)
+- `domains/` - WARM layer (namespace isolation)
+- `projects/` - WARM layer (project isolation)
+- `archive/` - COLD layer (90+ days old)
 
+## Hook Events
+
+| Event | Trigger | Function |
+|-------|---------|----------|
+| agent:bootstrap | AI启动 | 注入经验提醒 + AI判断草稿 |
+| before_compaction | 压缩前 | 分析会话，生成经验草稿 |
+| after_compaction | 压缩后 | 记录会话摘要 |
+| before_reset | 重置前 | 保存状态，生成草稿 |
+
+## One-Click Install
+
+```bash
+git clone <repo> ~/.openclaw/skills/rocky-know-how
+bash ~/.openclaw/skills/rocky-know-how/scripts/install.sh
 ```
-~/.openclaw/.learnings/
-├── memory.md           # HOT: ≤100 lines, always loaded
-├── index.md            # Topic index (line counts)
-├── heartbeat-state.md  # Heartbeat state
-├── corrections.md      # Corrections log (last 50 entries)
-├── reflections.md      # Self-reflection log
-├── domains/            # WARM: domain isolation (code, infra, dev)
-├── projects/           # WARM: project isolation
-└── archive/           # COLD: archive (loaded on explicit query)
-
-~/.openclaw/.learnings/experiences.md  # v1 compatibility: main data file
-```
-
-**Storage path**: Shared across all agents at `~/.openclaw/.learnings/`
-
-**Backward compatible**: experiences.md (v1 format) preserved, new layered format added
 
 ## Quick Reference
 
 | Topic | File |
 |-------|------|
 | Setup guide | `setup.md` |
-| Heartbeat state template | `heartbeat-state.md` |
-| Memory template | `memory-template.md` |
-| Heartbeat seed | `HEARTBEAT.md` |
-| Heartbeat rules | `heartbeat-rules.md` |
-| Learning mechanism | `learning.md` |
-| Safety boundaries | `boundaries.md` |
-| Scaling rules | `scaling.md` |
-| Memory operations | `operations.md` |
-| Self-reflection log | `reflections.md` |
-
-## Learning Signals
-
-Auto-record learnings → Append to `experiences.md`, sync to `corrections.md`:
-
-**Correction signals**:
-- "No, that's not right..." → Learning search missed, keep trying
-- "That's wrong..." / "You need to..." → Record correction
-- "Remember that I always..." → Confirm preference
-- "Why do you keep..." → Identify repeated error patterns
-
-**Learning signals (after successful solve)**:
-- Succeeded after 2+ failures → Write to experiences.md
-- Same Tag 3x → Promote to HOT
-- New tech solution effective → Record to domains/
-
-**Ignore**:
-- One-time instructions ("do X now")
-- Context-specific ("in this file...")
-- Hypothetical discussions ("what if...")
-
-## Self-Reflection
-
-After completing important work, pause and evaluate:
-
-1. **Did it match expectations?** — Compare result vs intent
-2. **What could be improved?** — Identify next improvements
-3. **Is this a pattern?** → If yes, record to `corrections.md`
-
-**When to reflect**:
-- After completing multi-step tasks
-- After receiving feedback (positive or negative)
-- After fixing bugs or errors
-- When noticing output could be better
-
-**Log format**:
-```
-CONTEXT: [task type]
-REFLECTION: [what I noticed]
-LESSON: [what to do differently next time]
-```
-
-**Example**:
-```
-CONTEXT: Debug gateway disconnect after Mac migration
-REFLECTION: Works from terminal but fails from LaunchAgent
-LESSON: Must check LaunchAgent registration after migration
-```
-
-Reflection entries follow same promotion rules: 3x successful use → Promote to HOT.
+| Scripts | `scripts/*.sh` |
+| Hook handler | `hooks/openclaw/handler.js` |
 
 ## Quick Queries
 
 | User says | Action |
 |-----------|--------|
-| "search learnings X" | Search all layers (search.sh) |
-| "show all learnings" | Display experiences.md |
-| "what did I learn recently?" | Show last 10 from corrections.md |
-| "what patterns exist?" | List memory.md (HOT) |
-| "show [project] patterns" | Load projects/{name}.md |
-| "what's in warm layer?" | List domains/ + projects/ |
-| "learning stats" | Show layer counts |
-| "forget X" | Delete from all layers (confirm first) |
-| "export learnings" | ZIP all files |
-
-## Memory Stats
-
-Report when user says "learning stats":
-
-```
-📊 rocky-know-how Learning Stats
-
-🔥 HOT (always loaded):
-  memory.md: X entries
-
-🌡️ WARM (loaded on demand):
-  domains/: X files
-  projects/: X files
-
-❄️ COLD (archived):
-  archive/: X files
-
-Learnings (v1 compatible):
-  experiences.md: X entries
-
-Last 7 days:
-  New corrections: X
-  Promoted to HOT: X
-  Demoted to WARM: X
-```
-
-## Common Traps
-
-| Trap | Why it fails | Better approach |
-|------|-------------|----------------|
-| Learning from silence | Creates wrong rules | Wait for explicit correction or repeated evidence |
-| Promoting too fast | Pollutes HOT memory | Keep new lessons tentative until confirmed |
-| Reading every namespace | Wastes context | Load only HOT + minimal matching files |
-| Deleting during compaction | Loses trust and history | Merge, summarize, or demote |
-
-## Core Rules
-
-### 1. Learn from corrections and self-reflection
-- Record explicit user corrections
-- Record self-identified work improvements
-- Never infer from silence
-- Same lesson 3x → Ask user to confirm as rule
-
-### 2. Layered storage
-| Layer | Location | Size limit | Behavior |
-|-------|----------|-----------|----------|
-| HOT | memory.md | ≤100 lines | Always loaded |
-| WARM | projects/, domains/ | ≤200 lines | Load on context match |
-| COLD | archive/ | Unlimited | Load on explicit query |
-
-### 3. Auto-promotion / demotion
-- Same Tag 3x in 7 days → Promote to HOT
-- Unused 30 days → Demote to WARM
-- Unused 90 days → Archive to COLD
-- Never delete (without asking)
-
-### 4. Namespace isolation
-- Project patterns → `projects/{name}.md`
-- Global preferences → HOT layer (memory.md)
-- Domain patterns (code, infra, dev) → `domains/`
-- Cross-namespace inheritance: global → domain → project
-
-### 5. Conflict resolution
-When patterns conflict:
-1. Most specific wins (project > domain > global)
-2. Most recent wins (same level)
-3. Unclear → Ask user
-
-### 6. Compaction
-When files exceed limits:
-1. Merge similar corrections into single rule
-2. Archive unused patterns
-3. Summarize verbose entries
-4. Never lose confirmed preferences
-
-### 7. Transparency
-- Every action from memory → Quote source: "Using X (from domains/code.md:12)"
-- Weekly summary available: learned patterns, demotions, archives
-- Full export anytime: ZIP all files
-
-### 8. Safety boundaries
-See `boundaries.md` — Never store credentials, health data, or third-party info.
-
-### 9. Graceful degradation
-If context limits trigger:
-1. Load only memory.md (HOT)
-2. Load matching namespaces on demand
-3. Never fail silently — Tell user what didn't load
-
-## Scope
-
-This skill **only does**:
-- Learn from user corrections and self-reflection
-- Store preferences in local files (`~/.openclaw/.learnings/`)
-- Maintain `heartbeat-state.md` on workspace-integrated heartbeat
-- Read own memory files when activated
-
-This skill **never does**:
-- Access calendars, email, or contacts
-- Make network requests
-- Read files outside `~/.openclaw/.learnings/`
-- Infer preferences from silence or observation
-- Delete or blindly overwrite rocky-know-how memory during heartbeat cleanup
-- Modify its own SKILL.md
-
-## Data Storage
-
-Local state in `~/.openclaw/.learnings/`:
-
-- `memory.md` — HOT rules and confirmed preferences
-- `corrections.md` — Explicit corrections and reusable lessons
-- `experiences.md` — v1 format learnings (backward compatible)
-- `domains/` — Domain-isolated patterns
-- `projects/` — Project-isolated patterns
-- `archive/` — Decayed or dormant patterns
-- `heartbeat-state.md` — Cyclic maintenance markers
-
----
-
-## Feedback
-
-- Found it useful: `clawhub star rocky-know-how`
-- Keep updated: `clawhub sync`
+| "search learnings X" | Use `search.sh` script |
+| "learning stats" | Use `stats.sh` |
+| "forget X" | Delete from all layers |

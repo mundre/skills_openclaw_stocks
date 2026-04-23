@@ -1,10 +1,11 @@
 #!/bin/bash
-# rocky-know-how 统计面板 v2.0.0
+# rocky-know-how 统计面板 v2.8.3
 # 用法: stats.sh
 
-get_state_dir() { [ -n "$OPENCLAW_STATE_DIR" ] && echo "$OPENCLAW_STATE_DIR" || echo "$HOME/.openclaw"; }
+SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SKILL_DIR/lib/common.sh"
 STATE_DIR=$(get_state_dir)
-SHARED_DIR="$STATE_DIR/.learnings"
+SHARED_DIR=$(get_shared_dir)
 ERRORS_FILE="$SHARED_DIR/experiences.md"
 MEMORY_FILE="$SHARED_DIR/memory.md"
 CORRECTIONS_FILE="$SHARED_DIR/corrections.md"
@@ -13,7 +14,7 @@ PROJECTS_DIR="$SHARED_DIR/projects"
 ARCHIVE_DIR="$SHARED_DIR/archive"
 
 echo "╔════════════════════════════════════════════╗"
-echo "║  📊 rocky-know-how 经验诀窍统计面板 v2.0.0 ║"
+echo "║  📊 rocky-know-how 经验诀窍统计面板 v2.8.3 ║"
 echo "╚════════════════════════════════════════════╝"
 echo ""
 
@@ -113,12 +114,13 @@ echo ""
 echo "📋 纠正日志 (corrections.md)"
 echo "───────────────────────────────────"
 if [ -f "$CORRECTIONS_FILE" ]; then
-  corr_entries=$(grep -c "^## " "$CORRECTIONS_FILE" 2>/dev/null || echo "0")
+  # corrections.md 条目以 ### HH:MM 开头，日期标题以 ## YYYY-MM-DD 开头
+  corr_entries=$(grep -c "^- \*\*纠正:\*\*" "$CORRECTIONS_FILE" 2>/dev/null || echo "0")
   corr_lines=$(wc -l < "$CORRECTIONS_FILE" | tr -d ' ')
   echo "  条目: $corr_entries, 行数: $corr_lines"
   # 最近一周的纠正
   week_ago=$(date -v-7d +%Y-%m 2>/dev/null || date -d "7 days ago" +%Y-%m)
-  recent=$(grep "^## " "$CORRECTIONS_FILE" 2>/dev/null | grep -c "$week_ago" || echo "0")
+  recent=$(grep "^## [0-9]" "$CORRECTIONS_FILE" 2>/dev/null | grep -c "$week_ago" || echo "0")
   echo "  本周新增: $recent"
 else
   echo "  (未初始化)"
