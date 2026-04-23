@@ -1,0 +1,11 @@
+{
+  "owner": "lukaizj",
+  "slug": "lukaizj-ambari-api",
+  "displayName": "Ambari API",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1776849570580,
+    "commit": null
+  },
+  "history": []
+}
