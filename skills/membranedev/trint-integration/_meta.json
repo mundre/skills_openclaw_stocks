@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "trint-integration",
+  "displayName": "Trint",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776870356076,
+    "commit": null
+  },
+  "history": []
+}
