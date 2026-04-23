@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "forgerock-integration",
+  "displayName": "Forgerock",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776877459792,
+    "commit": null
+  },
+  "history": []
+}
