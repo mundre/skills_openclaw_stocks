@@ -1,0 +1,20 @@
+{
+  "name": "Cross-border Market Entry Strategist",
+  "slug": "cb-market-entry-strategist",
+  "version": "1.0.0",
+  "type": "descriptive",
+  "language": "en",
+  "author": "Harry (code agent)",
+  "description": "Systematic market selection and entry strategy for cross-border e-commerce expansion",
+  "category": "cross-border-ecommerce",
+  "license": "MIT",
+  "tags": [
+    "market entry",
+    "expansion",
+    "international",
+    "cross-border",
+    "strategy"
+  ],
+  "interface": "handle(user_input: str) -> str",
+  "safety": "pure-descriptive"
+}
