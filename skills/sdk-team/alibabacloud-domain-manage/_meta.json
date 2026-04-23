@@ -1,0 +1,11 @@
+{
+  "owner": "sdk-team",
+  "slug": "alibabacloud-domain-manage",
+  "displayName": "Alibabacloud Domain Manage",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1776929635932,
+    "commit": null
+  },
+  "history": []
+}
