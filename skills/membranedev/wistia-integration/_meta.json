@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "wistia-integration",
+  "displayName": "Wistia",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1776858372398,
+    "commit": null
+  },
+  "history": []
+}
