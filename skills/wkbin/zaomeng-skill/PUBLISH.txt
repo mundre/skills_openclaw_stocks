@@ -1,0 +1,20 @@
+ClawHub Publish Bundle: zaomeng-skill
+
+Included files:
+1. SKILL.md
+2. PUBLISH.txt
+
+Suggested publish metadata:
+- Title: Zaomeng Skill
+- Category: Writing / Roleplay / Character Simulation
+- Engine: local-rule-engine
+- Language: Chinese (primary), English (partial)
+
+Quick verification before upload:
+1. py -m src.core.main --help
+2. py -m src.core.main distill --novel data/sample_novel.txt --force
+3. py -m src.core.main extract --novel data/sample_novel.txt --force
+
+Repository install option:
+npx skills add wkbin/Dreamforge
+

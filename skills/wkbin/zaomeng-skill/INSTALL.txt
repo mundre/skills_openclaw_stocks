@@ -1,0 +1,25 @@
+Install & Run (Required)
+
+This ClawHub skill package is an adapter layer and depends on the Dreamforge repository code.
+
+1) Clone repository
+git clone https://github.com/wkbin/Dreamforge.git
+cd Dreamforge
+
+2) Install dependencies
+pip install -r requirements.txt
+
+3) Create local config
+cp config.yaml.example config.yaml
+# Windows PowerShell:
+# Copy-Item config.yaml.example config.yaml
+
+4) Validate commands
+py -m src.core.main --help
+py -m src.core.main distill --novel data/sample_novel.txt --force
+py -m src.core.main extract --novel data/sample_novel.txt --force
+
+Notes:
+- No OpenAI API key is needed.
+- Engine mode is local-rule-engine.
+
