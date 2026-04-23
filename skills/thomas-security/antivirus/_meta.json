@@ -1,0 +1,11 @@
+{
+  "owner": "thomas-security",
+  "slug": "antivirus",
+  "displayName": "Antivirus",
+  "latest": {
+    "version": "6.8.20",
+    "publishedAt": 1773291557682,
+    "commit": null
+  },
+  "history": []
+}
