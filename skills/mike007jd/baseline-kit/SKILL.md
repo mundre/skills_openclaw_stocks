@@ -1,58 +1,53 @@
 ---
 name: baseline-kit
-description: OpenClaw 安全配置基线生成器和审计工具。生成开发/团队/企业/隔离环境的安全配置模板，并审计现有配置的安全问题（网络暴露、认证限流、技能来源限制、审计日志、备份策略、密钥卫生）。
-metadata: {"openclaw":{"emoji":"🧱"}}
+description: Generate safer OpenClaw configuration baselines and audit existing config files for exposure, missing controls, and secret hygiene issues.
+homepage: https://github.com/mike007jd/openclaw-skills/tree/main/baseline-kit
+metadata: {"openclaw":{"emoji":"🧱","requires":{"bins":["node"]}}}
 ---
 
 # Baseline Kit
 
-OpenClaw 安全配置基线生成器和审计工具。
+Generate profile-based OpenClaw configuration JSON and audit an existing config before rollout.
 
-## 功能
+## When to use
 
-- **generate**: 按场景生成安全配置模板
-- **audit**: 审计现有配置的安全合规性
+- You need a starting profile for `development`, `team`, `enterprise`, or `airgapped`.
+- You want an offline audit for `gateway.bind`, auth rate limits, allowed skill sources, audit logging, backups, or secret-like values.
+- You need a reviewable JSON artifact without contacting external services.
 
-## 配置场景
-
-| 场景 | 特点 |
-|------|------|
-| development | 宽松限流(20次/分钟)，7天日志保留 |
-| team | 中等限流(10次/分钟)，30天日志保留 |
-| enterprise | 严格限流(5次/5分钟)，90天日志，含灾备 |
-| airgapped | 仅本地回环，本地镜像源，180天日志 |
-
-## 用法
-
-### 生成安全配置
+## Commands
 
 ```bash
-# 生成企业级配置
-node bin/baseline-kit.js generate --profile enterprise --out ./openclaw.secure.json
-
-# 生成开发环境配置
-node bin/baseline-kit.js generate --profile development --out ./openclaw.dev.json
+node {baseDir}/bin/baseline-kit.js generate --profile enterprise --out ./openclaw.secure.json
+node {baseDir}/bin/baseline-kit.js generate --profile development --out ./openclaw.dev.json
+node {baseDir}/bin/baseline-kit.js audit --config ~/.openclaw/openclaw.json --format table
+node {baseDir}/bin/baseline-kit.js audit --config ./openclaw.secure.json --format json
 ```
 
-### 审计当前配置
+## Profiles
 
-```bash
-# 表格输出
-node bin/baseline-kit.js audit --config ~/.openclaw/openclaw.json --format table
+| Profile | Focus |
+| --- | --- |
+| `development` | Faster local iteration with lighter rate limits and shorter retention |
+| `team` | Shared team defaults with moderate auth protection and audit logging |
+| `enterprise` | Tighter auth windows, longer retention, and recovery guidance |
+| `airgapped` | Loopback-only and local-mirror oriented settings |
 
-# JSON 输出
-node bin/baseline-kit.js audit --config ./openclaw.secure.json --format json
-```
+## Audit checks
 
-## 审计检查项
+- `NET_EXPOSURE`: whether `gateway.bind` is loopback-only
+- `AUTH_RATE_LIMIT`: whether auth rate limiting is configured completely
+- `SOURCE_RESTRICTION`: whether allowed skill sources are too broad
+- `AUDIT_LOGGING`: whether audit logging is enabled
+- `BACKUP_HINT`: whether backup settings are present
+- `SECRET_HYGIENE`: whether the config tree contains plaintext secret-like values
 
-- `NET_EXPOSURE`: gateway.bind 是否仅限本地回环
-- `AUTH_RATE_LIMIT`: 认证限流是否配置完整
-- `SOURCE_RESTRICTION`: 技能来源限制是否过宽
-- `AUDIT_LOGGING`: 审计日志是否启用
-- `BACKUP_HINT`: 备份是否配置
-- `SECRET_HYGIENE`: 配置中是否存在明文密钥
+## Output
 
-## 合规标签
+- Each finding includes a severity, evidence path, recommendation, and compliance tag set.
+- Compliance tags currently map to `SOC2`, `ISO27001`, and `NIST CSF`.
 
-每个发现项都标注了相关合规框架：SOC2、ISO27001、NIST CSF
+## Boundaries
+
+- This tool audits JSON structure only. It does not enforce runtime policy.
+- Generated profiles are safer defaults, not a complete configuration management system.

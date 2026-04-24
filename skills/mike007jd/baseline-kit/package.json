@@ -33,7 +33,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mike007jd/openclaw-baseline-kit.git"
+    "url": "git+https://github.com/mike007jd/openclaw-skills.git",
+    "directory": "baseline-kit"
+  },
+  "homepage": "https://github.com/mike007jd/openclaw-skills/tree/main/baseline-kit",
+  "bugs": {
+    "url": "https://github.com/mike007jd/openclaw-skills/issues"
   },
   "author": "mike007jd",
   "engines": {
