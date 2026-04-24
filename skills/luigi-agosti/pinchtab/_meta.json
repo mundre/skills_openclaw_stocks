@@ -3,11 +3,16 @@
   "slug": "pinchtab",
   "displayName": "Pinchtab",
   "latest": {
-    "version": "0.9.1",
-    "publishedAt": 1776295056687,
-    "commit": "https://github.com/openclaw/skills/commit/1f3362ee7d2c87314df44bfafca8b68dbd0f9917"
+    "version": "0.10.0",
+    "publishedAt": 1776897093952,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.9.1",
+      "publishedAt": 1776295056687,
+      "commit": "https://github.com/openclaw/skills/commit/1f3362ee7d2c87314df44bfafca8b68dbd0f9917"
+    },
     {
       "version": "0.8.6",
       "publishedAt": 1774566325913,
