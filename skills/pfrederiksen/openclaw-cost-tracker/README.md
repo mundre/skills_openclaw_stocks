@@ -3,16 +3,15 @@
 [![ClawHub](https://img.shields.io/badge/ClawHub-openclaw--cost--tracker-blue)](https://clawhub.ai/pfrederiksen/openclaw-cost-tracker)
 [![Version](https://img.shields.io/badge/version-1.1.1-green)]()
 
-An [OpenClaw](https://openclaw.ai) skill that parses session JSONL files to compute per-model token usage, costs, and daily spend trends. No API keys needed — reads directly from local session files.
+An [OpenClaw](https://openclaw.ai) skill for analyzing token usage and API costs from local session data. The preferred workflow now uses `openclaw-cost-diff` for current analysis and window-over-window comparisons, with the older `cost_tracker.py` kept as a fallback.
 
 ## Features
 
-- 💰 **Per-model breakdown** — cost, tokens, and request count by model
-- 📊 **Daily spend chart** — text bar chart or JSON array for dashboards
-- 🔍 **Token split** — input, output, cache read/write breakdown
-- 📅 **Date filtering** — `--days N` or `--since YYYY-MM-DD`
-- 📄 **JSON output** — `--format json` for integrations
-- 🗂️ **`--agents-dir`** — point at any directory; no system-wide access required
+- 💰 **Cost diffs across time windows** via `openclaw-cost-diff`
+- 🧭 **Breakdowns by model, agent, and channel**
+- 📊 **Window-over-window regression detection**
+- 📄 **JSON output** for integrations and dashboards
+- 🧰 **Legacy fallback** with `cost_tracker.py` for the older single-window summary format
 
 ## Installation
 
@@ -23,36 +22,28 @@ clawhub install openclaw-cost-tracker
 ## Usage
 
 ```bash
-# All-time summary
-python3 scripts/cost_tracker.py
+# Preferred local wrapper
+/root/.openclaw/workspace/tools/ocost --last 7d --prev 7d --top 5
 
-# Last 7 days
-python3 scripts/cost_tracker.py --days 7
+# Direct diff tool invocation
+/root/.openclaw/venvs/openclaw-cost-diff/bin/openclaw-cost-diff --data /root/.openclaw/agents --last 7d --prev 7d
 
 # JSON output
-python3 scripts/cost_tracker.py --format json
+/root/.openclaw/venvs/openclaw-cost-diff/bin/openclaw-cost-diff --data /root/.openclaw/agents --last 7d --prev 7d --json
 
-# Point at a specific agents directory (safe for non-root review)
-python3 scripts/cost_tracker.py --agents-dir ~/sample-agents-copy
+# Legacy fallback
+python3 scripts/cost_tracker.py --days 7
 ```
 
 ## Security
 
-**No network calls.** The complete import list is: `json`, `os`, `sys`, `argparse`, `datetime`, `timedelta`, `typing`, `pathlib`, `re` — all Python stdlib. You can verify this yourself:
+**Minimal and transparent.** The bundled fallback script is plain Python source, and the preferred diff workflow uses a separately installed CLI. Keep both repo and skill text-only and auditable.
 
-```bash
-grep -n "^import\|^from" scripts/cost_tracker.py
-```
+**No hidden payloads.** This skill README and SKILL.md are plain text only.
 
-**No writes.** The script only reads JSONL files and prints to stdout. No files are created or modified.
+**Run as non-root when possible.** The analysis only needs read access to local session data.
 
-**No subprocess / shell execution.** No `subprocess`, `os.system`, `eval`, or `exec` anywhere in the source.
-
-**Minimal directory access.** Only reads `*.jsonl` files under the agents directory. Use `--agents-dir` to point at a sample copy before running against your live data.
-
-**Run as non-root.** The script needs no elevated permissions. Run it as a normal user.
-
-You can audit the full 296-line source at [scripts/cost_tracker.py](scripts/cost_tracker.py) before installing.
+You can still audit the fallback script source at [scripts/cost_tracker.py](scripts/cost_tracker.py).
 
 ## Requirements
 

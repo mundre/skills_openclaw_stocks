@@ -1,13 +1,33 @@
 ---
 name: openclaw-cost-tracker
-description: "Track OpenClaw token usage and API costs by parsing session JSONL files. Use when user asks about token spend, API costs, model usage breakdown, daily cost trends, or wants to know how much they're spending on Claude/GPT. Shows per-model breakdown, daily spend chart, and grand totals. No API keys needed — reads directly from local session files."
+description: "Track OpenClaw token usage and API costs from local session data. Prefer openclaw-cost-diff for current cost analysis and window-over-window comparison across models, agents, and channels. Use this skill when a user asks about token spend, API costs, regressions, model breakdowns, daily trends, or what changed between time windows. No API keys needed."
 ---
 
 # OpenClaw Cost Tracker
 
-Parse OpenClaw session files to compute per-model token usage, costs, and daily spend trends. Works with any OpenClaw installation — no API keys or external services needed.
+Analyze OpenClaw token usage and API costs from local session data.
 
-## Usage
+Prefer `openclaw-cost-diff` as the default tool for current analysis because it can compare time windows and break down changes by model, agent, and channel.
+
+## Preferred usage
+
+```bash
+# Compare the last 7 days vs the prior 7 days
+/root/.openclaw/venvs/openclaw-cost-diff/bin/openclaw-cost-diff --last 7d --prev 7d
+
+# JSON output for tooling or dashboards
+/root/.openclaw/venvs/openclaw-cost-diff/bin/openclaw-cost-diff --data /root/.openclaw/agents --last 7d --prev 7d --json
+
+# Focus on a specific model
+/root/.openclaw/venvs/openclaw-cost-diff/bin/openclaw-cost-diff --model openai-codex/gpt-5.4 --last 14d --prev 14d
+
+# Compare agent behavior
+/root/.openclaw/venvs/openclaw-cost-diff/bin/openclaw-cost-diff --agent main --prev-agent codex --last 7d --prev 7d
+```
+
+## Legacy/local fallback
+
+Use the bundled `cost_tracker.py` only as a secondary local fallback when `openclaw-cost-diff` is unavailable or when you want the older single-window daily spend report format.
 
 ```bash
 # All-time cost report
@@ -80,6 +100,12 @@ Feed JSON output into dashboards, alerting, or budgeting tools. The `daily` arra
 # Daily cost snapshot to file
 0 0 * * * python3 /path/to/cost_tracker.py --days 1 --format json >> ~/cost-log.jsonl
 ```
+
+## Notes
+
+- Prefer `openclaw-cost-diff` first for comparison and regression work.
+- If totals look surprising, sanity-check against direct raw sums from `message.usage.cost.total` in local JSONL records.
+- Keep `cost_tracker.py` as a fallback, not the default source of truth.
 
 ## Requirements
 

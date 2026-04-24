@@ -60,7 +60,7 @@ def parse_sessions(agents_dir: Path, days: int = 0, since: Optional[str] = None)
         if not sessions_dir.is_dir():
             continue
 
-        for session_file in sessions_dir.glob("*.jsonl"):
+        for session_file in sessions_dir.rglob("*.jsonl"):
             # Quick filter: skip old files by mtime
             if days > 0:
                 mtime = datetime.fromtimestamp(session_file.stat().st_mtime)
