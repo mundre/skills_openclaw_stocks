@@ -1,4 +1,4 @@
-import { execSync, spawnSync } from 'child_process';
+import { execSync, execFileSync, spawnSync } from 'child_process';
 import { loadConfig } from '../config/loader.js';
 // Re-export discovery functions
 export { extractDomain, extractSiteKey, search1PasswordItems, interactiveCredentialDiscovery } from './discovery.js';
@@ -146,8 +146,8 @@ class BitwardenVault extends VaultProvider {
         this.ensureAuthenticated();
         const creds = {};
         try {
-            // Get item by name
-            const items = JSON.parse(execSync(`bw list items --search "${config.item}"`, { encoding: 'utf-8' }));
+            // Get item by name using execFileSync to avoid shell injection
+            const items = JSON.parse(execFileSync('bw', ['list', 'items', '--search', config.item], { encoding: 'utf-8' }));
             if (items.length === 0) {
                 throw new Error(`Item "${config.item}" not found in Bitwarden`);
             }
@@ -186,7 +186,8 @@ class KeychainVault extends VaultProvider {
         const creds = {};
         if (config.passwordField) {
             try {
-                creds.password = execSync(`security find-generic-password -s "${config.item}" -w`, { encoding: 'utf-8' }).trim();
+                // Use execFileSync to avoid shell injection vulnerabilities
+                creds.password = execFileSync('security', ['find-generic-password', '-s', config.item, '-w'], { encoding: 'utf-8' }).trim();
             }
             catch (e) {
                 throw new Error(`Failed to read from keychain: ${e}`);

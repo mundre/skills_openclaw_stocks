@@ -1,7 +1,8 @@
 {
   "name": "browser-secure",
-  "version": "0.2.0",
-  "description": "Secure browser automation with vault integration, approval gates, and audit logging",
+  "version": "2.0.0",
+  "description": "Human-in-the-loop browser capture tool for gated content. Companion to attention-research.",
+  "license": "MIT-0",
   "type": "module",
   "main": "dist/cli.js",
   "bin": {

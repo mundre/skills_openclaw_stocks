@@ -52,7 +52,7 @@ export function loadConfig() {
         // Create default config
         const configDir = path.dirname(configPath);
         if (!fs.existsSync(configDir)) {
-            fs.mkdirSync(configDir, { recursive: true });
+            fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
         }
         saveConfig(DEFAULT_CONFIG);
         return DEFAULT_CONFIG;
@@ -84,9 +84,9 @@ export function saveConfig(config) {
     const configPath = getConfigPath();
     const configDir = path.dirname(configPath);
     if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
+        fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
     }
-    fs.writeFileSync(configPath, yaml.stringify(config), 'utf-8');
+    fs.writeFileSync(configPath, yaml.stringify(config), { encoding: 'utf-8', mode: 0o600 });
 }
 export function getAuditLogPath() {
     const config = loadConfig();

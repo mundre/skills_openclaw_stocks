@@ -62,9 +62,17 @@ export function listChromeProfiles() {
     }
     return profiles;
 }
-export function getProfileById(profileId) {
+export function getProfileById(profileIdOrName) {
     const profiles = listChromeProfiles();
-    return profiles.find(p => p.id === profileId);
+    // Exact id match wins (directory name: "Default", "Profile 1", ...)
+    const byId = profiles.find(p => p.id === profileIdOrName);
+    if (byId)
+        return byId;
+    // Fall back to case-insensitive display-name match so users can pass the
+    // name they see in Chrome's UI ("Work", "riverhoho") instead of the
+    // internal directory id.
+    const needle = profileIdOrName.toLowerCase();
+    return profiles.find(p => p.name.toLowerCase() === needle);
 }
 export async function promptProfileSelection() {
     const profiles = listChromeProfiles();

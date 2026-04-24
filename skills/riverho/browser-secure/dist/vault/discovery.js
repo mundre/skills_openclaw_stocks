@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execSync, execFileSync, spawnSync } from 'child_process';
 import * as readline from 'readline';
 import { loadConfig, saveConfig } from '../config/loader.js';
 /**
@@ -127,7 +127,8 @@ export function search1PasswordItems(domain) {
  */
 export function get1PasswordItemFields(itemId) {
     try {
-        const item = JSON.parse(execSync(`op item get ${itemId} --format json`, { encoding: 'utf-8', timeout: 10000 }));
+        // Use execFileSync with array args to prevent shell injection
+        const item = JSON.parse(execFileSync('op', ['item', 'get', itemId, '--format', 'json'], { encoding: 'utf-8', timeout: 10000 }));
         return item.fields || [];
     }
     catch (e) {
@@ -309,7 +310,14 @@ async function interactive1PasswordDiscovery(domain) {
     if (usernameField) {
         try {
             const vaultPath = `op://${selectedItem.vault.name}/${selectedItem.title}/${usernameField}`;
-            credentials.username = execSync(`op read "${vaultPath}"`, { encoding: 'utf-8' }).trim();
+            // Use spawnSync with input to avoid shell injection
+            const result = spawnSync('op', ['read', '-'], {
+                input: vaultPath,
+                encoding: 'utf-8'
+            });
+            if (result.status === 0) {
+                credentials.username = result.stdout.trim();
+            }
         }
         catch (e) {
             console.warn(`Warning: Could not read username field: ${e}`);
@@ -318,7 +326,14 @@ async function interactive1PasswordDiscovery(domain) {
     if (passwordField) {
         try {
             const vaultPath = `op://${selectedItem.vault.name}/${selectedItem.title}/${passwordField}`;
-            credentials.password = execSync(`op read "${vaultPath}"`, { encoding: 'utf-8' }).trim();
+            // Use spawnSync with input to avoid shell injection
+            const result = spawnSync('op', ['read', '-'], {
+                input: vaultPath,
+                encoding: 'utf-8'
+            });
+            if (result.status === 0) {
+                credentials.password = result.stdout.trim();
+            }
         }
         catch (e) {
             console.warn(`Warning: Could not read password field: ${e}`);
@@ -327,7 +342,14 @@ async function interactive1PasswordDiscovery(domain) {
     if (tokenField) {
         try {
             const vaultPath = `op://${selectedItem.vault.name}/${selectedItem.title}/${tokenField}`;
-            credentials.token = execSync(`op read "${vaultPath}"`, { encoding: 'utf-8' }).trim();
+            // Use spawnSync with input to avoid shell injection
+            const result = spawnSync('op', ['read', '-'], {
+                input: vaultPath,
+                encoding: 'utf-8'
+            });
+            if (result.status === 0) {
+                credentials.token = result.stdout.trim();
+            }
         }
         catch (e) {
             console.warn(`Warning: Could not read token field: ${e}`);

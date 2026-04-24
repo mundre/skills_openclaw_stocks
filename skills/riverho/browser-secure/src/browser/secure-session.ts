@@ -1,4 +1,4 @@
-import { chromium, Browser, Page } from 'playwright';
+import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
@@ -22,6 +22,21 @@ import {
 } from '../security/approval.js';
 import { validateUrl } from '../security/network.js';
 import { ChromeProfile } from './chrome-profiles.js';
+import {
+  copyChromeProfileToTemp
+} from './chrome-lifecycle.js';
+import {
+  startDaemon,
+  stopDaemon,
+  isDaemonRunning,
+  getDaemonStatus,
+  loadDaemonState,
+  DaemonState
+} from './daemon.js';
+import {
+  logNavigationError,
+  logSessionError
+} from '../utils/error-log.js';
 
 // Detect system Chrome path
 function getChromePath(): string | undefined {
@@ -74,8 +89,20 @@ function getChromePath(): string | undefined {
 }
 
 let browser: Browser | null = null;
+// When --profile is used we launch via launchPersistentContext, which returns
+// a BrowserContext directly rather than a Browser. Close via context.close().
+let persistentContext: BrowserContext | null = null;
 let page: Page | null = null;
 let actionCounter = 0;
+
+// Daemon mode: browser persists across tasks
+let daemonState: DaemonState | null = null;
+let daemonBrowser: Browser | null = null;  // separate from `browser` (non-daemon)
+let daemonContext: BrowserContext | null = null;
+
+// Temp copy of the real Chrome profile so we don't conflict with the user's
+// running Chrome. Cleaned up in closeBrowser().
+let tempProfileDir: string | null = null;
 
 interface SecureSession {
   id: string;
@@ -100,6 +127,9 @@ interface BrowserOptions {
   timeout?: number;
   profile?: ChromeProfile;
   unattended?: UnattendedOptions;
+  // When --profile is set and Chrome is running, allow browser-secure to
+  // quit Chrome gracefully. In unattended mode this is required.
+  closeChrome?: boolean;
 }
 
 // Check if vault is locked/unavailable
@@ -205,34 +235,64 @@ export async function startBrowser(url: string, options: BrowserOptions = {}): P
     console.log('⚠️  System Chrome not found, using bundled Chromium (extensions unavailable)');
   }
 
-  if (options.profile) {
-    // Use persistent context with Chrome profile
-    console.log(`🔐 Using Chrome profile: ${options.profile.name} [${options.profile.id}]`);
+  // ─── DAEMON MODE ───────────────────────────────────────────────────────────
+  // If a daemon is already running for this profile, connect to it and open a new tab.
+  // Otherwise, fall back to the existing launch logic (non-daemon, closed after each task).
+  const useProfile = !!options.profile;
 
-    const userDataDir = options.profile.path.replace(/\/Default$/, '').replace(/\/Profile \d+$/, '');
-    const profileArg = options.profile.id === 'Default' ? '' : `--profile-directory=${options.profile.id}`;
+  if (useProfile) {
+    const existingDaemon = loadDaemonState();
 
-    const context = await chromium.launchPersistentContext(userDataDir, {
-      headless: options.headless ?? false,
-      executablePath: chromePath,
-      args: profileArg ? [profileArg] : [],
-      ...(config.isolation.incognitoMode ? {} : {})
-    });
+    if (existingDaemon && isDaemonRunning(existingDaemon) && existingDaemon.profileId === options.profile!.id) {
+      // Same profile daemon: connect and open a new tab
+      console.log(`🔁 Reusing existing daemon for profile: ${existingDaemon.profile} [${existingDaemon.profileId}]`);
+      daemonState = existingDaemon;
+      daemonBrowser = await chromium.connectOverCDP(existingDaemon.wsUrl);
 
-    page = await context.newPage();
+      // When connecting to an existing Chrome via CDP, newContext() is not
+      // supported (Chrome only has its default persistent context). Re-use it.
+      daemonContext = daemonBrowser.contexts()[0] ?? null;
+      if (!daemonContext) {
+        throw new Error('Connected to daemon but no default browser context found');
+      }
+      page = await daemonContext.newPage();
+      console.log(`✅ Opened new tab in daemon (profile: ${daemonState.profile} [${daemonState.profileId}])`);
+
+    } else {
+      // No daemon for this profile (or daemon stale) — copy the real profile
+      // to a temp dir and launch against that copy. This avoids SingletonLock
+      // conflicts with the user's running Chrome.
+      const prof = options.profile!;
+      console.log(`🔐 Using Chrome profile: ${prof.name} [${prof.id}]`);
+
+      tempProfileDir = copyChromeProfileToTemp(prof.id);
+      const profileArgs = prof.id === 'Default' ? [] : [`--profile-directory=${prof.id}`];
+
+      persistentContext = await chromium.launchPersistentContext(tempProfileDir, {
+        headless: options.headless ?? false,
+        executablePath: chromePath || undefined,
+        args: [
+          ...profileArgs,
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-software-rasterizer',
+          '--disable-webgl',
+          '--disable-accelerated-2d-canvas',
+        ],
+      });
+
+      // Persistent contexts open with one blank page already; reuse it.
+      page = persistentContext.pages()[0] ?? await persistentContext.newPage();
+    }
   } else {
-    // Use isolated incognito context (default secure behavior)
+    // No profile: use Playwright's bundled Chromium (isolated, no cookies from system Chrome)
+    // No executablePath → Playwright uses its bundled browser
     browser = await chromium.launch({
       headless: options.headless ?? false,
-      executablePath: chromePath,
     });
-
-    const context = await browser.newContext({
-      // Incognito: no persistent storage
-      storageState: config.isolation.incognitoMode ? undefined : undefined,
-    });
-
+    const context = await browser.newContext();
     page = await context.newPage();
+    console.log(`🔓 Using Playwright Chromium (bundled, isolated/incognito)`);
   }
 
   // Navigate to URL
@@ -249,8 +309,14 @@ export async function startBrowser(url: string, options: BrowserOptions = {}): P
       throw new Error(`Failed to load welcome page: ${e}`);
     }
   } else {
-    await page.goto(url);
-    console.log(`✅ Navigated to ${url}`);
+    try {
+      await page.goto(url);
+      console.log(`✅ Navigated to ${url}`);
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      logNavigationError(url, `Navigation failed: ${err.message}`, err);
+      throw e;
+    }
   }
 
   // Handle site authentication if specified or auto-vault is enabled
@@ -333,7 +399,7 @@ function setupTimeoutWatcher(onTimeout: () => void): void {
   }, 5000);
 }
 
-async function handleSiteAuthentication(site: string, unattended?: UnattendedOptions): Promise<void> {
+export async function handleSiteAuthentication(site: string, unattended?: UnattendedOptions): Promise<void> {
   if (!page) return;
 
   // Check credential cache first
@@ -480,7 +546,7 @@ async function fillLoginForm(username: string, password: string): Promise<void> 
 }
 
 export async function performAction(action: string, options?: { autoApprove?: boolean; unattended?: UnattendedOptions }): Promise<void> {
-  if (!page || !browser) {
+  if (!page || !(browser || persistentContext || daemonBrowser)) {
     throw new Error('Browser not started. Call navigate first.');
   }
 
@@ -530,6 +596,12 @@ export async function performAction(action: string, options?: { autoApprove?: bo
       const value = match[1].trim();
       const field = match[2].trim();
       await performSelect(field, value);
+    }
+  } else if (lowerAction.includes('press') || lowerAction.includes('hit')) {
+    const match = action.match(/(?:press|hit)\s+(?:the\s+)?(?:key\s+)?(.+)/i);
+    if (match) {
+      const key = match[1].trim();
+      await performPress(key);
     }
   }
 
@@ -613,6 +685,32 @@ async function performSelect(field: string, value: string): Promise<void> {
   throw new Error(`Could not select ${value} from ${field}`);
 }
 
+async function performPress(key: string): Promise<void> {
+  if (!page) return;
+
+  const keyMap: Record<string, string> = {
+    'enter': 'Enter',
+    'return': 'Enter',
+    'esc': 'Escape',
+    'escape': 'Escape',
+    'tab': 'Tab',
+    'space': 'Space',
+    'backspace': 'Backspace',
+    'delete': 'Delete',
+    'arrowup': 'ArrowUp',
+    'up': 'ArrowUp',
+    'arrowdown': 'ArrowDown',
+    'down': 'ArrowDown',
+    'arrowleft': 'ArrowLeft',
+    'left': 'ArrowLeft',
+    'arrowright': 'ArrowRight',
+    'right': 'ArrowRight',
+  };
+
+  const normalized = keyMap[key.toLowerCase()] || key;
+  await page.keyboard.press(normalized);
+}
+
 export async function extractData(instruction: string, schema?: Record<string, unknown>): Promise<unknown> {
   if (!page) {
     throw new Error('Browser not started. Call navigate first.');
@@ -662,20 +760,68 @@ export async function extractData(instruction: string, schema?: Record<string, u
   };
 }
 
+export function getPage(): Page | null {
+  return page;
+}
+
+export async function reconnectToDaemon(): Promise<void> {
+  const state = loadDaemonState();
+  if (!state || !isDaemonRunning(state)) {
+    throw new Error('No daemon running. Start one with: browser-secure daemon start --profile <profile>');
+  }
+
+  daemonState = state;
+  daemonBrowser = await chromium.connectOverCDP(state.wsUrl);
+  daemonContext = daemonBrowser.contexts()[0] ?? null;
+  if (!daemonContext) {
+    throw new Error('Connected to daemon but no default browser context found');
+  }
+
+  // Find the most recently active web page (ignore extension/service-worker pages).
+  const pages = daemonContext.pages().filter(p => {
+    const url = p.url();
+    return url.startsWith('http://') || url.startsWith('https://') || url === 'about:blank';
+  });
+  if (pages.length > 0) {
+    page = pages[pages.length - 1];
+  } else {
+    page = await daemonContext.newPage();
+  }
+
+  // Create minimal session for audit/screenshot support
+  if (!activeSession) {
+    activeSession = createSecureSession(undefined, undefined, undefined);
+    const config = loadConfig();
+    if (config.isolation.secureWorkdir) {
+      fs.mkdirSync(activeSession.screenshotDir, { recursive: true });
+    }
+  }
+
+  // Start audit session for this command
+  startAuditSession();
+}
+
 export async function takeScreenshot(action?: string): Promise<string | null> {
-  if (!page || !activeSession) return null;
+  if (!page) return null;
 
   const config = loadConfig();
-  if (!config.security.screenshotEveryAction) return null;
+  if (!config.security.screenshotEveryAction && action !== 'manual') return null;
 
-  try {
+  let screenshotDir: string;
+  let filename: string;
+
+  if (activeSession) {
     const paddedIndex = String(actionCounter).padStart(3, '0');
     const safeAction = (action || 'screenshot').replace(/[^a-z0-9]/gi, '_').slice(0, 30);
-    const filename = path.join(
-      activeSession.screenshotDir,
-      `${activeSession.id}-${paddedIndex}-${safeAction}.png`
-    );
+    screenshotDir = activeSession.screenshotDir;
+    filename = path.join(screenshotDir, `${activeSession.id}-${paddedIndex}-${safeAction}.png`);
+  } else {
+    const safeAction = (action || 'screenshot').replace(/[^a-z0-9]/gi, '_').slice(0, 30);
+    screenshotDir = os.tmpdir();
+    filename = path.join(screenshotDir, `browser-secure-manual-${Date.now()}-${safeAction}.png`);
+  }
 
+  try {
     await page.screenshot({ path: filename, fullPage: false });
     logAction('screenshot', { path: filename });
     return filename;
@@ -685,7 +831,7 @@ export async function takeScreenshot(action?: string): Promise<string | null> {
   }
 }
 
-export async function closeBrowser(): Promise<void> {
+export async function closeBrowser(options?: { keepPage?: boolean }): Promise<void> {
   const startTime = activeSession?.startTime || Date.now();
 
   if (timeoutInterval) {
@@ -695,25 +841,63 @@ export async function closeBrowser(): Promise<void> {
 
   closeApprover();
 
-  if (browser) {
-    try {
-      await browser.close();
-    } catch (e) {
-      console.error(`Error closing browser: ${e}`);
+  if (daemonState) {
+    // Daemon mode: disconnect from browser. Optionally keep the page open in
+    // Chrome so subsequent CLI commands can reconnect and find it.
+    if (page && !options?.keepPage) {
+      try { await page.close(); } catch { /* */ }
     }
-    browser = null;
+    if (daemonBrowser) {
+      try { await daemonBrowser.close(); } catch { /* */ }
+    }
     page = null;
+    daemonContext = null;
+    daemonBrowser = null;
+    const msg = options?.keepPage ? 'Disconnected' : 'Tab closed';
+    console.log(`🔒 ${msg} (daemon running: ${daemonState.profile} [${daemonState.profileId}])`);
+    console.log(`   To stop daemon: browser-secure daemon stop`);
+  } else {
+    // Non-daemon: close the persistent context (if any) or the browser.
+    if (persistentContext) {
+      try {
+        await persistentContext.close();
+      } catch (e) {
+        console.error(`Error closing persistent context: ${e}`);
+      }
+      persistentContext = null;
+      page = null;
+    }
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (e) {
+        console.error(`Error closing browser: ${e}`);
+      }
+      browser = null;
+      page = null;
+    }
+    // Clean up the temp profile copy
+    if (tempProfileDir) {
+      try {
+        fs.rmSync(tempProfileDir, { recursive: true, force: true });
+      } catch (e) {
+        console.error(`Warning: failed to clean up temp profile dir: ${e}`);
+      }
+      tempProfileDir = null;
+    }
   }
 
-  // Secure cleanup
-  const cleanupSuccess = secureCleanup();
+  // Only clean up if we're fully closing (not just disconnecting for next command)
+  if (!options?.keepPage) {
+    // Secure cleanup (work dir, screenshots)
+    const cleanupSuccess = secureCleanup();
 
-  // Finalize audit
-  const duration = Math.floor((Date.now() - startTime) / 1000);
-  finalizeAuditSession(duration, cleanupSuccess);
+    // Finalize audit
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    finalizeAuditSession(duration, cleanupSuccess);
 
-  console.log('🔒 Secure session closed');
-  actionCounter = 0;
+    actionCounter = 0;
+  }
 }
 
 function secureCleanup(): boolean {
@@ -754,15 +938,36 @@ export function getBrowserStatus(): {
   actionCount: number;
   suspended?: boolean;
   warningShown?: boolean;
+  daemon?: {
+    profile: string;
+    profileId: string;
+    pid: number;
+    port: number;
+    uptime: string;
+  };
 } {
+  const daemon = daemonState
+    ? {
+        profile: daemonState.profile,
+        profileId: daemonState.profileId,
+        pid: daemonState.pid,
+        port: daemonState.port,
+        uptime: (() => {
+          const s = Math.floor((Date.now() - new Date(daemonState!.startedAt).getTime()) / 1000);
+          return `${Math.floor(s / 60)}m ${s % 60}s`;
+        })()
+      }
+    : undefined;
+
   return {
-    active: !!browser,
+    active: !!browser || !!daemonBrowser,
     sessionId: activeSession?.id,
     timeRemaining: activeSession ? Math.floor((activeSession.maxDuration - (Date.now() - activeSession.startTime)) / 1000) : undefined,
     site: activeSession?.site,
     actionCount: actionCounter,
     suspended: activeSession?.suspended,
-    warningShown: activeSession?.warningShown
+    warningShown: activeSession?.warningShown,
+    daemon
   };
 }
 
