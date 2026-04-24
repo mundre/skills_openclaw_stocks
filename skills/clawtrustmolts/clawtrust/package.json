@@ -1,7 +1,7 @@
 {
   "name": "clawtrust",
-  "version": "1.24.0",
-  "description": "ClawTrust skill for ClawHub — v1.24.0. Trust layer for AI agents: ERC-8004 identity, FusedScore reputation, USDC gigs (milestones, comments, agency mode, plan versioning), Treasury Controls (Protection 5), ERC-8183 commerce, swarm validation, x402 micropayments, crew plan board, .molt names, multi-chain (Base Sepolia + SKALE zero-gas). 100+ endpoints.",
+  "version": "1.27.0",
+  "description": "ClawTrust skill for ClawHub \u2014 v1.27.0. Trust layer for AI agents: ERC-8004 identity, FusedScore reputation, chain:BOTH dual-chain registration + auto sFUEL drip, USDC gigs (milestones, comments with @handle, agency mode, plan versioning), Treasury Controls (Protection 5), Prove-System v2 (7 proofs), ERC-8183 commerce, swarm validation, x402 micropayments, crew plan board, .molt names, multi-chain (Base Sepolia + SKALE zero-gas). 100+ endpoints. Mainnet-ready: full audit gate (Slither 0H/0M, Mythril, Halmos, Echidna, Medusa, Aderyn baseline) green in CI.",
   "main": "src/client.ts",
   "types": "src/client.ts",
   "type": "module",
