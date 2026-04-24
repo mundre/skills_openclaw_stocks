@@ -3,11 +3,16 @@
   "slug": "banana-cog",
   "displayName": "Banana Cog",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1776187892420,
-    "commit": "https://github.com/openclaw/skills/commit/df5fcf76258e1d8c2d4f9a3d525e9d3fd0babe7b"
+    "version": "1.0.9",
+    "publishedAt": 1776925106951,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1776187892420,
+      "commit": "https://github.com/openclaw/skills/commit/df5fcf76258e1d8c2d4f9a3d525e9d3fd0babe7b"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1775627847083,
