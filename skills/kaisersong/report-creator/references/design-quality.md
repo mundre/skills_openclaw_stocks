@@ -115,6 +115,47 @@ CSS for `.highlight-sentence` (add to shared.css section in html-shell-template.
 }
 ```
 
+### Narrative Cadence Blocks
+
+For `narrative` and `mixed` reports, do not stop at "shorter paragraphs". The better rhythm is:
+
+`claim -> explanation -> scan anchor`
+
+Use these render-time prose upgrades when the section supports them:
+
+- `lead-block` — for a decisive opening sentence that frames the section before detail.
+- `section-quote` — for a short judgment or implication that should read like a pull-quote.
+- `action-grid` — for 2-5 concrete moves, contrasts, or recommendations that scan better as cards than as one long list.
+
+These are **prose/HTML patterns, not IR tags**. Narrative cadence blocks are optional upgrades, not a quota. The renderer should promote qualifying prose into these blocks instead of leaving every narrative section as paragraph + list.
+
+- Never use them just to break up a page visually.
+- Do not stack multiple cadence blocks in one section unless the source clearly contains multiple distinct beats.
+- If uncertain, keep plain prose plus one stronger scan anchor instead of forcing a cadence block.
+
+```html
+<div class="lead-block">先抓主线：这部分讨论的不是聊天入口，而是委托边界。</div>
+<div class="section-quote">真正决定信任的，不是入口，而是编排层。</div>
+<div class="action-grid">
+  <div class="action-card"><strong>先做</strong><p>先把意图和边界收清楚。</p></div>
+  <div class="action-card"><strong>再做</strong><p>再把行动回执和恢复路径补上。</p></div>
+</div>
+```
+
+### Summary Card Hierarchy
+
+Summary cards should read like posters, not metadata panels.
+
+- Prefer `poster_title` + `poster_subtitle` only when the report's core judgment is stronger than the document title.
+- The poster title should dominate the card visually.
+- After fixing wrap quality, do not leave the poster title undersized; it should still feel like the dominant visual mass on the left panel.
+- Keep subtitle below the poster title, not merged into one dense headline.
+- On the left panel, keep only the title hierarchy and one short closing sentence near the bottom.
+- Leave visible breathing room around the title; do not let the left panel turn into a paragraph block.
+- Do not artificially squeeze the subtitle or closing sentence into a narrow column that wastes available width.
+- Do not duplicate audience, author/date byline, or explanatory filler inside the summary card.
+- Remove chips, bottom notes, and metadata filler if they weaken the poster read.
+
 ## 7. Pre-Output Self-Check
 
 Before writing the final HTML, answer each question. Fix any "no":
@@ -156,8 +197,14 @@ Every generated report HTML **MUST** contain these elements. If any are missing,
 | Summary card | `id="sc-card"` + class `sc-card` | Two-panel summary card (injected by JS) |
 | Export button | `id="export-btn"` + class `export-btn` | `↓ 导出` button, bottom-right |
 | Export menu | `id="export-menu"` + class `export-menu` | Dropdown with Print/PNG/IM options |
+| Export item: print | `id="export-print"` | `打印 / PDF` entry |
+| Export item: desktop | `id="export-png-desktop"` | `桌面截图` entry |
+| Export item: mobile | `id="export-png-mobile"` | `手机长图` entry |
+| Export item: IM | `id="export-im-share"` | `IM 长图` entry |
 | JSON summary block | `type="application/json" id="report-summary"` | Machine-readable report metadata |
 | Report mode attribute | `data-report-mode="[default\|comparison]"` on `<body>` | Semantic mode flag |
+
+**Important:** `id="export-menu"` by itself is not enough. The menu is incomplete unless all four export items above exist. If any one is missing, rebuild the entire export block from `html-shell-template.md` rather than leaving a partial menu.
 
 ### 8.2 TOC JavaScript Contract
 
@@ -181,6 +228,7 @@ Before writing, verify CSS includes:
 - `.export-btn`, `.export-menu`, `.export-item` styles
 - `.edit-hotzone`, `.edit-toggle` styles
 - `@media print` rules hiding UI chrome
+- Export JS bindings for all four entries: `export-print`, `export-png-desktop`, `export-png-mobile`, `export-im-share`
 
 ## L1 Content Review
 

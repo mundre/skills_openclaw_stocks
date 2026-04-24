@@ -55,7 +55,7 @@ def evaluate(root: Path) -> list[RuleResult]:
         readme_en,
         [
             "/report --review",
-            "8-checkpoint review system",
+            "13-checkpoint review system",
             "silent final review",
             "review-report-template.md",
         ],
@@ -66,7 +66,7 @@ def evaluate(root: Path) -> list[RuleResult]:
         readme_zh,
         [
             "/report --review",
-            "8 项检查点",
+            "13 项检查点",
             "静默终审",
             "review-report-template.md",
         ],
@@ -83,6 +83,24 @@ def evaluate(root: Path) -> list[RuleResult]:
         ],
     )
     results.append(RuleResult("checklist-contract", ok, detail))
+
+    # v4 guardrails: Doc drift protection (验收清单 #11, #12)
+    ok, detail = contains_all(
+        skill,
+        [
+            "no file given",  # SKILL.md must preserve context-backed generate prose
+            "IR from context",  # SKILL.md must preserve IR-from-context routing
+        ],
+    )
+    results.append(RuleResult("skill-context-backed-contract", ok, detail))
+
+    ok, detail = contains_all(
+        skill,
+        [
+            "report_class: mixed",  # SKILL.md must preserve optional report_class prose
+        ],
+    )
+    results.append(RuleResult("report_class-mixed-contract", ok, detail))
 
     return results
 
