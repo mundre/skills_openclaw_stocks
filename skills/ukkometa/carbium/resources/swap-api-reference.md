@@ -99,9 +99,7 @@ Submit a signed transaction via Jito bundle for MEV protection.
 
 **Response:** JSON with bundle ID and transaction hash.
 
----
-
-## GET /api/v2/fee/custom
+### GET /api/v1/fee/custom
 
 Generate a custom fee transfer transaction.
 

@@ -19,7 +19,7 @@
 | Key | Signup | Covers |
 |---|---|---|
 | RPC Key | [rpc.carbium.io/signup](https://rpc.carbium.io/signup) | RPC + Standard WebSocket + gRPC |
-| Swap API Key | [api.carbium.io/login](https://api.carbium.io/login) | All `/api/v2/*` endpoints |
+| Swap API Key | [api.carbium.io/login](https://api.carbium.io/login) | All `/api/v1/*` and `/api/v2/*` endpoints |
 
 Programmatic key provisioning is not yet available. Keys are created via dashboards (free to start).
 
