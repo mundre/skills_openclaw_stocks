@@ -1,6 +1,6 @@
 ---
 name: llm-eval-router
-version: 1.2.1
+version: 1.2.2
 description: Shadow-test local Ollama models against a cloud baseline with a multi-judge ensemble. Automatically promotes models when statistically proven equivalent — reducing API costs with evidence, not hope.
 homepage: https://github.com/reddinft/skill-llm-eval-router
 metadata:
@@ -15,10 +15,15 @@ metadata:
       "network": {
         "outbound": true,
         "reason": "Sends task prompts to Anthropic (ground truth baseline) and OpenAI/Gemini (judge sampling at 15%). Local model inference via Ollama stays on-device. No telemetry or data collection."
-      }
+      },
+      "security_notes": "All LLM API calls are made using the user's own API keys to providers they have accounts with. No telemetry or data collection of any kind. Task prompts are sent to Anthropic/OpenAI/Gemini only for ground-truth generation and judge scoring — all at 15% sampling. Local Ollama inference runs entirely on-device."
     }
   }
 ---
+**Last used:** 2026-03-24
+**Memory references:** 7
+**Status:** Active
+
 
 # llm-eval-router
 
