@@ -1,0 +1,505 @@
+{
+  "scan_time": "2026-04-24T16:51:42.819919+00:00",
+  "top_trending": [
+    {
+      "symbol": "INTC",
+      "mentions": 5,
+      "sources": [
+        "Yahoo Most Active",
+        "Yahoo Losers",
+        "Yahoo Gainers",
+        "Google News"
+      ],
+      "signals": [
+        "\ud83d\udcf0 Intel Stock Surges 23% After Earnings, O...",
+        "\ud83d\udcf0 S&P 500 rises as Intel soars, investors ..."
+      ]
+    },
+    {
+      "symbol": "BTC",
+      "mentions": 4,
+      "sources": [
+        "CoinGecko Trending",
+        "Google News Crypto"
+      ],
+      "signals": [
+        "\ud83d\udcc9 bearish (-0.7%)"
+      ]
+    },
+    {
+      "symbol": "AMD",
+      "mentions": 3,
+      "sources": [
+        "Yahoo Losers",
+        "Yahoo Gainers",
+        "Yahoo Most Active"
+      ],
+      "signals": []
+    },
+    {
+      "symbol": "NVDA",
+      "mentions": 3,
+      "sources": [
+        "Yahoo Losers",
+        "Yahoo Gainers",
+        "Yahoo Most Active"
+      ],
+      "signals": []
+    },
+    {
+      "symbol": "QCOM",
+      "mentions": 3,
+      "sources": [
+        "Yahoo Losers",
+        "Yahoo Gainers",
+        "Yahoo Most Active"
+      ],
+      "signals": []
+    },
+    {
+      "symbol": "MXL",
+      "mentions": 3,
+      "sources": [
+        "Yahoo Losers",
+        "Yahoo Gainers",
+        "Yahoo Most Active"
+      ],
+      "signals": []
+    },
+    {
+      "symbol": "APE",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\ude80 bullish (+72.2%)"
+      ]
+    },
+    {
+      "symbol": "KAT",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\ude80 bullish (+66.5%)"
+      ]
+    },
+    {
+      "symbol": "CHIP",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\udcc9 bearish (-8.5%)"
+      ]
+    },
+    {
+      "symbol": "PENGU",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\udcc9 bearish (-1.3%)"
+      ]
+    },
+    {
+      "symbol": "GRASS",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\udcc9 bearish (-4.5%)"
+      ]
+    },
+    {
+      "symbol": "AAVE",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\ude80 bullish (+0.4%)"
+      ]
+    },
+    {
+      "symbol": "RAVE",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\udcc9 bearish (-8.3%)"
+      ]
+    },
+    {
+      "symbol": "ASTEROID",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\udcc9 bearish (-11.9%)"
+      ]
+    },
+    {
+      "symbol": "ENJ",
+      "mentions": 2,
+      "sources": [
+        "CoinGecko Trending"
+      ],
+      "signals": [
+        "\ud83d\ude80 bullish (+3.1%)"
+      ]
+    },
+    {
+      "symbol": "MSFT",
+      "mentions": 2,
+      "sources": [
+        "Google News"
+      ],
+      "signals": [
+        "\ud83d\udcf0 Meta and Microsoft have joined the tech ...",
+        "\ud83d\udcf0 Israel-Lebanon ceasefire, Microsoft's fi..."
+      ]
+    },
+    {
+      "symbol": "CNBC",
+      "mentions": 2,
+      "sources": [
+        "Google News"
+      ],
+      "signals": [
+        "\ud83d\udcf0 S&P 500 rises as Intel soars, investors ...",
+        "\ud83d\udcf0 Israel-Lebanon ceasefire, Microsoft's fi..."
+      ]
+    },
+    {
+      "symbol": "CPM",
+      "mentions": 2,
+      "sources": [
+        "Google News Crypto"
+      ],
+      "signals": []
+    },
+    {
+      "symbol": "ETH",
+      "mentions": 2,
+      "sources": [
+        "Google News Crypto"
+      ],
+      "signals": []
+    },
+    {
+      "symbol": "LLY",
+      "mentions": 2,
+      "sources": [
+        "Yahoo Losers",
+        "Yahoo Most Active"
+      ],
+      "signals": []
+    }
+  ],
+  "crypto_highlights": [
+    {
+      "symbol": "APE",
+      "name": "ApeCoin",
+      "rank": 191,
+      "price_change_24h": 72.25,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "KAT",
+      "name": "Katana",
+      "rank": 461,
+      "price_change_24h": 66.53,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "CHIP",
+      "name": "USD.AI",
+      "rank": 197,
+      "price_change_24h": -8.5,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "PENGU",
+      "name": "Pudgy Penguins",
+      "rank": 100,
+      "price_change_24h": -1.31,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "GRASS",
+      "name": "Grass",
+      "rank": 167,
+      "price_change_24h": -4.54,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "AAVE",
+      "name": "Aave",
+      "rank": 55,
+      "price_change_24h": 0.35,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "RAVE",
+      "name": "RaveDAO",
+      "rank": 164,
+      "price_change_24h": -8.31,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "ASTEROID",
+      "name": "Asteroid Shiba",
+      "rank": 248,
+      "price_change_24h": -11.94,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "rank": 1,
+      "price_change_24h": -0.72,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "ENJ",
+      "name": "Enjin Coin",
+      "rank": 246,
+      "price_change_24h": 3.13,
+      "source": "coingecko_trending"
+    },
+    {
+      "symbol": "STABLE",
+      "name": "\u200b\u200bStable",
+      "price": 0.03387048,
+      "change_24h": 15.47,
+      "volume": 90465642,
+      "source": "coingecko_movers"
+    },
+    {
+      "symbol": "ZEC",
+      "name": "Zcash",
+      "price": 355.18,
+      "change_24h": 8.54,
+      "volume": 601219473,
+      "source": "coingecko_movers"
+    },
+    {
+      "symbol": "HASH",
+      "name": "Provenance Blockchain",
+      "price": 0.01078074,
+      "change_24h": 5.55,
+      "volume": 22635,
+      "source": "coingecko_movers"
+    },
+    {
+      "symbol": "ATOM",
+      "name": "Cosmos Hub",
+      "price": 1.98,
+      "change_24h": 4.88,
+      "volume": 49485014,
+      "source": "coingecko_movers"
+    },
+    {
+      "symbol": "ALGO",
+      "name": "Algorand",
+      "price": 0.10866,
+      "change_24h": 4.72,
+      "volume": 37337131,
+      "source": "coingecko_movers"
+    },
+    {
+      "symbol": "XDC",
+      "name": "XDC Network",
+      "price": 0.03091993,
+      "change_24h": 3.64,
+      "volume": 23351032,
+      "source": "coingecko_movers"
+    },
+    {
+      "symbol": "DEXE",
+      "name": "DeXe",
+      "price": 13.05,
+      "change_24h": 3.58,
+      "volume": 30917885,
+      "source": "coingecko_movers"
+    },
+    {
+      "symbol": "WLFI",
+      "name": "World Liberty Financial",
+      "price": 0.075047,
+      "change_24h": -3.56,
+      "volume": 60714086,
+      "source": "coingecko_movers"
+    }
+  ],
+  "stock_highlights": [
+    {
+      "symbol": "INTC",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "AMD",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "NVDA",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "GOOGL",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "SMCI",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "QXO",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "BLD",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "GOOG",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "QCOM",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "EXPE",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "MXL",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "TSM",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "HIMS",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "NVO",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "JPM",
+      "category": "gainers",
+      "source": "yahoo_gainers"
+    },
+    {
+      "symbol": "LLY",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "POET",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "OGN",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "AAOI",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "LBRDK",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "LBRDA",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "CHTR",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "STNE",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "CMCSA",
+      "category": "losers",
+      "source": "yahoo_losers"
+    },
+    {
+      "symbol": "NOK",
+      "category": "losers",
+      "source": "yahoo_losers"
+    }
+  ],
+  "social_buzz": [],
+  "breaking_news": [
+    {
+      "title": "Justice Department drops criminal probe of Fed chair Powell, likely clearing the way for Warsh - AP News",
+      "tickers": [
+        "AP"
+      ]
+    },
+    {
+      "title": "Meta and Microsoft have joined the tech layoff tsunami \u2013 but is AI really to blame? - The Conversation",
+      "tickers": [
+        "META",
+        "MSFT"
+      ]
+    },
+    {
+      "title": "Intel Stock Surges 23% After Earnings, On Track for Record Close. Can AI Drive It Higher? - Barron's",
+      "tickers": [
+        "INTC"
+      ]
+    },
+    {
+      "title": "Consumer sentiment rebounds slightly after hitting lowest level on record - CNN",
+      "tickers": [
+        "CNN"
+      ]
+    },
+    {
+      "title": "S&P 500 rises as Intel soars, investors bet on Iran talks restarting: Live updates - CNBC",
+      "tickers": [
+        "CNBC",
+        "INTC"
+      ]
+    }
+  ]
+}
