@@ -5,7 +5,7 @@
  * Zero dependencies.
  */
 
-import { execSync, execFileSync } from 'node:child_process';
+import { execSync, execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, renameSync } from 'node:fs';
 import { join, basename, dirname } from 'node:path';
 
@@ -25,7 +25,8 @@ export function detectCurrentVersion(repoPath) {
  * Bump a semver string by level.
  */
 export function bumpSemver(version, level) {
-  const [major, minor, patch] = version.split('.').map(Number);
+  const base = version.replace(/-.*$/, '');
+  const [major, minor, patch] = base.split('.').map(Number);
   switch (level) {
     case 'major': return `${major + 1}.0.0`;
     case 'minor': return `${major}.${minor + 1}.0`;
@@ -221,14 +222,50 @@ function gitCommitAndTag(repoPath, newVersion, notes) {
 // ── Publish ─────────────────────────────────────────────────────────
 
 /**
+ * Run `npm publish` and surface captured stderr in thrown errors.
+ *
+ * Why not execFileSync(..., stdio: 'inherit')?
+ *   execFileSync with stdio:'inherit' sends npm's stderr directly to the
+ *   parent tty. When the call throws, the error's .message is just
+ *   "Command failed: npm publish ..." ... it does NOT contain npm's stderr.
+ *   Callers trying to detect idempotent failures (e.g. "cannot publish over
+ *   the previously published versions") by substring-matching e.message
+ *   never matched and logged every re-publish as a real failure instead of
+ *   the intended silent swallow.
+ *
+ * Fix: pipe stderr (and stdout), echo captured bytes to the real tty for
+ * visibility, then include stderr in the thrown error's .message AND as
+ * .stderr so callers can match reliably. Stdout is inherited so live
+ * progress still prints.
+ */
+function runNpmPublish(args, cwd) {
+  // Stdout inherits for live progress; stderr piped so we can capture the
+  // "cannot publish over..." text that callers substring-match to detect
+  // idempotent re-publishes.
+  const res = spawnSync('npm', args, { cwd, encoding: 'utf8', stdio: ['inherit', 'inherit', 'pipe'] });
+  const stderr = res.stderr || '';
+  if (stderr) process.stderr.write(stderr);
+  if (res.status !== 0 || res.error) {
+    // Redact the auth token from the reproduced command for logs.
+    const safeArgs = args.map(a => a.replace(/_authToken=[^&\s]+/, '_authToken=***'));
+    const msg = `Command failed: npm ${safeArgs.join(' ')}${stderr ? '\n' + stderr.trim() : ''}`;
+    const err = new Error(msg);
+    err.stderr = stderr;
+    err.status = res.status;
+    throw err;
+  }
+}
+
+/**
  * Publish to npm via 1Password for auth.
+ * Default tag (latest).
  */
 export function publishNpm(repoPath) {
   const token = getNpmToken();
-  execFileSync('npm', [
+  runNpmPublish([
     'publish', '--access', 'public',
-    `--//registry.npmjs.org/:_authToken=${token}`
-  ], { cwd: repoPath, stdio: 'inherit' });
+    `--//registry.npmjs.org/:_authToken=${token}`,
+  ], repoPath);
 }
 
 /**
@@ -236,11 +273,11 @@ export function publishNpm(repoPath) {
  */
 export function publishNpmWithTag(repoPath, tag) {
   const token = getNpmToken();
-  execFileSync('npm', [
+  runNpmPublish([
     'publish', '--access', 'public',
     '--tag', tag,
-    `--//registry.npmjs.org/:_authToken=${token}`
-  ], { cwd: repoPath, stdio: 'inherit' });
+    `--//registry.npmjs.org/:_authToken=${token}`,
+  ], repoPath);
 }
 
 /**
@@ -1323,9 +1360,462 @@ export function checkStaleBranches(repoPath, level) {
 // ── Main ────────────────────────────────────────────────────────────
 
 /**
+ * Guard: wip-release must run from the main working tree on the main/master branch.
+ *
+ * Two independent conditions are enforced:
+ *
+ * 1. Linked worktree check: `git rev-parse --git-dir` of a linked worktree
+ *    resolves to a path under `.git/worktrees/...`. If we see that, the caller
+ *    is inside a feature worktree and must switch to the main working tree.
+ * 2. Current branch check: even from the main working tree, `git branch
+ *    --show-current` must be `main` or `master`. If a user checked out a feature
+ *    branch in the main tree, the release would commit to the wrong branch.
+ *
+ * Both conditions bypassable via `--skip-worktree-check` for break-glass scenarios.
+ *
+ * Returns `{ ok: true }` on pass, or `{ ok: false, reason, currentPath, mainPath, branch }`
+ * on fail so the caller can log and return the standard `{ failed: true }` shape.
+ *
+ * Related: `ai/product/bugs/guard/2026-04-05--cc-mini--guard-master-plan.md` Phase 3,
+ * `ai/product/bugs/release-pipeline/2026-04-05--cc-mini--release-pipeline-master-plan.md`
+ * Phase 1. Earlier today a wip-release alpha ran from a worktree branch because
+ * `releasePrerelease` had no worktree check at all and the other two checks did
+ * not cover the "main tree but non-main branch" case. This helper closes both gaps.
+ */
+function enforceMainBranchGuard(repoPath, skipWorktreeCheck) {
+  if (skipWorktreeCheck) {
+    return { ok: true, skipped: true };
+  }
+  try {
+    const gitDir = execFileSync('git', ['rev-parse', '--git-dir'], {
+      cwd: repoPath, encoding: 'utf8'
+    }).trim();
+    if (gitDir.includes('/worktrees/')) {
+      const worktreeList = execFileSync('git', ['worktree', 'list', '--porcelain'], {
+        cwd: repoPath, encoding: 'utf8'
+      });
+      const mainWorktree = worktreeList.split('\n')
+        .find(line => line.startsWith('worktree '));
+      const mainPath = mainWorktree ? mainWorktree.replace('worktree ', '') : '(unknown)';
+      return {
+        ok: false,
+        reason: 'linked-worktree',
+        currentPath: repoPath,
+        mainPath,
+      };
+    }
+    const branch = execFileSync('git', ['branch', '--show-current'], {
+      cwd: repoPath, encoding: 'utf8'
+    }).trim();
+    if (branch && branch !== 'main' && branch !== 'master') {
+      return {
+        ok: false,
+        reason: 'non-main-branch',
+        currentPath: repoPath,
+        branch,
+      };
+    }
+    return { ok: true, branch };
+  } catch {
+    // Git command failed: skip check gracefully so release can still run
+    // in CI or unusual environments where git plumbing is restricted.
+    return { ok: true, skipped: true };
+  }
+}
+
+/**
+ * Validate that sub-tool package.json versions were bumped when their files changed.
+ *
+ * Scans `tools/*\/package.json` in monorepo-style toolboxes. For each sub-tool
+ * whose files changed since the last git tag, verifies the package.json version
+ * differs from the version at that tag. If not, this used to be a WARNING that
+ * let the release proceed, which shipped at least one "committed but never
+ * deployed" bug earlier today (guard 1.9.71 had new code but the same version,
+ * so ldm install ignored the sub-tool on redeploy).
+ *
+ * Phase 8 of the release-pipeline master plan: WARNING becomes ERROR by default.
+ * Callers who genuinely want to proceed without bumping (e.g., a release that
+ * touches sub-tool files in a non-shipping way like CI config) pass
+ * `allowSubToolDrift: true`.
+ *
+ * Returns `{ ok: true }` on pass, `{ ok: false }` if any sub-tool drift was
+ * detected without the allow flag.
+ *
+ * Related: `ai/product/bugs/release-pipeline/2026-04-05--cc-mini--release-pipeline-master-plan.md`
+ * Phase 8.
+ */
+/**
+ * Phase 5: Auto-bump sub-tool patch versions when their files changed since last tag.
+ * Called before validateSubToolVersions so drift is fixed before validation runs.
+ * Returns the number of sub-tools bumped.
+ */
+function autoFixSubToolVersions(repoPath) {
+  const toolsDir = join(repoPath, 'tools');
+  if (!existsSync(toolsDir)) return 0;
+  let lastTag = null;
+  try {
+    lastTag = execFileSync('git', ['describe', '--tags', '--abbrev=0'], {
+      cwd: repoPath, encoding: 'utf8'
+    }).trim();
+  } catch {
+    return 0;
+  }
+  if (!lastTag) return 0;
+
+  let bumped = 0;
+  let entries;
+  try {
+    entries = readdirSync(toolsDir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const subDir = `tools/${entry.name}`;
+    const subPkgPath = join(toolsDir, entry.name, 'package.json');
+    if (!existsSync(subPkgPath)) continue;
+    try {
+      const diff = execFileSync('git', ['diff', '--name-only', lastTag, 'HEAD', '--', subDir], {
+        cwd: repoPath, encoding: 'utf8'
+      }).trim();
+      if (!diff) continue;
+      const subPkg = JSON.parse(readFileSync(subPkgPath, 'utf8'));
+      const currentSubVersion = subPkg.version;
+      let oldSubVersion = null;
+      try {
+        oldSubVersion = JSON.parse(
+          execFileSync('git', ['show', `${lastTag}:${subDir}/package.json`], {
+            cwd: repoPath, encoding: 'utf8'
+          })
+        ).version;
+      } catch {}
+      if (currentSubVersion === oldSubVersion) {
+        const parts = currentSubVersion.split('.');
+        parts[2] = String(Number(parts[2]) + 1);
+        const newSubVersion = parts.join('.');
+        subPkg.version = newSubVersion;
+        writeFileSync(subPkgPath, JSON.stringify(subPkg, null, 2) + '\n');
+        console.log(`  ✓ Auto-bumped ${entry.name}: ${currentSubVersion} -> ${newSubVersion}`);
+        bumped++;
+      }
+    } catch (err) {
+      console.log(`  ! Auto-bump failed for ${entry.name}: ${err.message}`);
+    }
+  }
+  return bumped;
+}
+
+function validateSubToolVersions(repoPath, allowSubToolDrift) {
+  const toolsDir = join(repoPath, 'tools');
+  if (!existsSync(toolsDir)) {
+    return { ok: true };
+  }
+  let lastTag = null;
+  try {
+    lastTag = execFileSync('git', ['describe', '--tags', '--abbrev=0'], {
+      cwd: repoPath, encoding: 'utf8'
+    }).trim();
+  } catch {
+    return { ok: true }; // No prior tag, nothing to compare against
+  }
+  if (!lastTag) return { ok: true };
+
+  let driftDetected = false;
+  let entries;
+  try {
+    entries = readdirSync(toolsDir, { withFileTypes: true });
+  } catch {
+    return { ok: true };
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const subDir = join('tools', entry.name);
+    const subPkgPath = join(toolsDir, entry.name, 'package.json');
+    if (!existsSync(subPkgPath)) continue;
+    try {
+      const diff = execFileSync('git', ['diff', '--name-only', lastTag, 'HEAD', '--', subDir], {
+        cwd: repoPath, encoding: 'utf8'
+      }).trim();
+      if (!diff) continue;
+      const currentSubVersion = JSON.parse(readFileSync(subPkgPath, 'utf8')).version;
+      let oldSubVersion = null;
+      try {
+        oldSubVersion = JSON.parse(
+          execFileSync('git', ['show', `${lastTag}:${subDir}/package.json`], {
+            cwd: repoPath, encoding: 'utf8'
+          })
+        ).version;
+      } catch {}
+      if (currentSubVersion === oldSubVersion) {
+        if (allowSubToolDrift) {
+          console.log(`  ! WARNING (allowed by --allow-sub-tool-drift): ${entry.name} has changed files since ${lastTag} but version is still ${currentSubVersion}`);
+          console.log(`    Changed: ${diff.split('\n').join(', ')}`);
+        } else {
+          console.log(`  \u2717 ${entry.name} has changed files since ${lastTag} but tools/${entry.name}/package.json version is still ${currentSubVersion}.`);
+          console.log(`    Changed: ${diff.split('\n').join(', ')}`);
+          console.log(`    Bump tools/${entry.name}/package.json before releasing, or pass --allow-sub-tool-drift to override.`);
+          console.log('');
+          driftDetected = true;
+        }
+      }
+    } catch {}
+  }
+  return { ok: !driftDetected };
+}
+
+/**
+ * Pre-tag collision check. Returns `{ ok: true }` if no collision, otherwise
+ * `{ ok: false, tag }` with a message logged. Phase 2 of the release-pipeline
+ * master plan: earlier today `wip-release alpha` failed mid-pipeline because
+ * `v1.9.71-alpha.4` and `v1.9.71-alpha.5` existed as local-only tags from
+ * prior failed releases. The release tool has no recovery path; this helper
+ * catches the collision before the bump+commit happens, so the user gets a
+ * clear error and concrete recovery command instead of a mid-pipeline failure.
+ */
+function checkTagCollision(repoPath, newVersion) {
+  const tag = `v${newVersion}`;
+  try {
+    const localTags = execFileSync('git', ['tag', '-l', tag], {
+      cwd: repoPath, encoding: 'utf8'
+    }).trim();
+    if (localTags === tag) {
+      // Tag exists locally. Is it also on remote?
+      try {
+        const remoteTags = execFileSync('git', ['ls-remote', '--tags', 'origin', tag], {
+          cwd: repoPath, encoding: 'utf8'
+        }).trim();
+        if (remoteTags.includes(tag)) {
+          // Tag is on remote: legitimate prior release. Refuse.
+          console.log(`  \u2717 Tag ${tag} already exists on origin (prior release).`);
+          console.log(`    Bump the version manually in package.json or run with a different level.`);
+          console.log('');
+          return { ok: false, tag, reason: 'on-remote' };
+        }
+      } catch {}
+      // Tag exists locally but NOT on remote: stale leftover from a failed release.
+      // Refuse with a concrete recovery command so the user knows this is safe to clean up.
+      console.log(`  \u2717 Tag ${tag} exists locally but not on origin (stale leftover from a prior failed release).`);
+      console.log(`    Safe to delete because it was never pushed. Recover with:`);
+      console.log(`      git tag -d ${tag} && wip-release <track>`);
+      console.log('');
+      return { ok: false, tag, reason: 'stale-local' };
+    }
+  } catch {}
+  return { ok: true };
+}
+
+/**
+ * Push the release commit + tag, handling protected-main rejection via
+ * automatic PR flow.
+ *
+ * If `git push origin main` succeeds directly, we also push tags and return.
+ * If it fails with a "protected branch" error (GH006), create a temporary
+ * release branch from the current HEAD, push the branch, open a PR targeting
+ * main, auto-merge it via `gh pr merge --merge --delete-branch`, then push
+ * the tag separately (tags bypass branch protection).
+ *
+ * Phase 4 of the release-pipeline master plan. Earlier today this entire
+ * flow was done manually every time, adding 2-3 minutes per release.
+ *
+ * Returns `{ ok: true, via }` on success where `via` is `"direct"` or `"pr"`.
+ * Returns `{ ok: false, reason, detail }` on failure; caller logs and
+ * continues (matches prior non-fatal push behavior).
+ */
+function pushReleaseWithAutoPr(repoPath, newVersion, level) {
+  const tag = `v${newVersion}`;
+  // 1. Try direct push first. Most repos allow it.
+  try {
+    execFileSync('git', ['push'], { cwd: repoPath, stdio: 'pipe' });
+    execFileSync('git', ['push', 'origin', tag], { cwd: repoPath, stdio: 'pipe' });
+    return { ok: true, via: 'direct' };
+  } catch (err) {
+    const msg = String(err?.stderr ?? err?.message ?? err);
+    const isProtected = /protected branch|GH006|Changes must be made through a pull request/i.test(msg);
+    if (!isProtected) {
+      return { ok: false, reason: 'push-failed', detail: msg };
+    }
+  }
+
+  // 2. Protected main. Open auto-PR flow.
+  const releaseBranch = `cc-mini/release-${tag}`;
+  console.log(`  - Direct push to main refused (protected). Opening release PR...`);
+  try {
+    // Create branch at current HEAD
+    execFileSync('git', ['branch', releaseBranch], { cwd: repoPath, stdio: 'pipe' });
+    execFileSync('git', ['push', '-u', 'origin', releaseBranch], {
+      cwd: repoPath, stdio: 'pipe'
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      reason: 'branch-push-failed',
+      detail: String(err?.stderr ?? err?.message ?? err),
+    };
+  }
+
+  // 3. Create and merge PR via gh CLI
+  try {
+    const prTitle = `release: ${tag}`;
+    const prBody = `Release commit for ${tag} (${level}). Auto-generated by wip-release.`;
+    execFileSync('gh', [
+      'pr', 'create',
+      '--base', 'main',
+      '--head', releaseBranch,
+      '--title', prTitle,
+      '--body', prBody,
+    ], { cwd: repoPath, stdio: 'pipe' });
+    execFileSync('gh', [
+      'pr', 'merge', releaseBranch,
+      '--merge', '--delete-branch',
+    ], { cwd: repoPath, stdio: 'pipe' });
+    console.log(`  ✓ Release PR merged`);
+  } catch (err) {
+    return {
+      ok: false,
+      reason: 'gh-pr-failed',
+      detail: String(err?.stderr ?? err?.message ?? err),
+    };
+  }
+
+  // 4. Push the tag separately. Tags bypass branch protection on most
+  //    GitHub setups, but if this fails the user can push the tag manually.
+  try {
+    execFileSync('git', ['push', 'origin', tag], { cwd: repoPath, stdio: 'pipe' });
+    console.log(`  ✓ Pushed tag ${tag}`);
+  } catch (err) {
+    return {
+      ok: false,
+      reason: 'tag-push-failed',
+      detail: String(err?.stderr ?? err?.message ?? err),
+      partialSuccess: 'pr-merged',
+    };
+  }
+
+  // 5. Pull latest main so local HEAD reflects the merge commit. This
+  //    keeps subsequent git operations (like deploy-public) happy.
+  try {
+    execFileSync('git', ['fetch', 'origin', 'main'], { cwd: repoPath, stdio: 'pipe' });
+    execFileSync('git', ['merge', '--ff-only', 'origin/main'], {
+      cwd: repoPath, stdio: 'pipe'
+    });
+  } catch {
+    // Non-fatal: main may have diverged (unlikely here). Deploy-public
+    // will handle its own state.
+  }
+
+  return { ok: true, via: 'pr' };
+}
+
+function logPushFailure(result, tag) {
+  console.log(`  ! Push failed: ${result.reason}`);
+  if (result.detail) {
+    console.log(`    ${result.detail.split('\n')[0]}`);
+  }
+  console.log(`  Manual recovery:`);
+  if (result.reason === 'push-failed' || result.reason === 'branch-push-failed') {
+    console.log(`    git push && git push origin ${tag}`);
+  } else if (result.reason === 'gh-pr-failed') {
+    console.log(`    Open a PR for cc-mini/release-${tag} targeting main, merge, then:`);
+    console.log(`    git push origin ${tag}`);
+  } else if (result.reason === 'tag-push-failed') {
+    console.log(`    PR already merged. Just push the tag:`);
+    console.log(`    git push origin ${tag}`);
+  }
+}
+
+/**
+ * Resolve the public GitHub repo name for a private-to-public mirror setup.
+ *
+ * Strategy:
+ *   1. Read `origin` remote URL (e.g. git@github.com:owner/repo-private.git)
+ *   2. Strip `-private` suffix to get the public repo name
+ *   3. Return `owner/repo` format suitable for gh CLI
+ *
+ * Returns null if the remote URL cannot be parsed or the repo name does not
+ * end in `-private` (in which case the caller should skip deploy-public as a
+ * no-op rather than error).
+ */
+function resolvePublicRepoName(repoPath) {
+  try {
+    const remoteUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
+      cwd: repoPath, encoding: 'utf8'
+    }).trim();
+    // Match owner/repo from either SSH (git@github.com:owner/repo.git) or HTTPS
+    const match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(\.git)?$/);
+    if (!match) return null;
+    const [, owner, repoName] = match;
+    if (!repoName.endsWith('-private')) {
+      return null;
+    }
+    return `${owner}/${repoName.replace(/-private$/, '')}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Run deploy-public.sh as the final step of the release pipeline.
+ *
+ * Previously deploy-public was a separate manual step. Every release that
+ * forgot it left the public mirror stale, so `ldm install` pulled old code
+ * from the public repo. Now wip-release invokes it automatically for stable
+ * and prerelease tracks (hotfix still skips, per prior convention).
+ *
+ * Callable with `--no-deploy-public` to opt out.
+ *
+ * Skips silently if:
+ *   - The repo has no tools/deploy-public/deploy-public.sh (not a toolbox-
+ *     style repo, or deploy-public is provided by a parent install)
+ *   - The origin remote is not a -private repo (no public mirror to sync)
+ *
+ * Related: `ai/product/bugs/release-pipeline/2026-04-05--cc-mini--release-pipeline-master-plan.md` Phase 6.
+ */
+function runDeployPublic(repoPath, { skip } = {}) {
+  if (skip) {
+    return { ok: true, skipped: true, reason: 'flag' };
+  }
+  const scriptPath = join(repoPath, 'tools', 'deploy-public', 'deploy-public.sh');
+  if (!existsSync(scriptPath)) {
+    return { ok: true, skipped: true, reason: 'no-script' };
+  }
+  const publicRepo = resolvePublicRepoName(repoPath);
+  if (!publicRepo) {
+    return { ok: true, skipped: true, reason: 'not-private-repo' };
+  }
+  try {
+    execFileSync('bash', [scriptPath, repoPath, publicRepo], {
+      cwd: repoPath, stdio: 'inherit',
+    });
+    return { ok: true, publicRepo };
+  } catch (err) {
+    return {
+      ok: false,
+      detail: String(err?.stderr ?? err?.message ?? err),
+      publicRepo,
+    };
+  }
+}
+
+function logMainBranchGuardFailure(result) {
+  if (result.reason === 'linked-worktree') {
+    console.log(`  \u2717 wip-release must run from the main working tree, not a worktree.`);
+    console.log(`    Current: ${result.currentPath}`);
+    console.log(`    Main working tree: ${result.mainPath}`);
+    console.log(`    Switch to the main working tree and run again:`);
+    console.log(`      cd ${result.mainPath} && wip-release <track>`);
+  } else if (result.reason === 'non-main-branch') {
+    console.log(`  \u2717 wip-release must run on the main branch, not a feature branch.`);
+    console.log(`    Current branch: ${result.branch}`);
+    console.log(`    Switch to main and pull latest:`);
+    console.log(`      git checkout main && git pull && wip-release <track>`);
+  }
+  console.log('');
+}
+
+/**
  * Run the full release pipeline.
  */
-export async function release({ repoPath, level, notes, notesSource, dryRun, noPublish, skipProductCheck, skipStaleCheck, skipWorktreeCheck, skipTechDocsCheck, skipCoverageCheck }) {
+export async function release({ repoPath, level, notes, notesSource, dryRun, noPublish, skipProductCheck, skipStaleCheck, skipWorktreeCheck, skipTechDocsCheck, skipCoverageCheck, allowSubToolDrift, noDeployPublic }) {
   repoPath = repoPath || process.cwd();
   const currentVersion = detectCurrentVersion(repoPath);
   const newVersion = bumpSemver(currentVersion, level);
@@ -1335,39 +1825,29 @@ export async function release({ repoPath, level, notes, notesSource, dryRun, noP
   console.log(`  ${repoName}: ${currentVersion} -> ${newVersion} (${level})`);
   console.log(`  ${'─'.repeat(40)}`);
 
-  // -1. Worktree guard: block releases from linked worktrees
-  if (!skipWorktreeCheck) {
-    try {
-      const gitDir = execFileSync('git', ['rev-parse', '--git-dir'], {
-        cwd: repoPath, encoding: 'utf8'
-      }).trim();
-
-      // Linked worktrees have "/worktrees/" in their git-dir path
-      if (gitDir.includes('/worktrees/')) {
-        // Get the main working tree path from `git worktree list`
-        const worktreeList = execFileSync('git', ['worktree', 'list', '--porcelain'], {
-          cwd: repoPath, encoding: 'utf8'
-        });
-        const mainWorktree = worktreeList.split('\n')
-          .find(line => line.startsWith('worktree '));
-        const mainPath = mainWorktree ? mainWorktree.replace('worktree ', '') : '(unknown)';
-
-        console.log(`  \u2717 wip-release must run from the main working tree, not a worktree.`);
-        console.log(`    Current: ${repoPath}`);
-        console.log(`    Main working tree: ${mainPath}`);
-        console.log(`    Switch to the main working tree and run again.`);
-        console.log('');
-        return { currentVersion, newVersion, dryRun: false, failed: true };
-      }
-      console.log('  \u2713 Running from main working tree');
-    } catch {
-      // Git command failed... skip check gracefully
+  // -1. Main-branch guard: block releases from linked worktrees or non-main branches
+  {
+    const guardResult = enforceMainBranchGuard(repoPath, skipWorktreeCheck);
+    if (!guardResult.ok) {
+      logMainBranchGuardFailure(guardResult);
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+    if (!guardResult.skipped) {
+      console.log(`  \u2713 Running from main working tree on ${guardResult.branch ?? 'main'}`);
     }
   }
 
-  // 0. License compliance gate
+  // 0. License compliance gate (MANDATORY: blocks release if .license-guard.json missing)
   const configPath = join(repoPath, '.license-guard.json');
-  if (existsSync(configPath)) {
+  if (!existsSync(configPath)) {
+    console.log(`  ✗ .license-guard.json not found.`);
+    console.log(`    Every repo must have .license-guard.json to release.`);
+    console.log(`    Run: wip-repo-init   (scaffolds ai/, .license-guard.json, CLA.md)`);
+    console.log(`    Or:  wip-license-guard init`);
+    console.log('');
+    return { currentVersion, newVersion, dryRun: false, failed: true };
+  }
+  {
     const config = JSON.parse(readFileSync(configPath, 'utf8'));
     const licenseIssues = [];
 
@@ -1393,6 +1873,24 @@ export async function release({ repoPath, level, notes, notesSource, dryRun, noP
       const readme = readFileSync(readmePath, 'utf8');
       if (!readme.includes('## License')) licenseIssues.push('README.md missing ## License section');
       if (config.license === 'MIT+AGPL' && !readme.includes('AGPL')) licenseIssues.push('README.md License section missing AGPL reference');
+    }
+
+    // .npmignore must exclude ai/ if repo has ai/ directory
+    const aiDir = join(repoPath, 'ai');
+    if (existsSync(aiDir)) {
+      const npmignorePath = join(repoPath, '.npmignore');
+      const pkgJson = JSON.parse(readFileSync(join(repoPath, 'package.json'), 'utf8'));
+      const hasFilesWhitelist = Array.isArray(pkgJson.files);
+      if (!hasFilesWhitelist) {
+        if (!existsSync(npmignorePath)) {
+          licenseIssues.push('.npmignore is missing (ai/ directory exists and could leak to npm)');
+        } else {
+          const npmignore = readFileSync(npmignorePath, 'utf8');
+          if (!npmignore.includes('ai/')) {
+            licenseIssues.push('.npmignore does not exclude ai/ (plans and bugs could leak to npm)');
+          }
+        }
+      }
     }
 
     if (licenseIssues.length > 0) {
@@ -1670,31 +2168,31 @@ export async function release({ repoPath, level, notes, notesSource, dryRun, noP
     return { currentVersion, newVersion, dryRun: true };
   }
 
+  // 1.25. Pre-bump tag collision check (Phase 2).
+  {
+    const collision = checkTagCollision(repoPath, newVersion);
+    if (!collision.ok) {
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+  }
+
   // 1. Bump package.json
   writePackageVersion(repoPath, newVersion);
   console.log(`  ✓ package.json -> ${newVersion}`);
 
-  // 1.5. Bump sub-tool versions in toolbox repos (tools/*/)
-  const toolsDir = join(repoPath, 'tools');
-  if (existsSync(toolsDir)) {
-    let subBumped = 0;
-    try {
-      const entries = readdirSync(toolsDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        const subPkgPath = join(toolsDir, entry.name, 'package.json');
-        if (existsSync(subPkgPath)) {
-          try {
-            const subPkg = JSON.parse(readFileSync(subPkgPath, 'utf8'));
-            subPkg.version = newVersion;
-            writeFileSync(subPkgPath, JSON.stringify(subPkg, null, 2) + '\n');
-            subBumped++;
-          } catch {}
-        }
-      }
-    } catch {}
-    if (subBumped > 0) {
-      console.log(`  ✓ ${subBumped} sub-tool(s) -> ${newVersion}`);
+  // 1.25. Auto-bump sub-tool versions (Phase 5: auto-fix before validation)
+  {
+    const autoBumped = autoFixSubToolVersions(repoPath);
+    if (autoBumped > 0) {
+      console.log(`  ✓ Auto-bumped ${autoBumped} sub-tool(s)`);
+    }
+  }
+
+  // 1.5. Validate sub-tool version bumps (Phase 8: error by default)
+  {
+    const subToolResult = validateSubToolVersions(repoPath, allowSubToolDrift);
+    if (!subToolResult.ok) {
+      return { currentVersion, newVersion, dryRun: false, failed: true };
     }
   }
 
@@ -1719,33 +2217,76 @@ export async function release({ repoPath, level, notes, notesSource, dryRun, noP
     console.log(`  ✓ Product docs synced to v${newVersion} (${docsUpdated} file(s))`);
   }
 
-  // 4. Git commit + tag
-  gitCommitAndTag(repoPath, newVersion, notes);
-  console.log(`  ✓ Committed and tagged v${newVersion}`);
-
-  // 5. Push commit + tag
-  try {
-    execSync('git push && git push --tags', { cwd: repoPath, stdio: 'pipe' });
-    console.log(`  ✓ Pushed to remote`);
-  } catch {
-    console.log(`  ! Push failed (maybe branch protection). Push manually.`);
-  }
-
   // Distribution results collector (#104)
   const distResults = [];
 
+  // 4. npm publish BEFORE commit (Phase 3: true publish-before-commit)
+  // Files are bumped and staged but NOT committed. If npm fails, we just
+  // revert the file changes. No commit, no tag, no remote state to clean up.
   if (!noPublish) {
-    // 6. npm publish
     try {
       publishNpm(repoPath);
       const pkg = JSON.parse(readFileSync(join(repoPath, 'package.json'), 'utf8'));
       distResults.push({ target: 'npm', status: 'ok', detail: `${pkg.name}@${newVersion}` });
       console.log(`  ✓ Published to npm`);
     } catch (e) {
-      distResults.push({ target: 'npm', status: 'failed', detail: e.message });
       console.log(`  ✗ npm publish failed: ${e.message}`);
+      console.log(`  Reverting file changes (no commit was made)...`);
+      try {
+        execSync('git checkout -- .', { cwd: repoPath, stdio: 'pipe' });
+        // Clean up any new files (like trashed release notes)
+        execSync('git clean -fd _trash/', { cwd: repoPath, stdio: 'pipe' });
+        console.log(`  ✓ Reverted. Working tree is clean. Fix the issue and try again.`);
+      } catch (revertErr) {
+        console.log(`  ✗ Revert failed: ${revertErr.message}`);
+        console.log(`  Manual cleanup: git checkout -- .`);
+      }
+      console.log('');
+      return { currentVersion, newVersion, dryRun: false, failed: true };
     }
 
+    // Phase 5: Auto-publish changed sub-tools to npm
+    const toolsDir = join(repoPath, 'tools');
+    if (existsSync(toolsDir)) {
+      for (const tool of readdirSync(toolsDir)) {
+        const toolPath = join(toolsDir, tool);
+        const toolPkg = join(toolPath, 'package.json');
+        if (!existsSync(toolPkg)) continue;
+        const pkg = JSON.parse(readFileSync(toolPkg, 'utf8'));
+        if (!pkg.name || pkg.private) continue;
+        try {
+          publishNpm(toolPath);
+          distResults.push({ target: 'npm', status: 'ok', detail: `${pkg.name}@${pkg.version}` });
+          console.log(`  ✓ Published sub-tool: ${pkg.name}@${pkg.version}`);
+        } catch (e) {
+          // Sub-tool publish failure is non-fatal but loud (Phase 7)
+          const msg = e.message || '';
+          if (msg.includes('previously published') || msg.includes('cannot publish over')) {
+            // Already published at this version. Not an error.
+          } else {
+            distResults.push({ target: 'npm', status: 'failed', detail: `${pkg.name}: ${msg}` });
+            console.log(`  ✗ Sub-tool ${pkg.name} publish failed: ${msg}`);
+          }
+        }
+      }
+    }
+  }
+
+  // 5. Git commit + tag (AFTER npm publish succeeds)
+  gitCommitAndTag(repoPath, newVersion, notes);
+  console.log(`  ✓ Committed and tagged v${newVersion}`);
+
+  // 5.5. Push commit + tag
+  {
+    const pushResult = pushReleaseWithAutoPr(repoPath, newVersion, level);
+    if (pushResult.ok) {
+      console.log(`  ✓ Pushed to remote (${pushResult.via})`);
+    } else {
+      logPushFailure(pushResult, `v${newVersion}`);
+    }
+  }
+
+  if (!noPublish) {
     // 7. GitHub Packages ... SKIPPED from private repos.
     // deploy-public.sh publishes to GitHub Packages from the public repo clone.
     // Publishing from private ties the package to the private repo, making it
@@ -1992,6 +2533,29 @@ export async function release({ repoPath, level, notes, notesSource, dryRun, noP
     }) + '\n');
   } catch {}
 
+  // 12. deploy-public: sync private -> public mirror (Phase 6)
+  // Runs at the end of every stable release unless --no-deploy-public is set
+  // or the repo has no deploy-public.sh script. Skips silently for non-
+  // -private repos (no public mirror to sync).
+  {
+    const dp = runDeployPublic(repoPath, { skip: noDeployPublic });
+    if (dp.skipped) {
+      if (dp.reason === 'flag') {
+        console.log(`  - deploy-public: skipped (--no-deploy-public)`);
+      } else if (dp.reason === 'no-script') {
+        console.log(`  - deploy-public: skipped (no tools/deploy-public/deploy-public.sh)`);
+      } else if (dp.reason === 'not-private-repo') {
+        console.log(`  - deploy-public: skipped (origin is not a -private repo)`);
+      }
+    } else if (dp.ok) {
+      console.log(`  \u2713 deploy-public: synced to ${dp.publicRepo}`);
+    } else {
+      console.log(`  \u2717 deploy-public failed for ${dp.publicRepo}`);
+      if (dp.detail) console.log(`    ${dp.detail.split('\n')[0]}`);
+      console.log(`    Manual recovery: bash tools/deploy-public/deploy-public.sh ${repoPath} ${dp.publicRepo}`);
+    }
+  }
+
   console.log('');
   console.log(`  Done. ${repoName} v${newVersion} released.`);
   console.log('');
@@ -2010,7 +2574,7 @@ export async function release({ repoPath, level, notes, notesSource, dryRun, noP
  * No deploy-public. No code sync. No CHANGELOG gate. No product docs gate.
  * Lightweight: bump version, npm publish with tag, optional GitHub prerelease.
  */
-export async function releasePrerelease({ repoPath, track, notes, dryRun, noPublish, publishReleaseNotes }) {
+export async function releasePrerelease({ repoPath, track, notes, dryRun, noPublish, publishReleaseNotes, skipWorktreeCheck, allowSubToolDrift, noDeployPublic }) {
   repoPath = repoPath || process.cwd();
   const currentVersion = detectCurrentVersion(repoPath);
   const newVersion = bumpPrerelease(currentVersion, track);
@@ -2019,6 +2583,80 @@ export async function releasePrerelease({ repoPath, track, notes, dryRun, noPubl
   console.log('');
   console.log(`  ${repoName}: ${currentVersion} -> ${newVersion} (${track})`);
   console.log(`  ${'─'.repeat(40)}`);
+
+  // Main-branch guard: worktree + non-main branch check via shared helper.
+  // Runs before the dry-run short-circuit so preview output from a feature
+  // branch still refuses instead of printing a misleading "would bump" plan.
+  {
+    const guardResult = enforceMainBranchGuard(repoPath, skipWorktreeCheck);
+    if (!guardResult.ok) {
+      logMainBranchGuardFailure(guardResult);
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+    if (!guardResult.skipped) {
+      console.log(`  \u2713 Running from main working tree on ${guardResult.branch ?? 'main'}`);
+    }
+  }
+
+  // License compliance gate (MANDATORY: blocks release if .license-guard.json missing)
+  {
+    const configPath = join(repoPath, '.license-guard.json');
+    if (!existsSync(configPath)) {
+      console.log(`  \u2717 .license-guard.json not found.`);
+      console.log(`    Every repo must have .license-guard.json to release.`);
+      console.log(`    Run: wip-repo-init   (scaffolds ai/, .license-guard.json, CLA.md)`);
+      console.log(`    Or:  wip-license-guard init`);
+      console.log('');
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    const licenseIssues = [];
+    const licensePath = join(repoPath, 'LICENSE');
+    if (!existsSync(licensePath)) {
+      licenseIssues.push('LICENSE file is missing');
+    } else {
+      const licenseText = readFileSync(licensePath, 'utf8');
+      if (!licenseText.includes(config.copyright)) {
+        licenseIssues.push(`LICENSE copyright does not match "${config.copyright}"`);
+      }
+      if (config.license === 'MIT+AGPL' && !licenseText.includes('AGPL') && !licenseText.includes('GNU Affero')) {
+        licenseIssues.push('LICENSE is MIT-only but config requires MIT+AGPL');
+      }
+    }
+    if (!existsSync(join(repoPath, 'CLA.md'))) {
+      licenseIssues.push('CLA.md is missing');
+    }
+    const readmePath = join(repoPath, 'README.md');
+    if (existsSync(readmePath)) {
+      const readme = readFileSync(readmePath, 'utf8');
+      if (!readme.includes('## License')) licenseIssues.push('README.md missing ## License section');
+      if (config.license === 'MIT+AGPL' && !readme.includes('AGPL')) licenseIssues.push('README.md License section missing AGPL reference');
+    }
+    const aiDir = join(repoPath, 'ai');
+    if (existsSync(aiDir)) {
+      const npmignorePath = join(repoPath, '.npmignore');
+      const pkgJson = JSON.parse(readFileSync(join(repoPath, 'package.json'), 'utf8'));
+      const hasFilesWhitelist = Array.isArray(pkgJson.files);
+      if (!hasFilesWhitelist) {
+        if (!existsSync(npmignorePath)) {
+          licenseIssues.push('.npmignore is missing (ai/ directory exists and could leak to npm)');
+        } else {
+          const npmignore = readFileSync(npmignorePath, 'utf8');
+          if (!npmignore.includes('ai/')) {
+            licenseIssues.push('.npmignore does not exclude ai/ (plans and bugs could leak to npm)');
+          }
+        }
+      }
+    }
+    if (licenseIssues.length > 0) {
+      console.log(`  \u2717 License compliance failed:`);
+      for (const issue of licenseIssues) console.log(`    - ${issue}`);
+      console.log(`\n  Run \`wip-license-guard check --fix\` to auto-repair, then try again.`);
+      console.log('');
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+    console.log(`  \u2713 License compliance passed`);
+  }
 
   if (dryRun) {
     console.log(`  [dry run] Would bump package.json to ${newVersion}`);
@@ -2036,9 +2674,33 @@ export async function releasePrerelease({ repoPath, track, notes, dryRun, noPubl
     return { currentVersion, newVersion, dryRun: true };
   }
 
+  // 1.25. Pre-bump tag collision check (Phase 2).
+  {
+    const collision = checkTagCollision(repoPath, newVersion);
+    if (!collision.ok) {
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+  }
+
   // 1. Bump package.json
   writePackageVersion(repoPath, newVersion);
   console.log(`  \u2713 package.json -> ${newVersion}`);
+
+  // 1.25. Auto-bump sub-tool versions (Phase 5)
+  {
+    const autoBumped = autoFixSubToolVersions(repoPath);
+    if (autoBumped > 0) {
+      console.log(`  \u2713 Auto-bumped ${autoBumped} sub-tool(s)`);
+    }
+  }
+
+  // 1.5. Validate sub-tool version bumps (Phase 8: error by default)
+  {
+    const subToolResult = validateSubToolVersions(repoPath, allowSubToolDrift);
+    if (!subToolResult.ok) {
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+  }
 
   // 2. Update CHANGELOG.md (lightweight entry)
   updateChangelog(repoPath, newVersion, notes || `${track} prerelease`);
@@ -2055,12 +2717,14 @@ export async function releasePrerelease({ repoPath, track, notes, dryRun, noPubl
   execFileSync('git', ['tag', `v${newVersion}`], { cwd: repoPath, stdio: 'pipe' });
   console.log(`  \u2713 Committed and tagged v${newVersion}`);
 
-  // 4. Push commit + tag
-  try {
-    execSync('git push && git push --tags', { cwd: repoPath, stdio: 'pipe' });
-    console.log(`  \u2713 Pushed to remote`);
-  } catch {
-    console.log(`  ! Push failed. Push manually.`);
+  // 4. Push commit + tag (with auto-PR fallback on protected main, Phase 4)
+  {
+    const pushResult = pushReleaseWithAutoPr(repoPath, newVersion, track);
+    if (pushResult.ok) {
+      console.log(`  \u2713 Pushed to remote (${pushResult.via})`);
+    } else {
+      logPushFailure(pushResult, `v${newVersion}`);
+    }
   }
 
   const distResults = [];
@@ -2075,6 +2739,31 @@ export async function releasePrerelease({ repoPath, track, notes, dryRun, noPubl
     } catch (e) {
       distResults.push({ target: 'npm', status: 'failed', detail: e.message });
       console.log(`  \u2717 npm publish failed: ${e.message}`);
+    }
+
+    // 5.5. Auto-publish changed sub-tools to npm (Phase 5)
+    const toolsDir = join(repoPath, 'tools');
+    if (existsSync(toolsDir)) {
+      for (const tool of readdirSync(toolsDir)) {
+        const toolPath = join(toolsDir, tool);
+        const toolPkg = join(toolPath, 'package.json');
+        if (!existsSync(toolPkg)) continue;
+        const pkg = JSON.parse(readFileSync(toolPkg, 'utf8'));
+        if (!pkg.name || pkg.private) continue;
+        try {
+          publishNpm(toolPath);
+          distResults.push({ target: 'npm', status: 'ok', detail: `${pkg.name}@${pkg.version}` });
+          console.log(`  \u2713 Published sub-tool: ${pkg.name}@${pkg.version}`);
+        } catch (e) {
+          const msg = e.message || '';
+          if (msg.includes('previously published') || msg.includes('cannot publish over')) {
+            // Already published at this version. Not an error.
+          } else {
+            distResults.push({ target: 'npm', status: 'failed', detail: `${pkg.name}: ${msg}` });
+            console.log(`  \u2717 Sub-tool ${pkg.name} publish failed: ${msg}`);
+          }
+        }
+      }
     }
 
     // 6. GitHub prerelease on public repo (if opted in)
@@ -2102,6 +2791,30 @@ export async function releasePrerelease({ repoPath, track, notes, dryRun, noPubl
     }
   }
 
+  // deploy-public: sync private -> public mirror (Phase 6)
+  // Beta: deploy to public (testing distribution pipeline)
+  // Alpha: NEVER deploy to public (dev-only)
+  if (track === 'alpha') {
+    console.log(`  - deploy-public: skipped (alpha is dev-only, never goes to public)`);
+  } else {
+    const dp = runDeployPublic(repoPath, { skip: noDeployPublic });
+    if (dp.skipped) {
+      if (dp.reason === 'flag') {
+        console.log(`  - deploy-public: skipped (--no-deploy-public)`);
+      } else if (dp.reason === 'no-script') {
+        console.log(`  - deploy-public: skipped (no deploy-public.sh)`);
+      } else if (dp.reason === 'not-private-repo') {
+        console.log(`  - deploy-public: skipped (origin is not a -private repo)`);
+      }
+    } else if (dp.ok) {
+      console.log(`  \u2713 deploy-public: synced to ${dp.publicRepo}`);
+    } else {
+      console.log(`  \u2717 deploy-public failed for ${dp.publicRepo}`);
+      if (dp.detail) console.log(`    ${dp.detail.split('\n')[0]}`);
+      console.log(`    Manual recovery: bash tools/deploy-public/deploy-public.sh ${repoPath} ${dp.publicRepo}`);
+    }
+  }
+
   console.log('');
   console.log(`  Done. ${repoName} v${newVersion} (${track}) released.`);
   console.log('');
@@ -2120,7 +2833,7 @@ export async function releasePrerelease({ repoPath, track, notes, dryRun, noPubl
  * Lighter gates than stable: no product docs check, no stale branch check.
  * Still runs: worktree guard, license compliance, tests.
  */
-export async function releaseHotfix({ repoPath, notes, notesSource, dryRun, noPublish, publishReleaseNotes, skipWorktreeCheck }) {
+export async function releaseHotfix({ repoPath, notes, notesSource, dryRun, noPublish, publishReleaseNotes, skipWorktreeCheck, allowSubToolDrift }) {
   repoPath = repoPath || process.cwd();
   const currentVersion = detectCurrentVersion(repoPath);
   const newVersion = bumpSemver(currentVersion, 'patch');
@@ -2130,32 +2843,29 @@ export async function releaseHotfix({ repoPath, notes, notesSource, dryRun, noPu
   console.log(`  ${repoName}: ${currentVersion} -> ${newVersion} (hotfix)`);
   console.log(`  ${'─'.repeat(40)}`);
 
-  // Worktree guard
-  if (!skipWorktreeCheck) {
-    try {
-      const gitDir = execFileSync('git', ['rev-parse', '--git-dir'], {
-        cwd: repoPath, encoding: 'utf8'
-      }).trim();
-      if (gitDir.includes('/worktrees/')) {
-        const worktreeList = execFileSync('git', ['worktree', 'list', '--porcelain'], {
-          cwd: repoPath, encoding: 'utf8'
-        });
-        const mainWorktree = worktreeList.split('\n')
-          .find(line => line.startsWith('worktree '));
-        const mainPath = mainWorktree ? mainWorktree.replace('worktree ', '') : '(unknown)';
-        console.log(`  \u2717 wip-release must run from the main working tree, not a worktree.`);
-        console.log(`    Current: ${repoPath}`);
-        console.log(`    Main working tree: ${mainPath}`);
-        console.log('');
-        return { currentVersion, newVersion, dryRun: false, failed: true };
-      }
-      console.log('  \u2713 Running from main working tree');
-    } catch {}
+  // Main-branch guard: worktree + non-main branch check via shared helper
+  {
+    const guardResult = enforceMainBranchGuard(repoPath, skipWorktreeCheck);
+    if (!guardResult.ok) {
+      logMainBranchGuardFailure(guardResult);
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+    if (!guardResult.skipped) {
+      console.log(`  \u2713 Running from main working tree on ${guardResult.branch ?? 'main'}`);
+    }
   }
 
-  // License compliance gate
-  const configPath = join(repoPath, '.license-guard.json');
-  if (existsSync(configPath)) {
+  // License compliance gate (MANDATORY: blocks release if .license-guard.json missing)
+  {
+    const configPath = join(repoPath, '.license-guard.json');
+    if (!existsSync(configPath)) {
+      console.log(`  \u2717 .license-guard.json not found.`);
+      console.log(`    Every repo must have .license-guard.json to release.`);
+      console.log(`    Run: wip-repo-init   (scaffolds ai/, .license-guard.json, CLA.md)`);
+      console.log(`    Or:  wip-license-guard init`);
+      console.log('');
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
     const config = JSON.parse(readFileSync(configPath, 'utf8'));
     const licenseIssues = [];
     const licensePath = join(repoPath, 'LICENSE');
@@ -2166,6 +2876,9 @@ export async function releaseHotfix({ repoPath, notes, notesSource, dryRun, noPu
       if (!licenseText.includes(config.copyright)) {
         licenseIssues.push(`LICENSE copyright does not match "${config.copyright}"`);
       }
+    }
+    if (!existsSync(join(repoPath, 'CLA.md'))) {
+      licenseIssues.push('CLA.md is missing');
     }
     if (licenseIssues.length > 0) {
       console.log(`  \u2717 License compliance failed:`);
@@ -2237,31 +2950,23 @@ export async function releaseHotfix({ repoPath, notes, notesSource, dryRun, noPu
     return { currentVersion, newVersion, dryRun: true };
   }
 
+  // 1.25. Pre-bump tag collision check (Phase 2).
+  {
+    const collision = checkTagCollision(repoPath, newVersion);
+    if (!collision.ok) {
+      return { currentVersion, newVersion, dryRun: false, failed: true };
+    }
+  }
+
   // 1. Bump package.json
   writePackageVersion(repoPath, newVersion);
   console.log(`  \u2713 package.json -> ${newVersion}`);
 
-  // 1.5. Bump sub-tool versions
-  const toolsDir = join(repoPath, 'tools');
-  if (existsSync(toolsDir)) {
-    let subBumped = 0;
-    try {
-      const entries = readdirSync(toolsDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        const subPkgPath = join(toolsDir, entry.name, 'package.json');
-        if (existsSync(subPkgPath)) {
-          try {
-            const subPkg = JSON.parse(readFileSync(subPkgPath, 'utf8'));
-            subPkg.version = newVersion;
-            writeFileSync(subPkgPath, JSON.stringify(subPkg, null, 2) + '\n');
-            subBumped++;
-          } catch {}
-        }
-      }
-    } catch {}
-    if (subBumped > 0) {
-      console.log(`  \u2713 ${subBumped} sub-tool(s) -> ${newVersion}`);
+  // 1.5. Validate sub-tool version bumps (Phase 8: error by default)
+  {
+    const subToolResult = validateSubToolVersions(repoPath, allowSubToolDrift);
+    if (!subToolResult.ok) {
+      return { currentVersion, newVersion, dryRun: false, failed: true };
     }
   }
 
@@ -2284,12 +2989,14 @@ export async function releaseHotfix({ repoPath, notes, notesSource, dryRun, noPu
   gitCommitAndTag(repoPath, newVersion, notes);
   console.log(`  \u2713 Committed and tagged v${newVersion}`);
 
-  // 5. Push commit + tag
-  try {
-    execSync('git push && git push --tags', { cwd: repoPath, stdio: 'pipe' });
-    console.log(`  \u2713 Pushed to remote`);
-  } catch {
-    console.log(`  ! Push failed. Push manually.`);
+  // 5. Push commit + tag (with auto-PR fallback on protected main, Phase 4)
+  {
+    const pushResult = pushReleaseWithAutoPr(repoPath, newVersion, 'hotfix');
+    if (pushResult.ok) {
+      console.log(`  \u2713 Pushed to remote (${pushResult.via})`);
+    } else {
+      logPushFailure(pushResult, `v${newVersion}`);
+    }
   }
 
   const distResults = [];
