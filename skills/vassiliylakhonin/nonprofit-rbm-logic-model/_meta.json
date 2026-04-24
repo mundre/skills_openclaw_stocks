@@ -1,13 +1,18 @@
 {
   "owner": "vassiliylakhonin",
   "slug": "nonprofit-rbm-logic-model",
-  "displayName": "Nonprofit Impact Orchestra",
+  "displayName": "Nonprofit Proposal Decision Engine",
   "latest": {
-    "version": "1.0.15",
-    "publishedAt": 1775970911402,
-    "commit": "https://github.com/openclaw/skills/commit/52f5d0b1ba4b7096fc6bf57c1a1103d7c93ef688"
+    "version": "1.1.2",
+    "publishedAt": 1776870680173,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.15",
+      "publishedAt": 1775970911402,
+      "commit": "https://github.com/openclaw/skills/commit/52f5d0b1ba4b7096fc6bf57c1a1103d7c93ef688"
+    },
     {
       "version": "1.0.13",
       "publishedAt": 1773919195462,
