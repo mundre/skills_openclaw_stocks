@@ -1,7 +1,7 @@
 ---
 name: soul-memory
-version: 3.5.7
-description: "Intelligent memory management system v3.5.7 - 排除 cron session 避免 HEARTBEAT session 誤選，放寬 normalize_for_dedup 保留時間戳差異，threshold 0.92 減少誤去重，stable_cues 放寬保存技術/項目/QST/文件關鍵詞。"
+version: 3.5.13
+description: "Intelligent memory management system v3.5.13 - 修復 heartbeat-trigger.py 改用上次 heartbeat 到現在的增量窗口抓取 important context，避免固定 3 小時窗口遺漏與重掃。"
 license: MIT
 author: kingofqin2026
 homepage: https://github.com/kingofqin2026/Soul-Memory-

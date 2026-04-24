@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Soul Memory Heartbeat Auto-Save Trigger
-v3.5.3 - 超寬鬆模式：強制記錄技術操作（安裝/配置/開發）
+v3.5.10 - 檢查上次 heartbeat 到現在的消息，避免遺漏
 """
 
 import sys
@@ -32,8 +32,33 @@ SESSIONS_JSON = SESSIONS_DIR / "sessions.json"
 # 去重記錄文件
 DEDUP_FILE = Path.home() / ".openclaw" / "workspace" / "soul-memory" / "dedup_hashes.json"
 
+# Heartbeat 狀態文件（記錄上次執行時間）
+HEARTBEAT_STATE_FILE = Path.home() / ".openclaw" / "workspace" / "soul-memory" / "heartbeat_state.json"
+
+def get_heartbeat_state():
+    """讀取上次 heartbeat 執行時間"""
+    if not HEARTBEAT_STATE_FILE.exists():
+        return None
+    try:
+        with open(HEARTBEAT_STATE_FILE, 'r') as f:
+            data = json.load(f)
+        return data.get('last_check_time')
+    except:
+        return None
+
+def save_heartbeat_state():
+    """保存當前 heartbeat 執行時間"""
+    try:
+        HEARTBEAT_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(HEARTBEAT_STATE_FILE, 'w') as f:
+            json.dump({
+                'last_check_time': datetime.now().isoformat()
+            }, f)
+    except Exception as e:
+        print(f"⚠️ 無法保存 heartbeat 狀態：{e}")
+
 def get_active_session_id():
-    """獲取當前 active session 的 ID（排除 cron session）v3.5.7"""
+    """獲取當前 active session 的 ID（排除 cron/HEARTBEAT session）v3.5.8"""
     try:
         with open(SESSIONS_JSON, 'r', encoding='utf-8') as f:
             sessions = json.load(f)
@@ -44,8 +69,8 @@ def get_active_session_id():
         
         for key, data in sessions.items():
             if isinstance(data, dict) and 'updatedAt' in data:
-                # v3.5.7: 排除 cron session
-                if "cron" in key.lower():
+                # v3.5.7: 排除 cron session 和 HEARTBEAT session (agent:main:main)
+                if "cron" in key.lower() or key == "agent:main:main":
                     continue
                 session_id = data.get('sessionId', key)
                 if data['updatedAt'] > best_time:
@@ -57,8 +82,8 @@ def get_active_session_id():
         print(f"⚠️ 無法讀取 sessions.json: {e}")
         return None
 
-def read_session_messages(session_id, hours=1):
-    """讀取 session 對話內容（最近 N 小時）"""
+def read_session_messages(session_id, last_check_time=None, hours=3):
+    """讀取 session 對話內容（上次 heartbeat 到現在；若無狀態則 fallback 最近 N 小時）"""
     session_file = SESSIONS_DIR / f"{session_id}.jsonl"
     
     if not session_file.exists():
@@ -66,7 +91,16 @@ def read_session_messages(session_id, hours=1):
         return []
     
     messages = []
-    cutoff_time = datetime.now() - timedelta(hours=hours)
+    if last_check_time:
+        try:
+            cutoff_time = datetime.fromisoformat(last_check_time)
+            print(f"📅 檢查時間範圍: {cutoff_time.strftime('%Y-%m-%d %H:%M:%S')} → 現在")
+        except Exception:
+            cutoff_time = datetime.now() - timedelta(hours=hours)
+            print(f"⚠️ heartbeat_state 無效，fallback 檢查最近 {hours} 小時")
+    else:
+        cutoff_time = datetime.now() - timedelta(hours=hours)
+        print(f"📅 無 heartbeat_state，fallback 檢查最近 {hours} 小時")
     
     try:
         with open(session_file, 'r', encoding='utf-8') as f:
@@ -124,8 +158,11 @@ def read_session_messages(session_id, hours=1):
     return messages
 
 def identify_important_content(messages):
-    """識別重要內容（超寬鬆模式 v3.4.0 - 強制記錄技術操作）"""
+    """識別重要內容（超寬鬆模式 v3.4.0 - 強制記錄技術操作）v3.5.12"""
     important = []
+    
+    # v3.5.12: 只處理用戶消息，不保存助手回應
+    messages = [msg for msg in messages if msg.get('role') == 'user']
     
     # 強制記錄關鍵詞（必須記錄 [C] Critical）
     force_record_keywords = [
@@ -409,9 +446,11 @@ def main():
     else:
         print(f"📋 當前 Session: {session_id[:8]}...")
 
-        # 讀取最近 1 小時的對話
-        messages = read_session_messages(session_id, hours=1)
+        # 讀取上次 heartbeat 到現在的對話；首次無狀態時 fallback 最近 3 小時
+        last_check_time = get_heartbeat_state()
+        messages = read_session_messages(session_id, last_check_time=last_check_time, hours=3)
         print(f"📝 找到 {len(messages)} 條 recent 消息")
+        save_heartbeat_state()
 
         # 識別重要內容
         important = identify_important_content(messages)
