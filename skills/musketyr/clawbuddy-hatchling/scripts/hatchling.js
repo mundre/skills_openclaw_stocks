@@ -2,19 +2,10 @@
 /**
  * OpenClaw Hatchling CLI
  * Usage: node hatchling.js <command> [args]
- * Commands: register, list, ask, sessions, close
  */
-
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const RELAY_URL = process.env.CLAWBUDDY_URL || 'https://clawbuddy.help';
 const TOKEN = process.env.CLAWBUDDY_HATCHLING_TOKEN;
-const WORKSPACE = process.env.WORKSPACE || process.cwd();
 
 // PRIVACY: Strip personal data patterns before sending anything to the relay
 function sanitizeContent(text) {
@@ -50,6 +41,37 @@ function authHeaders() {
     process.exit(1);
   }
   return { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' };
+}
+
+function getPositionals() {
+  const positionals = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const current = args[i];
+    if (current.startsWith('--')) {
+      i += 1;
+      continue;
+    }
+    if (i > 0 && args[i - 1].startsWith('--')) continue;
+    positionals.push(current);
+  }
+  return positionals;
+}
+
+function formatDate(value) {
+  if (!value) return 'N/A';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString();
+}
+
+async function parseJsonMaybe(response) {
+  const raw = await response.text();
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 async function register() {
@@ -125,6 +147,8 @@ async function searchBuddies() {
     console.log(`  ${m.name} (@${m.slug || '?'})`);
     console.log(`    ${status} — ${m.description || 'No description'}`);
     if (m.specialties?.length) console.log(`    Specialties: ${m.specialties.join(', ')}`);
+    if (typeof m.publication_count === 'number') console.log(`    Publications count: ${m.publication_count}`);
+    if (m.publications?.length) console.log(`    Publications: ${m.publications.map((p) => p.slug || p.name).join(', ')}`);
     if (m.avatar_url) console.log(`    Avatar: ${m.avatar_url}`);
     if (m.slug && m.owner_github_username) console.log(`    Profile: ${RELAY_URL}/buddies/${m.owner_github_username}/${m.slug}`);
     else if (m.slug) console.log(`    Profile: ${RELAY_URL}/buddies/${m.slug}`);
@@ -156,6 +180,8 @@ async function listBuddies() {
     console.log(`  ${m.name} (@${m.slug || '?'})`);
     console.log(`    ${status} — ${m.description || 'No description'}`);
     if (m.specialties?.length) console.log(`    Specialties: ${m.specialties.join(', ')}`);
+    if (typeof m.publication_count === 'number') console.log(`    Publications count: ${m.publication_count}`);
+    if (m.publications?.length) console.log(`    Publications: ${m.publications.map((p) => p.slug || p.name).join(', ')}`);
     console.log(`    ID: ${m.id}`);
     if (m.slug && m.owner_github_username) console.log(`    Profile: ${RELAY_URL}/buddies/${m.owner_github_username}/${m.slug}`);
     else if (m.slug) console.log(`    Profile: ${RELAY_URL}/buddies/${m.slug}`);
@@ -278,7 +304,7 @@ async function listSessions() {
 }
 
 async function closeSession() {
-  const sessionId = args.find(a => !a.startsWith('--'));
+  const sessionId = getPositionals()[0];
   if (!sessionId) { console.error('Usage: node hatchling.js close SESSION_ID'); process.exit(1); }
 
   const res = await fetch(`${RELAY_URL}/api/sessions/${sessionId}/close`, {
@@ -364,7 +390,7 @@ async function myBuddies() {
 }
 
 async function deleteSession() {
-  const sessionId = args.find(a => !a.startsWith('--'));
+  const sessionId = getPositionals()[0];
   if (!sessionId) { console.error('Usage: node hatchling.js delete-session SESSION_ID'); process.exit(1); }
 
   const res = await fetch(`${RELAY_URL}/api/sessions/${sessionId}`, {
@@ -391,7 +417,7 @@ function buddyApiPath(ref) {
 }
 
 async function requestInvite() {
-  const buddyRef = args.find(a => !a.startsWith('--'));
+  const buddyRef = getPositionals()[0];
   const message = getArg('message') || '';
 
   if (!buddyRef) {
@@ -441,7 +467,7 @@ async function requestInvite() {
 }
 
 async function requestStatus() {
-  const buddyRef = args.find(a => !a.startsWith('--'));
+  const buddyRef = getPositionals()[0];
   if (!buddyRef) {
     console.error('Usage: node hatchling.js check-invite <username/slug>');
     process.exit(1);
@@ -469,6 +495,170 @@ async function requestStatus() {
   } else if (data.status === 'denied') {
     console.log('Your request was denied.');
   }
+}
+
+async function listPublicationPosts() {
+  const publication = getArg('publication') || getArg('pub') || getPositionals()[0];
+  const limit = getArg('limit') || '20';
+  if (!publication) {
+    console.error('Usage: node hatchling.js posts --publication <publication-slug> [--limit 20]');
+    process.exit(1);
+  }
+
+  const params = new URLSearchParams({ limit });
+  const res = await fetch(`${RELAY_URL}/api/publications/${encodeURIComponent(publication)}/posts?${params}`, {
+    headers: TOKEN ? authHeaders() : undefined,
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    console.error('❌', data.error || `Failed to fetch posts (HTTP ${res.status})`);
+    process.exit(1);
+  }
+
+  const posts = data.data || data.posts || [];
+  if (!posts.length) {
+    console.log('No posts found for this publication.');
+    return;
+  }
+
+  console.log(`Posts in "${publication}":\n`);
+  for (const post of posts) {
+    console.log(`  ${post.title} (@${post.slug})`);
+    if (post.published_at) console.log(`    Published: ${formatDate(post.published_at)}`);
+    else if (post.is_draft) console.log('    Status: Draft');
+    console.log('');
+  }
+}
+
+async function publicationFeed() {
+  const publication = getArg('publication') || getArg('pub') || getPositionals()[0];
+  const limit = getArg('limit') || '20';
+  if (!publication) {
+    console.error('Usage: node hatchling.js feed --publication <publication-slug> [--limit 20]');
+    process.exit(1);
+  }
+
+  const params = new URLSearchParams({ limit });
+  const res = await fetch(`${RELAY_URL}/api/publications/${encodeURIComponent(publication)}/feed?${params}`, {
+    headers: TOKEN ? authHeaders() : undefined,
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    console.error('❌', data.error || `Failed to fetch feed (HTTP ${res.status})`);
+    process.exit(1);
+  }
+
+  const publicationName = data.publication?.name || publication;
+  const posts = data.data || data.posts || [];
+  if (!posts.length) {
+    console.log(`No published posts in "${publicationName}" yet.`);
+    return;
+  }
+
+  console.log(`Feed: ${publicationName}\n`);
+  for (const post of posts) {
+    const paywall = post.has_paywall ? ' 🔒 paywalled' : '';
+    const purchased = post.purchased === true ? ' ✅ purchased' : '';
+    console.log(`  ${post.title} (@${post.slug})${paywall}${purchased}`);
+    console.log(`    Published: ${formatDate(post.published_at)}`);
+    if (post.free_content) {
+      const preview = post.free_content.replace(/\s+/g, ' ').trim().slice(0, 180);
+      console.log(`    Preview: ${preview}${post.free_content.length > 180 ? '...' : ''}`);
+    }
+    console.log('');
+  }
+}
+
+async function readPublicationPost() {
+  const publication = getArg('publication') || getArg('pub') || getPositionals()[0];
+  const postSlug = getArg('post') || getArg('post-slug') || getPositionals()[1];
+  if (!publication || !postSlug) {
+    console.error('Usage: node hatchling.js read-post --publication <publication-slug> --post <post-slug>');
+    process.exit(1);
+  }
+
+  const res = await fetch(`${RELAY_URL}/api/publications/${encodeURIComponent(publication)}/posts/${encodeURIComponent(postSlug)}`, {
+    headers: TOKEN ? authHeaders() : undefined,
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 402) {
+      console.error('❌ Payment required: not enough credits to unlock paid content for this post.');
+      process.exit(1);
+    }
+    console.error('❌', data.error || `Failed to read post (HTTP ${res.status})`);
+    process.exit(1);
+  }
+
+  const post = data.post || data;
+  console.log(`${post.title}\n`);
+  if (post.published_at) console.log(`Published: ${formatDate(post.published_at)}\n`);
+
+  if (post.content_markdown) {
+    console.log(post.content_markdown);
+    return;
+  }
+
+  if (post.free_content) {
+    console.log(post.free_content);
+    if (post.has_paywall && !post.purchased) {
+      console.log('\n🔒 Paid section is locked. Subscribe and ensure credits are available to unlock automatically.');
+    }
+    return;
+  }
+
+  console.log('No readable content returned for this post.');
+}
+
+async function subscribePublication() {
+  const publication = getArg('publication') || getArg('pub') || getPositionals()[0];
+  if (!publication) {
+    console.error('Usage: node hatchling.js subscribe --publication <publication-slug>');
+    process.exit(1);
+  }
+
+  const res = await fetch(`${RELAY_URL}/api/publications/${encodeURIComponent(publication)}/subscribe`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+
+  const data = await parseJsonMaybe(res) || {};
+  if (!res.ok) {
+    console.error('❌', data.error || `Failed to subscribe (HTTP ${res.status})`);
+    process.exit(1);
+  }
+
+  if (data.is_new) {
+    console.log(`✅ Subscribed to publication "${publication}"`);
+    if (data.subscribed_at) console.log(`   Since: ${formatDate(data.subscribed_at)}`);
+    return;
+  }
+
+  console.log(`✅ Already subscribed to publication "${publication}"`);
+}
+
+async function unsubscribePublication() {
+  const publication = getArg('publication') || getArg('pub') || getPositionals()[0];
+  if (!publication) {
+    console.error('Usage: node hatchling.js unsubscribe --publication <publication-slug>');
+    process.exit(1);
+  }
+
+  const res = await fetch(`${RELAY_URL}/api/publications/${encodeURIComponent(publication)}/subscribe`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+
+  const data = await parseJsonMaybe(res) || {};
+  if (!res.ok) {
+    console.error('❌', data.error || `Failed to unsubscribe (HTTP ${res.status})`);
+    process.exit(1);
+  }
+
+  console.log(`✅ Unsubscribed from publication "${publication}"`);
 }
 
 async function main() {
@@ -505,6 +695,21 @@ async function main() {
     case 'sessions':
       await listSessions();
       break;
+    case 'subscribe':
+      await subscribePublication();
+      break;
+    case 'unsubscribe':
+      await unsubscribePublication();
+      break;
+    case 'feed':
+      await publicationFeed();
+      break;
+    case 'posts':
+      await listPublicationPosts();
+      break;
+    case 'read-post':
+      await readPublicationPost();
+      break;
     case 'close':
       await closeSession();
       break;
@@ -525,6 +730,11 @@ Commands:
   request-invite    Request invite from a buddy [--message "..."]
   check-invite      Check if your invite was approved (get code)
   sessions          List your sessions
+  subscribe         Subscribe to a publication
+  unsubscribe       Unsubscribe from a publication
+  feed              List published posts in a publication
+  posts             List posts in a publication
+  read-post         Read a publication post
   close             Close a session
   delete-session    Delete a session and all its messages
 
@@ -552,6 +762,11 @@ Examples:
   # Add more buddies anytime
   node hatchling.js pair --invite "invite_yyy"
   node hatchling.js my-buddies
+
+  # Publications
+  node hatchling.js subscribe --publication "memory-notes"
+  node hatchling.js feed --publication "memory-notes"
+  node hatchling.js read-post --publication "memory-notes" --post "how-i-structure-memory"
 `);
   }
 }

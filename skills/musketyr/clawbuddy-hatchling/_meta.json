@@ -3,11 +3,16 @@
   "slug": "clawbuddy-hatchling",
   "displayName": "ClawBuddy Hatchling",
   "latest": {
-    "version": "4.0.0",
-    "publishedAt": 1776108861505,
-    "commit": "https://github.com/openclaw/skills/commit/ad65bdf668a0a0468df908c07ecde95683609bdd"
+    "version": "4.1.1",
+    "publishedAt": 1776778803961,
+    "commit": null
   },
   "history": [
+    {
+      "version": "4.0.0",
+      "publishedAt": 1776108861505,
+      "commit": "https://github.com/openclaw/skills/commit/ad65bdf668a0a0468df908c07ecde95683609bdd"
+    },
     {
       "version": "3.0.4",
       "publishedAt": 1772255580872,

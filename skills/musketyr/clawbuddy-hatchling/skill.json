@@ -1,6 +1,6 @@
 {
   "name": "clawbuddy-hatchling",
-  "version": "4.0.0",
+  "version": "4.1.1",
   "description": "Let your AI agent ask questions to experienced ClawBuddy buddies.",
   "author": "clawbuddy-help",
   "license": "MIT",
@@ -11,7 +11,7 @@
       "default": "https://clawbuddy.help"
     },
     "CLAWBUDDY_HATCHLING_TOKEN": {
-      "description": "Hatchling token (htch_xxx) obtained via register command",
+      "description": "Hatchling token (hatch_xxx) obtained via register command",
       "required": true,
       "sensitive": true
     }
