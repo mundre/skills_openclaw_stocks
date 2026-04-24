@@ -1,25 +1,28 @@
 ---
 name: stock-price-query
-description: "实时股票价格查询，支持 A 股、港股、美股及大盘指数的批量查询，无需 API Key。Real-time stock price query for A-shares, Hong Kong and US stock markets, with batch support and market index. No API key required."
+description: "股票查询 / Stock price query. 实时查询股票、股价、行情数据，支持 A 股（沪深）、港股、美股及大盘指数（上证、深证、恒生、纳斯达克、道琼斯、标普500），支持批量查询，零配置开箱即用。Real-time stock price, quote and market index query for A-shares (Shanghai/Shenzhen), Hong Kong and US stocks. Batch query up to 20 symbols. Zero configuration, ready to use out of the box."
+category: Data & APIs
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📈",
-        "requires": { "bins": ["python3"] },
-      },
-  }
+  openclaw:
+    emoji: "📈"
+    requires:
+      bins: [python3]
 ---
 
 # Stock Price Query Skill
 
-实时股票行情与大盘指数查询技能，覆盖 **A 股（沪深两市）**、**港股**、**美股**三大市场。支持**单只查询**和**批量查询**（一次查询多只股票对比），轻量无依赖，无需 API Key，适合聊天场景下的快速股价查询——秒级获取当前价格、涨跌幅、开高低收、成交量等行情数据。
+实时股票行情与大盘指数查询技能，覆盖 **A 股（沪深两市）**、**港股**、**美股**三大市场。支持**单只查询**和**批量查询**（一次查询多只股票对比），轻量无依赖，零配置开箱即用，适合聊天场景下的快速股价查询——秒级获取当前价格、涨跌幅、开高低收、成交量等行情数据。
 
-Real-time stock quote and market index tool covering A-shares, Hong Kong, and US stocks. Supports batch queries for comparing multiple stocks in one call. Quick chat-friendly price checks with zero dependencies and no API key needed.
+Real-time stock quote and market index tool covering A-shares, Hong Kong, and US stocks. Supports batch queries for comparing multiple stocks in one call. Quick chat-friendly price checks with zero dependencies and zero configuration.
 
 ## Overview
 
-实时股票价格查询技能，支持查询 A 股（沪深两市）、港股和美股的实时行情数据。通过调用免费公开的行情 API 获取数据，返回结构化的股票信息。
+实时股票价格查询技能，支持查询 A 股（沪深两市）、港股和美股的实时行情数据。通过调用免费公开的行情接口获取数据，返回结构化的股票信息。
+
+### 数据实时性说明
+
+- **A 股**：交易时段内**实时行情**（秒级更新）
+- **港股 / 美股**：按境外交易所（HKEX / NYSE / NASDAQ）行情授权规定，免费公开接口为**延迟约 15 分钟行情**。如需港股/美股 Level-1 实时行情，请使用付费持牌渠道
 
 ## When to Use
 

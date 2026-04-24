@@ -2,7 +2,7 @@
 """
 Stock Price Query Script
 查询 A 股（沪深）、港股、美股的实时行情数据。
-使用腾讯财经 API (qt.gtimg.cn) 获取数据，无需 API Key，无需特殊 Header。
+使用腾讯财经公开 HTTP 接口 (qt.gtimg.cn) 获取数据，直接调用，无需任何配置。
 支持单只查询和批量查询（逗号分隔多只股票）。
 
 用法:
