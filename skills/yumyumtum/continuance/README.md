@@ -8,10 +8,10 @@ Continuance Guide draws wisdom from **The Book of Continuance**, a naturalistic 
 
 ## ✨ Features
 
-- **🎨 Automatic Contemplative Images** — Every guidance session includes a generated naturalistic spiritual image
+- **🎨 Default Context-Matched Images** — Continuance now defaults to generating an appropriate contemplative image for every guidance session
+- **🧘 Daily Meditation + Visual Mood** — Daily guidance is paired with a matching spiritual image that sets the inner atmosphere
+- **❓ Life Question Counseling + Visual Resonance** — Personal struggles get both written guidance and a context-aware contemplative image
 - **📖 Based on The Book of Continuance** — 7 chapters of naturalistic spiritual wisdom
-- **🧘 Daily Mental Guidance** — Structured reflections for contemplation and inner peace
-- **❓ Life Question Counseling** — Thoughtful responses to doubts about meaning, loss, identity, purpose
 - **🌊 Naturalistic Metaphors** — Water, roots, paths, seeds, cells — no supernatural claims
 - **🕊️ Non-dogmatic** — Offers perspective, not absolute truth
 
@@ -34,9 +34,36 @@ cp -r YumSkills/continuance ~/.openclaw/skills/
 
 ---
 
+## 🖼️ Image Generation Setup
+
+Continuance is designed to work best when OpenClaw image generation is configured.
+
+### Required
+Make sure your OpenClaw environment has a working image generation provider.
+
+Typical setup options:
+- configure the default `image_generate` model in OpenClaw
+- or ensure your preferred provider/model is available to the `image_generate` tool
+
+If image generation is unavailable, Continuance will still provide text guidance, but the intended default experience is **image + guidance together**.
+
+### What the image should do
+The image is not decorative filler. It should:
+- reflect the user's emotional context
+- establish contemplative mood
+- embody the spiritual metaphor of the answer
+- express the **境界** of the guidance rather than just literal objects
+
+Typical themes:
+- grief / release → flowing water, drifting leaves, dusk light
+- burnout / fatigue → still pond, deep shade, resting grove
+- difficult choices → branching path, mist, threshold
+- persistence → roots, stone, slow growth
+- daily meditation → calm river, dawn light, quiet sky, minimal natural scene
+
 ## 📖 Usage
 
-### Daily Guidance
+### Daily Guidance / Daily Meditation
 
 Ask for daily contemplative wisdom:
 
@@ -48,6 +75,16 @@ Or simply:
 
 ```
 I need something today.
+```
+
+Other common prompts:
+
+```
+Give me a daily meditation.
+```
+
+```
+I need a quiet reflection for today.
 ```
 
 **Example Response:**
@@ -71,6 +108,20 @@ Bring a genuine struggle or existential question:
 I feel like nothing I do matters. I work hard but nothing lasts.
 ```
 
+Other strong use cases:
+
+```
+I don't know how to let this relationship go.
+```
+
+```
+I feel lost and spiritually tired.
+```
+
+```
+I made a choice I regret. How should I live with it?
+```
+
 **Example Response:**
 
 *[Contemplative image: ancient tree roots, earth tones]*
@@ -86,7 +137,14 @@ What lasts is not the thing you built, but what it carried forward...
 
 ## 🎨 Image Generation
 
-**Every Continuance response includes a contemplative spiritual image.**
+**Every Continuance response should include a contemplative spiritual image by default.**
+
+The default behavior is:
+- generate a matching image for daily meditation / daily guidance
+- generate a matching image for personal questions and existential struggles
+- send the image together with the written guidance
+
+Only degrade to text-only when image generation is unavailable or fails.
 
 ### Themes:
 - 🌊 **Letting Go** — Flowing water, release, acceptance
@@ -98,6 +156,13 @@ What lasts is not the thing you built, but what it carried forward...
 - 🌿 **Consequence** — Branching trees, choices, outcomes
 - 🕊️ **Release** — Dandelion seeds, dispersal, freedom
 - 🌅 **Rest** — Still water, reflection, calm
+
+### Typical applications
+- **Daily meditation** — one passage + one image that establishes the mood of the day
+- **Grief support** — release-oriented image + quiet guidance
+- **Burnout / exhaustion** — rest-themed image + permission to slow down
+- **Meaning / purpose questions** — roots, seeds, path, carrier imagery
+- **Regret / consequence / forgiveness** — branching or consequence-oriented image + realignment guidance
 
 ---
 
