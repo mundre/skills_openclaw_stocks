@@ -1,16 +1,7 @@
 ---
 name: printpal-3d
-description: Generate 3D models for 3D printing from images or text prompts using PrintPal API. Use when the user wants to create 3D printable models, convert images to STL/GLB/OBJ files, or generate 3D assets from text descriptions. Supports text-to-image via WaveSpeed when WAVESPEED_API_KEY is configured. Works with file paths, URLs, or images pasted directly into chat.
-credentials:
-  - name: PRINTPAL_API_KEY
-    required: true
-    description: API key for PrintPal 3D generation (get from https://printpal.io/api-keys)
-  - name: WAVESPEED_API_KEY
-    required: false
-    description: API key for text-to-image and product photo generation (get from https://wavespeed.ai/accesskey)
-  - name: OPENROUTER_API_KEY
-    required: false
-    description: API key for SEO metadata generation (get from https://openrouter.ai/keys)
+description: Generate 3D models for 3D printing from images or text prompts using PrintPal API, plus SEO product listing generation. Supports text-to-image via WaveSpeed when WAVESPEED_API_KEY is configured. Includes a reference guide for Bambu Lab printer control via the separate @versatly/bambu CLI (printer integration requires manual CLI setup). Works with file paths, URLs, or images pasted directly into chat.
+metadata: { "openclaw": { "requires": { "bins": ["python3"], "env": ["PRINTPAL_API_KEY"] } } }
 ---
 
 # PrintPal 3D Model Generator
@@ -139,7 +130,7 @@ Default output is `printpal-output/` in the skill's workspace. Override with:
 
 ## Security Notes
 
-- **File server**: The serve_files.py script defaults to localhost (127.0.0.1) for security. Use `--public` flag to expose to network.
+- **File server**: The serve_files.py script binds to localhost (127.0.0.1) only. Use `--host 0.0.0.0` if you need network access, but be aware this exposes the server to your network.
 - **Third-party packages**: Scripts import `printpal`, `wavespeed`, and `requests` packages. Review these packages before installing.
 - **Downloaded content**: The skill downloads images from user-supplied URLs. Treat as untrusted input.
 
@@ -242,3 +233,48 @@ python3 scripts/seo_product_photos.py \
 ## Reference
 
 For detailed API documentation, see [api-reference.md](references/api-reference.md).
+For Bambu Lab printer control (printing generated models, monitoring, hardware management), see [bambu-printer-guide.md](references/bambu-printer-guide.md).
+
+---
+
+# Bambu Lab Printer Integration (Reference Guide)
+
+This section documents how to use the **separate** `@versatly/bambu` CLI to send PrintPal-generated models to Bambu Lab printers. This skill does not include built-in printer integration code — you must install and configure the Bambu CLI yourself.
+
+## Prerequisites
+
+- Install the CLI: `npm i -g @versatly/bambu`
+- Printer in Developer Mode (Settings → LAN Only → Enable Developer Mode)
+- One-time setup: `bambu setup <ip> <serial> <access_code>`
+
+## When to Use
+
+Use the bambu CLI when the user wants to:
+- Send a generated model to the printer
+- Monitor an active print job
+- Check printer status, temperatures, or filament info
+- Control the printer hardware (fans, lights, movement)
+- Run calibration routines
+
+## Quick Reference
+
+```bash
+# Upload and start printing a generated model
+bambu job upload-and-print ./printpal-output/model.3mf
+
+# Monitor until done
+bambu watch
+
+# Check printer readiness
+bambu status --json | jq '.gcode_state'
+# IDLE = ready, RUNNING = busy, FAILED = needs attention
+```
+
+## Typical End-to-End Flow
+
+1. Generate model via PrintPal → output lands in `printpal-output/`
+2. Upload to printer: `bambu job upload-and-print <file>`
+3. Monitor: `bambu watch` or `bambu status`
+4. When done: `bambu cooldown && bambu light off`
+
+For full command reference, temperature presets, AMS management, calibration, and troubleshooting, see [bambu-printer-guide.md](references/bambu-printer-guide.md).

@@ -23,7 +23,7 @@ def find_available_port(start_port=8765, max_attempts=100):
             continue
     return None
 
-def start_server(directory, port=None, host="0.0.0.0"):
+def start_server(directory, port=None, host="127.0.0.1"):
     """Start HTTP server serving files from directory."""
     from http.server import HTTPServer, SimpleHTTPRequestHandler
     
@@ -85,16 +85,10 @@ def main():
         action="store_true",
         help="Just print the URL and exit (don't start server)"
     )
-    parser.add_argument(
-        "--public",
-        action="store_true",
-        help="Bind to 0.0.0.0 to allow network access (default is localhost only)"
-    )
     
     args = parser.parse_args()
     
-    # Handle --public flag
-    host = "0.0.0.0" if args.public else args.host
+    host = args.host
     
     directory = Path(args.directory)
     if not directory.exists():
