@@ -3,11 +3,16 @@
   "slug": "legal-cog",
   "displayName": "Legal Cog",
   "latest": {
-    "version": "1.0.10",
-    "publishedAt": 1776187958530,
-    "commit": "https://github.com/openclaw/skills/commit/1a8bbdb5249863e162593d4b4773958d5be79e79"
+    "version": "1.0.11",
+    "publishedAt": 1776925145991,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.10",
+      "publishedAt": 1776187958530,
+      "commit": "https://github.com/openclaw/skills/commit/1a8bbdb5249863e162593d4b4773958d5be79e79"
+    },
     {
       "version": "1.0.7",
       "publishedAt": 1775627897619,
