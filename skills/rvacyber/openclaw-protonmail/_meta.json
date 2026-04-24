@@ -3,11 +3,16 @@
   "slug": "openclaw-protonmail",
   "displayName": "ProtonMail via Proton Mail Bridge",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1775331765305,
-    "commit": "https://github.com/openclaw/skills/commit/66a3ec0d086e6d540d197f3c205f79541cd57a76"
+    "version": "1.0.1",
+    "publishedAt": 1776488679243,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1775331765305,
+      "commit": "https://github.com/openclaw/skills/commit/66a3ec0d086e6d540d197f3c205f79541cd57a76"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1772144086617,
