@@ -1,25 +1,43 @@
 ---
 name: safe-install
-description: 带安全策略的 OpenClaw Skill 安装器。安装前自动经过 ClawShield 扫描，支持策略控制（来源限制、模式阻断、风险分级审批），提供快照和回滚能力。
-metadata: {"openclaw":{"emoji":"🔐"}}
+description: Install OpenClaw skills through policy validation, ClawShield scanning, snapshot storage, and rollback controls.
+homepage: https://github.com/mike007jd/openclaw-skills/tree/main/safe-install
+metadata: {"openclaw":{"emoji":"🔐","requires":{"bins":["node"]}}}
 ---
 
 # Safe Install
 
-带安全策略的 OpenClaw Skill 安装器。
+Add a local security review layer in front of skill installation.
 
-## 安全流程
+## When to use
 
-1. **来源验证**: 检查是否在 allowedSources 白名单
-2. **模式阻断**: 匹配 blockedPatterns 正则则拒绝
-3. **ClawShield 扫描**: 自动扫描风险
-4. **风险分级审批**:
-   - Safe: 直接安装
-   - Caution: 需确认 (--yes 或交互确认)
-   - Avoid: 需 --force 强制安装
-5. **快照存储**: 按 hash 存储版本，支持回滚
+- You want policy-driven review before activating a local skill.
+- You need ClawShield scanning and human approval for medium or high risk findings.
+- You want rollback-ready snapshots and install history for locally managed skills.
 
-## 策略配置
+## Commands
+
+```bash
+node {baseDir}/bin/safe-install.js /path/to/skill --config ./policy.json --store ./.openclaw-tools/safe-install
+node {baseDir}/bin/safe-install.js /path/to/skill --yes
+node {baseDir}/bin/safe-install.js /path/to/skill --force
+node {baseDir}/bin/safe-install.js history --format table
+node {baseDir}/bin/safe-install.js rollback my-skill
+node {baseDir}/bin/safe-install.js policy validate --file ./policy.json
+```
+
+## Review flow
+
+1. **Source validation**: check the candidate against `allowedSources`.
+2. **Pattern blocking**: reject candidates that match a blocked regular expression.
+3. **ClawShield scan**: scan before install.
+4. **Risk review**:
+   - `Safe`: install directly
+   - `Caution`: require `--yes` or interactive approval
+   - `Avoid`: require `--force`
+5. **Snapshot storage**: save a hashed snapshot for rollback.
+
+## Policy file
 
 `.openclaw-tools/safe-install.json`:
 
@@ -33,45 +51,28 @@ metadata: {"openclaw":{"emoji":"🔐"}}
 ```
 
 - `defaultAction`: allow/prompt/block
-- `blockedPatterns`: 拒绝安装的正则列表
-- `allowedSources`: 允许的来源白名单
-- `forceRequiredForAvoid`: Avoid 级别是否必须 --force
+- `blockedPatterns`: regular expressions that reject installation
+- `allowedSources`: source allowlist
+- `forceRequiredForAvoid`: whether `Avoid` requires `--force`
 
-## 用法
-
-```bash
-# 安装 skill（交互确认）
-node bin/safe-install.js /path/to/skill --config ./policy.json --store ./.openclaw-tools/safe-install
-
-# 自动确认 Caution
-node bin/safe-install.js /path/to/skill --yes
-
-# 强制安装 Avoid
-node bin/safe-install.js /path/to/skill --force
-
-# 查看安装历史
-node bin/safe-install.js history --format table
-
-# 回滚到上一版本
-node bin/safe-install.js rollback my-skill
-
-# 验证策略文件
-node bin/safe-install.js policy validate --file ./policy.json
-```
-
-## 存储结构
+## Storage
 
 ```
 .openclaw-tools/safe-install/
-├── snapshots/{skill}/{version}/{hash}/  # 版本快照
-├── active/{skill}/                       # 当前激活版本
-├── state.json                           # 激活状态
-└── history.json                         # 安装历史
+├── snapshots/{skill}/{version}/{hash}/  # stored snapshots
+├── active/{skill}/                       # current active version
+├── state.json                           # active state
+└── history.json                         # install history
 ```
 
-## 安全限制
+## Limits
 
-- 单文件最大 100MB
-- 单 skill 最多 10000 个文件
-- 单 skill 最大 500MB
-- 路径遍历防护
+- Maximum file size: 100MB
+- Maximum files per skill: 10,000
+- Maximum total skill size: 500MB
+- Path traversal protection is enforced
+
+## Boundaries
+
+- Safe Install currently resolves local directories or registry aliases defined in policy. It is not a full remote ClawHub client.
+- This tool adds a local control layer; it does not replace OpenClaw's native `skills install` flow.
