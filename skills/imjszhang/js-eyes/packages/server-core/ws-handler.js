@@ -47,7 +47,23 @@ function getOrCreatePolicyForClient(state, clientId) {
   }
   const conn = state.automationClients.get(clientId);
   if (!conn) return null;
-  if (conn.policy) return conn.policy;
+  // Generation counter lets `server.reloadSecurity()` invalidate cached
+  // per-connection policies by bumping `state.policyGeneration`. Session-level
+  // approvals held inside the old `PolicyContext` (e.g. `allowSession`) are
+  // dropped on rebuild; this is documented in SKILL.md as the MVP caveat.
+  const currentGeneration = Number.isFinite(state.policyGeneration) ? state.policyGeneration : 1;
+  if (conn.policy) {
+    if (conn.policyGeneration === currentGeneration) {
+      return conn.policy;
+    }
+    const previousGeneration = conn.policyGeneration;
+    conn.policy = null;
+    state.audit?.write?.('automation.policy-rebuilt', {
+      clientId,
+      previousGeneration: previousGeneration ?? null,
+      generation: currentGeneration,
+    });
+  }
   const Ctor = loadPolicyContext();
   if (!Ctor) return null;
   conn.policy = new Ctor({
@@ -56,6 +72,7 @@ function getOrCreatePolicyForClient(state, clientId) {
     audit: state.audit || null,
     tabLookup: (tabId) => lookupTabUrlInState(state, tabId),
   });
+  conn.policyGeneration = currentGeneration;
   return conn.policy;
 }
 
@@ -107,6 +124,15 @@ function getExtensionSummaries(state) {
     });
   }
   return summaries;
+}
+
+function prewarmPolicyFromTargetExtension(policy, state, target) {
+  if (!policy || typeof policy.recordTabs !== 'function') return;
+  const ext = pickExtension(state, target || null);
+  if (!ext || !Array.isArray(ext.tabs) || ext.tabs.length === 0) return;
+  try {
+    policy.recordTabs(ext.tabs, ext.activeTabId);
+  } catch {}
 }
 
 function handleConnection(socket, request, state, options = {}) {
@@ -249,7 +275,10 @@ function handleExtensionMessage(raw, clientId, state) {
           clientId,
           browserName: conn.browserName,
           serverConfig: {
-            request: { defaultTimeout: REQUEST_TIMEOUT_MS },
+            request: { defaultTimeout: state.requestTimeoutMs || REQUEST_TIMEOUT_MS },
+            security: {
+              allowRawEval: !!(state.security && state.security.allowRawEval),
+            },
           },
           timestamp: new Date().toISOString(),
         });
@@ -420,6 +449,7 @@ async function handleAutomationMessage(raw, clientId, socket, state) {
   if (toolName && state.security && state.security.enforcement !== 'off') {
     const policy = getOrCreatePolicyForClient(state, clientId);
     if (policy) {
+      prewarmPolicyFromTargetExtension(policy, state, target);
       const params = {};
       if (data.url !== undefined) params.url = data.url;
       if (data.tabId !== undefined) params.tabId = data.tabId;
@@ -571,6 +601,7 @@ function pickExtension(state, target) {
 }
 
 function registerPending(requestId, automationSocket, operationType, state, clientId = null) {
+  const timeoutMs = state.requestTimeoutMs || REQUEST_TIMEOUT_MS;
   const timeoutId = setTimeout(() => {
     const info = state.pendingResponses.get(requestId);
     if (!info) return;
@@ -580,12 +611,12 @@ function registerPending(requestId, automationSocket, operationType, state, clie
       status: 'error',
       type: `${operationType}_timeout`,
       requestId,
-      message: `Request timed out after ${REQUEST_TIMEOUT_MS}ms`,
+      message: `Request timed out after ${timeoutMs}ms`,
     };
 
     send(info.socket, { type: `${operationType}_response`, requestId, ...timeoutResponse });
     state.callbackResponses.set(requestId, timeoutResponse);
-  }, REQUEST_TIMEOUT_MS);
+  }, timeoutMs);
 
   state.pendingResponses.set(requestId, {
     socket: automationSocket,
@@ -652,6 +683,8 @@ function createState() {
     serverToken: null,
     security: null,
     pendingEgressDir: null,
+    requestTimeoutMs: REQUEST_TIMEOUT_MS,
+    policyGeneration: 1,
   };
 }
 
@@ -673,5 +706,6 @@ module.exports = {
     setupAutomationClient,
     registerPending,
     resolveRequest,
+    getOrCreatePolicyForClient,
   },
 };

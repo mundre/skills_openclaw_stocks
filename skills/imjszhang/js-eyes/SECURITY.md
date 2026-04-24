@@ -32,6 +32,27 @@ Base runtime behavior:
 
 By default this is all local traffic. No browser content is sent to a third-party service unless you explicitly point JS Eyes at a remote server you control.
 
+## Browser Native Messaging Host (Token Auto-Sync)
+
+JS Eyes 2.4+ ships an optional Native Messaging host (`com.js_eyes.native_host`) that lets the browser extension read `~/.js-eyes/runtime/server.token` directly, avoiding manual copy-paste.
+
+**Threat model**: this feature is designed to defend against **external web-page / cross-origin attackers** only. A compromised local device (root, malicious local process, malicious locally-loaded extension) is **explicitly out of scope** — any attacker with local code execution already has direct read access to `server.token`.
+
+Simplifications driven by this scoped threat model:
+
+- No in-extension secondary confirmation prompt.
+- No handshake / nonce / device-fingerprint binding.
+- The host simply returns the token when the browser calls it.
+
+Trust boundaries that remain in place:
+
+- Native messaging manifests whitelist specific extension IDs (Chrome: `allowed_origins`, Firefox: `allowed_extensions`) — unlisted extensions cannot launch the host.
+- The host only reads a fixed path (`~/.js-eyes/runtime/server.token`) and accepts only two messages (`ping`, `get-config`).
+- Extensions never expose the token through `externally_connectable`, so ordinary web pages cannot read it.
+- The Chrome manifest pins a stable extension ID via a `key` field so the allowlist stays authoritative after rebuilds.
+
+See [docs/native-messaging.md](./docs/native-messaging.md) for install/uninstall commands and file-system paths.
+
 ## Explicitly User-Initiated Network Access
 
 Some features intentionally access external URLs, but only when the user or agent explicitly chooses those workflows:
@@ -106,7 +127,7 @@ Built-in and skill-provided tools that can exfiltrate or mutate browser state ar
 
 - **Sensitive tool set.** `protocol.SENSITIVE_TOOL_NAMES` currently contains `execute_script`, `execute_script_action`, `get_cookies`, `get_cookies_by_domain`, `upload_file`, `upload_file_to_tab`, `inject_css`, and `js_eyes_install_skill`. Additional tools can be added via `security.toolPolicies`.
 - **Policy modes.** Each sensitive tool resolves to one of `allow`, `confirm`, or `deny`. The OpenClaw plugin's `wrapSensitiveTool` records every decision to `runtime/pending-consents/<id>.json` (JSONL-friendly) and logs a structured warning. `deny` short-circuits execution and returns a rejection payload to the calling agent. `confirm` currently emits an auto-confirmation log entry and records the decision so operators can review it; future versions will block until an operator runs `js-eyes consent approve <id>`.
-- **Extension-side eval lockdown.** `handleExecuteScript` / `handleExecuteScriptRequest` (Chrome MV3 + Firefox MV2) reject raw JavaScript payloads unless the extension's `securityConfig.allowRawEval=true` or the storage key `allowRawEval=true` has been set explicitly by the operator. The error `RAW_EVAL_DISABLED` is returned over the same response channel so the calling agent can degrade gracefully.
+- **Extension-side eval lockdown.** `handleExecuteScript` / `handleExecuteScriptRequest` (Chrome MV3 + Firefox MV2) reject raw JavaScript payloads unless `securityConfig.allowRawEval=true`. Starting with v2.5+, the extension no longer requires an independent toggle: the host's `security.allowRawEval` is pushed down at WebSocket handshake (`init_ack.serverConfig.security.allowRawEval`) and applied automatically. The extension storage key `allowRawEval` is retained as an explicit **opt-out override** for security-hardened deployments: if an operator sets it explicitly via `chrome.storage.local.set({allowRawEval:false})` (or `true`), that value wins over the host-synced value. The error `RAW_EVAL_DISABLED` is returned over the same response channel so the calling agent can degrade gracefully.
 - **Consent log review.** Operators should periodically review `runtime/pending-consents/*.json` and the JSONL entries in `logs/audit.log`. `js-eyes consent list` summarizes recent decisions; `js-eyes consent approve <id>` / `js-eyes consent deny <id>` mark pending entries for audit.
 - **Server-supplied token propagation.** The browser extension popup exposes a "Server Token" field that is persisted in `chrome.storage.local`. The background service worker forwards the token both as `Sec-WebSocket-Protocol: bearer.<token>` and as `?token=<token>` on the WebSocket URL.
 
@@ -140,11 +161,32 @@ Environment and config overrides: `JS_EYES_POLICY_ENFORCEMENT`, `config.security
 
 `packages/server-core` now emits `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, and `Permissions-Policy: interest-cohort=()` on every HTTP response. This closes the Chrome `externally_connectable` surface against any future accidental HTML response on port 18080.
 
-### Non-Goals (2.3.0)
+### Non-Goals (2.5.x)
 
 - Interactive `confirm` dialogs (still excluded by design).
-- Task profiles (L3) and reader sub-agent (L5') — both opt-in additions planned for 2.4 and will remain off by default.
+- Task profiles (L3) and reader sub-agent (L5') — remain opt-in additions on the roadmap and stay off by default.
+
+## Host-Synced `allowRawEval` (2.5.1+)
+
+Historically, enabling raw `execute_script` required flipping `security.allowRawEval=true` on the host **and** manually seeding `chrome.storage.local.allowRawEval=true` on the extension (no popup UI exposed the latter), so the host-side toggle was effectively a no-op in practice. Starting with 2.5.1:
+
+- The host pushes `security.allowRawEval` to the browser extension via `init_ack.serverConfig.security.allowRawEval` at WebSocket handshake; the extension applies the value automatically.
+- The extension storage key `allowRawEval` is retained as an explicit **opt-out override** — set it to `true` or `false` via `chrome.storage.local.set({allowRawEval:false})` (or `true`) to pin the extension regardless of the host. Useful for security-hardened deployments that want to force-disable raw eval even if the host flips it on.
+- Everyday users only need to touch `~/.js-eyes/config/config.json`. Restart the server / OpenClaw after changing it so the extension picks up the new value on the next reconnect.
+
+## Security Config Hot-Reload (2.5.2+)
+
+A small whitelist of `security.*` fields can now be swapped into the running JS Eyes server **without** restarting OpenClaw or the server. Server-core ships its own chokidar watcher on `~/.js-eyes/config/config.json` (separate from the plugin's skill watcher) plus a `server.reloadSecurity()` handle that the built-in `js_eyes_reload_security` tool calls on demand.
+
+- **Hot-reloadable** (swap takes effect on the next automation call, ~300 ms from fs write; also immediately via `js_eyes_reload_security`): `security.egressAllowlist`, `security.toolPolicies`, `security.sensitiveCookieDomains`, `security.allowedOrigins`, `security.enforcement`.
+- **Not hot-reloadable — server restart required** (changing these appears under `ignored` in the reload summary, with a one-line warning in the gateway log): `serverHost`, `serverPort`, `allowAnonymous`, `allowRemoteBind`, `allowRawEval`, `requireLockfile`, and anything outside `security.*` (token rotation, `requestTimeout`, etc.).
+- **Caveat — session-level egress approvals reset**: when the allowlist flips, each live automation connection rebuilds its `PolicyContext`, which means per-session `js-eyes egress approve <id>` grants are dropped. Agents re-issue the approval on the next `pending-egress` response; no action needed for standard `allow <domain>` edits because those are part of the static allowlist and get picked up automatically.
+- **Operator triggers** (any one is sufficient):
+  1. Edit `~/.js-eyes/config/config.json` and save — chokidar debounces 300 ms and fires `reloadSecurity({ source: 'fs-watch' })`.
+  2. Agent call: `js_eyes_reload_security` built-in tool (returns `{ changed, applied, ignored, generation, egressAllowlist }`).
+  3. CLI preview: `js-eyes security reload` — read-only dry run that prints what would be applied (CLI does not own the server event loop, so trigger #1 or #2 is required for the actual swap).
+- **Observability**: the audit log (`~/.js-eyes/logs/audit.log`) gains three new events — `config.hot-reload`, `config.hot-reload.error`, `automation.policy-rebuilt` — and `GET /api/browser/status` now includes `data.policy.generation` / `data.policy.egressAllowlist` so operators can externally confirm the live generation.
 
 ---
 
-*Last updated: 2026-04-17 — aligned with the 2.3.0 JS Eyes policy engine release.*
+*Last updated: 2026-04-21 — covers the 2.3.0 policy engine, 2.4.0 Native Messaging host, 2.5.1 host-synced `allowRawEval`, and 2.5.2 security config hot-reload.*

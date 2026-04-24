@@ -1,6 +1,6 @@
 {
   "name": "@js-eyes/protocol",
-  "version": "2.3.0",
+  "version": "2.6.1",
   "description": "Shared protocol constants for JS Eyes runtime packages",
   "main": "index.js",
   "files": [
@@ -9,6 +9,22 @@
     "zip-extract.js"
   ],
   "license": "MIT",
+  "author": "imjszhang <ortle3x3@gmail.com>",
+  "homepage": "https://js-eyes.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imjszhang/JS-Eyes.git",
+    "directory": "packages/protocol"
+  },
+  "bugs": {
+    "url": "https://github.com/imjszhang/JS-Eyes/issues"
+  },
+  "keywords": [
+    "js-eyes",
+    "protocol",
+    "browser-automation",
+    "openclaw"
+  ],
   "publishConfig": {
     "access": "public"
   }

@@ -41,24 +41,31 @@ patchWindowsHide();
 
 const require = createRequire(import.meta.url);
 const manifest = require("./openclaw.plugin.json");
-const { BrowserAutomation } = require("../packages/client-sdk");
+const {
+  BrowserAutomation,
+  PolicyBlockError,
+  ServerPolicyError,
+} = require("../packages/client-sdk");
 const { loadConfig, setConfigValue } = require("../packages/config");
 const { createServer } = require("../packages/server-core");
-const { SENSITIVE_TOOL_NAMES, SKILLS_REGISTRY_URL, resolveSecurityConfig } = require("../packages/protocol");
+const { SENSITIVE_TOOL_NAMES, SKILLS_REGISTRY_URL, isLoopbackHost, resolveSecurityConfig } = require("../packages/protocol");
 const {
-  applySkillInstall,
-  discoverLocalSkills,
+  createSkillRegistry,
+  discoverSkillsFromSources,
   fetchSkillsRegistry,
-  getLegacyOpenClawSkillState,
-  isSkillEnabled,
-  loadSkillContract,
   planSkillInstall,
-  readSkillIntegrity,
-  registerOpenClawTools,
-  verifySkillIntegrity,
+  resolveSkillSources,
 } = require("../packages/protocol/skills");
 const { ensureRuntimePaths, getPaths, chmodBestEffort } = require("../packages/runtime-paths");
 const { ensureToken, readToken } = require("../packages/runtime-paths/token.js");
+
+function tryLoadChokidar() {
+  try {
+    return require("chokidar");
+  } catch {
+    return null;
+  }
+}
 
 const nodeCrypto = require("node:crypto");
 const nodeFs = require("node:fs");
@@ -103,6 +110,8 @@ const BUILTIN_TOOL_NAMES = [
   "js_eyes_upload_file",
   "js_eyes_discover_skills",
   "js_eyes_install_skill",
+  "js_eyes_reload_skills",
+  "js_eyes_reload_security",
 ];
 
 function resolvePluginEntry(definition) {
@@ -117,99 +126,38 @@ function resolvePluginEntry(definition) {
   return definition.register;
 }
 
-function registerLocalSkills(api, skillsDir, pluginConfig, helpers = {}) {
-  const localSkills = discoverLocalSkills(skillsDir);
-  if (localSkills.length === 0) {
-    api.logger.info(`[js-eyes] No local skills found in ${skillsDir}`);
-    return;
-  }
+// 模块级单例：防止 OpenClaw host 直接重跑 register() 时 chokidar watcher /
+// skillRegistry / server 被重复创建（老的没关 → listener + fd 持续累积）。
+// 每次 register() 入口会先 await 旧 currentRegistration.teardown()，再装新的。
+let currentRegistration = null;
 
-  const hostConfig = loadConfig();
-  const legacyState = getLegacyOpenClawSkillState({
-    skillIds: localSkills.map((skill) => skill.id),
-  });
-  let firstRunMigrations = 0;
-  for (const skill of localSkills) {
-    if (!Object.prototype.hasOwnProperty.call(hostConfig.skillsEnabled || {}, skill.id)) {
-      const legacyValue = Object.prototype.hasOwnProperty.call(legacyState, skill.id)
-        ? legacyState[skill.id]
-        : false;
-      setConfigValue(`skillsEnabled.${skill.id}`, legacyValue === true);
-      firstRunMigrations++;
-      if (legacyValue !== true) {
-        api.logger.warn(
-          `[js-eyes] Skill "${skill.id}" left disabled by default; run \`js-eyes skills enable ${skill.id}\` to opt-in`,
-        );
-      }
-    }
-  }
-  let effectiveConfig = hostConfig;
-  if (firstRunMigrations > 0) {
-    effectiveConfig = loadConfig();
-  }
-
-  const registeredNames = new Set(BUILTIN_TOOL_NAMES);
-  for (const skill of localSkills) {
-    if (!isSkillEnabled(effectiveConfig, skill.id, legacyState)) {
-      api.logger.info(`[js-eyes] Skipping disabled local skill "${skill.id}"`);
-      continue;
-    }
-
-    const integrity = verifySkillIntegrity(skill.skillDir);
-    if (integrity.hasIntegrity && !integrity.ok) {
-      api.logger.warn(
-        `[js-eyes] Refusing to load tampered skill "${skill.id}": ${integrity.mismatches.length} mismatched, ${integrity.missing.length} missing`,
-      );
-      continue;
-    }
-    if (!integrity.hasIntegrity) {
-      api.logger.warn(
-        `[js-eyes] Skill "${skill.id}" has no .integrity.json (legacy install); load allowed but consider reinstalling`,
-      );
-    }
-
+async function register(api) {
+  if (currentRegistration) {
     try {
-      const contract = skill.contract || loadSkillContract(skill.skillDir);
-      if (!contract || typeof contract.createOpenClawAdapter !== "function") {
-        api.logger.warn(`[js-eyes] Skipping local skill "${skill.id}" because createOpenClawAdapter() is missing`);
-        continue;
-      }
-
-      const adapter = contract.createOpenClawAdapter(pluginConfig, api.logger);
-      const installManifest = readSkillIntegrity(skill.skillDir);
-      const declaredTools = installManifest?.declaredTools || skill.tools || [];
-
-      const summary = registerOpenClawTools(api, adapter, {
-        logger: api.logger,
-        registeredNames,
-        sourceName: skill.id,
-        declaredTools,
-        wrapTool: helpers.wrapSensitiveTool || null,
-      });
-
-      if (summary.registered.length > 0) {
-        api.logger.info(`[js-eyes] Loaded local skill "${skill.id}" with ${summary.registered.length} tool(s)`);
-      }
-      if (summary.skipped.length > 0 || summary.failed.length > 0) {
-        api.logger.warn(`[js-eyes] Local skill "${skill.id}" completed with ${summary.skipped.length} skipped and ${summary.failed.length} failed tool registration(s)`);
-      }
+      api.logger.warn(
+        "[js-eyes] register() called while a previous registration is still active; tearing it down first",
+      );
+      await currentRegistration.teardown({ logger: api.logger });
     } catch (error) {
-      api.logger.warn(`[js-eyes] Failed to load local skill "${skill.id}": ${error.message}`);
+      api.logger.warn(`[js-eyes] previous teardown failed: ${error.message}`);
     }
+    currentRegistration = null;
   }
-}
 
-function register(api) {
   const pluginCfg = api.pluginConfig ?? {};
 
   const serverHost = pluginCfg.serverHost || "localhost";
   const serverPort = pluginCfg.serverPort || 18080;
   const autoStart = pluginCfg.autoStartServer ?? true;
-  const requestTimeout = pluginCfg.requestTimeout || 60;
+  const requestTimeout = pluginCfg.requestTimeout || 1800;
   const skillsRegistryUrl = pluginCfg.skillsRegistryUrl || DEFAULT_REGISTRY;
   const skillsDir = pluginCfg.skillsDir
     ? nodePath.resolve(pluginCfg.skillsDir)
     : nodePath.join(SKILL_ROOT, "skills");
+  const skillSources = resolveSkillSources({
+    primary: skillsDir,
+    extras: Array.isArray(pluginCfg.extraSkillDirs) ? pluginCfg.extraSkillDirs : [],
+  });
 
   const runtimePaths = ensureRuntimePaths();
   const hostConfig = loadConfig();
@@ -217,10 +165,58 @@ function register(api) {
 
   let bot = null;
   let server = null;
+  // 以下变量随 register() 深入才被赋值，但 teardown() 闭包需要能读到，故提前声明。
+  let skillRegistry = null;
+  let configWatcher = null;
+  let skillDirWatcher = null;
+  let reloadTimer = null;
+
+  async function teardownRegistration(ctx) {
+    const log = (ctx && ctx.logger) || api.logger;
+    if (reloadTimer) {
+      try { clearTimeout(reloadTimer); } catch {}
+      reloadTimer = null;
+    }
+    if (configWatcher) {
+      try { await configWatcher.close(); } catch {}
+      configWatcher = null;
+    }
+    if (skillDirWatcher) {
+      try { await skillDirWatcher.close(); } catch {}
+      skillDirWatcher = null;
+    }
+    if (skillRegistry) {
+      try { await skillRegistry.disposeAll(); } catch {}
+      skillRegistry = null;
+    }
+    if (bot) {
+      try { bot.disconnect(); } catch {}
+      bot = null;
+    }
+    if (server) {
+      try { await server.stop(); } catch {}
+      server = null;
+    }
+    try { log.info("[js-eyes] Service stopped"); } catch {}
+  }
 
   function getServerToken() {
     if (process.env.JS_EYES_SERVER_TOKEN) return process.env.JS_EYES_SERVER_TOKEN;
     return readToken();
+  }
+
+  function getLocalRequestHeaders() {
+    const headers = {};
+    const token = getServerToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    if (isLoopbackHost(serverHost)) {
+      headers.Origin = serverHost === "::1" || serverHost === "[::1]"
+        ? "http://[::1]"
+        : `http://${serverHost}`;
+    }
+    return headers;
   }
 
   function ensureBot() {
@@ -302,6 +298,43 @@ function register(api) {
     return { content: [{ type: "text", text }] };
   }
 
+  /** 将 SDK 策略错误转为面向 Agent 的中文说明（含 egress CLI 指引） */
+  function formatJsEyesPolicyError(err) {
+    if (err instanceof ServerPolicyError) {
+      if (err.code === "POLICY_PENDING_EGRESS") {
+        const hostLine = err.host ? `目标主机: ${err.host}\n` : "";
+        const pendingLine = err.pendingId ? `pendingId: ${err.pendingId}\n` : "";
+        return (
+          `JS Eyes 出站策略未允许打开该 URL（pending-egress），浏览器未执行导航。\n` +
+          `${hostLine}` +
+          `${pendingLine}` +
+          `可执行: js-eyes egress list 查看待审批；js-eyes egress approve <id> 批准该条；` +
+          `js-eyes egress allow <域名> 写入 security.egressAllowlist；` +
+          `js-eyes security show 查看 egressAllowlist 与 taskOrigin。\n` +
+          `服务端说明: ${err.message}`
+        );
+      }
+      if (err.code === "POLICY_SOFT_BLOCK") {
+        return (
+          `JS Eyes 服务端策略拦截了该操作（多为任务范围 L4a、污点 L4b 等，与出站 egress 不同）。\n` +
+          `规则: ${err.rule || "unknown"}\n` +
+          `详情: ${err.message}`
+        );
+      }
+      return `JS Eyes 服务端策略拒绝: ${err.message} (code=${err.code})`;
+    }
+    if (err instanceof PolicyBlockError) {
+      return err.message;
+    }
+    return null;
+  }
+
+  function policyTextResultOrThrow(err) {
+    const text = formatJsEyesPolicyError(err);
+    if (text) return textResult(text);
+    throw err;
+  }
+
   function registerBuiltin(definition, options) {
     api.registerTool(wrapSensitiveTool(definition, { source: 'builtin' }), options);
   }
@@ -321,6 +354,7 @@ function register(api) {
           token: tokenInfo?.token || undefined,
           security,
           config: hostConfig,
+          requestTimeout,
           auditLogFile: runtimePaths.auditLogFile,
           logger: {
             info: (msg) => ctx.logger.info(msg),
@@ -339,15 +373,10 @@ function register(api) {
       }
     },
     async stop(ctx) {
-      if (bot) {
-        try { bot.disconnect(); } catch {}
-        bot = null;
+      await teardownRegistration(ctx);
+      if (currentRegistration && currentRegistration.api === api) {
+        currentRegistration = null;
       }
-      if (server) {
-        try { await server.stop(); } catch {}
-        server = null;
-      }
-      ctx.logger.info("[js-eyes] Service stopped");
     },
   });
 
@@ -430,14 +459,18 @@ function register(api) {
         required: ["url"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        const tabId = await b.openUrl(
-          params.url,
-          params.tabId ?? null,
-          params.windowId ?? null,
-          { target: params.target },
-        );
-        return textResult(`已打开 ${params.url}，标签页 ID: ${tabId}`);
+        try {
+          const b = ensureBot();
+          const tabId = await b.openUrl(
+            params.url,
+            params.tabId ?? null,
+            params.windowId ?? null,
+            { target: params.target },
+          );
+          return textResult(`已打开 ${params.url}，标签页 ID: ${tabId}`);
+        } catch (err) {
+          return policyTextResultOrThrow(err);
+        }
       },
     },
     { optional: true },
@@ -457,9 +490,13 @@ function register(api) {
         required: ["tabId"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        await b.closeTab(params.tabId, { target: params.target });
-        return textResult(`已关闭标签页 ${params.tabId}`);
+        try {
+          const b = ensureBot();
+          await b.closeTab(params.tabId, { target: params.target });
+          return textResult(`已关闭标签页 ${params.tabId}`);
+        } catch (err) {
+          return policyTextResultOrThrow(err);
+        }
       },
     },
     { optional: true },
@@ -479,9 +516,13 @@ function register(api) {
         required: ["tabId"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        const html = await b.getTabHtml(params.tabId, { target: params.target });
-        return textResult(html);
+        try {
+          const b = ensureBot();
+          const html = await b.getTabHtml(params.tabId, { target: params.target });
+          return textResult(html);
+        } catch (err) {
+          return policyTextResultOrThrow(err);
+        }
       },
     },
     { optional: true },
@@ -502,12 +543,16 @@ function register(api) {
         required: ["tabId", "code"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        const result = await b.executeScript(params.tabId, params.code, {
-          target: params.target,
-        });
-        const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
-        return textResult(text);
+        try {
+          const b = ensureBot();
+          const result = await b.executeScript(params.tabId, params.code, {
+            target: params.target,
+          });
+          const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+          return textResult(text);
+        } catch (err) {
+          return policyTextResultOrThrow(err);
+        }
       },
     },
     { optional: true },
@@ -527,12 +572,16 @@ function register(api) {
         required: ["tabId"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        const cookies = await b.getCookies(params.tabId, { target: params.target });
-        if (cookies.length === 0) {
-          return textResult("该标签页没有 Cookie。");
+        try {
+          const b = ensureBot();
+          const cookies = await b.getCookies(params.tabId, { target: params.target });
+          if (cookies.length === 0) {
+            return textResult("该标签页没有 Cookie。");
+          }
+          return textResult(JSON.stringify(cookies, null, 2));
+        } catch (err) {
+          return policyTextResultOrThrow(err);
         }
-        return textResult(JSON.stringify(cookies, null, 2));
       },
     },
     { optional: true },
@@ -553,9 +602,13 @@ function register(api) {
         required: ["tabId", "css"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        await b.injectCss(params.tabId, params.css, { target: params.target });
-        return textResult(`已向标签页 ${params.tabId} 注入 CSS 样式`);
+        try {
+          const b = ensureBot();
+          await b.injectCss(params.tabId, params.css, { target: params.target });
+          return textResult(`已向标签页 ${params.tabId} 注入 CSS 样式`);
+        } catch (err) {
+          return policyTextResultOrThrow(err);
+        }
       },
     },
     { optional: true },
@@ -579,15 +632,19 @@ function register(api) {
         required: ["domain"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        const cookies = await b.getCookiesByDomain(params.domain, {
-          includeSubdomains: params.includeSubdomains,
-          target: params.target,
-        });
-        if (cookies.length === 0) {
-          return textResult(`域名 ${params.domain} 没有 Cookie。`);
+        try {
+          const b = ensureBot();
+          const cookies = await b.getCookiesByDomain(params.domain, {
+            includeSubdomains: params.includeSubdomains,
+            target: params.target,
+          });
+          if (cookies.length === 0) {
+            return textResult(`域名 ${params.domain} 没有 Cookie。`);
+          }
+          return textResult(JSON.stringify(cookies, null, 2));
+        } catch (err) {
+          return policyTextResultOrThrow(err);
         }
-        return textResult(JSON.stringify(cookies, null, 2));
       },
     },
     { optional: true },
@@ -607,9 +664,13 @@ function register(api) {
         required: ["tabId"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        const info = await b.getPageInfo(params.tabId, { target: params.target });
-        return textResult(JSON.stringify(info, null, 2));
+        try {
+          const b = ensureBot();
+          const info = await b.getPageInfo(params.tabId, { target: params.target });
+          return textResult(JSON.stringify(info, null, 2));
+        } catch (err) {
+          return policyTextResultOrThrow(err);
+        }
       },
     },
     { optional: true },
@@ -646,12 +707,16 @@ function register(api) {
         required: ["tabId", "files"],
       },
       async execute(_toolCallId, params) {
-        const b = ensureBot();
-        const result = await b.uploadFileToTab(params.tabId, params.files, {
-          targetSelector: params.targetSelector,
-          target: params.target,
-        });
-        return textResult(JSON.stringify({ success: true, uploadedFiles: result }, null, 2));
+        try {
+          const b = ensureBot();
+          const result = await b.uploadFileToTab(params.tabId, params.files, {
+            targetSelector: params.targetSelector,
+            target: params.target,
+          });
+          return textResult(JSON.stringify({ success: true, uploadedFiles: result }, null, 2));
+        } catch (err) {
+          return policyTextResultOrThrow(err);
+        }
       },
     },
     { optional: true },
@@ -675,7 +740,15 @@ function register(api) {
         const url = params.registryUrl || skillsRegistryUrl;
         try {
           const registry = await fetchSkillsRegistry(url);
-          const installedSkills = new Set(discoverLocalSkills(skillsDir).map((skill) => skill.id));
+          // Re-resolve sources at call time so freshly linked extras are reflected.
+          const freshConfig = loadConfig();
+          const freshSources = resolveSkillSources({
+            primary: skillsDir,
+            extras: Array.isArray(freshConfig.extraSkillDirs) ? freshConfig.extraSkillDirs : [],
+          });
+          const installedSkills = new Set(
+            discoverSkillsFromSources(freshSources).skills.map((skill) => skill.id),
+          );
 
           if (!registry.skills || registry.skills.length === 0) {
             return textResult("当前没有可用的扩展技能。");
@@ -776,7 +849,225 @@ function register(api) {
     { optional: true },
   );
 
-  registerLocalSkills(api, skillsDir, pluginCfg, { wrapSensitiveTool });
+  skillRegistry = createSkillRegistry({
+    api,
+    pluginConfig: pluginCfg,
+    wrapSensitiveTool,
+    builtinToolNames: BUILTIN_TOOL_NAMES,
+    skillsDir,
+    extrasProvider: () => {
+      const cfg = loadConfig();
+      return Array.isArray(cfg.extraSkillDirs) ? cfg.extraSkillDirs : [];
+    },
+    configLoader: () => loadConfig(),
+    setConfigValue: (key, value) => setConfigValue(key, value),
+    logger: api.logger,
+  });
+
+  const initPromise = skillRegistry.init().catch((error) => {
+    api.logger.warn(`[js-eyes] SkillRegistry init failed: ${error.message}`);
+  });
+  void initPromise;
+
+  api.registerTool(
+    wrapSensitiveTool({
+      name: "js_eyes_reload_skills",
+      label: "JS Eyes: Reload Skills",
+      description: "重新扫描 primary + extraSkillDirs，应用 skillsEnabled 与配置变更（热加载/卸载技能），无需重启 OpenClaw。",
+      parameters: {
+        type: "object",
+        properties: {
+          reason: {
+            type: "string",
+            description: "触发原因，仅用于日志（如 'agent-call', 'user-link'）",
+          },
+        },
+      },
+      async execute(_toolCallId, params) {
+        const reason = (params && typeof params.reason === 'string') ? params.reason : 'tool';
+        try {
+          const summary = await skillRegistry.reload(reason);
+          const lines = [
+            `[js-eyes] reload 完成 (reason=${summary.reason || reason})`,
+            `  added:    ${summary.added.join(', ') || '(none)'}`,
+            `  removed:  ${summary.removed.join(', ') || '(none)'}`,
+            `  reloaded: ${summary.reloaded.join(', ') || '(none)'}`,
+            `  toggled-off: ${summary.toggledOff.join(', ') || '(none)'}`,
+          ];
+          if (Array.isArray(summary.conflicts) && summary.conflicts.length > 0) {
+            lines.push(`  conflicts:`);
+            for (const c of summary.conflicts) {
+              lines.push(`    - ${c.id}: kept ${c.winner.source} ${c.winner.path}, skipped ${c.loser.source} ${c.loser.path}`);
+            }
+          }
+          if (Array.isArray(summary.failedDispatchers) && summary.failedDispatchers.length > 0) {
+            lines.push(`  dispatcher-failures (restart OpenClaw once to expose these):`);
+            for (const f of summary.failedDispatchers) {
+              lines.push(`    - ${f.skillId}: ${f.toolNames.join(', ')}`);
+            }
+          }
+          return { content: [{ type: 'text', text: lines.join('\n') }] };
+        } catch (error) {
+          return { content: [{ type: 'text', text: `reload 失败: ${error.message}` }] };
+        }
+      },
+    }),
+    { optional: true },
+  );
+
+  api.registerTool(
+    wrapSensitiveTool({
+      name: "js_eyes_reload_security",
+      label: "JS Eyes: Reload Security",
+      description: "热加载 ~/.js-eyes/config/config.json 中的安全配置（egressAllowlist / toolPolicies / enforcement 等），无需重启 OpenClaw 或 JS Eyes 服务器。下一次 open_url 会立即生效。非热加载字段（serverHost/serverPort/allowAnonymous/token 等）会出现在 ignored 字段中，仍需重启。",
+      parameters: {
+        type: "object",
+        properties: {
+          reason: {
+            type: "string",
+            description: "触发原因，仅用于日志（如 'agent-call', 'user-link'）",
+          },
+        },
+      },
+      async execute(_toolCallId, params) {
+        const reason = (params && typeof params.reason === 'string') ? params.reason : 'tool';
+        if (!server || typeof server.reloadSecurity !== 'function') {
+          return { content: [{ type: 'text', text: '[js-eyes] 服务器未启动或未暴露 reloadSecurity（可能 autoStartServer=false 或版本过旧）。' }] };
+        }
+        try {
+          const summary = server.reloadSecurity({ source: `tool:${reason}` });
+          const lines = [
+            `[js-eyes] security reload (source=tool:${reason})`,
+            `  changed:    ${summary.changed}`,
+            `  generation: ${summary.generation}`,
+            `  applied:    ${Object.keys(summary.applied || {}).join(', ') || '(none)'}`,
+            `  ignored:    ${Object.keys(summary.ignored || {}).join(', ') || '(none)'}`,
+            `  egressAllowlist: ${JSON.stringify(summary.egressAllowlist || [])}`,
+          ];
+          if (summary.error) {
+            lines.push(`  error: ${summary.error}`);
+          }
+          if (Object.keys(summary.ignored || {}).length > 0) {
+            lines.push('  (ignored fields require a server restart to take effect.)');
+          }
+          return { content: [{ type: 'text', text: lines.join('\n') }] };
+        } catch (error) {
+          return { content: [{ type: 'text', text: `security reload 失败: ${error.message}` }] };
+        }
+      },
+    }),
+    { optional: true },
+  );
+
+  // Host-config chokidar watcher: triggers a debounced registry.reload() whenever
+  // ~/.js-eyes/config/config.json is written (by `js-eyes skills link`, toggles, etc.).
+  const watchConfig = pluginCfg.watchConfig !== false;
+  const devWatchSkills = pluginCfg.devWatchSkills !== false;
+  const chokidar = watchConfig || devWatchSkills ? tryLoadChokidar() : null;
+
+  // macOS 下编辑器原子写、.DS_Store 抖动、swap 文件等会刷 chokidar 事件。
+  // 忽略这些噪音源；对于真正发生变化的文件，再在下面用 sha1 指纹二次过滤，
+  // 保证 scheduleReload 只在内容真变时调用，避免空跑 reload 放大泄漏。
+  const WATCHER_IGNORED = [
+    /(^|[\/\\])\.DS_Store$/,
+    /(^|[\/\\])\.git([\/\\]|$)/,
+    /\.sw[pox]$/i,
+    /~$/,
+  ];
+
+  const _lastHashByPath = new Map();
+
+  function _hashFileSync(filePath) {
+    try {
+      const buf = nodeFs.readFileSync(filePath);
+      return nodeCrypto.createHash('sha1').update(buf).digest('hex');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /**
+   * 只有当 filePath 的内容 sha1 与上次记录不同时才触发 reason 对应的 reload。
+   * 对删除事件（sha1='' 且之前没记录过）直接放行。
+   */
+  function scheduleReloadIfChanged(reason, filePath) {
+    if (!filePath) {
+      scheduleReload(reason);
+      return;
+    }
+    const prev = _lastHashByPath.get(filePath);
+    const next = _hashFileSync(filePath);
+    if (prev === next && prev !== undefined) {
+      // 内容未变（或读失败两次都拿到空串），视为噪音，忽略。
+      return;
+    }
+    _lastHashByPath.set(filePath, next);
+    scheduleReload(reason);
+  }
+
+  function scheduleReload(reason) {
+    if (reloadTimer) clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(() => {
+      reloadTimer = null;
+      skillRegistry.reload(reason).catch((error) => {
+        api.logger.warn(`[js-eyes] Hot reload failed: ${error.message}`);
+      });
+    }, 300);
+  }
+
+  if (watchConfig && chokidar) {
+    try {
+      configWatcher = chokidar.watch(runtimePaths.configFile, {
+        persistent: true,
+        ignoreInitial: true,
+        ignored: WATCHER_IGNORED,
+        awaitWriteFinish: { stabilityThreshold: 150, pollInterval: 50 },
+      });
+      configWatcher.on('all', (_event, path) => scheduleReloadIfChanged('config-watch', path || runtimePaths.configFile));
+      configWatcher.on('error', (error) => {
+        api.logger.warn(`[js-eyes] config watcher error: ${error.message}`);
+      });
+      api.logger.info(`[js-eyes] Watching host config: ${runtimePaths.configFile}`);
+    } catch (error) {
+      api.logger.warn(`[js-eyes] Failed to start config watcher: ${error.message}`);
+    }
+  } else if (watchConfig && !chokidar) {
+    api.logger.warn(`[js-eyes] chokidar not installed; host-config hot reload disabled. Install chokidar to enable.`);
+  }
+
+  if (devWatchSkills && chokidar) {
+    try {
+      const watchGlobs = [];
+      if (skillSources && skillSources.primary && nodeFs.existsSync(skillSources.primary)) {
+        watchGlobs.push(nodePath.join(skillSources.primary, '*', 'skill.contract.js'));
+        watchGlobs.push(nodePath.join(skillSources.primary, '*', 'package.json'));
+      }
+      for (const extra of (skillSources && skillSources.extras) || []) {
+        if (extra.kind === 'skill') {
+          watchGlobs.push(nodePath.join(extra.path, 'skill.contract.js'));
+          watchGlobs.push(nodePath.join(extra.path, 'package.json'));
+        } else {
+          watchGlobs.push(nodePath.join(extra.path, '*', 'skill.contract.js'));
+          watchGlobs.push(nodePath.join(extra.path, '*', 'package.json'));
+        }
+      }
+      if (watchGlobs.length > 0) {
+        skillDirWatcher = chokidar.watch(watchGlobs, {
+          persistent: true,
+          ignoreInitial: true,
+          ignored: WATCHER_IGNORED,
+          awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 80 },
+        });
+        skillDirWatcher.on('all', (_event, path) => scheduleReloadIfChanged('skill-dir-watch', path));
+        skillDirWatcher.on('error', (error) => {
+          api.logger.warn(`[js-eyes] skill dir watcher error: ${error.message}`);
+        });
+        api.logger.info(`[js-eyes] Watching ${watchGlobs.length} skill path(s) for hot reload`);
+      }
+    } catch (error) {
+      api.logger.warn(`[js-eyes] Failed to start skill-dir watcher: ${error.message}`);
+    }
+  }
 
   api.registerCli(
     ({ program }) => {
@@ -790,7 +1081,7 @@ function register(api) {
         .action(async () => {
           try {
             const url = `http://${serverHost}:${serverPort}/api/browser/status`;
-            const resp = await fetch(url);
+            const resp = await fetch(url, { headers: getLocalRequestHeaders() });
             const data = await resp.json();
             const d = data.data;
             console.log("\n=== JS-Eyes Server Status ===");
@@ -813,7 +1104,7 @@ function register(api) {
         .action(async () => {
           try {
             const url = `http://${serverHost}:${serverPort}/api/browser/tabs`;
-            const resp = await fetch(url);
+            const resp = await fetch(url, { headers: getLocalRequestHeaders() });
             const data = await resp.json();
             if (!data.browsers || data.browsers.length === 0) {
               console.log("\n当前没有浏览器扩展连接。\n");
@@ -877,6 +1168,11 @@ function register(api) {
     },
     { commands: ["js-eyes"] },
   );
+
+  currentRegistration = {
+    api,
+    teardown: teardownRegistration,
+  };
 }
 
 const definition = {

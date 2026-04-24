@@ -3,11 +3,16 @@
   "slug": "js-eyes",
   "displayName": "Js Eyes",
   "latest": {
-    "version": "2.3.0",
-    "publishedAt": 1776370254712,
-    "commit": "https://github.com/openclaw/skills/commit/24d9aef8a35edc102248fe1d7896794da5158875"
+    "version": "2.6.1",
+    "publishedAt": 1776963491494,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.0",
+      "publishedAt": 1776370254712,
+      "commit": "https://github.com/openclaw/skills/commit/24d9aef8a35edc102248fe1d7896794da5158875"
+    },
     {
       "version": "1.4.3",
       "publishedAt": 1772027181864,

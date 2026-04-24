@@ -1,7 +1,12 @@
 'use strict';
 
 const WebSocket = require('ws');
-const { DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT } = require('@js-eyes/protocol');
+const {
+  DEFAULT_SERVER_HOST,
+  DEFAULT_SERVER_PORT,
+  DEFAULT_REQUEST_TIMEOUT_SECONDS,
+  isLoopbackHost,
+} = require('@js-eyes/protocol');
 const {
   PolicyContext,
   TaskOriginTracker,
@@ -25,6 +30,39 @@ class PolicyBlockError extends Error {
   }
 }
 
+/** WebSocket 服务端策略层返回（pending-egress / POLICY_*），与本地 PolicyBlockError 区分 */
+class ServerPolicyError extends Error {
+  constructor(message, info = {}) {
+    super(message);
+    this.name = 'ServerPolicyError';
+    this.code = info.code || 'POLICY_BLOCK';
+    this.status = info.status;
+    this.rule = info.rule;
+    this.reasons = Array.isArray(info.reasons) ? info.reasons : [];
+    this.pendingId = info.pendingId ?? null;
+    this.host = info.host ?? null;
+  }
+}
+
+function policyErrorFromServerMessage(msg) {
+  const reasons = Array.isArray(msg.reasons) ? msg.reasons : [];
+  let host = null;
+  for (const r of reasons) {
+    if (r && r.host) {
+      host = r.host;
+      break;
+    }
+  }
+  return new ServerPolicyError(msg.message || '策略引擎拒绝', {
+    code: msg.code || 'POLICY_BLOCK',
+    status: msg.status || 'error',
+    rule: msg.rule,
+    reasons,
+    pendingId: msg.pendingId ?? null,
+    host,
+  });
+}
+
 function tryReadServerToken() {
   try {
     const { readToken } = require('@js-eyes/runtime-paths/token');
@@ -34,11 +72,33 @@ function tryReadServerToken() {
   }
 }
 
+// 活跃的 BrowserAutomation 实例集合；进程退出信号只注册一次，避免每个实例都挂
+// SIGINT/SIGTERM/exit 造成 MaxListenersExceededWarning 与 listener 泄漏。
+const _activeAutomations = new Set();
+let _processHooksInstalled = false;
+
+function _installProcessHooksOnce() {
+  if (_processHooksInstalled) return;
+  _processHooksInstalled = true;
+  const cleanup = () => {
+    for (const bot of Array.from(_activeAutomations)) {
+      try { bot.disconnect(); } catch {}
+    }
+  };
+  try {
+    process.on('SIGINT', cleanup);
+    process.on('SIGTERM', cleanup);
+    process.on('exit', cleanup);
+  } catch {
+    // Best-effort: some sandboxed runtimes may forbid process.on.
+  }
+}
+
 class BrowserAutomation {
   constructor(serverUrl, options = {}) {
     this.serverUrl = this._normalizeWsUrl(serverUrl || DEFAULT_SERVER_URL);
     this.logger = options.logger || console;
-    this.defaultTimeout = options.defaultTimeout || 60;
+    this.defaultTimeout = options.defaultTimeout || DEFAULT_REQUEST_TIMEOUT_SECONDS;
     if (Object.prototype.hasOwnProperty.call(options, 'token')) {
       this.token = options.token || null;
     } else if (process.env.JS_EYES_SERVER_TOKEN) {
@@ -66,12 +126,8 @@ class BrowserAutomation {
       this.policy.setTabLookup((tabId) => this._lookupTabUrl(tabId));
     }
 
-    this._processCleanup = () => {
-      try { this.disconnect(); } catch {}
-    };
-    process.on('SIGINT', this._processCleanup);
-    process.on('SIGTERM', this._processCleanup);
-    process.on('exit', this._processCleanup);
+    _installProcessHooksOnce();
+    _activeAutomations.add(this);
   }
 
   _normalizeWsUrl(url) {
@@ -101,9 +157,23 @@ class BrowserAutomation {
       this.logger.info(`[JS-Eyes] 正在连接: ${sanitizedUrl}`);
 
       const protocols = this.token ? [WS_SUBPROTOCOL_PREFIX + this.token] : undefined;
+      
+      // Extract host from wsUrl for Origin header (loopback only)
+      let originHeader = null;
+      try {
+        const parsed = new URL(wsUrl);
+        if (isLoopbackHost(parsed.hostname)) {
+          originHeader = parsed.protocol === 'wss:'
+            ? `https://${parsed.host}`
+            : `http://${parsed.host}`;
+        }
+      } catch {}
+
       const wsOptions = this.token
-        ? { headers: { Authorization: `Bearer ${this.token}` } }
-        : undefined;
+        ? { headers: { Authorization: `Bearer ${this.token}`, ...(originHeader ? { Origin: originHeader } : {}) } }
+        : originHeader
+          ? { headers: { Origin: originHeader } }
+          : undefined;
 
       try {
         this.ws = protocols
@@ -190,9 +260,7 @@ class BrowserAutomation {
     this._connectPromise = null;
     this._clientId = null;
 
-    process.removeListener('SIGINT', this._processCleanup);
-    process.removeListener('SIGTERM', this._processCleanup);
-    process.removeListener('exit', this._processCleanup);
+    _activeAutomations.delete(this);
 
     this.logger.info('[JS-Eyes] 已断开连接');
   }
@@ -238,8 +306,15 @@ class BrowserAutomation {
         clearTimeout(pending.timeoutId);
         this.pendingRequests.delete(msg.requestId);
 
-        if (msg.status === 'error' || msg.type === 'error') {
-          pending.reject(new Error(msg.message || '未知错误'));
+        if (msg.status === 'pending-egress') {
+          pending.reject(policyErrorFromServerMessage(msg));
+        } else if (msg.status === 'error' || msg.type === 'error') {
+          const code = msg.code;
+          if (code && String(code).startsWith('POLICY_')) {
+            pending.reject(policyErrorFromServerMessage(msg));
+          } else {
+            pending.reject(new Error(msg.message || '未知错误'));
+          }
         } else {
           pending.resolve(msg);
         }
@@ -476,4 +551,5 @@ module.exports = {
   TaintRegistry,
   EgressGate,
   PolicyBlockError,
+  ServerPolicyError,
 };

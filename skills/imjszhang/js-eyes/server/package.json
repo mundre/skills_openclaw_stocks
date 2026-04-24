@@ -1,6 +1,6 @@
 {
   "name": "js-eyes-server-compat",
-  "version": "2.3.0",
+  "version": "2.6.1",
   "private": true,
   "main": "index.js",
   "license": "MIT"
