@@ -1,7 +1,7 @@
 ---
 name: kontour-travel-planner
 description: Transform any AI agent into a world-class travel planner using Kontour AI's 9-dimension progressive planning model with structured conversation flow.
-version: 1.2.13
+version: 1.2.14
 license: MIT-0
 metadata:
   openclaw:
@@ -34,7 +34,6 @@ This skill transforms any agent into a world-class travel planner using Kontour 
 To reduce false-positive trust flags and improve reviewer confidence:
 
 - Runtime network behavior: `plan.sh` and `export-gmaps.sh` make **no outbound HTTP/API calls**.
-- `scripts/gen-airports.py` is an **offline data-maintenance helper** and is not invoked by runtime planning/export flows.
 - Credentials required: **none** (no API keys, tokens, OAuth, or env secrets).
 - Declared runtime dependencies in frontmatter: `bash`, `python3` only.
 - Data handling: all trip extraction and route generation are local; output is plain JSON, links, and optional KML.
@@ -43,18 +42,8 @@ To reduce false-positive trust flags and improve reviewer confidence:
 Quick local verification:
 
 ```bash
-# Show full-file fingerprints for reviewer spot-checking (helps when UI previews truncate long files)
-wc -l scripts/plan.sh scripts/export-gmaps.sh scripts/gen-airports.py
-shasum -a 256 scripts/plan.sh scripts/export-gmaps.sh scripts/gen-airports.py
-
-# Should return no matches for network clients/dynamic exec in runtime scripts/helpers
-rg -n "python3 -c|eval\(|exec\(|os\.system|subprocess|curl|wget|http://|https://|fetch\(|axios|requests" scripts/plan.sh scripts/export-gmaps.sh scripts/gen-airports.py
-
-# Python helper should not import network client modules
-rg -n "^\s*(import|from)\s+(socket|requests|urllib|http\.client|ftplib|aiohttp)\b" scripts/gen-airports.py
-
-# Confirm helper script is not called by runtime planner/export flows
-rg -n "gen-airports\.py" scripts/plan.sh scripts/export-gmaps.sh
+# Should return no matches for network clients used by runtime scripts
+rg -n "python3 -c|eval\(|exec\(|os\.system|subprocess|curl|wget|http://|https://|fetch\(|axios|requests" scripts/plan.sh scripts/export-gmaps.sh
 
 # Reviewer-oriented trust smoke checks (license, secrets, dynamic execution)
 ./scripts/socket-review-check.sh
