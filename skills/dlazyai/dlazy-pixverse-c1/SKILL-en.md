@@ -1,8 +1,8 @@
 ---
 name: dlazy-pixverse-c1
-version: 1.0.0
+version: 1.0.1
 description: PixVerse C1 video model (strong on action, VFX, and high-motion scenes) 鈥?one model covers text-to-video, image-to-video, first/last-frame-to-video, and reference-to-video.
-metadata: {"clawdbot":{"emoji":"🤖","requires":{"bins":["npm","npx"]},"install":"npm install -g @dlazy/cli@1.0.5"},"openclaw":{"systemPrompt":"When invoking this skill, use dlazy pixverse-c1 -h for help."}}
+metadata: {"clawdbot":{"emoji":"🤖","requires":{"bins":["npm","npx"]},"install":"npm install -g @dlazy/cli@1.0.6"},"openclaw":{"systemPrompt":"When invoking this skill, use dlazy pixverse-c1 -h for help."}}
 ---
 
 # dlazy-pixverse-c1
@@ -13,6 +13,22 @@ PixVerse C1 video model. Covers text-to-video, image-to-video, first/last-frame-
 
 - pixverse c1
 - video generation
+
+## Authentication
+
+All requests require the dLazy API key via CLI configuration.
+
+**CLI Configuration**: You can set your API key using the following command:
+
+```bash
+dlazy auth set YOUR_API_KEY
+```
+
+### Getting Your API Key
+
+1. Sign in or create an account at [dlazy.com](https://dlazy.com)
+2. Go to [dlazy.com/dashboard/organization/api-key](https://dlazy.com/dashboard/organization/api-key)
+3. Click the copy button on the right side of API Key section to copy it
 
 ## Usage
 

@@ -1,8 +1,8 @@
 ---
 name: dlazy-pixverse-c1
-version: 1.0.0
+version: 1.0.1
 description: PixVerse C1 视频模型 (擅长动作、特效和高速运动场景) —— 单一模型覆盖文生视频、图生视频、首尾帧视频及参考图生成视频。
-metadata: {"clawdbot":{"emoji":"🤖","requires":{"bins":["npm","npx"]},"install":"npm install -g @dlazy/cli@1.0.5"},"openclaw":{"systemPrompt":"当调用此技能时，可以使用 dlazy pixverse-c1 -h 查看帮助信息。"}}
+metadata: {"clawdbot":{"emoji":"🤖","requires":{"bins":["npm","npx"]},"install":"npm install -g @dlazy/cli@1.0.6"},"openclaw":{"systemPrompt":"当调用此技能时，可以使用 dlazy pixverse-c1 -h 查看帮助信息。"}}
 ---
 
 # dlazy-pixverse-c1
@@ -13,6 +13,22 @@ PixVerse C1 视频模型 —— 支持文生视频，首尾帧生视频，以及
 
 - pixverse c1
 - 视频生成
+
+## 身份验证 (Authentication)
+
+所有请求都需要配置 dLazy API key。
+
+**CLI 配置**: 你可以通过以下命令设置你的 API key：
+
+```bash
+dlazy auth set YOUR_API_KEY
+```
+
+### 获取你的 API Key
+
+1. 登录或在 [dlazy.com](https://dlazy.com) 创建账号
+2. 访问 [dlazy.com/dashboard/organization/api-key](https://dlazy.com/dashboard/organization/api-key)
+3. 点击 API Key 右侧的复制按钮获取它
 
 ## 使用方法
 
