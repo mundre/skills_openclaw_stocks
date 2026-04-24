@@ -3,11 +3,16 @@
   "slug": "kryptogo-meme-trader",
   "displayName": "KryptoGO Meme Trader",
   "latest": {
-    "version": "2.5.6",
-    "publishedAt": 1772526359521,
-    "commit": "https://github.com/openclaw/skills/commit/5a3c80565e9c8b3f22fa70ff83191de46f48f095"
+    "version": "2.6.0",
+    "publishedAt": 1776671143016,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.5.6",
+      "publishedAt": 1772526359521,
+      "commit": "https://github.com/openclaw/skills/commit/5a3c80565e9c8b3f22fa70ff83191de46f48f095"
+    },
     {
       "version": "2.4.3",
       "publishedAt": 1772425658100,
