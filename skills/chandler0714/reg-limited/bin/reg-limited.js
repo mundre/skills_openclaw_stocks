@@ -20,13 +20,14 @@ const CITY_RULES = {
   '南京': { type: '尾号', weekdays: [1, 2, 3, 4, 5] }
 };
 
-// Beijing official rules (2025-12-29 to 2026-03-29)
+// Beijing official rules (2026-04-06 to 2026-10-06)
+// Source: https://jtgl.beijing.gov.cn/jgj/lszt/659722/660341/index.html
 const BEIJING_RULES = {
-  1: ['3', '8'],  // Monday
-  2: ['4', '9'],  // Tuesday
-  3: ['5', '0'],  // Wednesday
-  4: ['1', '6'],  // Thursday
-  5: ['2', '7']   // Friday
+  1: ['2', '7'],  // Monday
+  2: ['3', '8'],  // Tuesday
+  3: ['4', '9'],  // Wednesday
+  4: ['5', '0'],  // Thursday
+  5: ['1', '6']   // Friday
 };
 
 const BEIJING_URL = 'https://jtgl.beijing.gov.cn/jgj/lszt/659722/660341/index.html';
@@ -36,17 +37,19 @@ const BEIJING_URL = 'https://jtgl.beijing.gov.cn/jgj/lszt/659722/660341/index.ht
  */
 async function fetchBeijingRestrictions() {
   try {
-    // Use web_fetch via openclaw
-    const cmd = `openclaw tools web_fetch --url "${BEIJING_URL}" --max-chars 5000`;
+    // Use curl to fetch from Beijing traffic website
+    const cmd = `curl -s -L "${BEIJING_URL}" --max-time 30`;
     const result = execSync(cmd, { encoding: 'utf-8', timeout: 30000 });
     
-    const data = JSON.parse(result);
-    if (data.text) {
-      return parseBeijingRules(data.text);
+    if (result) {
+      const rules = parseBeijingRules(result);
+      if (rules) {
+        return rules;
+      }
     }
     return null;
   } catch (e) {
-    console.error('Failed to fetch from website:', e.message);
+    // Silent fallback - will use local rules
     return null;
   }
 }
@@ -130,15 +133,7 @@ async function getTodayRestrictions(city) {
     };
   }
   
- cities or weekends  // For other, use local rules
-  if (normalizedCity === '北京' && dayOfWeek >= 1 && dayOfWeek <= 5) {
-    return {
-      city: normalizedCity,
-      numbers: BEIJING_RULES[dayOfWeek] || [],
-      date: today.toISOString().split('T')[0]
-    };
-  }
-  
+ // For other cities or weekends, return empty
   return {
     city: normalizedCity,
     numbers: [],
