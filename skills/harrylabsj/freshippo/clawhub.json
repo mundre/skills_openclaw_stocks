@@ -1,9 +1,0 @@
-{
-  "name": "freshippo",
-  "version": "2.0.0",
-  "description": "盒马鲜生购物助手 - 支持搜索、生鲜选购、加购物车，支付环节留给用户",
-  "keywords": ["freshippo", "hema", "盒马", "grocery", "fresh"],
-  "author": "harrylabsj",
-  "license": "MIT",
-  "repository": "https://github.com/harrylabsj/freshippo"
-}

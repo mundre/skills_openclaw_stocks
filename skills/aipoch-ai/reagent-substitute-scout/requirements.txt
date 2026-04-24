@@ -1,9 +1,0 @@
-biopython
-dataclasses
-numpy
-pandas
-pydantic
-rdkit
-requests
-rich
-tabulate

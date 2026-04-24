@@ -1,3 +1,0 @@
-# Punchlist
-
-No current blockers.

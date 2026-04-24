@@ -1,5 +1,0 @@
-{
-  "path": "/api/xq_host/list",
-  "method": "GET",
-  "auth": "agent"
-}

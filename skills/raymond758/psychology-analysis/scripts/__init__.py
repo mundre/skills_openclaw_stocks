@@ -1,1 +1,0 @@
-# Psychology Analysis scripts package

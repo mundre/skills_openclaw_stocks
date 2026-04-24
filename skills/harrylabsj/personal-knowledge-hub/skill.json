@@ -1,9 +1,0 @@
-{
-  "name": "personal-knowledge-hub",
-  "slug": "personal-knowledge-hub",
-  "version": "0.1.0",
-  "description": "auto-generated skeleton",
-  "author": "Harry",
-  "tags": ["lifestyle"],
-  "handler": "handler.py"
-}

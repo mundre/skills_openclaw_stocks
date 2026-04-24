@@ -1,3 +1,0 @@
-file '/home/cxp/.openclaw/skills/video-producer/test-output/audio/s0.mp3'
-file '/home/cxp/.openclaw/skills/video-producer/test-output/audio/s1.mp3'
-file '/home/cxp/.openclaw/skills/video-producer/test-output/audio/s2.mp3'

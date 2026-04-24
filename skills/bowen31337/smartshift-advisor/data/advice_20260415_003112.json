@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 15,
-  "strategy": "conservative_hold",
-  "reasoning": "00:30 AEST overnight period. Battery at 85% SOC discharging 477W in self-consumption mode. Feed-in only 3c/kWh \u2014 not worth exporting. Buy price 20c (off-peak flat), no negspot for grid charging. Solar forecast for tomorrow is excellent: 102.4 kWh sunny day (21.7% cloud). Strategy: hold battery for overnight self-consumption, minimise grid imports, let solar refill by mid-morning. No action needed \u2014 current self-consumption mode is optimal.",
-  "timestamp": "2026-04-15T00:31:12.970265"
-}

@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "6:30 AM - Battery at 78%, sun just risen. Feed-in only 3c (poor return on export). Solar forecast 102 kWh today (partly cloudy). Buy price stable at 20c off-peak, no negspot. Best to hold battery for self-consumption through morning, let solar cover daytime load, and preserve charge for evening peak. Setting 15c export threshold to capture any midday price spikes, 20% floor to keep evening reserve.",
-  "timestamp": "2026-04-15T06:30:48.111046"
-}

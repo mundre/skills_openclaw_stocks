@@ -1,7 +1,0 @@
-{
-  "name": "ms365-cli",
-  "version": "1.0.0",
-  "description": "Microsoft 365 Email & Calendar CLI via Graph API",
-  "main": "index.js",
-  "dependencies": {}
-}

@@ -1,7 +1,0 @@
-{
-  "apiKey": "your-datahub-api-key-here",
-  "baseUrl": "https://datahub.seekin.chat",
-  "timeout": 600000,
-  "pollInterval": 3000,
-  "maxPollAttempts": 200
-}

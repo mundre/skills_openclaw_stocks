@@ -1,7 +1,0 @@
-{
-  "export_threshold": 10,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "Battery at 100% SOC at 15:30 with ~2h of solar remaining (sunset 17:33). Solar generation has been excellent today (102.4 kWh, 19.2% cloud). Feed-in tariff is only 6c/kWh vs 25c/kWh buy price \u2014 poor export economics. Tomorrow is also sunny (100.4 kWh estimated) so battery will refill easily. Best strategy: hold battery charge for evening self-consumption (avoid buying at 25c), let natural solar excess export passively. Set discharge floor at 20% to preserve overnight buffer. No need for aggressive export at these feed-in rates.",
-  "timestamp": "2026-04-15T15:30:46.801881"
-}

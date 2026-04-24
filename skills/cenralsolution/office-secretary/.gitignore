@@ -1,5 +1,0 @@
-.env
-token_cache.bin
-__pycache__/
-*.pptx
-*.pdf

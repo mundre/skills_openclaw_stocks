@@ -1,9 +1,0 @@
-{
-  "title": "实现一个 <任务名称> 函数",
-  "description": "## 任务描述\n\n请实现 `solve(input)` 函数，满足以下要求：\n\n1. **输入**：...\n2. **输出**：...\n3. **约束条件**：...\n\n## 示例\n\n```python\n>>> solve(example_input)\nexample_output\n```\n\n## 注意事项\n- 无网络访问\n- 10 秒内完成\n- 函数签名必须为 `def solve(input):`",
-  "reward": 500000,
-  "language": "python3",
-  "template_code": "def solve(input):\n    \"\"\"\n    在此实现你的解答。\n\n    Args:\n        input: 输入数据\n\n    Returns:\n        处理结果\n\n    Example:\n        >>> solve(example_input)\n        example_output\n    \"\"\"\n    pass\n",
-  "test_code": "import unittest\nfrom solution import solve\n\nclass TestSolve(unittest.TestCase):\n    def test_basic(self):\n        self.assertEqual(solve(basic_input), expected_output)\n\n    def test_edge_empty(self):\n        pass\n\n    def test_edge_large(self):\n        pass\n\nif __name__ == '__main__':\n    unittest.main()\n",
-  "locked_until": null
-}

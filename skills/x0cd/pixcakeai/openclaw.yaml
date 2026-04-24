@@ -1,3 +1,0 @@
-name: photo-enhance
-runtime: nodejs:18
-handler: openclaw-index.handleRequest

@@ -1,5 +1,0 @@
-{
-  "path": "/api/host_area/list",
-  "method": "GET",
-  "auth": "agent"
-}

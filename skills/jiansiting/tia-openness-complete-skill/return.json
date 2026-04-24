@@ -1,5 +1,0 @@
-{
-  "success": true/false,
-  "message": "操作结果描述",
-  ...  // 额外数据
-}

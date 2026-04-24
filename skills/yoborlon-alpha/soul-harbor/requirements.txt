@@ -1,3 +1,0 @@
-# SoulHarbor Dependencies
-# Requires OpenClaw as LLM client
-# No additional dependencies required - uses standard library only

@@ -1,6 +1,0 @@
-{
-  "name": "@starter/bot",
-  "private": true,
-  "type": "module",
-  "scripts": { "dev": "node index.js", "start": "node index.js" }
-}

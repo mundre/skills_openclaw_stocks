@@ -1,9 +1,0 @@
-{
-    "name": "competitor-pricing-monitor",
-    "version": "1.0.0",
-    "type": "module",
-    "description": "Monitor competitor pricing on Shopify stores. Track product prices, detect changes, compare across stores, and analyze pricing strategies. Uses Shopify's public products.json endpoint.",
-    "engines": { "node": ">=18.0.0" },
-    "dependencies": { "apify": "^3.3.2" },
-    "scripts": { "start": "node src/main.js" }
-}

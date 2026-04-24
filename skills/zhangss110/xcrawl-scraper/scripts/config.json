@@ -1,7 +1,0 @@
-{
-  "apiKey": "",
-  "apiUrl": "https://run.xcrawl.com",
-  "timeout": 60,
-  "defaultFormats": ["markdown"],
-  "defaultProxy": ""
-}

@@ -1,2 +1,0 @@
-futu-api>=1.0.0
-akshare>=1.18.0

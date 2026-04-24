@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 25,
-  "strategy": "moderate_export",
-  "reasoning": "Battery at 93% SoC with 102.7 kWh solar forecast today (sunny, 20% clouds). Off-peak flat prices at 20c buy / 3c feed-in with no spikes expected next 4h. Big solar day means battery will be full by mid-morning regardless \u2014 excess solar will export naturally. Not worth aggressive export at 3c feed-in. Moderate export lets self-consumption run while capturing any afternoon price spikes. Discharge floor 25% preserves buffer since tomorrow is also sunny (101 kWh). No arbitrage opportunity in flat off-peak pricing.",
-  "timestamp": "2026-04-15T09:30:37.023639"
-}

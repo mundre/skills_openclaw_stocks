@@ -1,2 +1,0 @@
-garth>=0.1.0
-notebooklm-py>=0.3.0

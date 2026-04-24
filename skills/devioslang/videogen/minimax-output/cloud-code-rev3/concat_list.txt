@@ -1,3 +1,0 @@
-file 'chunks_aac/chunk_01.aac'
-file 'chunks_aac/chunk_02.aac'
-file 'chunks_aac/chunk_03.aac'

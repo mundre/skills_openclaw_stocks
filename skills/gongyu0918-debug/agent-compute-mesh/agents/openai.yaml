@@ -1,7 +1,0 @@
-interface:
-  display_name: "Agent 算力分布网络 / Agent Compute Mesh"
-  short_description: "Staged outside compute for agents / 面向 agent 的分阶段外部算力执行"
-  default_prompt: "Use $agent-compute-mesh to shape one bounded exploration job, keep stage-1 work inside a local execution lease, and require evidence receipts plus local acceptance before any output can move forward. / 用 $agent-compute-mesh 规划一个边界明确的 exploration job，把第一阶段执行留在本地 execution lease 里，并要求带证据回执和本地验收后再让输出继续流转。"
-
-policy:
-  allow_implicit_invocation: true

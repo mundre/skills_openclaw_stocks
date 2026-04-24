@@ -1,2 +1,0 @@
-huaweicloud-sdk-python-obs >= 3.22.12
-python-dotenv >= 1.0.0

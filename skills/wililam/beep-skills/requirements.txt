@@ -1,3 +1,0 @@
-# Beep - Small speaker requirements
-edge-tts>=7.2.8
-pygame>=2.6.1

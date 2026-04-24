@@ -1,4 +1,0 @@
-fastmcp
-pydantic
-requests
-qrcode[pil]

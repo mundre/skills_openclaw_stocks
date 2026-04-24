@@ -1,2 +1,0 @@
-# KeyTuner Skill Dependencies
-# No external dependencies required

@@ -1,9 +1,0 @@
-{
-  "name": "gold-daily-report",
-  "version": "1.0.0",
-  "description": "每日金价快报 - 国际现货(XAU/USD) + 国内Au99.99 + 近期财经资讯",
-  "private": true,
-  "clawhub": {
-    "visibility": "private"
-  }
-}

@@ -1,2 +1,0 @@
-incident-triage-playbook v1.2.0
-Incident Triage Assistant

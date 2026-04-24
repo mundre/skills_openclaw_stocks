@@ -1,4 +1,0 @@
-data/*.sqlite
-data/*.db
-data/tokens.json
-.env

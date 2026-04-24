@@ -1,7 +1,0 @@
-{
-  "export_threshold": 20,
-  "discharge_floor": 20,
-  "strategy": "moderate_export",
-  "reasoning": "5:30 PM evening peak window. Solar generation has ended for the day. Battery should be used to offset evening peak consumption. Export threshold set at 20c/kWh to capture any high spot price spikes while preserving enough charge to cover household loads through the evening. Discharge floor at 20% to ensure overnight reserve. If current grid price exceeds 20c/kWh, export excess; otherwise hold and self-consume through peak hours.",
-  "timestamp": "2026-04-14T17:30:36.639638"
-}

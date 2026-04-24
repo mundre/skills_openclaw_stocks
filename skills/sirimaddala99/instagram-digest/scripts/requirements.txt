@@ -1,6 +1,0 @@
-openai
-playwright
-python-dotenv
-requests
-yt-dlp
-faster-whisper

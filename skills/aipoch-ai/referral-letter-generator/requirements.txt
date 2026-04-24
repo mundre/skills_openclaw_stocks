@@ -1,4 +1,0 @@
-dataclasses
-docx
-enum
-reportlab

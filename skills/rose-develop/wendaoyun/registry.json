@@ -1,6 +1,0 @@
-{
-  "name": "wendaoyun",
-  "version": "1.1.12",
-  "requiredEnvVars": ["WENDAOYUN_API_KEY"],
-  "primaryCredential": "WENDAOYUN_API_KEY"
-}

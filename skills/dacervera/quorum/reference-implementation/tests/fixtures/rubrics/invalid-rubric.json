@@ -1,5 +1,0 @@
-{
-  "name": "invalid-rubric",
-  "domain": "test",
-  "criteria": "this should be a list not a string"
-}

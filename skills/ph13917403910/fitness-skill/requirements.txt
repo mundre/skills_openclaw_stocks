@@ -1,2 +1,0 @@
-# Fitness Skill — Python dependencies
-# No external packages required; uses only the standard library.

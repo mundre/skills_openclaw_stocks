@@ -1,8 +1,0 @@
-{
-  "name": "brouter",
-  "main": "index.js",
-  "dependencies": {
-    "node-fetch": "^2",
-    "gpx-parse": "^0.10.1"
-  }
-}

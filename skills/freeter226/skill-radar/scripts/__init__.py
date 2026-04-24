@@ -1,1 +1,0 @@
-# Skill Radar scripts package

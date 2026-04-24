@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "env": ["BAIDU_APPID", "BAIDU_SECRET", "FEISHU_WEBHOOK"],
-    "bin": ["curl", "jq", "md5sum", "xmlstarlet"]
-  }
-}

@@ -1,7 +1,0 @@
-.env
-.env.local
-config.local.json
-config.*.local.json
-config.private.json
-config.*.private.json
-*.zip

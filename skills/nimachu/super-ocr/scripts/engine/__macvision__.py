@@ -1,1 +1,0 @@
-# MacVision OCR module

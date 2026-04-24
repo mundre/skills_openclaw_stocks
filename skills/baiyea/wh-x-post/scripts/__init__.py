@@ -1,1 +1,0 @@
-# Twitter Skill scripts package

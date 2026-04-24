@@ -1,2 +1,0 @@
-# Runtime dependencies for sql-to-bi-builder.
-# Keep empty for now; pipeline uses Python standard library only.

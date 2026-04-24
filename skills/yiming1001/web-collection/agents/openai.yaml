@@ -1,4 +1,0 @@
-interface:
-  display_name: "Web Collection"
-  short_description: "Run local or cloud browser collection flows"
-  default_prompt: "Use $web-collection to run a browser data collection task through the correct local or cloud flow."

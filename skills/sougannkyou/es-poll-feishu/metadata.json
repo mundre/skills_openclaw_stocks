@@ -1,8 +1,0 @@
-{
-  "name": "es-poll-feishu",
-  "description": "轮询 Elasticsearch 新数据，自动推送到飞书。支持 search_after 分页、自定义查询、去重、雪崩保护。",
-  "author": "sougannkyou",
-  "license": "MIT",
-  "requires": ["axios"],
-  "node": ">=16"
-}

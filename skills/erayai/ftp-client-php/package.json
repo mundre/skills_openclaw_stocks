@@ -1,7 +1,0 @@
-{
-  "name": "ftp-client-php-skill",
-  "version": "1.0.0",
-  "description": "FTP/FTPS client skill for OpenClaw via PHP proxy",
-  "type": "module",
-  "private": true
-}

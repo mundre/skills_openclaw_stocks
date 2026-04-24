@@ -1,7 +1,0 @@
-{
-  "track123": {
-    "api_secret": "your_track123_api_secret_here"
-  },
-  "cache_duration": 3600000,
-  "debug": false
-}

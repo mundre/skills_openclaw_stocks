@@ -1,1 +1,0 @@
-ALTER TABLE listings ADD COLUMN total_parking_space INTEGER;

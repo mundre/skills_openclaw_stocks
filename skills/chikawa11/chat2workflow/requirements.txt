@@ -1,2 +1,0 @@
-PyYAML>=6.0
-json_repair>=0.30.0

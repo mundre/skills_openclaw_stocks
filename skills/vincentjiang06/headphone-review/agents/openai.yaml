@@ -1,4 +1,0 @@
-interface:
-  display_name: "Headphone Review"
-  short_description: "Headphone reviews with language and style selection"
-  default_prompt: "Use $headphone-review. Use AskUserQuestion in option mode first: language options are 中文 or English; description mode options are 客观（偏理性、直接） or 情绪化抽象（偏氛围、意象）. Then write a pure-Markdown long review with a concise disagreement section and humanized prose."

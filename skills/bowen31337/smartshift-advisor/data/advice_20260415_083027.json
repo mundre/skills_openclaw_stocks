@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "Battery at 83% SOC in self-consumption mode. Amber feed-in only 5c/kWh (low) while buy price is 35c/kWh (morning peak). Sunny day forecast: 102.7 kWh solar expected with 20% cloud cover. With sunrise at 6:18 AM and strong solar ahead, battery will recharge well during the day. Exporting now at 5c is poor value vs self-consumption savings of 35c. Hold battery for self-use through morning, let solar top it up, and watch for afternoon/evening feed-in spikes. No negspot detected so no grid charge opportunity. Discharge floor set to 20% as safety margin with good solar refill confidence.",
-  "timestamp": "2026-04-15T08:30:27.183311"
-}

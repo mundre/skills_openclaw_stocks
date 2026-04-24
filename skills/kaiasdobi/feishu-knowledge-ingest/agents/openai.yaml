@@ -1,3 +1,0 @@
-interface:
-  display_name: "Feishu Knowledge Ingest"
-  short_description: "Batch-ingest Feishu folders and attachments into report-first outputs"

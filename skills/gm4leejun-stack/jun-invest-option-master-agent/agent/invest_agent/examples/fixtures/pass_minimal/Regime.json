@@ -1,9 +1,0 @@
-{
-  "regime_label": {"trend": "neutral", "vol": "normal", "corr": "normal", "liquidity": "normal"},
-  "evidence": {"bullets": ["stub"]},
-  "strategy_tilts": {"csp": "neutral", "cc": "neutral"},
-  "assumptions": ["stub"],
-  "confidence": "medium",
-  "invalidation_conditions": ["stub"],
-  "risks": ["stub"]
-}

@@ -1,7 +1,0 @@
-{
-  "name": "lightningprox",
-  "version": "1.3.1",
-  "description": "Pay-per-use AI gateway — 19 models, 5 providers, Bitcoin Lightning",
-  "homepage": "https://lightningprox.com",
-  "skill": "./SKILL.md"
-}

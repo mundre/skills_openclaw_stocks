@@ -1,4 +1,0 @@
-{
-  "request_timeout_seconds": 300,
-  "request_max_retries": 3
-}

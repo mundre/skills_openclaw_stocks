@@ -1,2 +1,0 @@
-# EV Calculator Requirements
-# (no external dependencies for basic version)

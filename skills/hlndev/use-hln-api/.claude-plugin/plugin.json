@@ -1,7 +1,0 @@
-{
-  "name": "use-hln-api",
-  "description": "Hyperliquid Names API skill and references for resolution, records, and HyperEVM integration workflows",
-  "author": {
-    "name": "OpenAI Codex + repository maintainers"
-  }
-}

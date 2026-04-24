@@ -1,4 +1,0 @@
-interface:
-  display_name: "Agentic CV Repro Lab"
-  short_description: "Benchmark-gated CV workflows across Google Colab GPU, Kaggle, and custom VMs"
-  default_prompt: "Use $data-science-cv-repro-lab to capture dataset and browser evidence, manage the Colab GPU or VM lane, and promote only on benchmark-backed wins."

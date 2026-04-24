@@ -1,6 +1,0 @@
-{
-  "msg_type": "text",
-  "content": {
-    "text": "{{message}}"
-  }
-}

@@ -1,7 +1,0 @@
-{
-  "export_threshold": 8,
-  "discharge_floor": 20,
-  "strategy": "moderate_export",
-  "reasoning": "Battery is at 100% SOC with only ~1 hour of solar generation remaining before sunset at 17:35. Feed-in rate is 6c/kWh (above the conservative hold threshold). With battery full and solar about to stop, discharging to export now captures value before the evening load period. Tomorrow is also forecast sunny so battery will easily refill. Discharge floor set to 20% to ensure enough reserve for overnight/morning use. Export threshold lowered to 8c to match current feed-in rate. Strategy: moderate_export to draw down battery while feed-in is available, then switch naturally to self-consumption for evening peak.",
-  "timestamp": "2026-04-14T16:31:44.767386"
-}

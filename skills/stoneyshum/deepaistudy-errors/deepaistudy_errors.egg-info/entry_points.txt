@@ -1,2 +1,0 @@
-[console_scripts]
-deepaistudy-errors = deepaistudy_errors:main

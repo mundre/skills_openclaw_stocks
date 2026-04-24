@@ -1,4 +1,0 @@
-Earnings Review Agent is an AI-powered skill designed to automatically track, fetch, and analyze earnings reports for publicly traded companies. It monitors scheduled earnings releases, retrieves key financial metrics — such as revenue, EPS, guidance, and year-over-year growth — and surfaces the data in a clean, digestible summary. Whether you follow a handful of stocks or a full portfolio, the agent keeps you informed without requiring you to dig through SEC filings or financial news sites yourself.
-
-Beyond raw numbers, the Earnings Review Agent provides context-aware commentary — highlighting beats or misses against analyst consensus, flagging unusual trends in margins or guidance, and summarizing management tone from earnings call transcripts. It's built for investors and analysts who want a faster, smarter first read on results, so you can make sense of what actually matters before the market moves on.
-

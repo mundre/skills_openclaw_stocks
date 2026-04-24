@@ -1,4 +1,0 @@
-# 与 pyproject.toml 同步；开发可用: pip install -e ".[web]"
-telethon>=1.34.0
-openpyxl>=3.1.0
-python-dotenv>=1.0.0

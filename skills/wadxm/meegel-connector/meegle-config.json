@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "meegle": {
-      "url": "https://meegle.com/mcp_server/v1",
-      "auth": "oauth"
-    }
-  }
-}

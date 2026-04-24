@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "Overnight 1:30 AM: SOC 84%, FIT only 3c/kWh (not worth exporting), buy price 20c flat for next 4h, no negspot. Sunny day ahead (102 kWh est, 22% cloud). Holding charge in self-consumption mode to preserve overnight capacity. Battery will recharge quickly once solar starts at 6:18 AM. Conservative export threshold of 15c ensures we only export when FIT is genuinely profitable. Discharge floor at 20% protects against deep discharge.",
-  "timestamp": "2026-04-15T01:30:59.869395"
-}

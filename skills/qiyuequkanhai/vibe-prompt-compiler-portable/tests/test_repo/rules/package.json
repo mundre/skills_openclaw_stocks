@@ -1,7 +1,0 @@
-{
-  "scripts": {
-    "test": "vitest run",
-    "lint": "eslint .",
-    "format": "prettier -w ."
-  }
-}

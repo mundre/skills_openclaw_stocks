@@ -1,7 +1,0 @@
-{
-  "configured": true,
-  "email": "operator@example.com",
-  "apiKeyMasked": "••••abcd",
-  "wordpressLocalRoot": "/home/example/.openclaw/workspace/cloudways-apps",
-  "preferredSyncMode": "sftp"
-}

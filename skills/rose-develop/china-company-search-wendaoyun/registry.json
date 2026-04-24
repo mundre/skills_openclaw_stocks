@@ -1,4 +1,0 @@
-{
-  "name": "china-company-search-wendaoyun",
-  "requiredEnvVars": ["WENDAOYUN_API_KEY"]
-}

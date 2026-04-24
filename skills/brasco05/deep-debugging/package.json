@@ -1,8 +1,0 @@
-{
-  "name": "deep-debugging",
-  "version": "2.0.0",
-  "description": "Structured 4-phase debugging protocol. No guessing, no random fixes — hypothesis-driven root cause analysis.",
-  "keywords": ["debugging", "bug-fixing", "nestjs", "nextjs", "react", "jwt", "prisma", "root-cause-analysis"],
-  "author": "brasco05",
-  "license": "MIT"
-}

@@ -1,9 +1,0 @@
-/etc
-/boot
-/root
-/dev
-/proc
-/sys
-/usr
-/var/lib
-/var/log

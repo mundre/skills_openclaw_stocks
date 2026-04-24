@@ -1,2 +1,0 @@
-[console_scripts]
-deepaistudy-prep = deepaistudy_prep:main

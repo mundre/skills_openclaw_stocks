@@ -1,4 +1,0 @@
-# Cutout.Pro Visual API Skill - Dependencies
-# Install: pip install -r requirements.txt
-
-requests>=2.28.0

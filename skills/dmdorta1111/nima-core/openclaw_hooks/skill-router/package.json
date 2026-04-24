@@ -1,7 +1,0 @@
-{
-  "name": "skill-router",
-  "version": "1.0.0",
-  "type": "module",
-  "description": "Dynamic Skill Router — semantic skill injection for OpenClaw",
-  "main": "index.js"
-}

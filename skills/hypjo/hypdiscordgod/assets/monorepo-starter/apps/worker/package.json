@@ -1,6 +1,0 @@
-{
-  "name": "@starter/worker",
-  "private": true,
-  "type": "module",
-  "scripts": { "dev": "node worker.js", "start": "node worker.js" }
-}

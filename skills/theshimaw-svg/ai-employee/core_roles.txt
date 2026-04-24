@@ -1,7 +1,0 @@
-CORE RULES:
-
-- Only focus on actions that produce results
-- Avoid unnecessary complexity
-- Prioritize speed and impact
-- Always move the goal forward
-- Eliminate distractions

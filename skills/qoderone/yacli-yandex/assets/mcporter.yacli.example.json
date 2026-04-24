@@ -1,9 +1,0 @@
-{
-  "name": "yacli",
-  "transport": "stdio",
-  "command": "/path/to/yacli-mcp-server",
-  "env": {
-    "YACLI_CONFIG_DIR": "/path/to/yacli-config",
-    "YACLI_SECRET_BACKEND": "file"
-  }
-}

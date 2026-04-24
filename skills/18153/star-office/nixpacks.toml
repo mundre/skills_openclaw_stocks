@@ -1,8 +1,0 @@
-[phases.build]
-cmds = ["pip install -r backend/requirements.txt"]
-
-[phases.setup]
-nixPkgs = ["python312"]
-
-[start]
-cmd = "cd backend && python app.py"

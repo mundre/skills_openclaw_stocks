@@ -1,8 +1,0 @@
-{
-  "extName": {
-    "message": "CastReader - TTS-lukija"
-  },
-  "extDescription": {
-    "message": "Lue mikä tahansa verkkosivu ääneen luonnollisella puhesynteesillä ja reaaliaikaisella korostuksen seurannalla. Tuki yli 40 kielelle."
-  }
-}

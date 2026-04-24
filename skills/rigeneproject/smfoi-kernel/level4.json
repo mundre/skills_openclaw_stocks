@@ -1,8 +1,0 @@
-{
-  "name": "smfoi-kernel",
-  "version": "0.2.2",
-  "description": "Managed orientation protocol for safety and auditability.",
-  "triggers": [
-    "every_turn"
-  ]
-}

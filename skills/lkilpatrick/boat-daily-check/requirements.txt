@@ -1,4 +1,0 @@
-# Boat Daily Check Requirements
-# Python 3.7+
-
-requests>=2.28.0

@@ -1,6 +1,0 @@
-interface:
-  display_name: "Airtap"
-  short_description: "Create and monitor Airtap tasks"
-  default_prompt: "Use $airtap to create, inspect, or monitor an Airtap task."
-policy:
-  allow_implicit_invocation: true

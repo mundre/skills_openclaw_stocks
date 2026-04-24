@@ -1,1 +1,0 @@
-"""OpenClaw literature recommender MVP."""

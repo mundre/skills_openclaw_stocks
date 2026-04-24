@@ -1,9 +1,0 @@
-{
-  "env": "production",
-  "pluginId": "q-wms",
-  "pluginName": "Q-WMS",
-  "managedSkillId": "q-wms",
-  "defaultAuthBaseUrl": "http://qlink-portal.800best.com",
-  "openclawInstanceId": "openclaw-q-wms",
-  "versionCheckCacheTtlMs": 60000
-}

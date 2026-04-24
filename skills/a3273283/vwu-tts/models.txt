@@ -1,2 +1,0 @@
-speech-2.8-hd
-speech-2.8-turbo

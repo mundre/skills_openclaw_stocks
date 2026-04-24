@@ -1,8 +1,0 @@
-{
-  "name": "ollama-memory-setup",
-  "version": "1.0.0",
-  "description": "Fix node-llama-cpp errors and enable local semantic memory search in OpenClaw using Ollama",
-  "keywords": ["openclaw", "ollama", "memory", "embeddings", "semantic-search", "nomic-embed-text"],
-  "author": "brasco05",
-  "license": "MIT"
-}

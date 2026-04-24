@@ -1,6 +1,0 @@
-feedparser
-trafilatura
-pyyaml
-pydantic
-openai
-pytest

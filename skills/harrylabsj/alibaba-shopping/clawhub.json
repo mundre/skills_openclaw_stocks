@@ -1,9 +1,0 @@
-{
-  "name": "alibaba-shopping",
-  "version": "2.0.0",
-  "description": "阿里巴巴生态购物助手 - 支持淘宝、天猫、1688 搜索、比价、看评论、加购物车，支付环节留给用户",
-  "keywords": ["alibaba", "taobao", "tmall", "1688", "shopping", "e-commerce"],
-  "author": "harrylabsj",
-  "license": "MIT",
-  "repository": "https://github.com/harrylabsj/alibaba-shopping"
-}

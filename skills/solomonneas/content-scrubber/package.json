@@ -1,9 +1,0 @@
-{
-  "name": "content-scrubber",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Scrubs internal infrastructure details (IPs, ports, hostnames) from outgoing messages",
-  "openclaw": {
-    "extensions": ["./index.ts"]
-  }
-}

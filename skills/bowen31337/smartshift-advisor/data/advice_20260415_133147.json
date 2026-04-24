@@ -1,7 +1,0 @@
-{
-  "export_threshold": 8,
-  "discharge_floor": 25,
-  "strategy": "moderate_export",
-  "reasoning": "Current price 7.26c/kWh with forecast rising sharply to 14.4c by 6-7pm AEST (peak window). Battery at 62% SOC with 1850W solar generating and good irradiance forecast peaking at 697 W/m2 through 5pm AEST. Setting export threshold at 8c to begin exporting as prices climb this afternoon, discharge floor at 25% to preserve overnight reserve. Solar surplus will continue charging battery while grid exports ramp up during the evening peak - strong value capture opportunity ahead.",
-  "timestamp": "2026-04-15T13:31:47.367893"
-}

@@ -1,7 +1,0 @@
-{
-  "export_threshold": 20,
-  "discharge_floor": 30,
-  "strategy": "conservative_hold",
-  "reasoning": "7:30 PM Tuesday evening - no solar generation available at this hour. Evening consumption period with no feed-in opportunity. Battery should conserve remaining charge to cover overnight household load and be ready for morning. Export threshold set high (20c) to only export if prices spike unexpectedly. Discharge floor at 30% to maintain overnight buffer without risking deep discharge before next solar window tomorrow morning.",
-  "timestamp": "2026-04-14T19:30:55.281351"
-}

@@ -1,6 +1,0 @@
-{
-  "name": "family-trip-planner",
-  "version": "0.1.0",
-  "description": "Family trip planning assistant",
-  "entry": "scripts/handler.py"
-}

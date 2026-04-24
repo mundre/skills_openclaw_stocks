@@ -1,2 +1,0 @@
-support-queue-operations v1.2.0
-Support Queue Operations

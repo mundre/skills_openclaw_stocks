@@ -1,2 +1,0 @@
-# gen_access_url.py：生成 PNG 二维码，需 Pillow
-qrcode[pil]>=7.3.1

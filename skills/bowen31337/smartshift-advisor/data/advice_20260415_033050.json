@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "3:30 AM off-peak: battery 82%, feed-in only 3c/kWh not worth exporting. Sunrise 6:18 AM in 2.5h with 102 kWh solar forecast (partly cloudy, 31%). No negspot for grid charging. Hold current charge, let morning solar refill. Self-consumption at 476W overnight is efficient.",
-  "timestamp": "2026-04-15T03:30:50.128400"
-}

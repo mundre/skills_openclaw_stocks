@@ -1,9 +1,0 @@
-{
-  "fields": [
-    {
-      "key": "利润表",
-      "type": "string",
-      "description": "利润表相关内容"
-    }
-  ]
-}

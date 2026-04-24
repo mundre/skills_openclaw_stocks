@@ -1,3 +1,0 @@
-MiniMax-Hailuo-02
-MiniMax-Hailuo-2.3
-MiniMax-Hailuo-2.3-Fast

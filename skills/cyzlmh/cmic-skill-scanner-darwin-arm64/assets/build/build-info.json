@@ -1,8 +1,0 @@
-{
-  "version": "v0.8.0",
-  "target_os": "darwin",
-  "target_arch": "arm64",
-  "binary_name": "skillscan",
-  "built_at_unix": 1776792692,
-  "checksum": "3d0e50040dbcb8e9ffa24433587796f61f3c94926ee7e8a87b3359b9e2ae1130"
-}

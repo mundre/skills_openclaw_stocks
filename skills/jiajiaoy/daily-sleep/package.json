@@ -1,9 +1,0 @@
-{
-  "name": "daily-sleep",
-  "version": "1.0.0",
-  "description": "\u7761\u7720\u52a9\u624b",
-  "engines": {
-    "node": ">=18"
-  },
-  "license": "MIT"
-}

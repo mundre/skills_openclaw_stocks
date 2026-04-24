@@ -1,5 +1,0 @@
-# Python dependencies for voice-assistant skill
-# 已安装到 skills/voice-assistant/lib/ 目录
-
-edge-tts>=7.0.0
-aiohttp>=3.8.0

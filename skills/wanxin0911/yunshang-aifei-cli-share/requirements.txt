@@ -1,3 +1,0 @@
-gmssl
-requests
-python-dotenv

@@ -1,2 +1,0 @@
-# 钢联API密钥配置文件
-YOUR_API_KEY_HERE

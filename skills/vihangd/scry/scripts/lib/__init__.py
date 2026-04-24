@@ -1,1 +1,0 @@
-# SCRY skill library

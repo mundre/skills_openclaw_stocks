@@ -1,7 +1,0 @@
-interface:
-  display_name: "WebPrinter Cloud Print"
-  short_description: "Upload files and use the official WebPrinter API for roaming print, direct print, printer lookup, and task setting updates."
-  default_prompt: "Use $webprinter to upload a document, check available printers, create a WebPrinter print task, or update duplex, color, and copies through separate task-setting actions."
-
-policy:
-  allow_implicit_invocation: true

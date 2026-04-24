@@ -1,7 +1,0 @@
-{
-  "export_threshold": 5,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "Battery at 92% SOC at 8:30 PM with 8+ hours until sunrise. Feed-in only 4c/kWh \u2014 no export incentive. Buy price high at 38c so self-consumption saves maximum value. Discharging at ~1kW, battery will comfortably last overnight. Tomorrow is sunny (102.4 kWh forecast, 21.7% cloud) so full recharge expected by mid-morning. No negspot or high feed-in events in forecast. Holding in self-consumption mode is optimal.",
-  "timestamp": "2026-04-14T20:31:43.867080"
-}

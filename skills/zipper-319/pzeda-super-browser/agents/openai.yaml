@@ -1,3 +1,0 @@
-display_name: super-browser
-short_description: Browser automation with a real local Chrome session
-default_prompt: Use this skill when the task needs browser automation through the published @pzeda/super-browser package and its super-browser CLI.

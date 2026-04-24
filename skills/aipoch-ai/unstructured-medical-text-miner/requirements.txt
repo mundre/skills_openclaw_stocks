@@ -1,8 +1,0 @@
-negspacy
-numpy
-pandas
-pyarrow
-pyyaml
-scispacy
-spacy
-tqdm

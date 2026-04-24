@@ -1,4 +1,0 @@
-interface:
-  display_name: "DecisionDeck"
-  short_description: "决策简报官：把多份资料压成一页可决策简报"
-  default_prompt: "Use $decisiondeck to turn my notes, research, proposals, meeting summaries, documents, or connector outputs into a one-page decision brief with options, conflicts, evidence gaps, a recommendation, and next steps, and answer in Chinese."

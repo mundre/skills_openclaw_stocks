@@ -1,4 +1,0 @@
-psutil
-openpyxl
-pandas
-scikit-learn

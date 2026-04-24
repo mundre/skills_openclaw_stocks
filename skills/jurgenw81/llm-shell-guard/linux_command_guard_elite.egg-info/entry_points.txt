@@ -1,2 +1,0 @@
-[console_scripts]
-safe-run-check = linux_command_guard.cli:main

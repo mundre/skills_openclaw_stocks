@@ -1,8 +1,0 @@
-{
-  "name": "content-news-thai",
-  "version": "1.0.0",
-  "type": "module",
-  "dependencies": {
-    "canvas": "^3.1.0"
-  }
-}

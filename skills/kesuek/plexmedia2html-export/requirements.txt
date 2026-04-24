@@ -1,2 +1,0 @@
-# PlexMedia2HTML Export - Python Dependencies
-# Keine externen Dependencies nötig - nutzt nur Standard-Library

@@ -1,3 +1,0 @@
-# Put one mint per line (optional)
-# Example:
-# So11111111111111111111111111111111111111112

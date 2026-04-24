@@ -1,1 +1,0 @@
-- Preference learned: Prioritize matching relevant expense categories over defaulting to 'Other' for better classification accuracy in user expense logging.

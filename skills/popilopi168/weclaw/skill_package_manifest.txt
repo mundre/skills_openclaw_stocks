@@ -1,4 +1,0 @@
-# Paths relative to openclaw_skill/weclaw/ (ClawHub / skills/weclaw layout).
-# Single list: install script, verify script, and your ClawHub upload should match this set.
-SKILL.md
-scripts/run_setup.py

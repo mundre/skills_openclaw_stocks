@@ -1,8 +1,0 @@
-{
-  "name": "weread-import-skill-runtime",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "playwright": "^1.53.0"
-  }
-}

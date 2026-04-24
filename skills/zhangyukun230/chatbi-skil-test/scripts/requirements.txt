@@ -1,2 +1,0 @@
-# ChatBI Agent CLI 依赖
-requests>=2.28.0

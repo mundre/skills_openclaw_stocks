@@ -1,1 +1,0 @@
-# Data Bird scripts package

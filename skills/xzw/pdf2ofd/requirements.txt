@@ -1,6 +1,0 @@
-easyofd
-PyMuPDF
-Pillow
-reportlab
-xmltodict
-loguru

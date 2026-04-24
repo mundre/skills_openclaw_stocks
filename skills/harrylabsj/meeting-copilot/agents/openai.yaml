@@ -1,4 +1,0 @@
-interface:
-  display_name: "Meeting Copilot"
-  short_description: "Meeting operations copilot for briefings, minutes, and follow-up drafts"
-  default_prompt: "Use $meeting-copilot to generate pre-meeting briefings, organize structured meeting notes, extract action items, and draft follow-up communication in boss mode or executor mode."

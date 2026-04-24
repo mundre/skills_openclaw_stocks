@@ -1,2 +1,0 @@
-"""IMA image runtime package."""
-

@@ -1,2 +1,0 @@
-# 广告账户管理 Skill 依赖
-playwright>=1.40.0

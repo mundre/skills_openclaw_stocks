@@ -1,4 +1,0 @@
-# Example OpenClaw environment for the web-distiller skill.
-env:
-  DISTILLER_API_BASE: https://webdistiller.dev
-  DISTILLER_API_KEY: your-api-key

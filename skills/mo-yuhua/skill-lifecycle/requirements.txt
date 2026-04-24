@@ -1,5 +1,0 @@
-# skill-lifecycle 依赖
-click>=8.0.0          # CLI 框架
-semver>=3.0.0         # 语义化版本
-rich>=13.0.0          # 美化输出
-pyyaml>=6.0.0         # YAML 配置

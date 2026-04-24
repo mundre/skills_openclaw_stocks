@@ -1,5 +1,0 @@
-{
-  "host": "REPLACE_WITH_GATEWAY_HOST",
-  "identity": "REPLACE_WITH_IDENTITY",
-  "psk": "REPLACE_WITH_PSK"
-}

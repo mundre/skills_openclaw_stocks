@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "medgroup": {
-      "url": "https://medgroup.medchat.fun/mcp/sse?api_key=sk-your-api-key",
-      "transport": "sse"
-    }
-  }
-}

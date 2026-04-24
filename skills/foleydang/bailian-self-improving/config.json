@@ -1,5 +1,0 @@
-{
-  "api_key": "sk-3873d7355f6b4ed28e519aee1b70f03f",
-  "endpoint": "https://poc-dashscope.aliyuncs.com/api/v2/apps/poc-memory/skills/extract",
-  "timeout": 30
-}

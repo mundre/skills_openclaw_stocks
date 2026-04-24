@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"bash scripts/upload_asset.sh /Users/symbolk/Downloads/cc30s.mp4 2>&1\"}",
-  "error": "Exit code 2\nError: No object_key in response. Full response:\n{\"code\":200,\"message\":\"Batch upload completed: 1 success, 0 failed\",\"timestamp\":\"2026-03-17T08:29:23.151322+00:00\",\"data\":{\"uploads\":[{\"object_key\":\"assets/93/ba80027ac5a240e480514cc03b092566.mp4\",\"file_name\":\"ba80027ac5a240e480514cc03b092566.mp4\",\"file_size\":3563900,\"format\":\"mp4\",\"status\":\"completed\",\"is_duplicate\":true,\"error\":null,\"created_at\":\"2026-03-17T07:17:19.030846+00:00\"}],\"total\":1,\"success_count\":1,\"failed_count\":0},\"tid\":...",
-  "timestamp": "2026-03-17T08:29:23.432Z",
-  "retry_count": 1
-}

@@ -1,9 +1,0 @@
-{
-  "naver_api": {
-    "client_id": "v6PbWt4lgMpMrCzsRlv5",
-    "client_secret": "",
-    "client_secret_enc": "AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAA+gs9qbHhu0Cl742QSZutnwAAAAACAAAAAAAQZgAAAAEAACAAAAAt4wPn/GdbIm2T5SyXI9DRUaZi+PICJXfsIxXbyYpj8AAAAAAOgAAAAAIAACAAAACfd6uhBr3UfU9jCMLKaOto9hoMnVlDfZrCTaI6UwenKRAAAADuWhsexx0OmwGTdQ8CS5jWQAAAADN4EXjP0EHH32zhKi+0wyCFN1L0eH1fU1/jCYNR10f78ghuGCcjpoB+QqRoL4I/ZPFdYtTmmx3AjxwzADQrvd4=",
-    "client_secret_storage": "dpapi",
-    "timeout": 15
-  }
-}

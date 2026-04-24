@@ -1,6 +1,0 @@
-{
-  "name": "cloudflare-tunnel",
-  "version": "1.0.0",
-  "license": "MIT-0",
-  "tags": ["cloudflare", "tunnel", "cloudflared", "networking", "security", "zero-trust", "dns", "proxy", "devops"]
-}

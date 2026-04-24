@@ -1,2 +1,0 @@
-# Standard-library only implementation.
-# No third-party packages required.

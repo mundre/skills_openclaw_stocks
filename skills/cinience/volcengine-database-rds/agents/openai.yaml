@@ -1,4 +1,0 @@
-interface:
-  display_name: "Volcengine RDS Operations"
-  short_description: "Operate database instances and diagnostics"
-  default_prompt: "Use $volcengine-database-rds to troubleshoot and operate this RDS instance."

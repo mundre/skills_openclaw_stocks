@@ -1,3 +1,0 @@
-# JLink Python SDK 依赖
-
-requests>=2.28.0

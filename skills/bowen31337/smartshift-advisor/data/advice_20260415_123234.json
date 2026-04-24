@@ -1,7 +1,0 @@
-{
-  "export_threshold": 20,
-  "discharge_floor": 30,
-  "strategy": "conservative_hold",
-  "reasoning": "12:30 PM midday: solar generation is at peak, Amber feed-in tariff is near zero during solar saturation hours. No value in discharging battery to export at negligible rates. Hold charge accumulated from morning solar, preserve battery SOC for the afternoon peak window (3-7 PM) when feed-in and import prices rise significantly. Solar surplus is currently self-consuming loads directly. Discharge floor set to 30% to ensure evening coverage.",
-  "timestamp": "2026-04-15T12:32:34.489929"
-}

@@ -1,8 +1,0 @@
-{
-  "name": "meituan",
-  "version": "1.2.0",
-  "description": "美团决策助手 - 帮你判断这一单该不该点，便宜和时效哪个更值",
-  "keywords": ["meituan", "美团", "waimai", "takeout", "delivery", "coupon", "refund", "threshold"],
-  "author": "openclaw",
-  "license": "MIT"
-}

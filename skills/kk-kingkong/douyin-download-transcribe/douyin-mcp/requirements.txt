@@ -1,6 +1,0 @@
-requests
-ffmpeg-python
-openai
-openai-whisper
-playwright
-nest_asyncio

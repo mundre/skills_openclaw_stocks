@@ -1,7 +1,0 @@
-interface:
-  display_name: "Invoice Verification Service"
-  short_description: "Initialize app keys, query quota and ledger, and verify invoices against the v4 plugin API."
-  default_prompt: "Use $invoice-verification-service to initialize an invoice app key, query quota or ledger, or verify invoice text and images through the v4 plugin API."
-
-policy:
-  allow_implicit_invocation: true

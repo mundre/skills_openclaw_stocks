@@ -1,9 +1,0 @@
-{
-  "agent": "0xDEC86b5D2cDE215987c537DAFf6ef5E763d8a90d",
-  "beat": 2,
-  "timestamp": 1774951863850,
-  "iso": "2026-03-31T10:11:03.850Z",
-  "txHash": "0x70a3b97f87b7c244cb62b7bc00fc4532319155cb20f1e43e20944b296c098151",
-  "lockDays": 90,
-  "onChain": true
-}

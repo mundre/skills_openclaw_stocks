@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "Battery at 83% SoC at 2:30 AM, feed-in only 3c/kWh (no export value). Buy price 20c \u2014 no negspot opportunity for grid charging. Sunrise in ~4 hours with 102 kWh solar forecast (partly cloudy). Battery draining at ~540W self-consumption, should reach ~70-75% by dawn. Best play is conservative hold: preserve charge for overnight coverage and let solar refill during the day. No export or grid-charge conditions met.",
-  "timestamp": "2026-04-15T02:30:47.867680"
-}

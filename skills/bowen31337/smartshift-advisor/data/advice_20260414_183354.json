@@ -1,7 +1,0 @@
-{
-  "export_threshold": 20,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "6:30 PM AEST - solar generation has ended for the day. Current feed-in rate is approximately 3-5 c/kWh which is far below grid import cost (~28 c/kWh), making export economically unviable. Battery should self-consume to offset evening household loads during this peak period rather than export at a loss. Maintaining 20% SOC floor ensures overnight loads are covered without grid dependence. Tomorrow shows good solar forecast (~18-22 kWh expected for autumn day) so battery will naturally recharge. No grid charging needed - prices are elevated and solar tomorrow is sufficient.",
-  "timestamp": "2026-04-14T18:33:54.700706"
-}

@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "meego": {
-      "url": "https://project.feishu.cn/mcp_server/v1",
-      "auth": "oauth"
-    }
-  }
-}

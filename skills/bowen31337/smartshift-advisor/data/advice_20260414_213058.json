@@ -1,7 +1,0 @@
-{
-  "export_threshold": 12,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "9:30 PM with battery at 90% SoC. Feed-in only 3c/kWh \u2014 well below export thresholds. Buy price flat at 20c for next 4 hours. No negspot opportunity. Sunset passed (17:35), no solar until 06:17 AM. Tomorrow is sunny (102.4 kWh forecast, 21.7% cloud). Strategy: hold battery for overnight self-consumption. Discharging at 1049W currently \u2014 set discharge floor at 20% to preserve buffer. Export threshold raised to 12c since current feed-in is only 3c and not worth aggressive export. Conservative approach preserves stored energy for morning pre-solar demand.",
-  "timestamp": "2026-04-14T21:30:58.989494"
-}

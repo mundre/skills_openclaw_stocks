@@ -1,5 +1,0 @@
-matplotlib
-pandas
-# 可选:
-plotly
-kaleido  # for plotly image export

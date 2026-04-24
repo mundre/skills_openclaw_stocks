@@ -1,4 +1,0 @@
-interface:
-  display_name: "Markdown Export"
-  short_description: "Export Markdown to DOCX or HTML from one unified skill"
-  default_prompt: "Use $markdown-export to convert a Markdown file or Markdown string into polished DOCX or HTML output."

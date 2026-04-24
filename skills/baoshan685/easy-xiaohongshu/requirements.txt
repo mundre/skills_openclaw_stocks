@@ -1,5 +1,0 @@
-# Easy-xiaohongshu 依赖清单
-# 安装：pip install -r requirements.txt
-
-# HTTP 请求
-requests>=2.31.0

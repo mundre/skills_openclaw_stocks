@@ -1,7 +1,0 @@
-{
-    "anyshare-mcp": {
-        "env": {
-            "MCPORTER_CALL_TIMEOUT": "600000"
-        }
-    }
-}

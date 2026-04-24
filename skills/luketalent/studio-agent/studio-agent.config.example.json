@@ -1,3 +1,0 @@
-{
-  "jdbcUrl": "jdbc:clickzetta://<instance>.<api-host>/<workspace>?username=<username>&password=<password>"
-}

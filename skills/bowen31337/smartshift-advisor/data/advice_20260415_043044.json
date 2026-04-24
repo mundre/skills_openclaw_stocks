@@ -1,7 +1,0 @@
-{
-  "export_threshold": 25,
-  "discharge_floor": 25,
-  "strategy": "conservative_hold",
-  "reasoning": "Battery at 81% at 4:30 AM with sunrise at 6:18 AM. Feed-in only 3c/kWh \u2014 not worth exporting. No negspot for cheap grid charging. Solar forecast is strong at 102 kWh (partly cloudy, 31% clouds). Holding charge for morning self-consumption; solar will refill by midday. Keeping discharge floor at 25% to ensure overnight coverage through early morning before solar kicks in.",
-  "timestamp": "2026-04-15T04:30:44.786639"
-}

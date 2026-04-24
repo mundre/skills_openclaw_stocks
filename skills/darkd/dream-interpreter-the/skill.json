@@ -1,7 +1,0 @@
-{
-  "name": "dream-interpreter",
-  "version": "5.3.0",
-  "description": "Multi-cultural dream interpretation engine with rotating guest system. Six permanent perspectives (Chinese Mystic / Greek Oracle / Slavic Vedunya / European Prophet / Northern Shaman / Indian Brahman) plus three rotating guest perspectives selected from a pool of seven (Egyptian Priest / Japanese Miko / Mesoamerican Daykeeper / Polynesian Navigator / Yoruba Babalawo / Arabian Sufist / Scandinavian Volva). Structured JSON output for Dream Analysis Card rendering.",
-  "author": "mingming, z-ai",
-  "tags": ["entertainment", "dream", "divination", "visualization", "multi-cultural", "interpretation", "rotating-guests"]
-}

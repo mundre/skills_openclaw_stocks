@@ -1,2 +1,0 @@
-release-coordination-toolkit v1.2.0
-Release Coordination Toolkit

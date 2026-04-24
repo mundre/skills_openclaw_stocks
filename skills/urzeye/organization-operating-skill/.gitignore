@@ -1,4 +1,0 @@
-.runtime/
-.spec-workflow/
-scripts/__pycache__/
-*.pyc

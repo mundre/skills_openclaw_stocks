@@ -1,3 +1,0 @@
-Parameter	Value
-Version	1.6.0.15
-Match between runs	True

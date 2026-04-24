@@ -1,5 +1,0 @@
-{
-  "name": "case-forecast",
-  "requiredEnvVars": ["API_KEY"],
-  "primaryCredential": "envvar"
-}

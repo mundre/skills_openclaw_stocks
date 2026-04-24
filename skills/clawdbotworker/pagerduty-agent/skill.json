@@ -1,7 +1,0 @@
-{
-  "pricing": {
-    "model": "per-call",
-    "currency": "USDC",
-    "amount": 0.001
-  }
-}

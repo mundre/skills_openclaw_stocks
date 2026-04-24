@@ -1,2 +1,0 @@
-[console_scripts]
-learning = learning_cli:main

@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "jinguyuan-dumpling-skill": {
-      "type": "streamable-http",
-      "url": "https://mcp-4g9gkps4c04addd0.service.tcloudbase.com/jgy-mcp"
-    }
-  }
-}

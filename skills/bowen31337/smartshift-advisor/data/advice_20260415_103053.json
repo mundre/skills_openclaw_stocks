@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 30,
-  "strategy": "moderate_export",
-  "reasoning": "Battery at 100% SOC with excellent solar day forecast (102.7 kWh, 21% cloud, sunny). Feed-in at 8c/kWh hits moderate export threshold. Strong solar generation means battery will easily stay charged through exports. No negative spot prices. Exporting now captures the 8c feed-in while battery is full and solar is abundant. Discharge floor set to 30% to maintain buffer for evening peak. Prices stable at 22c buy / 8c feed-in for next 4 hours.",
-  "timestamp": "2026-04-15T10:30:53.726180"
-}

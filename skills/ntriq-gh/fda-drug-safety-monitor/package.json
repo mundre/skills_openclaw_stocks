@@ -1,9 +1,0 @@
-{
-    "name": "trustpilot-review-scraper",
-    "version": "1.0.0",
-    "type": "module",
-    "description": "Scrape Trustpilot reviews, business profiles, ratings, and categories. Extract review text, ratings, dates, reviewer info, and business trust scores.",
-    "engines": { "node": ">=18.0.0" },
-    "dependencies": { "apify": "^3.3.2", "https-proxy-agent": "^7.0.4" },
-    "scripts": { "start": "node src/main.js" }
-}

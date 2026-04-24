@@ -1,7 +1,0 @@
-interface:
-  display_name: "Wechat Super Power"
-  short_description: "搜索微信文章并转 Markdown"
-  default_prompt: "Use $wechat-super-power to search WeChat articles or fetch a WeChat article URL and return Markdown."
-
-policy:
-  allow_implicit_invocation: true

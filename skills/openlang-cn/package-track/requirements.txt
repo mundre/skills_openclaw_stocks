@@ -1,3 +1,0 @@
-# Package Tracker - 快递查询
-# 仅使用 Python 标准库
-

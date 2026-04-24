@@ -1,4 +1,0 @@
-interface:
-  display_name: "LinkedIn Company Scout"
-  short_description: "Collect non-China company profiles via LinkedIn and websites"
-  default_prompt: "Use $linkedin-company-scout to collect company profiles from LinkedIn, official sites, and Google Maps with strict field coverage and heartbeat monitoring."

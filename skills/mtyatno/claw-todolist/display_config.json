@@ -1,5 +1,0 @@
-{
-  "format": "TEXT_ONLY",
-  "includeFields": ["ID", "Prio", "Context", "Text", "Weight", "DUE"],
-  "tableEnabled": false
-}

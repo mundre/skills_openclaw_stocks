@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 30,
-  "strategy": "conservative_hold",
-  "reasoning": "Scripts not yet installed (smartshift-advisor skill directory is missing). Applying safe defaults for 4:30 PM autumn afternoon Sydney: solar generation is winding down, hold battery above 30% to cover evening demand. Export threshold set to 15c/kWh to capture any remaining feed-in value. Strategy is conservative_hold until skill is properly configured with Amber API key, solar forecast source, and inverter credentials.",
-  "timestamp": "2026-04-14T16:31:21.209045"
-}

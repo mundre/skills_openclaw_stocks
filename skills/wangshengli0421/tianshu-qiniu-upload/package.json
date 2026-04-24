@@ -1,7 +1,0 @@
-{
-  "name": "tianshu-qiniu-upload-skill",
-  "private": true,
-  "dependencies": {
-    "qiniu": "^7.15.1"
-  }
-}

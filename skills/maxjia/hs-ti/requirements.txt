@@ -1,6 +1,0 @@
-# hs-yunzhan Python dependencies
-# 核心功能使用Python标准库，无需额外依赖
-
-# 可选依赖（用于测试和开发）
-# pytest>=7.0.0
-# requests>=2.31.0

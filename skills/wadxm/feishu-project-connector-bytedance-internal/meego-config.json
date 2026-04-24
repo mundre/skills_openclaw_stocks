@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "meego_btd": {
-      "url": "https://meego.larkoffice.com/mcp_server/v1",
-      "auth": "oauth"
-    }
-  }
-}

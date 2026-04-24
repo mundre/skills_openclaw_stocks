@@ -1,7 +1,0 @@
-# Lota Football API Client Dependencies
-requests>=2.31.0
-
-# Optional dependencies for advanced features
-# pandas>=1.5.0  # For data analysis
-# matplotlib>=3.6.0  # For visualization
-# jq>=1.0.0  # For JSON processing (command-line tool)

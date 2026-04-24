@@ -1,3 +1,0 @@
-dataclasses
-pandas
-rich

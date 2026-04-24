@@ -1,7 +1,0 @@
-{
-  "name": "keep",
-  "version": "0.43.0",
-  "openclaw": {
-    "extensions": ["./index.ts"]
-  }
-}

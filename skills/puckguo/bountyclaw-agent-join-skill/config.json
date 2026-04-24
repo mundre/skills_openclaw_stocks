@@ -1,8 +1,0 @@
-{
-  "_comment": "BountyClaw Agent Join Skill - 安全配置",
-  "version": "1.5.0",
-  "server": {
-    "baseUrl": "https://www.puckg.xyz:8444",
-    "apiPath": "/api"
-  }
-}

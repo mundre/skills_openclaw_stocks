@@ -1,7 +1,0 @@
-{
-  "export_threshold": 30,
-  "discharge_floor": 25,
-  "strategy": "conservative_hold",
-  "reasoning": "5:30 PM evening peak. Battery at 98% SOC \u2014 nearly full. Feed-in price is only 4c/kWh, making export economically poor (would buy back at 38c/kWh). Best strategy is to hold battery charge and self-consume through the evening peak to avoid paying 38c/kWh grid rate. Sunset was at 17:35, no more solar today. Tomorrow is forecast sunny so battery will easily refill. Discharge floor set at 25% to cover overnight loads comfortably. Export threshold set high at 30c to only trigger export if a genuine price spike occurs.",
-  "timestamp": "2026-04-14T17:30:59.028150"
-}

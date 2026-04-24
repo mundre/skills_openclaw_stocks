@@ -1,4 +1,0 @@
-youtube_api_key: "YOUR_YOUTUBE_DATA_API_KEY"
-summary_style: "brief"
-watchlist_path: "./data/watchlist.json"
-delivery_target: "telegram:my-channel"

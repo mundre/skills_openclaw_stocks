@@ -1,7 +1,0 @@
-README.md
-setup.py
-simple_websearch_skill.egg-info/PKG-INFO
-simple_websearch_skill.egg-info/SOURCES.txt
-simple_websearch_skill.egg-info/dependency_links.txt
-simple_websearch_skill.egg-info/requires.txt
-simple_websearch_skill.egg-info/top_level.txt

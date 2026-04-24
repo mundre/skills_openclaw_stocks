@@ -1,7 +1,0 @@
-interface:
-  display_name: "One Person Company OS"
-  short_description: "面向 AI 一人创始人的经营闭环操作系统，支持价值承诺、产品上线、成交、交付、回款与资产沉淀"
-  default_prompt: "我正在围绕一个 AI 产品创建一人公司，请调用 one-person-company-os。不要先给我商业计划书模板。先主动问我一句创业想法；如果我还没想好，就给我 3 到 4 个方向让我选。等我们确认可卖承诺、第一批买家和核心问题后，再在我确认的工作区里创建经营工作区、告诉我当前主瓶颈，并且只把批准后的文件保存到这个工作区内。"
-
-policy:
-  allow_implicit_invocation: false

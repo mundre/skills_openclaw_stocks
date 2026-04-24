@@ -1,1 +1,0 @@
-jumpserver-sdk-python>=0.9.1

@@ -1,1 +1,0 @@
-# Nex Ghostwriter - lib package

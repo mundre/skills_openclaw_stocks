@@ -1,3 +1,0 @@
-
-# 该项目无需额外依赖包
-# 可直接运行 python chat_skill.py 启动程序

@@ -1,4 +1,0 @@
-# Python dependencies for ai-nano-banana-ima (Nano Banana image generation)
-# Install with: pip install -r requirements.txt
-
-requests>=2.25.0

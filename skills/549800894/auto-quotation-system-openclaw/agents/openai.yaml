@@ -1,4 +1,0 @@
-interface:
-  display_name: "Auto Quotation System"
-  short_description: "Build quotes from feature docs and pricing history"
-  default_prompt: "Use this skill to mine historical quotation documents and generate a structured quotation draft from a markdown or mind-map-based feature specification."

@@ -1,1 +1,0 @@
-# Wine Cellar Scripts Package

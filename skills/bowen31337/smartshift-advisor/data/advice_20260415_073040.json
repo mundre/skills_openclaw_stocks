@@ -1,7 +1,0 @@
-{
-  "export_threshold": 8,
-  "discharge_floor": 25,
-  "strategy": "conservative_hold",
-  "reasoning": "Battery at 78% SoC in self-consumption mode. Amber buy price 35c/kWh vs feed-in only 5c/kWh (7:1 spread) \u2014 exporting wastes value. Solar forecast 102 kWh today (partly cloudy) with sunrise already passed \u2014 battery will charge from solar by mid-morning. No negspot event. Flat price forecast next 4h. Best play: hold battery for self-consumption, avoid discharge below 25% given high buy prices. Set export threshold at 8c \u2014 only export if feed-in rises meaningfully above current 5c. Tomorrow looks sunny (101 kWh) so no supply risk.",
-  "timestamp": "2026-04-15T07:30:40.209244"
-}

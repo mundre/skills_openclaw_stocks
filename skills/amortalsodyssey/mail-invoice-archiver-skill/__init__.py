@@ -1,1 +1,0 @@
-"""OpenClaw-compatible skill bundle."""

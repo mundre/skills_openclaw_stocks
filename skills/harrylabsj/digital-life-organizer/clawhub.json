@@ -1,9 +1,0 @@
-{
-  "name": "digital-life-organizer",
-  "version": "0.1.0",
-  "description": "数字生活整理师 - 帮助用户整理数字资产、减少信息焦虑的系统，通过数字资产盘点、文件分类整理、订阅服务管理和密码安全审计，帮助用户建立有序的数字生活。",
-  "keywords": ["digital-life", "organizer", "digital-asset", "file-organization", "subscription", "password-security"],
-  "author": "harrylabsj",
-  "license": "MIT",
-  "repository": "https://github.com/harrylabsj/digital-life-organizer"
-}

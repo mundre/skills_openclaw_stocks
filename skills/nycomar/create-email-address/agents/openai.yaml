@@ -1,3 +1,0 @@
-interface:
-  display_name: Crustacean Email Gateway
-  short_description: Register an OpenClaw identity, then manage mailbox, inbox, message status, and outbound send through the Crustacean API.

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Volcengine Function Compute"
-  short_description: "Deploy and debug serverless functions"
-  default_prompt: "Use $volcengine-compute-function to deploy and validate this function workflow."

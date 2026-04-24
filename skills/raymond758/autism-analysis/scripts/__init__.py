@@ -1,1 +1,0 @@
-# Autism Analysis scripts package

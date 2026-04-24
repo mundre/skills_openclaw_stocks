@@ -1,7 +1,0 @@
-interface:
-  display_name: "NVIDIA CUDA"
-  short_description: "NVIDIA GPU deep learning optimization policy"
-  default_prompt: "Use $nvidia-cuda to optimize or review NVIDIA GPU deep learning code on CUDA."
-
-policy:
-  allow_implicit_invocation: true

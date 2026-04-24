@@ -1,3 +1,0 @@
-interface:
-  display_name: "Outbound Login"
-  short_description: "Log in to the outbound workbench and refresh reusable browser sessions"

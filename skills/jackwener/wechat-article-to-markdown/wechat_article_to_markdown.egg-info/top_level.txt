@@ -1,2 +1,0 @@
-main
-wechat_article_to_markdown

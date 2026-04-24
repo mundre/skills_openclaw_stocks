@@ -1,7 +1,0 @@
-{
-  "api_url": "http://127.0.0.1:9090",
-  "api_secret": "",
-  "proxy_http": "http://127.0.0.1:7890",
-  "proxy_socks5": "socks5://127.0.0.1:7891",
-  "proxy_all": "socks5://127.0.0.1:7891"
-}

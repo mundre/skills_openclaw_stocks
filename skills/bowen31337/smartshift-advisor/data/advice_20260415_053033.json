@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "Pre-dawn 5:30AM: Battery at 79% SOC, sunrise in 48min (6:18AM). Feed-in only 3c/kWh \u2014 well below export threshold, not worth discharging. Buy price 20c flat for next 4h, no negspot. Solar forecast strong at 102 kWh today (partly cloudy, 31% cloud). Holding charge for morning self-consumption; solar will refill battery by mid-morning. Conservative hold preserves stored energy for early morning use before PV ramps up.",
-  "timestamp": "2026-04-15T05:30:33.051803"
-}

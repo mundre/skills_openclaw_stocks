@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git -C /Users/clawdbot/hostdb/teamclaw ls-files data/skills/agent-init/)"
-    ]
-  }
-}

@@ -1,9 +1,0 @@
-{
-  "name": "subscribe-filter-feishu",
-  "version": "1.0.3",
-  "description": "订阅-过滤-飞书推送。通过WebSocket订阅数据流，大模型智能过滤，自动推送到飞书。",
-  "author": "sougannkyou",
-  "license": "MIT",
-  "requires": ["ws", "axios"],
-  "node": ">=16"
-}

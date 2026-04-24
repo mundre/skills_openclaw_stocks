@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "ethers": "^5.8.0",
-    "lz-string": "^1.5.0"
-  }
-}

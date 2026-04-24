@@ -1,1 +1,0 @@
-node self_healing_engine.js analyze "PowerShell AmpersandNotAllowed"

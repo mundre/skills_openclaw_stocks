@@ -1,6 +1,0 @@
-{
-  "thresholdUSD": 0.5,
-  "alertEnabled": true,
-  "alertChannel": "wecom",
-  "lastAlertAt": null
-}

@@ -1,8 +1,0 @@
-{
-  "name": "deepsleep",
-  "version": "1.0.0",
-  "description": "Two-phase daily memory persistence for AI agents — nightly pack + morning dispatch",
-  "keywords": ["memory", "sleep", "persistence", "agent", "openclaw", "daily-summary"],
-  "author": "JeffChang2024",
-  "license": "MIT"
-}

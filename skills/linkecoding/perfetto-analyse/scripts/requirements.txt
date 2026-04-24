@@ -1,2 +1,0 @@
-# 供 query_trace.py 使用
-perfetto>=0.0.0

@@ -1,3 +1,0 @@
-endpoints.md
-examples.md
-advanced.md

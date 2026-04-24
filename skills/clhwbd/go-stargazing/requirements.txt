@@ -1,2 +1,0 @@
-lunarcalendar
-shapely

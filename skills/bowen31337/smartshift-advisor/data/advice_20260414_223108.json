@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "Feed-in price is only 3c/kWh \u2014 well below the 5c minimum to justify export. Battery at 88% SOC with sunny forecast tomorrow (102kWh est, ~2.9h refill time). It is 10:30pm with no solar until morning. Hold in self-consumption mode overnight, preserve charge for morning household load. No grid charging needed as battery is already high and tomorrow will fully refill it.",
-  "timestamp": "2026-04-14T22:31:08.562628"
-}

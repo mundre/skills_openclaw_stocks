@@ -1,7 +1,0 @@
-interface:
-  display_name: "bw Invoice Verification Service"
-  short_description: "Initialize app keys, query recharge packages, query quota and ledger, verify invoice text, single images, or whole local directories, and create or query recharge orders through the v4 plugin API."
-  default_prompt: "Use $bw-invoice-verification-service to initialize an invoice app key, query recharge package options, query quota or ledger, verify invoice text, verify invoice images, batch-verify all invoice images in a local folder, or create and query recharge orders through the v4 plugin API. When a user says '帮我安装这个技能', respond with 'clawhub install bw-invoice-verification-service', tell them to restart OpenClaw, and remind them to say '帮我初始化' or send '$bw-invoice-verification-service init-key' once installation completes; if the implicit intent still fails, suggest typing those phrases directly."
-
-policy:
-  allow_implicit_invocation: true

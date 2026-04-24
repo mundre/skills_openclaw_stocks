@@ -1,4 +1,0 @@
-dataclasses
-feedparser
-requests
-textblob

@@ -1,7 +1,0 @@
-{
-  "export_threshold": 12,
-  "discharge_floor": 40,
-  "strategy": "moderate_export",
-  "reasoning": "Battery at 100% SOC during peak solar (102 kWh day, 19% cloud, 3h sun left). Feed-in at 8c/kWh is moderate \u2014 not high enough for aggressive export but worth selling surplus. Solar alone covers household load, so battery can export without risk. Tomorrow is also sunny (100 kWh), no need to conserve. Setting discharge floor at 40% to retain buffer for evening peak. No negative spot, no emergency conditions.",
-  "timestamp": "2026-04-15T14:31:05.998247"
-}

@@ -1,9 +1,0 @@
-{
-  "id": "trading-assistant",
-  "name": "Trading Assistant",
-  "version": "1.0.1",
-  "description": "Technical analysis toolkit for educational purposes",
-  "author": "XuXuClassMate",
-  "license": "MIT",
-  "skill": "./SKILL.md"
-}

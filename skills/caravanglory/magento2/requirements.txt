@@ -1,5 +1,0 @@
-requests
-requests-oauthlib
-pandas
-tabulate
-ruff

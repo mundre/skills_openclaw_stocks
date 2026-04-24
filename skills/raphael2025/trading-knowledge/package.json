@@ -1,8 +1,0 @@
-{
-  "name": "trading-knowledge",
-  "version": "1.0.0",
-  "description": "Trading knowledge base skill",
-  "main": "index.js",
-  "author": "Lucifer",
-  "license": "MIT"
-}

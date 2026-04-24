@@ -1,9 +1,0 @@
-{
-  "env": "test",
-  "pluginId": "q-wms-test",
-  "pluginName": "Q-WMS (Test)",
-  "managedSkillId": "q-wms-test",
-  "defaultAuthBaseUrl": "http://qlink-portal-test.800best.com",
-  "openclawInstanceId": "openclaw-q-wms-test",
-  "versionCheckCacheTtlMs": 10000
-}

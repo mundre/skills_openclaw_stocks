@@ -1,6 +1,0 @@
-{
-  "lastRefreshAt": "2026-03-20T09:30:00+00:00",
-  "lastSeenMessageTs": "2026-03-20T02:26:40-07:00",
-  "rawSamplesRetentionDays": 90,
-  "note": "Nightly refresh 2026-03-20: Added 6 new Jon messages (openclaw-tui check-in, jonnify philosophical text, heading-home close). Notable: long-form philosophical voice (events vs stories). Cron check-in fix confirmed clean. Pruned raw-samples to 125 entries (all within 90 days)."
-}

@@ -1,2 +1,0 @@
-# requirements.txt
-# Token消费优选师依赖

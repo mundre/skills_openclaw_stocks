@@ -1,7 +1,0 @@
-{
-  "export_threshold": 15,
-  "discharge_floor": 20,
-  "strategy": "conservative_hold",
-  "reasoning": "Battery at 86% at 11:30 PM with overnight ahead. Feed-in is only 3c/kWh \u2014 not worth exporting. Buy price at 20c flat off-peak, no negspot for grid charging. Tomorrow is sunny (102.4 kWh, clear skies) so battery will refill by mid-morning. Hold battery for overnight self-consumption, preserve capacity for morning peak.",
-  "timestamp": "2026-04-14T23:30:51.878930"
-}

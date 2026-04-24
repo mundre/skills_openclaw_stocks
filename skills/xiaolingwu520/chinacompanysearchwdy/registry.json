@@ -1,9 +1,0 @@
-{
-  "name": "wendaoyun",
-  "requiredEnvVars": ["WENDAOYUN_API_KEY"],
-  "requiredConfigPaths": [
-    "~/.config/wendao-yun/config.json",
-    "wendao-yun-config.json"
-  ],
-  "primaryCredential": "WENDAOYUN_API_KEY"
-}

@@ -1,5 +1,0 @@
-aiohttp
-loguru
-pycryptodome
-getuseragent
-pydantic

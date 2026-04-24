@@ -1,1 +1,0 @@
-"""Multi-source-locate package."""

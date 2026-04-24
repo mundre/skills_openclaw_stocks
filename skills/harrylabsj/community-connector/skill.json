@@ -1,9 +1,0 @@
-{
-  "name": "Community Connector",
-  "slug": "community-connector",
-  "version": "0.1.0",
-  "description": "将用户描述的社区/位置/场景信息，转化为具体可验证的连接方案和话术建议。适用于邻里互助、社区服务、线下社交等场景。",
-  "author": "Harry",
-  "tags": ["community", "social", "neighbors"],
-  "handler": "handler.py"
-}

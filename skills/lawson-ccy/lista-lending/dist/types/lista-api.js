@@ -1,4 +1,0 @@
-/**
- * Lista API types.
- */
-export {};

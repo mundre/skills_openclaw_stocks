@@ -1,1 +1,0 @@
-# skill-security-scanner source package

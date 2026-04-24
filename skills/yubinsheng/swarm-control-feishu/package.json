@@ -1,6 +1,0 @@
-{
-  "name": "swarm-control-feishu",
-  "version": "2.0.0",
-  "description": "一键配置飞书智能体集群，支持多 agent 并行、语音服务、全权限控制",
-  "main": "SKILL.md"
-}

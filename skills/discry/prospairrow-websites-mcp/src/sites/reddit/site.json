@@ -1,5 +1,0 @@
-{
-  "baseUrl": "https://www.reddit.com",
-  "allowedHosts": ["reddit.com", "www.reddit.com"],
-  "capabilities": ["READ_ONLY"]
-}

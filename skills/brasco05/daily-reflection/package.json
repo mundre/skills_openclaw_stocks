@@ -1,8 +1,0 @@
-{
-  "name": "daily-reflection",
-  "version": "1.0.0",
-  "description": "Automated end-of-day reflection for OpenClaw agents — builds long-term memory, detects patterns, and prepares morning briefings",
-  "keywords": ["openclaw", "reflection", "memory", "learning", "patterns", "morning-briefing", "self-improvement"],
-  "author": "brasco05",
-  "license": "MIT"
-}

@@ -1,4 +1,0 @@
-interface:
-  display_name: "SOTA Agent"
-  short_description: "SOTA-focused CV and DS campaigns across browser notebooks and GPU VMs"
-  default_prompt: "Use $sota-agent to freeze the benchmark target, triage the papers, plan the ablations, and decide whether a candidate is a real SOTA step or only noise. Keep the benchmark contract fixed, require contamination checks, and point claim review at a paired execution dashboard when one exists."

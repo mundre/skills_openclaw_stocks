@@ -1,2 +1,0 @@
-# Project Analyzer 依赖
-PyYAML>=6.0

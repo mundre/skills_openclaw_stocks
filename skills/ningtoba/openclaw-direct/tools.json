@@ -1,8 +1,0 @@
-{
-  "tools": [],
-  "package": {
-    "type": "installer",
-    "scripts": ["setup.bat", "setup.ps1", "setup.sh"],
-    "description": "One-click OpenClaw installer with security hardening"
-  }
-}

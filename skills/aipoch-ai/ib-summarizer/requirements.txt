@@ -1,5 +1,0 @@
-dataclasses
-docx
-pdfplumber
-pypdf2
-python-docx

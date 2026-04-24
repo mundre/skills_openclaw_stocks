@@ -1,8 +1,0 @@
-{
-  "title": "Readiness gauge",
-  "chartType": "gauge",
-  "valueField": "score",
-  "dataset": [
-    { "score": 76 }
-  ]
-}

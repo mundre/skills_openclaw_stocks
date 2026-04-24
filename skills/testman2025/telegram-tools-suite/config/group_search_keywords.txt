@@ -1,8 +1,0 @@
-# 群搜索关键词（每行一个，支持 + 连接词，如 facebook+ads）
-facebook ads
-google ads
-tiktok ads
-facebook+ads
-google+ads
-tiktok+ads
-出海+ads

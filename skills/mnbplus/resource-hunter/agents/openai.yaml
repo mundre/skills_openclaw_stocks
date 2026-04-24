@@ -1,4 +1,0 @@
-version: 1
-display_name: Resource Hunter
-short_description: Find the best public download route for pan links, torrents, magnets, and public video URLs with quality-aware ranking and JSON output.
-default_prompt: Use resource-hunter when the user wants public download routes, release comparison, source health, or a public video URL workflow without login or cookies.

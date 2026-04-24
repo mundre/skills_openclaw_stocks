@@ -1,7 +1,0 @@
-[
-  {
-    "from": "data",
-    "to": ".models",
-    "mode": "replace"
-  }
-]

@@ -1,9 +1,0 @@
-{
-  "name": "emotion-weather-station",
-  "version": "0.1.0",
-  "description": "情绪天气站 - 情绪追踪与分析助手，帮助用户记录情绪、分析模式、推荐调节策略、预警压力",
-  "keywords": ["emotion", "weather-station", "mood-tracking", "stress-management", "emotional-health", "mindfulness"],
-  "author": "harrylabsj",
-  "license": "MIT",
-  "repository": "https://github.com/harrylabsj/emotion-weather-station"
-}

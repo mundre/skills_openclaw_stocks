@@ -1,7 +1,0 @@
-{
-  "cache_ttl": 120,
-  "min_request_interval": 3,
-  "recommended_cron": "*/5 * * * *",
-  "last_updated": "2026-04-01T00:24:00",
-  "emergency": true
-}

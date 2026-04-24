@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "sourceharbor": {
-      "command": "./bin/dev-mcp",
-      "cwd": "/ABSOLUTE/PATH/TO/sourceharbor"
-    }
-  }
-}
