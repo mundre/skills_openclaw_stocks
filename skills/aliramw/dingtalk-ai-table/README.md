@@ -1,38 +1,85 @@
-# dingtalk-ai-table
+# 示例数据文件
 
-钉钉 AI 表格技能，已适配 **2026-03-10 发布的新版 MCP tools**。
+## fields.json - 批量新增字段示例
 
-## 依赖与环境声明
-
-- 必需二进制：`mcporter`、`python3`
-- 必需环境变量：`DINGTALK_MCP_URL`
-- 推荐环境变量：`OPENCLAW_WORKSPACE`（脚本本地文件沙箱根目录）
-
-
-## 本次升级重点
-
-- 全面切换到新 schema：`baseId / tableId / fieldId / recordId`
-- 覆盖 19 个 MCP tools
-- 重写批量字段脚本
-- 重写批量导入脚本
-- 重写测试，当前 `21 / 21` 通过
-
-## 目录
-
-- `SKILL.md`：技能说明
-- `references/api-reference.md`：新版 API 参考
-- `references/error-codes.md`：错误排查
-- `scripts/bulk_add_fields.py`：批量新增字段
-- `scripts/import_records.py`：批量导入记录
-- `tests/test_security.py`：安全与构造测试
-
-## 测试
-
-```bash
-cd /Users/marila/Skills/dingtalk-ai-table
-python3 tests/test_security.py
+```json
+[
+  {
+    "fieldName": "任务名",
+    "type": "text"
+  },
+  {
+    "fieldName": "优先级",
+    "type": "singleSelect",
+    "config": {
+      "options": [
+        {"name": "高"},
+        {"name": "中"},
+        {"name": "低"}
+      ]
+    }
+  },
+  {
+    "fieldName": "截止日期",
+    "type": "date"
+  },
+  {
+    "fieldName": "负责人",
+    "type": "user",
+    "config": {
+      "multiple": false
+    }
+  },
+  {
+    "fieldName": "进度",
+    "type": "progress"
+  }
+]
 ```
 
-## 注意
+## data.csv - 批量导入记录示例
 
-旧版脚本依赖 `dentryUuid / sheetIdOrName`，现在已经废弃。后续调用必须使用新版 ID 体系。
+```csv
+fld_name,fld_age,fld_status,fld_salary
+张三,25,进行中,15000
+李四,30,已完成,18000
+王五,28,进行中,16000
+```
+
+## data.json - JSON 格式导入示例
+
+```json
+[
+  {
+    "cells": {
+      "fld_name": "张三",
+      "fld_age": 25,
+      "fld_status": "进行中",
+      "fld_salary": 15000
+    }
+  },
+  {
+    "cells": {
+      "fld_name": "李四",
+      "fld_age": 30,
+      "fld_status": "已完成",
+      "fld_salary": 18000
+    }
+  }
+]
+```
+
+## 字段类型参考
+
+| 类型 | 说明 | 示例 |
+|------|------|------|
+| `text` | 文本 | `"张三"` |
+| `number` | 数字 | `25` |
+| `singleSelect` | 单选 | `{"name":"高"}` |
+| `multipleSelect` | 多选 | `[{"name":"高"},{"name":"紧急"}]` |
+| `date` | 日期 | `"2026-03-31"` |
+| `user` | 用户 | `{"id":"user_xxx"}` |
+| `checkbox` | 复选框 | `true` |
+| `attachment` | 附件 | `[{"fileId":"file_xxx"}]` |
+| `url` | 链接 | `{"text":"官网","link":"https://..."}` |
+| `richText` | 富文本 | `{"markdown":"**加粗**"}` |

@@ -1,3 +1,28 @@
+## [0.6.0] - 2026-03-31
+
+### 文档与测试增强
+
+- ✅ 新增更完整的 skill metadata，包括 author / category / tags / documentation / support
+- ✅ 在 `SKILL.md` 增加“5 分钟快速开始”和核心概念说明，降低上手门槛
+- ✅ `package.json` 的测试命令扩展为同时执行 `test_security.py` 与 `test_triggering.py`
+- ✅ 新增补充文档与示例文件，完善技能交付内容
+
+## [0.5.4] - 2026-03-31
+
+### 维护发布
+
+- ✅ 发布新的 patch 版本，重新同步 GitHub Release 与 ClawHub registry
+- ✅ 基于当前最新仓库状态重新发版，无额外功能改动
+- ✅ 发布前重新执行安全测试，结果仍为 21 / 21 通过
+
+## [0.5.3] - 2026-03-31
+
+### 维护发布
+
+- ✅ 发布新的 patch 版本，重新同步 GitHub Release 与 ClawHub registry
+- ✅ 复核当前技能目录无未提交功能改动，确认本次为发布补发而非代码变更
+- ✅ 发布前重新执行安全测试，结果仍为 21 / 21 通过
+
 ## [0.5.2] - 2026-03-11
 
 ### 技能流程优化
