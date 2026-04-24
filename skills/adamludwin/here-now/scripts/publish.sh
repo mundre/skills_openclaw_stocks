@@ -49,7 +49,7 @@ if [[ -x "$BUNDLED_JQ" ]]; then
 elif command -v jq >/dev/null 2>&1; then
   JQ_BIN="$(command -v jq)"
 else
-  die "requires jq (run: curl -fsSL https://here.now/install.sh | bash)"
+  die "requires jq"
 fi
 
 for cmd in curl file; do
@@ -355,8 +355,15 @@ if [[ -n "$RESPONSE_CLAIM_URL" && "$RESPONSE_CLAIM_URL" == https://* ]]; then
   SAFE_CLAIM_URL="$RESPONSE_CLAIM_URL"
 fi
 
+ACTION="create"
+if [[ -n "$SLUG" ]]; then
+  ACTION="update"
+fi
+
 echo "" >&2
 echo "publish_result.site_url=$SITE_URL" >&2
+echo "publish_result.slug=$OUT_SLUG" >&2
+echo "publish_result.action=$ACTION" >&2
 echo "publish_result.auth_mode=$AUTH_MODE" >&2
 echo "publish_result.api_key_source=$API_KEY_SOURCE" >&2
 echo "publish_result.persistence=$PERSISTENCE" >&2
