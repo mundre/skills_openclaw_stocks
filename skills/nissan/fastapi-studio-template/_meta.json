@@ -3,11 +3,16 @@
   "slug": "fastapi-studio-template",
   "displayName": "Fastapi Studio Template",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1773613576895,
-    "commit": "https://github.com/openclaw/skills/commit/6268a50c0d4f57bb963fa895e58dde463f5cde95"
+    "version": "1.2.2",
+    "publishedAt": 1774672846485,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1773613576895,
+      "commit": "https://github.com/openclaw/skills/commit/6268a50c0d4f57bb963fa895e58dde463f5cde95"
+    },
     {
       "version": "1.2.0",
       "publishedAt": 1772145088903,
